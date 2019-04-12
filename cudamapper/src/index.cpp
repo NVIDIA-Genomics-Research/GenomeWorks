@@ -4,7 +4,7 @@
 #include "bioparser/bioparser.hpp"
 #include "cudamapper/sequence.hpp"
 
-namespace cudamapper {
+namespace genomeworks {
     Index::Index() {}
 
     void Index::generate_index(char *fasta_filename) {

@@ -12,7 +12,7 @@ namespace bioparser {
     template<class T>
     class FastqParser;
 }
-namespace cudamapper {
+namespace genomeworks {
 
 class Sequence;
 std::unique_ptr<Sequence> createSequence(const std::string& name,

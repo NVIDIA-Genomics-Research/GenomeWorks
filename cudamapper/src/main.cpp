@@ -2,7 +2,7 @@
 
 int main(int argc, char *argv[]){
 
-    cudamapper::Index index_generator = cudamapper::Index();
+    genomeworks::Index index_generator = genomeworks::Index();
     index_generator.generate_index(argv[1]);
 
     return  0;

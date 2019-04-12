@@ -1,6 +1,6 @@
 #pragma  once
 
-namespace cudamapper {
+namespace genomeworks {
     class Index {
     public:
         Index();

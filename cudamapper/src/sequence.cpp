@@ -2,7 +2,7 @@
 
 #include "cudamapper/sequence.hpp"
 
-namespace cudamapper {
+namespace genomeworks {
     std::unique_ptr<Sequence> createSequence(const std::string &name,
                                              const std::string &data) {
 
