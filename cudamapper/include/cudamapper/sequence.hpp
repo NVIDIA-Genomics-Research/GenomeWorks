@@ -1,5 +1,4 @@
-#ifndef GENOMEWORKSCPP_SEQUENCE_HPP
-#define GENOMEWORKSCPP_SEQUENCE_HPP
+#pragma once
 
 #include <stdint.h>
 #include <memory>
@@ -73,4 +72,3 @@ private:
     std::string reverse_quality_;
 };
 }
-#endif //GENOMEWORKSCPP_SEQUENCE_HPP
