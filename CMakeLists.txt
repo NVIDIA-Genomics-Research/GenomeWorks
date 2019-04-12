@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.10.2)
 project(GenomeWorksCPP)
 
+set(CMAKE_CXX_STANDARD 17)
+
 if (NOT TARGET bioparser)
     add_subdirectory(3rdparty/bioparser EXCLUDE_FROM_ALL)
 endif()
