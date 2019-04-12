@@ -1,4 +1,4 @@
-#include <ctype.h>
+#include <cctype>
 
 #include "cudamapper/sequence.hpp"
 
@@ -16,7 +16,7 @@ namespace genomeworks {
 
         data_.reserve(data_length);
         for (uint32_t i = 0; i < data_length; ++i) {
-            data_ += toupper(data[i]);
+            data_ += std::toupper(data[i]);
         }
     }
 
