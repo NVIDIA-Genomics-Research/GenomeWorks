@@ -7,9 +7,7 @@
 namespace genomeworks {
     Index::Index() {}
 
-    void Index::generate_index(char *fasta_filename) {
-
-        std::string query_filename = std::string(fasta_filename);
+    void Index::generate_index(std::string query_filename) {
 
         std::unique_ptr <bioparser::Parser<Sequence>> query_parser = nullptr;
 

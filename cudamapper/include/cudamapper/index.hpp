@@ -5,6 +5,6 @@ namespace genomeworks {
     public:
         Index();
 
-        void generate_index(char *fasta_filename);
+        void generate_index(std::string query_filename);
     };
 }
