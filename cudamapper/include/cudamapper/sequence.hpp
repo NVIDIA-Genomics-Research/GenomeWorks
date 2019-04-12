@@ -12,6 +12,7 @@ namespace bioparser {
     template<class T>
     class FastqParser;
 }
+
 namespace genomeworks {
 
 class Sequence;
