@@ -1,7 +1,7 @@
-#include <cudamapper/index.hpp>
 #include <string>
 #include <iostream>
 #include "bioparser/bioparser.hpp"
+#include "cudamapper/index.hpp"
 #include "cudamapper/sequence.hpp"
 
 namespace genomeworks {
