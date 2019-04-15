@@ -6,6 +6,11 @@
 
 namespace genomeworks {
 
+    class CPUIndex: public Index{
+    public:
+        void generate_index(std::string query_filename);
+    };
+
     void CPUIndex::generate_index(std::string query_filename) {
 
         std::unique_ptr <bioparser::Parser<Sequence>> query_parser = nullptr;
