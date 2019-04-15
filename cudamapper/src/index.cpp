@@ -5,9 +5,8 @@
 #include "cudamapper/sequence.hpp"
 
 namespace genomeworks {
-    Index::Index() {}
 
-    void Index::generate_index(std::string query_filename) {
+    void CPUIndex::generate_index(std::string query_filename) {
 
         std::unique_ptr <bioparser::Parser<Sequence>> query_parser = nullptr;
 
@@ -35,4 +34,9 @@ namespace genomeworks {
             std::cout << i << ": " << fasta_objects[i]->data() << std::endl;
         }
     }
+
+    std::unique_ptr<Index> Index::create_index() {
+        return std::make_unique<CPUIndex>();
+    }
+
 }
