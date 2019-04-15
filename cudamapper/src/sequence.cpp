@@ -1,15 +1,8 @@
-#include <cctype>
 #include "cudamapper/sequence.hpp"
+#include "bioparser_sequence.hpp"
 
 namespace genomeworks {
-
-    Sequence::Sequence(const char *name, uint32_t name_length, const char *data,
-                       uint32_t data_length)
-            : name_(name, name_length), data_(){
-
-        data_.reserve(data_length);
-        for (uint32_t i = 0; i < data_length; ++i) {
-            data_ += std::toupper(data[i]);
-        }
+    std::unique_ptr<Sequence> Sequence::create_sequence() {
+        return std::make_unique<BioParserSequence>();
     }
 }
