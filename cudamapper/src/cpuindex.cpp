@@ -1,15 +1,10 @@
 #include <string>
 #include <iostream>
 #include "bioparser/bioparser.hpp"
-#include "cudamapper/index.hpp"
 #include "cudamapper/sequence.hpp"
+#include "cpuindex.hpp"
 
 namespace genomeworks {
-
-    class CPUIndex: public Index{
-    public:
-        void generate_index(std::string query_filename);
-    };
 
     void CPUIndex::generate_index(std::string query_filename) {
 

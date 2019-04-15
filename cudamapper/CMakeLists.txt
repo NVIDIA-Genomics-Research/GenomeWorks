@@ -1,7 +1,7 @@
 project(cudamapper)
 
 add_library(indexer
-        src/index.cpp)
+        src/cpuindex.cpp)
 target_include_directories(indexer PUBLIC include)
 target_link_libraries(indexer bioparser)
 
