@@ -3,6 +3,9 @@
 
 #define WARP_SIZE 32
 
+// Extract shorts from bit field.
+#define EXTRACT_SHORT_FROMT_BITFIELD(type, val, pos) (type)((val >> (16 * (pos))) & 0xffff)
+
 namespace nvidia {
 
 namespace cudapoa {
@@ -214,14 +217,29 @@ uint16_t runNeedlemanWunsch(uint8_t* nodes,
                 j2 = read_pos + 3;
                 j3 = read_pos + 4;
                 //printf("thread idx %d locations %d %d\n", thread_idx, j0, j1);
-                score0 = max(scores_pred_i_1[j0-1] + char_profile0,
-                        scores_pred_i_1[j0] + GAP);
-                score1 = max(scores_pred_i_1[j1-1] + char_profile1,
-                        scores_pred_i_1[j1] + GAP);
-                score2 = max(scores_pred_i_1[j2-1] + char_profile2,
-                        scores_pred_i_1[j2] + GAP);
-                score3 = max(scores_pred_i_1[j3-1] + char_profile3,
-                        scores_pred_i_1[j3] + GAP);
+
+                // The load instructions typically load data in 4B or 8B chunks.
+                // If data is 16b (2B), then a 4B load chunk is loaded into register
+                // and the necessary bits are extracted before returning. This wastes cycles
+                // as each read of 16b issues a separate load command.
+                // Instead it is better to load a 4B or 8B chunk into a register
+                // using a single load inst, and then extracting necessary part of
+                // of the data using bit arithmatic. Also reduces register count.
+
+                // This loads 8 consecutive bytes (4 shorts).
+                int64_t score_pred_i_1_64 = ((int64_t*)&scores_pred_i_1[j0-1])[0];
+                // Since we read 5 consecutive shorts, we need to load the next
+                // chuink of memory as well.
+                int64_t score_pred_i_1_64_2 = ((int64_t*)&scores_pred_i_1[j0-1])[1];
+
+                score0 = max(EXTRACT_SHORT_FROMT_BITFIELD(int16_t, score_pred_i_1_64, 0) + char_profile0,
+                        EXTRACT_SHORT_FROMT_BITFIELD(int16_t, score_pred_i_1_64, 1) + GAP);
+                score1 = max(EXTRACT_SHORT_FROMT_BITFIELD(int16_t, score_pred_i_1_64, 1)  + char_profile1,
+                        EXTRACT_SHORT_FROMT_BITFIELD(int16_t, score_pred_i_1_64, 2) + GAP);
+                score2 = max(EXTRACT_SHORT_FROMT_BITFIELD(int16_t, score_pred_i_1_64, 2)  + char_profile2,
+                        EXTRACT_SHORT_FROMT_BITFIELD(int16_t, score_pred_i_1_64, 3) + GAP);
+                score3 = max(EXTRACT_SHORT_FROMT_BITFIELD(int16_t, score_pred_i_1_64, 3)  + char_profile3,
+                        EXTRACT_SHORT_FROMT_BITFIELD(int16_t, score_pred_i_1_64_2, 0) + GAP);
 
                 // Perform same score updates as above, but for rest of predecessors.
                 for (uint16_t p = 1; p < pred_count; p++)
@@ -229,17 +247,21 @@ uint16_t runNeedlemanWunsch(uint8_t* nodes,
                     int16_t pred_i_2 = node_id_to_pos[incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES + p]] + 1;
                     int16_t* scores_pred_i_2 = &scores[pred_i_2 * CUDAPOA_MAX_MATRIX_SEQUENCE_DIMENSION];
 
-                    score0 = max(scores_pred_i_2[j0 - 1] + char_profile0,
-                            max(score0, scores_pred_i_2[j0] + GAP));
+                    // Reasoning for 8B preload same as above.
+                    int64_t score_pred_i_2_64 = ((int64_t*)&scores_pred_i_2[j0-1])[0];
+                    int64_t score_pred_i_2_64_2 = ((int64_t*)&scores_pred_i_2[j0-1])[1];
 
-                    score1 = max(scores_pred_i_2[j1 - 1] + char_profile1,
-                            max(score1, scores_pred_i_2[j1] + GAP));
+                    score0 = max(EXTRACT_SHORT_FROMT_BITFIELD(int16_t, score_pred_i_2_64, 0) + char_profile0,
+                            max(score0, EXTRACT_SHORT_FROMT_BITFIELD(int16_t, score_pred_i_2_64, 1) + GAP));
 
-                    score2 = max(scores_pred_i_2[j2 - 1] + char_profile2,
-                            max(score2, scores_pred_i_2[j2] + GAP));
+                    score1 = max(EXTRACT_SHORT_FROMT_BITFIELD(int16_t, score_pred_i_2_64, 1) + char_profile1,
+                            max(score1, EXTRACT_SHORT_FROMT_BITFIELD(int16_t, score_pred_i_2_64, 2) + GAP));
 
-                    score3 = max(scores_pred_i_2[j3 - 1] + char_profile3,
-                            max(score3, scores_pred_i_2[j3] + GAP));
+                    score2 = max(EXTRACT_SHORT_FROMT_BITFIELD(int16_t, score_pred_i_2_64, 2) + char_profile2,
+                            max(score2, EXTRACT_SHORT_FROMT_BITFIELD(int16_t, score_pred_i_2_64, 3) + GAP));
+
+                    score3 = max(EXTRACT_SHORT_FROMT_BITFIELD(int16_t, score_pred_i_2_64, 3) + char_profile3,
+                            max(score3, EXTRACT_SHORT_FROMT_BITFIELD(int16_t, score_pred_i_2_64_2, 0) + GAP));
                 }
             }
 
