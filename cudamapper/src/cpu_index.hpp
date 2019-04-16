@@ -9,6 +9,6 @@ namespace genomeworks {
     public:
         /// \brief generate an in-memory (k,w)-minimizer index
         /// \param query_filename
-        void generate_index(std::string query_filename);
+        void generate_index(const std::string &query_filename);
     };
 }

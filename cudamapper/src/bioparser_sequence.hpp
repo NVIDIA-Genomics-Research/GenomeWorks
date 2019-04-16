@@ -9,7 +9,6 @@ namespace genomeworks {
     class BioParserSequence: public Sequence {
     public:
         ~BioParserSequence() = default;
-        BioParserSequence() = default;
 
         /// returns sequence read name.
         /// \return `name_` private variable
