@@ -24,12 +24,14 @@ namespace cudapoa {
 
 uint32_t Batch::batches = 0;
 
-Batch::Batch(uint32_t max_poas, uint32_t max_sequences_per_poa)
+Batch::Batch(uint32_t max_poas, uint32_t max_sequences_per_poa, uint32_t device)
     : max_poas_(max_poas)
     , max_sequences_per_poa_(max_sequences_per_poa)
+    , device_id_(device)
 {
     bid_ = Batch::batches++;
-
+    // Set CUDA device
+    CU_CHECK_ERR(cudaSetDevice(device));
     // Allocate host memory and CUDA memory based on max sequence and target counts.
 
     // Verify that maximum sequence size is in multiples of tb size.

@@ -39,7 +39,7 @@ class Batch
     const uint32_t NUM_THREADS = 64;
 
 public:
-    Batch(uint32_t max_poas, uint32_t max_sequences_per_poa);
+    Batch(uint32_t max_poas, uint32_t max_sequences_per_poa, uint32_t device);
     ~Batch();
 
     // Add new partial order alignment to batch.
