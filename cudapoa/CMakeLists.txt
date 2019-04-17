@@ -30,6 +30,7 @@ endif()
 
 target_include_directories(cudapoa PUBLIC include)
 
+add_doxygen_source_dir(${CMAKE_CURRENT_SOURCE_DIR}/include/cudapoa)
 
 # Add tests folder
 add_subdirectory(tests)

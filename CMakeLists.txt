@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.10.2)
 project(GenomeWorksCPP)
 
+include(cmake/Doxygen.cmake)
+
 set(CMAKE_CXX_STANDARD 17)
 
 if (NOT TARGET bioparser)
@@ -10,3 +12,4 @@ endif()
 add_subdirectory(cudapoa)
 add_subdirectory(cudamapper)
 
+add_docs_target("GenomeWorks" "1.0")
