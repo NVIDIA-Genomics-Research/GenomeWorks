@@ -24,14 +24,17 @@ namespace cudapoa {
 
 uint32_t Batch::batches = 0;
 
-Batch::Batch(uint32_t max_poas, uint32_t max_sequences_per_poa, uint32_t device)
+Batch::Batch(uint32_t max_poas, uint32_t max_sequences_per_poa, uint32_t device_id)
     : max_poas_(max_poas)
     , max_sequences_per_poa_(max_sequences_per_poa)
-    , device_id_(device)
+    , device_id_(device_id)
 {
     bid_ = Batch::batches++;
+    
     // Set CUDA device
-    CU_CHECK_ERR(cudaSetDevice(device));
+    CU_CHECK_ERR(cudaSetDevice(device_id_));
+    std::cerr << TABS << bid_ << " Initializing batch on device " << device_id_ << std::endl;
+
     // Allocate host memory and CUDA memory based on max sequence and target counts.
 
     // Verify that maximum sequence size is in multiples of tb size.
@@ -60,7 +63,7 @@ Batch::Batch(uint32_t max_poas, uint32_t max_sequences_per_poa, uint32_t device)
     CU_CHECK_ERR(cudaMalloc((void**)&sequence_lengths_d_, max_poas_ * max_sequences_per_poa * sizeof(uint16_t)));
     CU_CHECK_ERR(cudaMalloc((void**)&window_details_d_, max_poas_ * sizeof(nvidia::cudapoa::WindowDetails)));
 
-    std::cerr << TABS << bid_ << " Allocated input buffers of size " << (static_cast<float>(input_size)  / (1024 * 1024)) << "MB" << std::endl;
+    std::cerr << TABS << bid_ << " Allocated input buffers of size " << (static_cast<float>(input_size)  / (1024 * 1024)) << "MB on device " << device_id_ << std::endl;
 
     // Output buffers.
     // Buffer for final consensus.
@@ -77,7 +80,7 @@ Batch::Batch(uint32_t max_poas, uint32_t max_sequences_per_poa, uint32_t device)
     CU_CHECK_ERR(cudaMalloc((void**) &coverage_d_,  input_size * sizeof(uint16_t)));
 
     input_size += input_size * sizeof(uint16_t);
-    std::cerr << TABS << bid_ << " Allocated output buffers of size " << (static_cast<float>(input_size)  / (1024 * 1024)) << "MB" << std::endl;
+    std::cerr << TABS << bid_ << " Allocated output buffers of size " << (static_cast<float>(input_size)  / (1024 * 1024)) << "MB on device " << device_id_ << std::endl;
 
     // Buffers for storing NW scores and backtrace.
     CU_CHECK_ERR(cudaMalloc((void**) &scores_d_, sizeof(int16_t) * CUDAPOA_MAX_MATRIX_GRAPH_DIMENSION * CUDAPOA_MAX_MATRIX_SEQUENCE_DIMENSION * max_poas_));
@@ -87,7 +90,7 @@ Batch::Batch(uint32_t max_poas, uint32_t max_sequences_per_poa, uint32_t device)
     // Debug print for size allocated.
     uint32_t temp_size = (sizeof(int16_t) * CUDAPOA_MAX_MATRIX_GRAPH_DIMENSION * CUDAPOA_MAX_MATRIX_SEQUENCE_DIMENSION * max_poas_ );
     temp_size += 2 * (sizeof(int16_t) * CUDAPOA_MAX_MATRIX_GRAPH_DIMENSION * max_poas_ );
-    std::cerr << TABS << bid_ << " Allocated temp buffers of size " << (static_cast<float>(temp_size)  / (1024 * 1024)) << "MB" << std::endl;
+    std::cerr << TABS << bid_ << " Allocated temp buffers of size " << (static_cast<float>(temp_size)  / (1024 * 1024)) << "MB on device " << device_id_ << std::endl;
 
     // Allocate graph buffers. Size is based maximum data per window, times number of windows being processed.
     CU_CHECK_ERR(cudaMalloc((void**) &nodes_d_, sizeof(uint8_t) * CUDAPOA_MAX_NODES_PER_WINDOW * max_poas_ ));
@@ -145,7 +148,7 @@ Batch::Batch(uint32_t max_poas, uint32_t max_sequences_per_poa, uint32_t device)
     temp_size += sizeof(bool) * CUDAPOA_MAX_NODES_PER_WINDOW * max_poas_ ;
     temp_size += sizeof(uint16_t) * CUDAPOA_MAX_NODES_PER_WINDOW * max_poas_ ;
     temp_size += sizeof(uint16_t) * CUDAPOA_MAX_NODES_PER_WINDOW * max_poas_ ;
-    std::cerr << TABS << bid_ << " Allocated temp buffers of size " << (static_cast<float>(temp_size)  / (1024 * 1024)) << "MB" << std::endl;
+    std::cerr << TABS << bid_ << " Allocated temp buffers of size " << (static_cast<float>(temp_size)  / (1024 * 1024)) << "MB on device " << device_id_ << std::endl;
 }
 
 Batch::~Batch()
@@ -157,7 +160,7 @@ Batch::~Batch()
     CU_CHECK_ERR(cudaFree(alignment_graph_d_));
     CU_CHECK_ERR(cudaFree(alignment_read_d_));
 
-    std::cerr << TABS << "Destroyed buffers." << std::endl;
+    std::cerr << TABS << "Destroyed buffers on device " << device_id_ << std::endl;
 
     CU_CHECK_ERR(cudaFree(nodes_d_));
     CU_CHECK_ERR(cudaFree(node_alignments_d_));
@@ -199,7 +202,7 @@ void Batch::generate_poa()
                                  global_sequence_idx_ * sizeof(uint16_t), cudaMemcpyHostToDevice, stream_));
 
     // Launch kernel to run 1 POA per thread in thread block.
-    std::cerr << TABS << bid_ << " Launching kernel for " << poa_count_ << std::endl;
+    std::cerr << TABS << bid_ << " Launching kernel for " << poa_count_ << " on device " << device_id_ << std::endl;
     nvidia::cudapoa::generatePOA(consensus_d_,
                                  coverage_d_,
                                  inputs_d_,
@@ -229,15 +232,18 @@ void Batch::generate_poa()
                                  node_marks_d_,
                                  check_aligned_nodes_d_,
                                  nodes_to_visit_d_,
-                                 node_coverage_counts_d_);
+                                 node_coverage_counts_d_,
+                                 GAP,
+                                 MISMATCH,
+                                 MATCH);
     CU_CHECK_ERR(cudaPeekAtLastError());
-    std::cerr << TABS << bid_ << " Launched kernel" << std::endl;
+    std::cerr << TABS << bid_ << " Launched kernel on device " << device_id_ << std::endl;
 }
 
 void Batch::get_consensus(std::vector<std::string>& consensus,
         std::vector<std::vector<uint16_t>>& coverage)
 {
-    std::cerr << TABS << bid_ << " Launching memcpy D2H" << std::endl;
+    std::cerr << TABS << bid_ << " Launching memcpy D2H on device " << device_id_ << std::endl;
     CU_CHECK_ERR(cudaMemcpyAsync(consensus_h_.get(),
 				   consensus_d_,
 				   CUDAPOA_MAX_SEQUENCE_SIZE * max_poas_ * sizeof(uint8_t),
@@ -250,7 +256,7 @@ void Batch::get_consensus(std::vector<std::string>& consensus,
 				   stream_));
     CU_CHECK_ERR(cudaStreamSynchronize(stream_));
 
-    std::cerr << TABS << bid_ << " Finished memcpy D2H" << std::endl;
+    std::cerr << TABS << bid_ << " Finished memcpy D2H on device " << device_id_ << std::endl;
 
     for(uint32_t poa = 0; poa < poa_count_; poa++)
     {
@@ -271,11 +277,6 @@ void Batch::get_consensus(std::vector<std::string>& consensus,
 void Batch::set_cuda_stream(cudaStream_t stream)
 {
     stream_ = stream;
-}
-
-void Batch::set_device_id(uint32_t device_id)
-{
-    device_id_ = device_id;
 }
 
 status Batch::add_poa()

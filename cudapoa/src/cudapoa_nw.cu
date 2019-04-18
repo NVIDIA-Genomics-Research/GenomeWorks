@@ -41,15 +41,18 @@ uint16_t runNeedlemanWunsch(uint8_t* nodes,
                         uint16_t read_count,
                         int16_t* scores,
                         int16_t* alignment_graph,
-                        int16_t* alignment_read)
+                        int16_t* alignment_read,
+                        const int16_t GAP,
+                        const int16_t MISMATCH,
+                        const int16_t MATCH)
 {
     //printf("Running NW\n");
     // Set gap/mismatch penalty. Currently acquired from default racon settings.
     // TODO: Pass scores from arguments.
-#pragma message("TODO: Pass match/gap/mismatch scores into NW kernel as parameters.")
-    const int16_t GAP = -8;
-    const int16_t MISMATCH = -6;
-    const int16_t MATCH = 8;
+// #pragma message("TODO: Pass match/gap/mismatch scores into NW kernel as parameters.")
+    // const int16_t GAP = -8;
+    // const int16_t MISMATCH = -6;
+    // const int16_t MATCH = 8;
 
     __shared__ int16_t first_element_prev_score;
 

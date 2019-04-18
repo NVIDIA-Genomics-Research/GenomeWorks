@@ -72,7 +72,10 @@ void generatePOAKernel(uint8_t* consensus_d,
                        uint8_t* node_marks_d_,
                        bool* check_aligned_nodes_d_,
                        uint16_t* nodes_to_visit_d_,
-                       uint16_t* node_coverage_counts_d_)
+                       uint16_t* node_coverage_counts_d_,
+                       const int16_t GAP,
+                       const int16_t MISMATCH,
+                       const int16_t MATCH)
 {
 
     uint32_t block_idx = blockIdx.x;
@@ -238,7 +241,10 @@ void generatePOAKernel(uint8_t* consensus_d,
                 seq_len,
                 scores,
                 alignment_graph,
-                alignment_read);
+                alignment_read,
+                GAP,
+                MISMATCH,
+                MATCH);
 
         long long int nw_end = clock64();
         nw_time += (nw_end - start);
@@ -407,7 +413,10 @@ void generatePOA(uint8_t* consensus_d,
                  uint8_t* node_marks,
                  bool* check_aligned_nodes,
                  uint16_t* nodes_to_visit,
-                 uint16_t* node_coverage_counts)
+                 uint16_t* node_coverage_counts,
+                 const int16_t GAP,
+                 const int16_t MISMATCH,
+                 const int16_t MATCH)
 {
     generatePOAKernel<<<num_blocks, num_threads, 0, stream>>>(consensus_d,
                                                               coverage_d,
@@ -435,7 +444,10 @@ void generatePOA(uint8_t* consensus_d,
                                                               node_marks,
                                                               check_aligned_nodes,
                                                               nodes_to_visit,
-                                                              node_coverage_counts);
+                                                              node_coverage_counts,
+                                                              GAP,
+                                                              MISMATCH,
+                                                              MATCH);
 }
 
 } // namespace cudapoa

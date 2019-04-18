@@ -37,9 +37,12 @@ enum status
 class Batch
 {
     const uint32_t NUM_THREADS = 64;
+    const int16_t GAP = -8;
+    const int16_t MISMATCH = -6;
+    const int16_t MATCH = 8;
 
 public:
-    Batch(uint32_t max_poas, uint32_t max_sequences_per_poa, uint32_t device);
+    Batch(uint32_t max_poas, uint32_t max_sequences_per_poa, uint32_t device_id);
     ~Batch();
 
     // Add new partial order alignment to batch.
@@ -57,9 +60,6 @@ public:
     // Get the consensus for each POA.
     void get_consensus(std::vector<std::string>& consensus,
             std::vector<std::vector<uint16_t>>& coverage);
-
-    // Set GPU device to run batch on.
-    void set_device_id(uint32_t);
 
     // Set CUDA stream for GPU device.
     void set_cuda_stream(cudaStream_t stream);

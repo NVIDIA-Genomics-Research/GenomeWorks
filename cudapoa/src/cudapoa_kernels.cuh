@@ -28,6 +28,7 @@
 // any allocated buffer.
 #define CUDAPOA_MAX_MATRIX_SEQUENCE_DIMENSION (CUDAPOA_MAX_SEQUENCE_SIZE + 4)
 
+
 namespace nvidia {
 
 namespace cudapoa {
@@ -113,7 +114,10 @@ void generatePOA(uint8_t* consensus_d,
                  uint8_t* node_marks,
                  bool* check_aligned_nodes,
                  uint16_t* nodes_to_visit,
-                 uint16_t* node_coverage_counts);
+                 uint16_t* node_coverage_counts,
+                 const int16_t GAP,
+                 const int16_t MISMATCH,
+                 const int16_t MATCH);
 
 }
 
