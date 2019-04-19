@@ -44,6 +44,9 @@ namespace cudapoa {
  * @param[in] check_aligned_nodes_d_      Device scratch space for storing check for aligned nodes
  * @param[in] nodes_to_visit_d_           device scratch space for storing stack of nodes to be visited in topsort
  * @param[in] node_coverage_counts_d_     device scratch space for storing coverage of each node in graph.
+ * @param[in] gap_score                   Score for inserting gap into alignment
+ * @param[in] mismatch_score              Score for finding a mismatch in alignment
+ * @param[in] match_score                 Score for finding a match in alignment
  */
 __global__
 void generatePOAKernel(uint8_t* consensus_d,
@@ -73,9 +76,9 @@ void generatePOAKernel(uint8_t* consensus_d,
                        bool* check_aligned_nodes_d_,
                        uint16_t* nodes_to_visit_d_,
                        uint16_t* node_coverage_counts_d_,
-                       const int16_t GAP,
-                       const int16_t MISMATCH,
-                       const int16_t MATCH)
+                       int16_t gap_score,
+                       int16_t mismatch_score,
+                       int16_t match_score)
 {
 
     uint32_t block_idx = blockIdx.x;
@@ -242,9 +245,9 @@ void generatePOAKernel(uint8_t* consensus_d,
                 scores,
                 alignment_graph,
                 alignment_read,
-                GAP,
-                MISMATCH,
-                MATCH);
+                gap_score,
+                mismatch_score,
+                match_score);
 
         long long int nw_end = clock64();
         nw_time += (nw_end - start);
@@ -414,9 +417,9 @@ void generatePOA(uint8_t* consensus_d,
                  bool* check_aligned_nodes,
                  uint16_t* nodes_to_visit,
                  uint16_t* node_coverage_counts,
-                 const int16_t GAP,
-                 const int16_t MISMATCH,
-                 const int16_t MATCH)
+                 int16_t gap_score,
+                 int16_t mismatch_score,
+                 int16_t match_score)
 {
     generatePOAKernel<<<num_blocks, num_threads, 0, stream>>>(consensus_d,
                                                               coverage_d,
@@ -445,9 +448,9 @@ void generatePOA(uint8_t* consensus_d,
                                                               check_aligned_nodes,
                                                               nodes_to_visit,
                                                               node_coverage_counts,
-                                                              GAP,
-                                                              MISMATCH,
-                                                              MATCH);
+                                                              gap_score,
+                                                              mismatch_score,
+                                                              match_score);
 }
 
 } // namespace cudapoa

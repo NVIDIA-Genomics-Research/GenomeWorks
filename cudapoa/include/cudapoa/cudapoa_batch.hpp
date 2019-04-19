@@ -37,12 +37,16 @@ enum status
 class Batch
 {
     const uint32_t NUM_THREADS = 64;
-    const int16_t GAP = -8;
-    const int16_t MISMATCH = -6;
-    const int16_t MATCH = 8;
+    
+    int16_t gap_score_;
+    int16_t mismatch_score_;
+    int16_t match_score_;
+
+    std::string message_;
+    void print_batch_debug_message(const std::string& message);
 
 public:
-    Batch(uint32_t max_poas, uint32_t max_sequences_per_poa, uint32_t device_id);
+    Batch(uint32_t max_poas, uint32_t max_sequences_per_poa, uint32_t device_id, int16_t gap_score_ = -8, int16_t mismatch_score = -6, int16_t match_score = 8);
     ~Batch();
 
     // Add new partial order alignment to batch.
