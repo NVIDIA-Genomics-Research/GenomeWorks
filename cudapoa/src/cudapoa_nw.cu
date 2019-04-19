@@ -4,7 +4,7 @@
 #define WARP_SIZE 32
 
 // Extract shorts from bit field.
-#define EXTRACT_SHORT_FROMT_BITFIELD(type, val, pos) (type)((val >> (16 * (pos))) & 0xffff)
+#define EXTRACT_SHORT_FROM_BITFIELD(type, val, pos) (type)((val >> (16 * (pos))) & 0xffff)
 
 namespace nvidia {
 
@@ -232,14 +232,14 @@ uint16_t runNeedlemanWunsch(uint8_t* nodes,
                 // chuink of memory as well.
                 int64_t score_pred_i_1_64_2 = ((int64_t*)&scores_pred_i_1[j0-1])[1];
 
-                score0 = max(EXTRACT_SHORT_FROMT_BITFIELD(int16_t, score_pred_i_1_64, 0) + char_profile0,
-                        EXTRACT_SHORT_FROMT_BITFIELD(int16_t, score_pred_i_1_64, 1) + GAP);
-                score1 = max(EXTRACT_SHORT_FROMT_BITFIELD(int16_t, score_pred_i_1_64, 1)  + char_profile1,
-                        EXTRACT_SHORT_FROMT_BITFIELD(int16_t, score_pred_i_1_64, 2) + GAP);
-                score2 = max(EXTRACT_SHORT_FROMT_BITFIELD(int16_t, score_pred_i_1_64, 2)  + char_profile2,
-                        EXTRACT_SHORT_FROMT_BITFIELD(int16_t, score_pred_i_1_64, 3) + GAP);
-                score3 = max(EXTRACT_SHORT_FROMT_BITFIELD(int16_t, score_pred_i_1_64, 3)  + char_profile3,
-                        EXTRACT_SHORT_FROMT_BITFIELD(int16_t, score_pred_i_1_64_2, 0) + GAP);
+                score0 = max(EXTRACT_SHORT_FROM_BITFIELD(int16_t, score_pred_i_1_64, 0) + char_profile0,
+                        EXTRACT_SHORT_FROM_BITFIELD(int16_t, score_pred_i_1_64, 1) + GAP);
+                score1 = max(EXTRACT_SHORT_FROM_BITFIELD(int16_t, score_pred_i_1_64, 1)  + char_profile1,
+                        EXTRACT_SHORT_FROM_BITFIELD(int16_t, score_pred_i_1_64, 2) + GAP);
+                score2 = max(EXTRACT_SHORT_FROM_BITFIELD(int16_t, score_pred_i_1_64, 2)  + char_profile2,
+                        EXTRACT_SHORT_FROM_BITFIELD(int16_t, score_pred_i_1_64, 3) + GAP);
+                score3 = max(EXTRACT_SHORT_FROM_BITFIELD(int16_t, score_pred_i_1_64, 3)  + char_profile3,
+                        EXTRACT_SHORT_FROM_BITFIELD(int16_t, score_pred_i_1_64_2, 0) + GAP);
 
                 // Perform same score updates as above, but for rest of predecessors.
                 for (uint16_t p = 1; p < pred_count; p++)
@@ -251,17 +251,17 @@ uint16_t runNeedlemanWunsch(uint8_t* nodes,
                     int64_t score_pred_i_2_64 = ((int64_t*)&scores_pred_i_2[j0-1])[0];
                     int64_t score_pred_i_2_64_2 = ((int64_t*)&scores_pred_i_2[j0-1])[1];
 
-                    score0 = max(EXTRACT_SHORT_FROMT_BITFIELD(int16_t, score_pred_i_2_64, 0) + char_profile0,
-                            max(score0, EXTRACT_SHORT_FROMT_BITFIELD(int16_t, score_pred_i_2_64, 1) + GAP));
+                    score0 = max(EXTRACT_SHORT_FROM_BITFIELD(int16_t, score_pred_i_2_64, 0) + char_profile0,
+                            max(score0, EXTRACT_SHORT_FROM_BITFIELD(int16_t, score_pred_i_2_64, 1) + GAP));
 
-                    score1 = max(EXTRACT_SHORT_FROMT_BITFIELD(int16_t, score_pred_i_2_64, 1) + char_profile1,
-                            max(score1, EXTRACT_SHORT_FROMT_BITFIELD(int16_t, score_pred_i_2_64, 2) + GAP));
+                    score1 = max(EXTRACT_SHORT_FROM_BITFIELD(int16_t, score_pred_i_2_64, 1) + char_profile1,
+                            max(score1, EXTRACT_SHORT_FROM_BITFIELD(int16_t, score_pred_i_2_64, 2) + GAP));
 
-                    score2 = max(EXTRACT_SHORT_FROMT_BITFIELD(int16_t, score_pred_i_2_64, 2) + char_profile2,
-                            max(score2, EXTRACT_SHORT_FROMT_BITFIELD(int16_t, score_pred_i_2_64, 3) + GAP));
+                    score2 = max(EXTRACT_SHORT_FROM_BITFIELD(int16_t, score_pred_i_2_64, 2) + char_profile2,
+                            max(score2, EXTRACT_SHORT_FROM_BITFIELD(int16_t, score_pred_i_2_64, 3) + GAP));
 
-                    score3 = max(EXTRACT_SHORT_FROMT_BITFIELD(int16_t, score_pred_i_2_64, 3) + char_profile3,
-                            max(score3, EXTRACT_SHORT_FROMT_BITFIELD(int16_t, score_pred_i_2_64_2, 0) + GAP));
+                    score3 = max(EXTRACT_SHORT_FROM_BITFIELD(int16_t, score_pred_i_2_64, 3) + char_profile3,
+                            max(score3, EXTRACT_SHORT_FROM_BITFIELD(int16_t, score_pred_i_2_64_2, 0) + GAP));
                 }
             }
 
