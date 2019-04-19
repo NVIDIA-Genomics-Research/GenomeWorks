@@ -91,7 +91,7 @@ cd ${LOCAL_BUILD_DIR}
 # configure
 cmake $CMAKE_COMMON_VARIABLES ${CMAKE_BUILD_GPU} ..
 # build
-make -j${PARALLEL_LEVEL} VERBOSE=1
+make -j${PARALLEL_LEVEL} VERBOSE=1 all
 
 if [ "${TEST_ON_GPU}" == '1' ]; then
   logger "Pulling GPU test data..."

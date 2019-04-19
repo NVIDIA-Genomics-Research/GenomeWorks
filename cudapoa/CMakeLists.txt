@@ -28,12 +28,21 @@ if(spoa_accurate)
     target_compile_definitions(cudapoa PUBLIC SPOA_ACCURATE)
 endif()
 
-target_include_directories(cudapoa PUBLIC include)
+target_include_directories(cudapoa 
+    PUBLIC 
+        $<INSTALL_INTERFACE:include>    
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+)
 
 add_doxygen_source_dir(${CMAKE_CURRENT_SOURCE_DIR}/include/cudapoa)
 
 # Add tests folder
 add_subdirectory(tests)
 
-install(TARGETS cudapoa DESTINATION lib)
-install(FILES include/cudapoa/cudapoa_batch.hpp DESTINATION include/cudapoa)
+install(TARGETS cudapoa
+    EXPORT cudapoa
+    DESTINATION lib
+    INCLUDES DESTINATION include
+)
+install(DIRECTORY include/ DESTINATION include)
+install(EXPORT cudapoa DESTINATION cmake)
