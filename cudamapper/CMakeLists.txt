@@ -14,5 +14,18 @@ add_executable(cudamapper
         src/index.cpp
         src/cpu_index.cpp
         )
-target_include_directories(cudamapper PUBLIC include)
+
+target_include_directories(cudamapper
+    PUBLIC 
+        $<INSTALL_INTERFACE:include>    
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+)
 target_link_libraries(cudamapper bioparser indexer)
+
+install(TARGETS cudamapper 
+    EXPORT cudamapper
+    DESTINATION lib
+    INCLUDES DESTINATION include
+)
+install(DIRECTORY include/ DESTINATION include)
+install(EXPORT cudamapper DESTINATION cmake)
