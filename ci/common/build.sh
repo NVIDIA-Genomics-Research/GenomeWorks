@@ -10,7 +10,9 @@ function logger() {
   echo -e "\n>>>> $@\n"
 }
 
-export APP_DIR=$WORKSPACE/racon-gpu
+export APP_REPO="ssh://git@gitlab-master.nvidia.com:12051/genomics/racon-gpu.git"
+export APP_NAME=racon-gpu
+export APP_DIR=$WORKSPACE/${APP_NAME}
 
 # Set path and build parallel level
 export PATH=/conda/bin:/usr/local/cuda/bin:$PATH
@@ -58,9 +60,46 @@ CMAKE_COMMON_VARIABLES="-DCMAKE_BUILD_TYPE=Release"
 # If we are buildubg for "CPU", we just build locally as the SDK
 if [ "${BUILD_FOR_GPU}" == '1' ]; then
   logger "Pull racon-gpu..."
-  if [ ! -d "racon-gpu" ]; then
-    git clone ssh://git@gitlab-master.nvidia.com:12051/genomics/racon-gpu.git
+
+  # pull from scratch each time
+  cd ${WORKSPACE}
+  rm -rf racon-gpu
+  mkdir ${APP_NAME}
+
+  # is this is a merge request and there a branch with a name matching the MR branch in the
+  # other repo, pull that
+  export BRANCH_FOUND=""
+  if [ "${BUILD_CAUSE_SCMTRIGGER}" == "true" ]; then
+    logger "This is an SCM-caused build"
+    if [ "${gitlabActionType}" == 'MERGE' ]; then
+    logger "This is a merge-request-caused build"
+      if [ "${gitlabSourceBranch}" != "" ]; then
+        logger "The specified branch is: ${gitlabSourceBranch}"
+        export BRANCH_FOUND=`git ls-remote -h ${APP_REPO} | grep "refs/heads/${gitlabSourceBranch}$"`
+        logger "Branch found test ${BRANCH_FOUND}"
+      fi
+    fi
   fi
+
+  if [ "${BRANCH_FOUND}" == "" ]; then
+    logger "No specified branch - is there a target branch?: ${gitlabTargetBranch}"
+    if [ "${gitlabTargetBranch}" != "" ]; then
+      logger "A target branch is specified: ${gitlabTargetBranch}"
+      export BRANCH_FOUND=`git ls-remote -h ${APP_REPO} | grep "refs/heads/${gitlabTargetBranch}$"`
+      logger "Branch found test ${BRANCH_FOUND}"
+      if [ "${BRANCH_FOUND}" != "" ]; then
+        export MR_BRANCH=${gitlabTargetBranch}
+      else
+        export MR_BRANCH=master
+      fi
+    else
+      export MR_BRANCH=master
+    fi
+  else
+      export MR_BRANCH=${gitlabSourceBranch}
+  fi
+
+  git clone --branch ${MR_BRANCH} --single-branch --depth 1 ${APP_REPO}
 
   # Switch to project root; also root of repo checkout
   cd ${APP_DIR}
