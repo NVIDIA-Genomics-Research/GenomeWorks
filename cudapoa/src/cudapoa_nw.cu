@@ -25,6 +25,9 @@ namespace cudapoa {
  * @param[out] scores              Device scratch space that scores alignment matrix score
  * @param[out] alignment_graph     Device scratch space for backtrace alignment of graph
  * @param[out] alignment_read      Device scratch space for backtrace alignment of sequence
+ * @param[in] gap_score            Score for inserting gap into alignment
+ * @param[in] mismatch_score       Score for finding a mismatch in alignment
+ * @param[in] match_score          Score for finding a match in alignment
  *
  * @return Number of nodes in final alignment.
  */
@@ -41,15 +44,12 @@ uint16_t runNeedlemanWunsch(uint8_t* nodes,
                         uint16_t read_count,
                         int16_t* scores,
                         int16_t* alignment_graph,
-                        int16_t* alignment_read)
+                        int16_t* alignment_read,
+                        int16_t gap_score,
+                        int16_t mismatch_score,
+                        int16_t match_score)
 {
     //printf("Running NW\n");
-    // Set gap/mismatch penalty. Currently acquired from default racon settings.
-    // TODO: Pass scores from arguments.
-#pragma message("TODO: Pass match/gap/mismatch scores into NW kernel as parameters.")
-    const int16_t GAP = -8;
-    const int16_t MISMATCH = -6;
-    const int16_t MATCH = 8;
 
     __shared__ int16_t first_element_prev_score;
 
@@ -68,8 +68,8 @@ uint16_t runNeedlemanWunsch(uint8_t* nodes,
     // Init horizonal boundary conditions (read).
     for(uint16_t j = thread_idx + 1; j < read_count + 1; j += blockDim.x)
     {
-        //score_prev_i[j] = j * GAP;
-        scores[j] = j * GAP;
+        //score_prev_i[j] = j * gap_score;
+        scores[j] = j * gap_score;
     }
 
     if (thread_idx == 0)
@@ -93,7 +93,7 @@ uint16_t runNeedlemanWunsch(uint8_t* nodes,
             uint16_t pred_count = incoming_edge_count[node_id];
             if (pred_count == 0)
             {
-                scores[i * CUDAPOA_MAX_MATRIX_SEQUENCE_DIMENSION] = GAP;
+                scores[i * CUDAPOA_MAX_MATRIX_SEQUENCE_DIMENSION] = gap_score;
             }
             else
             {
@@ -109,7 +109,7 @@ uint16_t runNeedlemanWunsch(uint8_t* nodes,
                     //printf("node id %d parent id %d\n", node_id, pred_node_id);
                     penalty = max(penalty, scores[pred_node_graph_pos * CUDAPOA_MAX_MATRIX_SEQUENCE_DIMENSION]);
                 }
-                scores[i * CUDAPOA_MAX_MATRIX_SEQUENCE_DIMENSION] = penalty + GAP;
+                scores[i * CUDAPOA_MAX_MATRIX_SEQUENCE_DIMENSION] = penalty + gap_score;
             }
 
             //printf("%d \n", scores[i * CUDAPOA_MAX_MATRIX_DIMENSION]);
@@ -207,10 +207,10 @@ uint16_t runNeedlemanWunsch(uint8_t* nodes,
             if (warp_idx < max_warps)
             {
                 //printf("updating vertical for pos %d thread %d\n", read_pos, thread_idx);
-                int16_t char_profile0 = (n == read[read_pos + 0] ? MATCH : MISMATCH);
-                int16_t char_profile1 = (n == read[read_pos + 1] ? MATCH : MISMATCH);
-                int16_t char_profile2 = (n == read[read_pos + 2] ? MATCH : MISMATCH);
-                int16_t char_profile3 = (n == read[read_pos + 3] ? MATCH : MISMATCH);
+                int16_t char_profile0 = (n == read[read_pos + 0] ? match_score : mismatch_score);
+                int16_t char_profile1 = (n == read[read_pos + 1] ? match_score : mismatch_score);
+                int16_t char_profile2 = (n == read[read_pos + 2] ? match_score : mismatch_score);
+                int16_t char_profile3 = (n == read[read_pos + 3] ? match_score : mismatch_score);
                 // Index into score matrix.
                 j0 = read_pos + 1;
                 j1 = read_pos + 2;
@@ -233,13 +233,13 @@ uint16_t runNeedlemanWunsch(uint8_t* nodes,
                 int64_t score_pred_i_1_64_2 = ((int64_t*)&scores_pred_i_1[j0-1])[1];
 
                 score0 = max(EXTRACT_SHORT_FROM_BITFIELD(int16_t, score_pred_i_1_64, 0) + char_profile0,
-                        EXTRACT_SHORT_FROM_BITFIELD(int16_t, score_pred_i_1_64, 1) + GAP);
+                        EXTRACT_SHORT_FROM_BITFIELD(int16_t, score_pred_i_1_64, 1) + gap_score);
                 score1 = max(EXTRACT_SHORT_FROM_BITFIELD(int16_t, score_pred_i_1_64, 1)  + char_profile1,
-                        EXTRACT_SHORT_FROM_BITFIELD(int16_t, score_pred_i_1_64, 2) + GAP);
+                        EXTRACT_SHORT_FROM_BITFIELD(int16_t, score_pred_i_1_64, 2) + gap_score);
                 score2 = max(EXTRACT_SHORT_FROM_BITFIELD(int16_t, score_pred_i_1_64, 2)  + char_profile2,
-                        EXTRACT_SHORT_FROM_BITFIELD(int16_t, score_pred_i_1_64, 3) + GAP);
+                        EXTRACT_SHORT_FROM_BITFIELD(int16_t, score_pred_i_1_64, 3) + gap_score);
                 score3 = max(EXTRACT_SHORT_FROM_BITFIELD(int16_t, score_pred_i_1_64, 3)  + char_profile3,
-                        EXTRACT_SHORT_FROM_BITFIELD(int16_t, score_pred_i_1_64_2, 0) + GAP);
+                        EXTRACT_SHORT_FROM_BITFIELD(int16_t, score_pred_i_1_64_2, 0) + gap_score);
 
                 // Perform same score updates as above, but for rest of predecessors.
                 for (uint16_t p = 1; p < pred_count; p++)
@@ -252,16 +252,16 @@ uint16_t runNeedlemanWunsch(uint8_t* nodes,
                     int64_t score_pred_i_2_64_2 = ((int64_t*)&scores_pred_i_2[j0-1])[1];
 
                     score0 = max(EXTRACT_SHORT_FROM_BITFIELD(int16_t, score_pred_i_2_64, 0) + char_profile0,
-                            max(score0, EXTRACT_SHORT_FROM_BITFIELD(int16_t, score_pred_i_2_64, 1) + GAP));
+                            max(score0, EXTRACT_SHORT_FROM_BITFIELD(int16_t, score_pred_i_2_64, 1) + gap_score));
 
                     score1 = max(EXTRACT_SHORT_FROM_BITFIELD(int16_t, score_pred_i_2_64, 1) + char_profile1,
-                            max(score1, EXTRACT_SHORT_FROM_BITFIELD(int16_t, score_pred_i_2_64, 2) + GAP));
+                            max(score1, EXTRACT_SHORT_FROM_BITFIELD(int16_t, score_pred_i_2_64, 2) + gap_score));
 
                     score2 = max(EXTRACT_SHORT_FROM_BITFIELD(int16_t, score_pred_i_2_64, 2) + char_profile2,
-                            max(score2, EXTRACT_SHORT_FROM_BITFIELD(int16_t, score_pred_i_2_64, 3) + GAP));
+                            max(score2, EXTRACT_SHORT_FROM_BITFIELD(int16_t, score_pred_i_2_64, 3) + gap_score));
 
                     score3 = max(EXTRACT_SHORT_FROM_BITFIELD(int16_t, score_pred_i_2_64, 3) + char_profile3,
-                            max(score3, EXTRACT_SHORT_FROM_BITFIELD(int16_t, score_pred_i_2_64_2, 0) + GAP));
+                            max(score3, EXTRACT_SHORT_FROM_BITFIELD(int16_t, score_pred_i_2_64_2, 0) + gap_score));
                 }
             }
 
@@ -308,7 +308,7 @@ uint16_t runNeedlemanWunsch(uint8_t* nodes,
                         __syncwarp();
 
                         bool check3 = false;
-                        int16_t tscore = max(score2 + GAP, score3);
+                        int16_t tscore = max(score2 + gap_score, score3);
                         if (tscore > score3)
                         {
                             score3 = tscore;
@@ -316,7 +316,7 @@ uint16_t runNeedlemanWunsch(uint8_t* nodes,
                         }
 
                         bool check2 = false;
-                        tscore = max(score1 + GAP, score2);
+                        tscore = max(score1 + gap_score, score2);
                         if (tscore > score2)
                         {
                             score2 = tscore;
@@ -324,7 +324,7 @@ uint16_t runNeedlemanWunsch(uint8_t* nodes,
                         }
 
                         bool check1 = false;
-                        tscore = max(score0 + GAP, score1);
+                        tscore = max(score0 + gap_score, score1);
                         if (tscore > score1)
                         {
                             score1 = tscore;
@@ -332,7 +332,7 @@ uint16_t runNeedlemanWunsch(uint8_t* nodes,
                         }
 
                         bool check0 = false;
-                        tscore = max(last_score + GAP, score0);
+                        tscore = max(last_score + gap_score, score0);
                         if (tscore > score0)
                         {
                             score0 = tscore;
@@ -433,7 +433,7 @@ uint16_t runNeedlemanWunsch(uint8_t* nodes,
             if (i != 0 && j != 0)
             {
                 uint16_t node_id = graph[i - 1];
-                int16_t match_cost = (nodes[node_id] == read[j-1] ? MATCH : MISMATCH);
+                int16_t match_cost = (nodes[node_id] == read[j-1] ? match_score : mismatch_score);
 
                 uint16_t pred_count = incoming_edge_count[node_id];
                 uint16_t pred_i = (pred_count == 0 ? 0 :
@@ -472,7 +472,7 @@ uint16_t runNeedlemanWunsch(uint8_t* nodes,
                 uint16_t pred_i = (pred_count == 0 ? 0 :
                         node_id_to_pos[incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES]] + 1);
 
-                if (scores_ij == scores[pred_i * CUDAPOA_MAX_MATRIX_SEQUENCE_DIMENSION + j] + GAP)
+                if (scores_ij == scores[pred_i * CUDAPOA_MAX_MATRIX_SEQUENCE_DIMENSION + j] + gap_score)
                 {
                     prev_i = pred_i;
                     prev_j = j;
@@ -485,7 +485,7 @@ uint16_t runNeedlemanWunsch(uint8_t* nodes,
                     {
                         pred_i = node_id_to_pos[incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES + p]] + 1;
 
-                        if (scores_ij == scores[pred_i * CUDAPOA_MAX_MATRIX_SEQUENCE_DIMENSION + j] + GAP)
+                        if (scores_ij == scores[pred_i * CUDAPOA_MAX_MATRIX_SEQUENCE_DIMENSION + j] + gap_score)
                         {
                             prev_i = pred_i;
                             prev_j = j;
@@ -497,7 +497,7 @@ uint16_t runNeedlemanWunsch(uint8_t* nodes,
             }
 
             // Check if move is horizontal.
-            if (!pred_found && scores_ij == scores[i * CUDAPOA_MAX_MATRIX_SEQUENCE_DIMENSION + (j - 1)] + GAP)
+            if (!pred_found && scores_ij == scores[i * CUDAPOA_MAX_MATRIX_SEQUENCE_DIMENSION + (j - 1)] + gap_score)
             {
                 prev_i = i;
                 prev_j = j - 1;

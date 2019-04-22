@@ -28,6 +28,7 @@
 // any allocated buffer.
 #define CUDAPOA_MAX_MATRIX_SEQUENCE_DIMENSION (CUDAPOA_MAX_SEQUENCE_SIZE + 4)
 
+
 namespace nvidia {
 
 namespace cudapoa {
@@ -63,8 +64,8 @@ typedef struct WindowDetails
  * @param[in] num_blocks                  Number of blocks to launch
  * @param[in] stream                      Stream to run kernel on
  * @param[in] scores                      Device scratch space that scores alignment matrix score
- * @param[in] ti                          Device scratch space for backtrace alignment of graph
- * @param[in] tj                          Device scratch space for backtrace alignment of sequence
+ * @param[in] alignment_graph             Device scratch space for backtrace alignment of graph
+ * @param[in] alignment_read              Device scratch space for backtrace alignment of sequence
  * @param[in] nodes                       Device scratch space for storing unique nodes in graph
  * @param[in] incoming_edges              Device scratch space for storing incoming edges per node
  * @param[in] incoming_edges_count        Device scratch space for storing number of incoming edges per node
@@ -83,6 +84,9 @@ typedef struct WindowDetails
  * @param[in] check_aligned_nodes_d       Device scratch space for storing check for aligned nodes
  * @param[in] nodes_to_visit_d            Device scratch space for storing stack of nodes to be visited in topsort
  * @param[in] node_coverage_counts        Device scratch space for storing coverage count for each node in graph
+ * @param[in] gap_score                   Score for inserting gap into alignment
+ * @param[in] mismatch_score              Score for finding a mismatch in alignment
+ * @param[in] match_score                 Score for finding a match in alignment
  */
 void generatePOA(uint8_t* consensus_d,
                  uint16_t* coverage_d_,
@@ -94,8 +98,8 @@ void generatePOA(uint8_t* consensus_d,
                  uint32_t num_blocks,
                  cudaStream_t stream,
                  int16_t* scores,
-                 int16_t* ti,
-                 int16_t* tj,
+                 int16_t* alignment_graph,
+                 int16_t* alignment_read,
                  uint8_t* nodes,
                  uint16_t* incoming_edges,
                  uint16_t* incoming_edge_count,
@@ -113,7 +117,10 @@ void generatePOA(uint8_t* consensus_d,
                  uint8_t* node_marks,
                  bool* check_aligned_nodes,
                  uint16_t* nodes_to_visit,
-                 uint16_t* node_coverage_counts);
+                 uint16_t* node_coverage_counts,
+                 int16_t gap_score,
+                 int16_t mismatch_score,
+                 int16_t match_score);
 
 }
 

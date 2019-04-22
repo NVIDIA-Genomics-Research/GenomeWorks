@@ -37,9 +37,9 @@ enum status
 class Batch
 {
     const uint32_t NUM_THREADS = 64;
-
+    
 public:
-    Batch(uint32_t max_poas, uint32_t max_sequences_per_poa);
+    Batch(uint32_t max_poas, uint32_t max_sequences_per_poa, uint32_t device_id, int16_t gap_score_ = -8, int16_t mismatch_score = -6, int16_t match_score = 8);
     ~Batch();
 
     // Add new partial order alignment to batch.
@@ -58,9 +58,6 @@ public:
     void get_consensus(std::vector<std::string>& consensus,
             std::vector<std::vector<uint16_t>>& coverage);
 
-    // Set GPU device to run batch on.
-    void set_device_id(uint32_t);
-
     // Set CUDA stream for GPU device.
     void set_cuda_stream(cudaStream_t stream);
 
@@ -71,6 +68,10 @@ public:
     void reset();
 
 protected:
+    // Print debug message with batch specific formatting.
+    void print_batch_debug_message(const std::string& message);
+
+protected:
     // Maximum POAs to process in batch.
     uint32_t max_poas_ = 0;
 
@@ -79,6 +80,11 @@ protected:
 
     // GPU Device ID
     uint32_t device_id_ = 0;
+
+    // Gap, mismatch and match scores for NW dynamic programming loop.
+    int16_t gap_score_;
+    int16_t mismatch_score_;
+    int16_t match_score_;
 
     // CUDA stream for launching kernels.
     cudaStream_t stream_;
