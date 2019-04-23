@@ -35,12 +35,6 @@ namespace genomeworks {
         std::vector <std::unique_ptr<BioParserSequence>> fasta_objects;
         query_parser->parse(fasta_objects, -1);
 
-        //We can read the data:
-        for (int i = 0; i < fasta_objects.size(); i++) {
-            std::cout << i << ": " << fasta_objects[i]->name() << std::endl;
-            std::cout << i << ": " << fasta_objects[i]->data() << std::endl;
-        }
-
         for (std::uint64_t seq_id = 0; seq_id < fasta_objects.size(); ++seq_id) {
             process_sequence(*fasta_objects[seq_id], seq_id);
         }
@@ -54,7 +48,7 @@ namespace genomeworks {
     }
 
     void CPUIndex::process_sequence(const Sequence& sequence, std::uint64_t sequence_id) {
-        // check if sequence fits at leas one window
+        // check if sequence fits at least one window
         if (sequence.data().size() < window_size_ + minimizer_size_ - 1) {
             // TODO: throw?
             return;
