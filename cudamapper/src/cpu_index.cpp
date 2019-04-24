@@ -9,6 +9,8 @@
 
 namespace genomeworks {
 
+    typedef std::pair<uint64_t, Minimizer> MinPair;
+
     CPUIndex::CPUIndex(std::uint64_t minimizer_size, std::uint64_t window_size)
     : minimizer_size_(minimizer_size), window_size_(window_size)
     {}
@@ -71,7 +73,7 @@ namespace genomeworks {
         }
         // add all position of the minimizer of the first window
         for (const std::size_t& pos : minimizer_pos) {
-            index_.emplace(std::pair(minimizer, Minimizer(minimizer, pos, sequence_id)));
+            index_.emplace(MinPair(minimizer, Minimizer(minimizer, pos, sequence_id)));
         }
 
         // move the window by one basepair in each step
@@ -94,28 +96,28 @@ namespace genomeworks {
                         }
                     }
                     for (std::size_t minimizer_pos : minimizer_pos) {
-                        index_.emplace(std::pair(minimizer, Minimizer(minimizer, minimizer_pos, sequence_id)));
+                        index_.emplace(MinPair(minimizer, Minimizer(minimizer, minimizer_pos, sequence_id)));
                     }
                 } else { // there are other kmers with that value, proceed as if the oldest element was not not the smallest one
                     if (window.back() == minimizer) {
                         minimizer_pos.push_back(window_num + minimizer_size_ - 1);
-                        index_.emplace(std::pair(minimizer, Minimizer(minimizer, window_num + minimizer_size_ - 1, sequence_id)));
+                        index_.emplace(MinPair(minimizer, Minimizer(minimizer, window_num + minimizer_size_ - 1, sequence_id)));
                     } else if (window.back() < minimizer) {
                         minimizer_pos.clear();
                         minimizer = window.back();
                         minimizer_pos.push_back(window_num + minimizer_size_ - 1);
-                        index_.emplace(std::pair(minimizer, Minimizer(minimizer, window_num + minimizer_size_ - 1, sequence_id)));
+                        index_.emplace(MinPair(minimizer, Minimizer(minimizer, window_num + minimizer_size_ - 1, sequence_id)));
                     }
                 }
             } else {  // oldest kmer was not the minimizer
                 if (window.back() == minimizer) {
                     minimizer_pos.push_back(window_num + minimizer_size_ - 1);
-                    index_.emplace(std::pair(minimizer, Minimizer(minimizer, window_num + minimizer_size_ - 1, sequence_id)));
+                    index_.emplace(MinPair(minimizer, Minimizer(minimizer, window_num + minimizer_size_ - 1, sequence_id)));
                 } else if (window.back() < minimizer) {
                     minimizer_pos.clear();
                     minimizer = window.back();
                     minimizer_pos.push_back(window_num + minimizer_size_ - 1);
-                    index_.emplace(std::pair(minimizer, Minimizer(minimizer, window_num + minimizer_size_ - 1, sequence_id)));
+                    index_.emplace(MinPair(minimizer, Minimizer(minimizer, window_num + minimizer_size_ - 1, sequence_id)));
                 }
             }
         }
@@ -142,7 +144,7 @@ namespace genomeworks {
                 }
                 // add minimizer (if not already present)
                 if (std::none_of(existing_positions.first, existing_positions.second, [i, sequence_id](const decltype(index_)::value_type& a) {return a.second.position() == i && a.second.sequence_id() == sequence_id;})) {
-                    index_.emplace(std::pair(minimizer, Minimizer(minimizer, i, sequence_id)));
+                    index_.emplace(MinPair(minimizer, Minimizer(minimizer, i, sequence_id)));
                 }
             }
         }
@@ -160,7 +162,7 @@ namespace genomeworks {
                 }
                 // add minimizer (if not already present)
                 if (std::none_of(existing_positions.first, existing_positions.second, [kmer_position, sequence_id](const decltype(index_)::value_type& a) {return a.second.position() == kmer_position && a.second.sequence_id() == sequence_id;})) {
-                    index_.emplace(std::pair(minimizer, Minimizer(minimizer, kmer_position, sequence_id)));
+                    index_.emplace(MinPair(minimizer, Minimizer(minimizer, kmer_position, sequence_id)));
                 }
             }
         }
