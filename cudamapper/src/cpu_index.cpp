@@ -36,18 +36,18 @@ namespace genomeworks {
         query_parser->parse(fasta_objects, -1);
 
         for (std::uint64_t seq_id = 0; seq_id < fasta_objects.size(); ++seq_id) {
-            process_sequence(*fasta_objects[seq_id], seq_id);
+            add_sequence_to_index(*fasta_objects[seq_id], seq_id);
         }
 
         /*std::string bp("TCTCTCTC");
         BioParserSequence seq = BioParserSequence("A", 1, bp.c_str(), bp.size());
-        process_sequence(seq, 0);
+        add_sequence_to_index(seq, 0);
         for (const auto& m : index_) {
             std::cout << std::hex << m.first << " " << std::dec << m.second.position() << "\n";
         }*/
     }
 
-    void CPUIndex::process_sequence(const Sequence& sequence, std::uint64_t sequence_id) {
+    void CPUIndex::add_sequence_to_index(const Sequence& sequence, std::uint64_t sequence_id) {
         // check if sequence fits at least one window
         if (sequence.data().size() < window_size_ + minimizer_size_ - 1) {
             return;

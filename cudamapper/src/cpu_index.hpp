@@ -37,7 +37,7 @@ namespace genomeworks {
         ///
         /// \param sequence
         /// \param sequence_id
-        void process_sequence(const Sequence& sequence, std::uint64_t sequence_id);
+        void add_sequence_to_index(const Sequence& sequence, std::uint64_t sequence_id);
 
         /// \brief finds "central" minimizers
         ///
