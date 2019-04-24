@@ -50,7 +50,6 @@ namespace genomeworks {
     void CPUIndex::process_sequence(const Sequence& sequence, std::uint64_t sequence_id) {
         // check if sequence fits at least one window
         if (sequence.data().size() < window_size_ + minimizer_size_ - 1) {
-            // TODO: throw?
             return;
         }
 
