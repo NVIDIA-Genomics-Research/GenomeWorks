@@ -96,9 +96,8 @@ namespace genomeworks {
                             minimizer_pos.push_back(window_num + i);
                         } else if (window[i] < minimizer) {
                             minimizer_pos.clear();
-                            minimizer = window.back();
-                            minimizer_pos.push_back(window_num + i);
                             minimizer = window[i];
+                            minimizer_pos.push_back(window_num + i);
                         }
                     }
                     for (std::size_t minimizer_pos : minimizer_pos) {
