@@ -5,7 +5,7 @@
 
 namespace genomeworks {
 
-    /// @brief Converts a k-mer of length length into 4-bit packed numeric representation
+    /// \brief Converts a k-mer of length length into 4-bit packed numeric representation
     ///
     /// \param baseparis
     /// \param start_element where in basepairs the k-mer actually starts 
