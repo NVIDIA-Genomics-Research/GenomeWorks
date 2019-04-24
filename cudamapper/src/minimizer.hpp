@@ -9,7 +9,7 @@ namespace genomeworks {
     public:
         /// \brief constructor
         ///
-        /// \param representation 4-bit packed representation of a k-mer
+        /// \param representation 4-bit packed representation of a kmer
         /// \param position position of the minimizer in the sequence
         /// \param sequence_id sequence's id
         Minimizer(std::uint64_t representation, std::size_t position, std::uint64_t sequence_id);

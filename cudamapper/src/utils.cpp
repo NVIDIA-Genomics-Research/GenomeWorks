@@ -2,7 +2,7 @@
 
 namespace genomeworks {
 
-    static std::uint64_t k_mer_to_representation(const std::string& basepairs, std::size_t start_element, std::size_t length) {
+    static std::uint64_t kmer_to_representation(const std::string& basepairs, std::size_t start_element, std::size_t length) {
         std::uint64_t minimizer = 0;
         if (length <= 2*sizeof(std::uint64_t)) { // two basepairs per byte due to 4-bit packing
             // TODO: Lexical ordering for now, this will change in the future
