@@ -1,4 +1,5 @@
 #include "utils.hpp"
+#include <limits>
 
 namespace genomeworks {
 

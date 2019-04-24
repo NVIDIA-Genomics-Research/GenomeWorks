@@ -95,8 +95,8 @@ namespace genomeworks {
                             minimizer_pos.push_back(window_num + i);
                         }
                     }
-                    for (std::size_t minimizer_pos : minimizer_pos) {
-                        index_.emplace(MinPair(minimizer, Minimizer(minimizer, minimizer_pos, sequence_id)));
+                    for (std::size_t m_pos : minimizer_pos) {
+                        index_.emplace(MinPair(minimizer, Minimizer(minimizer, m_pos, sequence_id)));
                     }
                 } else { // there are other kmers with that value, proceed as if the oldest element was not not the smallest one
                     if (window.back() == minimizer) {
