@@ -56,7 +56,9 @@ git clean -xdf
 
 CMAKE_COMMON_VARIABLES="-DCMAKE_BUILD_TYPE=Release"
 
-# If we are building for GPU, we use racon-gpu as the build flow
+# If we are building for GPU, we do 2 builds:
+# 1) the SDK on its own
+# 2) use racon-gpu as a build flow
 # If we are buildubg for "CPU", we just build locally as the SDK
 if [ "${BUILD_FOR_GPU}" == '1' ]; then
   logger "Pull racon-gpu..."
@@ -106,19 +108,12 @@ if [ "${BUILD_FOR_GPU}" == '1' ]; then
 
   git pull
   git submodule update --init --recursive
-
-  logger "Build racon-gpu for CUDA..."
-  CMAKE_BUILD_GPU="-Dracon_enable_cuda=ON -DGENOMEWORKS_SRC_PATH=${WORKSPACE}"
-
-  export LOCAL_BUILD_ROOT=${APP_DIR}
-else
-  # Forced disable GPU testing
-  export TEST_ON_GPU=0
-
-  logger "Build SDK..."
-  CMAKE_BUILD_GPU=""
-  export LOCAL_BUILD_ROOT=${WORKSPACE}
 fi
+
+
+logger "Build SDK..."
+CMAKE_BUILD_GPU=""
+export LOCAL_BUILD_ROOT=${WORKSPACE}
 
 cd ${LOCAL_BUILD_ROOT}
 export LOCAL_BUILD_DIR=${LOCAL_BUILD_ROOT}/build
@@ -130,23 +125,45 @@ cd ${LOCAL_BUILD_DIR}
 # configure
 cmake $CMAKE_COMMON_VARIABLES ${CMAKE_BUILD_GPU} ..
 # build
-make -j${PARALLEL_LEVEL} VERBOSE=1 all
+make -j${PARALLEL_LEVEL} VERBOSE=1 install
 
-if [ "${TEST_ON_GPU}" == '1' ]; then
-  logger "Pulling GPU test data..."
-  cd ${WORKSPACE}
-  if [ ! -d "ont-racon-data" ]; then
-    if [ ! -f "${ont-racon-data.tar.gz}" ]; then
-      wget -q -L https://s3.us-east-2.amazonaws.com/racon-data/ont-racon-data.tar.gz
+cd ${LOCAL_BUILD_ROOT}
+rm -rf build
+
+if [ "${BUILD_FOR_GPU}" == '1' ]; then
+  logger "Build racon-gpu for CUDA..."
+  CMAKE_BUILD_GPU="-Dracon_enable_cuda=ON -DGENOMEWORKS_SRC_PATH=${WORKSPACE}"
+
+  export LOCAL_BUILD_ROOT=${APP_DIR}
+
+  cd ${LOCAL_BUILD_ROOT}
+  export LOCAL_BUILD_DIR=${LOCAL_BUILD_ROOT}/build
+
+  # Use CMake-based build procedure
+  mkdir --parents ${LOCAL_BUILD_DIR}
+  cd ${LOCAL_BUILD_DIR}
+
+  # configure
+  cmake $CMAKE_COMMON_VARIABLES ${CMAKE_BUILD_GPU} ..
+  # build
+  make -j${PARALLEL_LEVEL} VERBOSE=1 all
+
+  if [ "${TEST_ON_GPU}" == '1' ]; then
+    logger "Pulling GPU test data..."
+    cd ${WORKSPACE}
+    if [ ! -d "ont-racon-data" ]; then
+      if [ ! -f "${ont-racon-data.tar.gz}" ]; then
+        wget -q -L https://s3.us-east-2.amazonaws.com/racon-data/ont-racon-data.tar.gz
+      fi
+      tar xvzf ont-racon-data.tar.gz
     fi
-    tar xvzf ont-racon-data.tar.gz
+
+    logger "Running test..."
+    logger "GPU config..."
+    nvidia-smi
+
+    logger "Test results..."
+    cd ${LOCAL_BUILD_DIR}/bin
+    ./cuda_test.sh
   fi
-
-  logger "Running test..."
-  logger "GPU config..."
-  nvidia-smi
-
-  logger "Test results..."
-  cd ${LOCAL_BUILD_DIR}/bin
-  ./cuda_test.sh
 fi
