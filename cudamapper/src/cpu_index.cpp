@@ -38,13 +38,6 @@ namespace genomeworks {
         for (std::uint64_t seq_id = 0; seq_id < fasta_objects.size(); ++seq_id) {
             add_sequence_to_index(*fasta_objects[seq_id], seq_id);
         }
-
-        /*std::string bp("TCTCTCTC");
-        BioParserSequence seq = BioParserSequence("A", 1, bp.c_str(), bp.size());
-        add_sequence_to_index(seq, 0);
-        for (const auto& m : index_) {
-            std::cout << std::hex << m.first << " " << std::dec << m.second.position() << "\n";
-        }*/
     }
 
     void CPUIndex::add_sequence_to_index(const Sequence& sequence, std::uint64_t sequence_id) {
