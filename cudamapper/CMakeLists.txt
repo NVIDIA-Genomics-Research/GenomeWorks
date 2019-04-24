@@ -13,6 +13,8 @@ add_executable(cudamapper
         src/bioparser_sequence.cpp
         src/index.cpp
         src/cpu_index.cpp
+        src/utils.cpp
+        src/minimizer.cpp
         )
 
 target_include_directories(cudamapper
