@@ -13,6 +13,7 @@ endif()
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -march=native")
 
 cuda_add_library(cudapoa STATIC 
+    src/cudapoa.cpp
     src/cudapoa_kernels.cu
     src/cudapoa_topsort.cu
     src/cudapoa_add_alignment.cu

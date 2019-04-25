@@ -18,7 +18,7 @@ inline std::string printTabs(uint32_t tab_count)
     return s;
 }
 
-namespace nvidia {
+namespace genomeworks {
 
 namespace cudapoa {
 
@@ -70,7 +70,7 @@ Batch::Batch(uint32_t max_poas, uint32_t max_sequences_per_poa, uint32_t device_
     //device allocations
     CU_CHECK_ERR(cudaMalloc((void**)&inputs_d_, input_size * sizeof(uint8_t)));
     CU_CHECK_ERR(cudaMalloc((void**)&sequence_lengths_d_, max_poas_ * max_sequences_per_poa * sizeof(uint16_t)));
-    CU_CHECK_ERR(cudaMalloc((void**)&window_details_d_, max_poas_ * sizeof(nvidia::cudapoa::WindowDetails)));
+    CU_CHECK_ERR(cudaMalloc((void**)&window_details_d_, max_poas_ * sizeof(genomeworks::cudapoa::WindowDetails)));
 
     msg = " Allocated input buffers of size " + std::to_string( (static_cast<float>(input_size)  / (1024 * 1024)) ) + "MB on device ";
     print_batch_debug_message(msg);
@@ -212,7 +212,7 @@ void Batch::generate_poa()
     CU_CHECK_ERR(cudaMemcpyAsync(inputs_d_, inputs_h_,
                                  num_nucleotides_copied_ * sizeof(uint8_t), cudaMemcpyHostToDevice, stream_));
     CU_CHECK_ERR(cudaMemcpyAsync(window_details_d_, window_details_h_,
-                                 poa_count_ * sizeof(nvidia::cudapoa::WindowDetails), cudaMemcpyHostToDevice, stream_));
+                                 poa_count_ * sizeof(genomeworks::cudapoa::WindowDetails), cudaMemcpyHostToDevice, stream_));
     CU_CHECK_ERR(cudaMemcpyAsync(sequence_lengths_d_, sequence_lengths_h_,
                                  global_sequence_idx_ * sizeof(uint16_t), cudaMemcpyHostToDevice, stream_));
 
@@ -220,7 +220,7 @@ void Batch::generate_poa()
     std::string msg = " Launching kernel for " + std::to_string(poa_count_) + " on device ";
     print_batch_debug_message(msg);
 
-    nvidia::cudapoa::generatePOA(consensus_d_,
+    genomeworks::cudapoa::generatePOA(consensus_d_,
                                  coverage_d_,
                                  inputs_d_,
                                  sequence_lengths_d_,
@@ -299,11 +299,11 @@ void Batch::set_cuda_stream(cudaStream_t stream)
     stream_ = stream;
 }
 
-status Batch::add_poa()
+StatusType Batch::add_poa()
 {
     if (poa_count_ == max_poas_)
     {
-        return CUDAPOA_EXCEEDED_MAXIMUM_POAS;
+        return StatusType::EXCEEDED_MAXIMUM_POAS;
     }
 
     WindowDetails window_details{};
@@ -312,7 +312,7 @@ status Batch::add_poa()
     window_details_h_[poa_count_] = window_details;
     poa_count_++;
 
-    return CUDAPOA_SUCCESS;
+    return StatusType::SUCCESS;
 }
 
 void Batch::reset()
@@ -322,11 +322,11 @@ void Batch::reset()
     global_sequence_idx_ = 0;
 }
 
-status Batch::add_seq_to_poa(const char* seq, uint32_t seq_len)
+StatusType Batch::add_seq_to_poa(const char* seq, uint32_t seq_len)
 {
     if (seq_len >= CUDAPOA_MAX_SEQUENCE_SIZE)
     {
-        return CUDAPOA_EXCEEDED_MAXIMUM_SEQUENCE_SIZE;
+        return StatusType::EXCEEDED_MAXIMUM_SEQUENCE_SIZE;
     }
 
     WindowDetails *window_details = &window_details_h_[poa_count_ - 1];
@@ -334,7 +334,7 @@ status Batch::add_seq_to_poa(const char* seq, uint32_t seq_len)
 
     if (window_details->num_seqs == max_sequences_per_poa_)
     {
-        return CUDAPOA_EXCEEDED_MAXIMUM_SEQUENCES_PER_POA;
+        return StatusType::EXCEEDED_MAXIMUM_SEQUENCES_PER_POA;
     }
 
     memcpy(&(inputs_h_[num_nucleotides_copied_]),
@@ -345,7 +345,7 @@ status Batch::add_seq_to_poa(const char* seq, uint32_t seq_len)
     num_nucleotides_copied_ += seq_len;
     global_sequence_idx_++;
 
-    return CUDAPOA_SUCCESS;
+    return StatusType::SUCCESS;
 }
 
 }

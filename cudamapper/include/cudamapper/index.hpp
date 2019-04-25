@@ -4,6 +4,9 @@
 #include <memory>
 
 namespace genomeworks {
+/// \addtogroup cudamapper
+/// \{
+
     /// Index - generates and manages (k,w)-minimizer index for one or more sequences
     class Index {
     public:
@@ -21,4 +24,7 @@ namespace genomeworks {
         /// \return Index implementation, generates minimizers indices
         static std::unique_ptr<Index> create_index(std::uint64_t minimizer_size, std::uint64_t window_size);
     };
+
+/// \}
+
 }

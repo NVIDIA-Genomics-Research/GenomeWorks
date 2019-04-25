@@ -2,7 +2,7 @@
 #include "cudapoa_kernels.cuh"
 #include <stdio.h>
 
-namespace nvidia {
+namespace genomeworks {
 
 namespace cudapoa {
 

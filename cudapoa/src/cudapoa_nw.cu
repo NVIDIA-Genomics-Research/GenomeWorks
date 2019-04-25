@@ -6,7 +6,7 @@
 // Extract shorts from bit field.
 #define EXTRACT_SHORT_FROM_BITFIELD(type, val, pos) (type)((val >> (16 * (pos))) & 0xffff)
 
-namespace nvidia {
+namespace genomeworks {
 
 namespace cudapoa {
 

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cudapoa/cudapoa.hpp>
+
 #include <memory>
 #include <vector>
 #include <stdint.h>
@@ -19,21 +21,17 @@ inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort=t
     }
 }
 
-namespace nvidia {
+namespace genomeworks {
 
 namespace cudapoa {
 
 class WindowDetails;
 
-enum status
-{
-    CUDAPOA_SUCCESS = 0,
-    CUDAPOA_EXCEEDED_MAXIMUM_POAS,
-    CUDAPOA_EXCEEDED_MAXIMUM_SEQUENCE_SIZE,
-    CUDAPOA_EXCEEDED_MAXIMUM_SEQUENCES_PER_POA,
-    UNKNOWN_FAILURE
-};
+/// \addtogroup cudapoa
+/// \{
 
+/// \class
+/// Batched GPU CUDA POA object
 class Batch
 {
     const uint32_t NUM_THREADS = 64;
@@ -43,10 +41,10 @@ public:
     ~Batch();
 
     // Add new partial order alignment to batch.
-    status add_poa();
+    StatusType add_poa();
 
     // Add sequence to last partial order alignment.
-    status add_seq_to_poa(const char* seq, uint32_t seq_len);
+    StatusType add_seq_to_poa(const char* seq, uint32_t seq_len);
 
     // Get total number of partial order alignments in batch.
     uint32_t get_total_poas() const;
@@ -191,6 +189,8 @@ protected:
     // Global sequence index.
     uint32_t global_sequence_idx_ = 0;
 };
+
+/// \}
 
 }
 
