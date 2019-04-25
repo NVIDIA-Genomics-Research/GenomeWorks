@@ -2,13 +2,12 @@ cmake_minimum_required(VERSION 3.10.2)
 project(GenomeWorksCPP)
 
 include(cmake/Doxygen.cmake)
+include(cmake/Tests.cmake)
+include(cmake/3rdparty.cmake)
 
 set(CMAKE_CXX_STANDARD 17)
 
-if (NOT TARGET bioparser)
-    add_subdirectory(3rdparty/bioparser EXCLUDE_FROM_ALL)
-endif()
-
+# Add GenomeWorks projects.
 add_subdirectory(cudapoa)
 add_subdirectory(cudamapper)
 
