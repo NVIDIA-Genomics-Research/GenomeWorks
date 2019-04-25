@@ -4,6 +4,9 @@
 #include <string>
 
 namespace genomeworks {
+/// \addtogroup cudamapper
+/// \{
+
     /// Sequence - represents an individual read (name, DNA nucleotides etc)
     class Sequence {
     public:
@@ -21,4 +24,6 @@ namespace genomeworks {
 
         static std::unique_ptr<Sequence> create_sequence(const std::string &name, const std::string &data);
     };
+
+/// \}
 }

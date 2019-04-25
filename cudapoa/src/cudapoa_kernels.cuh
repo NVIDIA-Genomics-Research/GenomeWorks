@@ -29,7 +29,7 @@
 #define CUDAPOA_MAX_MATRIX_SEQUENCE_DIMENSION (CUDAPOA_MAX_SEQUENCE_SIZE + 4)
 
 
-namespace nvidia {
+namespace genomeworks {
 
 namespace cudapoa {
 
@@ -92,7 +92,7 @@ void generatePOA(uint8_t* consensus_d,
                  uint16_t* coverage_d_,
                  uint8_t* sequences_d,
                  uint16_t * sequence_lengths_d,
-                 nvidia::cudapoa::WindowDetails * window_details_d,
+                 genomeworks::cudapoa::WindowDetails * window_details_d,
                  uint32_t total_windows,
                  uint32_t num_threads,
                  uint32_t num_blocks,

@@ -8,6 +8,7 @@ target_link_libraries(indexer bioparser)
 add_doxygen_source_dir(${CMAKE_CURRENT_SOURCE_DIR}/include/cudamapper)
 
 add_executable(cudamapper
+        src/cudamapper.cpp
         src/main.cpp
         src/sequence.cpp
         src/bioparser_sequence.cpp
