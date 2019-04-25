@@ -110,6 +110,8 @@ if [ "${BUILD_FOR_GPU}" == '1' ]; then
   git submodule update --init --recursive
 fi
 
+logger "GPU config..."
+nvidia-smi
 
 logger "Build SDK..."
 CMAKE_BUILD_GPU=""
@@ -123,13 +125,19 @@ mkdir --parents ${LOCAL_BUILD_DIR}
 cd ${LOCAL_BUILD_DIR}
 
 # configure
-cmake $CMAKE_COMMON_VARIABLES ${CMAKE_BUILD_GPU} ..
+cmake $CMAKE_COMMON_VARIABLES ${CMAKE_BUILD_GPU} -DCMAKE_INSTALL_PREFIX=${LOCAL_BUILD_DIR}/install ..
 # build
 make -j${PARALLEL_LEVEL} VERBOSE=1 install
+
+if [ "${TEST_ON_GPU}" == '1' ]; then
+    logger "Running GenomeWorks unit tests..."
+    run-parts -v ${LOCAL_BUILD_DIR}/install/tests
+fi
 
 cd ${LOCAL_BUILD_ROOT}
 rm -rf build
 
+# Build related application repo for end to end test.
 if [ "${BUILD_FOR_GPU}" == '1' ]; then
   logger "Build racon-gpu for CUDA..."
   CMAKE_BUILD_GPU="-Dracon_enable_cuda=ON -DGENOMEWORKS_SRC_PATH=${WORKSPACE}"
@@ -158,9 +166,7 @@ if [ "${BUILD_FOR_GPU}" == '1' ]; then
       tar xvzf ont-racon-data.tar.gz
     fi
 
-    logger "Running test..."
-    logger "GPU config..."
-    nvidia-smi
+    logger "Running Racon end to end test..."
 
     logger "Test results..."
     cd ${LOCAL_BUILD_DIR}/bin

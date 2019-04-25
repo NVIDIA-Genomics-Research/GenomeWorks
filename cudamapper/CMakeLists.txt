@@ -24,6 +24,9 @@ target_include_directories(cudamapper
 )
 target_link_libraries(cudamapper bioparser indexer)
 
+# Add tests folder
+add_subdirectory(tests)
+
 install(TARGETS cudamapper 
     EXPORT cudamapper
     DESTINATION lib
