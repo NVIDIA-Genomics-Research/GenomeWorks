@@ -5,7 +5,8 @@ if (NOT TARGET bioparser)
     add_subdirectory(3rdparty/bioparser EXCLUDE_FROM_ALL)
 endif()
 
-if (NOT TARGET gtest)
+get_property(enable_tests GLOBAL PROPERTY enable_tests)
+if (enable_tests AND NOT TARGET gtest)
     add_subdirectory(3rdparty/googletest EXCLUDE_FROM_ALL)
 endif()
 

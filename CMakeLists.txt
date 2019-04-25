@@ -1,9 +1,17 @@
 cmake_minimum_required(VERSION 3.10.2)
 project(GenomeWorksCPP)
 
+# Process options.
+option(gw_enable_tests "Build GenomeWorks unit tests" OFF)
+
+if (gw_enable_tests)
+    message(STATUS "Enabling GenomeWorks unit tests")
+    set_property(GLOBAL PROPERTY enable_tests ON)
+endif()
+
 include(cmake/Doxygen.cmake)
-include(cmake/Tests.cmake)
 include(cmake/3rdparty.cmake)
+include(cmake/Tests.cmake)
 
 set(CMAKE_CXX_STANDARD 17)
 
