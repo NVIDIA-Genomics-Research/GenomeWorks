@@ -62,7 +62,7 @@ namespace genomeworks {
 
         // fill the initial window
         for (std::size_t vector_pos = 0; vector_pos < window_size_; ++vector_pos) {
-            window.push_back(kmer_to_representation(sequence_data, vector_pos, minimizer_size_));
+            window.push_back(kmer_to_integer_representation(sequence_data, vector_pos, minimizer_size_));
             if (window.back() == minimizer) { // if this kmer is equeal to the current minimizer add it to the list of positions of that minimizer
                 minimizer_pos.push_back(vector_pos);
             } else if (window.back() < minimizer) { // if it is smaller than the current minimizer clear the list and make it the new minimizer
@@ -80,7 +80,7 @@ namespace genomeworks {
         for (std::uint64_t window_num = 1; window_num <= sequence_data.size() - (window_size_ + minimizer_size_ - 1); ++window_num) {
             // remove the kmer which does not belong to the window anymore and add the new one
             window.pop_front();
-            window.push_back(kmer_to_representation(sequence_data, window_num + window_size_ - 1, minimizer_size_)); // last kmer in that window
+            window.push_back(kmer_to_integer_representation(sequence_data, window_num + window_size_ - 1, minimizer_size_)); // last kmer in that window
             // if the removed kmer was the minimizer find the new minimizer (unless another minimizer of the same value exists inside the window)
             if (minimizer_pos[0] == window_num - 1) { // oldest kmer's index is always equal to current window_num - 1
                 minimizer_pos.pop_front(); // remove the occurence of the minimizer
@@ -136,7 +136,7 @@ namespace genomeworks {
         std::uint64_t minimizer = std::numeric_limits<std::uint64_t>::max();
         auto existing_positions = index_.equal_range(minimizer);
         for (std::size_t i = 0; i < window_size_; ++i) {
-            std::uint64_t new_minimizer = kmer_to_representation(sequence_data, i, minimizer_size_);
+            std::uint64_t new_minimizer = kmer_to_integer_representation(sequence_data, i, minimizer_size_);
             if (new_minimizer <= minimizer) {
                 if (new_minimizer < minimizer) {
                     minimizer = new_minimizer;
@@ -154,7 +154,7 @@ namespace genomeworks {
         existing_positions = index_.equal_range(minimizer);
         for(std::size_t i = 0; i < window_size_; ++i) {
             std::size_t kmer_position = sequence_data.size() - minimizer_size_ - i;
-            std::uint64_t new_minimizer = kmer_to_representation(sequence_data, kmer_position, minimizer_size_);
+            std::uint64_t new_minimizer = kmer_to_integer_representation(sequence_data, kmer_position, minimizer_size_);
             if (new_minimizer <= minimizer) {
                 if (new_minimizer < minimizer) {
                     minimizer = new_minimizer;
