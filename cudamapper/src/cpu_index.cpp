@@ -5,7 +5,7 @@
 #include "bioparser/bioparser.hpp"
 #include "bioparser_sequence.hpp"
 #include "cpu_index.hpp"
-#include "utils.cpp"
+#include "utils.hpp"
 
 namespace genomeworks {
 
