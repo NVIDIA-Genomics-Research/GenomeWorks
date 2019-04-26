@@ -7,4 +7,4 @@ set(SOURCES
 set(LIBS
     indexer)
 
-gw_add_tests(${PROJECT_NAME} ${SOURCES} ${LIBS})
+gw_add_tests(${PROJECT_NAME} "${SOURCES}" "${LIBS}")
