@@ -12,7 +12,7 @@ namespace genomeworks {
     /// \param baseparis
     /// \param start_element where in basepairs the kmer actually starts 
     /// \param length lenght of the kmer
-    static std::uint64_t kmer_to_integer_representation(const std::string& basepairs, std::size_t start_element, std::size_t length);
+    std::uint64_t kmer_to_integer_representation(const std::string& basepairs, std::size_t start_element, std::size_t length);
 
 }
 
