@@ -14,6 +14,8 @@ export APP_REPO="ssh://git@gitlab-master.nvidia.com:12051/genomics/racon-gpu.git
 export APP_NAME=racon-gpu
 export APP_DIR=$WORKSPACE/${APP_NAME}
 
+export TEST_PYGENOMEWORKS=1
+
 # Set path and build parallel level
 export PATH=/conda/bin:/usr/local/cuda/bin:$PATH
 export PARALLEL_LEVEL=4
@@ -172,4 +174,15 @@ if [ "${BUILD_FOR_GPU}" == '1' ]; then
     cd ${LOCAL_BUILD_DIR}/bin
     ./cuda_test.sh
   fi
+fi
+
+################################################################################
+# Pygenomeworks tests
+################################################################################
+
+if [ "${TEST_PYGENOMEWORKS}" == '1' ]; then
+    cd $WORKSPACE/pygenomeworks
+    python3 -m pip install -r requirements.txt
+    python3 setup.py install
+    python3 -m pytest
 fi
