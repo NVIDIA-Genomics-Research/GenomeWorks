@@ -39,7 +39,7 @@ def main():
     parser.add_argument('--median_read_length',
                         type=int,
                         default=10000)
-    parser.add_argument('--snp_error_rate',
+    parser.add_argument('--snv_error_rate',
                         type=float,
                         default=0.025)
     parser.add_argument('--insertion_error_rate',
