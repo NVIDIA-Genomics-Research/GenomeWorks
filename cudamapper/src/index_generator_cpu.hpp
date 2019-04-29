@@ -2,19 +2,19 @@
 
 #include <cstdint>
 #include <unordered_map>
-#include "cudamapper/index.hpp"
+#include "cudamapper/index_generator.hpp"
 #include "minimizer.hpp"
 
 namespace genomeworks {
-    /// CPUIndex - generates and manages (k,w)-minimizer index for one or more sequences
+    /// IndexGeneratorCPU - generates and manages (k,w)-minimizer index for one or more sequences
     /// lifecycle managed by the host (not GPU)
-    class CPUIndex : public Index {
+    class IndexGeneratorCPU : public IndexGenerator {
     public:
         /// \brief constructor
         ///
         /// \param minimizer_size
         /// \param window_size
-        CPUIndex(std::uint64_t minimizer_size, std::uint64_t window_size);
+        IndexGeneratorCPU(std::uint64_t minimizer_size, std::uint64_t window_size);
 
         /// \brief generate an in-memory (k,w)-minimizer index
         /// \param query_filename

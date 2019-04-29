@@ -1,7 +1,7 @@
 project(cudamapper)
 
 add_library(indexer
-        src/cpu_index.cpp)
+        src/index_generator_cpu.cpp)
 target_include_directories(indexer PUBLIC include)
 target_link_libraries(indexer bioparser)
 
@@ -12,8 +12,8 @@ add_executable(cudamapper
         src/main.cpp
         src/sequence.cpp
         src/bioparser_sequence.cpp
-        src/index.cpp
-        src/cpu_index.cpp
+        src/index_generator.cpp
+        src/index_generator_cpu.cpp
         src/utils.cpp
         src/minimizer.cpp
         )

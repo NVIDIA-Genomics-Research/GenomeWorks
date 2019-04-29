@@ -7,8 +7,8 @@ namespace genomeworks {
 /// \addtogroup cudamapper
 /// \{
 
-    /// Index - generates and manages (k,w)-minimizer index for one or more sequences
-    class Index {
+    /// IndexGenerator - generates and manages (k,w)-minimizer index for one or more sequences
+    class IndexGenerator {
     public:
         /// \brief generates an in-memory minimizer index
         ///
@@ -22,7 +22,7 @@ namespace genomeworks {
         /// \param window_size
         ///
         /// \return Index implementation, generates minimizers indices
-        static std::unique_ptr<Index> create_index(std::uint64_t minimizer_size, std::uint64_t window_size);
+        static std::unique_ptr<IndexGenerator> create_index_generator(std::uint64_t minimizer_size, std::uint64_t window_size);
     };
 
 /// \}
