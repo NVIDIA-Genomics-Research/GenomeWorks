@@ -2,6 +2,7 @@
 #include <deque>
 #include <string>
 #include <iostream>
+#include <utility>
 #include "bioparser/bioparser.hpp"
 #include "bioparser_sequence.hpp"
 #include "cpu_index.hpp"
@@ -56,24 +57,24 @@ namespace genomeworks {
     void CPUIndex::find_central_minimizers(const Sequence& sequence, std::uint64_t sequence_id) {
         std::uint64_t minimizer = std::numeric_limits<std::uint64_t>::max(); // value of the current minimizer
         // These deques are going to be resized all the time. Think about using ring buffers if this limits the performance
-        std::deque<std::uint64_t> window; // values of all kmers in the current window
-        std::deque<std::size_t> minimizer_pos; // positions of kmers that are minimzers in the current window
+        std::deque<KmerIntegerRepresentation> window; // values of all kmers in the current window
+        std::deque<std::pair<std::size_t, RepresentationDirection>> minimizer_pos; // positions of kmers that are minimzers in the current window and their directions
         const std::string& sequence_data = sequence.data();
 
         // fill the initial window
         for (std::size_t vector_pos = 0; vector_pos < window_size_; ++vector_pos) {
             window.push_back(kmer_to_integer_representation(sequence_data, vector_pos, minimizer_size_));
-            if (window.back() == minimizer) { // if this kmer is equeal to the current minimizer add it to the list of positions of that minimizer
-                minimizer_pos.push_back(vector_pos);
-            } else if (window.back() < minimizer) { // if it is smaller than the current minimizer clear the list and make it the new minimizer
-                minimizer = window.back(); // minimizer gets the value of the newest kmer as it is smaller than the previous minimizer
+            if (window.back().representation_ == minimizer) { // if this kmer is equeal to the current minimizer add it to the list of positions of that minimizer
+                minimizer_pos.emplace_back(vector_pos, window.back().direction_);
+            } else if (window.back().representation_ < minimizer) { // if it is smaller than the current minimizer clear the list and make it the new minimizer
+                minimizer = window.back().representation_; // minimizer gets the value of the newest kmer as it is smaller than the previous minimizer
                 minimizer_pos.clear(); // there is a new minimizer, clear the positions of the old minimizer
-                minimizer_pos.push_back(vector_pos); // save the position of the new minimizer
+                minimizer_pos.emplace_back(vector_pos, window.back().direction_); // save the position of the new minimizer
             }
         }
         // add all position of the minimizer of the first window
-        for (const std::size_t& pos : minimizer_pos) {
-            index_.emplace(MinPair(minimizer, Minimizer(minimizer, pos, sequence_id)));
+        for (const std::pair<std::uint64_t, RepresentationDirection>& pos : minimizer_pos) {
+            index_.emplace(MinPair(minimizer, Minimizer(minimizer, pos.first, sequence_id, pos.second)));
         }
 
         // move the window by one basepair in each step
@@ -82,49 +83,48 @@ namespace genomeworks {
             window.pop_front();
             window.push_back(kmer_to_integer_representation(sequence_data, window_num + window_size_ - 1, minimizer_size_)); // last kmer in that window
             // if the removed kmer was the minimizer find the new minimizer (unless another minimizer of the same value exists inside the window)
-            if (minimizer_pos[0] == window_num - 1) { // oldest kmer's index is always equal to current window_num - 1
+            if (minimizer_pos[0].first == window_num - 1) { // oldest kmer's index is always equal to current window_num - 1
                 minimizer_pos.pop_front(); // remove the occurence of the minimizer
                 if (minimizer_pos.empty()) { // removed kmer was the only minimzer -> find a new one
                     minimizer = std::numeric_limits<std::uint64_t>::max();
                     for (std::size_t i = 0; i < window.size(); ++i) {
-                        if (window[i] == minimizer) {
-                            minimizer_pos.push_back(window_num + i);
-                        } else if (window[i] < minimizer) {
+                        if (window[i].representation_ == minimizer) {
+                            minimizer_pos.emplace_back(window_num + i, window[i].direction_);
+                        } else if (window[i].representation_ < minimizer) {
                             minimizer_pos.clear();
-                            minimizer = window[i];
-                            minimizer_pos.push_back(window_num + i);
+                            minimizer = window[i].representation_;
+                            minimizer_pos.emplace_back(window_num + i, window[i].direction_);
                         }
                     }
-                    for (std::size_t m_pos : minimizer_pos) {
-                        index_.emplace(MinPair(minimizer, Minimizer(minimizer, m_pos, sequence_id)));
+                    for (const std::pair<std::uint64_t, RepresentationDirection>& pos : minimizer_pos) {
+                        index_.emplace(MinPair(minimizer, Minimizer(minimizer, pos.first, sequence_id, pos.second)));
                     }
                 } else { // there are other kmers with that value, proceed as if the oldest element was not not the smallest one
-                    if (window.back() == minimizer) {
-                        minimizer_pos.push_back(window_num + minimizer_size_ - 1);
-                        index_.emplace(MinPair(minimizer, Minimizer(minimizer, window_num + minimizer_size_ - 1, sequence_id)));
-                    } else if (window.back() < minimizer) {
+                    if (window.back().representation_ == minimizer) {
+                        minimizer_pos.emplace_back(window_num + minimizer_size_ - 1, window.back().direction_);
+                        index_.emplace(MinPair(minimizer, Minimizer(minimizer, window_num + minimizer_size_ - 1, sequence_id, window.back().direction_)));
+                    } else if (window.back().representation_ < minimizer) {
                         minimizer_pos.clear();
-                        minimizer = window.back();
-                        minimizer_pos.push_back(window_num + minimizer_size_ - 1);
-                        index_.emplace(MinPair(minimizer, Minimizer(minimizer, window_num + minimizer_size_ - 1, sequence_id)));
+                        minimizer = window.back().representation_;
+                        minimizer_pos.emplace_back(window_num + minimizer_size_ - 1, window.back().direction_);
+                        index_.emplace(MinPair(minimizer, Minimizer(minimizer, window_num + minimizer_size_ - 1, sequence_id, window.back().direction_)));
                     }
                 }
             } else {  // oldest kmer was not the minimizer
-                if (window.back() == minimizer) {
-                    minimizer_pos.push_back(window_num + minimizer_size_ - 1);
-                    index_.emplace(MinPair(minimizer, Minimizer(minimizer, window_num + minimizer_size_ - 1, sequence_id)));
-                } else if (window.back() < minimizer) {
+                if (window.back().representation_ == minimizer) {
+                    minimizer_pos.emplace_back(window_num + minimizer_size_ - 1, window.back().direction_);
+                    index_.emplace(MinPair(minimizer, Minimizer(minimizer, window_num + minimizer_size_ - 1, sequence_id, window.back().direction_)));
+                } else if (window.back().representation_ < minimizer) {
                     minimizer_pos.clear();
-                    minimizer = window.back();
-                    minimizer_pos.push_back(window_num + minimizer_size_ - 1);
-                    index_.emplace(MinPair(minimizer, Minimizer(minimizer, window_num + minimizer_size_ - 1, sequence_id)));
+                    minimizer = window.back().representation_;
+                    minimizer_pos.emplace_back(window_num + minimizer_size_ - 1, window.back().direction_);
+                    index_.emplace(MinPair(minimizer, Minimizer(minimizer, window_num + minimizer_size_ - 1, sequence_id, window.back().direction_)));
                 }
             }
         }
     }
 
     void CPUIndex::find_end_minimizers(const Sequence& sequence, std::uint64_t sequence_id) {
-        std::deque<std::uint64_t> window;
         const std::string& sequence_data = sequence.data();
 
         // End minimizers are found by increasing the window size and keeping the same minimizer length.
@@ -136,15 +136,15 @@ namespace genomeworks {
         std::uint64_t minimizer = std::numeric_limits<std::uint64_t>::max();
         auto existing_positions = index_.equal_range(minimizer);
         for (std::size_t i = 0; i < window_size_; ++i) {
-            std::uint64_t new_minimizer = kmer_to_integer_representation(sequence_data, i, minimizer_size_);
-            if (new_minimizer <= minimizer) {
-                if (new_minimizer < minimizer) {
-                    minimizer = new_minimizer;
+            KmerIntegerRepresentation new_kmer = kmer_to_integer_representation(sequence_data, i, minimizer_size_);
+            if (new_kmer.representation_ <= minimizer) {
+                if (new_kmer.representation_ < minimizer) {
+                    minimizer = new_kmer.representation_;
                     existing_positions = index_.equal_range(minimizer);
                 }
                 // add minimizer (if not already present)
                 if (std::none_of(existing_positions.first, existing_positions.second, [i, sequence_id](const decltype(index_)::value_type& a) {return a.second.position() == i && a.second.sequence_id() == sequence_id;})) {
-                    index_.emplace(MinPair(minimizer, Minimizer(minimizer, i, sequence_id)));
+                    index_.emplace(MinPair(minimizer, Minimizer(minimizer, i, sequence_id, new_kmer.direction_)));
                 }
             }
         }
@@ -154,15 +154,15 @@ namespace genomeworks {
         existing_positions = index_.equal_range(minimizer);
         for(std::size_t i = 0; i < window_size_; ++i) {
             std::size_t kmer_position = sequence_data.size() - minimizer_size_ - i;
-            std::uint64_t new_minimizer = kmer_to_integer_representation(sequence_data, kmer_position, minimizer_size_);
-            if (new_minimizer <= minimizer) {
-                if (new_minimizer < minimizer) {
-                    minimizer = new_minimizer;
+            KmerIntegerRepresentation new_kmer = kmer_to_integer_representation(sequence_data, kmer_position, minimizer_size_);
+            if (new_kmer.representation_ <= minimizer) {
+                if (new_kmer.representation_ < minimizer) {
+                    minimizer = new_kmer.representation_;
                     existing_positions = index_.equal_range(minimizer);
                 }
                 // add minimizer (if not already present)
                 if (std::none_of(existing_positions.first, existing_positions.second, [kmer_position, sequence_id](const decltype(index_)::value_type& a) {return a.second.position() == kmer_position && a.second.sequence_id() == sequence_id;})) {
-                    index_.emplace(MinPair(minimizer, Minimizer(minimizer, kmer_position, sequence_id)));
+                    index_.emplace(MinPair(minimizer, Minimizer(minimizer, kmer_position, sequence_id, new_kmer.direction_)));
                 }
             }
         }
