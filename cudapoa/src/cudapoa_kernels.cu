@@ -387,40 +387,50 @@ void generatePOAKernel(uint8_t* consensus_d,
 }
 
 // Host function call for POA kernel.
-void generatePOA(uint8_t* consensus_d,
-                 uint16_t* coverage_d,
-                 uint8_t* sequences_d,
-                 uint16_t * sequence_lengths_d,
-                 genomeworks::cudapoa::WindowDetails * window_details_d,
-                 uint32_t total_windows,
-                 uint32_t num_threads,
-                 uint32_t num_blocks,
-                 cudaStream_t stream,
-                 int16_t* scores,
-                 int16_t* alignment_graph,
-                 int16_t* alignment_read,
-                 uint8_t* nodes,
-                 uint16_t* incoming_edges,
-                 uint16_t* incoming_edge_count,
-                 uint16_t* outgoing_edges,
-                 uint16_t* outgoing_edge_count,
-                 uint16_t* incoming_edge_w,
-                 uint16_t* outgoing_edge_w,
-                 uint16_t* sorted_poa,
-                 uint16_t* node_id_to_pos,
-                 uint16_t* node_alignments,
-                 uint16_t* node_alignment_count,
-                 uint16_t* sorted_poa_local_edge_count,
-                 int32_t* consensus_scores,
-                 int16_t* consensus_predecessors,
-                 uint8_t* node_marks,
-                 bool* check_aligned_nodes,
-                 uint16_t* nodes_to_visit,
-                 uint16_t* node_coverage_counts,
-                 int16_t gap_score,
-                 int16_t mismatch_score,
-                 int16_t match_score)
+void generatePOA(genomeworks::cudapoa::OutputDetails * output_details_d,
+                genomeworks::cudapoa::InputDetails * input_details_d,
+                uint32_t total_windows,
+                uint32_t num_threads,
+                uint32_t num_blocks,
+                cudaStream_t stream,
+                genomeworks::cudapoa::AlignmentDetails * alignment_details_d,
+                genomeworks::cudapoa::GraphDetails * graph_details_d,
+                int16_t gap_score,
+                int16_t mismatch_score,
+                int16_t match_score)
 {
+    // unpack output details
+    uint8_t* consensus_d = output_details_d->consensus;
+    uint16_t* coverage_d = output_details_d->coverage;
+    // unpack input details
+    uint8_t* sequences_d = input_details_d->sequences;
+    uint16_t* sequence_lengths_d = input_details_d->sequence_lengths;
+    WindowDetails* window_details_d = input_details_d->window_details;
+    // unpack alignment details
+    int16_t* scores = alignment_details_d->scores;
+    int16_t* alignment_graph = alignment_details_d->alignment_graph;
+    int16_t* alignment_read = alignment_details_d->alignment_read;
+    // unpack graph details
+    uint8_t* nodes = graph_details_d->nodes;
+    uint16_t* node_alignments = graph_details_d->node_alignments;
+    uint16_t* node_alignment_count = graph_details_d->node_alignment_count;
+    uint16_t* incoming_edges = graph_details_d->incoming_edges;
+    uint16_t* incoming_edge_count = graph_details_d->incoming_edge_count;
+    uint16_t* outgoing_edges = graph_details_d->outgoing_edges;
+    uint16_t* outgoing_edge_count = graph_details_d->outgoing_edge_count;
+    uint16_t* incoming_edge_w = graph_details_d->incoming_edge_weights;
+    uint16_t* outgoing_edge_w = graph_details_d->outgoing_edge_weights;
+    uint16_t* sorted_poa = graph_details_d->sorted_poa;
+    uint16_t* node_id_to_pos = graph_details_d->sorted_poa_node_map;
+    uint16_t* sorted_poa_local_edge_count = graph_details_d->sorted_poa_local_edge_count;
+    int32_t* consensus_scores = graph_details_d->consensus_scores;
+    int16_t* consensus_predecessors = graph_details_d->consensus_predecessors;
+    uint8_t* node_marks = graph_details_d->node_marks;
+    bool* check_aligned_nodes = graph_details_d->check_aligned_nodes;
+    uint16_t* nodes_to_visit = graph_details_d->nodes_to_visit;
+    uint16_t* node_coverage_counts = graph_details_d->node_coverage_counts;
+    
+
     generatePOAKernel<<<num_blocks, num_threads, 0, stream>>>(consensus_d,
                                                               coverage_d,
                                                               sequences_d,
@@ -455,4 +465,4 @@ void generatePOA(uint8_t* consensus_d,
 
 } // namespace cudapoa
 
-} // namespace nvidia
+} // namespace genomeworks

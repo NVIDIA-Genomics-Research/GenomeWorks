@@ -27,6 +27,14 @@ namespace cudapoa {
 
 class WindowDetails;
 
+class AlignmentDetails;
+
+class GraphDetails;
+
+class OutputDetails;
+
+class InputDetails;
+
 /// \addtogroup cudapoa
 /// \{
 
@@ -69,6 +77,30 @@ protected:
     // Print debug message with batch specific formatting.
     void print_batch_debug_message(const std::string& message);
 
+    // Allocate buffers for output details
+    void initialize_output_details();
+
+    // Free buffers for output details
+    void free_output_details();
+
+    // Allocate buffers for alignment details
+    void initialize_alignment_details();
+
+    // Free buffers for alignment details
+    void free_alignment_details();
+
+    // Allocate buffers for graph details
+    void initialize_graph_details();
+
+    // Free buffers for graph details
+    void free_graph_details();
+
+    // Allocate buffers for input details
+    void initialize_input_details();
+
+    // Free buffers for input details
+    void free_input_details();
+
 protected:
     // Maximum POAs to process in batch.
     uint32_t max_poas_ = 0;
@@ -87,92 +119,19 @@ protected:
     // CUDA stream for launching kernels.
     cudaStream_t stream_;
 
-    // Host buffer for storing consensus.
-    std::unique_ptr<uint8_t[]> consensus_h_;
-
-    // Device buffer pointer for storing consensus.
-    uint8_t *consensus_d_;
+    // Host and device buffer for output data.
+    OutputDetails * output_details_h_;
+    OutputDetails * output_details_d_;
 
     // Host and device buffer pointer for input data.
-    uint8_t *inputs_h_;
-    uint8_t *inputs_d_;
+    InputDetails * input_details_d_;
+    InputDetails * input_details_h_;
 
-    // Host buffer pointfer number of sequences per window.
-    uint8_t * num_sequences_per_window_h_;
+    // Device buffer struct for alignment details
+    AlignmentDetails * alignment_details_d_;
 
-    // Host and device buffer for sequence lengths.
-    uint16_t * sequence_lengths_h_;
-    uint16_t * sequence_lengths_d_;
-
-    // Host and device buffer pointers that hold Window Details struct.
-    WindowDetails * window_details_d_;
-    WindowDetails * window_details_h_;
-
-    // Device buffer for the scoring matrix for all windows.
-    int16_t* scores_d_;
-
-    // Device buffers for alignment backtrace.
-    // i for graph
-    // j for sequence
-    int16_t* alignment_graph_d_;
-    int16_t* alignment_read_d_;
-
-    // Device buffer to store nodes of the graph. The node itself is the base
-    // (A, T, C, G) and the id of the node is it's position in the buffer.
-    uint8_t* nodes_d_;
-
-    // Device buffer to store the list of nodes aligned to a 
-    // specific node in the graph.
-    uint16_t* node_alignments_d_;
-    uint16_t* node_alignment_count_d_;
-
-    // Device buffer to store incoming edges to a node.
-    uint16_t* incoming_edges_d_;
-    uint16_t* incoming_edge_count_d_;
-
-    // Device buffer to store outgoing edges from a node.
-    uint16_t* outgoing_edges_d_;
-    uint16_t* outgoing_edge_count_d_;
-
-    // Devices buffers to store incoming and outgoing edge weights.
-    uint16_t* incoming_edges_weights_d_;
-    uint16_t* outoing_edges_weights_d_;
-
-    // Device buffer to store the topologically sorted graph. Each element
-    // of this buffer is an ID of the node.
-    uint16_t* sorted_poa_d_;
-
-    // Device buffer that maintains a mapping between the node ID and its
-    // position in the topologically sorted graph.
-    uint16_t* sorted_poa_node_map_d_;
-
-    // Device buffer used during topological sort to store incoming
-    // edge counts for nodes.
-    uint16_t* sorted_poa_local_edge_count_d_;
-
-    // Device buffer to store scores calculated during traversal
-    // of graph for consensus generation.
-    int32_t* consensus_scores_d_;
-
-    // Device buffer to store the predecessors of nodes during
-    // graph traversal.
-    int16_t* consensus_predecessors_d_;
-
-    // Device buffer to store node marks when performing spoa accurate topsort.
-    uint8_t* node_marks_d_;
-
-    // Device buffer to store check for aligned nodes.
-    bool* check_aligned_nodes_d_;
-
-    // Device buffer to store stack for nodes to be visited.
-    uint16_t* nodes_to_visit_d_;
-
-    // Buffer for coverage of consensus.
-    uint16_t* coverage_h_;
-    uint16_t* coverage_d_;
-
-    // Device buffer for storing coverage of each node in graph.
-    uint16_t* node_coverage_counts_d_;
+    // Device buffer struct for graph details
+    GraphDetails * graph_details_d_;
 
     // Static batch count used to generate batch IDs.
     static uint32_t batches;
@@ -192,6 +151,6 @@ protected:
 
 /// \}
 
-}
+} // namespace cudapoa
 
-}
+} // namespace genomeworks
