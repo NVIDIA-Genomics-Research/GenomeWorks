@@ -5,18 +5,18 @@
 #include <utility>
 #include "bioparser/bioparser.hpp"
 #include "bioparser_sequence.hpp"
-#include "cpu_index.hpp"
+#include "index_generator_cpu.hpp"
 #include "utils.hpp"
 
 namespace genomeworks {
 
     typedef std::pair<uint64_t, Minimizer> MinPair;
 
-    CPUIndex::CPUIndex(std::uint64_t minimizer_size, std::uint64_t window_size)
+    IndexGeneratorCPU::IndexGeneratorCPU(std::uint64_t minimizer_size, std::uint64_t window_size)
     : minimizer_size_(minimizer_size), window_size_(window_size)
     {}
 
-    void CPUIndex::generate_index(const std::string &query_filename) {
+    void IndexGeneratorCPU::generate_index(const std::string &query_filename) {
 
         std::unique_ptr <bioparser::Parser<BioParserSequence>> query_parser = nullptr;
 
@@ -43,7 +43,7 @@ namespace genomeworks {
         }
     }
 
-    void CPUIndex::add_sequence_to_index(const Sequence& sequence, std::uint64_t sequence_id) {
+    void IndexGeneratorCPU::add_sequence_to_index(const Sequence& sequence, std::uint64_t sequence_id) {
         // check if sequence fits at least one window
         if (sequence.data().size() < window_size_ + minimizer_size_ - 1) {
             return;
@@ -54,7 +54,7 @@ namespace genomeworks {
         find_end_minimizers(sequence, sequence_id);
     }
 
-    void CPUIndex::find_central_minimizers(const Sequence& sequence, std::uint64_t sequence_id) {
+    void IndexGeneratorCPU::find_central_minimizers(const Sequence& sequence, std::uint64_t sequence_id) {
         std::uint64_t minimizer = std::numeric_limits<std::uint64_t>::max(); // value of the current minimizer
         // These deques are going to be resized all the time. Think about using ring buffers if this limits the performance
         std::deque<KmerIntegerRepresentation> window; // values of all kmers in the current window
@@ -124,7 +124,7 @@ namespace genomeworks {
         }
     }
 
-    void CPUIndex::find_end_minimizers(const Sequence& sequence, std::uint64_t sequence_id) {
+    void IndexGeneratorCPU::find_end_minimizers(const Sequence& sequence, std::uint64_t sequence_id) {
         const std::string& sequence_data = sequence.data();
 
         // End minimizers are found by increasing the window size and keeping the same minimizer length.
@@ -168,9 +168,9 @@ namespace genomeworks {
         }
     }
 
-    std::uint64_t CPUIndex::minimizer_size() const { return minimizer_size_; }
+    std::uint64_t IndexGeneratorCPU::minimizer_size() const { return minimizer_size_; }
 
-    std::uint64_t CPUIndex::window_size() const { return window_size_; }
+    std::uint64_t IndexGeneratorCPU::window_size() const { return window_size_; }
 
-    const std::unordered_multimap<std::uint64_t, Minimizer>& CPUIndex::index() const { return index_; }
+    const std::unordered_multimap<std::uint64_t, Minimizer>& IndexGeneratorCPU::index() const { return index_; }
 }
