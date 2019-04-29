@@ -1,5 +1,6 @@
 #pragma once
 
+#include "utils.hpp"
 #include <cstdint>
 
 namespace genomeworks {
@@ -12,7 +13,7 @@ namespace genomeworks {
         /// \param representation 4-bit packed representation of a kmer
         /// \param position position of the minimizer in the sequence
         /// \param sequence_id sequence's id
-        Minimizer(std::uint64_t representation, std::size_t position, std::uint64_t sequence_id);
+        Minimizer(std::uint64_t representation, std::size_t position, std::uint64_t sequence_id, RepresentationDirection direction);
 
         /// \brief returns minimizers representation
         /// \return minimizer representation
@@ -26,10 +27,15 @@ namespace genomeworks {
         /// \return sequence's ID
         std::size_t sequence_id() const;
 
+        /// \brief returns representation's direction
+        /// \return representation's direction
+        RepresentationDirection direction() const;
+
     private:
         std::uint64_t representation_; // supports up to 2*64 basepairs in a minimzer. Normaly minimizers of around 20 elements are used
         std::size_t position_;
         std::size_t sequence_id_;
+        RepresentationDirection direction_;
     };
 
 }

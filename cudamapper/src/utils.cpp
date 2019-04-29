@@ -1,10 +1,9 @@
 #include "utils.hpp"
-#include <algorithm>
 #include <limits>
 
 namespace genomeworks {
 
-    std::uint64_t kmer_to_integer_representation(const std::string& basepairs, std::size_t start_element, std::size_t length) {
+    KmerIntegerRepresentation kmer_to_integer_representation(const std::string& basepairs, std::size_t start_element, std::size_t length) {
         std::uint64_t forward_representation = 0;
         std::uint64_t reverse_representation = 0;
         if (length <= 2*sizeof(std::uint64_t)) { // two basepairs per byte due to 4-bit packing
@@ -29,7 +28,8 @@ namespace genomeworks {
             // TODO: throw?
             forward_representation = reverse_representation = std::numeric_limits<std::uint64_t>::max();
         }
-        return std::min(forward_representation, reverse_representation);
+
+        return forward_representation <= reverse_representation ? KmerIntegerRepresentation{forward_representation, RepresentationDirection::FORWARD} : KmerIntegerRepresentation{reverse_representation, RepresentationDirection::REVERSE};
     }
 
 }
