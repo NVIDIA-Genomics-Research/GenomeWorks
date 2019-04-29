@@ -9,15 +9,22 @@ pip install -r requirements.txt
 python setup.py install
 ```
 
+*Note* if you are developing pygenomeworks you should do a develop build instead, changes you make to the source code will then be picked up on immediately:
+
+```
+pip install -r requirements.txt
+python setup.py develop
+```
+
 ## Generating a simulated genome
 
-A genome can be simulated without any parameters, to generate a 10Mbp reference with 20x coverage and median read length of 10kbp:
+A genome can be simulated without any parameters, to generate a 1Mbp reference with 200x coverage and median read length of 10kbp:
 
 ```
-genome_simulator --reference_length 2700000 --num_reads 5400 --median_read_length=10000
+genome_simulator --snv_error_rate 0.01 --insertion_error_rate 0.005 --deletion_error_rate 0.005  --reference_length 1000000 --num_reads 2000 --median_read_length=10000
 ```
 
-this will generate a 2.7Mbp reference genome with 20x coverage (default errors) reads in two files (run time approx 3 min):
+this will generate a 1Mbp reference genome with 100x coverage (default errors) reads in two files:
 
 1. `ref.fasta` - the reference genome
 2. `reads.fasta` - the corresponding reads
@@ -42,33 +49,32 @@ miniasm -f ./reads.fasta ./out.paf > reads.gfa
 assembly_evaluator --gfa_filepath ./reads.gfa --reference_filepath ./ref.fasta
 ```
 
-This should produce an output that looks like this:
-
+This should produce the following output:
 
 ```
-Assembly                     a64b786b_058d_4ba4_a5c8_564c317e8f86
-# contigs (>= 0 bp)          1
-# contigs (>= 1000 bp)       1
-# contigs (>= 5000 bp)       1
-# contigs (>= 10000 bp)      1
-# contigs (>= 25000 bp)      1
-# contigs (>= 50000 bp)      1
-Total length (>= 0 bp)       2630124
-Total length (>= 1000 bp)    2630124
-Total length (>= 5000 bp)    2630124
-Total length (>= 10000 bp)   2630124
-Total length (>= 25000 bp)   2630124
-Total length (>= 50000 bp)   2630124
-# contigs                    1
-Largest contig               2630124
-Total length                 2630124
-Reference length             2700000
-GC (%)                       55.75
-Reference GC (%)             55.86
-N50                          2630124
-NG50                         2630124
-N75                          2630124
-NG75                         2630124
+Assembly                     cca8d249_4adb_4dfc_b3eb_3fad6258851a
+# contigs (>= 0 bp)          2
+# contigs (>= 1000 bp)       2
+# contigs (>= 5000 bp)       2
+# contigs (>= 10000 bp)      2
+# contigs (>= 25000 bp)      2
+# contigs (>= 50000 bp)      2
+Total length (>= 0 bp)       987753
+Total length (>= 1000 bp)    987753
+Total length (>= 5000 bp)    987753
+Total length (>= 10000 bp)   987753
+Total length (>= 25000 bp)   987753
+Total length (>= 50000 bp)   987753
+# contigs                    2
+Largest contig               889670
+Total length                 987753
+Reference length             1000000
+GC (%)                       55.64
+Reference GC (%)             55.83
+N50                          889670
+NG50                         889670
+N75                          889670
+NG75                         889670
 L50                          1
 LG50                         1
 L75                          1
@@ -82,25 +88,24 @@ Misassembled contigs length  0
 # unaligned mis. contigs     0
 # unaligned contigs          0 + 0 part
 Unaligned length             0
-Genome fraction (%)          100.000
-Duplication ratio            0.974
+Genome fraction (%)          99.957
+Duplication ratio            0.988
 # N's per 100 kbp            0.00
-# mismatches per 100 kbp     3.44
-# indels per 100 kbp         2064.15
-Largest alignment            2630124
-Total aligned length         2630124
-NA50                         2630124
-NGA50                        2630124
-NA75                         2630124
-NGA75                        2630124
+# mismatches per 100 kbp     1010.43
+# indels per 100 kbp         1801.27
+Largest alignment            889670
+Total aligned length         987753
+NA50                         889670
+NGA50                        889670
+NA75                         889670
+NGA75                        889670
 LA50                         1
 LGA50                        1
 LA75                         1
 LGA75                        1
-
 ```
 
-indicating that mismatch rate is low, but indel rate is around 2%
+Indicating a total error rate of ~2.8%.
 
 ### Step 4 (optional). Polish with racon and re-evaluate
 
@@ -131,29 +136,30 @@ quast.py polished_assembly.fa -r ./ref.fasta
 5. Looking at the report file (`less ./quast_results/latest/report.txt`) should show results similar to this:
 
 
-```Assembly                     polished_assembly
-# contigs (>= 0 bp)          1
-# contigs (>= 1000 bp)       1
-# contigs (>= 5000 bp)       1
-# contigs (>= 10000 bp)      1
-# contigs (>= 25000 bp)      1
-# contigs (>= 50000 bp)      1
-Total length (>= 0 bp)       2665507
-Total length (>= 1000 bp)    2665507
-Total length (>= 5000 bp)    2665507
-Total length (>= 10000 bp)   2665507
-Total length (>= 25000 bp)   2665507
-Total length (>= 50000 bp)   2665507
-# contigs                    1
-Largest contig               2665507
-Total length                 2665507
-Reference length             2700000
-GC (%)                       55.75
-Reference GC (%)             55.86
-N50                          2665507
-NG50                         2665507
-N75                          2665507
-NG75                         2665507
+```
+Assembly                     polished_assembly
+# contigs (>= 0 bp)          2
+# contigs (>= 1000 bp)       2
+# contigs (>= 5000 bp)       2
+# contigs (>= 10000 bp)      2
+# contigs (>= 25000 bp)      2
+# contigs (>= 50000 bp)      2
+Total length (>= 0 bp)       990107
+Total length (>= 1000 bp)    990107
+Total length (>= 5000 bp)    990107
+Total length (>= 10000 bp)   990107
+Total length (>= 25000 bp)   990107
+Total length (>= 50000 bp)   990107
+# contigs                    2
+Largest contig               891746
+Total length                 990107
+Reference length             1000000
+GC (%)                       55.76
+Reference GC (%)             55.83
+N50                          891746
+NG50                         891746
+N75                          891746
+NG75                         891746
 L50                          1
 LG50                         1
 L75                          1
@@ -167,21 +173,21 @@ Misassembled contigs length  0
 # unaligned mis. contigs     0
 # unaligned contigs          0 + 0 part
 Unaligned length             0
-Genome fraction (%)          99.999
-Duplication ratio            0.987
+Genome fraction (%)          99.956
+Duplication ratio            0.991
 # N's per 100 kbp            0.00
-# mismatches per 100 kbp     0.59
-# indels per 100 kbp         1062.67
-Largest alignment            2665501
-Total aligned length         2665501
-NA50                         2665501
-NGA50                        2665501
-NA75                         2665501
-NGA75                        2665501
+# mismatches per 100 kbp     2.00
+# indels per 100 kbp         913.50
+Largest alignment            891746
+Total aligned length         990107
+NA50                         891746
+NGA50                        891746
+NA75                         891746
+NGA75                        891746
 LA50                         1
 LGA50                        1
 LA75                         1
 LGA75                        1
 ```
 
-Mismatch rate has dropped from 2% to 1%
+Total error rate has dropped from 2.8% to 0.9%. Most of the remaining error is in indels.

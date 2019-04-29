@@ -131,13 +131,13 @@ class NoisyReadSimulator(ReadSimulator):
         end = clamp(pos + median_length // 2) + median_length % 2
         substring = reference[start: end]
 
-        read = self._add_snv_errors(substring, snv_error_rate)
+        substring = self._add_snv_errors(substring, snv_error_rate)
 
-        read = self._add_insertion_errors(substring, insertion_error_rate)
+        substring = self._add_insertion_errors(substring, insertion_error_rate)
 
-        read = self._add_deletion_errors(substring, deletion_error_rate)
+        substring = self._add_deletion_errors(substring, deletion_error_rate)
 
-        read = self._add_homopolymer_clipping(read,
+        read = self._add_homopolymer_clipping(substring,
                                               homopolymer_survival_length=homopolymer_survival_length,
                                               clip_rate=homopolymer_clip_rate)
 

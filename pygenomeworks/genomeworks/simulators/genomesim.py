@@ -3,17 +3,21 @@ import abc
 import random
 
 import numpy as np
+from tqdm  import tqdm
 
 from genomeworks.simulators import NUCLEOTIDES
 
 
 class GenomeSimulator(abc.ABC):
+    """Base class for genome simulators"""
     @abc.abstractmethod
     def build_reference(self):
         pass
 
 
 class PoissonGenomeSimulator(GenomeSimulator):
+    """Simulates genome with poisson process"""
+
     def __init__(self):
         pass
 
@@ -32,6 +36,8 @@ class PoissonGenomeSimulator(GenomeSimulator):
 
 
 class MarkovGenomeSimulator(GenomeSimulator):
+    """Simulates genome with a Markovian process"""
+
     def __init__(self):
         pass
 
@@ -50,7 +56,8 @@ class MarkovGenomeSimulator(GenomeSimulator):
         reference_length = int(reference_length)
         prev_base = random.choice(list(NUCLEOTIDES))
         ref_bases = [prev_base]
-        for _ in range(reference_length - 1):
+        print("Simulating genome:")
+        for _ in tqdm(range(reference_length - 1)):
             next_base_choices = list(zip(*transitions[prev_base].items()))
             next_base_candidates = next_base_choices[0]
             next_base_pd = np.array(next_base_choices[1])

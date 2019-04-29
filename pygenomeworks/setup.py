@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+import os.path
+
 from setuptools import setup, find_packages
 
 setup(name='pygenomeworks',
@@ -7,5 +9,5 @@ setup(name='pygenomeworks',
       author='Mike Vella',
       author_email='mvella@nvidia.com',
       packages=find_packages(),
-      scripts=['bin/genome_simulator',
-               'bin/assembly_evaluator'])
+      scripts=[os.path.join('bin', 'genome_simulator'),
+               os.path.join('bin', 'assembly_evaluator')])

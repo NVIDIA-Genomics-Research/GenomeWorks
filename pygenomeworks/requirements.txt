@@ -1,3 +1,4 @@
+matplotlib==3.0.3
 numpy==1.16.3
 pytest==4.4.1
 quast==5.0.2
