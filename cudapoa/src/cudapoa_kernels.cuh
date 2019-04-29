@@ -49,6 +49,90 @@ typedef struct WindowDetails
     uint32_t seq_starts;
 } WindowDetails;
 
+typedef struct OutputDetails
+{
+    // Buffer pointer for storing consensus.
+    uint8_t* consensus;
+    // Buffer for coverage of consensus.
+    uint16_t* coverage;
+} OutputDetails;
+
+typedef struct InputDetails
+{
+    // Buffer pointer for input data.
+    uint8_t* sequences;
+    // Buffer for sequence lengths.
+    uint16_t* sequence_lengths;
+    // Buffer pointers that hold Window Details struct.
+    WindowDetails* window_details;
+} InputDetails;
+
+typedef struct AlignmentDetails
+{
+    // Device buffer for the scoring matrix for all windows.
+    int16_t* scores;
+    // Device buffers for alignment backtrace
+    int16_t* alignment_graph;
+    int16_t* alignment_read;
+} AlignmentDetails;
+
+typedef struct GraphDetails
+{
+    // Device buffer to store nodes of the graph. The node itself is the base
+    // (A, T, C, G) and the id of the node is it's position in the buffer.
+    uint8_t* nodes;
+
+    // Device buffer to store the list of nodes aligned to a 
+    // specific node in the graph.
+    uint16_t* node_alignments;
+    uint16_t* node_alignment_count;
+
+    // Device buffer to store incoming edges to a node.
+    uint16_t* incoming_edges;
+    uint16_t* incoming_edge_count;
+
+    // Device buffer to store outgoing edges from a node.
+    uint16_t* outgoing_edges;
+    uint16_t* outgoing_edge_count;
+
+    // Devices buffers to store incoming and outgoing edge weights.
+    uint16_t* incoming_edge_weights;
+    uint16_t* outgoing_edge_weights;
+
+    // Device buffer to store the topologically sorted graph. Each element
+    // of this buffer is an ID of the node.
+    uint16_t* sorted_poa;
+
+    // Device buffer that maintains a mapping between the node ID and its
+    // position in the topologically sorted graph.
+    uint16_t* sorted_poa_node_map;
+
+    // Device buffer used during topological sort to store incoming
+    // edge counts for nodes.
+    uint16_t* sorted_poa_local_edge_count;
+
+    // Device buffer to store scores calculated during traversal
+    // of graph for consensus generation.
+    int32_t* consensus_scores;
+
+    // Device buffer to store the predecessors of nodes during
+    // graph traversal.
+    int16_t* consensus_predecessors;
+
+    // Device buffer to store node marks when performing spoa accurate topsort.
+    uint8_t* node_marks;
+
+    // Device buffer to store check for aligned nodes.
+    bool* check_aligned_nodes;
+
+    // Device buffer to store stack for nodes to be visited.
+    uint16_t* nodes_to_visit;
+
+    // Device buffer for storing coverage of each node in graph.
+    uint16_t* node_coverage_counts;
+} GraphDetails;
+
+
 /**
  * @brief The host function which calls the kernel that runs the partial order alignment
  *        algorithm.
@@ -88,40 +172,20 @@ typedef struct WindowDetails
  * @param[in] mismatch_score              Score for finding a mismatch in alignment
  * @param[in] match_score                 Score for finding a match in alignment
  */
-void generatePOA(uint8_t* consensus_d,
-                 uint16_t* coverage_d_,
-                 uint8_t* sequences_d,
-                 uint16_t * sequence_lengths_d,
-                 genomeworks::cudapoa::WindowDetails * window_details_d,
+
+void generatePOA(genomeworks::cudapoa::OutputDetails * output_details_d,
+                 genomeworks::cudapoa::InputDetails * Input_details_d,
                  uint32_t total_windows,
                  uint32_t num_threads,
                  uint32_t num_blocks,
                  cudaStream_t stream,
-                 int16_t* scores,
-                 int16_t* alignment_graph,
-                 int16_t* alignment_read,
-                 uint8_t* nodes,
-                 uint16_t* incoming_edges,
-                 uint16_t* incoming_edge_count,
-                 uint16_t* outgoing_edges,
-                 uint16_t* outgoing_edge_count,
-                 uint16_t* incoming_edge_w,
-                 uint16_t* outgoing_edge_w,
-                 uint16_t* sorted_poa,
-                 uint16_t* node_id_to_pos,
-                 uint16_t* node_alignments,
-                 uint16_t* node_alignment_count,
-                 uint16_t* sorted_poa_local_edge_count,
-                 int32_t* consensus_scores,
-                 int16_t* consensus_predecessors,
-                 uint8_t* node_marks,
-                 bool* check_aligned_nodes,
-                 uint16_t* nodes_to_visit,
-                 uint16_t* node_coverage_counts,
+                 genomeworks::cudapoa::AlignmentDetails * alignment_details_d,
+                 genomeworks::cudapoa::GraphDetails * graph_details_d,
                  int16_t gap_score,
                  int16_t mismatch_score,
                  int16_t match_score);
 
-}
 
-}
+} // namespace cudapoa
+
+} // namespace genomeworks
