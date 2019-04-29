@@ -18,6 +18,7 @@ set(CMAKE_CXX_STANDARD 17)
 # Add GenomeWorks projects.
 add_subdirectory(cudapoa)
 add_subdirectory(cudamapper)
+add_subdirectory(cudaaligner)
 
 set_doxygen_mainpage(${CMAKE_CURRENT_SOURCE_DIR}/docs/README-SDK.md)
 add_docs_target("GenomeWorks" "1.0")
