@@ -112,8 +112,10 @@ if [ "${BUILD_FOR_GPU}" == '1' ]; then
   git submodule update --init --recursive
 fi
 
-logger "GPU config..."
-nvidia-smi
+if [ "${TEST_ON_GPU}" == '1' ]; then
+    logger "GPU config..."
+    nvidia-smi
+fi
 
 logger "Build SDK..."
 CMAKE_BUILD_GPU=""
