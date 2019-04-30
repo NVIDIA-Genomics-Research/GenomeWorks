@@ -14,8 +14,8 @@ namespace genomeworks {
         /// \brief generates an in-memory (k,w)-minimizer index
         ///
         /// \param query_filename filepath to reads in FASTA or FASTQ format
-        /// \param minimizer_size k
-        /// \param window_size w
+        /// \param minimizer_size k - the kmer length used as a minimizer
+        /// \param window_size w - the length of the sliding window used to find minimizer
         IndexGeneratorCPU(const std::string& query_filename, std::uint64_t minimizer_size, std::uint64_t window_size);
 
         /// \brief return minimizer size
@@ -28,14 +28,14 @@ namespace genomeworks {
 
         /// \brief return a hash table wich maps minimizers' representations and positions
         /// \return hash table
-        const std::unordered_multimap<std::uint64_t, Minimizer>& index() const;
+        const std::unordered_multimap<std::uint64_t, std::unique_ptr<SketchElement>>& representation_sketch_element_mapping() const override;
 
     private:
         /// \brief generates the index
         /// \param query_filename
         void generate_index(const std::string& query_filename);
 
-        /// \brief finds minimizers and adds then to the index
+        /// \brief finds minimizers and adds them to the index
         ///
         /// \param sequence
         /// \param sequence_id
@@ -55,6 +55,6 @@ namespace genomeworks {
 
         std::uint64_t minimizer_size_;
         std::uint64_t window_size_;
-        std::unordered_multimap<std::uint64_t, Minimizer> index_;
+        std::unordered_multimap<std::uint64_t, std::unique_ptr<SketchElement>> index_;
     };
 }
