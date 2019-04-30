@@ -12,9 +12,11 @@ namespace genomeworks {
 
     typedef std::pair<uint64_t, Minimizer> MinPair;
 
-    IndexGeneratorCPU::IndexGeneratorCPU(std::uint64_t minimizer_size, std::uint64_t window_size)
-    : minimizer_size_(minimizer_size), window_size_(window_size)
-    {}
+    IndexGeneratorCPU::IndexGeneratorCPU(const std::string& query_filename, std::uint64_t minimizer_size, std::uint64_t window_size)
+    : minimizer_size_(minimizer_size), window_size_(window_size), index_()
+    {
+        generate_index(query_filename);
+    }
 
     void IndexGeneratorCPU::generate_index(const std::string &query_filename) {
 

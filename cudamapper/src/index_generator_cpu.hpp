@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <unordered_map>
 #include "cudamapper/index_generator.hpp"
+#include "cudamapper/sequence.hpp"
 #include "minimizer.hpp"
 
 namespace genomeworks {
@@ -10,15 +11,12 @@ namespace genomeworks {
     /// lifecycle managed by the host (not GPU)
     class IndexGeneratorCPU : public IndexGenerator {
     public:
-        /// \brief constructor
+        /// \brief generates an in-memory (k,w)-minimizer index
         ///
-        /// \param minimizer_size
-        /// \param window_size
-        IndexGeneratorCPU(std::uint64_t minimizer_size, std::uint64_t window_size);
-
-        /// \brief generate an in-memory (k,w)-minimizer index
-        /// \param query_filename
-        void generate_index(const std::string &query_filename);
+        /// \param query_filename filepath to reads in FASTA or FASTQ format
+        /// \param minimizer_size k
+        /// \param window_size w
+        IndexGeneratorCPU(const std::string& query_filename, std::uint64_t minimizer_size, std::uint64_t window_size);
 
         /// \brief return minimizer size
         /// \return minimizer size
@@ -31,9 +29,13 @@ namespace genomeworks {
         /// \brief return a hash table wich maps minimizers' representations and positions
         /// \return hash table
         const std::unordered_multimap<std::uint64_t, Minimizer>& index() const;
-    private:
 
-        /// \brief find minimizers and adds then to the index
+    private:
+        /// \brief generates the index
+        /// \param query_filename
+        void generate_index(const std::string& query_filename);
+
+        /// \brief finds minimizers and adds then to the index
         ///
         /// \param sequence
         /// \param sequence_id
