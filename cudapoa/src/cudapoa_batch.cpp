@@ -1,7 +1,8 @@
 #include <algorithm>
 #include <cstring>
 
-#include "cudapoa/cudapoa_batch.hpp"
+#include "cudapoa/batch.hpp"
+#include "cudapoa_batch.hpp"
 #include "cudapoa_kernels.cuh"
 
 #define GW_LOG_LEVEL GW_LOG_LEVEL_INFO
@@ -25,14 +26,14 @@ namespace genomeworks {
 
 namespace cudapoa {
 
-uint32_t Batch::batches = 0;
+uint32_t CudapoaBatch::batches = 0;
 
-void Batch::print_batch_debug_message(const std::string& message)
+void CudapoaBatch::print_batch_debug_message(const std::string& message)
 {
     GW_LOG_INFO("{}{}{}{}", TABS, bid_, message, device_id_);
 }
 
-void Batch::initialize_output_details()
+void CudapoaBatch::initialize_output_details()
 {
     // Output buffers.
     uint32_t input_size = max_poas_ * CUDAPOA_MAX_SEQUENCE_SIZE;
@@ -45,7 +46,7 @@ void Batch::initialize_output_details()
     CU_CHECK_ERR(cudaMalloc((void**) &(output_details_d_->coverage), input_size * sizeof(int16_t)));
 }
 
-void Batch::free_output_details()
+void CudapoaBatch::free_output_details()
 {
     CU_CHECK_ERR(cudaFreeHost(output_details_h_->consensus));
     CU_CHECK_ERR(cudaFreeHost(output_details_h_->coverage));
@@ -55,7 +56,7 @@ void Batch::free_output_details()
     CU_CHECK_ERR(cudaFreeHost(output_details_d_));
 }
 
-void Batch::initialize_input_details()
+void CudapoaBatch::initialize_input_details()
 {
     uint32_t input_size = max_poas_ * max_sequences_per_poa_ * CUDAPOA_MAX_SEQUENCE_SIZE; //TODO how big does this need to be
     // Host allocations
@@ -70,7 +71,7 @@ void Batch::initialize_input_details()
     CU_CHECK_ERR(cudaMalloc((void**) &(input_details_d_->window_details), max_poas_ * sizeof(WindowDetails)));
 }
 
-void Batch::free_input_details()
+void CudapoaBatch::free_input_details()
 {
     CU_CHECK_ERR(cudaFreeHost(input_details_h_->sequences));
     CU_CHECK_ERR(cudaFreeHost(input_details_h_->sequence_lengths));
@@ -82,7 +83,7 @@ void Batch::free_input_details()
     CU_CHECK_ERR(cudaFreeHost(input_details_d_));
 }
 
-void Batch::initialize_alignment_details()
+void CudapoaBatch::initialize_alignment_details()
 {
     // Struct for alignment details
     CU_CHECK_ERR(cudaHostAlloc((void**) &alignment_details_d_, sizeof(genomeworks::cudapoa::AlignmentDetails), cudaHostAllocDefault));
@@ -91,7 +92,7 @@ void Batch::initialize_alignment_details()
     CU_CHECK_ERR(cudaMalloc((void**) &(alignment_details_d_->alignment_read), sizeof(int16_t) * CUDAPOA_MAX_MATRIX_GRAPH_DIMENSION * max_poas_ ));
 }
 
-void Batch::free_alignment_details()
+void CudapoaBatch::free_alignment_details()
 {
     CU_CHECK_ERR(cudaFree(alignment_details_d_->scores));
     CU_CHECK_ERR(cudaFree(alignment_details_d_->alignment_graph));
@@ -99,7 +100,7 @@ void Batch::free_alignment_details()
     CU_CHECK_ERR(cudaFreeHost(alignment_details_d_));
 }
 
-void Batch::initialize_graph_details()
+void CudapoaBatch::initialize_graph_details()
 {
     // Struct for graph details
     CU_CHECK_ERR(cudaHostAlloc((void**) &graph_details_d_, sizeof(genomeworks::cudapoa::GraphDetails), cudaHostAllocDefault));
@@ -123,7 +124,7 @@ void Batch::initialize_graph_details()
     CU_CHECK_ERR(cudaMalloc((void**) &(graph_details_d_->node_coverage_counts), sizeof(uint16_t) * CUDAPOA_MAX_NODES_PER_WINDOW * max_poas_ ));
 }
 
-void Batch::free_graph_details()
+void CudapoaBatch::free_graph_details()
 {
     CU_CHECK_ERR(cudaFree(graph_details_d_->nodes));
     CU_CHECK_ERR(cudaFree(graph_details_d_->node_alignments));
@@ -146,15 +147,10 @@ void Batch::free_graph_details()
     CU_CHECK_ERR(cudaFreeHost(graph_details_d_));
 }
 
-Batch::Batch(uint32_t max_poas, uint32_t max_sequences_per_poa, uint32_t device_id, int16_t gap_score, int16_t mismatch_score, int16_t match_score)
-    : max_poas_(max_poas)
-    , max_sequences_per_poa_(max_sequences_per_poa)
-    , device_id_(device_id)
-    , gap_score_(gap_score)
-    , mismatch_score_(mismatch_score)
-    , match_score_(match_score)
+CudapoaBatch::CudapoaBatch(uint32_t max_poas, uint32_t max_sequences_per_poa, uint32_t device_id, int16_t gap_score, int16_t mismatch_score, int16_t match_score)
+    : max_poas_(max_poas), max_sequences_per_poa_(max_sequences_per_poa), device_id_(device_id), gap_score_(gap_score), mismatch_score_(mismatch_score), match_score_(match_score)
 {
-    bid_ = Batch::batches++;
+    bid_ = CudapoaBatch::batches++;
 
     // Set CUDA device
     CU_CHECK_ERR(cudaSetDevice(device_id_));
@@ -216,7 +212,7 @@ Batch::Batch(uint32_t max_poas, uint32_t max_sequences_per_poa, uint32_t device_
     print_batch_debug_message(msg);
 }
 
-Batch::~Batch()
+CudapoaBatch::~CudapoaBatch()
 {
     std::string msg = "Destroyed buffers on device ";
     print_batch_debug_message(msg);
@@ -228,17 +224,17 @@ Batch::~Batch()
 
 }
 
-uint32_t Batch::batch_id() const
+uint32_t CudapoaBatch::batch_id() const
 {
     return bid_;
 }
 
-uint32_t Batch::get_total_poas() const
+uint32_t CudapoaBatch::get_total_poas() const
 {
     return poa_count_;
 }
 
-void Batch::generate_poa()
+void CudapoaBatch::generate_poa()
 {
     CU_CHECK_ERR(cudaSetDevice(device_id_));
     //Copy sequencecs, sequence lengths and window details to device
@@ -270,7 +266,7 @@ void Batch::generate_poa()
     print_batch_debug_message(msg);
 }
 
-void Batch::get_consensus(std::vector<std::string>& consensus,
+void CudapoaBatch::get_consensus(std::vector<std::string>& consensus,
         std::vector<std::vector<uint16_t>>& coverage)
 {
     std::string msg = " Launching memcpy D2H on device ";
@@ -307,12 +303,12 @@ void Batch::get_consensus(std::vector<std::string>& consensus,
     }
 }
 
-void Batch::set_cuda_stream(cudaStream_t stream)
+void CudapoaBatch::set_cuda_stream(cudaStream_t stream)
 {
     stream_ = stream;
 }
 
-StatusType Batch::add_poa()
+StatusType CudapoaBatch::add_poa()
 {
     if (poa_count_ == max_poas_)
     {
@@ -328,14 +324,14 @@ StatusType Batch::add_poa()
     return StatusType::SUCCESS;
 }
 
-void Batch::reset()
+void CudapoaBatch::reset()
 {
     poa_count_ = 0;
     num_nucleotides_copied_ = 0;
     global_sequence_idx_ = 0;
 }
 
-StatusType Batch::add_seq_to_poa(const char* seq, uint32_t seq_len)
+StatusType CudapoaBatch::add_seq_to_poa(const char* seq, uint32_t seq_len)
 {
     if (seq_len >= CUDAPOA_MAX_SEQUENCE_SIZE)
     {

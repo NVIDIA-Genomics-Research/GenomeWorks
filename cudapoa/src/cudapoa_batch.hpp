@@ -1,6 +1,8 @@
 #pragma once
 
 #include <cudapoa/cudapoa.hpp>
+#include "cudapoa/batch.hpp"
+
 
 #include <memory>
 #include <vector>
@@ -10,16 +12,6 @@
 
 #include <cuda_runtime_api.h>
 
-#define CU_CHECK_ERR(ans) { gpuAssert((ans), __FILE__, __LINE__); }
-
-inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort=true)
-{
-    if (code != cudaSuccess)
-    {
-        fprintf(stderr,"GPU Error:: %s %s %d\n", cudaGetErrorString(code), file, line);
-        if (abort) exit(code);
-    }
-}
 
 namespace genomeworks {
 
@@ -40,13 +32,13 @@ class InputDetails;
 
 /// \class
 /// Batched GPU CUDA POA object
-class Batch
+class CudapoaBatch : public Batch 
 {
     const uint32_t NUM_THREADS = 64;
     
 public:
-    Batch(uint32_t max_poas, uint32_t max_sequences_per_poa, uint32_t device_id, int16_t gap_score_ = -8, int16_t mismatch_score = -6, int16_t match_score = 8);
-    ~Batch();
+    CudapoaBatch(uint32_t max_poas, uint32_t max_sequences_per_poa, uint32_t device_id, int16_t gap_score = -8, int16_t mismatch_score = -6, int16_t match_score = 8);
+    ~CudapoaBatch();
 
     // Add new partial order alignment to batch.
     StatusType add_poa();

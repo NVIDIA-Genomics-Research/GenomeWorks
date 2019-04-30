@@ -18,6 +18,7 @@ cuda_add_library(cudapoa STATIC
     src/cudapoa_topsort.cu
     src/cudapoa_add_alignment.cu
     src/cudapoa_nw.cu
+    src/batch.cpp
     src/cudapoa_batch.cpp
     )
 
