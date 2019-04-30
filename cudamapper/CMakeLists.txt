@@ -12,9 +12,10 @@ add_executable(cudamapper
         src/main.cpp
         src/sequence.cpp
         src/bioparser_sequence.cpp
+        src/index.cpp
+        src/index_gpu.cpp
         src/index_generator.cpp
         src/index_generator_cpu.cpp
-        src/utils.cpp
         src/minimizer.cpp
         )
 
