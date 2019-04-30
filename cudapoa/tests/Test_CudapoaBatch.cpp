@@ -1,17 +1,20 @@
 #include "gtest/gtest.h"
-#include "cudapoa/cudapoa_batch.hpp"
+#include "cudapoa/batch.hpp"
 
-namespace genomeworks {
+namespace genomeworks
+{
 
-namespace cudapoa {
+namespace cudapoa
+{
 
-class TestCudapoaBatch : public ::testing::Test {
-    public:
-        void SetUp()
-        {
-            // Do noting for now, but place for
-            // constructing test objects.
-        }
+class TestCudapoaBatch : public ::testing::Test
+{
+  public:
+    void SetUp()
+    {
+        // Do noting for now, but place for
+        // constructing test objects.
+    }
 };
 
 TEST_F(TestCudapoaBatch, DummyTest)
@@ -19,6 +22,6 @@ TEST_F(TestCudapoaBatch, DummyTest)
     ASSERT_EQ(StatusType::SUCCESS, StatusType::SUCCESS);
 }
 
-}
+} // namespace cudapoa
 
-}
+} // namespace genomeworks

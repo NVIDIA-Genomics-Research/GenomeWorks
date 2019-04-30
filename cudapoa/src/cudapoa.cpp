@@ -10,5 +10,5 @@ namespace genomeworks {
             return StatusType::SUCCESS;
         }
 
-    };
-};
+    }
+}

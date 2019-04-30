@@ -17,6 +17,6 @@ namespace genomeworks {
         };
 
         StatusType Init();
-    };
-};
+    }
+}
 /// \}
