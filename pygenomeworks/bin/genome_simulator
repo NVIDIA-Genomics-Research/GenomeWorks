@@ -13,6 +13,8 @@ from __future__ import print_function
 from __future__ import division
 
 import argparse
+import functools
+import multiprocessing
 import random
 
 from tqdm import tqdm
@@ -21,6 +23,17 @@ from genomeworks import simulators
 from genomeworks.io import fastaio
 from genomeworks.simulators import genomesim
 from genomeworks.simulators import readsim
+
+
+def _readgen(read_id, args, read_generator, reference_string):
+    random.seed(read_id)
+    read = read_generator.generate_read(reference_string,
+                                        median_length=args.median_read_length,
+                                        snv_error_rate=args.snv_error_rate,
+                                        insertion_error_rate=args.insertion_error_rate,
+                                        deletion_error_rate=args.deletion_error_rate)
+
+    return (("read_" + str(read_id), read))
 
 
 def main():
@@ -53,28 +66,26 @@ def main():
     parser.add_argument('--num_reads',
                         type=int,
                         default=100)
+    parser.add_argument('--num_threads',
+                        type=int,
+                        default=multiprocessing.cpu_count())
+
     args = parser.parse_args()
 
     random.seed(args.random_seed)
 
     genome_simulator = genomesim.MarkovGenomeSimulator()
-
     reference_string = genome_simulator.build_reference(args.reference_length,
-                                                        transitions=simulators.HIGH_GC_HOMOPOLYMERIC_TRANSITIONS)
+                                                        transitions=simulators.HIGH_GC_HOMOPOLYMERIC_TRANSITIONS,
+                                                        num_threads=args.num_threads)
 
     reference = [('Reference', reference_string)]
-
     read_generator = readsim.NoisyReadSimulator()
+    readgen = functools.partial(_readgen, args=args, read_generator=read_generator, reference_string=reference_string)
+    pool = multiprocessing.Pool(args.num_threads)
 
-    reads = []
-    print("Simulating reads:")
-    for read_id in tqdm(range(args.num_reads)):
-        read = read_generator.generate_read(reference_string,
-                                            args.median_read_length,
-                                            snv_error_rate=args.snv_error_rate,
-                                            insertion_error_rate=args.insertion_error_rate,
-                                            deletion_error_rate=args.deletion_error_rate)
-        reads.append(("read_" + str(read_id), read))
+    print('Simulating reads:')
+    reads = tqdm(pool.imap(readgen, range(args.num_reads)), total=args.num_reads)
 
     # Write the reference
     fastaio.write_fasta(reference, args.reference_filepath)
