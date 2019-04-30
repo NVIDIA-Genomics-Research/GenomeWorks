@@ -21,6 +21,8 @@ cuda_add_library(cudapoa STATIC
     src/cudapoa_batch.cpp
     )
 
+target_link_libraries(cudapoa logging)
+
 if(debug)
     target_compile_definitions(cudapoa PUBLIC DEBUG)
 endif()
@@ -41,6 +43,7 @@ add_doxygen_source_dir(${CMAKE_CURRENT_SOURCE_DIR}/include/cudapoa)
 add_subdirectory(tests)
 
 install(TARGETS cudapoa
+    COMPONENT logging
     EXPORT cudapoa
     DESTINATION lib
     INCLUDES DESTINATION include

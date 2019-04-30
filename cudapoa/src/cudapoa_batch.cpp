@@ -4,6 +4,9 @@
 #include "cudapoa/cudapoa_batch.hpp"
 #include "cudapoa_kernels.cuh"
 
+#define GW_LOG_LEVEL GW_LOG_LEVEL_INFO
+#include <logging/logging.hpp>
+
 #ifndef TABS
 #define TABS printTabs(bid_)
 #endif
@@ -26,7 +29,7 @@ uint32_t Batch::batches = 0;
 
 void Batch::print_batch_debug_message(const std::string& message)
 {
-     std::cerr << TABS << bid_ << message << device_id_ << std::endl;
+    GW_LOG_INFO("{}{}{}{}", TABS, bid_, message, device_id_);
 }
 
 void Batch::initialize_output_details()
@@ -165,7 +168,7 @@ Batch::Batch(uint32_t max_poas, uint32_t max_sequences_per_poa, uint32_t device_
     // than the sequence size.
     if (CUDAPOA_MAX_SEQUENCE_SIZE % NUM_THREADS != 0)
     {
-        std::cerr << "Thread block size needs to be in multiples of 32." << std::endl;
+        GW_LOG_CRITICAL("Thread block size needs to be in multiples of 32.");
         exit(-1);
     }
 
