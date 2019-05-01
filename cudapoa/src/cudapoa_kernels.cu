@@ -111,9 +111,11 @@ void generatePOAKernel(uint8_t* consensus_d,
     int16_t* alignment_read = &alignment_read_d[CUDAPOA_MAX_MATRIX_GRAPH_DIMENSION * block_idx];
     uint16_t* node_coverage_counts = &node_coverage_counts_d_[CUDAPOA_MAX_NODES_PER_WINDOW * block_idx];
 
+#ifdef SPOA_ACCURATE
     uint8_t* node_marks = &node_marks_d_[CUDAPOA_MAX_NODES_PER_WINDOW * block_idx];
     bool* check_aligned_nodes = &check_aligned_nodes_d_[CUDAPOA_MAX_NODES_PER_WINDOW * block_idx];
     uint16_t* nodes_to_visit = &nodes_to_visit_d_[CUDAPOA_MAX_NODES_PER_WINDOW * block_idx];
+#endif
 
     //get Block-specific variables
     uint32_t window_idx = blockIdx.x;
@@ -347,7 +349,7 @@ void generatePOAKernel(uint8_t* consensus_d,
     //    output_row[c] = input_row[c];
     //}
 
-    long long int consensus_time = 0;
+    //long long int consensus_time = 0;
 
     if (thread_idx == 0 && generate_consensus)
     {
@@ -372,7 +374,7 @@ void generatePOAKernel(uint8_t* consensus_d,
                 coverage,
                 node_coverage_counts,
                 node_alignments, node_alignment_count);
-        consensus_time = (clock64() - start);
+        //consensus_time = (clock64() - start);
     }
     //if (thread_idx == 0)
     //{
