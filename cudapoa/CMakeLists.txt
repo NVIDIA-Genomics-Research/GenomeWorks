@@ -7,10 +7,8 @@ if(NOT ${CUDA_FOUND})
     message(FATAL_ERROR "CUDA not detected on system. Please install")
 else()
     message(STATUS "Using CUDA ${CUDA_VERSION} from ${CUDA_TOOLKIT_ROOT_DIR}")
-    set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -lineinfo -use_fast_math -Xcompiler -Wno-pedantic")
+    set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -lineinfo -use_fast_math -Xcompiler -Wall,-Wno-pedantic")
 endif()
-
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -march=native")
 
 cuda_add_library(cudapoa STATIC 
     src/cudapoa.cpp
@@ -23,6 +21,8 @@ cuda_add_library(cudapoa STATIC
     )
 
 target_link_libraries(cudapoa cudautils logging)
+
+target_compile_options(cudapoa PRIVATE -Werror -Wall -Wextra -march=native)
 
 if(debug)
     target_compile_definitions(cudapoa PUBLIC DEBUG)

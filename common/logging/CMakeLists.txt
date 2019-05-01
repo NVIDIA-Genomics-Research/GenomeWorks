@@ -12,6 +12,8 @@ target_include_directories(logging
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 )
 
+target_compile_options(logging PRIVATE -Werror)
+
 install(TARGETS logging 
     EXPORT logging
     DESTINATION lib

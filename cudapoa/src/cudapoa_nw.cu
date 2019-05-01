@@ -57,7 +57,7 @@ uint16_t runNeedlemanWunsch(uint8_t* nodes,
     uint32_t warp_idx = thread_idx / WARP_SIZE;
 
     long long int start = clock64();
-    long long int init = 0;
+    //long long int init = 0;
 
     //for(uint16_t graph_pos = thread_idx; graph_pos < graph_count; graph_pos += blockDim.x)
     //{
@@ -123,7 +123,7 @@ uint16_t runNeedlemanWunsch(uint8_t* nodes,
         //}
         //printf("\n");
 
-        init = clock64() - start;
+        //init = clock64() - start;
 
     }
 
@@ -183,8 +183,6 @@ uint16_t runNeedlemanWunsch(uint8_t* nodes,
         {
             first_element_prev_score = scores[i * CUDAPOA_MAX_MATRIX_SEQUENCE_DIMENSION];
         }
-        uint16_t out_edge_count = outgoing_edge_count[node_id];
-
         uint16_t pred_count = incoming_edge_count[node_id];
 
         uint16_t pred_i_1 = (pred_count == 0 ? 0 :
@@ -385,7 +383,7 @@ uint16_t runNeedlemanWunsch(uint8_t* nodes,
 //    }
 
     long long int nw = clock64() - start;
-    long long int tb = 0;
+    //long long int tb = 0;
 
     start = clock64();
 
@@ -519,7 +517,7 @@ uint16_t runNeedlemanWunsch(uint8_t* nodes,
         printf("aligned nodes %d\n", aligned_nodes);
 #endif
 
-        tb = clock64() - start;
+        // tb = clock64() - start;
     }
 
     //if (thread_idx == 0)
