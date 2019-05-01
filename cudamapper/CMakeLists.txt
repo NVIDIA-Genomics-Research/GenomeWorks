@@ -1,5 +1,7 @@
 project(cudamapper)
 
+find_package(CUDA 9.0 QUIET REQUIRED)
+
 add_library(indexer
         src/index_generator_cpu.cpp)
 target_include_directories(indexer PUBLIC include)

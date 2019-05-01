@@ -16,6 +16,7 @@ include(cmake/Tests.cmake)
 set(CMAKE_CXX_STANDARD 17)
 
 # Add GenomeWorks projects.
+add_subdirectory(common/cudautils)
 add_subdirectory(common/logging)
 add_subdirectory(cudapoa)
 add_subdirectory(cudamapper)

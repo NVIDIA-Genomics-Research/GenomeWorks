@@ -10,17 +10,6 @@
 
 #include <cuda_runtime_api.h>
 
-#define CU_CHECK_ERR(ans) { gpuAssert((ans), __FILE__, __LINE__); }
-
-inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort=true)
-{
-    if (code != cudaSuccess)
-    {
-        fprintf(stderr,"GPU Error:: %s %s %d\n", cudaGetErrorString(code), file, line);
-        if (abort) exit(code);
-    }
-}
-
 namespace genomeworks {
 
 namespace cudapoa {
