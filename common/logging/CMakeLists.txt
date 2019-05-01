@@ -2,7 +2,7 @@ project(logging)
 
 add_library(logging
         src/logging.cpp)
-target_link_libraries(logging PUBLIC spdlog)
+target_link_libraries(logging PUBLIC spdlog pthread)
 
 add_doxygen_source_dir(${CMAKE_CURRENT_SOURCE_DIR}/include/logging)
 

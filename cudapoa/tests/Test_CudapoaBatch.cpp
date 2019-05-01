@@ -19,7 +19,7 @@ class TestCudapoaBatch : public ::testing::Test
 
 TEST_F(TestCudapoaBatch, DummyTest)
 {
-    ASSERT_EQ(StatusType::SUCCESS, StatusType::SUCCESS);
+    ASSERT_EQ(StatusType::success, StatusType::success);
 }
 
 } // namespace cudapoa

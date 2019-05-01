@@ -3,7 +3,7 @@ project(cudamapper)
 add_library(indexer
         src/index_generator_cpu.cpp)
 target_include_directories(indexer PUBLIC include)
-target_link_libraries(indexer bioparser)
+target_link_libraries(indexer bioparser logging pthread)
 
 add_doxygen_source_dir(${CMAKE_CURRENT_SOURCE_DIR}/include/cudamapper)
 
@@ -24,7 +24,7 @@ target_include_directories(cudamapper
         $<INSTALL_INTERFACE:include>    
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 )
-target_link_libraries(cudamapper bioparser indexer)
+target_link_libraries(cudamapper bioparser indexer logging)
 
 # Add tests folder
 add_subdirectory(tests)

@@ -6,8 +6,10 @@ namespace genomeworks {
 
         StatusType Init()
         {
-            logging::Init();
-            return StatusType::SUCCESS;
+            if (logging::LoggingStatus::success != logging::Init())
+                return StatusType::generic_error;
+                
+            return StatusType::success;
         }
 
     }

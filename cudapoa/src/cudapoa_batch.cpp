@@ -312,7 +312,7 @@ StatusType CudapoaBatch::add_poa()
 {
     if (poa_count_ == max_poas_)
     {
-        return StatusType::EXCEEDED_MAXIMUM_POAS;
+        return StatusType::exceeded_maximum_poas;
     }
 
     WindowDetails window_details{};
@@ -321,7 +321,7 @@ StatusType CudapoaBatch::add_poa()
     input_details_h_->window_details[poa_count_] = window_details;
     poa_count_++;
 
-    return StatusType::SUCCESS;
+    return StatusType::success;
 }
 
 void CudapoaBatch::reset()
@@ -335,7 +335,7 @@ StatusType CudapoaBatch::add_seq_to_poa(const char* seq, uint32_t seq_len)
 {
     if (seq_len >= CUDAPOA_MAX_SEQUENCE_SIZE)
     {
-        return StatusType::EXCEEDED_MAXIMUM_SEQUENCE_SIZE;
+        return StatusType::exceeded_maximum_sequence_size;
     }
 
     WindowDetails *window_details = &(input_details_h_->window_details[poa_count_ - 1]);
@@ -343,7 +343,7 @@ StatusType CudapoaBatch::add_seq_to_poa(const char* seq, uint32_t seq_len)
 
     if (window_details->num_seqs == max_sequences_per_poa_)
     {
-        return StatusType::EXCEEDED_MAXIMUM_SEQUENCES_PER_POA;
+        return StatusType::exceeded_maximum_sequences_per_poa;
     }
 
     memcpy(&(input_details_h_->sequences[num_nucleotides_copied_]),
@@ -354,7 +354,7 @@ StatusType CudapoaBatch::add_seq_to_poa(const char* seq, uint32_t seq_len)
     num_nucleotides_copied_ += seq_len;
     global_sequence_idx_++;
 
-    return StatusType::SUCCESS;
+    return StatusType::success;
 }
 
 } // namespace cudapoa

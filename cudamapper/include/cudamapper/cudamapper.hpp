@@ -8,8 +8,8 @@
 namespace genomeworks {
     namespace cudamapper {
         enum class StatusType {
-            SUCCESS = 0,
-            GENERIC_ERROR
+            success = 0,
+            generic_error
         };
 
         StatusType Init();
