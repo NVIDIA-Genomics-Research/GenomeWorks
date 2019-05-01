@@ -29,12 +29,12 @@
 /// \{
 
 enum {
-    GW_LOG_LEVEL_DEBUG,
-    GW_LOG_LEVEL_INFO,
-    GW_LOG_LEVEL_WARN,
-    GW_LOG_LEVEL_ERROR,
-    GW_LOG_LEVEL_CRITICAL,
-    GW_LOG_LEVEL_OFF
+    gw_log_level_debug,
+    gw_log_level_info,
+    gw_log_level_warn,
+    gw_log_level_error,
+    gw_log_level_critical,
+    gw_log_level_off
 };
 
 #ifndef GW_LOG_LEVEL
@@ -45,18 +45,18 @@ enum {
     #endif
 #endif
 
-#if GW_LOG_LEVEL == GW_LOG_LEVEL_DEBUG
+#if GW_LOG_LEVEL == gw_log_level_debug
     #define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_DEBUG
-#elif GW_LOG_LEVEL == GW_LOG_LEVEL_INFO
+#elif GW_LOG_LEVEL == gw_log_level_info
     #define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_INFO
-#elif GW_LOG_LEVEL == GW_LOG_LEVEL_WARN
+#elif GW_LOG_LEVEL == gw_log_level_warn
     #define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_WARN
-#elif GW_LOG_LEVEL == GW_LOG_LEVEL_ERROR
+#elif GW_LOG_LEVEL == gw_log_level_error
     #define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_ERROR
-#elif GW_LOG_LEVEL == GW_LOG_LEVEL_CRITICAL
+#elif GW_LOG_LEVEL == gw_log_level_critical
     #define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_CRITICAL
 #else 
-#define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_OFF
+    #define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_OFF
 #endif
 
 // MUST come after the defines of the logging level!

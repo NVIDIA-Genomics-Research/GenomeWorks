@@ -1,15 +1,18 @@
 #include <string>
-#include <iostream>
+
 #include "cudamapper/index.hpp"
+#include <logging/logging.hpp>
 
-int main(int argc, char *argv[]){
+int main(int argc, char *argv[])
+{
+    genomeworks::logging::Init();
 
-    std::cout<<"Creating index generator"<<std::endl;
+    GW_LOG_INFO("Creating index generator");
     // TODO: pass kmer and window size as parameters
     std::unique_ptr<genomeworks::IndexGenerator> index_generator = genomeworks::IndexGenerator::create_index_generator(std::string(argv[1]), 4, 4);
-    std::cout<<"Created index generator"<<std::endl;
-    std::cout<<"Creating index"<<std::endl;
+    GW_LOG_INFO("Created index generator");
+    GW_LOG_INFO("Creating index");
     std::unique_ptr<genomeworks::Index> index = genomeworks::Index::create_index(*index_generator);
-    std::cout<<"Created index"<<std::endl;
+    GW_LOG_INFO("Created index");
     return  0;
 }
