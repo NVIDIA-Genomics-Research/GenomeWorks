@@ -104,8 +104,11 @@ LGA50                        1
 LA75                         1
 LGA75                        1
 ```
-
-Indicating a total error rate of ~2.8%.
+The error rate is calculated by
+```math
+\text{error rate} = \frac{\text{mismatches per 100 kbp} + \text{indels per 100 kbp}} {10^5} 
+```
+The above result indicates a total error rate of ~2.8%.
 
 ### Step 4 (optional). Polish with racon and re-evaluate
 
