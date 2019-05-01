@@ -22,7 +22,7 @@ cuda_add_library(cudapoa STATIC
     src/cudapoa_batch.cpp
     )
 
-target_link_libraries(cudapoa logging)
+target_link_libraries(cudapoa cudautils logging)
 
 if(debug)
     target_compile_definitions(cudapoa PUBLIC DEBUG)

@@ -1,3 +1,4 @@
+#pragma once
 /// \file 
 /// \defgroup logging Internal logging package
 /// Base docs for the logging package
