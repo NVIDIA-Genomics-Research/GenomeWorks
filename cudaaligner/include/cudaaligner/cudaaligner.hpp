@@ -9,9 +9,25 @@ namespace genomeworks {
 namespace cudaaligner {
     /// CUDA Aligner error type
     enum class StatusType {
-        SUCCESS = 0,
-        UNINITIALIZED,
-        GENERIC_ERROR
+        success = 0,
+        uninitialized,
+        exceeded_max_alignments,
+        exceeded_max_length,
+        generic_error
+    };
+
+    /// AlignmentType - Enum for storing type of alignment.
+    enum class AlignmentType {
+        global = 0,
+        unset
+    };
+
+    /// AlignmentState - Enum for encoding each position in alignment.
+    enum class AlignmentState {
+        match = 0,
+        mismatch,
+        insert_into_query,
+        insert_into_target
     };
 
     StatusType Init();
