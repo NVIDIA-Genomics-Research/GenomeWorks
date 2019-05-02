@@ -1,0 +1,22 @@
+#include "cudaaligner/aligner.hpp"
+#include "aligner_global.hpp"
+
+namespace genomeworks {
+
+namespace cudaaligner {
+
+    std::unique_ptr<Aligner> create_aligner(uint32_t max_query_length, uint32_t max_target_length, uint32_t max_alignments, AlignmentType type)
+    {
+        if (type == AlignmentType::global)
+        {
+            return std::make_unique<AlignerGlobal>(max_query_length, max_target_length, max_alignments);
+        }
+        else
+        {
+            throw std::runtime_error("Aligner for specified type not implemented yet.");
+        }
+    }
+
+}
+
+}

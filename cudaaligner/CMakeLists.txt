@@ -10,11 +10,16 @@ else()
     set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -lineinfo -use_fast_math -Xcompiler -Wno-pedantic,-Wall")
 endif()
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -march=native")
-
 cuda_add_library(cudaaligner STATIC 
     src/cudaaligner.cpp
+    src/aligner.cpp
+    src/alignment_impl.cpp
+    src/aligner_global.cpp
     )
+
+target_link_libraries(cudaaligner cudautils logging)
+
+target_compile_options(cudapoa PRIVATE -Werror -Wall -Wextra -march=native)
 
 target_include_directories(cudaaligner 
     PUBLIC 
@@ -30,6 +35,7 @@ add_doxygen_source_dir(${CMAKE_CURRENT_SOURCE_DIR}/include/cudaaligner)
 add_subdirectory(tests)
 
 install(TARGETS cudaaligner
+    COMPONENT logging
     EXPORT cudaaligner
     DESTINATION lib
     INCLUDES DESTINATION include

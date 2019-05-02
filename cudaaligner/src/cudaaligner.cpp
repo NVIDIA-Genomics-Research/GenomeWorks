@@ -6,7 +6,7 @@ namespace cudaaligner {
 
 StatusType Init()
 {
-    return StatusType::SUCCESS;
+    return StatusType::success;
 }
 
 }
