@@ -2,7 +2,6 @@
 
 /// \defgroup cudaaligner CUDA Aligner package
 /// Base docs for the cudaaligner package (tbd)
-/// \ingroup cudaaligner
 /// \{
 
 namespace genomeworks {

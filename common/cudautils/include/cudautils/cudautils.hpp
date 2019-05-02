@@ -19,6 +19,13 @@ namespace genomeworks {
 
     namespace cudautils {
 
+        /// gpuAssert 
+        /// Logs and/or exits on cuda error
+        /// \ingroup cudautils
+        /// \param code The CUDA status code of the function being asserted
+        /// \param file Filename of the calling function
+        /// \param line File line number of the calling function
+        /// \param abort If true, hard-exit on CUDA error
         inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort=true)
         {
             if (code != cudaSuccess)

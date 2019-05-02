@@ -12,7 +12,7 @@ class Alignment;
 /// \addtogroup cudaaligner
 /// \{
 
-/// \class
+/// \class Aligner
 /// CUDA Alignment object
 class Aligner {
     public:

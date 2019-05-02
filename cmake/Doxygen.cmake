@@ -26,6 +26,7 @@ function(add_docs_target DOXY_PACKAGE_NAME DOXY_PACKAGE_VERSION)
     if(DOXYGEN_FOUND)
         set(DOXYGEN_PROJECT_NAME ${DOXY_PACKAGE_NAME})
         set(DOXYGEN_PROJECT_NUMBER ${DOXY_PACKAGE_VERSION})
+        set(DOXYGEN_WARN_AS_ERROR TRUE)
 
         get_property(final_doxygen_mainpage GLOBAL PROPERTY doxygen_mainpage)
 
