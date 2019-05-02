@@ -2,7 +2,6 @@
 
 /// \defgroup cudapoa CUDA POA package
 /// Base docs for the cudapoa package (tbd)
-/// \ingroup cudapoa
 /// \{
 
 namespace genomeworks {
