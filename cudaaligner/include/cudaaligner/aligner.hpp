@@ -29,7 +29,10 @@ class Aligner {
 
         /// \brief Add new alignment object
         ///
-        /// \param alignment Shared pointer to alignment object.
+        /// \param query Query string
+        /// \param query_length  Query string length
+        /// \param target Target string
+        /// \param target_length Target string length
         virtual StatusType add_alignment(const char* query, uint32_t query_length, const char* target, uint32_t target_length) = 0;
 
         /// \brief Return the computed alignments.
@@ -43,6 +46,7 @@ class Aligner {
 /// \param max_query_length Maximum length of query string
 /// \param max_target_length Maximum length of target string
 /// \param max_alignments Maximum number of alignments to be performed
+/// \param type Type of aligner to construct
 ///
 /// \return Unique pointer to Aligner object
 std::unique_ptr<Aligner> create_aligner(uint32_t max_query_length, uint32_t max_target_length, uint32_t max_alignments, AlignmentType type);
