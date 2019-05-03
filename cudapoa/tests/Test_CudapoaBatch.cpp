@@ -15,12 +15,75 @@ class TestCudapoaBatch : public ::testing::Test
         // Do noting for now, but place for
         // constructing test objects.
     }
+
+    void initialize(uint32_t max_poas, 
+                    uint32_t max_sequences_per_poa, 
+                    uint32_t device_id = 0, 
+                    int16_t gap_score = -8, 
+                    int16_t mismatch_score = -6, 
+                    int16_t match_score = 8) 
+    {
+        cudapoa_batch = genomeworks::cudapoa::create_batch(max_poas, max_sequences_per_poa, device_id, gap_score, mismatch_score, match_score);
+    }
+
+  public:
+    std::unique_ptr<genomeworks::cudapoa::Batch> cudapoa_batch;
 };
 
-TEST_F(TestCudapoaBatch, DummyTest)
+TEST_F(TestCudapoaBatch, InitializeTest)
 {
-    ASSERT_EQ(StatusType::success, StatusType::success);
+    initialize(5, 5);
+    EXPECT_EQ(cudapoa_batch->batch_id(), 0);
+    EXPECT_EQ(cudapoa_batch->get_total_poas(), 0);
 }
+
+TEST_F(TestCudapoaBatch, AddPOATest)
+{
+    initialize(5, 5);
+    EXPECT_EQ(cudapoa_batch->add_poa(), StatusType::success);
+    EXPECT_EQ(cudapoa_batch->get_total_poas(), 1);
+    cudapoa_batch->reset();
+    EXPECT_EQ(cudapoa_batch->get_total_poas(), 0);
+}
+
+TEST_F(TestCudapoaBatch, MaxPOATest)
+{
+    initialize(5, 5);
+
+    for (uint16_t i=0; i<5; ++i) {
+        EXPECT_EQ(cudapoa_batch->add_poa(), StatusType::success);
+    }
+    EXPECT_EQ(cudapoa_batch->get_total_poas(), 5);
+    EXPECT_EQ(cudapoa_batch->add_poa(), StatusType::exceeded_maximum_poas);
+}
+
+TEST_F(TestCudapoaBatch, MaxSeqPerPOATest)
+{
+    initialize(5, 10);
+    EXPECT_EQ(cudapoa_batch->add_poa(), StatusType::success);
+
+    std::string seq(20, 'A');
+    for (uint16_t i = 0; i < 9; ++i)
+    {
+        EXPECT_EQ(cudapoa_batch->add_seq_to_poa(seq.c_str(), seq.length()), StatusType::success);
+    }
+    EXPECT_EQ(cudapoa_batch->get_total_poas(), 1);
+    EXPECT_EQ(cudapoa_batch->add_seq_to_poa(seq.c_str(), seq.length()), StatusType::exceeded_maximum_sequences_per_poa);
+}
+
+TEST_F(TestCudapoaBatch, MaxSeqSizeTest)
+{
+    initialize(5, 10);
+    EXPECT_EQ(cudapoa_batch->add_poa(), StatusType::success);
+    EXPECT_EQ(cudapoa_batch->get_total_poas(), 1);
+
+    std::string seq(1023, 'A');
+    EXPECT_EQ(cudapoa_batch->add_seq_to_poa(seq.c_str(), seq.length()), StatusType::success);
+
+    seq = std::string(1024, 'A');
+    EXPECT_EQ(cudapoa_batch->add_seq_to_poa(seq.c_str(), seq.length()), StatusType::exceeded_maximum_sequence_size);
+}
+
 
 } // namespace cudapoa
 
