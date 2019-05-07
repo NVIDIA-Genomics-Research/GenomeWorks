@@ -5,11 +5,11 @@ namespace genomeworks {
 
 namespace cudaaligner {
 
-    std::unique_ptr<Aligner> create_aligner(uint32_t max_query_length, uint32_t max_target_length, uint32_t max_alignments, AlignmentType type)
+    std::unique_ptr<Aligner> create_aligner(uint32_t max_query_length, uint32_t max_target_length, uint32_t max_alignments, AlignmentType type, uint32_t device_id)
     {
         if (type == AlignmentType::global)
         {
-            return std::make_unique<AlignerGlobal>(max_query_length, max_target_length, max_alignments);
+            return std::make_unique<AlignerGlobal>(max_query_length, max_target_length, max_alignments, device_id);
         }
         else
         {

@@ -3,6 +3,8 @@
 #include <memory>
 #include <vector>
 
+#include <cuda_runtime_api.h>
+
 #include "cudaaligner/cudaaligner.hpp"
 
 namespace genomeworks {
@@ -19,6 +21,8 @@ class Alignment;
 /// CUDA Alignment object
 class Aligner {
     public:
+        /// \brief Virtual destructor for Aligner.
+        virtual ~Aligner() = default;
 
         /// \brief Perform CUDA accelerated alignment
         ///
@@ -39,6 +43,14 @@ class Aligner {
         ///
         /// \return Vector of Alignments.
         virtual const std::vector<std::shared_ptr<Alignment>>& get_alignments() const = 0;
+
+        /// \brief Set CUDA stream for aligner.
+        ///
+        /// \param stream CUDA stream
+        virtual void set_cuda_stream(cudaStream_t stream) = 0;
+
+        /// \brief Reset aligner object.
+        virtual void reset() = 0;
 };
 
 /// \brief Created Aligner object
@@ -49,7 +61,7 @@ class Aligner {
 /// \param type Type of aligner to construct
 ///
 /// \return Unique pointer to Aligner object
-std::unique_ptr<Aligner> create_aligner(uint32_t max_query_length, uint32_t max_target_length, uint32_t max_alignments, AlignmentType type);
+std::unique_ptr<Aligner> create_aligner(uint32_t max_query_length, uint32_t max_target_length, uint32_t max_alignments, AlignmentType type, uint32_t device_id);
 
 /// \}
 
