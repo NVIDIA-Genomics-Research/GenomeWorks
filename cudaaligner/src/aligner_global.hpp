@@ -9,8 +9,9 @@ namespace cudaaligner {
 class AlignerGlobal : public Aligner
 {
     public:
-        AlignerGlobal(uint32_t max_query_length, uint32_t max_target_length, uint32_t max_alignments);
-        ~AlignerGlobal();
+        AlignerGlobal(uint32_t max_query_length, uint32_t max_target_length, uint32_t max_alignments, uint32_t device_id);
+        virtual ~AlignerGlobal();
+        AlignerGlobal(const AlignerGlobal&) = delete;
 
         virtual StatusType align_all() override;
 
@@ -21,8 +22,14 @@ class AlignerGlobal : public Aligner
         }
 
         virtual uint32_t num_alignments() const {
-            return num_alignments_;
+            return alignments_.size();
         }
+
+        virtual void set_cuda_stream(cudaStream_t stream) override {
+            stream_ = stream;
+        }
+
+        virtual void reset() override;
 
     private:
         virtual void update_alignments_with_results();
@@ -31,7 +38,6 @@ class AlignerGlobal : public Aligner
         uint32_t max_query_length_;
         uint32_t max_target_length_;
         uint32_t max_alignments_;
-        uint32_t num_alignments_;
         std::vector<std::shared_ptr<Alignment>> alignments_;
 
         uint8_t* sequences_d_;
@@ -45,6 +51,10 @@ class AlignerGlobal : public Aligner
 
         uint32_t* result_lengths_d_;
         uint32_t* result_lengths_h_;
+
+        cudaStream_t stream_;
+
+        uint32_t device_id_;
 };
 
 }

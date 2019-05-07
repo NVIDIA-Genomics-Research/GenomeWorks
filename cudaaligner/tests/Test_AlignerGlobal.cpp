@@ -9,7 +9,7 @@ namespace cudaaligner {
 // Test adding alignments to Aligner objects
 TEST(TestCudaAligner, TestAlignmentAddition)
 {
-    std::unique_ptr<AlignerGlobal> aligner = std::make_unique<AlignerGlobal>(5, 5, 5);
+    std::unique_ptr<AlignerGlobal> aligner = std::make_unique<AlignerGlobal>(5, 5, 5, 0);
     ASSERT_EQ(StatusType::success, aligner->add_alignment("ATCG", 4, "TACG", 4));
     ASSERT_EQ(StatusType::success, aligner->add_alignment("ATCG", 4, "TACG", 4));
     ASSERT_EQ(StatusType::success, aligner->add_alignment("ATCG", 4, "TACG", 4));
@@ -34,7 +34,7 @@ TEST(TestCudaAligner, TestAlignmentAddition)
 #pragma message("TODO: Add test for checking proper alignment")
 TEST(TestCudaAligner, TestAlignmentKernel)
 {
-    std::unique_ptr<AlignerGlobal> aligner = std::make_unique<AlignerGlobal>(5, 5, 1);
+    std::unique_ptr<AlignerGlobal> aligner = std::make_unique<AlignerGlobal>(5, 5, 1, 0);
     ASSERT_EQ(StatusType::success, aligner->add_alignment("AAAA", 4, "TTAT", 4));
 
     aligner->align_all();
