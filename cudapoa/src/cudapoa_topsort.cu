@@ -168,6 +168,46 @@ void raconTopologicalSortDeviceUtil(uint16_t* sorted_poa,
 
 }
 
+
+__global__
+void runTopSortKernel(uint16_t* sorted_poa,
+                                 uint16_t* sorted_poa_node_map,
+                                 uint16_t node_count,
+                                 uint16_t* incoming_edge_count,
+                                 uint16_t* outgoing_edges,
+                                 uint16_t* outgoing_edge_count,
+                                 uint16_t* local_incoming_edge_count)
+{
+    //calls the topsort device function
+    topologicalSortDeviceUtil(sorted_poa, 
+                              sorted_poa_node_map, 
+                              node_count, 
+                              incoming_edge_count,
+                              outgoing_edges,
+                              outgoing_edge_count,
+                              local_incoming_edge_count);
+
+}
+
+
+void runTopSort(uint16_t* sorted_poa,
+                uint16_t* sorted_poa_node_map,
+                uint16_t  node_count,
+                uint16_t* incoming_edge_count,
+                uint16_t* outgoing_edges,
+                uint16_t* outgoing_edge_count,
+                uint16_t* local_incoming_edge_count) 
+{
+    // calls the topsort kernel on 1 thread
+    runTopSortKernel<<<1, 1>>>(sorted_poa,
+                               sorted_poa_node_map,
+                               node_count,
+                               incoming_edge_count,
+                               outgoing_edges,
+                               outgoing_edge_count,
+                               local_incoming_edge_count);
+}
+
 }
 
 }

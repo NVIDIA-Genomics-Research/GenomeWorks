@@ -5,6 +5,8 @@
 #include <stdint.h>
 #include <cuda_runtime_api.h>
 #include <stdio.h>
+#include <string>
+#include <vector>
 
 // Maximum vnumber of edges per node.
 #define CUDAPOA_MAX_NODE_EDGES 50
@@ -186,6 +188,14 @@ void generatePOA(genomeworks::cudapoa::OutputDetails * output_details_d,
                  int16_t match_score);
 
 
+// host function that calls runTopSortKernel
+void runTopSort(uint16_t* sorted_poa,
+                uint16_t* sorted_poa_node_map,
+                uint16_t node_count,
+                uint16_t* incoming_edge_count,
+                uint16_t* outgoing_edges,
+                uint16_t* outgoing_edge_count,
+                uint16_t* local_incoming_edge_count);
 } // namespace cudapoa
 
 } // namespace genomeworks

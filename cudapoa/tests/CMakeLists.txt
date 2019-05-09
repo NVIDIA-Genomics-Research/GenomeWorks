@@ -3,7 +3,8 @@ project(cudapoatests)
 
 set(SOURCES
     main.cpp
-    Test_CudapoaBatch.cpp)
+    Test_CudapoaBatch.cpp
+    Test_CudapoaTopSort.cpp)
 
 set(LIBS
     cudapoa)

@@ -20,7 +20,7 @@ cuda_add_library(cudapoa STATIC
     src/cudapoa_batch.cpp
     )
 
-target_link_libraries(cudapoa cudautils logging)
+target_link_libraries(cudapoa cudautils logging utils)
 
 target_compile_options(cudapoa PRIVATE -Werror -Wall -Wextra -march=native)
 
