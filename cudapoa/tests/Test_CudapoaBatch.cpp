@@ -7,6 +7,7 @@ namespace genomeworks
 namespace cudapoa
 {
 
+
 class TestCudapoaBatch : public ::testing::Test
 {
   public:
@@ -88,3 +89,4 @@ TEST_F(TestCudapoaBatch, MaxSeqSizeTest)
 } // namespace cudapoa
 
 } // namespace genomeworks
+
