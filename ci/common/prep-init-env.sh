@@ -15,6 +15,9 @@ g++ --version
 # FIX Added to deal with Anancoda SSL verification issues during conda builds
 conda config --set ssl_verify False
 
+# Conda add custom packages for GenomeWorks CI
+conda install -c conda-forge doxygen
+
 ################################################################################
 # BUILD - Conda package builds 
 ################################################################################

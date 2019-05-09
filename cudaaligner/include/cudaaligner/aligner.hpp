@@ -59,6 +59,7 @@ class Aligner {
 /// \param max_target_length Maximum length of target string
 /// \param max_alignments Maximum number of alignments to be performed
 /// \param type Type of aligner to construct
+/// \param device_id GPU device ID to run all CUDA operations on
 ///
 /// \return Unique pointer to Aligner object
 std::unique_ptr<Aligner> create_aligner(uint32_t max_query_length, uint32_t max_target_length, uint32_t max_alignments, AlignmentType type, uint32_t device_id);
