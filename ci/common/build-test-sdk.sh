@@ -14,7 +14,7 @@ cd ${LOCAL_BUILD_DIR}
 # configure
 cmake $CMAKE_COMMON_VARIABLES ${CMAKE_BUILD_GPU} -Dgw_enable_tests=ON -DCMAKE_INSTALL_PREFIX=${LOCAL_BUILD_DIR}/install ..
 # build
-make -j${BUILD_THREADS} VERBOSE=1 install
+make -j${BUILD_THREADS} VERBOSE=1 all docs install
 
 if [ "$GPU_TEST" == '1' ]; then
   logger "GPU config..."
