@@ -9,16 +9,16 @@ namespace cudaaligner {
 class AlignmentImpl: public Alignment
 {
     public:
-        AlignmentImpl(const char* query, const char* target);
+        AlignmentImpl(const char* query, uint32_t query_length, const char* target, uint32_t);
         ~AlignmentImpl();
 
         /// \brief Returns query sequence
-        virtual std::string get_query_sequence() const override {
+        virtual const std::string& get_query_sequence() const override {
             return query_;
         }
 
         /// \brief Returns target sequence
-        virtual std::string get_target_sequence() const override {
+        virtual const std::string& get_target_sequence() const override {
             return target_;
         }
 
@@ -69,7 +69,7 @@ class AlignmentImpl: public Alignment
         }
 
         /// \brief Print formatted alignment to stderr.
-        virtual void print_alignment() const override;
+        virtual FormattedAlignment format_alignment() const override;
     private:
 
         // Query string

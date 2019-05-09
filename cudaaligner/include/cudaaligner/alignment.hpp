@@ -12,14 +12,20 @@ namespace cudaaligner {
 /// \addtogroup cudaaligner
 /// \{
 
+/// \typedef FormattedAlignment
+/// Holds formatted strings representing an alignment.
+/// FormattedAlignment.first = formatted string for query
+/// FormattedAlignment.second = formatted string for target
+using FormattedAlignment = std::pair<std::string, std::string>;
+
 /// Alignment - Object encapsulating an alignment between 2 string.
 class Alignment {
     public:
         /// \brief Returns query sequence
-        virtual std::string get_query_sequence() const = 0;
+        virtual const std::string& get_query_sequence() const = 0;
 
         /// \brief Returns target sequence
-        virtual std::string get_target_sequence() const = 0;
+        virtual const std::string& get_target_sequence() const = 0;
 
         /// \brief Converts an alignment to CIGAR format
         ///
@@ -43,7 +49,7 @@ class Alignment {
         virtual const std::vector<AlignmentState>& get_alignment() const = 0;
 
         /// \brief Print formatted alignment to stderr.
-        virtual void print_alignment() const = 0;
+        virtual FormattedAlignment format_alignment() const = 0;
 };
 
 /// \}

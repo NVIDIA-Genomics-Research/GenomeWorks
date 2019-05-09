@@ -4,9 +4,9 @@ namespace genomeworks {
 
 namespace cudaaligner {
 
-AlignmentImpl::AlignmentImpl(const char* query, const char* target)
-    : query_(query)
-    , target_(target)
+AlignmentImpl::AlignmentImpl(const char* query, uint32_t query_length, const char* target, uint32_t target_length)
+    : query_(query, query + query_length)
+    , target_(target, target + target_length)
     , status_(StatusType::uninitialized)
     , type_(AlignmentType::unset)
 {
@@ -23,7 +23,7 @@ std::string AlignmentImpl::convert_to_cigar() const
     throw std::runtime_error("Conversion to CIGAR not imlemented yet.");
 }
 
-void AlignmentImpl::print_alignment() const
+FormattedAlignment AlignmentImpl::format_alignment() const
 {
     std::string t_str = "";
     std::size_t t_pos = 0;
@@ -35,15 +35,15 @@ void AlignmentImpl::print_alignment() const
         {
             case AlignmentState::match:
             case AlignmentState::mismatch:
-                t_str += target_.at(t_pos++);
-                q_str += query_.at(q_pos++);
+                t_str += target_[t_pos++];
+                q_str += query_[q_pos++];
                 break;
             case AlignmentState::insert_into_query:
                 t_str += "-";
-                q_str += query_.at(q_pos++);
+                q_str += query_[q_pos++];
                 break;
             case AlignmentState::insert_into_target:
-                t_str += target_.at(t_pos++);
+                t_str += target_[t_pos++];
                 q_str += "-";
                 break;
             default:
@@ -51,7 +51,8 @@ void AlignmentImpl::print_alignment() const
         }
     }
 
-    printf("%s\n%s\n", q_str.c_str(), t_str.c_str());
+    FormattedAlignment output(q_str, t_str);
+    return output;
 }
 
 }
