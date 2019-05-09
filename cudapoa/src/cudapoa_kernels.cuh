@@ -15,7 +15,7 @@
 #define CUDAPOA_MAX_NODE_ALIGNMENTS 50
 
 // Maximum number of nodes in a graph, 1 graph per window.
-#define CUDAPOA_MAX_NODES_PER_WINDOW 2048
+#define CUDAPOA_MAX_NODES_PER_WINDOW 3072
 
 // Maximum number of elements in a sequence.
 #define CUDAPOA_MAX_SEQUENCE_SIZE 1024
