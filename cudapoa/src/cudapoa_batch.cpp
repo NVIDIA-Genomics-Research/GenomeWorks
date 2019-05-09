@@ -341,13 +341,13 @@ StatusType CudapoaBatch::add_seq_to_poa(const char* seq, uint32_t seq_len)
     }
 
     WindowDetails *window_details = &(input_details_h_->window_details[poa_count_ - 1]);
-    window_details->num_seqs++;
-
-    if (window_details->num_seqs == max_sequences_per_poa_)
+    
+    if (static_cast<uint32_t>(window_details->num_seqs) + 1 >= max_sequences_per_poa_)
     {
         return StatusType::exceeded_maximum_sequences_per_poa;
     }
 
+    window_details->num_seqs++;
     memcpy(&(input_details_h_->sequences[num_nucleotides_copied_]),
            seq,
            seq_len);
