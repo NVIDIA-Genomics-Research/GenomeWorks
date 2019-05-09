@@ -5,8 +5,8 @@ namespace genomeworks {
 
 namespace cudaaligner {
 
-static const char* QUERY= "AAAA";
-static const char* TARGET = "TTATG";
+static std::string QUERY= "AAAA";
+static std::string TARGET = "TTATG";
 static const std::vector<AlignmentState> ALIGNMENT {
     AlignmentState::mismatch,
     AlignmentState::mismatch,
@@ -19,7 +19,7 @@ class TestAlignmentImpl : public ::testing::Test {
     public:
         void SetUp()
         {
-            alignment_.reset(new AlignmentImpl(QUERY, TARGET));
+            alignment_.reset(new AlignmentImpl(QUERY.c_str(), QUERY.size(), TARGET.c_str(), TARGET.size()));
         }
 
     protected:
@@ -28,8 +28,11 @@ class TestAlignmentImpl : public ::testing::Test {
 
 TEST_F(TestAlignmentImpl, StringGetters)
 {
-    ASSERT_STREQ(QUERY, alignment_->get_query_sequence().c_str()) << "Query doesn't match original string";
-    ASSERT_STREQ(TARGET, alignment_->get_target_sequence().c_str()) << "Target doesn't match original string";
+    ASSERT_STREQ(QUERY.c_str(), alignment_->get_query_sequence().c_str()) << "Query doesn't match original string";
+    ASSERT_EQ(QUERY.size(), alignment_->get_query_sequence().size()) << "Query length match original string";
+
+    ASSERT_STREQ(TARGET.c_str(), alignment_->get_target_sequence().c_str()) << "Target doesn't match original string";
+    ASSERT_EQ(TARGET.size(), alignment_->get_target_sequence().size()) << "Target length match original string";
 }
 
 TEST_F(TestAlignmentImpl, Status)
@@ -58,6 +61,17 @@ TEST_F(TestAlignmentImpl, AlignmentState)
     {
         ASSERT_EQ(ALIGNMENT.at(i), al_read.at(i));
     }
+}
+
+TEST_F(TestAlignmentImpl, AlignmentFormatting)
+{
+    alignment_->set_alignment(ALIGNMENT);
+
+    FormattedAlignment formatted_alignment = alignment_->format_alignment();
+    std::string query = formatted_alignment.first;
+    std::string target = formatted_alignment.second;
+    ASSERT_STREQ("AAAA-", query.c_str());
+    ASSERT_STREQ("TTATG", target.c_str());
 }
 
 }

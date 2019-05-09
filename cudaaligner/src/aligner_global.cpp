@@ -94,7 +94,10 @@ StatusType AlignerGlobal::add_alignment(const char* query, uint32_t query_length
     sequence_lengths_h_[2 * num_alignments] = query_length;
     sequence_lengths_h_[2 * num_alignments + 1] = target_length;
 
-    std::shared_ptr<AlignmentImpl> alignment = std::make_shared<AlignmentImpl>(query, target);
+    std::shared_ptr<AlignmentImpl> alignment = std::make_shared<AlignmentImpl>(query,
+                                                                               query_length,
+                                                                               target,
+                                                                               target_length);
     alignment->set_alignment_type(AlignmentType::global);
     alignments_.push_back(alignment);
 
