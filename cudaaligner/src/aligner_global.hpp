@@ -9,13 +9,13 @@ namespace cudaaligner {
 class AlignerGlobal : public Aligner
 {
     public:
-        AlignerGlobal(uint32_t max_query_length, uint32_t max_target_length, uint32_t max_alignments, uint32_t device_id);
+        AlignerGlobal(uint32_t max_query_length, uint32_t max_subject_length, uint32_t max_alignments, uint32_t device_id);
         virtual ~AlignerGlobal();
         AlignerGlobal(const AlignerGlobal&) = delete;
 
         virtual StatusType align_all() override;
 
-        virtual StatusType add_alignment(const char* query, uint32_t query_length, const char* target, uint32_t target_length) override;
+        virtual StatusType add_alignment(const char* query, uint32_t query_length, const char* subject, uint32_t subject_length) override;
 
         virtual const std::vector<std::shared_ptr<Alignment>>& get_alignments() const override {
             return alignments_;
@@ -36,7 +36,7 @@ class AlignerGlobal : public Aligner
 
     private:
         uint32_t max_query_length_;
-        uint32_t max_target_length_;
+        uint32_t max_subject_length_;
         uint32_t max_alignments_;
         std::vector<std::shared_ptr<Alignment>> alignments_;
 

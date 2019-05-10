@@ -14,9 +14,9 @@ namespace genomeworks {
 
 namespace cudaaligner {
 
-AlignerGlobal::AlignerGlobal(uint32_t max_query_length, uint32_t max_target_length, uint32_t max_alignments, uint32_t device_id)
+AlignerGlobal::AlignerGlobal(uint32_t max_query_length, uint32_t max_subject_length, uint32_t max_alignments, uint32_t device_id)
     : max_query_length_(max_query_length)
-    , max_target_length_(max_target_length)
+    , max_subject_length_(max_subject_length)
     , max_alignments_(max_alignments)
     , alignments_()
     , device_id_(device_id)
@@ -24,9 +24,9 @@ AlignerGlobal::AlignerGlobal(uint32_t max_query_length, uint32_t max_target_leng
     // Allocate buffers
     GW_CU_CHECK_ERR(cudaSetDevice(device_id_));
     GW_CU_CHECK_ERR(cudaMalloc((void**) &sequences_d_,
-                2 * sizeof(uint8_t) * std::max(max_query_length_, max_target_length_) * max_alignments_));
+                2 * sizeof(uint8_t) * std::max(max_query_length_, max_subject_length_) * max_alignments_));
     GW_CU_CHECK_ERR(cudaHostAlloc((void**) &sequences_h_,
-                2 * sizeof(uint8_t) * std::max(max_query_length_, max_target_length_) * max_alignments_,
+                2 * sizeof(uint8_t) * std::max(max_query_length_, max_subject_length_) * max_alignments_,
                 cudaHostAllocDefault));
 
     GW_CU_CHECK_ERR(cudaMalloc((void**) &sequence_lengths_d_,
@@ -36,9 +36,9 @@ AlignerGlobal::AlignerGlobal(uint32_t max_query_length, uint32_t max_target_leng
                 cudaHostAllocDefault));
 
     GW_CU_CHECK_ERR(cudaMalloc((void**) &results_d_,
-                sizeof(uint8_t) * (max_query_length_ + max_target_length_) * max_alignments_));
+                sizeof(uint8_t) * (max_query_length_ + max_subject_length_) * max_alignments_));
     GW_CU_CHECK_ERR(cudaHostAlloc((void**) &results_h_,
-                sizeof(uint8_t) * (max_query_length_ + max_target_length_) * max_alignments_,
+                sizeof(uint8_t) * (max_query_length_ + max_subject_length_) * max_alignments_,
                 cudaHostAllocDefault));
 
     GW_CU_CHECK_ERR(cudaMalloc((void**) &result_lengths_d_,
@@ -63,7 +63,7 @@ AlignerGlobal::~AlignerGlobal()
     GW_CU_CHECK_ERR(cudaFreeHost(result_lengths_h_));
 }
 
-StatusType AlignerGlobal::add_alignment(const char* query, uint32_t query_length, const char* target, uint32_t target_length)
+StatusType AlignerGlobal::add_alignment(const char* query, uint32_t query_length, const char* subject, uint32_t subject_length)
 {
     uint32_t num_alignments = alignments_.size();
     if (num_alignments >= max_alignments_)
@@ -78,26 +78,26 @@ StatusType AlignerGlobal::add_alignment(const char* query, uint32_t query_length
         return StatusType::exceeded_max_length;
     }
 
-    if (target_length >= max_target_length_)
+    if (subject_length >= max_subject_length_)
     {
-        GW_LOG_INFO("{} {}", "Exceeded maximum length of target allowed : ", max_target_length_);
+        GW_LOG_INFO("{} {}", "Exceeded maximum length of subject allowed : ", max_subject_length_);
         return StatusType::exceeded_max_length;
     }
 
-    memcpy(&sequences_h_[(2 * num_alignments) * std::max(max_query_length_, max_target_length_)],
+    memcpy(&sequences_h_[(2 * num_alignments) * std::max(max_query_length_, max_subject_length_)],
           query,
           sizeof(uint8_t) * query_length);
-    memcpy(&sequences_h_[(2 * num_alignments + 1) * std::max(max_query_length_, max_target_length_)],
-           target,
-           sizeof(uint8_t) * target_length);
+    memcpy(&sequences_h_[(2 * num_alignments + 1) * std::max(max_query_length_, max_subject_length_)],
+           subject,
+           sizeof(uint8_t) * subject_length);
 
     sequence_lengths_h_[2 * num_alignments] = query_length;
-    sequence_lengths_h_[2 * num_alignments + 1] = target_length;
+    sequence_lengths_h_[2 * num_alignments + 1] = subject_length;
 
     std::shared_ptr<AlignmentImpl> alignment = std::make_shared<AlignmentImpl>(query,
                                                                                query_length,
-                                                                               target,
-                                                                               target_length);
+                                                                               subject,
+                                                                               subject_length);
     alignment->set_alignment_type(AlignmentType::global);
     alignments_.push_back(alignment);
 
@@ -110,7 +110,7 @@ StatusType AlignerGlobal::align_all()
     GW_CU_CHECK_ERR(cudaSetDevice(device_id_));
     GW_CU_CHECK_ERR(cudaMemcpyAsync(sequences_d_,
                                     sequences_h_,
-                                    2 * sizeof(uint8_t) * std::max(max_query_length_, max_target_length_) * num_alignments,
+                                    2 * sizeof(uint8_t) * std::max(max_query_length_, max_subject_length_) * num_alignments,
                                     cudaMemcpyHostToDevice,
                                     stream_));
     GW_CU_CHECK_ERR(cudaMemcpyAsync(sequence_lengths_d_,
@@ -123,7 +123,7 @@ StatusType AlignerGlobal::align_all()
 
     GW_CU_CHECK_ERR(cudaMemcpyAsync(results_h_,
                                     results_d_,
-                                    sizeof(uint8_t) * (max_query_length_ + max_target_length_) * num_alignments,
+                                    sizeof(uint8_t) * (max_query_length_ + max_subject_length_) * num_alignments,
                                     cudaMemcpyDeviceToHost,
                                     stream_));
     GW_CU_CHECK_ERR(cudaMemcpyAsync(result_lengths_h_,
@@ -147,7 +147,7 @@ void AlignerGlobal::update_alignments_with_results()
         uint32_t alignment_length = result_lengths_h_[a];
         for(uint32_t pos = 0; pos < alignment_length; pos++)
         {
-            uint8_t state = results_h_[a * (max_query_length_ + max_target_length_) + pos];            
+            uint8_t state = results_h_[a * (max_query_length_ + max_subject_length_) + pos];            
             al_state.push_back(static_cast<AlignmentState>(state));
         }
         AlignmentImpl* alignment = static_cast<AlignmentImpl*>(alignments_.at(a).get());
