@@ -22,37 +22,60 @@ class Batch
     // const uint32_t NUM_THREADS = 64;
     
 public:
-    /// CudapoaBatch has a custom dtor, so declare ~Batch virtual and give it a default implementation
+    /// \brief CudapoaBatch has a custom dtor, so declare ~Batch virtual and give it a default implementation
     virtual ~Batch() = default;
 
-    /// Add new partial order alignment to batch.
+    /// \brief Add new partial order alignment to batch.
     virtual StatusType add_poa() = 0;
 
-    /// Add sequence to last partial order alignment.
+    /// \brief Add sequence to last partial order alignment.
+    ///
+    /// \param seq New sequence to be added to most recent POA
+    /// \param seq_len Length of sequence added
+    ///
+    /// \return Whether sequence could be successfully added to POA
     virtual StatusType add_seq_to_poa(const char* seq, uint32_t seq_len) = 0;
 
-    /// Get total number of partial order alignments in batch.
+    /// \brief Get total number of partial order alignments in batch.
+    ///
+    /// \return Total POAs in batch.
     virtual uint32_t get_total_poas() const = 0;
 
-    /// Run partial order alignment algorithm over all POAs.
+    /// \brief Run partial order alignment algorithm over all POAs.
     virtual void generate_poa() = 0;
 
-    /// Get the consensus for each POA.
+    /// \brief Get the consensus for each POA.
+    ///
+    /// \param consensus Reference to vector where consensus strings
+    ///                  will be returned
+    /// \param coverage Reference to vector where coverage of each
+    ///                 base in each consensus string is returned
     virtual void get_consensus(std::vector<std::string>& consensus,
             std::vector<std::vector<uint16_t>>& coverage) = 0;
 
-    /// Set CUDA stream for GPU device.
+    /// \brief Set CUDA stream for GPU device.
     virtual void set_cuda_stream(cudaStream_t stream) = 0;
 
-    /// Return batch ID.
+    /// \brief Return batch ID.
+    ///
+    /// \return Batch ID
     virtual uint32_t batch_id() const = 0;
 
-    /// Reset batch. Must do before re-using batch.
+    /// \brief Reset batch. Must do before re-using batch.
     virtual void reset() = 0;
 
 };
 
-/// create_batch - return a pointer to Batch object
+/// \brief Creates a new CUDA Batch object.
+///
+/// \param max_poas Maximum number of POAs that can be added to the batch
+/// \param max_sequences_per_poa Maximum number of sequences per POA
+/// \param device_id GPU device on which to run CUDA POA algorithm
+/// \param gap_score Score to be assigned to a gap
+/// \param mismatch_score Score to be assigned to a mismatch
+/// \param match_score Score to be assigned for a match
+///
+/// \return Returns a unique pointer to a new Batch object
 std::unique_ptr<Batch> create_batch(uint32_t max_poas, uint32_t max_sequences_per_poa, uint32_t device_id, int16_t gap_score = -8, int16_t mismatch_score = -6, int16_t match_score = 8);
 
 /// \}
