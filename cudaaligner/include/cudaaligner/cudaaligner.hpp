@@ -26,8 +26,8 @@ namespace cudaaligner {
     enum class AlignmentState {
         match = 0,
         mismatch,
-        insert_into_query,
-        insert_into_target
+        insertion, // Present in query, absent in subject
+        deletion // Absent in query, present in subject
     };
 
     StatusType Init();

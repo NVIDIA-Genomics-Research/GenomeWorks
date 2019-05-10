@@ -9,7 +9,7 @@ namespace cudaaligner {
 class AlignmentImpl: public Alignment
 {
     public:
-        AlignmentImpl(const char* query, uint32_t query_length, const char* target, uint32_t);
+        AlignmentImpl(const char* query, uint32_t query_length, const char* subject, uint32_t);
         ~AlignmentImpl();
 
         /// \brief Returns query sequence
@@ -17,9 +17,9 @@ class AlignmentImpl: public Alignment
             return query_;
         }
 
-        /// \brief Returns target sequence
-        virtual const std::string& get_target_sequence() const override {
-            return target_;
+        /// \brief Returns subject sequence
+        virtual const std::string& get_subject_sequence() const override {
+            return subject_;
         }
 
         /// \brief Converts an alignment to CIGAR format
@@ -75,8 +75,8 @@ class AlignmentImpl: public Alignment
         // Query string
         std::string query_;
 
-        // Target string
-        std::string target_;
+        // Subject string
+        std::string subject_;
 
         // Status of alignment
         StatusType status_;
@@ -86,6 +86,9 @@ class AlignmentImpl: public Alignment
 
         // Alignment state
         std::vector<AlignmentState> alignment_;
+
+        // Convert alignment state to cigar state
+        std::string alignment_state_to_cigar_state(AlignmentState) const;
 };
 
 }
