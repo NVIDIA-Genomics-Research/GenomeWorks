@@ -206,6 +206,64 @@ uint16_t addAlignmentToGraph(uint8_t* nodes,
     return node_count;
 }
 
+// kernel that calls the addAlignmentToGraph device funtion
+__global__
+void addAlignmentKernel(uint8_t*  nodes,
+                        uint16_t* node_count,
+                        uint16_t* node_alignments, uint16_t* node_alignment_count,
+                        uint16_t* incoming_edges,  uint16_t* incoming_edge_count,
+                        uint16_t* outgoing_edges,  uint16_t* outgoing_edge_count,
+                        uint16_t* incoming_edge_w, uint16_t* outgoing_edge_w,
+                        uint16_t*  alignment_length,
+                        uint16_t* graph,
+                        int16_t*  alignment_graph,
+                        uint8_t*  read,
+                        int16_t*  alignment_read,
+                        uint16_t* node_coverage_counts) 
+{
+    // all pointers will be allocated in unified memory visible to both host and device
+    *node_count = addAlignmentToGraph(nodes,
+                                      *node_count,
+                                      node_alignments, node_alignment_count,
+                                      incoming_edges,  incoming_edge_count,
+                                      outgoing_edges,  outgoing_edge_count,
+                                      incoming_edge_w, outgoing_edge_w,
+                                      *alignment_length,
+                                      graph,
+                                      alignment_graph,
+                                      read,
+                                      alignment_read,
+                                      node_coverage_counts);
+}
+
+// Host function that calls the kernel
+void addAlignment(uint8_t*  nodes,
+                  uint16_t* node_count,
+                  uint16_t* node_alignments, uint16_t* node_alignment_count,
+                  uint16_t* incoming_edges,  uint16_t* incoming_edge_count,
+                  uint16_t* outgoing_edges,  uint16_t* outgoing_edge_count,
+                  uint16_t* incoming_edge_w, uint16_t* outgoing_edge_w,
+                  uint16_t* alignment_length,
+                  uint16_t* graph,
+                  int16_t*  alignment_graph,
+                  uint8_t*  read,
+                  int16_t*  alignment_read,
+                  uint16_t* node_coverage_counts) 
+{
+    addAlignmentKernel<<<1, 1>>>(nodes,
+                                  node_count,
+                                  node_alignments, node_alignment_count,
+                                  incoming_edges,  incoming_edge_count,
+                                  outgoing_edges,  outgoing_edge_count,
+                                  incoming_edge_w, outgoing_edge_w,
+                                  alignment_length,
+                                  graph,
+                                  alignment_graph,
+                                  read,
+                                  alignment_read,
+                                  node_coverage_counts);
+}
+
 }
 
 }
