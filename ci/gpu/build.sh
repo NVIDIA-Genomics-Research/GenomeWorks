@@ -61,7 +61,7 @@ source ci/common/prep-pull-repo-mr-branch.sh ${APP_REPO} ${APP_DIR}
 logger "Build racon-gpu for CUDA..."
 
 cd ${WORKSPACE}
-source ci/common/build-test-racon-gpu.sh ${APP_DIR} ${WORKSPACE} ${CMAKE_COMMON_VARIABLES} ${PARALLEL_LEVEL} ${TEST_ON_GPU}
+source ci/common/build-test-racon-gpu.sh ${APP_DIR} ${WORKSPACE} ${CMAKE_COMMON_VARIABLES} ${PARALLEL_LEVEL} 1 ${TEST_ON_GPU}
 
 
 
