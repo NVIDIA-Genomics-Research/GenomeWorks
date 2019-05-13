@@ -196,6 +196,20 @@ void runTopSort(uint16_t* sorted_poa,
                 uint16_t* outgoing_edges,
                 uint16_t* outgoing_edge_count,
                 uint16_t* local_incoming_edge_count);
+
+// Host function that calls the kernel
+void addAlignment(uint8_t*  nodes,
+                  uint16_t* node_count,
+                  uint16_t* node_alignments, uint16_t* node_alignment_count,
+                  uint16_t* incoming_edges,  uint16_t* incoming_edge_count,
+                  uint16_t* outgoing_edges,  uint16_t* outgoing_edge_count,
+                  uint16_t* incoming_edge_w, uint16_t* outgoing_edge_w,
+                  uint16_t* alignment_length,
+                  uint16_t* graph,
+                  int16_t*  alignment_graph,
+                  uint8_t*  read,
+                  int16_t*  alignment_read,
+                  uint16_t* node_coverage_counts);
 } // namespace cudapoa
 
 } // namespace genomeworks
