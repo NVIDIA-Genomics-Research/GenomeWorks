@@ -2,9 +2,14 @@ LOCAL_BUILD_ROOT=$1
 GW_ROOT=$2
 CMAKE_OPTS=$3
 BUILD_THREADS=$4
-GPU_TEST=$5
+GPU_BUILD=$5
+GPU_TEST=$6
 
-CMAKE_BUILD_GPU="-Dracon_enable_cuda=ON -DGENOMEWORKS_SRC_PATH=${GW_ROOT}"
+if [ "$GPU_BUILD" == '1' ]; then
+  CMAKE_BUILD_GPU="-Dracon_enable_cuda=ON -DGENOMEWORKS_SRC_PATH=${GW_ROOT}"
+elif [ "$GPU_BUILD" == '0' ]; then
+  CMAKE_BUILD_GPU="-Dracon_enable_cuda=OFF -DGENOMEWORKS_SRC_PATH=${GW_ROOT}"
+fi
 
 echo "GW Root ${GW_ROOT}"
 
