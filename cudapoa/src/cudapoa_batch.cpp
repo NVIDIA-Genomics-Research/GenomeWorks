@@ -164,7 +164,7 @@ CudapoaBatch::CudapoaBatch(uint32_t max_poas, uint32_t max_sequences_per_poa, ui
     // Verify that maximum sequence size is in multiples of tb size.
     // We subtract one because the matrix dimension needs to be one element larger
     // than the sequence size.
-    if (CUDAPOA_MAX_SEQUENCE_SIZE % NUM_THREADS != 0)
+    if (CUDAPOA_MAX_SEQUENCE_SIZE % CUDAPOA_THREADS_PER_BLOCK != 0)
     {
         GW_LOG_CRITICAL("Thread block size needs to be in multiples of 32.");
         exit(-1);
@@ -254,15 +254,13 @@ void CudapoaBatch::generate_poa()
     genomeworks::cudapoa::generatePOA(output_details_d_,
                                  input_details_d_,
                                  poa_count_,
-                                 NUM_THREADS,
-                                 poa_count_,
                                  stream_,
                                  alignment_details_d_,
                                  graph_details_d_,
                                  gap_score_,
                                  mismatch_score_,
                                  match_score_);
-
+ 
     GW_CU_CHECK_ERR(cudaPeekAtLastError());
     msg = " Launched kernel on device ";
     print_batch_debug_message(msg);

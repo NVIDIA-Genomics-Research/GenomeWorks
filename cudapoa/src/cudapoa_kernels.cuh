@@ -24,12 +24,16 @@
 // Adding 4 elements more to ensure a 4byte boundary alignment for
 // any allocated buffer.
 #define CUDAPOA_MAX_MATRIX_GRAPH_DIMENSION (CUDAPOA_MAX_NODES_PER_WINDOW + 4)
-
+ 
 // Maximum horizontal dimension of scoring matrix, which stores sequences.
 // Adding 4 elements more to ensure a 4byte boundary alignment for
 // any allocated buffer.
 #define CUDAPOA_MAX_MATRIX_SEQUENCE_DIMENSION (CUDAPOA_MAX_SEQUENCE_SIZE + 4)
 
+
+#define CUDAPOA_THREADS_PER_BLOCK 64
+
+#define FULL_MASK 0xffffffff
 
 namespace genomeworks {
 
@@ -146,8 +150,6 @@ typedef struct GraphDetails
  * @param[in] window_details_d            Device buffer with structs 
  *                                        encapsulating sequence details per window
  * @param[in] total_window                Total number of windows to process
- * @param[in] num_threads                 Number of threads per block
- * @param[in] num_blocks                  Number of blocks to launch
  * @param[in] stream                      Stream to run kernel on
  * @param[in] scores                      Device scratch space that scores alignment matrix score
  * @param[in] alignment_graph             Device scratch space for backtrace alignment of graph
@@ -178,8 +180,6 @@ typedef struct GraphDetails
 void generatePOA(genomeworks::cudapoa::OutputDetails * output_details_d,
                  genomeworks::cudapoa::InputDetails * Input_details_d,
                  uint32_t total_windows,
-                 uint32_t num_threads,
-                 uint32_t num_blocks,
                  cudaStream_t stream,
                  genomeworks::cudapoa::AlignmentDetails * alignment_details_d,
                  genomeworks::cudapoa::GraphDetails * graph_details_d,

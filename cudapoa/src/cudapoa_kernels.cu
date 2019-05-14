@@ -5,6 +5,7 @@
 #include "cudapoa_topsort.cu"
 #include "cudapoa_add_alignment.cu"
 #include "cudapoa_generate_consensus.cu"
+#include <cudautils/cudautils.hpp>
 
 #include <stdio.h>
 
@@ -48,6 +49,7 @@ namespace cudapoa {
  * @param[in] mismatch_score              Score for finding a mismatch in alignment
  * @param[in] match_score                 Score for finding a match in alignment
  */
+template<int32_t TPB = 64>
 __global__
 void generatePOAKernel(uint8_t* consensus_d,
                        uint16_t* coverage_d,
@@ -78,56 +80,49 @@ void generatePOAKernel(uint8_t* consensus_d,
                        uint16_t* node_coverage_counts_d_,
                        int16_t gap_score,
                        int16_t mismatch_score,
-                       int16_t match_score)
-{
+                       int16_t match_score){
 
-    uint32_t block_idx = blockIdx.x;
-    uint32_t thread_idx = threadIdx.x;
+    uint32_t nwindows_per_block = TPB/WARP_SIZE;
+    uint32_t warp_idx = threadIdx.x / WARP_SIZE;
+    uint32_t lane_idx = threadIdx.x % WARP_SIZE;
 
-    long long int back_time = 0;
-    long long int nw_time = 0;
-    long long int add_time = 0;
-    long long int top_time = 0;
+    uint32_t window_idx = blockIdx.x * nwindows_per_block + warp_idx;
 
-    if (block_idx > total_windows)
+
+    if (window_idx >= total_windows)
         return;
 
     // Find the buffer offsets for each thread within the global memory buffers.
-    uint8_t* nodes = &nodes_d[CUDAPOA_MAX_NODES_PER_WINDOW * block_idx];
-    uint16_t* incoming_edges = &incoming_edges_d[block_idx * CUDAPOA_MAX_NODES_PER_WINDOW * CUDAPOA_MAX_NODE_EDGES];
-    uint16_t* incoming_edge_count = &incoming_edge_count_d[block_idx * CUDAPOA_MAX_NODES_PER_WINDOW];
-    uint16_t* outoing_edges = &outgoing_edges_d[block_idx * CUDAPOA_MAX_NODES_PER_WINDOW * CUDAPOA_MAX_NODE_EDGES];
-    uint16_t* outgoing_edge_count = &outgoing_edge_count_d[block_idx * CUDAPOA_MAX_NODES_PER_WINDOW];
-    uint16_t* incoming_edge_weights = &incoming_edge_w_d[block_idx * CUDAPOA_MAX_NODES_PER_WINDOW * CUDAPOA_MAX_NODE_EDGES];
-    uint16_t* outgoing_edge_weights = &outgoing_edge_w_d[block_idx * CUDAPOA_MAX_NODES_PER_WINDOW * CUDAPOA_MAX_NODE_EDGES];
-    uint16_t* sorted_poa = &sorted_poa_d[block_idx * CUDAPOA_MAX_NODES_PER_WINDOW];
-    uint16_t* node_id_to_pos = &node_id_to_pos_d[block_idx * CUDAPOA_MAX_NODES_PER_WINDOW];
-    uint16_t* node_alignments = &node_alignments_d[block_idx * CUDAPOA_MAX_NODES_PER_WINDOW * CUDAPOA_MAX_NODE_ALIGNMENTS];
-    uint16_t* node_alignment_count = &node_alignment_count_d[block_idx * CUDAPOA_MAX_NODES_PER_WINDOW];
-    uint16_t* sorted_poa_local_edge_count = &sorted_poa_local_edge_count_d[block_idx * CUDAPOA_MAX_NODES_PER_WINDOW];
+    uint8_t* nodes = &nodes_d[CUDAPOA_MAX_NODES_PER_WINDOW * window_idx];
+    uint16_t* incoming_edges = &incoming_edges_d[window_idx * CUDAPOA_MAX_NODES_PER_WINDOW * CUDAPOA_MAX_NODE_EDGES];
+    uint16_t* incoming_edge_count = &incoming_edge_count_d[window_idx * CUDAPOA_MAX_NODES_PER_WINDOW];
+    uint16_t* outoing_edges = &outgoing_edges_d[window_idx * CUDAPOA_MAX_NODES_PER_WINDOW * CUDAPOA_MAX_NODE_EDGES];
+    uint16_t* outgoing_edge_count = &outgoing_edge_count_d[window_idx * CUDAPOA_MAX_NODES_PER_WINDOW];
+    uint16_t* incoming_edge_weights = &incoming_edge_w_d[window_idx * CUDAPOA_MAX_NODES_PER_WINDOW * CUDAPOA_MAX_NODE_EDGES];
+    uint16_t* outgoing_edge_weights = &outgoing_edge_w_d[window_idx * CUDAPOA_MAX_NODES_PER_WINDOW * CUDAPOA_MAX_NODE_EDGES];
+    uint16_t* sorted_poa = &sorted_poa_d[window_idx * CUDAPOA_MAX_NODES_PER_WINDOW];
+    uint16_t* node_id_to_pos = &node_id_to_pos_d[window_idx * CUDAPOA_MAX_NODES_PER_WINDOW];
+    uint16_t* node_alignments = &node_alignments_d[window_idx * CUDAPOA_MAX_NODES_PER_WINDOW * CUDAPOA_MAX_NODE_ALIGNMENTS];
+    uint16_t* node_alignment_count = &node_alignment_count_d[window_idx * CUDAPOA_MAX_NODES_PER_WINDOW];
+    uint16_t* sorted_poa_local_edge_count = &sorted_poa_local_edge_count_d[window_idx * CUDAPOA_MAX_NODES_PER_WINDOW];
 
-    int16_t* scores = &scores_d[CUDAPOA_MAX_MATRIX_GRAPH_DIMENSION * CUDAPOA_MAX_MATRIX_SEQUENCE_DIMENSION * block_idx];
-    int16_t* alignment_graph = &alignment_graph_d[CUDAPOA_MAX_MATRIX_GRAPH_DIMENSION * block_idx];
-    int16_t* alignment_read = &alignment_read_d[CUDAPOA_MAX_MATRIX_GRAPH_DIMENSION * block_idx];
-    uint16_t* node_coverage_counts = &node_coverage_counts_d_[CUDAPOA_MAX_NODES_PER_WINDOW * block_idx];
+    int16_t* scores = &scores_d[CUDAPOA_MAX_MATRIX_GRAPH_DIMENSION * CUDAPOA_MAX_MATRIX_SEQUENCE_DIMENSION * window_idx];
+    int16_t* alignment_graph = &alignment_graph_d[CUDAPOA_MAX_MATRIX_GRAPH_DIMENSION * window_idx];
+    int16_t* alignment_read = &alignment_read_d[CUDAPOA_MAX_MATRIX_GRAPH_DIMENSION * window_idx];
+    uint16_t* node_coverage_counts = &node_coverage_counts_d_[CUDAPOA_MAX_NODES_PER_WINDOW * window_idx];
 
 #ifdef SPOA_ACCURATE
-    uint8_t* node_marks = &node_marks_d_[CUDAPOA_MAX_NODES_PER_WINDOW * block_idx];
-    bool* check_aligned_nodes = &check_aligned_nodes_d_[CUDAPOA_MAX_NODES_PER_WINDOW * block_idx];
-    uint16_t* nodes_to_visit = &nodes_to_visit_d_[CUDAPOA_MAX_NODES_PER_WINDOW * block_idx];
+    uint8_t* node_marks = &node_marks_d_[CUDAPOA_MAX_NODES_PER_WINDOW * window_idx];
+    bool* check_aligned_nodes = &check_aligned_nodes_d_[CUDAPOA_MAX_NODES_PER_WINDOW * window_idx];
+    uint16_t* nodes_to_visit = &nodes_to_visit_d_[CUDAPOA_MAX_NODES_PER_WINDOW * window_idx];
 #endif
-
-    //get Block-specific variables
-    uint32_t window_idx = blockIdx.x;
 
     uint16_t * sequence_lengths = &sequence_lengths_d[window_details_d[window_idx].seq_len_buffer_offset];
 
     uint32_t num_sequences = window_details_d[window_idx].num_seqs;
     uint8_t * sequence = &sequences_d[window_details_d[window_idx].seq_starts];
 
-    long long int t0 = clock64();
-
-    if (thread_idx == 0)
+    if (lane_idx == 0)
     {
 
         // Create backbone for window based on first sequence in window.
@@ -156,125 +151,54 @@ void generatePOAKernel(uint8_t* consensus_d,
 
     }
 
-    __syncthreads();
+    __syncwarp();
 
-    back_time += (clock64() - t0);
-
-    //for(uint16_t i = 0; i < sequence_lengths[0]; i++)
-    //{
-    //    printf("%c ", nodes[i]);
-    //}
 
     // Generate consensus only if sequences are aligned to graph.
     bool generate_consensus = false;
 
-    //printf("window id %d, sequence %d\n", block_idx, num_sequences_in_window - 1);
+    //printf("window id %d, sequence %d\n", window_idx, num_sequences_in_window - 1);
 
     // Align each subsequent read, add alignment to graph, run topoligical sort.
-    for(uint16_t s = 1; s < num_sequences; s++)
-    {
-        //printf("running window %d seq %d / %d\n", block_idx, s, num_sequences_in_window);
+    for(uint16_t s = 1; s < num_sequences; s++){
         uint16_t seq_len = sequence_lengths[s];
         sequence += sequence_lengths[s - 1]; // increment the pointer so it is pointing to correct sequence data
-/*
-        if (thread_idx == 0)
-            printf("seq len is %i for sequence %i\n", seq_len, s);
-*/
 
-        //for(uint16_t i = 0; i < seq_len; i++)
-        //{
-        //    printf("%c ", seq[i]);
-        //}
-
-        //return;
-        // Run DP step and fetch traceback.
-        //bool found_node = false;
-        //for(uint16_t i = 0; i < sequence_length_data[0]; i++)
-        //{
-        //    if (outgoing_edge_count[i] == 0)
-        //    {
-        //        printf("node %d has 0 oe\n", i);
-        //        found_node = true;
-        //    }
-        //}
-        //if (!found_node)
-        //{
-        //    printf("DID NOT FIND A NODE WITH NO OUTGOING EDGE before alignment!!!!\n");
-        //    return;
-        //}
-
-        // print sorted graph
-        //for(uint16_t i = 0; i < sequence_length_data[0]; i++)
-        //{
-        //    printf("%d ", sorted_poa[i]);
-        //}
-        //printf("\n");
-
-        if (thread_idx == 0)
-        {
-
-            if (sequence_lengths[0] >= CUDAPOA_MAX_NODES_PER_WINDOW)
-            {
+        if (lane_idx == 0){
+            if (sequence_lengths[0] >= CUDAPOA_MAX_NODES_PER_WINDOW){
                 printf("Node count %d is greater than max matrix size %d\n", sequence_lengths[0], CUDAPOA_MAX_NODES_PER_WINDOW);
                 return;
             }
-            if (seq_len >= CUDAPOA_MAX_NODES_PER_WINDOW)
-            {
+            if (seq_len >= CUDAPOA_MAX_NODES_PER_WINDOW){
                 printf("Sequence len %d is greater than max matrix size %d\n", seq_len, CUDAPOA_MAX_NODES_PER_WINDOW);
                 return;
             }
-
-
         }
-        long long int start = clock64();
 
         // Run Needleman-Wunsch alignment between graph and new sequence.
-/*
-        if (thread_idx ==0)
-            printf("running nw with sequence length of %i and sequence of %c %c %c %c %c\n", seq_len, sequence[0], sequence[1], sequence[2], sequence[3], sequence[4]);
-*/
 
-        uint16_t alignment_length = runNeedlemanWunsch(nodes,
-                sorted_poa,
-                node_id_to_pos,
-                sequence_lengths[0],
-                incoming_edge_count,
-                incoming_edges,
-                outgoing_edge_count,
-                outoing_edges,
-                sequence,
-                seq_len,
-                scores,
-                alignment_graph,
-                alignment_read,
-                gap_score,
-                mismatch_score,
-                match_score);
+        uint16_t alignment_length = runNeedlemanWunsch<uint8_t, uint16_t, int16_t, TPB>(nodes,
+											sorted_poa,
+											node_id_to_pos,
+											sequence_lengths[0],
+											incoming_edge_count,
+											incoming_edges,
+											outgoing_edge_count,
+											outoing_edges,
+											sequence,
+											seq_len,
+											scores,
+											alignment_graph,
+											alignment_read,
+											gap_score,
+											mismatch_score,
+											match_score);
 
-        long long int nw_end = clock64();
-        nw_time += (nw_end - start);
 
-        __syncthreads();
+        __syncwarp();
+	//printf("%d %d %d\n", s, window_idx, alignment_length);
 
-        //found_node = false;
-        //for(uint16_t i = 0; i < sequence_length_data[0]; i++)
-        //{
-        //    if (outgoing_edge_count[i] == 0)
-        //    {
-        //        printf("node %d has 0 oe\n", i);
-        //        found_node = true;
-        //    }
-        //}
-        //if (!found_node)
-        //{
-        //    printf("DID NOT FIND A NODE WITH NO OUTGOING EDGE before addition!!!!\n");
-        //    return;
-        //}
-
-        start = clock64();
-
-        if (thread_idx == 0)
-        {
+        if (lane_idx == 0){
 
             // Add alignment to graph.
             //printf("running add\n");
@@ -288,8 +212,6 @@ void generatePOAKernel(uint8_t* consensus_d,
                     sequence, alignment_read,
                     node_coverage_counts);
 
-            long long int add_end = clock64();
-            add_time += (add_end - start);
 
             // Verify that each graph has at least one node with no outgoing edges.
             //bool found_node = false;
@@ -330,61 +252,36 @@ void generatePOAKernel(uint8_t* consensus_d,
                                       outgoing_edge_count,
                                       sorted_poa_local_edge_count);
 #endif
-
-            long long int top_end = clock64();
-            top_time += (top_end - add_end);
-            //printf("done loop\n");
         }
 
-        __syncthreads();
+        __syncwarp();
 
         generate_consensus = true;
     }
 
-    // Dummy kernel code to copy first sequence as output.
-    //uint8_t *input_row = &sequences_d[input_row_idx * sequences_pitch];
-    //uint8_t *output_row = &consensus_d[block_idx * consensus_pitch];
-    //for(uint32_t c = 0; c < sequence_lengths_d[block_idx * max_depth_per_window]; c++)
-    //{
-    //    output_row[c] = input_row[c];
-    //}
 
-    //long long int consensus_time = 0;
+    if (lane_idx == 0 && generate_consensus){
+        uint8_t* consensus = &consensus_d[window_idx * CUDAPOA_MAX_SEQUENCE_SIZE];
+        uint16_t* coverage = &coverage_d[window_idx * CUDAPOA_MAX_SEQUENCE_SIZE];
+        int32_t* consensus_scores = &consensus_scores_d[window_idx * CUDAPOA_MAX_NODES_PER_WINDOW];
+        int16_t* consensus_predecessors = &consensus_predecessors_d[window_idx * CUDAPOA_MAX_NODES_PER_WINDOW];
 
-    if (thread_idx == 0 && generate_consensus)
-    {
-        uint8_t* consensus = &consensus_d[block_idx * CUDAPOA_MAX_SEQUENCE_SIZE];
-        uint16_t* coverage = &coverage_d[block_idx * CUDAPOA_MAX_SEQUENCE_SIZE];
-        int32_t* consensus_scores = &consensus_scores_d[block_idx * CUDAPOA_MAX_NODES_PER_WINDOW];
-        int16_t* consensus_predecessors = &consensus_predecessors_d[block_idx * CUDAPOA_MAX_NODES_PER_WINDOW];
-
-        long long int start = clock64();
         generateConsensus(nodes,
-                sequence_lengths[0],
-                sorted_poa,
-                node_id_to_pos,
-                incoming_edges,
-                incoming_edge_count,
-                outoing_edges,
-                outgoing_edge_count,
-                incoming_edge_weights,
-                consensus_predecessors,
-                consensus_scores,
-                consensus,
-                coverage,
-                node_coverage_counts,
-                node_alignments, node_alignment_count);
-        //consensus_time = (clock64() - start);
+			  sequence_lengths[0],
+			  sorted_poa,
+			  node_id_to_pos,
+			  incoming_edges,
+			  incoming_edge_count,
+			  outoing_edges,
+			  outgoing_edge_count,
+			  incoming_edge_weights,
+			  consensus_predecessors,
+			  consensus_scores,
+			  consensus,
+			  coverage,
+			  node_coverage_counts,
+			  node_alignments, node_alignment_count);
     }
-    //if (thread_idx == 0)
-    //{
-    //    long long int total = back_time + nw_time + add_time + top_time + consensus_time;
-    //    printf("Total time of backbone generation is %lf %\n", ((double)back_time / total) * 100.f);
-    //    printf("Total time of nw is %lf %\n", ((double)nw_time / total) * 100.f);
-    //    printf("Total time of addition is %lf %\n", ((double)add_time / total) * 100.f);
-    //    printf("Total time of topsort is %lf %\n", ((double)top_time / total) * 100.f);
-    //    printf("Total time of consensus is %lf %\n", ((double)consensus_time / total) * 100.f);
-    //}
 
 }
 
@@ -392,8 +289,6 @@ void generatePOAKernel(uint8_t* consensus_d,
 void generatePOA(genomeworks::cudapoa::OutputDetails * output_details_d,
                 genomeworks::cudapoa::InputDetails * input_details_d,
                 uint32_t total_windows,
-                uint32_t num_threads,
-                uint32_t num_blocks,
                 cudaStream_t stream,
                 genomeworks::cudapoa::AlignmentDetails * alignment_details_d,
                 genomeworks::cudapoa::GraphDetails * graph_details_d,
@@ -433,36 +328,43 @@ void generatePOA(genomeworks::cudapoa::OutputDetails * output_details_d,
     uint16_t* node_coverage_counts = graph_details_d->node_coverage_counts;
     
 
-    generatePOAKernel<<<num_blocks, num_threads, 0, stream>>>(consensus_d,
-                                                              coverage_d,
-                                                              sequences_d,
-                                                              sequence_lengths_d,
-                                                              window_details_d,
-                                                              total_windows,
-                                                              scores,
-                                                              alignment_graph,
-                                                              alignment_read,
-                                                              nodes,
-                                                              incoming_edges,
-                                                              incoming_edge_count,
-                                                              outgoing_edges,
-                                                              outgoing_edge_count,
-                                                              incoming_edge_w,
-                                                              outgoing_edge_w,
-                                                              sorted_poa,
-                                                              node_id_to_pos,
-                                                              node_alignments,
-                                                              node_alignment_count,
-                                                              sorted_poa_local_edge_count,
-                                                              consensus_scores,
-                                                              consensus_predecessors,
-                                                              node_marks,
-                                                              check_aligned_nodes,
-                                                              nodes_to_visit,
-                                                              node_coverage_counts,
-                                                              gap_score,
-                                                              mismatch_score,
-                                                              match_score);
+    uint32_t nwindows_per_block = CUDAPOA_THREADS_PER_BLOCK/WARP_SIZE;
+    uint32_t nblocks = (total_windows + nwindows_per_block - 1)/nwindows_per_block;
+
+    GW_CU_CHECK_ERR(cudaDeviceSetCacheConfig(cudaFuncCachePreferL1));
+
+    
+    generatePOAKernel<CUDAPOA_THREADS_PER_BLOCK>
+	<<<nblocks, CUDAPOA_THREADS_PER_BLOCK, 0, stream>>>(consensus_d,
+							    coverage_d,
+							    sequences_d,
+							    sequence_lengths_d,
+							    window_details_d,
+							    total_windows,
+							    scores,
+							    alignment_graph,
+							    alignment_read,
+							    nodes,
+							    incoming_edges,
+							    incoming_edge_count,
+							    outgoing_edges,
+							    outgoing_edge_count,
+							    incoming_edge_w,
+							    outgoing_edge_w,
+							    sorted_poa,
+							    node_id_to_pos,
+							    node_alignments,
+							    node_alignment_count,
+							    sorted_poa_local_edge_count,
+							    consensus_scores,
+							    consensus_predecessors,
+							    node_marks,
+							    check_aligned_nodes,
+							    nodes_to_visit,
+							    node_coverage_counts,
+							    gap_score,
+							    mismatch_score,
+							    match_score);
 }
 
 } // namespace cudapoa
