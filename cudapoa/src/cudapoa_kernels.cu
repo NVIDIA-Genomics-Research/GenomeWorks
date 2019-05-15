@@ -2,6 +2,7 @@
 
 #include "cudapoa_kernels.cuh"
 #include "cudapoa_nw.cu"
+#include "cudapoa_nw_banded.cu"
 #include "cudapoa_topsort.cu"
 #include "cudapoa_add_alignment.cu"
 #include "cudapoa_generate_consensus.cu"
@@ -80,7 +81,8 @@ void generatePOAKernel(uint8_t* consensus_d,
                        uint16_t* node_coverage_counts_d_,
                        int16_t gap_score,
                        int16_t mismatch_score,
-                       int16_t match_score){
+                       int16_t match_score,
+                       bool cuda_banded_alignment){
 
     uint32_t nwindows_per_block = TPB/WARP_SIZE;
     uint32_t warp_idx = threadIdx.x / WARP_SIZE;
@@ -176,23 +178,43 @@ void generatePOAKernel(uint8_t* consensus_d,
         }
 
         // Run Needleman-Wunsch alignment between graph and new sequence.
+        uint16_t alignment_length;
 
-        uint16_t alignment_length = runNeedlemanWunsch<uint8_t, uint16_t, int16_t, TPB>(nodes,
-											sorted_poa,
-											node_id_to_pos,
-											sequence_lengths[0],
-											incoming_edge_count,
-											incoming_edges,
-											outgoing_edge_count,
-											outoing_edges,
-											sequence,
-											seq_len,
-											scores,
-											alignment_graph,
-											alignment_read,
-											gap_score,
-											mismatch_score,
-											match_score);
+        if(cuda_banded_alignment){
+            alignment_length = runNeedlemanWunschBanded(nodes,
+                                                       sorted_poa,
+                                                       node_id_to_pos,
+                                                       sequence_lengths[0],
+                                                       incoming_edge_count,
+                                                       incoming_edges,
+                                                       outgoing_edge_count,
+                                                       outoing_edges,
+                                                       sequence,
+                                                       seq_len,
+                                                       scores,
+                                                       alignment_graph,
+                                                       alignment_read,
+                                                       gap_score,
+                                                       mismatch_score,
+                                                       match_score);
+        } else {
+            alignment_length = runNeedlemanWunsch<uint8_t, uint16_t, int16_t, TPB>(nodes,
+                                                sorted_poa,
+                                                node_id_to_pos,
+                                                sequence_lengths[0],
+                                                incoming_edge_count,
+                                                incoming_edges,
+                                                outgoing_edge_count,
+                                                outoing_edges,
+                                                sequence,
+                                                seq_len,
+                                                scores,
+                                                alignment_graph,
+                                                alignment_read,
+                                                gap_score,
+                                                mismatch_score,
+                                                match_score);
+        }
 
 
         __syncwarp();
@@ -294,7 +316,8 @@ void generatePOA(genomeworks::cudapoa::OutputDetails * output_details_d,
                 genomeworks::cudapoa::GraphDetails * graph_details_d,
                 int16_t gap_score,
                 int16_t mismatch_score,
-                int16_t match_score)
+                int16_t match_score,
+                bool cuda_banded_alignment)
 {
     // unpack output details
     uint8_t* consensus_d = output_details_d->consensus;
@@ -333,38 +356,73 @@ void generatePOA(genomeworks::cudapoa::OutputDetails * output_details_d,
 
     GW_CU_CHECK_ERR(cudaDeviceSetCacheConfig(cudaFuncCachePreferL1));
 
-    
-    generatePOAKernel<CUDAPOA_THREADS_PER_BLOCK>
-	<<<nblocks, CUDAPOA_THREADS_PER_BLOCK, 0, stream>>>(consensus_d,
-							    coverage_d,
-							    sequences_d,
-							    sequence_lengths_d,
-							    window_details_d,
-							    total_windows,
-							    scores,
-							    alignment_graph,
-							    alignment_read,
-							    nodes,
-							    incoming_edges,
-							    incoming_edge_count,
-							    outgoing_edges,
-							    outgoing_edge_count,
-							    incoming_edge_w,
-							    outgoing_edge_w,
-							    sorted_poa,
-							    node_id_to_pos,
-							    node_alignments,
-							    node_alignment_count,
-							    sorted_poa_local_edge_count,
-							    consensus_scores,
-							    consensus_predecessors,
-							    node_marks,
-							    check_aligned_nodes,
-							    nodes_to_visit,
-							    node_coverage_counts,
-							    gap_score,
-							    mismatch_score,
-							    match_score);
+    if (cuda_banded_alignment) {
+        generatePOAKernel<CUDAPOA_BANDED_THREADS_PER_BLOCK>
+                << < total_windows, CUDAPOA_BANDED_THREADS_PER_BLOCK, 0, stream >> > (consensus_d,
+                coverage_d,
+                sequences_d,
+                sequence_lengths_d,
+                window_details_d,
+                total_windows,
+                scores,
+                alignment_graph,
+                alignment_read,
+                nodes,
+                incoming_edges,
+                incoming_edge_count,
+                outgoing_edges,
+                outgoing_edge_count,
+                incoming_edge_w,
+                outgoing_edge_w,
+                sorted_poa,
+                node_id_to_pos,
+                node_alignments,
+                node_alignment_count,
+                sorted_poa_local_edge_count,
+                consensus_scores,
+                consensus_predecessors,
+                node_marks,
+                check_aligned_nodes,
+                nodes_to_visit,
+                node_coverage_counts,
+                gap_score,
+                mismatch_score,
+                match_score,
+                cuda_banded_alignment);
+    } else{
+        generatePOAKernel<CUDAPOA_THREADS_PER_BLOCK>
+                << < nblocks, CUDAPOA_THREADS_PER_BLOCK, 0, stream >> > (consensus_d,
+                coverage_d,
+                sequences_d,
+                sequence_lengths_d,
+                window_details_d,
+                total_windows,
+                scores,
+                alignment_graph,
+                alignment_read,
+                nodes,
+                incoming_edges,
+                incoming_edge_count,
+                outgoing_edges,
+                outgoing_edge_count,
+                incoming_edge_w,
+                outgoing_edge_w,
+                sorted_poa,
+                node_id_to_pos,
+                node_alignments,
+                node_alignment_count,
+                sorted_poa_local_edge_count,
+                consensus_scores,
+                consensus_predecessors,
+                node_marks,
+                check_aligned_nodes,
+                nodes_to_visit,
+                node_coverage_counts,
+                gap_score,
+                mismatch_score,
+                match_score,
+                cuda_banded_alignment);
+    }
 }
 
 } // namespace cudapoa

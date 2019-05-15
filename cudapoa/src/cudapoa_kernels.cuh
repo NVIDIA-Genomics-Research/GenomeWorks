@@ -32,6 +32,7 @@
 
 
 #define CUDAPOA_THREADS_PER_BLOCK 64
+#define CUDAPOA_BANDED_THREADS_PER_BLOCK 32
 
 #define FULL_MASK 0xffffffff
 
@@ -175,6 +176,7 @@ typedef struct GraphDetails
  * @param[in] gap_score                   Score for inserting gap into alignment
  * @param[in] mismatch_score              Score for finding a mismatch in alignment
  * @param[in] match_score                 Score for finding a match in alignment
+ * @param[in] banded_alignment            Use banded alignment
  */
 
 void generatePOA(genomeworks::cudapoa::OutputDetails * output_details_d,
@@ -185,7 +187,8 @@ void generatePOA(genomeworks::cudapoa::OutputDetails * output_details_d,
                  genomeworks::cudapoa::GraphDetails * graph_details_d,
                  int16_t gap_score,
                  int16_t mismatch_score,
-                 int16_t match_score);
+                 int16_t match_score,
+                 bool banded_alignment);
 
 
 // host function that calls runTopSortKernel

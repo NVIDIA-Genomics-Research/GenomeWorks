@@ -149,8 +149,8 @@ void CudapoaBatch::free_graph_details()
     GW_CU_CHECK_ERR(cudaFreeHost(graph_details_d_));
 }
 
-CudapoaBatch::CudapoaBatch(uint32_t max_poas, uint32_t max_sequences_per_poa, uint32_t device_id, int16_t gap_score, int16_t mismatch_score, int16_t match_score)
-    : max_poas_(max_poas), max_sequences_per_poa_(max_sequences_per_poa), device_id_(device_id), gap_score_(gap_score), mismatch_score_(mismatch_score), match_score_(match_score)
+CudapoaBatch::CudapoaBatch(uint32_t max_poas, uint32_t max_sequences_per_poa, uint32_t device_id, int16_t gap_score, int16_t mismatch_score, int16_t match_score, bool cuda_banded_alignment)
+    : max_poas_(max_poas), max_sequences_per_poa_(max_sequences_per_poa), device_id_(device_id), gap_score_(gap_score), mismatch_score_(mismatch_score), match_score_(match_score), banded_alignment_(cuda_banded_alignment)
 {
     bid_ = CudapoaBatch::batches++;
 
@@ -259,7 +259,8 @@ void CudapoaBatch::generate_poa()
                                  graph_details_d_,
                                  gap_score_,
                                  mismatch_score_,
-                                 match_score_);
+                                 match_score_,
+                                 banded_alignment_);
  
     GW_CU_CHECK_ERR(cudaPeekAtLastError());
     msg = " Launched kernel on device ";
