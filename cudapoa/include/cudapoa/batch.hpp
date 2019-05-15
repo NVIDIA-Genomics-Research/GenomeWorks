@@ -74,9 +74,10 @@ public:
 /// \param gap_score Score to be assigned to a gap
 /// \param mismatch_score Score to be assigned to a mismatch
 /// \param match_score Score to be assigned for a match
+/// \param cuda_banded_alignment Whether to use banded alignment
 ///
 /// \return Returns a unique pointer to a new Batch object
-std::unique_ptr<Batch> create_batch(uint32_t max_poas, uint32_t max_sequences_per_poa, uint32_t device_id, int16_t gap_score = -8, int16_t mismatch_score = -6, int16_t match_score = 8);
+std::unique_ptr<Batch> create_batch(uint32_t max_poas, uint32_t max_sequences_per_poa, uint32_t device_id, int16_t gap_score = -8, int16_t mismatch_score = -6, int16_t match_score = 8, bool cuda_banded_alignment=false);
 
 /// \}
 

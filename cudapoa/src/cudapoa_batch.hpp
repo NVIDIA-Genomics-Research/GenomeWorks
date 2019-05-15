@@ -37,7 +37,7 @@ class CudapoaBatch : public Batch
     const uint32_t NUM_THREADS = 64;
     
 public:
-    CudapoaBatch(uint32_t max_poas, uint32_t max_sequences_per_poa, uint32_t device_id, int16_t gap_score = -8, int16_t mismatch_score = -6, int16_t match_score = 8);
+    CudapoaBatch(uint32_t max_poas, uint32_t max_sequences_per_poa, uint32_t device_id, int16_t gap_score = -8, int16_t mismatch_score = -6, int16_t match_score = 8, bool cuda_banded_alignment = false);
     ~CudapoaBatch();
 
     // Add new partial order alignment to batch.
@@ -139,6 +139,9 @@ protected:
 
     // Global sequence index.
     uint32_t global_sequence_idx_ = 0;
+
+    // Use banded POA alignment
+    bool banded_alignment_;
 };
 
 /// \}
