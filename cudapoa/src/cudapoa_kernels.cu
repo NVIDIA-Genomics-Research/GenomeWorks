@@ -21,6 +21,7 @@ namespace cudapoa {
  * @param[out] consensus_d                Device buffer for generated consensus
  * @param[out] coverage_d                 Device buffer for coverage of each base in consensus
  * @param[in] sequences_d                 Device buffer with sequences for all windows
+ * @param[in] base_weights_d              Device buffer with base weights for all windows
  * @param[in] sequence_lengths_d          Device buffer sequence lengths
  * @param[in] window_details_d            Device buffer with structs 
  *                                        encapsulating sequence details per window
@@ -55,6 +56,7 @@ __global__
 void generatePOAKernel(uint8_t* consensus_d,
                        uint16_t* coverage_d,
                        uint8_t* sequences_d,
+                       uint8_t* base_weights_d,
                        uint16_t * sequence_lengths_d,
                        genomeworks::cudapoa::WindowDetails * window_details_d,
                        uint32_t total_windows,
@@ -123,6 +125,7 @@ void generatePOAKernel(uint8_t* consensus_d,
 
     uint32_t num_sequences = window_details_d[window_idx].num_seqs;
     uint8_t * sequence = &sequences_d[window_details_d[window_idx].seq_starts];
+    uint8_t * base_weights = &base_weights_d[window_details_d[window_idx].seq_starts];
 
     if (lane_idx == 0)
     {
@@ -134,7 +137,7 @@ void generatePOAKernel(uint8_t* consensus_d,
         node_alignment_count[0] = 0;
         node_id_to_pos[0] = 0;
         outgoing_edge_count[sequence_lengths[0] - 1] = 0;
-        incoming_edge_weights[0] = 0;
+        incoming_edge_weights[0] = base_weights[0];
         node_coverage_counts[0] = 1;
 
         //Build the rest of the graphs
@@ -144,7 +147,7 @@ void generatePOAKernel(uint8_t* consensus_d,
             outoing_edges[(nucleotide_idx-1) * CUDAPOA_MAX_NODE_EDGES] = nucleotide_idx;
             outgoing_edge_count[nucleotide_idx-1] = 1;
             incoming_edges[nucleotide_idx * CUDAPOA_MAX_NODE_EDGES] = nucleotide_idx - uint16_t(1);
-            incoming_edge_weights[nucleotide_idx * CUDAPOA_MAX_NODE_EDGES] = 0;
+            incoming_edge_weights[nucleotide_idx * CUDAPOA_MAX_NODE_EDGES] = base_weights[nucleotide_idx - 1] + base_weights[nucleotide_idx];
             incoming_edge_count[nucleotide_idx] = 1;
             node_alignment_count[nucleotide_idx] = 0;
             node_id_to_pos[nucleotide_idx] = nucleotide_idx;
@@ -165,6 +168,7 @@ void generatePOAKernel(uint8_t* consensus_d,
     for(uint16_t s = 1; s < num_sequences; s++){
         uint16_t seq_len = sequence_lengths[s];
         sequence += sequence_lengths[s - 1]; // increment the pointer so it is pointing to correct sequence data
+        base_weights += sequence_lengths[s - 1]; // increment the pointer so it is pointing to correct sequence data
 
         if (lane_idx == 0){
             if (sequence_lengths[0] >= CUDAPOA_MAX_NODES_PER_WINDOW){
@@ -232,7 +236,8 @@ void generatePOAKernel(uint8_t* consensus_d,
                     alignment_length,
                     sorted_poa, alignment_graph, 
                     sequence, alignment_read,
-                    node_coverage_counts);
+                    node_coverage_counts,
+                    base_weights);
 
 
             // Verify that each graph has at least one node with no outgoing edges.
@@ -324,6 +329,7 @@ void generatePOA(genomeworks::cudapoa::OutputDetails * output_details_d,
     uint16_t* coverage_d = output_details_d->coverage;
     // unpack input details
     uint8_t* sequences_d = input_details_d->sequences;
+    uint8_t* base_weights_d = input_details_d->base_weights;
     uint16_t* sequence_lengths_d = input_details_d->sequence_lengths;
     WindowDetails* window_details_d = input_details_d->window_details;
     // unpack alignment details
@@ -361,6 +367,7 @@ void generatePOA(genomeworks::cudapoa::OutputDetails * output_details_d,
                 << < total_windows, CUDAPOA_BANDED_THREADS_PER_BLOCK, 0, stream >> > (consensus_d,
                 coverage_d,
                 sequences_d,
+                base_weights_d,
                 sequence_lengths_d,
                 window_details_d,
                 total_windows,
@@ -394,6 +401,7 @@ void generatePOA(genomeworks::cudapoa::OutputDetails * output_details_d,
                 << < nblocks, CUDAPOA_THREADS_PER_BLOCK, 0, stream >> > (consensus_d,
                 coverage_d,
                 sequences_d,
+                base_weights_d,
                 sequence_lengths_d,
                 window_details_d,
                 total_windows,
