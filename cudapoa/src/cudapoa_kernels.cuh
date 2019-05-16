@@ -20,6 +20,9 @@
 // Maximum number of elements in a sequence.
 #define CUDAPOA_MAX_SEQUENCE_SIZE 1024
 
+// Maximum size of final consensus
+#define CUDAPOA_MAX_CONSENSUS_SIZE 1024
+
 // Maximum vertical dimension of scoring matrix, which stores graph.
 // Adding 4 elements more to ensure a 4byte boundary alignment for
 // any allocated buffer.

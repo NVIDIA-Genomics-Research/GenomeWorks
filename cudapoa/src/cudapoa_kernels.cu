@@ -288,8 +288,8 @@ void generatePOAKernel(uint8_t* consensus_d,
 
 
     if (lane_idx == 0 && generate_consensus){
-        uint8_t* consensus = &consensus_d[window_idx * CUDAPOA_MAX_SEQUENCE_SIZE];
-        uint16_t* coverage = &coverage_d[window_idx * CUDAPOA_MAX_SEQUENCE_SIZE];
+        uint8_t* consensus = &consensus_d[window_idx * CUDAPOA_MAX_CONSENSUS_SIZE];
+        uint16_t* coverage = &coverage_d[window_idx * CUDAPOA_MAX_CONSENSUS_SIZE];
         int32_t* consensus_scores = &consensus_scores_d[window_idx * CUDAPOA_MAX_NODES_PER_WINDOW];
         int16_t* consensus_predecessors = &consensus_predecessors_d[window_idx * CUDAPOA_MAX_NODES_PER_WINDOW];
 

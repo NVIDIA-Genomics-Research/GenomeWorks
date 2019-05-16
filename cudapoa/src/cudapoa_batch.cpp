@@ -38,14 +38,14 @@ void CudapoaBatch::print_batch_debug_message(const std::string& message)
 void CudapoaBatch::initialize_output_details()
 {
     // Output buffers.
-    uint32_t input_size = max_poas_ * CUDAPOA_MAX_SEQUENCE_SIZE;
+    uint32_t output_size = max_poas_ * CUDAPOA_MAX_CONSENSUS_SIZE;
     GW_CU_CHECK_ERR(cudaHostAlloc((void**) &output_details_h_, sizeof(genomeworks::cudapoa::OutputDetails), cudaHostAllocDefault));
-    GW_CU_CHECK_ERR(cudaHostAlloc((void**) &(output_details_h_->consensus), input_size * sizeof(uint8_t), cudaHostAllocDefault));
-    GW_CU_CHECK_ERR(cudaHostAlloc((void**) &(output_details_h_->coverage), input_size * sizeof(uint16_t), cudaHostAllocDefault));
+    GW_CU_CHECK_ERR(cudaHostAlloc((void**) &(output_details_h_->consensus), output_size * sizeof(uint8_t), cudaHostAllocDefault));
+    GW_CU_CHECK_ERR(cudaHostAlloc((void**) &(output_details_h_->coverage), output_size * sizeof(uint16_t), cudaHostAllocDefault));
 
     GW_CU_CHECK_ERR(cudaHostAlloc((void**) &output_details_d_, sizeof(genomeworks::cudapoa::OutputDetails), cudaHostAllocDefault));
-    GW_CU_CHECK_ERR(cudaMalloc((void**) &(output_details_d_->consensus), input_size * sizeof(int8_t)));
-    GW_CU_CHECK_ERR(cudaMalloc((void**) &(output_details_d_->coverage), input_size * sizeof(int16_t)));
+    GW_CU_CHECK_ERR(cudaMalloc((void**) &(output_details_d_->consensus), output_size * sizeof(int8_t)));
+    GW_CU_CHECK_ERR(cudaMalloc((void**) &(output_details_d_->coverage), output_size * sizeof(int16_t)));
 }
 
 void CudapoaBatch::free_output_details()
@@ -280,12 +280,12 @@ void CudapoaBatch::get_consensus(std::vector<std::string>& consensus,
     print_batch_debug_message(msg);
     GW_CU_CHECK_ERR(cudaMemcpyAsync(output_details_h_->consensus,
 				   output_details_d_->consensus,
-				   CUDAPOA_MAX_SEQUENCE_SIZE * max_poas_ * sizeof(uint8_t),
+				   CUDAPOA_MAX_CONSENSUS_SIZE * max_poas_ * sizeof(uint8_t),
 				   cudaMemcpyDeviceToHost,
 				   stream_));
     GW_CU_CHECK_ERR(cudaMemcpyAsync(output_details_h_->coverage,
 				   output_details_d_->coverage,
-				   CUDAPOA_MAX_SEQUENCE_SIZE * max_poas_ * sizeof(uint16_t),
+				   CUDAPOA_MAX_CONSENSUS_SIZE * max_poas_ * sizeof(uint16_t),
 				   cudaMemcpyDeviceToHost,
 				   stream_));
     GW_CU_CHECK_ERR(cudaStreamSynchronize(stream_));
@@ -297,14 +297,14 @@ void CudapoaBatch::get_consensus(std::vector<std::string>& consensus,
     {
         // Get the consensus string and reverse it since on GPU the
         // string is built backwards..
-        char* c = reinterpret_cast<char *>(&(output_details_h_->consensus[poa * CUDAPOA_MAX_SEQUENCE_SIZE]));
+        char* c = reinterpret_cast<char *>(&(output_details_h_->consensus[poa * CUDAPOA_MAX_CONSENSUS_SIZE]));
         consensus.emplace_back(std::string(c));
         std::reverse(consensus.back().begin(), consensus.back().end());
 
         // Similarly, get the coverage and reverse it.
         coverage.emplace_back(std::vector<uint16_t>(
-            &(output_details_h_->coverage[poa * CUDAPOA_MAX_SEQUENCE_SIZE]),
-            &(output_details_h_->coverage[poa * CUDAPOA_MAX_SEQUENCE_SIZE + consensus.back().size()])));
+            &(output_details_h_->coverage[poa * CUDAPOA_MAX_CONSENSUS_SIZE]),
+            &(output_details_h_->coverage[poa * CUDAPOA_MAX_CONSENSUS_SIZE + consensus.back().size()])));
         std::reverse(coverage.back().begin(), coverage.back().end());
 
     }
