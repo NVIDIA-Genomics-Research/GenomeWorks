@@ -228,6 +228,25 @@ void addAlignment(uint8_t*  nodes,
                   int16_t*  alignment_read,
                   uint16_t* node_coverage_counts,
                   uint8_t* base_weights);
+
+// Host function that calls the kernel
+void runNW(uint8_t* nodes,
+            uint16_t* graph,
+            uint16_t* node_id_to_pos,
+            uint16_t graph_count,
+            uint16_t* incoming_edge_count,
+            uint16_t* incoming_edges,
+            uint16_t* outgoing_edge_count,
+            uint16_t* outgoing_edges,
+            uint8_t* read,
+            uint16_t read_count,
+            int16_t* scores,
+            int16_t* alignment_graph,
+            int16_t* alignment_read,
+            int16_t gap_score,
+            int16_t mismatch_score,
+            int16_t match_score,
+            uint16_t* algined_nodes);
 } // namespace cudapoa
 
 } // namespace genomeworks

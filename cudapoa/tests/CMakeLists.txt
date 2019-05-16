@@ -5,7 +5,8 @@ set(SOURCES
     main.cpp
     Test_CudapoaBatch.cpp
     Test_CudapoaTopSort.cpp
-    Test_CudapoaAddAlignment.cpp)
+    Test_CudapoaAddAlignment.cpp
+    Test_CudapoaNW.cpp)
 
 set(LIBS
     cudapoa)
