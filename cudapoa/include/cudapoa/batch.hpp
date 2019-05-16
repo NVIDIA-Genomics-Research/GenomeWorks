@@ -31,10 +31,12 @@ public:
     /// \brief Add sequence to last partial order alignment.
     ///
     /// \param seq New sequence to be added to most recent POA
+    /// \param weights Weight per base in sequence. If no weights are supplied,
+    ///                per base weight defaults to 1.
     /// \param seq_len Length of sequence added
     ///
     /// \return Whether sequence could be successfully added to POA
-    virtual StatusType add_seq_to_poa(const char* seq, uint32_t seq_len) = 0;
+    virtual StatusType add_seq_to_poa(const char* seq, const uint8_t* weights, uint32_t seq_len) = 0;
 
     /// \brief Get total number of partial order alignments in batch.
     ///

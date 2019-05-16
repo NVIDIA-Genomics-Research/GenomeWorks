@@ -63,13 +63,15 @@ TEST_F(TestCudapoaBatch, MaxSeqPerPOATest)
     initialize(5, 10);
     EXPECT_EQ(cudapoa_batch->add_poa(), StatusType::success);
 
-    std::string seq(20, 'A');
+    uint32_t seq_length = 20;
+    std::string seq(seq_length, 'A');
+    std::vector<uint8_t> weights(seq_length, 1);
     for (uint16_t i = 0; i < 9; ++i)
     {
-        EXPECT_EQ(cudapoa_batch->add_seq_to_poa(seq.c_str(), seq.length()), StatusType::success);
+        EXPECT_EQ(cudapoa_batch->add_seq_to_poa(seq.c_str(), weights.data(), seq.length()), StatusType::success);
     }
     EXPECT_EQ(cudapoa_batch->get_total_poas(), 1);
-    EXPECT_EQ(cudapoa_batch->add_seq_to_poa(seq.c_str(), seq.length()), StatusType::exceeded_maximum_sequences_per_poa);
+    EXPECT_EQ(cudapoa_batch->add_seq_to_poa(seq.c_str(), weights.data(), seq.length()), StatusType::exceeded_maximum_sequences_per_poa);
 }
 
 TEST_F(TestCudapoaBatch, MaxSeqSizeTest)
@@ -78,11 +80,15 @@ TEST_F(TestCudapoaBatch, MaxSeqSizeTest)
     EXPECT_EQ(cudapoa_batch->add_poa(), StatusType::success);
     EXPECT_EQ(cudapoa_batch->get_total_poas(), 1);
 
-    std::string seq(1023, 'A');
-    EXPECT_EQ(cudapoa_batch->add_seq_to_poa(seq.c_str(), seq.length()), StatusType::success);
+    uint32_t seq_length = 1023;
+    std::string seq(seq_length, 'A');
+    std::vector<uint8_t> weights(seq_length, 1);
+    EXPECT_EQ(cudapoa_batch->add_seq_to_poa(seq.c_str(), weights.data(), seq.length()), StatusType::success);
 
-    seq = std::string(1024, 'A');
-    EXPECT_EQ(cudapoa_batch->add_seq_to_poa(seq.c_str(), seq.length()), StatusType::exceeded_maximum_sequence_size);
+    seq_length = 1024;
+    seq = std::string(seq_length, 'A');
+    std::vector<uint8_t> weights_2(seq_length, 1);
+    EXPECT_EQ(cudapoa_batch->add_seq_to_poa(seq.c_str(), weights_2.data(), seq.length()), StatusType::exceeded_maximum_sequence_size);
 }
 
 

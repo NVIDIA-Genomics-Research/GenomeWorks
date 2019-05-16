@@ -40,15 +40,13 @@ uint16_t addAlignmentToGraph(uint8_t* nodes,
                          int16_t* alignment_graph,
                          uint8_t* read,
                          int16_t* alignment_read,
-                         uint16_t* node_coverage_counts)
+                         uint16_t* node_coverage_counts,
+                         uint8_t* base_weights)
 {
     //printf("Running addition for alignment %d\n", alignment_length);
     int16_t head_node_id = -1;
     int16_t curr_node_id = -1;
     uint16_t prev_weight = 0;
-
-#pragma message("TODO: Send node weights into kernel as vector. Currently hard coded.")
-    const uint16_t NODE_WEIGHT = 1;
 
     // Basic algorithm is to iterate through the alignment of the read.
     // For each position in that alignment -
@@ -66,6 +64,8 @@ uint16_t addAlignmentToGraph(uint8_t* nodes,
         // Case where base in read in an insert.
         if (read_pos != -1)
         {
+            uint16_t NODE_WEIGHT = base_weights[read_pos];
+
             //printf("%c ", read[read_pos]);
             uint8_t read_base = read[read_pos];
             int16_t graph_node_id = alignment_graph[pos];
@@ -197,10 +197,9 @@ uint16_t addAlignmentToGraph(uint8_t* nodes,
             // If a node is seen within a graph, then it's part of some
             // read, hence its coverage is incremented by 1.
             node_coverage_counts[head_node_id]++;
+
+            prev_weight = NODE_WEIGHT;
         }
-
-        prev_weight = NODE_WEIGHT;
-
     }
     //printf("final size %d\n", node_count);
     return node_count;
@@ -219,7 +218,8 @@ void addAlignmentKernel(uint8_t*  nodes,
                         int16_t*  alignment_graph,
                         uint8_t*  read,
                         int16_t*  alignment_read,
-                        uint16_t* node_coverage_counts) 
+                        uint16_t* node_coverage_counts,
+                        uint8_t* base_weights)
 {
     // all pointers will be allocated in unified memory visible to both host and device
     *node_count = addAlignmentToGraph(nodes,
@@ -233,7 +233,8 @@ void addAlignmentKernel(uint8_t*  nodes,
                                       alignment_graph,
                                       read,
                                       alignment_read,
-                                      node_coverage_counts);
+                                      node_coverage_counts,
+                                      base_weights);
 }
 
 // Host function that calls the kernel
@@ -248,7 +249,8 @@ void addAlignment(uint8_t*  nodes,
                   int16_t*  alignment_graph,
                   uint8_t*  read,
                   int16_t*  alignment_read,
-                  uint16_t* node_coverage_counts) 
+                  uint16_t* node_coverage_counts,
+                  uint8_t* base_weights)
 {
     addAlignmentKernel<<<1, 1>>>(nodes,
                                   node_count,
@@ -261,7 +263,8 @@ void addAlignment(uint8_t*  nodes,
                                   alignment_graph,
                                   read,
                                   alignment_read,
-                                  node_coverage_counts);
+                                  node_coverage_counts,
+                                  base_weights);
 }
 
 }

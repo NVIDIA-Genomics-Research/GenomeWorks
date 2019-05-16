@@ -44,7 +44,7 @@ public:
     StatusType add_poa();
 
     // Add sequence to last partial order alignment.
-    StatusType add_seq_to_poa(const char* seq, uint32_t seq_len);
+    StatusType add_seq_to_poa(const char* seq, const uint8_t* weights, uint32_t seq_len);
 
     // Get total number of partial order alignments in batch.
     uint32_t get_total_poas() const;

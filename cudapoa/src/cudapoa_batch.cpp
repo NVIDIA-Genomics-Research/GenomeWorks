@@ -64,11 +64,13 @@ void CudapoaBatch::initialize_input_details()
     // Host allocations
     GW_CU_CHECK_ERR(cudaHostAlloc((void**) &input_details_h_, sizeof(genomeworks::cudapoa::InputDetails), cudaHostAllocDefault));
     GW_CU_CHECK_ERR(cudaHostAlloc((void**) &(input_details_h_->sequences), input_size * sizeof(uint8_t), cudaHostAllocDefault));
+    GW_CU_CHECK_ERR(cudaHostAlloc((void**) &(input_details_h_->base_weights), input_size * sizeof(uint8_t), cudaHostAllocDefault));
     GW_CU_CHECK_ERR(cudaHostAlloc((void**) &(input_details_h_->sequence_lengths), max_poas_ * max_sequences_per_poa_ * sizeof(uint16_t), cudaHostAllocDefault));
     GW_CU_CHECK_ERR(cudaHostAlloc((void**) &(input_details_h_->window_details), max_poas_ * sizeof(WindowDetails), cudaHostAllocDefault));
     // Device allocations
     GW_CU_CHECK_ERR(cudaHostAlloc((void**) &input_details_d_, sizeof(genomeworks::cudapoa::InputDetails), cudaHostAllocDefault));
     GW_CU_CHECK_ERR(cudaMalloc((void**) &(input_details_d_->sequences), input_size * sizeof(uint8_t)));
+    GW_CU_CHECK_ERR(cudaMalloc((void**) &(input_details_d_->base_weights), input_size * sizeof(uint8_t)));
     GW_CU_CHECK_ERR(cudaMalloc((void**) &(input_details_d_->sequence_lengths), max_poas_ * max_sequences_per_poa_ * sizeof(uint16_t)));
     GW_CU_CHECK_ERR(cudaMalloc((void**) &(input_details_d_->window_details), max_poas_ * sizeof(WindowDetails)));
 }
@@ -76,10 +78,12 @@ void CudapoaBatch::initialize_input_details()
 void CudapoaBatch::free_input_details()
 {
     GW_CU_CHECK_ERR(cudaFreeHost(input_details_h_->sequences));
+    GW_CU_CHECK_ERR(cudaFreeHost(input_details_h_->base_weights));
     GW_CU_CHECK_ERR(cudaFreeHost(input_details_h_->sequence_lengths));
     GW_CU_CHECK_ERR(cudaFreeHost(input_details_h_->window_details));
     GW_CU_CHECK_ERR(cudaFreeHost(input_details_h_));
     GW_CU_CHECK_ERR(cudaFree(input_details_d_->sequences));
+    GW_CU_CHECK_ERR(cudaFree(input_details_d_->base_weights));
     GW_CU_CHECK_ERR(cudaFree(input_details_d_->sequence_lengths));
     GW_CU_CHECK_ERR(cudaFree(input_details_d_->window_details));
     GW_CU_CHECK_ERR(cudaFreeHost(input_details_d_));
@@ -242,6 +246,8 @@ void CudapoaBatch::generate_poa()
     //Copy sequencecs, sequence lengths and window details to device
     GW_CU_CHECK_ERR(cudaMemcpyAsync(input_details_d_->sequences, input_details_h_->sequences,
                                  num_nucleotides_copied_ * sizeof(uint8_t), cudaMemcpyHostToDevice, stream_));
+    GW_CU_CHECK_ERR(cudaMemcpyAsync(input_details_d_->base_weights, input_details_h_->base_weights,
+                                 num_nucleotides_copied_ * sizeof(uint8_t), cudaMemcpyHostToDevice, stream_));
     GW_CU_CHECK_ERR(cudaMemcpyAsync(input_details_d_->window_details, input_details_h_->window_details,
                                  poa_count_ * sizeof(genomeworks::cudapoa::WindowDetails), cudaMemcpyHostToDevice, stream_));
     GW_CU_CHECK_ERR(cudaMemcpyAsync(input_details_d_->sequence_lengths, input_details_h_->sequence_lengths,
@@ -332,7 +338,7 @@ void CudapoaBatch::reset()
     global_sequence_idx_ = 0;
 }
 
-StatusType CudapoaBatch::add_seq_to_poa(const char* seq, uint32_t seq_len)
+StatusType CudapoaBatch::add_seq_to_poa(const char* seq, const uint8_t* weights, uint32_t seq_len)
 {
     if (seq_len >= CUDAPOA_MAX_SEQUENCE_SIZE)
     {
@@ -347,9 +353,23 @@ StatusType CudapoaBatch::add_seq_to_poa(const char* seq, uint32_t seq_len)
     }
 
     window_details->num_seqs++;
+    // Copy sequence data
     memcpy(&(input_details_h_->sequences[num_nucleotides_copied_]),
-           seq,
-           seq_len);
+            seq,
+            seq_len);
+    // Copy weights
+    if (weights == nullptr)
+    {
+        memset(&(input_details_h_->base_weights[num_nucleotides_copied_]),
+                1,
+                seq_len);
+    }
+    else
+    {
+        memcpy(&(input_details_h_->base_weights[num_nucleotides_copied_]),
+                weights,
+                seq_len);
+    }
     input_details_h_->sequence_lengths[global_sequence_idx_] = seq_len;
 
     num_nucleotides_copied_ += seq_len;

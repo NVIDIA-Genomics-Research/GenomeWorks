@@ -68,6 +68,8 @@ typedef struct InputDetails
 {
     // Buffer pointer for input data.
     uint8_t* sequences;
+    // Buffer pointer for weights of each base.
+    uint8_t* base_weights;
     // Buffer for sequence lengths.
     uint16_t* sequence_lengths;
     // Buffer pointers that hold Window Details struct.
@@ -144,35 +146,44 @@ typedef struct GraphDetails
  * @brief The host function which calls the kernel that runs the partial order alignment
  *        algorithm.
  *
- * @param[out] consensus_d                Device buffer for generated consensus
- * @param[out] coverage_d_                Device buffer for coverage of each base in consensus
- * @param[in] sequences_d                 Device buffer with sequences for all windows
- * @param[in] sequence_lengths_d          Device buffer sequence lengths
- * @param[in] window_details_d            Device buffer with structs 
- *                                        encapsulating sequence details per window
+ * @param[out] output_details_d           Struct that contains output buffers, including the following fields:
+ *             consensus                  Device buffer for generated consensus
+ *             coverage                   Device buffer for coverage of each base in consensus
+ *
+ * @param[in] input_details_d             Struct that contains input buffers, including the following fields:
+ *            sequences                   Device buffer with sequences for all windows
+ *            base_weight                 Device buffer with weights per base for all windows
+ *            sequence_lengths            Device buffer sequence lengths
+ *            window_details              Device buffer with structs encapsulating sequence details per window
+ *
  * @param[in] total_window                Total number of windows to process
  * @param[in] stream                      Stream to run kernel on
- * @param[in] scores                      Device scratch space that scores alignment matrix score
- * @param[in] alignment_graph             Device scratch space for backtrace alignment of graph
- * @param[in] alignment_read              Device scratch space for backtrace alignment of sequence
- * @param[in] nodes                       Device scratch space for storing unique nodes in graph
- * @param[in] incoming_edges              Device scratch space for storing incoming edges per node
- * @param[in] incoming_edges_count        Device scratch space for storing number of incoming edges per node
- * @param[in] outgoing_edges              Device scratch space for storing outgoing edges per node
- * @param[in] outgoing_edges_count        Device scratch space for storing number of outgoing edges per node
- * @param[in] incoming_edge_w             Device scratch space for storing weight of incoming edges
- * @param[in] outgoing_edge_w             Device scratch space for storing weight of outgoing edges
- * @param[in] sorted_poa                  Device scratch space for storing sorted graph
- * @param[in] node_id_to_pos              Device scratch space for mapping node ID to position in graph
- * @graph[in] node_alignments             Device scratch space for storing alignment nodes per node in graph
- * @param[in] node_alignment_count        Device scratch space for storing number of aligned nodes
- * @param[in] sorted_poa_local_edge_count Device scratch space for maintaining edge counts during topological sort
- * @param[in] consensus_scores            Device scratch space for storing score of each node while traversing graph during consensus
- * @param[in] consensus_predecessors      Device scratch space for storing predecessors of nodes while traversing graph during consensus
- * @param[in] node_marks_d                Device scratch space for storing node marks when running spoa accurate top sort
- * @param[in] check_aligned_nodes_d       Device scratch space for storing check for aligned nodes
- * @param[in] nodes_to_visit_d            Device scratch space for storing stack of nodes to be visited in topsort
- * @param[in] node_coverage_counts        Device scratch space for storing coverage count for each node in graph
+ *
+ * @param[in] alignment_details_d         Struct that contains alignment related buffers, including the following fields:
+ *            scores                      Device scratch space that scores alignment matrix score
+ *            alignment_graph             Device scratch space for backtrace alignment of graph
+ *            alignment_read              Device scratch space for backtrace alignment of sequence
+ *
+ * @param[in] graph_details_d             Struct that contains graph related buffers, including the following fields:
+ *            nodes                       Device scratch space for storing unique nodes in graph
+ *            incoming_edges              Device scratch space for storing incoming edges per node
+ *            incoming_edges_count        Device scratch space for storing number of incoming edges per node
+ *            outgoing_edges              Device scratch space for storing outgoing edges per node
+ *            outgoing_edges_count        Device scratch space for storing number of outgoing edges per node
+ *            incoming_edge_w             Device scratch space for storing weight of incoming edges
+ *            outgoing_edge_w             Device scratch space for storing weight of outgoing edges
+ *            sorted_poa                  Device scratch space for storing sorted graph
+ *            node_id_to_pos              Device scratch space for mapping node ID to position in graph
+ *            node_alignments             Device scratch space for storing alignment nodes per node in graph
+ *            node_alignment_count        Device scratch space for storing number of aligned nodes
+ *            sorted_poa_local_edge_count Device scratch space for maintaining edge counts during topological sort
+ *            consensus_scores            Device scratch space for storing score of each node while traversing graph during consensus
+ *            consensus_predecessors      Device scratch space for storing predecessors of nodes while traversing graph during consensus
+ *            node_marks                  Device scratch space for storing node marks when running spoa accurate top sort
+ *            check_aligned_nodes         Device scratch space for storing check for aligned nodes
+ *            nodes_to_visit              Device scratch space for storing stack of nodes to be visited in topsort
+ *            node_coverage_counts        Device scratch space for storing coverage count for each node in graph
+ *
  * @param[in] gap_score                   Score for inserting gap into alignment
  * @param[in] mismatch_score              Score for finding a mismatch in alignment
  * @param[in] match_score                 Score for finding a match in alignment
@@ -212,7 +223,8 @@ void addAlignment(uint8_t*  nodes,
                   int16_t*  alignment_graph,
                   uint8_t*  read,
                   int16_t*  alignment_read,
-                  uint16_t* node_coverage_counts);
+                  uint16_t* node_coverage_counts,
+                  uint8_t* base_weights);
 } // namespace cudapoa
 
 } // namespace genomeworks
