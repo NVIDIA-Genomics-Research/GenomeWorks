@@ -223,7 +223,7 @@ void generateConsensus(uint8_t* nodes,
         cov += node_coverage_counts[node_alignments[max_score_id * CUDAPOA_MAX_NODE_ALIGNMENTS + a]];
     }
     coverage[consensus_pos] = cov;
-    consensus++;
+    consensus_pos++;
     consensus[consensus_pos] = '\0';
 }
 
