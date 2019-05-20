@@ -97,30 +97,32 @@ void generatePOAKernel(uint8_t* consensus_d,
         return;
 
     uint32_t matrix_sequence_dimension = cuda_banded_alignment ? CUDAPOA_BANDED_MAX_MATRIX_SEQUENCE_DIMENSION : CUDAPOA_MAX_MATRIX_SEQUENCE_DIMENSION;
+    uint32_t max_nodes_per_window = cuda_banded_alignment ? CUDAPOA_MAX_NODES_PER_WINDOW_BANDED : CUDAPOA_MAX_NODES_PER_WINDOW;
+    uint32_t max_graph_dimension = cuda_banded_alignment ? CUDAPOA_MAX_MATRIX_GRAPH_DIMENSION_BANDED : CUDAPOA_MAX_MATRIX_GRAPH_DIMENSION;
 
     // Find the buffer offsets for each thread within the global memory buffers.
-    uint8_t* nodes = &nodes_d[CUDAPOA_MAX_NODES_PER_WINDOW * window_idx];
-    uint16_t* incoming_edges = &incoming_edges_d[window_idx * CUDAPOA_MAX_NODES_PER_WINDOW * CUDAPOA_MAX_NODE_EDGES];
-    uint16_t* incoming_edge_count = &incoming_edge_count_d[window_idx * CUDAPOA_MAX_NODES_PER_WINDOW];
-    uint16_t* outoing_edges = &outgoing_edges_d[window_idx * CUDAPOA_MAX_NODES_PER_WINDOW * CUDAPOA_MAX_NODE_EDGES];
-    uint16_t* outgoing_edge_count = &outgoing_edge_count_d[window_idx * CUDAPOA_MAX_NODES_PER_WINDOW];
-    uint16_t* incoming_edge_weights = &incoming_edge_w_d[window_idx * CUDAPOA_MAX_NODES_PER_WINDOW * CUDAPOA_MAX_NODE_EDGES];
-    uint16_t* outgoing_edge_weights = &outgoing_edge_w_d[window_idx * CUDAPOA_MAX_NODES_PER_WINDOW * CUDAPOA_MAX_NODE_EDGES];
-    uint16_t* sorted_poa = &sorted_poa_d[window_idx * CUDAPOA_MAX_NODES_PER_WINDOW];
-    uint16_t* node_id_to_pos = &node_id_to_pos_d[window_idx * CUDAPOA_MAX_NODES_PER_WINDOW];
-    uint16_t* node_alignments = &node_alignments_d[window_idx * CUDAPOA_MAX_NODES_PER_WINDOW * CUDAPOA_MAX_NODE_ALIGNMENTS];
-    uint16_t* node_alignment_count = &node_alignment_count_d[window_idx * CUDAPOA_MAX_NODES_PER_WINDOW];
-    uint16_t* sorted_poa_local_edge_count = &sorted_poa_local_edge_count_d[window_idx * CUDAPOA_MAX_NODES_PER_WINDOW];
+    uint8_t* nodes = &nodes_d[max_nodes_per_window * window_idx];
+    uint16_t* incoming_edges = &incoming_edges_d[window_idx * max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES];
+    uint16_t* incoming_edge_count = &incoming_edge_count_d[window_idx * max_nodes_per_window];
+    uint16_t* outoing_edges = &outgoing_edges_d[window_idx * max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES];
+    uint16_t* outgoing_edge_count = &outgoing_edge_count_d[window_idx * max_nodes_per_window];
+    uint16_t* incoming_edge_weights = &incoming_edge_w_d[window_idx * max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES];
+    uint16_t* outgoing_edge_weights = &outgoing_edge_w_d[window_idx * max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES];
+    uint16_t* sorted_poa = &sorted_poa_d[window_idx * max_nodes_per_window];
+    uint16_t* node_id_to_pos = &node_id_to_pos_d[window_idx * max_nodes_per_window];
+    uint16_t* node_alignments = &node_alignments_d[window_idx * max_nodes_per_window * CUDAPOA_MAX_NODE_ALIGNMENTS];
+    uint16_t* node_alignment_count = &node_alignment_count_d[window_idx * max_nodes_per_window];
+    uint16_t* sorted_poa_local_edge_count = &sorted_poa_local_edge_count_d[window_idx * max_nodes_per_window];
 
-    int16_t* scores = &scores_d[CUDAPOA_MAX_MATRIX_GRAPH_DIMENSION * matrix_sequence_dimension * window_idx];
-    int16_t* alignment_graph = &alignment_graph_d[CUDAPOA_MAX_MATRIX_GRAPH_DIMENSION * window_idx];
-    int16_t* alignment_read = &alignment_read_d[CUDAPOA_MAX_MATRIX_GRAPH_DIMENSION * window_idx];
-    uint16_t* node_coverage_counts = &node_coverage_counts_d_[CUDAPOA_MAX_NODES_PER_WINDOW * window_idx];
+    int16_t* scores = &scores_d[max_graph_dimension * matrix_sequence_dimension * window_idx];
+    int16_t* alignment_graph = &alignment_graph_d[max_graph_dimension * window_idx];
+    int16_t* alignment_read = &alignment_read_d[max_graph_dimension * window_idx];
+    uint16_t* node_coverage_counts = &node_coverage_counts_d_[max_nodes_per_window * window_idx];
 
 #ifdef SPOA_ACCURATE
-    uint8_t* node_marks = &node_marks_d_[CUDAPOA_MAX_NODES_PER_WINDOW * window_idx];
-    bool* check_aligned_nodes = &check_aligned_nodes_d_[CUDAPOA_MAX_NODES_PER_WINDOW * window_idx];
-    uint16_t* nodes_to_visit = &nodes_to_visit_d_[CUDAPOA_MAX_NODES_PER_WINDOW * window_idx];
+    uint8_t* node_marks = &node_marks_d_[max_nodes_per_window * window_idx];
+    bool* check_aligned_nodes = &check_aligned_nodes_d_[max_nodes_per_window * window_idx];
+    uint16_t* nodes_to_visit = &nodes_to_visit_d_[max_nodes_per_window * window_idx];
 #endif
 
     uint16_t * sequence_lengths = &sequence_lengths_d[window_details_d[window_idx].seq_len_buffer_offset];
@@ -172,12 +174,12 @@ void generatePOAKernel(uint8_t* consensus_d,
         base_weights += sequence_lengths[s - 1]; // increment the pointer so it is pointing to correct sequence data
 
         if (lane_idx == 0){
-            if (sequence_lengths[0] >= CUDAPOA_MAX_NODES_PER_WINDOW){
-                printf("Node count %d is greater than max matrix size %d\n", sequence_lengths[0], CUDAPOA_MAX_NODES_PER_WINDOW);
+            if (sequence_lengths[0] >= max_nodes_per_window){
+                printf("Node count %d is greater than max matrix size %d\n", sequence_lengths[0], max_nodes_per_window);
                 return;
             }
-            if (seq_len >= CUDAPOA_MAX_NODES_PER_WINDOW){
-                printf("Sequence len %d is greater than max matrix size %d\n", seq_len, CUDAPOA_MAX_NODES_PER_WINDOW);
+            if (seq_len >= max_nodes_per_window){
+                printf("Sequence len %d is greater than max matrix size %d\n", seq_len, max_nodes_per_window);
                 return;
             }
         }
@@ -269,7 +271,8 @@ void generatePOAKernel(uint8_t* consensus_d,
                                       node_alignments,
                                       node_marks,
                                       check_aligned_nodes,
-                                      nodes_to_visit);
+                                      nodes_to_visit,
+                                      cuda_banded_alignment);
 #else
             // Faster top sort
             topologicalSortDeviceUtil(sorted_poa,
@@ -291,8 +294,8 @@ void generatePOAKernel(uint8_t* consensus_d,
     if (lane_idx == 0 && generate_consensus){
         uint8_t* consensus = &consensus_d[window_idx * CUDAPOA_MAX_CONSENSUS_SIZE];
         uint16_t* coverage = &coverage_d[window_idx * CUDAPOA_MAX_CONSENSUS_SIZE];
-        int32_t* consensus_scores = &consensus_scores_d[window_idx * CUDAPOA_MAX_NODES_PER_WINDOW];
-        int16_t* consensus_predecessors = &consensus_predecessors_d[window_idx * CUDAPOA_MAX_NODES_PER_WINDOW];
+        int32_t* consensus_scores = &consensus_scores_d[window_idx * max_nodes_per_window];
+        int16_t* consensus_predecessors = &consensus_predecessors_d[window_idx * max_nodes_per_window];
 
         generateConsensus(nodes,
 			  sequence_lengths[0],

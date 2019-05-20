@@ -82,7 +82,7 @@ protected:
     void free_alignment_details();
 
     // Allocate buffers for graph details
-    void initialize_graph_details();
+    void initialize_graph_details(bool banded_alignment);
 
     // Free buffers for graph details
     void free_graph_details();

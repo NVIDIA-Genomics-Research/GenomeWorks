@@ -16,6 +16,7 @@
 
 // Maximum number of nodes in a graph, 1 graph per window.
 #define CUDAPOA_MAX_NODES_PER_WINDOW 3072
+#define CUDAPOA_MAX_NODES_PER_WINDOW_BANDED 4096
 
 // Maximum number of elements in a sequence.
 #define CUDAPOA_MAX_SEQUENCE_SIZE 1024
@@ -27,7 +28,8 @@
 // Adding 4 elements more to ensure a 4byte boundary alignment for
 // any allocated buffer.
 #define CUDAPOA_MAX_MATRIX_GRAPH_DIMENSION (CUDAPOA_MAX_NODES_PER_WINDOW + 4)
- 
+#define CUDAPOA_MAX_MATRIX_GRAPH_DIMENSION_BANDED (CUDAPOA_MAX_NODES_PER_WINDOW_BANDED + 4)
+
 // Maximum horizontal dimension of scoring matrix, which stores sequences.
 // Adding 4 elements more to ensure a 4byte boundary alignment for
 // any allocated buffer.
