@@ -11,7 +11,7 @@ namespace genomeworks {
 
     std::size_t Minimizer::position() const { return position_; }
 
-    std::size_t Minimizer::sequence_id() const { return sequence_id_; }
+    std::uint64_t Minimizer::sequence_id() const { return sequence_id_; }
 
     Minimizer::DirectionOfRepresentation Minimizer::direction() const { return direction_; }
 

@@ -30,7 +30,7 @@ namespace genomeworks {
 
         /// \brief returns sequence's ID
         /// \return sequence's ID
-        virtual std::size_t sequence_id() const = 0;
+        virtual std::uint64_t sequence_id() const = 0;
     };
 
 /// \}
