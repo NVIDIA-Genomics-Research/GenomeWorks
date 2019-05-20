@@ -89,11 +89,12 @@ void CudapoaBatch::free_input_details()
     GW_CU_CHECK_ERR(cudaFreeHost(input_details_d_));
 }
 
-void CudapoaBatch::initialize_alignment_details()
+void CudapoaBatch::initialize_alignment_details(bool banded_alignment)
 {
+    uint32_t matrix_sequence_dimension = banded_alignment ? CUDAPOA_BANDED_MAX_MATRIX_SEQUENCE_DIMENSION : CUDAPOA_MAX_MATRIX_SEQUENCE_DIMENSION;
     // Struct for alignment details
     GW_CU_CHECK_ERR(cudaHostAlloc((void**) &alignment_details_d_, sizeof(genomeworks::cudapoa::AlignmentDetails), cudaHostAllocDefault));
-    GW_CU_CHECK_ERR(cudaMalloc((void**) &(alignment_details_d_->scores), sizeof(int16_t) * CUDAPOA_MAX_MATRIX_GRAPH_DIMENSION * CUDAPOA_MAX_MATRIX_SEQUENCE_DIMENSION * max_poas_));
+    GW_CU_CHECK_ERR(cudaMalloc((void**) &(alignment_details_d_->scores), sizeof(int16_t) * CUDAPOA_MAX_MATRIX_GRAPH_DIMENSION * matrix_sequence_dimension * max_poas_));
     GW_CU_CHECK_ERR(cudaMalloc((void**) &(alignment_details_d_->alignment_graph), sizeof(int16_t) * CUDAPOA_MAX_MATRIX_GRAPH_DIMENSION * max_poas_ ));
     GW_CU_CHECK_ERR(cudaMalloc((void**) &(alignment_details_d_->alignment_read), sizeof(int16_t) * CUDAPOA_MAX_MATRIX_GRAPH_DIMENSION * max_poas_ ));
 }
@@ -186,12 +187,14 @@ CudapoaBatch::CudapoaBatch(uint32_t max_poas, uint32_t max_sequences_per_poa, ui
     msg = " Allocated output buffers of size " + std::to_string( (static_cast<float>(input_size)  / (1024 * 1024)) ) + "MB on device ";
     print_batch_debug_message(msg);
 
-    initialize_alignment_details();
+    initialize_alignment_details(banded_alignment_);
 
     initialize_graph_details();
 
     // Debug print for size allocated.
-    uint32_t temp_size = (sizeof(int16_t) * CUDAPOA_MAX_MATRIX_GRAPH_DIMENSION * CUDAPOA_MAX_MATRIX_SEQUENCE_DIMENSION * max_poas_ );
+    uint32_t matrix_sequence_dimension = banded_alignment_ ? CUDAPOA_BANDED_MAX_MATRIX_SEQUENCE_DIMENSION : CUDAPOA_MAX_MATRIX_SEQUENCE_DIMENSION;
+    uint32_t temp_size = (sizeof(int16_t) * CUDAPOA_MAX_MATRIX_GRAPH_DIMENSION * matrix_sequence_dimension * max_poas_ );
+
     temp_size += 2 * (sizeof(int16_t) * CUDAPOA_MAX_MATRIX_GRAPH_DIMENSION * max_poas_ );
     msg = " Allocated temp buffers of size " + std::to_string( (static_cast<float>(temp_size)  / (1024 * 1024)) ) + "MB on device ";
     print_batch_debug_message(msg);

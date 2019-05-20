@@ -96,6 +96,8 @@ void generatePOAKernel(uint8_t* consensus_d,
     if (window_idx >= total_windows)
         return;
 
+    uint32_t matrix_sequence_dimension = cuda_banded_alignment ? CUDAPOA_BANDED_MAX_MATRIX_SEQUENCE_DIMENSION : CUDAPOA_MAX_MATRIX_SEQUENCE_DIMENSION;
+
     // Find the buffer offsets for each thread within the global memory buffers.
     uint8_t* nodes = &nodes_d[CUDAPOA_MAX_NODES_PER_WINDOW * window_idx];
     uint16_t* incoming_edges = &incoming_edges_d[window_idx * CUDAPOA_MAX_NODES_PER_WINDOW * CUDAPOA_MAX_NODE_EDGES];
@@ -110,7 +112,7 @@ void generatePOAKernel(uint8_t* consensus_d,
     uint16_t* node_alignment_count = &node_alignment_count_d[window_idx * CUDAPOA_MAX_NODES_PER_WINDOW];
     uint16_t* sorted_poa_local_edge_count = &sorted_poa_local_edge_count_d[window_idx * CUDAPOA_MAX_NODES_PER_WINDOW];
 
-    int16_t* scores = &scores_d[CUDAPOA_MAX_MATRIX_GRAPH_DIMENSION * CUDAPOA_MAX_MATRIX_SEQUENCE_DIMENSION * window_idx];
+    int16_t* scores = &scores_d[CUDAPOA_MAX_MATRIX_GRAPH_DIMENSION * matrix_sequence_dimension * window_idx];
     int16_t* alignment_graph = &alignment_graph_d[CUDAPOA_MAX_MATRIX_GRAPH_DIMENSION * window_idx];
     int16_t* alignment_read = &alignment_read_d[CUDAPOA_MAX_MATRIX_GRAPH_DIMENSION * window_idx];
     uint16_t* node_coverage_counts = &node_coverage_counts_d_[CUDAPOA_MAX_NODES_PER_WINDOW * window_idx];
@@ -129,7 +131,6 @@ void generatePOAKernel(uint8_t* consensus_d,
 
     if (lane_idx == 0)
     {
-
         // Create backbone for window based on first sequence in window.
         nodes[0] = sequence[0];
         sorted_poa[0] = 0;

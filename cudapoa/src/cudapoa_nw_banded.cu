@@ -1,8 +1,6 @@
 #include "cudapoa_kernels.cuh"
+#include "cudastructs.cuh"
 #include <stdio.h>
-
-#define WARP_SIZE 32
-#define CELLS_PER_THREAD 4
 
 // Extract shorts from bit field.
 #define EXTRACT_SHORT_FROM_BITFIELD(type, val, pos) (type)((val >> (16 * (pos))) & 0xffff)
@@ -10,6 +8,7 @@
 namespace genomeworks {
 
 namespace cudapoa {
+
 
 __device__ uint16_t get_band_start_for_row(uint16_t row_idx, float gradient, uint16_t band_width, uint16_t max_column){
 
@@ -27,34 +26,48 @@ __device__ uint16_t get_band_start_for_row(uint16_t row_idx, float gradient, uin
 
     start_pos = start_pos - (start_pos % CELLS_PER_THREAD);
 
-
-        //check if end pos is exceeding the matrix bounds, this should never happen becuause band centre doesn't
-        // exceed max_column - band_width /2
-/*    if ((start_pos + band_width > CUDAPOA_MAX_SEQUENCE_SIZE)) {
-        if (threadIdx.x == 0) {
-            printf("ERROR - overspilling matrix end!\n");
-        }
-    }*/
-
-
     return uint16_t (start_pos);
 }
 
-__device__ int16_t * get_score_ptr(int16_t* scores, uint16_t row, uint16_t  column) {
-    return &scores[column + row * CUDAPOA_MAX_MATRIX_SEQUENCE_DIMENSION];
+__device__ int16_t * get_score_ptr(int16_t* scores, uint16_t row, uint16_t  column, float gradient, uint16_t band_width, uint16_t max_column) {
+
+    uint16_t band_start = get_band_start_for_row(row, gradient, band_width, max_column);
+
+    uint16_t col_idx;
+
+    if (column == 0){
+        col_idx = band_start;
+    }else{
+        col_idx = column - band_start;
+    }
+
+    return &scores[(col_idx) + row * CUDAPOA_BANDED_MAX_MATRIX_SEQUENCE_DIMENSION];
 };
+
+__device__ void set_score(int16_t* scores, uint16_t row, uint16_t  column, int16_t value, float gradient, uint16_t band_width, uint16_t max_column){
+    uint16_t band_start = get_band_start_for_row(row, gradient, band_width, max_column);
+
+    uint16_t col_idx;
+    if (column == 0){
+        col_idx = band_start;
+    }else{
+        col_idx = column - band_start;
+    }
+
+    scores[col_idx + row * CUDAPOA_BANDED_MAX_MATRIX_SEQUENCE_DIMENSION] = value;
+}
 
 __device__ void initialize_band(int16_t* scores, uint16_t row, int16_t  value, float gradient, uint16_t band_width, uint16_t max_column) {
 
-    //hacky
     uint16_t band_start = get_band_start_for_row(row, gradient, band_width, max_column);
     uint16_t band_end = band_start + band_width;
-    uint16_t right_pad = band_width; // TODO solve this overallocation of memory
 
     uint16_t initialization_offset = (band_start == 0) ? 1 : band_start;
 
-    for (uint16_t j = threadIdx.x + initialization_offset; j < band_end + right_pad; j += blockDim.x) { //bandwidth actually readlength, trying to sort out left first
-        scores[j + row * CUDAPOA_MAX_MATRIX_SEQUENCE_DIMENSION] = value;
+    set_score(scores, row, initialization_offset, value, gradient, band_width, max_column);
+
+    for (uint16_t j = threadIdx.x + band_end; j < band_end + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING; j += blockDim.x) {
+        set_score(scores, row, j, value, gradient, band_width, max_column);
     }
 };
 
@@ -65,15 +78,49 @@ __device__ int16_t get_score(int16_t* scores, uint16_t row, uint16_t  column, fl
     if (((column > band_end) || (column < band_start)) && column != 0){
         return SHRT_MIN + out_of_band_score_offset;
     }else {
-        return *get_score_ptr(scores, row, column);
+        return *get_score_ptr(scores, row, column, gradient, bandwidth, max_column);
     }
 }
 
+__device__ ScoreT4<int16_t> get_scores(uint16_t read_pos, int16_t * scores, uint16_t node,
+                                       int16_t gap_score, int16_t char_profile0, int16_t char_profile1, int16_t char_profile2, int16_t char_profile3,
+                                       float gradient, uint16_t bandwidth, int16_t default_value,
+                                       uint16_t max_column){
 
-__device__ void set_score(int16_t* scores, uint16_t row, uint16_t  column, int16_t value, float gradient, uint16_t band_width){
-    scores[column + row * CUDAPOA_MAX_MATRIX_SEQUENCE_DIMENSION] = value;
+    // The load instructions typically load data in 4B or 8B chunks.
+    // If data is 16b (2B), then a 4B load chunk is loaded into register
+    // and the necessary bits are extracted before returning. This wastes cycles
+    // as each read of 16b issues a separate load command.
+    // Instead it is better to load a 4B or 8B chunk into a register
+    // using a single load inst, and then extracting necessary part of
+    // of the data using bit arithmatic. Also reduces register count.
+
+    uint16_t band_start = get_band_start_for_row(node, gradient, bandwidth, max_column);
+
+    uint16_t band_end = band_start + bandwidth + CELLS_PER_THREAD;
+
+    if (((read_pos + 1 > band_end) || (read_pos + 1 < band_start)) && read_pos + 1 != 0){
+        return  ScoreT4<int16_t> {default_value, default_value, default_value, default_value};
+    } else {
+        ScoreT4<int16_t> scores_4;
+        int16_t * score_ptr = get_score_ptr(scores, node, read_pos, gradient, bandwidth, max_column);
+
+        // This loads 8 consecutive bytes (4 shorts).
+        int64_t score_pred_i_1_64 = ((int64_t *) score_ptr)[0];
+        int64_t score_pred_i_1_64_2 = ((int64_t *) score_ptr)[1];
+
+        scores_4.s0 = max(EXTRACT_SHORT_FROM_BITFIELD(int16_t, score_pred_i_1_64, 0) + char_profile0,
+                          EXTRACT_SHORT_FROM_BITFIELD(int16_t, score_pred_i_1_64, 1) + gap_score);
+        scores_4.s1 = max(EXTRACT_SHORT_FROM_BITFIELD(int16_t, score_pred_i_1_64, 1) + char_profile1,
+                          EXTRACT_SHORT_FROM_BITFIELD(int16_t, score_pred_i_1_64, 2) + gap_score);
+        scores_4.s2 = max(EXTRACT_SHORT_FROM_BITFIELD(int16_t, score_pred_i_1_64, 2) + char_profile2,
+                          EXTRACT_SHORT_FROM_BITFIELD(int16_t, score_pred_i_1_64, 3) + gap_score);
+        scores_4.s3 = max(EXTRACT_SHORT_FROM_BITFIELD(int16_t, score_pred_i_1_64, 3) + char_profile3,
+                          EXTRACT_SHORT_FROM_BITFIELD(int16_t, score_pred_i_1_64_2, 0) + gap_score);
+
+        return scores_4;
+    }
 }
-
 
 __device__
 uint16_t runNeedlemanWunschBanded(uint8_t* nodes,
@@ -106,12 +153,13 @@ uint16_t runNeedlemanWunschBanded(uint8_t* nodes,
 
     long long int start = clock64();
 
-    // Initialise the horizontal boundary of the score matrix
-    for(uint16_t j = thread_idx + 1; j < read_length + 1; j += blockDim.x)
-    {
-        set_score(scores, 0, j, j * gap_score, gradient, band_width);
-    }
+    uint16_t max_column = read_length + 1;
 
+    // Initialise the horizontal boundary of the score matrix
+    for(uint16_t j = thread_idx + 1; j < CUDAPOA_BANDED_MAX_MATRIX_SEQUENCE_DIMENSION; j += blockDim.x)
+    {
+        set_score(scores, 0, j, j * gap_score, gradient, band_width, max_column);
+    }
 
     // Initialise the vertical boundary of the score matrix
     if (thread_idx == 0)
@@ -123,7 +171,7 @@ uint16_t runNeedlemanWunschBanded(uint8_t* nodes,
         for(uint16_t graph_pos = 0; graph_pos < graph_count; graph_pos++)
         {
 
-            set_score(scores, 0, 0, 0, gradient, band_width);
+            set_score(scores, 0, 0, 0, gradient, band_width, max_column);
 
             uint16_t node_id = graph[graph_pos];
             uint16_t i = graph_pos + 1;
@@ -131,7 +179,7 @@ uint16_t runNeedlemanWunschBanded(uint8_t* nodes,
             uint16_t pred_count = incoming_edge_count[node_id];
             if (pred_count == 0)
             {
-                set_score(scores, i, 0, gap_score, gradient, band_width);
+                set_score(scores, i, 0, gap_score, gradient, band_width, max_column);
             }
             else
             {
@@ -142,9 +190,8 @@ uint16_t runNeedlemanWunschBanded(uint8_t* nodes,
                     uint16_t pred_node_graph_pos = node_id_to_pos[pred_node_id] + 1;
                     penalty = max(penalty, get_score(scores, pred_node_graph_pos, 0, gradient, band_width, read_length + 1, min_score_abs));
                 }
-                set_score(scores, i, 0, penalty + gap_score, gradient, band_width);
+                set_score(scores, i, 0, penalty + gap_score, gradient, band_width, max_column);
             }
-
         }
     }
 
@@ -178,13 +225,8 @@ uint16_t runNeedlemanWunschBanded(uint8_t* nodes,
 
         uint16_t pred_i_1 = (pred_count == 0 ? 0 :
                              node_id_to_pos[incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES]] + 1);
-        int16_t* scores_pred_i_1 = get_score_ptr(scores, pred_i_1, 0);
 
         uint8_t n = nodes[node_id];
-
-        // max_cols is the first tb boundary multiple beyond read_length. This is done
-        // so all threads in the block enter the loop. The loop has syncthreads, so if
-        // any of the threads don't enter, then it'll cause a lock in the system.
 
         uint16_t read_pos = thread_idx * CELLS_PER_THREAD + band_start;
         {
@@ -209,67 +251,28 @@ uint16_t runNeedlemanWunschBanded(uint8_t* nodes,
                 j2 = read_pos + 3;
                 j3 = read_pos + 4;
 
-                //if(debug){printf("Indices into score matrix are %i %i %i %i\n", j0, j1, j2, j3);}
+                ScoreT4<int16_t> scores_4 = get_scores(read_pos, scores, pred_i_1, gap_score, char_profile0, char_profile1, char_profile2, char_profile3, gradient, band_width, SHRT_MIN + min_score_abs, read_length + 1);
 
-                // The load instructions typically load data in 4B or 8B chunks.
-                // If data is 16b (2B), then a 4B load chunk is loaded into register
-                // and the necessary bits are extracted before returning. This wastes cycles
-                // as each read of 16b issues a separate load command.
-                // Instead it is better to load a 4B or 8B chunk into a register
-                // using a single load inst, and then extracting necessary part of
-                // of the data using bit arithmatic. Also reduces register count.
-
-                // This loads 8 consecutive bytes (4 shorts).
-                int64_t score_pred_i_1_64 = ((int64_t*)&scores_pred_i_1[j0-1])[0];
-                //if(debug){printf("Row for predecessor is %i , getting ptr to position %i\n", pred_i_1, j0-1);}
-                // Since we read 5 consecutive shorts, we need to load the next
-                // chuink of memory as well.
-                int64_t score_pred_i_1_64_2 = ((int64_t*)&scores_pred_i_1[j0-1])[1];
-
-                score0 = max(EXTRACT_SHORT_FROM_BITFIELD(int16_t, score_pred_i_1_64, 0) + char_profile0,
-                             EXTRACT_SHORT_FROM_BITFIELD(int16_t, score_pred_i_1_64, 1) + gap_score);
-                score1 = max(EXTRACT_SHORT_FROM_BITFIELD(int16_t, score_pred_i_1_64, 1)  + char_profile1,
-                             EXTRACT_SHORT_FROM_BITFIELD(int16_t, score_pred_i_1_64, 2) + gap_score);
-                score2 = max(EXTRACT_SHORT_FROM_BITFIELD(int16_t, score_pred_i_1_64, 2)  + char_profile2,
-                             EXTRACT_SHORT_FROM_BITFIELD(int16_t, score_pred_i_1_64, 3) + gap_score);
-                score3 = max(EXTRACT_SHORT_FROM_BITFIELD(int16_t, score_pred_i_1_64, 3)  + char_profile3,
-                             EXTRACT_SHORT_FROM_BITFIELD(int16_t, score_pred_i_1_64_2, 0) + gap_score);
+                score0 = scores_4.s0;
+                score1 = scores_4.s1;
+                score2 = scores_4.s2;
+                score3 = scores_4.s3;
 
                 // Perform same score updates as above, but for rest of predecessors.
                 for (uint16_t p = 1; p < pred_count; p++)
                 {
                     int16_t pred_i_2 = node_id_to_pos[incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES + p]] + 1;
-                    int16_t* scores_pred_i_2 = get_score_ptr(scores, pred_i_2, 0);
+                    ScoreT4<int16_t> scores_4 = get_scores(read_pos, scores, pred_i_2, gap_score, char_profile0, char_profile1, char_profile2, char_profile3, gradient, band_width, SHRT_MIN + min_score_abs, read_length + 1);
 
-                    // Reasoning for 8B preload same as above.
-                    int64_t score_pred_i_2_64 = ((int64_t*)&scores_pred_i_2[j0-1])[0];
-                    int64_t score_pred_i_2_64_2 = ((int64_t*)&scores_pred_i_2[j0-1])[1];
-
-                    score0 = max(EXTRACT_SHORT_FROM_BITFIELD(int16_t, score_pred_i_2_64, 0) + char_profile0,
-                                 max(score0, EXTRACT_SHORT_FROM_BITFIELD(int16_t, score_pred_i_2_64, 1) + gap_score));
-
-                    score1 = max(EXTRACT_SHORT_FROM_BITFIELD(int16_t, score_pred_i_2_64, 1) + char_profile1,
-                                 max(score1, EXTRACT_SHORT_FROM_BITFIELD(int16_t, score_pred_i_2_64, 2) + gap_score));
-
-                    score2 = max(EXTRACT_SHORT_FROM_BITFIELD(int16_t, score_pred_i_2_64, 2) + char_profile2,
-                                 max(score2, EXTRACT_SHORT_FROM_BITFIELD(int16_t, score_pred_i_2_64, 3) + gap_score));
-
-                    score3 = max(EXTRACT_SHORT_FROM_BITFIELD(int16_t, score_pred_i_2_64, 3) + char_profile3,
-                                 max(score3, EXTRACT_SHORT_FROM_BITFIELD(int16_t, score_pred_i_2_64_2, 0) + gap_score));
+                    score0 = max(score0, scores_4.s0);
+                    score1 = max(score1, scores_4.s1);
+                    score2 = max(score2, scores_4.s2);
+                    score3 = max(score3, scores_4.s3);
                 }
             }
 
             long long int temp = clock64();
 
-            // Process the warps in a step ladder fashion.
-            // warp0, warp1, warp2, warp3
-            //        warp1, warp2, warp3
-            //               warp2, warp3
-            //                      warp3
-            // After each step, the maximum values are passed onto
-            // warp through shared memory.
-            // Empirically, tb = 64 works best (2 warps), as increasing beyond that
-            // incurs high syncthreads costs that don't offset the gain in parallelism.
             for(uint32_t tb_start = 0; tb_start < blockDim.x; tb_start += WARP_SIZE)
             {
                 if (thread_idx >= tb_start && warp_idx < max_warps)
@@ -354,10 +357,10 @@ uint16_t runNeedlemanWunschBanded(uint8_t* nodes,
             // Index into score matrix.
             if (warp_idx < max_warps)
             {
-                set_score(scores, i, j0, score0, gradient, band_width);
-                set_score(scores, i, j1, score1, gradient, band_width);
-                set_score(scores, i, j2, score2, gradient, band_width);
-                set_score(scores, i, j3, score3, gradient, band_width);
+                set_score(scores, i, j0, score0, gradient, band_width, max_column);
+                set_score(scores, i, j1, score1, gradient, band_width, max_column);
+                set_score(scores, i, j2, score2, gradient, band_width, max_column);
+                set_score(scores, i, j3, score3, gradient, band_width, max_column);
             }
 
             serial += (clock64() - temp);
