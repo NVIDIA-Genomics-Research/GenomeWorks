@@ -76,7 +76,7 @@ protected:
     void free_output_details();
 
     // Allocate buffers for alignment details
-    void initialize_alignment_details();
+    void initialize_alignment_details(bool banded_alignment);
 
     // Free buffers for alignment details
     void free_alignment_details();
