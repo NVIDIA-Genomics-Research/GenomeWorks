@@ -36,7 +36,7 @@ namespace genomeworks {
 
         /// \brief returns sequence's ID
         /// \return sequence's ID
-        std::size_t sequence_id() const override;
+        std::uint64_t sequence_id() const override;
 
         /// \brief converts a kmer of length length into 4-bit packed numeric representation
         ///
@@ -53,7 +53,7 @@ namespace genomeworks {
         std::uint64_t representation_; // supports up to 2*64 basepairs in a minimzer. Normaly minimizers of around 20 elements are used
         std::size_t position_;
         DirectionOfRepresentation direction_;
-        std::size_t sequence_id_;
+        std::uint64_t sequence_id_;
     };
 
 }
