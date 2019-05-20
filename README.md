@@ -18,3 +18,32 @@ make -j install
 ## Enable Unit Tests
 To enable unit tests, add `-Dgw_enable_tests=ON` to the `cmake` command in the build step.
 
+## Enable Doc Generation
+To enable document generation for GenomeWorks, please install `Doxygen` on your system. Once
+`Doxygen` has been installed, run the following to build documents.
+
+```bash
+make docs
+```
+
+### Enable Auto-Formatting
+GenomeWorks makes use of `clang-format` to format it's source and header files. To make use of
+auto-formatting, `clang-format` would have to be installed from the LLVM package (for latest builds,
+best to refer to http://releases.llvm.org/download.html).
+
+Once `clang-format` has been installed, make sure the binary is in your path.
+
+To add a folder to the auto-formatting list, use the macro `gw_enable_auto_formatting(FOLDER)`. This
+will add all cpp source/header files to the formatting list.
+
+To auto-format, run the following in your build directory.
+
+```bash
+make format
+```
+
+To check if files are correct formatted, run the following in your build directory.
+
+```bash
+make check-format
+```

@@ -12,6 +12,7 @@ endif()
 include(cmake/Doxygen.cmake)
 include(cmake/3rdparty.cmake)
 include(cmake/Tests.cmake)
+include(cmake/Format.cmake)
 
 set(CMAKE_CXX_STANDARD 17)
 
@@ -23,9 +24,13 @@ add_subdirectory(cudapoa)
 add_subdirectory(cudamapper)
 add_subdirectory(cudaaligner)
 
+# Add documentation generation.
 set_doxygen_mainpage(${CMAKE_CURRENT_SOURCE_DIR}/docs/README-SDK.md)
 add_docs_target("GenomeWorks" "1.0")
 
+# Add auto formatting.
+gw_enable_formatting_targets()
+
 if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
-  set (CMAKE_INSTALL_PREFIX ../deploy CACHE PATH "The default SDK install path is ../deploy" FORCE)
+    set (CMAKE_INSTALL_PREFIX ${CMAKE_BINARY_DIR}/install CACHE PATH "The default SDK install path is install" FORCE)
 endif (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
