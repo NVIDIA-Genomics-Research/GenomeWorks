@@ -92,11 +92,12 @@ void CudapoaBatch::free_input_details()
 void CudapoaBatch::initialize_alignment_details(bool banded_alignment)
 {
     uint32_t matrix_sequence_dimension = banded_alignment ? CUDAPOA_BANDED_MAX_MATRIX_SEQUENCE_DIMENSION : CUDAPOA_MAX_MATRIX_SEQUENCE_DIMENSION;
+    uint32_t max_graph_dimension = banded_alignment ? CUDAPOA_MAX_MATRIX_GRAPH_DIMENSION_BANDED : CUDAPOA_MAX_MATRIX_GRAPH_DIMENSION;
     // Struct for alignment details
     GW_CU_CHECK_ERR(cudaHostAlloc((void**) &alignment_details_d_, sizeof(genomeworks::cudapoa::AlignmentDetails), cudaHostAllocDefault));
-    GW_CU_CHECK_ERR(cudaMalloc((void**) &(alignment_details_d_->scores), sizeof(int16_t) * CUDAPOA_MAX_MATRIX_GRAPH_DIMENSION * matrix_sequence_dimension * max_poas_));
-    GW_CU_CHECK_ERR(cudaMalloc((void**) &(alignment_details_d_->alignment_graph), sizeof(int16_t) * CUDAPOA_MAX_MATRIX_GRAPH_DIMENSION * max_poas_ ));
-    GW_CU_CHECK_ERR(cudaMalloc((void**) &(alignment_details_d_->alignment_read), sizeof(int16_t) * CUDAPOA_MAX_MATRIX_GRAPH_DIMENSION * max_poas_ ));
+    GW_CU_CHECK_ERR(cudaMalloc((void**) &(alignment_details_d_->scores), sizeof(int16_t) * max_graph_dimension * matrix_sequence_dimension * max_poas_));
+    GW_CU_CHECK_ERR(cudaMalloc((void**) &(alignment_details_d_->alignment_graph), sizeof(int16_t) * max_graph_dimension * max_poas_ ));
+    GW_CU_CHECK_ERR(cudaMalloc((void**) &(alignment_details_d_->alignment_read), sizeof(int16_t) * max_graph_dimension * max_poas_ ));
 }
 
 void CudapoaBatch::free_alignment_details()
@@ -107,28 +108,29 @@ void CudapoaBatch::free_alignment_details()
     GW_CU_CHECK_ERR(cudaFreeHost(alignment_details_d_));
 }
 
-void CudapoaBatch::initialize_graph_details()
+void CudapoaBatch::initialize_graph_details(bool banded_alignment_)
 {
+    uint16_t max_nodes_per_window = banded_alignment_ ? CUDAPOA_MAX_NODES_PER_WINDOW_BANDED : CUDAPOA_MAX_NODES_PER_WINDOW;
     // Struct for graph details
     GW_CU_CHECK_ERR(cudaHostAlloc((void**) &graph_details_d_, sizeof(genomeworks::cudapoa::GraphDetails), cudaHostAllocDefault));
-    GW_CU_CHECK_ERR(cudaMalloc((void**) &(graph_details_d_->nodes), sizeof(uint8_t) * CUDAPOA_MAX_NODES_PER_WINDOW * max_poas_ ));
-    GW_CU_CHECK_ERR(cudaMalloc((void**) &(graph_details_d_->node_alignments), sizeof(uint16_t) * CUDAPOA_MAX_NODES_PER_WINDOW * CUDAPOA_MAX_NODE_ALIGNMENTS * max_poas_ ));
-    GW_CU_CHECK_ERR(cudaMalloc((void**) &(graph_details_d_->node_alignment_count), sizeof(uint16_t) * CUDAPOA_MAX_NODES_PER_WINDOW * max_poas_ ));
-    GW_CU_CHECK_ERR(cudaMalloc((void**) &(graph_details_d_->incoming_edges), sizeof(uint16_t) * CUDAPOA_MAX_NODES_PER_WINDOW * CUDAPOA_MAX_NODE_EDGES * max_poas_ ));
-    GW_CU_CHECK_ERR(cudaMalloc((void**) &(graph_details_d_->incoming_edge_count), sizeof(uint16_t) * CUDAPOA_MAX_NODES_PER_WINDOW * max_poas_ ));
-    GW_CU_CHECK_ERR(cudaMalloc((void**) &(graph_details_d_->outgoing_edges), sizeof(uint16_t) * CUDAPOA_MAX_NODES_PER_WINDOW * CUDAPOA_MAX_NODE_EDGES * max_poas_ ));
-    GW_CU_CHECK_ERR(cudaMalloc((void**) &(graph_details_d_->outgoing_edge_count), sizeof(uint16_t) * CUDAPOA_MAX_NODES_PER_WINDOW * max_poas_ ));
-    GW_CU_CHECK_ERR(cudaMalloc((void**) &(graph_details_d_->incoming_edge_weights), sizeof(uint16_t) * CUDAPOA_MAX_NODES_PER_WINDOW * CUDAPOA_MAX_NODE_EDGES * max_poas_ ));
-    GW_CU_CHECK_ERR(cudaMalloc((void**) &(graph_details_d_->outgoing_edge_weights), sizeof(uint16_t) * CUDAPOA_MAX_NODES_PER_WINDOW * CUDAPOA_MAX_NODE_EDGES * max_poas_ ));
-    GW_CU_CHECK_ERR(cudaMalloc((void**) &(graph_details_d_->sorted_poa), sizeof(uint16_t) * CUDAPOA_MAX_NODES_PER_WINDOW * max_poas_ ));
-    GW_CU_CHECK_ERR(cudaMalloc((void**) &(graph_details_d_->sorted_poa_node_map), sizeof(uint16_t) * CUDAPOA_MAX_NODES_PER_WINDOW * max_poas_ ));
-    GW_CU_CHECK_ERR(cudaMalloc((void**) &(graph_details_d_->sorted_poa_local_edge_count), sizeof(uint16_t) * CUDAPOA_MAX_NODES_PER_WINDOW * max_poas_ ));
-    GW_CU_CHECK_ERR(cudaMalloc((void**) &(graph_details_d_->consensus_scores), sizeof(int32_t) * CUDAPOA_MAX_NODES_PER_WINDOW * max_poas_ ));
-    GW_CU_CHECK_ERR(cudaMalloc((void**) &(graph_details_d_->consensus_predecessors), sizeof(int16_t) * CUDAPOA_MAX_NODES_PER_WINDOW * max_poas_ ));
-    GW_CU_CHECK_ERR(cudaMalloc((void**) &(graph_details_d_->node_marks), sizeof(int8_t) * CUDAPOA_MAX_NODES_PER_WINDOW * max_poas_ ));
-    GW_CU_CHECK_ERR(cudaMalloc((void**) &(graph_details_d_->check_aligned_nodes), sizeof(bool) * CUDAPOA_MAX_NODES_PER_WINDOW * max_poas_ ));
-    GW_CU_CHECK_ERR(cudaMalloc((void**) &(graph_details_d_->nodes_to_visit), sizeof(uint16_t) * CUDAPOA_MAX_NODES_PER_WINDOW * max_poas_ ));
-    GW_CU_CHECK_ERR(cudaMalloc((void**) &(graph_details_d_->node_coverage_counts), sizeof(uint16_t) * CUDAPOA_MAX_NODES_PER_WINDOW * max_poas_ ));
+    GW_CU_CHECK_ERR(cudaMalloc((void**) &(graph_details_d_->nodes), sizeof(uint8_t) * max_nodes_per_window * max_poas_ ));
+    GW_CU_CHECK_ERR(cudaMalloc((void**) &(graph_details_d_->node_alignments), sizeof(uint16_t) * max_nodes_per_window * CUDAPOA_MAX_NODE_ALIGNMENTS * max_poas_ ));
+    GW_CU_CHECK_ERR(cudaMalloc((void**) &(graph_details_d_->node_alignment_count), sizeof(uint16_t) * max_nodes_per_window * max_poas_ ));
+    GW_CU_CHECK_ERR(cudaMalloc((void**) &(graph_details_d_->incoming_edges), sizeof(uint16_t) * max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES * max_poas_ ));
+    GW_CU_CHECK_ERR(cudaMalloc((void**) &(graph_details_d_->incoming_edge_count), sizeof(uint16_t) * max_nodes_per_window * max_poas_ ));
+    GW_CU_CHECK_ERR(cudaMalloc((void**) &(graph_details_d_->outgoing_edges), sizeof(uint16_t) * max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES * max_poas_ ));
+    GW_CU_CHECK_ERR(cudaMalloc((void**) &(graph_details_d_->outgoing_edge_count), sizeof(uint16_t) * max_nodes_per_window * max_poas_ ));
+    GW_CU_CHECK_ERR(cudaMalloc((void**) &(graph_details_d_->incoming_edge_weights), sizeof(uint16_t) * max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES * max_poas_ ));
+    GW_CU_CHECK_ERR(cudaMalloc((void**) &(graph_details_d_->outgoing_edge_weights), sizeof(uint16_t) * max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES * max_poas_ ));
+    GW_CU_CHECK_ERR(cudaMalloc((void**) &(graph_details_d_->sorted_poa), sizeof(uint16_t) * max_nodes_per_window * max_poas_ ));
+    GW_CU_CHECK_ERR(cudaMalloc((void**) &(graph_details_d_->sorted_poa_node_map), sizeof(uint16_t) * max_nodes_per_window * max_poas_ ));
+    GW_CU_CHECK_ERR(cudaMalloc((void**) &(graph_details_d_->sorted_poa_local_edge_count), sizeof(uint16_t) * max_nodes_per_window * max_poas_ ));
+    GW_CU_CHECK_ERR(cudaMalloc((void**) &(graph_details_d_->consensus_scores), sizeof(int32_t) * max_nodes_per_window * max_poas_ ));
+    GW_CU_CHECK_ERR(cudaMalloc((void**) &(graph_details_d_->consensus_predecessors), sizeof(int16_t) * max_nodes_per_window * max_poas_ ));
+    GW_CU_CHECK_ERR(cudaMalloc((void**) &(graph_details_d_->node_marks), sizeof(int8_t) * max_nodes_per_window * max_poas_ ));
+    GW_CU_CHECK_ERR(cudaMalloc((void**) &(graph_details_d_->check_aligned_nodes), sizeof(bool) * max_nodes_per_window * max_poas_ ));
+    GW_CU_CHECK_ERR(cudaMalloc((void**) &(graph_details_d_->nodes_to_visit), sizeof(uint16_t) * max_nodes_per_window * max_poas_ ));
+    GW_CU_CHECK_ERR(cudaMalloc((void**) &(graph_details_d_->node_coverage_counts), sizeof(uint16_t) * max_nodes_per_window * max_poas_ ));
 }
 
 void CudapoaBatch::free_graph_details()
@@ -188,35 +190,37 @@ CudapoaBatch::CudapoaBatch(uint32_t max_poas, uint32_t max_sequences_per_poa, ui
     print_batch_debug_message(msg);
 
     initialize_alignment_details(banded_alignment_);
-
-    initialize_graph_details();
+    initialize_graph_details(banded_alignment_);
 
     // Debug print for size allocated.
     uint32_t matrix_sequence_dimension = banded_alignment_ ? CUDAPOA_BANDED_MAX_MATRIX_SEQUENCE_DIMENSION : CUDAPOA_MAX_MATRIX_SEQUENCE_DIMENSION;
-    uint32_t temp_size = (sizeof(int16_t) * CUDAPOA_MAX_MATRIX_GRAPH_DIMENSION * matrix_sequence_dimension * max_poas_ );
+    uint32_t max_graph_dimension = cuda_banded_alignment ? CUDAPOA_MAX_MATRIX_GRAPH_DIMENSION_BANDED : CUDAPOA_MAX_MATRIX_GRAPH_DIMENSION;
 
-    temp_size += 2 * (sizeof(int16_t) * CUDAPOA_MAX_MATRIX_GRAPH_DIMENSION * max_poas_ );
+    uint32_t temp_size = (sizeof(int16_t) * max_graph_dimension * matrix_sequence_dimension * max_poas_ );
+
+    temp_size += 2 * (sizeof(int16_t) * max_graph_dimension * max_poas_ );
     msg = " Allocated temp buffers of size " + std::to_string( (static_cast<float>(temp_size)  / (1024 * 1024)) ) + "MB on device ";
     print_batch_debug_message(msg);
 
     // Debug print for size allocated.
-    temp_size = sizeof(uint8_t) * CUDAPOA_MAX_NODES_PER_WINDOW * max_poas_ ;
-    temp_size += sizeof(uint16_t) * CUDAPOA_MAX_NODES_PER_WINDOW * CUDAPOA_MAX_NODE_ALIGNMENTS * max_poas_ ;
-    temp_size += sizeof(uint16_t) * CUDAPOA_MAX_NODES_PER_WINDOW * max_poas_ ;
-    temp_size += sizeof(uint16_t) * CUDAPOA_MAX_NODES_PER_WINDOW * CUDAPOA_MAX_NODE_EDGES * max_poas_ ;
-    temp_size += sizeof(uint16_t) * CUDAPOA_MAX_NODES_PER_WINDOW * max_poas_ ;
-    temp_size += sizeof(uint16_t) * CUDAPOA_MAX_NODES_PER_WINDOW * CUDAPOA_MAX_NODE_EDGES * max_poas_ ;
-    temp_size += sizeof(uint16_t) * CUDAPOA_MAX_NODES_PER_WINDOW * max_poas_ ;
-    temp_size += sizeof(uint16_t) * CUDAPOA_MAX_NODES_PER_WINDOW * CUDAPOA_MAX_NODE_EDGES * max_poas_ ;
-    temp_size += sizeof(uint16_t) * CUDAPOA_MAX_NODES_PER_WINDOW * CUDAPOA_MAX_NODE_EDGES * max_poas_ ;
-    temp_size += sizeof(uint16_t) * CUDAPOA_MAX_NODES_PER_WINDOW * max_poas_ ;
-    temp_size += sizeof(uint16_t) * CUDAPOA_MAX_NODES_PER_WINDOW * max_poas_ ;
-    temp_size += sizeof(int16_t) * CUDAPOA_MAX_NODES_PER_WINDOW * max_poas_ ;
-    temp_size += sizeof(int16_t) * CUDAPOA_MAX_NODES_PER_WINDOW * max_poas_ ;
-    temp_size += sizeof(int8_t) * CUDAPOA_MAX_NODES_PER_WINDOW * max_poas_ ;
-    temp_size += sizeof(bool) * CUDAPOA_MAX_NODES_PER_WINDOW * max_poas_ ;
-    temp_size += sizeof(uint16_t) * CUDAPOA_MAX_NODES_PER_WINDOW * max_poas_ ;
-    temp_size += sizeof(uint16_t) * CUDAPOA_MAX_NODES_PER_WINDOW * max_poas_ ;
+    uint16_t max_nodes_per_window = banded_alignment_ ? CUDAPOA_MAX_NODES_PER_WINDOW_BANDED : CUDAPOA_MAX_NODES_PER_WINDOW;
+    temp_size = sizeof(uint8_t) * max_nodes_per_window * max_poas_ ;
+    temp_size += sizeof(uint16_t) * max_nodes_per_window * CUDAPOA_MAX_NODE_ALIGNMENTS * max_poas_ ;
+    temp_size += sizeof(uint16_t) * max_nodes_per_window * max_poas_ ;
+    temp_size += sizeof(uint16_t) * max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES * max_poas_ ;
+    temp_size += sizeof(uint16_t) * max_nodes_per_window * max_poas_ ;
+    temp_size += sizeof(uint16_t) * max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES * max_poas_ ;
+    temp_size += sizeof(uint16_t) * max_nodes_per_window * max_poas_ ;
+    temp_size += sizeof(uint16_t) * max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES * max_poas_ ;
+    temp_size += sizeof(uint16_t) * max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES * max_poas_ ;
+    temp_size += sizeof(uint16_t) * max_nodes_per_window * max_poas_ ;
+    temp_size += sizeof(uint16_t) * max_nodes_per_window * max_poas_ ;
+    temp_size += sizeof(int16_t) * max_nodes_per_window * max_poas_ ;
+    temp_size += sizeof(int16_t) * max_nodes_per_window * max_poas_ ;
+    temp_size += sizeof(int8_t) * max_nodes_per_window * max_poas_ ;
+    temp_size += sizeof(bool) * max_nodes_per_window * max_poas_ ;
+    temp_size += sizeof(uint16_t) * max_nodes_per_window * max_poas_ ;
+    temp_size += sizeof(uint16_t) * max_nodes_per_window * max_poas_ ;
     msg = " Allocated temp buffers of size " + std::to_string( (static_cast<float>(temp_size)  / (1024 * 1024)) ) + "MB on device ";
     print_batch_debug_message(msg);
 }
