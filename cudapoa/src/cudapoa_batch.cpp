@@ -3,7 +3,6 @@
 
 #define GW_LOG_LEVEL gw_log_level_info
 
-#include "cudapoa/batch.hpp"
 #include "cudapoa_batch.hpp"
 #include "cudapoa_kernels.cuh"
 
@@ -274,14 +273,15 @@ void CudapoaBatch::generate_poa()
                                  mismatch_score_,
                                  match_score_,
                                  banded_alignment_);
- 
+
     GW_CU_CHECK_ERR(cudaPeekAtLastError());
     msg = " Launched kernel on device ";
     print_batch_debug_message(msg);
 }
 
 void CudapoaBatch::get_consensus(std::vector<std::string>& consensus,
-        std::vector<std::vector<uint16_t>>& coverage)
+        std::vector<std::vector<uint16_t>>& coverage, 
+        std::vector<StatusType>& output_status)
 {
     std::string msg = " Launching memcpy D2H on device ";
     print_batch_debug_message(msg);
@@ -305,15 +305,43 @@ void CudapoaBatch::get_consensus(std::vector<std::string>& consensus,
         // Get the consensus string and reverse it since on GPU the
         // string is built backwards..
         char* c = reinterpret_cast<char *>(&(output_details_h_->consensus[poa * CUDAPOA_MAX_CONSENSUS_SIZE]));
-        consensus.emplace_back(std::string(c));
-        std::reverse(consensus.back().begin(), consensus.back().end());
-
-        // Similarly, get the coverage and reverse it.
-        coverage.emplace_back(std::vector<uint16_t>(
-            &(output_details_h_->coverage[poa * CUDAPOA_MAX_CONSENSUS_SIZE]),
-            &(output_details_h_->coverage[poa * CUDAPOA_MAX_CONSENSUS_SIZE + consensus.back().size()])));
-        std::reverse(coverage.back().begin(), coverage.back().end());
-
+        // We use the first two entries in the consensus buffer to log error during kernel execution
+        // c[0] == 0 means an error occured and when that happens the error type is saved in c[1]
+        if (c[0] == 0)
+        {
+            genomeworks::cudapoa::StatusType error_type = static_cast<genomeworks::cudapoa::StatusType>(c[1]);
+            switch (error_type)
+            {
+                case genomeworks::cudapoa::StatusType::node_count_exceeded_maximum_graph_size:
+                    GW_LOG_ERROR("Kernel Error:: Node count exceeded maximum nodes per window\n");
+                    output_status.emplace_back(genomeworks::cudapoa::StatusType::node_count_exceeded_maximum_graph_size);
+                    break;
+                case genomeworks::cudapoa::StatusType::seq_len_exceeded_maximum_nodes_per_window:
+                    GW_LOG_ERROR("Kernel Error::Sequence length exceeded maximum nodes per window\n");
+                    output_status.emplace_back(genomeworks::cudapoa::StatusType::seq_len_exceeded_maximum_nodes_per_window);
+                    break;
+                case genomeworks::cudapoa::StatusType::loop_count_exceeded_upper_bound:
+                    GW_LOG_ERROR("Kernel Error::Loop count exceeded upper bound in nw algorithm\n");
+                    output_status.emplace_back(genomeworks::cudapoa::StatusType::loop_count_exceeded_upper_bound);
+                    break;
+                default:
+                    break;
+            }
+            // push back empty placeholder for consensus and coverage
+            consensus.emplace_back(std::string());
+            coverage.emplace_back(std::vector<uint16_t>());
+        }
+        else 
+        {
+            output_status.emplace_back(genomeworks::cudapoa::StatusType::success);
+            consensus.emplace_back(std::string(c));
+            std::reverse(consensus.back().begin(), consensus.back().end());
+            // Similarly, get the coverage and reverse it.
+            coverage.emplace_back(std::vector<uint16_t>(
+                &(output_details_h_->coverage[poa * CUDAPOA_MAX_CONSENSUS_SIZE]),
+                &(output_details_h_->coverage[poa * CUDAPOA_MAX_CONSENSUS_SIZE + consensus.back().size()])));
+            std::reverse(coverage.back().begin(), coverage.back().end());
+        }
     }
 }
 

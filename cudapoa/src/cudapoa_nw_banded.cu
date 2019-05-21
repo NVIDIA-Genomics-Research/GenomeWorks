@@ -399,9 +399,10 @@ uint16_t runNeedlemanWunschBanded(uint8_t* nodes,
         int16_t prev_i = 0;
         int16_t prev_j = 0;
 
-        while(!(i == 0 && j == 0))
+        uint32_t loop_count = 0;
+        while(!(i == 0 && j == 0) && loop_count < (read_length + graph_count + 2))
         {
-
+            loop_count++;
             int16_t scores_ij = get_score(scores, i, j, gradient, band_width, read_length + 1, min_score_abs);
             bool pred_found = false;
             // Check if move is diagonal.
@@ -489,12 +490,16 @@ uint16_t runNeedlemanWunschBanded(uint8_t* nodes,
 
         }
 
+		if (loop_count >= (read_length + graph_count + 2))
+		{
+			aligned_nodes = UINT16_MAX;
+		}
 
 #ifdef DEBUG
         printf("aligned nodes %d\n", aligned_nodes);
 #endif
     }
-
+    aligned_nodes = __shfl_sync(0xffffffff, aligned_nodes, 0); 
     return aligned_nodes;
 }
 

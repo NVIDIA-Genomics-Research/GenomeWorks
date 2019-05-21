@@ -52,8 +52,11 @@ public:
     ///                  will be returned
     /// \param coverage Reference to vector where coverage of each
     ///                 base in each consensus string is returned
+    /// \param output_status Reference to vector where the errors 
+    ///                 during kernel execution is captured
     virtual void get_consensus(std::vector<std::string>& consensus,
-            std::vector<std::vector<uint16_t>>& coverage) = 0;
+            std::vector<std::vector<uint16_t>>& coverage, 
+            std::vector<genomeworks::cudapoa::StatusType>& output_status) = 0;
 
     /// \brief Set CUDA stream for GPU device.
     virtual void set_cuda_stream(cudaStream_t stream) = 0;

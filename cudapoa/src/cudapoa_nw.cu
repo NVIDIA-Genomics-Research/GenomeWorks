@@ -304,8 +304,11 @@ uint16_t runNeedlemanWunsch(SeqT* nodes,
 	// along the path to see which preceding cell the move could have
 	// come from. This seems computaitonally more expensive, but doesn't
 	// require storing any traceback buffer during alignment.
-	while(!(i == 0 && j == 0)){
-	    //printf("%d %d\n", i, j);
+	uint32_t loop_count = 0;
+	while(!(i == 0 && j == 0) && loop_count < (read_count + graph_count + 2))
+	{
+		loop_count++;
+	    // printf("%d %d\n", i, j);
 	    int16_t scores_ij = scores[i * CUDAPOA_MAX_MATRIX_SEQUENCE_DIMENSION + j];
 	    bool pred_found = false;
 	    // printf("%d %d node %d\n", i, j, graph[i-1]);
@@ -383,14 +386,20 @@ uint16_t runNeedlemanWunsch(SeqT* nodes,
 	    i = prev_i;
 	    j = prev_j;
 
-	    //printf("loop %d %d\n",i, j);
-        }
+		//printf("loop %d %d\n",i, j);
+
+        } // end of while
+		if (loop_count >= (read_count + graph_count + 2))
+		{
+			aligned_nodes = UINT16_MAX;
+		}
+
 #ifdef DEBUG
 	printf("aligned nodes %d\n", aligned_nodes);
 #endif
-
     }
 
+	aligned_nodes = __shfl_sync(0xffffffff, aligned_nodes, 0); 
     return aligned_nodes;
 }
 
@@ -473,7 +482,7 @@ void runNW(uint8_t* nodes,
     
 }
 
-}
-
-}
+} // namespace cudapoa
+ 
+} // namespace genomeworks
 
