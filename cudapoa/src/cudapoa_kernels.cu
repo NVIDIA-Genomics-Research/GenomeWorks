@@ -132,6 +132,7 @@ void generatePOAKernel(uint8_t* consensus_d,
     uint8_t * sequence = &sequences_d[window_details_d[window_idx].seq_starts];
     uint8_t * base_weights = &base_weights_d[window_details_d[window_idx].seq_starts];
 
+    uint8_t* consensus = &consensus_d[window_idx * CUDAPOA_MAX_CONSENSUS_SIZE];
     if (lane_idx == 0)
     {
         // Create backbone for window based on first sequence in window.
@@ -176,8 +177,8 @@ void generatePOAKernel(uint8_t* consensus_d,
 
         if (lane_idx == 0){
             if (sequence_lengths[0] >= CUDAPOA_MAX_NODES_PER_WINDOW){
-                consensus_d[0] = 0;
-                consensus_d[1] = static_cast<uint8_t>(StatusType::node_count_exceeded_maximum_graph_size);
+                consensus[0] = 0;
+                consensus[1] = static_cast<uint8_t>(StatusType::node_count_exceeded_maximum_graph_size);
                 warp_error = true;
             }
         }
@@ -232,8 +233,11 @@ void generatePOAKernel(uint8_t* consensus_d,
     //printf("%d %d %d\n", s, window_idx, alignment_length);
         if (alignment_length == UINT16_MAX)
         {
-            consensus_d[0] = 0;
-            consensus_d[1] = static_cast<uint8_t>(StatusType::loop_count_exceeded_upper_bound);
+            if (lane_idx == 0)
+            {
+                consensus[0] = 0;
+                consensus[1] = static_cast<uint8_t>(StatusType::loop_count_exceeded_upper_bound);
+            }
             return;
         }
 
@@ -302,7 +306,6 @@ void generatePOAKernel(uint8_t* consensus_d,
 
 
     if (lane_idx == 0 && generate_consensus){
-        uint8_t* consensus = &consensus_d[window_idx * CUDAPOA_MAX_CONSENSUS_SIZE];
         uint16_t* coverage = &coverage_d[window_idx * CUDAPOA_MAX_CONSENSUS_SIZE];
         int32_t* consensus_scores = &consensus_scores_d[window_idx * max_nodes_per_window];
         int16_t* consensus_predecessors = &consensus_predecessors_d[window_idx * max_nodes_per_window];
