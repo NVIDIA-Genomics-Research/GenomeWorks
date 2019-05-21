@@ -8,6 +8,8 @@
 #include <string>
 #include <vector>
 
+#include "cudapoa/cudapoa.hpp"
+
 // Maximum vnumber of edges per node.
 #define CUDAPOA_MAX_NODE_EDGES 50
 

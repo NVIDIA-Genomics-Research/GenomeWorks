@@ -1,8 +1,6 @@
 #pragma once
 
-#include <cudapoa/cudapoa.hpp>
 #include "cudapoa/batch.hpp"
-
 
 #include <memory>
 #include <vector>
@@ -54,7 +52,8 @@ public:
 
     // Get the consensus for each POA.
     void get_consensus(std::vector<std::string>& consensus,
-            std::vector<std::vector<uint16_t>>& coverage);
+            std::vector<std::vector<uint16_t>>& coverage, 
+            std::vector<genomeworks::cudapoa::StatusType>& output_status);
 
     // Set CUDA stream for GPU device.
     void set_cuda_stream(cudaStream_t stream);

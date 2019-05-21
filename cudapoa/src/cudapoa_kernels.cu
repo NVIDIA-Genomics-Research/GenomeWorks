@@ -86,12 +86,13 @@ void generatePOAKernel(uint8_t* consensus_d,
                        int16_t match_score)
 {
 
+    // shared error indicator within a warp
+    bool warp_error = false;
+
     uint32_t nwindows_per_block = TPB/WARP_SIZE;
     uint32_t warp_idx = threadIdx.x / WARP_SIZE;
     uint32_t lane_idx = threadIdx.x % WARP_SIZE;
-
     uint32_t window_idx = blockIdx.x * nwindows_per_block + warp_idx;
-
 
     if (window_idx >= total_windows)
         return;
@@ -174,14 +175,17 @@ void generatePOAKernel(uint8_t* consensus_d,
         base_weights += sequence_lengths[s - 1]; // increment the pointer so it is pointing to correct sequence data
 
         if (lane_idx == 0){
-            if (sequence_lengths[0] >= max_nodes_per_window){
-                printf("Node count %d is greater than max matrix size %d\n", sequence_lengths[0], max_nodes_per_window);
-                return;
+            if (sequence_lengths[0] >= CUDAPOA_MAX_NODES_PER_WINDOW){
+                consensus_d[0] = 0;
+                consensus_d[1] = static_cast<uint8_t>(StatusType::node_count_exceeded_maximum_graph_size);
+                warp_error = true;
             }
-            if (seq_len >= max_nodes_per_window){
-                printf("Sequence len %d is greater than max matrix size %d\n", seq_len, max_nodes_per_window);
-                return;
-            }
+        }
+        
+        warp_error = __shfl_sync(0xffffffff, warp_error, 0); 
+        if (warp_error) 
+        {
+            return;
         }
 
         // Run Needleman-Wunsch alignment between graph and new sequence.
@@ -225,7 +229,13 @@ void generatePOAKernel(uint8_t* consensus_d,
 
 
         __syncwarp();
-	//printf("%d %d %d\n", s, window_idx, alignment_length);
+    //printf("%d %d %d\n", s, window_idx, alignment_length);
+        if (alignment_length == UINT16_MAX)
+        {
+            consensus_d[0] = 0;
+            consensus_d[1] = static_cast<uint8_t>(StatusType::loop_count_exceeded_upper_bound);
+            return;
+        }
 
         if (lane_idx == 0){
 
@@ -360,7 +370,6 @@ void generatePOA(genomeworks::cudapoa::OutputDetails * output_details_d,
     uint16_t* nodes_to_visit = graph_details_d->nodes_to_visit;
     uint16_t* node_coverage_counts = graph_details_d->node_coverage_counts;
     
-
     uint32_t nwindows_per_block = CUDAPOA_THREADS_PER_BLOCK/WARP_SIZE;
     uint32_t nblocks = (total_windows + nwindows_per_block - 1)/nwindows_per_block;
 
