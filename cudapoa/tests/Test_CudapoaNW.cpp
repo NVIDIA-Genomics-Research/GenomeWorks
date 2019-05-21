@@ -9,58 +9,61 @@ namespace genomeworks
 namespace cudapoa
 {
 
-class SortedGraph : public BasicGraph {
+class SortedGraph : public BasicGraph
+{
 
 public:
-  SortedGraph(std::vector<uint8_t> nodes, std::vector<uint16_t> sorted_graph, Uint16Vec2D outgoing_edges)
-    : BasicGraph(nodes, outgoing_edges), sorted_graph_(sorted_graph)
+    SortedGraph(std::vector<uint8_t> nodes, std::vector<uint16_t> sorted_graph, Uint16Vec2D outgoing_edges)
+        : BasicGraph(nodes, outgoing_edges), sorted_graph_(sorted_graph)
     {
         // do nothing for now
     }
 
-    SortedGraph() = delete ;
+    SortedGraph() = delete;
 
-    void get_node_id_to_pos(uint16_t *node_id_to_pos) const {
+    void get_node_id_to_pos(uint16_t* node_id_to_pos) const
+    {
         for (size_t pos = 0; pos < sorted_graph_.size(); pos++)
         {
-            uint16_t id = sorted_graph_[pos];
+            uint16_t id                = sorted_graph_[pos];
             node_id_to_pos[(size_t)id] = (uint16_t)pos;
         }
     }
 
-    void get_sorted_graph(uint16_t *graph) const {
-        for (int i = 0; i < sorted_graph_.size(); i++) {
+    void get_sorted_graph(uint16_t* graph) const
+    {
+        for (int i = 0; i < sorted_graph_.size(); i++)
+        {
             graph[i] = sorted_graph_[i];
         }
     }
 
-
 protected:
-  std::vector<uint16_t> sorted_graph_;
-
+    std::vector<uint16_t> sorted_graph_;
 };
 
-class BasicNW {
+class BasicNW
+{
 
 public:
-    const static int16_t gap_score_ = -8;
+    const static int16_t gap_score_      = -8;
     const static int16_t mismatch_score_ = -6;
-    const static int16_t match_score_ = 8;
+    const static int16_t match_score_    = 8;
 
 public:
     BasicNW(std::vector<uint8_t> nodes, std::vector<uint16_t> sorted_graph, Uint16Vec2D outgoing_edges,
-          std::vector<uint8_t> read)
-      : graph_(nodes, sorted_graph, outgoing_edges), read_(read)
+            std::vector<uint8_t> read)
+        : graph_(nodes, sorted_graph, outgoing_edges), read_(read)
     {
-      // do nothing
+        // do nothing
     }
 
     BasicNW() = delete;
 
-    void get_graph_buffers(uint16_t *incoming_edges, uint16_t *incoming_edge_count,
-                            uint16_t *outgoing_edges, uint16_t *outgoing_edge_count,
-                            uint8_t *nodes, uint16_t *node_count,
-                            uint16_t *graph, uint16_t *node_id_to_pos) const
+    void get_graph_buffers(uint16_t* incoming_edges, uint16_t* incoming_edge_count,
+                           uint16_t* outgoing_edges, uint16_t* outgoing_edge_count,
+                           uint8_t* nodes, uint16_t* node_count,
+                           uint16_t* graph, uint16_t* node_id_to_pos) const
     {
         graph_.get_edges(incoming_edges, incoming_edge_count, outgoing_edges, outgoing_edge_count);
         graph_.get_nodes(nodes, node_count);
@@ -68,9 +71,11 @@ public:
         graph_.get_node_id_to_pos(node_id_to_pos);
     }
 
-    void get_read_buffers(uint8_t *read, uint16_t *read_count) const {
-        for (int i = 0; i < read_.size(); i++) {
-            read[i] =  read_[i];
+    void get_read_buffers(uint8_t* read, uint16_t* read_count) const
+    {
+        for (int i = 0; i < read_.size(); i++)
+        {
+            read[i] = read_[i];
         }
         *read_count = read_.size();
     }
@@ -78,7 +83,6 @@ public:
 protected:
     SortedGraph graph_;
     std::vector<uint8_t> read_;
-  
 };
 
 typedef std::pair<std::string, std::string> NWAnswer;
@@ -101,11 +105,11 @@ std::vector<NWTestPair> getNWTestCases()
      *                        A
      */
 
-    NWAnswer ans_1("3,2,1,0", "3,2,1,0");               //alginment_graph & alignment_read are reversed
-    BasicNW nw_1({'A', 'A', 'A', 'A'},                  //nodes
-                 {0, 1, 2, 3},                          //sorted_graph
-                 {{1}, {2}, {3}, {}},                   //outgoing_edges
-                 {'A', 'A', 'T', 'A'});                  //read
+    NWAnswer ans_1("3,2,1,0", "3,2,1,0"); //alginment_graph & alignment_read are reversed
+    BasicNW nw_1({'A', 'A', 'A', 'A'},    //nodes
+                 {0, 1, 2, 3},            //sorted_graph
+                 {{1}, {2}, {3}, {}},     //outgoing_edges
+                 {'A', 'A', 'T', 'A'});   //read
     test_cases.emplace_back(std::move(ans_1), std::move(nw_1));
 
     /*
@@ -117,11 +121,11 @@ std::vector<NWTestPair> getNWTestCases()
      * final graph      A — T — C — G — A
      * 
      */
-    NWAnswer ans_2("-1,3,2,1,0", "4,3,2,1,0");          //alginment_graph & alignment_read are reversed
-    BasicNW nw_2({'A', 'T', 'C', 'G'},                  //nodes
-                 {0, 1, 2, 3},                          //sorted_graph
-                 {{1}, {2}, {3}, {}},                   //outgoing_edges
-                 {'A', 'T', 'C', 'G', 'A'});            //read
+    NWAnswer ans_2("-1,3,2,1,0", "4,3,2,1,0"); //alginment_graph & alignment_read are reversed
+    BasicNW nw_2({'A', 'T', 'C', 'G'},         //nodes
+                 {0, 1, 2, 3},                 //sorted_graph
+                 {{1}, {2}, {3}, {}},          //outgoing_edges
+                 {'A', 'T', 'C', 'G', 'A'});   //read
 
     test_cases.emplace_back(std::move(ans_2), std::move(nw_2));
 
@@ -138,12 +142,12 @@ std::vector<NWTestPair> getNWTestCases()
      *                    \   /
      *                      A
      */
-    NWAnswer ans_3("3,2,1,0", "3,2,1,0");               //alginment_graph & alignment_read are reversed
-    BasicNW nw_3({'A', 'A', 'C', 'G', 'C'},             //nodes
-                 {0, 4, 1, 2, 3},                       //sorted_graph
-                 {{1, 4}, {2}, {3}, {}, {2}},           //outgoing_edges
-                 {'A', 'T', 'C', 'G'});                 //read
-                
+    NWAnswer ans_3("3,2,1,0", "3,2,1,0");     //alginment_graph & alignment_read are reversed
+    BasicNW nw_3({'A', 'A', 'C', 'G', 'C'},   //nodes
+                 {0, 4, 1, 2, 3},             //sorted_graph
+                 {{1, 4}, {2}, {3}, {}, {2}}, //outgoing_edges
+                 {'A', 'T', 'C', 'G'});       //read
+
     test_cases.emplace_back(std::move(ans_3), std::move(nw_3));
 
     /*
@@ -156,11 +160,11 @@ std::vector<NWTestPair> getNWTestCases()
      *                   \_____________/
      * 
      */
-    NWAnswer ans_4("4,3,2,1,0", "1,-1,-1,-1,0");        //alginment_graph & alignment_read are reversed
-    BasicNW nw_4({'A', 'T', 'T', 'G', 'A'},             //nodes
-                  {0, 1, 2, 3, 4},                      //sorted_graph
-                  {{1}, {2}, {3}, {4}, {}},             //outgoing_edges
-                  {'A', 'A'});                          //read
+    NWAnswer ans_4("4,3,2,1,0", "1,-1,-1,-1,0"); //alginment_graph & alignment_read are reversed
+    BasicNW nw_4({'A', 'T', 'T', 'G', 'A'},      //nodes
+                 {0, 1, 2, 3, 4},                //sorted_graph
+                 {{1}, {2}, {3}, {4}, {}},       //outgoing_edges
+                 {'A', 'A'});                    //read
     test_cases.emplace_back(std::move(ans_4), std::move(nw_4));
 
     /*
@@ -191,56 +195,56 @@ std::vector<NWTestPair> getNWTestCases()
 }
 
 // host function for calling the kernel to test topsort device function.
-NWAnswer testNW(const BasicNW &obj)
+NWAnswer testNW(const BasicNW& obj)
 {
     //declare device buffer
-    uint8_t  *nodes;
-    uint16_t *graph;
-    uint16_t *node_id_to_pos;
-    uint16_t  graph_count; //local
-    uint16_t *incoming_edge_count;
-    uint16_t *incoming_edges;
-    uint16_t *outgoing_edge_count;
-    uint16_t *outgoing_edges;
-    uint8_t  *read;
-    uint16_t  read_count; //local
-    int16_t  *scores;
-    int16_t  *alignment_graph;
-    int16_t  *alignment_read;
-    int16_t  gap_score;
-    int16_t  mismatch_score;
-    int16_t  match_score;
-    uint16_t *aligned_nodes; //local; to store num of nodes aligned (length of alignment_graph and alignment_read)
+    uint8_t* nodes;
+    uint16_t* graph;
+    uint16_t* node_id_to_pos;
+    uint16_t graph_count; //local
+    uint16_t* incoming_edge_count;
+    uint16_t* incoming_edges;
+    uint16_t* outgoing_edge_count;
+    uint16_t* outgoing_edges;
+    uint8_t* read;
+    uint16_t read_count; //local
+    int16_t* scores;
+    int16_t* alignment_graph;
+    int16_t* alignment_read;
+    int16_t gap_score;
+    int16_t mismatch_score;
+    int16_t match_score;
+    uint16_t* aligned_nodes; //local; to store num of nodes aligned (length of alignment_graph and alignment_read)
 
     //allocate unified memory so they can be accessed by both host and device.
-    GW_CU_CHECK_ERR(cudaMallocManaged((void **)&nodes, CUDAPOA_MAX_NODES_PER_WINDOW * sizeof(uint8_t)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void **)&graph, CUDAPOA_MAX_NODES_PER_WINDOW * sizeof(uint16_t)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void **)&node_id_to_pos, CUDAPOA_MAX_NODES_PER_WINDOW * sizeof(uint16_t)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void **)&incoming_edges, CUDAPOA_MAX_NODES_PER_WINDOW * CUDAPOA_MAX_NODE_EDGES * sizeof(uint16_t)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void **)&incoming_edge_count, CUDAPOA_MAX_NODES_PER_WINDOW * sizeof(uint16_t)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void **)&outgoing_edges, CUDAPOA_MAX_NODES_PER_WINDOW * CUDAPOA_MAX_NODE_EDGES * sizeof(uint16_t)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void **)&outgoing_edge_count, CUDAPOA_MAX_NODES_PER_WINDOW * sizeof(uint16_t)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void **)&scores, CUDAPOA_MAX_MATRIX_GRAPH_DIMENSION * CUDAPOA_MAX_MATRIX_SEQUENCE_DIMENSION * sizeof(int16_t)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void **)&alignment_graph, CUDAPOA_MAX_MATRIX_GRAPH_DIMENSION * sizeof(int16_t)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void **)&read, CUDAPOA_MAX_SEQUENCE_SIZE * sizeof(uint8_t)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void **)&alignment_read, CUDAPOA_MAX_MATRIX_GRAPH_DIMENSION * sizeof(int16_t)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void **)&aligned_nodes, sizeof(uint16_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&nodes, CUDAPOA_MAX_NODES_PER_WINDOW * sizeof(uint8_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&graph, CUDAPOA_MAX_NODES_PER_WINDOW * sizeof(uint16_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&node_id_to_pos, CUDAPOA_MAX_NODES_PER_WINDOW * sizeof(uint16_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&incoming_edges, CUDAPOA_MAX_NODES_PER_WINDOW * CUDAPOA_MAX_NODE_EDGES * sizeof(uint16_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&incoming_edge_count, CUDAPOA_MAX_NODES_PER_WINDOW * sizeof(uint16_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&outgoing_edges, CUDAPOA_MAX_NODES_PER_WINDOW * CUDAPOA_MAX_NODE_EDGES * sizeof(uint16_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&outgoing_edge_count, CUDAPOA_MAX_NODES_PER_WINDOW * sizeof(uint16_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&scores, CUDAPOA_MAX_MATRIX_GRAPH_DIMENSION * CUDAPOA_MAX_MATRIX_SEQUENCE_DIMENSION * sizeof(int16_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&alignment_graph, CUDAPOA_MAX_MATRIX_GRAPH_DIMENSION * sizeof(int16_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&read, CUDAPOA_MAX_SEQUENCE_SIZE * sizeof(uint8_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&alignment_read, CUDAPOA_MAX_MATRIX_GRAPH_DIMENSION * sizeof(int16_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&aligned_nodes, sizeof(uint16_t)));
 
     //initialize all 'count' buffers
-    memset((void **)incoming_edge_count, 0, CUDAPOA_MAX_NODES_PER_WINDOW * sizeof(uint16_t));
-    memset((void **)outgoing_edge_count, 0, CUDAPOA_MAX_NODES_PER_WINDOW * sizeof(uint16_t));
-    memset((void **)node_id_to_pos, 0, CUDAPOA_MAX_NODES_PER_WINDOW * sizeof(uint16_t));
-    memset((void **)scores, 0, CUDAPOA_MAX_MATRIX_GRAPH_DIMENSION * CUDAPOA_MAX_MATRIX_SEQUENCE_DIMENSION * sizeof(int16_t));
+    memset((void**)incoming_edge_count, 0, CUDAPOA_MAX_NODES_PER_WINDOW * sizeof(uint16_t));
+    memset((void**)outgoing_edge_count, 0, CUDAPOA_MAX_NODES_PER_WINDOW * sizeof(uint16_t));
+    memset((void**)node_id_to_pos, 0, CUDAPOA_MAX_NODES_PER_WINDOW * sizeof(uint16_t));
+    memset((void**)scores, 0, CUDAPOA_MAX_MATRIX_GRAPH_DIMENSION * CUDAPOA_MAX_MATRIX_SEQUENCE_DIMENSION * sizeof(int16_t));
 
     //calculate edge counts on host
-    obj.get_graph_buffers(incoming_edges, incoming_edge_count, 
+    obj.get_graph_buffers(incoming_edges, incoming_edge_count,
                           outgoing_edges, outgoing_edge_count,
                           nodes, &graph_count,
                           graph, node_id_to_pos);
     obj.get_read_buffers(read, &read_count);
-    gap_score = BasicNW::gap_score_;
+    gap_score      = BasicNW::gap_score_;
     mismatch_score = BasicNW::mismatch_score_;
-    match_score = BasicNW::match_score_;
+    match_score    = BasicNW::match_score_;
 
     //call the host wrapper of nw kernel
     runNW(nodes,
@@ -262,7 +266,7 @@ NWAnswer testNW(const BasicNW &obj)
           aligned_nodes);
 
     GW_CU_CHECK_ERR(cudaDeviceSynchronize());
-    
+
     //input and output buffers are the same ones in unified memory, so the results are updated in place
     //results are stored in alignment_graph and alignment_read; return string representation of those
     auto res = std::make_pair(array_to_string<int16_t>(alignment_graph, *aligned_nodes, ","),
@@ -289,10 +293,10 @@ using ::testing::ValuesIn;
 
 class NWTest : public TestWithParam<NWTestPair>
 {
-  public:
+public:
     void SetUp() {}
 
-    NWAnswer runNWTest(const BasicNW &nw)
+    NWAnswer runNWTest(const BasicNW& nw)
     {
         return testNW(nw);
     }

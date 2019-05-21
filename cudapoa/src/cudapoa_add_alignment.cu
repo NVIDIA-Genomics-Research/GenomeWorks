@@ -2,9 +2,11 @@
 #include "cudapoa_kernels.cuh"
 #include <stdio.h>
 
-namespace genomeworks {
+namespace genomeworks
+{
 
-namespace cudapoa {
+namespace cudapoa
+{
 
 /**
  * @brief Device function for adding a new alignment to the partial order alignment graph.
@@ -29,19 +31,20 @@ namespace cudapoa {
  * @return Number of nodes in graph after update
  */
 __device__
-uint16_t addAlignmentToGraph(uint8_t* nodes,
-                         uint16_t node_count,
-                         uint16_t* node_alignments, uint16_t* node_alignment_count,
-                         uint16_t* incoming_edges, uint16_t* incoming_edge_count,
-                         uint16_t* outgoing_edges, uint16_t* outgoing_edge_count,
-                         uint16_t* incoming_edge_w, uint16_t* outgoing_edge_w,
-                         uint16_t alignment_length,
-                         uint16_t* graph,
-                         int16_t* alignment_graph,
-                         uint8_t* read,
-                         int16_t* alignment_read,
-                         uint16_t* node_coverage_counts,
-                         uint8_t* base_weights)
+    uint16_t
+    addAlignmentToGraph(uint8_t* nodes,
+                        uint16_t node_count,
+                        uint16_t* node_alignments, uint16_t* node_alignment_count,
+                        uint16_t* incoming_edges, uint16_t* incoming_edge_count,
+                        uint16_t* outgoing_edges, uint16_t* outgoing_edge_count,
+                        uint16_t* incoming_edge_w, uint16_t* outgoing_edge_w,
+                        uint16_t alignment_length,
+                        uint16_t* graph,
+                        int16_t* alignment_graph,
+                        uint8_t* read,
+                        int16_t* alignment_read,
+                        uint16_t* node_coverage_counts,
+                        uint8_t* base_weights)
 {
     //printf("Running addition for alignment %d\n", alignment_length);
     int16_t head_node_id = -1;
@@ -57,9 +60,9 @@ uint16_t addAlignmentToGraph(uint8_t* nodes,
     //         if node base doesn't match, check other aligned nodes
     //             if none of the other aligned nodes match, add new node
     //             else use one of aligned nodes and move on.
-    for(int16_t pos = alignment_length - 1; pos >= 0; pos--)
+    for (int16_t pos = alignment_length - 1; pos >= 0; pos--)
     {
-        bool new_node = false;
+        bool new_node    = false;
         int16_t read_pos = alignment_read[pos];
         // Case where base in read in an insert.
         if (read_pos != -1)
@@ -67,7 +70,7 @@ uint16_t addAlignmentToGraph(uint8_t* nodes,
             uint16_t NODE_WEIGHT = base_weights[read_pos];
 
             //printf("%c ", read[read_pos]);
-            uint8_t read_base = read[read_pos];
+            uint8_t read_base     = read[read_pos];
             int16_t graph_node_id = alignment_graph[pos];
             if (graph_node_id == -1)
             {
@@ -75,10 +78,10 @@ uint16_t addAlignmentToGraph(uint8_t* nodes,
                 // Create new node.
                 curr_node_id = node_count++;
                 //printf("create new node %d\n", curr_node_id);
-                new_node = true;
-                nodes[curr_node_id] = read_base;
-                outgoing_edge_count[curr_node_id] = 0;
-                incoming_edge_count[curr_node_id] = 0;
+                new_node                           = true;
+                nodes[curr_node_id]                = read_base;
+                outgoing_edge_count[curr_node_id]  = 0;
+                incoming_edge_count[curr_node_id]  = 0;
                 node_alignment_count[curr_node_id] = 0;
                 node_coverage_counts[curr_node_id] = 0;
             }
@@ -103,7 +106,7 @@ uint16_t addAlignmentToGraph(uint8_t* nodes,
                     //printf("aligned nodes are %d\n", num_aligned_node);
                     int16_t aligned_node_id = -1;
                     //printf("looping through alignments\n");
-                    for(uint16_t n = 0; n < num_aligned_node; n++)
+                    for (uint16_t n = 0; n < num_aligned_node; n++)
                     {
                         uint16_t aid = node_alignments[graph_node_id * CUDAPOA_MAX_NODE_ALIGNMENTS + n];
                         if (nodes[aid] == read_base)
@@ -124,28 +127,28 @@ uint16_t addAlignmentToGraph(uint8_t* nodes,
                         // then create a new node and update the graph node (+ aligned nodes)
                         // with information about this new node since it also becomes an aligned
                         // node to the others.
-                        new_node = true;
+                        new_node     = true;
                         curr_node_id = node_count++;
                         //printf("create new node %d\n", curr_node_id);
-                        nodes[curr_node_id] = read_base;
-                        outgoing_edge_count[curr_node_id] = 0;
-                        incoming_edge_count[curr_node_id] = 0;
+                        nodes[curr_node_id]                = read_base;
+                        outgoing_edge_count[curr_node_id]  = 0;
+                        incoming_edge_count[curr_node_id]  = 0;
                         node_alignment_count[curr_node_id] = 0;
                         node_coverage_counts[curr_node_id] = 0;
-                        uint16_t new_node_alignments = 0;
+                        uint16_t new_node_alignments       = 0;
 
-                        for(uint16_t n = 0; n < num_aligned_node; n++)
+                        for (uint16_t n = 0; n < num_aligned_node; n++)
                         {
-                            uint16_t aid = node_alignments[graph_node_id * CUDAPOA_MAX_NODE_ALIGNMENTS + n];
-                            uint16_t aid_count = node_alignment_count[aid];
-                            node_alignments[aid * CUDAPOA_MAX_NODE_ALIGNMENTS + aid_count] = curr_node_id;
-                            node_alignment_count[aid] = aid_count + 1;
+                            uint16_t aid                                                                      = node_alignments[graph_node_id * CUDAPOA_MAX_NODE_ALIGNMENTS + n];
+                            uint16_t aid_count                                                                = node_alignment_count[aid];
+                            node_alignments[aid * CUDAPOA_MAX_NODE_ALIGNMENTS + aid_count]                    = curr_node_id;
+                            node_alignment_count[aid]                                                         = aid_count + 1;
                             node_alignments[curr_node_id * CUDAPOA_MAX_NODE_ALIGNMENTS + new_node_alignments] = aid;
                             new_node_alignments++;
                         }
 
                         node_alignments[graph_node_id * CUDAPOA_MAX_NODE_ALIGNMENTS + num_aligned_node] = curr_node_id;
-                        node_alignment_count[graph_node_id] = num_aligned_node + 1;
+                        node_alignment_count[graph_node_id]                                             = num_aligned_node + 1;
 
                         node_alignments[curr_node_id * CUDAPOA_MAX_NODE_ALIGNMENTS + new_node_alignments] = graph_node_id;
                         new_node_alignments++;
@@ -163,11 +166,11 @@ uint16_t addAlignmentToGraph(uint8_t* nodes,
             // Create new edges if necessary.
             if (head_node_id != -1)
             {
-                bool edge_exists = false;
+                bool edge_exists  = false;
                 uint16_t in_count = incoming_edge_count[curr_node_id];
-                for(uint16_t e = 0; e < in_count; e++)
+                for (uint16_t e = 0; e < in_count; e++)
                 {
-                    if(incoming_edges[curr_node_id * CUDAPOA_MAX_NODE_EDGES + e] == head_node_id)
+                    if (incoming_edges[curr_node_id * CUDAPOA_MAX_NODE_EDGES + e] == head_node_id)
                     {
                         edge_exists = true;
                         incoming_edge_w[curr_node_id * CUDAPOA_MAX_NODE_EDGES + e] += (prev_weight + NODE_WEIGHT);
@@ -176,12 +179,12 @@ uint16_t addAlignmentToGraph(uint8_t* nodes,
                 }
                 if (!edge_exists)
                 {
-                    incoming_edges[curr_node_id * CUDAPOA_MAX_NODE_EDGES + in_count] = head_node_id;
+                    incoming_edges[curr_node_id * CUDAPOA_MAX_NODE_EDGES + in_count]  = head_node_id;
                     incoming_edge_w[curr_node_id * CUDAPOA_MAX_NODE_EDGES + in_count] = prev_weight + NODE_WEIGHT;
-                    incoming_edge_count[curr_node_id] = in_count + 1;
-                    uint16_t out_count = outgoing_edge_count[head_node_id];
+                    incoming_edge_count[curr_node_id]                                 = in_count + 1;
+                    uint16_t out_count                                                = outgoing_edge_count[head_node_id];
                     outgoing_edges[head_node_id * CUDAPOA_MAX_NODE_EDGES + out_count] = curr_node_id;
-                    outgoing_edge_count[head_node_id] = out_count + 1;
+                    outgoing_edge_count[head_node_id]                                 = out_count + 1;
                     //printf("Created new edge %d to %d with weight %d\n", head_node_id, curr_node_id, prev_weight + NODE_WEIGHT);
 
                     if (out_count + 1 >= CUDAPOA_MAX_NODE_EDGES || in_count + 1 >= CUDAPOA_MAX_NODE_EDGES)
@@ -189,7 +192,6 @@ uint16_t addAlignmentToGraph(uint8_t* nodes,
                         printf("exceeded max edge count\n");
                     }
                 }
-
             }
 
             head_node_id = curr_node_id;
@@ -206,27 +208,26 @@ uint16_t addAlignmentToGraph(uint8_t* nodes,
 }
 
 // kernel that calls the addAlignmentToGraph device funtion
-__global__
-void addAlignmentKernel(uint8_t*  nodes,
-                        uint16_t* node_count,
-                        uint16_t* node_alignments, uint16_t* node_alignment_count,
-                        uint16_t* incoming_edges,  uint16_t* incoming_edge_count,
-                        uint16_t* outgoing_edges,  uint16_t* outgoing_edge_count,
-                        uint16_t* incoming_edge_w, uint16_t* outgoing_edge_w,
-                        uint16_t*  alignment_length,
-                        uint16_t* graph,
-                        int16_t*  alignment_graph,
-                        uint8_t*  read,
-                        int16_t*  alignment_read,
-                        uint16_t* node_coverage_counts,
-                        uint8_t* base_weights)
+__global__ void addAlignmentKernel(uint8_t* nodes,
+                                   uint16_t* node_count,
+                                   uint16_t* node_alignments, uint16_t* node_alignment_count,
+                                   uint16_t* incoming_edges, uint16_t* incoming_edge_count,
+                                   uint16_t* outgoing_edges, uint16_t* outgoing_edge_count,
+                                   uint16_t* incoming_edge_w, uint16_t* outgoing_edge_w,
+                                   uint16_t* alignment_length,
+                                   uint16_t* graph,
+                                   int16_t* alignment_graph,
+                                   uint8_t* read,
+                                   int16_t* alignment_read,
+                                   uint16_t* node_coverage_counts,
+                                   uint8_t* base_weights)
 {
     // all pointers will be allocated in unified memory visible to both host and device
     *node_count = addAlignmentToGraph(nodes,
                                       *node_count,
                                       node_alignments, node_alignment_count,
-                                      incoming_edges,  incoming_edge_count,
-                                      outgoing_edges,  outgoing_edge_count,
+                                      incoming_edges, incoming_edge_count,
+                                      outgoing_edges, outgoing_edge_count,
                                       incoming_edge_w, outgoing_edge_w,
                                       *alignment_length,
                                       graph,
@@ -238,35 +239,35 @@ void addAlignmentKernel(uint8_t*  nodes,
 }
 
 // Host function that calls the kernel
-void addAlignment(uint8_t*  nodes,
+void addAlignment(uint8_t* nodes,
                   uint16_t* node_count,
                   uint16_t* node_alignments, uint16_t* node_alignment_count,
-                  uint16_t* incoming_edges,  uint16_t* incoming_edge_count,
-                  uint16_t* outgoing_edges,  uint16_t* outgoing_edge_count,
+                  uint16_t* incoming_edges, uint16_t* incoming_edge_count,
+                  uint16_t* outgoing_edges, uint16_t* outgoing_edge_count,
                   uint16_t* incoming_edge_w, uint16_t* outgoing_edge_w,
                   uint16_t* alignment_length,
                   uint16_t* graph,
-                  int16_t*  alignment_graph,
-                  uint8_t*  read,
-                  int16_t*  alignment_read,
+                  int16_t* alignment_graph,
+                  uint8_t* read,
+                  int16_t* alignment_read,
                   uint16_t* node_coverage_counts,
                   uint8_t* base_weights)
 {
     addAlignmentKernel<<<1, 1>>>(nodes,
-                                  node_count,
-                                  node_alignments, node_alignment_count,
-                                  incoming_edges,  incoming_edge_count,
-                                  outgoing_edges,  outgoing_edge_count,
-                                  incoming_edge_w, outgoing_edge_w,
-                                  alignment_length,
-                                  graph,
-                                  alignment_graph,
-                                  read,
-                                  alignment_read,
-                                  node_coverage_counts,
-                                  base_weights);
+                                 node_count,
+                                 node_alignments, node_alignment_count,
+                                 incoming_edges, incoming_edge_count,
+                                 outgoing_edges, outgoing_edge_count,
+                                 incoming_edge_w, outgoing_edge_w,
+                                 alignment_length,
+                                 graph,
+                                 alignment_graph,
+                                 read,
+                                 alignment_read,
+                                 node_coverage_counts,
+                                 base_weights);
 }
 
-}
+} // namespace cudapoa
 
-}
+} // namespace genomeworks

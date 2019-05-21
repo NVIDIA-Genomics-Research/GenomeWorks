@@ -10,43 +10,51 @@ namespace genomeworks
 namespace cudapoa
 {
 
-
-class BasicAlignment {
+class BasicAlignment
+{
 public:
     BasicAlignment(std::vector<uint8_t> nodes, Uint16Vec2D outgoing_edges,
-                 Uint16Vec2D node_alignments, std::vector<uint16_t> node_coverage_counts,
-                 std::vector<uint8_t> read, std::vector<uint8_t> base_weights, std::vector<int16_t> alignment_graph, std::vector<int16_t> alignment_read)
-      : graph(nodes, outgoing_edges, node_alignments, node_coverage_counts), read_(read), alignment_graph_(alignment_graph), alignment_read_(alignment_read)
+                   Uint16Vec2D node_alignments, std::vector<uint16_t> node_coverage_counts,
+                   std::vector<uint8_t> read, std::vector<uint8_t> base_weights, std::vector<int16_t> alignment_graph, std::vector<int16_t> alignment_read)
+        : graph(nodes, outgoing_edges, node_alignments, node_coverage_counts), read_(read), alignment_graph_(alignment_graph), alignment_read_(alignment_read)
     {
-      //do nothing for now
+        //do nothing for now
     }
 
-    void get_alignments(int16_t *alignment_graph, int16_t *alignment_read, uint16_t *alignment_length) const {
-        for (int i = 0; i < alignment_graph_.size(); i++) {
+    void get_alignments(int16_t* alignment_graph, int16_t* alignment_read, uint16_t* alignment_length) const
+    {
+        for (int i = 0; i < alignment_graph_.size(); i++)
+        {
             alignment_graph[i] = alignment_graph_[i];
-            alignment_read[i] = alignment_read_[i];
+            alignment_read[i]  = alignment_read_[i];
         }
         *alignment_length = alignment_graph_.size();
     }
 
-    void get_read(uint8_t *read) const {
-        for (int i = 0; i < read_.size(); i++) {
+    void get_read(uint8_t* read) const
+    {
+        for (int i = 0; i < read_.size(); i++)
+        {
             read[i] = read_[i];
         }
     }
 
-    void get_base_weights(uint8_t *base_weights) const {
-        for (int i = 0; i < base_weights_.size(); i++) {
+    void get_base_weights(uint8_t* base_weights) const
+    {
+        for (int i = 0; i < base_weights_.size(); i++)
+        {
             base_weights[i] = base_weights_[i];
         }
     }
 
-    void get_graph_buffers(uint16_t *incoming_edges, uint16_t *incoming_edge_count,
-                           uint16_t *outgoing_edges, uint16_t *outgoing_edge_count,
-                           uint8_t *nodes, uint16_t *node_count,
-                           uint16_t *node_alignments, uint16_t *node_alignment_count,
-                           uint16_t *node_coverage_counts) const {
-        if (!graph.is_complete()) {
+    void get_graph_buffers(uint16_t* incoming_edges, uint16_t* incoming_edge_count,
+                           uint16_t* outgoing_edges, uint16_t* outgoing_edge_count,
+                           uint8_t* nodes, uint16_t* node_count,
+                           uint16_t* node_alignments, uint16_t* node_alignment_count,
+                           uint16_t* node_coverage_counts) const
+    {
+        if (!graph.is_complete())
+        {
             throw "graph is incomplete; unable to fill the buffers.";
         }
         graph.get_edges(incoming_edges, incoming_edge_count, outgoing_edges, outgoing_edge_count);
@@ -55,14 +63,15 @@ public:
         graph.get_node_coverage_counts(node_coverage_counts);
     }
 
-    void get_alignment_buffers(int16_t *alignment_graph, int16_t *alignment_read, uint16_t *alignment_length,
-                                    uint8_t *read, uint8_t *base_weights) const {
+    void get_alignment_buffers(int16_t* alignment_graph, int16_t* alignment_read, uint16_t* alignment_length,
+                               uint8_t* read, uint8_t* base_weights) const
+    {
         get_alignments(alignment_graph, alignment_read, alignment_length);
         get_read(read);
         get_base_weights(base_weights);
     }
 
-protected: 
+protected:
     BasicGraph graph;
     std::vector<uint8_t> read_;
     std::vector<uint8_t> base_weights_;
@@ -71,7 +80,7 @@ protected:
 };
 
 typedef std::pair<BasicGraph, BasicAlignment> AddAlginmentTestPair;
-    // create a vector of test cases
+// create a vector of test cases
 std::vector<AddAlginmentTestPair> getAddAlignmentTestCases()
 {
 
@@ -89,14 +98,14 @@ std::vector<AddAlginmentTestPair> getAddAlignmentTestCases()
      *                        A
      */
     BasicGraph ans_1({{}, {0}, {1}, {2, 4}, {1}});
-    BasicAlignment ali_1({'A', 'A', 'A', 'A'},                  //nodes
-                         {{}, {0}, {1}, {2}},                   //outgoing_edges
-                         {{}, {}, {}, {}},                      //node_alignments
-                         {1, 1, 1, 1},                          //node_coverage_counts
-                         {'A', 'A', 'T', 'A'},                  //read
-                         {0, 0, 1, 2},                          //base weights
-                         {0, 1, 2, 3},                          //alignment_graph
-                         {0, 1, 2, 3});                         //alignment_read
+    BasicAlignment ali_1({'A', 'A', 'A', 'A'}, //nodes
+                         {{}, {0}, {1}, {2}},  //outgoing_edges
+                         {{}, {}, {}, {}},     //node_alignments
+                         {1, 1, 1, 1},         //node_coverage_counts
+                         {'A', 'A', 'T', 'A'}, //read
+                         {0, 0, 1, 2},         //base weights
+                         {0, 1, 2, 3},         //alignment_graph
+                         {0, 1, 2, 3});        //alignment_read
     test_cases.emplace_back(std::move(ans_1), std::move(ali_1));
 
     /*
@@ -109,14 +118,14 @@ std::vector<AddAlginmentTestPair> getAddAlignmentTestCases()
      * 
      */
     BasicGraph ans_2({{}, {0}, {1}, {2}, {3}});
-    BasicAlignment ali_2({'A', 'T', 'C', 'G'},                  //nodes
-                         {{}, {0}, {1}, {2}},                   //outgoing_edges
-                         {{}, {}, {}, {}},                      //node_alignments
-                         {1, 1, 1, 1},                          //node_coverage_counts
-                         {'A', 'T', 'C', 'G', 'A'},             //read
-                         {0, 1, 2, 3, 4},                       //base weights
-                         {0, 1, 2, 3, -1},                      //alignment_graph
-                         {0, 1, 2, 3, 4});                      //alignment_read
+    BasicAlignment ali_2({'A', 'T', 'C', 'G'},      //nodes
+                         {{}, {0}, {1}, {2}},       //outgoing_edges
+                         {{}, {}, {}, {}},          //node_alignments
+                         {1, 1, 1, 1},              //node_coverage_counts
+                         {'A', 'T', 'C', 'G', 'A'}, //read
+                         {0, 1, 2, 3, 4},           //base weights
+                         {0, 1, 2, 3, -1},          //alignment_graph
+                         {0, 1, 2, 3, 4});          //alignment_read
     test_cases.emplace_back(std::move(ans_2), std::move(ali_2));
 
     /*
@@ -133,14 +142,14 @@ std::vector<AddAlginmentTestPair> getAddAlignmentTestCases()
      *                      A
      */
     BasicGraph ans_3({{}, {0}, {1, 4, 5}, {2}, {0}, {0}});
-    BasicAlignment ali_3({'A', 'A', 'C', 'G', 'C'},             //nodes
-                         {{}, {0}, {1, 4}, {2}, {0}},           //outgoing_edges
-                         {{}, {}, {}, {}},                      //node_alignments
-                         {2, 1, 2, 2, 1},                       //node_coverage_counts
-                         {'A', 'T', 'C', 'G'},                  //read
-                         {0, 1, 1, 5},                          //base weights
-                         {0, 4, 2, 3},                          //alignment_graph
-                         {0, 1, 2, 3});                         //alignment_read
+    BasicAlignment ali_3({'A', 'A', 'C', 'G', 'C'},   //nodes
+                         {{}, {0}, {1, 4}, {2}, {0}}, //outgoing_edges
+                         {{}, {}, {}, {}},            //node_alignments
+                         {2, 1, 2, 2, 1},             //node_coverage_counts
+                         {'A', 'T', 'C', 'G'},        //read
+                         {0, 1, 1, 5},                //base weights
+                         {0, 4, 2, 3},                //alignment_graph
+                         {0, 1, 2, 3});               //alignment_read
     test_cases.emplace_back(std::move(ans_3), std::move(ali_3));
 
     /*
@@ -154,14 +163,14 @@ std::vector<AddAlginmentTestPair> getAddAlignmentTestCases()
      * 
      */
     BasicGraph ans_4({{}, {0}, {1}, {2}, {3, 0}});
-    BasicAlignment ali_4({'A', 'T', 'T', 'G', 'A'},             //nodes
-                         {{}, {0}, {1}, {2}, {3}},              //outgoing_edges
-                         {{}, {}, {}, {}},                      //node_alignments
-                         {1, 1, 1, 1, 1},                       //node_coverage_counts
-                         {'A', 'A'},                            //read
-                         {5, 1},                                //base weights
-                         {0, 1, 2, 3, 4},                       //alignment_graph
-                         {0, -1, -1, -1, 1});                   //alignment_read
+    BasicAlignment ali_4({'A', 'T', 'T', 'G', 'A'}, //nodes
+                         {{}, {0}, {1}, {2}, {3}},  //outgoing_edges
+                         {{}, {}, {}, {}},          //node_alignments
+                         {1, 1, 1, 1, 1},           //node_coverage_counts
+                         {'A', 'A'},                //read
+                         {5, 1},                    //base weights
+                         {0, 1, 2, 3, 4},           //alignment_graph
+                         {0, -1, -1, -1, 1});       //alignment_read
     test_cases.emplace_back(std::move(ans_4), std::move(ali_4));
 
     /*
@@ -194,56 +203,55 @@ std::vector<AddAlginmentTestPair> getAddAlignmentTestCases()
     return test_cases;
 }
 
-
 // host function for calling the kernel to test topsort device function.
-BasicGraph testAddAlignment(const BasicAlignment &obj)
+BasicGraph testAddAlignment(const BasicAlignment& obj)
 {
     //declare device buffer
-    uint8_t *nodes;
-    uint16_t *node_count;
-    uint16_t *node_alignments;
-    uint16_t *node_alignment_count;
-    uint16_t *incoming_edges;
-    uint16_t *incoming_edge_count;
-    uint16_t *outgoing_edges;
-    uint16_t *outgoing_edge_count;
-    uint16_t *incoming_edge_w;
-    uint16_t *outgoing_edge_w;
-    uint16_t *alignment_length;
-    uint16_t *graph;
-    int16_t  *alignment_graph;
-    uint8_t  *read;
-    uint8_t  *base_weights;
-    int16_t  *alignment_read;
-    uint16_t *node_coverage_counts;
+    uint8_t* nodes;
+    uint16_t* node_count;
+    uint16_t* node_alignments;
+    uint16_t* node_alignment_count;
+    uint16_t* incoming_edges;
+    uint16_t* incoming_edge_count;
+    uint16_t* outgoing_edges;
+    uint16_t* outgoing_edge_count;
+    uint16_t* incoming_edge_w;
+    uint16_t* outgoing_edge_w;
+    uint16_t* alignment_length;
+    uint16_t* graph;
+    int16_t* alignment_graph;
+    uint8_t* read;
+    uint8_t* base_weights;
+    int16_t* alignment_read;
+    uint16_t* node_coverage_counts;
 
     //allocate unified memory so they can be accessed by both host and device.
-    GW_CU_CHECK_ERR(cudaMallocManaged((void **)&nodes, CUDAPOA_MAX_NODES_PER_WINDOW * sizeof(uint8_t)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void **)&node_count, sizeof(uint16_t)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void **)&node_alignments, CUDAPOA_MAX_NODES_PER_WINDOW * CUDAPOA_MAX_NODE_ALIGNMENTS * sizeof(uint16_t)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void **)&node_alignment_count, CUDAPOA_MAX_NODES_PER_WINDOW * sizeof(uint16_t)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void **)&incoming_edges, CUDAPOA_MAX_NODES_PER_WINDOW * CUDAPOA_MAX_NODE_EDGES * sizeof(uint16_t)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void **)&incoming_edge_count, CUDAPOA_MAX_NODES_PER_WINDOW * sizeof(uint16_t)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void **)&outgoing_edges, CUDAPOA_MAX_NODES_PER_WINDOW * CUDAPOA_MAX_NODE_EDGES * sizeof(uint16_t)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void **)&outgoing_edge_count, CUDAPOA_MAX_NODES_PER_WINDOW * sizeof(uint16_t)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void **)&incoming_edge_w, CUDAPOA_MAX_NODES_PER_WINDOW * CUDAPOA_MAX_NODE_EDGES * sizeof(uint16_t)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void **)&outgoing_edge_w, CUDAPOA_MAX_NODES_PER_WINDOW * CUDAPOA_MAX_NODE_EDGES * sizeof(uint16_t)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void **)&alignment_length, sizeof(uint16_t)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void **)&graph, CUDAPOA_MAX_NODES_PER_WINDOW * sizeof(uint16_t)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void **)&alignment_graph, CUDAPOA_MAX_SEQUENCE_SIZE * sizeof(uint16_t)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void **)&read, CUDAPOA_MAX_SEQUENCE_SIZE * sizeof(uint8_t)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void **)&base_weights, CUDAPOA_MAX_SEQUENCE_SIZE * sizeof(uint8_t)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void **)&alignment_read, CUDAPOA_MAX_SEQUENCE_SIZE * sizeof(uint16_t)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void **)&node_coverage_counts, CUDAPOA_MAX_NODES_PER_WINDOW * sizeof(uint16_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&nodes, CUDAPOA_MAX_NODES_PER_WINDOW * sizeof(uint8_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&node_count, sizeof(uint16_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&node_alignments, CUDAPOA_MAX_NODES_PER_WINDOW * CUDAPOA_MAX_NODE_ALIGNMENTS * sizeof(uint16_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&node_alignment_count, CUDAPOA_MAX_NODES_PER_WINDOW * sizeof(uint16_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&incoming_edges, CUDAPOA_MAX_NODES_PER_WINDOW * CUDAPOA_MAX_NODE_EDGES * sizeof(uint16_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&incoming_edge_count, CUDAPOA_MAX_NODES_PER_WINDOW * sizeof(uint16_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&outgoing_edges, CUDAPOA_MAX_NODES_PER_WINDOW * CUDAPOA_MAX_NODE_EDGES * sizeof(uint16_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&outgoing_edge_count, CUDAPOA_MAX_NODES_PER_WINDOW * sizeof(uint16_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&incoming_edge_w, CUDAPOA_MAX_NODES_PER_WINDOW * CUDAPOA_MAX_NODE_EDGES * sizeof(uint16_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&outgoing_edge_w, CUDAPOA_MAX_NODES_PER_WINDOW * CUDAPOA_MAX_NODE_EDGES * sizeof(uint16_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&alignment_length, sizeof(uint16_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&graph, CUDAPOA_MAX_NODES_PER_WINDOW * sizeof(uint16_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&alignment_graph, CUDAPOA_MAX_SEQUENCE_SIZE * sizeof(uint16_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&read, CUDAPOA_MAX_SEQUENCE_SIZE * sizeof(uint8_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&base_weights, CUDAPOA_MAX_SEQUENCE_SIZE * sizeof(uint8_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&alignment_read, CUDAPOA_MAX_SEQUENCE_SIZE * sizeof(uint16_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&node_coverage_counts, CUDAPOA_MAX_NODES_PER_WINDOW * sizeof(uint16_t)));
 
     //initialize all 'count' buffers
-    memset((void **)node_alignment_count, 0, CUDAPOA_MAX_NODES_PER_WINDOW * sizeof(uint16_t));
-    memset((void **)incoming_edge_count, 0, CUDAPOA_MAX_NODES_PER_WINDOW * sizeof(uint16_t));
-    memset((void **)outgoing_edge_count, 0, CUDAPOA_MAX_NODES_PER_WINDOW * sizeof(uint16_t));
-    memset((void **)node_coverage_counts, 0, CUDAPOA_MAX_NODES_PER_WINDOW * sizeof(uint16_t));
+    memset((void**)node_alignment_count, 0, CUDAPOA_MAX_NODES_PER_WINDOW * sizeof(uint16_t));
+    memset((void**)incoming_edge_count, 0, CUDAPOA_MAX_NODES_PER_WINDOW * sizeof(uint16_t));
+    memset((void**)outgoing_edge_count, 0, CUDAPOA_MAX_NODES_PER_WINDOW * sizeof(uint16_t));
+    memset((void**)node_coverage_counts, 0, CUDAPOA_MAX_NODES_PER_WINDOW * sizeof(uint16_t));
 
     //calculate edge counts on host
-    //3 buffers are disregarded because they don't affect correctness -- incoming_edge_w, outgoing_edge_w, graph 
+    //3 buffers are disregarded because they don't affect correctness -- incoming_edge_w, outgoing_edge_w, graph
     obj.get_graph_buffers(incoming_edges, incoming_edge_count, outgoing_edges, outgoing_edge_count,
                           nodes, node_count,
                           node_alignments, node_alignment_count,
@@ -292,15 +300,12 @@ BasicGraph testAddAlignment(const BasicAlignment &obj)
     return res;
 }
 
-
-
 using ::testing::TestWithParam;
 using ::testing::ValuesIn;
 
-
 class AddAlignmentTest : public TestWithParam<AddAlginmentTestPair>
 {
-  public:
+public:
     void SetUp() {}
 
     BasicGraph runAddAlignment(const BasicAlignment& ali)
