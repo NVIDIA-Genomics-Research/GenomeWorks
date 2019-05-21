@@ -44,15 +44,16 @@
 #define CUDAPOA_BANDED_MATRIX_RIGHT_PADDING (CELLS_PER_THREAD * 2)
 #define CUDAPOA_BANDED_MAX_MATRIX_SEQUENCE_DIMENSION (CUDAPOA_BAND_WIDTH + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING)
 
-
 #define CUDAPOA_THREADS_PER_BLOCK 64
 #define CUDAPOA_BANDED_THREADS_PER_BLOCK WARP_SIZE
 
 #define FULL_MASK 0xffffffff
 
-namespace genomeworks {
+namespace genomeworks
+{
 
-namespace cudapoa {
+namespace cudapoa
+{
 
 /**
  * @brief A struct to hold information about the sequences
@@ -105,7 +106,7 @@ typedef struct GraphDetails
     // (A, T, C, G) and the id of the node is it's position in the buffer.
     uint8_t* nodes;
 
-    // Device buffer to store the list of nodes aligned to a 
+    // Device buffer to store the list of nodes aligned to a
     // specific node in the graph.
     uint16_t* node_alignments;
     uint16_t* node_alignment_count;
@@ -155,7 +156,6 @@ typedef struct GraphDetails
     uint16_t* node_coverage_counts;
 } GraphDetails;
 
-
 /**
  * @brief The host function which calls the kernel that runs the partial order alignment
  *        algorithm.
@@ -204,17 +204,16 @@ typedef struct GraphDetails
  * @param[in] banded_alignment            Use banded alignment
  */
 
-void generatePOA(genomeworks::cudapoa::OutputDetails * output_details_d,
-                 genomeworks::cudapoa::InputDetails * Input_details_d,
+void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
+                 genomeworks::cudapoa::InputDetails* Input_details_d,
                  uint32_t total_windows,
                  cudaStream_t stream,
-                 genomeworks::cudapoa::AlignmentDetails * alignment_details_d,
-                 genomeworks::cudapoa::GraphDetails * graph_details_d,
+                 genomeworks::cudapoa::AlignmentDetails* alignment_details_d,
+                 genomeworks::cudapoa::GraphDetails* graph_details_d,
                  int16_t gap_score,
                  int16_t mismatch_score,
                  int16_t match_score,
                  bool banded_alignment);
-
 
 // host function that calls runTopSortKernel
 void runTopSort(uint16_t* sorted_poa,
@@ -226,38 +225,38 @@ void runTopSort(uint16_t* sorted_poa,
                 uint16_t* local_incoming_edge_count);
 
 // Host function that calls the kernel
-void addAlignment(uint8_t*  nodes,
+void addAlignment(uint8_t* nodes,
                   uint16_t* node_count,
                   uint16_t* node_alignments, uint16_t* node_alignment_count,
-                  uint16_t* incoming_edges,  uint16_t* incoming_edge_count,
-                  uint16_t* outgoing_edges,  uint16_t* outgoing_edge_count,
+                  uint16_t* incoming_edges, uint16_t* incoming_edge_count,
+                  uint16_t* outgoing_edges, uint16_t* outgoing_edge_count,
                   uint16_t* incoming_edge_w, uint16_t* outgoing_edge_w,
                   uint16_t* alignment_length,
                   uint16_t* graph,
-                  int16_t*  alignment_graph,
-                  uint8_t*  read,
-                  int16_t*  alignment_read,
+                  int16_t* alignment_graph,
+                  uint8_t* read,
+                  int16_t* alignment_read,
                   uint16_t* node_coverage_counts,
                   uint8_t* base_weights);
 
 // Host function that calls the kernel
 void runNW(uint8_t* nodes,
-            uint16_t* graph,
-            uint16_t* node_id_to_pos,
-            uint16_t graph_count,
-            uint16_t* incoming_edge_count,
-            uint16_t* incoming_edges,
-            uint16_t* outgoing_edge_count,
-            uint16_t* outgoing_edges,
-            uint8_t* read,
-            uint16_t read_count,
-            int16_t* scores,
-            int16_t* alignment_graph,
-            int16_t* alignment_read,
-            int16_t gap_score,
-            int16_t mismatch_score,
-            int16_t match_score,
-            uint16_t* algined_nodes);
+           uint16_t* graph,
+           uint16_t* node_id_to_pos,
+           uint16_t graph_count,
+           uint16_t* incoming_edge_count,
+           uint16_t* incoming_edges,
+           uint16_t* outgoing_edge_count,
+           uint16_t* outgoing_edges,
+           uint8_t* read,
+           uint16_t read_count,
+           int16_t* scores,
+           int16_t* alignment_graph,
+           int16_t* alignment_read,
+           int16_t gap_score,
+           int16_t mismatch_score,
+           int16_t match_score,
+           uint16_t* algined_nodes);
 } // namespace cudapoa
 
 } // namespace genomeworks

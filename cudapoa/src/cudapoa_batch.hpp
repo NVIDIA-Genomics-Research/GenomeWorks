@@ -10,10 +10,11 @@
 
 #include <cuda_runtime_api.h>
 
+namespace genomeworks
+{
 
-namespace genomeworks {
-
-namespace cudapoa {
+namespace cudapoa
+{
 
 class WindowDetails;
 
@@ -30,10 +31,10 @@ class InputDetails;
 
 /// \class
 /// Batched GPU CUDA POA object
-class CudapoaBatch : public Batch 
+class CudapoaBatch : public Batch
 {
     const uint32_t NUM_THREADS = 64;
-    
+
 public:
     CudapoaBatch(uint32_t max_poas, uint32_t max_sequences_per_poa, uint32_t device_id, int16_t gap_score = -8, int16_t mismatch_score = -6, int16_t match_score = 8, bool cuda_banded_alignment = false);
     ~CudapoaBatch();
@@ -52,8 +53,8 @@ public:
 
     // Get the consensus for each POA.
     void get_consensus(std::vector<std::string>& consensus,
-            std::vector<std::vector<uint16_t>>& coverage, 
-            std::vector<genomeworks::cudapoa::StatusType>& output_status);
+                       std::vector<std::vector<uint16_t>>& coverage,
+                       std::vector<genomeworks::cudapoa::StatusType>& output_status);
 
     // Set CUDA stream for GPU device.
     void set_cuda_stream(cudaStream_t stream);
@@ -111,18 +112,18 @@ protected:
     cudaStream_t stream_;
 
     // Host and device buffer for output data.
-    OutputDetails * output_details_h_;
-    OutputDetails * output_details_d_;
+    OutputDetails* output_details_h_;
+    OutputDetails* output_details_d_;
 
     // Host and device buffer pointer for input data.
-    InputDetails * input_details_d_;
-    InputDetails * input_details_h_;
+    InputDetails* input_details_d_;
+    InputDetails* input_details_h_;
 
     // Device buffer struct for alignment details
-    AlignmentDetails * alignment_details_d_;
+    AlignmentDetails* alignment_details_d_;
 
     // Device buffer struct for graph details
-    GraphDetails * graph_details_d_;
+    GraphDetails* graph_details_d_;
 
     // Static batch count used to generate batch IDs.
     static uint32_t batches;

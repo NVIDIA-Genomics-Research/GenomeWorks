@@ -10,17 +10,18 @@
 
 #include <cuda_runtime_api.h>
 
-namespace genomeworks {
+namespace genomeworks
+{
 
-namespace cudapoa {
-
+namespace cudapoa
+{
 
 /// \class Batch
 /// Batched GPU CUDA POA object
 class Batch
 {
     // const uint32_t NUM_THREADS = 64;
-    
+
 public:
     /// \brief CudapoaBatch has a custom dtor, so declare ~Batch virtual and give it a default implementation
     virtual ~Batch() = default;
@@ -52,11 +53,11 @@ public:
     ///                  will be returned
     /// \param coverage Reference to vector where coverage of each
     ///                 base in each consensus string is returned
-    /// \param output_status Reference to vector where the errors 
+    /// \param output_status Reference to vector where the errors
     ///                 during kernel execution is captured
     virtual void get_consensus(std::vector<std::string>& consensus,
-            std::vector<std::vector<uint16_t>>& coverage, 
-            std::vector<genomeworks::cudapoa::StatusType>& output_status) = 0;
+                               std::vector<std::vector<uint16_t>>& coverage,
+                               std::vector<genomeworks::cudapoa::StatusType>& output_status) = 0;
 
     /// \brief Set CUDA stream for GPU device.
     virtual void set_cuda_stream(cudaStream_t stream) = 0;
@@ -68,7 +69,6 @@ public:
 
     /// \brief Reset batch. Must do before re-using batch.
     virtual void reset() = 0;
-
 };
 
 /// \brief Creates a new CUDA Batch object.
@@ -82,7 +82,7 @@ public:
 /// \param cuda_banded_alignment Whether to use banded alignment
 ///
 /// \return Returns a unique pointer to a new Batch object
-std::unique_ptr<Batch> create_batch(uint32_t max_poas, uint32_t max_sequences_per_poa, uint32_t device_id, int16_t gap_score = -8, int16_t mismatch_score = -6, int16_t match_score = 8, bool cuda_banded_alignment=false);
+std::unique_ptr<Batch> create_batch(uint32_t max_poas, uint32_t max_sequences_per_poa, uint32_t device_id, int16_t gap_score = -8, int16_t mismatch_score = -6, int16_t match_score = 8, bool cuda_banded_alignment = false);
 
 /// \}
 

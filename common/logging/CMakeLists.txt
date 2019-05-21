@@ -21,3 +21,6 @@ install(TARGETS logging
 )
 install(DIRECTORY include/ DESTINATION include)
 install(EXPORT logging DESTINATION cmake)
+
+# Add auto formatting.
+gw_enable_auto_formatting("${CMAKE_CURRENT_SOURCE_DIR}")
