@@ -13,6 +13,7 @@ namespace cudaaligner {
         uninitialized,
         exceeded_max_alignments,
         exceeded_max_length,
+        exceeded_max_alignment_difference,
         generic_error
     };
 

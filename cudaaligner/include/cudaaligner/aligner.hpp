@@ -24,12 +24,20 @@ class Aligner {
         /// \brief Virtual destructor for Aligner.
         virtual ~Aligner() = default;
 
-        /// \brief Perform CUDA accelerated alignment
+        /// \brief Launch CUDA accelerated alignment
         ///
         /// Perform alignment on all Alignment objects previously
-        /// inserted. The alignment objects are directly updated
-        /// with the results.
+        /// inserted. This is an async call, and returns before alignment
+        /// is fully finished. To sync the alignments, refer to the
+        /// sync_alignments() call;
+        /// To
         virtual StatusType align_all() = 0;
+
+        /// \brief Waits for CUDA accelerated alignment to finish
+        ///
+        /// Blocking call that waits for all the alignments scheduled
+        /// on the GPU to come to completion.
+        virtual StatusType sync_alignments() = 0;
 
         /// \brief Add new alignment object
         ///

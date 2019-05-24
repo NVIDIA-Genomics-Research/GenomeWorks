@@ -7,7 +7,7 @@ if(NOT ${CUDA_FOUND})
     message(FATAL_ERROR "CUDA not detected on system. Please install")
 else()
     message(STATUS "Using CUDA ${CUDA_VERSION} from ${CUDA_TOOLKIT_ROOT_DIR}")
-    set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -lineinfo -use_fast_math -Xcompiler -Wno-pedantic,-Wall")
+    set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -lineinfo --expt-relaxed-constexpr -use_fast_math -Xcompiler -Wno-pedantic,-Wall -std=c++14")
 endif()
 
 cuda_add_library(cudaaligner STATIC 
@@ -15,6 +15,7 @@ cuda_add_library(cudaaligner STATIC
     src/aligner.cpp
     src/alignment_impl.cpp
     src/aligner_global.cpp
+    src/ukkonen_gpu.cu
     )
 
 target_link_libraries(cudaaligner cudautils logging)
