@@ -37,7 +37,7 @@ typedef struct AlignmentTestData {
     std::string cigar;
 } AlignmentTestData;
 
-std::vector<AlignmentTestData> create_test_cases()
+std::vector<AlignmentTestData> create_alignment_test_cases()
 {
     std::vector<AlignmentTestData> test_cases;
     AlignmentTestData data;
@@ -162,7 +162,7 @@ TEST_P(TestAlignmentImpl, CigarFormatting)
     ASSERT_STREQ(param_.cigar.c_str(), cigar.c_str());
 }
 
-INSTANTIATE_TEST_SUITE_P(TestAlignment, TestAlignmentImpl, ValuesIn(create_test_cases()));
+INSTANTIATE_TEST_SUITE_P(TestAlignment, TestAlignmentImpl, ValuesIn(create_alignment_test_cases()));
 
 }
 

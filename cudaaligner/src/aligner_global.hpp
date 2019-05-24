@@ -1,10 +1,14 @@
 #pragma once
 
 #include "cudaaligner/aligner.hpp"
+#include "ukkonen_gpu.cuh"
 
 namespace genomeworks {
 
 namespace cudaaligner {
+
+template <typename T>
+class batched_device_matrices;
 
 class AlignerGlobal : public Aligner
 {
@@ -14,6 +18,8 @@ class AlignerGlobal : public Aligner
         AlignerGlobal(const AlignerGlobal&) = delete;
 
         virtual StatusType align_all() override;
+
+        virtual StatusType sync_alignments() override;
 
         virtual StatusType add_alignment(const char* query, uint32_t query_length, const char* subject, uint32_t subject_length) override;
 
@@ -32,25 +38,24 @@ class AlignerGlobal : public Aligner
         virtual void reset() override;
 
     private:
-        virtual void update_alignments_with_results();
-
-    private:
         uint32_t max_query_length_;
         uint32_t max_subject_length_;
         uint32_t max_alignments_;
         std::vector<std::shared_ptr<Alignment>> alignments_;
 
-        uint8_t* sequences_d_;
-        uint8_t* sequences_h_;
+        char* sequences_d_;
+        char* sequences_h_;
 
-        uint32_t* sequence_lengths_d_;
-        uint32_t* sequence_lengths_h_;
+        int32_t* sequence_lengths_d_;
+        int32_t* sequence_lengths_h_;
 
-        uint8_t* results_d_;
-        uint8_t* results_h_;
+        int8_t* results_d_;
+        int8_t* results_h_;
 
-        uint32_t* result_lengths_d_;
-        uint32_t* result_lengths_h_;
+        int32_t* result_lengths_d_;
+        int32_t* result_lengths_h_;
+
+        std::unique_ptr< batched_device_matrices<nw_score_t> > score_matrices_;
 
         cudaStream_t stream_;
 
