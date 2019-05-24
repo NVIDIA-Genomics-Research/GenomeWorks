@@ -1,15 +1,28 @@
+/*
+* Copyright (c) 2019, NVIDIA CORPORATION.  All rights reserved.
+*
+* NVIDIA CORPORATION and its licensors retain all intellectual property
+* and proprietary rights in and to this software, related documentation
+* and any modifications thereto.  Any use, reproduction, disclosure or
+* distribution of this software and related documentation without an express
+* license agreement from NVIDIA CORPORATION is strictly prohibited.
+*/
+
 #include "gtest/gtest.h"
 #include "../src/aligner_global.hpp"
 #include "cudaaligner/alignment.hpp"
 #include "common.hpp"
 #include <cstdlib>
 
-namespace genomeworks {
+namespace genomeworks
+{
 
-namespace cudaaligner {
+namespace cudaaligner
+{
 
 // Common data structures and functions.
-typedef struct {
+typedef struct
+{
     std::vector<std::pair<std::string, std::string>> inputs;
     std::vector<std::string> cigars;
 } AlignerTestData;
@@ -73,45 +86,47 @@ std::vector<AlignerTestData> create_aligner_test_cases()
     return test_cases;
 };
 
-class TestAlignerGlobalImpl : public ::testing::TestWithParam<AlignerTestData> {
-    public:
-        virtual void SetUp()
+class TestAlignerGlobalImpl : public ::testing::TestWithParam<AlignerTestData>
+{
+public:
+    virtual void SetUp()
+    {
+        param                    = GetParam();
+        uint32_t max_string_size = 0;
+        for (auto& pair : param.inputs)
         {
-            param = GetParam();
-            uint32_t max_string_size = 0;
-            for(auto& pair : param.inputs)
-            {
-                max_string_size = std::max(max_string_size,
-                                           static_cast<uint32_t>(pair.first.length()));
-                max_string_size = std::max(max_string_size,
-                                           static_cast<uint32_t>(pair.second.length()));
-            }
-            max_string_size++;
-            aligner = std::make_unique<AlignerGlobal>(max_string_size,
-                                                      max_string_size,
-                                                      param.inputs.size(),
-                                                      0);
-            aligner->set_cuda_stream(0);
+            max_string_size = std::max(max_string_size,
+                                       static_cast<uint32_t>(pair.first.length()));
+            max_string_size = std::max(max_string_size,
+                                       static_cast<uint32_t>(pair.second.length()));
         }
+        max_string_size++;
+        aligner = std::make_unique<AlignerGlobal>(max_string_size,
+                                                  max_string_size,
+                                                  param.inputs.size(),
+                                                  0);
+        aligner->set_cuda_stream(0);
+    }
 
-    protected:
-        std::unique_ptr<AlignerGlobal> aligner;
-        AlignerTestData param;
+protected:
+    std::unique_ptr<AlignerGlobal> aligner;
+    AlignerTestData param;
 };
 
 TEST_P(TestAlignerGlobalImpl, TestAlignmentKernel)
 {
     const std::vector<std::pair<std::string, std::string>>& inputs = param.inputs;
-    const std::vector<std::string>& cigars = param.cigars;
+    const std::vector<std::string>& cigars                         = param.cigars;
 
     ASSERT_EQ(inputs.size(), cigars.size()) << "Input data length mismatch";
 
-    for(auto& pair : inputs)
+    for (auto& pair : inputs)
     {
-        auto& query = pair.first;
+        auto& query  = pair.first;
         auto& target = pair.second;
         ASSERT_EQ(StatusType::success, aligner->add_alignment(query.c_str(), query.length(),
-                                                              target.c_str(), target.length())) << "Could not add alignment to aligner";
+                                                              target.c_str(), target.length()))
+            << "Could not add alignment to aligner";
     }
 
     aligner->align_all();
@@ -119,7 +134,7 @@ TEST_P(TestAlignerGlobalImpl, TestAlignmentKernel)
 
     const std::vector<std::shared_ptr<Alignment>>& alignments = aligner->get_alignments();
     ASSERT_EQ(alignments.size(), inputs.size());
-    for(uint32_t a = 0; a < alignments.size(); a++)
+    for (uint32_t a = 0; a < alignments.size(); a++)
     {
         auto alignment = alignments[a];
         EXPECT_EQ(StatusType::success, alignment->get_status()) << "Alignment status is not success";
@@ -150,16 +165,17 @@ std::vector<AlignerTestData> create_aligner_perf_test_cases()
     return test_cases;
 };
 
-class TestAlignerGlobalImplPerf : public TestAlignerGlobalImpl {
+class TestAlignerGlobalImplPerf : public TestAlignerGlobalImpl
+{
 };
 
 TEST_P(TestAlignerGlobalImplPerf, TestAlignmentKernelPerf)
 {
     const std::vector<std::pair<std::string, std::string>>& inputs = param.inputs;
 
-    for(auto& pair : inputs)
+    for (auto& pair : inputs)
     {
-        auto& query = pair.first;
+        auto& query  = pair.first;
         auto& target = pair.second;
         ASSERT_EQ(StatusType::success, aligner->add_alignment(query.c_str(), query.length(),
                                                               target.c_str(), target.length()));
@@ -172,7 +188,5 @@ TEST_P(TestAlignerGlobalImplPerf, TestAlignmentKernelPerf)
 }
 
 INSTANTIATE_TEST_SUITE_P(TestCudaAligner, TestAlignerGlobalImplPerf, ::testing::ValuesIn(create_aligner_perf_test_cases()));
-
 }
-
 }
