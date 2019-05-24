@@ -1,11 +1,23 @@
+/*
+* Copyright (c) 2019, NVIDIA CORPORATION.  All rights reserved.
+*
+* NVIDIA CORPORATION and its licensors retain all intellectual property
+* and proprietary rights in and to this software, related documentation
+* and any modifications thereto.  Any use, reproduction, disclosure or
+* distribution of this software and related documentation without an express
+* license agreement from NVIDIA CORPORATION is strictly prohibited.
+*/
+
 #include <memory>
 
 #include "gtest/gtest.h"
 #include "../src/alignment_impl.hpp"
 
-namespace genomeworks {
+namespace genomeworks
+{
 
-namespace cudaaligner {
+namespace cudaaligner
+{
 
 using ::testing::ValuesIn;
 
@@ -29,7 +41,8 @@ TEST(TestAlignmentImplIndividual, Type)
 }
 
 // Parametrized tests
-typedef struct AlignmentTestData {
+typedef struct AlignmentTestData
+{
     std::string query;
     std::string subject;
     std::vector<AlignmentState> alignment;
@@ -43,23 +56,22 @@ std::vector<AlignmentTestData> create_alignment_test_cases()
     AlignmentTestData data;
 
     // Test case 1
-    data.subject = "TTATG";
-    data.query =  "AAAA";
-    data.alignment =  {
+    data.subject   = "TTATG";
+    data.query     = "AAAA";
+    data.alignment = {
         AlignmentState::mismatch,
         AlignmentState::mismatch,
         AlignmentState::match,
         AlignmentState::mismatch,
-        AlignmentState::deletion
-    };
+        AlignmentState::deletion};
     data.formatted_alignment = std::make_pair("AAAA-", "TTATG");
-    data.cigar = "4M1I";
+    data.cigar               = "4M1I";
     test_cases.push_back(data);
 
     // Test case 2
-    data.subject = "CATAA";
-    data.query = "CGATAATG";
-    data.alignment =  {
+    data.subject   = "CATAA";
+    data.query     = "CGATAATG";
+    data.alignment = {
         AlignmentState::insertion,
         AlignmentState::mismatch,
         AlignmentState::match,
@@ -67,16 +79,15 @@ std::vector<AlignmentTestData> create_alignment_test_cases()
         AlignmentState::match,
         AlignmentState::match,
         AlignmentState::insertion,
-        AlignmentState::insertion
-    };
+        AlignmentState::insertion};
     data.formatted_alignment = std::make_pair("CGATAATG", "-CATAA--");
-    data.cigar = "1D5M2D";
+    data.cigar               = "1D5M2D";
     test_cases.push_back(data);
 
     // Test case 3
-    data.subject = "AAGTCTAGAA";
-    data.query =    "GTTAG";
-    data.alignment =  {
+    data.subject   = "AAGTCTAGAA";
+    data.query     = "GTTAG";
+    data.alignment = {
         AlignmentState::deletion,
         AlignmentState::deletion,
         AlignmentState::match,
@@ -89,43 +100,43 @@ std::vector<AlignmentTestData> create_alignment_test_cases()
         AlignmentState::deletion,
     };
     data.formatted_alignment = std::make_pair("--GT-TAG--", "AAGTCTAGAA");
-    data.cigar = "2I2M1I3M2I";
+    data.cigar               = "2I2M1I3M2I";
     test_cases.push_back(data);
 
     // Test case 4
-    data.subject = "GATTCA";
-    data.query =  "GTTACA";
-    data.alignment =  {
+    data.subject   = "GATTCA";
+    data.query     = "GTTACA";
+    data.alignment = {
         AlignmentState::match,
         AlignmentState::deletion,
         AlignmentState::match,
         AlignmentState::match,
         AlignmentState::insertion,
         AlignmentState::match,
-        AlignmentState::match
-    };
+        AlignmentState::match};
     data.formatted_alignment = std::make_pair("G-TTACA", "GATT-CA");
-    data.cigar = "1M1I2M1D2M";
+    data.cigar               = "1M1I2M1D2M";
     test_cases.push_back(data);
 
     return test_cases;
 };
 
-class TestAlignmentImpl : public ::testing::TestWithParam<AlignmentTestData> {
-    public:
-        void SetUp()
-        {
-            param_ = GetParam();
-            alignment_ = std::make_unique<AlignmentImpl>(param_.query.c_str(),
-                                                         param_.query.size(),
-                                                         param_.subject.c_str(),
-                                                         param_.subject.size());
-            alignment_->set_alignment(param_.alignment);
-        }
+class TestAlignmentImpl : public ::testing::TestWithParam<AlignmentTestData>
+{
+public:
+    void SetUp()
+    {
+        param_     = GetParam();
+        alignment_ = std::make_unique<AlignmentImpl>(param_.query.c_str(),
+                                                     param_.query.size(),
+                                                     param_.subject.c_str(),
+                                                     param_.subject.size());
+        alignment_->set_alignment(param_.alignment);
+    }
 
-    protected:
-        std::unique_ptr<AlignmentImpl> alignment_;
-        AlignmentTestData param_;
+protected:
+    std::unique_ptr<AlignmentImpl> alignment_;
+    AlignmentTestData param_;
 };
 
 TEST_P(TestAlignmentImpl, StringGetters)
@@ -141,7 +152,7 @@ TEST_P(TestAlignmentImpl, AlignmentState)
 {
     const std::vector<AlignmentState>& al_read = alignment_->get_alignment();
     ASSERT_EQ(param_.alignment.size(), al_read.size());
-    for(std::size_t i = 0; i < param_.alignment.size(); i++)
+    for (std::size_t i = 0; i < param_.alignment.size(); i++)
     {
         ASSERT_EQ(param_.alignment.at(i), al_read.at(i));
     }
@@ -150,8 +161,8 @@ TEST_P(TestAlignmentImpl, AlignmentState)
 TEST_P(TestAlignmentImpl, AlignmentFormatting)
 {
     FormattedAlignment formatted_alignment = alignment_->format_alignment();
-    std::string query = formatted_alignment.first;
-    std::string subject = formatted_alignment.second;
+    std::string query                      = formatted_alignment.first;
+    std::string subject                    = formatted_alignment.second;
     ASSERT_STREQ(param_.formatted_alignment.first.c_str(), query.c_str());
     ASSERT_STREQ(param_.formatted_alignment.second.c_str(), subject.c_str());
 }
@@ -163,7 +174,5 @@ TEST_P(TestAlignmentImpl, CigarFormatting)
 }
 
 INSTANTIATE_TEST_SUITE_P(TestAlignment, TestAlignmentImpl, ValuesIn(create_alignment_test_cases()));
-
 }
-
 }
