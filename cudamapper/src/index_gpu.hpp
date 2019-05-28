@@ -13,6 +13,7 @@
 #include <cstdint>
 #include <memory>
 #include <unordered_map>
+#include <unordered_set>
 #include "cudamapper/index.hpp"
 #include "index_generator_cpu.hpp"
 
@@ -95,6 +96,16 @@ namespace genomeworks {
         ///
         /// \return array of directions (device memory)
         std::shared_ptr<const SketchElement::DirectionOfRepresentation> directions_d() const;
+
+        /// Returns all sequence ids
+        ///
+        /// \return set with all sequence ids
+        const std::unordered_set<std::uint64_t> sequence_ids() const;
+
+        /// \brief Maps sequence id to all representations in that sequence
+        ///
+        /// \return mapping of sequence id to all representations in that sequence
+        const std::unordered_multimap<std::uint64_t, std::uint64_t>& sequence_id_to_representations() const;
     private:
         /// hash table that maps representations to relevant parts of device arrays
         std::unordered_map<std::uint64_t, MappingToDeviceArrays> representation_to_device_arrays_;
@@ -110,5 +121,11 @@ namespace genomeworks {
 
         /// directions of sketch elements
         std::shared_ptr<SketchElement::DirectionOfRepresentation> directions_d_;
+
+        /// all sequence ids
+        std::unordered_set<std::uint64_t> sequence_ids_;
+
+        /// maps sequence id to all representations in that sequence
+        std::unordered_multimap<std::uint64_t, std::uint64_t> sequence_id_to_representations_;
     };
 }

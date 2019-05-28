@@ -10,6 +10,7 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <iterator>
 #include <memory>
 #include <vector>
 #include "gtest/gtest.h"
@@ -85,10 +86,13 @@ namespace genomeworks {
 
 
             std::vector<std::uint32_t> sketch_elems_for_representation_local(largest_representation_+1, 0);
+            std::vector<std::uint32_t> representations_for_sequence_id_local(largest_sequence_id_+1, 0);
             for (const Minimizer& minimizer : minimizers_) {
                 ++sketch_elems_for_representation_local[minimizer.representation()];
+                ++representations_for_sequence_id_local[minimizer.sequence_id()];
             }
             sketch_elems_for_representation_ = std::move(sketch_elems_for_representation_local);
+            representations_for_sequence_id_ = std::move(representations_for_sequence_id_local);
 
             // generate index
             index_ = std::make_unique<IndexGPU>(index_generator_test);
@@ -122,6 +126,7 @@ namespace genomeworks {
         std::size_t largest_position_;
         std::uint64_t largest_sequence_id_;
         std::vector<std::uint32_t> sketch_elems_for_representation_;
+        std::vector<std::uint32_t> representations_for_sequence_id_;
         std::vector<Minimizer> minimizers_;
 
         std::uint64_t* representations_h_;
@@ -151,7 +156,7 @@ namespace genomeworks {
 
     // Tests whether there is a correct number of sketch elements for each representation
     TEST_F(TestCudamapperIndexGPU, CorrectNumberOfRepresentations) {
-        for (const auto & elem : index_->representation_to_device_arrays()) {
+        for (const auto& elem : index_->representation_to_device_arrays()) {
             const auto& representation = elem.first;
             const IndexGPU::MappingToDeviceArrays& data_for_representation = (*index_->representation_to_device_arrays().find(representation)).second;
             EXPECT_EQ(data_for_representation.block_size_, sketch_elems_for_representation_[representation]);
@@ -219,6 +224,54 @@ namespace genomeworks {
             }
             EXPECT_EQ(direction_occurrences_seen[0], direction_occurrences_per_representation[representation][0]) << "representation " << representation;
             EXPECT_EQ(direction_occurrences_seen[1], direction_occurrences_per_representation[representation][1]) << "representation " << representation;
+        }
+    }
+
+    // Test whetehr the number of elements in sequence_ids() and representations_for_sequence_id() match with the input
+    TEST_F(TestCudamapperIndexGPU, NumberOfSequencesAndRepresentations) {
+        const std::size_t num_sequence_ids = std::count_if(std::begin(representations_for_sequence_id_), std::end(representations_for_sequence_id_), [](const std::uint32_t val) { return 0 != val; });
+        EXPECT_EQ(index_->sequence_ids().size(), num_sequence_ids);
+
+        std::vector<std::uint32_t> sequence_id_occurrences(largest_sequence_id_, 0);
+        for (const auto& elem : index_->sequence_id_to_representations()) {
+            auto const& sequence_id = elem.first;
+            ASSERT_LE(sequence_id, largest_sequence_id_);
+            ++sequence_id_occurrences[sequence_id];
+        }
+        for (std::size_t i = 0; i <= largest_sequence_id_; ++i) {
+            EXPECT_EQ(sequence_id_occurrences[i], representations_for_sequence_id_[i]) << "index " << i;
+        }
+    }
+
+    // Test wheter content of sequence_ids() and representations_for_sequence_id() matches with the input
+    TEST_F(TestCudamapperIndexGPU, RepresentationNumberMatches) {
+        // sequence_ids()
+        const auto& sequence_ids = index_->sequence_ids();
+        for (int i = 0; i < largest_sequence_id_; ++i) {
+            if(representations_for_sequence_id_[i] == 0) { // should not be in set
+                EXPECT_EQ(sequence_ids.find(i), std::end(sequence_ids)) << "index " << i;
+            } else { // should be in set
+                EXPECT_NE(sequence_ids.find(i), std::end(sequence_ids)) << "index " << i;
+            }
+        }
+
+        // representations_for_sequence_id()
+        std::vector<std::vector<std::uint32_t>> rep_histogram_per_seq_id_input(largest_sequence_id_+1, std::vector<std::uint32_t>(largest_representation_+1, 0));
+        std::vector<std::vector<std::uint32_t>> rep_histogram_per_seq_id_index(largest_sequence_id_+1, std::vector<std::uint32_t>(largest_representation_+1, 0));
+        for (const Minimizer& minimizer : minimizers_) {
+            ++rep_histogram_per_seq_id_input[minimizer.sequence_id()][minimizer.representation()];
+        }
+
+        for (const auto& elem : index_->sequence_id_to_representations()) {
+            const auto& sequence_id = elem.first;
+            const auto& representation = elem.second;
+            ++rep_histogram_per_seq_id_index[sequence_id][representation];
+        }
+
+        for (std::uint64_t sequence_id = 0; sequence_id <= largest_sequence_id_; ++sequence_id) {
+            for (std::uint64_t representation = 0; representation <= largest_representation_; ++representation) {
+                EXPECT_EQ(rep_histogram_per_seq_id_input[sequence_id][representation], rep_histogram_per_seq_id_index[sequence_id][representation]) << "sequence id " << sequence_id << ", representation " << representation;
+            }
         }
     }
 }
