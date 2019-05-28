@@ -45,6 +45,8 @@ namespace genomeworks {
                 positions_h.push_back((*sketch_elem_iter).second->position());
                 directions_h.push_back((*sketch_elem_iter).second->direction());
                 ++occurences_of_representation;
+                sequence_ids_.insert(sequences_h.back());
+                sequence_id_to_representations_.insert(std::pair<std::uint64_t, std::uint64_t>(sequences_h.back(), representation));
             }
             representation_to_device_arrays_.emplace(std::pair<std::uint64_t, MappingToDeviceArrays>(representation, {representations_h.size()-1, representation_block_start, occurences_of_representation}));
         }
@@ -96,5 +98,13 @@ namespace genomeworks {
 
     std::shared_ptr<const SketchElement::DirectionOfRepresentation> IndexGPU::directions_d() const {
         return directions_d_;
+    }
+
+    const std::unordered_set<std::uint64_t> IndexGPU::sequence_ids() const {
+        return sequence_ids_;
+    }
+
+    const std::unordered_multimap<std::uint64_t, std::uint64_t>& IndexGPU::sequence_id_to_representations() const {
+        return sequence_id_to_representations_;
     }
 }
