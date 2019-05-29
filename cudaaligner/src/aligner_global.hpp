@@ -12,6 +12,8 @@
 
 #include "cudaaligner/aligner.hpp"
 #include "ukkonen_gpu.cuh"
+#include "device_storage.cuh"
+#include <thrust/system/cuda/experimental/pinned_allocator.h>
 
 namespace genomeworks
 {
@@ -53,22 +55,25 @@ public:
     virtual void reset() override;
 
 private:
+    template <typename T>
+    using pinned_host_vector = std::vector<T, thrust::system::cuda::experimental::pinned_allocator<T> >;
+
     uint32_t max_query_length_;
     uint32_t max_subject_length_;
     uint32_t max_alignments_;
     std::vector<std::shared_ptr<Alignment>> alignments_;
 
-    char* sequences_d_;
-    char* sequences_h_;
+    device_storage<char> sequences_d_;
+    pinned_host_vector<char> sequences_h_;
 
-    int32_t* sequence_lengths_d_;
-    int32_t* sequence_lengths_h_;
+    device_storage<int32_t> sequence_lengths_d_;
+    pinned_host_vector<int32_t> sequence_lengths_h_;
 
-    int8_t* results_d_;
-    int8_t* results_h_;
+    device_storage<int8_t> results_d_;
+    pinned_host_vector<int8_t> results_h_;
 
-    int32_t* result_lengths_d_;
-    int32_t* result_lengths_h_;
+    device_storage<int32_t> result_lengths_d_;
+    pinned_host_vector<int32_t> result_lengths_h_;
 
     std::unique_ptr<batched_device_matrices<nw_score_t>> score_matrices_;
 
