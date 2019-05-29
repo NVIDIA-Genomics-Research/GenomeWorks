@@ -243,6 +243,6 @@ std::vector<int8_t> ukkonen_cpu(std::string const& target, std::string const& qu
     result = nw_cpu::ukkonen_backtrace(scores, n, m, p);
     return result;
 }
-}
-}
-}
+} // namespace nw_cpu
+} // namespace cudaaligner
+} // namespace genomeworks

@@ -29,6 +29,6 @@ inline std::string generate_random_genome(const uint32_t length)
     return genome;
 }
 
-} // cudaaligner
+} // namespace cudaaligner
 
-} // genomeworks
+} // namespace genomeworks

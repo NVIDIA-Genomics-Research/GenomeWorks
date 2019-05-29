@@ -174,5 +174,5 @@ TEST_P(TestAlignmentImpl, CigarFormatting)
 }
 
 INSTANTIATE_TEST_SUITE_P(TestAlignment, TestAlignmentImpl, ValuesIn(create_alignment_test_cases()));
-}
-}
+} // namespace cudaaligner
+} // namespace genomeworks

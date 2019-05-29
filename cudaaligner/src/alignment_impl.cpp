@@ -103,5 +103,5 @@ FormattedAlignment AlignmentImpl::format_alignment() const
     FormattedAlignment output(q_str, t_str);
     return output;
 }
-}
-}
+} // namespace cudaaligner
+} // namespace genomeworks

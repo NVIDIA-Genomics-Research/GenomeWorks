@@ -68,5 +68,5 @@ public:
 };
 
 /// \}
-}
-}
+} // namespace cudaaligner
+} // namespace genomeworks

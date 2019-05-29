@@ -47,6 +47,6 @@ enum class AlignmentState
 };
 
 StatusType Init();
-}
-}
+} // namespace cudaaligner
+} // namespace genomeworks
 /// \}

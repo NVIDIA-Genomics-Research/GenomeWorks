@@ -188,5 +188,5 @@ TEST_P(TestAlignerGlobalImplPerf, TestAlignmentKernelPerf)
 }
 
 INSTANTIATE_TEST_SUITE_P(TestCudaAligner, TestAlignerGlobalImplPerf, ::testing::ValuesIn(create_aligner_perf_test_cases()));
-}
-}
+} // namespace cudaaligner
+} // namespace genomeworks

@@ -28,5 +28,5 @@ std::unique_ptr<Aligner> create_aligner(uint32_t max_query_length, uint32_t max_
         throw std::runtime_error("Aligner for specified type not implemented yet.");
     }
 }
-}
-}
+} // namespace cudaaligner
+} // namespace genomeworks
