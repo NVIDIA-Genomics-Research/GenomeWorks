@@ -35,6 +35,14 @@ AlignerGlobal::AlignerGlobal(uint32_t max_query_length, uint32_t max_subject_len
     , max_subject_length_(max_subject_length)
     , max_alignments_(max_alignments)
     , alignments_()
+    , sequences_d_(2*std::max(max_query_length,max_subject_length)*max_alignments, device_id)
+    , sequences_h_(2*std::max(max_query_length,max_subject_length)*max_alignments, device_id)
+    , sequence_lengths_d_(2*max_alignments, device_id)
+    , sequence_lengths_h_(2*max_alignments, device_id)
+    , results_d_((max_query_length+max_subject_length)*max_alignments, device_id)
+    , results_h_((max_query_length+max_subject_length)*max_alignments, device_id)
+    , result_lengths_d_(max_alignments, device_id)
+    , result_lengths_h_(max_alignments, device_id)
     , stream_(nullptr)
     , device_id_(device_id)
 {
@@ -43,49 +51,12 @@ AlignerGlobal::AlignerGlobal(uint32_t max_query_length, uint32_t max_subject_len
     {
         throw std::runtime_error("Max alignments must be at least 1.");
     }
-
-    // Allocate buffers
-    GW_CU_CHECK_ERR(cudaSetDevice(device_id_));
-    GW_CU_CHECK_ERR(cudaMalloc((void**)&sequences_d_,
-                               2 * sizeof(char) * std::max(max_query_length_, max_subject_length_) * max_alignments_));
-    GW_CU_CHECK_ERR(cudaHostAlloc((void**)&sequences_h_,
-                                  2 * sizeof(char) * std::max(max_query_length_, max_subject_length_) * max_alignments_,
-                                  cudaHostAllocDefault));
-
-    GW_CU_CHECK_ERR(cudaMalloc((void**)&sequence_lengths_d_,
-                               2 * sizeof(uint32_t) * max_alignments_));
-    GW_CU_CHECK_ERR(cudaHostAlloc((void**)&sequence_lengths_h_,
-                                  2 * sizeof(uint32_t) * max_alignments_,
-                                  cudaHostAllocDefault));
-
-    GW_CU_CHECK_ERR(cudaMalloc((void**)&results_d_,
-                               sizeof(uint8_t) * (max_query_length_ + max_subject_length_) * max_alignments_));
-    GW_CU_CHECK_ERR(cudaHostAlloc((void**)&results_h_,
-                                  sizeof(uint8_t) * (max_query_length_ + max_subject_length_) * max_alignments_,
-                                  cudaHostAllocDefault));
-
-    GW_CU_CHECK_ERR(cudaMalloc((void**)&result_lengths_d_,
-                               sizeof(uint32_t) * max_alignments_));
-    GW_CU_CHECK_ERR(cudaHostAlloc((void**)&result_lengths_h_,
-                                  sizeof(uint32_t) * max_alignments_,
-                                  cudaHostAllocDefault));
 }
 
 AlignerGlobal::~AlignerGlobal()
 {
-    GW_CU_CHECK_ERR(cudaSetDevice(device_id_));
-    // Free up buffers
-    GW_CU_CHECK_ERR(cudaFree(sequences_d_));
-    GW_CU_CHECK_ERR(cudaFree(results_d_));
-    GW_CU_CHECK_ERR(cudaFree(sequence_lengths_d_));
-    GW_CU_CHECK_ERR(cudaFree(result_lengths_d_));
-
-    GW_CU_CHECK_ERR(cudaFreeHost(sequences_h_));
-    GW_CU_CHECK_ERR(cudaFreeHost(sequence_lengths_h_));
-    GW_CU_CHECK_ERR(cudaFreeHost(results_h_));
-    GW_CU_CHECK_ERR(cudaFreeHost(result_lengths_h_));
+    // Keep empty destructor to keep batched_device_matrices type incomplete in the .hpp file.
 }
-
 StatusType AlignerGlobal::add_alignment(const char* query, uint32_t query_length, const char* subject, uint32_t subject_length)
 {
     uint32_t const max_alignment_length           = std::max(max_query_length_, max_subject_length_);
@@ -145,13 +116,13 @@ StatusType AlignerGlobal::align_all()
         score_matrices_ = std::make_unique<batched_device_matrices<nw_score_t>>(
             max_alignments_, ukkonen_max_score_matrix_size(max_query_length_, max_subject_length_, allocated_max_length_difference, ukkonen_p), stream_, device_id_);
     GW_CU_CHECK_ERR(cudaSetDevice(device_id_));
-    GW_CU_CHECK_ERR(cudaMemcpyAsync(sequence_lengths_d_,
-                                    sequence_lengths_h_,
+    GW_CU_CHECK_ERR(cudaMemcpyAsync(sequence_lengths_d_.data(),
+                                    sequence_lengths_h_.data(),
                                     2 * sizeof(uint32_t) * num_alignments,
                                     cudaMemcpyHostToDevice,
                                     stream_));
-    GW_CU_CHECK_ERR(cudaMemcpyAsync(sequences_d_,
-                                    sequences_h_,
+    GW_CU_CHECK_ERR(cudaMemcpyAsync(sequences_d_.data(),
+                                    sequences_h_.data(),
                                     2 * sizeof(char) * max_alignment_length * num_alignments,
                                     cudaMemcpyHostToDevice,
                                     stream_));
@@ -165,20 +136,20 @@ StatusType AlignerGlobal::align_all()
 
     // Run kernel
     ukkonen_gpu(
-        results_d_, result_lengths_d_, max_query_length_ + max_subject_length_,
-        sequences_d_, sequence_lengths_d_,
+        results_d_.data(), result_lengths_d_.data(), max_query_length_ + max_subject_length_,
+        sequences_d_.data(), sequence_lengths_d_.data(),
         max_length_difference, max_alignment_length, num_alignments,
         score_matrices_.get(),
         ukkonen_p,
         stream_);
 
-    GW_CU_CHECK_ERR(cudaMemcpyAsync(results_h_,
-                                    results_d_,
+    GW_CU_CHECK_ERR(cudaMemcpyAsync(results_h_.data(),
+                                    results_d_.data(),
                                     sizeof(uint8_t) * (max_query_length_ + max_subject_length_) * num_alignments,
                                     cudaMemcpyDeviceToHost,
                                     stream_));
-    GW_CU_CHECK_ERR(cudaMemcpyAsync(result_lengths_h_,
-                                    result_lengths_d_,
+    GW_CU_CHECK_ERR(cudaMemcpyAsync(result_lengths_h_.data(),
+                                    result_lengths_d_.data(),
                                     sizeof(uint32_t) * num_alignments,
                                     cudaMemcpyDeviceToHost,
                                     stream_));
@@ -195,7 +166,7 @@ StatusType AlignerGlobal::sync_alignments()
     for (int32_t i = 0; i < n_alignments; ++i)
     {
         al_state.clear();
-        int8_t const* r_begin = results_h_ + i * (max_query_length_ + max_subject_length_);
+        int8_t const* r_begin = results_h_.data() + i * (max_query_length_ + max_subject_length_);
         int8_t const* r_end   = r_begin + result_lengths_h_[i];
         std::transform(r_begin, r_end, std::back_inserter(al_state), [](int8_t x) { return static_cast<AlignmentState>(x); });
         std::reverse(begin(al_state), end(al_state));
