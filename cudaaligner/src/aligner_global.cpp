@@ -35,12 +35,12 @@ AlignerGlobal::AlignerGlobal(uint32_t max_query_length, uint32_t max_subject_len
     , max_subject_length_(max_subject_length)
     , max_alignments_(max_alignments)
     , alignments_()
-    , sequences_d_(2*std::max(max_query_length,max_subject_length)*max_alignments, device_id)
-    , sequences_h_(2*std::max(max_query_length,max_subject_length)*max_alignments, device_id)
-    , sequence_lengths_d_(2*max_alignments, device_id)
-    , sequence_lengths_h_(2*max_alignments, device_id)
-    , results_d_((max_query_length+max_subject_length)*max_alignments, device_id)
-    , results_h_((max_query_length+max_subject_length)*max_alignments, device_id)
+    , sequences_d_(2 * std::max(max_query_length, max_subject_length) * max_alignments, device_id)
+    , sequences_h_(2 * std::max(max_query_length, max_subject_length) * max_alignments, device_id)
+    , sequence_lengths_d_(2 * max_alignments, device_id)
+    , sequence_lengths_h_(2 * max_alignments, device_id)
+    , results_d_((max_query_length + max_subject_length) * max_alignments, device_id)
+    , results_h_((max_query_length + max_subject_length) * max_alignments, device_id)
     , result_lengths_d_(max_alignments, device_id)
     , result_lengths_h_(max_alignments, device_id)
     , stream_(nullptr)
@@ -181,5 +181,5 @@ void AlignerGlobal::reset()
 {
     alignments_.clear();
 }
-}
-}
+} // namespace cudaaligner
+} // namespace genomeworks

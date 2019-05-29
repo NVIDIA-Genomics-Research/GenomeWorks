@@ -86,5 +86,5 @@ public:
 std::unique_ptr<Aligner> create_aligner(uint32_t max_query_length, uint32_t max_subject_length, uint32_t max_alignments, AlignmentType type, uint32_t device_id);
 
 /// \}
-}
-}
+} // namespace cudaaligner
+} // namespace genomeworks

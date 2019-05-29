@@ -56,7 +56,7 @@ public:
 
 private:
     template <typename T>
-    using pinned_host_vector = std::vector<T, thrust::system::cuda::experimental::pinned_allocator<T> >;
+    using pinned_host_vector = std::vector<T, thrust::system::cuda::experimental::pinned_allocator<T>>;
 
     uint32_t max_query_length_;
     uint32_t max_subject_length_;
@@ -81,5 +81,5 @@ private:
 
     uint32_t device_id_;
 };
-}
-}
+} // namespace cudaaligner
+} // namespace genomeworks
