@@ -3,6 +3,14 @@ project(GenomeWorksCPP)
 
 # Process options.
 option(gw_enable_tests "Build GenomeWorks unit tests" OFF)
+# The spoa_accurate option runs a different (and slower) version of
+# the topological sort in cudapoa which exactly matches the output
+# of the topological sort implementation in the SPOA library. This is
+# useful for validation. When the option is turned off, a faster
+# custom top sort function is run which outputs a correct but different
+# ordering of the graph. This leads to subtle differences in the
+# overall consensus generated, and hence makes it harder to validate and debug.
+option(spoa_accurate "Run cudapoa code in mode that matches spoa" OFF)
 
 if (gw_enable_tests)
     message(STATUS "Enabling GenomeWorks unit tests")
