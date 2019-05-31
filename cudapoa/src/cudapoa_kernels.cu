@@ -31,7 +31,6 @@ namespace cudapoa
  *        algorithm.
  *
  * @param[out] consensus_d                Device buffer for generated consensus
- * @param[out] coverage_d                 Device buffer for coverage of each base in consensus
  * @param[in] sequences_d                 Device buffer with sequences for all windows
  * @param[in] base_weights_d              Device buffer with base weights for all windows
  * @param[in] sequence_lengths_d          Device buffer sequence lengths
@@ -53,8 +52,6 @@ namespace cudapoa
  * @graph[in] node_alignments             Device scratch space for storing alignment nodes per node in graph
  * @param[in] node_alignment_count        Device scratch space for storing number of aligned nodes
  * @param[in] sorted_poa_local_edge_count Device scratch space for maintaining edge counts during topological sort
- * @param[in] consensus_scores            Device scratch space for storing score of each node while traversing graph during consensus
- * @param[in] consensus_predecessors      Device scratch space for storing predecessors of nodes while traversing graph during consensus
  * @param[in] node_marks_d_               Device scratch space for storing node marks when running spoa accurate top sort
  * @param[in] check_aligned_nodes_d_      Device scratch space for storing check for aligned nodes
  * @param[in] nodes_to_visit_d_           device scratch space for storing stack of nodes to be visited in topsort
@@ -65,7 +62,6 @@ namespace cudapoa
  */
 template <int32_t TPB = 64, bool cuda_banded_alignment = false>
 __global__ void generatePOAKernel(uint8_t* consensus_d,
-                                  uint16_t* coverage_d,
                                   uint8_t* sequences_d,
                                   uint8_t* base_weights_d,
                                   uint16_t* sequence_lengths_d,
@@ -86,8 +82,6 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
                                   uint16_t* node_alignments_d,
                                   uint16_t* node_alignment_count_d,
                                   uint16_t* sorted_poa_local_edge_count_d,
-                                  int32_t* consensus_scores_d,
-                                  int16_t* consensus_predecessors_d,
                                   uint8_t* node_marks_d_,
                                   bool* check_aligned_nodes_d_,
                                   uint16_t* nodes_to_visit_d_,
@@ -174,9 +168,6 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
 
     __syncwarp();
 
-    // Generate consensus only if sequences are aligned to graph.
-    bool generate_consensus = false;
-
     //printf("window id %d, sequence %d\n", window_idx, num_sequences_in_window - 1);
 
     // Align each subsequent read, add alignment to graph, run topoligical sort.
@@ -190,7 +181,7 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
         {
             if (sequence_lengths[0] >= CUDAPOA_MAX_NODES_PER_WINDOW)
             {
-                consensus[0] = 0;
+                consensus[0] = CUDAPOA_KERNEL_ERROR_ENCOUNTERED;
                 consensus[1] = static_cast<uint8_t>(StatusType::node_count_exceeded_maximum_graph_size);
                 warp_error   = true;
             }
@@ -250,7 +241,7 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
         {
             if (lane_idx == 0)
             {
-                consensus[0] = 0;
+                consensus[0] = CUDAPOA_KERNEL_ERROR_ENCOUNTERED;
                 consensus[1] = static_cast<uint8_t>(StatusType::loop_count_exceeded_upper_bound);
             }
             return;
@@ -314,31 +305,6 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
         }
 
         __syncwarp();
-
-        generate_consensus = true;
-    }
-
-    if (lane_idx == 0 && generate_consensus)
-    {
-        uint16_t* coverage              = &coverage_d[window_idx * CUDAPOA_MAX_CONSENSUS_SIZE];
-        int32_t* consensus_scores       = &consensus_scores_d[window_idx * max_nodes_per_window];
-        int16_t* consensus_predecessors = &consensus_predecessors_d[window_idx * max_nodes_per_window];
-
-        generateConsensus(nodes,
-                          sequence_lengths[0],
-                          sorted_poa,
-                          node_id_to_pos,
-                          incoming_edges,
-                          incoming_edge_count,
-                          outoing_edges,
-                          outgoing_edge_count,
-                          incoming_edge_weights,
-                          consensus_predecessors,
-                          consensus_scores,
-                          consensus,
-                          coverage,
-                          node_coverage_counts,
-                          node_alignments, node_alignment_count);
     }
 }
 
@@ -395,7 +361,6 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
     {
         generatePOAKernel<CUDAPOA_BANDED_THREADS_PER_BLOCK, true>
             <<<total_windows, CUDAPOA_BANDED_THREADS_PER_BLOCK, 0, stream>>>(consensus_d,
-                                                                             coverage_d,
                                                                              sequences_d,
                                                                              base_weights_d,
                                                                              sequence_lengths_d,
@@ -416,8 +381,6 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
                                                                              node_alignments,
                                                                              node_alignment_count,
                                                                              sorted_poa_local_edge_count,
-                                                                             consensus_scores,
-                                                                             consensus_predecessors,
                                                                              node_marks,
                                                                              check_aligned_nodes,
                                                                              nodes_to_visit,
@@ -430,7 +393,6 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
     {
         generatePOAKernel<CUDAPOA_THREADS_PER_BLOCK, false>
             <<<nblocks, CUDAPOA_THREADS_PER_BLOCK, 0, stream>>>(consensus_d,
-                                                                coverage_d,
                                                                 sequences_d,
                                                                 base_weights_d,
                                                                 sequence_lengths_d,
@@ -451,8 +413,6 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
                                                                 node_alignments,
                                                                 node_alignment_count,
                                                                 sorted_poa_local_edge_count,
-                                                                consensus_scores,
-                                                                consensus_predecessors,
                                                                 node_marks,
                                                                 check_aligned_nodes,
                                                                 nodes_to_visit,
@@ -460,6 +420,51 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
                                                                 gap_score,
                                                                 mismatch_score,
                                                                 match_score);
+    }
+
+    if (cuda_banded_alignment)
+    {
+        generateConsensusKernel<true>
+            <<<1, total_windows, 0, stream>>>(consensus_d,
+                                              coverage_d,
+                                              sequence_lengths_d,
+                                              window_details_d,
+                                              total_windows,
+                                              nodes,
+                                              incoming_edges,
+                                              incoming_edge_count,
+                                              outgoing_edges,
+                                              outgoing_edge_count,
+                                              incoming_edge_w,
+                                              sorted_poa,
+                                              node_id_to_pos,
+                                              node_alignments,
+                                              node_alignment_count,
+                                              consensus_scores,
+                                              consensus_predecessors,
+                                              node_coverage_counts);
+    }
+    else
+    {
+        generateConsensusKernel<false>
+            <<<1, total_windows, 0, stream>>>(consensus_d,
+                                              coverage_d,
+                                              sequence_lengths_d,
+                                              window_details_d,
+                                              total_windows,
+                                              nodes,
+                                              incoming_edges,
+                                              incoming_edge_count,
+                                              outgoing_edges,
+                                              outgoing_edge_count,
+                                              incoming_edge_w,
+                                              sorted_poa,
+                                              node_id_to_pos,
+                                              node_alignments,
+                                              node_alignment_count,
+                                              consensus_scores,
+                                              consensus_predecessors,
+                                              node_coverage_counts);
     }
 }
 

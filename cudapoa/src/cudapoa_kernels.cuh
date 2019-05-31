@@ -58,6 +58,7 @@
 #define CUDAPOA_BANDED_THREADS_PER_BLOCK WARP_SIZE
 
 #define FULL_MASK 0xffffffff
+#define CUDAPOA_KERNEL_ERROR_ENCOUNTERED UINT8_MAX
 
 namespace genomeworks
 {

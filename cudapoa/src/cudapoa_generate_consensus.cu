@@ -236,6 +236,75 @@ __device__ void generateConsensus(uint8_t* nodes,
     consensus[consensus_pos] = '\0';
 }
 
+template <bool cuda_banded_alignment = false>
+__global__ void generateConsensusKernel(uint8_t* consensus_d,
+                                        uint16_t* coverage_d,
+                                        uint16_t* sequence_lengths_d,
+                                        genomeworks::cudapoa::WindowDetails* window_details_d,
+                                        uint32_t total_windows,
+                                        uint8_t* nodes_d,
+                                        uint16_t* incoming_edges_d,
+                                        uint16_t* incoming_edge_count_d,
+                                        uint16_t* outgoing_edges_d,
+                                        uint16_t* outgoing_edge_count_d,
+                                        uint16_t* incoming_edge_w_d,
+                                        uint16_t* sorted_poa_d,
+                                        uint16_t* node_id_to_pos_d,
+                                        uint16_t* node_alignments_d,
+                                        uint16_t* node_alignment_count_d,
+                                        int32_t* consensus_scores_d,
+                                        int16_t* consensus_predecessors_d,
+                                        uint16_t* node_coverage_counts_d_)
+{
+    //each thread will operate on a window
+    uint32_t window_idx = threadIdx.x;
+
+    if (window_idx >= total_windows)
+        return;
+
+    uint8_t* consensus = &consensus_d[window_idx * CUDAPOA_MAX_CONSENSUS_SIZE];
+
+    if (consensus[0] == CUDAPOA_KERNEL_ERROR_ENCOUNTERED) //error during graph generation
+        return;
+
+    uint32_t max_nodes_per_window = cuda_banded_alignment ? CUDAPOA_MAX_NODES_PER_WINDOW_BANDED : CUDAPOA_MAX_NODES_PER_WINDOW;
+
+    // Find the buffer offsets for each thread within the global memory buffers.
+    uint8_t* nodes                  = &nodes_d[max_nodes_per_window * window_idx];
+    uint16_t* incoming_edges        = &incoming_edges_d[window_idx * max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES];
+    uint16_t* incoming_edge_count   = &incoming_edge_count_d[window_idx * max_nodes_per_window];
+    uint16_t* outoing_edges         = &outgoing_edges_d[window_idx * max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES];
+    uint16_t* outgoing_edge_count   = &outgoing_edge_count_d[window_idx * max_nodes_per_window];
+    uint16_t* incoming_edge_weights = &incoming_edge_w_d[window_idx * max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES];
+    uint16_t* sorted_poa            = &sorted_poa_d[window_idx * max_nodes_per_window];
+    uint16_t* node_id_to_pos        = &node_id_to_pos_d[window_idx * max_nodes_per_window];
+    uint16_t* node_alignments       = &node_alignments_d[window_idx * max_nodes_per_window * CUDAPOA_MAX_NODE_ALIGNMENTS];
+    uint16_t* node_alignment_count  = &node_alignment_count_d[window_idx * max_nodes_per_window];
+    uint16_t* node_coverage_counts  = &node_coverage_counts_d_[max_nodes_per_window * window_idx];
+    uint16_t* sequence_lengths      = &sequence_lengths_d[window_details_d[window_idx].seq_len_buffer_offset];
+
+    //generate consensus
+    uint16_t* coverage              = &coverage_d[window_idx * CUDAPOA_MAX_CONSENSUS_SIZE];
+    int32_t* consensus_scores       = &consensus_scores_d[window_idx * max_nodes_per_window];
+    int16_t* consensus_predecessors = &consensus_predecessors_d[window_idx * max_nodes_per_window];
+
+    generateConsensus(nodes,
+                      sequence_lengths[0],
+                      sorted_poa,
+                      node_id_to_pos,
+                      incoming_edges,
+                      incoming_edge_count,
+                      outoing_edges,
+                      outgoing_edge_count,
+                      incoming_edge_weights,
+                      consensus_predecessors,
+                      consensus_scores,
+                      consensus,
+                      coverage,
+                      node_coverage_counts,
+                      node_alignments, node_alignment_count);
+}
+
 } // namespace cudapoa
 
 } // namespace genomeworks
