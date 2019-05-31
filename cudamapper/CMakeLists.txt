@@ -34,13 +34,14 @@ target_compile_options(index_gpu PRIVATE -Werror)
 
 add_doxygen_source_dir(${CMAKE_CURRENT_SOURCE_DIR}/include/cudamapper)
 
-add_executable(cudamapper
+cuda_add_executable(cudamapper
         src/cudamapper.cpp
         src/main.cpp
         src/sequence.cpp
         src/bioparser_sequence.cpp
         src/index.cpp
         src/index_generator.cpp
+        src/matcher.cu
         )
 
 target_compile_options(cudamapper PRIVATE -Werror)
