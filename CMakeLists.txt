@@ -11,6 +11,7 @@ option(gw_enable_tests "Build GenomeWorks unit tests" OFF)
 # ordering of the graph. This leads to subtle differences in the
 # overall consensus generated, and hence makes it harder to validate and debug.
 option(spoa_accurate "Run cudapoa code in mode that matches spoa" OFF)
+option(gw_enable_cudapoa_nw_print "Enable verbose prints within cudapoa NW kernel" OFF)
 
 if (gw_enable_tests)
     message(STATUS "Enabling GenomeWorks unit tests")

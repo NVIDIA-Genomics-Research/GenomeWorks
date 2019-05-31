@@ -11,8 +11,6 @@
 #include <algorithm>
 #include <cstring>
 
-#define GW_LOG_LEVEL gw_log_level_info
-
 #include "cudapoa_batch.hpp"
 #include "cudapoa_kernels.cuh"
 
@@ -43,7 +41,8 @@ uint32_t CudapoaBatch::batches = 0;
 
 void CudapoaBatch::print_batch_debug_message(const std::string& message)
 {
-    GW_LOG_INFO("{}{}{}{}", TABS, bid_, message, device_id_);
+    (void)message;
+    GW_LOG_DEBUG("{}{}{}{}", TABS, bid_, message, device_id_);
 }
 
 void CudapoaBatch::initialize_output_details()

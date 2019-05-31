@@ -35,8 +35,8 @@ target_link_libraries(cudapoa cudautils logging utils)
 
 target_compile_options(cudapoa PRIVATE -Werror -Wall -Wextra -march=native)
 
-if(debug)
-    target_compile_definitions(cudapoa PUBLIC DEBUG)
+if(gw_enable_cudapoa_nw_print)
+    target_compile_definitions(cudapoa PUBLIC NW_VERBOSE_PRINT)
 endif()
 
 if(spoa_accurate)

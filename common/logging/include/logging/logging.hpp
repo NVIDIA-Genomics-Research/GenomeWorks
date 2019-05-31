@@ -39,28 +39,25 @@
 /// \ingroup logging
 /// \{
 
-enum
-{
-    gw_log_level_debug,
-    gw_log_level_info,
-    gw_log_level_warn,
-    gw_log_level_error,
-    gw_log_level_critical,
-    gw_log_level_off
-};
+#define gw_log_level_debug 0
+#define gw_log_level_info 1
+#define gw_log_level_warn 2
+#define gw_log_level_error 3
+#define gw_log_level_critical 4
+#define gw_log_level_off 5
 
 #ifndef GW_LOG_LEVEL
-#ifdef DEBUG
-#define GW_LOG_LEVEL GW_LOG_LEVEL_DEBUG
-#else // DEBUG
-#define GW_LOG_LEVEL GW_LOG_LEVEL_ERROR
-#endif // DEBUG
+#ifndef NDEBUG
+#define GW_LOG_LEVEL gw_log_level_debug
+#else // NDEBUG
+#define GW_LOG_LEVEL gw_log_level_error
+#endif // NDEBUG
 #endif // GW_LOG_LEVEL
 
-#if GW_LOG_LEVEL == gw_log_level_debug
-#define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_DEBUG
-#elif GW_LOG_LEVEL == gw_log_level_info
+#if GW_LOG_LEVEL == gw_log_level_info
 #define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_INFO
+#elif GW_LOG_LEVEL == gw_log_level_debug
+#define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_DEBUG
 #elif GW_LOG_LEVEL == gw_log_level_warn
 #define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_WARN
 #elif GW_LOG_LEVEL == gw_log_level_error
