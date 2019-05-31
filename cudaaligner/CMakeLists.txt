@@ -30,7 +30,7 @@ cuda_add_library(cudaaligner STATIC
 
 target_link_libraries(cudaaligner cudautils logging)
 
-target_compile_options(cudapoa PRIVATE -Werror -Wall -Wextra -march=native)
+target_compile_options(cudaaligner PRIVATE -Werror -Wall -Wextra -march=native)
 
 target_include_directories(cudaaligner 
     PUBLIC 

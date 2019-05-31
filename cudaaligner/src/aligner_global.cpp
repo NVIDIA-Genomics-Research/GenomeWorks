@@ -13,8 +13,6 @@
 
 #include <cuda_runtime_api.h>
 
-#define GW_LOG_LEVEL gw_log_level_warn
-
 #include "aligner_global.hpp"
 #include "alignment_impl.hpp"
 #include "ukkonen_gpu.cuh"
