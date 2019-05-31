@@ -317,7 +317,7 @@ void CudapoaBatch::get_consensus(std::vector<std::string>& consensus,
         char* c = reinterpret_cast<char*>(&(output_details_h_->consensus[poa * CUDAPOA_MAX_CONSENSUS_SIZE]));
         // We use the first two entries in the consensus buffer to log error during kernel execution
         // c[0] == 0 means an error occured and when that happens the error type is saved in c[1]
-        if (c[0] == 0)
+        if (static_cast<uint8_t>(c[0]) == CUDAPOA_KERNEL_ERROR_ENCOUNTERED)
         {
             genomeworks::cudapoa::StatusType error_type = static_cast<genomeworks::cudapoa::StatusType>(c[1]);
             switch (error_type)
