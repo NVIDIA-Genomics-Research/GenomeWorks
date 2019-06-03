@@ -29,6 +29,7 @@ cuda_add_library(cudapoa STATIC
     src/cudapoa_nw_banded.cu
     src/batch.cpp
     src/cudapoa_batch.cpp
+    src/allocate_block.cpp
     )
 
 target_link_libraries(cudapoa cudautils logging utils)
