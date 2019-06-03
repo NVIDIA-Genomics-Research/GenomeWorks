@@ -6,7 +6,7 @@ git clone --recursive git@github.com:clara-genomics/GenomeWorks.git
 ```
 
 ## Build GenomeWorks
-To build GenomeWorks -
+To build GenomeWorks
 
 ```bash
 mkdir build
