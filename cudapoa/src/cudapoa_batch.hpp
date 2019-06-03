@@ -36,6 +36,8 @@ class OutputDetails;
 
 class InputDetails;
 
+class BatchBlock;
+
 /// \addtogroup cudapoa
 /// \{
 
@@ -82,26 +84,14 @@ protected:
     // Allocate buffers for output details
     void initialize_output_details();
 
-    // Free buffers for output details
-    void free_output_details();
-
     // Allocate buffers for alignment details
-    void initialize_alignment_details(bool banded_alignment);
-
-    // Free buffers for alignment details
-    void free_alignment_details();
+    void initialize_alignment_details();
 
     // Allocate buffers for graph details
-    void initialize_graph_details(bool banded_alignment);
-
-    // Free buffers for graph details
-    void free_graph_details();
+    void initialize_graph_details();
 
     // Allocate buffers for input details
     void initialize_input_details();
-
-    // Free buffers for input details
-    void free_input_details();
 
 protected:
     // Maximum POAs to process in batch.
@@ -152,6 +142,9 @@ protected:
 
     // Use banded POA alignment
     bool banded_alignment_;
+
+    // Pointer of a seperate class BatchBlock that implements details on calculating and allocating the memory for each batch
+    std::unique_ptr<BatchBlock> batch_block_;
 };
 
 /// \}
