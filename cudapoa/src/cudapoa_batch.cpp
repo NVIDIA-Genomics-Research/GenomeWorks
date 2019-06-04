@@ -11,6 +11,7 @@
 #include <algorithm>
 #include <cstring>
 
+#include "allocate_block.hpp"
 #include "cudapoa_batch.hpp"
 #include "cudapoa_kernels.cuh"
 
@@ -47,127 +48,26 @@ void CudapoaBatch::print_batch_debug_message(const std::string& message)
 
 void CudapoaBatch::initialize_output_details()
 {
-    // Output buffers.
-    uint32_t output_size = max_poas_ * CUDAPOA_MAX_CONSENSUS_SIZE;
-    GW_CU_CHECK_ERR(cudaHostAlloc((void**)&output_details_h_, sizeof(genomeworks::cudapoa::OutputDetails), cudaHostAllocDefault));
-    GW_CU_CHECK_ERR(cudaHostAlloc((void**)&(output_details_h_->consensus), output_size * sizeof(uint8_t), cudaHostAllocDefault));
-    GW_CU_CHECK_ERR(cudaHostAlloc((void**)&(output_details_h_->coverage), output_size * sizeof(uint16_t), cudaHostAllocDefault));
-
-    GW_CU_CHECK_ERR(cudaHostAlloc((void**)&output_details_d_, sizeof(genomeworks::cudapoa::OutputDetails), cudaHostAllocDefault));
-    GW_CU_CHECK_ERR(cudaMalloc((void**)&(output_details_d_->consensus), output_size * sizeof(int8_t)));
-    GW_CU_CHECK_ERR(cudaMalloc((void**)&(output_details_d_->coverage), output_size * sizeof(int16_t)));
-}
-
-void CudapoaBatch::free_output_details()
-{
-    GW_CU_CHECK_ERR(cudaFreeHost(output_details_h_->consensus));
-    GW_CU_CHECK_ERR(cudaFreeHost(output_details_h_->coverage));
-    GW_CU_CHECK_ERR(cudaFreeHost(output_details_h_));
-    GW_CU_CHECK_ERR(cudaFree(output_details_d_->consensus));
-    GW_CU_CHECK_ERR(cudaFree(output_details_d_->coverage));
-    GW_CU_CHECK_ERR(cudaFreeHost(output_details_d_));
+    batch_block_->get_output_details(&output_details_h_, &output_details_d_);
 }
 
 void CudapoaBatch::initialize_input_details()
 {
-    uint32_t input_size = max_poas_ * max_sequences_per_poa_ * CUDAPOA_MAX_SEQUENCE_SIZE; //TODO how big does this need to be
-    // Host allocations
-    GW_CU_CHECK_ERR(cudaHostAlloc((void**)&input_details_h_, sizeof(genomeworks::cudapoa::InputDetails), cudaHostAllocDefault));
-    GW_CU_CHECK_ERR(cudaHostAlloc((void**)&(input_details_h_->sequences), input_size * sizeof(uint8_t), cudaHostAllocDefault));
-    GW_CU_CHECK_ERR(cudaHostAlloc((void**)&(input_details_h_->base_weights), input_size * sizeof(uint8_t), cudaHostAllocDefault));
-    GW_CU_CHECK_ERR(cudaHostAlloc((void**)&(input_details_h_->sequence_lengths), max_poas_ * max_sequences_per_poa_ * sizeof(uint16_t), cudaHostAllocDefault));
-    GW_CU_CHECK_ERR(cudaHostAlloc((void**)&(input_details_h_->window_details), max_poas_ * sizeof(WindowDetails), cudaHostAllocDefault));
-    // Device allocations
-    GW_CU_CHECK_ERR(cudaHostAlloc((void**)&input_details_d_, sizeof(genomeworks::cudapoa::InputDetails), cudaHostAllocDefault));
-    GW_CU_CHECK_ERR(cudaMalloc((void**)&(input_details_d_->sequences), input_size * sizeof(uint8_t)));
-    GW_CU_CHECK_ERR(cudaMalloc((void**)&(input_details_d_->base_weights), input_size * sizeof(uint8_t)));
-    GW_CU_CHECK_ERR(cudaMalloc((void**)&(input_details_d_->sequence_lengths), max_poas_ * max_sequences_per_poa_ * sizeof(uint16_t)));
-    GW_CU_CHECK_ERR(cudaMalloc((void**)&(input_details_d_->window_details), max_poas_ * sizeof(WindowDetails)));
+    batch_block_->get_input_details(&input_details_h_, &input_details_d_);
 }
 
-void CudapoaBatch::free_input_details()
+void CudapoaBatch::initialize_alignment_details()
 {
-    GW_CU_CHECK_ERR(cudaFreeHost(input_details_h_->sequences));
-    GW_CU_CHECK_ERR(cudaFreeHost(input_details_h_->base_weights));
-    GW_CU_CHECK_ERR(cudaFreeHost(input_details_h_->sequence_lengths));
-    GW_CU_CHECK_ERR(cudaFreeHost(input_details_h_->window_details));
-    GW_CU_CHECK_ERR(cudaFreeHost(input_details_h_));
-    GW_CU_CHECK_ERR(cudaFree(input_details_d_->sequences));
-    GW_CU_CHECK_ERR(cudaFree(input_details_d_->base_weights));
-    GW_CU_CHECK_ERR(cudaFree(input_details_d_->sequence_lengths));
-    GW_CU_CHECK_ERR(cudaFree(input_details_d_->window_details));
-    GW_CU_CHECK_ERR(cudaFreeHost(input_details_d_));
+    batch_block_->get_alignment_details(&alignment_details_d_);
 }
 
-void CudapoaBatch::initialize_alignment_details(bool banded_alignment)
+void CudapoaBatch::initialize_graph_details()
 {
-    uint32_t matrix_sequence_dimension = banded_alignment ? CUDAPOA_BANDED_MAX_MATRIX_SEQUENCE_DIMENSION : CUDAPOA_MAX_MATRIX_SEQUENCE_DIMENSION;
-    uint32_t max_graph_dimension       = banded_alignment ? CUDAPOA_MAX_MATRIX_GRAPH_DIMENSION_BANDED : CUDAPOA_MAX_MATRIX_GRAPH_DIMENSION;
-    // Struct for alignment details
-    GW_CU_CHECK_ERR(cudaHostAlloc((void**)&alignment_details_d_, sizeof(genomeworks::cudapoa::AlignmentDetails), cudaHostAllocDefault));
-    GW_CU_CHECK_ERR(cudaMalloc((void**)&(alignment_details_d_->scores), sizeof(int16_t) * max_graph_dimension * matrix_sequence_dimension * max_poas_));
-    GW_CU_CHECK_ERR(cudaMalloc((void**)&(alignment_details_d_->alignment_graph), sizeof(int16_t) * max_graph_dimension * max_poas_));
-    GW_CU_CHECK_ERR(cudaMalloc((void**)&(alignment_details_d_->alignment_read), sizeof(int16_t) * max_graph_dimension * max_poas_));
-}
-
-void CudapoaBatch::free_alignment_details()
-{
-    GW_CU_CHECK_ERR(cudaFree(alignment_details_d_->scores));
-    GW_CU_CHECK_ERR(cudaFree(alignment_details_d_->alignment_graph));
-    GW_CU_CHECK_ERR(cudaFree(alignment_details_d_->alignment_read));
-    GW_CU_CHECK_ERR(cudaFreeHost(alignment_details_d_));
-}
-
-void CudapoaBatch::initialize_graph_details(bool banded_alignment_)
-{
-    uint16_t max_nodes_per_window = banded_alignment_ ? CUDAPOA_MAX_NODES_PER_WINDOW_BANDED : CUDAPOA_MAX_NODES_PER_WINDOW;
-    // Struct for graph details
-    GW_CU_CHECK_ERR(cudaHostAlloc((void**)&graph_details_d_, sizeof(genomeworks::cudapoa::GraphDetails), cudaHostAllocDefault));
-    GW_CU_CHECK_ERR(cudaMalloc((void**)&(graph_details_d_->nodes), sizeof(uint8_t) * max_nodes_per_window * max_poas_));
-    GW_CU_CHECK_ERR(cudaMalloc((void**)&(graph_details_d_->node_alignments), sizeof(uint16_t) * max_nodes_per_window * CUDAPOA_MAX_NODE_ALIGNMENTS * max_poas_));
-    GW_CU_CHECK_ERR(cudaMalloc((void**)&(graph_details_d_->node_alignment_count), sizeof(uint16_t) * max_nodes_per_window * max_poas_));
-    GW_CU_CHECK_ERR(cudaMalloc((void**)&(graph_details_d_->incoming_edges), sizeof(uint16_t) * max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES * max_poas_));
-    GW_CU_CHECK_ERR(cudaMalloc((void**)&(graph_details_d_->incoming_edge_count), sizeof(uint16_t) * max_nodes_per_window * max_poas_));
-    GW_CU_CHECK_ERR(cudaMalloc((void**)&(graph_details_d_->outgoing_edges), sizeof(uint16_t) * max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES * max_poas_));
-    GW_CU_CHECK_ERR(cudaMalloc((void**)&(graph_details_d_->outgoing_edge_count), sizeof(uint16_t) * max_nodes_per_window * max_poas_));
-    GW_CU_CHECK_ERR(cudaMalloc((void**)&(graph_details_d_->incoming_edge_weights), sizeof(uint16_t) * max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES * max_poas_));
-    GW_CU_CHECK_ERR(cudaMalloc((void**)&(graph_details_d_->outgoing_edge_weights), sizeof(uint16_t) * max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES * max_poas_));
-    GW_CU_CHECK_ERR(cudaMalloc((void**)&(graph_details_d_->sorted_poa), sizeof(uint16_t) * max_nodes_per_window * max_poas_));
-    GW_CU_CHECK_ERR(cudaMalloc((void**)&(graph_details_d_->sorted_poa_node_map), sizeof(uint16_t) * max_nodes_per_window * max_poas_));
-    GW_CU_CHECK_ERR(cudaMalloc((void**)&(graph_details_d_->sorted_poa_local_edge_count), sizeof(uint16_t) * max_nodes_per_window * max_poas_));
-    GW_CU_CHECK_ERR(cudaMalloc((void**)&(graph_details_d_->consensus_scores), sizeof(int32_t) * max_nodes_per_window * max_poas_));
-    GW_CU_CHECK_ERR(cudaMalloc((void**)&(graph_details_d_->consensus_predecessors), sizeof(int16_t) * max_nodes_per_window * max_poas_));
-    GW_CU_CHECK_ERR(cudaMalloc((void**)&(graph_details_d_->node_marks), sizeof(int8_t) * max_nodes_per_window * max_poas_));
-    GW_CU_CHECK_ERR(cudaMalloc((void**)&(graph_details_d_->check_aligned_nodes), sizeof(bool) * max_nodes_per_window * max_poas_));
-    GW_CU_CHECK_ERR(cudaMalloc((void**)&(graph_details_d_->nodes_to_visit), sizeof(uint16_t) * max_nodes_per_window * max_poas_));
-    GW_CU_CHECK_ERR(cudaMalloc((void**)&(graph_details_d_->node_coverage_counts), sizeof(uint16_t) * max_nodes_per_window * max_poas_));
-}
-
-void CudapoaBatch::free_graph_details()
-{
-    GW_CU_CHECK_ERR(cudaFree(graph_details_d_->nodes));
-    GW_CU_CHECK_ERR(cudaFree(graph_details_d_->node_alignments));
-    GW_CU_CHECK_ERR(cudaFree(graph_details_d_->node_alignment_count));
-    GW_CU_CHECK_ERR(cudaFree(graph_details_d_->incoming_edges));
-    GW_CU_CHECK_ERR(cudaFree(graph_details_d_->incoming_edge_count));
-    GW_CU_CHECK_ERR(cudaFree(graph_details_d_->outgoing_edges));
-    GW_CU_CHECK_ERR(cudaFree(graph_details_d_->outgoing_edge_count));
-    GW_CU_CHECK_ERR(cudaFree(graph_details_d_->incoming_edge_weights));
-    GW_CU_CHECK_ERR(cudaFree(graph_details_d_->outgoing_edge_weights));
-    GW_CU_CHECK_ERR(cudaFree(graph_details_d_->sorted_poa));
-    GW_CU_CHECK_ERR(cudaFree(graph_details_d_->sorted_poa_node_map));
-    GW_CU_CHECK_ERR(cudaFree(graph_details_d_->sorted_poa_local_edge_count));
-    GW_CU_CHECK_ERR(cudaFree(graph_details_d_->consensus_scores));
-    GW_CU_CHECK_ERR(cudaFree(graph_details_d_->consensus_predecessors));
-    GW_CU_CHECK_ERR(cudaFree(graph_details_d_->node_marks));
-    GW_CU_CHECK_ERR(cudaFree(graph_details_d_->check_aligned_nodes));
-    GW_CU_CHECK_ERR(cudaFree(graph_details_d_->nodes_to_visit));
-    GW_CU_CHECK_ERR(cudaFree(graph_details_d_->node_coverage_counts));
-    GW_CU_CHECK_ERR(cudaFreeHost(graph_details_d_));
+    batch_block_->get_graph_details(&graph_details_d_);
 }
 
 CudapoaBatch::CudapoaBatch(uint32_t max_poas, uint32_t max_sequences_per_poa, uint32_t device_id, int16_t gap_score, int16_t mismatch_score, int16_t match_score, bool cuda_banded_alignment)
-    : max_poas_(max_poas), max_sequences_per_poa_(max_sequences_per_poa), device_id_(device_id), gap_score_(gap_score), mismatch_score_(mismatch_score), match_score_(match_score), banded_alignment_(cuda_banded_alignment)
+    : max_poas_(max_poas), max_sequences_per_poa_(max_sequences_per_poa), device_id_(device_id), gap_score_(gap_score), mismatch_score_(mismatch_score), match_score_(match_score), banded_alignment_(cuda_banded_alignment), batch_block_(new BatchBlock(device_id, max_poas, max_sequences_per_poa, cuda_banded_alignment))
 {
     bid_ = CudapoaBatch::batches++;
 
@@ -199,8 +99,8 @@ CudapoaBatch::CudapoaBatch(uint32_t max_poas, uint32_t max_sequences_per_poa, ui
     msg = " Allocated output buffers of size " + std::to_string((static_cast<float>(input_size) / (1024 * 1024))) + "MB on device ";
     print_batch_debug_message(msg);
 
-    initialize_alignment_details(banded_alignment_);
-    initialize_graph_details(banded_alignment_);
+    initialize_alignment_details();
+    initialize_graph_details();
 
     // Debug print for size allocated.
     uint32_t matrix_sequence_dimension = banded_alignment_ ? CUDAPOA_BANDED_MAX_MATRIX_SEQUENCE_DIMENSION : CUDAPOA_MAX_MATRIX_SEQUENCE_DIMENSION;
@@ -239,11 +139,6 @@ CudapoaBatch::~CudapoaBatch()
 {
     std::string msg = "Destroyed buffers on device ";
     print_batch_debug_message(msg);
-
-    free_alignment_details();
-    free_graph_details();
-    free_output_details();
-    free_input_details();
 }
 
 uint32_t CudapoaBatch::batch_id() const
@@ -317,7 +212,7 @@ void CudapoaBatch::get_consensus(std::vector<std::string>& consensus,
         char* c = reinterpret_cast<char*>(&(output_details_h_->consensus[poa * CUDAPOA_MAX_CONSENSUS_SIZE]));
         // We use the first two entries in the consensus buffer to log error during kernel execution
         // c[0] == 0 means an error occured and when that happens the error type is saved in c[1]
-        if (c[0] == 0)
+        if (static_cast<uint8_t>(c[0]) == CUDAPOA_KERNEL_ERROR_ENCOUNTERED)
         {
             genomeworks::cudapoa::StatusType error_type = static_cast<genomeworks::cudapoa::StatusType>(c[1]);
             switch (error_type)
