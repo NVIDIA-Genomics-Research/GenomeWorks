@@ -59,6 +59,7 @@
 
 #define FULL_MASK 0xffffffff
 #define CUDAPOA_KERNEL_ERROR_ENCOUNTERED UINT8_MAX
+#define CUDAPOA_KERNEL_NOERROR_ENCOUNTERED 0
 
 namespace genomeworks
 {
