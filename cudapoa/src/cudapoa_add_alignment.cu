@@ -86,6 +86,10 @@ __device__
                 // No alignment node found in graph.
                 // Create new node.
                 curr_node_id = node_count++;
+                if (node_count >= CUDAPOA_MAX_NODES_PER_WINDOW)
+                {
+                    break;
+                }
                 //printf("create new node %d\n", curr_node_id);
                 new_node                           = true;
                 nodes[curr_node_id]                = read_base;
@@ -138,6 +142,10 @@ __device__
                         // node to the others.
                         new_node     = true;
                         curr_node_id = node_count++;
+                        if (node_count >= CUDAPOA_MAX_NODES_PER_WINDOW)
+                        {
+                            break;
+                        }
                         //printf("create new node %d\n", curr_node_id);
                         nodes[curr_node_id]                = read_base;
                         outgoing_edge_count[curr_node_id]  = 0;

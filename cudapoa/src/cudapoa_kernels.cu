@@ -164,6 +164,9 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
             node_id_to_pos[nucleotide_idx]                                 = nucleotide_idx;
             node_coverage_counts[nucleotide_idx]                           = 1;
         }
+
+        // Clear error code for window.
+        consensus[0] = CUDAPOA_KERNEL_NOERROR_ENCOUNTERED;
     }
 
     __syncwarp();
@@ -252,56 +255,46 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
 
             // Add alignment to graph.
             //printf("running add\n");
-            sequence_lengths[0] = addAlignmentToGraph(nodes, sequence_lengths[0],
-                                                      node_alignments, node_alignment_count,
-                                                      incoming_edges, incoming_edge_count,
-                                                      outoing_edges, outgoing_edge_count,
-                                                      incoming_edge_weights, outgoing_edge_weights,
-                                                      alignment_length,
-                                                      sorted_poa, alignment_graph,
-                                                      sequence, alignment_read,
-                                                      node_coverage_counts,
-                                                      base_weights);
+            uint16_t new_node_count = addAlignmentToGraph(nodes, sequence_lengths[0],
+                                                          node_alignments, node_alignment_count,
+                                                          incoming_edges, incoming_edge_count,
+                                                          outoing_edges, outgoing_edge_count,
+                                                          incoming_edge_weights, outgoing_edge_weights,
+                                                          alignment_length,
+                                                          sorted_poa, alignment_graph,
+                                                          sequence, alignment_read,
+                                                          node_coverage_counts,
+                                                          base_weights);
 
-            // Verify that each graph has at least one node with no outgoing edges.
-            //bool found_node = false;
-            //for(uint16_t i = 0; i < sequence_length_data[0]; i++)
-            //{
-            //    //printf("node id %d ie %d oe %d\n ", i, incoming_edge_count[i], outgoing_edge_count[i]);
-            //    if (outgoing_edge_count[i] == 0)
-            //        found_node = true;
-            //}
-            //if (!found_node)
-            //{
-            //    printf("DID NOT FIND A NODE WITH NO OUTGOING EDGE after addition!!!!\n");
-            //    return;
-            //}
-
+            sequence_lengths[0] = new_node_count;
             // Run a topsort on the graph. Not strictly necessary at this point
             //printf("running topsort\n");
+            if (new_node_count < CUDAPOA_MAX_NODES_PER_WINDOW)
+            {
 #ifdef SPOA_ACCURATE
-            // Exactly matches racon CPU results
-            raconTopologicalSortDeviceUtil(sorted_poa,
-                                           node_id_to_pos,
-                                           sequence_lengths[0],
-                                           incoming_edge_count,
-                                           incoming_edges,
-                                           node_alignment_count,
-                                           node_alignments,
-                                           node_marks,
-                                           check_aligned_nodes,
-                                           nodes_to_visit,
-                                           cuda_banded_alignment);
+                // Exactly matches racon CPU results
+                raconTopologicalSortDeviceUtil(sorted_poa,
+                                               node_id_to_pos,
+                                               new_node_count,
+                                               incoming_edge_count,
+                                               incoming_edges,
+                                               node_alignment_count,
+                                               node_alignments,
+                                               node_marks,
+                                               check_aligned_nodes,
+                                               nodes_to_visit,
+                                               cuda_banded_alignment);
 #else
-            // Faster top sort
-            topologicalSortDeviceUtil(sorted_poa,
-                                      node_id_to_pos,
-                                      sequence_lengths[0],
-                                      incoming_edge_count,
-                                      outoing_edges,
-                                      outgoing_edge_count,
-                                      sorted_poa_local_edge_count);
+                // Faster top sort
+                topologicalSortDeviceUtil(sorted_poa,
+                                          node_id_to_pos,
+                                          new_node_count,
+                                          incoming_edge_count,
+                                          outoing_edges,
+                                          outgoing_edge_count,
+                                          sorted_poa_local_edge_count);
 #endif
+            }
         }
 
         __syncwarp();
