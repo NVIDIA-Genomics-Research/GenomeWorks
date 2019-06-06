@@ -269,6 +269,23 @@ void runNW(uint8_t* nodes,
            int16_t mismatch_score,
            int16_t match_score,
            uint16_t* algined_nodes);
+
+void generateConsensusTestHost(uint8_t* nodes,
+                               uint16_t node_count,
+                               uint16_t* graph,
+                               uint16_t* node_id_to_pos,
+                               uint16_t* incoming_edges,
+                               uint16_t* incoming_edge_count,
+                               uint16_t* outgoing_edges,
+                               uint16_t* outgoing_edge_count,
+                               uint16_t* incoming_edge_w,
+                               int16_t* predecessors,
+                               int32_t* scores,
+                               uint8_t* consensus,
+                               uint16_t* coverage,
+                               uint16_t* node_coverage_counts,
+                               uint16_t* node_alignments,
+                               uint16_t* node_alignment_count);
 } // namespace cudapoa
 
 } // namespace genomeworks

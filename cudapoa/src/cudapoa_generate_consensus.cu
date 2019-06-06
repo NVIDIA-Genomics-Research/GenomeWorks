@@ -305,6 +305,76 @@ __global__ void generateConsensusKernel(uint8_t* consensus_d,
                       node_alignments, node_alignment_count);
 }
 
+__global__ void generateConsensusTestKernel(uint8_t* nodes,
+                                            uint16_t node_count,
+                                            uint16_t* graph,
+                                            uint16_t* node_id_to_pos,
+                                            uint16_t* incoming_edges,
+                                            uint16_t* incoming_edge_count,
+                                            uint16_t* outgoing_edges,
+                                            uint16_t* outgoing_edge_count,
+                                            uint16_t* incoming_edge_w,
+                                            int16_t* predecessors,
+                                            int32_t* scores,
+                                            uint8_t* consensus,
+                                            uint16_t* coverage,
+                                            uint16_t* node_coverage_counts,
+                                            uint16_t* node_alignments,
+                                            uint16_t* node_alignment_count)
+{
+    generateConsensus(nodes,
+                      node_count,
+                      graph,
+                      node_id_to_pos,
+                      incoming_edges,
+                      incoming_edge_count,
+                      outgoing_edges,
+                      outgoing_edge_count,
+                      incoming_edge_w,
+                      predecessors,
+                      scores,
+                      consensus,
+                      coverage,
+                      node_coverage_counts,
+                      node_alignments,
+                      node_alignment_count);
+}
+
+void generateConsensusTestHost(uint8_t* nodes,
+                               uint16_t node_count,
+                               uint16_t* graph,
+                               uint16_t* node_id_to_pos,
+                               uint16_t* incoming_edges,
+                               uint16_t* incoming_edge_count,
+                               uint16_t* outgoing_edges,
+                               uint16_t* outgoing_edge_count,
+                               uint16_t* incoming_edge_w,
+                               int16_t* predecessors,
+                               int32_t* scores,
+                               uint8_t* consensus,
+                               uint16_t* coverage,
+                               uint16_t* node_coverage_counts,
+                               uint16_t* node_alignments,
+                               uint16_t* node_alignment_count)
+{
+    generateConsensusTestKernel<<<1, 1>>>(nodes,
+                                          node_count,
+                                          graph,
+                                          node_id_to_pos,
+                                          incoming_edges,
+                                          incoming_edge_count,
+                                          outgoing_edges,
+                                          outgoing_edge_count,
+                                          incoming_edge_w,
+                                          predecessors,
+                                          scores,
+                                          consensus,
+                                          coverage,
+                                          node_coverage_counts,
+                                          node_alignments,
+                                          node_alignment_count);
+}
+
 } // namespace cudapoa
 
 } // namespace genomeworks
