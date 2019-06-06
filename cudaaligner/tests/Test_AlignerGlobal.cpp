@@ -12,6 +12,7 @@
 #include "../src/aligner_global.hpp"
 #include "cudaaligner/alignment.hpp"
 #include "common.hpp"
+#include <utils/signed_integer_utils.hpp>
 #include <cstdlib>
 
 namespace genomeworks
@@ -91,14 +92,12 @@ class TestAlignerGlobalImpl : public ::testing::TestWithParam<AlignerTestData>
 public:
     virtual void SetUp()
     {
-        param                    = GetParam();
-        uint32_t max_string_size = 0;
+        param                   = GetParam();
+        int64_t max_string_size = 0;
         for (auto& pair : param.inputs)
         {
-            max_string_size = std::max(max_string_size,
-                                       static_cast<uint32_t>(pair.first.length()));
-            max_string_size = std::max(max_string_size,
-                                       static_cast<uint32_t>(pair.second.length()));
+            max_string_size = std::max(max_string_size, get_size(pair.first));
+            max_string_size = std::max(max_string_size, get_size(pair.second));
         }
         max_string_size++;
         aligner = std::make_unique<AlignerGlobal>(max_string_size,
@@ -133,8 +132,8 @@ TEST_P(TestAlignerGlobalImpl, TestAlignmentKernel)
     aligner->sync_alignments();
 
     const std::vector<std::shared_ptr<Alignment>>& alignments = aligner->get_alignments();
-    ASSERT_EQ(alignments.size(), inputs.size());
-    for (uint32_t a = 0; a < alignments.size(); a++)
+    ASSERT_EQ(get_size(alignments), get_size(inputs));
+    for (int32_t a = 0; a < get_size(alignments); a++)
     {
         auto alignment = alignments[a];
         EXPECT_EQ(StatusType::success, alignment->get_status()) << "Alignment status is not success";

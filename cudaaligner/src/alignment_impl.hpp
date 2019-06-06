@@ -21,7 +21,7 @@ namespace cudaaligner
 class AlignmentImpl : public Alignment
 {
 public:
-    AlignmentImpl(const char* query, uint32_t query_length, const char* subject, uint32_t);
+    AlignmentImpl(const char* query, int32_t query_length, const char* subject, int32_t);
     ~AlignmentImpl();
 
     /// \brief Returns query sequence

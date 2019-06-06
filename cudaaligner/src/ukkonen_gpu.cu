@@ -83,7 +83,7 @@ __global__ void ukkonen_backtrace_kernel(int8_t* paths_base, int32_t* lengths, i
         tie(k, l) = to_band_indices(i, j, p);
         return scores(k, l);
     }();
-    uint32_t pos = 0;
+    int32_t pos = 0;
     while (i > 0 && j > 0)
     {
         int8_t r = 0;

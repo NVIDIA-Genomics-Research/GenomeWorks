@@ -15,6 +15,7 @@
 #include "../src/device_storage.cuh"
 #include "../src/batched_device_matrices.cuh"
 #include "common.hpp"
+#include <utils/signed_integer_utils.hpp>
 #include <cuda_runtime_api.h>
 #include <algorithm>
 
@@ -114,11 +115,11 @@ public:
 
     void compare_backtrace(const std::vector<int8_t>& a, const std::vector<int8_t>& b)
     {
-        ASSERT_EQ(a.size(), b.size()) << "Backtraces are of varying length\n"
-                                      << print_backtrace(a) << "\n"
-                                      << print_backtrace(b) << "\n";
+        ASSERT_EQ(get_size(a), get_size(b)) << "Backtraces are of varying length\n"
+                                            << print_backtrace(a) << "\n"
+                                            << print_backtrace(b) << "\n";
 
-        for (uint32_t i = 0; i < a.size(); i++)
+        for (int32_t i = 0; i < get_size(a); i++)
         {
             ASSERT_EQ(a[i], b[i]);
         }
