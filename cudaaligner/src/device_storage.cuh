@@ -21,7 +21,7 @@ class device_storage
 public:
     using value_type = T;
     device_storage() = delete;
-    device_storage(size_t n_elements, uint32_t device_id)
+    device_storage(size_t n_elements, int32_t device_id)
         : size_(n_elements)
         , device_id_(device_id)
     {
@@ -42,7 +42,7 @@ public:
 private:
     T* data_;
     size_t size_;
-    uint32_t device_id_;
+    int32_t device_id_;
 };
 
 } // end namespace genomeworks

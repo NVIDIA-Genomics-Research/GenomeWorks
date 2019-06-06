@@ -12,6 +12,7 @@
 
 #include "gtest/gtest.h"
 #include "../src/alignment_impl.hpp"
+#include <utils/signed_integer_utils.hpp>
 
 namespace genomeworks
 {
@@ -152,9 +153,9 @@ TEST_P(TestAlignmentImpl, AlignmentState)
 {
     const std::vector<AlignmentState>& al_read = alignment_->get_alignment();
     ASSERT_EQ(param_.alignment.size(), al_read.size());
-    for (std::size_t i = 0; i < param_.alignment.size(); i++)
+    for (int64_t i = 0; i < get_size(param_.alignment); i++)
     {
-        ASSERT_EQ(param_.alignment.at(i), al_read.at(i));
+        ASSERT_EQ(param_.alignment[i], al_read[i]);
     }
 }
 

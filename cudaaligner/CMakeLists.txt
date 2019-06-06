@@ -28,7 +28,7 @@ cuda_add_library(cudaaligner STATIC
     src/ukkonen_gpu.cu
     )
 
-target_link_libraries(cudaaligner cudautils logging)
+target_link_libraries(cudaaligner cudautils logging utils)
 
 target_compile_options(cudaaligner PRIVATE -Werror -Wall -Wextra -march=native)
 

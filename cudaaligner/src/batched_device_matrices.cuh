@@ -100,7 +100,7 @@ public:
         int32_t n_matrices_;
     };
 
-    batched_device_matrices(int32_t n_matrices, int32_t max_elements_per_matrix, cudaStream_t stream, uint32_t device_id)
+    batched_device_matrices(int32_t n_matrices, int32_t max_elements_per_matrix, cudaStream_t stream, int32_t device_id)
         : storage_(static_cast<size_t>(n_matrices) * static_cast<size_t>(max_elements_per_matrix), device_id)
         , max_elements_per_matrix_(max_elements_per_matrix)
         , n_matrices_(n_matrices)
@@ -147,7 +147,7 @@ private:
     device_interface* dev_ = nullptr;
     int32_t max_elements_per_matrix_;
     int32_t n_matrices_;
-    uint32_t device_id_;
+    int32_t device_id_;
 };
 
 } // end namespace cudaaligner
