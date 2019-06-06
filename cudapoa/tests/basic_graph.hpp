@@ -21,12 +21,13 @@ namespace cudapoa
 
 // alias for the 2d vector graph representation
 typedef std::vector<std::vector<uint16_t>> Uint16Vec2D;
+typedef std::vector<std::vector<std::vector<uint16_t>>> Uint16Vec3D;
 
 class BasicGraph
 {
 public:
-    BasicGraph(std::vector<uint8_t> nodes, Uint16Vec2D outgoing_edges, Uint16Vec2D node_alignments, std::vector<uint16_t> node_coverage_counts)
-        : nodes_(nodes), outgoing_edges_(outgoing_edges), node_alignments_(node_alignments), node_coverage_counts_(node_coverage_counts)
+    BasicGraph(std::vector<uint8_t> nodes, Uint16Vec2D outgoing_edges, Uint16Vec2D node_alignments, std::vector<uint16_t> node_coverage_counts, Uint16Vec3D outgoing_edges_coverage = {})
+        : nodes_(nodes), outgoing_edges_(outgoing_edges), node_alignments_(node_alignments), node_coverage_counts_(node_coverage_counts), outgoing_edges_coverage_(outgoing_edges_coverage)
     {
         graph_complete_ = true;
         node_count_     = nodes_.size();
@@ -117,6 +118,11 @@ public:
         return graph;
     }
 
+    Uint16Vec2D get_outgoing_edges() const
+    {
+        return outgoing_edges_;
+    }
+
     bool is_complete() const
     {
         return graph_complete_;
@@ -131,6 +137,7 @@ protected:
     bool graph_complete_;
     std::vector<uint8_t> nodes_;
     Uint16Vec2D outgoing_edges_; //this uniquely represents the graph structure; equality of BasicGraph is based on this member.
+    Uint16Vec3D outgoing_edges_coverage_;
     Uint16Vec2D node_alignments_;
     std::vector<uint16_t> node_coverage_counts_;
     uint16_t node_count_;
