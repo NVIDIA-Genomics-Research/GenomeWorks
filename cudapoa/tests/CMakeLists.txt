@@ -16,7 +16,8 @@ set(SOURCES
     Test_CudapoaBatch.cpp
     Test_CudapoaTopSort.cpp
     Test_CudapoaAddAlignment.cpp
-    Test_CudapoaNW.cpp)
+    Test_CudapoaNW.cpp
+    Test_CudapoaGenerateConsensus.cpp)
 
 set(LIBS
     cudapoa)

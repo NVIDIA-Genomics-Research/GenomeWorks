@@ -107,7 +107,7 @@ std::vector<AddAlginmentTestPair> getAddAlignmentTestCases()
      *                       \ /
      *                        A
      */
-    BasicGraph ans_1({{}, {0}, {1}, {2, 4}, {1}});
+    BasicGraph ans_1(Uint16Vec2D({{}, {0}, {1}, {2, 4}, {1}}));
     BasicAlignment ali_1({'A', 'A', 'A', 'A'}, //nodes
                          {{}, {0}, {1}, {2}},  //outgoing_edges
                          {{}, {}, {}, {}},     //node_alignments
@@ -127,7 +127,7 @@ std::vector<AddAlginmentTestPair> getAddAlignmentTestCases()
      * final graph      A — T — C — G — A
      * 
      */
-    BasicGraph ans_2({{}, {0}, {1}, {2}, {3}});
+    BasicGraph ans_2(Uint16Vec2D({{}, {0}, {1}, {2}, {3}}));
     BasicAlignment ali_2({'A', 'T', 'C', 'G'},      //nodes
                          {{}, {0}, {1}, {2}},       //outgoing_edges
                          {{}, {}, {}, {}},          //node_alignments
@@ -151,7 +151,7 @@ std::vector<AddAlginmentTestPair> getAddAlignmentTestCases()
      *                    \   /
      *                      A
      */
-    BasicGraph ans_3({{}, {0}, {1, 4, 5}, {2}, {0}, {0}});
+    BasicGraph ans_3(Uint16Vec2D({{}, {0}, {1, 4, 5}, {2}, {0}, {0}}));
     BasicAlignment ali_3({'A', 'A', 'C', 'G', 'C'},   //nodes
                          {{}, {0}, {1, 4}, {2}, {0}}, //outgoing_edges
                          {{}, {}, {}, {}},            //node_alignments
@@ -172,7 +172,7 @@ std::vector<AddAlginmentTestPair> getAddAlignmentTestCases()
      *                   \_____________/
      * 
      */
-    BasicGraph ans_4({{}, {0}, {1}, {2}, {3, 0}});
+    BasicGraph ans_4(Uint16Vec2D({{}, {0}, {1}, {2}, {3, 0}}));
     BasicAlignment ali_4({'A', 'T', 'T', 'G', 'A'}, //nodes
                          {{}, {0}, {1}, {2}, {3}},  //outgoing_edges
                          {{}, {}, {}, {}},          //node_alignments
@@ -197,7 +197,7 @@ std::vector<AddAlginmentTestPair> getAddAlignmentTestCases()
      *                          T
      * 
      */
-    BasicGraph ans_5({{}, {0}, {1}, {2, 6, 7}, {3}, {0}, {5}, {5}});
+    BasicGraph ans_5(Uint16Vec2D({{}, {0}, {1}, {2, 6, 7}, {3}, {0}, {5}, {5}}));
     BasicAlignment ali_5({'A', 'T', 'G', 'T', 'A', 'C', 'A'},   //nodes
                          {{}, {0}, {1}, {2, 6}, {3}, {0}, {5}}, //outgoing_edges
                          {{}, {}, {}, {}},                      //node_alignments
