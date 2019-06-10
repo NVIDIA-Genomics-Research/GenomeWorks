@@ -45,8 +45,6 @@ class BatchBlock;
 /// Batched GPU CUDA POA object
 class CudapoaBatch : public Batch
 {
-    const uint32_t NUM_THREADS = 64;
-
 public:
     CudapoaBatch(uint32_t max_poas, uint32_t max_sequences_per_poa, uint32_t device_id, int16_t gap_score = -8, int16_t mismatch_score = -6, int16_t match_score = 8, bool cuda_banded_alignment = false);
     ~CudapoaBatch();
