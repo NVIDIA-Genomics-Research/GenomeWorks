@@ -22,7 +22,7 @@ mkdir --parents ${LOCAL_BUILD_DIR}
 cd ${LOCAL_BUILD_DIR}
 
 # configure
-cmake $CMAKE_COMMON_VARIABLES ${CMAKE_BUILD_GPU} -Dgw_enable_tests=ON -DCMAKE_INSTALL_PREFIX=${LOCAL_BUILD_DIR}/install ..
+cmake $CMAKE_COMMON_VARIABLES ${CMAKE_BUILD_GPU} -Dgw_enable_tests=ON -Dgw_enable_benchmarks=ON -DCMAKE_INSTALL_PREFIX=${LOCAL_BUILD_DIR}/install ..
 # Format files
 make check-format
 # build
@@ -34,5 +34,8 @@ if [ "$GPU_TEST" == '1' ]; then
 
   logger "Running GenomeWorks unit tests..."
   run-parts -v ${LOCAL_BUILD_DIR}/install/tests
+
+  logger "Running GenomeWorks benchmarks..."
+  ${LOCAL_BUILD_DIR}/install/benchmarks/cudapoa/multibatch
 fi
 

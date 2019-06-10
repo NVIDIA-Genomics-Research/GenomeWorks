@@ -18,6 +18,29 @@ make -j install
 ## Enable Unit Tests
 To enable unit tests, add `-Dgw_enable_tests=ON` to the `cmake` command in the build step.
 
+This builds GTest based unit tests for all applicable modules, and installs them under
+`${CMAKE_INSTALL_PREFIX}/tests`. These tests are standalone binaries and can be executed
+directly.
+e.g.
+
+```
+cd $INSTALL_DIR
+./tests/cudapoatests
+```
+
+## Enable Benchmarks
+To enable benchmarks, add `-Dgw_enable_benchmarks=ON` to the `cmake` command in the build step.
+
+This builds Google Benchmark based microbenchmarks for applicable modules. The built benchmarks
+are installed under `${CMAKE_INSTALL_PREFIX}/benchmarks/<module>` and can be run directly.
+
+e.g.
+```
+#INSTALL_DIR/benchmarks/cudapoa/multibatch
+```
+
+A description of each of the benchmarks is present in a README under the module's benchmark folder.
+
 ## Enable Doc Generation
 To enable document generation for GenomeWorks, please install `Doxygen` on your system. Once
 `Doxygen` has been installed, run the following to build documents.
@@ -26,7 +49,7 @@ To enable document generation for GenomeWorks, please install `Doxygen` on your 
 make docs
 ```
 
-### Enable Auto-Formatting
+## Enable Auto-Formatting
 GenomeWorks makes use of `clang-format` to format it's source and header files. To make use of
 auto-formatting, `clang-format` would have to be installed from the LLVM package (for latest builds,
 best to refer to http://releases.llvm.org/download.html).

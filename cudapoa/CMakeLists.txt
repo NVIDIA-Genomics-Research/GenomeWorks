@@ -11,6 +11,9 @@
 cmake_minimum_required(VERSION 3.10.2)
 project(cudapoa)
 
+# Process data subdirectory first
+add_subdirectory(data)
+
 find_package(CUDA 9.0 QUIET REQUIRED)
 
 if(NOT ${CUDA_FOUND})
@@ -54,6 +57,7 @@ add_doxygen_source_dir(${CMAKE_CURRENT_SOURCE_DIR}/include/cudapoa)
 
 # Add tests folder
 add_subdirectory(tests)
+add_subdirectory(benchmarks)
 
 install(TARGETS cudapoa
     COMPONENT logging

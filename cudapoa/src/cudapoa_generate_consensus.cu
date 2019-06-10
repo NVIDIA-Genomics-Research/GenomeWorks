@@ -257,7 +257,7 @@ __global__ void generateConsensusKernel(uint8_t* consensus_d,
                                         uint16_t* node_coverage_counts_d_)
 {
     //each thread will operate on a window
-    uint32_t window_idx = threadIdx.x;
+    uint32_t window_idx = blockIdx.x * CUDAPOA_MAX_CONSENSUS_PER_BLOCK + threadIdx.x;
 
     if (window_idx >= total_windows)
         return;
