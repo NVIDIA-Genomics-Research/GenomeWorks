@@ -415,49 +415,50 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
                                                                 match_score);
     }
 
+    int32_t consensus_num_blocks = (total_windows / CUDAPOA_MAX_CONSENSUS_PER_BLOCK) + 1;
     if (cuda_banded_alignment)
     {
         generateConsensusKernel<true>
-            <<<1, total_windows, 0, stream>>>(consensus_d,
-                                              coverage_d,
-                                              sequence_lengths_d,
-                                              window_details_d,
-                                              total_windows,
-                                              nodes,
-                                              incoming_edges,
-                                              incoming_edge_count,
-                                              outgoing_edges,
-                                              outgoing_edge_count,
-                                              incoming_edge_w,
-                                              sorted_poa,
-                                              node_id_to_pos,
-                                              node_alignments,
-                                              node_alignment_count,
-                                              consensus_scores,
-                                              consensus_predecessors,
-                                              node_coverage_counts);
+            <<<consensus_num_blocks, CUDAPOA_MAX_CONSENSUS_PER_BLOCK, 0, stream>>>(consensus_d,
+                                                                                   coverage_d,
+                                                                                   sequence_lengths_d,
+                                                                                   window_details_d,
+                                                                                   total_windows,
+                                                                                   nodes,
+                                                                                   incoming_edges,
+                                                                                   incoming_edge_count,
+                                                                                   outgoing_edges,
+                                                                                   outgoing_edge_count,
+                                                                                   incoming_edge_w,
+                                                                                   sorted_poa,
+                                                                                   node_id_to_pos,
+                                                                                   node_alignments,
+                                                                                   node_alignment_count,
+                                                                                   consensus_scores,
+                                                                                   consensus_predecessors,
+                                                                                   node_coverage_counts);
     }
     else
     {
         generateConsensusKernel<false>
-            <<<1, total_windows, 0, stream>>>(consensus_d,
-                                              coverage_d,
-                                              sequence_lengths_d,
-                                              window_details_d,
-                                              total_windows,
-                                              nodes,
-                                              incoming_edges,
-                                              incoming_edge_count,
-                                              outgoing_edges,
-                                              outgoing_edge_count,
-                                              incoming_edge_w,
-                                              sorted_poa,
-                                              node_id_to_pos,
-                                              node_alignments,
-                                              node_alignment_count,
-                                              consensus_scores,
-                                              consensus_predecessors,
-                                              node_coverage_counts);
+            <<<consensus_num_blocks, CUDAPOA_MAX_CONSENSUS_PER_BLOCK, 0, stream>>>(consensus_d,
+                                                                                   coverage_d,
+                                                                                   sequence_lengths_d,
+                                                                                   window_details_d,
+                                                                                   total_windows,
+                                                                                   nodes,
+                                                                                   incoming_edges,
+                                                                                   incoming_edge_count,
+                                                                                   outgoing_edges,
+                                                                                   outgoing_edge_count,
+                                                                                   incoming_edge_w,
+                                                                                   sorted_poa,
+                                                                                   node_id_to_pos,
+                                                                                   node_alignments,
+                                                                                   node_alignment_count,
+                                                                                   consensus_scores,
+                                                                                   consensus_predecessors,
+                                                                                   node_coverage_counts);
     }
 }
 

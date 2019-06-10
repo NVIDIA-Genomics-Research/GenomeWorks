@@ -3,3 +3,7 @@
 *.fa filter=lfs diff=lfs merge=lfs -text
 *.gfa filter=lfs diff=lfs merge=lfs -text
 *.paf filter=lfs diff=lfs merge=lfs -text
+**/cudapoa/data/*.txt filter=lfs diff=lfs merge=lfs -text
+
+# Untrack following files in lfs
+*CMakeLists* -filter=lfs -diff=lfs -merge=lfs -text

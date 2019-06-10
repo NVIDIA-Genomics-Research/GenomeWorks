@@ -17,7 +17,11 @@ set(SOURCES
     Test_CudapoaTopSort.cpp
     Test_CudapoaAddAlignment.cpp
     Test_CudapoaNW.cpp
-    Test_CudapoaGenerateConsensus.cpp)
+    Test_CudapoaGenerateConsensus.cpp
+    Test_CudapoaBatchEnd2End.cpp)
+
+get_property(cudapoa_data_include_dir GLOBAL PROPERTY cudapoa_data_include_dir)
+include_directories(${cudapoa_data_include_dir})
 
 set(LIBS
     cudapoa)

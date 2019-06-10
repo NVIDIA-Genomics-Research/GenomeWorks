@@ -20,6 +20,13 @@ if (enable_tests AND NOT TARGET gtest)
     add_subdirectory(3rdparty/googletest EXCLUDE_FROM_ALL)
 endif()
 
+get_property(enable_benchmarks GLOBAL PROPERTY enable_benchmarks)
+if (enable_benchmarks AND NOT TARGET benchmark)
+    set(BENCHMARK_ENABLE_TESTING OFF)
+    set(BENCHMARK_ENABLE_GTEST_TESTS OFF)
+    add_subdirectory(3rdparty/benchmark EXCLUDE_FROM_ALL)
+endif()
+
 if (NOT TARGET spdlog)
 # FORCE spdlog to put out an install target, which we need
     set(SPDLOG_INSTALL ON CACHE BOOL "Generate the install target." FORCE)
