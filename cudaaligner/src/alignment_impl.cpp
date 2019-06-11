@@ -9,6 +9,7 @@
 */
 
 #include "alignment_impl.hpp"
+#include <utils/signed_integer_utils.hpp>
 
 namespace genomeworks
 {
@@ -16,9 +17,9 @@ namespace genomeworks
 namespace cudaaligner
 {
 
-AlignmentImpl::AlignmentImpl(const char* query, uint32_t query_length, const char* subject, uint32_t subject_length)
-    : query_(query, query + query_length)
-    , subject_(subject, subject + subject_length)
+AlignmentImpl::AlignmentImpl(const char* query, int32_t query_length, const char* subject, int32_t subject_length)
+    : query_(query, query + throw_on_negative(query_length, "query_length has to be non-negative."))
+    , subject_(subject, subject + throw_on_negative(subject_length, "subject_length has to be non-negative."))
     , status_(StatusType::uninitialized)
     , type_(AlignmentType::unset)
 {
@@ -46,17 +47,17 @@ std::string AlignmentImpl::alignment_state_to_cigar_state(AlignmentState s) cons
 
 std::string AlignmentImpl::convert_to_cigar() const
 {
-    if (alignment_.size() < 1)
+    if (get_size(alignment_) < 1)
     {
         return std::string("");
     }
 
     std::string cigar            = "";
-    std::string last_cigar_state = alignment_state_to_cigar_state(alignment_.at(0));
-    uint32_t count_last_state    = 1;
-    for (std::size_t pos = 1; pos < alignment_.size(); pos++)
+    std::string last_cigar_state = alignment_state_to_cigar_state(alignment_[0]);
+    int32_t count_last_state     = 0;
+    for (auto const& x : alignment_)
     {
-        std::string cur_cigar_state = alignment_state_to_cigar_state(alignment_.at(pos));
+        std::string cur_cigar_state = alignment_state_to_cigar_state(x);
         if (cur_cigar_state == last_cigar_state)
         {
             count_last_state++;
@@ -75,12 +76,12 @@ std::string AlignmentImpl::convert_to_cigar() const
 FormattedAlignment AlignmentImpl::format_alignment() const
 {
     std::string t_str = "";
-    std::size_t t_pos = 0;
+    int64_t t_pos     = 0;
     std::string q_str = "";
-    std::size_t q_pos = 0;
-    for (std::size_t i = 0; i < alignment_.size(); i++)
+    int64_t q_pos     = 0;
+    for (auto const& x : alignment_)
     {
-        switch (alignment_.at(i))
+        switch (x)
         {
         case AlignmentState::match:
         case AlignmentState::mismatch:

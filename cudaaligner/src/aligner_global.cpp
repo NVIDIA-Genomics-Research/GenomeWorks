@@ -13,6 +13,8 @@
 
 #include <cuda_runtime_api.h>
 
+#include <utils/signed_integer_utils.hpp>
+
 #include "aligner_global.hpp"
 #include "alignment_impl.hpp"
 #include "ukkonen_gpu.cuh"
@@ -28,10 +30,10 @@ namespace cudaaligner
 
 static constexpr float max_target_query_length_difference = 0.1; // query has to be >=90% of target length
 
-AlignerGlobal::AlignerGlobal(uint32_t max_query_length, uint32_t max_subject_length, uint32_t max_alignments, uint32_t device_id)
-    : max_query_length_(max_query_length)
-    , max_subject_length_(max_subject_length)
-    , max_alignments_(max_alignments)
+AlignerGlobal::AlignerGlobal(int32_t max_query_length, int32_t max_subject_length, int32_t max_alignments, int32_t device_id)
+    : max_query_length_(throw_on_negative(max_query_length, "max_query_length must be non-negative."))
+    , max_subject_length_(throw_on_negative(max_subject_length, "max_subject_length must be non-negative."))
+    , max_alignments_(throw_on_negative(max_alignments, "max_alignments must be non-negative."))
     , alignments_()
     , sequences_d_(2 * std::max(max_query_length, max_subject_length) * max_alignments, device_id)
     , sequences_h_(2 * std::max(max_query_length, max_subject_length) * max_alignments, device_id)
@@ -44,7 +46,6 @@ AlignerGlobal::AlignerGlobal(uint32_t max_query_length, uint32_t max_subject_len
     , stream_(nullptr)
     , device_id_(device_id)
 {
-    // Must have at least one alignment.
     if (max_alignments < 1)
     {
         throw std::runtime_error("Max alignments must be at least 1.");
@@ -55,11 +56,18 @@ AlignerGlobal::~AlignerGlobal()
 {
     // Keep empty destructor to keep batched_device_matrices type incomplete in the .hpp file.
 }
-StatusType AlignerGlobal::add_alignment(const char* query, uint32_t query_length, const char* subject, uint32_t subject_length)
+
+StatusType AlignerGlobal::add_alignment(const char* query, int32_t query_length, const char* subject, int32_t subject_length)
 {
-    uint32_t const max_alignment_length           = std::max(max_query_length_, max_subject_length_);
-    int32_t const allocated_max_length_difference = static_cast<int32_t>(max_subject_length_ * max_target_query_length_difference);
-    uint32_t const num_alignments                 = alignments_.size();
+    if (query_length < 0 || subject_length < 0)
+    {
+        GW_LOG_DEBUG("{} {}", "Negative subject or query length is not allowed.");
+        return StatusType::generic_error;
+    }
+
+    int32_t const max_alignment_length            = std::max(max_query_length_, max_subject_length_);
+    int32_t const allocated_max_length_difference = max_subject_length_ * max_target_query_length_difference;
+    int32_t const num_alignments                  = get_size(alignments_);
     if (num_alignments >= max_alignments_)
     {
         GW_LOG_DEBUG("{} {}", "Exceeded maximum number of alignments allowed : ", max_alignments_);
@@ -78,7 +86,7 @@ StatusType AlignerGlobal::add_alignment(const char* query, uint32_t query_length
         return StatusType::exceeded_max_length;
     }
 
-    if (std::abs(static_cast<int32_t>(query_length) - static_cast<int32_t>(subject_length)) > allocated_max_length_difference)
+    if (std::abs(query_length - subject_length) > allocated_max_length_difference)
     {
         GW_LOG_DEBUG("{} {}", "Exceeded maximum length difference b/w subject and query allowed : ", allocated_max_length_difference);
         return StatusType::exceeded_max_alignment_difference;
@@ -107,8 +115,8 @@ StatusType AlignerGlobal::add_alignment(const char* query, uint32_t query_length
 StatusType AlignerGlobal::align_all()
 {
     int32_t const max_alignment_length            = std::max(max_query_length_, max_subject_length_);
-    int32_t const num_alignments                  = alignments_.size();
-    int32_t const allocated_max_length_difference = static_cast<int32_t>(max_subject_length_ * max_target_query_length_difference);
+    int32_t const num_alignments                  = get_size(alignments_);
+    int32_t const allocated_max_length_difference = max_subject_length_ * max_target_query_length_difference;
     int32_t const ukkonen_p                       = 100;
     if (!score_matrices_)
         score_matrices_ = std::make_unique<batched_device_matrices<nw_score_t>>(
@@ -116,7 +124,7 @@ StatusType AlignerGlobal::align_all()
     GW_CU_CHECK_ERR(cudaSetDevice(device_id_));
     GW_CU_CHECK_ERR(cudaMemcpyAsync(sequence_lengths_d_.data(),
                                     sequence_lengths_h_.data(),
-                                    2 * sizeof(uint32_t) * num_alignments,
+                                    2 * sizeof(int32_t) * num_alignments,
                                     cudaMemcpyHostToDevice,
                                     stream_));
     GW_CU_CHECK_ERR(cudaMemcpyAsync(sequences_d_.data(),
@@ -143,12 +151,12 @@ StatusType AlignerGlobal::align_all()
 
     GW_CU_CHECK_ERR(cudaMemcpyAsync(results_h_.data(),
                                     results_d_.data(),
-                                    sizeof(uint8_t) * (max_query_length_ + max_subject_length_) * num_alignments,
+                                    sizeof(int8_t) * (max_query_length_ + max_subject_length_) * num_alignments,
                                     cudaMemcpyDeviceToHost,
                                     stream_));
     GW_CU_CHECK_ERR(cudaMemcpyAsync(result_lengths_h_.data(),
                                     result_lengths_d_.data(),
-                                    sizeof(uint32_t) * num_alignments,
+                                    sizeof(int32_t) * num_alignments,
                                     cudaMemcpyDeviceToHost,
                                     stream_));
     return StatusType::success;
@@ -159,7 +167,7 @@ StatusType AlignerGlobal::sync_alignments()
     GW_CU_CHECK_ERR(cudaSetDevice(device_id_));
     GW_CU_CHECK_ERR(cudaStreamSynchronize(stream_));
 
-    int32_t const n_alignments = alignments_.size();
+    int32_t const n_alignments = get_size(alignments_);
     std::vector<AlignmentState> al_state;
     for (int32_t i = 0; i < n_alignments; ++i)
     {

@@ -58,7 +58,7 @@ public:
     /// \param query_length  Query string length
     /// \param subject Subject string
     /// \param subject_length Subject string length
-    virtual StatusType add_alignment(const char* query, uint32_t query_length, const char* subject, uint32_t subject_length) = 0;
+    virtual StatusType add_alignment(const char* query, int32_t query_length, const char* subject, int32_t subject_length) = 0;
 
     /// \brief Return the computed alignments.
     ///
@@ -83,7 +83,7 @@ public:
 /// \param device_id GPU device ID to run all CUDA operations on
 ///
 /// \return Unique pointer to Aligner object
-std::unique_ptr<Aligner> create_aligner(uint32_t max_query_length, uint32_t max_subject_length, uint32_t max_alignments, AlignmentType type, uint32_t device_id);
+std::unique_ptr<Aligner> create_aligner(int32_t max_query_length, int32_t max_subject_length, int32_t max_alignments, AlignmentType type, int32_t device_id);
 
 /// \}
 } // namespace cudaaligner
