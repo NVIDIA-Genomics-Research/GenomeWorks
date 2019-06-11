@@ -8,6 +8,8 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
+#pragma once
+
 namespace genomeworks {
 
 /// ArrayBlock - points to a part of an array
@@ -16,7 +18,7 @@ namespace genomeworks {
 struct ArrayBlock {
     size_t first_element_;
     std::uint32_t block_size_;
-}
+};
 
 using position_in_read_t = std::uint32_t;
 using representation_t = std::uint64_t; // this depends on kmer size, in some cases could also be 32-bit
