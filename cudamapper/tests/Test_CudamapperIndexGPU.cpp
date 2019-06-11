@@ -18,7 +18,7 @@
 #include "../src/index_gpu.hpp"
 #include "../src/minimizer.hpp"
 
-namespace genomeworks {
+/*namespace genomeworks {
 
     class IndexGeneratorTest : public IndexGenerator {
     public:
@@ -275,3 +275,4 @@ namespace genomeworks {
         }
     }
 }
+*/

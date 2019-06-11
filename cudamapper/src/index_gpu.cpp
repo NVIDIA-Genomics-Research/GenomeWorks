@@ -7,7 +7,7 @@
 * distribution of this software and related documentation without an express
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
-
+/*
 #include <unordered_set>
 #include "cudautils/cudautils.hpp"
 #include "index_gpu.hpp"
@@ -107,4 +107,4 @@ namespace genomeworks {
     const std::unordered_multimap<std::uint64_t, std::uint64_t>& IndexGPU::sequence_id_to_representations() const {
         return sequence_id_to_representations_;
     }
-}
+}*/

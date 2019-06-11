@@ -7,7 +7,7 @@
 * distribution of this software and related documentation without an express
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
-
+/*
 #pragma once
 
 #include <cstdint>
@@ -129,3 +129,4 @@ namespace genomeworks {
         std::unordered_multimap<std::uint64_t, std::uint64_t> sequence_id_to_representations_;
     };
 }
+*/
