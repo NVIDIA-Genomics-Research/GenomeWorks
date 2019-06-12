@@ -20,8 +20,6 @@
 
 namespace genomeworks {
 
-//    typedef std::pair<uint64_t, std::unique_ptr<Minimizer>> MinPair;
-
     IndexGeneratorCPU::IndexGeneratorCPU(const std::string& query_filename, std::uint64_t minimizer_size, std::uint64_t window_size)
     : minimizer_size_(minimizer_size), window_size_(window_size), index_()
     {
@@ -76,8 +74,27 @@ namespace genomeworks {
         //find_end_minimizers(sequence, sequence_id);
     }
 
-    void IndexGeneratorCPU::find_central_minimizers(const Sequence& sequence, std::uint64_t sequence_id) {
+    void IndexGeneratorCPU::find_central_minimizers(const Sequence& read, std::uint64_t read_id) {
+        representation_t current_minimizer_representation = std::numeric_limits<representation_t>::max();
+        std::deque<Minimizer::RepresentationAndDirection> kmers_in_window; // values of all kmers in the current window
+        std::deque<std::pair<position_in_read_t, Minimizer::DirectionOfRepresentation>> minimizer_pos; // positions of kmers that are minimzers in the current window and their directions
+        const std::string& read_data = read.data();
 
+        // fill the initial window
+        for (std::size_t kmer_in_window_index = 0; kmer_in_window_index < window_size_; ++kmer_in_window_index) {
+            kmers_in_window.push_back(Minimizer::kmer_to_representation(read_data, kmer_in_window_index, minimizer_size_));
+            if (kmers_in_window.back().representation_ == current_minimizer_representation) { // if this kmer is equeal to the current minimizer add it to the list of positions of that minimizer
+                minimizer_pos.emplace_back(kmer_in_window_index, kmers_in_window.back().direction_);
+            } else if (kmers_in_window.back().representation_ < current_minimizer_representation) { // if it is smaller than the current minimizer clear the list and make it the new minimizer
+                current_minimizer_representation = kmers_in_window.back().representation_; // minimizer gets the value of the newest kmer as it is smaller than the previous minimizer
+                minimizer_pos.clear(); // there is a new minimizer, clear the positions of the old minimizer
+                minimizer_pos.emplace_back(kmer_in_window_index, kmers_in_window.back().direction_); // save the position of the new minimizer
+            }
+        }
+        // add all position of the minimizer of the first window
+        for (const std::pair<position_in_read_t, Minimizer::DirectionOfRepresentation>& pos : minimizer_pos) {
+            index_[current_minimizer_representation].push_back(std::make_unique<Minimizer>(current_minimizer_representation, pos.first, pos.second, read_id));
+        }
     }
 
 /*    void IndexGeneratorCPU::find_central_minimizers(const Sequence& sequence, std::uint64_t sequence_id) {
