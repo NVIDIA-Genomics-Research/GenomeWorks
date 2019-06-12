@@ -58,7 +58,7 @@ namespace genomeworks {
         /// \param length length of the kmer
         ///
         /// \return representation and direction of the read
-        static RepresentationAndDirection kmer_to_integer_representation(const std::string& basepairs, std::size_t start_element, std::size_t length);
+        static RepresentationAndDirection kmer_to_representation(const std::string& basepairs, std::size_t start_element, std::size_t length);
 
     private:
         representation_t representation_;
