@@ -194,9 +194,10 @@ __device__ void generateConsensus(uint8_t* nodes,
 
     // If the node with maximum score isn't a leaf of the graph
     // then run a special branch completion function.
+    uint16_t loop_count = 0;
     if (outgoing_edge_count[max_score_id] != 0)
     {
-        while (outgoing_edge_count[max_score_id] != 0)
+        while (outgoing_edge_count[max_score_id] != 0 && loop_count < node_count)
         {
             max_score_id = branchCompletion(node_id_to_pos[max_score_id],
                                             nodes,
@@ -209,7 +210,15 @@ __device__ void generateConsensus(uint8_t* nodes,
                                             incoming_edge_w,
                                             scores,
                                             predecessors);
+            loop_count++;
         }
+    }
+
+    if (loop_count >= node_count)
+    {
+        consensus[0] = CUDAPOA_KERNEL_ERROR_ENCOUNTERED;
+        consensus[1] = static_cast<uint8_t>(StatusType::loop_count_exceeded_upper_bound);
+        return;
     }
 
     uint16_t consensus_pos = 0;
