@@ -62,23 +62,25 @@ namespace genomeworks {
         }
     }
 
-    void IndexGeneratorCPU::add_read_to_index(const Sequence& read, read_id_t read_id) {
+    void IndexGeneratorCPU::add_read_to_index(const Sequence& read, const read_id_t read_id) {
         // check if sequence fits at least one window
         if (read.data().size() < window_size_ + minimizer_size_ - 1) {
             // TODO: as long as the read fits at least one minimizer process it, but log it wasn't long enough
             return;
         }
 
-        find_central_minimizers(read, read_id);
-
-        //find_end_minimizers(sequence, sequence_id);
+        find_minimizers(read, read_id);
     }
 
-    void IndexGeneratorCPU::find_central_minimizers(const Sequence& read, std::uint64_t read_id) {
+    void IndexGeneratorCPU::find_minimizers(const Sequence& read, const read_id_t read_id) {
         representation_t current_minimizer_representation = std::numeric_limits<representation_t>::max();
         std::deque<Minimizer::RepresentationAndDirection> kmers_in_window; // values of all kmers in the current window
         std::deque<std::pair<position_in_read_t, Minimizer::DirectionOfRepresentation>> minimizer_pos; // positions of kmers that are minimzers in the current window and their directions
         const std::string& read_data = read.data();
+
+        // Minimizers of first/last window migh be the same as some of end minimizers. These values will be needed for calculating the end minimizers
+        representation_t first_window_minimizer_representation = 0;
+        representation_t last_window_minimizer_representation = 0;
 
         // fill the initial window
         for (std::size_t kmer_in_window_index = 0; kmer_in_window_index < window_size_; ++kmer_in_window_index) {
@@ -95,6 +97,7 @@ namespace genomeworks {
         for (const std::pair<position_in_read_t, Minimizer::DirectionOfRepresentation>& pos : minimizer_pos) {
             index_[current_minimizer_representation].emplace_back(std::make_unique<Minimizer>(current_minimizer_representation, pos.first, pos.second, read_id));
         }
+        first_window_minimizer_representation = current_minimizer_representation;
 
         // move the window by one basepair in each step
         // window 0 was processed in the previous step
@@ -143,50 +146,55 @@ namespace genomeworks {
                 }
             }
         }
+        last_window_minimizer_representation = current_minimizer_representation;
+
+        find_end_minimizers(read, read_id, first_window_minimizer_representation, last_window_minimizer_representation);
     }
 
+    void IndexGeneratorCPU::find_end_minimizers(const Sequence& read, const read_id_t read_id, const representation_t first_window_minimizer_representation, const representation_t last_window_minimizer_representation) {
+        const std::string& read_data = read.data();
 
-/*    void IndexGeneratorCPU::find_end_minimizers(const Sequence& sequence, std::uint64_t sequence_id) {
-        const std::string& sequence_data = sequence.data();
-
-        // End minimizers are found by increasing the window size and keeping the same minimizer length.
-        // This means that the window of size w+1 will either have the same or smaller minimizer than the window of size w
-        // (or by induction any other smaller window)
-        // It is thus necessary only to check new kmer. If it is a new minimizer it's guaraneed that that kmer is not present in the rest of the window
+        // End minimizers are minimizers of windows with window_size_end = [1..window_size-1],
+        // where each window starts at the begining/ends at the end of the read (front/back end miniminizers)
+        // (discussion for front end minimizers, back end minimimizer are equivalent)
+        // For window_size_end=1 minimizer is the representation of the first kmer.
+        // For window_size_end=2 minimizer can either come from the first or the second kmer. If it comes from the first kmer
+        // then it has already been added by window_size_end=1. If it comes from the second kmer then the representation of the second kmer
+        // has to be smaller or equal than the representation of the first kmer.
+        // This means that as the window_size_end is increased only the newly added kmer has to be checked and its representation added
+        // if it is smaller or equal than the minimizer of the previous window.
+        // "Central" minimizer for window_size has alread been added. If a kmer with representation equal to the minimizer of that window is found
+        // that means that no kmer with representation smaller than that value will be found for window_size_end < window_size
 
         // "front" end minimizers
-        std::uint64_t minimizer = std::numeric_limits<std::uint64_t>::max();
-        auto existing_positions = index_.equal_range(minimizer);
-        for (std::size_t i = 0; i < window_size_; ++i) {
-            Minimizer::RepresentationAndDirection new_kmer = Minimizer::kmer_to_integer_representation(sequence_data, i, minimizer_size_);
-            if (new_kmer.representation_ <= minimizer) {
-                if (new_kmer.representation_ < minimizer) {
-                    minimizer = new_kmer.representation_;
-                    existing_positions = index_.equal_range(minimizer);
+        representation_t current_minimizer_representation = std::numeric_limits<std::uint64_t>::max();
+        for (std::size_t current_window_size = 1; current_window_size < window_size_; ++current_window_size) {
+            Minimizer::RepresentationAndDirection new_kmer = Minimizer::kmer_to_representation(read_data, current_window_size-1, minimizer_size_);
+            if (new_kmer.representation_ == first_window_minimizer_representation) { // minimizer already added by the first "central" minimizer window
+                break;
+            }
+            if (new_kmer.representation_ <= current_minimizer_representation) {
+                if (new_kmer.representation_ < current_minimizer_representation) {
+                    current_minimizer_representation = new_kmer.representation_;
                 }
-                // add minimizer (if not already present)
-                if (std::none_of(existing_positions.first, existing_positions.second, [i, sequence_id](const decltype(index_)::value_type& a) {return a.second->position() == i && a.second->sequence_id() == sequence_id;})) {
-                    index_.emplace(MinPair(minimizer, std::make_unique<Minimizer>(minimizer, i, new_kmer.direction_, sequence_id)));
-                }
+                index_[current_minimizer_representation].emplace_back(std::make_unique<Minimizer>(current_minimizer_representation, current_window_size-1, new_kmer.direction_, read_id));
             }
         }
 
-        // "back" end minimizers
-        minimizer = std::numeric_limits<std::uint64_t>::max();
-        existing_positions = index_.equal_range(minimizer);
-        for(std::size_t i = 0; i < window_size_; ++i) {
-            std::size_t kmer_position = sequence_data.size() - minimizer_size_ - i;
-            Minimizer::RepresentationAndDirection new_kmer = Minimizer::kmer_to_integer_representation(sequence_data, kmer_position, minimizer_size_);
-            if (new_kmer.representation_ <= minimizer) {
-                if (new_kmer.representation_ < minimizer) {
-                    minimizer = new_kmer.representation_;
-                    existing_positions = index_.equal_range(minimizer);
+
+        current_minimizer_representation = std::numeric_limits<std::uint64_t>::max();
+        for (std::size_t current_window_size = 1; current_window_size < window_size_; ++current_window_size) {
+            std::size_t kmer_begin_position = read_data.size() - minimizer_size_ - current_window_size + 1;
+            Minimizer::RepresentationAndDirection new_kmer = Minimizer::kmer_to_representation(read_data, kmer_begin_position, minimizer_size_);
+            if (new_kmer.representation_ == last_window_minimizer_representation) { // minimizer already added by the first "central" minimizer window
+                break;
+            }
+            if (new_kmer.representation_ <= current_minimizer_representation) {
+                if (new_kmer.representation_ < current_minimizer_representation) {
+                    current_minimizer_representation = new_kmer.representation_;
                 }
-                // add minimizer (if not already present)
-                if (std::none_of(existing_positions.first, existing_positions.second, [kmer_position, sequence_id](const decltype(index_)::value_type& a) {return a.second->position() == kmer_position && a.second->sequence_id() == sequence_id;})) {
-                    index_.emplace(MinPair(minimizer, std::make_unique<Minimizer>(minimizer, kmer_position, new_kmer.direction_, sequence_id)));
-                }
+                index_[current_minimizer_representation].emplace_back(std::make_unique<Minimizer>(current_minimizer_representation, kmer_begin_position, new_kmer.direction_, read_id));
             }
         }
-    }*/
+    }
 }

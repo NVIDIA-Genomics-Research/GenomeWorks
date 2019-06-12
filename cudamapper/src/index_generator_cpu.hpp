@@ -50,23 +50,25 @@ namespace genomeworks {
 
         /// \brief finds minimizers and adds them to the index
         ///
-        /// \param sequence
-        /// \param sequence_id
-        void add_read_to_index(const Sequence& read, read_id_t read_id);
+        /// \param read
+        /// \param read_id
+        void add_read_to_index(const Sequence& read, const read_id_t read_id);
 
 
-        /// \brief finds "central" minimizers
+        /// \brief finds all minimizers (central and end)
         ///
-        /// \param sequence
-        /// \param sequence_id
-        void find_central_minimizers(const Sequence& sequence, std::uint64_t sequence_id);
+        /// \param read
+        /// \param read_id
+        void find_minimizers(const Sequence& read, const read_id_t read_id);
 
-/*        /// \brief finds end minimizers
+        /// \brief finds end minimizers
         ///
-        /// \param sequence
-        /// \param sequence_id
-        void find_end_minimizers(const Sequence& sequence, std::uint64_t sequence_id);
-*/
+        /// \param read
+        /// \param read_id
+        /// \param first_window_minimizer_representation representations of the minimizer of the first window
+        /// \param last_window_minimizer_representation representations of the minimizer of the last window
+        void find_end_minimizers(const Sequence& read, const read_id_t sequence_id, const representation_t first_window_minimizer_representation, const representation_t last_window_minimizer_representation);
+
         std::uint64_t minimizer_size_;
         std::uint64_t window_size_;
         std::map<representation_t, std::vector<std::unique_ptr<SketchElement>>> index_;
