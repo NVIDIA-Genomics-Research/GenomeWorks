@@ -13,9 +13,12 @@ project(cudamappertests)
 
 set(SOURCES
     main.cpp
-    Test_CudamapperIndexGPU.cpp)
+    Test_CudamapperIndexGeneratorCPU.cpp
+    Test_CudamapperIndexGPU.cpp
+    ../src/bioparser_sequence.cpp)
 
 set(LIBS
+    bioparser
     index_generator_cpu
     index_gpu)
 
