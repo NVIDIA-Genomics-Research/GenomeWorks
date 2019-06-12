@@ -13,7 +13,7 @@
 #include <memory>
 #include "cudamapper/index_generator.hpp"
 
-
+/*
 namespace genomeworks {
 /// \addtogroup cudamapper
 /// \{
@@ -35,3 +35,4 @@ namespace genomeworks {
 /// \}
 
 }
+*/

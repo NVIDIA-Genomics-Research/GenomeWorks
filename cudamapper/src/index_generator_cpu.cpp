@@ -20,13 +20,21 @@
 
 namespace genomeworks {
 
-    typedef std::pair<uint64_t, std::unique_ptr<Minimizer>> MinPair;
+//    typedef std::pair<uint64_t, std::unique_ptr<Minimizer>> MinPair;
 
     IndexGeneratorCPU::IndexGeneratorCPU(const std::string& query_filename, std::uint64_t minimizer_size, std::uint64_t window_size)
     : minimizer_size_(minimizer_size), window_size_(window_size), index_()
     {
         generate_index(query_filename);
     }
+
+    std::uint64_t IndexGeneratorCPU::minimizer_size() const { return minimizer_size_; }
+
+    std::uint64_t IndexGeneratorCPU::window_size() const { return window_size_; }
+
+    const std::map<representation_t, std::vector<std::unique_ptr<SketchElement>>>& IndexGeneratorCPU::representation_to_sketch_elements() const { return index_; };
+
+    const std::vector<std::string>& IndexGeneratorCPU::read_id_to_read_name() const { return read_id_to_read_name_; };
 
     void IndexGeneratorCPU::generate_index(const std::string &query_filename) {
 
@@ -50,23 +58,29 @@ namespace genomeworks {
         std::vector <std::unique_ptr<BioParserSequence>> fasta_objects;
         query_parser->parse(fasta_objects, -1);
 
-        for (std::uint64_t seq_id = 0; seq_id < fasta_objects.size(); ++seq_id) {
-            add_sequence_to_index(*fasta_objects[seq_id], seq_id);
+        for (std::uint64_t read_id = 0; read_id < fasta_objects.size(); ++read_id) {
+            read_id_to_read_name_.push_back(fasta_objects[read_id]->name());
+            add_read_to_index(*fasta_objects[read_id], read_id);
         }
     }
 
-    void IndexGeneratorCPU::add_sequence_to_index(const Sequence& sequence, std::uint64_t sequence_id) {
+    void IndexGeneratorCPU::add_read_to_index(const Sequence& read, read_id_t read_id) {
         // check if sequence fits at least one window
-        if (sequence.data().size() < window_size_ + minimizer_size_ - 1) {
+        if (read.data().size() < window_size_ + minimizer_size_ - 1) {
+            // TODO: as long as the read fits at least one minimizer process it, but log it wasn't long enough
             return;
         }
 
-        find_central_minimizers(sequence, sequence_id);
+        find_central_minimizers(read, read_id);
 
-        find_end_minimizers(sequence, sequence_id);
+        //find_end_minimizers(sequence, sequence_id);
     }
 
     void IndexGeneratorCPU::find_central_minimizers(const Sequence& sequence, std::uint64_t sequence_id) {
+
+    }
+
+/*    void IndexGeneratorCPU::find_central_minimizers(const Sequence& sequence, std::uint64_t sequence_id) {
         std::uint64_t minimizer = std::numeric_limits<std::uint64_t>::max(); // value of the current minimizer
         // These deques are going to be resized all the time. Think about using ring buffers if this limits the performance
         std::deque<Minimizer::RepresentationAndDirection> window; // values of all kmers in the current window
@@ -178,11 +192,5 @@ namespace genomeworks {
                 }
             }
         }
-    }
-
-    std::uint64_t IndexGeneratorCPU::minimizer_size() const { return minimizer_size_; }
-
-    std::uint64_t IndexGeneratorCPU::window_size() const { return window_size_; }
-
-    const std::unordered_multimap<std::uint64_t, std::unique_ptr<SketchElement>>& IndexGeneratorCPU::representation_sketch_element_mapping() const { return index_; }
+    }*/
 }

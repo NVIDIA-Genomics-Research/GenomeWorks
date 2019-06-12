@@ -13,15 +13,15 @@
 
 namespace genomeworks {
 
-    Minimizer::Minimizer(std::uint64_t representation, std::size_t position, DirectionOfRepresentation direction, std::uint64_t sequence_id)
-    : representation_(representation), position_(position), direction_(direction), sequence_id_(sequence_id)
+    Minimizer::Minimizer(representation_t representation, position_in_read_t position_in_read, DirectionOfRepresentation direction, read_id_t read_id)
+    : representation_(representation), position_in_read_(position_in_read), direction_(direction), read_id_(read_id)
     {}
 
-    std::uint64_t Minimizer::representation() const { return representation_; }
+    representation_t Minimizer::representation() const { return representation_; }
 
-    std::size_t Minimizer::position() const { return position_; }
+    position_in_read_t Minimizer::position_in_read() const { return position_in_read_; }
 
-    std::uint64_t Minimizer::sequence_id() const { return sequence_id_; }
+    read_id_t Minimizer::read_id() const { return read_id_; }
 
     Minimizer::DirectionOfRepresentation Minimizer::direction() const { return direction_; }
 
