@@ -30,6 +30,10 @@ namespace genomeworks {
         /// \return mapping of sketch element representations to all sketch elements with those representations
         virtual const std::map<representation_t, std::vector<std::unique_ptr<SketchElement>>>& representation_to_sketch_elements() const = 0;
 
+        /// \brief returns number of reads
+        /// \return number of reads
+        virtual std::uint64_t number_of_reads() const = 0;
+
         /// \brief create and return an IndexGenerator object
         ///
         /// Given one or more sequences generates an in-memory mapping of (k,w)-kmer-representations and all occurences of skatch elelemtns with that representation

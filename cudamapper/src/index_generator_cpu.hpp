@@ -43,6 +43,10 @@ namespace genomeworks {
         /// returns mapping of internal read id that goes from 0 to number_of_reads-1 to actual read name from the input
         const std::vector<std::string>& read_id_to_read_name() const;
 
+        /// \brief returns number of reads
+        /// \return number of reads
+        std::uint64_t number_of_reads() const override;
+
     private:
         /// \brief generates the index
         /// \param query_filename
@@ -71,6 +75,7 @@ namespace genomeworks {
 
         std::uint64_t minimizer_size_;
         std::uint64_t window_size_;
+        std::uint64_t number_of_reads_;
         std::map<representation_t, std::vector<std::unique_ptr<SketchElement>>> index_;
         std::vector<std::string> read_id_to_read_name_;
     };

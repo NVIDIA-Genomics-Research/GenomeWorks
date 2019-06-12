@@ -34,6 +34,8 @@ namespace genomeworks {
 
     const std::vector<std::string>& IndexGeneratorCPU::read_id_to_read_name() const { return read_id_to_read_name_; };
 
+    std::uint64_t IndexGeneratorCPU::number_of_reads() const { return number_of_reads_; }
+
     void IndexGeneratorCPU::generate_index(const std::string &query_filename) {
 
         std::unique_ptr <bioparser::Parser<BioParserSequence>> query_parser = nullptr;
@@ -60,6 +62,7 @@ namespace genomeworks {
             read_id_to_read_name_.push_back(fasta_objects[read_id]->name());
             add_read_to_index(*fasta_objects[read_id], read_id);
         }
+        number_of_reads_ = fasta_objects.size();
     }
 
     void IndexGeneratorCPU::add_read_to_index(const Sequence& read, const read_id_t read_id) {
