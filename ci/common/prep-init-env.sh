@@ -26,21 +26,15 @@ g++ --version
 conda config --set ssl_verify False
 
 # Conda add custom packages for GenomeWorks CI
-conda install -c conda-forge doxygen
-conda install -c sarcasm clang-format
-
-logger "Conda install minimap2"
-# Conda install minimap2
-conda install -c bioconda minimap2
-
-logger "Conda install miniasm"
-# Conda install miniasm
-conda install -c bioconda miniasm
-
-logger "Conda install GIT LFS"
-conda install -c conda-forge git-lfs
-git lfs install
-git-lfs pull
+logger "Conda install GenomeWorks custom packages"
+conda install \
+    -c conda-forge \
+    -c sarcasm \
+    -c bioconda \
+    doxygen \
+    clang-format \
+    minimap2 \
+    miniasm
 
 ################################################################################
 # BUILD - Conda package builds 
