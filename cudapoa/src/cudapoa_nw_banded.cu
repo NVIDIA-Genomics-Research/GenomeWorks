@@ -180,8 +180,8 @@ __device__
     float gradient = float(read_length + 1) / float(graph_count + 1);
 
     uint16_t band_width = blockDim.x * CELLS_PER_THREAD;
-    uint32_t thread_idx = threadIdx.x;
-    uint32_t warp_idx   = thread_idx / WARP_SIZE;
+    int32_t thread_idx  = threadIdx.x;
+    int32_t warp_idx    = thread_idx / WARP_SIZE;
 
     long long int start = clock64();
 
@@ -303,7 +303,7 @@ __device__
 
             long long int temp = clock64();
 
-            for (uint32_t tb_start = 0; tb_start < blockDim.x; tb_start += WARP_SIZE)
+            for (int32_t tb_start = 0; tb_start < blockDim.x; tb_start += WARP_SIZE)
             {
                 if (thread_idx >= tb_start && warp_idx < max_warps)
                 {
@@ -426,7 +426,7 @@ __device__
         int16_t prev_i = 0;
         int16_t prev_j = 0;
 
-        uint32_t loop_count = 0;
+        int32_t loop_count = 0;
         while (!(i == 0 && j == 0) && loop_count < (read_length + graph_count + 2))
         {
             loop_count++;

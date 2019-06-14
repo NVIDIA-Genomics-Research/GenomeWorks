@@ -17,9 +17,9 @@ namespace genomeworks
 namespace cudapoa
 {
 
-std::unique_ptr<Batch> create_batch(uint32_t max_poas,
-                                    uint32_t max_sequences_per_poa,
-                                    uint32_t device_id,
+std::unique_ptr<Batch> create_batch(int32_t max_poas,
+                                    int32_t max_sequences_per_poa,
+                                    int32_t device_id,
                                     int16_t gap_score,
                                     int16_t mismatch_score,
                                     int16_t match_score,

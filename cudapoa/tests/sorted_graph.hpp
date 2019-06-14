@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include "../src/cudapoa_kernels.cuh" //CUDAPOA_MAX_NODE_EDGES, CUDAPOA_MAX_NODE_ALIGNMENTS
 #include "basic_graph.hpp"
+#include <utils/signed_integer_utils.hpp> // get_size
 
 namespace genomeworks
 {
@@ -31,16 +32,16 @@ public:
 
     void get_node_id_to_pos(uint16_t* node_id_to_pos) const
     {
-        for (size_t pos = 0; pos < sorted_graph_.size(); pos++)
+        for (int32_t pos = 0; pos < get_size(sorted_graph_); pos++)
         {
-            uint16_t id                = sorted_graph_[pos];
-            node_id_to_pos[(size_t)id] = (uint16_t)pos;
+            int32_t id         = sorted_graph_[pos];
+            node_id_to_pos[id] = static_cast<uint16_t>(pos);
         }
     }
 
     void get_sorted_graph(uint16_t* graph) const
     {
-        for (int i = 0; i < sorted_graph_.size(); i++)
+        for (int i = 0; i < get_size(sorted_graph_); i++)
         {
             graph[i] = sorted_graph_[i];
         }
