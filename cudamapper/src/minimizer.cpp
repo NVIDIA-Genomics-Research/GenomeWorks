@@ -36,14 +36,14 @@ namespace genomeworks {
             representation_t t = 0b011;
             representation_t x = 0b100;
             // in reverse complement base 0 goes to position length-1, 1 to length-2...
-            for (std::size_t i = start_element; i < start_element + length; ++i) {
+            for (std::size_t i = start_element, position_for_reverse = 0; i < start_element + length; ++i, ++position_for_reverse) {
                 forward_representation <<= 4;
                 switch(basepairs[i]) {
-                    case 'A': forward_representation |= a; reverse_representation |= t << 4*i; break;
-                    case 'C': forward_representation |= c; reverse_representation |= g << 4*i; break;
-                    case 'G': forward_representation |= g; reverse_representation |= c << 4*i; break;
-                    case 'T': forward_representation |= t; reverse_representation |= a << 4*i; break;
-                    default : forward_representation |= x; reverse_representation |= x << 4*i; break;
+                    case 'A': forward_representation |= a; reverse_representation |= (t << 4*position_for_reverse); break;
+                    case 'C': forward_representation |= c; reverse_representation |= (g << 4*position_for_reverse); break;
+                    case 'G': forward_representation |= g; reverse_representation |= (c << 4*position_for_reverse); break;
+                    case 'T': forward_representation |= t; reverse_representation |= (a << 4*position_for_reverse); break;
+                    default : forward_representation |= x; reverse_representation |= (x << 4*position_for_reverse); break;
                 }
             }
         } else {

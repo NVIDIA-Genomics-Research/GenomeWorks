@@ -28,7 +28,7 @@ namespace genomeworks {
 
         /// \brief returns a mapping of sketch element representations to all sketch elements with those representations
         /// \return mapping of sketch element representations to all sketch elements with those representations
-        virtual const std::map<representation_t, std::vector<std::unique_ptr<SketchElement>>>& representation_to_sketch_elements() const = 0;
+        virtual const std::map<representation_t, std::vector<std::unique_ptr<SketchElement>>>& representations_to_sketch_elements() const = 0;
 
         /// \brief returns number of reads
         /// \return number of reads

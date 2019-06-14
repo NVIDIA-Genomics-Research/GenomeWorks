@@ -37,7 +37,7 @@ namespace genomeworks {
 
         /// \brief returns a mapping of minimizer representations to all minimizers with those representations
         /// \return mapping of minimzer representations to all minimizers with those representations
-        const std::map<representation_t, std::vector<std::unique_ptr<SketchElement>>>& representation_to_sketch_elements() const override;
+        const std::map<representation_t, std::vector<std::unique_ptr<SketchElement>>>& representations_to_sketch_elements() const override;
 
         /// \brief returns mapping of internal read id that goes from 0 to number_of_reads-1 to actual read name from the input
         /// returns mapping of internal read id that goes from 0 to number_of_reads-1 to actual read name from the input

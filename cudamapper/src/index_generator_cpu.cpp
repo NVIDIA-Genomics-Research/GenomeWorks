@@ -30,7 +30,7 @@ namespace genomeworks {
 
     std::uint64_t IndexGeneratorCPU::window_size() const { return window_size_; }
 
-    const std::map<representation_t, std::vector<std::unique_ptr<SketchElement>>>& IndexGeneratorCPU::representation_to_sketch_elements() const { return index_; };
+    const std::map<representation_t, std::vector<std::unique_ptr<SketchElement>>>& IndexGeneratorCPU::representations_to_sketch_elements() const { return index_; };
 
     const std::vector<std::string>& IndexGeneratorCPU::read_id_to_read_name() const { return read_id_to_read_name_; };
 
@@ -114,7 +114,7 @@ namespace genomeworks {
                 if (minimizer_pos.empty()) { // removed kmer was the only minimzer -> find a new one
                     current_minimizer_representation = std::numeric_limits<std::uint64_t>::max();
                     // TODO: this happens fairly often, compare this solution with using a heap (which would have to updated for each added/removed kmer)
-                    for (std::size_t i = 0; i < kmers_in_window.size(); ++i) {
+                    for (std::size_t i = 0; i < window_size_; ++i) {
                         if (kmers_in_window[i].representation_ == current_minimizer_representation) {
                             minimizer_pos.emplace_back(window_num + i, kmers_in_window[i].direction_);
                         } else if (kmers_in_window[i].representation_ < current_minimizer_representation) {
@@ -129,23 +129,23 @@ namespace genomeworks {
                 } else { // there are other kmers with that value, proceed as if the oldest element was not not the smallest one
                     if (kmers_in_window.back().representation_ == current_minimizer_representation) {
                         minimizer_pos.emplace_back(window_num + minimizer_size_ - 1, kmers_in_window.back().direction_);
-                        index_[current_minimizer_representation].emplace_back(std::make_unique<Minimizer>(current_minimizer_representation, window_num + minimizer_size_ - 1, kmers_in_window.back().direction_, read_id));
+                        index_[current_minimizer_representation].emplace_back(std::make_unique<Minimizer>(current_minimizer_representation, window_num + window_size_ - 1, kmers_in_window.back().direction_, read_id));
                     } else if (kmers_in_window.back().representation_ < current_minimizer_representation) {
                         minimizer_pos.clear();
                         current_minimizer_representation = kmers_in_window.back().representation_;
                         minimizer_pos.emplace_back(window_num + minimizer_size_ - 1, kmers_in_window.back().direction_);
-                        index_[current_minimizer_representation].emplace_back(std::make_unique<Minimizer>(current_minimizer_representation, window_num + minimizer_size_ - 1, kmers_in_window.back().direction_, read_id));
+                        index_[current_minimizer_representation].emplace_back(std::make_unique<Minimizer>(current_minimizer_representation, window_num + window_size_ - 1, kmers_in_window.back().direction_, read_id));
                     }
                 }
             } else {  // oldest kmer was not the minimizer
                 if (kmers_in_window.back().representation_ == current_minimizer_representation) {
                     minimizer_pos.emplace_back(window_num + minimizer_size_ - 1, kmers_in_window.back().direction_);
-                    index_[current_minimizer_representation].emplace_back(std::make_unique<Minimizer>(current_minimizer_representation, window_num + minimizer_size_ - 1, kmers_in_window.back().direction_, read_id));
+                    index_[current_minimizer_representation].emplace_back(std::make_unique<Minimizer>(current_minimizer_representation, window_num + window_size_ - 1, kmers_in_window.back().direction_, read_id));
                 } else if (kmers_in_window.back().representation_ < current_minimizer_representation) {
                     minimizer_pos.clear();
                     current_minimizer_representation = kmers_in_window.back().representation_;
                     minimizer_pos.emplace_back(window_num + minimizer_size_ - 1, kmers_in_window.back().direction_);
-                    index_[current_minimizer_representation].emplace_back(std::make_unique<Minimizer>(current_minimizer_representation, window_num + minimizer_size_ - 1, kmers_in_window.back().direction_, read_id));
+                    index_[current_minimizer_representation].emplace_back(std::make_unique<Minimizer>(current_minimizer_representation, window_num + window_size_ - 1, kmers_in_window.back().direction_, read_id));
                 }
             }
         }
