@@ -8,12 +8,12 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
+#include <random>
 #include "gtest/gtest.h"
 #include "../src/aligner_global.hpp"
 #include "cudaaligner/alignment.hpp"
-#include "common.hpp"
 #include <utils/signed_integer_utils.hpp>
-#include <cstdlib>
+#include <utils/genomeutils.hpp>
 
 namespace genomeworks
 {
@@ -151,14 +151,15 @@ std::vector<AlignerTestData> create_aligner_perf_test_cases()
     AlignerTestData data;
 
     // Test case 1
-    data.inputs = {{generate_random_genome(1000), generate_random_genome(1000)}};
+    std::minstd_rand rng(1);
+    data.inputs = {{generate_random_genome(1000, rng), generate_random_genome(1000, rng)}};
     test_cases.push_back(data);
 
     // Test case 2
-    data.inputs = {{generate_random_genome(9500), generate_random_genome(9000)},
-                   {generate_random_genome(3456), generate_random_genome(3213)},
-                   {generate_random_genome(20000), generate_random_genome(20000)},
-                   {generate_random_genome(15000), generate_random_genome(14000)}};
+    data.inputs = {{generate_random_genome(9500, rng), generate_random_genome(9000, rng)},
+                   {generate_random_genome(3456, rng), generate_random_genome(3213, rng)},
+                   {generate_random_genome(20000, rng), generate_random_genome(20000, rng)},
+                   {generate_random_genome(15000, rng), generate_random_genome(14000, rng)}};
     test_cases.push_back(data);
 
     return test_cases;
@@ -181,6 +182,7 @@ TEST_P(TestAlignerGlobalImplPerf, TestAlignmentKernelPerf)
     }
 
     aligner->align_all();
+    aligner->sync_alignments();
 
     const std::vector<std::shared_ptr<Alignment>>& alignments = aligner->get_alignments();
     ASSERT_EQ(alignments.size(), inputs.size());
