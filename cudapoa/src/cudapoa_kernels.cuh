@@ -78,10 +78,10 @@ typedef struct WindowDetails
     uint16_t num_seqs;
     /// Offset of first sequence length for specific window
     /// inside global sequence length buffer.
-    uint32_t seq_len_buffer_offset;
+    int32_t seq_len_buffer_offset;
     /// Offset of first sequence content for specific window
     /// inside global sequences buffer.
-    uint32_t seq_starts;
+    int32_t seq_starts;
 } WindowDetails;
 
 typedef struct OutputDetails
@@ -97,7 +97,7 @@ typedef struct InputDetails
     // Buffer pointer for input data.
     uint8_t* sequences;
     // Buffer pointer for weights of each base.
-    uint8_t* base_weights;
+    int8_t* base_weights;
     // Buffer for sequence lengths.
     uint16_t* sequence_lengths;
     // Buffer pointers that hold Window Details struct.
@@ -219,7 +219,7 @@ typedef struct GraphDetails
 
 void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
                  genomeworks::cudapoa::InputDetails* Input_details_d,
-                 uint32_t total_windows,
+                 int32_t total_windows,
                  cudaStream_t stream,
                  genomeworks::cudapoa::AlignmentDetails* alignment_details_d,
                  genomeworks::cudapoa::GraphDetails* graph_details_d,
@@ -250,7 +250,7 @@ void addAlignment(uint8_t* nodes,
                   uint8_t* read,
                   int16_t* alignment_read,
                   uint16_t* node_coverage_counts,
-                  uint8_t* base_weights);
+                  int8_t* base_weights);
 
 // Host function that calls the kernel
 void runNW(uint8_t* nodes,

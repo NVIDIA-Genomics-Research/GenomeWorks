@@ -53,7 +53,7 @@ __device__
                         uint8_t* read,
                         int16_t* alignment_read,
                         uint16_t* node_coverage_counts,
-                        uint8_t* base_weights)
+                        int8_t* base_weights)
 {
     //printf("Running addition for alignment %d\n", alignment_length);
     int16_t head_node_id = -1;
@@ -76,7 +76,7 @@ __device__
         // Case where base in read in an insert.
         if (read_pos != -1)
         {
-            uint16_t NODE_WEIGHT = base_weights[read_pos];
+            int8_t NODE_WEIGHT = base_weights[read_pos];
 
             //printf("%c ", read[read_pos]);
             uint8_t read_base     = read[read_pos];
@@ -237,7 +237,7 @@ __global__ void addAlignmentKernel(uint8_t* nodes,
                                    uint8_t* read,
                                    int16_t* alignment_read,
                                    uint16_t* node_coverage_counts,
-                                   uint8_t* base_weights)
+                                   int8_t* base_weights)
 {
     // all pointers will be allocated in unified memory visible to both host and device
     *node_count = addAlignmentToGraph(nodes,
@@ -268,7 +268,7 @@ void addAlignment(uint8_t* nodes,
                   uint8_t* read,
                   int16_t* alignment_read,
                   uint16_t* node_coverage_counts,
-                  uint8_t* base_weights)
+                  int8_t* base_weights)
 {
     addAlignmentKernel<<<1, 1>>>(nodes,
                                  node_count,

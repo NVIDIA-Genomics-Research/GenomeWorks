@@ -250,7 +250,7 @@ __global__ void generateConsensusKernel(uint8_t* consensus_d,
                                         uint16_t* coverage_d,
                                         uint16_t* sequence_lengths_d,
                                         genomeworks::cudapoa::WindowDetails* window_details_d,
-                                        uint32_t total_windows,
+                                        int32_t total_windows,
                                         uint8_t* nodes_d,
                                         uint16_t* incoming_edges_d,
                                         uint16_t* incoming_edge_count_d,
@@ -266,7 +266,7 @@ __global__ void generateConsensusKernel(uint8_t* consensus_d,
                                         uint16_t* node_coverage_counts_d_)
 {
     //each thread will operate on a window
-    uint32_t window_idx = blockIdx.x * CUDAPOA_MAX_CONSENSUS_PER_BLOCK + threadIdx.x;
+    int32_t window_idx = blockIdx.x * CUDAPOA_MAX_CONSENSUS_PER_BLOCK + threadIdx.x;
 
     if (window_idx >= total_windows)
         return;
@@ -276,7 +276,7 @@ __global__ void generateConsensusKernel(uint8_t* consensus_d,
     if (consensus[0] == CUDAPOA_KERNEL_ERROR_ENCOUNTERED) //error during graph generation
         return;
 
-    uint32_t max_nodes_per_window = cuda_banded_alignment ? CUDAPOA_MAX_NODES_PER_WINDOW_BANDED : CUDAPOA_MAX_NODES_PER_WINDOW;
+    int32_t max_nodes_per_window = cuda_banded_alignment ? CUDAPOA_MAX_NODES_PER_WINDOW_BANDED : CUDAPOA_MAX_NODES_PER_WINDOW;
 
     // Find the buffer offsets for each thread within the global memory buffers.
     uint8_t* nodes                  = &nodes_d[max_nodes_per_window * window_idx];

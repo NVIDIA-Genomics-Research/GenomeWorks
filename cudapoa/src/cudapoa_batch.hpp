@@ -46,17 +46,17 @@ class BatchBlock;
 class CudapoaBatch : public Batch
 {
 public:
-    CudapoaBatch(uint32_t max_poas, uint32_t max_sequences_per_poa, uint32_t device_id, int16_t gap_score = -8, int16_t mismatch_score = -6, int16_t match_score = 8, bool cuda_banded_alignment = false);
+    CudapoaBatch(int32_t max_poas, int32_t max_sequences_per_poa, int32_t device_id, int16_t gap_score = -8, int16_t mismatch_score = -6, int16_t match_score = 8, bool cuda_banded_alignment = false);
     ~CudapoaBatch();
 
     // Add new partial order alignment to batch.
     StatusType add_poa();
 
     // Add sequence to last partial order alignment.
-    StatusType add_seq_to_poa(const char* seq, const uint8_t* weights, uint32_t seq_len);
+    StatusType add_seq_to_poa(const char* seq, const int8_t* weights, int32_t seq_len);
 
     // Get total number of partial order alignments in batch.
-    uint32_t get_total_poas() const;
+    int32_t get_total_poas() const;
 
     // Run partial order alignment algorithm over all POAs.
     void generate_poa();
@@ -70,7 +70,7 @@ public:
     void set_cuda_stream(cudaStream_t stream);
 
     // Return batch ID.
-    uint32_t batch_id() const;
+    int32_t batch_id() const;
 
     // Reset batch. Must do before re-using batch.
     void reset();
@@ -93,13 +93,13 @@ protected:
 
 protected:
     // Maximum POAs to process in batch.
-    uint32_t max_poas_ = 0;
+    int32_t max_poas_ = 0;
 
     // Maximum sequences per POA.
-    uint32_t max_sequences_per_poa_ = 0;
+    int32_t max_sequences_per_poa_ = 0;
 
     // GPU Device ID
-    uint32_t device_id_ = 0;
+    int32_t device_id_ = 0;
 
     // Gap, mismatch and match scores for NW dynamic programming loop.
     int16_t gap_score_;
@@ -124,19 +124,19 @@ protected:
     GraphDetails* graph_details_d_;
 
     // Static batch count used to generate batch IDs.
-    static uint32_t batches;
+    static int32_t batches;
 
     // Batch ID.
-    uint32_t bid_ = 0;
+    int32_t bid_ = 0;
 
     // Total POAs added.
-    uint32_t poa_count_ = 0;
+    int32_t poa_count_ = 0;
 
     // Number of nucleotides already already inserted.
-    uint32_t num_nucleotides_copied_ = 0;
+    int32_t num_nucleotides_copied_ = 0;
 
     // Global sequence index.
-    uint32_t global_sequence_idx_ = 0;
+    int32_t global_sequence_idx_ = 0;
 
     // Use banded POA alignment
     bool banded_alignment_;

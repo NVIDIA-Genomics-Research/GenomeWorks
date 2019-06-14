@@ -146,7 +146,7 @@ __device__
     static_assert(CPT == 4,
                   "implementation currently supports only 4 cells per thread");
 
-    uint32_t lane_idx = threadIdx.x % WARP_SIZE;
+    int32_t lane_idx = threadIdx.x % WARP_SIZE;
 
     // Init horizonal boundary conditions (read).
     for (IndexT j = lane_idx; j < read_count + 1; j += WARP_SIZE)
@@ -328,7 +328,7 @@ __device__
         // along the path to see which preceding cell the move could have
         // come from. This seems computaitonally more expensive, but doesn't
         // require storing any traceback buffer during alignment.
-        uint32_t loop_count = 0;
+        int32_t loop_count = 0;
         while (!(i == 0 && j == 0) && loop_count < (read_count + graph_count + 2))
         {
             loop_count++;
