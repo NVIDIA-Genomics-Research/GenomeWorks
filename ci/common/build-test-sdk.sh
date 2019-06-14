@@ -37,5 +37,6 @@ if [ "$GPU_TEST" == '1' ]; then
 
   logger "Running GenomeWorks benchmarks..."
   ${LOCAL_BUILD_DIR}/install/benchmarks/cudapoa/multibatch
+  ${LOCAL_BUILD_DIR}/install/benchmarks/cudaaligner/singlealignment
 fi
 

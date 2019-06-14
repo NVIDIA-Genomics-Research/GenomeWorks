@@ -18,6 +18,7 @@ set(SOURCES
     Test_NeedlemanWunschImplementation.cpp)
 
 set(LIBS
-    cudaaligner)
+    cudaaligner
+    utils)
 
 gw_add_tests(${PROJECT_NAME} "${SOURCES}" "${LIBS}")
