@@ -14,9 +14,10 @@
 #include "../src/ukkonen_gpu.cuh"
 #include "../src/device_storage.cuh"
 #include "../src/batched_device_matrices.cuh"
-#include "common.hpp"
 #include <utils/signed_integer_utils.hpp>
+#include <utils/genomeutils.hpp>
 #include <cuda_runtime_api.h>
+#include <random>
 #include <algorithm>
 
 namespace genomeworks
@@ -77,8 +78,9 @@ std::vector<TestAlignmentPair> getTestCases()
     test_cases.push_back(t);
 
     // Test 7
-    t.target = generate_random_genome(5000);
-    t.query  = generate_random_genome(4800);
+    std::minstd_rand rng(1);
+    t.target = generate_random_genome(5000, rng);
+    t.query  = generate_random_genome(4800, rng);
     t.p      = 5000;
     test_cases.push_back(t);
 

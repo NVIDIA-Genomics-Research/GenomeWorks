@@ -44,6 +44,7 @@ add_doxygen_source_dir(${CMAKE_CURRENT_SOURCE_DIR}/include/cudaaligner)
 
 # Add tests folder
 add_subdirectory(tests)
+add_subdirectory(benchmarks)
 
 install(TARGETS cudaaligner
     COMPONENT logging

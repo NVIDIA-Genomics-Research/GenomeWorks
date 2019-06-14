@@ -10,25 +10,21 @@
 
 #pragma once
 
-#include <cstdlib>
+#include <random>
 
 namespace genomeworks
 {
 
-namespace cudaaligner
-{
-
-inline std::string generate_random_genome(const int32_t length)
+inline std::string generate_random_genome(const int32_t length, std::minstd_rand& rng)
 {
     const char alphabet[4] = {'A', 'C', 'G', 'T'};
-    std::string genome     = "";
+    std::uniform_int_distribution<int32_t> random_index(0, 3);
+    std::string genome = "";
     for (int32_t i = 0; i < length; i++)
     {
-        genome += alphabet[rand() % 4];
+        genome += alphabet[random_index(rng)];
     }
     return genome;
 }
-
-} // namespace cudaaligner
 
 } // namespace genomeworks
