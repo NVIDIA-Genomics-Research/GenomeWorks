@@ -12,6 +12,7 @@
 #include <numeric>
 #include "cudapoa/batch.hpp"
 #include "../common/utils.hpp"
+#include "utils/signed_integer_utils.hpp"
 
 namespace genomeworks
 {
@@ -34,7 +35,7 @@ public:
     {
         parse_window_data_file(windows_, filename);
 
-        assert(windows.size() > 0);
+        assert(get_size(windows) > 0);
 
         for (int32_t batch = 0; batch < num_batches_; batch++)
         {
@@ -54,24 +55,24 @@ public:
     void process_batches()
     {
         // Reserve space
-        consensus_.resize(windows_.size());
-        coverages_.resize(windows_.size());
+        consensus_.resize(get_size(windows_));
+        coverages_.resize(get_size(windows_));
 
         // Mutex for accessing the vector of windows.
         std::mutex mutex_windows;
 
         // Index of next window to be added to a batch.
-        uint32_t next_window_index = 0;
+        int32_t next_window_index = 0;
 
         // Lambda function for adding windows to batches.
-        auto fill_next_batch = [&mutex_windows, &next_window_index, this](Batch* batch) -> std::pair<uint32_t, uint32_t> {
+        auto fill_next_batch = [&mutex_windows, &next_window_index, this](Batch* batch) -> std::pair<int32_t, int32_t> {
             // Use mutex to read the vector containing windows in a threadsafe manner.
             std::lock_guard<std::mutex> guard(mutex_windows);
 
             // TODO: Reducing window wize by 10 for debugging.
-            uint32_t initial_count = next_window_index;
-            uint32_t count         = windows_.size();
-            int32_t num_inserted   = 0;
+            int32_t initial_count = next_window_index;
+            int32_t count         = get_size(windows_);
+            int32_t num_inserted  = 0;
             while (next_window_index < count)
             {
                 if (num_inserted < max_poas_per_batch_)
@@ -94,7 +95,7 @@ public:
             {
                 batch->reset();
 
-                std::pair<uint32_t, uint32_t> range = fill_next_batch(batch);
+                std::pair<int32_t, int32_t> range = fill_next_batch(batch);
                 for (int32_t i = range.first; i < range.second; i++)
                 {
                     if (batch->add_poa() == StatusType::success)
@@ -122,12 +123,12 @@ public:
 
                     // Check if the number of batches processed is same as the range of
                     // of windows that were added.
-                    if (consensus_temp.size() != (range.second - range.first))
+                    if (get_size(consensus_temp) != (range.second - range.first))
                     {
                         throw std::runtime_error("Consensus processed doesn't match \
                                 range of windows passed to batch\n");
                     }
-                    if (coverages_temp.size() != (range.second - range.first))
+                    if (get_size(coverages_temp) != (range.second - range.first))
                     {
                         throw std::runtime_error("Coverages processed doesn't match \
                                 range of windows passed to batch\n");
@@ -167,14 +168,14 @@ public:
     std::string assembly()
     {
         std::string genome = "";
-        for (int32_t w = 0; w < windows_.size(); w++)
+        for (int32_t w = 0; w < get_size(windows_); w++)
         {
             int32_t average_coverage = std::accumulate(coverages_[w].begin(),
                                                        coverages_[w].end(),
                                                        0) /
-                                       coverages_[w].size();
+                                       get_size(coverages_[w]);
             int32_t begin = 0, end = consensus_[w].length() - 1;
-            for (; begin < static_cast<int32_t>(coverages_[w].size()); ++begin)
+            for (; begin < get_size(coverages_[w]); ++begin)
             {
                 if (coverages_[w][begin] >= average_coverage)
                 {

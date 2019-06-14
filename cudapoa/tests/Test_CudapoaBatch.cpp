@@ -26,9 +26,9 @@ public:
         // constructing test objects.
     }
 
-    void initialize(uint32_t max_poas,
-                    uint32_t max_sequences_per_poa,
-                    uint32_t device_id     = 0,
+    void initialize(int32_t max_poas,
+                    int32_t max_sequences_per_poa,
+                    int32_t device_id      = 0,
                     int16_t gap_score      = -8,
                     int16_t mismatch_score = -6,
                     int16_t match_score    = 8)
@@ -73,9 +73,9 @@ TEST_F(TestCudapoaBatch, MaxSeqPerPOATest)
     initialize(5, 10);
     EXPECT_EQ(cudapoa_batch->add_poa(), StatusType::success);
 
-    uint32_t seq_length = 20;
+    int32_t seq_length = 20;
     std::string seq(seq_length, 'A');
-    std::vector<uint8_t> weights(seq_length, 1);
+    std::vector<int8_t> weights(seq_length, 1);
     for (uint16_t i = 0; i < 9; ++i)
     {
         EXPECT_EQ(cudapoa_batch->add_seq_to_poa(seq.c_str(), weights.data(), seq.length()), StatusType::success);
@@ -90,14 +90,14 @@ TEST_F(TestCudapoaBatch, MaxSeqSizeTest)
     EXPECT_EQ(cudapoa_batch->add_poa(), StatusType::success);
     EXPECT_EQ(cudapoa_batch->get_total_poas(), 1);
 
-    uint32_t seq_length = 1023;
+    int32_t seq_length = 1023;
     std::string seq(seq_length, 'A');
-    std::vector<uint8_t> weights(seq_length, 1);
+    std::vector<int8_t> weights(seq_length, 1);
     EXPECT_EQ(cudapoa_batch->add_seq_to_poa(seq.c_str(), weights.data(), seq.length()), StatusType::success);
 
     seq_length = 1024;
     seq        = std::string(seq_length, 'A');
-    std::vector<uint8_t> weights_2(seq_length, 1);
+    std::vector<int8_t> weights_2(seq_length, 1);
     EXPECT_EQ(cudapoa_batch->add_seq_to_poa(seq.c_str(), weights_2.data(), seq.length()), StatusType::exceeded_maximum_sequence_size);
 }
 

@@ -14,6 +14,7 @@
 
 #include <cudautils/cudautils.hpp>
 #include <logging/logging.hpp>
+#include <utils/signed_integer_utils.hpp>
 
 namespace genomeworks
 {
@@ -21,11 +22,11 @@ namespace genomeworks
 namespace cudapoa
 {
 
-BatchBlock::BatchBlock(uint32_t device_id, uint32_t max_poas, uint32_t max_sequences_per_poa, bool banded_alignment)
-    : max_poas_(max_poas)
-    , max_sequences_per_poa_(max_sequences_per_poa)
+BatchBlock::BatchBlock(int32_t device_id, int32_t max_poas, int32_t max_sequences_per_poa, bool banded_alignment)
+    : max_poas_(throw_on_negative(max_poas, "Maximum POAs in block has to be non-negative"))
+    , max_sequences_per_poa_(throw_on_negative(max_sequences_per_poa, "Maximum sequences per POA has to be non-negative"))
     , banded_alignment_(banded_alignment)
-    , device_id_(device_id)
+    , device_id_(throw_on_negative(device_id, "Device ID has to be non-negative"))
 {
     output_size_               = max_poas_ * CUDAPOA_MAX_CONSENSUS_SIZE;
     input_size_                = max_poas_ * max_sequences_per_poa_ * CUDAPOA_MAX_SEQUENCE_SIZE;
@@ -74,13 +75,13 @@ void BatchBlock::calculate_size()
     // for input - host
     total_h_ += sizeof(InputDetails);                                  // input_details_h_
     total_h_ += input_size_ * sizeof(uint8_t);                         // input_details_h_->sequences
-    total_h_ += input_size_ * sizeof(uint8_t);                         // input_details_h_->base_weights
+    total_h_ += input_size_ * sizeof(int8_t);                          // input_details_h_->base_weights
     total_h_ += max_poas_ * max_sequences_per_poa_ * sizeof(uint16_t); // input_details_h_->sequence_lengths
     total_h_ += max_poas_ * sizeof(WindowDetails);                     // input_details_h_->window_details
     total_h_ += sizeof(InputDetails);                                  // input_details_d_
     // for input - device
     total_d_ += input_size_ * sizeof(uint8_t);                         // input_details_d_->sequences
-    total_d_ += input_size_ * sizeof(uint8_t);                         // input_details_d_->base_weights
+    total_d_ += input_size_ * sizeof(int8_t);                          // input_details_d_->base_weights
     total_d_ += max_poas_ * max_sequences_per_poa_ * sizeof(uint16_t); // input_details_d_->sequence_lengths
     total_d_ += max_poas_ * sizeof(WindowDetails);                     // input_details_d_->window_details
 
@@ -149,8 +150,8 @@ void BatchBlock::get_input_details(InputDetails** input_details_h_p, InputDetail
     offset_h_ += sizeof(InputDetails);
     input_details_h->sequences = &block_data_h_[offset_h_];
     offset_h_ += input_size_ * sizeof(uint8_t);
-    input_details_h->base_weights = &block_data_h_[offset_h_];
-    offset_h_ += input_size_ * sizeof(uint8_t);
+    input_details_h->base_weights = reinterpret_cast<int8_t*>(&block_data_h_[offset_h_]);
+    offset_h_ += input_size_ * sizeof(int8_t);
     input_details_h->sequence_lengths = reinterpret_cast<uint16_t*>(&block_data_h_[offset_h_]);
     offset_h_ += max_poas_ * max_sequences_per_poa_ * sizeof(uint16_t);
     input_details_h->window_details = reinterpret_cast<WindowDetails*>(&block_data_h_[offset_h_]);
@@ -161,8 +162,8 @@ void BatchBlock::get_input_details(InputDetails** input_details_h_p, InputDetail
     // on device
     input_details_d->sequences = &block_data_d_[offset_d_];
     offset_d_ += input_size_ * sizeof(uint8_t);
-    input_details_d->base_weights = &block_data_d_[offset_d_];
-    offset_d_ += input_size_ * sizeof(uint8_t);
+    input_details_d->base_weights = reinterpret_cast<int8_t*>(&block_data_d_[offset_d_]);
+    offset_d_ += input_size_ * sizeof(int8_t);
     input_details_d->sequence_lengths = reinterpret_cast<uint16_t*>(&block_data_d_[offset_d_]);
     offset_d_ += max_poas_ * max_sequences_per_poa_ * sizeof(uint16_t);
     input_details_d->window_details = reinterpret_cast<WindowDetails*>(&block_data_d_[offset_d_]);

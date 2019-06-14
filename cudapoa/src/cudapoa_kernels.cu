@@ -63,10 +63,10 @@ namespace cudapoa
 template <int32_t TPB = 64, bool cuda_banded_alignment = false>
 __global__ void generatePOAKernel(uint8_t* consensus_d,
                                   uint8_t* sequences_d,
-                                  uint8_t* base_weights_d,
+                                  int8_t* base_weights_d,
                                   uint16_t* sequence_lengths_d,
                                   genomeworks::cudapoa::WindowDetails* window_details_d,
-                                  uint32_t total_windows,
+                                  int32_t total_windows,
                                   int16_t* scores_d,
                                   int16_t* alignment_graph_d,
                                   int16_t* alignment_read_d,
@@ -94,14 +94,16 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
     // shared error indicator within a warp
     bool warp_error = false;
 
-    uint32_t nwindows_per_block = TPB / WARP_SIZE;
-    uint32_t warp_idx           = threadIdx.x / WARP_SIZE;
-    uint32_t lane_idx           = threadIdx.x % WARP_SIZE;
-    uint32_t window_idx         = blockIdx.x * nwindows_per_block + warp_idx;
+    int32_t nwindows_per_block = TPB / WARP_SIZE;
+    int32_t warp_idx           = threadIdx.x / WARP_SIZE;
+    int32_t lane_idx           = threadIdx.x % WARP_SIZE;
+    int32_t window_idx         = blockIdx.x * nwindows_per_block + warp_idx;
 
     if (window_idx >= total_windows)
         return;
 
+    // These are not being changed to int32_t to make use of larger range
+    // without having to use 2 registers which would be needed for 64bit
     uint32_t matrix_sequence_dimension = cuda_banded_alignment ? CUDAPOA_BANDED_MAX_MATRIX_SEQUENCE_DIMENSION : CUDAPOA_MAX_MATRIX_SEQUENCE_DIMENSION;
     uint32_t max_nodes_per_window      = cuda_banded_alignment ? CUDAPOA_MAX_NODES_PER_WINDOW_BANDED : CUDAPOA_MAX_NODES_PER_WINDOW;
     uint32_t max_graph_dimension       = cuda_banded_alignment ? CUDAPOA_MAX_MATRIX_GRAPH_DIMENSION_BANDED : CUDAPOA_MAX_MATRIX_GRAPH_DIMENSION;
@@ -135,7 +137,7 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
 
     uint32_t num_sequences = window_details_d[window_idx].num_seqs;
     uint8_t* sequence      = &sequences_d[window_details_d[window_idx].seq_starts];
-    uint8_t* base_weights  = &base_weights_d[window_details_d[window_idx].seq_starts];
+    int8_t* base_weights   = &base_weights_d[window_details_d[window_idx].seq_starts];
 
     uint8_t* consensus = &consensus_d[window_idx * CUDAPOA_MAX_CONSENSUS_SIZE];
     if (lane_idx == 0)
@@ -304,7 +306,7 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
 // Host function call for POA kernel.
 void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
                  genomeworks::cudapoa::InputDetails* input_details_d,
-                 uint32_t total_windows,
+                 int32_t total_windows,
                  cudaStream_t stream,
                  genomeworks::cudapoa::AlignmentDetails* alignment_details_d,
                  genomeworks::cudapoa::GraphDetails* graph_details_d,
@@ -318,7 +320,7 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
     uint16_t* coverage_d = output_details_d->coverage;
     // unpack input details
     uint8_t* sequences_d            = input_details_d->sequences;
-    uint8_t* base_weights_d         = input_details_d->base_weights;
+    int8_t* base_weights_d          = input_details_d->base_weights;
     uint16_t* sequence_lengths_d    = input_details_d->sequence_lengths;
     WindowDetails* window_details_d = input_details_d->window_details;
     // unpack alignment details
@@ -345,8 +347,8 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
     uint16_t* nodes_to_visit              = graph_details_d->nodes_to_visit;
     uint16_t* node_coverage_counts        = graph_details_d->node_coverage_counts;
 
-    uint32_t nwindows_per_block = CUDAPOA_THREADS_PER_BLOCK / WARP_SIZE;
-    uint32_t nblocks            = (total_windows + nwindows_per_block - 1) / nwindows_per_block;
+    int32_t nwindows_per_block = CUDAPOA_THREADS_PER_BLOCK / WARP_SIZE;
+    int32_t nblocks            = (total_windows + nwindows_per_block - 1) / nwindows_per_block;
 
     GW_CU_CHECK_ERR(cudaDeviceSetCacheConfig(cudaFuncCachePreferL1));
 

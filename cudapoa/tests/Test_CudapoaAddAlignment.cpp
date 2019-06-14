@@ -9,10 +9,11 @@
 */
 
 #include "gtest/gtest.h"
-#include "../src/cudapoa_kernels.cuh" //addAlignment, CUDAPOA_MAX_NODE_EDGES, CUDAPOA_MAX_NODE_ALIGNMENTS
-#include <cudautils/cudautils.hpp>    //GW_CU_CHECK_ERR
-#include <utils/stringutils.hpp>      //array_to_string
-#include "basic_graph.hpp"            //BasicGraph
+#include "../src/cudapoa_kernels.cuh"     //addAlignment, CUDAPOA_MAX_NODE_EDGES, CUDAPOA_MAX_NODE_ALIGNMENTS
+#include <cudautils/cudautils.hpp>        //GW_CU_CHECK_ERR
+#include <utils/stringutils.hpp>          //array_to_string
+#include <utils/signed_integer_utils.hpp> // get_size
+#include "basic_graph.hpp"                //BasicGraph
 
 namespace genomeworks
 {
@@ -25,7 +26,7 @@ class BasicAlignment
 public:
     BasicAlignment(std::vector<uint8_t> nodes, Uint16Vec2D outgoing_edges,
                    Uint16Vec2D node_alignments, std::vector<uint16_t> node_coverage_counts,
-                   std::vector<uint8_t> read, std::vector<uint8_t> base_weights, std::vector<int16_t> alignment_graph, std::vector<int16_t> alignment_read)
+                   std::vector<uint8_t> read, std::vector<int8_t> base_weights, std::vector<int16_t> alignment_graph, std::vector<int16_t> alignment_read)
         : graph(nodes, outgoing_edges, node_alignments, node_coverage_counts), read_(read), alignment_graph_(alignment_graph), alignment_read_(alignment_read)
     {
         //do nothing for now
@@ -33,25 +34,25 @@ public:
 
     void get_alignments(int16_t* alignment_graph, int16_t* alignment_read, uint16_t* alignment_length) const
     {
-        for (int i = 0; i < alignment_graph_.size(); i++)
+        for (int i = 0; i < get_size(alignment_graph_); i++)
         {
             alignment_graph[i] = alignment_graph_[i];
             alignment_read[i]  = alignment_read_[i];
         }
-        *alignment_length = alignment_graph_.size();
+        *alignment_length = get_size(alignment_graph_);
     }
 
     void get_read(uint8_t* read) const
     {
-        for (int i = 0; i < read_.size(); i++)
+        for (int i = 0; i < get_size(read_); i++)
         {
             read[i] = read_[i];
         }
     }
 
-    void get_base_weights(uint8_t* base_weights) const
+    void get_base_weights(int8_t* base_weights) const
     {
-        for (int i = 0; i < base_weights_.size(); i++)
+        for (int i = 0; i < get_size(base_weights_); i++)
         {
             base_weights[i] = base_weights_[i];
         }
@@ -74,7 +75,7 @@ public:
     }
 
     void get_alignment_buffers(int16_t* alignment_graph, int16_t* alignment_read, uint16_t* alignment_length,
-                               uint8_t* read, uint8_t* base_weights) const
+                               uint8_t* read, int8_t* base_weights) const
     {
         get_alignments(alignment_graph, alignment_read, alignment_length);
         get_read(read);
@@ -84,7 +85,7 @@ public:
 protected:
     BasicGraph graph;
     std::vector<uint8_t> read_;
-    std::vector<uint8_t> base_weights_;
+    std::vector<int8_t> base_weights_;
     std::vector<int16_t> alignment_graph_;
     std::vector<int16_t> alignment_read_;
 };
@@ -231,7 +232,7 @@ BasicGraph testAddAlignment(const BasicAlignment& obj)
     uint16_t* graph;
     int16_t* alignment_graph;
     uint8_t* read;
-    uint8_t* base_weights;
+    int8_t* base_weights;
     int16_t* alignment_read;
     uint16_t* node_coverage_counts;
 
@@ -250,7 +251,7 @@ BasicGraph testAddAlignment(const BasicAlignment& obj)
     GW_CU_CHECK_ERR(cudaMallocManaged((void**)&graph, CUDAPOA_MAX_NODES_PER_WINDOW * sizeof(uint16_t)));
     GW_CU_CHECK_ERR(cudaMallocManaged((void**)&alignment_graph, CUDAPOA_MAX_SEQUENCE_SIZE * sizeof(uint16_t)));
     GW_CU_CHECK_ERR(cudaMallocManaged((void**)&read, CUDAPOA_MAX_SEQUENCE_SIZE * sizeof(uint8_t)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&base_weights, CUDAPOA_MAX_SEQUENCE_SIZE * sizeof(uint8_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&base_weights, CUDAPOA_MAX_SEQUENCE_SIZE * sizeof(int8_t)));
     GW_CU_CHECK_ERR(cudaMallocManaged((void**)&alignment_read, CUDAPOA_MAX_SEQUENCE_SIZE * sizeof(uint16_t)));
     GW_CU_CHECK_ERR(cudaMallocManaged((void**)&node_coverage_counts, CUDAPOA_MAX_NODES_PER_WINDOW * sizeof(uint16_t)));
 
