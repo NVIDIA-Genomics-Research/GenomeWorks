@@ -13,13 +13,13 @@ project(cudamappertests)
 
 set(SOURCES
     main.cpp
+    Test_CudamapperIndexCPU.cpp
     Test_CudamapperIndexGeneratorCPU.cpp
-    Test_CudamapperIndexGPU.cpp
     ../src/bioparser_sequence.cpp)
 
 set(LIBS
     bioparser
     index_generator_cpu
-    index_gpu)
+    index_cpu)
 
 gw_add_tests(${PROJECT_NAME} "${SOURCES}" "${LIBS}")

@@ -13,7 +13,6 @@
 #include <memory>
 #include "cudamapper/index_generator.hpp"
 
-/*
 namespace genomeworks {
 /// \addtogroup cudamapper
 /// \{
@@ -24,7 +23,7 @@ namespace genomeworks {
         /// \brief generates a mapping of (k,w)-kmer-representation to all of its occurrences for one or more sequences
         ///
         /// \return index
-        static std::unique_ptr<Index> create_index(IndexGenerator& index_generator);
+        static std::unique_ptr<Index> create_index(const IndexGenerator& index_generator);
 
         /// \brief creates an empty index
         ///
@@ -35,4 +34,3 @@ namespace genomeworks {
 /// \}
 
 }
-*/
