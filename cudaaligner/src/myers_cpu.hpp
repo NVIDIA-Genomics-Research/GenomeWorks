@@ -47,12 +47,12 @@ int32_t myers_advance_block(WordType hmask, WordType eq, WordType & pv, WordType
 
 WordType myers_preprocess(char x, std::string const& query, int32_t offset)
 {
-    assert( offset < get_size(query) );
-    const int32_t max_i = std::max(get_size(query)-offset, static_cast<int64_t>(sizeof(WordType)*CHAR_BIT));
-    WordType r = 0;
+    assert(offset < get_size(query));
+    const int32_t max_i = (std::min)(get_size(query) - offset, static_cast<int64_t>(sizeof(WordType) * CHAR_BIT));
+    WordType r          = 0;
     for (int32_t i = 0; i < max_i; ++i)
     {
-        if( x == query[i+offset] )
+        if (x == query[i + offset])
             r = r | (WordType(1) << i);
     }
     return r;
