@@ -1,3 +1,4 @@
+
 /*
 * Copyright (c) 2019, NVIDIA CORPORATION.  All rights reserved.
 *
@@ -8,21 +9,18 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-#pragma once
-
-#include "index_cpu.hpp"
+#include "gtest/gtest.h"
+#include "../src/index_cpu.hpp"
+#include "../src/index_generator_cpu.hpp"
+#include "../src/matcher.hpp"
 
 namespace genomeworks {
 
-    /// Matcher - Finds anchors
-    /// For each representation in a sequence finds all other sequences that containt the same
-    /// representation. Does this for each sequence.
-    class Matcher {
-    public:
-        /// \brief construtor
-        ///
-        /// \param index
-        Matcher(const IndexCPU& index);
-    private:
-    };
+    TEST(TestCudamapperMatcher, SampleTest) {
+        IndexGeneratorCPU index_generator("cudamapper/tests/data/one_read_one_minimizer.fasta", 4, 1);
+        IndexCPU index(index_generator);
+        Matcher matcher(index);
+        ASSERT_EQ(true, true);
+    }
+
 }
