@@ -74,12 +74,12 @@ int32_t myers_compute_edit_distance(std::string const& target, std::string const
     if (query_size == 0)
         return get_size(target);
 
-    const int32_t n_blocks = (query_size + word_size - 1) / word_size;
+    const int32_t n_words = (query_size + word_size - 1) / word_size;
 
-    std::vector<WordType> pv(n_blocks, ~WordType(0));
-    std::vector<WordType> mv(n_blocks, 0);
-    std::vector<int32_t> score(n_blocks);
-    for (int32_t i = 0; i < n_blocks; ++i)
+    std::vector<WordType> pv(n_words, ~WordType(0));
+    std::vector<WordType> mv(n_words, 0);
+    std::vector<int32_t> score(n_words);
+    for (int32_t i = 0; i < n_words; ++i)
     {
         score[i] = (std::min)((i + 1) * word_size, query_size);
     }
@@ -87,13 +87,13 @@ int32_t myers_compute_edit_distance(std::string const& target, std::string const
     for (const char t : target)
     {
         int32_t carry = 0;
-        for (int32_t i = 0; i < n_blocks; ++i)
+        for (int32_t i = 0; i < n_words; ++i)
         {
             const WordType peq_a = myers_preprocess('A', query, i * word_size);
             const WordType peq_c = myers_preprocess('C', query, i * word_size);
             const WordType peq_g = myers_preprocess('G', query, i * word_size);
             const WordType peq_t = myers_preprocess('T', query, i * word_size);
-            const WordType hmask = WordType(1) << (i < (n_blocks - 1) ? word_size - 1 : query_size - (n_blocks - 1) * word_size - 1);
+            const WordType hmask = WordType(1) << (i < (n_words - 1) ? word_size - 1 : query_size - (n_words - 1) * word_size - 1);
 
             const WordType eq = [peq_a, peq_c, peq_g, peq_t](char x) -> WordType {
                 assert(x == 'A' || x == 'C' || x == 'G' || x == 'T');
