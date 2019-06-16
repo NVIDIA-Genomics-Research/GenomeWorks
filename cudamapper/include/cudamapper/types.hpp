@@ -16,12 +16,17 @@ namespace genomeworks {
 ///
 /// Contains the index of the first element in the block and the number of elements
 struct ArrayBlock {
+    /// index of the first element of the block
     size_t first_element_;
+    /// number of elements of the block
     std::uint32_t block_size_;
 };
 
+/// position_in_read_t
 using position_in_read_t = std::uint32_t;
+/// representation_t
 using representation_t = std::uint64_t; // this depends on kmer size, in some cases could also be 32-bit
+/// read_id_t
 using read_id_t = std::uint64_t; // can this be 32-bit?
 
 }
