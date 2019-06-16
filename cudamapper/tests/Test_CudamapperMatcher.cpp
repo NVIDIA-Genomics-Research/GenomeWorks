@@ -17,7 +17,7 @@
 namespace genomeworks {
 
     TEST(TestCudamapperMatcher, SampleTest) {
-        IndexGeneratorCPU index_generator("cudamapper/tests/data/one_read_one_minimizer.fasta", 4, 1);
+        IndexGeneratorCPU index_generator("data/one_read_one_minimizer.fasta", 4, 1);
         IndexCPU index(index_generator);
         Matcher matcher(index);
         ASSERT_EQ(true, true);

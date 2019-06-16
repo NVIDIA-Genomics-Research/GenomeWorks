@@ -19,7 +19,7 @@ namespace genomeworks {
         // >read_0
         // GATT
 
-        IndexGeneratorCPU index_generator(std::string("cudamapper/tests/data/one_read_one_minimizer.fasta"), 4, 1);
+        IndexGeneratorCPU index_generator(std::string("data/one_read_one_minimizer.fasta"), 4, 1);
         EXPECT_EQ(index_generator.minimizer_size(), 4);
         EXPECT_EQ(index_generator.window_size(), 1);
         ASSERT_EQ(index_generator.number_of_reads(), 1);
@@ -67,7 +67,7 @@ namespace genomeworks {
 
         // complete datastructure: AAG(4f0), AAG(0f1), AGC(1f1), AGC(2r1), ATC(1f0), ATG(0r0), CCA(3f0), CTA(3f1)
 
-        IndexGeneratorCPU index_generator(std::string("cudamapper/tests/data/two_reads_multiple_minimizers.fasta"), 3, 2);
+        IndexGeneratorCPU index_generator(std::string("data/two_reads_multiple_minimizers.fasta"), 3, 2);
         EXPECT_EQ(index_generator.minimizer_size(), 3);
         EXPECT_EQ(index_generator.window_size(), 2);
         ASSERT_EQ(index_generator.number_of_reads(), 2);
