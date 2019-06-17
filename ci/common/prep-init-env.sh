@@ -34,7 +34,8 @@ conda install \
     doxygen \
     clang-format \
     minimap2 \
-    miniasm
+    miniasm \
+    racon
 
 ################################################################################
 # BUILD - Conda package builds 
