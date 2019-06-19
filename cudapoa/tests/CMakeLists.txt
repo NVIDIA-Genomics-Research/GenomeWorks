@@ -18,12 +18,14 @@ set(SOURCES
     Test_CudapoaAddAlignment.cpp
     Test_CudapoaNW.cpp
     Test_CudapoaGenerateConsensus.cpp
-    Test_CudapoaBatchEnd2End.cpp)
+    Test_CudapoaBatchEnd2End.cpp
+    Test_CudapoaGenerateMSA2.cpp)
 
 get_property(cudapoa_data_include_dir GLOBAL PROPERTY cudapoa_data_include_dir)
 include_directories(${cudapoa_data_include_dir})
 
 set(LIBS
-    cudapoa)
+    cudapoa
+    spoa)
 
 gw_add_tests(${PROJECT_NAME} "${SOURCES}" "${LIBS}")

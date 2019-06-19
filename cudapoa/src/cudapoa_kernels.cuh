@@ -90,6 +90,8 @@ typedef struct OutputDetails
     uint8_t* consensus;
     // Buffer for coverage of consensus.
     uint16_t* coverage;
+    // Buffer for multiple sequence alignments
+    uint8_t* multiple_sequence_alignments;
 } OutputDetails;
 
 typedef struct InputDetails
@@ -102,6 +104,9 @@ typedef struct InputDetails
     uint16_t* sequence_lengths;
     // Buffer pointers that hold Window Details struct.
     WindowDetails* window_details;
+    // Buffer storing begining nodes for sequences
+    uint16_t* sequence_begin_nodes_ids;
+
 } InputDetails;
 
 typedef struct AlignmentDetails
@@ -167,6 +172,11 @@ typedef struct GraphDetails
 
     // Device buffer for storing coverage of each node in graph.
     uint16_t* node_coverage_counts;
+
+    uint16_t* outgoing_edges_coverage;
+    uint16_t* outgoing_edges_coverage_count;
+    int16_t* node_id_to_msa_pos;
+
 } GraphDetails;
 
 /**
@@ -226,7 +236,9 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
                  int16_t gap_score,
                  int16_t mismatch_score,
                  int16_t match_score,
-                 bool banded_alignment);
+                 bool banded_alignment,
+                 uint32_t max_sequences_per_poa,
+                 int8_t output_mask);
 
 // host function that calls runTopSortKernel
 void runTopSort(uint16_t* sorted_poa,
@@ -250,7 +262,13 @@ void addAlignment(uint8_t* nodes,
                   uint8_t* read,
                   int16_t* alignment_read,
                   uint16_t* node_coverage_counts,
-                  int8_t* base_weights);
+                  int8_t* base_weights,
+                  uint16_t* sequence_begin_nodes_ids,
+                  uint16_t* outgoing_edges_coverage,
+                  uint16_t* outgoing_edges_coverage_count,
+                  uint16_t s,
+                  uint32_t max_sequences_per_poa,
+                  int8_t output_mask);
 
 // Host function that calls the kernel
 void runNW(uint8_t* nodes,

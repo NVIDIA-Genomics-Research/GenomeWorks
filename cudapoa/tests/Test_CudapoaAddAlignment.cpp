@@ -235,6 +235,12 @@ BasicGraph testAddAlignment(const BasicAlignment& obj)
     int8_t* base_weights;
     int16_t* alignment_read;
     uint16_t* node_coverage_counts;
+    uint16_t* sequence_begin_nodes_ids;
+    uint16_t* outgoing_edges_coverage;
+    uint16_t* outgoing_edges_coverage_count;
+    uint16_t s                     = 0;
+    uint32_t max_sequences_per_poa = 100;
+    int8_t output_mask             = OutputType::consensus;
 
     //allocate unified memory so they can be accessed by both host and device.
     GW_CU_CHECK_ERR(cudaMallocManaged((void**)&nodes, CUDAPOA_MAX_NODES_PER_WINDOW * sizeof(uint8_t)));
@@ -254,6 +260,9 @@ BasicGraph testAddAlignment(const BasicAlignment& obj)
     GW_CU_CHECK_ERR(cudaMallocManaged((void**)&base_weights, CUDAPOA_MAX_SEQUENCE_SIZE * sizeof(int8_t)));
     GW_CU_CHECK_ERR(cudaMallocManaged((void**)&alignment_read, CUDAPOA_MAX_SEQUENCE_SIZE * sizeof(uint16_t)));
     GW_CU_CHECK_ERR(cudaMallocManaged((void**)&node_coverage_counts, CUDAPOA_MAX_NODES_PER_WINDOW * sizeof(uint16_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&sequence_begin_nodes_ids, max_sequences_per_poa * sizeof(uint16_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&outgoing_edges_coverage, CUDAPOA_MAX_NODES_PER_WINDOW * CUDAPOA_MAX_NODE_EDGES * max_sequences_per_poa * sizeof(uint16_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&outgoing_edges_coverage_count, CUDAPOA_MAX_NODES_PER_WINDOW * CUDAPOA_MAX_NODE_EDGES * sizeof(uint16_t)));
 
     //initialize all 'count' buffers
     memset((void**)node_alignment_count, 0, CUDAPOA_MAX_NODES_PER_WINDOW * sizeof(uint16_t));
@@ -282,7 +291,13 @@ BasicGraph testAddAlignment(const BasicAlignment& obj)
                  read,
                  alignment_read,
                  node_coverage_counts,
-                 base_weights);
+                 base_weights,
+                 sequence_begin_nodes_ids,
+                 outgoing_edges_coverage,
+                 outgoing_edges_coverage_count,
+                 s,
+                 max_sequences_per_poa,
+                 output_mask);
 
     GW_CU_CHECK_ERR(cudaDeviceSynchronize());
 
@@ -307,6 +322,9 @@ BasicGraph testAddAlignment(const BasicAlignment& obj)
     GW_CU_CHECK_ERR(cudaFree(base_weights));
     GW_CU_CHECK_ERR(cudaFree(alignment_read));
     GW_CU_CHECK_ERR(cudaFree(node_coverage_counts));
+    GW_CU_CHECK_ERR(cudaFree(sequence_begin_nodes_ids));
+    GW_CU_CHECK_ERR(cudaFree(outgoing_edges_coverage));
+    GW_CU_CHECK_ERR(cudaFree(outgoing_edges_coverage_count));
 
     return res;
 }
