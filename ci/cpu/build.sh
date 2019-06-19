@@ -44,28 +44,6 @@ logger "Build SDK..."
 source ci/common/build-test-sdk.sh ${WORKSPACE} ${CMAKE_COMMON_VARIABLES} ${PARALLEL_LEVEL} 0
 
 ################################################################################
-# racon-gpu build/test (CPU version)
-################################################################################
-APP_REPO="ssh://git@gitlab-master.nvidia.com:12051/genomics/racon-gpu.git"
-APP_NAME=racon-gpu
-APP_DIR=$WORKSPACE/${APP_NAME}
-
-logger "Pull racon-gpu..."
-
-# pull from scratch each time
-cd ${WORKSPACE}
-rm -rf racon-gpu
-mkdir ${APP_NAME}
-
-source ci/common/prep-pull-repo-mr-branch.sh ${APP_REPO} ${APP_DIR}
-
-logger "Build racon-gpu for CPU version..."
-
-cd ${WORKSPACE}
-source ci/common/build-test-racon-gpu.sh ${APP_DIR} ${WORKSPACE} ${CMAKE_COMMON_VARIABLES} ${PARALLEL_LEVEL} 0 0
-export PATH=${APP_DIR}/build/bin:$PATH
-
-################################################################################
 # Pygenomeworks tests
 ################################################################################
 
