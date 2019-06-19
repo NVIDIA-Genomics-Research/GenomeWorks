@@ -119,9 +119,23 @@ public:
         return graph;
     }
 
-    Uint16Vec2D get_outgoing_edges() const
+    void get_outgoing_edges_coverage(uint16_t* outgoing_edges_coverage, uint16_t* outgoing_edges_coverage_count, uint16_t num_sequences) const
     {
-        return outgoing_edges_;
+        if (outgoing_edges_coverage_.size() == 0)
+            return;
+        uint16_t out_node;
+        for (int i = 0; i < outgoing_edges_coverage_.size(); i++) //from_node
+        {
+            for (int j = 0; j < (int)outgoing_edges_coverage_[i].size(); j++) //to_node
+            {
+                uint16_t edge_coverage_count                                  = outgoing_edges_coverage_[i][j].size();
+                outgoing_edges_coverage_count[i * CUDAPOA_MAX_NODE_EDGES + j] = edge_coverage_count;
+                for (int k = 0; k < edge_coverage_count; k++)
+                {
+                    outgoing_edges_coverage[i * CUDAPOA_MAX_NODE_EDGES * num_sequences + j * num_sequences + k] = outgoing_edges_coverage_[i][j][k];
+                }
+            }
+        }
     }
 
     bool is_complete() const
@@ -133,6 +147,8 @@ public:
     {
         return this->outgoing_edges_ == rhs.outgoing_edges_;
     }
+
+    const Uint16Vec2D& get_outgoing_edges() const { return outgoing_edges_; }
 
 protected:
     bool graph_complete_;

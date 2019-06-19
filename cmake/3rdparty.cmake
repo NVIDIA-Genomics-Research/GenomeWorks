@@ -33,3 +33,6 @@ if (NOT TARGET spdlog)
     add_subdirectory(3rdparty/spdlog EXCLUDE_FROM_ALL)
 endif()
 
+if (NOT TARGET spoa)
+    add_subdirectory(3rdparty/spoa EXCLUDE_FROM_ALL)
+endif()

@@ -67,6 +67,15 @@ public:
                                std::vector<std::vector<uint16_t>>& coverage,
                                std::vector<genomeworks::cudapoa::StatusType>& output_status) = 0;
 
+    /// \brief Get the multiple sequence alignments for each POA.
+    ///
+    /// \param msa Reference to vector where msa strings of each
+    ///                 poa is returned
+    /// \param output_status Reference to vector where the errors
+    ///                 during kernel execution is captured
+    virtual void get_msa(std::vector<std::vector<std::string>>& msa,
+                         std::vector<StatusType>& output_status) = 0;
+
     /// \brief Set CUDA stream for GPU device.
     virtual void set_cuda_stream(cudaStream_t stream) = 0;
 
@@ -90,7 +99,7 @@ public:
 /// \param cuda_banded_alignment Whether to use banded alignment
 ///
 /// \return Returns a unique pointer to a new Batch object
-std::unique_ptr<Batch> create_batch(int32_t max_poas, int32_t max_sequences_per_poa, int32_t device_id, int16_t gap_score = -8, int16_t mismatch_score = -6, int16_t match_score = 8, bool cuda_banded_alignment = false);
+std::unique_ptr<Batch> create_batch(int32_t max_poas, int32_t max_sequences_per_poa, int32_t device_id, int8_t output_mask, int16_t gap_score = -8, int16_t mismatch_score = -6, int16_t match_score = 8, bool cuda_banded_alignment = false);
 
 /// \}
 

@@ -46,7 +46,7 @@ class BatchBlock;
 class CudapoaBatch : public Batch
 {
 public:
-    CudapoaBatch(int32_t max_poas, int32_t max_sequences_per_poa, int32_t device_id, int16_t gap_score = -8, int16_t mismatch_score = -6, int16_t match_score = 8, bool cuda_banded_alignment = false);
+    CudapoaBatch(int32_t max_poas, int32_t max_sequences_per_poa, int32_t device_id, int8_t output_mask, int16_t gap_score = -8, int16_t mismatch_score = -6, int16_t match_score = 8, bool cuda_banded_alignment = false);
     ~CudapoaBatch();
 
     // Add new partial order alignment to batch.
@@ -65,6 +65,10 @@ public:
     void get_consensus(std::vector<std::string>& consensus,
                        std::vector<std::vector<uint16_t>>& coverage,
                        std::vector<genomeworks::cudapoa::StatusType>& output_status);
+
+    // Get multiple sequence alignments for each POA
+    void get_msa(std::vector<std::vector<std::string>>& msa,
+                 std::vector<StatusType>& output_status);
 
     // Set CUDA stream for GPU device.
     void set_cuda_stream(cudaStream_t stream);
@@ -91,6 +95,10 @@ protected:
     // Allocate buffers for input details
     void initialize_input_details();
 
+    // Log cudapoa kernel error
+    void decode_cudapoa_kernel_error(genomeworks::cudapoa::StatusType error_type,
+                                     std::vector<StatusType>& output_status);
+
 protected:
     // Maximum POAs to process in batch.
     int32_t max_poas_ = 0;
@@ -100,6 +108,9 @@ protected:
 
     // GPU Device ID
     int32_t device_id_ = 0;
+
+    // Bit field for output type
+    int8_t output_mask_;
 
     // Gap, mismatch and match scores for NW dynamic programming loop.
     int16_t gap_score_;
