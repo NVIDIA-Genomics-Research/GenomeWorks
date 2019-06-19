@@ -103,7 +103,7 @@ std::string testTopSortDeviceUtil(uint16_t node_count, std::vector<std::vector<u
 
     GW_CU_CHECK_ERR(cudaDeviceSynchronize());
 
-    std::string res = array_to_string<uint16_t>(sorted_poa, node_count);
+    std::string res = genomeworks::stringutils::array_to_string<uint16_t>(sorted_poa, node_count);
 
     GW_CU_CHECK_ERR(cudaFree(sorted_poa));
     GW_CU_CHECK_ERR(cudaFree(sorted_poa_node_map));

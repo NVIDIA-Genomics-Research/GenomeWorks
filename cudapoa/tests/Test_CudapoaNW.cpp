@@ -248,8 +248,8 @@ NWAnswer testNW(const BasicNW& obj)
 
     //input and output buffers are the same ones in unified memory, so the results are updated in place
     //results are stored in alignment_graph and alignment_read; return string representation of those
-    auto res = std::make_pair(array_to_string<int16_t>(alignment_graph, *aligned_nodes, ","),
-                              array_to_string<int16_t>(alignment_read, *aligned_nodes, ","));
+    auto res = std::make_pair(genomeworks::stringutils::array_to_string<int16_t>(alignment_graph, *aligned_nodes, ","),
+                              genomeworks::stringutils::array_to_string<int16_t>(alignment_read, *aligned_nodes, ","));
 
     GW_CU_CHECK_ERR(cudaFree(nodes));
     GW_CU_CHECK_ERR(cudaFree(graph));

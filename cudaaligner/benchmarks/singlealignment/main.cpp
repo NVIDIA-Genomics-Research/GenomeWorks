@@ -26,8 +26,8 @@ static void BM_SingleAlignment(benchmark::State& state)
 
     // Generate random sequences
     std::minstd_rand rng(1);
-    std::string genome_1 = generate_random_genome(genome_size, rng);
-    std::string genome_2 = generate_random_genome(genome_size, rng);
+    std::string genome_1 = genomeworks::genomeutils::generate_random_genome(genome_size, rng);
+    std::string genome_2 = genomeworks::genomeutils::generate_random_genome(genome_size, rng);
 
     // Create aligner object
     std::unique_ptr<Aligner> aligner = create_aligner(genome_size,

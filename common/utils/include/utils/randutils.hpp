@@ -10,27 +10,30 @@
 
 #pragma once
 
-#include <string>
-#include <stdint.h>
+#include <stdlib.h> /* srand, rand */
 
 namespace genomeworks
 {
 
-namespace stringutils
+namespace randutils
 {
 
-// utility function to convert an array of node ids into a readable string representation
-template <class T>
-inline std::string array_to_string(T* arr, size_t len, std::string delim = "-")
+inline void set_rand_seed(int seed)
 {
-    std::string res;
-    for (size_t i = 0; i < len; i++)
-    {
-        res += std::to_string(arr[i]) + (i == len - 1 ? "" : delim);
-    }
-    return res;
+    srand(seed);
 }
 
-} //namespace stringutils
+//returns a random integer in the range [0, range-1]
+inline int rand_int_within(int range)
+{
+    return rand() % range;
+}
+//returns a random float in the range [0.0, 1.0]
+inline double rand_prob()
+{
+    return ((double)rand() / RAND_MAX);
+}
+
+} // namespace randutils
 
 } // namespace genomeworks
