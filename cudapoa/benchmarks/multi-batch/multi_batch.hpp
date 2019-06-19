@@ -35,7 +35,7 @@ public:
     {
         parse_window_data_file(windows_, filename);
 
-        assert(get_size(windows) > 0);
+        assert(get_size(windows_) > 0);
 
         for (int32_t batch = 0; batch < num_batches_; batch++)
         {
