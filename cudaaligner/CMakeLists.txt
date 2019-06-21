@@ -19,6 +19,7 @@ cuda_add_library(cudaaligner STATIC
     src/alignment_impl.cpp
     src/aligner_global.cpp
     src/ukkonen_gpu.cu
+    src/myers_gpu.cu
     )
 
 target_link_libraries(cudaaligner cudautils logging utils)

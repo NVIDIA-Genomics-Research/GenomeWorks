@@ -9,7 +9,7 @@
 */
 
 #include <gtest/gtest.h>
-#include "../src/myers_cpu.hpp"
+#include "../src/myers_gpu.cuh"
 
 namespace claragenomics
 {
