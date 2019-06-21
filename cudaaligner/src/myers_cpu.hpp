@@ -29,7 +29,7 @@ int32_t myers_advance_block(WordType hmask, int32_t carry_in, WordType eq, WordT
 
     // Stage 1
     WordType xv = eq | mv;
-    if(carry_in < 0)
+    if (carry_in < 0)
         eq |= WordType(1);
     WordType xh = (((eq & pv) + pv) ^ pv) | eq;
     WordType ph = mv | (~(xh | pv));
@@ -40,10 +40,10 @@ int32_t myers_advance_block(WordType hmask, int32_t carry_in, WordType eq, WordT
     ph <<= 1;
     mh <<= 1;
 
-    if(carry_in < 0)
+    if (carry_in < 0)
         mh |= WordType(1);
 
-    if(carry_in > 0)
+    if (carry_in > 0)
         ph |= WordType(1);
 
     // Stage 2
