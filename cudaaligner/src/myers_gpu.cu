@@ -24,7 +24,7 @@ namespace cudaaligner
 
 using WordType = uint32_t;
 
-__device__ WordType leftshift_shfl_up_sync(uint32_t warp_mask, WordType v)
+inline __device__ WordType warp_leftshift_sync(uint32_t warp_mask, WordType v)
 {
     constexpr int32_t word_size = sizeof(WordType) * CHAR_BIT;
     const WordType x            = __shfl_up_sync(warp_mask, v >> (word_size - 1), 1);
@@ -34,7 +34,7 @@ __device__ WordType leftshift_shfl_up_sync(uint32_t warp_mask, WordType v)
     return v;
 }
 
-__device__ WordType warpadd_sync(uint32_t warp_mask, WordType a, WordType b)
+inline __device__ WordType warp_add_sync(uint32_t warp_mask, WordType a, WordType b)
 {
     static_assert(sizeof(WordType) == 4);
     static_assert(CHAR_BIT == 8);
@@ -57,21 +57,21 @@ __device__ WordType warpadd_sync(uint32_t warp_mask, WordType a, WordType b)
     return static_cast<WordType>(r);
 }
 
-__device__ int32_t myers_advance_block(uint32_t warp_mask, WordType hmask, WordType eq, WordType& pv, WordType& mv)
+__device__ int32_t myers_advance_block(uint32_t warp_mask, WordType highest_bit, WordType eq, WordType& pv, WordType& mv)
 {
     assert((pv & mv) == WordType(0));
 
     // Stage 1
     WordType xv = eq | mv;
-    WordType xh = warpadd_sync(warp_mask, eq & pv, pv);
+    WordType xh = warp_add_sync(warp_mask, eq & pv, pv);
     xh          = (xh ^ pv) | eq;
     WordType ph = mv | (~(xh | pv));
     WordType mh = pv & xh;
 
-    int32_t carry_out = ((ph & hmask) == WordType(0) ? 0 : 1) - ((mh & hmask) == WordType(0) ? 0 : 1);
+    int32_t carry_out = ((ph & highest_bit) == WordType(0) ? 0 : 1) - ((mh & highest_bit) == WordType(0) ? 0 : 1);
 
-    ph = leftshift_shfl_up_sync(warp_mask, ph);
-    mh = leftshift_shfl_up_sync(warp_mask, mh);
+    ph = warp_leftshift_sync(warp_mask, ph);
+    mh = warp_leftshift_sync(warp_mask, mh);
 
     // Stage 2
     pv = mh | (~(xv | ph));
