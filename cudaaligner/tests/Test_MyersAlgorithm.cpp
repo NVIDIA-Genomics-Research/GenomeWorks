@@ -9,7 +9,10 @@
 */
 
 #include <gtest/gtest.h>
+#include <utils/genomeutils.hpp>
+#include <random>
 #include "../src/myers_gpu.cuh"
+#include "../src/needleman_wunsch_cpu.hpp"
 
 namespace claragenomics
 {
@@ -73,6 +76,13 @@ std::vector<TestCaseData> create_myers_test_cases()
     t.target        = "GTCGTCGTCCGTCGTCGTCCGTCGTCGTCGTCGTCGTCGTCCGTCGTCGTCCGTCGTCGTCGTCGTCGTCGTCCGTCGTCGTCCGTCGTCGTCGTC";
     t.query         = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
     t.edit_distance = 96;
+    tests.push_back(t);
+
+    std::minstd_rand rng(1);
+    t.target        = claragenomics::genomeutils::generate_random_genome(5000, rng);
+    t.query         = claragenomics::genomeutils::generate_random_genome(4800, rng);
+    matrix<int> s   = nw_cpu::needleman_wunsch_build_score_matrix_diagonal(t.target, t.query);
+    t.edit_distance = s(s.num_rows() - 1, s.num_cols() - 1);
     tests.push_back(t);
     return tests;
 }

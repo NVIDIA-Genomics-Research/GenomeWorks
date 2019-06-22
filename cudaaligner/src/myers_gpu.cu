@@ -41,8 +41,8 @@ inline __device__ WordType warp_add_sync(uint32_t warp_mask, WordType a, WordTyp
     const uint64_t ax = a;
     const uint64_t bx = b;
     uint64_t r        = ax + bx;
-    uint32_t carry    = r >> 32;
-    r &= 0xffff'ffffu;
+    uint32_t carry    = static_cast<uint32_t>(r >> 32);
+    r &= 0xffff'ffffull;
     // TODO: I think due to the structure of the Myer blocks,
     // a carry cannot propagate over more than a single block.
     // I.e. a single carry propagation without the loop should be sufficient.
@@ -51,18 +51,20 @@ inline __device__ WordType warp_add_sync(uint32_t warp_mask, WordType a, WordTyp
         uint32_t x = __shfl_up_sync(warp_mask, carry, 1);
         if (threadIdx.x != 0)
             r += x;
-        carry = r >> 32;
-        r &= 0xffff'ffffu;
+        carry = static_cast<uint32_t>(r >> 32);
+        r &= 0xffff'ffffull;
     }
     return static_cast<WordType>(r);
 }
 
-__device__ int32_t myers_advance_block(uint32_t warp_mask, WordType highest_bit, WordType eq, WordType& pv, WordType& mv)
+__device__ int32_t myers_advance_block(uint32_t warp_mask, WordType highest_bit, WordType eq, WordType& pv, WordType& mv, int32_t carry_in)
 {
     assert((pv & mv) == WordType(0));
 
     // Stage 1
     WordType xv = eq | mv;
+    if (carry_in < 0)
+        eq |= WordType(1);
     WordType xh = warp_add_sync(warp_mask, eq & pv, pv);
     xh          = (xh ^ pv) | eq;
     WordType ph = mv | (~(xh | pv));
@@ -72,6 +74,12 @@ __device__ int32_t myers_advance_block(uint32_t warp_mask, WordType highest_bit,
 
     ph = warp_leftshift_sync(warp_mask, ph);
     mh = warp_leftshift_sync(warp_mask, mh);
+
+    if (carry_in < 0)
+        mh |= WordType(1);
+
+    if (carry_in > 0)
+        ph |= WordType(1);
 
     // Stage 2
     pv = mh | (~(xv | ph));
@@ -98,51 +106,66 @@ __device__ WordType myers_preprocess(char x, char const* query, int32_t query_si
 __global__ void myers_compute_edit_distance_kernel(WordType* pv, WordType* mv, int32_t* score, int32_t n_words, char const* target, int32_t target_size, char const* query, int32_t query_size)
 {
     constexpr int32_t word_size = sizeof(WordType) * CHAR_BIT;
+    constexpr int32_t warp_size = 32;
+    assert(warpSize == warp_size);
+    assert(threadIdx.x < warp_size);
     assert(query_size != 0);
-    assert(n_words < warpSize);
 
-    const int32_t idx = threadIdx.x;
-
-    if (idx >= n_words)
-        return;
-
-    const uint32_t warp_mask = n_words < 31 ? (1u << n_words) - 1 : 0xffffffff;
-
-    score[idx] = min((idx + 1) * word_size, query_size);
-
-    WordType pv_local = ~WordType(0);
-    WordType mv_local = 0;
-
-    const WordType peq_a = myers_preprocess('A', query, query_size, idx * word_size);
-    const WordType peq_c = myers_preprocess('C', query, query_size, idx * word_size);
-    const WordType peq_g = myers_preprocess('G', query, query_size, idx * word_size);
-    const WordType peq_t = myers_preprocess('T', query, query_size, idx * word_size);
-    const WordType hmask = WordType(1) << (idx < (n_words - 1) ? word_size - 1 : query_size - (n_words - 1) * word_size - 1);
+    for (int32_t idx = threadIdx.x; idx < n_words; idx += warp_size)
+    {
+        pv[idx]    = ~WordType(0);
+        mv[idx]    = 0;
+        score[idx] = min((idx + 1) * word_size, query_size);
+    }
 
     char const* const tend = target + target_size;
     for (char const* t = target; t < tend; ++t)
     {
-        const WordType eq = [peq_a, peq_c, peq_g, peq_t](char x) -> WordType {
-            assert(x == 'A' || x == 'C' || x == 'G' || x == 'T');
-            switch (x)
-            {
-            case 'A':
-                return peq_a;
-            case 'C':
-                return peq_c;
-            case 'G':
-                return peq_g;
-            case 'T':
-                return peq_t;
-            default:
-                return 0;
-            }
-        }(*t);
+        int32_t warp_carry = 0;
+        for (int32_t idx = threadIdx.x; idx < n_words; idx += warp_size)
+        {
+            const uint32_t warp_mask = idx / warp_size < n_words / warp_size ? 0xffff'ffffu : (1u << (n_words % warp_size)) - 1;
 
-        score[idx] += myers_advance_block(warp_mask, hmask, eq, pv_local, mv_local);
+            WordType pv_local = pv[idx];
+            WordType mv_local = mv[idx];
+            // TODO these might be cached or only computed for the specific t at hand.
+            // TODO query load is inefficient
+            const WordType peq_a       = myers_preprocess('A', query, query_size, idx * word_size);
+            const WordType peq_c       = myers_preprocess('C', query, query_size, idx * word_size);
+            const WordType peq_g       = myers_preprocess('G', query, query_size, idx * word_size);
+            const WordType peq_t       = myers_preprocess('T', query, query_size, idx * word_size);
+            const WordType highest_bit = WordType(1) << (idx == (n_words - 1) ? query_size - (n_words - 1) * word_size - 1 : word_size - 1);
+
+            const WordType eq = [peq_a, peq_c, peq_g, peq_t](char x) -> WordType {
+                assert(x == 'A' || x == 'C' || x == 'G' || x == 'T');
+                switch (x)
+                {
+                case 'A':
+                    return peq_a;
+                case 'C':
+                    return peq_c;
+                case 'G':
+                    return peq_g;
+                case 'T':
+                    return peq_t;
+                default:
+                    return 0;
+                }
+            }(*t);
+
+            warp_carry = myers_advance_block(warp_mask, highest_bit, eq, pv_local, mv_local, warp_carry);
+            score[idx] += warp_carry;
+            if (threadIdx.x == 0)
+                warp_carry = 0;
+            //            warp_carry = __shfl_down_sync(warp_mask, warp_carry, warp_size - 1);
+            if (warp_mask == 0xffff'ffffu)
+                warp_carry = __shfl_down_sync(0x8000'0001u, warp_carry, warp_size - 1);
+            if (threadIdx.x != 0)
+                warp_carry = 0;
+            pv[idx] = pv_local;
+            mv[idx] = mv_local;
+        }
     }
-    pv[idx] = pv_local;
-    mv[idx] = mv_local;
 }
 
 int32_t myers_compute_edit_distance(std::string const& target, std::string const& query)
