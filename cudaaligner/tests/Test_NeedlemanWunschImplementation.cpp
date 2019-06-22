@@ -108,7 +108,7 @@ public:
                 if (j - i >= -p && j - i <= std::abs(n - m) + p)
                 {
                     int32_t k, l;
-                    std::tie(k, l) = nw_cpu::to_band_indices(i, j, p);
+                    std::tie(k, l) = to_band_indices(i, j, p);
                     ASSERT_EQ(banded_matrix(k, l), regular_matrix_ref(i, j)) << "(" << k << "," << l << ")d=(" << i << "," << j << ") -- " << banded_matrix(k, l) << " != " << regular_matrix_ref(i, j);
                 }
             }
@@ -187,8 +187,8 @@ matrix<int> ukkonen_gpu_build_score_matrix(const std::string& target, const std:
 
 TEST_P(AlignerImplementation, UkkonenVsNaiveScoringMatrix)
 {
-    matrix<int> u = nw_cpu::ukkonen_build_score_matrix(param_.target, param_.query, param_.p);
-    matrix<int> r = nw_cpu::needleman_wunsch_build_score_matrix_naive(param_.target, param_.query);
+    matrix<int> u = ukkonen_build_score_matrix(param_.target, param_.query, param_.p);
+    matrix<int> r = needleman_wunsch_build_score_matrix_naive(param_.target, param_.query);
 
     compare_banded_score_matrix(r, u, param_.p);
 }
@@ -196,7 +196,7 @@ TEST_P(AlignerImplementation, UkkonenVsNaiveScoringMatrix)
 TEST_P(AlignerImplementation, UkkonenGpuVsUkkonenCpuScoringMatrix)
 {
     matrix<int> u = ukkonen_gpu_build_score_matrix(param_.target, param_.query, param_.p);
-    matrix<int> r = nw_cpu::ukkonen_build_score_matrix(param_.target, param_.query, param_.p);
+    matrix<int> r = ukkonen_build_score_matrix(param_.target, param_.query, param_.p);
     int const m   = param_.query.length() + 1;
     int const n   = param_.target.length() + 1;
     int const p   = param_.p;
@@ -212,7 +212,7 @@ TEST_P(AlignerImplementation, UkkonenGpuVsUkkonenCpuScoringMatrix)
             if (j - i >= -p && j - i <= n - m + p)
             {
                 int k, l;
-                std::tie(k, l) = nw_cpu::to_band_indices(i, j, p);
+                std::tie(k, l) = to_band_indices(i, j, p);
                 if (u(k, l) != r(k, l))
                     ASSERT_EQ(u(k, l), r(k, l)) << "(" << k << "," << l << ")d[=(" << i << "," << j << ")] -- " << u(k, l) << " != " << r(k, l) << std::endl;
             }
@@ -271,7 +271,7 @@ std::vector<int8_t> run_ukkonen_gpu(const std::string& target, const std::string
 TEST_P(AlignerImplementation, UkkonenCpuFullVsUkkonenGpuFull)
 {
     int32_t const p            = 1;
-    std::vector<int8_t> cpu_bt = nw_cpu::ukkonen_cpu(param_.target, param_.query, p);
+    std::vector<int8_t> cpu_bt = ukkonen_cpu(param_.target, param_.query, p);
     std::vector<int8_t> gpu_bt = run_ukkonen_gpu(param_.target, param_.query, p);
 
     compare_backtrace(cpu_bt, gpu_bt);

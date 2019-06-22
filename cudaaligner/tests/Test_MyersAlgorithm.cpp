@@ -81,7 +81,7 @@ std::vector<TestCaseData> create_myers_test_cases()
     std::minstd_rand rng(1);
     t.target        = claragenomics::genomeutils::generate_random_genome(5000, rng);
     t.query         = claragenomics::genomeutils::generate_random_genome(4800, rng);
-    matrix<int> s   = nw_cpu::needleman_wunsch_build_score_matrix_diagonal(t.target, t.query);
+    matrix<int> s   = needleman_wunsch_build_score_matrix_naive(t.target, t.query);
     t.edit_distance = s(s.num_rows() - 1, s.num_cols() - 1);
     tests.push_back(t);
     return tests;

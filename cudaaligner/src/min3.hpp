@@ -10,19 +10,16 @@
 
 #pragma once
 
-#include "matrix_cpu.hpp"
-#include <vector>
-#include <string>
-
 namespace claragenomics
 {
 
 namespace cudaaligner
 {
-
-matrix<int> needleman_wunsch_build_score_matrix_naive(std::string const& text, std::string const& query);
-
-std::vector<int8_t> needleman_wunsch_cpu(std::string const& text, std::string const& query);
+template <typename T>
+inline T const& min3(T const& t1, T const& t2, T const& t3)
+{
+    return std::min(t1, std::min(t2, t3));
+}
 
 } // namespace cudaaligner
 } // namespace claragenomics
