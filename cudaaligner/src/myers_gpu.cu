@@ -122,6 +122,8 @@ __global__ void myers_compute_edit_distance_kernel(WordType* pv, WordType* mv, i
     for (char const* t = target; t < tend; ++t)
     {
         int32_t warp_carry = 0;
+        if(threadIdx.x == 0)
+            warp_carry = 1;
         for (int32_t idx = threadIdx.x; idx < n_words; idx += warp_size)
         {
             const uint32_t warp_mask = idx / warp_size < n_words / warp_size ? 0xffff'ffffu : (1u << (n_words % warp_size)) - 1;
