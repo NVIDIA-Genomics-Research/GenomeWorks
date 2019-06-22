@@ -214,7 +214,9 @@ TEST_P(AlignerImplementation, UkkonenGpuVsUkkonenCpuScoringMatrix)
                 int k, l;
                 std::tie(k, l) = to_band_indices(i, j, p);
                 if (u(k, l) != r(k, l))
+                {
                     ASSERT_EQ(u(k, l), r(k, l)) << "(" << k << "," << l << ")d[=(" << i << "," << j << ")] -- " << u(k, l) << " != " << r(k, l) << std::endl;
+                }
             }
         }
 }
