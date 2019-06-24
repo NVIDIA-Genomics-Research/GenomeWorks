@@ -10,6 +10,7 @@
 
 #include "cudapoa/batch.hpp"
 #include "../common/utils.hpp"
+#include "utils/signed_integer_utils.hpp"
 
 namespace genomeworks
 {
@@ -31,9 +32,9 @@ public:
     {
         parse_window_data_file(windows_, filename, total_windows);
 
-        assert(windows.size() > 0);
+        assert(get_size(windows) > 0);
 
-        batch_ = create_batch(max_poas_per_batch, 200, 0, -8, -6, 8, false);
+        batch_ = create_batch(max_poas_per_batch, 200, 0, OutputType::consensus, -8, -6, 8, false);
         cudaStream_t stream;
         cudaStreamCreate(&stream);
         batch_->set_cuda_stream(stream);
@@ -49,12 +50,12 @@ public:
     {
         batch_->reset();
 
-        int32_t total_windows = windows_.size();
+        int32_t total_windows = get_size(windows_);
         for (int32_t i = 0; i < max_poas_per_batch_; i++)
         {
             batch_->add_poa();
             const auto& window = windows_[i % total_windows];
-            for (int32_t s = 0; s < window.size(); s++)
+            for (int32_t s = 0; s < get_size(window); s++)
             {
                 batch_->add_seq_to_poa(
                     window[s].c_str(),

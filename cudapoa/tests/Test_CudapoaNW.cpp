@@ -9,10 +9,11 @@
 */
 
 #include "gtest/gtest.h"
-#include "../src/cudapoa_kernels.cuh" //runNW, CUDAPOA_*
-#include <cudautils/cudautils.hpp>    //GW_CU_CHECK_ERR
-#include <utils/stringutils.hpp>      //array_to_string
-#include "sorted_graph.hpp"           //SortedGraph
+#include "../src/cudapoa_kernels.cuh"     //runNW, CUDAPOA_*
+#include <cudautils/cudautils.hpp>        //GW_CU_CHECK_ERR
+#include <utils/stringutils.hpp>          //array_to_string
+#include <utils/signed_integer_utils.hpp> //get_size
+#include "sorted_graph.hpp"               //SortedGraph
 
 namespace genomeworks
 {
@@ -51,11 +52,11 @@ public:
 
     void get_read_buffers(uint8_t* read, uint16_t* read_count) const
     {
-        for (int i = 0; i < read_.size(); i++)
+        for (int i = 0; i < get_size(read_); i++)
         {
             read[i] = read_[i];
         }
-        *read_count = read_.size();
+        *read_count = get_size(read_);
     }
 
 protected:
@@ -247,8 +248,8 @@ NWAnswer testNW(const BasicNW& obj)
 
     //input and output buffers are the same ones in unified memory, so the results are updated in place
     //results are stored in alignment_graph and alignment_read; return string representation of those
-    auto res = std::make_pair(array_to_string<int16_t>(alignment_graph, *aligned_nodes, ","),
-                              array_to_string<int16_t>(alignment_read, *aligned_nodes, ","));
+    auto res = std::make_pair(genomeworks::stringutils::array_to_string<int16_t>(alignment_graph, *aligned_nodes, ","),
+                              genomeworks::stringutils::array_to_string<int16_t>(alignment_read, *aligned_nodes, ","));
 
     GW_CU_CHECK_ERR(cudaFree(nodes));
     GW_CU_CHECK_ERR(cudaFree(graph));

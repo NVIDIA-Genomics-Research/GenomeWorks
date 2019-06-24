@@ -17,15 +17,16 @@
 
 #include <cudautils/cudautils.hpp>
 #include <logging/logging.hpp>
+#include <utils/signed_integer_utils.hpp>
 
 #ifndef TABS
 #define TABS printTabs(bid_)
 #endif
 
-inline std::string printTabs(uint32_t tab_count)
+inline std::string printTabs(int32_t tab_count)
 {
     std::string s;
-    for (uint32_t i = 0; i < tab_count; i++)
+    for (int32_t i = 0; i < tab_count; i++)
     {
         s += "\t";
     }
@@ -38,7 +39,7 @@ namespace genomeworks
 namespace cudapoa
 {
 
-uint32_t CudapoaBatch::batches = 0;
+int32_t CudapoaBatch::batches = 0;
 
 void CudapoaBatch::print_batch_debug_message(const std::string& message)
 {
@@ -66,8 +67,16 @@ void CudapoaBatch::initialize_graph_details()
     batch_block_->get_graph_details(&graph_details_d_);
 }
 
-CudapoaBatch::CudapoaBatch(uint32_t max_poas, uint32_t max_sequences_per_poa, uint32_t device_id, int16_t gap_score, int16_t mismatch_score, int16_t match_score, bool cuda_banded_alignment)
-    : max_poas_(max_poas), max_sequences_per_poa_(max_sequences_per_poa), device_id_(device_id), gap_score_(gap_score), mismatch_score_(mismatch_score), match_score_(match_score), banded_alignment_(cuda_banded_alignment), batch_block_(new BatchBlock(device_id, max_poas, max_sequences_per_poa, cuda_banded_alignment))
+CudapoaBatch::CudapoaBatch(int32_t max_poas, int32_t max_sequences_per_poa, int32_t device_id, int8_t output_mask, int16_t gap_score, int16_t mismatch_score, int16_t match_score, bool cuda_banded_alignment)
+    : max_poas_(throw_on_negative(max_poas, "Maximum POAs in batch has to be non-negative"))
+    , max_sequences_per_poa_(throw_on_negative(max_sequences_per_poa, "Maximum sequences per POA has to be non-negative"))
+    , device_id_(throw_on_negative(device_id, "Device ID has to be non-negative"))
+    , output_mask_(output_mask)
+    , gap_score_(gap_score)
+    , mismatch_score_(mismatch_score)
+    , match_score_(match_score)
+    , banded_alignment_(cuda_banded_alignment)
+    , batch_block_(new BatchBlock(device_id, max_poas, max_sequences_per_poa, output_mask, cuda_banded_alignment))
 {
     bid_ = CudapoaBatch::batches++;
 
@@ -89,8 +98,8 @@ CudapoaBatch::CudapoaBatch(uint32_t max_poas, uint32_t max_sequences_per_poa, ui
 
     initialize_input_details();
 
-    uint32_t input_size = max_poas_ * max_sequences_per_poa_ * CUDAPOA_MAX_SEQUENCE_SIZE; //TODO how big does this need to be
-    msg                 = " Allocated input buffers of size " + std::to_string((static_cast<float>(input_size) / (1024 * 1024))) + "MB on device ";
+    int32_t input_size = max_poas_ * max_sequences_per_poa_ * CUDAPOA_MAX_SEQUENCE_SIZE; //TODO how big does this need to be
+    msg                = " Allocated input buffers of size " + std::to_string((static_cast<float>(input_size) / (1024 * 1024))) + "MB on device ";
     print_batch_debug_message(msg);
 
     initialize_output_details();
@@ -103,10 +112,10 @@ CudapoaBatch::CudapoaBatch(uint32_t max_poas, uint32_t max_sequences_per_poa, ui
     initialize_graph_details();
 
     // Debug print for size allocated.
-    uint32_t matrix_sequence_dimension = banded_alignment_ ? CUDAPOA_BANDED_MAX_MATRIX_SEQUENCE_DIMENSION : CUDAPOA_MAX_MATRIX_SEQUENCE_DIMENSION;
-    uint32_t max_graph_dimension       = cuda_banded_alignment ? CUDAPOA_MAX_MATRIX_GRAPH_DIMENSION_BANDED : CUDAPOA_MAX_MATRIX_GRAPH_DIMENSION;
+    int32_t matrix_sequence_dimension = banded_alignment_ ? CUDAPOA_BANDED_MAX_MATRIX_SEQUENCE_DIMENSION : CUDAPOA_MAX_MATRIX_SEQUENCE_DIMENSION;
+    int32_t max_graph_dimension       = cuda_banded_alignment ? CUDAPOA_MAX_MATRIX_GRAPH_DIMENSION_BANDED : CUDAPOA_MAX_MATRIX_GRAPH_DIMENSION;
 
-    uint32_t temp_size = (sizeof(int16_t) * max_graph_dimension * matrix_sequence_dimension * max_poas_);
+    int32_t temp_size = (sizeof(int16_t) * max_graph_dimension * matrix_sequence_dimension * max_poas_);
 
     temp_size += 2 * (sizeof(int16_t) * max_graph_dimension * max_poas_);
     msg = " Allocated temp buffers of size " + std::to_string((static_cast<float>(temp_size) / (1024 * 1024))) + "MB on device ";
@@ -141,12 +150,12 @@ CudapoaBatch::~CudapoaBatch()
     print_batch_debug_message(msg);
 }
 
-uint32_t CudapoaBatch::batch_id() const
+int32_t CudapoaBatch::batch_id() const
 {
     return bid_;
 }
 
-uint32_t CudapoaBatch::get_total_poas() const
+int32_t CudapoaBatch::get_total_poas() const
 {
     return poa_count_;
 }
@@ -177,11 +186,35 @@ void CudapoaBatch::generate_poa()
                                       gap_score_,
                                       mismatch_score_,
                                       match_score_,
-                                      banded_alignment_);
+                                      banded_alignment_,
+                                      max_sequences_per_poa_,
+                                      output_mask_);
 
     GW_CU_CHECK_ERR(cudaPeekAtLastError());
     msg = " Launched kernel on device ";
     print_batch_debug_message(msg);
+}
+
+void CudapoaBatch::decode_cudapoa_kernel_error(genomeworks::cudapoa::StatusType error_type,
+                                               std::vector<StatusType>& output_status)
+{
+    switch (error_type)
+    {
+    case genomeworks::cudapoa::StatusType::node_count_exceeded_maximum_graph_size:
+        GW_LOG_ERROR("Kernel Error:: Node count exceeded maximum nodes per window\n");
+        output_status.emplace_back(genomeworks::cudapoa::StatusType::node_count_exceeded_maximum_graph_size);
+        break;
+    case genomeworks::cudapoa::StatusType::seq_len_exceeded_maximum_nodes_per_window:
+        GW_LOG_ERROR("Kernel Error::Sequence length exceeded maximum nodes per window\n");
+        output_status.emplace_back(genomeworks::cudapoa::StatusType::seq_len_exceeded_maximum_nodes_per_window);
+        break;
+    case genomeworks::cudapoa::StatusType::loop_count_exceeded_upper_bound:
+        GW_LOG_ERROR("Kernel Error::Loop count exceeded upper bound in nw algorithm\n");
+        output_status.emplace_back(genomeworks::cudapoa::StatusType::loop_count_exceeded_upper_bound);
+        break;
+    default:
+        break;
+    }
 }
 
 void CudapoaBatch::get_consensus(std::vector<std::string>& consensus,
@@ -205,7 +238,7 @@ void CudapoaBatch::get_consensus(std::vector<std::string>& consensus,
     msg = " Finished memcpy D2H on device ";
     print_batch_debug_message(msg);
 
-    for (uint32_t poa = 0; poa < poa_count_; poa++)
+    for (int32_t poa = 0; poa < poa_count_; poa++)
     {
         // Get the consensus string and reverse it since on GPU the
         // string is built backwards..
@@ -214,24 +247,7 @@ void CudapoaBatch::get_consensus(std::vector<std::string>& consensus,
         // c[0] == 0 means an error occured and when that happens the error type is saved in c[1]
         if (static_cast<uint8_t>(c[0]) == CUDAPOA_KERNEL_ERROR_ENCOUNTERED)
         {
-            genomeworks::cudapoa::StatusType error_type = static_cast<genomeworks::cudapoa::StatusType>(c[1]);
-            switch (error_type)
-            {
-            case genomeworks::cudapoa::StatusType::node_count_exceeded_maximum_graph_size:
-                GW_LOG_ERROR("Kernel Error:: Node count exceeded maximum nodes per window\n");
-                output_status.emplace_back(genomeworks::cudapoa::StatusType::node_count_exceeded_maximum_graph_size);
-                break;
-            case genomeworks::cudapoa::StatusType::seq_len_exceeded_maximum_nodes_per_window:
-                GW_LOG_ERROR("Kernel Error::Sequence length exceeded maximum nodes per window\n");
-                output_status.emplace_back(genomeworks::cudapoa::StatusType::seq_len_exceeded_maximum_nodes_per_window);
-                break;
-            case genomeworks::cudapoa::StatusType::loop_count_exceeded_upper_bound:
-                GW_LOG_ERROR("Kernel Error::Loop count exceeded upper bound in nw algorithm\n");
-                output_status.emplace_back(genomeworks::cudapoa::StatusType::loop_count_exceeded_upper_bound);
-                break;
-            default:
-                break;
-            }
+            decode_cudapoa_kernel_error(static_cast<genomeworks::cudapoa::StatusType>(c[1]), output_status);
             // push back empty placeholder for consensus and coverage
             consensus.emplace_back(std::string());
             coverage.emplace_back(std::vector<uint16_t>());
@@ -244,8 +260,53 @@ void CudapoaBatch::get_consensus(std::vector<std::string>& consensus,
             // Similarly, get the coverage and reverse it.
             coverage.emplace_back(std::vector<uint16_t>(
                 &(output_details_h_->coverage[poa * CUDAPOA_MAX_CONSENSUS_SIZE]),
-                &(output_details_h_->coverage[poa * CUDAPOA_MAX_CONSENSUS_SIZE + consensus.back().size()])));
+                &(output_details_h_->coverage[poa * CUDAPOA_MAX_CONSENSUS_SIZE + get_size(consensus.back())])));
             std::reverse(coverage.back().begin(), coverage.back().end());
+        }
+    }
+}
+
+void CudapoaBatch::get_msa(std::vector<std::vector<std::string>>& msa, std::vector<StatusType>& output_status)
+{
+    std::string msg = " Launching memcpy D2H on device for msa ";
+    print_batch_debug_message(msg);
+
+    GW_CU_CHECK_ERR(cudaMemcpyAsync(output_details_h_->multiple_sequence_alignments,
+                                    output_details_d_->multiple_sequence_alignments,
+                                    max_poas_ * max_sequences_per_poa_ * CUDAPOA_MAX_CONSENSUS_SIZE * sizeof(uint8_t),
+                                    cudaMemcpyDeviceToHost,
+                                    stream_));
+
+    GW_CU_CHECK_ERR(cudaMemcpyAsync(output_details_h_->consensus,
+                                    output_details_d_->consensus,
+                                    CUDAPOA_MAX_CONSENSUS_SIZE * max_poas_ * sizeof(uint8_t),
+                                    cudaMemcpyDeviceToHost,
+                                    stream_));
+
+    GW_CU_CHECK_ERR(cudaStreamSynchronize(stream_));
+
+    msg = " Finished memcpy D2H on device for msa";
+    print_batch_debug_message(msg);
+
+    for (int32_t poa = 0; poa < poa_count_; poa++)
+    {
+        msa.emplace_back(std::vector<std::string>());
+        char* c = reinterpret_cast<char*>(&(output_details_h_->consensus[poa * CUDAPOA_MAX_CONSENSUS_SIZE]));
+        // We use the first two entries in the consensus buffer to log error during kernel execution
+        // c[0] == 0 means an error occured and when that happens the error type is saved in c[1]
+        if (static_cast<uint8_t>(c[0]) == CUDAPOA_KERNEL_ERROR_ENCOUNTERED)
+        {
+            decode_cudapoa_kernel_error(static_cast<genomeworks::cudapoa::StatusType>(c[1]), output_status);
+        }
+        else
+        {
+            output_status.emplace_back(genomeworks::cudapoa::StatusType::success);
+            uint16_t num_seqs = input_details_h_->window_details[poa].num_seqs;
+            for (uint16_t i = 0; i < num_seqs; i++)
+            {
+                char* c = reinterpret_cast<char*>(&(output_details_h_->multiple_sequence_alignments[(poa * max_sequences_per_poa_ + i) * CUDAPOA_MAX_CONSENSUS_SIZE]));
+                msa[poa].emplace_back(std::string(c));
+            }
         }
     }
 }
@@ -278,7 +339,7 @@ void CudapoaBatch::reset()
     global_sequence_idx_    = 0;
 }
 
-StatusType CudapoaBatch::add_seq_to_poa(const char* seq, const uint8_t* weights, uint32_t seq_len)
+StatusType CudapoaBatch::add_seq_to_poa(const char* seq, const int8_t* weights, int32_t seq_len)
 {
     if (seq_len >= CUDAPOA_MAX_SEQUENCE_SIZE)
     {
@@ -287,7 +348,7 @@ StatusType CudapoaBatch::add_seq_to_poa(const char* seq, const uint8_t* weights,
 
     WindowDetails* window_details = &(input_details_h_->window_details[poa_count_ - 1]);
 
-    if (static_cast<uint32_t>(window_details->num_seqs) + 1 >= max_sequences_per_poa_)
+    if (static_cast<int32_t>(window_details->num_seqs) + 1 >= max_sequences_per_poa_)
     {
         return StatusType::exceeded_maximum_sequences_per_poa;
     }
@@ -306,6 +367,11 @@ StatusType CudapoaBatch::add_seq_to_poa(const char* seq, const uint8_t* weights,
     }
     else
     {
+        // Verify that weightsw are positive.
+        for (int32_t i = 0; i < seq_len; i++)
+        {
+            throw_on_negative(weights[i], "Base weights need have to be non-negative");
+        }
         memcpy(&(input_details_h_->base_weights[num_nucleotides_copied_]),
                weights,
                seq_len);

@@ -27,7 +27,7 @@ class batched_device_matrices;
 class AlignerGlobal : public Aligner
 {
 public:
-    AlignerGlobal(uint32_t max_query_length, uint32_t max_subject_length, uint32_t max_alignments, uint32_t device_id);
+    AlignerGlobal(int32_t max_query_length, int32_t max_subject_length, int32_t max_alignments, int32_t device_id);
     virtual ~AlignerGlobal();
     AlignerGlobal(const AlignerGlobal&) = delete;
 
@@ -35,14 +35,14 @@ public:
 
     virtual StatusType sync_alignments() override;
 
-    virtual StatusType add_alignment(const char* query, uint32_t query_length, const char* subject, uint32_t subject_length) override;
+    virtual StatusType add_alignment(const char* query, int32_t query_length, const char* subject, int32_t subject_length) override;
 
     virtual const std::vector<std::shared_ptr<Alignment>>& get_alignments() const override
     {
         return alignments_;
     }
 
-    virtual uint32_t num_alignments() const
+    virtual int32_t num_alignments() const
     {
         return alignments_.size();
     }
@@ -58,9 +58,9 @@ private:
     template <typename T>
     using pinned_host_vector = std::vector<T, thrust::system::cuda::experimental::pinned_allocator<T>>;
 
-    uint32_t max_query_length_;
-    uint32_t max_subject_length_;
-    uint32_t max_alignments_;
+    int32_t max_query_length_;
+    int32_t max_subject_length_;
+    int32_t max_alignments_;
     std::vector<std::shared_ptr<Alignment>> alignments_;
 
     device_storage<char> sequences_d_;
@@ -79,7 +79,7 @@ private:
 
     cudaStream_t stream_;
 
-    uint32_t device_id_;
+    int32_t device_id_;
 };
 } // namespace cudaaligner
 } // namespace genomeworks

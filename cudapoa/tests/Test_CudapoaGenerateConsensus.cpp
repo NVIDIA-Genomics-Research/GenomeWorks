@@ -9,9 +9,10 @@
 */
 
 #include "gtest/gtest.h"
-#include "../src/cudapoa_kernels.cuh" //generateConsensusHost, CUDAPOA_MAX_NODE_EDGES, CUDAPOA_MAX_NODE_ALIGNMENTS
-#include <cudautils/cudautils.hpp>    //GW_CU_CHECK_ERR
-#include "sorted_graph.hpp"           //SortedGraph
+#include "../src/cudapoa_kernels.cuh"     //generateConsensusHost, CUDAPOA_MAX_NODE_EDGES, CUDAPOA_MAX_NODE_ALIGNMENTS
+#include <cudautils/cudautils.hpp>        //GW_CU_CHECK_ERR
+#include <utils/signed_integer_utils.hpp> //get_size
+#include "sorted_graph.hpp"               //SortedGraph
 
 namespace genomeworks
 {
@@ -48,9 +49,9 @@ public:
     void get_incoming_edge_w(uint16_t* incoming_edge_w) const
     {
         auto outgoing_edges = graph_.get_outgoing_edges();
-        for (int i = 0; i < outgoing_edges.size(); i++)
+        for (int i = 0; i < get_size(outgoing_edges); i++)
         {
-            for (int j = 0; j < outgoing_edges[i].size(); j++)
+            for (int j = 0; j < get_size(outgoing_edges[i]); j++)
             {
                 uint16_t to_node                                      = outgoing_edges[i][j];
                 incoming_edge_w[to_node * CUDAPOA_MAX_NODE_EDGES + i] = outgoing_edge_w_[i][j];

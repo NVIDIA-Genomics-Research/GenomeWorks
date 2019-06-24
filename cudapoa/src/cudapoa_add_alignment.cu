@@ -36,9 +36,17 @@ namespace cudapoa
  * @param[in] read                        Device scratch space with sequence
  * @param[in] alignment_read              Device buffer with bases from read in alignment
  * @param[in] node_coverage_count         Device buffer with coverage of each node in graph
+ * @param[in] base_weights                    Device buffer with weight of each node in read
+ * @param[in] sequence_begin_nodes_ids        Device buffer with begining node of each sequence
+ * @param[in] outgoing_edges_coverage         Device buffer with coverage of each edge in graph
+ * @param[in] outgoing_edges_coverage_count   Device buffer with coverage count of each edge in graph
+ * @param[in] s                               Current sequence id
+ * @param[in] max_sequences_per_poa           Maximum sequences allowed in a graph
  *
  * @return Number of nodes in graph after update
  */
+
+template <bool msa = false>
 __device__
     uint16_t
     addAlignmentToGraph(uint8_t* nodes,
@@ -53,7 +61,12 @@ __device__
                         uint8_t* read,
                         int16_t* alignment_read,
                         uint16_t* node_coverage_counts,
-                        uint8_t* base_weights)
+                        int8_t* base_weights,
+                        uint16_t* sequence_begin_nodes_ids,
+                        uint16_t* outgoing_edges_coverage,
+                        uint16_t* outgoing_edges_coverage_count,
+                        uint16_t s,
+                        uint32_t max_sequences_per_poa)
 {
     //printf("Running addition for alignment %d\n", alignment_length);
     int16_t head_node_id = -1;
@@ -76,7 +89,7 @@ __device__
         // Case where base in read in an insert.
         if (read_pos != -1)
         {
-            uint16_t NODE_WEIGHT = base_weights[read_pos];
+            int8_t NODE_WEIGHT = base_weights[read_pos];
 
             //printf("%c ", read[read_pos]);
             uint8_t read_base     = read[read_pos];
@@ -180,6 +193,14 @@ __device__
                 //printf("new node %d\n", curr_node_id);
             }
 
+            // for msa generation
+            if (msa && (read_pos == 0))
+            {
+                //begin node of the sequence, add its node_id (curr_node_id) to sequence_begin_nodes_ids
+                *sequence_begin_nodes_ids = curr_node_id;
+                // printf("adding sequence_begin_nodes_ids = %d\n", curr_node_id);
+            }
+
             // Create new edges if necessary.
             if (head_node_id != -1)
             {
@@ -201,12 +222,31 @@ __device__
                     incoming_edge_count[curr_node_id]                                 = in_count + 1;
                     uint16_t out_count                                                = outgoing_edge_count[head_node_id];
                     outgoing_edges[head_node_id * CUDAPOA_MAX_NODE_EDGES + out_count] = curr_node_id;
-                    outgoing_edge_count[head_node_id]                                 = out_count + 1;
+                    if (msa)
+                    {
+                        outgoing_edges_coverage_count[head_node_id * CUDAPOA_MAX_NODE_EDGES + out_count]                     = 1;
+                        outgoing_edges_coverage[(head_node_id * CUDAPOA_MAX_NODE_EDGES + out_count) * max_sequences_per_poa] = s;
+                    }
+                    outgoing_edge_count[head_node_id] = out_count + 1;
                     //printf("Created new edge %d to %d with weight %d\n", head_node_id, curr_node_id, prev_weight + NODE_WEIGHT);
 
                     if (out_count + 1 >= CUDAPOA_MAX_NODE_EDGES || in_count + 1 >= CUDAPOA_MAX_NODE_EDGES)
                     {
                         printf("exceeded max edge count\n");
+                    }
+                }
+                else if (msa) //if edge exists and for msa generation
+                {
+                    uint16_t out_count = outgoing_edge_count[head_node_id];
+                    for (uint16_t e = 0; e < out_count; e++)
+                    {
+                        if (outgoing_edges[head_node_id * CUDAPOA_MAX_NODE_EDGES + e] == curr_node_id)
+                        {
+                            uint16_t out_edge_coverage_count                                                                                       = outgoing_edges_coverage_count[head_node_id * CUDAPOA_MAX_NODE_EDGES + e];
+                            outgoing_edges_coverage[(head_node_id * CUDAPOA_MAX_NODE_EDGES + e) * max_sequences_per_poa + out_edge_coverage_count] = s;
+                            outgoing_edges_coverage_count[head_node_id * CUDAPOA_MAX_NODE_EDGES + e]                                               = out_edge_coverage_count + 1;
+                            break;
+                        }
                     }
                 }
             }
@@ -237,7 +277,12 @@ __global__ void addAlignmentKernel(uint8_t* nodes,
                                    uint8_t* read,
                                    int16_t* alignment_read,
                                    uint16_t* node_coverage_counts,
-                                   uint8_t* base_weights)
+                                   int8_t* base_weights,
+                                   uint16_t* sequence_begin_nodes_ids,
+                                   uint16_t* outgoing_edges_coverage,
+                                   uint16_t* outgoing_edges_coverage_count,
+                                   uint16_t s,
+                                   uint32_t max_sequences_per_poa)
 {
     // all pointers will be allocated in unified memory visible to both host and device
     *node_count = addAlignmentToGraph(nodes,
@@ -252,7 +297,12 @@ __global__ void addAlignmentKernel(uint8_t* nodes,
                                       read,
                                       alignment_read,
                                       node_coverage_counts,
-                                      base_weights);
+                                      base_weights,
+                                      sequence_begin_nodes_ids,
+                                      outgoing_edges_coverage,
+                                      outgoing_edges_coverage_count,
+                                      s,
+                                      max_sequences_per_poa);
 }
 
 // Host function that calls the kernel
@@ -268,7 +318,12 @@ void addAlignment(uint8_t* nodes,
                   uint8_t* read,
                   int16_t* alignment_read,
                   uint16_t* node_coverage_counts,
-                  uint8_t* base_weights)
+                  int8_t* base_weights,
+                  uint16_t* sequence_begin_nodes_ids,
+                  uint16_t* outgoing_edges_coverage,
+                  uint16_t* outgoing_edges_coverage_count,
+                  uint16_t s,
+                  uint32_t max_sequences_per_poa)
 {
     addAlignmentKernel<<<1, 1>>>(nodes,
                                  node_count,
@@ -282,7 +337,12 @@ void addAlignment(uint8_t* nodes,
                                  read,
                                  alignment_read,
                                  node_coverage_counts,
-                                 base_weights);
+                                 base_weights,
+                                 sequence_begin_nodes_ids,
+                                 outgoing_edges_coverage,
+                                 outgoing_edges_coverage_count,
+                                 s,
+                                 max_sequences_per_poa);
 }
 
 } // namespace cudapoa

@@ -11,7 +11,8 @@
 #include <string>
 #include <vector>
 #include <stdint.h>
-#include "../src/cudapoa_kernels.cuh" //CUDAPOA_MAX_NODE_EDGES, CUDAPOA_MAX_NODE_ALIGNMENTS
+#include "../src/cudapoa_kernels.cuh"     //CUDAPOA_MAX_NODE_EDGES, CUDAPOA_MAX_NODE_ALIGNMENTS
+#include <utils/signed_integer_utils.hpp> //get_size
 
 namespace genomeworks
 {
@@ -30,7 +31,7 @@ public:
         : nodes_(nodes), outgoing_edges_(outgoing_edges), node_alignments_(node_alignments), node_coverage_counts_(node_coverage_counts), outgoing_edges_coverage_(outgoing_edges_coverage)
     {
         graph_complete_ = true;
-        node_count_     = nodes_.size();
+        node_count_     = get_size(nodes_);
     }
 
     BasicGraph(uint16_t* outgoing_edges, uint16_t* outgoing_edge_count, uint16_t node_count)
@@ -43,7 +44,7 @@ public:
     {
         graph_complete_ = false;
         outgoing_edges_ = outgoing_edges;
-        node_count_     = outgoing_edges.size();
+        node_count_     = get_size(outgoing_edges);
     }
 
     BasicGraph(std::vector<uint8_t> nodes, Uint16Vec2D outgoing_edges)
@@ -61,8 +62,8 @@ public:
         uint16_t out_node;
         for (int i = 0; i < node_count_; i++)
         {
-            outgoing_edge_count[i] = outgoing_edges_[i].size();
-            for (int j = 0; j < (int)outgoing_edges_[i].size(); j++)
+            outgoing_edge_count[i] = get_size(outgoing_edges_[i]);
+            for (int j = 0; j < get_size(outgoing_edges_[i]); j++)
             {
                 out_node                                                          = outgoing_edges_[i][j];
                 uint16_t in_edge_count                                            = incoming_edge_count[out_node];
@@ -75,7 +76,7 @@ public:
     //fill in the nodes and node_count pointer
     void get_nodes(uint8_t* nodes, uint16_t* node_count) const
     {
-        for (int i = 0; i < nodes_.size(); i++)
+        for (int i = 0; i < get_size(nodes_); i++)
         {
             nodes[i] = nodes_[i];
         }
@@ -85,9 +86,9 @@ public:
     void get_node_alignments(uint16_t* node_alignments, uint16_t* node_alignment_count) const
     {
         uint16_t aligned_node;
-        for (int i = 0; i < node_alignments_.size(); i++)
+        for (int i = 0; i < get_size(node_alignments_); i++)
         {
-            for (int j = 0; j < node_alignments_[i].size(); j++)
+            for (int j = 0; j < get_size(node_alignments_[i]); j++)
             {
                 aligned_node                                         = node_alignments_[i][j];
                 node_alignments[i * CUDAPOA_MAX_NODE_ALIGNMENTS + j] = aligned_node;
@@ -98,7 +99,7 @@ public:
     //fill in node_coverage_counts pointer
     void get_node_coverage_counts(uint16_t* node_coverage_counts) const
     {
-        for (int i = 0; i < node_coverage_counts_.size(); i++)
+        for (int i = 0; i < get_size(node_coverage_counts_); i++)
         {
             node_coverage_counts[i] = node_coverage_counts_[i];
         }
@@ -118,9 +119,23 @@ public:
         return graph;
     }
 
-    Uint16Vec2D get_outgoing_edges() const
+    void get_outgoing_edges_coverage(uint16_t* outgoing_edges_coverage, uint16_t* outgoing_edges_coverage_count, uint16_t num_sequences) const
     {
-        return outgoing_edges_;
+        if (outgoing_edges_coverage_.size() == 0)
+            return;
+        uint16_t out_node;
+        for (int i = 0; i < outgoing_edges_coverage_.size(); i++) //from_node
+        {
+            for (int j = 0; j < (int)outgoing_edges_coverage_[i].size(); j++) //to_node
+            {
+                uint16_t edge_coverage_count                                  = outgoing_edges_coverage_[i][j].size();
+                outgoing_edges_coverage_count[i * CUDAPOA_MAX_NODE_EDGES + j] = edge_coverage_count;
+                for (int k = 0; k < edge_coverage_count; k++)
+                {
+                    outgoing_edges_coverage[i * CUDAPOA_MAX_NODE_EDGES * num_sequences + j * num_sequences + k] = outgoing_edges_coverage_[i][j][k];
+                }
+            }
+        }
     }
 
     bool is_complete() const
@@ -132,6 +147,8 @@ public:
     {
         return this->outgoing_edges_ == rhs.outgoing_edges_;
     }
+
+    const Uint16Vec2D& get_outgoing_edges() const { return outgoing_edges_; }
 
 protected:
     bool graph_complete_;

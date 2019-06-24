@@ -28,7 +28,7 @@ cuda_add_library(cudaaligner STATIC
     src/ukkonen_gpu.cu
     )
 
-target_link_libraries(cudaaligner cudautils logging)
+target_link_libraries(cudaaligner cudautils logging utils)
 
 target_compile_options(cudaaligner PRIVATE -Werror -Wall -Wextra -march=native)
 
@@ -44,6 +44,7 @@ add_doxygen_source_dir(${CMAKE_CURRENT_SOURCE_DIR}/include/cudaaligner)
 
 # Add tests folder
 add_subdirectory(tests)
+add_subdirectory(benchmarks)
 
 install(TARGETS cudaaligner
     COMPONENT logging

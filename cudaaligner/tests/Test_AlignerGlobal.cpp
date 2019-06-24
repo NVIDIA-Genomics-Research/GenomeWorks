@@ -8,11 +8,12 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
+#include <random>
 #include "gtest/gtest.h"
 #include "../src/aligner_global.hpp"
 #include "cudaaligner/alignment.hpp"
-#include "common.hpp"
-#include <cstdlib>
+#include <utils/signed_integer_utils.hpp>
+#include <utils/genomeutils.hpp>
 
 namespace genomeworks
 {
@@ -91,14 +92,12 @@ class TestAlignerGlobalImpl : public ::testing::TestWithParam<AlignerTestData>
 public:
     virtual void SetUp()
     {
-        param                    = GetParam();
-        uint32_t max_string_size = 0;
+        param                   = GetParam();
+        int64_t max_string_size = 0;
         for (auto& pair : param.inputs)
         {
-            max_string_size = std::max(max_string_size,
-                                       static_cast<uint32_t>(pair.first.length()));
-            max_string_size = std::max(max_string_size,
-                                       static_cast<uint32_t>(pair.second.length()));
+            max_string_size = std::max(max_string_size, get_size(pair.first));
+            max_string_size = std::max(max_string_size, get_size(pair.second));
         }
         max_string_size++;
         aligner = std::make_unique<AlignerGlobal>(max_string_size,
@@ -133,8 +132,8 @@ TEST_P(TestAlignerGlobalImpl, TestAlignmentKernel)
     aligner->sync_alignments();
 
     const std::vector<std::shared_ptr<Alignment>>& alignments = aligner->get_alignments();
-    ASSERT_EQ(alignments.size(), inputs.size());
-    for (uint32_t a = 0; a < alignments.size(); a++)
+    ASSERT_EQ(get_size(alignments), get_size(inputs));
+    for (int32_t a = 0; a < get_size(alignments); a++)
     {
         auto alignment = alignments[a];
         EXPECT_EQ(StatusType::success, alignment->get_status()) << "Alignment status is not success";
@@ -152,14 +151,15 @@ std::vector<AlignerTestData> create_aligner_perf_test_cases()
     AlignerTestData data;
 
     // Test case 1
-    data.inputs = {{generate_random_genome(1000), generate_random_genome(1000)}};
+    std::minstd_rand rng(1);
+    data.inputs = {{genomeworks::genomeutils::generate_random_genome(1000, rng), genomeworks::genomeutils::generate_random_genome(1000, rng)}};
     test_cases.push_back(data);
 
     // Test case 2
-    data.inputs = {{generate_random_genome(9500), generate_random_genome(9000)},
-                   {generate_random_genome(3456), generate_random_genome(3213)},
-                   {generate_random_genome(20000), generate_random_genome(20000)},
-                   {generate_random_genome(15000), generate_random_genome(14000)}};
+    data.inputs = {{genomeworks::genomeutils::generate_random_genome(9500, rng), genomeworks::genomeutils::generate_random_genome(9000, rng)},
+                   {genomeworks::genomeutils::generate_random_genome(3456, rng), genomeworks::genomeutils::generate_random_genome(3213, rng)},
+                   {genomeworks::genomeutils::generate_random_genome(20000, rng), genomeworks::genomeutils::generate_random_genome(20000, rng)},
+                   {genomeworks::genomeutils::generate_random_genome(15000, rng), genomeworks::genomeutils::generate_random_genome(14000, rng)}};
     test_cases.push_back(data);
 
     return test_cases;
@@ -182,6 +182,7 @@ TEST_P(TestAlignerGlobalImplPerf, TestAlignmentKernelPerf)
     }
 
     aligner->align_all();
+    aligner->sync_alignments();
 
     const std::vector<std::shared_ptr<Alignment>>& alignments = aligner->get_alignments();
     ASSERT_EQ(alignments.size(), inputs.size());

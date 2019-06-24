@@ -28,7 +28,7 @@ namespace cudapoa
 class BatchBlock
 {
 public:
-    BatchBlock(uint32_t device_id_, uint32_t max_poas, uint32_t max_sequences_per_poa, bool banded_alignment = false);
+    BatchBlock(int32_t device_id_, int32_t max_poas, int32_t max_sequences_per_poa, int8_t output_mask, bool banded_alignment = false);
     ~BatchBlock();
 
     void get_output_details(OutputDetails** output_details_h_p, OutputDetails** output_details_d_p);
@@ -48,10 +48,10 @@ protected:
 
 protected:
     // Maximum POAs to process in batch.
-    uint32_t max_poas_ = 0;
+    int32_t max_poas_ = 0;
 
     // Maximum sequences per POA.
-    uint32_t max_sequences_per_poa_ = 0;
+    int32_t max_sequences_per_poa_ = 0;
 
     // Use banded POA alignment
     bool banded_alignment_;
@@ -68,12 +68,15 @@ protected:
     uint64_t offset_h_ = 0;
     uint64_t offset_d_ = 0;
 
-    uint32_t input_size_;
-    uint32_t output_size_;
-    uint32_t matrix_sequence_dimension_;
-    uint32_t max_graph_dimension_;
+    int32_t input_size_;
+    int32_t output_size_;
+    int32_t matrix_sequence_dimension_;
+    int32_t max_graph_dimension_;
     uint16_t max_nodes_per_window_;
-    uint32_t device_id_;
+    int32_t device_id_;
+
+    // Bit field for output type
+    int8_t output_mask_;
 };
 
 } // namespace cudapoa

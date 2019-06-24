@@ -10,10 +10,10 @@
 
 #include "gtest/gtest.h"
 #include "cudapoa/batch.hpp"
-#include "../src/cudapoa_kernels.cuh" //runTopSort
-#include <cudautils/cudautils.hpp>    //GW_CU_CHECK_ERR
-#include <utils/stringutils.hpp>      //array_to_string
-// #include <cuda_runtime_api.h>
+#include "../src/cudapoa_kernels.cuh"     //runTopSort
+#include <cudautils/cudautils.hpp>        //GW_CU_CHECK_ERR
+#include <utils/stringutils.hpp>          //array_to_string
+#include <utils/signed_integer_utils.hpp> //get_size
 
 namespace genomeworks
 {
@@ -82,8 +82,8 @@ std::string testTopSortDeviceUtil(uint16_t node_count, std::vector<std::vector<u
     uint16_t out_node;
     for (int i = 0; i < node_count; i++)
     {
-        outgoing_edge_count[i] = outgoing_edges_vec[i].size();
-        for (int j = 0; j < (int)outgoing_edges_vec[i].size(); j++)
+        outgoing_edge_count[i] = get_size(outgoing_edges_vec[i]);
+        for (int j = 0; j < get_size(outgoing_edges_vec[i]); j++)
         {
             out_node = outgoing_edges_vec[i][j];
             incoming_edge_count[out_node]++;
@@ -103,7 +103,7 @@ std::string testTopSortDeviceUtil(uint16_t node_count, std::vector<std::vector<u
 
     GW_CU_CHECK_ERR(cudaDeviceSynchronize());
 
-    std::string res = array_to_string<uint16_t>(sorted_poa, node_count);
+    std::string res = genomeworks::stringutils::array_to_string<uint16_t>(sorted_poa, node_count);
 
     GW_CU_CHECK_ERR(cudaFree(sorted_poa));
     GW_CU_CHECK_ERR(cudaFree(sorted_poa_node_map));
@@ -122,7 +122,7 @@ public:
 
     std::string runTopSortDevice(Uint16Vec2D outgoing_edges)
     {
-        return testTopSortDeviceUtil(outgoing_edges.size(), outgoing_edges);
+        return testTopSortDeviceUtil(get_size(outgoing_edges), outgoing_edges);
     }
 };
 

@@ -32,6 +32,13 @@ enum class StatusType
 };
 
 StatusType Init();
+
+enum OutputType
+{
+    consensus = 0x1,
+    msa       = 0x1 << 1
+};
+
 } // namespace cudapoa
 } // namespace genomeworks
 /// \}
