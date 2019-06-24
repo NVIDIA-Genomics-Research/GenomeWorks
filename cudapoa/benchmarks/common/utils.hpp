@@ -26,7 +26,10 @@ namespace cudapoa
 /// \param[out] windows Reference to vector into which parsed window
 ///                     data is saved
 /// \param[in] filename Name of file with window data
-inline void parse_window_data_file(std::vector<std::vector<std::string>>& windows, const std::string& filename)
+/// \param[in] total_windows Limit windows read to total windows, or
+///                          loop over existing windows to fill remaining spots.
+///                          -1 ignored the total_windows arg and uses all windows in the file.
+inline void parse_window_data_file(std::vector<std::vector<std::string>>& windows, const std::string& filename, int32_t total_windows)
 {
     std::ifstream infile(filename);
     if (!infile.good())
@@ -48,6 +51,24 @@ inline void parse_window_data_file(std::vector<std::vector<std::string>>& window
             windows.back().push_back(line);
             num_sequences--;
         }
+    }
+
+    if (total_windows >= 0)
+    {
+        if (windows.size() > total_windows)
+        {
+            windows.erase(windows.begin() + total_windows, windows.end());
+        }
+        else if (windows.size() < total_windows)
+        {
+            int32_t windows_read = windows.size();
+            while(windows.size() != total_windows)
+            {
+                windows.push_back(windows[windows.size() - windows_read]);
+            }
+        }
+
+        assert(windows.size() == total_windows);
     }
 }
 
