@@ -1,9 +1,7 @@
-#include <stdlib.h> //srand, rand
 #include <assert.h>
 #include <algorithm>
 #include "gtest/gtest.h"
 #include "cudapoa/batch.hpp"
-#include <utils/randutils.hpp>
 #include <utils/genomeutils.hpp>
 #include "spoa/spoa.hpp"
 
@@ -59,11 +57,10 @@ public:
 
 TEST_F(MSATest, CudapoaMSA)
 {
-    genomeworks::randutils::set_rand_seed(4321);
     std::minstd_rand rng(1);
     int num_sequences    = 499;
     std::string backbone = genomeworks::genomeutils::generate_random_genome(50, rng);
-    auto sequences       = genomeworks::genomeutils::generate_random_sequences(backbone, num_sequences, 10, 5, 10);
+    auto sequences       = genomeworks::genomeutils::generate_random_sequences(backbone, num_sequences, rng, 10, 5, 10);
 
     initialize(1, num_sequences + 1); //
     EXPECT_EQ(cudapoa_batch->add_poa(), StatusType::success);
