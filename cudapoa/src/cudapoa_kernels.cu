@@ -61,7 +61,7 @@ namespace cudapoa
  * @param[in] mismatch_score              Score for finding a mismatch in alignment
  * @param[in] match_score                 Score for finding a match in alignment
  */
-template <int32_t TPB = 64, bool cuda_banded_alignment = false>
+template <int32_t TPB = 64, bool cuda_banded_alignment = false, bool msa = false>
 __global__ void generatePOAKernel(uint8_t* consensus_d,
                                   uint8_t* sequences_d,
                                   int8_t* base_weights_d,
@@ -93,8 +93,7 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
                                   uint32_t max_sequences_per_poa,
                                   uint16_t* sequence_begin_nodes_ids_d,
                                   uint16_t* outgoing_edges_coverage_d,
-                                  uint16_t* outgoing_edges_coverage_count_d,
-                                  int8_t output_mask)
+                                  uint16_t* outgoing_edges_coverage_count_d)
 {
 
     // shared error indicator within a warp
@@ -151,7 +150,7 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
     uint16_t* outgoing_edges_coverage       = nullptr;
     uint16_t* outgoing_edges_coverage_count = nullptr;
 
-    if (output_mask & OutputType::msa)
+    if (msa)
     {
         sequence_begin_nodes_ids      = &sequence_begin_nodes_ids_d[window_idx * max_sequences_per_poa];
         outgoing_edges_coverage       = &outgoing_edges_coverage_d[window_idx * max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES * max_sequences_per_poa];
@@ -169,7 +168,7 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
         outgoing_edge_count[sequence_lengths[0] - 1] = 0;
         incoming_edge_weights[0]                     = base_weights[0];
         node_coverage_counts[0]                      = 1;
-        if (output_mask & OutputType::msa)
+        if (msa)
         {
             sequence_begin_nodes_ids[0] = 0;
         }
@@ -187,7 +186,7 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
             node_alignment_count[nucleotide_idx]                           = 0;
             node_id_to_pos[nucleotide_idx]                                 = nucleotide_idx;
             node_coverage_counts[nucleotide_idx]                           = 1;
-            if (output_mask & OutputType::msa)
+            if (msa)
             {
                 outgoing_edges_coverage[(nucleotide_idx - 1) * CUDAPOA_MAX_NODE_EDGES * max_sequences_per_poa] = 0;
                 outgoing_edges_coverage_count[(nucleotide_idx - 1) * CUDAPOA_MAX_NODE_EDGES]                   = 1;
@@ -284,22 +283,21 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
 
             // Add alignment to graph.
             //printf("running add\n");
-            uint16_t new_node_count = addAlignmentToGraph(nodes, sequence_lengths[0],
-                                                          node_alignments, node_alignment_count,
-                                                          incoming_edges, incoming_edge_count,
-                                                          outoing_edges, outgoing_edge_count,
-                                                          incoming_edge_weights, outgoing_edge_weights,
-                                                          alignment_length,
-                                                          sorted_poa, alignment_graph,
-                                                          sequence, alignment_read,
-                                                          node_coverage_counts,
-                                                          base_weights,
-                                                          (sequence_begin_nodes_ids + s),
-                                                          outgoing_edges_coverage,
-                                                          outgoing_edges_coverage_count,
-                                                          s,
-                                                          max_sequences_per_poa,
-                                                          output_mask);
+            uint16_t new_node_count = addAlignmentToGraph<msa>(nodes, sequence_lengths[0],
+                                                               node_alignments, node_alignment_count,
+                                                               incoming_edges, incoming_edge_count,
+                                                               outoing_edges, outgoing_edge_count,
+                                                               incoming_edge_weights, outgoing_edge_weights,
+                                                               alignment_length,
+                                                               sorted_poa, alignment_graph,
+                                                               sequence, alignment_read,
+                                                               node_coverage_counts,
+                                                               base_weights,
+                                                               (sequence_begin_nodes_ids + s),
+                                                               outgoing_edges_coverage,
+                                                               outgoing_edges_coverage_count,
+                                                               s,
+                                                               max_sequences_per_poa);
 
             sequence_lengths[0] = new_node_count;
             // Run a topsort on the graph. Not strictly necessary at this point
@@ -394,86 +392,44 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
 
     GW_CU_CHECK_ERR(cudaDeviceSetCacheConfig(cudaFuncCachePreferL1));
 
-    if (cuda_banded_alignment)
-    {
-        generatePOAKernel<CUDAPOA_BANDED_THREADS_PER_BLOCK, true>
-            <<<total_windows, CUDAPOA_BANDED_THREADS_PER_BLOCK, 0, stream>>>(consensus_d,
-                                                                             sequences_d,
-                                                                             base_weights_d,
-                                                                             sequence_lengths_d,
-                                                                             window_details_d,
-                                                                             total_windows,
-                                                                             scores,
-                                                                             alignment_graph,
-                                                                             alignment_read,
-                                                                             nodes,
-                                                                             incoming_edges,
-                                                                             incoming_edge_count,
-                                                                             outgoing_edges,
-                                                                             outgoing_edge_count,
-                                                                             incoming_edge_w,
-                                                                             outgoing_edge_w,
-                                                                             sorted_poa,
-                                                                             node_id_to_pos,
-                                                                             node_alignments,
-                                                                             node_alignment_count,
-                                                                             sorted_poa_local_edge_count,
-                                                                             node_marks,
-                                                                             check_aligned_nodes,
-                                                                             nodes_to_visit,
-                                                                             node_coverage_counts,
-                                                                             gap_score,
-                                                                             mismatch_score,
-                                                                             match_score,
-                                                                             max_sequences_per_poa,
-                                                                             sequence_begin_nodes_ids,
-                                                                             outgoing_edges_coverage,
-                                                                             outgoing_edges_coverage_count,
-                                                                             output_mask);
-    }
-    else
-    {
-        generatePOAKernel<CUDAPOA_THREADS_PER_BLOCK, false>
-            <<<nblocks, CUDAPOA_THREADS_PER_BLOCK, 0, stream>>>(consensus_d,
-                                                                sequences_d,
-                                                                base_weights_d,
-                                                                sequence_lengths_d,
-                                                                window_details_d,
-                                                                total_windows,
-                                                                scores,
-                                                                alignment_graph,
-                                                                alignment_read,
-                                                                nodes,
-                                                                incoming_edges,
-                                                                incoming_edge_count,
-                                                                outgoing_edges,
-                                                                outgoing_edge_count,
-                                                                incoming_edge_w,
-                                                                outgoing_edge_w,
-                                                                sorted_poa,
-                                                                node_id_to_pos,
-                                                                node_alignments,
-                                                                node_alignment_count,
-                                                                sorted_poa_local_edge_count,
-                                                                node_marks,
-                                                                check_aligned_nodes,
-                                                                nodes_to_visit,
-                                                                node_coverage_counts,
-                                                                gap_score,
-                                                                mismatch_score,
-                                                                match_score,
-                                                                max_sequences_per_poa,
-                                                                sequence_begin_nodes_ids,
-                                                                outgoing_edges_coverage,
-                                                                outgoing_edges_coverage_count,
-                                                                output_mask);
-    }
-
     int32_t consensus_num_blocks = (total_windows / CUDAPOA_MAX_CONSENSUS_PER_BLOCK) + 1;
     if (cuda_banded_alignment)
     {
         if (output_mask & OutputType::consensus)
         {
+            generatePOAKernel<CUDAPOA_BANDED_THREADS_PER_BLOCK, true, false>
+                <<<total_windows, CUDAPOA_BANDED_THREADS_PER_BLOCK, 0, stream>>>(consensus_d,
+                                                                                 sequences_d,
+                                                                                 base_weights_d,
+                                                                                 sequence_lengths_d,
+                                                                                 window_details_d,
+                                                                                 total_windows,
+                                                                                 scores,
+                                                                                 alignment_graph,
+                                                                                 alignment_read,
+                                                                                 nodes,
+                                                                                 incoming_edges,
+                                                                                 incoming_edge_count,
+                                                                                 outgoing_edges,
+                                                                                 outgoing_edge_count,
+                                                                                 incoming_edge_w,
+                                                                                 outgoing_edge_w,
+                                                                                 sorted_poa,
+                                                                                 node_id_to_pos,
+                                                                                 node_alignments,
+                                                                                 node_alignment_count,
+                                                                                 sorted_poa_local_edge_count,
+                                                                                 node_marks,
+                                                                                 check_aligned_nodes,
+                                                                                 nodes_to_visit,
+                                                                                 node_coverage_counts,
+                                                                                 gap_score,
+                                                                                 mismatch_score,
+                                                                                 match_score,
+                                                                                 max_sequences_per_poa,
+                                                                                 sequence_begin_nodes_ids,
+                                                                                 outgoing_edges_coverage,
+                                                                                 outgoing_edges_coverage_count);
             generateConsensusKernel<true>
                 <<<consensus_num_blocks, CUDAPOA_MAX_CONSENSUS_PER_BLOCK, 0, stream>>>(consensus_d,
                                                                                        coverage_d,
@@ -496,6 +452,39 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
         }
         if (output_mask & OutputType::msa)
         {
+            generatePOAKernel<CUDAPOA_BANDED_THREADS_PER_BLOCK, true, true>
+                <<<total_windows, CUDAPOA_BANDED_THREADS_PER_BLOCK, 0, stream>>>(consensus_d,
+                                                                                 sequences_d,
+                                                                                 base_weights_d,
+                                                                                 sequence_lengths_d,
+                                                                                 window_details_d,
+                                                                                 total_windows,
+                                                                                 scores,
+                                                                                 alignment_graph,
+                                                                                 alignment_read,
+                                                                                 nodes,
+                                                                                 incoming_edges,
+                                                                                 incoming_edge_count,
+                                                                                 outgoing_edges,
+                                                                                 outgoing_edge_count,
+                                                                                 incoming_edge_w,
+                                                                                 outgoing_edge_w,
+                                                                                 sorted_poa,
+                                                                                 node_id_to_pos,
+                                                                                 node_alignments,
+                                                                                 node_alignment_count,
+                                                                                 sorted_poa_local_edge_count,
+                                                                                 node_marks,
+                                                                                 check_aligned_nodes,
+                                                                                 nodes_to_visit,
+                                                                                 node_coverage_counts,
+                                                                                 gap_score,
+                                                                                 mismatch_score,
+                                                                                 match_score,
+                                                                                 max_sequences_per_poa,
+                                                                                 sequence_begin_nodes_ids,
+                                                                                 outgoing_edges_coverage,
+                                                                                 outgoing_edges_coverage_count);
             generateMSAKernel<true>
                 <<<total_windows, max_sequences_per_poa, 0, stream>>>(nodes,
                                                                       consensus_d,
@@ -524,6 +513,39 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
     {
         if (output_mask & OutputType::consensus)
         {
+            generatePOAKernel<CUDAPOA_THREADS_PER_BLOCK, false, false>
+                <<<nblocks, CUDAPOA_THREADS_PER_BLOCK, 0, stream>>>(consensus_d,
+                                                                    sequences_d,
+                                                                    base_weights_d,
+                                                                    sequence_lengths_d,
+                                                                    window_details_d,
+                                                                    total_windows,
+                                                                    scores,
+                                                                    alignment_graph,
+                                                                    alignment_read,
+                                                                    nodes,
+                                                                    incoming_edges,
+                                                                    incoming_edge_count,
+                                                                    outgoing_edges,
+                                                                    outgoing_edge_count,
+                                                                    incoming_edge_w,
+                                                                    outgoing_edge_w,
+                                                                    sorted_poa,
+                                                                    node_id_to_pos,
+                                                                    node_alignments,
+                                                                    node_alignment_count,
+                                                                    sorted_poa_local_edge_count,
+                                                                    node_marks,
+                                                                    check_aligned_nodes,
+                                                                    nodes_to_visit,
+                                                                    node_coverage_counts,
+                                                                    gap_score,
+                                                                    mismatch_score,
+                                                                    match_score,
+                                                                    max_sequences_per_poa,
+                                                                    sequence_begin_nodes_ids,
+                                                                    outgoing_edges_coverage,
+                                                                    outgoing_edges_coverage_count);
             generateConsensusKernel<false>
                 <<<consensus_num_blocks, CUDAPOA_MAX_CONSENSUS_PER_BLOCK, 0, stream>>>(consensus_d,
                                                                                        coverage_d,
@@ -546,6 +568,39 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
         }
         if (output_mask & OutputType::msa)
         {
+            generatePOAKernel<CUDAPOA_THREADS_PER_BLOCK, false, true>
+                <<<nblocks, CUDAPOA_THREADS_PER_BLOCK, 0, stream>>>(consensus_d,
+                                                                    sequences_d,
+                                                                    base_weights_d,
+                                                                    sequence_lengths_d,
+                                                                    window_details_d,
+                                                                    total_windows,
+                                                                    scores,
+                                                                    alignment_graph,
+                                                                    alignment_read,
+                                                                    nodes,
+                                                                    incoming_edges,
+                                                                    incoming_edge_count,
+                                                                    outgoing_edges,
+                                                                    outgoing_edge_count,
+                                                                    incoming_edge_w,
+                                                                    outgoing_edge_w,
+                                                                    sorted_poa,
+                                                                    node_id_to_pos,
+                                                                    node_alignments,
+                                                                    node_alignment_count,
+                                                                    sorted_poa_local_edge_count,
+                                                                    node_marks,
+                                                                    check_aligned_nodes,
+                                                                    nodes_to_visit,
+                                                                    node_coverage_counts,
+                                                                    gap_score,
+                                                                    mismatch_score,
+                                                                    match_score,
+                                                                    max_sequences_per_poa,
+                                                                    sequence_begin_nodes_ids,
+                                                                    outgoing_edges_coverage,
+                                                                    outgoing_edges_coverage_count);
             generateMSAKernel<false>
                 <<<total_windows, max_sequences_per_poa, 0, stream>>>(nodes,
                                                                       consensus_d,

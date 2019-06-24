@@ -267,8 +267,7 @@ void addAlignment(uint8_t* nodes,
                   uint16_t* outgoing_edges_coverage,
                   uint16_t* outgoing_edges_coverage_count,
                   uint16_t s,
-                  uint32_t max_sequences_per_poa,
-                  int8_t output_mask);
+                  uint32_t max_sequences_per_poa);
 
 // Host function that calls the kernel
 void runNW(uint8_t* nodes,
