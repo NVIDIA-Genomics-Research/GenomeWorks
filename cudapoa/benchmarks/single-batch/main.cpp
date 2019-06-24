@@ -21,7 +21,7 @@ namespace cudapoa
 
 static void BM_SingleBatchTest(benchmark::State& state)
 {
-    SingleBatch sb(state.range(0), std::string(CUDAPOA_BENCHMARK_DATA_DIR) + "/fungus-windows.txt");
+    SingleBatch sb(state.range(0), std::string(CUDAPOA_BENCHMARK_DATA_DIR) + "/sample-windows.txt", state.range(0));
     for (auto _ : state)
     {
         state.PauseTiming();

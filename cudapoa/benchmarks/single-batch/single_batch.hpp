@@ -27,10 +27,10 @@ public:
     ///
     /// \param max_poas_per_batch Batch size
     /// \param filename Filename with window data
-    SingleBatch(int32_t max_poas_per_batch, const std::string& filename)
+    SingleBatch(int32_t max_poas_per_batch, const std::string& filename, int32_t total_windows)
         : max_poas_per_batch_(max_poas_per_batch)
     {
-        parse_window_data_file(windows_, filename);
+        parse_window_data_file(windows_, filename, total_windows);
 
         assert(get_size(windows) > 0);
 

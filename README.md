@@ -2,7 +2,7 @@
 
 ## Clone GenomeWorks
 ```bash
-git clone --recursive ssh://git@gitlab-master.nvidia.com:12051/genomics/GenomeWorks.git
+git clone --recursive git@github.com:clara-genomics/GenomeWorks.git
 ```
 
 ## Build GenomeWorks

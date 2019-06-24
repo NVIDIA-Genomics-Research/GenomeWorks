@@ -33,7 +33,8 @@ if [ "$GPU_TEST" == '1' ]; then
   nvidia-smi
 
   logger "Running GenomeWorks unit tests..."
-  run-parts -v ${LOCAL_BUILD_DIR}/install/tests
+  #run-parts -v ${LOCAL_BUILD_DIR}/install/tests
+  find ${LOCAL_BUILD_DIR}/install/tests -type f -exec {} \;
 
   logger "Running GenomeWorks benchmarks..."
   ${LOCAL_BUILD_DIR}/install/benchmarks/cudapoa/multibatch

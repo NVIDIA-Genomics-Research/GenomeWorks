@@ -46,7 +46,8 @@ static void BM_MultiBatchTest(benchmark::State& state)
     }
     else
     {
-        MultiBatch mb(batches, batch_size, std::string(CUDAPOA_BENCHMARK_DATA_DIR) + "/fungus-windows.txt");
+        const int32_t total_windows = 5500;
+        MultiBatch mb(batches, batch_size, std::string(CUDAPOA_BENCHMARK_DATA_DIR) + "/sample-windows.txt", total_windows);
         for (auto _ : state)
         {
             mb.process_batches();
