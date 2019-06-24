@@ -32,8 +32,8 @@ std::vector<End2EndBatchTestParam> getCudapoaBatchEnd2EndTestCases()
     std::vector<End2EndBatchTestParam> test_cases;
 
     End2EndBatchTestParam test1{};
-    test1.data_file   = std::string(CUDAPOA_BENCHMARK_DATA_DIR) + "/fungus-windows.txt";
-    test1.golden_file = std::string(CUDAPOA_BENCHMARK_DATA_DIR) + "/fungus-golden-value.txt";
+    test1.data_file   = std::string(CUDAPOA_BENCHMARK_DATA_DIR) + "/sample-windows.txt";
+    test1.golden_file = std::string(CUDAPOA_BENCHMARK_DATA_DIR) + "/sample-golden-value.txt";
 
     test1.batches    = 2;
     test1.batch_size = 256;

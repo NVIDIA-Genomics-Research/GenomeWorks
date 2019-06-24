@@ -28,11 +28,11 @@ public:
     /// \param num_batches Number of cudapoa batches
     /// \param max_poas_per_batch Batch size
     /// \param filename Filename with window data
-    MultiBatch(int32_t num_batches, int32_t max_poas_per_batch, const std::string& filename)
+    MultiBatch(int32_t num_batches, int32_t max_poas_per_batch, const std::string& filename, int32_t total_windows = -1)
         : num_batches_(num_batches)
         , max_poas_per_batch_(max_poas_per_batch)
     {
-        parse_window_data_file(windows_, filename);
+        parse_window_data_file(windows_, filename, total_windows);
 
         assert(windows.size() > 0);
 
