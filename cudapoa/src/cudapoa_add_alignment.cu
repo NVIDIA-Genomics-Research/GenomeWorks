@@ -42,10 +42,11 @@ namespace cudapoa
  * @param[in] outgoing_edges_coverage_count   Device buffer with coverage count of each edge in graph
  * @param[in] s                               Current sequence id
  * @param[in] max_sequences_per_poa           Maximum sequences allowed in a graph
- * @param[in] output_mask           Output type (OutputType::consensus or OutputType::msa)
-
+ *
  * @return Number of nodes in graph after update
  */
+
+template <bool msa = false>
 __device__
     uint16_t
     addAlignmentToGraph(uint8_t* nodes,
@@ -65,8 +66,7 @@ __device__
                         uint16_t* outgoing_edges_coverage,
                         uint16_t* outgoing_edges_coverage_count,
                         uint16_t s,
-                        uint32_t max_sequences_per_poa,
-                        int8_t output_mask)
+                        uint32_t max_sequences_per_poa)
 {
     //printf("Running addition for alignment %d\n", alignment_length);
     int16_t head_node_id = -1;
@@ -194,7 +194,7 @@ __device__
             }
 
             // for msa generation
-            if ((output_mask & OutputType::msa) && (read_pos == 0))
+            if (msa && (read_pos == 0))
             {
                 //begin node of the sequence, add its node_id (curr_node_id) to sequence_begin_nodes_ids
                 *sequence_begin_nodes_ids = curr_node_id;
@@ -222,7 +222,7 @@ __device__
                     incoming_edge_count[curr_node_id]                                 = in_count + 1;
                     uint16_t out_count                                                = outgoing_edge_count[head_node_id];
                     outgoing_edges[head_node_id * CUDAPOA_MAX_NODE_EDGES + out_count] = curr_node_id;
-                    if (output_mask & OutputType::msa)
+                    if (msa)
                     {
                         outgoing_edges_coverage_count[head_node_id * CUDAPOA_MAX_NODE_EDGES + out_count]                     = 1;
                         outgoing_edges_coverage[(head_node_id * CUDAPOA_MAX_NODE_EDGES + out_count) * max_sequences_per_poa] = s;
@@ -235,7 +235,7 @@ __device__
                         printf("exceeded max edge count\n");
                     }
                 }
-                else if (output_mask & OutputType::msa) //if edge exists and for msa generation
+                else if (msa) //if edge exists and for msa generation
                 {
                     uint16_t out_count = outgoing_edge_count[head_node_id];
                     for (uint16_t e = 0; e < out_count; e++)
@@ -282,8 +282,7 @@ __global__ void addAlignmentKernel(uint8_t* nodes,
                                    uint16_t* outgoing_edges_coverage,
                                    uint16_t* outgoing_edges_coverage_count,
                                    uint16_t s,
-                                   uint32_t max_sequences_per_poa,
-                                   int8_t output_mask)
+                                   uint32_t max_sequences_per_poa)
 {
     // all pointers will be allocated in unified memory visible to both host and device
     *node_count = addAlignmentToGraph(nodes,
@@ -303,8 +302,7 @@ __global__ void addAlignmentKernel(uint8_t* nodes,
                                       outgoing_edges_coverage,
                                       outgoing_edges_coverage_count,
                                       s,
-                                      max_sequences_per_poa,
-                                      output_mask);
+                                      max_sequences_per_poa);
 }
 
 // Host function that calls the kernel
@@ -325,8 +323,7 @@ void addAlignment(uint8_t* nodes,
                   uint16_t* outgoing_edges_coverage,
                   uint16_t* outgoing_edges_coverage_count,
                   uint16_t s,
-                  uint32_t max_sequences_per_poa,
-                  int8_t output_mask)
+                  uint32_t max_sequences_per_poa)
 {
     addAlignmentKernel<<<1, 1>>>(nodes,
                                  node_count,
@@ -345,8 +342,7 @@ void addAlignment(uint8_t* nodes,
                                  outgoing_edges_coverage,
                                  outgoing_edges_coverage_count,
                                  s,
-                                 max_sequences_per_poa,
-                                 output_mask);
+                                 max_sequences_per_poa);
 }
 
 } // namespace cudapoa

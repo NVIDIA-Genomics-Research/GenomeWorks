@@ -240,7 +240,6 @@ BasicGraph testAddAlignment(const BasicAlignment& obj)
     uint16_t* outgoing_edges_coverage_count;
     uint16_t s                     = 0;
     uint32_t max_sequences_per_poa = 100;
-    int8_t output_mask             = OutputType::consensus;
 
     //allocate unified memory so they can be accessed by both host and device.
     GW_CU_CHECK_ERR(cudaMallocManaged((void**)&nodes, CUDAPOA_MAX_NODES_PER_WINDOW * sizeof(uint8_t)));
@@ -296,8 +295,7 @@ BasicGraph testAddAlignment(const BasicAlignment& obj)
                  outgoing_edges_coverage,
                  outgoing_edges_coverage_count,
                  s,
-                 max_sequences_per_poa,
-                 output_mask);
+                 max_sequences_per_poa);
 
     GW_CU_CHECK_ERR(cudaDeviceSynchronize());
 
