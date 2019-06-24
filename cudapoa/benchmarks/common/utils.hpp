@@ -62,7 +62,7 @@ inline void parse_window_data_file(std::vector<std::vector<std::string>>& window
         else if (windows.size() < total_windows)
         {
             int32_t windows_read = windows.size();
-            while(windows.size() != total_windows)
+            while (windows.size() != total_windows)
             {
                 windows.push_back(windows[windows.size() - windows_read]);
             }
