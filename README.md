@@ -11,7 +11,7 @@ The `cudapoa` package provides a GPU-accelerated implementation of the [Partial 
 algorithm. It is heavily influenced by [SPOA](https://github.com/rvaser/spoa) and in many cases can be considered a GPU-accelerated replacement. Features include:
 
 1. Generation of consensus sequences
-2. Generation of MSA alignments
+2. Generation of multi-sequence alignments (MSAs)
 
 ### cudaaligner
 
