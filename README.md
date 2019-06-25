@@ -1,5 +1,22 @@
 # GenomeWorks
 
+## Overview
+
+Genomeworks is a GPU-accelerated library for biological sequence analysis. This section provides a brief overview of the different components of GenomeWorks.
+For more detailed API documentation please refer to the [documentation](#enable-doc-generation).
+
+### cudapoa
+
+The `cudapoa` package provides a GPU-accelerated implementation of the [Partial Order Alignment](https://simpsonlab.github.io/2015/05/01/understanding-poa/)
+algorithm. It is heavily influenced by [SPOA](https://github.com/rvaser/spoa) and in many cases can be considered a GPU-accelerated replacement. Features include:
+
+1. Generation of consensus sequences
+2. Generation of multi-sequence alignments (MSAs)
+
+### cudaaligner
+
+The `cudaaligner` package provides GPU-accelerated global alignment.
+
 ## Clone GenomeWorks
 ```bash
 git clone --recursive git@github.com:clara-genomics/GenomeWorks.git
