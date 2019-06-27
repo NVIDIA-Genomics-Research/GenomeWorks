@@ -53,6 +53,11 @@ std::vector<TestCaseData> create_myers_test_cases()
     t.edit_distance = 10;
     tests.push_back(t);
 
+    t.target        = "AATAATAATA";
+    t.query         = "C";
+    t.edit_distance = 10;
+    tests.push_back(t);
+
     t.target        = "CGTCGTCGTC";
     t.query         = "CGTCGTCGTC";
     t.edit_distance = 0;
@@ -99,7 +104,31 @@ TEST_P(TestMyersEditDistance, TestCases)
     ASSERT_EQ(d, t.edit_distance);
 }
 
+class TestMyersScoreMatrix : public ::testing::TestWithParam<TestCaseData>
+{
+};
+
+TEST_P(TestMyersScoreMatrix, TestCases)
+{
+    TestCaseData t = GetParam();
+
+    matrix<int32_t> m = myers_get_full_score_matrix(t.target, t.query);
+    matrix<int32_t> r = needleman_wunsch_build_score_matrix_naive(t.target, t.query);
+
+    ASSERT_EQ(m.num_rows(), r.num_rows());
+    ASSERT_EQ(m.num_cols(), r.num_cols());
+
+    for (int32_t j = 0; j < m.num_cols(); ++j)
+    {
+        for (int32_t i = 0; i < m.num_rows(); ++i)
+        {
+            EXPECT_EQ(m(i, j), r(i, j)) << "index: (" << i << "," << j << ")";
+        }
+    }
+}
+
 INSTANTIATE_TEST_SUITE_P(TestMyersAlgorithm, TestMyersEditDistance, ::testing::ValuesIn(create_myers_test_cases()));
+INSTANTIATE_TEST_SUITE_P(TestMyersAlgorithm, TestMyersScoreMatrix, ::testing::ValuesIn(create_myers_test_cases()));
 
 } // namespace cudaaligner
 } // namespace claragenomics
