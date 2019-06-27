@@ -41,13 +41,23 @@ namespace cudautils
 /// \param file Filename of the calling function
 /// \param line File line number of the calling function
 /// \param abort If true, hard-exit on CUDA error
-inline void gpuAssert(cudaError_t code, const char* file, int line, bool abort = true)
+inline void gpuAssert(cudaError_t code, const char* file, int line, bool abort = false)
 {
     if (code != cudaSuccess)
     {
-        GW_LOG_ERROR("GPU Error:: {} {} {}\n", cudaGetErrorString(code), file, line);
+        std::string err = "GPU Error:: " +
+                          std::string(cudaGetErrorString(code)) +
+                          " " + std::string(file) +
+                          " " + std::to_string(line);
         if (abort)
-            exit(code);
+        {
+            GW_LOG_ERROR("{}\n", err);
+            std::abort();
+        }
+        else
+        {
+            throw std::runtime_error(err);
+        }
     }
 }
 
