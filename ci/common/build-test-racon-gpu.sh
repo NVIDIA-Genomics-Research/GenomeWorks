@@ -16,9 +16,9 @@ GPU_BUILD=$5
 GPU_TEST=$6
 
 if [ "$GPU_BUILD" == '1' ]; then
-  CMAKE_BUILD_GPU="-Dracon_enable_cuda=ON -DGENOMEWORKS_SRC_PATH=${CGA_ROOT}"
+  CMAKE_BUILD_GPU="-Dracon_enable_cuda=ON -DCLARAGENOMICSANALYSIS_SRC_PATH=${CGA_ROOT}"
 elif [ "$GPU_BUILD" == '0' ]; then
-  CMAKE_BUILD_GPU="-Dracon_enable_cuda=OFF -DGENOMEWORKS_SRC_PATH=${CGA_ROOT}"
+  CMAKE_BUILD_GPU="-Dracon_enable_cuda=OFF -DCLARAGENOMICSANALYSIS_SRC_PATH=${CGA_ROOT}"
 fi
 
 echo "CGA Root ${CGA_ROOT}"

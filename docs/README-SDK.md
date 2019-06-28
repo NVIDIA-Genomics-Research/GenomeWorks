@@ -1,4 +1,4 @@
-# GenomeWorks SDK Documentation
+# ClaraGenomicsAnalysis SDK Documentation
 
 The top-level markdown file for the SDK docs
 

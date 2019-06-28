@@ -32,11 +32,11 @@ if [ "$GPU_TEST" == '1' ]; then
   logger "GPU config..."
   nvidia-smi
 
-  logger "Running GenomeWorks unit tests..."
+  logger "Running ClaraGenomicsAnalysis unit tests..."
   #run-parts -v ${LOCAL_BUILD_DIR}/install/tests
   find ${LOCAL_BUILD_DIR}/install/tests -type f -exec {} \;
 
-  logger "Running GenomeWorks benchmarks..."
+  logger "Running ClaraGenomicsAnalysis benchmarks..."
   ${LOCAL_BUILD_DIR}/install/benchmarks/cudapoa/multibatch
   ${LOCAL_BUILD_DIR}/install/benchmarks/cudaaligner/singlealignment
 fi

@@ -1,9 +1,9 @@
 cmake_minimum_required(VERSION 3.10.2)
-project(GenomeWorksCPP)
+project(ClaraGenomicsAnalysisCPP)
 
 # Process options.
-option(gw_enable_tests "Build GenomeWorks unit tests" OFF)
-option(gw_enable_benchmarks "Build GenomeWorks benchmarks" OFF)
+option(gw_enable_tests "Build ClaraGenomicsAnalysis unit tests" OFF)
+option(gw_enable_benchmarks "Build ClaraGenomicsAnalysis benchmarks" OFF)
 # The spoa_accurate option runs a different (and slower) version of
 # the topological sort in cudapoa which exactly matches the output
 # of the topological sort implementation in the SPOA library. This is
@@ -15,12 +15,12 @@ option(spoa_accurate "Run cudapoa code in mode that matches spoa" OFF)
 option(gw_enable_cudapoa_nw_print "Enable verbose prints within cudapoa NW kernel" OFF)
 
 if (gw_enable_tests)
-    message(STATUS "Enabling GenomeWorks unit tests")
+    message(STATUS "Enabling ClaraGenomicsAnalysis unit tests")
     set_property(GLOBAL PROPERTY enable_tests ON)
 endif()
 
 if (gw_enable_benchmarks)
-    message(STATUS "Enabling GenomeWorks benchmarks")
+    message(STATUS "Enabling ClaraGenomicsAnalysis benchmarks")
     set_property(GLOBAL PROPERTY enable_benchmarks ON)
 endif()
 
@@ -32,7 +32,7 @@ include(cmake/Format.cmake)
 
 set(CMAKE_CXX_STANDARD 17)
 
-# Add GenomeWorks projects.
+# Add ClaraGenomicsAnalysis projects.
 add_subdirectory(common/cudautils)
 add_subdirectory(common/logging)
 add_subdirectory(common/utils)
@@ -41,7 +41,7 @@ add_subdirectory(cudaaligner)
 
 # Add documentation generation.
 set_doxygen_mainpage(${CMAKE_CURRENT_SOURCE_DIR}/docs/README-SDK.md)
-add_docs_target("GenomeWorks" "1.0")
+add_docs_target("ClaraGenomicsAnalysis" "1.0")
 
 # Add auto formatting.
 gw_enable_formatting_targets()

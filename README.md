@@ -1,8 +1,8 @@
-# GenomeWorks
+# ClaraGenomicsAnalysis
 
 ## Overview
 
-Genomeworks is a GPU-accelerated library for biological sequence analysis. This section provides a brief overview of the different components of GenomeWorks.
+Clara Genomics Analysis is a GPU-accelerated library for biological sequence analysis. This section provides a brief overview of the different components of ClaraGenomicsAnalysis.
 For more detailed API documentation please refer to the [documentation](#enable-doc-generation).
 
 ### cudapoa
@@ -17,13 +17,13 @@ algorithm. It is heavily influenced by [SPOA](https://github.com/rvaser/spoa) an
 
 The `cudaaligner` package provides GPU-accelerated global alignment.
 
-## Clone GenomeWorks
+## Clone ClaraGenomicsAnalysis
 ```bash
-git clone --recursive git@github.com:clara-genomics/GenomeWorks.git
+git clone --recursive git@github.com:clara-genomics/ClaraGenomicsAnalysis.git
 ```
 
-## Build GenomeWorks
-To build GenomeWorks -
+## Build ClaraGenomicsAnalysis
+To build ClaraGenomicsAnalysis -
 
 ```bash
 mkdir build
@@ -59,7 +59,7 @@ e.g.
 A description of each of the benchmarks is present in a README under the module's benchmark folder.
 
 ## Enable Doc Generation
-To enable document generation for GenomeWorks, please install `Doxygen` on your system. Once
+To enable document generation for ClaraGenomicsAnalysis, please install `Doxygen` on your system. Once
 `Doxygen` has been installed, run the following to build documents.
 
 ```bash
@@ -67,7 +67,7 @@ make docs
 ```
 
 ## Enable Auto-Formatting
-GenomeWorks makes use of `clang-format` to format it's source and header files. To make use of
+ClaraGenomicsAnalysis makes use of `clang-format` to format it's source and header files. To make use of
 auto-formatting, `clang-format` would have to be installed from the LLVM package (for latest builds,
 best to refer to http://releases.llvm.org/download.html).
 

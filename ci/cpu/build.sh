@@ -10,7 +10,7 @@
 #
 
 ######################################
-# GenomeWorks CPU build script for CI #
+# ClaraGenomicsAnalysis CPU build script for CI #
 ######################################
 set -e
 
@@ -23,7 +23,7 @@ function logger() {
 # Init
 ################################################################################
 
-export TEST_PYGENOMEWORKS=1
+export TEST_PYCLARAGENOMICSANALYSIS=1
 export PATH=/conda/bin:/usr/local/cuda/bin:$PATH
 PARALLEL_LEVEL=4
 
@@ -48,6 +48,6 @@ source ci/common/build-test-sdk.sh ${WORKSPACE} ${CMAKE_COMMON_VARIABLES} ${PARA
 ################################################################################
 
 cd ${WORKSPACE}
-if [ "${TEST_PYGENOMEWORKS}" == '1' ]; then
+if [ "${TEST_PYCLARAGENOMICSANALYSIS}" == '1' ]; then
     source ci/common/test-pycga.sh $WORKSPACE/pycga
 fi

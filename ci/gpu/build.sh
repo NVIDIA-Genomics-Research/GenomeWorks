@@ -10,7 +10,7 @@
 #
 
 ######################################
-# GenomeWorks CPU/GPU conda build script for CI #
+# ClaraGenomicsAnalysis CPU/GPU conda build script for CI #
 ######################################
 set -e
 
