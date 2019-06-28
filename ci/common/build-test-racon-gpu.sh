@@ -21,7 +21,7 @@ elif [ "$GPU_BUILD" == '0' ]; then
   CMAKE_BUILD_GPU="-Dracon_enable_cuda=OFF -DGENOMEWORKS_SRC_PATH=${CGA_ROOT}"
 fi
 
-echo "CGA Root ${GW_ROOT}"
+echo "CGA Root ${CGA_ROOT}"
 
 cd ${LOCAL_BUILD_ROOT}
 export LOCAL_BUILD_DIR=${LOCAL_BUILD_ROOT}/build
