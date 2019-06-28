@@ -32,7 +32,7 @@ public:
     {
         parse_window_data_file(windows_, filename, total_windows);
 
-        assert(get_size(windows) > 0);
+        assert(get_size(windows_) > 0);
 
         batch_ = create_batch(max_poas_per_batch, 200, 0, OutputType::consensus, -8, -6, 8, false);
         cudaStream_t stream;

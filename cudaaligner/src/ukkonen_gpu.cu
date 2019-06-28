@@ -16,6 +16,8 @@
 #include <algorithm>
 #include <cassert>
 
+#define CGA_UKKONEN_MAX_THREADS_PER_BLOCK 1024
+
 namespace cga
 {
 namespace cudaaligner
@@ -43,7 +45,10 @@ __device__ thrust::tuple<int, int> to_band_indices(int i, int j, int p)
     return thrust::make_tuple(k, l);
 }
 
-__global__ void ukkonen_backtrace_kernel(int8_t* paths_base, int32_t* lengths, int32_t max_path_length, batched_device_matrices<nw_score_t>::device_interface* s, int32_t const* sequence_lengths_d, int32_t n_alignments, int32_t p)
+#ifndef NDEBUG
+__launch_bounds__(CGA_UKKONEN_MAX_THREADS_PER_BLOCK) // Workaround for a register allocation problem when compiled with -g
+#endif
+    __global__ void ukkonen_backtrace_kernel(int8_t* paths_base, int32_t* lengths, int32_t max_path_length, batched_device_matrices<nw_score_t>::device_interface* s, int32_t const* sequence_lengths_d, int32_t n_alignments, int32_t p)
 {
     // Using scoring schema from cudaaligner.hpp
     // Match = 0
@@ -193,7 +198,11 @@ __device__ void ukkonen_init_score_matrix(device_matrix_view<nw_score_t>& scores
         k += blockDim.x;
     }
 }
-__global__ void ukkonen_compute_score_matrix(batched_device_matrices<nw_score_t>::device_interface* s, char const* sequences_d, int32_t const* sequence_lengths_d, int32_t max_target_query_length, int32_t p, int32_t max_cols)
+
+#ifndef NDEBUG
+__launch_bounds__(CGA_UKKONEN_MAX_THREADS_PER_BLOCK) // Workaround for a register allocation problem when compiled with -g
+#endif
+    __global__ void ukkonen_compute_score_matrix(batched_device_matrices<nw_score_t>::device_interface* s, char const* sequences_d, int32_t const* sequence_lengths_d, int32_t max_target_query_length, int32_t p, int32_t max_cols)
 {
     using thrust::swap;
     int32_t const k  = blockIdx.x * blockDim.x + threadIdx.x;
@@ -253,7 +262,7 @@ constexpr int32_t calc_good_blockdim(int32_t n)
 {
     constexpr int32_t warpsize = 32;
     int32_t i                  = n + (warpsize - n % warpsize);
-    return i > 1024 ? 1024 : i;
+    return i > CGA_UKKONEN_MAX_THREADS_PER_BLOCK ? CGA_UKKONEN_MAX_THREADS_PER_BLOCK : i;
 }
 
 void ukkonen_compute_score_matrix_gpu(batched_device_matrices<nw_score_t>& score_matrices, char const* sequences_d, int32_t const* sequence_lengths_d, int32_t max_length_difference, int32_t max_target_query_length, int32_t n_alignments, int32_t p, cudaStream_t stream)
