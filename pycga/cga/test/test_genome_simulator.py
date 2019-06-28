@@ -1,7 +1,7 @@
 import pytest
 
-from genomeworks.simulators import genomesim
-from genomeworks import simulators
+from cga.simulators import genomesim
+from cga import simulators
 
 
 genome_lengths_data = [

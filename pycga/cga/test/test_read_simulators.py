@@ -1,8 +1,8 @@
 import pytest
 
-from genomeworks.simulators import readsim
-from genomeworks.simulators import genomesim
-from genomeworks import simulators
+from cga.simulators import readsim
+from cga.simulators import genomesim
+from cga import simulators
 
 
 num_reads_data = [
