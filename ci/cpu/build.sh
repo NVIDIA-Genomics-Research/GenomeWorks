@@ -44,10 +44,10 @@ logger "Build SDK..."
 source ci/common/build-test-sdk.sh ${WORKSPACE} ${CMAKE_COMMON_VARIABLES} ${PARALLEL_LEVEL} 0
 
 ################################################################################
-# Pygenomeworks tests
+# Pycga tests
 ################################################################################
 
 cd ${WORKSPACE}
 if [ "${TEST_PYGENOMEWORKS}" == '1' ]; then
-    source ci/common/test-pygenomeworks.sh $WORKSPACE/pygenomeworks
+    source ci/common/test-pycga.sh $WORKSPACE/pycga
 fi
