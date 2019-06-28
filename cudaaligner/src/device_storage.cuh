@@ -12,7 +12,7 @@
 
 #include <cudautils/cudautils.hpp>
 
-namespace genomeworks
+namespace cga
 {
 
 template <typename T>
@@ -45,4 +45,4 @@ private:
     int32_t device_id_;
 };
 
-} // end namespace genomeworks
+} // end namespace cga

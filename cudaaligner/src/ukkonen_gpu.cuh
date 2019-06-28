@@ -12,7 +12,7 @@
 
 #include <cuda_runtime_api.h>
 
-namespace genomeworks
+namespace cga
 {
 namespace cudaaligner
 {
@@ -36,4 +36,4 @@ void ukkonen_gpu(int8_t* paths_d, int32_t* path_lengths_d, int32_t max_path_leng
                  cudaStream_t stream);
 
 } // end namespace cudaaligner
-} // end namespace genomeworks
+} // end namespace cga

@@ -16,7 +16,7 @@
 
 #include "cudaaligner/cudaaligner.hpp"
 
-namespace genomeworks
+namespace cga
 {
 
 namespace cudaaligner
@@ -69,4 +69,4 @@ public:
 
 /// \}
 } // namespace cudaaligner
-} // namespace genomeworks
+} // namespace cga

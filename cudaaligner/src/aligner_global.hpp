@@ -15,7 +15,7 @@
 #include "device_storage.cuh"
 #include <thrust/system/cuda/experimental/pinned_allocator.h>
 
-namespace genomeworks
+namespace cga
 {
 
 namespace cudaaligner
@@ -82,4 +82,4 @@ private:
     int32_t device_id_;
 };
 } // namespace cudaaligner
-} // namespace genomeworks
+} // namespace cga
