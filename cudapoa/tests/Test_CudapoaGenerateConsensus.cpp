@@ -10,11 +10,11 @@
 
 #include "gtest/gtest.h"
 #include "../src/cudapoa_kernels.cuh"     //generateConsensusHost, CUDAPOA_MAX_NODE_EDGES, CUDAPOA_MAX_NODE_ALIGNMENTS
-#include <cudautils/cudautils.hpp>        //GW_CU_CHECK_ERR
+#include <cudautils/cudautils.hpp>        //CGA_CU_CHECK_ERR
 #include <utils/signed_integer_utils.hpp> //get_size
 #include "sorted_graph.hpp"               //SortedGraph
 
-namespace genomeworks
+namespace cga
 {
 
 namespace cudapoa
@@ -175,23 +175,23 @@ std::string testGenerateConsensus(const BasicGenerateConsensus& obj)
     uint16_t* coverage;
 
     //allocate unified memory so they can be accessed by both host and device.
-    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&nodes, CUDAPOA_MAX_NODES_PER_WINDOW * sizeof(uint8_t)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&node_count, sizeof(uint16_t)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&graph, CUDAPOA_MAX_NODES_PER_WINDOW * sizeof(uint16_t)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&node_id_to_pos, CUDAPOA_MAX_NODES_PER_WINDOW * sizeof(uint16_t)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&incoming_edges, CUDAPOA_MAX_NODES_PER_WINDOW * CUDAPOA_MAX_NODE_EDGES * sizeof(uint16_t)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&incoming_edge_count, CUDAPOA_MAX_NODES_PER_WINDOW * sizeof(uint16_t)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&outgoing_edges, CUDAPOA_MAX_NODES_PER_WINDOW * CUDAPOA_MAX_NODE_EDGES * sizeof(uint16_t)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&outgoing_edge_count, CUDAPOA_MAX_NODES_PER_WINDOW * sizeof(uint16_t)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&incoming_edge_w, CUDAPOA_MAX_NODES_PER_WINDOW * CUDAPOA_MAX_NODE_EDGES * sizeof(uint16_t)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&node_coverage_counts, CUDAPOA_MAX_NODES_PER_WINDOW * sizeof(uint16_t)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&node_alignments, CUDAPOA_MAX_NODES_PER_WINDOW * CUDAPOA_MAX_NODE_ALIGNMENTS * sizeof(uint16_t)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&node_alignment_count, CUDAPOA_MAX_NODES_PER_WINDOW * sizeof(uint16_t)));
+    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&nodes, CUDAPOA_MAX_NODES_PER_WINDOW * sizeof(uint8_t)));
+    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&node_count, sizeof(uint16_t)));
+    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&graph, CUDAPOA_MAX_NODES_PER_WINDOW * sizeof(uint16_t)));
+    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&node_id_to_pos, CUDAPOA_MAX_NODES_PER_WINDOW * sizeof(uint16_t)));
+    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&incoming_edges, CUDAPOA_MAX_NODES_PER_WINDOW * CUDAPOA_MAX_NODE_EDGES * sizeof(uint16_t)));
+    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&incoming_edge_count, CUDAPOA_MAX_NODES_PER_WINDOW * sizeof(uint16_t)));
+    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&outgoing_edges, CUDAPOA_MAX_NODES_PER_WINDOW * CUDAPOA_MAX_NODE_EDGES * sizeof(uint16_t)));
+    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&outgoing_edge_count, CUDAPOA_MAX_NODES_PER_WINDOW * sizeof(uint16_t)));
+    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&incoming_edge_w, CUDAPOA_MAX_NODES_PER_WINDOW * CUDAPOA_MAX_NODE_EDGES * sizeof(uint16_t)));
+    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&node_coverage_counts, CUDAPOA_MAX_NODES_PER_WINDOW * sizeof(uint16_t)));
+    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&node_alignments, CUDAPOA_MAX_NODES_PER_WINDOW * CUDAPOA_MAX_NODE_ALIGNMENTS * sizeof(uint16_t)));
+    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&node_alignment_count, CUDAPOA_MAX_NODES_PER_WINDOW * sizeof(uint16_t)));
 
-    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&predecessors, CUDAPOA_MAX_NODES_PER_WINDOW * sizeof(int16_t)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&scores, CUDAPOA_MAX_NODES_PER_WINDOW * sizeof(int32_t)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&consensus, CUDAPOA_MAX_CONSENSUS_SIZE * sizeof(uint8_t)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&coverage, CUDAPOA_MAX_CONSENSUS_SIZE * sizeof(uint16_t)));
+    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&predecessors, CUDAPOA_MAX_NODES_PER_WINDOW * sizeof(int16_t)));
+    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&scores, CUDAPOA_MAX_NODES_PER_WINDOW * sizeof(int32_t)));
+    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&consensus, CUDAPOA_MAX_CONSENSUS_SIZE * sizeof(uint8_t)));
+    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&coverage, CUDAPOA_MAX_CONSENSUS_SIZE * sizeof(uint16_t)));
 
     //initialize all 'count' buffers
     memset((void**)incoming_edge_count, 0, CUDAPOA_MAX_NODES_PER_WINDOW * sizeof(uint16_t));
@@ -225,28 +225,28 @@ std::string testGenerateConsensus(const BasicGenerateConsensus& obj)
                               node_alignments,
                               node_alignment_count);
 
-    GW_CU_CHECK_ERR(cudaDeviceSynchronize());
+    CGA_CU_CHECK_ERR(cudaDeviceSynchronize());
 
     //input and output buffers are the same ones in unified memory, so the results are updated in place
     //create and return a new BasicGraph object that encodes the resulting graph structure after adding the alignment
     std::string res((char*)consensus);
 
-    GW_CU_CHECK_ERR(cudaFree(nodes));
-    GW_CU_CHECK_ERR(cudaFree(node_count));
-    GW_CU_CHECK_ERR(cudaFree(graph));
-    GW_CU_CHECK_ERR(cudaFree(node_id_to_pos));
-    GW_CU_CHECK_ERR(cudaFree(incoming_edges));
-    GW_CU_CHECK_ERR(cudaFree(incoming_edge_count));
-    GW_CU_CHECK_ERR(cudaFree(outgoing_edges));
-    GW_CU_CHECK_ERR(cudaFree(outgoing_edge_count));
-    GW_CU_CHECK_ERR(cudaFree(incoming_edge_w));
-    GW_CU_CHECK_ERR(cudaFree(node_coverage_counts));
-    GW_CU_CHECK_ERR(cudaFree(node_alignments));
-    GW_CU_CHECK_ERR(cudaFree(node_alignment_count));
-    GW_CU_CHECK_ERR(cudaFree(predecessors));
-    GW_CU_CHECK_ERR(cudaFree(scores));
-    GW_CU_CHECK_ERR(cudaFree(consensus));
-    GW_CU_CHECK_ERR(cudaFree(coverage));
+    CGA_CU_CHECK_ERR(cudaFree(nodes));
+    CGA_CU_CHECK_ERR(cudaFree(node_count));
+    CGA_CU_CHECK_ERR(cudaFree(graph));
+    CGA_CU_CHECK_ERR(cudaFree(node_id_to_pos));
+    CGA_CU_CHECK_ERR(cudaFree(incoming_edges));
+    CGA_CU_CHECK_ERR(cudaFree(incoming_edge_count));
+    CGA_CU_CHECK_ERR(cudaFree(outgoing_edges));
+    CGA_CU_CHECK_ERR(cudaFree(outgoing_edge_count));
+    CGA_CU_CHECK_ERR(cudaFree(incoming_edge_w));
+    CGA_CU_CHECK_ERR(cudaFree(node_coverage_counts));
+    CGA_CU_CHECK_ERR(cudaFree(node_alignments));
+    CGA_CU_CHECK_ERR(cudaFree(node_alignment_count));
+    CGA_CU_CHECK_ERR(cudaFree(predecessors));
+    CGA_CU_CHECK_ERR(cudaFree(scores));
+    CGA_CU_CHECK_ERR(cudaFree(consensus));
+    CGA_CU_CHECK_ERR(cudaFree(coverage));
 
     return res;
 }
@@ -275,4 +275,4 @@ INSTANTIATE_TEST_SUITE_P(TestGenerateConsensus, GenerateConsensusTest, ValuesIn(
 
 } // namespace cudapoa
 
-} // namespace genomeworks
+} // namespace cga

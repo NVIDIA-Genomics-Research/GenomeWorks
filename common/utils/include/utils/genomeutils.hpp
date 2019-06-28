@@ -12,7 +12,7 @@
 
 #include <random>
 
-namespace genomeworks
+namespace cga
 {
 
 namespace genomeutils
@@ -92,4 +92,4 @@ inline std::vector<std::string> generate_random_sequences(std::string backbone,
 
 } // namespace genomeutils
 
-} // namespace genomeworks
+} // namespace cga

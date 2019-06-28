@@ -20,7 +20,7 @@
 #include <random>
 #include <algorithm>
 
-namespace genomeworks
+namespace cga
 {
 
 namespace cudaaligner
@@ -79,8 +79,8 @@ std::vector<TestAlignmentPair> getTestCases()
 
     // Test 7
     std::minstd_rand rng(1);
-    t.target = genomeworks::genomeutils::generate_random_genome(5000, rng);
-    t.query  = genomeworks::genomeutils::generate_random_genome(4800, rng);
+    t.target = cga::genomeutils::generate_random_genome(5000, rng);
+    t.query  = cga::genomeutils::generate_random_genome(4800, rng);
     t.p      = 5000;
     test_cases.push_back(t);
 
@@ -279,4 +279,4 @@ TEST_P(AlignerImplementation, UkkonenCpuFullVsUkkonenGpuFull)
 
 INSTANTIATE_TEST_SUITE_P(TestNeedlemanWunschImplementation, AlignerImplementation, ValuesIn(getTestCases()));
 } // namespace cudaaligner
-} // namespace genomeworks
+} // namespace cga

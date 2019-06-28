@@ -2,7 +2,7 @@
 import abc
 import random
 
-from genomeworks.simulators import NUCLEOTIDES
+from cga.simulators import NUCLEOTIDES
 
 
 class ReadSimulator:

@@ -62,7 +62,7 @@
 #define CUDAPOA_KERNEL_ERROR_ENCOUNTERED UINT8_MAX
 #define CUDAPOA_KERNEL_NOERROR_ENCOUNTERED 0
 
-namespace genomeworks
+namespace cga
 {
 
 namespace cudapoa
@@ -227,12 +227,12 @@ typedef struct GraphDetails
  * @param[in] banded_alignment            Use banded alignment
  */
 
-void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
-                 genomeworks::cudapoa::InputDetails* Input_details_d,
+void generatePOA(cga::cudapoa::OutputDetails* output_details_d,
+                 cga::cudapoa::InputDetails* Input_details_d,
                  int32_t total_windows,
                  cudaStream_t stream,
-                 genomeworks::cudapoa::AlignmentDetails* alignment_details_d,
-                 genomeworks::cudapoa::GraphDetails* graph_details_d,
+                 cga::cudapoa::AlignmentDetails* alignment_details_d,
+                 cga::cudapoa::GraphDetails* graph_details_d,
                  int16_t gap_score,
                  int16_t mismatch_score,
                  int16_t match_score,
@@ -306,4 +306,4 @@ void generateConsensusTestHost(uint8_t* nodes,
                                uint16_t* node_alignment_count);
 } // namespace cudapoa
 
-} // namespace genomeworks
+} // namespace cga

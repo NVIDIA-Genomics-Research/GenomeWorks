@@ -15,7 +15,7 @@
 #include <sstream>
 #include <fstream>
 
-namespace genomeworks
+namespace cga
 {
 
 namespace cudapoa
@@ -90,4 +90,4 @@ inline std::string parse_golden_value_file(const std::string& filename)
     return line;
 }
 } // namespace cudapoa
-} // namespace genomeworks
+} // namespace cga

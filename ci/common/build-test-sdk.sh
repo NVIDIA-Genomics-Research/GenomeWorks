@@ -22,7 +22,7 @@ mkdir --parents ${LOCAL_BUILD_DIR}
 cd ${LOCAL_BUILD_DIR}
 
 # configure
-cmake $CMAKE_COMMON_VARIABLES ${CMAKE_BUILD_GPU} -Dgw_enable_tests=ON -Dgw_enable_benchmarks=ON -DCMAKE_INSTALL_PREFIX=${LOCAL_BUILD_DIR}/install ..
+cmake $CMAKE_COMMON_VARIABLES ${CMAKE_BUILD_GPU} -Dcga_enable_tests=ON -Dcga_enable_benchmarks=ON -DCMAKE_INSTALL_PREFIX=${LOCAL_BUILD_DIR}/install ..
 # Format files
 make check-format
 # build
@@ -32,11 +32,11 @@ if [ "$GPU_TEST" == '1' ]; then
   logger "GPU config..."
   nvidia-smi
 
-  logger "Running GenomeWorks unit tests..."
+  logger "Running ClaraGenomicsAnalysis unit tests..."
   #run-parts -v ${LOCAL_BUILD_DIR}/install/tests
   find ${LOCAL_BUILD_DIR}/install/tests -type f -exec {} \;
 
-  logger "Running GenomeWorks benchmarks..."
+  logger "Running ClaraGenomicsAnalysis benchmarks..."
   ${LOCAL_BUILD_DIR}/install/benchmarks/cudapoa/multibatch
   ${LOCAL_BUILD_DIR}/install/benchmarks/cudaaligner/singlealignment
 fi

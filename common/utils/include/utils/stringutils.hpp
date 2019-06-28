@@ -13,7 +13,7 @@
 #include <string>
 #include <stdint.h>
 
-namespace genomeworks
+namespace cga
 {
 
 namespace stringutils
@@ -33,4 +33,4 @@ inline std::string array_to_string(T* arr, size_t len, std::string delim = "-")
 
 } //namespace stringutils
 
-} // namespace genomeworks
+} // namespace cga

@@ -14,7 +14,7 @@
 /// Base docs for the cudaaligner package (tbd)
 /// \{
 
-namespace genomeworks
+namespace cga
 {
 
 namespace cudaaligner
@@ -48,5 +48,5 @@ enum class AlignmentState
 
 StatusType Init();
 } // namespace cudaaligner
-} // namespace genomeworks
+} // namespace cga
 /// \}

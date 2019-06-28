@@ -11,7 +11,7 @@
 #include "alignment_impl.hpp"
 #include <utils/signed_integer_utils.hpp>
 
-namespace genomeworks
+namespace cga
 {
 
 namespace cudaaligner
@@ -105,4 +105,4 @@ FormattedAlignment AlignmentImpl::format_alignment() const
     return output;
 }
 } // namespace cudaaligner
-} // namespace genomeworks
+} // namespace cga

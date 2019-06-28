@@ -19,7 +19,7 @@
 
 #include "cudapoa_kernels.cuh"
 
-namespace genomeworks
+namespace cga
 {
 
 namespace cudapoa
@@ -81,4 +81,4 @@ protected:
 
 } // namespace cudapoa
 
-} // namespace genomeworks
+} // namespace cga

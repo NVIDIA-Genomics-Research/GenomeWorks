@@ -30,4 +30,4 @@ install(DIRECTORY include/ DESTINATION include)
 install(EXPORT utils DESTINATION cmake)
 
 # Adding formatting
-gw_enable_auto_formatting("${CMAKE_CURRENT_SOURCE_DIR}")
+cga_enable_auto_formatting("${CMAKE_CURRENT_SOURCE_DIR}")
