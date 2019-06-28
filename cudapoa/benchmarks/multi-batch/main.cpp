@@ -39,10 +39,12 @@ static void BM_MultiBatchTest(benchmark::State& state)
     if (total_memory >= free)
     {
         state.SkipWithError("Not enough available memory for config, skipping");
+        state.KeepRunning(); // Added as a WAR to Google Benchmark crashing in DEBUG mode.
     }
     else if (total_memory < (free / 2))
     {
         state.SkipWithError("Config using less than half of available memory, skipping");
+        state.KeepRunning(); // Added as a WAR to Google Benchmark crashing in DEBUG mode.
     }
     else
     {

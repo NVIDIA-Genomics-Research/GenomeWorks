@@ -33,18 +33,19 @@ cd ${WORKSPACE}
 
 source ci/common/prep-init-env.sh ${WORKSPACE}
 
-CMAKE_COMMON_VARIABLES="-DCMAKE_BUILD_TYPE=Release"
-
-# If we are building for GPU, we do 2 builds:
-# 1) the SDK on its own
-# 2) use racon-gpu as a build flow
-# If we are building for "CPU", we just build locally as the SDK
-
 ################################################################################
 # SDK build/test
 ################################################################################
 
-logger "Build SDK..."
+logger "Build SDK in Release mode..."
+CMAKE_COMMON_VARIABLES="-DCMAKE_BUILD_TYPE=Release"
+source ci/common/build-test-sdk.sh ${WORKSPACE} ${CMAKE_COMMON_VARIABLES} ${PARALLEL_LEVEL} ${TEST_ON_GPU}
+
+cd ${WORKSPACE}
+rm -rf ${WORKSPACE}/build
+
+logger "Build SDK in Debug mode..."
+CMAKE_COMMON_VARIABLES="-DCMAKE_BUILD_TYPE=Debug"
 source ci/common/build-test-sdk.sh ${WORKSPACE} ${CMAKE_COMMON_VARIABLES} ${PARALLEL_LEVEL} ${TEST_ON_GPU}
 
 cd ${WORKSPACE}
