@@ -23,12 +23,12 @@
 /// \brief Log on CUDA error in enclosed expression
 #define GW_CU_CHECK_ERR(ans)                                          \
     {                                                                 \
-        genomeworks::cudautils::gpuAssert((ans), __FILE__, __LINE__); \
+        cga::cudautils::gpuAssert((ans), __FILE__, __LINE__); \
     }
 
 /// \}
 
-namespace genomeworks
+namespace cga
 {
 
 namespace cudautils
@@ -63,4 +63,4 @@ inline void gpuAssert(cudaError_t code, const char* file, int line, bool abort =
 
 } // namespace cudautils
 
-} // namespace genomeworks
+} // namespace cga

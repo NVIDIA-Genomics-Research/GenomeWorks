@@ -14,7 +14,7 @@
 #include "../common/utils.hpp"
 #include "utils/signed_integer_utils.hpp"
 
-namespace genomeworks
+namespace cga
 {
 namespace cudapoa
 {
@@ -115,7 +115,7 @@ public:
                 {
                     std::vector<std::string> consensus_temp;
                     std::vector<std::vector<uint16_t>> coverages_temp;
-                    std::vector<genomeworks::cudapoa::StatusType> output_status;
+                    std::vector<cga::cudapoa::StatusType> output_status;
 
                     // Launch workload.
                     batch->generate_poa();
@@ -207,4 +207,4 @@ private:
     std::vector<std::vector<uint16_t>> coverages_;
 };
 } // namespace cudapoa
-} // namespace genomeworks
+} // namespace cga

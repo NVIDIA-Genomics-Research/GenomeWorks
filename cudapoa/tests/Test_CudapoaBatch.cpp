@@ -11,7 +11,7 @@
 #include "gtest/gtest.h"
 #include "cudapoa/batch.hpp"
 
-namespace genomeworks
+namespace cga
 {
 
 namespace cudapoa
@@ -34,11 +34,11 @@ public:
                     int16_t mismatch_score = -6,
                     int16_t match_score    = 8)
     {
-        cudapoa_batch = genomeworks::cudapoa::create_batch(max_poas, max_sequences_per_poa, device_id, output_mask, gap_score, mismatch_score, match_score);
+        cudapoa_batch = cga::cudapoa::create_batch(max_poas, max_sequences_per_poa, device_id, output_mask, gap_score, mismatch_score, match_score);
     }
 
 public:
-    std::unique_ptr<genomeworks::cudapoa::Batch> cudapoa_batch;
+    std::unique_ptr<cga::cudapoa::Batch> cudapoa_batch;
 };
 
 TEST_F(TestCudapoaBatch, InitializeTest)
@@ -104,4 +104,4 @@ TEST_F(TestCudapoaBatch, MaxSeqSizeTest)
 
 } // namespace cudapoa
 
-} // namespace genomeworks
+} // namespace cga

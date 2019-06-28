@@ -14,7 +14,7 @@
 /// Base docs for the cudapoa package (tbd)
 /// \{
 
-namespace genomeworks
+namespace cga
 {
 namespace cudapoa
 {
@@ -40,5 +40,5 @@ enum OutputType
 };
 
 } // namespace cudapoa
-} // namespace genomeworks
+} // namespace cga
 /// \}

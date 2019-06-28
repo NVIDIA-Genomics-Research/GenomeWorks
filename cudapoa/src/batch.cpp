@@ -11,7 +11,7 @@
 #include "cudapoa/batch.hpp"
 #include "cudapoa_batch.hpp"
 
-namespace genomeworks
+namespace cga
 {
 
 namespace cudapoa
@@ -31,4 +31,4 @@ std::unique_ptr<Batch> create_batch(int32_t max_poas,
 
 } // namespace cudapoa
 
-} // namespace genomeworks
+} // namespace cga

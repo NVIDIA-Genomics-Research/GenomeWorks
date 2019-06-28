@@ -13,7 +13,7 @@
 #include <vector>
 #include <cassert>
 
-namespace genomeworks
+namespace cga
 {
 
 namespace cudaaligner
@@ -113,4 +113,4 @@ inline bool operator!=(matrix<T> const& a, matrix<T> const& b)
     return !(a == b);
 }
 } // namespace cudaaligner
-} // namespace genomeworks
+} // namespace cga

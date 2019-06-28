@@ -15,7 +15,7 @@
 #include <limits>
 #include <cassert>
 
-namespace genomeworks
+namespace cga
 {
 
 namespace cudaaligner
@@ -245,4 +245,4 @@ std::vector<int8_t> ukkonen_cpu(std::string const& target, std::string const& qu
 }
 } // namespace nw_cpu
 } // namespace cudaaligner
-} // namespace genomeworks
+} // namespace cga

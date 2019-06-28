@@ -12,7 +12,7 @@
 #include "../common/utils.hpp"
 #include "utils/signed_integer_utils.hpp"
 
-namespace genomeworks
+namespace cga
 {
 
 namespace cudapoa
@@ -71,7 +71,7 @@ public:
         batch_->generate_poa();
         std::vector<std::string> consensus;
         std::vector<std::vector<uint16_t>> coverage;
-        std::vector<genomeworks::cudapoa::StatusType> output_status;
+        std::vector<cga::cudapoa::StatusType> output_status;
         batch_->get_consensus(consensus, coverage, output_status);
     }
 
@@ -81,4 +81,4 @@ private:
     int32_t max_poas_per_batch_;
 };
 } // namespace cudapoa
-} // namespace genomeworks
+} // namespace cga

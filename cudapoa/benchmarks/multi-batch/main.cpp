@@ -16,7 +16,7 @@
 #include "../common/utils.hpp"
 #include "cudautils/cudautils.hpp"
 
-namespace genomeworks
+namespace cga
 {
 
 namespace cudapoa
@@ -76,6 +76,6 @@ BENCHMARK(BM_MultiBatchTest)
     ->Unit(benchmark::kMillisecond)
     ->Apply(CustomArguments);
 } // namespace cudapoa
-} // namespace genomeworks
+} // namespace cga
 
 BENCHMARK_MAIN();

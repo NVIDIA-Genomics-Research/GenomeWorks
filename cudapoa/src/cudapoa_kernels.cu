@@ -21,7 +21,7 @@
 
 #include <stdio.h>
 
-namespace genomeworks
+namespace cga
 {
 
 namespace cudapoa
@@ -66,7 +66,7 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
                                   uint8_t* sequences_d,
                                   int8_t* base_weights_d,
                                   uint16_t* sequence_lengths_d,
-                                  genomeworks::cudapoa::WindowDetails* window_details_d,
+                                  cga::cudapoa::WindowDetails* window_details_d,
                                   int32_t total_windows,
                                   int16_t* scores_d,
                                   int16_t* alignment_graph_d,
@@ -335,12 +335,12 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
 }
 
 // Host function call for POA kernel.
-void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
-                 genomeworks::cudapoa::InputDetails* input_details_d,
+void generatePOA(cga::cudapoa::OutputDetails* output_details_d,
+                 cga::cudapoa::InputDetails* input_details_d,
                  int32_t total_windows,
                  cudaStream_t stream,
-                 genomeworks::cudapoa::AlignmentDetails* alignment_details_d,
-                 genomeworks::cudapoa::GraphDetails* graph_details_d,
+                 cga::cudapoa::AlignmentDetails* alignment_details_d,
+                 cga::cudapoa::GraphDetails* graph_details_d,
                  int16_t gap_score,
                  int16_t mismatch_score,
                  int16_t match_score,
@@ -629,4 +629,4 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
 
 } // namespace cudapoa
 
-} // namespace genomeworks
+} // namespace cga

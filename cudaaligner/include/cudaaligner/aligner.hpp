@@ -17,7 +17,7 @@
 
 #include "cudaaligner/cudaaligner.hpp"
 
-namespace genomeworks
+namespace cga
 {
 
 namespace cudaaligner
@@ -87,4 +87,4 @@ std::unique_ptr<Aligner> create_aligner(int32_t max_query_length, int32_t max_su
 
 /// \}
 } // namespace cudaaligner
-} // namespace genomeworks
+} // namespace cga

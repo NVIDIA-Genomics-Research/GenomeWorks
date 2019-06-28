@@ -15,7 +15,7 @@
 #include <stdexcept>
 #include <type_traits>
 
-namespace genomeworks
+namespace cga
 {
 
 template <class Container>
@@ -36,4 +36,4 @@ T throw_on_negative(T x, const char* message)
     return x;
 }
 
-} // namespace genomeworks
+} // namespace cga

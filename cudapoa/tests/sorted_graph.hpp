@@ -5,7 +5,7 @@
 #include "basic_graph.hpp"
 #include <utils/signed_integer_utils.hpp> // get_size
 
-namespace genomeworks
+namespace cga
 {
 
 namespace cudapoa
@@ -53,4 +53,4 @@ protected:
 
 } // namespace cudapoa
 
-} // namespace genomeworks
+} // namespace cga

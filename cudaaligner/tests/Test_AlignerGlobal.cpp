@@ -15,7 +15,7 @@
 #include <utils/signed_integer_utils.hpp>
 #include <utils/genomeutils.hpp>
 
-namespace genomeworks
+namespace cga
 {
 
 namespace cudaaligner
@@ -152,14 +152,14 @@ std::vector<AlignerTestData> create_aligner_perf_test_cases()
 
     // Test case 1
     std::minstd_rand rng(1);
-    data.inputs = {{genomeworks::genomeutils::generate_random_genome(1000, rng), genomeworks::genomeutils::generate_random_genome(1000, rng)}};
+    data.inputs = {{cga::genomeutils::generate_random_genome(1000, rng), genomeworks::genomeutils::generate_random_genome(1000, rng)}};
     test_cases.push_back(data);
 
     // Test case 2
-    data.inputs = {{genomeworks::genomeutils::generate_random_genome(9500, rng), genomeworks::genomeutils::generate_random_genome(9000, rng)},
-                   {genomeworks::genomeutils::generate_random_genome(3456, rng), genomeworks::genomeutils::generate_random_genome(3213, rng)},
-                   {genomeworks::genomeutils::generate_random_genome(20000, rng), genomeworks::genomeutils::generate_random_genome(20000, rng)},
-                   {genomeworks::genomeutils::generate_random_genome(15000, rng), genomeworks::genomeutils::generate_random_genome(14000, rng)}};
+    data.inputs = {{cga::genomeutils::generate_random_genome(9500, rng), genomeworks::genomeutils::generate_random_genome(9000, rng)},
+                   {cga::genomeutils::generate_random_genome(3456, rng), genomeworks::genomeutils::generate_random_genome(3213, rng)},
+                   {cga::genomeutils::generate_random_genome(20000, rng), genomeworks::genomeutils::generate_random_genome(20000, rng)},
+                   {cga::genomeutils::generate_random_genome(15000, rng), genomeworks::genomeutils::generate_random_genome(14000, rng)}};
     test_cases.push_back(data);
 
     return test_cases;
@@ -190,4 +190,4 @@ TEST_P(TestAlignerGlobalImplPerf, TestAlignmentKernelPerf)
 
 INSTANTIATE_TEST_SUITE_P(TestCudaAligner, TestAlignerGlobalImplPerf, ::testing::ValuesIn(create_aligner_perf_test_cases()));
 } // namespace cudaaligner
-} // namespace genomeworks
+} // namespace cga
