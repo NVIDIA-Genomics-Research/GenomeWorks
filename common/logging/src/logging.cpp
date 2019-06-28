@@ -29,7 +29,7 @@ LoggingStatus Init(const char* filename)
     {
         try
         {
-            logger = spdlog::basic_logger_mt("GWLogger", filename);
+            logger = spdlog::basic_logger_mt("CGALogger", filename);
         }
         catch (const spdlog::spdlog_ex& ex)
         {
@@ -40,7 +40,7 @@ LoggingStatus Init(const char* filename)
     {
         try
         {
-            logger = spdlog::stderr_logger_mt("GWLogger");
+            logger = spdlog::stderr_logger_mt("CGALogger");
         }
         catch (const spdlog::spdlog_ex& ex)
         {

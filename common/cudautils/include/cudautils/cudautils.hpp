@@ -19,9 +19,9 @@
 /// \{
 
 /// \ingroup cudautils
-/// \def GW_CU_CHECK_ERR
+/// \def CGA_CU_CHECK_ERR
 /// \brief Log on CUDA error in enclosed expression
-#define GW_CU_CHECK_ERR(ans)                                          \
+#define CGA_CU_CHECK_ERR(ans)                                          \
     {                                                                 \
         cga::cudautils::gpuAssert((ans), __FILE__, __LINE__); \
     }
@@ -51,7 +51,7 @@ inline void gpuAssert(cudaError_t code, const char* file, int line, bool abort =
                           " " + std::to_string(line);
         if (abort)
         {
-            GW_LOG_ERROR("{}\n", err);
+            CGA_LOG_ERROR("{}\n", err);
             std::abort();
         }
         else

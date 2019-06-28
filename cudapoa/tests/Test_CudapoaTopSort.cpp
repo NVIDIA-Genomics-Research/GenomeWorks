@@ -11,7 +11,7 @@
 #include "gtest/gtest.h"
 #include "cudapoa/batch.hpp"
 #include "../src/cudapoa_kernels.cuh"     //runTopSort
-#include <cudautils/cudautils.hpp>        //GW_CU_CHECK_ERR
+#include <cudautils/cudautils.hpp>        //CGA_CU_CHECK_ERR
 #include <utils/stringutils.hpp>          //array_to_string
 #include <utils/signed_integer_utils.hpp> //get_size
 
@@ -66,12 +66,12 @@ std::string testTopSortDeviceUtil(uint16_t node_count, std::vector<std::vector<u
     size_t graph_size = node_count * sizeof(uint16_t);
 
     //allocate unified memory so they can be accessed by both host and device.
-    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&sorted_poa, graph_size));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&sorted_poa_node_map, graph_size));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&incoming_edge_count, graph_size));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&outgoing_edges, graph_size * CUDAPOA_MAX_NODE_EDGES));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&outgoing_edge_count, graph_size));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&local_incoming_edge_count, graph_size));
+    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&sorted_poa, graph_size));
+    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&sorted_poa_node_map, graph_size));
+    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&incoming_edge_count, graph_size));
+    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&outgoing_edges, graph_size * CUDAPOA_MAX_NODE_EDGES));
+    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&outgoing_edge_count, graph_size));
+    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&local_incoming_edge_count, graph_size));
 
     //initialize incoming_edge_count & local_incoming_edge_count
     memset((void**)incoming_edge_count, 0, graph_size);
@@ -101,16 +101,16 @@ std::string testTopSortDeviceUtil(uint16_t node_count, std::vector<std::vector<u
                outgoing_edge_count,
                local_incoming_edge_count);
 
-    GW_CU_CHECK_ERR(cudaDeviceSynchronize());
+    CGA_CU_CHECK_ERR(cudaDeviceSynchronize());
 
     std::string res = cga::stringutils::array_to_string<uint16_t>(sorted_poa, node_count);
 
-    GW_CU_CHECK_ERR(cudaFree(sorted_poa));
-    GW_CU_CHECK_ERR(cudaFree(sorted_poa_node_map));
-    GW_CU_CHECK_ERR(cudaFree(incoming_edge_count));
-    GW_CU_CHECK_ERR(cudaFree(outgoing_edges));
-    GW_CU_CHECK_ERR(cudaFree(outgoing_edge_count));
-    GW_CU_CHECK_ERR(cudaFree(local_incoming_edge_count));
+    CGA_CU_CHECK_ERR(cudaFree(sorted_poa));
+    CGA_CU_CHECK_ERR(cudaFree(sorted_poa_node_map));
+    CGA_CU_CHECK_ERR(cudaFree(incoming_edge_count));
+    CGA_CU_CHECK_ERR(cudaFree(outgoing_edges));
+    CGA_CU_CHECK_ERR(cudaFree(outgoing_edge_count));
+    CGA_CU_CHECK_ERR(cudaFree(local_incoming_edge_count));
 
     return res;
 }

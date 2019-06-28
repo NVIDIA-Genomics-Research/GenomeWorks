@@ -61,7 +61,7 @@ StatusType AlignerGlobal::add_alignment(const char* query, int32_t query_length,
 {
     if (query_length < 0 || subject_length < 0)
     {
-        GW_LOG_DEBUG("{} {}", "Negative subject or query length is not allowed.");
+        CGA_LOG_DEBUG("{} {}", "Negative subject or query length is not allowed.");
         return StatusType::generic_error;
     }
 
@@ -70,25 +70,25 @@ StatusType AlignerGlobal::add_alignment(const char* query, int32_t query_length,
     int32_t const num_alignments                  = get_size(alignments_);
     if (num_alignments >= max_alignments_)
     {
-        GW_LOG_DEBUG("{} {}", "Exceeded maximum number of alignments allowed : ", max_alignments_);
+        CGA_LOG_DEBUG("{} {}", "Exceeded maximum number of alignments allowed : ", max_alignments_);
         return StatusType::exceeded_max_alignments;
     }
 
     if (query_length > max_query_length_)
     {
-        GW_LOG_DEBUG("{} {}", "Exceeded maximum length of query allowed : ", max_query_length_);
+        CGA_LOG_DEBUG("{} {}", "Exceeded maximum length of query allowed : ", max_query_length_);
         return StatusType::exceeded_max_length;
     }
 
     if (subject_length > max_subject_length_)
     {
-        GW_LOG_DEBUG("{} {}", "Exceeded maximum length of subject allowed : ", max_subject_length_);
+        CGA_LOG_DEBUG("{} {}", "Exceeded maximum length of subject allowed : ", max_subject_length_);
         return StatusType::exceeded_max_length;
     }
 
     if (std::abs(query_length - subject_length) > allocated_max_length_difference)
     {
-        GW_LOG_DEBUG("{} {}", "Exceeded maximum length difference b/w subject and query allowed : ", allocated_max_length_difference);
+        CGA_LOG_DEBUG("{} {}", "Exceeded maximum length difference b/w subject and query allowed : ", allocated_max_length_difference);
         return StatusType::exceeded_max_alignment_difference;
     }
 
@@ -121,13 +121,13 @@ StatusType AlignerGlobal::align_all()
     if (!score_matrices_)
         score_matrices_ = std::make_unique<batched_device_matrices<nw_score_t>>(
             max_alignments_, ukkonen_max_score_matrix_size(max_query_length_, max_subject_length_, allocated_max_length_difference, ukkonen_p), stream_, device_id_);
-    GW_CU_CHECK_ERR(cudaSetDevice(device_id_));
-    GW_CU_CHECK_ERR(cudaMemcpyAsync(sequence_lengths_d_.data(),
+    CGA_CU_CHECK_ERR(cudaSetDevice(device_id_));
+    CGA_CU_CHECK_ERR(cudaMemcpyAsync(sequence_lengths_d_.data(),
                                     sequence_lengths_h_.data(),
                                     2 * sizeof(int32_t) * num_alignments,
                                     cudaMemcpyHostToDevice,
                                     stream_));
-    GW_CU_CHECK_ERR(cudaMemcpyAsync(sequences_d_.data(),
+    CGA_CU_CHECK_ERR(cudaMemcpyAsync(sequences_d_.data(),
                                     sequences_h_.data(),
                                     2 * sizeof(char) * max_alignment_length * num_alignments,
                                     cudaMemcpyHostToDevice,
@@ -149,12 +149,12 @@ StatusType AlignerGlobal::align_all()
         ukkonen_p,
         stream_);
 
-    GW_CU_CHECK_ERR(cudaMemcpyAsync(results_h_.data(),
+    CGA_CU_CHECK_ERR(cudaMemcpyAsync(results_h_.data(),
                                     results_d_.data(),
                                     sizeof(int8_t) * (max_query_length_ + max_subject_length_) * num_alignments,
                                     cudaMemcpyDeviceToHost,
                                     stream_));
-    GW_CU_CHECK_ERR(cudaMemcpyAsync(result_lengths_h_.data(),
+    CGA_CU_CHECK_ERR(cudaMemcpyAsync(result_lengths_h_.data(),
                                     result_lengths_d_.data(),
                                     sizeof(int32_t) * num_alignments,
                                     cudaMemcpyDeviceToHost,
@@ -164,8 +164,8 @@ StatusType AlignerGlobal::align_all()
 
 StatusType AlignerGlobal::sync_alignments()
 {
-    GW_CU_CHECK_ERR(cudaSetDevice(device_id_));
-    GW_CU_CHECK_ERR(cudaStreamSynchronize(stream_));
+    CGA_CU_CHECK_ERR(cudaSetDevice(device_id_));
+    CGA_CU_CHECK_ERR(cudaStreamSynchronize(stream_));
 
     int32_t const n_alignments = get_size(alignments_);
     std::vector<AlignmentState> al_state;
