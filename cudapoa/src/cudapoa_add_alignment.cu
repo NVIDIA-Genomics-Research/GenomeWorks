@@ -11,7 +11,7 @@
 #include "cudapoa_kernels.cuh"
 #include <stdio.h>
 
-namespace cga
+namespace genomeworks
 {
 
 namespace cudapoa
@@ -347,4 +347,4 @@ void addAlignment(uint8_t* nodes,
 
 } // namespace cudapoa
 
-} // namespace cga
+} // namespace genomeworks

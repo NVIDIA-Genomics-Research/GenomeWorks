@@ -12,7 +12,7 @@
 #include "cudastructs.cuh"
 #include <stdio.h>
 
-namespace cga
+namespace genomeworks
 {
 
 namespace cudapoa
@@ -511,4 +511,4 @@ void runNW(uint8_t* nodes,
 
 } // namespace cudapoa
 
-} // namespace cga
+} // namespace genomeworks

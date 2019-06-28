@@ -13,7 +13,7 @@
 #include "../benchmarks/common/utils.hpp"
 #include "file_location.hpp"
 
-namespace cga
+namespace genomeworks
 {
 
 namespace cudapoa
@@ -86,4 +86,4 @@ INSTANTIATE_TEST_SUITE_P(TestEnd2End, TestCudapoaBatchEnd2End, ::testing::Values
 
 } // namespace cudapoa
 
-} // namespace cga
+} // namespace genomeworks

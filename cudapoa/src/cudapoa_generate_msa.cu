@@ -2,7 +2,7 @@
 #include <time.h>
 #include <stdio.h>
 
-namespace cga
+namespace genomeworks
 {
 
 namespace cudapoa
@@ -101,7 +101,7 @@ __device__ void generateMSADevice(uint8_t* nodes,
 template <bool cuda_banded_alignment = false>
 __global__ void generateMSAKernel(uint8_t* nodes_d,
                                   uint8_t* consensus_d,
-                                  cga::cudapoa::WindowDetails* window_details_d,
+                                  genomeworks::cudapoa::WindowDetails* window_details_d,
                                   uint16_t* incoming_edge_count_d,
                                   uint16_t* incoming_edges_d,
                                   uint16_t* outgoing_edge_count_d,
@@ -193,4 +193,4 @@ __global__ void generateMSAKernel(uint8_t* nodes_d,
 
 } // namespace cudapoa
 
-} // namespace cga
+} // namespace genomeworks

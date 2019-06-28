@@ -11,7 +11,7 @@
 # Formatting build targets
 
 # list of symbols to fill with commands to run auto-formatter
-define_property(GLOBAL PROPERTY CGA_FORMAT_SOURCES
+define_property(GLOBAL PROPERTY GW_FORMAT_SOURCES
     BRIEF_DOCS "List of files for autoformatting"
     FULL_DOCS "List of files for autoformatting"
 )
@@ -34,15 +34,15 @@ function(gw_enable_auto_formatting DIRECTORY)
                                             "${DIRECTORY}/*.cuh"
                                             "${DIRECTORY}/*.cu")
 
-    set_property(GLOBAL APPEND PROPERTY CGA_FORMAT_SOURCES "${FOLDER_FORMAT_SOURCES}")
+    set_property(GLOBAL APPEND PROPERTY GW_FORMAT_SOURCES "${FOLDER_FORMAT_SOURCES}")
 endfunction()
 
 # activate formatting
 function(gw_enable_formatting_targets)
-    find_program(CGA_CLANGFORMAT_EXECUTABLE NAMES clang-format)
-    if(CGA_CLANGFORMAT_EXECUTABLE)
+    find_program(GW_CLANGFORMAT_EXECUTABLE NAMES clang-format)
+    if(GW_CLANGFORMAT_EXECUTABLE)
 
-        get_property(FOLDER_FORMAT_SOURCES GLOBAL PROPERTY CGA_FORMAT_SOURCES)
+        get_property(FOLDER_FORMAT_SOURCES GLOBAL PROPERTY GW_FORMAT_SOURCES)
 
         set(format_list "")
         set(format_check_list "")
@@ -54,7 +54,7 @@ function(gw_enable_formatting_targets)
             get_filename_component(SYMBOL_BASE_DIR ${RELATIVE_PATH} DIRECTORY)
             file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/formatting/${SYMBOL_BASE_DIR})
             add_custom_command(OUTPUT ${CMAKE_BINARY_DIR}/formatting/${RELATIVE_PATH}-formatted
-                COMMAND "${CGA_CLANGFORMAT_EXECUTABLE}" "-i" "-style=file" ${source}
+                COMMAND "${GW_CLANGFORMAT_EXECUTABLE}" "-i" "-style=file" ${source}
                 COMMAND ${CMAKE_COMMAND} -E touch ${CMAKE_BINARY_DIR}/formatting/${RELATIVE_PATH}-formatted
                 DEPENDS ${source}
                 COMMENT "Formatting ${source}")
@@ -63,12 +63,12 @@ function(gw_enable_formatting_targets)
 
             # Check / show format differences (check will terminate on error)
             add_custom_command(OUTPUT ${CMAKE_BINARY_DIR}/formatting/${RELATIVE_PATH}-format-checked
-                COMMAND ${CGA_CLANGFORMAT_EXECUTABLE} ${source} | diff ${source} -
+                COMMAND ${GW_CLANGFORMAT_EXECUTABLE} ${source} | diff ${source} -
                 && touch ${CMAKE_BINARY_DIR}/formatting/${RELATIVE_PATH}-format-checked
                 DEPENDS ${source}
                 COMMENT "Checking format of ${source}")
             add_custom_command(OUTPUT ${CMAKE_BINARY_DIR}/formatting/${RELATIVE_PATH}-format-shown
-                COMMAND if ${CGA_CLANGFORMAT_EXECUTABLE} ${source} | diff ${source} - \; then
+                COMMAND if ${GW_CLANGFORMAT_EXECUTABLE} ${source} | diff ${source} - \; then
                 touch ${CMAKE_BINARY_DIR}/formatting/${RELATIVE_PATH}-format-checked\;
                 fi
                 DEPENDS ${source}

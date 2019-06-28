@@ -13,7 +13,7 @@
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/sinks/stdout_sinks.h>
 
-namespace cga
+namespace genomeworks
 {
 namespace logging
 {
@@ -29,7 +29,7 @@ LoggingStatus Init(const char* filename)
     {
         try
         {
-            logger = spdlog::basic_logger_mt("CGALogger", filename);
+            logger = spdlog::basic_logger_mt("GWLogger", filename);
         }
         catch (const spdlog::spdlog_ex& ex)
         {
@@ -40,7 +40,7 @@ LoggingStatus Init(const char* filename)
     {
         try
         {
-            logger = spdlog::stderr_logger_mt("CGALogger");
+            logger = spdlog::stderr_logger_mt("GWLogger");
         }
         catch (const spdlog::spdlog_ex& ex)
         {
@@ -78,4 +78,4 @@ LoggingStatus SetHeader(bool logTime, bool logLocation)
     return LoggingStatus::success;
 }
 } // namespace logging
-} // namespace cga
+} // namespace genomeworks

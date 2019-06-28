@@ -12,7 +12,7 @@
 
 #include "cudaaligner/alignment.hpp"
 
-namespace cga
+namespace genomeworks
 {
 
 namespace cudaaligner
@@ -111,4 +111,4 @@ private:
     std::string alignment_state_to_cigar_state(AlignmentState) const;
 };
 } // namespace cudaaligner
-} // namespace cga
+} // namespace genomeworks

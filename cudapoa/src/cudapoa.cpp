@@ -11,7 +11,7 @@
 #include <cudapoa/cudapoa.hpp>
 #include <logging/logging.hpp>
 
-namespace cga
+namespace genomeworks
 {
 namespace cudapoa
 {
@@ -25,4 +25,4 @@ StatusType Init()
 }
 
 } // namespace cudapoa
-} // namespace cga
+} // namespace genomeworks

@@ -8,7 +8,7 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-#define CGA_LOG_LEVEL gw_log_level_info
+#define GW_LOG_LEVEL gw_log_level_info
 
 #include "allocate_block.hpp"
 
@@ -16,7 +16,7 @@
 #include <logging/logging.hpp>
 #include <utils/signed_integer_utils.hpp>
 
-namespace cga
+namespace genomeworks
 {
 
 namespace cudapoa
@@ -36,20 +36,20 @@ BatchBlock::BatchBlock(int32_t device_id, int32_t max_poas, int32_t max_sequence
     max_nodes_per_window_      = banded_alignment_ ? CUDAPOA_MAX_NODES_PER_WINDOW_BANDED : CUDAPOA_MAX_NODES_PER_WINDOW;
 
     // Set CUDA device
-    CGA_CU_CHECK_ERR(cudaSetDevice(device_id_));
+    GW_CU_CHECK_ERR(cudaSetDevice(device_id_));
 
     // calculate size
     calculate_size();
 
     // allocation
-    CGA_CU_CHECK_ERR(cudaHostAlloc((void**)&block_data_h_, total_h_, cudaHostAllocDefault));
-    CGA_CU_CHECK_ERR(cudaMalloc((void**)&block_data_d_, total_d_));
+    GW_CU_CHECK_ERR(cudaHostAlloc((void**)&block_data_h_, total_h_, cudaHostAllocDefault));
+    GW_CU_CHECK_ERR(cudaMalloc((void**)&block_data_d_, total_d_));
 }
 
 BatchBlock::~BatchBlock()
 {
-    CGA_CU_CHECK_ERR(cudaFree(block_data_d_));
-    CGA_CU_CHECK_ERR(cudaFreeHost(block_data_h_));
+    GW_CU_CHECK_ERR(cudaFree(block_data_d_));
+    GW_CU_CHECK_ERR(cudaFreeHost(block_data_h_));
 }
 
 uint8_t* BatchBlock::get_block_host()
@@ -293,4 +293,4 @@ void BatchBlock::get_graph_details(GraphDetails** graph_details_d_p)
 
 } // namespace cudapoa
 
-} // namespace cga
+} // namespace genomeworks

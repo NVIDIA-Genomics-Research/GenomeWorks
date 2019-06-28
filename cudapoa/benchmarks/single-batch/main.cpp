@@ -13,7 +13,7 @@
 #include "single_batch.hpp"
 #include "file_location.hpp"
 
-namespace cga
+namespace genomeworks
 {
 
 namespace cudapoa
@@ -37,6 +37,6 @@ BENCHMARK(BM_SingleBatchTest)
     ->RangeMultiplier(4)
     ->Range(1, 1 << 10);
 } // namespace cudapoa
-} // namespace cga
+} // namespace genomeworks
 
 BENCHMARK_MAIN();

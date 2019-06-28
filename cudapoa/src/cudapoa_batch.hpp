@@ -20,7 +20,7 @@
 
 #include <cuda_runtime_api.h>
 
-namespace cga
+namespace genomeworks
 {
 
 namespace cudapoa
@@ -64,7 +64,7 @@ public:
     // Get the consensus for each POA.
     void get_consensus(std::vector<std::string>& consensus,
                        std::vector<std::vector<uint16_t>>& coverage,
-                       std::vector<cga::cudapoa::StatusType>& output_status);
+                       std::vector<genomeworks::cudapoa::StatusType>& output_status);
 
     // Get multiple sequence alignments for each POA
     void get_msa(std::vector<std::vector<std::string>>& msa,
@@ -96,7 +96,7 @@ protected:
     void initialize_input_details();
 
     // Log cudapoa kernel error
-    void decode_cudapoa_kernel_error(cga::cudapoa::StatusType error_type,
+    void decode_cudapoa_kernel_error(genomeworks::cudapoa::StatusType error_type,
                                      std::vector<StatusType>& output_status);
 
 protected:
@@ -160,4 +160,4 @@ protected:
 
 } // namespace cudapoa
 
-} // namespace cga
+} // namespace genomeworks

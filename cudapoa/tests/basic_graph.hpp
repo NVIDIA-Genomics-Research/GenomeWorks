@@ -14,7 +14,7 @@
 #include "../src/cudapoa_kernels.cuh"     //CUDAPOA_MAX_NODE_EDGES, CUDAPOA_MAX_NODE_ALIGNMENTS
 #include <utils/signed_integer_utils.hpp> //get_size
 
-namespace cga
+namespace genomeworks
 {
 
 namespace cudapoa
@@ -162,4 +162,4 @@ protected:
 
 } // namespace cudapoa
 
-} // namespace cga
+} // namespace genomeworks

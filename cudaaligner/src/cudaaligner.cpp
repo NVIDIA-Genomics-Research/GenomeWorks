@@ -11,7 +11,7 @@
 #include "cudaaligner/cudaaligner.hpp"
 #include <logging/logging.hpp>
 
-namespace cga
+namespace genomeworks
 {
 
 namespace cudaaligner
@@ -25,4 +25,4 @@ StatusType Init()
     return StatusType::success;
 }
 } // namespace cudaaligner
-} // namespace cga
+} // namespace genomeworks

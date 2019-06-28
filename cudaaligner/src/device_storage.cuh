@@ -25,14 +25,14 @@ public:
         : size_(n_elements)
         , device_id_(device_id)
     {
-        CGA_CU_CHECK_ERR(cudaSetDevice(device_id_));
-        CGA_CU_CHECK_ERR(cudaMalloc(reinterpret_cast<void**>(&data_), size_ * sizeof(T)));
+        GW_CU_CHECK_ERR(cudaSetDevice(device_id_));
+        GW_CU_CHECK_ERR(cudaMalloc(reinterpret_cast<void**>(&data_), size_ * sizeof(T)));
     }
 
     ~device_storage()
     {
-        CGA_CU_CHECK_ERR(cudaSetDevice(device_id_));
-        CGA_CU_CHECK_ERR(cudaFree(data_));
+        GW_CU_CHECK_ERR(cudaSetDevice(device_id_));
+        GW_CU_CHECK_ERR(cudaFree(data_));
     }
 
     T* data() { return data_; }

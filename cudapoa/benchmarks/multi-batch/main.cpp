@@ -16,7 +16,7 @@
 #include "../common/utils.hpp"
 #include "cudautils/cudautils.hpp"
 
-namespace cga
+namespace genomeworks
 {
 
 namespace cudapoa
@@ -30,7 +30,7 @@ static void BM_MultiBatchTest(benchmark::State& state)
 
     // Query free total and free GPU memory.
     size_t free, total;
-    CGA_CU_CHECK_ERR(cudaMemGetInfo(&free, &total));
+    GW_CU_CHECK_ERR(cudaMemGetInfo(&free, &total));
 
     int32_t batches     = state.range(0);
     int32_t batch_size  = state.range(1);
@@ -76,6 +76,6 @@ BENCHMARK(BM_MultiBatchTest)
     ->Unit(benchmark::kMillisecond)
     ->Apply(CustomArguments);
 } // namespace cudapoa
-} // namespace cga
+} // namespace genomeworks
 
 BENCHMARK_MAIN();

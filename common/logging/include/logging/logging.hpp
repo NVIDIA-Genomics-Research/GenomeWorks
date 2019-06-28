@@ -46,23 +46,23 @@
 #define gw_log_level_critical 4
 #define gw_log_level_off 5
 
-#ifndef CGA_LOG_LEVEL
+#ifndef GW_LOG_LEVEL
 #ifndef NDEBUG
-#define CGA_LOG_LEVEL gw_log_level_debug
+#define GW_LOG_LEVEL gw_log_level_debug
 #else // NDEBUG
-#define CGA_LOG_LEVEL gw_log_level_error
+#define GW_LOG_LEVEL gw_log_level_error
 #endif // NDEBUG
-#endif // CGA_LOG_LEVEL
+#endif // GW_LOG_LEVEL
 
-#if CGA_LOG_LEVEL == gw_log_level_info
+#if GW_LOG_LEVEL == gw_log_level_info
 #define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_INFO
-#elif CGA_LOG_LEVEL == gw_log_level_debug
+#elif GW_LOG_LEVEL == gw_log_level_debug
 #define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_DEBUG
-#elif CGA_LOG_LEVEL == gw_log_level_warn
+#elif GW_LOG_LEVEL == gw_log_level_warn
 #define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_WARN
-#elif CGA_LOG_LEVEL == gw_log_level_error
+#elif GW_LOG_LEVEL == gw_log_level_error
 #define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_ERROR
-#elif CGA_LOG_LEVEL == gw_log_level_critical
+#elif GW_LOG_LEVEL == gw_log_level_critical
 #define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_CRITICAL
 #else
 #define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_OFF
@@ -71,7 +71,7 @@
 // MUST come after the defines of the logging level!
 #include <spdlog/spdlog.h>
 
-namespace cga
+namespace genomeworks
 {
 namespace logging
 {
@@ -99,41 +99,41 @@ LoggingStatus Init(const char* filename = nullptr);
 LoggingStatus SetHeader(bool logTime, bool logLocation);
 
 /// \ingroup logging
-/// \def CGA_LOG_DEBUG
+/// \def GW_LOG_DEBUG
 /// \brief Log at debug level
 ///
 /// parameters as per https://github.com/gabime/spdlog/blob/v1.x/README.md
-#define CGA_LOG_DEBUG(...) SPDLOG_DEBUG(__VA_ARGS__)
+#define GW_LOG_DEBUG(...) SPDLOG_DEBUG(__VA_ARGS__)
 
 /// \ingroup logging
-/// \def CGA_LOG_INFO
+/// \def GW_LOG_INFO
 /// \brief Log at info level
 ///
 /// parameters as per https://github.com/gabime/spdlog/blob/v1.x/README.md
-#define CGA_LOG_INFO(...) SPDLOG_INFO(__VA_ARGS__)
+#define GW_LOG_INFO(...) SPDLOG_INFO(__VA_ARGS__)
 
 /// \ingroup logging
-/// \def CGA_LOG_WARN
+/// \def GW_LOG_WARN
 /// \brief Log at warning level
 ///
 /// parameters as per https://github.com/gabime/spdlog/blob/v1.x/README.md
-#define CGA_LOG_WARN(...) SPDLOG_WARN(__VA_ARGS__)
+#define GW_LOG_WARN(...) SPDLOG_WARN(__VA_ARGS__)
 
 /// \ingroup logging
-/// \def CGA_LOG_ERROR
+/// \def GW_LOG_ERROR
 /// \brief Log at error level
 ///
 /// parameters as per https://github.com/gabime/spdlog/blob/v1.x/README.md
-#define CGA_LOG_ERROR(...) SPDLOG_ERROR(__VA_ARGS__)
+#define GW_LOG_ERROR(...) SPDLOG_ERROR(__VA_ARGS__)
 
 /// \ingroup logging
-/// \def CGA_LOG_CRITICAL
+/// \def GW_LOG_CRITICAL
 /// \brief Log at fatal/critical error level (does NOT exit)
 ///
 /// parameters as per https://github.com/gabime/spdlog/blob/v1.x/README.md
-#define CGA_LOG_CRITICAL(...) SPDLOG_CRITICAL(__VA_ARGS__)
+#define GW_LOG_CRITICAL(...) SPDLOG_CRITICAL(__VA_ARGS__)
 
 } // namespace logging
-} // namespace cga
+} // namespace genomeworks
 
 /// \}

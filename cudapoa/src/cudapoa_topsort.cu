@@ -11,7 +11,7 @@
 #include "cudapoa_kernels.cuh"
 #include <stdio.h>
 
-namespace cga
+namespace genomeworks
 {
 
 namespace cudapoa
@@ -217,4 +217,4 @@ void runTopSort(uint16_t* sorted_poa,
 
 } // namespace cudapoa
 
-} // namespace cga
+} // namespace genomeworks

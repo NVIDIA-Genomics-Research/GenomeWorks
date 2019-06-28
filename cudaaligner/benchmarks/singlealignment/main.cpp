@@ -14,7 +14,7 @@
 #include "cudautils/cudautils.hpp"
 #include "cudaaligner/aligner.hpp"
 
-namespace cga
+namespace genomeworks
 {
 
 namespace cudaaligner
@@ -26,8 +26,8 @@ static void BM_SingleAlignment(benchmark::State& state)
 
     // Generate random sequences
     std::minstd_rand rng(1);
-    std::string genome_1 = cga::genomeutils::generate_random_genome(genome_size, rng);
-    std::string genome_2 = cga::genomeutils::generate_random_genome(genome_size, rng);
+    std::string genome_1 = genomeworks::genomeutils::generate_random_genome(genome_size, rng);
+    std::string genome_2 = genomeworks::genomeutils::generate_random_genome(genome_size, rng);
 
     // Create aligner object
     std::unique_ptr<Aligner> aligner = create_aligner(genome_size,
@@ -53,6 +53,6 @@ BENCHMARK(BM_SingleAlignment)
     ->RangeMultiplier(10)
     ->Range(100, 1000000);
 } // namespace cudaaligner
-} // namespace cga
+} // namespace genomeworks
 
 BENCHMARK_MAIN();
