@@ -9,6 +9,7 @@
 */
 
 #include "cudapoa_kernels.cuh"
+#include "cudautils/cudautils.hpp"
 #include <stdio.h>
 
 namespace claragenomics
@@ -343,6 +344,7 @@ void addAlignment(uint8_t* nodes,
                                  outgoing_edges_coverage_count,
                                  s,
                                  max_sequences_per_poa);
+    CGA_CU_CHECK_ERR(cudaPeekAtLastError());
 }
 
 } // namespace cudapoa

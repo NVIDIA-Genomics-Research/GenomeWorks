@@ -10,6 +10,7 @@
 
 #include "cudapoa_kernels.cuh"
 #include "cudastructs.cuh"
+#include "cudautils/cudautils.hpp"
 #include <stdio.h>
 
 namespace claragenomics
@@ -507,6 +508,7 @@ void runNW(uint8_t* nodes,
                                         mismatch_score,
                                         match_score,
                                         aligned_nodes);
+    CGA_CU_CHECK_ERR(cudaPeekAtLastError());
 }
 
 } // namespace cudapoa

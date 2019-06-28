@@ -430,6 +430,8 @@ void generatePOA(claragenomics::cudapoa::OutputDetails* output_details_d,
                                                                                  sequence_begin_nodes_ids,
                                                                                  outgoing_edges_coverage,
                                                                                  outgoing_edges_coverage_count);
+            CGA_CU_CHECK_ERR(cudaPeekAtLastError());
+
             generateConsensusKernel<true>
                 <<<consensus_num_blocks, CUDAPOA_MAX_CONSENSUS_PER_BLOCK, 0, stream>>>(consensus_d,
                                                                                        coverage_d,
@@ -449,6 +451,7 @@ void generatePOA(claragenomics::cudapoa::OutputDetails* output_details_d,
                                                                                        consensus_scores,
                                                                                        consensus_predecessors,
                                                                                        node_coverage_counts);
+            CGA_CU_CHECK_ERR(cudaPeekAtLastError());
         }
         if (output_mask & OutputType::msa)
         {
@@ -485,6 +488,8 @@ void generatePOA(claragenomics::cudapoa::OutputDetails* output_details_d,
                                                                                  sequence_begin_nodes_ids,
                                                                                  outgoing_edges_coverage,
                                                                                  outgoing_edges_coverage_count);
+            CGA_CU_CHECK_ERR(cudaPeekAtLastError());
+
             generateMSAKernel<true>
                 <<<total_windows, max_sequences_per_poa, 0, stream>>>(nodes,
                                                                       consensus_d,
@@ -507,6 +512,7 @@ void generatePOA(claragenomics::cudapoa::OutputDetails* output_details_d,
                                                                       node_marks,
                                                                       check_aligned_nodes,
                                                                       nodes_to_visit);
+            CGA_CU_CHECK_ERR(cudaPeekAtLastError());
         }
     }
     else
@@ -546,6 +552,8 @@ void generatePOA(claragenomics::cudapoa::OutputDetails* output_details_d,
                                                                     sequence_begin_nodes_ids,
                                                                     outgoing_edges_coverage,
                                                                     outgoing_edges_coverage_count);
+            CGA_CU_CHECK_ERR(cudaPeekAtLastError());
+
             generateConsensusKernel<false>
                 <<<consensus_num_blocks, CUDAPOA_MAX_CONSENSUS_PER_BLOCK, 0, stream>>>(consensus_d,
                                                                                        coverage_d,
@@ -565,6 +573,7 @@ void generatePOA(claragenomics::cudapoa::OutputDetails* output_details_d,
                                                                                        consensus_scores,
                                                                                        consensus_predecessors,
                                                                                        node_coverage_counts);
+            CGA_CU_CHECK_ERR(cudaPeekAtLastError());
         }
         if (output_mask & OutputType::msa)
         {
@@ -601,6 +610,8 @@ void generatePOA(claragenomics::cudapoa::OutputDetails* output_details_d,
                                                                     sequence_begin_nodes_ids,
                                                                     outgoing_edges_coverage,
                                                                     outgoing_edges_coverage_count);
+            CGA_CU_CHECK_ERR(cudaPeekAtLastError());
+
             generateMSAKernel<false>
                 <<<total_windows, max_sequences_per_poa, 0, stream>>>(nodes,
                                                                       consensus_d,
@@ -623,6 +634,7 @@ void generatePOA(claragenomics::cudapoa::OutputDetails* output_details_d,
                                                                       node_marks,
                                                                       check_aligned_nodes,
                                                                       nodes_to_visit);
+            CGA_CU_CHECK_ERR(cudaPeekAtLastError());
         }
     }
 }

@@ -281,11 +281,13 @@ void ukkonen_compute_score_matrix_gpu(batched_device_matrices<nw_score_t>& score
     dim3 const blocks = dim3(1, n_alignments, 1);
 
     ukkonen_compute_score_matrix<<<blocks, compute_blockdims, 0, stream>>>(score_matrices.get_device_interface(), sequences_d, sequence_lengths_d, max_target_query_length, p, max_cols);
+    CGA_CU_CHECK_ERR(cudaPeekAtLastError());
 }
 
 void ukkonen_backtrace_gpu(int8_t* paths_d, int32_t* path_lengths_d, int32_t max_path_length, batched_device_matrices<nw_score_t>& scores, int32_t const* sequence_lengths_d, int32_t n_alignments, int32_t p, cudaStream_t stream)
 {
     kernels::ukkonen_backtrace_kernel<<<n_alignments, 1, 0, stream>>>(paths_d, path_lengths_d, max_path_length, scores.get_device_interface(), sequence_lengths_d, n_alignments, p);
+    CGA_CU_CHECK_ERR(cudaPeekAtLastError());
 }
 
 void ukkonen_gpu(int8_t* paths_d, int32_t* path_lengths_d, int32_t max_path_length,

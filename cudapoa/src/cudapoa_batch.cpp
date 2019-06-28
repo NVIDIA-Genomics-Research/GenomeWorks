@@ -190,7 +190,6 @@ void CudapoaBatch::generate_poa()
                                         max_sequences_per_poa_,
                                         output_mask_);
 
-    CGA_CU_CHECK_ERR(cudaPeekAtLastError());
     msg = " Launched kernel on device ";
     print_batch_debug_message(msg);
 }
