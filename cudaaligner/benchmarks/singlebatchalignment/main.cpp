@@ -34,7 +34,7 @@ static void BM_SingleBatchAlignment(benchmark::State& state)
 
     // Query free total and free GPU memory.
     size_t free, total;
-    GW_CU_CHECK_ERR(cudaMemGetInfo(&free, &total));
+    CGA_CU_CHECK_ERR(cudaMemGetInfo(&free, &total));
 
     if (total_mem > free)
     {

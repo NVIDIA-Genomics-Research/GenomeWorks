@@ -106,18 +106,18 @@ public:
         , n_matrices_(n_matrices)
         , device_id_(device_id)
     {
-        GW_CU_CHECK_ERR(cudaSetDevice(device_id_));
-        GW_CU_CHECK_ERR(cudaMalloc(reinterpret_cast<void**>(&dev_), sizeof(device_interface)));
-        GW_CU_CHECK_ERR(cudaMemsetAsync(storage_.data(), 0, storage_.size() * sizeof(T), stream));
+        CGA_CU_CHECK_ERR(cudaSetDevice(device_id_));
+        CGA_CU_CHECK_ERR(cudaMalloc(reinterpret_cast<void**>(&dev_), sizeof(device_interface)));
+        CGA_CU_CHECK_ERR(cudaMemsetAsync(storage_.data(), 0, storage_.size() * sizeof(T), stream));
         device_interface tmp(storage_.data(), n_matrices_, max_elements_per_matrix_);
-        GW_CU_CHECK_ERR(cudaMemcpyAsync(dev_, &tmp, sizeof(device_interface), cudaMemcpyHostToDevice, stream));
-        GW_CU_CHECK_ERR(cudaStreamSynchronize(stream)); // sync because tmp will be destroyed.
+        CGA_CU_CHECK_ERR(cudaMemcpyAsync(dev_, &tmp, sizeof(device_interface), cudaMemcpyHostToDevice, stream));
+        CGA_CU_CHECK_ERR(cudaStreamSynchronize(stream)); // sync because tmp will be destroyed.
     }
 
     ~batched_device_matrices()
     {
-        GW_CU_CHECK_ERR(cudaSetDevice(device_id_));
-        GW_CU_CHECK_ERR(cudaFree(dev_));
+        CGA_CU_CHECK_ERR(cudaSetDevice(device_id_));
+        CGA_CU_CHECK_ERR(cudaFree(dev_));
     }
 
     device_interface* get_device_interface()
@@ -137,8 +137,8 @@ public:
         if (n_rows * n_cols > max_elements_per_matrix_)
             throw std::runtime_error("Requested matrix size is larger than batched_device_matrices::max_elements_per_matrix_.");
         matrix<T> m(n_rows, n_cols);
-        GW_CU_CHECK_ERR(cudaMemcpyAsync(m.data(), storage_.data() + id * static_cast<ptrdiff_t>(max_elements_per_matrix_), sizeof(T) * n_rows * n_cols, cudaMemcpyDeviceToHost, stream));
-        GW_CU_CHECK_ERR(cudaStreamSynchronize(stream));
+        CGA_CU_CHECK_ERR(cudaMemcpyAsync(m.data(), storage_.data() + id * static_cast<ptrdiff_t>(max_elements_per_matrix_), sizeof(T) * n_rows * n_cols, cudaMemcpyDeviceToHost, stream));
+        CGA_CU_CHECK_ERR(cudaStreamSynchronize(stream));
         return m;
     }
 

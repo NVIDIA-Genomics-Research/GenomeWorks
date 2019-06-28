@@ -30,7 +30,7 @@ static void BM_MultiBatchTest(benchmark::State& state)
 
     // Query free total and free GPU memory.
     size_t free, total;
-    GW_CU_CHECK_ERR(cudaMemGetInfo(&free, &total));
+    CGA_CU_CHECK_ERR(cudaMemGetInfo(&free, &total));
 
     int32_t batches     = state.range(0);
     int32_t batch_size  = state.range(1);

@@ -390,7 +390,7 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
     int32_t nwindows_per_block = CUDAPOA_THREADS_PER_BLOCK / WARP_SIZE;
     int32_t nblocks            = (total_windows + nwindows_per_block - 1) / nwindows_per_block;
 
-    GW_CU_CHECK_ERR(cudaDeviceSetCacheConfig(cudaFuncCachePreferL1));
+    CGA_CU_CHECK_ERR(cudaDeviceSetCacheConfig(cudaFuncCachePreferL1));
 
     int32_t consensus_num_blocks = (total_windows / CUDAPOA_MAX_CONSENSUS_PER_BLOCK) + 1;
     if (cuda_banded_alignment)
