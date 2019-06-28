@@ -1,4 +1,4 @@
-# ClaraGenomicsAnalysis
+# Clara Genomics Analysis
 
 ## Overview
 
@@ -17,13 +17,13 @@ algorithm. It is heavily influenced by [SPOA](https://github.com/rvaser/spoa) an
 
 The `cudaaligner` package provides GPU-accelerated global alignment.
 
-## Clone ClaraGenomicsAnalysis
+## Clone Clara Genomics Analysis
 ```bash
 git clone --recursive git@github.com:clara-genomics/ClaraGenomicsAnalysis.git
 ```
 
-## Build ClaraGenomicsAnalysis
-To build ClaraGenomicsAnalysis -
+## Build Clara Genomics Analysis
+To build Clara Genomics Analysis -
 
 ```bash
 mkdir build
@@ -59,7 +59,7 @@ e.g.
 A description of each of the benchmarks is present in a README under the module's benchmark folder.
 
 ## Enable Doc Generation
-To enable document generation for ClaraGenomicsAnalysis, please install `Doxygen` on your system. Once
+To enable document generation for Clara Genomics Analysis, please install `Doxygen` on your system. Once
 `Doxygen` has been installed, run the following to build documents.
 
 ```bash
@@ -67,7 +67,7 @@ make docs
 ```
 
 ## Enable Auto-Formatting
-ClaraGenomicsAnalysis makes use of `clang-format` to format it's source and header files. To make use of
+Clara Genomics Analysis makes use of `clang-format` to format it's source and header files. To make use of
 auto-formatting, `clang-format` would have to be installed from the LLVM package (for latest builds,
 best to refer to http://releases.llvm.org/download.html).
 
