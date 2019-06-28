@@ -21,4 +21,4 @@ set(LIBS
     cudaaligner
     utils)
 
-gw_add_tests(${PROJECT_NAME} "${SOURCES}" "${LIBS}")
+cga_add_tests(${PROJECT_NAME} "${SOURCES}" "${LIBS}")

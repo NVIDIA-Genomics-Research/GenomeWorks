@@ -29,4 +29,4 @@ set(LIBS
     cudaaligner
     utils)
 
-gw_add_benchmarks(${PROJECT_NAME} "cudaaligner" "${SOURCES}" "${LIBS}")
+cga_add_benchmarks(${PROJECT_NAME} "cudaaligner" "${SOURCES}" "${LIBS}")

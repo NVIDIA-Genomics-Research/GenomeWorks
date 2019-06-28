@@ -39,30 +39,30 @@
 /// \ingroup logging
 /// \{
 
-#define gw_log_level_debug 0
-#define gw_log_level_info 1
-#define gw_log_level_warn 2
-#define gw_log_level_error 3
-#define gw_log_level_critical 4
-#define gw_log_level_off 5
+#define cga_log_level_debug 0
+#define cga_log_level_info 1
+#define cga_log_level_warn 2
+#define cga_log_level_error 3
+#define cga_log_level_critical 4
+#define cga_log_level_off 5
 
 #ifndef CGA_LOG_LEVEL
 #ifndef NDEBUG
-#define CGA_LOG_LEVEL gw_log_level_debug
+#define CGA_LOG_LEVEL cga_log_level_debug
 #else // NDEBUG
-#define CGA_LOG_LEVEL gw_log_level_error
+#define CGA_LOG_LEVEL cga_log_level_error
 #endif // NDEBUG
 #endif // CGA_LOG_LEVEL
 
-#if CGA_LOG_LEVEL == gw_log_level_info
+#if CGA_LOG_LEVEL == cga_log_level_info
 #define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_INFO
-#elif CGA_LOG_LEVEL == gw_log_level_debug
+#elif CGA_LOG_LEVEL == cga_log_level_debug
 #define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_DEBUG
-#elif CGA_LOG_LEVEL == gw_log_level_warn
+#elif CGA_LOG_LEVEL == cga_log_level_warn
 #define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_WARN
-#elif CGA_LOG_LEVEL == gw_log_level_error
+#elif CGA_LOG_LEVEL == cga_log_level_error
 #define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_ERROR
-#elif CGA_LOG_LEVEL == gw_log_level_critical
+#elif CGA_LOG_LEVEL == cga_log_level_critical
 #define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_CRITICAL
 #else
 #define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_OFF

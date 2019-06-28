@@ -33,7 +33,7 @@ make -j install
 ```
 
 ## Enable Unit Tests
-To enable unit tests, add `-Dgw_enable_tests=ON` to the `cmake` command in the build step.
+To enable unit tests, add `-Dcga_enable_tests=ON` to the `cmake` command in the build step.
 
 This builds GTest based unit tests for all applicable modules, and installs them under
 `${CMAKE_INSTALL_PREFIX}/tests`. These tests are standalone binaries and can be executed
@@ -46,7 +46,7 @@ cd $INSTALL_DIR
 ```
 
 ## Enable Benchmarks
-To enable benchmarks, add `-Dgw_enable_benchmarks=ON` to the `cmake` command in the build step.
+To enable benchmarks, add `-Dcga_enable_benchmarks=ON` to the `cmake` command in the build step.
 
 This builds Google Benchmark based microbenchmarks for applicable modules. The built benchmarks
 are installed under `${CMAKE_INSTALL_PREFIX}/benchmarks/<module>` and can be run directly.
@@ -73,7 +73,7 @@ best to refer to http://releases.llvm.org/download.html).
 
 Once `clang-format` has been installed, make sure the binary is in your path.
 
-To add a folder to the auto-formatting list, use the macro `gw_enable_auto_formatting(FOLDER)`. This
+To add a folder to the auto-formatting list, use the macro `cga_enable_auto_formatting(FOLDER)`. This
 will add all cpp source/header files to the formatting list.
 
 To auto-format, run the following in your build directory.

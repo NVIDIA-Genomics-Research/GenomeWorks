@@ -2,8 +2,8 @@ cmake_minimum_required(VERSION 3.10.2)
 project(ClaraGenomicsAnalysisCPP)
 
 # Process options.
-option(gw_enable_tests "Build ClaraGenomicsAnalysis unit tests" OFF)
-option(gw_enable_benchmarks "Build ClaraGenomicsAnalysis benchmarks" OFF)
+option(cga_enable_tests "Build ClaraGenomicsAnalysis unit tests" OFF)
+option(cga_enable_benchmarks "Build ClaraGenomicsAnalysis benchmarks" OFF)
 # The spoa_accurate option runs a different (and slower) version of
 # the topological sort in cudapoa which exactly matches the output
 # of the topological sort implementation in the SPOA library. This is
@@ -12,14 +12,14 @@ option(gw_enable_benchmarks "Build ClaraGenomicsAnalysis benchmarks" OFF)
 # ordering of the graph. This leads to subtle differences in the
 # overall consensus generated, and hence makes it harder to validate and debug.
 option(spoa_accurate "Run cudapoa code in mode that matches spoa" OFF)
-option(gw_enable_cudapoa_nw_print "Enable verbose prints within cudapoa NW kernel" OFF)
+option(cga_enable_cudapoa_nw_print "Enable verbose prints within cudapoa NW kernel" OFF)
 
-if (gw_enable_tests)
+if (cga_enable_tests)
     message(STATUS "Enabling ClaraGenomicsAnalysis unit tests")
     set_property(GLOBAL PROPERTY enable_tests ON)
 endif()
 
-if (gw_enable_benchmarks)
+if (cga_enable_benchmarks)
     message(STATUS "Enabling ClaraGenomicsAnalysis benchmarks")
     set_property(GLOBAL PROPERTY enable_benchmarks ON)
 endif()
@@ -44,7 +44,7 @@ set_doxygen_mainpage(${CMAKE_CURRENT_SOURCE_DIR}/docs/README-SDK.md)
 add_docs_target("ClaraGenomicsAnalysis" "1.0")
 
 # Add auto formatting.
-gw_enable_formatting_targets()
+cga_enable_formatting_targets()
 
 if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
     set (CMAKE_INSTALL_PREFIX ${CMAKE_BINARY_DIR}/install CACHE PATH "The default SDK install path is install" FORCE)
