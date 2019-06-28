@@ -165,30 +165,30 @@ void CudapoaBatch::generate_poa()
     CGA_CU_CHECK_ERR(cudaSetDevice(device_id_));
     //Copy sequencecs, sequence lengths and window details to device
     CGA_CU_CHECK_ERR(cudaMemcpyAsync(input_details_d_->sequences, input_details_h_->sequences,
-                                    num_nucleotides_copied_ * sizeof(uint8_t), cudaMemcpyHostToDevice, stream_));
+                                     num_nucleotides_copied_ * sizeof(uint8_t), cudaMemcpyHostToDevice, stream_));
     CGA_CU_CHECK_ERR(cudaMemcpyAsync(input_details_d_->base_weights, input_details_h_->base_weights,
-                                    num_nucleotides_copied_ * sizeof(uint8_t), cudaMemcpyHostToDevice, stream_));
+                                     num_nucleotides_copied_ * sizeof(uint8_t), cudaMemcpyHostToDevice, stream_));
     CGA_CU_CHECK_ERR(cudaMemcpyAsync(input_details_d_->window_details, input_details_h_->window_details,
-                                    poa_count_ * sizeof(cga::cudapoa::WindowDetails), cudaMemcpyHostToDevice, stream_));
+                                     poa_count_ * sizeof(cga::cudapoa::WindowDetails), cudaMemcpyHostToDevice, stream_));
     CGA_CU_CHECK_ERR(cudaMemcpyAsync(input_details_d_->sequence_lengths, input_details_h_->sequence_lengths,
-                                    global_sequence_idx_ * sizeof(uint16_t), cudaMemcpyHostToDevice, stream_));
+                                     global_sequence_idx_ * sizeof(uint16_t), cudaMemcpyHostToDevice, stream_));
 
     // Launch kernel to run 1 POA per thread in thread block.
     std::string msg = " Launching kernel for " + std::to_string(poa_count_) + " on device ";
     print_batch_debug_message(msg);
 
     cga::cudapoa::generatePOA(output_details_d_,
-                                      input_details_d_,
-                                      poa_count_,
-                                      stream_,
-                                      alignment_details_d_,
-                                      graph_details_d_,
-                                      gap_score_,
-                                      mismatch_score_,
-                                      match_score_,
-                                      banded_alignment_,
-                                      max_sequences_per_poa_,
-                                      output_mask_);
+                              input_details_d_,
+                              poa_count_,
+                              stream_,
+                              alignment_details_d_,
+                              graph_details_d_,
+                              gap_score_,
+                              mismatch_score_,
+                              match_score_,
+                              banded_alignment_,
+                              max_sequences_per_poa_,
+                              output_mask_);
 
     CGA_CU_CHECK_ERR(cudaPeekAtLastError());
     msg = " Launched kernel on device ";
@@ -224,15 +224,15 @@ void CudapoaBatch::get_consensus(std::vector<std::string>& consensus,
     std::string msg = " Launching memcpy D2H on device ";
     print_batch_debug_message(msg);
     CGA_CU_CHECK_ERR(cudaMemcpyAsync(output_details_h_->consensus,
-                                    output_details_d_->consensus,
-                                    CUDAPOA_MAX_CONSENSUS_SIZE * max_poas_ * sizeof(uint8_t),
-                                    cudaMemcpyDeviceToHost,
-                                    stream_));
+                                     output_details_d_->consensus,
+                                     CUDAPOA_MAX_CONSENSUS_SIZE * max_poas_ * sizeof(uint8_t),
+                                     cudaMemcpyDeviceToHost,
+                                     stream_));
     CGA_CU_CHECK_ERR(cudaMemcpyAsync(output_details_h_->coverage,
-                                    output_details_d_->coverage,
-                                    CUDAPOA_MAX_CONSENSUS_SIZE * max_poas_ * sizeof(uint16_t),
-                                    cudaMemcpyDeviceToHost,
-                                    stream_));
+                                     output_details_d_->coverage,
+                                     CUDAPOA_MAX_CONSENSUS_SIZE * max_poas_ * sizeof(uint16_t),
+                                     cudaMemcpyDeviceToHost,
+                                     stream_));
     CGA_CU_CHECK_ERR(cudaStreamSynchronize(stream_));
 
     msg = " Finished memcpy D2H on device ";
@@ -272,16 +272,16 @@ void CudapoaBatch::get_msa(std::vector<std::vector<std::string>>& msa, std::vect
     print_batch_debug_message(msg);
 
     CGA_CU_CHECK_ERR(cudaMemcpyAsync(output_details_h_->multiple_sequence_alignments,
-                                    output_details_d_->multiple_sequence_alignments,
-                                    max_poas_ * max_sequences_per_poa_ * CUDAPOA_MAX_CONSENSUS_SIZE * sizeof(uint8_t),
-                                    cudaMemcpyDeviceToHost,
-                                    stream_));
+                                     output_details_d_->multiple_sequence_alignments,
+                                     max_poas_ * max_sequences_per_poa_ * CUDAPOA_MAX_CONSENSUS_SIZE * sizeof(uint8_t),
+                                     cudaMemcpyDeviceToHost,
+                                     stream_));
 
     CGA_CU_CHECK_ERR(cudaMemcpyAsync(output_details_h_->consensus,
-                                    output_details_d_->consensus,
-                                    CUDAPOA_MAX_CONSENSUS_SIZE * max_poas_ * sizeof(uint8_t),
-                                    cudaMemcpyDeviceToHost,
-                                    stream_));
+                                     output_details_d_->consensus,
+                                     CUDAPOA_MAX_CONSENSUS_SIZE * max_poas_ * sizeof(uint8_t),
+                                     cudaMemcpyDeviceToHost,
+                                     stream_));
 
     CGA_CU_CHECK_ERR(cudaStreamSynchronize(stream_));
 

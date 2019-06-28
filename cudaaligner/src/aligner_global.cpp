@@ -123,15 +123,15 @@ StatusType AlignerGlobal::align_all()
             max_alignments_, ukkonen_max_score_matrix_size(max_query_length_, max_subject_length_, allocated_max_length_difference, ukkonen_p), stream_, device_id_);
     CGA_CU_CHECK_ERR(cudaSetDevice(device_id_));
     CGA_CU_CHECK_ERR(cudaMemcpyAsync(sequence_lengths_d_.data(),
-                                    sequence_lengths_h_.data(),
-                                    2 * sizeof(int32_t) * num_alignments,
-                                    cudaMemcpyHostToDevice,
-                                    stream_));
+                                     sequence_lengths_h_.data(),
+                                     2 * sizeof(int32_t) * num_alignments,
+                                     cudaMemcpyHostToDevice,
+                                     stream_));
     CGA_CU_CHECK_ERR(cudaMemcpyAsync(sequences_d_.data(),
-                                    sequences_h_.data(),
-                                    2 * sizeof(char) * max_alignment_length * num_alignments,
-                                    cudaMemcpyHostToDevice,
-                                    stream_));
+                                     sequences_h_.data(),
+                                     2 * sizeof(char) * max_alignment_length * num_alignments,
+                                     cudaMemcpyHostToDevice,
+                                     stream_));
 
     int32_t max_length_difference = 0;
     for (int32_t i = 0; i < num_alignments; ++i)
@@ -150,15 +150,15 @@ StatusType AlignerGlobal::align_all()
         stream_);
 
     CGA_CU_CHECK_ERR(cudaMemcpyAsync(results_h_.data(),
-                                    results_d_.data(),
-                                    sizeof(int8_t) * (max_query_length_ + max_subject_length_) * num_alignments,
-                                    cudaMemcpyDeviceToHost,
-                                    stream_));
+                                     results_d_.data(),
+                                     sizeof(int8_t) * (max_query_length_ + max_subject_length_) * num_alignments,
+                                     cudaMemcpyDeviceToHost,
+                                     stream_));
     CGA_CU_CHECK_ERR(cudaMemcpyAsync(result_lengths_h_.data(),
-                                    result_lengths_d_.data(),
-                                    sizeof(int32_t) * num_alignments,
-                                    cudaMemcpyDeviceToHost,
-                                    stream_));
+                                     result_lengths_d_.data(),
+                                     sizeof(int32_t) * num_alignments,
+                                     cudaMemcpyDeviceToHost,
+                                     stream_));
     return StatusType::success;
 }
 
