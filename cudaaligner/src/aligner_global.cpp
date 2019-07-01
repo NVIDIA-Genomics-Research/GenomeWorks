@@ -17,10 +17,8 @@
 
 #include "aligner_global.hpp"
 #include "alignment_impl.hpp"
-#include "ukkonen_gpu.cuh"
 #include <cudautils/cudautils.hpp>
 #include <logging/logging.hpp>
-#include "batched_device_matrices.cuh"
 
 namespace claragenomics
 {
@@ -28,9 +26,7 @@ namespace claragenomics
 namespace cudaaligner
 {
 
-static constexpr float max_target_query_length_difference = 0.1; // query has to be >=90% of target length
-
-AlignerGlobal::AlignerGlobal(int32_t max_query_length, int32_t max_subject_length, int32_t max_alignments, int32_t device_id)
+AlignerGlobal::AlignerGlobal(int32_t max_query_length, int32_t max_subject_length, int32_t max_alignments, cudaStream_t stream, int32_t device_id)
     : max_query_length_(throw_on_negative(max_query_length, "max_query_length must be non-negative."))
     , max_subject_length_(throw_on_negative(max_subject_length, "max_subject_length must be non-negative."))
     , max_alignments_(throw_on_negative(max_alignments, "max_alignments must be non-negative."))
@@ -43,18 +39,13 @@ AlignerGlobal::AlignerGlobal(int32_t max_query_length, int32_t max_subject_lengt
     , results_h_((max_query_length + max_subject_length) * max_alignments, device_id)
     , result_lengths_d_(max_alignments, device_id)
     , result_lengths_h_(max_alignments, device_id)
-    , stream_(nullptr)
+    , stream_(stream)
     , device_id_(device_id)
 {
     if (max_alignments < 1)
     {
         throw std::runtime_error("Max alignments must be at least 1.");
     }
-}
-
-AlignerGlobal::~AlignerGlobal()
-{
-    // Keep empty destructor to keep batched_device_matrices type incomplete in the .hpp file.
 }
 
 StatusType AlignerGlobal::add_alignment(const char* query, int32_t query_length, const char* subject, int32_t subject_length)
@@ -65,9 +56,8 @@ StatusType AlignerGlobal::add_alignment(const char* query, int32_t query_length,
         return StatusType::generic_error;
     }
 
-    int32_t const max_alignment_length            = std::max(max_query_length_, max_subject_length_);
-    int32_t const allocated_max_length_difference = max_subject_length_ * max_target_query_length_difference;
-    int32_t const num_alignments                  = get_size(alignments_);
+    int32_t const max_alignment_length = std::max(max_query_length_, max_subject_length_);
+    int32_t const num_alignments       = get_size(alignments_);
     if (num_alignments >= max_alignments_)
     {
         CGA_LOG_DEBUG("{} {}", "Exceeded maximum number of alignments allowed : ", max_alignments_);
@@ -84,12 +74,6 @@ StatusType AlignerGlobal::add_alignment(const char* query, int32_t query_length,
     {
         CGA_LOG_DEBUG("{} {}", "Exceeded maximum length of subject allowed : ", max_subject_length_);
         return StatusType::exceeded_max_length;
-    }
-
-    if (std::abs(query_length - subject_length) > allocated_max_length_difference)
-    {
-        CGA_LOG_DEBUG("{} {}", "Exceeded maximum length difference b/w subject and query allowed : ", allocated_max_length_difference);
-        return StatusType::exceeded_max_alignment_difference;
     }
 
     memcpy(&sequences_h_[(2 * num_alignments) * max_alignment_length],
@@ -114,13 +98,8 @@ StatusType AlignerGlobal::add_alignment(const char* query, int32_t query_length,
 
 StatusType AlignerGlobal::align_all()
 {
-    int32_t const max_alignment_length            = std::max(max_query_length_, max_subject_length_);
-    int32_t const num_alignments                  = get_size(alignments_);
-    int32_t const allocated_max_length_difference = max_subject_length_ * max_target_query_length_difference;
-    int32_t const ukkonen_p                       = 100;
-    if (!score_matrices_)
-        score_matrices_ = std::make_unique<batched_device_matrices<nw_score_t>>(
-            max_alignments_, ukkonen_max_score_matrix_size(max_query_length_, max_subject_length_, allocated_max_length_difference, ukkonen_p), stream_, device_id_);
+    int32_t const max_alignment_length = std::max(max_query_length_, max_subject_length_);
+    int32_t const num_alignments       = get_size(alignments_);
     CGA_CU_CHECK_ERR(cudaSetDevice(device_id_));
     CGA_CU_CHECK_ERR(cudaMemcpyAsync(sequence_lengths_d_.data(),
                                      sequence_lengths_h_.data(),
@@ -133,21 +112,12 @@ StatusType AlignerGlobal::align_all()
                                      cudaMemcpyHostToDevice,
                                      stream_));
 
-    int32_t max_length_difference = 0;
-    for (int32_t i = 0; i < num_alignments; ++i)
-    {
-        max_length_difference = std::max(max_length_difference,
-                                         std::abs(sequence_lengths_h_[2 * i] - sequence_lengths_h_[2 * i + 1]));
-    }
-
     // Run kernel
-    ukkonen_gpu(
-        results_d_.data(), result_lengths_d_.data(), max_query_length_ + max_subject_length_,
-        sequences_d_.data(), sequence_lengths_d_.data(),
-        max_length_difference, max_alignment_length, num_alignments,
-        score_matrices_.get(),
-        ukkonen_p,
-        stream_);
+    run_alignment(results_d_.data(), result_lengths_d_.data(),
+                  max_query_length_, sequences_d_.data(), sequence_lengths_d_.data(), sequence_lengths_h_.data(),
+                  max_alignment_length,
+                  num_alignments,
+                  stream_);
 
     CGA_CU_CHECK_ERR(cudaMemcpyAsync(results_h_.data(),
                                      results_d_.data(),

@@ -18,6 +18,7 @@ cuda_add_library(cudaaligner STATIC
     src/aligner.cpp
     src/alignment_impl.cpp
     src/aligner_global.cpp
+    src/aligner_global_ukkonen.cpp
     src/needleman_wunsch_cpu.cpp
     src/ukkonen_gpu.cu
     src/myers_gpu.cu

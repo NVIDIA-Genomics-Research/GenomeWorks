@@ -10,7 +10,7 @@
 
 #include <random>
 #include "gtest/gtest.h"
-#include "../src/aligner_global.hpp"
+#include "../src/aligner_global_ukkonen.hpp"
 #include "cudaaligner/alignment.hpp"
 #include <utils/signed_integer_utils.hpp>
 #include <utils/genomeutils.hpp>
@@ -31,7 +31,7 @@ typedef struct
 // Test adding alignments to Aligner objects
 TEST(TestCudaAligner, TestAlignmentAddition)
 {
-    std::unique_ptr<AlignerGlobal> aligner = std::make_unique<AlignerGlobal>(5, 5, 5, 0);
+    std::unique_ptr<AlignerGlobal> aligner = std::make_unique<AlignerGlobalUkkonen>(5, 5, 5, nullptr, 0);
     ASSERT_EQ(StatusType::success, aligner->add_alignment("ATCG", 4, "TACG", 4));
     ASSERT_EQ(StatusType::success, aligner->add_alignment("ATCG", 4, "TACG", 4));
     ASSERT_EQ(StatusType::success, aligner->add_alignment("ATCG", 4, "TACG", 4));
@@ -100,15 +100,16 @@ public:
             max_string_size = std::max(max_string_size, get_size(pair.second));
         }
         max_string_size++;
-        aligner = std::make_unique<AlignerGlobal>(max_string_size,
-                                                  max_string_size,
-                                                  param.inputs.size(),
-                                                  0);
+        aligner = std::make_unique<AlignerGlobalUkkonen>(max_string_size,
+                                                         max_string_size,
+                                                         param.inputs.size(),
+                                                         nullptr,
+                                                         0);
         aligner->set_cuda_stream(0);
     }
 
 protected:
-    std::unique_ptr<AlignerGlobal> aligner;
+    std::unique_ptr<Aligner> aligner;
     AlignerTestData param;
 };
 
