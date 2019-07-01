@@ -13,6 +13,7 @@
 #include "cudaaligner/aligner.hpp"
 #include "ukkonen_gpu.cuh"
 #include "device_storage.cuh"
+#include <utils/signed_integer_utils.hpp>
 #include <thrust/system/cuda/experimental/pinned_allocator.h>
 
 namespace claragenomics
@@ -41,7 +42,7 @@ public:
 
     virtual int32_t num_alignments() const
     {
-        return alignments_.size();
+        return get_size(alignments_);
     }
 
     virtual void set_cuda_stream(cudaStream_t stream) override
