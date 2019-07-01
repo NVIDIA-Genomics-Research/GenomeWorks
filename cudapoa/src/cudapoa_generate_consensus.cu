@@ -182,7 +182,7 @@ __device__ void generateConsensus(uint8_t* nodes,
         }
 
         // Keep track of the highest weighted node.
-        if (max_score < score_node_id)
+        if (max_score <= score_node_id)
         {
             max_score_id = node_id;
             max_score    = score_node_id;
