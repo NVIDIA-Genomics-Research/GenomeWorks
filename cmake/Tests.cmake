@@ -15,7 +15,7 @@ cmake_minimum_required(VERSION 3.10.2)
 enable_testing()
 
 get_property(enable_tests GLOBAL PROPERTY enable_tests)
-function(claragenomics_add_tests NAME SOURCES LIBS)
+function(cga_add_tests NAME SOURCES LIBS)
     # Add test executable
     if (enable_tests)
         add_executable(${NAME} ${SOURCES})
@@ -28,4 +28,4 @@ function(claragenomics_add_tests NAME SOURCES LIBS)
         install(TARGETS ${NAME}
             DESTINATION tests)
     endif()
-endfunction(claragenomics_add_tests)
+endfunction(cga_add_tests)
