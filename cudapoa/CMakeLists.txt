@@ -39,7 +39,7 @@ target_link_libraries(cudapoa cudautils logging utils)
 
 target_compile_options(cudapoa PRIVATE -Werror -Wall -Wextra -march=native)
 
-if(cga_enable_cudapoa_nw_print)
+if(claragenomics_enable_cudapoa_nw_print)
     target_compile_definitions(cudapoa PUBLIC NW_VERBOSE_PRINT)
 endif()
 
@@ -69,4 +69,4 @@ install(DIRECTORY include/ DESTINATION include)
 install(EXPORT cudapoa DESTINATION cmake)
 
 # Add auto formatting.
-cga_enable_auto_formatting("${CMAKE_CURRENT_SOURCE_DIR}")
+claragenomics_enable_auto_formatting("${CMAKE_CURRENT_SOURCE_DIR}")

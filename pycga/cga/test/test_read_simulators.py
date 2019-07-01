@@ -1,8 +1,8 @@
 import pytest
 
-from cga.simulators import readsim
-from cga.simulators import genomesim
-from cga import simulators
+from claragenomics.simulators import readsim
+from claragenomics.simulators import genomesim
+from claragenomics import simulators
 
 
 num_reads_data = [

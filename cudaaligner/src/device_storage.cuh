@@ -12,7 +12,7 @@
 
 #include <cudautils/cudautils.hpp>
 
-namespace cga
+namespace claragenomics
 {
 
 template <typename T>
@@ -45,4 +45,4 @@ private:
     int32_t device_id_;
 };
 
-} // end namespace cga
+} // end namespace claragenomics

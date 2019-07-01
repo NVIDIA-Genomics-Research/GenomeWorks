@@ -28,4 +28,4 @@ set(LIBS
     cudapoa
     spoa)
 
-cga_add_tests(${PROJECT_NAME} "${SOURCES}" "${LIBS}")
+claragenomics_add_tests(${PROJECT_NAME} "${SOURCES}" "${LIBS}")

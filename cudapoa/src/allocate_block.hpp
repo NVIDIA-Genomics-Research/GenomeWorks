@@ -19,7 +19,7 @@
 
 #include "cudapoa_kernels.cuh"
 
-namespace cga
+namespace claragenomics
 {
 
 namespace cudapoa
@@ -81,4 +81,4 @@ protected:
 
 } // namespace cudapoa
 
-} // namespace cga
+} // namespace claragenomics

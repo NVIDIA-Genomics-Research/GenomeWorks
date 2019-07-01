@@ -3,7 +3,7 @@ import os.path
 
 from setuptools import setup, find_packages
 
-setup(name='pycga',
+setup(name='pyclaragenomics',
       version='0.1',
       description='NVIDIA genomics python libraries an utiliites',
       author='Mike Vella',

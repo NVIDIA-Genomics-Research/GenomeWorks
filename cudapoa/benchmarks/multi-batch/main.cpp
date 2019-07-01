@@ -16,7 +16,7 @@
 #include "../common/utils.hpp"
 #include "cudautils/cudautils.hpp"
 
-namespace cga
+namespace claragenomics
 {
 
 namespace cudapoa
@@ -78,6 +78,6 @@ BENCHMARK(BM_MultiBatchTest)
     ->Unit(benchmark::kMillisecond)
     ->Apply(CustomArguments);
 } // namespace cudapoa
-} // namespace cga
+} // namespace claragenomics
 
 BENCHMARK_MAIN();

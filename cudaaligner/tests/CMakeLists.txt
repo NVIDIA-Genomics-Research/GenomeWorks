@@ -21,4 +21,4 @@ set(LIBS
     cudaaligner
     utils)
 
-cga_add_tests(${PROJECT_NAME} "${SOURCES}" "${LIBS}")
+claragenomics_add_tests(${PROJECT_NAME} "${SOURCES}" "${LIBS}")

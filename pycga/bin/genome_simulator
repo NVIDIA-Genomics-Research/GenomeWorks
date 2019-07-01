@@ -21,10 +21,10 @@ import uuid
 
 from tqdm import tqdm
 
-from cga import simulators
-from cga.io import fastaio
-from cga.simulators import genomesim
-from cga.simulators import readsim
+from claragenomics import simulators
+from claragenomics.io import fastaio
+from claragenomics.simulators import genomesim
+from claragenomics.simulators import readsim
 
 
 def _readgen(num_reads, args, read_generator, reference_string):

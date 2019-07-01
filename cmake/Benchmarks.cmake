@@ -11,7 +11,7 @@
 cmake_minimum_required(VERSION 3.10.2)
 
 get_property(enable_benchmarks GLOBAL PROPERTY enable_benchmarks)
-function(cga_add_benchmarks NAME MODULE SOURCES LIBS)
+function(claragenomics_add_benchmarks NAME MODULE SOURCES LIBS)
     # Add test executable
     if (enable_benchmarks)
         cuda_add_executable(${NAME} ${SOURCES})
@@ -24,4 +24,4 @@ function(cga_add_benchmarks NAME MODULE SOURCES LIBS)
         install(TARGETS ${NAME}
             DESTINATION benchmarks/${MODULE})
     endif()
-endfunction(cga_add_benchmarks)
+endfunction(claragenomics_add_benchmarks)

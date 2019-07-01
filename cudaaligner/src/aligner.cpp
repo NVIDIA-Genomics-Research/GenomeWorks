@@ -11,7 +11,7 @@
 #include "cudaaligner/aligner.hpp"
 #include "aligner_global.hpp"
 
-namespace cga
+namespace claragenomics
 {
 
 namespace cudaaligner
@@ -29,4 +29,4 @@ std::unique_ptr<Aligner> create_aligner(int32_t max_query_length, int32_t max_su
     }
 }
 } // namespace cudaaligner
-} // namespace cga
+} // namespace claragenomics

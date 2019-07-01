@@ -30,4 +30,4 @@ install(DIRECTORY include/ DESTINATION include)
 install(EXPORT cudautils DESTINATION cmake)
 
 # Add auto formatting.
-cga_enable_auto_formatting("${CMAKE_CURRENT_SOURCE_DIR}")
+claragenomics_enable_auto_formatting("${CMAKE_CURRENT_SOURCE_DIR}")

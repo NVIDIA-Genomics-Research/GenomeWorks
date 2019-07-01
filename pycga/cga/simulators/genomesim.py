@@ -7,7 +7,7 @@ import random
 import numpy as np
 from tqdm import tqdm
 
-from cga.simulators import NUCLEOTIDES
+from claragenomics.simulators import NUCLEOTIDES
 
 
 class GenomeSimulator(abc.ABC):

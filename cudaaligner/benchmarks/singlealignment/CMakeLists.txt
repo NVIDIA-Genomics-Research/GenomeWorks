@@ -29,4 +29,4 @@ set(LIBS
     cudaaligner
     utils)
 
-cga_add_benchmarks(${PROJECT_NAME} "cudaaligner" "${SOURCES}" "${LIBS}")
+claragenomics_add_benchmarks(${PROJECT_NAME} "cudaaligner" "${SOURCES}" "${LIBS}")

@@ -4,8 +4,8 @@ import pytest
 import subprocess
 import tempfile
 
-from cga.wrappers import wrappers
-from cga.utilities import utilities
+from claragenomics.wrappers import wrappers
+from claragenomics.utilities import utilities
 
 # ground-truth files
 current_dir = os.path.dirname(os.path.realpath(__file__))

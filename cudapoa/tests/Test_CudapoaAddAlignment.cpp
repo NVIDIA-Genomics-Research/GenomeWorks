@@ -15,7 +15,7 @@
 #include <utils/signed_integer_utils.hpp> // get_size
 #include "basic_graph.hpp"                //BasicGraph
 
-namespace cga
+namespace claragenomics
 {
 
 namespace cudapoa
@@ -351,4 +351,4 @@ INSTANTIATE_TEST_SUITE_P(TestAddAlginment, AddAlignmentTest, ValuesIn(getAddAlig
 
 } // namespace cudapoa
 
-} // namespace cga
+} // namespace claragenomics

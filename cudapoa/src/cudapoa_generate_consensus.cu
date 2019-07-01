@@ -11,7 +11,7 @@
 #include "cudapoa_kernels.cuh"
 #include <stdio.h>
 
-namespace cga
+namespace claragenomics
 {
 
 namespace cudapoa
@@ -249,7 +249,7 @@ template <bool cuda_banded_alignment = false>
 __global__ void generateConsensusKernel(uint8_t* consensus_d,
                                         uint16_t* coverage_d,
                                         uint16_t* sequence_lengths_d,
-                                        cga::cudapoa::WindowDetails* window_details_d,
+                                        claragenomics::cudapoa::WindowDetails* window_details_d,
                                         int32_t total_windows,
                                         uint8_t* nodes_d,
                                         uint16_t* incoming_edges_d,
@@ -386,4 +386,4 @@ void generateConsensusTestHost(uint8_t* nodes,
 
 } // namespace cudapoa
 
-} // namespace cga
+} // namespace claragenomics

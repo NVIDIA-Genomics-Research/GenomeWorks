@@ -39,30 +39,30 @@
 /// \ingroup logging
 /// \{
 
-#define cga_log_level_debug 0
-#define cga_log_level_info 1
-#define cga_log_level_warn 2
-#define cga_log_level_error 3
-#define cga_log_level_critical 4
-#define cga_log_level_off 5
+#define claragenomics_log_level_debug 0
+#define claragenomics_log_level_info 1
+#define claragenomics_log_level_warn 2
+#define claragenomics_log_level_error 3
+#define claragenomics_log_level_critical 4
+#define claragenomics_log_level_off 5
 
 #ifndef CGA_LOG_LEVEL
 #ifndef NDEBUG
-#define CGA_LOG_LEVEL cga_log_level_debug
+#define CGA_LOG_LEVEL claragenomics_log_level_debug
 #else // NDEBUG
-#define CGA_LOG_LEVEL cga_log_level_error
+#define CGA_LOG_LEVEL claragenomics_log_level_error
 #endif // NDEBUG
 #endif // CGA_LOG_LEVEL
 
-#if CGA_LOG_LEVEL == cga_log_level_info
+#if CGA_LOG_LEVEL == claragenomics_log_level_info
 #define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_INFO
-#elif CGA_LOG_LEVEL == cga_log_level_debug
+#elif CGA_LOG_LEVEL == claragenomics_log_level_debug
 #define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_DEBUG
-#elif CGA_LOG_LEVEL == cga_log_level_warn
+#elif CGA_LOG_LEVEL == claragenomics_log_level_warn
 #define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_WARN
-#elif CGA_LOG_LEVEL == cga_log_level_error
+#elif CGA_LOG_LEVEL == claragenomics_log_level_error
 #define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_ERROR
-#elif CGA_LOG_LEVEL == cga_log_level_critical
+#elif CGA_LOG_LEVEL == claragenomics_log_level_critical
 #define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_CRITICAL
 #else
 #define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_OFF
@@ -71,7 +71,7 @@
 // MUST come after the defines of the logging level!
 #include <spdlog/spdlog.h>
 
-namespace cga
+namespace claragenomics
 {
 namespace logging
 {
@@ -134,6 +134,6 @@ LoggingStatus SetHeader(bool logTime, bool logLocation);
 #define CGA_LOG_CRITICAL(...) SPDLOG_CRITICAL(__VA_ARGS__)
 
 } // namespace logging
-} // namespace cga
+} // namespace claragenomics
 
 /// \}

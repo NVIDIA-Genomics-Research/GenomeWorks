@@ -31,4 +31,4 @@ include_directories(${cudapoa_data_include_dir})
 set(LIBS
     cudapoa)
 
-cga_add_benchmarks(${PROJECT_NAME} "cudapoa" "${SOURCES}" "${LIBS}")
+claragenomics_add_benchmarks(${PROJECT_NAME} "cudapoa" "${SOURCES}" "${LIBS}")

@@ -13,7 +13,7 @@
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/sinks/stdout_sinks.h>
 
-namespace cga
+namespace claragenomics
 {
 namespace logging
 {
@@ -78,4 +78,4 @@ LoggingStatus SetHeader(bool logTime, bool logLocation)
     return LoggingStatus::success;
 }
 } // namespace logging
-} // namespace cga
+} // namespace claragenomics

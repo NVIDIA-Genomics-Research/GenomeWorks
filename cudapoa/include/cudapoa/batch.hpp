@@ -20,7 +20,7 @@
 
 #include <cuda_runtime_api.h>
 
-namespace cga
+namespace claragenomics
 {
 
 namespace cudapoa
@@ -65,7 +65,7 @@ public:
     ///                 during kernel execution is captured
     virtual void get_consensus(std::vector<std::string>& consensus,
                                std::vector<std::vector<uint16_t>>& coverage,
-                               std::vector<cga::cudapoa::StatusType>& output_status) = 0;
+                               std::vector<claragenomics::cudapoa::StatusType>& output_status) = 0;
 
     /// \brief Get the multiple sequence alignments for each POA.
     ///
@@ -105,4 +105,4 @@ std::unique_ptr<Batch> create_batch(int32_t max_poas, int32_t max_sequences_per_
 
 } // namespace cudapoa
 
-} // namespace cga
+} // namespace claragenomics

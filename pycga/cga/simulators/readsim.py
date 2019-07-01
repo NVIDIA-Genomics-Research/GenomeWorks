@@ -2,7 +2,7 @@
 import abc
 import random
 
-from cga.simulators import NUCLEOTIDES
+from claragenomics.simulators import NUCLEOTIDES
 
 
 class ReadSimulator:
