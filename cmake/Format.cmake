@@ -21,7 +21,7 @@ define_property(GLOBAL PROPERTY CGA_FORMAT_SOURCES
 #
 # param(DIRECTORY) - directory to activate formatting for
 #
-function(claragenomics_enable_auto_formatting DIRECTORY)
+function(cga_enable_auto_formatting DIRECTORY)
     if(NOT (IS_ABSOLUTE ${DIRECTORY} AND IS_DIRECTORY ${DIRECTORY}))
         message(FATAL_ERROR "Formatting: '${DIRECTORY}' not an absolute path to a directory")
     endif()
@@ -38,7 +38,7 @@ function(claragenomics_enable_auto_formatting DIRECTORY)
 endfunction()
 
 # activate formatting
-function(claragenomics_enable_formatting_targets)
+function(cga_enable_formatting_targets)
     find_program(CGA_CLANGFORMAT_EXECUTABLE NAMES clang-format)
     if(CGA_CLANGFORMAT_EXECUTABLE)
 
