@@ -89,7 +89,7 @@ __device__
             score_node_id += scores[predecessors[node_id]];
         }
 
-        if (max_score < score_node_id)
+        if (max_score <= score_node_id)
         {
             max_score    = score_node_id;
             max_score_id = node_id;
