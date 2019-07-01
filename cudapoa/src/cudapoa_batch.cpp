@@ -178,17 +178,17 @@ void CudapoaBatch::generate_poa()
     print_batch_debug_message(msg);
 
     claragenomics::cudapoa::generatePOA(output_details_d_,
-                              input_details_d_,
-                              poa_count_,
-                              stream_,
-                              alignment_details_d_,
-                              graph_details_d_,
-                              gap_score_,
-                              mismatch_score_,
-                              match_score_,
-                              banded_alignment_,
-                              max_sequences_per_poa_,
-                              output_mask_);
+                                        input_details_d_,
+                                        poa_count_,
+                                        stream_,
+                                        alignment_details_d_,
+                                        graph_details_d_,
+                                        gap_score_,
+                                        mismatch_score_,
+                                        match_score_,
+                                        banded_alignment_,
+                                        max_sequences_per_poa_,
+                                        output_mask_);
 
     CGA_CU_CHECK_ERR(cudaPeekAtLastError());
     msg = " Launched kernel on device ";
