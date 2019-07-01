@@ -12,11 +12,17 @@
 
 #include <cuda_runtime_api.h>
 #include "matrix_cpu.hpp"
+#include "batched_device_matrices.cuh"
 
 namespace claragenomics
 {
 namespace cudaaligner
 {
+
+namespace myers
+{
+using WordType = uint32_t;
+}
 
 int32_t myers_compute_edit_distance(std::string const& target, std::string const& query);
 matrix<int32_t> myers_get_full_score_matrix(std::string const& target, std::string const& query);
@@ -26,6 +32,9 @@ void myers_gpu(int8_t* paths_d, int32_t* path_lengths_d, int32_t max_path_length
                int32_t const* sequence_lengths_d,
                int32_t max_target_query_length,
                int32_t n_alignments,
+               batched_device_matrices<myers::WordType>& pv,
+               batched_device_matrices<myers::WordType>& mv,
+               batched_device_matrices<int32_t>& score,
                cudaStream_t stream);
 
 } // end namespace cudaaligner
