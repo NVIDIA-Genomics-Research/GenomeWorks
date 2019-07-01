@@ -8,7 +8,7 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-#define CGA_LOG_LEVEL claragenomics_log_level_info
+#define CGA_LOG_LEVEL cga_log_level_info
 
 #include "allocate_block.hpp"
 
