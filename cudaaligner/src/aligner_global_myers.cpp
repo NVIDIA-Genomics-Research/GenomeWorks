@@ -43,14 +43,7 @@ AlignerGlobalMyers::~AlignerGlobalMyers()
 void AlignerGlobalMyers::run_alignment(int8_t* results_d, int32_t* result_lengths_d, int32_t max_result_length, const char* sequences_d, int32_t* sequence_lengths_d, int32_t* sequence_lengths_h, int32_t max_sequence_length, int32_t num_alignments, cudaStream_t stream)
 {
     static_cast<void>(sequence_lengths_h);
-    for (int32_t n = 0; n < num_alignments; ++n)
-    {
-        myers_gpu(results_d, result_lengths_d, max_result_length, sequences_d, sequence_lengths_d, max_sequence_length, 1, workspace_->pvs, workspace_->mvs, workspace_->scores, stream);
-        results_d += max_result_length;
-        result_lengths_d += 1;
-        sequences_d += 2 * max_sequence_length;
-        sequence_lengths_d += 2;
-    }
+    myers_gpu(results_d, result_lengths_d, max_result_length, sequences_d, sequence_lengths_d, max_sequence_length, num_alignments, workspace_->pvs, workspace_->mvs, workspace_->scores, stream);
 }
 
 } // namespace cudaaligner
