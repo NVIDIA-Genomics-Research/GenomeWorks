@@ -15,7 +15,7 @@
 // Extract shorts from bit field.
 #define EXTRACT_SHORT_FROM_BITFIELD(type, val, pos) (type)((val >> (16 * (pos))) & 0xffff)
 
-namespace cga
+namespace claragenomics
 {
 
 namespace cudapoa
@@ -528,4 +528,4 @@ __device__
 
 } // namespace cudapoa
 
-} // namespace cga
+} // namespace claragenomics

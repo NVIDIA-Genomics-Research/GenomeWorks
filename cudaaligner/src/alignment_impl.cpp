@@ -11,7 +11,7 @@
 #include "alignment_impl.hpp"
 #include <utils/signed_integer_utils.hpp>
 
-namespace cga
+namespace claragenomics
 {
 
 namespace cudaaligner
@@ -105,4 +105,4 @@ FormattedAlignment AlignmentImpl::format_alignment() const
     return output;
 }
 } // namespace cudaaligner
-} // namespace cga
+} // namespace claragenomics

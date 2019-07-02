@@ -5,7 +5,7 @@
 #include <utils/genomeutils.hpp>
 #include "spoa/spoa.hpp"
 
-namespace cga
+namespace claragenomics
 {
 
 namespace cudapoa
@@ -27,7 +27,7 @@ public:
                     int16_t mismatch_score = -6,
                     int16_t match_score    = 8)
     {
-        cudapoa_batch = cga::cudapoa::create_batch(max_poas, max_sequences_per_poa, device_id, output_mask, gap_score, mismatch_score, match_score);
+        cudapoa_batch = claragenomics::cudapoa::create_batch(max_poas, max_sequences_per_poa, device_id, output_mask, gap_score, mismatch_score, match_score);
     }
 
     std::vector<std::string> spoa_generate_multiple_sequence_alignments(std::vector<std::string> sequences,
@@ -52,15 +52,15 @@ public:
     }
 
 public:
-    std::unique_ptr<cga::cudapoa::Batch> cudapoa_batch;
+    std::unique_ptr<claragenomics::cudapoa::Batch> cudapoa_batch;
 };
 
 TEST_F(MSATest, CudapoaMSA)
 {
     std::minstd_rand rng(1);
     int num_sequences    = 499;
-    std::string backbone = cga::genomeutils::generate_random_genome(50, rng);
-    auto sequences       = cga::genomeutils::generate_random_sequences(backbone, num_sequences, rng, 10, 5, 10);
+    std::string backbone = claragenomics::genomeutils::generate_random_genome(50, rng);
+    auto sequences       = claragenomics::genomeutils::generate_random_sequences(backbone, num_sequences, rng, 10, 5, 10);
 
     initialize(1, num_sequences + 1); //
     EXPECT_EQ(cudapoa_batch->add_poa(), StatusType::success);
@@ -95,4 +95,4 @@ TEST_F(MSATest, CudapoaMSA)
 
 } // namespace cudapoa
 
-} // namespace cga
+} // namespace claragenomics

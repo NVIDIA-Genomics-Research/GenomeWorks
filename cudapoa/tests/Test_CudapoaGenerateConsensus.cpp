@@ -14,7 +14,7 @@
 #include <utils/signed_integer_utils.hpp> //get_size
 #include "sorted_graph.hpp"               //SortedGraph
 
-namespace cga
+namespace claragenomics
 {
 
 namespace cudapoa
@@ -275,4 +275,4 @@ INSTANTIATE_TEST_SUITE_P(TestGenerateConsensus, GenerateConsensusTest, ValuesIn(
 
 } // namespace cudapoa
 
-} // namespace cga
+} // namespace claragenomics

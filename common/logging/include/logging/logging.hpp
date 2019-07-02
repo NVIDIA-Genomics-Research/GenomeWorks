@@ -71,7 +71,7 @@
 // MUST come after the defines of the logging level!
 #include <spdlog/spdlog.h>
 
-namespace cga
+namespace claragenomics
 {
 namespace logging
 {
@@ -134,6 +134,6 @@ LoggingStatus SetHeader(bool logTime, bool logLocation);
 #define CGA_LOG_CRITICAL(...) SPDLOG_CRITICAL(__VA_ARGS__)
 
 } // namespace logging
-} // namespace cga
+} // namespace claragenomics
 
 /// \}

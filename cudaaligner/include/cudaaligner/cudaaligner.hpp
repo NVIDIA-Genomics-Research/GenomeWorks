@@ -14,7 +14,7 @@
 /// Base docs for the cudaaligner package (tbd)
 /// \{
 
-namespace cga
+namespace claragenomics
 {
 
 namespace cudaaligner
@@ -48,5 +48,5 @@ enum class AlignmentState
 
 StatusType Init();
 } // namespace cudaaligner
-} // namespace cga
+} // namespace claragenomics
 /// \}

@@ -16,7 +16,7 @@
 #include "cudautils/cudautils.hpp"
 #include "cudaaligner/aligner.hpp"
 
-namespace cga
+namespace claragenomics
 {
 
 namespace cudaaligner
@@ -54,8 +54,8 @@ static void BM_SingleBatchAlignment(benchmark::State& state)
     for (int32_t i = 0; i < alignments_per_batch; i++)
     {
         // TODO: generate genomes with indels as well
-        std::string genome_1 = cga::genomeutils::generate_random_genome(genome_size, rng);
-        std::string genome_2 = cga::genomeutils::generate_random_genome(genome_size, rng);
+        std::string genome_1 = claragenomics::genomeutils::generate_random_genome(genome_size, rng);
+        std::string genome_2 = claragenomics::genomeutils::generate_random_genome(genome_size, rng);
 
         aligner->add_alignment(genome_1.c_str(), genome_1.length(),
                                genome_2.c_str(), genome_2.length());
@@ -76,6 +76,6 @@ BENCHMARK(BM_SingleBatchAlignment)
     ->Ranges({{32, 512}, {500, 10000}});
 
 } // namespace cudaaligner
-} // namespace cga
+} // namespace claragenomics
 
 BENCHMARK_MAIN();

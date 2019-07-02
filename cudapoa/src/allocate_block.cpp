@@ -16,7 +16,7 @@
 #include <logging/logging.hpp>
 #include <utils/signed_integer_utils.hpp>
 
-namespace cga
+namespace claragenomics
 {
 
 namespace cudapoa
@@ -293,4 +293,4 @@ void BatchBlock::get_graph_details(GraphDetails** graph_details_d_p)
 
 } // namespace cudapoa
 
-} // namespace cga
+} // namespace claragenomics

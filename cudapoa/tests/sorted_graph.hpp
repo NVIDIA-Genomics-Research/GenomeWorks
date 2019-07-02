@@ -5,7 +5,7 @@
 #include "basic_graph.hpp"
 #include <utils/signed_integer_utils.hpp> // get_size
 
-namespace cga
+namespace claragenomics
 {
 
 namespace cudapoa
@@ -53,4 +53,4 @@ protected:
 
 } // namespace cudapoa
 
-} // namespace cga
+} // namespace claragenomics

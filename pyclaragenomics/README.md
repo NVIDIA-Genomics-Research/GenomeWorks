@@ -1,4 +1,4 @@
-# pycga
+# pyclaragenomics
 
 Python libraries and utilities for manipulating genomics data
 
@@ -9,7 +9,7 @@ pip install -r requirements.txt
 python setup.py install
 ```
 
-*Note* if you are developing pycga you should do a develop build instead, changes you make to the source code will then be picked up on immediately:
+*Note* if you are developing pyclaragenomics you should do a develop build instead, changes you make to the source code will then be picked up on immediately:
 
 ```
 pip install -r requirements.txt

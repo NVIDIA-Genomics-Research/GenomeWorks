@@ -21,14 +21,14 @@
 /// \ingroup cudautils
 /// \def CGA_CU_CHECK_ERR
 /// \brief Log on CUDA error in enclosed expression
-#define CGA_CU_CHECK_ERR(ans)                                 \
-    {                                                         \
-        cga::cudautils::gpuAssert((ans), __FILE__, __LINE__); \
+#define CGA_CU_CHECK_ERR(ans)                                           \
+    {                                                                   \
+        claragenomics::cudautils::gpuAssert((ans), __FILE__, __LINE__); \
     }
 
 /// \}
 
-namespace cga
+namespace claragenomics
 {
 
 namespace cudautils
@@ -63,4 +63,4 @@ inline void gpuAssert(cudaError_t code, const char* file, int line, bool abort =
 
 } // namespace cudautils
 
-} // namespace cga
+} // namespace claragenomics

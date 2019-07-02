@@ -16,7 +16,7 @@
 #include "device_storage.cuh"
 #include "matrix_cpu.hpp"
 
-namespace cga
+namespace claragenomics
 {
 namespace cudaaligner
 {
@@ -151,4 +151,4 @@ private:
 };
 
 } // end namespace cudaaligner
-} // end namespace cga
+} // end namespace claragenomics

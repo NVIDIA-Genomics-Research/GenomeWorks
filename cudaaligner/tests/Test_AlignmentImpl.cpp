@@ -14,7 +14,7 @@
 #include "../src/alignment_impl.hpp"
 #include <utils/signed_integer_utils.hpp>
 
-namespace cga
+namespace claragenomics
 {
 
 namespace cudaaligner
@@ -176,4 +176,4 @@ TEST_P(TestAlignmentImpl, CigarFormatting)
 
 INSTANTIATE_TEST_SUITE_P(TestAlignment, TestAlignmentImpl, ValuesIn(create_alignment_test_cases()));
 } // namespace cudaaligner
-} // namespace cga
+} // namespace claragenomics

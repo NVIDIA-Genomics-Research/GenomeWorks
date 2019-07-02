@@ -22,7 +22,7 @@
 #include <logging/logging.hpp>
 #include "batched_device_matrices.cuh"
 
-namespace cga
+namespace claragenomics
 {
 
 namespace cudaaligner
@@ -188,4 +188,4 @@ void AlignerGlobal::reset()
     alignments_.clear();
 }
 } // namespace cudaaligner
-} // namespace cga
+} // namespace claragenomics
