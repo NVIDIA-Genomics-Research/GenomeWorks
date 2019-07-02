@@ -8,15 +8,16 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-#include "cudamapper/index.hpp"
-#include "index_cpu.hpp"
+#include "gtest/gtest.h"
+#include "../src/index_cpu.hpp"
+#include "../src/index_generator_cpu.hpp"
 
 namespace claragenomics {
-    std::unique_ptr<Index> Index::create_index(const IndexGenerator& index_generator) {
-        return std::make_unique<IndexCPU>(index_generator);
+
+    TEST(TestCudamapperIndexCPU, SampleTest) {
+        IndexGeneratorCPU index_generator("data/one_read_one_minimizer.fasta", 4, 1);
+        IndexCPU index(index_generator);
+        ASSERT_EQ(true, true);
     }
 
-    std::unique_ptr<Index> Index::create_index() {
-        return std::make_unique<IndexCPU>();
-    }
 }

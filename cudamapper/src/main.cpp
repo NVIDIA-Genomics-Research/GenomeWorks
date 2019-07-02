@@ -26,7 +26,7 @@ int main(int argc, char *argv[])
     std::unique_ptr<claragenomics::IndexGenerator> index_generator = claragenomics::IndexGenerator::create_index_generator(std::string(argv[1]), 15, 15);
     CGA_LOG_INFO("Created index generator");
     std::cout << "Index generator execution time: " << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time).count() << "ms" << std::endl;
-
+/*
     start_time = std::chrono::high_resolution_clock::now();
     CGA_LOG_INFO("Creating index");
     std::unique_ptr<claragenomics::Index> index = claragenomics::Index::create_index(*index_generator);
@@ -38,6 +38,6 @@ int main(int argc, char *argv[])
     claragenomics::Matcher matcher(static_cast<claragenomics::IndexGPU&>(*(index.get())));
     CGA_LOG_INFO("Finished matcher");
     std::cout << "Matcher execution time: " << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time).count() << "ms" << std::endl;
-
+*/
     return  0;
 }

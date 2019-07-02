@@ -26,11 +26,17 @@ target_include_directories(index_generator_cpu PUBLIC include)
 target_link_libraries(index_generator_cpu bioparser logging pthread)
 target_compile_options(index_generator_cpu PRIVATE -Werror)
 
-cuda_add_library(index_gpu
-        src/index_gpu.cpp)
-target_include_directories(index_gpu PUBLIC include)
-target_link_libraries(index_gpu bioparser logging pthread cudautils)
-target_compile_options(index_gpu PRIVATE -Werror)
+cuda_add_library(index_cpu
+        src/index_cpu.cpp)
+target_include_directories(index_cpu PUBLIC include)
+target_link_libraries(index_cpu bioparser logging pthread cudautils)
+target_compile_options(index_cpu PRIVATE -Werror)
+
+cuda_add_library(matcher
+        src/matcher.cu)
+target_include_directories(matcher PUBLIC include)
+target_link_libraries(matcher cudautils)
+target_compile_options(matcher PRIVATE -Werror)
 
 add_doxygen_source_dir(${CMAKE_CURRENT_SOURCE_DIR}/include/cudamapper)
 
@@ -41,7 +47,6 @@ cuda_add_executable(cudamapper
         src/bioparser_sequence.cpp
         src/index.cpp
         src/index_generator.cpp
-        src/matcher.cu
         )
 
 target_compile_options(cudamapper PRIVATE -Werror)
@@ -51,7 +56,7 @@ target_include_directories(cudamapper
         $<INSTALL_INTERFACE:include>    
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 )
-target_link_libraries(cudamapper bioparser cudautils index_generator_cpu index_gpu logging)
+target_link_libraries(cudamapper bioparser cudautils index_generator_cpu index_cpu matcher logging)
 
 # Add tests folder
 add_subdirectory(tests)
