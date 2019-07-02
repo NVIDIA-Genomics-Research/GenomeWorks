@@ -16,7 +16,7 @@
 #include <unordered_map>
 #include "cudamapper/sketch_element.hpp"
 
-namespace genomeworks {
+namespace claragenomics {
 /// \addtogroup cudamapper
 /// \{
 

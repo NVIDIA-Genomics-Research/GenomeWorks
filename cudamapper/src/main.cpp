@@ -19,24 +19,24 @@
 
 int main(int argc, char *argv[])
 {
-    genomeworks::logging::Init();
+    claragenomics::logging::Init();
     auto start_time = std::chrono::high_resolution_clock::now();
-    GW_LOG_INFO("Creating index generator");
+    CGA_LOG_INFO("Creating index generator");
     // TODO: pass kmer and window size as parameters
-    std::unique_ptr<genomeworks::IndexGenerator> index_generator = genomeworks::IndexGenerator::create_index_generator(std::string(argv[1]), 15, 15);
-    GW_LOG_INFO("Created index generator");
+    std::unique_ptr<claragenomics::IndexGenerator> index_generator = claragenomics::IndexGenerator::create_index_generator(std::string(argv[1]), 15, 15);
+    CGA_LOG_INFO("Created index generator");
     std::cout << "Index generator execution time: " << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time).count() << "ms" << std::endl;
 
     start_time = std::chrono::high_resolution_clock::now();
-    GW_LOG_INFO("Creating index");
-    std::unique_ptr<genomeworks::Index> index = genomeworks::Index::create_index(*index_generator);
-    GW_LOG_INFO("Created index");
+    CGA_LOG_INFO("Creating index");
+    std::unique_ptr<claragenomics::Index> index = claragenomics::Index::create_index(*index_generator);
+    CGA_LOG_INFO("Created index");
     std::cout << "Index execution time: " << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time).count() << "ms" << std::endl;
 
     start_time = std::chrono::high_resolution_clock::now();
-    GW_LOG_INFO("Started matcher");
-    genomeworks::Matcher matcher(static_cast<genomeworks::IndexGPU&>(*(index.get())));
-    GW_LOG_INFO("Finished matcher");
+    CGA_LOG_INFO("Started matcher");
+    claragenomics::Matcher matcher(static_cast<claragenomics::IndexGPU&>(*(index.get())));
+    CGA_LOG_INFO("Finished matcher");
     std::cout << "Matcher execution time: " << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time).count() << "ms" << std::endl;
 
     return  0;

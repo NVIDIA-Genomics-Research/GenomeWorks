@@ -19,4 +19,4 @@ set(LIBS
     index_generator_cpu
     index_gpu)
 
-gw_add_tests(${PROJECT_NAME} "${SOURCES}" "${LIBS}")
+cga_add_tests(${PROJECT_NAME} "${SOURCES}" "${LIBS}")

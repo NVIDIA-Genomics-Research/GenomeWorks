@@ -18,7 +18,7 @@
 #include <logging/logging.hpp>
 #include "index_generator_cpu.hpp"
 
-namespace genomeworks {
+namespace claragenomics {
 
     typedef std::pair<uint64_t, std::unique_ptr<Minimizer>> MinPair;
 
@@ -41,7 +41,7 @@ namespace genomeworks {
 
         if (is_suffix(query_filename, ".fasta") || is_suffix(query_filename, ".fa") ||
             is_suffix(query_filename, ".fasta.gz") || is_suffix(query_filename, ".fa.gz")) {
-            GW_LOG_INFO("Getting Query data");
+            CGA_LOG_INFO("Getting Query data");
             query_parser = bioparser::createParser<bioparser::FastaParser, BioParserSequence>(
                     query_filename);
         }

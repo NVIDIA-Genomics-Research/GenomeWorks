@@ -11,7 +11,7 @@
 #include <cudamapper/cudamapper.hpp>
 #include <logging/logging.hpp>
 
-namespace genomeworks {
+namespace claragenomics {
     namespace cudamapper {
 
         StatusType Init()

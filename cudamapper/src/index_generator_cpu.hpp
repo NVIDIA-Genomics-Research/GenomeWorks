@@ -16,7 +16,7 @@
 #include "cudamapper/sequence.hpp"
 #include "minimizer.hpp"
 
-namespace genomeworks {
+namespace claragenomics {
     /// IndexGeneratorCPU - generates and manages (k,w)-minimizer index for one or more sequences
     /// lifecycle managed by the host (not GPU)
     class IndexGeneratorCPU : public IndexGenerator {

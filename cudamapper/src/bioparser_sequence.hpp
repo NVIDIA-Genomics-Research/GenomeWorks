@@ -14,7 +14,7 @@
 #include <string>
 #include "cudamapper/sequence.hpp"
 
-namespace genomeworks {
+namespace claragenomics {
     ///BioParserSequence - represents sequence. Compatible with BioParser's FastaParser
     class BioParserSequence: public Sequence {
     public:

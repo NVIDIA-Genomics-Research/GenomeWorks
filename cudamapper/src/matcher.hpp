@@ -12,7 +12,7 @@
 
 #include "index_gpu.hpp"
 
-namespace genomeworks {
+namespace claragenomics {
 
     /// Matcher - Finds anchors
     /// For each representation in a sequence finds all other sequences that containt the same

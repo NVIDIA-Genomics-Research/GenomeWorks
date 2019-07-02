@@ -18,7 +18,7 @@
 #include "../src/index_gpu.hpp"
 #include "../src/minimizer.hpp"
 
-namespace genomeworks {
+namespace claragenomics {
 
     class IndexGeneratorTest : public IndexGenerator {
     public:
@@ -97,19 +97,19 @@ namespace genomeworks {
             // generate index
             index_ = std::make_unique<IndexGPU>(index_generator_test);
 
-            GW_CU_CHECK_ERR(cudaMallocHost((void**)&representations_h_, index_->representation_to_device_arrays().size()*sizeof(std::uint64_t)));
-            GW_CU_CHECK_ERR(cudaMallocHost((void**)&sequence_ids_h_, minimizers_.size()*sizeof(std::uint64_t)));
-            GW_CU_CHECK_ERR(cudaMallocHost((void**)&positions_h_, minimizers_.size()*sizeof(std::size_t)));
-            GW_CU_CHECK_ERR(cudaMallocHost((void**)&directions_h_, minimizers_.size()*sizeof(SketchElement::DirectionOfRepresentation)));
+            CGA_CU_CHECK_ERR(cudaMallocHost((void**)&representations_h_, index_->representation_to_device_arrays().size()*sizeof(std::uint64_t)));
+            CGA_CU_CHECK_ERR(cudaMallocHost((void**)&sequence_ids_h_, minimizers_.size()*sizeof(std::uint64_t)));
+            CGA_CU_CHECK_ERR(cudaMallocHost((void**)&positions_h_, minimizers_.size()*sizeof(std::size_t)));
+            CGA_CU_CHECK_ERR(cudaMallocHost((void**)&directions_h_, minimizers_.size()*sizeof(SketchElement::DirectionOfRepresentation)));
 
             const std::uint64_t* representations_d = index_->representations_d().get();
-            GW_CU_CHECK_ERR(cudaMemcpy(representations_h_, representations_d, index_->representation_to_device_arrays().size()*sizeof(std::uint64_t), cudaMemcpyDeviceToHost));
+            CGA_CU_CHECK_ERR(cudaMemcpy(representations_h_, representations_d, index_->representation_to_device_arrays().size()*sizeof(std::uint64_t), cudaMemcpyDeviceToHost));
             const std::uint64_t* sequence_ids_d = index_->sequence_ids_d().get();
-            GW_CU_CHECK_ERR(cudaMemcpy(sequence_ids_h_, sequence_ids_d, minimizers_.size()*sizeof(std::uint64_t), cudaMemcpyDeviceToHost));
+            CGA_CU_CHECK_ERR(cudaMemcpy(sequence_ids_h_, sequence_ids_d, minimizers_.size()*sizeof(std::uint64_t), cudaMemcpyDeviceToHost));
             const std::size_t* positions_d = index_->positions_d().get();
-            GW_CU_CHECK_ERR(cudaMemcpy(positions_h_, positions_d, minimizers_.size()*sizeof(std::size_t), cudaMemcpyDeviceToHost));
+            CGA_CU_CHECK_ERR(cudaMemcpy(positions_h_, positions_d, minimizers_.size()*sizeof(std::size_t), cudaMemcpyDeviceToHost));
             const SketchElement::DirectionOfRepresentation* directions_d = index_->directions_d().get();
-            GW_CU_CHECK_ERR(cudaMemcpy(directions_h_, directions_d, minimizers_.size()*sizeof(SketchElement::DirectionOfRepresentation), cudaMemcpyDeviceToHost));
+            CGA_CU_CHECK_ERR(cudaMemcpy(directions_h_, directions_d, minimizers_.size()*sizeof(SketchElement::DirectionOfRepresentation), cudaMemcpyDeviceToHost));
         }
 
         void TearDown() override {

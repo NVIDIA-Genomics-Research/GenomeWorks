@@ -11,7 +11,7 @@
 #include <cctype>
 #include "bioparser_sequence.hpp"
 
-namespace genomeworks {
+namespace claragenomics {
 
     BioParserSequence::BioParserSequence(const char *name, uint32_t name_length, const char *data,
                                          uint32_t data_length)

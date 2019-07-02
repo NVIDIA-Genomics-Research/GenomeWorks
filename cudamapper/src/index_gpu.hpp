@@ -17,7 +17,7 @@
 #include "cudamapper/index.hpp"
 #include "index_generator_cpu.hpp"
 
-namespace genomeworks {
+namespace claragenomics {
     /// IndexGPU - index of sketch elements
     ///
     /// Index of sketch elemetnts suitable for GPU processing

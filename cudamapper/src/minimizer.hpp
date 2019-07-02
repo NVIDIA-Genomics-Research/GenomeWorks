@@ -13,7 +13,7 @@
 #include <cstdint>
 #include "cudamapper/sketch_element.hpp"
 
-namespace genomeworks {
+namespace claragenomics {
 
     /// Minimizer - represents one occurrance of a minimizer
     class Minimizer : public SketchElement {

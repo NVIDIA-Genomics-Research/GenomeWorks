@@ -13,7 +13,7 @@
 #include <memory>
 #include <string>
 
-namespace genomeworks {
+namespace claragenomics {
 /// \addtogroup cudamapper
 /// \{
 

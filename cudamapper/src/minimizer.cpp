@@ -11,7 +11,7 @@
 #include <limits>
 #include "minimizer.hpp"
 
-namespace genomeworks {
+namespace claragenomics {
 
     Minimizer::Minimizer(std::uint64_t representation, std::size_t position, DirectionOfRepresentation direction, std::uint64_t sequence_id)
     : representation_(representation), position_(position), direction_(direction), sequence_id_(sequence_id)

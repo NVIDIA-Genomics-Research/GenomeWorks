@@ -14,7 +14,7 @@
 #include "cudamapper/index_generator.hpp"
 
 
-namespace genomeworks {
+namespace claragenomics {
 /// \addtogroup cudamapper
 /// \{
 

@@ -12,7 +12,7 @@
 #include "cudautils/cudautils.hpp"
 #include "index_gpu.hpp"
 
-namespace genomeworks {
+namespace claragenomics {
     IndexGPU::IndexGPU(IndexGenerator& index_generator) {
         const auto& source_index = index_generator.representation_sketch_element_mapping();
 
@@ -56,26 +56,26 @@ namespace genomeworks {
         // Copy the data to device arrays
 
         size_t* temp_ptr_d = nullptr;
-        GW_CU_CHECK_ERR(cudaMalloc((void**)&temp_ptr_d, representations_h.size()*sizeof(std::uint64_t)));
-        representations_d_ = std::shared_ptr<std::uint64_t>(temp_ptr_d, [](std::uint64_t* p) { GW_CU_CHECK_ERR(cudaFree(p));} );
+        CGA_CU_CHECK_ERR(cudaMalloc((void**)&temp_ptr_d, representations_h.size()*sizeof(std::uint64_t)));
+        representations_d_ = std::shared_ptr<std::uint64_t>(temp_ptr_d, [](std::uint64_t* p) { CGA_CU_CHECK_ERR(cudaFree(p));} );
         temp_ptr_d = nullptr;
-        GW_CU_CHECK_ERR(cudaMemcpy(representations_d_.get(), &representations_h[0], representations_h.size()*sizeof(std::uint64_t), cudaMemcpyHostToDevice));
+        CGA_CU_CHECK_ERR(cudaMemcpy(representations_d_.get(), &representations_h[0], representations_h.size()*sizeof(std::uint64_t), cudaMemcpyHostToDevice));
 
-        GW_CU_CHECK_ERR(cudaMalloc((void**)&temp_ptr_d, sequences_h.size()*sizeof(std::uint64_t)));
-        sequences_d_ = std::shared_ptr<std::uint64_t>(temp_ptr_d, [](std::uint64_t* p) { GW_CU_CHECK_ERR(cudaFree(p));} );
+        CGA_CU_CHECK_ERR(cudaMalloc((void**)&temp_ptr_d, sequences_h.size()*sizeof(std::uint64_t)));
+        sequences_d_ = std::shared_ptr<std::uint64_t>(temp_ptr_d, [](std::uint64_t* p) { CGA_CU_CHECK_ERR(cudaFree(p));} );
         temp_ptr_d = nullptr;
-        GW_CU_CHECK_ERR(cudaMemcpy(sequences_d_.get(), &sequences_h[0], sequences_h.size()*sizeof(std::uint64_t), cudaMemcpyHostToDevice));
+        CGA_CU_CHECK_ERR(cudaMemcpy(sequences_d_.get(), &sequences_h[0], sequences_h.size()*sizeof(std::uint64_t), cudaMemcpyHostToDevice));
 
-        GW_CU_CHECK_ERR(cudaMalloc((void**)&temp_ptr_d, positions_h.size()*sizeof(std::uint64_t)));
-        positions_d_ = std::shared_ptr<std::uint64_t>(temp_ptr_d, [](std::uint64_t* p) { GW_CU_CHECK_ERR(cudaFree(p));} );
+        CGA_CU_CHECK_ERR(cudaMalloc((void**)&temp_ptr_d, positions_h.size()*sizeof(std::uint64_t)));
+        positions_d_ = std::shared_ptr<std::uint64_t>(temp_ptr_d, [](std::uint64_t* p) { CGA_CU_CHECK_ERR(cudaFree(p));} );
         temp_ptr_d = nullptr;
-        GW_CU_CHECK_ERR(cudaMemcpy(positions_d_.get(), &positions_h[0], positions_h.size()*sizeof(std::uint64_t), cudaMemcpyHostToDevice));
+        CGA_CU_CHECK_ERR(cudaMemcpy(positions_d_.get(), &positions_h[0], positions_h.size()*sizeof(std::uint64_t), cudaMemcpyHostToDevice));
 
         SketchElement::DirectionOfRepresentation* temp_ptr_direction_d;
-        GW_CU_CHECK_ERR(cudaMalloc((void**)&temp_ptr_direction_d, directions_h.size()*sizeof(SketchElement::DirectionOfRepresentation)));
-        directions_d_ = std::shared_ptr<SketchElement::DirectionOfRepresentation>(temp_ptr_direction_d, [](SketchElement::DirectionOfRepresentation* p) { GW_CU_CHECK_ERR(cudaFree(p));} );
+        CGA_CU_CHECK_ERR(cudaMalloc((void**)&temp_ptr_direction_d, directions_h.size()*sizeof(SketchElement::DirectionOfRepresentation)));
+        directions_d_ = std::shared_ptr<SketchElement::DirectionOfRepresentation>(temp_ptr_direction_d, [](SketchElement::DirectionOfRepresentation* p) { CGA_CU_CHECK_ERR(cudaFree(p));} );
         temp_ptr_direction_d = nullptr;
-        GW_CU_CHECK_ERR(cudaMemcpy(directions_d_.get(), &directions_h[0], directions_h.size()*sizeof(SketchElement::DirectionOfRepresentation), cudaMemcpyHostToDevice));
+        CGA_CU_CHECK_ERR(cudaMemcpy(directions_d_.get(), &directions_h[0], directions_h.size()*sizeof(SketchElement::DirectionOfRepresentation), cudaMemcpyHostToDevice));
     }
 
     IndexGPU::IndexGPU() {}

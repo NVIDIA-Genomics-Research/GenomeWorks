@@ -21,7 +21,7 @@
 // TODO: remove after dummy printf has been removed from the kernel
 #include <stdio.h>
 
-namespace genomeworks {
+namespace claragenomics {
     // TODO: move to cudautils?
     /// \brief allocates pinned host memory
     ///
@@ -31,8 +31,8 @@ namespace genomeworks {
     template<typename T>
     std::unique_ptr<T, void(*)(T*)> make_unique_cuda_malloc_host(std::size_t num_of_elems) {
         T* tmp_ptr_h = nullptr;
-        GW_CU_CHECK_ERR(cudaMallocHost((void**)&tmp_ptr_h, num_of_elems*sizeof(T)));
-        std::unique_ptr<T, void(*)(T*)> uptr_h(tmp_ptr_h, [](T* p) {GW_CU_CHECK_ERR(cudaFreeHost(p));});
+        CGA_CU_CHECK_ERR(cudaMallocHost((void**)&tmp_ptr_h, num_of_elems*sizeof(T)));
+        std::unique_ptr<T, void(*)(T*)> uptr_h(tmp_ptr_h, [](T* p) {CGA_CU_CHECK_ERR(cudaFreeHost(p));});
         return std::move(uptr_h);
     }
 
@@ -45,8 +45,8 @@ namespace genomeworks {
     template<typename T>
     std::unique_ptr<T, void(*)(T*)> make_unique_cuda_malloc(std::size_t num_of_elems) {
         T* tmp_ptr_h = nullptr;
-        GW_CU_CHECK_ERR(cudaMalloc((void**)&tmp_ptr_h, num_of_elems*sizeof(T)));
-        std::unique_ptr<T, void(*)(T*)> uptr_h(tmp_ptr_h, [](T* p) {GW_CU_CHECK_ERR(cudaFree(p));});
+        CGA_CU_CHECK_ERR(cudaMalloc((void**)&tmp_ptr_h, num_of_elems*sizeof(T)));
+        std::unique_ptr<T, void(*)(T*)> uptr_h(tmp_ptr_h, [](T* p) {CGA_CU_CHECK_ERR(cudaFree(p));});
         return std::move(uptr_h);
     }
 
@@ -111,23 +111,23 @@ namespace genomeworks {
 
 
         auto sequences_mappings_d = make_unique_cuda_malloc<IndexGPU::MappingToDeviceArrays>(sequences_mappings_h.size());
-        GW_CU_CHECK_ERR(cudaMemcpy(sequences_mappings_d.get(), &sequences_mappings_h[0], sequences_mappings_h.size()*sizeof(IndexGPU::MappingToDeviceArrays), cudaMemcpyHostToDevice));
+        CGA_CU_CHECK_ERR(cudaMemcpy(sequences_mappings_d.get(), &sequences_mappings_h[0], sequences_mappings_h.size()*sizeof(IndexGPU::MappingToDeviceArrays), cudaMemcpyHostToDevice));
         // clear sequences_mappings_h
         sequences_mappings_h.clear();
         sequences_mappings_h.reserve(0);
 
         auto sequences_block_start_d = make_unique_cuda_malloc<std::size_t>(sequence_ids_set.size());
-        GW_CU_CHECK_ERR(cudaMemcpy(sequences_block_start_d.get(), sequences_block_start_h.get(), sequence_ids_set.size()*sizeof(std::size_t), cudaMemcpyHostToDevice));
+        CGA_CU_CHECK_ERR(cudaMemcpy(sequences_block_start_d.get(), sequences_block_start_h.get(), sequence_ids_set.size()*sizeof(std::size_t), cudaMemcpyHostToDevice));
         // clear sequences_block_start_h
         sequences_block_start_h.reset(nullptr);
 
         auto sequences_block_past_the_end_d = make_unique_cuda_malloc<std::size_t>(sequence_ids_set.size());
-        GW_CU_CHECK_ERR(cudaMemcpy(sequences_block_past_the_end_d.get(), sequences_block_past_the_end_h.get(), sequence_ids_set.size()*sizeof(std::size_t), cudaMemcpyHostToDevice));
+        CGA_CU_CHECK_ERR(cudaMemcpy(sequences_block_past_the_end_d.get(), sequences_block_past_the_end_h.get(), sequence_ids_set.size()*sizeof(std::size_t), cudaMemcpyHostToDevice));
         // clear sequences_block_past_the_end_h
         sequences_block_past_the_end_h.reset(nullptr);
 
         access_data<<<sequence_ids_set.size(),128>>>(sequences_mappings_d.get(), sequences_block_start_d.get(), sequences_block_past_the_end_d.get(), index.positions_d().get(), index.sequence_ids_d().get(), index.directions_d().get());
-        GW_CU_CHECK_ERR(cudaPeekAtLastError());
-        GW_CU_CHECK_ERR(cudaDeviceSynchronize());
+        CGA_CU_CHECK_ERR(cudaPeekAtLastError());
+        CGA_CU_CHECK_ERR(cudaDeviceSynchronize());
     }
 }
