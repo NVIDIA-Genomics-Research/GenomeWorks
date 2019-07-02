@@ -11,34 +11,41 @@
 #pragma once
 
 #include <cstdint>
-#include <unordered_map>
 #include "cudamapper/index_generator.hpp"
 #include "cudamapper/sequence.hpp"
+#include "cudamapper/types.hpp"
 #include "minimizer.hpp"
 
 namespace claragenomics {
-    /// IndexGeneratorCPU - generates and manages (k,w)-minimizer index for one or more sequences
-    /// lifecycle managed by the host (not GPU)
+    /// IndexGeneratorCPU - generates data structures necessary for building the actualy index using (k,w)-kmer minimizers
     class IndexGeneratorCPU : public IndexGenerator {
     public:
-        /// \brief generates an in-memory (k,w)-minimizer index
+        /// \brief generates data structures necessary for building the actualy index
         ///
         /// \param query_filename filepath to reads in FASTA or FASTQ format
         /// \param minimizer_size k - the kmer length used as a minimizer
         /// \param window_size w - the length of the sliding window used to find minimizer
         IndexGeneratorCPU(const std::string& query_filename, std::uint64_t minimizer_size, std::uint64_t window_size);
 
-        /// \brief return minimizer size
+        /// \brief return minimizer size (k)
         /// \return minimizer size
         std::uint64_t minimizer_size() const;
 
-        /// \brief returns window size
+        /// \brief returns window size (w)
         /// \return window size
         std::uint64_t window_size() const;
 
-        /// \brief return a hash table wich maps minimizers' representations and positions
-        /// \return hash table
-        const std::unordered_multimap<std::uint64_t, std::unique_ptr<SketchElement>>& representation_sketch_element_mapping() const override;
+        /// \brief returns a mapping of minimizer representations to all minimizers with those representations
+        /// \return mapping of minimzer representations to all minimizers with those representations
+        const std::map<representation_t, std::vector<std::unique_ptr<SketchElement>>>& representations_to_sketch_elements() const override;
+
+        /// \brief returns mapping of internal read id that goes from 0 to number_of_reads-1 to actual read name from the input
+        /// returns mapping of internal read id that goes from 0 to number_of_reads-1 to actual read name from the input
+        const std::vector<std::string>& read_id_to_read_name() const;
+
+        /// \brief returns number of reads
+        /// \return number of reads
+        std::uint64_t number_of_reads() const override;
 
     private:
         /// \brief generates the index
@@ -47,24 +54,29 @@ namespace claragenomics {
 
         /// \brief finds minimizers and adds them to the index
         ///
-        /// \param sequence
-        /// \param sequence_id
-        void add_sequence_to_index(const Sequence& sequence, std::uint64_t sequence_id);
+        /// \param read
+        /// \param read_id
+        void add_read_to_index(const Sequence& read, const read_id_t read_id);
 
-        /// \brief finds "central" minimizers
+
+        /// \brief finds all minimizers (central and end)
         ///
-        /// \param sequence
-        /// \param sequence_id
-        void find_central_minimizers(const Sequence& sequence, std::uint64_t sequence_id);
+        /// \param read
+        /// \param read_id
+        void find_minimizers(const Sequence& read, const read_id_t read_id);
 
         /// \brief finds end minimizers
         ///
-        /// \param sequence
-        /// \param sequence_id
-        void find_end_minimizers(const Sequence& sequence, std::uint64_t sequence_id);
+        /// \param read
+        /// \param read_id
+        /// \param first_window_minimizer_representation representations of the minimizer of the first window
+        /// \param last_window_minimizer_representation representations of the minimizer of the last window
+        void find_end_minimizers(const Sequence& read, const read_id_t sequence_id, const representation_t first_window_minimizer_representation, const representation_t last_window_minimizer_representation);
 
         std::uint64_t minimizer_size_;
         std::uint64_t window_size_;
-        std::unordered_multimap<std::uint64_t, std::unique_ptr<SketchElement>> index_;
+        std::uint64_t number_of_reads_;
+        std::map<representation_t, std::vector<std::unique_ptr<SketchElement>>> index_;
+        std::vector<std::string> read_id_to_read_name_;
     };
 }

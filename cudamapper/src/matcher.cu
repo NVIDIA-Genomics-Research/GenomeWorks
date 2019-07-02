@@ -8,126 +8,107 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-#include <cstdint>
-#include <cstring>
-#include <memory>
-#include <numeric>
-#include <unordered_set>
-#include <utility>
-#include <vector>
-#include "cudautils/cudautils.hpp"
 #include "matcher.hpp"
 
-// TODO: remove after dummy printf has been removed from the kernel
-#include <stdio.h>
-
 namespace claragenomics {
-    // TODO: move to cudautils?
-    /// \brief allocates pinned host memory
-    ///
-    /// \param num_of_elems number of elements to allocate
-    ///
-    /// \return unique pointer to allocated memory
-    template<typename T>
-    std::unique_ptr<T, void(*)(T*)> make_unique_cuda_malloc_host(std::size_t num_of_elems) {
-        T* tmp_ptr_h = nullptr;
-        CGA_CU_CHECK_ERR(cudaMallocHost((void**)&tmp_ptr_h, num_of_elems*sizeof(T)));
-        std::unique_ptr<T, void(*)(T*)> uptr_h(tmp_ptr_h, [](T* p) {CGA_CU_CHECK_ERR(cudaFreeHost(p));});
-        return std::move(uptr_h);
-    }
 
-    // TODO: move to cudautils?
-    /// \brief allocates device memory
-    ///
-    /// \param num_of_elems number of elements to allocate
-    ///
-    /// \return unique pointer to allocated memory
-    template<typename T>
-    std::unique_ptr<T, void(*)(T*)> make_unique_cuda_malloc(std::size_t num_of_elems) {
-        T* tmp_ptr_h = nullptr;
-        CGA_CU_CHECK_ERR(cudaMalloc((void**)&tmp_ptr_h, num_of_elems*sizeof(T)));
-        std::unique_ptr<T, void(*)(T*)> uptr_h(tmp_ptr_h, [](T* p) {CGA_CU_CHECK_ERR(cudaFree(p));});
-        return std::move(uptr_h);
-    }
+/*    typedef struct Anchor{
+        read_id_t query_read_id_;
+        read_id_t target_read_id_;
+        position_in_read_t query_position_in_read_;
+        position_in_read_t target_position_in_read_;
+    } Anchor;*/
 
-    __global__ void access_data(const IndexGPU::MappingToDeviceArrays* sequence_mappings_d, const std::size_t* sequences_block_start_d, const std::size_t* sequences_block_past_the_end_d, const std::size_t* positions_d, const std::size_t* sequence_ids_d, const SketchElement::DirectionOfRepresentation* directions_d) {
-        const int sequence_num = blockIdx.x;
-        const std::size_t sequence_block_start = sequences_block_start_d[sequence_num];
-        const std::size_t sequence_block_end = sequences_block_past_the_end_d[sequence_num];
-        for (std::size_t position_group = sequence_block_start; position_group < sequence_block_end; ++position_group) {
-            const IndexGPU::MappingToDeviceArrays& sequence_mapping = sequence_mappings_d[position_group];
-            for (std::size_t position_position = threadIdx.x; position_position < sequence_mapping.block_size_; position_position += blockDim.x) {
-                std::size_t elem_to_get = sequence_mapping.location_first_in_block_ + position_position;
-                // dummy checks and printfs to make sure values are actually loaded into memory
-                if(positions_d[elem_to_get] > 1000000000) {
-                    printf("foo\n");
+/*    __global__ void matcher(const position_in_read_t* const positions_in_read_d,
+                            const read_id_t* const read_ids_d,
+                            const ArrayBlock* const blocks_belonging_to_reads_d,
+                            const ArrayBlock* const sketch_elements_with_same_representation_to_check_d,
+                            const ArrayBlock* const sketch_elements_with_same_representation_and_read_d,
+                            Anchor** const anchors_for_read_d,
+                            std:uint32_t* const total_anchors_for_read_d) {
+        extern __shared__ position_in_read_t query_positions_in_read[]; // number of elements == blockDim.x
+
+        const read_id_t query_read_id = blockIdx.x;
+        const ArrayBlock block_for_query_sketch_elements = blocks_belonging_to_reads_d[query_read_id];
+
+        __shared__ std::uint32_t anchors_written_so_far = 0;
+
+        // go over all representations in this read one by one
+        for (std::uint32_t representation_index_for_this_read = block_for_query_sketch_elements.first_element_;
+             representation_index_for_this_read < block_for_query_sketch_elements.block_size_;
+             ++representation_index_for_this_read) {
+                 // load all position_in_read for this read and representation
+                 ArrayBlock block_for_this_read_and_representation = sketch_elements_with_same_representation_and_read_d[representation_index_for_this_read];
+                 for (std::uint32_t i = threadIdx.x; i < block_for_this_read_and_representation.block_size_; ++i) {
+                     query_positions_in_read[i] = positions_in_read_d[block_for_this_read_and_representation.first + i];
+                 }
+                 std::uint32_t total_query_sketch_elements = block_for_this_read_and_representation.block_size_;
+                 __syncthreads();
+
+                 // load all other position_in_read which should be matched
+                 block_for_this_read_and_representation = sketch_elements_with_same_representation_to_check_d[representation_index_for_this_read];
+                 for (std::uint32_t i = threadIdx.x; i < block_for_this_read_and_representation.block_size_; ++i) {
+                     const read_id_t target_read_id = read_ids_d[block_for_this_read_and_representation.first_element_ + i];
+                     const position_in_read_t target_position_in_read = positions_in_read_d[block_for_this_read_and_representation.first_element_ + i];
+                     for (int j = 0; j < total_query_sketch_elements; ++j) {
+                         anchors_for_read_d[query_read_id][anchors_written_so_far + i*total_query_sketch_elements + j].query_read_id_ = query_read_id;
+                         anchors_for_read_d[query_read_id][anchors_written_so_far + i*total_query_sketch_elements + j].taget_read_id_ = target_read_id;
+                         anchors_for_read_d[query_read_id][anchors_written_so_far + i*total_query_sketch_elements + j].query_position_in_read_ = query_position_in_read_[i];
+                         anchors_for_read_d[query_read_id][anchors_written_so_far + i*total_query_sketch_elements + j].target_position_in_read_ = target_position_in_read;
+                     }
+                 }
+                 __syncthreads
+                 (0 == threadIdx.x) anchors_written_so_far += block_for_this_read_and_representation.block_size_ * total_query_sketch_elements];
+             }
+
+        if (0 == threadIdx.x) total_anchors_for_read_d[query_read_id] = anchors_written_so_far;
+    }*/
+
+    Matcher::Matcher(const IndexCPU& index) {
+/*        std::shared_ptr<position_in_read_t> positions_in_read_h = index.positions_in_read();
+        // allocate std::unique<std::uint32_t> positions_in_read_d and move the data to the device
+        // do the same for read_ids_d and directions_d
+
+        // Each element points to blocks of sketch_elements_with_same_representation_to_check and sketch_elements_with_same_representation_and_read
+        std::vector<ArrayBlock> blocks_belonging_to_reads(index.number_of_reads(), {0,0});
+
+        // Each element points to one block of positions_in_read, read_ids and directions arrays that belong to sketch elements with the same representation
+        // and whose read_id is larger than some read_id
+        // Elements pointing to sketch elements with the same read are grouped together. Such groups are pointed to by the elements of blocks_belonging_to_reads
+        std::vector<ArrayBlock> sketch_elements_with_same_representation_to_check;
+        // Each element points to one block of positions_in_read, read_ids and directions arrays that belong to sketch elements with the same representation and read_id
+        // Elements pointing to sketch elements with the same read are grouped together. Such groups are pointed to by the elements of blocks_belonging_to_reads
+        std::vector<ArrayBlock> sketch_elements_with_same_representation_and_read;
+
+        for (std::size_t read_id = 0; read_id < index.number_of_reads(); ++read_id) {
+            if (read_id != 0) blocks_belonging_to_reads[read_id].first_element_ = blocks_belonging_to_reads[read_id - 1].first_element_ + blocks_belonging_to_reads[read_id - 1].block_size_;
+            const std::map<representation_t, ArrayBlock>& array_blocks_for_representations = index.array_block_for_representations_and_reads()[read_id];
+                for (const std::map<representation_t, ArrayBlock>::iterator& array_block_for_representation : array_blocks_for_representations) { // this is a map so we know that representations are sorted in ascending order
+                    const representation_t& representation = array_block_for_representation.first;
+                    const ArrayBlock& array_block_for_this_representation_and_read = iterator.second;
+                    const ArrayBlock& array_block_for_this_representation_and_all_reads = index.representation_to_all_its_sketch_elements().find(representation);
+                    // due to symmetry we only want to check reads with read_id greater than the current read_id
+                    // within one representation all blocks are stored in ascending order, so we only want to add parts of arrays after array_block_for_this_representation_and_read
+                    ArrayBlock array_block_to_check;
+                    array_block_to_check.first_element_ = array_block_for_this_representation_and_read.first_element_ + array_block_for_this_representation_and_read.block_size_;
+                    array_block_to_check.block_size_ = array_block_for_this_representation_and_all_reads.block_size_ - array_block_to_check.first_element_;
+
+                    sketch_elements_with_same_representation_to_check.push_back(block_to_check);
+                    sketch_elements_with_same_representation_and_read.push_back(array_block_for_this_representation_and_read);
                 }
-                if (sequence_ids_d[elem_to_get] > 1000000000) {
-                    printf("bar\n");
-                }
-                if(directions_d[elem_to_get] != SketchElement::DirectionOfRepresentation::FORWARD && directions_d[elem_to_get] != SketchElement::DirectionOfRepresentation::REVERSE) {
-                    printf("buz\n");
-                }
+            ++blocks_belonging_to_reads[read_id].block_size_;
             }
-            __syncthreads();
-        }
-    }
-
-    Matcher::Matcher(const IndexGPU& index) {
-        // IndexGPU::MappingToDeviceArrays points to a section of arrays returned by index.positions_d(), index.sequence_ids_d(), index.directions_d() that
-        // correspond to a representation
-        // Each section of sequences_mappings_h corresponds to one seqence. By iterating over such section one gets mappings to all occurrences (in all seqeunce)
-        // of all representations within the given sequence
-
-        const std::unordered_set<std::uint64_t>& sequence_ids_set = index.sequence_ids();
-
-        // each block of this vector (as defined by sequences_block_start and sequence_block_end) contains mappings for one sequence
-        std::vector<IndexGPU::MappingToDeviceArrays> sequences_mappings_h;
-
-        // index of the first element of the section of sequences_mappings_h belonging to the given sequence
-        auto sequences_block_start_h = make_unique_cuda_malloc_host<std::size_t>(sequence_ids_set.size());
-        // index of past-the-end element of the section of sequences_mappings_h belonging to the given sequence
-        auto sequences_block_past_the_end_h = make_unique_cuda_malloc_host<std::size_t>(sequence_ids_set.size());
-
-        // maps sequence_id to all representations in that sequence
-        const auto& sequence_id_to_representations = index.sequence_id_to_representations();
-        // maps representation to its IndexGPU::MappingToDeviceArrays
-        const auto& representation_to_device_arrays = index.representation_to_device_arrays();
-
-        std::size_t sequence_num = 0;
-        for (const std::uint64_t& sequence_id : sequence_ids_set) {
-            sequences_block_start_h.get()[sequence_num] = sequences_mappings_h.size();
-            const auto& representations_range = sequence_id_to_representations.equal_range(sequence_id);
-            std::unordered_set<std::uint64_t> representations_seen;
-            for (auto representation_it = representations_range.first; representation_it != representations_range.second; ++representation_it) {
-                if (representations_seen.find((*representation_it).second) == std::end(representations_seen)) { // representation not seen already
-                    const IndexGPU::MappingToDeviceArrays& mapping = (*representation_to_device_arrays.find((*representation_it).second)).second;
-                    sequences_mappings_h.push_back(mapping);
-                }
-            }
-            sequences_block_past_the_end_h.get()[sequence_num] = sequences_mappings_h.size();
-            ++sequence_num;
         }
 
+        // copy blocks_belonging_to_reads_d, sketch_elements_with_same_representation_to_check and sketch_elements_with_same_representation_and_read to device
 
-        auto sequences_mappings_d = make_unique_cuda_malloc<IndexGPU::MappingToDeviceArrays>(sequences_mappings_h.size());
-        CGA_CU_CHECK_ERR(cudaMemcpy(sequences_mappings_d.get(), &sequences_mappings_h[0], sequences_mappings_h.size()*sizeof(IndexGPU::MappingToDeviceArrays), cudaMemcpyHostToDevice));
-        // clear sequences_mappings_h
-        sequences_mappings_h.clear();
-        sequences_mappings_h.reserve(0);
+        // call kernel
 
-        auto sequences_block_start_d = make_unique_cuda_malloc<std::size_t>(sequence_ids_set.size());
-        CGA_CU_CHECK_ERR(cudaMemcpy(sequences_block_start_d.get(), sequences_block_start_h.get(), sequence_ids_set.size()*sizeof(std::size_t), cudaMemcpyHostToDevice));
-        // clear sequences_block_start_h
-        sequences_block_start_h.reset(nullptr);
+        // copy anchors_for_read_d and total_anchors_for_read_d to host
 
-        auto sequences_block_past_the_end_d = make_unique_cuda_malloc<std::size_t>(sequence_ids_set.size());
-        CGA_CU_CHECK_ERR(cudaMemcpy(sequences_block_past_the_end_d.get(), sequences_block_past_the_end_h.get(), sequence_ids_set.size()*sizeof(std::size_t), cudaMemcpyHostToDevice));
-        // clear sequences_block_past_the_end_h
-        sequences_block_past_the_end_h.reset(nullptr);
+        // generate overlaps
 
-        access_data<<<sequence_ids_set.size(),128>>>(sequences_mappings_d.get(), sequences_block_start_d.get(), sequences_block_past_the_end_d.get(), index.positions_d().get(), index.sequence_ids_d().get(), index.directions_d().get());
-        CGA_CU_CHECK_ERR(cudaPeekAtLastError());
-        CGA_CU_CHECK_ERR(cudaDeviceSynchronize());
-    }
+        //convert read_id into real read identifier using const std::vector<string>& index.read_id_to_read_name()
+*/    }
+
 }

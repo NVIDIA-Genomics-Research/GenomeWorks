@@ -10,7 +10,7 @@
 
 #pragma once
 
-#include "index_gpu.hpp"
+#include "index_cpu.hpp"
 
 namespace claragenomics {
 
@@ -22,7 +22,7 @@ namespace claragenomics {
         /// \brief construtor
         ///
         /// \param index
-        Matcher(const IndexGPU& index);
+        Matcher(const IndexCPU& index);
     private:
     };
 }
