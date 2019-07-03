@@ -79,14 +79,9 @@ std::vector<AlignerTestData> create_aligner_test_cases()
     data.cigars = {"1M1D8M"};
     test_cases.push_back(data);
 
-    // Test case 3
-    data.inputs = {{"ACTGA", "GCTAG"}};
-    data.cigars = {"3M1I1M1D"};
-    test_cases.push_back(data);
-
     // Test case 4
-    data.inputs = {{"ACTGA", "GCTAG"}, {"ACTG", "ACTG"}, {"A", "T"}};
-    data.cigars = {"3M1I1M1D", "4M", "1M"};
+    data.inputs = {{"ACTG", "ACTG"}, {"A", "T"}};
+    data.cigars = {"4M", "1M"};
     test_cases.push_back(data);
 
     test_cases.reserve(2*test_cases.size());
