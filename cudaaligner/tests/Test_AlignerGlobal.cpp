@@ -62,6 +62,7 @@ std::vector<AlignerTestData> create_aligner_test_cases()
 {
     std::vector<AlignerTestData> test_cases;
     AlignerTestData data;
+    data.algorithm = AlignmentAlgorithm::Ukkonen;
 
     // Test case 1
     data.inputs = {{"AAAA", "TTAT"}};
@@ -154,7 +155,8 @@ TEST_P(TestAlignerGlobal, TestAlignmentKernel)
         auto alignment = alignments[a];
         EXPECT_EQ(StatusType::success, alignment->get_status()) << "Alignment status is not success";
         EXPECT_EQ(AlignmentType::global, alignment->get_alignment_type()) << "Alignment type is not global";
-        EXPECT_STREQ(cigars[a].c_str(), alignment->convert_to_cigar().c_str()) << "CIGAR doesn't match for alignment " << a;
+        EXPECT_STREQ(cigars[a].c_str(), alignment->convert_to_cigar().c_str()) << "CIGAR doesn't match for alignment " << a
+            << " using " << (param.algorithm == AlignmentAlgorithm::Ukkonen ? "Ukkonen" : "Myers");
     }
 }
 

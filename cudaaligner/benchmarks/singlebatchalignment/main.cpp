@@ -46,8 +46,8 @@ static void BM_SingleBatchAlignment(benchmark::State& state)
                                                       genome_size,
                                                       alignments_per_batch,
                                                       AlignmentType::global,
+                                                      0,
                                                       0);
-    aligner->set_cuda_stream(0);
 
     // Generate random sequences
     std::minstd_rand rng(1);

@@ -34,8 +34,8 @@ static void BM_SingleAlignment(benchmark::State& state)
                                                       genome_size,
                                                       1,
                                                       AlignmentType::global,
+                                                      0,
                                                       0);
-    aligner->set_cuda_stream(0);
     aligner->add_alignment(genome_1.c_str(), genome_1.length(),
                            genome_2.c_str(), genome_2.length());
 
