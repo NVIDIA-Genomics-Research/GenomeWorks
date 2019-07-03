@@ -10,6 +10,7 @@
 */
 
 #include "gtest/gtest.h"
+#include "cudamapper_file_location.hpp"
 #include "../src/index_cpu.hpp"
 #include "../src/index_generator_cpu.hpp"
 #include "../src/matcher.hpp"
@@ -17,7 +18,7 @@
 namespace claragenomics {
 
     TEST(TestCudamapperMatcher, SampleTest) {
-        IndexGeneratorCPU index_generator("data/one_read_one_minimizer.fasta", 4, 1);
+        IndexGeneratorCPU index_generator(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/one_read_one_minimizer.fasta", 4, 1);
         IndexCPU index(index_generator);
         Matcher matcher(index);
         ASSERT_EQ(true, true);

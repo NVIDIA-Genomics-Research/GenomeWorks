@@ -7,18 +7,6 @@
 * distribution of this software and related documentation without an express
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
+#pragma once
 
-#include "gtest/gtest.h"
-#include "cudamapper_file_location.hpp"
-#include "../src/index_cpu.hpp"
-#include "../src/index_generator_cpu.hpp"
-
-namespace claragenomics {
-
-    TEST(TestCudamapperIndexCPU, SampleTest) {
-        IndexGeneratorCPU index_generator(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) +  "/one_read_one_minimizer.fasta", 4, 1);
-        IndexCPU index(index_generator);
-        ASSERT_EQ(true, true);
-    }
-
-}
+#cmakedefine CUDAMAPPER_BENCHMARK_DATA_DIR "@CUDAMAPPER_BENCHMARK_DATA_DIR@"

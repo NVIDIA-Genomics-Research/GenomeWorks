@@ -9,22 +9,8 @@
 #
 
 cmake_minimum_required(VERSION 3.10.2)
-project(cudamappertests)
 
-set(SOURCES
-    main.cpp
-    Test_CudamapperIndexCPU.cpp
-    Test_CudamapperIndexGeneratorCPU.cpp
-    Test_CudamapperMatcher.cpp
-    ../src/bioparser_sequence.cpp)
+set(CUDAMAPPER_BENCHMARK_DATA_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../data")
+configure_file(cudamapper_file_location.hpp.in ${PROJECT_BINARY_DIR}/data/cudamapper_file_location.hpp @ONLY)
 
-get_property(cudamapper_data_include_dir GLOBAL PROPERTY cudamapper_data_include_dir)
-include_directories(${cudamapper_data_include_dir})
-
-set(LIBS
-    bioparser
-    index_generator_cpu
-    index_cpu
-    matcher)
-
-cga_add_tests(${PROJECT_NAME} "${SOURCES}" "${LIBS}")
+set_property(GLOBAL PROPERTY cudamapper_data_include_dir "${PROJECT_BINARY_DIR}/data")

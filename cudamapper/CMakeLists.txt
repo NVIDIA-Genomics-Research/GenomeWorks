@@ -10,6 +10,9 @@
 
 project(cudamapper)
 
+# Process data subdirectory first
+add_subdirectory(data)
+
 find_package(CUDA 9.0 QUIET REQUIRED)
 
 if(NOT ${CUDA_FOUND})
