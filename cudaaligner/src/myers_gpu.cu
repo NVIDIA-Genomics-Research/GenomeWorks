@@ -121,12 +121,10 @@ inline __device__ int32_t get_myers_score(int32_t i, int32_t j, device_matrix_vi
     return s;
 }
 
-__device__ void myers_backtrace(int8_t* paths_base, int32_t* lengths, device_matrix_view<WordType> const& pv, device_matrix_view<WordType> const& mv, device_matrix_view<int32_t> const& score, int32_t query_size, int32_t id)
+__device__ void myers_backtrace(int8_t* paths_base, int32_t* lengths, int32_t max_path_length, device_matrix_view<WordType> const& pv, device_matrix_view<WordType> const& mv, device_matrix_view<int32_t> const& score, int32_t query_size, int32_t id)
 {
-    const int32_t max_path_length = 0;
     using nw_score_t              = int32_t;
     constexpr int32_t word_size   = sizeof(WordType) * CHAR_BIT;
-    const int32_t n_words         = (query_size + word_size - 1) / word_size;
     assert(pv.num_rows() == score.num_rows());
     assert(mv.num_rows() == score.num_rows());
     assert(pv.num_cols() == score.num_cols());
@@ -202,7 +200,7 @@ __global__ void myers_backtrace_kernel(int8_t* paths_base, int32_t* lengths, int
     const device_matrix_view<WordType> pv   = pvi->get_matrix_view(i, n_words, target_size + 1);
     const device_matrix_view<WordType> mv   = mvi->get_matrix_view(i, n_words, target_size + 1);
     const device_matrix_view<int32_t> score = scorei->get_matrix_view(i, n_words, target_size + 1);
-    myers_backtrace(paths_base, lengths, pv, mv, score, query_size, i);
+    myers_backtrace(paths_base, lengths, max_path_length, pv, mv, score, query_size, i);
 }
 
 __global__ void myers_convert_to_full_score_matrix_kernel(batched_device_matrices<int32_t>::device_interface* fullscorei,

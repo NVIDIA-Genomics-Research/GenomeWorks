@@ -25,12 +25,12 @@ namespace cudaaligner
 enum class AlignmentAlgorithm { Ukkonen = 0, Myers};
 
 // Common data structures and functions.
-typedef struct
+struct AlignerTestData
 {
     std::vector<std::pair<std::string, std::string>> inputs;
     std::vector<std::string> cigars;
-    AlignmentAlgorithm algorithm;
-} AlignerTestData;
+    AlignmentAlgorithm algorithm = AlignmentAlgorithm::Ukkonen;
+};
 
 // Test adding alignments to Aligner objects
 TEST(TestCudaAligner, TestAlignmentAddition)
@@ -62,26 +62,35 @@ std::vector<AlignerTestData> create_aligner_test_cases()
 {
     std::vector<AlignerTestData> test_cases;
     AlignerTestData data;
-    data.algorithm = AlignmentAlgorithm::Ukkonen;
 
     // Test case 1
     data.inputs = {{"AAAA", "TTAT"}};
     data.cigars = {"4M"};
+    data.algorithm = AlignmentAlgorithm::Ukkonen;
     test_cases.push_back(data);
 
     // Test case 2
     data.inputs = {{"ATAAAAAAAA", "AAAAAAAAA"}};
     data.cigars = {"1M1I8M"};
+    data.algorithm = AlignmentAlgorithm::Ukkonen;
     test_cases.push_back(data);
 
     // Test case 3
     data.inputs = {{"AAAAAAAAA", "ATAAAAAAAA"}};
     data.cigars = {"1M1D8M"};
+    data.algorithm = AlignmentAlgorithm::Ukkonen;
+    test_cases.push_back(data);
+
+    // Test case 3
+    data.inputs = {{"ACTGA", "GCTAG"}};
+    data.cigars = {"3M1I1M1D"};
+    data.algorithm = AlignmentAlgorithm::Ukkonen;
     test_cases.push_back(data);
 
     // Test case 4
-    data.inputs = {{"ACTG", "ACTG"}, {"A", "T"}};
-    data.cigars = {"4M", "1M"};
+    data.inputs = {{"ACTGA", "GCTAG"}, {"ACTG", "ACTG"}, {"A", "T"}};
+    data.cigars = {"3M1I1M1D", "4M", "1M"};
+    data.algorithm = AlignmentAlgorithm::Ukkonen;
     test_cases.push_back(data);
 
     test_cases.reserve(2*test_cases.size());
