@@ -189,18 +189,19 @@ __global__ void myers_backtrace_kernel(int8_t* paths_base, int32_t* lengths, int
                                        batched_device_matrices<WordType>::device_interface* mvi,
                                        batched_device_matrices<int32_t>::device_interface* scorei,
                                        int32_t const* sequence_lengths_d,
-                                       int32_t i)
+                                       int32_t n_alignments)
 {
-    if(threadIdx.x != 0)
+    const int32_t idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if(idx >= n_alignments)
         return;
     constexpr int32_t word_size       = sizeof(WordType) * CHAR_BIT;
-    const int32_t query_size          = sequence_lengths_d[2 * i];
-    const int32_t target_size         = sequence_lengths_d[2 * i + 1];
+    const int32_t query_size          = sequence_lengths_d[2 * idx];
+    const int32_t target_size         = sequence_lengths_d[2 * idx + 1];
     const int32_t n_words             = (query_size + word_size - 1) / word_size;
-    const device_matrix_view<WordType> pv   = pvi->get_matrix_view(i, n_words, target_size + 1);
-    const device_matrix_view<WordType> mv   = mvi->get_matrix_view(i, n_words, target_size + 1);
-    const device_matrix_view<int32_t> score = scorei->get_matrix_view(i, n_words, target_size + 1);
-    myers_backtrace(paths_base, lengths, max_path_length, pv, mv, score, query_size, i);
+    const device_matrix_view<WordType> pv   = pvi->get_matrix_view(idx, n_words, target_size + 1);
+    const device_matrix_view<WordType> mv   = mvi->get_matrix_view(idx, n_words, target_size + 1);
+    const device_matrix_view<int32_t> score = scorei->get_matrix_view(idx, n_words, target_size + 1);
+    myers_backtrace(paths_base, lengths, max_path_length, pv, mv, score, query_size, idx);
 }
 
 __global__ void myers_convert_to_full_score_matrix_kernel(batched_device_matrices<int32_t>::device_interface* fullscorei,
@@ -412,15 +413,16 @@ void myers_gpu(int8_t* paths_d, int32_t* path_lengths_d, int32_t max_path_length
 {
     constexpr int32_t warp_size = 32;
 
-    const dim3 threads(warp_size, 8, 1);
-    const dim3 blocks(1,ceiling_divide<int32_t>(n_alignments,threads.y),1);
-
-    myers::myers_compute_score_matrix_kernel<<<blocks, threads, 0, stream>>>(pv.get_device_interface(), mv.get_device_interface(), score.get_device_interface(), sequences_d, sequence_lengths_d, max_sequence_length, n_alignments);
-    for (int32_t i = 0; i < n_alignments; ++i)
     {
-        myers::myers_backtrace_kernel<<<1, 1, 0, stream>>>(paths_d, path_lengths_d, max_path_length, pv.get_device_interface(), mv.get_device_interface(), score.get_device_interface(), sequence_lengths_d, i);
+        const dim3 threads(warp_size, 8, 1);
+        const dim3 blocks(1,ceiling_divide<int32_t>(n_alignments,threads.y),1);
+        myers::myers_compute_score_matrix_kernel<<<blocks, threads, 0, stream>>>(pv.get_device_interface(), mv.get_device_interface(), score.get_device_interface(), sequences_d, sequence_lengths_d, max_sequence_length, n_alignments);
     }
-    CGA_CU_CHECK_ERR(cudaStreamSynchronize(stream));
+    {
+        const dim3 threads(128, 1, 1);
+        const dim3 blocks(ceiling_divide<int32_t>(n_alignments,threads.x),1,1);
+        myers::myers_backtrace_kernel<<<blocks, threads, 0, stream>>>(paths_d, path_lengths_d, max_path_length, pv.get_device_interface(), mv.get_device_interface(), score.get_device_interface(), sequence_lengths_d, n_alignments);
+    }
 }
 
 } // namespace cudaaligner
