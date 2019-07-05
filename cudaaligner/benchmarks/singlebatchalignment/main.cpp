@@ -15,6 +15,8 @@
 #include "utils/genomeutils.hpp"
 #include "cudautils/cudautils.hpp"
 #include "cudaaligner/aligner.hpp"
+#include "aligner_global_ukkonen.hpp"
+#include "aligner_global_myers.hpp"
 
 namespace claragenomics
 {
@@ -22,8 +24,32 @@ namespace claragenomics
 namespace cudaaligner
 {
 
+class CudaStream
+{
+public:
+    CudaStream()
+    {
+        CGA_CU_CHECK_ERR(cudaStreamCreate(&s_));
+    }
+
+    ~CudaStream()
+    {
+        CGA_CU_CHECK_ERR(cudaStreamDestroy(s_));
+    }
+
+    inline cudaStream_t& get()
+    {
+        return s_;
+    }
+
+private:
+    cudaStream_t s_ = nullptr;
+};
+
+template <typename AlignerT>
 static void BM_SingleBatchAlignment(benchmark::State& state)
 {
+    CudaStream stream;
     int32_t alignments_per_batch = state.range(0);
     int32_t genome_size          = state.range(1);
 
@@ -42,12 +68,12 @@ static void BM_SingleBatchAlignment(benchmark::State& state)
     }
 
     // Create aligner object
-    std::unique_ptr<Aligner> aligner = create_aligner(genome_size,
-                                                      genome_size,
-                                                      alignments_per_batch,
-                                                      AlignmentType::global,
-                                                      0,
-                                                      0);
+    std::unique_ptr<Aligner> aligner = std::make_unique<AlignerT>(
+        genome_size,
+        genome_size,
+        alignments_per_batch,
+        stream.get(),
+        0);
 
     // Generate random sequences
     std::minstd_rand rng(1);
@@ -70,10 +96,15 @@ static void BM_SingleBatchAlignment(benchmark::State& state)
 }
 
 // Register the function as a benchmark
-BENCHMARK(BM_SingleBatchAlignment)
+BENCHMARK_TEMPLATE(BM_SingleBatchAlignment, AlignerGlobalUkkonen)
     ->Unit(benchmark::kMillisecond)
     ->RangeMultiplier(2)
-    ->Ranges({{32, 512}, {500, 10000}});
+    ->Ranges({{32, 512}, {500, 8192}});
+
+BENCHMARK_TEMPLATE(BM_SingleBatchAlignment, AlignerGlobalMyers)
+    ->Unit(benchmark::kMillisecond)
+    ->RangeMultiplier(2)
+    ->Ranges({{32, 512}, {500, 8192}});
 
 } // namespace cudaaligner
 } // namespace claragenomics
