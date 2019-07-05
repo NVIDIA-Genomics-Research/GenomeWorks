@@ -53,7 +53,7 @@ namespace claragenomics {
         // CAAG: CAA, TTG, <AAG>, CTT
         // front end minimizers: CAT, <ATG>
         // beck end minimizers: none
-        // All minimizers: ATC(1f), CCA(3f), AAG(4f), ATG(0r)
+        // All minimizers: ATC(1f), CAA(3f), AAG(4f), ATG(0r)
 
         // AAGCTA
         // Central minimizers:
@@ -64,7 +64,7 @@ namespace claragenomics {
         // Back end miniminers: <CTA>, TAG
         // All minimizers: AAG(0f), AGC(1f), AGC(2r), CTA(3f)
 
-        // complete datastructure: AAG(4f0), AAG(0f1), AGC(1f1), AGC(2r1), ATC(1f0), ATG(0r0), CCA(3f0), CTA(3f1)
+        // complete datastructure: AAG(4f0), AAG(0f1), AGC(1f1), AGC(2r1), ATC(1f0), ATG(0r0), CAA(3f0), CTA(3f1)
 
         IndexGeneratorCPU index_generator(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/two_reads_multiple_minimizers.fasta", 3, 2);
         EXPECT_EQ(index_generator.minimizer_size(), 3);
@@ -78,7 +78,7 @@ namespace claragenomics {
         const auto& representations_to_sketch_elements = index_generator.representations_to_sketch_elements();
         ASSERT_EQ(representations_to_sketch_elements.size(), 6);
 
-        // complete datastructure: AAG(4f0), AAG(0f1), AGC(1f1), AGC(2r1), ATC(1f0), ATG(0r0), CCA(3f0), CTA(3f1)
+        // complete datastructure: AAG(4f0), AAG(0f1), AGC(1f1), AGC(2r1), ATC(1f0), ATG(0r0), CAA(3f0), CTA(3f1)
         // AAG (4f0), (0f1)
         {
             ASSERT_NE(representations_to_sketch_elements.find(0x002), std::end(representations_to_sketch_elements)) << "AAG";
