@@ -237,6 +237,7 @@ __global__ void myers_compute_score_matrix_kernel(
     batched_device_matrices<WordType>::device_interface* pvi,
     batched_device_matrices<WordType>::device_interface* mvi,
     batched_device_matrices<int32_t>::device_interface* scorei,
+    batched_device_matrices<WordType>::device_interface* query_patternsi,
     char const* sequences_d, int32_t const* sequence_lengths_d,
     int32_t max_sequence_length,
     int32_t n_alignments)
@@ -257,15 +258,21 @@ __global__ void myers_compute_score_matrix_kernel(
 
     assert(query_size > 0);
 
-    device_matrix_view<WordType> pv   = pvi->get_matrix_view(alignment_idx, n_words, target_size + 1);
-    device_matrix_view<WordType> mv   = mvi->get_matrix_view(alignment_idx, n_words, target_size + 1);
-    device_matrix_view<int32_t> score = scorei->get_matrix_view(alignment_idx, n_words, target_size + 1);
+    device_matrix_view<WordType> pv            = pvi->get_matrix_view(alignment_idx, n_words, target_size + 1);
+    device_matrix_view<WordType> mv            = mvi->get_matrix_view(alignment_idx, n_words, target_size + 1);
+    device_matrix_view<int32_t> score          = scorei->get_matrix_view(alignment_idx, n_words, target_size + 1);
+    device_matrix_view<WordType> query_pattern = query_patternsi->get_matrix_view(alignment_idx, n_words, 4);
 
     for (int32_t idx = threadIdx.x; idx < n_words; idx += warp_size)
     {
         pv(idx, 0)    = ~WordType(0);
         mv(idx, 0)    = 0;
         score(idx, 0) = min((idx + 1) * word_size, query_size);
+        // TODO query load is inefficient
+        query_pattern(idx, 0) = myers_preprocess('A', query, query_size, idx * word_size);
+        query_pattern(idx, 1) = myers_preprocess('C', query, query_size, idx * word_size);
+        query_pattern(idx, 2) = myers_preprocess('G', query, query_size, idx * word_size);
+        query_pattern(idx, 3) = myers_preprocess('T', query, query_size, idx * word_size);
     }
 
     for (int32_t t = 1; t <= target_size; ++t)
@@ -280,29 +287,24 @@ __global__ void myers_compute_score_matrix_kernel(
             WordType pv_local = pv(idx, t - 1);
             WordType mv_local = mv(idx, t - 1);
             // TODO these might be cached or only computed for the specific t at hand.
-            // TODO query load is inefficient
-            const WordType peq_a       = myers_preprocess('A', query, query_size, idx * word_size);
-            const WordType peq_c       = myers_preprocess('C', query, query_size, idx * word_size);
-            const WordType peq_g       = myers_preprocess('G', query, query_size, idx * word_size);
-            const WordType peq_t       = myers_preprocess('T', query, query_size, idx * word_size);
             const WordType highest_bit = WordType(1) << (idx == (n_words - 1) ? query_size - (n_words - 1) * word_size - 1 : word_size - 1);
 
-            const WordType eq = [peq_a, peq_c, peq_g, peq_t](char x) -> WordType {
+            const WordType eq = query_pattern(idx, [](char x) -> WordType {
                 assert(x == 'A' || x == 'C' || x == 'G' || x == 'T');
                 switch (x)
                 {
                 case 'A':
-                    return peq_a;
+                    return 0;
                 case 'C':
-                    return peq_c;
+                    return 1;
                 case 'G':
-                    return peq_g;
+                    return 2;
                 case 'T':
-                    return peq_t;
+                    return 3;
                 default:
                     return 0;
                 }
-            }(target[t - 1]);
+            }(target[t - 1]));
 
             warp_carry    = myers_advance_block(warp_mask, highest_bit, eq, pv_local, mv_local, warp_carry);
             score(idx, t) = score(idx, t - 1) + warp_carry;
@@ -340,13 +342,14 @@ int32_t myers_compute_edit_distance(std::string const& target, std::string const
     batched_device_matrices<myers::WordType> pv(1, n_words * (get_size(target) + 1), stream, device_id);
     batched_device_matrices<myers::WordType> mv(1, n_words * (get_size(target) + 1), stream, device_id);
     batched_device_matrices<int32_t> score(1, n_words * (get_size(target) + 1), stream, device_id);
+    batched_device_matrices<myers::WordType> query_patterns(1, n_words * 4, stream, device_id);
 
     std::array<int32_t, 2> lengths = {static_cast<int32_t>(get_size(query)), static_cast<int32_t>(get_size(target))};
     CGA_CU_CHECK_ERR(cudaMemcpyAsync(sequences_d.data(), query.data(), sizeof(char) * get_size(query), cudaMemcpyHostToDevice, stream));
     CGA_CU_CHECK_ERR(cudaMemcpyAsync(sequences_d.data() + max_sequence_length, target.data(), sizeof(char) * get_size(target), cudaMemcpyHostToDevice, stream));
     CGA_CU_CHECK_ERR(cudaMemcpyAsync(sequence_lengths_d.data(), lengths.data(), sizeof(int32_t) * 2, cudaMemcpyHostToDevice, stream));
 
-    myers::myers_compute_score_matrix_kernel<<<1, warp_size, 0, stream>>>(pv.get_device_interface(), mv.get_device_interface(), score.get_device_interface(), sequences_d.data(), sequence_lengths_d.data(), max_sequence_length, 1);
+    myers::myers_compute_score_matrix_kernel<<<1, warp_size, 0, stream>>>(pv.get_device_interface(), mv.get_device_interface(), score.get_device_interface(), query_patterns.get_device_interface(), sequences_d.data(), sequence_lengths_d.data(), max_sequence_length, 1);
 
     matrix<int32_t> score_host = score.get_matrix(0, n_words, get_size(target) + 1, stream);
     CGA_CU_CHECK_ERR(cudaStreamSynchronize(stream));
@@ -384,6 +387,7 @@ matrix<int32_t> myers_get_full_score_matrix(std::string const& target, std::stri
     batched_device_matrices<myers::WordType> pv(1, n_words * (get_size(target) + 1), stream, device_id);
     batched_device_matrices<myers::WordType> mv(1, n_words * (get_size(target) + 1), stream, device_id);
     batched_device_matrices<int32_t> score(1, n_words * (get_size(target) + 1), stream, device_id);
+    batched_device_matrices<myers::WordType> query_patterns(1, n_words * 4, stream, device_id);
 
     batched_device_matrices<int32_t> fullscore(1, (get_size(query) + 1) * (get_size(target) + 1), stream, device_id);
 
@@ -392,7 +396,7 @@ matrix<int32_t> myers_get_full_score_matrix(std::string const& target, std::stri
     CGA_CU_CHECK_ERR(cudaMemcpyAsync(sequences_d.data() + max_sequence_length, target.data(), sizeof(char) * get_size(target), cudaMemcpyHostToDevice, stream));
     CGA_CU_CHECK_ERR(cudaMemcpyAsync(sequence_lengths_d.data(), lengths.data(), sizeof(int32_t) * 2, cudaMemcpyHostToDevice, stream));
 
-    myers::myers_compute_score_matrix_kernel<<<1, warp_size, 0, stream>>>(pv.get_device_interface(), mv.get_device_interface(), score.get_device_interface(), sequences_d.data(), sequence_lengths_d.data(), max_sequence_length, 1);
+    myers::myers_compute_score_matrix_kernel<<<1, warp_size, 0, stream>>>(pv.get_device_interface(), mv.get_device_interface(), score.get_device_interface(), query_patterns.get_device_interface(), sequences_d.data(), sequence_lengths_d.data(), max_sequence_length, 1);
     myers::myers_convert_to_full_score_matrix_kernel<<<1, 1, 0, stream>>>(fullscore.get_device_interface(), pv.get_device_interface(), mv.get_device_interface(), score.get_device_interface(), sequence_lengths_d.data(), 0);
 
     matrix<int32_t> fullscore_host = fullscore.get_matrix(0, get_size(query) + 1, get_size(target) + 1, stream);
@@ -409,18 +413,19 @@ void myers_gpu(int8_t* paths_d, int32_t* path_lengths_d, int32_t max_path_length
                batched_device_matrices<myers::WordType>& pv,
                batched_device_matrices<myers::WordType>& mv,
                batched_device_matrices<int32_t>& score,
+               batched_device_matrices<myers::WordType>& query_patterns,
                cudaStream_t stream)
 {
     constexpr int32_t warp_size = 32;
 
     {
-        const dim3 threads(warp_size, 8, 1);
-        const dim3 blocks(1,ceiling_divide<int32_t>(n_alignments,threads.y),1);
-        myers::myers_compute_score_matrix_kernel<<<blocks, threads, 0, stream>>>(pv.get_device_interface(), mv.get_device_interface(), score.get_device_interface(), sequences_d, sequence_lengths_d, max_sequence_length, n_alignments);
+        const dim3 threads(warp_size, 1, 1);
+        const dim3 blocks(1, ceiling_divide<int32_t>(n_alignments, threads.y), 1);
+        myers::myers_compute_score_matrix_kernel<<<blocks, threads, 0, stream>>>(pv.get_device_interface(), mv.get_device_interface(), score.get_device_interface(), query_patterns.get_device_interface(), sequences_d, sequence_lengths_d, max_sequence_length, n_alignments);
     }
     {
         const dim3 threads(128, 1, 1);
-        const dim3 blocks(ceiling_divide<int32_t>(n_alignments,threads.x),1,1);
+        const dim3 blocks(ceiling_divide<int32_t>(n_alignments, threads.x), 1, 1);
         myers::myers_backtrace_kernel<<<blocks, threads, 0, stream>>>(paths_d, path_lengths_d, max_path_length, pv.get_device_interface(), mv.get_device_interface(), score.get_device_interface(), sequence_lengths_d, n_alignments);
     }
 }

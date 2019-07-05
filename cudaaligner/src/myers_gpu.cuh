@@ -35,6 +35,7 @@ void myers_gpu(int8_t* paths_d, int32_t* path_lengths_d, int32_t max_path_length
                batched_device_matrices<myers::WordType>& pv,
                batched_device_matrices<myers::WordType>& mv,
                batched_device_matrices<int32_t>& score,
+               batched_device_matrices<myers::WordType>& query_patterns,
                cudaStream_t stream);
 
 } // end namespace cudaaligner

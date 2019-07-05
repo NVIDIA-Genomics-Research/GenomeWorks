@@ -21,17 +21,18 @@ namespace cudaaligner
 
 struct AlignerGlobalMyers::Workspace
 {
-    Workspace(int32_t max_alignments, int32_t max_elements_per_matrix, cudaStream_t stream, int32_t device_id)
-        : pvs(max_alignments, max_elements_per_matrix, stream, device_id), mvs(max_alignments, max_elements_per_matrix, stream, device_id), scores(max_alignments, max_elements_per_matrix, stream, device_id)
+    Workspace(int32_t max_alignments, int32_t max_n_words, int32_t max_target_length, cudaStream_t stream, int32_t device_id)
+        : pvs(max_alignments, max_n_words + (max_target_length + 1), stream, device_id), mvs(max_alignments, max_n_words + (max_target_length + 1), stream, device_id), scores(max_alignments, max_n_words + (max_target_length + 1), stream, device_id), query_patterns(max_alignments, max_n_words * 4, stream, device_id)
     {
     }
     batched_device_matrices<myers::WordType> pvs;
     batched_device_matrices<myers::WordType> mvs;
     batched_device_matrices<int32_t> scores;
+    batched_device_matrices<myers::WordType> query_patterns;
 };
 
 AlignerGlobalMyers::AlignerGlobalMyers(int32_t max_query_length, int32_t max_subject_length, int32_t max_alignments, cudaStream_t stream, int32_t device_id)
-    : AlignerGlobal(max_query_length, max_subject_length, max_alignments, stream, device_id), workspace_(std::make_unique<Workspace>(max_alignments, ceiling_divide<int32_t>(max_query_length, sizeof(myers::WordType)) * (max_subject_length + 1), stream, device_id))
+    : AlignerGlobal(max_query_length, max_subject_length, max_alignments, stream, device_id), workspace_(std::make_unique<Workspace>(max_alignments, ceiling_divide<int32_t>(max_query_length, sizeof(myers::WordType)), max_subject_length, stream, device_id))
 {
 }
 
@@ -43,7 +44,7 @@ AlignerGlobalMyers::~AlignerGlobalMyers()
 void AlignerGlobalMyers::run_alignment(int8_t* results_d, int32_t* result_lengths_d, int32_t max_result_length, const char* sequences_d, int32_t* sequence_lengths_d, int32_t* sequence_lengths_h, int32_t max_sequence_length, int32_t num_alignments, cudaStream_t stream)
 {
     static_cast<void>(sequence_lengths_h);
-    myers_gpu(results_d, result_lengths_d, max_result_length, sequences_d, sequence_lengths_d, max_sequence_length, num_alignments, workspace_->pvs, workspace_->mvs, workspace_->scores, stream);
+    myers_gpu(results_d, result_lengths_d, max_result_length, sequences_d, sequence_lengths_d, max_sequence_length, num_alignments, workspace_->pvs, workspace_->mvs, workspace_->scores, workspace_->query_patterns, stream);
 }
 
 } // namespace cudaaligner
