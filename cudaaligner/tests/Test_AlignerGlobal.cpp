@@ -22,7 +22,11 @@ namespace claragenomics
 namespace cudaaligner
 {
 
-enum class AlignmentAlgorithm { Ukkonen = 0, Myers};
+enum class AlignmentAlgorithm
+{
+    Ukkonen = 0,
+    Myers
+};
 
 // Common data structures and functions.
 struct AlignerTestData
@@ -64,37 +68,37 @@ std::vector<AlignerTestData> create_aligner_test_cases()
     AlignerTestData data;
 
     // Test case 1
-    data.inputs = {{"AAAA", "TTAT"}};
-    data.cigars = {"4M"};
+    data.inputs    = {{"AAAA", "TTAT"}};
+    data.cigars    = {"4M"};
     data.algorithm = AlignmentAlgorithm::Ukkonen;
     test_cases.push_back(data);
 
     // Test case 2
-    data.inputs = {{"ATAAAAAAAA", "AAAAAAAAA"}};
-    data.cigars = {"1M1I8M"};
+    data.inputs    = {{"ATAAAAAAAA", "AAAAAAAAA"}};
+    data.cigars    = {"1M1I8M"};
     data.algorithm = AlignmentAlgorithm::Ukkonen;
     test_cases.push_back(data);
 
     // Test case 3
-    data.inputs = {{"AAAAAAAAA", "ATAAAAAAAA"}};
-    data.cigars = {"1M1D8M"};
+    data.inputs    = {{"AAAAAAAAA", "ATAAAAAAAA"}};
+    data.cigars    = {"1M1D8M"};
     data.algorithm = AlignmentAlgorithm::Ukkonen;
     test_cases.push_back(data);
 
     // Test case 3
-    data.inputs = {{"ACTGA", "GCTAG"}};
-    data.cigars = {"3M1I1M1D"};
+    data.inputs    = {{"ACTGA", "GCTAG"}};
+    data.cigars    = {"3M1I1M1D"};
     data.algorithm = AlignmentAlgorithm::Ukkonen;
     test_cases.push_back(data);
 
     // Test case 4
-    data.inputs = {{"ACTGA", "GCTAG"}, {"ACTG", "ACTG"}, {"A", "T"}};
-    data.cigars = {"3M1I1M1D", "4M", "1M"};
+    data.inputs    = {{"ACTGA", "GCTAG"}, {"ACTG", "ACTG"}, {"A", "T"}};
+    data.cigars    = {"3M1I1M1D", "4M", "1M"};
     data.algorithm = AlignmentAlgorithm::Ukkonen;
     test_cases.push_back(data);
 
-    test_cases.reserve(2*test_cases.size());
-    std::transform(test_cases.begin(),test_cases.end(),std::back_inserter(test_cases), [](AlignerTestData td){ td.algorithm = AlignmentAlgorithm::Myers; return td;});
+    test_cases.reserve(2 * test_cases.size());
+    std::transform(test_cases.begin(), test_cases.end(), std::back_inserter(test_cases), [](AlignerTestData td) { td.algorithm = AlignmentAlgorithm::Myers; return td; });
 
     return test_cases;
 };
@@ -103,7 +107,7 @@ class TestAlignerGlobal : public ::testing::TestWithParam<AlignerTestData>
 {
 };
 
-int32_t get_max_sequence_length(std::vector<std::pair<std::string,std::string>> const& inputs)
+int32_t get_max_sequence_length(std::vector<std::pair<std::string, std::string>> const& inputs)
 {
     int64_t max_string_size = 0;
     for (auto const& pair : inputs)
@@ -116,7 +120,7 @@ int32_t get_max_sequence_length(std::vector<std::pair<std::string,std::string>> 
 
 TEST_P(TestAlignerGlobal, TestAlignmentKernel)
 {
-    AlignerTestData param = GetParam();
+    AlignerTestData param                                          = GetParam();
     const std::vector<std::pair<std::string, std::string>>& inputs = param.inputs;
     const std::vector<std::string>& cigars                         = param.cigars;
 
@@ -124,7 +128,7 @@ TEST_P(TestAlignerGlobal, TestAlignmentKernel)
 
     const int32_t max_string_size = get_max_sequence_length(inputs) + 1;
     std::unique_ptr<Aligner> aligner;
-    if(param.algorithm == AlignmentAlgorithm::Ukkonen)
+    if (param.algorithm == AlignmentAlgorithm::Ukkonen)
     {
         aligner = std::make_unique<AlignerGlobalUkkonen>(max_string_size,
                                                          max_string_size,
@@ -135,10 +139,10 @@ TEST_P(TestAlignerGlobal, TestAlignmentKernel)
     else
     {
         aligner = std::make_unique<AlignerGlobalMyers>(max_string_size,
-                                                         max_string_size,
-                                                         param.inputs.size(),
-                                                         nullptr,
-                                                         0);
+                                                       max_string_size,
+                                                       param.inputs.size(),
+                                                       nullptr,
+                                                       0);
     }
     for (auto& pair : inputs)
     {
@@ -160,7 +164,7 @@ TEST_P(TestAlignerGlobal, TestAlignmentKernel)
         EXPECT_EQ(StatusType::success, alignment->get_status()) << "Alignment status is not success";
         EXPECT_EQ(AlignmentType::global, alignment->get_alignment_type()) << "Alignment type is not global";
         EXPECT_STREQ(cigars[a].c_str(), alignment->convert_to_cigar().c_str()) << "CIGAR doesn't match for alignment " << a
-            << " using " << (param.algorithm == AlignmentAlgorithm::Ukkonen ? "Ukkonen" : "Myers");
+                                                                               << " using " << (param.algorithm == AlignmentAlgorithm::Ukkonen ? "Ukkonen" : "Myers");
     }
 }
 
@@ -193,14 +197,14 @@ class TestAlignerGlobalImplPerf : public TestAlignerGlobal
 
 TEST_P(TestAlignerGlobalImplPerf, TestAlignmentKernelPerf)
 {
-    AlignerTestData param = GetParam();
+    AlignerTestData param                                          = GetParam();
     const std::vector<std::pair<std::string, std::string>>& inputs = param.inputs;
-    const int32_t max_string_size = get_max_sequence_length(inputs) + 1;
-    std::unique_ptr<Aligner> aligner = std::make_unique<AlignerGlobalUkkonen>(max_string_size,
-                                                         max_string_size,
-                                                         param.inputs.size(),
-                                                         nullptr,
-                                                         0);
+    const int32_t max_string_size                                  = get_max_sequence_length(inputs) + 1;
+    std::unique_ptr<Aligner> aligner                               = std::make_unique<AlignerGlobalUkkonen>(max_string_size,
+                                                                              max_string_size,
+                                                                              param.inputs.size(),
+                                                                              nullptr,
+                                                                              0);
 
     for (auto& pair : inputs)
     {

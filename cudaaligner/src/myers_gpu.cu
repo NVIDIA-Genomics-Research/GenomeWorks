@@ -123,8 +123,8 @@ inline __device__ int32_t get_myers_score(int32_t i, int32_t j, device_matrix_vi
 
 __device__ void myers_backtrace(int8_t* paths_base, int32_t* lengths, int32_t max_path_length, device_matrix_view<WordType> const& pv, device_matrix_view<WordType> const& mv, device_matrix_view<int32_t> const& score, int32_t query_size, int32_t id)
 {
-    using nw_score_t              = int32_t;
-    constexpr int32_t word_size   = sizeof(WordType) * CHAR_BIT;
+    using nw_score_t            = int32_t;
+    constexpr int32_t word_size = sizeof(WordType) * CHAR_BIT;
     assert(pv.num_rows() == score.num_rows());
     assert(mv.num_rows() == score.num_rows());
     assert(pv.num_cols() == score.num_cols());
@@ -145,7 +145,7 @@ __device__ void myers_backtrace(int8_t* paths_base, int32_t* lengths, int32_t ma
     {
         int8_t r               = 0;
         nw_score_t const above = i == 1 ? j : get_myers_score(i - 1, j, pv, mv, score, last_entry_mask);
-        nw_score_t const diag  = i == 1 ? j-1 : get_myers_score(i - 1, j - 1, pv, mv, score, last_entry_mask);
+        nw_score_t const diag  = i == 1 ? j - 1 : get_myers_score(i - 1, j - 1, pv, mv, score, last_entry_mask);
         nw_score_t const left  = get_myers_score(i, j - 1, pv, mv, score, last_entry_mask);
         if (left + 1 == myscore)
         {
@@ -192,12 +192,12 @@ __global__ void myers_backtrace_kernel(int8_t* paths_base, int32_t* lengths, int
                                        int32_t n_alignments)
 {
     const int32_t idx = blockIdx.x * blockDim.x + threadIdx.x;
-    if(idx >= n_alignments)
+    if (idx >= n_alignments)
         return;
-    constexpr int32_t word_size       = sizeof(WordType) * CHAR_BIT;
-    const int32_t query_size          = sequence_lengths_d[2 * idx];
-    const int32_t target_size         = sequence_lengths_d[2 * idx + 1];
-    const int32_t n_words             = (query_size + word_size - 1) / word_size;
+    constexpr int32_t word_size             = sizeof(WordType) * CHAR_BIT;
+    const int32_t query_size                = sequence_lengths_d[2 * idx];
+    const int32_t target_size               = sequence_lengths_d[2 * idx + 1];
+    const int32_t n_words                   = (query_size + word_size - 1) / word_size;
     const device_matrix_view<WordType> pv   = pvi->get_matrix_view(idx, n_words, target_size + 1);
     const device_matrix_view<WordType> mv   = mvi->get_matrix_view(idx, n_words, target_size + 1);
     const device_matrix_view<int32_t> score = scorei->get_matrix_view(idx, n_words, target_size + 1);
@@ -247,8 +247,8 @@ __global__ void myers_compute_score_matrix_kernel(
     assert(warpSize == warp_size);
     assert(threadIdx.x < warp_size);
 
-    const int32_t alignment_idx         = threadIdx.y;
-    if(alignment_idx >= n_alignments)
+    const int32_t alignment_idx = threadIdx.y;
+    if (alignment_idx >= n_alignments)
         return;
     const int32_t query_size  = sequence_lengths_d[2 * alignment_idx];
     const int32_t target_size = sequence_lengths_d[2 * alignment_idx + 1];
