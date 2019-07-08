@@ -8,8 +8,6 @@
 # license agreement from NVIDIA CORPORATION is strictly prohibited.
 #
 
-cmake_minimum_required(VERSION 3.10.2)
-
 get_property(enable_benchmarks GLOBAL PROPERTY enable_benchmarks)
 function(cga_add_benchmarks NAME MODULE SOURCES LIBS)
     # Add test executable

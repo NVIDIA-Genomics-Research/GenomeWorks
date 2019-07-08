@@ -8,7 +8,13 @@
 # license agreement from NVIDIA CORPORATION is strictly prohibited.
 #
 
-set(CUDAPOA_BENCHMARK_DATA_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../data")
-configure_file(file_location.hpp.in ${PROJECT_BINARY_DIR}/data/file_location.hpp @ONLY)
+# Check CUDA dependency for project.
+find_package(CUDA 9.0 QUIET REQUIRED)
 
-set_property(GLOBAL PROPERTY cudapoa_data_include_dir "${PROJECT_BINARY_DIR}/data")
+if(NOT ${CUDA_FOUND})
+    message(FATAL_ERROR "CUDA not detected on system. Please install")
+else()
+    message(STATUS "Using CUDA ${CUDA_VERSION} from ${CUDA_TOOLKIT_ROOT_DIR}")
+    set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -lineinfo -use_fast_math -Xcompiler -Wall,-Wno-pedantic")
+endif()
+

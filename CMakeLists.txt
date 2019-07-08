@@ -24,6 +24,7 @@ if (cga_enable_benchmarks)
     set_property(GLOBAL PROPERTY enable_benchmarks ON)
 endif()
 
+include(cmake/CUDA.cmake)
 include(cmake/Doxygen.cmake)
 include(cmake/3rdparty.cmake)
 include(cmake/Tests.cmake)
