@@ -25,6 +25,7 @@ set(SOURCES
     )
 
 set(LIBS
+    cudaaligner_internal
     cudaaligner
     utils)
 
