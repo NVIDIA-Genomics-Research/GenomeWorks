@@ -25,7 +25,7 @@ namespace claragenomics {
     /// Assume q0p4t2p8 means anchor of read id 0 at position 4 and read id 2 at position 8.
     /// Assume read 0 has 30 sketch elements with certain representation, read 1 40 and read 2 50.
     /// Anchors for read 0 as query and that represtnation looks like this:
-    /// q0p0t1p0, q0p0t1p1 .. q0p0t1p39, q0p0t2p0, q0p0t2p1 ... q0p0t2p49, q0p1t1p0, q0p1t1p1 ... q0p1t1p39, q0p1t2p0 .. q0p1t2p49, q0p2p1p0 ...
+    /// q0p0t1p0, q0p0t1p1 .. q0p0t1p39, q0p0t2p0, q0p0t2p1 ... q0p0t2p49, q0p1t1p0, q0p1t1p1 ... q0p1t1p39, q0p1t2p0 .. q0p1t2p49, q0p2t1p0 ... q0p2t1p39, q0p2t2p0 ... q0p2t2p49, q0p3t1p0 ... q0p29t2p49
     class Matcher {
     public:
 
