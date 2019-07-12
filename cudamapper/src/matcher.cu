@@ -48,7 +48,7 @@ namespace claragenomics {
     /// \param read_id_to_sketch_elements_to_check_d every element points to a section of positions_in_reads_d and read_ids_d that belong to sketch elements with the same representation and read_id larger than some value
     /// \param read_id_to_pointer_arrays_section_d every element belongs to one read_id and points to its sections of read_id_to_sketch_elements_d and read_id_to_sketch_elements_to_check_d
     /// \param anchors_d pairs of sketch elements with the same representation that belong to different reads
-    /// \param read_id_to_anchors_section_d points to parts of andchors_d in which all anchors have the same read_id
+    /// \param read_id_to_anchors_section_d points to parts of anchors_d in which all anchors have the same read_id
     __global__ void generate_anchors(const position_in_read_t* const positions_in_reads_d,
                                      const read_id_t* const read_ids_d,
                                      // const SketchElement::DirectionOfRepresentation* const directions_of_reads_d, // currently we don't use direction
