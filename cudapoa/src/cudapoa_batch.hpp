@@ -118,7 +118,7 @@ protected:
     int16_t match_score_;
 
     // CUDA stream for launching kernels.
-    cudaStream_t stream_;
+    cudaStream_t stream_ = 0;
 
     // Host and device buffer for output data.
     OutputDetails* output_details_h_;

@@ -19,7 +19,7 @@ namespace claragenomics
 namespace cudapoa
 {
 /// CUDA POA error type
-enum class StatusType
+enum StatusType
 {
     success = 0,
     exceeded_maximum_poas,

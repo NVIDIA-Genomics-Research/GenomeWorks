@@ -11,14 +11,54 @@
 #
 
 import os.path
+import os
+import subprocess
 
-from setuptools import setup, find_packages
+from distutils.sysconfig import get_python_lib
+from setuptools import setup, find_packages, Extension
+
+from Cython.Build import cythonize
+
+def build_cga(cmake_root_dir="..", cmake_build_folder="build", cmake_install_prefix="install"):
+    build_path = os.path.abspath(cmake_build_folder)
+    root_dir = os.path.abspath(cmake_root_dir)
+    cmake_args = ['-DCMAKE_INSTALL_PREFIX=' + cmake_install_prefix,
+                  '-Dcga_build_shared=ON']
+
+    cmake_args += ['-DCMAKE_BUILD_TYPE=' + 'Release']
+    build_args = ['--', '-j16', 'docs', 'install']
+
+    if not os.path.exists(build_path):
+        os.makedirs(build_path)
+    subprocess.check_call(['cmake', root_dir] + cmake_args, cwd=build_path)
+    subprocess.check_call(['cmake', '--build', '.'] + build_args, cwd=build_path)
+
+build_cga(cmake_build_folder="py_build")
+
+extensions = [
+    Extension(
+        "claragenomics.poa",
+        sources=["claragenomics/cudapoa/*.pyx"],
+        include_dirs=[
+            os.path.abspath("py_build/install/include"),
+            "/usr/local/cuda/include",
+        ],
+        library_dirs=[get_python_lib(), os.path.abspath("py_build/install/lib")],
+        runtime_library_dirs=[get_python_lib(), os.path.abspath("pyclaragenomics/claragenomics/cudapoa")],
+        libraries=["cudapoa"],
+        language="c++",
+        extra_compile_args=["-std=c++14"],
+    )
+]
 
 setup(name='pyclaragenomics',
       version='0.1',
       description='NVIDIA genomics python libraries an utiliites',
-      author='Mike Vella',
-      author_email='mvella@nvidia.com',
+      author='NVIDIA Corporation',
+      setup_requires=["cython"],
       packages=find_packages(),
+      ext_modules=cythonize(extensions),
       scripts=[os.path.join('bin', 'genome_simulator'),
-               os.path.join('bin', 'assembly_evaluator')])
+               os.path.join('bin', 'assembly_evaluator')],
+      install_requires=["cython"]
+      )
