@@ -32,7 +32,9 @@ public:
 private:
     using BaseType = AlignerGlobal;
 
-    virtual void run_alignment(int8_t* results_d, int32_t* result_lengths_d, int32_t max_result_length, const char* sequences_d, int32_t* sequence_lengths_d, int32_t* sequence_lengths_h, int32_t max_sequence_length, int32_t num_alignments, cudaStream_t stream) override;
+    virtual void run_alignment(int8_t* results_d, int32_t* result_lengths_d, int32_t max_result_length,
+                               const char* sequences_d, int32_t* sequence_lengths_d, int32_t* sequence_lengths_h, int32_t max_sequence_length,
+                               int32_t num_alignments, cudaStream_t stream) override;
 
     std::unique_ptr<batched_device_matrices<nw_score_t>> score_matrices_;
     int32_t ukkonen_p_;

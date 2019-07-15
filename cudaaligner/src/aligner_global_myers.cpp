@@ -41,10 +41,15 @@ AlignerGlobalMyers::~AlignerGlobalMyers()
     // Keep empty destructor to keep Workspace type incomplete in the .hpp file.
 }
 
-void AlignerGlobalMyers::run_alignment(int8_t* results_d, int32_t* result_lengths_d, int32_t max_result_length, const char* sequences_d, int32_t* sequence_lengths_d, int32_t* sequence_lengths_h, int32_t max_sequence_length, int32_t num_alignments, cudaStream_t stream)
+void AlignerGlobalMyers::run_alignment(int8_t* results_d, int32_t* result_lengths_d, int32_t max_result_length,
+                                       const char* sequences_d, int32_t* sequence_lengths_d, int32_t* sequence_lengths_h, int32_t max_sequence_length,
+                                       int32_t num_alignments, cudaStream_t stream)
 {
     static_cast<void>(sequence_lengths_h);
-    myers_gpu(results_d, result_lengths_d, max_result_length, sequences_d, sequence_lengths_d, max_sequence_length, num_alignments, workspace_->pvs, workspace_->mvs, workspace_->scores, workspace_->query_patterns, stream);
+    myers_gpu(results_d, result_lengths_d, max_result_length,
+            sequences_d, sequence_lengths_d, max_sequence_length, num_alignments,
+            workspace_->pvs, workspace_->mvs, workspace_->scores, workspace_->query_patterns,
+            stream);
 }
 
 } // namespace cudaaligner

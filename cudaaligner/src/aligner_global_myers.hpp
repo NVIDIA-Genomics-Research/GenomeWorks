@@ -28,7 +28,9 @@ private:
     struct Workspace;
     using BaseType = AlignerGlobal;
 
-    virtual void run_alignment(int8_t* results_d, int32_t* result_lengths_d, int32_t max_result_length, const char* sequences_d, int32_t* sequence_lengths_d, int32_t* sequence_lengths_h, int32_t max_sequence_length, int32_t num_alignments, cudaStream_t stream) override;
+    virtual void run_alignment(int8_t* results_d, int32_t* result_lengths_d, int32_t max_result_length,
+                               const char* sequences_d, int32_t* sequence_lengths_d, int32_t* sequence_lengths_h, int32_t max_sequence_length,
+                               int32_t num_alignments, cudaStream_t stream) override;
 
     std::unique_ptr<Workspace> workspace_;
 };

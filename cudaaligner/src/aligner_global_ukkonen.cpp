@@ -48,7 +48,9 @@ StatusType AlignerGlobalUkkonen::add_alignment(const char* query, int32_t query_
     return BaseType::add_alignment(query, query_length, subject, subject_length);
 }
 
-void AlignerGlobalUkkonen::run_alignment(int8_t* results_d, int32_t* result_lengths_d, int32_t max_result_length, const char* sequences_d, int32_t* sequence_lengths_d, int32_t* sequence_lengths_h, int32_t max_sequence_length, int32_t num_alignments, cudaStream_t stream)
+void AlignerGlobalUkkonen::run_alignment(int8_t* results_d, int32_t* result_lengths_d, int32_t max_result_length,
+        const char* sequences_d, int32_t* sequence_lengths_d, int32_t* sequence_lengths_h, int32_t max_sequence_length,
+        int32_t num_alignments, cudaStream_t stream)
 {
     int32_t max_length_difference = 0;
     for (int32_t i = 0; i < num_alignments; ++i)
