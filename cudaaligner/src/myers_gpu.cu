@@ -130,7 +130,6 @@ __device__ void myers_backtrace(int8_t* paths_base, int32_t* lengths, int32_t ma
     assert(mv.num_rows() == score.num_rows());
     assert(pv.num_cols() == score.num_cols());
     assert(mv.num_cols() == score.num_cols());
-    assert(score.num_rows() == n_words);
     int32_t i         = query_size;
     int32_t j         = score.num_cols() - 1;
     int8_t query_ins  = 2;
@@ -247,8 +246,9 @@ __global__ void myers_compute_score_matrix_kernel(
     constexpr int32_t warp_size = 32;
     assert(warpSize == warp_size);
     assert(threadIdx.x < warp_size);
+    assert(blockIdx.x == 0);
 
-    const int32_t alignment_idx = threadIdx.y;
+    const int32_t alignment_idx = blockIdx.y * blockDim.y + threadIdx.y;
     if (alignment_idx >= n_alignments)
         return;
     const int32_t query_size  = sequence_lengths_d[2 * alignment_idx];

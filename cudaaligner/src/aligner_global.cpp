@@ -26,6 +26,13 @@ namespace claragenomics
 namespace cudaaligner
 {
 
+constexpr int32_t calc_max_result_length(int32_t max_query_length, int32_t max_subject_length)
+{
+    constexpr int32_t alignment_bytes = 4;
+    const int32_t max_length          = max_query_length + max_subject_length;
+    return max_length + max_length % alignment_bytes;
+}
+
 AlignerGlobal::AlignerGlobal(int32_t max_query_length, int32_t max_subject_length, int32_t max_alignments, cudaStream_t stream, int32_t device_id)
     : max_query_length_(throw_on_negative(max_query_length, "max_query_length must be non-negative."))
     , max_subject_length_(throw_on_negative(max_subject_length, "max_subject_length must be non-negative."))
@@ -35,8 +42,8 @@ AlignerGlobal::AlignerGlobal(int32_t max_query_length, int32_t max_subject_lengt
     , sequences_h_(2 * std::max(max_query_length, max_subject_length) * max_alignments, device_id)
     , sequence_lengths_d_(2 * max_alignments, device_id)
     , sequence_lengths_h_(2 * max_alignments, device_id)
-    , results_d_((max_query_length + max_subject_length) * max_alignments, device_id)
-    , results_h_((max_query_length + max_subject_length) * max_alignments, device_id)
+    , results_d_(calc_max_result_length(max_query_length, max_subject_length) * max_alignments, device_id)
+    , results_h_(calc_max_result_length(max_query_length, max_subject_length) * max_alignments, device_id)
     , result_lengths_d_(max_alignments, device_id)
     , result_lengths_h_(max_alignments, device_id)
     , stream_(stream)
@@ -98,8 +105,9 @@ StatusType AlignerGlobal::add_alignment(const char* query, int32_t query_length,
 
 StatusType AlignerGlobal::align_all()
 {
-    int32_t const max_alignment_length = std::max(max_query_length_, max_subject_length_);
-    int32_t const num_alignments       = get_size(alignments_);
+    const int32_t max_alignment_length = std::max(max_query_length_, max_subject_length_);
+    const int32_t num_alignments       = get_size(alignments_);
+    const int32_t max_result_length    = calc_max_result_length(max_query_length_, max_subject_length_);
     CGA_CU_CHECK_ERR(cudaSetDevice(device_id_));
     CGA_CU_CHECK_ERR(cudaMemcpyAsync(sequence_lengths_d_.data(),
                                      sequence_lengths_h_.data(),
@@ -114,14 +122,14 @@ StatusType AlignerGlobal::align_all()
 
     // Run kernel
     run_alignment(results_d_.data(), result_lengths_d_.data(),
-                  max_query_length_, sequences_d_.data(), sequence_lengths_d_.data(), sequence_lengths_h_.data(),
+                  max_result_length, sequences_d_.data(), sequence_lengths_d_.data(), sequence_lengths_h_.data(),
                   max_alignment_length,
                   num_alignments,
                   stream_);
 
     CGA_CU_CHECK_ERR(cudaMemcpyAsync(results_h_.data(),
                                      results_d_.data(),
-                                     sizeof(int8_t) * (max_query_length_ + max_subject_length_) * num_alignments,
+                                     sizeof(int8_t) * max_result_length * num_alignments,
                                      cudaMemcpyDeviceToHost,
                                      stream_));
     CGA_CU_CHECK_ERR(cudaMemcpyAsync(result_lengths_h_.data(),
@@ -137,13 +145,14 @@ StatusType AlignerGlobal::sync_alignments()
     CGA_CU_CHECK_ERR(cudaSetDevice(device_id_));
     CGA_CU_CHECK_ERR(cudaStreamSynchronize(stream_));
 
-    int32_t const n_alignments = get_size(alignments_);
+    const int32_t n_alignments      = get_size(alignments_);
+    const int32_t max_result_length = calc_max_result_length(max_query_length_, max_subject_length_);
     std::vector<AlignmentState> al_state;
     for (int32_t i = 0; i < n_alignments; ++i)
     {
         al_state.clear();
-        int8_t const* r_begin = results_h_.data() + i * (max_query_length_ + max_subject_length_);
-        int8_t const* r_end   = r_begin + result_lengths_h_[i];
+        const int8_t* r_begin = results_h_.data() + i * max_result_length;
+        const int8_t* r_end   = r_begin + result_lengths_h_[i];
         std::transform(r_begin, r_end, std::back_inserter(al_state), [](int8_t x) { return static_cast<AlignmentState>(x); });
         std::reverse(begin(al_state), end(al_state));
         AlignmentImpl* alignment = dynamic_cast<AlignmentImpl*>(alignments_[i].get());
