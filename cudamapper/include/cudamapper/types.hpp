@@ -10,6 +10,8 @@
 
 #pragma once
 
+#include <cstdint>
+
 namespace claragenomics {
 
 /// ArrayBlock - points to a part of an array
