@@ -10,7 +10,7 @@
 
 #include "aligner_global_myers.hpp"
 #include "myers_gpu.cuh"
-#include <utils/signed_integer_utils.hpp>
+#include <utils/math_utils.hpp>
 #include "batched_device_matrices.cuh"
 
 namespace claragenomics
@@ -47,9 +47,9 @@ void AlignerGlobalMyers::run_alignment(int8_t* results_d, int32_t* result_length
 {
     static_cast<void>(sequence_lengths_h);
     myers_gpu(results_d, result_lengths_d, max_result_length,
-            sequences_d, sequence_lengths_d, max_sequence_length, num_alignments,
-            workspace_->pvs, workspace_->mvs, workspace_->scores, workspace_->query_patterns,
-            stream);
+              sequences_d, sequence_lengths_d, max_sequence_length, num_alignments,
+              workspace_->pvs, workspace_->mvs, workspace_->scores, workspace_->query_patterns,
+              stream);
 }
 
 } // namespace cudaaligner

@@ -8,25 +8,29 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-#include "gtest/gtest.h"
-#include <utils/math_utils.hpp>
+#pragma once
+
+#include <limits>
+#include <cassert>
+#include <stdexcept>
+#include <type_traits>
 
 namespace claragenomics
 {
 
-namespace cudaaligner
+template <typename Integer>
+constexpr inline Integer ceiling_divide(Integer i, Integer j)
 {
-
-TEST(TestCudaAlignerMisc, CeilingDivide)
-{
-    EXPECT_EQ(ceiling_divide(0, 5), 0);
-    EXPECT_EQ(ceiling_divide(5, 5), 1);
-    EXPECT_EQ(ceiling_divide(10, 5), 2);
-    EXPECT_EQ(ceiling_divide(20, 5), 4);
-
-    EXPECT_EQ(ceiling_divide(6, 5), 2);
-    EXPECT_EQ(ceiling_divide(4, 5), 1);
+    static_assert(std::is_integral<Integer>::value);
+    assert(i >= 0);
+    assert(j > 0);
+    return (i + j - 1) / j;
 }
 
-} // namespace cudaaligner
+template <typename T>
+inline T const& min3(T const& t1, T const& t2, T const& t3)
+{
+    return std::min(t1, std::min(t2, t3));
+}
+
 } // namespace claragenomics

@@ -74,7 +74,7 @@ int32_t myers_compute_edit_distance(std::string const& target, std::string const
     if (query_size == 0)
         return get_size(target);
 
-    const int32_t n_words = (query_size + word_size - 1) / word_size;
+    const int32_t n_words = ceiling_divide(query_size, word_size);
 
     std::vector<WordType> pv(n_words, ~WordType(0));
     std::vector<WordType> mv(n_words, 0);
