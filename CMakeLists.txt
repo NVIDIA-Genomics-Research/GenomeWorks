@@ -4,6 +4,7 @@ project(ClaraGenomicsAnalysisCPP)
 # Process options.
 option(cga_enable_tests "Build ClaraGenomicsAnalysis unit tests" OFF)
 option(cga_enable_benchmarks "Build ClaraGenomicsAnalysis benchmarks" OFF)
+option(cga_build_shared "Build ClaraGenomicsAnalysis libraries as shared objects" OFF)
 # The spoa_accurate option runs a different (and slower) version of
 # the topological sort in cudapoa which exactly matches the output
 # of the topological sort implementation in the SPOA library. This is
@@ -22,6 +23,14 @@ endif()
 if (cga_enable_benchmarks)
     message(STATUS "Enabling ClaraGenomicsAnalysis benchmarks")
     set_property(GLOBAL PROPERTY enable_benchmarks ON)
+endif()
+
+if (cga_build_shared)
+    message(STATUS "Building ClaraGenomicsAnalysis libraries as shared objects")
+    set_property(GLOBAL PROPERTY cga_library_type SHARED)
+else()
+    message(STATUS "Building ClaraGenomicsAnalysis libraries as static objects")
+    set_property(GLOBAL PROPERTY cga_library_type STATIC)
 endif()
 
 include(cmake/CUDA.cmake)

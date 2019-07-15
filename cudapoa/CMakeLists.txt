@@ -16,13 +16,10 @@ add_subdirectory(data)
 # Project specific NVCC flags
 set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -std=c++11")
 
-cuda_add_library(cudapoa STATIC 
+get_property(cga_library_type GLOBAL PROPERTY cga_library_type)
+cuda_add_library(cudapoa ${cga_library_type}
     src/cudapoa.cpp
     src/cudapoa_kernels.cu
-    src/cudapoa_topsort.cu
-    src/cudapoa_add_alignment.cu
-    src/cudapoa_nw.cu
-    src/cudapoa_nw_banded.cu
     src/batch.cpp
     src/cudapoa_batch.cpp
     src/allocate_block.cpp
