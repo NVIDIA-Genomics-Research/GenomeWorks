@@ -12,7 +12,7 @@
 #include "gtest/gtest.h"
 #include "../src/matcher.hpp"
 #include "../src/overlapper.hpp"
-#include "../src/mock_index.hpp"
+#include "mock_index.hpp"
 
 namespace claragenomics {
 

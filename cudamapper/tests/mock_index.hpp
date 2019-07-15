@@ -10,9 +10,9 @@
 
 #pragma  once
 
-#include "gmock/gmock.h"  // Brings in Google Mock.
+#include "gmock/gmock.h"
 
-#include "cudamapper/index.hpp"
+#include "../src/index_cpu.hpp"
 
 class MockIndex : public claragenomics::IndexCPU {
 public:
