@@ -21,12 +21,14 @@ namespace claragenomics {
     void print_paf(std::vector<Overlap> overlaps){
         std::string relative_strand = "+";
         for(auto overlap: overlaps){
-            std::printf("%lu\t%i\t%i\t%i\t%s\t%i\t%i\t%i\t%i\t%i\n",
-                    overlap.query_read_id_,
+            std::printf("%s\t%i\t%i\t%i\t%s\t%s\t%i\t%i\t%i\t%i\t%i\t%i\n",
+                    overlap.query_read_name_.c_str(),
                     0,
                     overlap.query_start_position_in_read_,
                     overlap.query_end_position_in_read_,
                     relative_strand.c_str(),
+                    overlap.target_read_name_.c_str(),
+                    0,
                     overlap.target_start_position_in_read_,
                     overlap.target_end_position_in_read_,
                     overlap.num_residues_,
@@ -36,9 +38,11 @@ namespace claragenomics {
         }
     }
 
-    std::vector<Overlap> get_overlaps(std::vector<Matcher::Anchor> anchors) {
+    std::vector<Overlap> get_overlaps(std::vector<Matcher::Anchor> anchors, Index& index) {
 
         std::map<std::pair<int,int>, Overlap> reads_to_overlaps;
+
+        auto read_names = index.read_id_to_read_name();
 
         for(auto anchor: anchors){
             std::pair<int,int> read_pair;
@@ -50,7 +54,11 @@ namespace claragenomics {
                 Overlap new_overlap;
                 new_overlap.num_residues_++;
                 new_overlap.query_read_id_ = anchor.query_read_id_;
+                new_overlap.query_read_name_ = read_names[anchor.query_read_id_];
+
                 new_overlap.target_read_id_ = anchor.target_read_id_;
+                new_overlap.target_read_name_ = read_names[anchor.target_read_id_];
+
                 new_overlap.query_start_position_in_read_ = anchor.query_position_in_read_;
                 new_overlap.target_start_position_in_read_ = anchor.query_position_in_read_;
                 reads_to_overlaps[read_pair] = new_overlap;

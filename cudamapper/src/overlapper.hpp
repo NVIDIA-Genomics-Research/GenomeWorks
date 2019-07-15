@@ -23,11 +23,13 @@ namespace claragenomics {
         position_in_read_t target_start_position_in_read_;
         position_in_read_t query_end_position_in_read_;
         position_in_read_t target_end_position_in_read_;
+        std::string query_read_name_;
+        std::string target_read_name_;
         uint32_t num_residues_ = 0;
         bool overlap_complete = false;
     } Overlap;
 
-    std::vector<Overlap> get_overlaps(std::vector<Matcher::Anchor>);
+    std::vector<Overlap> get_overlaps(std::vector<Matcher::Anchor>, Index&); //TODO pass in the base class
 
     void print_paf(std::vector<Overlap>);
 }
