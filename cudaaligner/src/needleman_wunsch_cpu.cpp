@@ -105,7 +105,6 @@ matrix<int> needleman_wunsch_build_score_matrix_naive(std::string const& text, s
 {
     int const text_size  = text.size() + 1;
     int const query_size = query.size() + 1;
-    assert(query_size <= text_size);
     matrix<int> scores(query_size, text_size);
 
     for (int i = 0; i < query_size; ++i)
