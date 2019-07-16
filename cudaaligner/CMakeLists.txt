@@ -13,7 +13,8 @@ project(cudaaligner)
 # Project specific NVCC flags
 set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -std=c++14 --expt-relaxed-constexpr")
 
-cuda_add_library(cudaaligner STATIC 
+get_property(cga_library_type GLOBAL PROPERTY cga_library_type)
+cuda_add_library(cudaaligner ${cga_library_type}
     src/cudaaligner.cpp
     src/aligner.cpp
     src/alignment_impl.cpp
