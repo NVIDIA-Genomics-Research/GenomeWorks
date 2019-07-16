@@ -13,12 +13,13 @@
 #include <vector>
 #include <unordered_map>
 
-#include "overlapper.hpp"
+#include "overlapper_naive.hpp"
+#include "cudamapper/overlapper.hpp"
 #include "matcher.hpp"
 
 
 namespace claragenomics {
-    void print_paf(std::vector<Overlap> overlaps){
+    void OverlapperNaive::print_paf(std::vector<Overlap> overlaps){
         std::string relative_strand = "+";
         for(auto overlap: overlaps){
             std::printf("%s\t%i\t%i\t%i\t%s\t%s\t%i\t%i\t%i\t%i\t%i\t%i\n",
@@ -38,7 +39,7 @@ namespace claragenomics {
         }
     }
 
-    std::vector<Overlap> get_overlaps(std::vector<Matcher::Anchor> anchors, Index& index) {
+    std::vector<Overlap> const OverlapperNaive::get_overlaps(const std::vector<Anchor>& anchors, Index& index) {
 
         std::map<std::pair<int,int>, Overlap> reads_to_overlaps;
 

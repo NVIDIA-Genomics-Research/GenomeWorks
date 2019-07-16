@@ -27,6 +27,6 @@ set(LIBS
     index_generator_cpu
     index_cpu
     matcher
-    overlapper)
+    overlapper_naive)
 
 cga_add_tests(${PROJECT_NAME} "${SOURCES}" "${LIBS}")

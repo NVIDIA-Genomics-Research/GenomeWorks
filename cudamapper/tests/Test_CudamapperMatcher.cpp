@@ -27,7 +27,7 @@ namespace claragenomics {
         IndexCPU index(index_generator);
         Matcher matcher(index);
 
-        const std::vector<Matcher::Anchor>& anchors = matcher.anchors();
+        const std::vector<Anchor>& anchors = matcher.anchors();
         ASSERT_EQ(anchors.size(), 0);
     }
 
@@ -62,7 +62,7 @@ namespace claragenomics {
         IndexCPU index(index_generator);
         Matcher matcher(index);
 
-        const std::vector<Matcher::Anchor>& anchors = matcher.anchors();
+        const std::vector<Anchor>& anchors = matcher.anchors();
         ASSERT_EQ(anchors.size(), 1);
         EXPECT_EQ(anchors[0].query_read_id_, 0);
         EXPECT_EQ(anchors[0].target_read_id_, 1);
@@ -129,7 +129,7 @@ namespace claragenomics {
 
         Matcher matcher(test_index);
 
-        const std::vector<Matcher::Anchor>& anchors = matcher.anchors();
+        const std::vector<Anchor>& anchors = matcher.anchors();
         ASSERT_EQ(anchors.size(), 2500);
 
         for (std::size_t read_0_sketch_element = 0; read_0_sketch_element < 50; ++read_0_sketch_element) {
@@ -253,7 +253,7 @@ namespace claragenomics {
 
         Matcher matcher(test_index);
 
-        const std::vector<Matcher::Anchor>& anchors = matcher.anchors();
+        const std::vector<Anchor>& anchors = matcher.anchors();
         ASSERT_EQ(anchors.size(), 90300);
 
         // Anchors are grouped by query read id and within that by representation (both in increasing order).

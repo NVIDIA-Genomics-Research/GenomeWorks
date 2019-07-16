@@ -10,14 +10,15 @@
 
 #include "gtest/gtest.h"
 #include "../src/matcher.hpp"
-#include "../src/overlapper.hpp"
+#include "../src/overlapper_naive.hpp"
 #include "mock_index.hpp"
+#include "cudamapper/types.hpp"
 
 namespace claragenomics {
 
     TEST(TestPAFGenerator, TestGenerateNoOverlapForOneAnchor){
-        Matcher::Anchor anchor{0,1,2,3};
-        std::vector<Matcher::Anchor> anchors;
+        Anchor anchor{0,1,2,3};
+        std::vector<Anchor> anchors;
         anchors.push_back(anchor);
 
         MockIndex test_index;
@@ -29,14 +30,15 @@ namespace claragenomics {
         EXPECT_CALL(test_index, read_id_to_read_name)
                 .WillRepeatedly(testing::ReturnRef(testv));
 
-        std::vector<Overlap> overlaps = get_overlaps(anchors, test_index);
+        auto overlapper = OverlapperNaive();
+        std::vector<Overlap> overlaps = overlapper.get_overlaps(anchors, test_index);
         int num_overlaps_found = overlaps.size();
         EXPECT_EQ(num_overlaps_found, 0);
     }
 
     TEST(TestPAFGenerator, TestGenerateNoOverlapForTwoAnchorsDifferentReadpairs){
-        Matcher::Anchor anchor1;
-        Matcher::Anchor anchor2;
+        Anchor anchor1;
+        Anchor anchor2;
 
         anchor1.query_position_in_read_ = 1000;
         anchor1.target_position_in_read_ = 1000;
@@ -60,18 +62,19 @@ namespace claragenomics {
         EXPECT_CALL(test_index, read_id_to_read_name)
                 .WillRepeatedly(testing::ReturnRef(testv));
 
-        std::vector<Matcher::Anchor> anchors;
+        std::vector<Anchor> anchors;
         anchors.push_back(anchor1);
         anchors.push_back(anchor2);
 
-        std::vector<Overlap> overlaps = get_overlaps(anchors, test_index);
+        auto overlapper = OverlapperNaive();
+        std::vector<Overlap> overlaps = overlapper.get_overlaps(anchors, test_index);
         int num_overlaps_found = overlaps.size();
         EXPECT_EQ(num_overlaps_found, 0);
     }
 
     TEST(TestPAFGenerator, TestGenerateOverlapForTwoAnchorsSameReadpairs){
-        Matcher::Anchor anchor1;
-        Matcher::Anchor anchor2;
+        Anchor anchor1;
+        Anchor anchor2;
 
         anchor1.query_position_in_read_ = 1000;
         anchor1.target_position_in_read_ = 1000;
@@ -96,19 +99,21 @@ namespace claragenomics {
         EXPECT_CALL(test_index, read_id_to_read_name)
                 .WillRepeatedly(testing::ReturnRef(testv));
 
-        std::vector<Matcher::Anchor> anchors;
+        std::vector<Anchor> anchors;
         anchors.push_back(anchor1);
         anchors.push_back(anchor2);
 
-        std::vector<Overlap> overlaps = get_overlaps(anchors, test_index);
+        auto overlapper = OverlapperNaive();
+
+        std::vector<Overlap> overlaps = overlapper.get_overlaps(anchors, test_index);
         int num_overlaps_found = overlaps.size();
         EXPECT_EQ(num_overlaps_found, 1);
     }
 
     TEST(TestPAFGenerator, TestGenerateOverlapForThreeAnchorsSameReadpairs){
-        Matcher::Anchor anchor1;
-        Matcher::Anchor anchor2;
-        Matcher::Anchor anchor3;
+        Anchor anchor1;
+        Anchor anchor2;
+        Anchor anchor3;
 
         anchor1.query_position_in_read_ = 1000;
         anchor1.target_position_in_read_ = 1000;
@@ -137,20 +142,22 @@ namespace claragenomics {
         EXPECT_CALL(test_index, read_id_to_read_name)
                 .WillRepeatedly(testing::ReturnRef(testv));
 
-        std::vector<Matcher::Anchor> anchors;
+        std::vector<Anchor> anchors;
         anchors.push_back(anchor1);
         anchors.push_back(anchor2);
         anchors.push_back(anchor3);
 
-        std::vector<Overlap> overlaps = get_overlaps(anchors, test_index);
+        auto overlapper = OverlapperNaive();
+
+        std::vector<Overlap> overlaps = overlapper.get_overlaps(anchors, test_index);
         int num_overlaps_found = overlaps.size();
         EXPECT_EQ(num_overlaps_found, 1);
     }
 
     TEST(TestPAFGenerator, TestGenerateOverlap2){
-        Matcher::Anchor anchor1;
-        Matcher::Anchor anchor2;
-        Matcher::Anchor anchor3;
+        Anchor anchor1;
+        Anchor anchor2;
+        Anchor anchor3;
 
         anchor1.query_position_in_read_ = 1000;
         anchor1.target_position_in_read_ = 1000;
@@ -170,7 +177,7 @@ namespace claragenomics {
         anchor3.query_read_id_ = 2;
         anchor3.target_read_id_ = 3;
 
-        std::vector<Matcher::Anchor> anchors;
+        std::vector<Anchor> anchors;
         anchors.push_back(anchor1);
         anchors.push_back(anchor2);
         anchors.push_back(anchor3);
@@ -184,14 +191,15 @@ namespace claragenomics {
         EXPECT_CALL(test_index, read_id_to_read_name)
                 .WillRepeatedly(testing::ReturnRef(testv));
 
-        std::vector<Overlap> overlaps = get_overlaps(anchors, test_index);
+        auto overlapper = OverlapperNaive();
+        std::vector<Overlap> overlaps = overlapper.get_overlaps(anchors, test_index);
         int num_overlaps_found = overlaps.size();
         EXPECT_EQ(num_overlaps_found, 1);
     }
 
     TEST(TestPAFGenerator, TestOverlapHasCorrectQueryName){
-        Matcher::Anchor anchor1;
-        Matcher::Anchor anchor2;
+        Anchor anchor1;
+        Anchor anchor2;
 
         anchor1.query_position_in_read_ = 1000;
         anchor1.target_position_in_read_ = 1000;
@@ -216,11 +224,13 @@ namespace claragenomics {
         EXPECT_CALL(test_index, read_id_to_read_name)
                 .WillRepeatedly(testing::ReturnRef(testv));
 
-        std::vector<Matcher::Anchor> anchors;
+        std::vector<Anchor> anchors;
         anchors.push_back(anchor1);
         anchors.push_back(anchor2);
 
-        std::vector<Overlap> overlaps = get_overlaps(anchors, test_index);
+        auto overlapper = OverlapperNaive();
+
+        std::vector<Overlap> overlaps = overlapper.get_overlaps(anchors, test_index);
         int num_overlaps_found = overlaps.size();
         EXPECT_EQ(num_overlaps_found, 1);
         EXPECT_EQ(overlaps[0].query_read_name_, testv[0]);

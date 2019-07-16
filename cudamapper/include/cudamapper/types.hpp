@@ -31,4 +31,35 @@ using representation_t = std::uint64_t; // this depends on kmer size, in some ca
 /// read_id_t
 using read_id_t = std::uint64_t; // can this be 32-bit?
 
+/// Anchor - represents one anchor
+///
+/// Anchor is a pair of two sketch elemetns with the same sketch element representation from different reads
+typedef struct Anchor{
+    // read id of first sketch element
+    read_id_t query_read_id_;
+    // read id of second sketch element
+    read_id_t target_read_id_;
+    // position of first sketch element in query_read_id_
+    position_in_read_t query_position_in_read_;
+    // position of second sketch element in target_read_id_
+    position_in_read_t target_position_in_read_;
+} Anchor;
+
+
+/// Overlap - represents one overlap between two substrings
+///
+/// Overlap is a region of two strings which is considered to be the same underlying biological sequence.
+/// The overlapping region need not be identical across both substrings.
+typedef struct Overlap {
+    read_id_t query_read_id_;
+    read_id_t target_read_id_;
+    position_in_read_t query_start_position_in_read_;
+    position_in_read_t target_start_position_in_read_;
+    position_in_read_t query_end_position_in_read_;
+    position_in_read_t target_end_position_in_read_;
+    std::string query_read_name_;
+    std::string target_read_name_;
+    uint32_t num_residues_ = 0;
+    bool overlap_complete = false;
+} Overlap;
 }
