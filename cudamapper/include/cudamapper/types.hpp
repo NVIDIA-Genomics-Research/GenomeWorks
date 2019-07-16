@@ -68,7 +68,7 @@ typedef struct Overlap {
     /// target read name (e.g from FASTA)
     std::string target_read_name_;
     /// Number of residues (e.g anchors) between the two reads
-    uint32_t num_residues_ = 0;
+    std::uint32_t num_residues_ = 0;
     /// Whether the overlap is considered valid by the generating overlapper
     bool overlap_complete = false;
 } Overlap;
