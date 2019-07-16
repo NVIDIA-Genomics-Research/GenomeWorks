@@ -11,9 +11,24 @@
 #pragma once
 
 #include <cudautils/cudautils.hpp>
+#include <exception>
 
 namespace claragenomics
 {
+
+class device_memory_allocation_exception : public std::exception
+{
+public:
+    device_memory_allocation_exception()                                          = default;
+    device_memory_allocation_exception(device_memory_allocation_exception const&) = default;
+    device_memory_allocation_exception& operator=(device_memory_allocation_exception const&) = default;
+    virtual ~device_memory_allocation_exception()                                            = default;
+
+    virtual const char* what() const noexcept
+    {
+        return "Could not allocate device memory!";
+    }
+};
 
 template <typename T>
 class device_storage
@@ -26,7 +41,10 @@ public:
         , device_id_(device_id)
     {
         CGA_CU_CHECK_ERR(cudaSetDevice(device_id_));
-        CGA_CU_CHECK_ERR(cudaMalloc(reinterpret_cast<void**>(&data_), size_ * sizeof(T)));
+        cudaError_t err = cudaMalloc(reinterpret_cast<void**>(&data_), size_ * sizeof(T));
+        if (err == cudaErrorMemoryAllocation)
+            throw device_memory_allocation_exception();
+        CGA_CU_CHECK_ERR(err);
     }
 
     ~device_storage()
