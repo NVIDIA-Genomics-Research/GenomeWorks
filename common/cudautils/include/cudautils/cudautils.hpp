@@ -59,18 +59,18 @@ inline void gpuAssert(cudaError_t code, const char* file, int line, bool abort =
             throw std::runtime_error(err);
         }
     }
-
 }
 
 /// make_unique_cuda_malloc
 /// Creates a unique pointer to device memory which gets deallocated automatically
 /// \param num_of_elems number of elements to allocate
 /// \return unique pointer to allocated memory
-template<typename T>
-std::unique_ptr<T, void(*)(T*)> make_unique_cuda_malloc(std::size_t num_of_elems) {
+template <typename T>
+std::unique_ptr<T, void (*)(T*)> make_unique_cuda_malloc(std::size_t num_of_elems)
+{
     T* tmp_ptr_d = nullptr;
-    CGA_CU_CHECK_ERR(cudaMalloc((void**)&tmp_ptr_d, num_of_elems*sizeof(T)));
-    std::unique_ptr<T, void(*)(T*)> unq_ptr_d(tmp_ptr_d, [](T* p) {CGA_CU_CHECK_ERR(cudaFree(p));}); // tmp_prt_d's ownership transfered to unq_ptr_d
+    CGA_CU_CHECK_ERR(cudaMalloc((void**)&tmp_ptr_d, num_of_elems * sizeof(T)));
+    std::unique_ptr<T, void (*)(T*)> unq_ptr_d(tmp_ptr_d, [](T* p) { CGA_CU_CHECK_ERR(cudaFree(p)); }); // tmp_prt_d's ownership transfered to unq_ptr_d
     return std::move(unq_ptr_d);
 }
 
@@ -78,11 +78,12 @@ std::unique_ptr<T, void(*)(T*)> make_unique_cuda_malloc(std::size_t num_of_elems
 /// Creates a shared pointer to device memory which gets deallocated automatically
 /// \param num_of_elems number of elements to allocate
 /// \return shared pointer to allocated memory
-template<typename T>
-std::shared_ptr<T> make_shared_cuda_malloc(std::size_t num_of_elems) {
+template <typename T>
+std::shared_ptr<T> make_shared_cuda_malloc(std::size_t num_of_elems)
+{
     T* tmp_ptr_d = nullptr;
-    CGA_CU_CHECK_ERR(cudaMalloc((void**)&tmp_ptr_d, num_of_elems*sizeof(T)));
-    std::shared_ptr<T> shr_ptr_d(tmp_ptr_d, [](T* p) {CGA_CU_CHECK_ERR(cudaFree(p));}); // tmp_prt_d's ownership transfered to shr_ptr_d
+    CGA_CU_CHECK_ERR(cudaMalloc((void**)&tmp_ptr_d, num_of_elems * sizeof(T)));
+    std::shared_ptr<T> shr_ptr_d(tmp_ptr_d, [](T* p) { CGA_CU_CHECK_ERR(cudaFree(p)); }); // tmp_prt_d's ownership transfered to shr_ptr_d
     return std::move(shr_ptr_d);
 }
 
