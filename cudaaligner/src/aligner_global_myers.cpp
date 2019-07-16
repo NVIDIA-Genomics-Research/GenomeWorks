@@ -22,7 +22,7 @@ namespace cudaaligner
 struct AlignerGlobalMyers::Workspace
 {
     Workspace(int32_t max_alignments, int32_t max_n_words, int32_t max_target_length, cudaStream_t stream, int32_t device_id)
-        : pvs(max_alignments, max_n_words + (max_target_length + 1), stream, device_id), mvs(max_alignments, max_n_words + (max_target_length + 1), stream, device_id), scores(max_alignments, max_n_words + (max_target_length + 1), stream, device_id), query_patterns(max_alignments, max_n_words * 4, stream, device_id)
+        : pvs(max_alignments, max_n_words * (max_target_length + 1), stream, device_id), mvs(max_alignments, max_n_words * (max_target_length + 1), stream, device_id), scores(max_alignments, max_n_words * (max_target_length + 1), stream, device_id), query_patterns(max_alignments, max_n_words * 4, stream, device_id)
     {
     }
     batched_device_matrices<myers::WordType> pvs;
