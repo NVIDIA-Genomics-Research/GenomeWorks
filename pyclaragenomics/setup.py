@@ -22,7 +22,7 @@ from Cython.Build import cythonize
 def build_cga(cmake_root_dir="..", cmake_build_folder="build", cmake_install_prefix="install"):
     build_path = os.path.abspath(cmake_build_folder)
     root_dir = os.path.abspath(cmake_root_dir)
-    cmake_args = ['-DCMAKE_INSTALL_PREFIX=' + cmake_install_prefix,
+    cmake_args = ['-DCMAKE_INSTALL_PREFIX=' + os.environ['CONDA_PREFIX'],
                   '-Dcga_build_shared=ON']
 
     cmake_args += ['-DCMAKE_BUILD_TYPE=' + 'Release']
@@ -37,15 +37,13 @@ build_cga(cmake_build_folder="py_build")
 
 extensions = [
     Extension(
-        "claragenomics.poa",
-        sources=["claragenomics/cudapoa/*.pyx"],
+        "*",
+        sources=["claragenomics/**/*.pyx"],
         include_dirs=[
-            os.path.abspath("py_build/install/include"),
             "/usr/local/cuda/include",
+            "../cudapoa/include",
         ],
-        library_dirs=[get_python_lib(), os.path.abspath("py_build/install/lib")],
-        runtime_library_dirs=[get_python_lib(), os.path.abspath("pyclaragenomics/claragenomics/cudapoa")],
-        libraries=["cudapoa"],
+        libraries=["cudapoa", "cudart"],
         language="c++",
         extra_compile_args=["-std=c++14"],
     )

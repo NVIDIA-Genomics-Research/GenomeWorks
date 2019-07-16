@@ -7,6 +7,7 @@ from libcpp.vector cimport vector
 from libcpp.memory cimport unique_ptr
 from libcpp.string cimport string
 from libc.stdint cimport int8_t, int16_t, uint16_t, int32_t
+from claragenomics.bindings.cuda cimport _Stream, _Error
 
 cdef extern from "cudapoa/cudapoa.hpp" namespace "claragenomics::cudapoa":
     cdef enum StatusType:
@@ -33,5 +34,6 @@ cdef extern from "cudapoa/batch.hpp" namespace "claragenomics::cudapoa":
         void get_msa(vector[vector[string]]&, vector[StatusType]&) except +
         void get_consensus(vector[string]&, vector[vector[uint16_t]]&, vector[StatusType]&) except +
         int get_total_poas() except +
+        void set_cuda_stream(_Stream) except +
 
     cdef unique_ptr[Batch] create_batch(int32_t, int32_t, int32_t, int8_t, int16_t, int16_t, int16_t, bool)

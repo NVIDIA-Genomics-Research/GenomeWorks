@@ -5,13 +5,20 @@ from libcpp.vector cimport vector
 from libcpp.memory cimport unique_ptr
 from libcpp.string cimport string
 from libc.stdint cimport int8_t, int16_t, uint16_t, int32_t
-from cudapoa cimport StatusType, OutputType, Batch, create_batch
+from claragenomics.bindings.cudapoa cimport StatusType, OutputType, Batch, create_batch
+from claragenomics.bindings.cuda import *
+from claragenomics.bindings.cuda cimport *
 
 cdef class PyCudapoa:
     cdef unique_ptr[Batch] my_test
 
-    def __cinit__(self):
+    def __cinit__(self, stream=None):
         self.my_test = create_batch(100, 100, 0, 0x1, -8, -6, 8, False)
+
+    def set_cuda_stream(self, stream):
+        cdef size_t st = stream.get_stream()
+        cdef _Stream tempstream = <_Stream>st
+        deref(self.my_test).set_cuda_stream(<_Stream>st)
 
     def add_poa(self):
         return deref(self.my_test).add_poa()
