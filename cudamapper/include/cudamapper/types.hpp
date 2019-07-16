@@ -33,17 +33,17 @@ using read_id_t = std::uint64_t; // can this be 32-bit?
 
 /// Anchor - represents one anchor
 ///
-/// Anchor is a pair of two sketch elemetns with the same sketch element representation from different reads
-typedef struct Anchor{
-    // read id of first sketch element
+/// Anchor is a pair of two sketch elements with the same sketch element representation from different reads
+struct Anchor{
+    /// read ID of query
     read_id_t query_read_id_;
-    // read id of second sketch element
+    /// read ID of target
     read_id_t target_read_id_;
-    // position of first sketch element in query_read_id_
+    /// position of first sketch element in query_read_id_
     position_in_read_t query_position_in_read_;
-    // position of second sketch element in target_read_id_
+    /// position of second sketch element in target_read_id_
     position_in_read_t target_position_in_read_;
-} Anchor;
+};
 
 
 /// Overlap - represents one overlap between two substrings
@@ -51,15 +51,25 @@ typedef struct Anchor{
 /// Overlap is a region of two strings which is considered to be the same underlying biological sequence.
 /// The overlapping region need not be identical across both substrings.
 typedef struct Overlap {
+    /// internal read ID for query
     read_id_t query_read_id_;
+    /// internal read ID for target
     read_id_t target_read_id_;
+    /// start position in the query
     position_in_read_t query_start_position_in_read_;
+    /// start position in the target
     position_in_read_t target_start_position_in_read_;
+    /// end position in the query
     position_in_read_t query_end_position_in_read_;
+    /// end position in the target
     position_in_read_t target_end_position_in_read_;
+    /// query read name (e.g from FASTA)
     std::string query_read_name_;
+    /// target read name (e.g from FASTA)
     std::string target_read_name_;
+    /// Number of residues (e.g anchors) between the two reads
     uint32_t num_residues_ = 0;
+    /// Whether the overlap is considered valid by the generating overlapper
     bool overlap_complete = false;
 } Overlap;
 }
