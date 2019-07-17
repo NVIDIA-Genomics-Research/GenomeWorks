@@ -25,7 +25,7 @@ namespace claragenomics {
 
         const auto& read_names = index.read_id_to_read_name();
 
-        for(auto anchor: anchors){
+        for(const auto& anchor: anchors){
             std::pair<int,int> read_pair;
             read_pair.first= anchor.query_read_id_;
             read_pair.second = anchor.target_read_id_;
