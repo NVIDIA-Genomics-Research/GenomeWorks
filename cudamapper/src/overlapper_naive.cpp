@@ -19,26 +19,6 @@
 
 
 namespace claragenomics {
-    void OverlapperNaive::print_paf(std::vector<Overlap> overlaps){
-        std::string relative_strand = "+";
-        for(auto overlap: overlaps){
-            std::printf("%s\t%i\t%i\t%i\t%s\t%s\t%i\t%i\t%i\t%i\t%i\t%i\n",
-                    overlap.query_read_name_.c_str(),
-                    0,
-                    overlap.query_start_position_in_read_,
-                    overlap.query_end_position_in_read_,
-                    relative_strand.c_str(),
-                    overlap.target_read_name_.c_str(),
-                    0,
-                    overlap.target_start_position_in_read_,
-                    overlap.target_end_position_in_read_,
-                    overlap.num_residues_,
-                    0,
-                    255
-                    );
-        }
-    }
-
     std::vector<Overlap> const OverlapperNaive::get_overlaps(const std::vector<Anchor>& anchors, Index& index) {
 
         std::map<std::pair<int,int>, Overlap> reads_to_overlaps;

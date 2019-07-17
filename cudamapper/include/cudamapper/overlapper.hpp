@@ -24,7 +24,7 @@ namespace claragenomics {
         virtual const std::vector<Overlap> get_overlaps(const std::vector<claragenomics::Anchor> &, Index &) = 0;
 
         /// \brief prints overlaps to stdout in PAF format
-        virtual void print_paf(std::vector<Overlap>) = 0;
+        void print_paf(std::vector<Overlap> overlaps);
     };
 //}
 }

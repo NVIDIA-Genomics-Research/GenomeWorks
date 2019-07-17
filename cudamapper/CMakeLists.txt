@@ -55,6 +55,7 @@ cuda_add_executable(cudamapper
         src/bioparser_sequence.cpp
         src/index.cpp
         src/index_generator.cpp
+        src/overlapper.cpp
         src/overlapper_naive.cpp
         )
 

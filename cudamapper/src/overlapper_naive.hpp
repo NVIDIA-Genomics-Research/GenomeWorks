@@ -30,10 +30,5 @@ namespace claragenomics {
         /// \param index Index
         virtual const std::vector<Overlap> get_overlaps(const std::vector<Anchor>& anchors, Index& index) override;
 
-        /// \brief prints overlaps to stdout in PAF format
-        ///
-        /// \param overlaps vector of Overlap objects
-        virtual void print_paf(std::vector<Overlap> overlaps) override;
-
     };
 }
