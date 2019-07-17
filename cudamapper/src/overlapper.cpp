@@ -14,7 +14,7 @@
 namespace claragenomics {
     void Overlapper::print_paf(const std::vector<Overlap> &overlaps){
         std::string relative_strand = "+";
-        for(auto overlap: overlaps){
+        for(const auto& overlap: overlaps){
             std::printf("%s\t%i\t%i\t%i\t%s\t%s\t%i\t%i\t%i\t%i\t%i\t%i\n",
                         overlap.query_read_name_.c_str(),
                         0,
