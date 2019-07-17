@@ -23,7 +23,7 @@ namespace claragenomics {
 
         std::map<std::pair<int,int>, Overlap> reads_to_overlaps;
 
-        auto read_names = index.read_id_to_read_name();
+        const auto& read_names = index.read_id_to_read_name();
 
         for(auto anchor: anchors){
             std::pair<int,int> read_pair;
