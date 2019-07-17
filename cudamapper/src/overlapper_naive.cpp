@@ -82,10 +82,10 @@ namespace claragenomics {
 
         std::vector<Overlap> overlaps;
 
-        for( std::map<std::pair<int,int>, Overlap>::iterator it = reads_to_overlaps.begin(); it != reads_to_overlaps.end(); ++it ) {
-            auto overlap = it->second;
+        for(const auto& it: reads_to_overlaps) {
+            auto overlap = it.second;
             if (overlap.overlap_complete){
-                overlaps.push_back(it->second);
+                overlaps.push_back(it.second);
             }
         }
         return overlaps;
