@@ -12,7 +12,7 @@
 #include "index_cpu.hpp"
 
 namespace claragenomics {
-    void Overlapper::print_paf(std::vector<Overlap> overlaps){
+    void Overlapper::print_paf(std::vector<Overlap>& overlaps){
         std::string relative_strand = "+";
         for(auto overlap: overlaps){
             std::printf("%s\t%i\t%i\t%i\t%s\t%s\t%i\t%i\t%i\t%i\t%i\t%i\n",
