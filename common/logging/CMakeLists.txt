@@ -10,7 +10,8 @@
 
 project(logging)
 
-add_library(logging
+get_property(cga_library_type GLOBAL PROPERTY cga_library_type)
+add_library(logging ${cga_library_type}
         src/logging.cpp)
 target_link_libraries(logging PUBLIC spdlog pthread)
 

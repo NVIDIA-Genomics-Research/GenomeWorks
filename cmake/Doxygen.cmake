@@ -8,8 +8,6 @@
 # license agreement from NVIDIA CORPORATION is strictly prohibited.
 #
 
-cmake_minimum_required(VERSION 3.10.2)
-
 set_property(GLOBAL PROPERTY doxygen_src_dirs)
 set_property(GLOBAL PROPERTY doxygen_mainpage)
 function(add_doxygen_source_dir)

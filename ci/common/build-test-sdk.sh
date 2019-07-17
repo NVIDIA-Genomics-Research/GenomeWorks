@@ -23,8 +23,6 @@ cd ${LOCAL_BUILD_DIR}
 
 # configure
 cmake $CMAKE_COMMON_VARIABLES ${CMAKE_BUILD_GPU} -Dcga_enable_tests=ON -Dcga_enable_benchmarks=ON -DCMAKE_INSTALL_PREFIX=${LOCAL_BUILD_DIR}/install ..
-# Format files
-make check-format
 # build
 make -j${BUILD_THREADS} VERBOSE=1 all docs install
 

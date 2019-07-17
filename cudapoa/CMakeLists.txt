@@ -8,28 +8,18 @@
 # license agreement from NVIDIA CORPORATION is strictly prohibited.
 #
 
-cmake_minimum_required(VERSION 3.10.2)
 project(cudapoa)
 
 # Process data subdirectory first
 add_subdirectory(data)
 
-find_package(CUDA 9.0 QUIET REQUIRED)
+# Project specific NVCC flags
+set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -std=c++11")
 
-if(NOT ${CUDA_FOUND})
-    message(FATAL_ERROR "CUDA not detected on system. Please install")
-else()
-    message(STATUS "Using CUDA ${CUDA_VERSION} from ${CUDA_TOOLKIT_ROOT_DIR}")
-    set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -std=c++11 -lineinfo -use_fast_math -Xcompiler -Wall,-Wno-pedantic")
-endif()
-
-cuda_add_library(cudapoa STATIC 
+get_property(cga_library_type GLOBAL PROPERTY cga_library_type)
+cuda_add_library(cudapoa ${cga_library_type}
     src/cudapoa.cpp
     src/cudapoa_kernels.cu
-    src/cudapoa_topsort.cu
-    src/cudapoa_add_alignment.cu
-    src/cudapoa_nw.cu
-    src/cudapoa_nw_banded.cu
     src/batch.cpp
     src/cudapoa_batch.cpp
     src/allocate_block.cpp
