@@ -28,7 +28,7 @@ namespace claragenomics {
         ///
         /// \param anchors vector of anchors
         /// \param index Index
-        virtual const std::vector<Overlap> get_overlaps(const std::vector<Anchor>& anchors, Index& index) override;
+        virtual const std::vector<Overlap> get_overlaps(const std::vector<Anchor>& anchors, const Index& index) override;
 
     };
 }

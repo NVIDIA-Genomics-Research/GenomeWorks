@@ -19,7 +19,7 @@
 
 
 namespace claragenomics {
-    std::vector<Overlap> const OverlapperNaive::get_overlaps(const std::vector<Anchor>& anchors, Index& index) {
+    std::vector<Overlap> const OverlapperNaive::get_overlaps(const std::vector<Anchor>& anchors,const Index& index) {
 
         std::map<std::pair<int,int>, Overlap> reads_to_overlaps;
 
