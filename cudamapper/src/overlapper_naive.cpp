@@ -90,5 +90,4 @@ namespace claragenomics {
         }
         return overlaps;
     }
-
 }
