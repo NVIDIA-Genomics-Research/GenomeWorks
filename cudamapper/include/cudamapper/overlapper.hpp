@@ -20,7 +20,6 @@ namespace claragenomics {
     class Overlapper {
     public:
         /// \brief returns overlaps for a set of reads
-        /// \return vector of overlaps
         /// \return vector of Overlap objects
         virtual const std::vector<Overlap> get_overlaps(const std::vector<claragenomics::Anchor> & anchors, const Index & index) = 0;
 
