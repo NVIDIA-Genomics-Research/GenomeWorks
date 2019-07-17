@@ -19,7 +19,7 @@
 namespace claragenomics {
 
     /// OverlapperNaive - generates overlaps and displays them on screen. This overlapper uses a greedy approach where
-    /// very simple chaining is used - if two strings have more than one anchor this is considered to be an overlap.
+    /// very simplet chaining is used - if two strings have more than one anchor this is considered to be an overlap.
     /// The extend of the overlap is the two anchors which are furthest apart.
     class OverlapperNaive: public Overlapper {
 
