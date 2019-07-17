@@ -85,7 +85,7 @@ namespace claragenomics {
         for(const auto& it: reads_to_overlaps) {
             const auto& overlap = it.second;
             if (overlap.overlap_complete){
-                overlaps.push_back(it.second);
+                overlaps.push_back(overlap);
             }
         }
         return overlaps;
