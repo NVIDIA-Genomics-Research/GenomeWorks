@@ -37,16 +37,20 @@ source ci/common/prep-init-env.sh ${WORKSPACE}
 # SDK build/test
 ################################################################################
 
-logger "Build SDK in Release mode..."
-CMAKE_COMMON_VARIABLES="-DCMAKE_BUILD_TYPE=Release"
-source ci/common/build-test-sdk.sh ${WORKSPACE} ${CMAKE_COMMON_VARIABLES} ${PARALLEL_LEVEL} ${TEST_ON_GPU}
-
-cd ${WORKSPACE}
-rm -rf ${WORKSPACE}/build
-
 logger "Build SDK in Debug mode..."
 CMAKE_COMMON_VARIABLES="-DCMAKE_BUILD_TYPE=Debug"
 source ci/common/build-test-sdk.sh ${WORKSPACE} ${CMAKE_COMMON_VARIABLES} ${PARALLEL_LEVEL} ${TEST_ON_GPU}
 
 cd ${WORKSPACE}
+rm -rf ${WORKSPACE}/build
+
+logger "Build SDK in Release mode..."
+CMAKE_COMMON_VARIABLES="-DCMAKE_BUILD_TYPE=Release"
+source ci/common/build-test-sdk.sh ${WORKSPACE} ${CMAKE_COMMON_VARIABLES} ${PARALLEL_LEVEL} ${TEST_ON_GPU}
+
+cd ${WORKSPACE}
+if [ "${TEST_PYCLARAGENOMICSANALYSIS}" == '1' ]; then
+    source ci/common/test-pyclaragenomics.sh $WORKSPACE/pyclaragenomics
+fi
+
 rm -rf ${WORKSPACE}/build
