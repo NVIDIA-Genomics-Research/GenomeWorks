@@ -41,6 +41,11 @@ target_include_directories(matcher PUBLIC include)
 target_link_libraries(matcher cudautils)
 target_compile_options(matcher PRIVATE -Werror)
 
+add_library(overlapper_naive
+        src/overlapper_naive.cpp)
+target_include_directories(overlapper_naive PUBLIC include)
+target_compile_options(overlapper_naive PRIVATE -Werror)
+
 add_doxygen_source_dir(${CMAKE_CURRENT_SOURCE_DIR}/include/cudamapper)
 
 cuda_add_executable(cudamapper
@@ -50,6 +55,8 @@ cuda_add_executable(cudamapper
         src/bioparser_sequence.cpp
         src/index.cpp
         src/index_generator.cpp
+        src/overlapper.cpp
+        src/overlapper_naive.cpp
         )
 
 target_compile_options(cudamapper PRIVATE -Werror)

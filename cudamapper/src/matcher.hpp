@@ -29,20 +29,6 @@ namespace claragenomics {
     class Matcher {
     public:
 
-        /// Anchor - represents one anchor
-        ///
-        /// Anchor is a pair of two sketch elemetns with the same sketch element representation from different reads
-        typedef struct Anchor{
-            // read id of first sketch element
-            read_id_t query_read_id_;
-            // read id of second sketch element
-            read_id_t target_read_id_;
-            // position of first sketch element in query_read_id_
-            position_in_read_t query_position_in_read_;
-            // position of second sketch element in target_read_id_
-            position_in_read_t target_position_in_read_;
-        } Anchor;
-
         /// \brief Construtor
         /// \param index index to generate anchors from
         Matcher(const Index& index);

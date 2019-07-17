@@ -23,7 +23,8 @@ function(cga_add_tests NAME SOURCES LIBS)
         # Link gtest to tests binary
         target_link_libraries(${NAME}
             ${LIBS}
-            gtest)
+            gtest
+            gmock)
         # Install to tests location
         install(TARGETS ${NAME}
             DESTINATION tests)

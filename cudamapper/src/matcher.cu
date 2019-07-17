@@ -55,7 +55,7 @@ namespace claragenomics {
                                      ArrayBlock* read_id_to_sketch_elements_d,
                                      ArrayBlock* read_id_to_sketch_elements_to_check_d,
                                      ArrayBlock* read_id_to_pointer_arrays_section_d,
-                                     Matcher::Anchor* const anchors_d,
+                                     Anchor* const anchors_d,
                                      ArrayBlock* read_id_to_anchors_section_d) {
 
         extern __shared__ position_in_read_t query_positions[]; // size = largest value of block_size in read_id_to_sketch_elements_d
@@ -236,7 +236,7 @@ namespace claragenomics {
         directions_of_reads_d.reset(nullptr);
     }
 
-    const std::vector<Matcher::Anchor>& Matcher::anchors() const {
+    const std::vector<Anchor>& Matcher::anchors() const {
         return anchors_h_;
     }
 

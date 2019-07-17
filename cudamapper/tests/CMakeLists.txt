@@ -16,6 +16,7 @@ set(SOURCES
     Test_CudamapperIndexCPU.cpp
     Test_CudamapperIndexGeneratorCPU.cpp
     Test_CudamapperMatcher.cpp
+    Test_PAF_generator.cpp
     ../src/bioparser_sequence.cpp)
 
 get_property(cudamapper_data_include_dir GLOBAL PROPERTY cudamapper_data_include_dir)
@@ -25,6 +26,7 @@ set(LIBS
     bioparser
     index_generator_cpu
     index_cpu
-    matcher)
+    matcher
+    overlapper_naive)
 
 cga_add_tests(${PROJECT_NAME} "${SOURCES}" "${LIBS}")
