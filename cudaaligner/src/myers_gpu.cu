@@ -40,8 +40,8 @@ inline __device__ WordType warp_leftshift_sync(uint32_t warp_mask, WordType v)
 
 inline __device__ WordType warp_add_sync(uint32_t warp_mask, WordType a, WordType b)
 {
-    static_assert(sizeof(WordType) == 4);
-    static_assert(CHAR_BIT == 8);
+    static_assert(sizeof(WordType) == 4, "This function assumes WordType to have 4 bytes.");
+    static_assert(CHAR_BIT == 8, "This function assumes a char width of 8 bit.");
     const uint64_t ax = a;
     const uint64_t bx = b;
     uint64_t r        = ax + bx;

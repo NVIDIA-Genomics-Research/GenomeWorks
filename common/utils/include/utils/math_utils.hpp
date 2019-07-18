@@ -21,7 +21,7 @@ namespace claragenomics
 template <typename Integer>
 constexpr inline Integer ceiling_divide(Integer i, Integer j)
 {
-    static_assert(std::is_integral<Integer>::value);
+    static_assert(std::is_integral<Integer>::value, "Arguments have to be integer types.");
     assert(i >= 0);
     assert(j > 0);
     return (i + j - 1) / j;
