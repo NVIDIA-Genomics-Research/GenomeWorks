@@ -12,9 +12,12 @@ project(cudaalignertests)
 
 set(SOURCES
     main.cpp
+    Test_Misc.cpp
     Test_AlignmentImpl.cpp
     Test_AlignerGlobal.cpp
-    Test_NeedlemanWunschImplementation.cpp)
+    Test_MyersAlgorithm.cpp
+    Test_NeedlemanWunschImplementation.cpp
+    )
 
 set(LIBS
     cudaaligner

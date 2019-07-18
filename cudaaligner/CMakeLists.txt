@@ -11,7 +11,11 @@
 project(cudaaligner)
 
 # Project specific NVCC flags
+if((CUDA_VERSION_MAJOR GREATER 10) OR (CUDA_VERSION_MAJOR EQUAL 10 AND CUDA_VERSION_MINOR GREATER 0))
 set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -std=c++14 --expt-relaxed-constexpr")
+else()
+set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -std=c++14")
+endif()
 
 get_property(cga_library_type GLOBAL PROPERTY cga_library_type)
 cuda_add_library(cudaaligner ${cga_library_type}
@@ -19,8 +23,17 @@ cuda_add_library(cudaaligner ${cga_library_type}
     src/aligner.cpp
     src/alignment_impl.cpp
     src/aligner_global.cpp
+    src/aligner_global_ukkonen.cpp
+    src/aligner_global_myers.cpp
+    src/needleman_wunsch_cpu.cpp
     src/ukkonen_gpu.cu
+    src/myers_gpu.cu
     )
+
+add_library(cudaaligner_internal INTERFACE)
+target_include_directories(cudaaligner_internal INTERFACE
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
 
 target_link_libraries(cudaaligner cudautils logging utils)
 

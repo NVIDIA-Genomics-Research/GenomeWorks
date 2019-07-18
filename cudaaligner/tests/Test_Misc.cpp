@@ -8,11 +8,8 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-#pragma once
-
-#include "matrix_cpu.hpp"
-#include <vector>
-#include <string>
+#include "gtest/gtest.h"
+#include <utils/mathutils.hpp>
 
 namespace claragenomics
 {
@@ -20,9 +17,16 @@ namespace claragenomics
 namespace cudaaligner
 {
 
-matrix<int> needleman_wunsch_build_score_matrix_naive(std::string const& text, std::string const& query);
+TEST(TestCudaAlignerMisc, CeilingDivide)
+{
+    EXPECT_EQ(ceiling_divide(0, 5), 0);
+    EXPECT_EQ(ceiling_divide(5, 5), 1);
+    EXPECT_EQ(ceiling_divide(10, 5), 2);
+    EXPECT_EQ(ceiling_divide(20, 5), 4);
 
-std::vector<int8_t> needleman_wunsch_cpu(std::string const& text, std::string const& query);
+    EXPECT_EQ(ceiling_divide(6, 5), 2);
+    EXPECT_EQ(ceiling_divide(4, 5), 1);
+}
 
 } // namespace cudaaligner
 } // namespace claragenomics

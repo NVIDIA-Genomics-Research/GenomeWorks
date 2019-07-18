@@ -11,7 +11,7 @@
 #pragma once
 
 #include "matrix_cpu.hpp"
-#include "needleman_wunsch_cpu.hpp"
+#include "utils/mathutils.hpp"
 #include <limits>
 #include <cassert>
 
@@ -19,9 +19,6 @@ namespace claragenomics
 {
 
 namespace cudaaligner
-{
-
-namespace nw_cpu
 {
 
 std::tuple<int, int> to_band_indices(int i, int j, int p)
@@ -240,9 +237,9 @@ std::vector<int8_t> ukkonen_cpu(std::string const& target, std::string const& qu
     int const m        = query.size() + 1;
     matrix<int> scores = ukkonen_build_score_matrix(target, query, p);
     std::vector<int8_t> result;
-    result = nw_cpu::ukkonen_backtrace(scores, n, m, p);
+    result = ukkonen_backtrace(scores, n, m, p);
     return result;
 }
-} // namespace nw_cpu
+
 } // namespace cudaaligner
 } // namespace claragenomics

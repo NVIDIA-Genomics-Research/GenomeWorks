@@ -10,19 +10,27 @@
 
 #pragma once
 
-#include "matrix_cpu.hpp"
-#include <vector>
-#include <string>
+#include <limits>
+#include <cassert>
+#include <stdexcept>
+#include <type_traits>
 
 namespace claragenomics
 {
 
-namespace cudaaligner
+template <typename Integer>
+constexpr inline Integer ceiling_divide(Integer i, Integer j)
 {
+    static_assert(std::is_integral<Integer>::value, "Arguments have to be integer types.");
+    assert(i >= 0);
+    assert(j > 0);
+    return (i + j - 1) / j;
+}
 
-matrix<int> needleman_wunsch_build_score_matrix_naive(std::string const& text, std::string const& query);
+template <typename T>
+inline T const& min3(T const& t1, T const& t2, T const& t3)
+{
+    return std::min(t1, std::min(t2, t3));
+}
 
-std::vector<int8_t> needleman_wunsch_cpu(std::string const& text, std::string const& query);
-
-} // namespace cudaaligner
 } // namespace claragenomics
