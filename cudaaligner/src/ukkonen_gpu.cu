@@ -25,7 +25,7 @@ namespace cudaaligner
 namespace kernels
 {
 
-#if __CUDACC_VER_MAJOR__ < 10 || (__CUDACC_VER_MAJOR__ == 10 && __CUDACC_VER_MINOR__ < 1)
+#if CGA_CUDA_BEFORE_10_1
 template <typename T>
 struct numeric_limits
 {
