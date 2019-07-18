@@ -30,8 +30,8 @@ namespace myers
 
 inline __device__ WordType warp_leftshift_sync(uint32_t warp_mask, WordType v)
 {
-    constexpr int32_t word_size = sizeof(WordType) * CHAR_BIT;
-    const WordType x            = __shfl_up_sync(warp_mask, v >> (word_size - 1), 1);
+    CGA_CONSTEXPR int32_t word_size = sizeof(WordType) * CHAR_BIT;
+    const WordType x                = __shfl_up_sync(warp_mask, v >> (word_size - 1), 1);
     v <<= 1;
     if (threadIdx.x != 0)
         v |= x;
@@ -95,7 +95,7 @@ __device__ int32_t myers_advance_block(uint32_t warp_mask, WordType highest_bit,
 __device__ WordType myers_preprocess(char x, char const* query, int32_t query_size, int32_t offset)
 {
     // Sets a 1 bit at the position of every matching character
-    constexpr int32_t word_size = sizeof(WordType) * CHAR_BIT;
+    CGA_CONSTEXPR int32_t word_size = sizeof(WordType) * CHAR_BIT;
     assert(offset < query_size);
     const int32_t max_i = min(query_size - offset, word_size);
     WordType r          = 0;
@@ -110,11 +110,11 @@ __device__ WordType myers_preprocess(char x, char const* query, int32_t query_si
 inline __device__ int32_t get_myers_score(int32_t i, int32_t j, device_matrix_view<WordType> const& pv, device_matrix_view<WordType> const& mv, device_matrix_view<int32_t> const& score, WordType last_entry_mask)
 {
     assert(i > 0); // row 0 is implicit, NW matrix is shifted by i -> i-1
-    constexpr int32_t word_size = sizeof(WordType) * CHAR_BIT;
-    const int32_t word_idx      = (i - 1) / word_size;
-    const int32_t bit_idx       = (i - 1) % word_size;
-    int32_t s                   = score(word_idx, j);
-    WordType mask               = (~WordType(1)) << bit_idx;
+    CGA_CONSTEXPR int32_t word_size = sizeof(WordType) * CHAR_BIT;
+    const int32_t word_idx          = (i - 1) / word_size;
+    const int32_t bit_idx           = (i - 1) % word_size;
+    int32_t s                       = score(word_idx, j);
+    WordType mask                   = (~WordType(1)) << bit_idx;
     if (word_idx == score.num_rows() - 1)
         mask &= last_entry_mask;
     s -= __popc(mask & pv(word_idx, j));
@@ -124,8 +124,8 @@ inline __device__ int32_t get_myers_score(int32_t i, int32_t j, device_matrix_vi
 
 __device__ void myers_backtrace(int8_t* paths_base, int32_t* lengths, int32_t max_path_length, device_matrix_view<WordType> const& pv, device_matrix_view<WordType> const& mv, device_matrix_view<int32_t> const& score, int32_t query_size, int32_t id)
 {
-    using nw_score_t            = int32_t;
-    constexpr int32_t word_size = sizeof(WordType) * CHAR_BIT;
+    using nw_score_t                = int32_t;
+    CGA_CONSTEXPR int32_t word_size = sizeof(WordType) * CHAR_BIT;
     assert(pv.num_rows() == score.num_rows());
     assert(mv.num_rows() == score.num_rows());
     assert(pv.num_cols() == score.num_cols());
@@ -194,7 +194,7 @@ __global__ void myers_backtrace_kernel(int8_t* paths_base, int32_t* lengths, int
     const int32_t idx = blockIdx.x * blockDim.x + threadIdx.x;
     if (idx >= n_alignments)
         return;
-    constexpr int32_t word_size             = sizeof(WordType) * CHAR_BIT;
+    CGA_CONSTEXPR int32_t word_size         = sizeof(WordType) * CHAR_BIT;
     const int32_t query_size                = sequence_lengths_d[2 * idx];
     const int32_t target_size               = sequence_lengths_d[2 * idx + 1];
     const int32_t n_words                   = (query_size + word_size - 1) / word_size;
@@ -211,7 +211,7 @@ __global__ void myers_convert_to_full_score_matrix_kernel(batched_device_matrice
                                                           int32_t const* sequence_lengths_d,
                                                           int32_t i)
 {
-    constexpr int32_t word_size           = sizeof(WordType) * CHAR_BIT;
+    CGA_CONSTEXPR int32_t word_size       = sizeof(WordType) * CHAR_BIT;
     const int32_t query_size              = sequence_lengths_d[2 * i];
     const int32_t target_size             = sequence_lengths_d[2 * i + 1];
     const int32_t n_words                 = (query_size + word_size - 1) / word_size;
@@ -242,8 +242,8 @@ __global__ void myers_compute_score_matrix_kernel(
     int32_t max_sequence_length,
     int32_t n_alignments)
 {
-    constexpr int32_t word_size = sizeof(WordType) * CHAR_BIT;
-    constexpr int32_t warp_size = 32;
+    CGA_CONSTEXPR int32_t word_size = sizeof(WordType) * CHAR_BIT;
+    CGA_CONSTEXPR int32_t warp_size = 32;
     assert(warpSize == warp_size);
     assert(threadIdx.x < warp_size);
     assert(blockIdx.x == 0);

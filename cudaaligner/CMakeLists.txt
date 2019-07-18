@@ -11,7 +11,11 @@
 project(cudaaligner)
 
 # Project specific NVCC flags
+if((CUDA_VERSION_MAJOR GREATER 10) OR (CUDA_VERSION_MAJOR EQUAL 10 AND CUDA_VERSION_MINOR GREATER 0))
 set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -std=c++14 --expt-relaxed-constexpr")
+else()
+set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -std=c++14")
+endif()
 
 cuda_add_library(cudaaligner STATIC 
     src/cudaaligner.cpp

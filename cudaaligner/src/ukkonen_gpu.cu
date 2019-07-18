@@ -25,6 +25,27 @@ namespace cudaaligner
 namespace kernels
 {
 
+#if __CUDACC_VER_MAJOR__ < 10 || (__CUDACC_VER_MAJOR__ == 10 && __CUDACC_VER_MINOR__ < 1)
+template <typename T>
+struct numeric_limits
+{
+};
+
+template <>
+struct numeric_limits<int16_t>
+{
+    CGA_CONSTEXPR static __device__ int16_t max() { return INT16_MAX; }
+};
+
+template <>
+struct numeric_limits<int32_t>
+{
+    CGA_CONSTEXPR static __device__ int32_t max() { return INT32_MAX; }
+};
+#else
+using std::numeric_limits;
+#endif
+
 template <typename T>
 __device__ T min3(T t1, T t2, T t3)
 {
@@ -63,7 +84,7 @@ __launch_bounds__(CGA_UKKONEN_MAX_THREADS_PER_BLOCK) // Workaround for a registe
     if (id >= n_alignments)
         return;
 
-    constexpr nw_score_t max = std::numeric_limits<nw_score_t>::max() - 1;
+    CGA_CONSTEXPR nw_score_t max = numeric_limits<nw_score_t>::max() - 1;
 
     int32_t m         = sequence_lengths_d[2 * id] + 1;
     int32_t n         = sequence_lengths_d[2 * id + 1] + 1;
@@ -139,7 +160,7 @@ __launch_bounds__(CGA_UKKONEN_MAX_THREADS_PER_BLOCK) // Workaround for a registe
 
 __device__ void ukkonen_compute_score_matrix_odd(device_matrix_view<nw_score_t>& scores, int32_t kmax, int32_t k, int32_t m, int32_t n, char const* query, char const* target, int32_t max_target_query_length, int32_t p, int32_t l)
 {
-    constexpr nw_score_t max = std::numeric_limits<nw_score_t>::max() - 1;
+    CGA_CONSTEXPR nw_score_t max = numeric_limits<nw_score_t>::max() - 1;
     while (k < kmax)
     {
         int32_t const lmin = abs(2 * k + 1 - p);
@@ -159,7 +180,7 @@ __device__ void ukkonen_compute_score_matrix_odd(device_matrix_view<nw_score_t>&
 
 __device__ void ukkonen_compute_score_matrix_even(device_matrix_view<nw_score_t>& scores, int32_t kmax, int32_t k, int32_t m, int32_t n, char const* query, char const* target, int32_t max_target_query_length, int32_t p, int32_t l)
 {
-    constexpr nw_score_t max = std::numeric_limits<nw_score_t>::max() - 1;
+    CGA_CONSTEXPR nw_score_t max = numeric_limits<nw_score_t>::max() - 1;
     while (k < kmax)
     {
         int32_t const lmin = abs(2 * k - p);
@@ -179,7 +200,7 @@ __device__ void ukkonen_compute_score_matrix_even(device_matrix_view<nw_score_t>
 
 __device__ void ukkonen_init_score_matrix(device_matrix_view<nw_score_t>& scores, int32_t k, int32_t p)
 {
-    constexpr nw_score_t max = std::numeric_limits<nw_score_t>::max() - 1;
+    CGA_CONSTEXPR nw_score_t max = numeric_limits<nw_score_t>::max() - 1;
     while (k < scores.num_rows())
     {
         for (int32_t l = 0; l < scores.num_cols(); ++l)
