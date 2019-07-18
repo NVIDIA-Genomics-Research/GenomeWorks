@@ -26,6 +26,14 @@
         claragenomics::cudautils::gpuAssert((ans), __FILE__, __LINE__); \
     }
 
+/// \def CGA_CONSTEXPR
+/// \brief C++ constexpr for device code - falls back to const for CUDA 10.0 and earlier
+#if __CUDACC_VER_MAJOR__ < 10 || (__CUDACC_VER_MAJOR__ == 10 && __CUDACC_VER_MINOR__ < 1)
+#define CGA_CONSTEXPR const
+#else
+#define CGA_CONSTEXPR constexpr
+#endif
+
 /// \}
 
 namespace claragenomics
