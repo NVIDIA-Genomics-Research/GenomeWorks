@@ -10,7 +10,12 @@
 #
 
 # Ignore errors and set path
-set +e
+set -e
+
+# Logger function for build status output
+function logger() {
+  echo -e "\n>>>> $@\n"
+}
 
 ################################################################################
 # Init
@@ -29,6 +34,11 @@ source ci/common/prep-init-env.sh ${WORKSPACE}
 # SDK style check
 ################################################################################
 
+# Run copyright header check
+logger "Run Copyright header check..."
+./ci/checks/check_copyright.py
+
+logger "Run C++ formatting check..."
 mkdir --parents ${WORKSPACE}/build
 cd ${WORKSPACE}/build
 
