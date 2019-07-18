@@ -11,7 +11,7 @@
 #pragma once
 
 #include "matrix_cpu.hpp"
-#include "min3.hpp"
+#include "utils/mathutils.hpp"
 #include <limits>
 #include <cassert>
 
