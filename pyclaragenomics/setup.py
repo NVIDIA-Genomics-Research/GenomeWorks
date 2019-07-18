@@ -43,6 +43,8 @@ extensions = [
             "/usr/local/cuda/include",
             "../cudapoa/include",
         ],
+        library_dirs=["/usr/local/cuda/lib64"],
+        runtime_library_dirs=["/usr/local/cuda/lib64"],
         libraries=["cudapoa", "cudart"],
         language="c++",
         extra_compile_args=["-std=c++14"],
