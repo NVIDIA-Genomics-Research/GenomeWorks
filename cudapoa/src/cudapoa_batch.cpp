@@ -67,7 +67,7 @@ void CudapoaBatch::initialize_graph_details()
     batch_block_->get_graph_details(&graph_details_d_);
 }
 
-CudapoaBatch::CudapoaBatch(int32_t max_poas, int32_t max_sequences_per_poa, int32_t device_id, int8_t output_mask, int16_t gap_score, int16_t mismatch_score, int16_t match_score, bool cuda_banded_alignment)
+CudapoaBatch::CudapoaBatch(int32_t max_poas, int32_t max_sequences_per_poa, int32_t device_id, size_t max_mem, int8_t output_mask, int16_t gap_score, int16_t mismatch_score, int16_t match_score, bool cuda_banded_alignment)
     : max_poas_(throw_on_negative(max_poas, "Maximum POAs in batch has to be non-negative"))
     , max_sequences_per_poa_(throw_on_negative(max_sequences_per_poa, "Maximum sequences per POA has to be non-negative"))
     , device_id_(throw_on_negative(device_id, "Device ID has to be non-negative"))
@@ -76,7 +76,7 @@ CudapoaBatch::CudapoaBatch(int32_t max_poas, int32_t max_sequences_per_poa, int3
     , mismatch_score_(mismatch_score)
     , match_score_(match_score)
     , banded_alignment_(cuda_banded_alignment)
-    , batch_block_(new BatchBlock(device_id, max_poas, max_sequences_per_poa, output_mask, cuda_banded_alignment))
+    , batch_block_(new BatchBlock(device_id, max_mem, max_poas, max_sequences_per_poa, output_mask, cuda_banded_alignment))
 {
     bid_ = CudapoaBatch::batches++;
 
@@ -108,8 +108,8 @@ CudapoaBatch::CudapoaBatch(int32_t max_poas, int32_t max_sequences_per_poa, int3
     msg = " Allocated output buffers of size " + std::to_string((static_cast<float>(input_size) / (1024 * 1024))) + "MB on device ";
     print_batch_debug_message(msg);
 
-    initialize_alignment_details();
     initialize_graph_details();
+    initialize_alignment_details();
 
     // Debug print for size allocated.
     int32_t matrix_sequence_dimension = banded_alignment_ ? CUDAPOA_BANDED_MAX_MATRIX_SEQUENCE_DIMENSION : CUDAPOA_MAX_MATRIX_SEQUENCE_DIMENSION;
@@ -316,6 +316,24 @@ void CudapoaBatch::set_cuda_stream(cudaStream_t stream)
     stream_ = stream;
 }
 
+bool CudapoaBatch::reserve_buf(uint32_t max_seq_length)
+{
+    uint32_t max_graph_dimension = banded_alignment_ ? CUDAPOA_MAX_MATRIX_GRAPH_DIMENSION_BANDED : CUDAPOA_MAX_MATRIX_GRAPH_DIMENSION;
+
+    int32_t scores_width = banded_alignment_ ? CUDAPOA_BANDED_MAX_MATRIX_SEQUENCE_DIMENSION : cudapoa::align(max_seq_length + 1 + CELLS_PER_THREAD);
+    size_t scores_size   = scores_width * max_graph_dimension * sizeof(int16_t);
+
+    if (scores_size > avail_scorebuf_mem_)
+    {
+        return false;
+    }
+    else
+    {
+        avail_scorebuf_mem_ -= scores_size;
+        return true;
+    }
+}
+
 StatusType CudapoaBatch::add_poa()
 {
     if (poa_count_ == max_poas_)
@@ -326,6 +344,8 @@ StatusType CudapoaBatch::add_poa()
     WindowDetails window_details{};
     window_details.seq_len_buffer_offset         = global_sequence_idx_;
     window_details.seq_starts                    = num_nucleotides_copied_;
+    window_details.scores_width                  = 0;
+    window_details.scores_offset                 = scores_offset_;
     input_details_h_->window_details[poa_count_] = window_details;
     poa_count_++;
 
@@ -337,6 +357,8 @@ void CudapoaBatch::reset()
     poa_count_              = 0;
     num_nucleotides_copied_ = 0;
     global_sequence_idx_    = 0;
+    scores_offset_          = 0;
+    avail_scorebuf_mem_     = alignment_details_d_->scorebuf_alloc_size;
 }
 
 StatusType CudapoaBatch::add_seq_to_poa(const char* seq, const int8_t* weights, int32_t seq_len)
@@ -347,6 +369,13 @@ StatusType CudapoaBatch::add_seq_to_poa(const char* seq, const int8_t* weights, 
     }
 
     WindowDetails* window_details = &(input_details_h_->window_details[poa_count_ - 1]);
+    int32_t scores_width_         = cudapoa::align(seq_len + 1 + CELLS_PER_THREAD);
+    if (scores_width_ > window_details->scores_width)
+    {
+        scores_offset_ -= window_details->scores_width;
+        window_details->scores_width = scores_width_;
+        scores_offset_ += scores_width_;
+    }
 
     if (static_cast<int32_t>(window_details->num_seqs) + 1 >= max_sequences_per_poa_)
     {

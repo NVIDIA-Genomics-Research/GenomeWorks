@@ -46,7 +46,7 @@ class BatchBlock;
 class CudapoaBatch : public Batch
 {
 public:
-    CudapoaBatch(int32_t max_poas, int32_t max_sequences_per_poa, int32_t device_id, int8_t output_mask, int16_t gap_score = -8, int16_t mismatch_score = -6, int16_t match_score = 8, bool cuda_banded_alignment = false);
+    CudapoaBatch(int32_t max_poas, int32_t max_sequences_per_poa, int32_t device_id, size_t max_mem, int8_t output_mask, int16_t gap_score = -8, int16_t mismatch_score = -6, int16_t match_score = 8, bool cuda_banded_alignment = false);
     ~CudapoaBatch();
 
     // Add new partial order alignment to batch.
@@ -78,6 +78,8 @@ public:
 
     // Reset batch. Must do before re-using batch.
     void reset();
+
+    bool reserve_buf(uint32_t max_seq_length);
 
 protected:
     // Print debug message with batch specific formatting.
@@ -148,6 +150,12 @@ protected:
 
     // Global sequence index.
     int32_t global_sequence_idx_ = 0;
+
+    // Remaining scores buffer memory available for use.
+    size_t avail_scorebuf_mem_ = 0;
+
+    // Temporary variable to compute the offset to scorebuf.
+    size_t scores_offset_ = 0;
 
     // Use banded POA alignment
     bool banded_alignment_;

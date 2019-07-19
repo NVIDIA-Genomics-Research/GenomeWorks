@@ -86,6 +86,8 @@ public:
 
     /// \brief Reset batch. Must do before re-using batch.
     virtual void reset() = 0;
+
+    virtual bool reserve_buf(uint32_t max_seq_length) = 0;
 };
 
 /// \brief Creates a new CUDA Batch object.
@@ -99,7 +101,7 @@ public:
 /// \param cuda_banded_alignment Whether to use banded alignment
 ///
 /// \return Returns a unique pointer to a new Batch object
-std::unique_ptr<Batch> create_batch(int32_t max_poas, int32_t max_sequences_per_poa, int32_t device_id, int8_t output_mask, int16_t gap_score = -8, int16_t mismatch_score = -6, int16_t match_score = 8, bool cuda_banded_alignment = false);
+std::unique_ptr<Batch> create_batch(int32_t max_poas, int32_t max_sequences_per_poa, int32_t device_id, size_t max_mem, int8_t output_mask, int16_t gap_score = -8, int16_t mismatch_score = -6, int16_t match_score = 8, bool cuda_banded_alignment = false);
 
 /// \}
 

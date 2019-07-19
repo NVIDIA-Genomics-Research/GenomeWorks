@@ -22,7 +22,7 @@ namespace claragenomics
 namespace cudapoa
 {
 
-BatchBlock::BatchBlock(int32_t device_id, int32_t max_poas, int32_t max_sequences_per_poa, int8_t output_mask, bool banded_alignment)
+BatchBlock::BatchBlock(int32_t device_id, size_t avail_mem, int32_t max_poas, int32_t max_sequences_per_poa, int8_t output_mask, bool banded_alignment)
     : max_poas_(throw_on_negative(max_poas, "Maximum POAs in block has to be non-negative"))
     , max_sequences_per_poa_(throw_on_negative(max_sequences_per_poa, "Maximum sequences per POA has to be non-negative"))
     , banded_alignment_(banded_alignment)
@@ -38,9 +38,13 @@ BatchBlock::BatchBlock(int32_t device_id, int32_t max_poas, int32_t max_sequence
     // Set CUDA device
     CGA_CU_CHECK_ERR(cudaSetDevice(device_id_));
 
-    // calculate size
+    // calculate size of statically sized buffers
     calculate_size();
 
+    if (total_d_ > avail_mem)
+        CGA_LOG_ERROR("Device Error:: memory footprint for current batch exceeds the allocated memory for the batch\n");
+
+    total_d_ = avail_mem;
     // allocation
     CGA_CU_CHECK_ERR(cudaHostAlloc((void**)&block_data_h_, total_h_, cudaHostAllocDefault));
     CGA_CU_CHECK_ERR(cudaMalloc((void**)&block_data_d_, total_d_));
@@ -91,13 +95,6 @@ void BatchBlock::calculate_size()
     total_d_ += max_poas_ * sizeof(WindowDetails);                                                            // input_details_d_->window_details
     total_d_ += (output_mask_ & OutputType::msa) ? max_poas_ * max_sequences_per_poa_ * sizeof(uint16_t) : 0; // input_details_d_->sequence_begin_nodes_ids
 
-    // for alignment - host
-    total_h_ += sizeof(AlignmentDetails); // alignment_details_d_
-    // for alignment - device
-    total_d_ += sizeof(int16_t) * max_graph_dimension_ * matrix_sequence_dimension_ * max_poas_; // alignment_details_d_->scores
-    total_d_ += sizeof(int16_t) * max_graph_dimension_ * max_poas_;                              // alignment_details_d_->alignment_graph
-    total_d_ += sizeof(int16_t) * max_graph_dimension_ * max_poas_;                              // alignment_details_d_->alignment_read
-
     // for graph - host
     total_h_ += sizeof(GraphDetails); // graph_details_d_
     // for graph - device
@@ -122,6 +119,12 @@ void BatchBlock::calculate_size()
     total_d_ += (output_mask_ & OutputType::msa) ? sizeof(uint16_t) * max_nodes_per_window_ * CUDAPOA_MAX_NODE_EDGES * max_sequences_per_poa_ * max_poas_ : 0; // graph_details_d_->outgoing_edges_coverage
     total_d_ += (output_mask_ & OutputType::msa) ? sizeof(uint16_t) * max_nodes_per_window_ * CUDAPOA_MAX_NODE_EDGES * max_poas_ : 0;                          // graph_details_d_->outgoing_edges_coverage_count
     total_d_ += (output_mask_ & OutputType::msa) ? sizeof(int16_t) * max_nodes_per_window_ * max_poas_ : 0;                                                    // graph_details_d_->node_id_to_msa_pos
+
+    // for alignment - host
+    total_h_ += sizeof(AlignmentDetails); // alignment_details_d_
+    // for alignment - device
+    total_d_ += sizeof(int16_t) * max_graph_dimension_ * max_poas_; // alignment_details_d_->alignment_graph
+    total_d_ += sizeof(int16_t) * max_graph_dimension_ * max_poas_; // alignment_details_d_->alignment_read
 }
 
 void BatchBlock::get_output_details(OutputDetails** output_details_h_p, OutputDetails** output_details_d_p)
@@ -218,15 +221,16 @@ void BatchBlock::get_alignment_details(AlignmentDetails** alignment_details_d_p)
     alignment_details_d = reinterpret_cast<AlignmentDetails*>(&block_data_h_[offset_h_]);
     offset_h_ += sizeof(AlignmentDetails);
 
-    // on device
-    alignment_details_d->scores = reinterpret_cast<int16_t*>(&block_data_d_[offset_d_]);
-    offset_d_ += sizeof(int16_t) * max_graph_dimension_ * matrix_sequence_dimension_ * max_poas_;
+    // on device;
     alignment_details_d->alignment_graph = reinterpret_cast<int16_t*>(&block_data_d_[offset_d_]);
     offset_d_ += sizeof(int16_t) * max_graph_dimension_ * max_poas_;
     alignment_details_d->alignment_read = reinterpret_cast<int16_t*>(&block_data_d_[offset_d_]);
     offset_d_ += sizeof(int16_t) * max_graph_dimension_ * max_poas_;
 
-    *alignment_details_d_p = alignment_details_d;
+    // rest of the available memory is assigned to scores buffer
+    alignment_details_d->scorebuf_alloc_size = total_d_ - offset_d_;
+    alignment_details_d->scores              = reinterpret_cast<int16_t*>(&block_data_d_[offset_d_]);
+    *alignment_details_d_p                   = alignment_details_d;
 }
 
 void BatchBlock::get_graph_details(GraphDetails** graph_details_d_p)

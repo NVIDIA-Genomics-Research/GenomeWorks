@@ -68,6 +68,25 @@ namespace claragenomics
 namespace cudapoa
 {
 
+// Alignment of memory chunks in cudapoa
+// must be a power of two
+enum
+{
+    ALIGN = 4
+};
+enum
+{
+    MASK = ALIGN - 1
+};
+
+template <typename IntType>
+__host__ __device__ __forceinline__
+    IntType
+    align(const IntType& size)
+{
+    return (size + MASK) & ~MASK;
+}
+
 /**
  * @brief A struct to hold information about the sequences
  *        inside a window.
@@ -82,6 +101,12 @@ typedef struct WindowDetails
     /// Offset of first sequence content for specific window
     /// inside global sequences buffer.
     int32_t seq_starts;
+
+    /// Offset to the scores buffer for specific window
+    size_t scores_offset;
+
+    /// Max column width of the score matrix required for specific window
+    int32_t scores_width;
 } WindowDetails;
 
 typedef struct OutputDetails
@@ -113,6 +138,10 @@ typedef struct AlignmentDetails
 {
     // Device buffer for the scoring matrix for all windows.
     int16_t* scores;
+
+    // preallocated size of scores buffer
+    size_t scorebuf_alloc_size = 0;
+
     // Device buffers for alignment backtrace
     int16_t* alignment_graph;
     int16_t* alignment_read;
@@ -281,6 +310,7 @@ void runNW(uint8_t* nodes,
            uint8_t* read,
            uint16_t read_count,
            int16_t* scores,
+           int32_t scores_width,
            int16_t* alignment_graph,
            int16_t* alignment_read,
            int16_t gap_score,
