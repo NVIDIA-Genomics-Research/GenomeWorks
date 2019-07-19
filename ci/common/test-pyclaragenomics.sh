@@ -16,6 +16,11 @@ set -e
 
 cd $1
 python3 -m pip install -r requirements.txt
-python3 setup.py build_ext --inplace
 python3 setup.py install
-python3 -m pytest -s
+python3 setup.py develop
+
+if [ "$GPU_TEST" == '1' ]; then
+    python3 -m pytest -m gpu -s
+else
+    python3 -m pytest -m cpu -s
+fi

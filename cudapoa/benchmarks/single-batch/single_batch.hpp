@@ -34,10 +34,9 @@ public:
 
         assert(get_size(windows_) > 0);
 
-        batch_ = create_batch(max_poas_per_batch, 200, 0, OutputType::consensus, -8, -6, 8, false);
         cudaStream_t stream;
         cudaStreamCreate(&stream);
-        batch_->set_cuda_stream(stream);
+        batch_ = create_batch(max_poas_per_batch, 200, stream, 0, OutputType::consensus, -8, -6, 8, false);
     }
 
     ~SingleBatch()

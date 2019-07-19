@@ -46,7 +46,7 @@ class BatchBlock;
 class CudapoaBatch : public Batch
 {
 public:
-    CudapoaBatch(int32_t max_poas, int32_t max_sequences_per_poa, int32_t device_id, int8_t output_mask, int16_t gap_score = -8, int16_t mismatch_score = -6, int16_t match_score = 8, bool cuda_banded_alignment = false);
+    CudapoaBatch(int32_t max_poas, int32_t max_sequences_per_poa, cudaStream_t stream, int32_t device_id, int8_t output_mask, int16_t gap_score = -8, int16_t mismatch_score = -6, int16_t match_score = 8, bool cuda_banded_alignment = false);
     ~CudapoaBatch();
 
     // Add new partial order alignment to batch.
@@ -62,16 +62,13 @@ public:
     void generate_poa();
 
     // Get the consensus for each POA.
-    void get_consensus(std::vector<std::string>& consensus,
-                       std::vector<std::vector<uint16_t>>& coverage,
-                       std::vector<claragenomics::cudapoa::StatusType>& output_status);
+    StatusType get_consensus(std::vector<std::string>& consensus,
+                             std::vector<std::vector<uint16_t>>& coverage,
+                             std::vector<claragenomics::cudapoa::StatusType>& output_status);
 
     // Get multiple sequence alignments for each POA
-    void get_msa(std::vector<std::vector<std::string>>& msa,
-                 std::vector<StatusType>& output_status);
-
-    // Set CUDA stream for GPU device.
-    void set_cuda_stream(cudaStream_t stream);
+    StatusType get_msa(std::vector<std::vector<std::string>>& msa,
+                       std::vector<StatusType>& output_status);
 
     // Return batch ID.
     int32_t batch_id() const;
@@ -106,6 +103,9 @@ protected:
     // Maximum sequences per POA.
     int32_t max_sequences_per_poa_ = 0;
 
+    // CUDA stream for launching kernels.
+    cudaStream_t stream_;
+
     // GPU Device ID
     int32_t device_id_ = 0;
 
@@ -116,9 +116,6 @@ protected:
     int16_t gap_score_;
     int16_t mismatch_score_;
     int16_t match_score_;
-
-    // CUDA stream for launching kernels.
-    cudaStream_t stream_;
 
     // Host and device buffer for output data.
     OutputDetails* output_details_h_;

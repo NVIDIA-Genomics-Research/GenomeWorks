@@ -31,13 +31,14 @@ public:
 
     void initialize(uint32_t max_poas,
                     uint32_t max_sequences_per_poa,
+                    cudaStream_t stream    = 0,
                     uint32_t device_id     = 0,
                     int8_t output_mask     = OutputType::msa,
                     int16_t gap_score      = -8,
                     int16_t mismatch_score = -6,
                     int16_t match_score    = 8)
     {
-        cudapoa_batch = claragenomics::cudapoa::create_batch(max_poas, max_sequences_per_poa, device_id, output_mask, gap_score, mismatch_score, match_score);
+        cudapoa_batch = claragenomics::cudapoa::create_batch(max_poas, max_sequences_per_poa, stream, device_id, output_mask, gap_score, mismatch_score, match_score);
     }
 
     std::vector<std::string> spoa_generate_multiple_sequence_alignments(std::vector<std::string> sequences,
@@ -81,8 +82,6 @@ TEST_F(MSATest, CudapoaMSA)
 
     std::vector<std::vector<std::string>> cudapoa_msa;
     std::vector<StatusType> output_status;
-
-    cudapoa_batch->set_cuda_stream(0);
 
     cudapoa_batch->generate_poa();
 

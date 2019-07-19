@@ -29,6 +29,7 @@ enum StatusType
     edge_count_exceeded_maximum_graph_size,
     seq_len_exceeded_maximum_nodes_per_window,
     loop_count_exceeded_upper_bound,
+    output_type_unavailable,
     generic_error
 };
 
