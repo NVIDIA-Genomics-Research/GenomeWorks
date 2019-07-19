@@ -11,6 +11,7 @@
 #pragma once
 
 #include <random>
+#include <stdexcept>
 
 namespace claragenomics
 {
