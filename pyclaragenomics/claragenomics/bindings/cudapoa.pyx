@@ -7,7 +7,6 @@ from libcpp.string cimport string
 from libc.stdint cimport int8_t, int16_t, uint16_t, int32_t
 from claragenomics.bindings.cudapoa cimport StatusType, OutputType, Batch, create_batch
 from claragenomics.bindings.cuda import *
-from claragenomics.bindings.cuda cimport *
 
 cdef class PyCudapoa:
     cdef unique_ptr[Batch] my_test

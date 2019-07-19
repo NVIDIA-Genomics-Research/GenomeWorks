@@ -22,7 +22,7 @@ from Cython.Build import cythonize
 def build_cga(cmake_root_dir="..", cmake_build_folder="build", cmake_install_prefix="install"):
     build_path = os.path.abspath(cmake_build_folder)
     root_dir = os.path.abspath(cmake_root_dir)
-    cmake_args = ['-DCMAKE_INSTALL_PREFIX=' + os.environ['CONDA_PREFIX'],
+    cmake_args = ['-DCMAKE_INSTALL_PREFIX=' + cmake_install_prefix,
                   '-Dcga_build_shared=ON']
 
     cmake_args += ['-DCMAKE_BUILD_TYPE=' + 'Release']
@@ -33,7 +33,8 @@ def build_cga(cmake_root_dir="..", cmake_build_folder="build", cmake_install_pre
     subprocess.check_call(['cmake', root_dir] + cmake_args, cwd=build_path)
     subprocess.check_call(['cmake', '--build', '.'] + build_args, cwd=build_path)
 
-build_cga(cmake_build_folder="py_build")
+build_cga(cmake_build_folder="py_build",
+        cmake_install_prefix=os.environ['CONDA_PREFIX'])
 
 extensions = [
     Extension(
