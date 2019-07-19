@@ -232,7 +232,7 @@ __device__
 
                     if (out_count + 1 >= CUDAPOA_MAX_NODE_EDGES || in_count + 1 >= CUDAPOA_MAX_NODE_EDGES)
                     {
-                        printf("exceeded max edge count\n");
+                        //printf("exceeded max edge count\n");
                     }
                 }
                 else if (msa) //if edge exists and for msa generation
