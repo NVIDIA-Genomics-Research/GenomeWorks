@@ -10,6 +10,7 @@
 
 #include "cudapoa_kernels.cuh"
 #include "cudastructs.cuh"
+#include "cudautils/cudautils.hpp"
 #include <stdio.h>
 
 // Extract shorts from bit field.

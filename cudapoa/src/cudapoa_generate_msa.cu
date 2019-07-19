@@ -9,6 +9,7 @@
 */
 
 #include "cudapoa_kernels.cuh"
+#include "cudautils/cudautils.hpp"
 #include <time.h>
 #include <stdio.h>
 
