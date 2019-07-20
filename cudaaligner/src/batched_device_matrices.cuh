@@ -83,7 +83,7 @@ public:
         __device__ device_matrix_view<T> get_matrix_view(int32_t id, int32_t n_rows, int32_t n_cols)
         {
             assert(id < n_matrices_);
-            assert(n_rows * n_cols <= max_elements_per_matrix_);
+            assert(n_rows * n_cols <= max_elements_per_matrix_ || error(n_rows * n_cols, max_elements_per_matrix_));
             if (n_rows * n_cols > max_elements_per_matrix_)
             {
                 n_rows = 0;
@@ -94,6 +94,11 @@ public:
         __device__ inline T* data(int32_t id)
         {
             return storage_ + id * static_cast<ptrdiff_t>(max_elements_per_matrix_);
+        }
+
+        __device__ inline int32_t get_max_elements_per_matrix() const
+        {
+            return max_elements_per_matrix_;
         }
 
     private:
