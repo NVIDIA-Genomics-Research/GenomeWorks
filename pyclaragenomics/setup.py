@@ -12,29 +12,55 @@
 
 import os.path
 import os
+import shutil
 import subprocess
 
 from distutils.sysconfig import get_python_lib
+from distutils.cmd import Command
 from setuptools import setup, find_packages, Extension
 
 from Cython.Build import cythonize
 
-def build_cga(cmake_root_dir="..", cmake_build_folder="build", cmake_install_prefix="install"):
-    build_path = os.path.abspath(cmake_build_folder)
-    root_dir = os.path.abspath(cmake_root_dir)
-    cmake_args = ['-DCMAKE_INSTALL_PREFIX=' + cmake_install_prefix,
-                  '-Dcga_build_shared=ON']
+class BuildCgaCommand(Command):
+    """
+    Custom command to build ClaraGenomicsAnalysis CMake project
+    required for python bindings in pyclaragenomics.
+    """
+    description = "Build ClaraGenomicsAnalysis C++ project"
+    user_options = [
+            ('cga-install-dir=', None, 'Path to build directory for CGA'),
+            ('clean-build', None, 'Build CGA from scratch'),
+            ]
 
-    cmake_args += ['-DCMAKE_BUILD_TYPE=' + 'Release']
-    build_args = ['--', '-j16', 'docs', 'install']
+    def initialize_options(self):
+        self.cga_install_dir = ''
+        self.clean_build = False
 
-    if not os.path.exists(build_path):
-        os.makedirs(build_path)
-    subprocess.check_call(['cmake', root_dir] + cmake_args, cwd=build_path)
-    subprocess.check_call(['cmake', '--build', '.'] + build_args, cwd=build_path)
+    def finalize_options(self):
+        if (not self.cga_install_dir):
+            raise RuntimeError("Please pass in an install path for the "
+                    "CGA build files using --cga_install_dir=")
 
-build_cga(cmake_build_folder="py_build",
-        cmake_install_prefix=os.environ['CONDA_PREFIX'])
+    def run(self):
+        build_path = os.path.abspath('cga_build')
+        cmake_root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        cmake_args = ['-DCMAKE_INSTALL_PREFIX=' + self.cga_install_dir,
+                      '-Dcga_build_shared=ON']
+        cmake_args += ['-DCMAKE_BUILD_TYPE=' + 'Release']
+
+        build_args = ['--', '-j16', 'docs', 'install']
+
+        if os.path.exists(build_path) and self.clean_build:
+            shutil.rmtree(build_path)
+
+        if not os.path.exists(build_path):
+            os.makedirs(build_path)
+
+        if not os.path.exists(self.cga_install_dir):
+            os.makedirs(self.cga_install_dir)
+
+        subprocess.check_call(['cmake', cmake_root_dir] + cmake_args, cwd=build_path)
+        subprocess.check_call(['cmake', '--build', '.'] + build_args, cwd=build_path)
 
 extensions = [
     Extension(
@@ -58,6 +84,9 @@ setup(name='pyclaragenomics',
       author='NVIDIA Corporation',
       setup_requires=["cython"],
       packages=find_packages(),
+      cmdclass={
+          'build_cga': BuildCgaCommand,
+          },
       ext_modules=cythonize(extensions),
       scripts=[os.path.join('bin', 'genome_simulator'),
                os.path.join('bin', 'assembly_evaluator')],

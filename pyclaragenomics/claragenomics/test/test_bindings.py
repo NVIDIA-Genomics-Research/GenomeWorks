@@ -6,7 +6,7 @@ from claragenomics.bindings.cudapoa import CudaPoaBatch
 from claragenomics.bindings.cuda import CudaStream
 
 @pytest.mark.gpu
-def test_simple_batch():
+def test_cudapoa_simple_batch():
     batch = CudaPoaBatch(10, 10)
     windows = list()
     windows.append(["ACTGACTG", "ACTTACTG", "ACGGACTG", "ATCGACTG"])
@@ -18,7 +18,7 @@ def test_simple_batch():
     assert(len(consensus) == len(windows))
 
 @pytest.mark.gpu
-def test_complex_batch():
+def test_cudapoa_complex_batch():
     read_len = 500
     ref = ''.join([random.choice(['A','C', 'G', 'T']) for _ in range(read_len)])
     num_reads=100

@@ -14,11 +14,22 @@
 ######################################
 set -e
 
-cd $1
+WORKSPACE=$1
+cd $WORKSPACE
+
+#Install external dependencies.
 python3 -m pip install -r requirements.txt
-python3 setup.py install
+
+# Build and install internal modules.
+CGA_INSTALL_DIR=`pwd`/cga_install_dir
+
+export LIBRARY_PATH=$LIBRARY_PATH:$CGA_INSTALL_DIR/lib
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CGA_INSTALL_DIR/lib
+
+python3 setup.py build_cga --cga-install-dir=$CGA_INSTALL_DIR --clean-build
 python3 setup.py develop
 
+# Run tests.
 if [ "$GPU_TEST" == '1' ]; then
     python3 -m pytest -m gpu -s
 else
