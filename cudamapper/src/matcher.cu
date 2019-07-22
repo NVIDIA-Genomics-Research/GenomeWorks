@@ -80,7 +80,7 @@ namespace claragenomics {
 
             // section of sketch elements with that representation and read_id larger than query_read_id
             ArrayBlock target_sketch_elements_section = read_id_to_sketch_elements_to_check_d[representation_index];
-            for (auto i = threadIdx.x; i < target_sketch_elements_section.block_size_; ++i) {
+            for (auto i = threadIdx.x; i < target_sketch_elements_section.block_size_; i += blockDim.x) {
                 const read_id_t target_read_id = read_ids_d[target_sketch_elements_section.first_element_ + i];
                 const position_in_read_t target_position_in_read = positions_in_reads_d[target_sketch_elements_section.first_element_ + i];
                 for (int j = 0; j < query_sketch_elements_section.block_size_; ++j) {
