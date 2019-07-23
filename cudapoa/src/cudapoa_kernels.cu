@@ -19,8 +19,6 @@
 #include "cudapoa_generate_msa.cu"
 #include <cudautils/cudautils.hpp>
 
-#include <stdio.h>
-
 namespace claragenomics
 {
 
@@ -199,8 +197,6 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
 
     __syncwarp();
 
-    //printf("window id %d, sequence %d\n", window_idx, num_sequences_in_window - 1);
-
     // Align each subsequent read, add alignment to graph, run topoligical sort.
     for (uint16_t s = 1; s < num_sequences; s++)
     {
@@ -218,7 +214,7 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
             }
         }
 
-        warp_error = __shfl_sync(0xffffffff, warp_error, 0);
+        warp_error = __shfl_sync(FULL_MASK, warp_error, 0);
         if (warp_error)
         {
             return;
@@ -267,7 +263,7 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
         }
 
         __syncwarp();
-        //printf("%d %d %d\n", s, window_idx, alignment_length);
+
         if (alignment_length == UINT16_MAX)
         {
             if (lane_idx == 0)
@@ -282,28 +278,34 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
         {
 
             // Add alignment to graph.
-            //printf("running add\n");
-            uint16_t new_node_count = addAlignmentToGraph<msa>(nodes, sequence_lengths[0],
-                                                               node_alignments, node_alignment_count,
-                                                               incoming_edges, incoming_edge_count,
-                                                               outoing_edges, outgoing_edge_count,
-                                                               incoming_edge_weights, outgoing_edge_weights,
-                                                               alignment_length,
-                                                               sorted_poa, alignment_graph,
-                                                               sequence, alignment_read,
-                                                               node_coverage_counts,
-                                                               base_weights,
-                                                               (sequence_begin_nodes_ids + s),
-                                                               outgoing_edges_coverage,
-                                                               outgoing_edges_coverage_count,
-                                                               s,
-                                                               max_sequences_per_poa);
+            uint16_t new_node_count;
+            uint8_t error_code = addAlignmentToGraph<msa>(new_node_count,
+                                                          nodes, sequence_lengths[0],
+                                                          node_alignments, node_alignment_count,
+                                                          incoming_edges, incoming_edge_count,
+                                                          outoing_edges, outgoing_edge_count,
+                                                          incoming_edge_weights, outgoing_edge_weights,
+                                                          alignment_length,
+                                                          sorted_poa, alignment_graph,
+                                                          sequence, alignment_read,
+                                                          node_coverage_counts,
+                                                          base_weights,
+                                                          (sequence_begin_nodes_ids + s),
+                                                          outgoing_edges_coverage,
+                                                          outgoing_edges_coverage_count,
+                                                          s,
+                                                          max_sequences_per_poa);
 
-            sequence_lengths[0] = new_node_count;
-            // Run a topsort on the graph. Not strictly necessary at this point
-            //printf("running topsort\n");
-            if (new_node_count < CUDAPOA_MAX_NODES_PER_WINDOW)
+            if (error_code != 0)
             {
+                consensus[0] = CUDAPOA_KERNEL_ERROR_ENCOUNTERED;
+                consensus[1] = error_code;
+                warp_error   = true;
+            }
+            else
+            {
+                sequence_lengths[0] = new_node_count;
+                // Run a topsort on the graph.
 #ifdef SPOA_ACCURATE
                 // Exactly matches racon CPU results
                 raconTopologicalSortDeviceUtil(sorted_poa,
@@ -331,6 +333,12 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
         }
 
         __syncwarp();
+
+        warp_error = __shfl_sync(FULL_MASK, warp_error, 0);
+        if (warp_error)
+        {
+            return;
+        }
     }
 }
 
