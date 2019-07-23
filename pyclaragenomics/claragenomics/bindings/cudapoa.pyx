@@ -2,7 +2,7 @@
 
 from cython.operator cimport dereference as deref
 from claragenomics.bindings.cudapoa cimport StatusType, OutputType, Batch, create_batch
-#from claragenomics.bindings.cuda import *
+from claragenomics.bindings.cuda import CudaStream
 from libcpp.vector cimport vector
 from libcpp.memory cimport unique_ptr
 from libcpp.string cimport string
@@ -45,6 +45,8 @@ cdef class CudaPoaBatch:
         cdef _Stream temp_stream
         if (stream == None):
             temp_stream = NULL
+        elif (not isinstance(stream, CudaStream)):
+            raise RuntimeError("Type for stream option must be CudaStream")
         else:
             st = stream.get_stream()
             temp_stream = <_Stream>st
