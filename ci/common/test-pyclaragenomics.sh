@@ -14,8 +14,8 @@
 ######################################
 set -e
 
-WORKSPACE=$1
-cd $WORKSPACE
+PYCLARAGENOMICS_DIR=$1
+cd $PYCLARAGENOMICS_DIR
 
 #Install external dependencies.
 python3 -m pip install -r requirements.txt
