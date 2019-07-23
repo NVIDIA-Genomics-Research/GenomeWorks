@@ -26,6 +26,22 @@ def test_cudapoa_simple_batch():
     consensus = batch.get_consensus()
 
     assert(len(consensus) == len(windows))
+    assert(batch.total_poas == len(windows))
+
+@pytest.mark.gpu
+def test_cudapoa_reset_batch():
+    batch = CudaPoaBatch(10, 10)
+    windows = list()
+    windows.append(["ACTGACTG", "ACTTACTG", "ACGGACTG", "ATCGACTG"])
+    batch.add_poas(windows)
+    batch.generate_poa()
+    consensus = batch.get_consensus()
+
+    assert(batch.total_poas == 1)
+
+    batch.reset()
+
+    assert(batch.total_poas == 0)
 
 @pytest.mark.gpu
 def test_cudapoa_complex_batch():

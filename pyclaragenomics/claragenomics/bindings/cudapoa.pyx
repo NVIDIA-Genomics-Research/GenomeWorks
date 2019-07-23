@@ -101,7 +101,8 @@ cdef class CudaPoaBatch:
                 if status != success:
                     raise RuntimeError("Could not add new sequence to poa")
 
-    def get_total_poas(self):
+    @property
+    def total_poas(self):
         """
         Get total number of POA groups added to batch.
 
@@ -109,6 +110,16 @@ cdef class CudaPoaBatch:
             Number of POA groups added to batch.
         """
         return deref(self.batch).get_total_poas()
+
+    @property
+    def batch_id(self):
+        """
+        Get the batch ID of the cudapoa Batch object.
+
+        Returns:
+            Batch ID.
+        """
+        return deref(self.batch).batch_id()
 
     def generate_poa(self):
         """
@@ -146,3 +157,10 @@ cdef class CudaPoaBatch:
         if error == output_type_unavailable:
             raise RuntimeError("Output type not requested during batch initialization")
         return consensus
+
+    def reset(self):
+        """
+        Reset the batch object. Involves deleting all windows previously
+        assigned to batch object.
+        """
+        deref(self.batch).reset()

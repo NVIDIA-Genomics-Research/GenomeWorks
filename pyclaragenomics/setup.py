@@ -21,7 +21,17 @@ from setuptools import setup, find_packages, Extension
 from Cython.Build import cythonize
 
 class CMakeWrapper():
+    """Class to encapsulate building a CMake project."""
+
     def __init__(self, cmake_root_dir, cmake_build_path="cmake_build", cmake_extra_args=""):
+        """
+        Class constructor.
+
+        Args:
+            cmake_root_dir : Root folder of CMake project
+            cmake_install_dir : Install location for CMake project
+            cmake_extra_args : Extra string arguments to be passed to CMake during setup
+        """
         self.build_path = os.path.abspath(cmake_build_path)
         self.cmake_root_dir = os.path.abspath(cmake_root_dir)
         self.cmake_install_dir = os.path.join(self.build_path, "install")
@@ -51,8 +61,11 @@ class CMakeWrapper():
             raise RuntimeError("No valid path for requested component exists")
         return installed_path
 
-cmake = CMakeWrapper("..", cmake_build_path="cga_build", cmake_extra_args="-Dcga_build_shared=ON")
-cmake.build()
+cmake_root_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+cmake_proj = CMakeWrapper(cmake_root_dir,
+             cmake_build_path="cga_build",
+             cmake_extra_args="-Dcga_build_shared=ON")
+cmake_proj.build()
 
 extensions = [
     Extension(
@@ -62,8 +75,8 @@ extensions = [
             "/usr/local/cuda/include",
             "../cudapoa/include",
         ],
-        library_dirs=["/usr/local/cuda/lib64", cmake.get_installed_path("lib")],
-        runtime_library_dirs=["/usr/local/cuda/lib64", cmake.get_installed_path("lib")],
+        library_dirs=["/usr/local/cuda/lib64", cmake_proj.get_installed_path("lib")],
+        runtime_library_dirs=["/usr/local/cuda/lib64", cmake_proj.get_installed_path("lib")],
         libraries=["cudapoa", "cudart"],
         language="c++",
         extra_compile_args=["-std=c++14"],
@@ -74,10 +87,8 @@ setup(name='pyclaragenomics',
       version='0.1',
       description='NVIDIA genomics python libraries an utiliites',
       author='NVIDIA Corporation',
-      setup_requires=["cython"],
       packages=find_packages(),
       ext_modules=cythonize(extensions),
       scripts=[os.path.join('bin', 'genome_simulator'),
                os.path.join('bin', 'assembly_evaluator')],
-      install_requires=["cython"]
       )

@@ -50,5 +50,7 @@ cdef extern from "cudapoa/batch.hpp" namespace "claragenomics::cudapoa":
         StatusType get_msa(vector[vector[string]]&, vector[StatusType]&) except +
         StatusType get_consensus(vector[string]&, vector[vector[uint16_t]]&, vector[StatusType]&) except +
         int get_total_poas() except +
+        int batch_id() except +
+        void reset() except +
 
     cdef unique_ptr[Batch] create_batch(int32_t, int32_t, _Stream, int32_t, int8_t, int16_t, int16_t, int16_t, bool)
