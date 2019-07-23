@@ -16,51 +16,43 @@ import shutil
 import subprocess
 
 from distutils.sysconfig import get_python_lib
-from distutils.cmd import Command
 from setuptools import setup, find_packages, Extension
 
 from Cython.Build import cythonize
 
-class BuildCgaCommand(Command):
-    """
-    Custom command to build ClaraGenomicsAnalysis CMake project
-    required for python bindings in pyclaragenomics.
-    """
-    description = "Build ClaraGenomicsAnalysis C++ project"
-    user_options = [
-            ('cga-install-dir=', None, 'Path to build directory for CGA'),
-            ('clean-build', None, 'Build CGA from scratch'),
-            ]
+class CMakeWrapper():
+    def __init__(self, cmake_root_dir, cmake_build_path="cmake_build", cmake_extra_args=""):
+        self.build_path = os.path.abspath(cmake_build_path)
+        self.cmake_root_dir = os.path.abspath(cmake_root_dir)
+        self.cmake_install_dir = os.path.join(self.build_path, "install")
+        self.cmake_extra_args = cmake_extra_args
 
-    def initialize_options(self):
-        self.cga_install_dir = ''
-        self.clean_build = False
+    def run_cmake_cmd(self):
+        cmake_args = ['-DCMAKE_INSTALL_PREFIX=' + self.cmake_install_dir,
+                      '-DCMAKE_BUILD_TYPE=' + 'Release']
+        cmake_args += [self.cmake_extra_args]
 
-    def finalize_options(self):
-        if (not self.cga_install_dir):
-            raise RuntimeError("Please pass in an install path for the "
-                    "CGA build files using --cga_install_dir=")
+        if not os.path.exists(self.build_path):
+            os.makedirs(self.build_path)
 
-    def run(self):
-        build_path = os.path.abspath('cga_build')
-        cmake_root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        cmake_args = ['-DCMAKE_INSTALL_PREFIX=' + self.cga_install_dir,
-                      '-Dcga_build_shared=ON']
-        cmake_args += ['-DCMAKE_BUILD_TYPE=' + 'Release']
+        subprocess.check_call(['cmake', self.cmake_root_dir] + cmake_args, cwd=self.build_path)
 
+    def run_build_cmd(self):
         build_args = ['--', '-j16', 'docs', 'install']
+        subprocess.check_call(['cmake', '--build', '.'] + build_args, cwd=self.build_path)
 
-        if os.path.exists(build_path) and self.clean_build:
-            shutil.rmtree(build_path)
+    def build(self):
+        self.run_cmake_cmd()
+        self.run_build_cmd()
 
-        if not os.path.exists(build_path):
-            os.makedirs(build_path)
+    def get_installed_path(self, component=""):
+        installed_path = os.path.abspath(os.path.join(self.cmake_install_dir, component))
+        if (not os.path.exists(installed_path)):
+            raise RuntimeError("No valid path for requested component exists")
+        return installed_path
 
-        if not os.path.exists(self.cga_install_dir):
-            os.makedirs(self.cga_install_dir)
-
-        subprocess.check_call(['cmake', cmake_root_dir] + cmake_args, cwd=build_path)
-        subprocess.check_call(['cmake', '--build', '.'] + build_args, cwd=build_path)
+cmake = CMakeWrapper("..", cmake_build_path="cga_build", cmake_extra_args="-Dcga_build_shared=ON")
+cmake.build()
 
 extensions = [
     Extension(
@@ -70,8 +62,8 @@ extensions = [
             "/usr/local/cuda/include",
             "../cudapoa/include",
         ],
-        library_dirs=["/usr/local/cuda/lib64"],
-        runtime_library_dirs=["/usr/local/cuda/lib64"],
+        library_dirs=["/usr/local/cuda/lib64", cmake.get_installed_path("lib")],
+        runtime_library_dirs=["/usr/local/cuda/lib64", cmake.get_installed_path("lib")],
         libraries=["cudapoa", "cudart"],
         language="c++",
         extra_compile_args=["-std=c++14"],
@@ -84,9 +76,6 @@ setup(name='pyclaragenomics',
       author='NVIDIA Corporation',
       setup_requires=["cython"],
       packages=find_packages(),
-      cmdclass={
-          'build_cga': BuildCgaCommand,
-          },
       ext_modules=cythonize(extensions),
       scripts=[os.path.join('bin', 'genome_simulator'),
                os.path.join('bin', 'assembly_evaluator')],
