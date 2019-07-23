@@ -201,16 +201,20 @@ void CudapoaBatch::decode_cudapoa_kernel_error(claragenomics::cudapoa::StatusTyp
     switch (error_type)
     {
     case claragenomics::cudapoa::StatusType::node_count_exceeded_maximum_graph_size:
-        CGA_LOG_ERROR("Kernel Error:: Node count exceeded maximum nodes per window\n");
-        output_status.emplace_back(claragenomics::cudapoa::StatusType::node_count_exceeded_maximum_graph_size);
+        CGA_LOG_WARN("Kernel Error:: Node count exceeded maximum nodes per graph\n");
+        output_status.emplace_back(error_type);
+        break;
+    case claragenomics::cudapoa::StatusType::edge_count_exceeded_maximum_graph_size:
+        CGA_LOG_WARN("Kernel Error:: Edge count exceeded maximum edges per graph\n");
+        output_status.emplace_back(error_type);
         break;
     case claragenomics::cudapoa::StatusType::seq_len_exceeded_maximum_nodes_per_window:
-        CGA_LOG_ERROR("Kernel Error::Sequence length exceeded maximum nodes per window\n");
-        output_status.emplace_back(claragenomics::cudapoa::StatusType::seq_len_exceeded_maximum_nodes_per_window);
+        CGA_LOG_WARN("Kernel Error::Sequence length exceeded maximum nodes per window\n");
+        output_status.emplace_back(error_type);
         break;
     case claragenomics::cudapoa::StatusType::loop_count_exceeded_upper_bound:
-        CGA_LOG_ERROR("Kernel Error::Loop count exceeded upper bound in nw algorithm\n");
-        output_status.emplace_back(claragenomics::cudapoa::StatusType::loop_count_exceeded_upper_bound);
+        CGA_LOG_WARN("Kernel Error::Loop count exceeded upper bound in nw algorithm\n");
+        output_status.emplace_back(error_type);
         break;
     default:
         break;

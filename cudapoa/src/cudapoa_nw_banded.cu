@@ -196,7 +196,7 @@ __device__
     // Initialise the vertical boundary of the score matrix
     if (thread_idx == 0)
     {
-#ifdef DEBUG
+#ifdef NW_VERBOSE_PRINT
         printf("graph %d, read %d\n", graph_count, read_length);
 #endif
 
@@ -518,7 +518,7 @@ __device__
             aligned_nodes = UINT16_MAX;
         }
 
-#ifdef DEBUG
+#ifdef NW_VERBOSE_PRINT
         printf("aligned nodes %d\n", aligned_nodes);
 #endif
     }
