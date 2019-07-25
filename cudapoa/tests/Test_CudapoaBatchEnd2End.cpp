@@ -69,7 +69,7 @@ public:
 
         std::string golden_genome = parse_golden_value_file(param_.golden_file);
 
-        ASSERT_STREQ(golden_genome.c_str(), genome.c_str());
+        ASSERT_EQ(golden_genome, genome);
     }
 
 private:
