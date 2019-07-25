@@ -33,6 +33,7 @@ conda install \
     -c bioconda \
     doxygen \
     clang-format \
+    ninja \
     minimap2 \
     miniasm \
     racon
