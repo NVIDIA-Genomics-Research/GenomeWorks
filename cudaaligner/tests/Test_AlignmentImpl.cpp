@@ -142,11 +142,8 @@ protected:
 
 TEST_P(TestAlignmentImpl, StringGetters)
 {
-    ASSERT_STREQ(param_.query.c_str(), alignment_->get_query_sequence().c_str()) << "Query doesn't match original string";
-    ASSERT_EQ(param_.query.size(), alignment_->get_query_sequence().size()) << "Query length match original string";
-
-    ASSERT_STREQ(param_.subject.c_str(), alignment_->get_subject_sequence().c_str()) << "Subject doesn't match original string";
-    ASSERT_EQ(param_.subject.size(), alignment_->get_subject_sequence().size()) << "Subject length match original string";
+    ASSERT_EQ(param_.query, alignment_->get_query_sequence()) << "Query doesn't match original string";
+    ASSERT_EQ(param_.subject, alignment_->get_subject_sequence()) << "Subject doesn't match original string";
 }
 
 TEST_P(TestAlignmentImpl, AlignmentState)
@@ -164,14 +161,14 @@ TEST_P(TestAlignmentImpl, AlignmentFormatting)
     FormattedAlignment formatted_alignment = alignment_->format_alignment();
     std::string query                      = formatted_alignment.first;
     std::string subject                    = formatted_alignment.second;
-    ASSERT_STREQ(param_.formatted_alignment.first.c_str(), query.c_str());
-    ASSERT_STREQ(param_.formatted_alignment.second.c_str(), subject.c_str());
+    ASSERT_EQ(param_.formatted_alignment.first, query);
+    ASSERT_EQ(param_.formatted_alignment.second, subject);
 }
 
 TEST_P(TestAlignmentImpl, CigarFormatting)
 {
     std::string cigar = alignment_->convert_to_cigar();
-    ASSERT_STREQ(param_.cigar.c_str(), cigar.c_str());
+    ASSERT_EQ(param_.cigar, cigar);
 }
 
 INSTANTIATE_TEST_SUITE_P(TestAlignment, TestAlignmentImpl, ValuesIn(create_alignment_test_cases()));

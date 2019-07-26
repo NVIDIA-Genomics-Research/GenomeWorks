@@ -18,7 +18,6 @@
 #include "cudapoa_generate_consensus.cu"
 #include "cudapoa_generate_msa.cu"
 #include <cudautils/cudautils.hpp>
-#include <stdio.h>
 
 namespace claragenomics
 {
@@ -221,7 +220,7 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
             }
         }
 
-        warp_error = __shfl_sync(0xffffffff, warp_error, 0);
+        warp_error = __shfl_sync(FULL_MASK, warp_error, 0);
         if (warp_error)
         {
             return;
@@ -271,6 +270,7 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
         }
 
         __syncwarp();
+
         if (alignment_length == UINT16_MAX)
         {
             if (lane_idx == 0)
@@ -285,28 +285,34 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
         {
 
             // Add alignment to graph.
-            //printf("running add\n");
-            uint16_t new_node_count = addAlignmentToGraph<msa>(nodes, sequence_lengths[0],
-                                                               node_alignments, node_alignment_count,
-                                                               incoming_edges, incoming_edge_count,
-                                                               outoing_edges, outgoing_edge_count,
-                                                               incoming_edge_weights, outgoing_edge_weights,
-                                                               alignment_length,
-                                                               sorted_poa, alignment_graph,
-                                                               sequence, alignment_read,
-                                                               node_coverage_counts,
-                                                               base_weights,
-                                                               (sequence_begin_nodes_ids + s),
-                                                               outgoing_edges_coverage,
-                                                               outgoing_edges_coverage_count,
-                                                               s,
-                                                               max_sequences_per_poa);
+            uint16_t new_node_count;
+            uint8_t error_code = addAlignmentToGraph<msa>(new_node_count,
+                                                          nodes, sequence_lengths[0],
+                                                          node_alignments, node_alignment_count,
+                                                          incoming_edges, incoming_edge_count,
+                                                          outoing_edges, outgoing_edge_count,
+                                                          incoming_edge_weights, outgoing_edge_weights,
+                                                          alignment_length,
+                                                          sorted_poa, alignment_graph,
+                                                          sequence, alignment_read,
+                                                          node_coverage_counts,
+                                                          base_weights,
+                                                          (sequence_begin_nodes_ids + s),
+                                                          outgoing_edges_coverage,
+                                                          outgoing_edges_coverage_count,
+                                                          s,
+                                                          max_sequences_per_poa);
 
-            sequence_lengths[0] = new_node_count;
-            // Run a topsort on the graph. Not strictly necessary at this point
-            //printf("running topsort\n");
-            if (new_node_count < CUDAPOA_MAX_NODES_PER_WINDOW)
+            if (error_code != 0)
             {
+                consensus[0] = CUDAPOA_KERNEL_ERROR_ENCOUNTERED;
+                consensus[1] = error_code;
+                warp_error   = true;
+            }
+            else
+            {
+                sequence_lengths[0] = new_node_count;
+                // Run a topsort on the graph.
 #ifdef SPOA_ACCURATE
                 // Exactly matches racon CPU results
                 raconTopologicalSortDeviceUtil(sorted_poa,
@@ -334,6 +340,12 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
         }
 
         __syncwarp();
+
+        warp_error = __shfl_sync(FULL_MASK, warp_error, 0);
+        if (warp_error)
+        {
+            return;
+        }
     }
 }
 
@@ -433,6 +445,8 @@ void generatePOA(claragenomics::cudapoa::OutputDetails* output_details_d,
                                                                                  sequence_begin_nodes_ids,
                                                                                  outgoing_edges_coverage,
                                                                                  outgoing_edges_coverage_count);
+            CGA_CU_CHECK_ERR(cudaPeekAtLastError());
+
             generateConsensusKernel<true>
                 <<<consensus_num_blocks, CUDAPOA_MAX_CONSENSUS_PER_BLOCK, 0, stream>>>(consensus_d,
                                                                                        coverage_d,
@@ -452,6 +466,7 @@ void generatePOA(claragenomics::cudapoa::OutputDetails* output_details_d,
                                                                                        consensus_scores,
                                                                                        consensus_predecessors,
                                                                                        node_coverage_counts);
+            CGA_CU_CHECK_ERR(cudaPeekAtLastError());
         }
         if (output_mask & OutputType::msa)
         {
@@ -488,6 +503,8 @@ void generatePOA(claragenomics::cudapoa::OutputDetails* output_details_d,
                                                                                  sequence_begin_nodes_ids,
                                                                                  outgoing_edges_coverage,
                                                                                  outgoing_edges_coverage_count);
+            CGA_CU_CHECK_ERR(cudaPeekAtLastError());
+
             generateMSAKernel<true>
                 <<<total_windows, max_sequences_per_poa, 0, stream>>>(nodes,
                                                                       consensus_d,
@@ -510,6 +527,7 @@ void generatePOA(claragenomics::cudapoa::OutputDetails* output_details_d,
                                                                       node_marks,
                                                                       check_aligned_nodes,
                                                                       nodes_to_visit);
+            CGA_CU_CHECK_ERR(cudaPeekAtLastError());
         }
     }
     else
@@ -549,6 +567,8 @@ void generatePOA(claragenomics::cudapoa::OutputDetails* output_details_d,
                                                                     sequence_begin_nodes_ids,
                                                                     outgoing_edges_coverage,
                                                                     outgoing_edges_coverage_count);
+            CGA_CU_CHECK_ERR(cudaPeekAtLastError());
+
             generateConsensusKernel<false>
                 <<<consensus_num_blocks, CUDAPOA_MAX_CONSENSUS_PER_BLOCK, 0, stream>>>(consensus_d,
                                                                                        coverage_d,
@@ -568,6 +588,7 @@ void generatePOA(claragenomics::cudapoa::OutputDetails* output_details_d,
                                                                                        consensus_scores,
                                                                                        consensus_predecessors,
                                                                                        node_coverage_counts);
+            CGA_CU_CHECK_ERR(cudaPeekAtLastError());
         }
         if (output_mask & OutputType::msa)
         {
@@ -604,6 +625,8 @@ void generatePOA(claragenomics::cudapoa::OutputDetails* output_details_d,
                                                                     sequence_begin_nodes_ids,
                                                                     outgoing_edges_coverage,
                                                                     outgoing_edges_coverage_count);
+            CGA_CU_CHECK_ERR(cudaPeekAtLastError());
+
             generateMSAKernel<false>
                 <<<total_windows, max_sequences_per_poa, 0, stream>>>(nodes,
                                                                       consensus_d,
@@ -626,6 +649,7 @@ void generatePOA(claragenomics::cudapoa::OutputDetails* output_details_d,
                                                                       node_marks,
                                                                       check_aligned_nodes,
                                                                       nodes_to_visit);
+            CGA_CU_CHECK_ERR(cudaPeekAtLastError());
         }
     }
 }
