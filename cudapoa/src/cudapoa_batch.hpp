@@ -159,7 +159,7 @@ protected:
     size_t avail_scorebuf_mem_ = 0;
 
     // Temporary variable to compute the offset to scorebuf.
-    size_t scores_offset_ = 0;
+    size_t next_scores_offset_ = 0;
 
     // Use banded POA alignment
     bool banded_alignment_;

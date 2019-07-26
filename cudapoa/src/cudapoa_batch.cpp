@@ -114,7 +114,7 @@ void CudapoaBatch::reset()
     poa_count_              = 0;
     num_nucleotides_copied_ = 0;
     global_sequence_idx_    = 0;
-    scores_offset_          = 0;
+    next_scores_offset_     = 0;
     avail_scorebuf_mem_     = alignment_details_d_->scorebuf_alloc_size;
 }
 
@@ -310,12 +310,12 @@ StatusType CudapoaBatch::add_poa_group(std::vector<StatusType>& per_seq_status,
 {
     // Check if the largest entry in the group fill fit
     // in available scoring matrix memory or not.
-    auto result            = std::max_element(poa_group.begin(),
-                                   poa_group.end(),
-                                   [](const Entry& lhs, const Entry& rhs) {
-                                       return lhs.length < rhs.length;
-                                   });
-    int32_t max_seq_length = result[0].length;
+    auto max_length_entry  = std::max_element(poa_group.begin(),
+                                             poa_group.end(),
+                                             [](const Entry& lhs, const Entry& rhs) {
+                                                 return lhs.length < rhs.length;
+                                             });
+    int32_t max_seq_length = max_length_entry->length;
 
     if (!reserve_buf(max_seq_length))
     {
@@ -356,7 +356,7 @@ StatusType CudapoaBatch::add_poa()
     window_details.seq_len_buffer_offset         = global_sequence_idx_;
     window_details.seq_starts                    = num_nucleotides_copied_;
     window_details.scores_width                  = 0;
-    window_details.scores_offset                 = scores_offset_;
+    window_details.scores_offset                 = next_scores_offset_;
     input_details_h_->window_details[poa_count_] = window_details;
     poa_count_++;
 
@@ -374,9 +374,8 @@ StatusType CudapoaBatch::add_seq_to_poa(const char* seq, const int8_t* weights, 
     int32_t scores_width_         = cudapoa::align(seq_len + 1 + CELLS_PER_THREAD);
     if (scores_width_ > window_details->scores_width)
     {
-        scores_offset_ -= window_details->scores_width;
+        next_scores_offset_ += (scores_width_ - window_details->scores_width);
         window_details->scores_width = scores_width_;
-        scores_offset_ += scores_width_;
     }
 
     if (static_cast<int32_t>(window_details->num_seqs) + 1 >= max_sequences_per_poa_)

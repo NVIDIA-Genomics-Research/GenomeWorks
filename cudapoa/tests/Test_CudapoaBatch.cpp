@@ -57,6 +57,7 @@ TEST_F(TestCudapoaBatch, AddPOATest)
 {
     initialize(5, 5);
     Group poa_group;
+    poa_group.push_back(Entry{});
     std::vector<StatusType> status;
     StatusType call_status = cudapoa_batch->add_poa_group(status, poa_group);
     EXPECT_EQ(call_status, StatusType::success) << static_cast<int32_t>(call_status);
@@ -73,10 +74,12 @@ TEST_F(TestCudapoaBatch, MaxPOATest)
     for (uint16_t i = 0; i < 5; ++i)
     {
         Group poa_group;
+        poa_group.push_back(Entry{});
         EXPECT_EQ(cudapoa_batch->add_poa_group(status, poa_group), StatusType::success);
     }
     EXPECT_EQ(cudapoa_batch->get_total_poas(), 5);
     Group poa_group;
+    poa_group.push_back(Entry{});
     EXPECT_EQ(cudapoa_batch->add_poa_group(status, poa_group), StatusType::exceeded_maximum_poas);
 }
 
