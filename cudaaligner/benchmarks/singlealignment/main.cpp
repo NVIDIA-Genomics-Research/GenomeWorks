@@ -10,8 +10,8 @@
 
 #include <benchmark/benchmark.h>
 
-#include "utils/genomeutils.hpp"
-#include "cudautils/cudautils.hpp"
+#include "cgautils/genomeutils.hpp"
+#include "cgautils/cudautils.hpp"
 #include "cudaaligner/aligner.hpp"
 
 namespace claragenomics

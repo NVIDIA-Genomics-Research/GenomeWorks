@@ -13,11 +13,11 @@
 
 #include <cuda_runtime_api.h>
 
-#include <utils/signed_integer_utils.hpp>
+#include <cgautils/signed_integer_utils.hpp>
 
 #include "aligner_global.hpp"
 #include "alignment_impl.hpp"
-#include <cudautils/cudautils.hpp>
+#include <cgautils/cudautils.hpp>
 #include <logging/logging.hpp>
 
 namespace claragenomics

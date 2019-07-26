@@ -15,9 +15,9 @@
 #include "cudapoa_batch.hpp"
 #include "cudapoa_kernels.cuh"
 
-#include <cudautils/cudautils.hpp>
+#include <cgautils/cudautils.hpp>
 #include <logging/logging.hpp>
-#include <utils/signed_integer_utils.hpp>
+#include <cgautils/signed_integer_utils.hpp>
 
 #ifndef TABS
 #define TABS printTabs(bid_)

@@ -14,7 +14,7 @@
 #include "multi_batch.hpp"
 #include "file_location.hpp"
 #include "../common/utils.hpp"
-#include "cudautils/cudautils.hpp"
+#include "cgautils/cudautils.hpp"
 
 namespace claragenomics
 {

@@ -9,7 +9,7 @@
 */
 
 #include "gtest/gtest.h"
-#include <utils/mathutils.hpp>
+#include <cgautils/mathutils.hpp>
 
 namespace claragenomics
 {

@@ -12,7 +12,7 @@
 #include <algorithm>
 #include "gtest/gtest.h"
 #include "cudapoa/batch.hpp"
-#include <utils/genomeutils.hpp>
+#include <cgautils/genomeutils.hpp>
 #include "spoa/spoa.hpp"
 
 namespace claragenomics

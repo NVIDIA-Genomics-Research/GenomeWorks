@@ -12,9 +12,9 @@
 
 #include "allocate_block.hpp"
 
-#include <cudautils/cudautils.hpp>
+#include <cgautils/cudautils.hpp>
 #include <logging/logging.hpp>
-#include <utils/signed_integer_utils.hpp>
+#include <cgautils/signed_integer_utils.hpp>
 
 namespace claragenomics
 {

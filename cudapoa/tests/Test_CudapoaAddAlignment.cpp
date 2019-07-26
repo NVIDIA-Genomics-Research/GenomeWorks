@@ -9,11 +9,11 @@
 */
 
 #include "gtest/gtest.h"
-#include "../src/cudapoa_kernels.cuh"     //addAlignment, CUDAPOA_MAX_NODE_EDGES, CUDAPOA_MAX_NODE_ALIGNMENTS
-#include <cudautils/cudautils.hpp>        //CGA_CU_CHECK_ERR
-#include <utils/stringutils.hpp>          //array_to_string
-#include <utils/signed_integer_utils.hpp> // get_size
-#include "basic_graph.hpp"                //BasicGraph
+#include "../src/cudapoa_kernels.cuh"        //addAlignment, CUDAPOA_MAX_NODE_EDGES, CUDAPOA_MAX_NODE_ALIGNMENTS
+#include <cgautils/cudautils.hpp>            //CGA_CU_CHECK_ERR
+#include <cgautils/stringutils.hpp>          //array_to_string
+#include <cgautils/signed_integer_utils.hpp> // get_size
+#include "basic_graph.hpp"                   //BasicGraph
 
 namespace claragenomics
 {

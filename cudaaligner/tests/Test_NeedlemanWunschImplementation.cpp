@@ -14,8 +14,8 @@
 #include "../src/ukkonen_gpu.cuh"
 #include "../src/device_storage.cuh"
 #include "../src/batched_device_matrices.cuh"
-#include <utils/signed_integer_utils.hpp>
-#include <utils/genomeutils.hpp>
+#include <cgautils/signed_integer_utils.hpp>
+#include <cgautils/genomeutils.hpp>
 #include <cuda_runtime_api.h>
 #include <random>
 #include <algorithm>

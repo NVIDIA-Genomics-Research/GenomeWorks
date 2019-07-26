@@ -9,7 +9,7 @@
 */
 
 #include <gtest/gtest.h>
-#include <utils/genomeutils.hpp>
+#include <cgautils/genomeutils.hpp>
 #include <random>
 #include "../src/myers_gpu.cuh"
 #include "../src/needleman_wunsch_cpu.hpp"

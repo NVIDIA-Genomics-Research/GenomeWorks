@@ -17,7 +17,7 @@
 #include "cudapoa_add_alignment.cu"
 #include "cudapoa_generate_consensus.cu"
 #include "cudapoa_generate_msa.cu"
-#include <cudautils/cudautils.hpp>
+#include <cgautils/cudautils.hpp>
 
 namespace claragenomics
 {

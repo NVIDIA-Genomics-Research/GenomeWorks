@@ -13,8 +13,8 @@
 #include "../src/aligner_global_ukkonen.hpp"
 #include "../src/aligner_global_myers.hpp"
 #include "cudaaligner/alignment.hpp"
-#include <utils/signed_integer_utils.hpp>
-#include <utils/genomeutils.hpp>
+#include <cgautils/signed_integer_utils.hpp>
+#include <cgautils/genomeutils.hpp>
 
 namespace claragenomics
 {

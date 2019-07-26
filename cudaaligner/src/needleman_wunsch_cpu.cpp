@@ -9,7 +9,7 @@
 */
 
 #include "needleman_wunsch_cpu.hpp"
-#include "utils/mathutils.hpp"
+#include "cgautils/mathutils.hpp"
 #include <tuple>
 #include <cassert>
 #include <algorithm>

@@ -13,7 +13,7 @@
 #include <stdint.h>
 #include "../src/cudapoa_kernels.cuh" //CUDAPOA_MAX_NODE_EDGES, CUDAPOA_MAX_NODE_ALIGNMENTS
 #include "basic_graph.hpp"
-#include <utils/signed_integer_utils.hpp> // get_size
+#include <cgautils/signed_integer_utils.hpp> // get_size
 
 namespace claragenomics
 {

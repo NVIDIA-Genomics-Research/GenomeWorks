@@ -53,9 +53,8 @@ include(cmake/Format.cmake)
 set(CMAKE_CXX_STANDARD 17)
 
 # Add ClaraGenomicsAnalysis projects.
-add_subdirectory(common/cudautils)
 add_subdirectory(common/logging)
-add_subdirectory(common/utils)
+add_subdirectory(common/cgautils)
 add_subdirectory(cudapoa)
 add_subdirectory(cudaaligner)
 

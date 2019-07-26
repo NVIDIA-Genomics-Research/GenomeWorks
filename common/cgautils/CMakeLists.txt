@@ -8,26 +8,26 @@
 # license agreement from NVIDIA CORPORATION is strictly prohibited.
 #
 
-project(cudautils)
+project(cgautils)
 
-add_library(cudautils INTERFACE)
-target_link_libraries(cudautils INTERFACE logging)
+add_library(cgautils INTERFACE)
+target_link_libraries(cgautils INTERFACE logging)
 
-add_doxygen_source_dir(${CMAKE_CURRENT_SOURCE_DIR}/include/cudautils)
+add_doxygen_source_dir(${CMAKE_CURRENT_SOURCE_DIR}/include/cgautils)
 
-target_include_directories(cudautils
+target_include_directories(cgautils
     INTERFACE 
         $<INSTALL_INTERFACE:include>    
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 )
 
-install(TARGETS cudautils 
-    EXPORT cudautils
+install(TARGETS cgautils
+    EXPORT cgautils
     DESTINATION lib
     INCLUDES DESTINATION include
 )
 install(DIRECTORY include/ DESTINATION include)
-install(EXPORT cudautils DESTINATION cmake)
+install(EXPORT cgautils DESTINATION cmake)
 
-# Add auto formatting.
+# Adding formatting
 cga_enable_auto_formatting("${CMAKE_CURRENT_SOURCE_DIR}")

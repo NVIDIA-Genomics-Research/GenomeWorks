@@ -10,7 +10,7 @@
 
 #pragma once
 
-#include <cudautils/cudautils.hpp>
+#include <cgautils/cudautils.hpp>
 #include <tuple>
 #include <cassert>
 #include "device_storage.cuh"
