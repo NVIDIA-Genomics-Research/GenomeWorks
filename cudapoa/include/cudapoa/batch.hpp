@@ -111,6 +111,8 @@ public:
 /// \param max_poas Maximum number of POAs that can be added to the batch
 /// \param max_sequences_per_poa Maximum number of sequences per POA
 /// \param device_id GPU device on which to run CUDA POA algorithm
+/// \param max_mem Maximum GPU memory to use for this batch.
+/// \param output_mask Which outputs to produce from POA (msa, consensus)
 /// \param gap_score Score to be assigned to a gap
 /// \param mismatch_score Score to be assigned to a mismatch
 /// \param match_score Score to be assigned for a match
