@@ -76,8 +76,6 @@ public:
     // Reset batch. Must do before re-using batch.
     void reset();
 
-    bool reserve_buf(uint32_t max_seq_length);
-
 protected:
     // Print debug message with batch specific formatting.
     void print_batch_debug_message(const std::string& message);
@@ -103,6 +101,9 @@ protected:
 
     // Add sequence to last partial order alignment.
     StatusType add_seq_to_poa(const char* seq, const int8_t* weights, int32_t seq_len);
+
+    // Check if seq length can fit in available scoring matrix memory.
+    bool reserve_buf(uint32_t max_seq_length);
 
 protected:
     // Maximum POAs to process in batch.

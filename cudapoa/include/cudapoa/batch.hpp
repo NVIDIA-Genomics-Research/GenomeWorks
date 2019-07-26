@@ -104,8 +104,6 @@ public:
 
     /// \brief Reset batch. Must do before re-using batch.
     virtual void reset() = 0;
-
-    virtual bool reserve_buf(uint32_t max_seq_length) = 0;
 };
 
 /// \brief Creates a new CUDA Batch object.
