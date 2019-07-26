@@ -42,7 +42,9 @@ BatchBlock::BatchBlock(int32_t device_id, size_t avail_mem, int32_t max_poas, in
     calculate_size();
 
     if (total_d_ > avail_mem)
+    {
         CGA_LOG_ERROR("Device Error:: memory footprint for current batch exceeds the allocated memory for the batch\n");
+    }
 
     total_d_ = avail_mem;
     // allocation

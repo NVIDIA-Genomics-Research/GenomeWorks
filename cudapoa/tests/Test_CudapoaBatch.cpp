@@ -32,9 +32,14 @@ public:
                     int8_t output_mask     = OutputType::consensus,
                     int16_t gap_score      = -8,
                     int16_t mismatch_score = -6,
-                    int16_t match_score    = 8)
+                    int16_t match_score    = 8,
+                    bool banded_alignment  = false)
     {
-        cudapoa_batch = claragenomics::cudapoa::create_batch(max_poas, max_sequences_per_poa, device_id, output_mask, gap_score, mismatch_score, match_score);
+        size_t total = 0, free = 0;
+        cudaSetDevice(device_id);
+        cudaMemGetInfo(&free, &total);
+        size_t mem_per_batch = 0.9 * free;
+        cudapoa_batch        = claragenomics::cudapoa::create_batch(max_poas, max_sequences_per_poa, device_id, mem_per_batch, output_mask, gap_score, mismatch_score, match_score, banded_alignment);
     }
 
 public:
@@ -51,7 +56,10 @@ TEST_F(TestCudapoaBatch, InitializeTest)
 TEST_F(TestCudapoaBatch, AddPOATest)
 {
     initialize(5, 5);
-    EXPECT_EQ(cudapoa_batch->add_poa(), StatusType::success);
+    Group poa_group;
+    std::vector<StatusType> status;
+    StatusType call_status = cudapoa_batch->add_poa_group(status, poa_group);
+    EXPECT_EQ(call_status, StatusType::success) << static_cast<int32_t>(call_status);
     EXPECT_EQ(cudapoa_batch->get_total_poas(), 1);
     cudapoa_batch->reset();
     EXPECT_EQ(cudapoa_batch->get_total_poas(), 0);
@@ -61,45 +69,65 @@ TEST_F(TestCudapoaBatch, MaxPOATest)
 {
     initialize(5, 5);
 
+    std::vector<StatusType> status;
     for (uint16_t i = 0; i < 5; ++i)
     {
-        EXPECT_EQ(cudapoa_batch->add_poa(), StatusType::success);
+        Group poa_group;
+        EXPECT_EQ(cudapoa_batch->add_poa_group(status, poa_group), StatusType::success);
     }
     EXPECT_EQ(cudapoa_batch->get_total_poas(), 5);
-    EXPECT_EQ(cudapoa_batch->add_poa(), StatusType::exceeded_maximum_poas);
+    Group poa_group;
+    EXPECT_EQ(cudapoa_batch->add_poa_group(status, poa_group), StatusType::exceeded_maximum_poas);
 }
 
 TEST_F(TestCudapoaBatch, MaxSeqPerPOATest)
 {
     initialize(5, 10);
-    EXPECT_EQ(cudapoa_batch->add_poa(), StatusType::success);
+    Group poa_group;
+    std::vector<StatusType> status;
 
     int32_t seq_length = 20;
     std::string seq(seq_length, 'A');
     std::vector<int8_t> weights(seq_length, 1);
-    for (uint16_t i = 0; i < 9; ++i)
+    for (uint16_t i = 0; i < 10; ++i)
     {
-        EXPECT_EQ(cudapoa_batch->add_seq_to_poa(seq.c_str(), weights.data(), seq.length()), StatusType::success);
+        Entry e{};
+        e.seq     = seq.c_str();
+        e.weights = weights.data();
+        e.length  = seq.length();
+        poa_group.push_back(e);
     }
+    EXPECT_EQ(cudapoa_batch->add_poa_group(status, poa_group), StatusType::success);
     EXPECT_EQ(cudapoa_batch->get_total_poas(), 1);
-    EXPECT_EQ(cudapoa_batch->add_seq_to_poa(seq.c_str(), weights.data(), seq.length()), StatusType::exceeded_maximum_sequences_per_poa);
+    EXPECT_EQ(status.at(9), StatusType::exceeded_maximum_sequences_per_poa);
 }
 
 TEST_F(TestCudapoaBatch, MaxSeqSizeTest)
 {
     initialize(5, 10);
-    EXPECT_EQ(cudapoa_batch->add_poa(), StatusType::success);
-    EXPECT_EQ(cudapoa_batch->get_total_poas(), 1);
+    Group poa_group;
+    std::vector<StatusType> status;
+    Entry e{};
 
     int32_t seq_length = 1023;
     std::string seq(seq_length, 'A');
     std::vector<int8_t> weights(seq_length, 1);
-    EXPECT_EQ(cudapoa_batch->add_seq_to_poa(seq.c_str(), weights.data(), seq.length()), StatusType::success);
+    e.seq     = seq.c_str();
+    e.weights = weights.data();
+    e.length  = seq.length();
+    poa_group.push_back(e);
 
-    seq_length = 1024;
-    seq        = std::string(seq_length, 'A');
+    Entry e_2{};
+    seq_length        = 1024;
+    std::string seq_2 = std::string(seq_length, 'A');
     std::vector<int8_t> weights_2(seq_length, 1);
-    EXPECT_EQ(cudapoa_batch->add_seq_to_poa(seq.c_str(), weights_2.data(), seq.length()), StatusType::exceeded_maximum_sequence_size);
+    e_2.seq     = seq_2.c_str();
+    e_2.weights = weights_2.data();
+    e_2.length  = seq_2.length();
+    poa_group.push_back(e_2);
+
+    EXPECT_EQ(cudapoa_batch->add_poa_group(status, poa_group), StatusType::success);
+    EXPECT_EQ(status.at(1), StatusType::exceeded_maximum_sequence_size);
 }
 
 } // namespace cudapoa

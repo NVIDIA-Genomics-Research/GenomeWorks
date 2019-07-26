@@ -34,7 +34,11 @@ public:
 
         assert(get_size(windows_) > 0);
 
-        batch_ = create_batch(max_poas_per_batch, 200, 0, OutputType::consensus, -8, -6, 8, false);
+        size_t total = 0, free = 0;
+        cudaSetDevice(0);
+        cudaMemGetInfo(&free, &total);
+        size_t mem_per_batch = 0.9 * free;
+        batch_               = create_batch(max_poas_per_batch, 200, 0, mem_per_batch, OutputType::consensus, -8, -6, 8, false);
         cudaStream_t stream;
         cudaStreamCreate(&stream);
         batch_->set_cuda_stream(stream);
@@ -53,15 +57,18 @@ public:
         int32_t total_windows = get_size(windows_);
         for (int32_t i = 0; i < max_poas_per_batch_; i++)
         {
-            batch_->add_poa();
+            Group poa_group;
             const auto& window = windows_[i % total_windows];
             for (int32_t s = 0; s < get_size(window); s++)
             {
-                batch_->add_seq_to_poa(
-                    window[s].c_str(),
-                    NULL,
-                    window[s].length());
+                Entry e{};
+                e.seq     = window[s].c_str();
+                e.weights = NULL;
+                e.length  = window[s].length();
+                poa_group.push_back(e);
             }
+            std::vector<StatusType> error_status;
+            batch_->add_poa_group(error_status, poa_group);
         }
     }
 

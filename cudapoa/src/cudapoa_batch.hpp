@@ -49,11 +49,8 @@ public:
     CudapoaBatch(int32_t max_poas, int32_t max_sequences_per_poa, int32_t device_id, size_t max_mem, int8_t output_mask, int16_t gap_score = -8, int16_t mismatch_score = -6, int16_t match_score = 8, bool cuda_banded_alignment = false);
     ~CudapoaBatch();
 
-    // Add new partial order alignment to batch.
-    StatusType add_poa();
-
-    // Add sequence to last partial order alignment.
-    StatusType add_seq_to_poa(const char* seq, const int8_t* weights, int32_t seq_len);
+    virtual StatusType add_poa_group(std::vector<StatusType>& per_seq_status,
+                                     const Group& poa_group);
 
     // Get total number of partial order alignments in batch.
     int32_t get_total_poas() const;
@@ -100,6 +97,12 @@ protected:
     // Log cudapoa kernel error
     void decode_cudapoa_kernel_error(claragenomics::cudapoa::StatusType error_type,
                                      std::vector<StatusType>& output_status);
+
+    // Add new partial order alignment to batch.
+    StatusType add_poa();
+
+    // Add sequence to last partial order alignment.
+    StatusType add_seq_to_poa(const char* seq, const int8_t* weights, int32_t seq_len);
 
 protected:
     // Maximum POAs to process in batch.

@@ -37,11 +37,18 @@ public:
 
         assert(get_size(windows_) > 0);
 
+        size_t total = 0, free = 0;
+        cudaSetDevice(0);
+        cudaMemGetInfo(&free, &total);
+        size_t mem_per_batch = 0.9 * free / num_batches_;
         for (int32_t batch = 0; batch < num_batches_; batch++)
         {
             cudaStream_t stream;
             cudaStreamCreate(&stream);
-            batches_.emplace_back(create_batch(max_poas_per_batch, 200, 0, OutputType::consensus));
+            batches_.emplace_back(create_batch(max_poas_per_batch, 200,
+                                               0, mem_per_batch,
+                                               OutputType::consensus,
+                                               -8, -6, 8, false));
             batches_.back()->set_cuda_stream(stream);
         }
     }
@@ -66,19 +73,33 @@ public:
 
         // Lambda function for adding windows to batches.
         auto fill_next_batch = [&mutex_windows, &next_window_index, this](Batch* batch) -> std::pair<int32_t, int32_t> {
+            // Reset batch before adding fresh set of windows.
+            batch->reset();
+
             // Use mutex to read the vector containing windows in a threadsafe manner.
             std::lock_guard<std::mutex> guard(mutex_windows);
 
             // TODO: Reducing window wize by 10 for debugging.
             int32_t initial_count = next_window_index;
             int32_t count         = get_size(windows_);
-            int32_t num_inserted  = 0;
             while (next_window_index < count)
             {
-                if (num_inserted < max_poas_per_batch_)
+                Group poa_group;
+                const std::vector<std::string>& window = windows_[next_window_index];
+                for (auto& seq : window)
+                {
+                    Entry e{};
+                    e.seq     = seq.c_str();
+                    e.weights = NULL;
+                    e.length  = seq.length();
+                    poa_group.push_back(e);
+                }
+
+                std::vector<StatusType> s;
+                StatusType status = batch->add_poa_group(s, poa_group);
+                if (status == StatusType::success)
                 {
                     next_window_index++;
-                    num_inserted++;
                 }
                 else
                 {
@@ -93,24 +114,7 @@ public:
         auto process_batch = [&fill_next_batch, this](Batch* batch) -> void {
             while (true)
             {
-                batch->reset();
-
                 std::pair<int32_t, int32_t> range = fill_next_batch(batch);
-                for (int32_t i = range.first; i < range.second; i++)
-                {
-                    if (batch->add_poa() == StatusType::success)
-                    {
-                        const std::vector<std::string>& window = windows_[i];
-                        for (auto& seq : window)
-                        {
-                            batch->add_seq_to_poa(seq.c_str(), NULL, seq.length());
-                        }
-                    }
-                    else
-                    {
-                        throw std::runtime_error("Could not add new POA to batch");
-                    }
-                }
                 if (batch->get_total_poas() > 0)
                 {
                     std::vector<std::string> consensus_temp;

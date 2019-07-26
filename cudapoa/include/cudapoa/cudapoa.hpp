@@ -25,6 +25,7 @@ enum class StatusType
     exceeded_maximum_poas,
     exceeded_maximum_sequence_size,
     exceeded_maximum_sequences_per_poa,
+    exceeded_batch_size,
     node_count_exceeded_maximum_graph_size,
     seq_len_exceeded_maximum_nodes_per_window,
     loop_count_exceeded_upper_bound,
