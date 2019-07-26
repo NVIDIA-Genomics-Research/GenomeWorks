@@ -310,14 +310,12 @@ StatusType CudapoaBatch::add_poa_group(std::vector<StatusType>& per_seq_status,
 {
     // Check if the largest entry in the group fill fit
     // in available scoring matrix memory or not.
-    int32_t max_seq_length = 0;
-    for (int32_t j = 0; j < get_size(poa_group); j++)
-    {
-        if (poa_group[j].length > max_seq_length)
-        {
-            max_seq_length = poa_group[j].length;
-        }
-    }
+    auto result            = std::max_element(poa_group.begin(),
+                                   poa_group.end(),
+                                   [](const Entry& lhs, const Entry& rhs) {
+                                       return lhs.length < rhs.length;
+                                   });
+    int32_t max_seq_length = result[0].length;
 
     if (!reserve_buf(max_seq_length))
     {
