@@ -11,7 +11,6 @@
 import filecmp
 import os
 import pytest
-import subprocess
 import tempfile
 
 from claragenomics.wrappers import wrappers
@@ -41,7 +40,7 @@ def test_minimap2_from_reads(reads_filepath, overlaps_gt_filepath, minimap2_tool
         minimap2.overlap(reads_filepath, reads_filepath, output_overlaps, args="-x ava-ont", extra_args="-t 12")
         # verify output is the same as ground-truth
         match = filecmp.cmp(output_overlaps, overlaps_gt_filepath)
-        assert(match == True)
+        assert(match)
 
 
 @pytest.mark.parametrize(
@@ -56,7 +55,7 @@ def test_minimap2_from_assembly(reads_filepath, assembly_fa_gt_filepath, minimap
         minimap2.overlap(assembly_fa_gt_filepath, reads_filepath, output_overlaps_on_assembly)
         # verify output is the same as ground-truth
         match = filecmp.cmp(output_overlaps_on_assembly, overlaps_on_assembly_gt_filepath)
-        assert(match == True)
+        assert(match)
 
 
 @pytest.mark.parametrize(
@@ -71,7 +70,7 @@ def test_miniasm(reads_filepath, overlaps_gt_filepath, assembly_gfa_gt_filepath,
         miniasm.assemble(reads_filepath, overlaps_gt_filepath, output_assembly_gfa)
         # verify output is the same as ground-truth
         match = filecmp.cmp(output_assembly_gfa, assembly_gfa_gt_filepath)
-        assert(match == True)
+        assert(match)
 
 
 @pytest.mark.parametrize(
@@ -85,14 +84,16 @@ def test_gfa2fa(assembly_gfa_gt_filepath, assembly_fa_gt_filepath):
         utilities.Utilities.gfa2fa(assembly_gfa_gt_filepath, output_assembly_fa)
         # verify output is the same as ground-truth
         match = filecmp.cmp(output_assembly_fa, assembly_fa_gt_filepath)
-        assert(match == True)
+        assert(match)
 
 
-@pytest.mark.parametrize(
-    "reads_filepath, overlaps_on_assembly_gt_filepath, assembly_fa_gt_filepath, polished_assembly_CPU_subgraph_gt_filepath, racon_tool_path",
-    [(reads_filepath, overlaps_on_assembly_gt_filepath, assembly_fa_gt_filepath, polished_assembly_CPU_subgraph_gt_filepath, None)],
-)
-def test_racon_cpu(reads_filepath, overlaps_on_assembly_gt_filepath, assembly_fa_gt_filepath, polished_assembly_CPU_subgraph_gt_filepath, racon_tool_path):
+@pytest.mark.parametrize("reads_filepath, overlaps_on_assembly_gt_filepath, assembly_fa_gt_filepath, \
+                         polished_assembly_CPU_subgraph_gt_filepath, racon_tool_path",
+                         [(reads_filepath, overlaps_on_assembly_gt_filepath, assembly_fa_gt_filepath,
+                           polished_assembly_CPU_subgraph_gt_filepath, None)],
+                         )
+def test_racon_cpu(reads_filepath, overlaps_on_assembly_gt_filepath, assembly_fa_gt_filepath,
+                   polished_assembly_CPU_subgraph_gt_filepath, racon_tool_path):
     with tempfile.TemporaryDirectory(dir=".") as output_dir:
         # polish with racon
         racon = wrappers.RaconWrapper(racon_tool_path, gpu=False)
@@ -100,7 +101,7 @@ def test_racon_cpu(reads_filepath, overlaps_on_assembly_gt_filepath, assembly_fa
         racon.polish(reads_filepath, overlaps_on_assembly_gt_filepath, assembly_fa_gt_filepath, output_polished)
         # verify output is the same as ground-truth
         match = filecmp.cmp(output_polished, polished_assembly_CPU_subgraph_gt_filepath)
-        assert(match == True)
+        assert(match)
 
 
 # @pytest.mark.parametrize(
@@ -142,4 +143,3 @@ def test_racon_cpu(reads_filepath, overlaps_on_assembly_gt_filepath, assembly_fa
 #         error_predicted = utilities.Utilities.calculate_error(os.path.join(report_dir,"report.txt"))
 #         # verify output is the same as ground-truth
 #         assert(abs(error_gt - error_predicted) < 10**(-9))
-

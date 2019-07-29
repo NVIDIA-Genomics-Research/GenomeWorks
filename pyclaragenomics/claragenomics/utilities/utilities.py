@@ -28,12 +28,12 @@ class Utilities:
         """
         logging.info("Convert GFA to FA file:")
         if os.path.isfile(fa_filepath):
-            logging.info("Overwriting existing file.") 
+            logging.info("Overwriting existing file.")
             os.remove(fa_filepath)
         cmd = """awk '/^S/{{print ">"$2"\\n"$3}}' {} | fold > {}""".format(gfa_filepath, fa_filepath)
         logging.info(cmd)
         subprocess.call(cmd, shell=True)
-    
+
     @staticmethod
     def calculate_error(report_filepath):
         """Calculates error rate from quast generated report (report.txt).
@@ -45,7 +45,6 @@ class Utilities:
         lines = [line.rstrip('\n') for line in open(report_filepath)]
         mismatch = [i for i in lines if i.startswith('# mismatches')][0].split()
         indels = [i for i in lines if i.startswith('# indels')][0].split()
-        error = (float(mismatch[-1]) + float(indels[-1])) / 10**5 * 100 
+        error = (float(mismatch[-1]) + float(indels[-1])) / 10**5 * 100
         logging.info("The error rate is {}%".format(str(error)))
         return error
-
