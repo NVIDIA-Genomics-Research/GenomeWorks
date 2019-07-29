@@ -38,6 +38,10 @@ source ci/common/prep-init-env.sh ${WORKSPACE}
 logger "Run Copyright header check..."
 ./ci/checks/check_copyright.py
 
+# Run style check
+logger "Run Python formatting check..."
+pycodestyle pyclaragenomics/
+
 logger "Run C++ formatting check..."
 mkdir --parents ${WORKSPACE}/build
 cd ${WORKSPACE}/build
