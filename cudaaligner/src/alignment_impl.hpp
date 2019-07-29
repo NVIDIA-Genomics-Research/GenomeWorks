@@ -108,7 +108,7 @@ private:
     std::vector<AlignmentState> alignment_;
 
     // Convert alignment state to cigar state
-    std::string alignment_state_to_cigar_state(AlignmentState) const;
+    char alignment_state_to_cigar_state(AlignmentState) const;
 };
 } // namespace cudaaligner
 } // namespace claragenomics
