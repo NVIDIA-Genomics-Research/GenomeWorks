@@ -12,9 +12,10 @@
 #include <cuda_runtime_api.h>
 #include <random>
 
-#include "cgautils/genomeutils.hpp"
-#include "cgautils/cudautils.hpp"
-#include "cudaaligner/aligner.hpp"
+#include "claragenomics/utils/genomeutils.hpp"
+#include "claragenomics/utils/cudautils.hpp"
+#include "claragenomics/cudaaligner/aligner.hpp"
+
 #include "aligner_global_ukkonen.hpp"
 #include "aligner_global_myers.hpp"
 

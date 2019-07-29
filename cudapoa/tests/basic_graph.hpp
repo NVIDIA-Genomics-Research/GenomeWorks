@@ -11,8 +11,10 @@
 #include <string>
 #include <vector>
 #include <stdint.h>
-#include "../src/cudapoa_kernels.cuh"        //CUDAPOA_MAX_NODE_EDGES, CUDAPOA_MAX_NODE_ALIGNMENTS
-#include <cgautils/signed_integer_utils.hpp> //get_size
+
+#include <claragenomics/utils/signed_integer_utils.hpp> //get_size
+
+#include "../src/cudapoa_kernels.cuh" //CUDAPOA_MAX_NODE_EDGES, CUDAPOA_MAX_NODE_ALIGNMENTS
 
 namespace claragenomics
 {

@@ -11,9 +11,10 @@
 #include <assert.h>
 #include <algorithm>
 #include "gtest/gtest.h"
-#include "cudapoa/batch.hpp"
-#include <cgautils/genomeutils.hpp>
 #include "spoa/spoa.hpp"
+
+#include "claragenomics/cudapoa/batch.hpp"
+#include <claragenomics/utils/genomeutils.hpp>
 
 namespace claragenomics
 {

@@ -8,13 +8,14 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-#include "ukkonen_gpu.cuh"
-#include "batched_device_matrices.cuh"
-#include <thrust/tuple.h>
 #include <limits>
 #include <cstdint>
 #include <algorithm>
 #include <cassert>
+#include <thrust/tuple.h>
+
+#include "ukkonen_gpu.cuh"
+#include "batched_device_matrices.cuh"
 
 #define CGA_UKKONEN_MAX_THREADS_PER_BLOCK 1024
 

@@ -9,7 +9,8 @@
 */
 
 #include "gtest/gtest.h"
-#include "cudapoa/batch.hpp"
+
+#include "claragenomics/cudapoa/batch.hpp"
 
 namespace claragenomics
 {

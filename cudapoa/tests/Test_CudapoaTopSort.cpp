@@ -9,11 +9,13 @@
 */
 
 #include "gtest/gtest.h"
-#include "cudapoa/batch.hpp"
-#include "../src/cudapoa_kernels.cuh"        //runTopSort
-#include <cgautils/cudautils.hpp>            //CGA_CU_CHECK_ERR
-#include <cgautils/stringutils.hpp>          //array_to_string
-#include <cgautils/signed_integer_utils.hpp> //get_size
+
+#include "claragenomics/cudapoa/batch.hpp"
+#include <claragenomics/utils/cudautils.hpp>            //CGA_CU_CHECK_ERR
+#include <claragenomics/utils/stringutils.hpp>          //array_to_string
+#include <claragenomics/utils/signed_integer_utils.hpp> //get_size
+
+#include "../src/cudapoa_kernels.cuh" //runTopSort
 
 namespace claragenomics
 {

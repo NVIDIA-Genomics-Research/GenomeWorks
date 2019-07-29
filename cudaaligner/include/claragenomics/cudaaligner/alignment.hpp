@@ -14,7 +14,7 @@
 #include <vector>
 #include <string>
 
-#include "cudaaligner/cudaaligner.hpp"
+#include "claragenomics/cudaaligner/cudaaligner.hpp"
 
 namespace claragenomics
 {

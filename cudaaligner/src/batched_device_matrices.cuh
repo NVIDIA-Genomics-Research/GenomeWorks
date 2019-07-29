@@ -10,9 +10,11 @@
 
 #pragma once
 
-#include <cgautils/cudautils.hpp>
 #include <tuple>
 #include <cassert>
+
+#include <claragenomics/utils/cudautils.hpp>
+
 #include "device_storage.cuh"
 #include "matrix_cpu.hpp"
 

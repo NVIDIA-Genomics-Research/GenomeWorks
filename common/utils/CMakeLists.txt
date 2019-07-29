@@ -8,26 +8,26 @@
 # license agreement from NVIDIA CORPORATION is strictly prohibited.
 #
 
-project(cgautils)
+project(utils)
 
-add_library(cgautils INTERFACE)
-target_link_libraries(cgautils INTERFACE logging)
+add_library(utils INTERFACE)
+target_link_libraries(utils INTERFACE logging)
 
-add_doxygen_source_dir(${CMAKE_CURRENT_SOURCE_DIR}/include/cgautils)
+add_doxygen_source_dir(${CMAKE_CURRENT_SOURCE_DIR}/include/utils)
 
-target_include_directories(cgautils
+target_include_directories(utils
     INTERFACE 
         $<INSTALL_INTERFACE:include>    
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 )
 
-install(TARGETS cgautils
-    EXPORT cgautils
+install(TARGETS utils
+    EXPORT utils
     DESTINATION lib
     INCLUDES DESTINATION include
 )
 install(DIRECTORY include/ DESTINATION include)
-install(EXPORT cgautils DESTINATION cmake)
+install(EXPORT utils DESTINATION cmake)
 
 # Adding formatting
 cga_enable_auto_formatting("${CMAKE_CURRENT_SOURCE_DIR}")

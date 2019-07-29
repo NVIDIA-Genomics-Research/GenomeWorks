@@ -10,15 +10,14 @@
 
 #include <cstring>
 #include <algorithm>
-
 #include <cuda_runtime_api.h>
 
-#include <cgautils/signed_integer_utils.hpp>
+#include <claragenomics/utils/signed_integer_utils.hpp>
+#include <claragenomics/utils/cudautils.hpp>
+#include <claragenomics/logging/logging.hpp>
 
 #include "aligner_global.hpp"
 #include "alignment_impl.hpp"
-#include <cgautils/cudautils.hpp>
-#include <logging/logging.hpp>
 
 namespace claragenomics
 {

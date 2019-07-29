@@ -10,10 +10,12 @@
 
 #pragma once
 
-#include "matrix_cpu.hpp"
-#include "cgautils/mathutils.hpp"
 #include <limits>
 #include <cassert>
+
+#include "claragenomics/utils/mathutils.hpp"
+
+#include "matrix_cpu.hpp"
 
 namespace claragenomics
 {

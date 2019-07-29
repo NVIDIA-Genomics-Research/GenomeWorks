@@ -10,11 +10,11 @@
 
 #define CGA_LOG_LEVEL cga_log_level_info
 
-#include "allocate_block.hpp"
+#include <claragenomics/utils/cudautils.hpp>
+#include <claragenomics/logging/logging.hpp>
+#include <claragenomics/utils/signed_integer_utils.hpp>
 
-#include <cgautils/cudautils.hpp>
-#include <logging/logging.hpp>
-#include <cgautils/signed_integer_utils.hpp>
+#include "allocate_block.hpp"
 
 namespace claragenomics
 {

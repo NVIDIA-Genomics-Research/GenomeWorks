@@ -13,7 +13,8 @@
 /// \defgroup cudautils Internal CUDA utilities package
 
 #include <cuda_runtime_api.h>
-#include <logging/logging.hpp>
+
+#include <claragenomics/logging/logging.hpp>
 
 /// \ingroup cudautils
 /// \{

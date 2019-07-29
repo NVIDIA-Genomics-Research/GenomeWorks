@@ -11,13 +11,13 @@
 #include <algorithm>
 #include <cstring>
 
+#include <claragenomics/utils/cudautils.hpp>
+#include <claragenomics/logging/logging.hpp>
+#include <claragenomics/utils/signed_integer_utils.hpp>
+
 #include "allocate_block.hpp"
 #include "cudapoa_batch.hpp"
 #include "cudapoa_kernels.cuh"
-
-#include <cgautils/cudautils.hpp>
-#include <logging/logging.hpp>
-#include <cgautils/signed_integer_utils.hpp>
 
 #ifndef TABS
 #define TABS printTabs(bid_)

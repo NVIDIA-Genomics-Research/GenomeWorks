@@ -10,8 +10,9 @@
 
 #pragma once
 
-#include <cgautils/cudautils.hpp>
 #include <exception>
+
+#include <claragenomics/utils/cudautils.hpp>
 
 namespace claragenomics
 {

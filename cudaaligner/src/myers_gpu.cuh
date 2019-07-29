@@ -11,6 +11,7 @@
 #pragma once
 
 #include <cuda_runtime_api.h>
+
 #include "matrix_cpu.hpp"
 #include "batched_device_matrices.cuh"
 

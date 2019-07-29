@@ -35,7 +35,7 @@ target_include_directories(cudaaligner_internal INTERFACE
         ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 
-target_link_libraries(cudaaligner cgautils logging)
+target_link_libraries(cudaaligner utils logging)
 
 target_compile_options(cudaaligner PRIVATE -Werror -Wall -Wextra -march=native)
 

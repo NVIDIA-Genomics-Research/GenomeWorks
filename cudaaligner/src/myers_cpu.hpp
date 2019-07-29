@@ -13,7 +13,8 @@
 #include <cassert>
 #include <climits>
 #include <vector>
-#include <cgautils/signed_integer_utils.hpp>
+
+#include <claragenomics/utils/signed_integer_utils.hpp>
 
 namespace claragenomics
 {

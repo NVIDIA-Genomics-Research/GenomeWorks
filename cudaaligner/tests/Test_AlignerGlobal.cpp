@@ -10,11 +10,13 @@
 
 #include <random>
 #include "gtest/gtest.h"
+
+#include "claragenomics/cudaaligner/alignment.hpp"
+#include <claragenomics/utils/signed_integer_utils.hpp>
+#include <claragenomics/utils/genomeutils.hpp>
+
 #include "../src/aligner_global_ukkonen.hpp"
 #include "../src/aligner_global_myers.hpp"
-#include "cudaaligner/alignment.hpp"
-#include <cgautils/signed_integer_utils.hpp>
-#include <cgautils/genomeutils.hpp>
 
 namespace claragenomics
 {

@@ -9,10 +9,11 @@
 */
 
 #include <memory>
-
 #include "gtest/gtest.h"
+
+#include <claragenomics/utils/signed_integer_utils.hpp>
+
 #include "../src/alignment_impl.hpp"
-#include <cgautils/signed_integer_utils.hpp>
 
 namespace claragenomics
 {

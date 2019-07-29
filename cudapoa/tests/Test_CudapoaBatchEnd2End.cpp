@@ -9,6 +9,7 @@
 */
 
 #include "gtest/gtest.h"
+
 #include "../benchmarks/multi-batch/multi_batch.hpp"
 #include "../benchmarks/common/utils.hpp"
 #include "file_location.hpp"
