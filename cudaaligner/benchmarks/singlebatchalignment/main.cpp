@@ -12,9 +12,9 @@
 #include <cuda_runtime_api.h>
 #include <random>
 
-#include "claragenomics/utils/genomeutils.hpp"
-#include "claragenomics/utils/cudautils.hpp"
-#include "claragenomics/cudaaligner/aligner.hpp"
+#include <claragenomics/utils/genomeutils.hpp>
+#include <claragenomics/utils/cudautils.hpp>
+#include <claragenomics/cudaaligner/aligner.hpp>
 
 #include "aligner_global_ukkonen.hpp"
 #include "aligner_global_myers.hpp"

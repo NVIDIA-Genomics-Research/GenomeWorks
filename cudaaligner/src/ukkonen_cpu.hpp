@@ -13,7 +13,7 @@
 #include <limits>
 #include <cassert>
 
-#include "claragenomics/utils/mathutils.hpp"
+#include <claragenomics/utils/mathutils.hpp>
 
 #include "matrix_cpu.hpp"
 

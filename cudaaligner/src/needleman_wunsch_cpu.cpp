@@ -12,7 +12,7 @@
 #include <cassert>
 #include <algorithm>
 
-#include "claragenomics/utils/mathutils.hpp"
+#include <claragenomics/utils/mathutils.hpp>
 
 #include "needleman_wunsch_cpu.hpp"
 

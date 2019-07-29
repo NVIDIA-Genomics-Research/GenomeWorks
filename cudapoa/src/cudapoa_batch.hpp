@@ -17,7 +17,7 @@
 #include <iostream>
 #include <cuda_runtime_api.h>
 
-#include "claragenomics/cudapoa/batch.hpp"
+#include <claragenomics/cudapoa/batch.hpp>
 
 namespace claragenomics
 {

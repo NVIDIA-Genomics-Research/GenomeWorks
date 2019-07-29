@@ -11,7 +11,7 @@
 #include <random>
 #include "gtest/gtest.h"
 
-#include "claragenomics/cudaaligner/alignment.hpp"
+#include <claragenomics/cudaaligner/alignment.hpp>
 #include <claragenomics/utils/signed_integer_utils.hpp>
 #include <claragenomics/utils/genomeutils.hpp>
 

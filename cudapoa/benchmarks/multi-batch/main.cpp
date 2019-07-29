@@ -11,7 +11,7 @@
 #include <benchmark/benchmark.h>
 #include <cuda_runtime_api.h>
 
-#include "claragenomics/utils/cudautils.hpp"
+#include <claragenomics/utils/cudautils.hpp>
 
 #include "../common/utils.hpp"
 #include "multi_batch.hpp"

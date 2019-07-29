@@ -8,7 +8,7 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-#include "claragenomics/cudaaligner/aligner.hpp"
+#include <claragenomics/cudaaligner/aligner.hpp>
 
 #include "aligner_global_ukkonen.hpp"
 #include "aligner_global_myers.hpp"

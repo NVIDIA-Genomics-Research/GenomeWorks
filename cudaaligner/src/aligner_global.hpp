@@ -12,7 +12,7 @@
 
 #include <thrust/system/cuda/experimental/pinned_allocator.h>
 
-#include "claragenomics/cudaaligner/aligner.hpp"
+#include <claragenomics/cudaaligner/aligner.hpp>
 #include <claragenomics/utils/signed_integer_utils.hpp>
 
 #include "ukkonen_gpu.cuh"

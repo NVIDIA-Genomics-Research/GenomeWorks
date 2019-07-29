@@ -10,7 +10,7 @@
 
 #include <stdio.h>
 
-#include "claragenomics/utils/cudautils.hpp"
+#include <claragenomics/utils/cudautils.hpp>
 
 #include "cudapoa_kernels.cuh"
 

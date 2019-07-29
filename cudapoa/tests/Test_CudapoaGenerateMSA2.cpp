@@ -13,7 +13,7 @@
 #include "gtest/gtest.h"
 #include "spoa/spoa.hpp"
 
-#include "claragenomics/cudapoa/batch.hpp"
+#include <claragenomics/cudapoa/batch.hpp>
 #include <claragenomics/utils/genomeutils.hpp>
 
 namespace claragenomics

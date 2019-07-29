@@ -11,8 +11,8 @@
 #include <future>
 #include <numeric>
 
-#include "claragenomics/cudapoa/batch.hpp"
-#include "claragenomics/utils/signed_integer_utils.hpp"
+#include <claragenomics/cudapoa/batch.hpp>
+#include <claragenomics/utils/signed_integer_utils.hpp>
 
 #include "../common/utils.hpp"
 

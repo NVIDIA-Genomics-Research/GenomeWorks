@@ -10,7 +10,7 @@
 
 #include "gtest/gtest.h"
 
-#include "claragenomics/cudapoa/batch.hpp"
+#include <claragenomics/cudapoa/batch.hpp>
 #include <claragenomics/utils/cudautils.hpp>            //CGA_CU_CHECK_ERR
 #include <claragenomics/utils/stringutils.hpp>          //array_to_string
 #include <claragenomics/utils/signed_integer_utils.hpp> //get_size
