@@ -40,7 +40,7 @@ logger "Run Copyright header check..."
 
 # Run style check
 logger "Run Python formatting check..."
-pycodestyle pyclaragenomics/
+flake8 pyclaragenomics/
 
 logger "Run C++ formatting check..."
 mkdir --parents ${WORKSPACE}/build
