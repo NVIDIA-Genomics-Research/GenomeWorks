@@ -13,3 +13,4 @@ numpy==1.16.3
 pytest==4.4.1
 tqdm==4.31.1
 quast==5.0.2
+flake8==3.7.8

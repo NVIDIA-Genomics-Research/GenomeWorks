@@ -66,7 +66,9 @@ To enable document generation for Clara Genomics Analysis, please install `Doxyg
 make docs
 ```
 
-## Enable Auto-Formatting
+## Code Formatting
+
+### C++ / CUDA
 Clara Genomics Analysis makes use of `clang-format` to format it's source and header files. To make use of
 auto-formatting, `clang-format` would have to be installed from the LLVM package (for latest builds,
 best to refer to http://releases.llvm.org/download.html).
@@ -86,4 +88,13 @@ To check if files are correct formatted, run the following in your build directo
 
 ```bash
 make check-format
+```
+
+### Python
+Clara Genomics Analysis follows the PEP-8 style guidelines for all its Python code. The automated
+CI system for Clara Genomics Analysis run `flake8` to check the style.
+
+To run style check manually, simply run the following from the top level folder.
+```
+flake8 pyclaragenomics/
 ```
