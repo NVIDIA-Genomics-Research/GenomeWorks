@@ -22,32 +22,34 @@ namespace claragenomics
 namespace cudapoa
 {
 
-BatchBlock::BatchBlock(int32_t device_id, size_t avail_mem, int32_t max_poas, int32_t max_sequences_per_poa, int8_t output_mask, bool banded_alignment)
-    : max_poas_(throw_on_negative(max_poas, "Maximum POAs in block has to be non-negative"))
-    , max_sequences_per_poa_(throw_on_negative(max_sequences_per_poa, "Maximum sequences per POA has to be non-negative"))
+BatchBlock::BatchBlock(int32_t device_id, size_t avail_mem, int32_t max_sequences_per_poa, int8_t output_mask, bool banded_alignment)
+    //: max_poas_(throw_on_negative(1U, "Maximum POAs in block has to be non-negative"))
+    : max_sequences_per_poa_(throw_on_negative(max_sequences_per_poa, "Maximum sequences per POA has to be non-negative"))
     , banded_alignment_(banded_alignment)
     , device_id_(throw_on_negative(device_id, "Device ID has to be non-negative"))
     , output_mask_(output_mask)
 {
-    output_size_               = max_poas_ * CUDAPOA_MAX_CONSENSUS_SIZE;
-    input_size_                = max_poas_ * max_sequences_per_poa_ * CUDAPOA_MAX_SEQUENCE_SIZE;
     matrix_sequence_dimension_ = banded_alignment_ ? CUDAPOA_BANDED_MAX_MATRIX_SEQUENCE_DIMENSION : CUDAPOA_MAX_MATRIX_SEQUENCE_DIMENSION;
     max_graph_dimension_       = banded_alignment_ ? CUDAPOA_MAX_MATRIX_GRAPH_DIMENSION_BANDED : CUDAPOA_MAX_MATRIX_GRAPH_DIMENSION;
     max_nodes_per_window_      = banded_alignment_ ? CUDAPOA_MAX_NODES_PER_WINDOW_BANDED : CUDAPOA_MAX_NODES_PER_WINDOW;
 
-    // Set CUDA device
+    // calculate static and dynamic sizes of buffers needed per POA entry.
+    size_t host_size_fixed, device_size_fixed;
+    size_t host_size_per_poa, device_size_per_poa;
+    std::tie(host_size_fixed, device_size_fixed, host_size_per_poa, device_size_per_poa) = calculate_space_per_poa();
+
+    // Calculate max POAs possible based on heirustics and available memory.
+    const float fraction_for_metadata = 0.4f;
+    max_poas_                         = (avail_mem * fraction_for_metadata) / device_size_per_poa;
+
+    // Update final sizes for block based on calculated maximum POAs.
+    output_size_ = max_poas_ * CUDAPOA_MAX_CONSENSUS_SIZE;
+    input_size_  = max_poas_ * max_sequences_per_poa_ * CUDAPOA_MAX_SEQUENCE_SIZE;
+    total_h_     = max_poas_ * host_size_per_poa + host_size_fixed;
+    total_d_     = avail_mem;
+
+    // Allocate.
     CGA_CU_CHECK_ERR(cudaSetDevice(device_id_));
-
-    // calculate size of statically sized buffers
-    calculate_size();
-
-    if (total_d_ > avail_mem)
-    {
-        throw std::runtime_error("Device Error:: memory footprint for cudapoa batch exceeds the available memory per batch\n");
-    }
-
-    total_d_ = avail_mem;
-    // allocation
     CGA_CU_CHECK_ERR(cudaHostAlloc((void**)&block_data_h_, total_h_, cudaHostAllocDefault));
     CGA_CU_CHECK_ERR(cudaMalloc((void**)&block_data_d_, total_d_));
 }
@@ -68,65 +70,75 @@ uint8_t* BatchBlock::get_block_device()
     return block_data_d_;
 }
 
-void BatchBlock::calculate_size()
+std::tuple<size_t, size_t, size_t, size_t> BatchBlock::calculate_space_per_poa()
 {
+    const int32_t poa_count = 1;
+
+    size_t host_size_fixed = 0, device_size_fixed = 0;
+    size_t host_size_per_poa = 0, device_size_per_poa = 0;
+
+    size_t input_size_per_poa  = max_sequences_per_poa_ * CUDAPOA_MAX_SEQUENCE_SIZE * poa_count;
+    size_t output_size_per_poa = CUDAPOA_MAX_CONSENSUS_SIZE * poa_count;
+
     // for output - host
-    total_h_ += sizeof(OutputDetails);                                                                          // output_details_h_
-    total_h_ += output_size_ * sizeof(uint8_t);                                                                 // output_details_h_->consensus
-    total_h_ += (output_mask_ & OutputType::consensus) ? output_size_ * sizeof(uint16_t) : 0;                   // output_details_h_->coverage
-    total_h_ += (output_mask_ & OutputType::msa) ? output_size_ * max_sequences_per_poa_ * sizeof(uint8_t) : 0; // output_details_h_->multiple_sequence_alignments
-    total_h_ += sizeof(OutputDetails);                                                                          // output_details_d_
+    host_size_fixed += sizeof(OutputDetails);                                                                                   // output_details_h_
+    host_size_per_poa += output_size_per_poa * sizeof(uint8_t);                                                                 // output_details_h_->consensus
+    host_size_per_poa += (output_mask_ & OutputType::consensus) ? output_size_per_poa * sizeof(uint16_t) : 0;                   // output_details_h_->coverage
+    host_size_per_poa += (output_mask_ & OutputType::msa) ? output_size_per_poa * max_sequences_per_poa_ * sizeof(uint8_t) : 0; // output_details_h_->multiple_sequence_alignments
+    host_size_per_poa += sizeof(OutputDetails);                                                                                 // output_details_d_
     // for output - device
-    total_d_ += output_size_ * sizeof(uint8_t);                                                                 // output_details_d_->consensus
-    total_d_ += (output_mask_ & OutputType::consensus) ? output_size_ * sizeof(uint16_t) : 0;                   // output_details_d_->coverage
-    total_d_ += (output_mask_ & OutputType::msa) ? output_size_ * max_sequences_per_poa_ * sizeof(uint8_t) : 0; // output_details_d_->multiple_sequence_alignments
+    device_size_per_poa += output_size_per_poa * sizeof(uint8_t);                                                                 // output_details_d_->consensus
+    device_size_per_poa += (output_mask_ & OutputType::consensus) ? output_size_per_poa * sizeof(uint16_t) : 0;                   // output_details_d_->coverage
+    device_size_per_poa += (output_mask_ & OutputType::msa) ? output_size_per_poa * max_sequences_per_poa_ * sizeof(uint8_t) : 0; // output_details_d_->multiple_sequence_alignments
 
     // for input - host
-    total_h_ += sizeof(InputDetails);                                                                         // input_details_h_
-    total_h_ += input_size_ * sizeof(uint8_t);                                                                // input_details_h_->sequences
-    total_h_ += input_size_ * sizeof(int8_t);                                                                 // input_details_h_->base_weights
-    total_h_ += max_poas_ * max_sequences_per_poa_ * sizeof(uint16_t);                                        // input_details_h_->sequence_lengths
-    total_h_ += max_poas_ * sizeof(WindowDetails);                                                            // input_details_h_->window_details
-    total_h_ += (output_mask_ & OutputType::msa) ? max_poas_ * max_sequences_per_poa_ * sizeof(uint16_t) : 0; // input_details_h_->sequence_begin_nodes_ids
+    host_size_fixed += sizeof(InputDetails);                                                                           // input_details_h_
+    host_size_per_poa += input_size_per_poa * sizeof(uint8_t);                                                         // input_details_h_->sequences
+    host_size_per_poa += input_size_per_poa * sizeof(int8_t);                                                          // input_details_h_->base_weights
+    host_size_per_poa += poa_count * max_sequences_per_poa_ * sizeof(uint16_t);                                        // input_details_h_->sequence_lengths
+    host_size_per_poa += poa_count * sizeof(WindowDetails);                                                            // input_details_h_->window_details
+    host_size_per_poa += (output_mask_ & OutputType::msa) ? poa_count * max_sequences_per_poa_ * sizeof(uint16_t) : 0; // input_details_h_->sequence_begin_nodes_ids
 
-    total_h_ += sizeof(InputDetails); // input_details_d_
+    host_size_fixed += sizeof(InputDetails); // input_details_d_
     // for input - device
-    total_d_ += input_size_ * sizeof(uint8_t);                                                                // input_details_d_->sequences
-    total_d_ += input_size_ * sizeof(int8_t);                                                                 // input_details_d_->base_weights
-    total_d_ += max_poas_ * max_sequences_per_poa_ * sizeof(uint16_t);                                        // input_details_d_->sequence_lengths
-    total_d_ += max_poas_ * sizeof(WindowDetails);                                                            // input_details_d_->window_details
-    total_d_ += (output_mask_ & OutputType::msa) ? max_poas_ * max_sequences_per_poa_ * sizeof(uint16_t) : 0; // input_details_d_->sequence_begin_nodes_ids
+    device_size_per_poa += input_size_per_poa * sizeof(uint8_t);                                                         // input_details_d_->sequences
+    device_size_per_poa += input_size_per_poa * sizeof(int8_t);                                                          // input_details_d_->base_weights
+    device_size_per_poa += poa_count * max_sequences_per_poa_ * sizeof(uint16_t);                                        // input_details_d_->sequence_lengths
+    device_size_per_poa += poa_count * sizeof(WindowDetails);                                                            // input_details_d_->window_details
+    device_size_per_poa += (output_mask_ & OutputType::msa) ? poa_count * max_sequences_per_poa_ * sizeof(uint16_t) : 0; // input_details_d_->sequence_begin_nodes_ids
 
     // for graph - host
-    total_h_ += sizeof(GraphDetails); // graph_details_d_
+    host_size_fixed += sizeof(GraphDetails); // graph_details_d_
     // for graph - device
-    total_d_ += sizeof(uint8_t) * max_nodes_per_window_ * max_poas_;                                                                                           // graph_details_d_->nodes
-    total_d_ += sizeof(uint16_t) * max_nodes_per_window_ * CUDAPOA_MAX_NODE_ALIGNMENTS * max_poas_;                                                            // graph_details_d_->node_alignments
-    total_d_ += sizeof(uint16_t) * max_nodes_per_window_ * max_poas_;                                                                                          // graph_details_d_->node_alignment_count
-    total_d_ += sizeof(uint16_t) * max_nodes_per_window_ * CUDAPOA_MAX_NODE_EDGES * max_poas_;                                                                 // graph_details_d_->incoming_edges
-    total_d_ += sizeof(uint16_t) * max_nodes_per_window_ * max_poas_;                                                                                          // graph_details_d_->incoming_edge_count
-    total_d_ += sizeof(uint16_t) * max_nodes_per_window_ * CUDAPOA_MAX_NODE_EDGES * max_poas_;                                                                 // graph_details_d_->outgoing_edges
-    total_d_ += sizeof(uint16_t) * max_nodes_per_window_ * max_poas_;                                                                                          // graph_details_d_->outgoing_edge_count
-    total_d_ += sizeof(uint16_t) * max_nodes_per_window_ * CUDAPOA_MAX_NODE_EDGES * max_poas_;                                                                 // graph_details_d_->incoming_edge_weights
-    total_d_ += sizeof(uint16_t) * max_nodes_per_window_ * CUDAPOA_MAX_NODE_EDGES * max_poas_;                                                                 // graph_details_d_->outgoing_edge_weights
-    total_d_ += sizeof(uint16_t) * max_nodes_per_window_ * max_poas_;                                                                                          // graph_details_d_->sorted_poa
-    total_d_ += sizeof(uint16_t) * max_nodes_per_window_ * max_poas_;                                                                                          // graph_details_d_->sorted_poa_node_map
-    total_d_ += sizeof(uint16_t) * max_nodes_per_window_ * max_poas_;                                                                                          // graph_details_d_->sorted_poa_local_edge_count
-    total_d_ += (output_mask_ & OutputType::consensus) ? sizeof(int32_t) * max_nodes_per_window_ * max_poas_ : 0;                                              // graph_details_d_->consensus_scores
-    total_d_ += (output_mask_ & OutputType::consensus) ? sizeof(int16_t) * max_nodes_per_window_ * max_poas_ : 0;                                              // graph_details_d_->consensus_predecessors
-    total_d_ += sizeof(int8_t) * max_nodes_per_window_ * max_poas_;                                                                                            // graph_details_d_->node_marks
-    total_d_ += sizeof(bool) * max_nodes_per_window_ * max_poas_;                                                                                              // graph_details_d_->check_aligned_nodes
-    total_d_ += sizeof(uint16_t) * max_nodes_per_window_ * max_poas_;                                                                                          // graph_details_d_->nodes_to_visit
-    total_d_ += sizeof(uint16_t) * max_nodes_per_window_ * max_poas_;                                                                                          // graph_details_d_->node_coverage_counts
-    total_d_ += (output_mask_ & OutputType::msa) ? sizeof(uint16_t) * max_nodes_per_window_ * CUDAPOA_MAX_NODE_EDGES * max_sequences_per_poa_ * max_poas_ : 0; // graph_details_d_->outgoing_edges_coverage
-    total_d_ += (output_mask_ & OutputType::msa) ? sizeof(uint16_t) * max_nodes_per_window_ * CUDAPOA_MAX_NODE_EDGES * max_poas_ : 0;                          // graph_details_d_->outgoing_edges_coverage_count
-    total_d_ += (output_mask_ & OutputType::msa) ? sizeof(int16_t) * max_nodes_per_window_ * max_poas_ : 0;                                                    // graph_details_d_->node_id_to_msa_pos
+    device_size_per_poa += sizeof(uint8_t) * max_nodes_per_window_ * poa_count;                                                                                           // graph_details_d_->nodes
+    device_size_per_poa += sizeof(uint16_t) * max_nodes_per_window_ * CUDAPOA_MAX_NODE_ALIGNMENTS * poa_count;                                                            // graph_details_d_->node_alignments
+    device_size_per_poa += sizeof(uint16_t) * max_nodes_per_window_ * poa_count;                                                                                          // graph_details_d_->node_alignment_count
+    device_size_per_poa += sizeof(uint16_t) * max_nodes_per_window_ * CUDAPOA_MAX_NODE_EDGES * poa_count;                                                                 // graph_details_d_->incoming_edges
+    device_size_per_poa += sizeof(uint16_t) * max_nodes_per_window_ * poa_count;                                                                                          // graph_details_d_->incoming_edge_count
+    device_size_per_poa += sizeof(uint16_t) * max_nodes_per_window_ * CUDAPOA_MAX_NODE_EDGES * poa_count;                                                                 // graph_details_d_->outgoing_edges
+    device_size_per_poa += sizeof(uint16_t) * max_nodes_per_window_ * poa_count;                                                                                          // graph_details_d_->outgoing_edge_count
+    device_size_per_poa += sizeof(uint16_t) * max_nodes_per_window_ * CUDAPOA_MAX_NODE_EDGES * poa_count;                                                                 // graph_details_d_->incoming_edge_weights
+    device_size_per_poa += sizeof(uint16_t) * max_nodes_per_window_ * CUDAPOA_MAX_NODE_EDGES * poa_count;                                                                 // graph_details_d_->outgoing_edge_weights
+    device_size_per_poa += sizeof(uint16_t) * max_nodes_per_window_ * poa_count;                                                                                          // graph_details_d_->sorted_poa
+    device_size_per_poa += sizeof(uint16_t) * max_nodes_per_window_ * poa_count;                                                                                          // graph_details_d_->sorted_poa_node_map
+    device_size_per_poa += sizeof(uint16_t) * max_nodes_per_window_ * poa_count;                                                                                          // graph_details_d_->sorted_poa_local_edge_count
+    device_size_per_poa += (output_mask_ & OutputType::consensus) ? sizeof(int32_t) * max_nodes_per_window_ * poa_count : 0;                                              // graph_details_d_->consensus_scores
+    device_size_per_poa += (output_mask_ & OutputType::consensus) ? sizeof(int16_t) * max_nodes_per_window_ * poa_count : 0;                                              // graph_details_d_->consensus_predecessors
+    device_size_per_poa += sizeof(int8_t) * max_nodes_per_window_ * poa_count;                                                                                            // graph_details_d_->node_marks
+    device_size_per_poa += sizeof(bool) * max_nodes_per_window_ * poa_count;                                                                                              // graph_details_d_->check_aligned_nodes
+    device_size_per_poa += sizeof(uint16_t) * max_nodes_per_window_ * poa_count;                                                                                          // graph_details_d_->nodes_to_visit
+    device_size_per_poa += sizeof(uint16_t) * max_nodes_per_window_ * poa_count;                                                                                          // graph_details_d_->node_coverage_counts
+    device_size_per_poa += (output_mask_ & OutputType::msa) ? sizeof(uint16_t) * max_nodes_per_window_ * CUDAPOA_MAX_NODE_EDGES * max_sequences_per_poa_ * poa_count : 0; // graph_details_d_->outgoing_edges_coverage
+    device_size_per_poa += (output_mask_ & OutputType::msa) ? sizeof(uint16_t) * max_nodes_per_window_ * CUDAPOA_MAX_NODE_EDGES * poa_count : 0;                          // graph_details_d_->outgoing_edges_coverage_count
+    device_size_per_poa += (output_mask_ & OutputType::msa) ? sizeof(int16_t) * max_nodes_per_window_ * poa_count : 0;                                                    // graph_details_d_->node_id_to_msa_pos
 
     // for alignment - host
-    total_h_ += sizeof(AlignmentDetails); // alignment_details_d_
+    host_size_fixed += sizeof(AlignmentDetails); // alignment_details_d_
     // for alignment - device
-    total_d_ += sizeof(int16_t) * max_graph_dimension_ * max_poas_; // alignment_details_d_->alignment_graph
-    total_d_ += sizeof(int16_t) * max_graph_dimension_ * max_poas_; // alignment_details_d_->alignment_read
+    device_size_per_poa += sizeof(int16_t) * max_graph_dimension_ * poa_count; // alignment_details_d_->alignment_graph
+    device_size_per_poa += sizeof(int16_t) * max_graph_dimension_ * poa_count; // alignment_details_d_->alignment_read
+
+    return std::make_tuple(host_size_fixed, device_size_fixed, host_size_per_poa, device_size_per_poa);
 }
 
 void BatchBlock::get_output_details(OutputDetails** output_details_h_p, OutputDetails** output_details_d_p)

@@ -29,11 +29,9 @@ public:
     /// \brief Construct a multi batch processor
     ///
     /// \param num_batches Number of cudapoa batches
-    /// \param max_poas_per_batch Batch size
     /// \param filename Filename with window data
-    MultiBatch(int32_t num_batches, int32_t max_poas_per_batch, const std::string& filename, int32_t total_windows = -1)
+    MultiBatch(int32_t num_batches, const std::string& filename, int32_t total_windows = -1)
         : num_batches_(num_batches)
-        , max_poas_per_batch_(max_poas_per_batch)
     {
         parse_window_data_file(windows_, filename, total_windows);
 
@@ -47,7 +45,7 @@ public:
         {
             cudaStream_t stream;
             cudaStreamCreate(&stream);
-            batches_.emplace_back(create_batch(max_poas_per_batch, 200,
+            batches_.emplace_back(create_batch(200,
                                                0, mem_per_batch,
                                                OutputType::consensus,
                                                -8, -6, 8, false));
@@ -206,7 +204,6 @@ public:
 
 private:
     int32_t num_batches_;
-    int32_t max_poas_per_batch_;
     std::vector<std::unique_ptr<Batch>> batches_;
     std::vector<std::vector<std::string>> windows_;
     std::vector<std::string> consensus_;

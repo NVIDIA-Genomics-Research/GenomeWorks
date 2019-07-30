@@ -26,9 +26,8 @@ namespace cudapoa
 static void BM_MultiBatchTest(benchmark::State& state)
 {
     int32_t batches             = state.range(0);
-    int32_t batch_size          = state.range(1);
     const int32_t total_windows = 5500;
-    MultiBatch mb(batches, batch_size, std::string(CUDAPOA_BENCHMARK_DATA_DIR) + "/sample-windows.txt", total_windows);
+    MultiBatch mb(batches, std::string(CUDAPOA_BENCHMARK_DATA_DIR) + "/sample-windows.txt", total_windows);
     for (auto _ : state)
     {
         mb.process_batches();
@@ -39,15 +38,9 @@ static void CustomArguments(benchmark::internal::Benchmark* b)
 {
     const int32_t min_total_windows = 512;
     const int32_t max_total_windows = 4096;
-    for (int32_t batches = 1; batches <= 64; batches *= 2)
+    for (int32_t batches = 1; batches <= 16; batches *= 2)
     {
-        for (int32_t batch_size = 64; batch_size <= 1024; batch_size *= 2)
-        {
-            if (batches * batch_size <= max_total_windows && batches * batch_size >= min_total_windows)
-            {
-                b->Args({batches, batch_size});
-            }
-        }
+        b->Args({batches});
     }
 }
 
