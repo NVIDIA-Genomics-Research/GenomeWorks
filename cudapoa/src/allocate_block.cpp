@@ -43,7 +43,7 @@ BatchBlock::BatchBlock(int32_t device_id, size_t avail_mem, int32_t max_poas, in
 
     if (total_d_ > avail_mem)
     {
-        CGA_LOG_ERROR("Device Error:: memory footprint for current batch exceeds the allocated memory for the batch\n");
+        throw std::runtime_error("Device Error:: memory footprint for cudapoa batch exceeds the available memory per batch\n");
     }
 
     total_d_ = avail_mem;

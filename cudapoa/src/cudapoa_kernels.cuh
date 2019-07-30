@@ -82,7 +82,7 @@ enum
 template <typename IntType>
 __host__ __device__ __forceinline__
     IntType
-    align(const IntType& size)
+    alignTo4(const IntType& size)
 {
     return (size + MASK) & ~MASK;
 }
