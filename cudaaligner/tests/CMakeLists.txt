@@ -16,6 +16,7 @@ set(SOURCES
     Test_AlignmentImpl.cpp
     Test_AlignerGlobal.cpp
     Test_MyersAlgorithm.cpp
+    Test_HirschbergMyers.cu
     Test_NeedlemanWunschImplementation.cpp
     )
 

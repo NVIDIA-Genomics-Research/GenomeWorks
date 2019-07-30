@@ -10,6 +10,7 @@
 
 #include "../src/aligner_global_ukkonen.hpp"
 #include "../src/aligner_global_myers.hpp"
+#include "../src/aligner_global_hirschberg_myers.hpp"
 
 #include <claragenomics/cudaaligner/alignment.hpp>
 #include <claragenomics/utils/signed_integer_utils.hpp>
@@ -27,8 +28,20 @@ namespace cudaaligner
 enum class AlignmentAlgorithm
 {
     Ukkonen = 0,
-    Myers
+    Myers,
+    HirschbergMyers
 };
+
+std::string get_algorithm_name(AlignmentAlgorithm x)
+{
+    switch (x)
+    {
+    case AlignmentAlgorithm::Ukkonen: return "Ukkonen";
+    case AlignmentAlgorithm::Myers: return "Ukkonen";
+    case AlignmentAlgorithm::HirschbergMyers: return "Hirschberg + Myers";
+    default: return "";
+    }
+}
 
 // Common data structures and functions.
 struct AlignerTestData
@@ -117,9 +130,10 @@ std::vector<AlignerTestData> create_aligner_test_cases()
     test_cases.push_back(data);
 
     std::vector<AlignerTestData> test_cases_final;
-    test_cases_final.reserve(2 * test_cases.size());
+    test_cases_final.reserve(3 * test_cases.size());
     test_cases_final.insert(test_cases_final.end(), test_cases.begin(), test_cases.end());
     std::transform(test_cases.begin(), test_cases.end(), std::back_inserter(test_cases_final), [](AlignerTestData td) { td.algorithm = AlignmentAlgorithm::Myers; return td; });
+    std::transform(test_cases.begin(), test_cases.end(), std::back_inserter(test_cases_final), [](AlignerTestData td) { td.algorithm = AlignmentAlgorithm::HirschbergMyers; return td; });
 
     return test_cases_final;
 };
@@ -152,16 +166,24 @@ TEST_P(TestAlignerGlobal, TestAlignmentKernel)
 
     const int32_t max_string_size = get_max_sequence_length(inputs) + 1;
     std::unique_ptr<Aligner> aligner;
-    if (param.algorithm == AlignmentAlgorithm::Ukkonen)
+    switch (param.algorithm)
     {
+    case AlignmentAlgorithm::Ukkonen:
         aligner = std::make_unique<AlignerGlobalUkkonen>(max_string_size,
                                                          max_string_size,
                                                          param.inputs.size(),
                                                          nullptr,
                                                          0);
-    }
-    else
-    {
+        break;
+    case AlignmentAlgorithm::HirschbergMyers:
+        aligner = std::make_unique<AlignerGlobalHirschbergMyers>(max_string_size,
+                                                                 max_string_size,
+                                                                 param.inputs.size(),
+                                                                 nullptr,
+                                                                 0);
+        break;
+    default:
+    case AlignmentAlgorithm::Myers:
         aligner = std::make_unique<AlignerGlobalMyers>(max_string_size,
                                                        max_string_size,
                                                        param.inputs.size(),
@@ -194,7 +216,7 @@ TEST_P(TestAlignerGlobal, TestAlignmentKernel)
                                                                 << "\nand\n"
                                                                 << alignment->get_target_sequence()
                                                                 << "\nindex: " << a
-                                                                << "\nusing " << (param.algorithm == AlignmentAlgorithm::Ukkonen ? "Ukkonen" : "Myers");
+                                                                << "\nusing " << get_algorithm_name(param.algorithm);
         }
     }
 }
