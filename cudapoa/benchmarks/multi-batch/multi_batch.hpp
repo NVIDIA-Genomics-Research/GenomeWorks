@@ -8,13 +8,13 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-#include <future>
-#include <numeric>
+#include "../common/utils.hpp"
 
 #include <claragenomics/cudapoa/batch.hpp>
 #include <claragenomics/utils/signed_integer_utils.hpp>
 
-#include "../common/utils.hpp"
+#include <future>
+#include <numeric>
 
 namespace claragenomics
 {

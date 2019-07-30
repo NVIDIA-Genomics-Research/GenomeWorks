@@ -8,19 +8,19 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-#include <cuda_runtime_api.h>
-#include <random>
-#include <algorithm>
-#include "gtest/gtest.h"
-
-#include <claragenomics/utils/signed_integer_utils.hpp>
-#include <claragenomics/utils/genomeutils.hpp>
-
 #include "../src/needleman_wunsch_cpu.hpp"
 #include "../src/ukkonen_cpu.hpp"
 #include "../src/ukkonen_gpu.cuh"
 #include "../src/device_storage.cuh"
 #include "../src/batched_device_matrices.cuh"
+
+#include <claragenomics/utils/signed_integer_utils.hpp>
+#include <claragenomics/utils/genomeutils.hpp>
+
+#include <cuda_runtime_api.h>
+#include <random>
+#include <algorithm>
+#include "gtest/gtest.h"
 
 namespace claragenomics
 {

@@ -8,13 +8,13 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-#include <tuple>
-#include <cassert>
-#include <algorithm>
+#include "needleman_wunsch_cpu.hpp"
 
 #include <claragenomics/utils/mathutils.hpp>
 
-#include "needleman_wunsch_cpu.hpp"
+#include <tuple>
+#include <cassert>
+#include <algorithm>
 
 namespace claragenomics
 {

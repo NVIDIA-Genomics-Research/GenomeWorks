@@ -8,16 +8,16 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-#include <benchmark/benchmark.h>
-#include <cuda_runtime_api.h>
-#include <random>
+#include "aligner_global_ukkonen.hpp"
+#include "aligner_global_myers.hpp"
 
 #include <claragenomics/utils/genomeutils.hpp>
 #include <claragenomics/utils/cudautils.hpp>
 #include <claragenomics/cudaaligner/aligner.hpp>
 
-#include "aligner_global_ukkonen.hpp"
-#include "aligner_global_myers.hpp"
+#include <benchmark/benchmark.h>
+#include <cuda_runtime_api.h>
+#include <random>
 
 namespace claragenomics
 {

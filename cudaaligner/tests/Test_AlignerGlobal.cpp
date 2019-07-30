@@ -8,15 +8,15 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-#include <random>
-#include "gtest/gtest.h"
+#include "../src/aligner_global_ukkonen.hpp"
+#include "../src/aligner_global_myers.hpp"
 
 #include <claragenomics/cudaaligner/alignment.hpp>
 #include <claragenomics/utils/signed_integer_utils.hpp>
 #include <claragenomics/utils/genomeutils.hpp>
 
-#include "../src/aligner_global_ukkonen.hpp"
-#include "../src/aligner_global_myers.hpp"
+#include <random>
+#include "gtest/gtest.h"
 
 namespace claragenomics
 {

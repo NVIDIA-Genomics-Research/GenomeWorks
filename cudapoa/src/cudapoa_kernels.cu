@@ -10,8 +10,6 @@
 
 // Implementation file for CUDA POA kernels.
 
-#include <claragenomics/utils/cudautils.hpp>
-
 #include "cudapoa_kernels.cuh"
 #include "cudapoa_nw.cu"
 #include "cudapoa_nw_banded.cu"
@@ -19,6 +17,8 @@
 #include "cudapoa_add_alignment.cu"
 #include "cudapoa_generate_consensus.cu"
 #include "cudapoa_generate_msa.cu"
+
+#include <claragenomics/utils/cudautils.hpp>
 
 namespace claragenomics
 {

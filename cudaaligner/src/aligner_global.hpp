@@ -10,13 +10,13 @@
 
 #pragma once
 
-#include <thrust/system/cuda/experimental/pinned_allocator.h>
+#include "ukkonen_gpu.cuh"
+#include "device_storage.cuh"
 
 #include <claragenomics/cudaaligner/aligner.hpp>
 #include <claragenomics/utils/signed_integer_utils.hpp>
 
-#include "ukkonen_gpu.cuh"
-#include "device_storage.cuh"
+#include <thrust/system/cuda/experimental/pinned_allocator.h>
 
 namespace claragenomics
 {

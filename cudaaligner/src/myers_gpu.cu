@@ -8,18 +8,18 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-#include <cassert>
-#include <climits>
-#include <vector>
-#include <numeric>
+#include "myers_gpu.cuh"
+#include "device_storage.cuh"
+#include "batched_device_matrices.cuh"
 
 #include <claragenomics/utils/signed_integer_utils.hpp>
 #include <claragenomics/utils/mathutils.hpp>
 #include <claragenomics/utils/cudautils.hpp>
 
-#include "myers_gpu.cuh"
-#include "device_storage.cuh"
-#include "batched_device_matrices.cuh"
+#include <cassert>
+#include <climits>
+#include <vector>
+#include <numeric>
 
 namespace claragenomics
 {

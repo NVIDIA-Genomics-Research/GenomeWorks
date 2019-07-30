@@ -10,13 +10,13 @@
 
 #pragma once
 
-#include <tuple>
-#include <cassert>
+#include "device_storage.cuh"
+#include "matrix_cpu.hpp"
 
 #include <claragenomics/utils/cudautils.hpp>
 
-#include "device_storage.cuh"
-#include "matrix_cpu.hpp"
+#include <tuple>
+#include <cassert>
 
 namespace claragenomics
 {

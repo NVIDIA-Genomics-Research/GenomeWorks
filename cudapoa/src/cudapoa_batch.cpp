@@ -8,16 +8,16 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-#include <algorithm>
-#include <cstring>
+#include "cudapoa_batch.hpp"
+#include "allocate_block.hpp"
+#include "cudapoa_kernels.cuh"
 
 #include <claragenomics/utils/cudautils.hpp>
 #include <claragenomics/logging/logging.hpp>
 #include <claragenomics/utils/signed_integer_utils.hpp>
 
-#include "allocate_block.hpp"
-#include "cudapoa_batch.hpp"
-#include "cudapoa_kernels.cuh"
+#include <algorithm>
+#include <cstring>
 
 #ifndef TABS
 #define TABS printTabs(bid_)

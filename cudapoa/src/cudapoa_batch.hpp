@@ -10,14 +10,14 @@
 
 #pragma once
 
+#include <claragenomics/cudapoa/batch.hpp>
+
 #include <memory>
 #include <vector>
 #include <stdint.h>
 #include <string>
 #include <iostream>
 #include <cuda_runtime_api.h>
-
-#include <claragenomics/cudapoa/batch.hpp>
 
 namespace claragenomics
 {

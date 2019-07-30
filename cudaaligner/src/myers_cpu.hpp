@@ -10,11 +10,11 @@
 
 #pragma once
 
+#include <claragenomics/utils/signed_integer_utils.hpp>
+
 #include <cassert>
 #include <climits>
 #include <vector>
-
-#include <claragenomics/utils/signed_integer_utils.hpp>
 
 namespace claragenomics
 {

@@ -8,11 +8,11 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-#include <claragenomics/utils/mathutils.hpp>
-
 #include "aligner_global_myers.hpp"
 #include "myers_gpu.cuh"
 #include "batched_device_matrices.cuh"
+
+#include <claragenomics/utils/mathutils.hpp>
 
 namespace claragenomics
 {

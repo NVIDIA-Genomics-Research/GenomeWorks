@@ -8,11 +8,11 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-#include <benchmark/benchmark.h>
-
 #include <claragenomics/utils/genomeutils.hpp>
 #include <claragenomics/utils/cudautils.hpp>
 #include <claragenomics/cudaaligner/aligner.hpp>
+
+#include <benchmark/benchmark.h>
 
 namespace claragenomics
 {

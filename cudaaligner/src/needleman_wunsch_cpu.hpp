@@ -10,10 +10,10 @@
 
 #pragma once
 
+#include "matrix_cpu.hpp"
+
 #include <vector>
 #include <string>
-
-#include "matrix_cpu.hpp"
 
 namespace claragenomics
 {

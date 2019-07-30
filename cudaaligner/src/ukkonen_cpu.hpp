@@ -10,12 +10,14 @@
 
 #pragma once
 
-#include <limits>
-#include <cassert>
+#include "matrix_cpu.hpp"
 
 #include <claragenomics/utils/mathutils.hpp>
 
-#include "matrix_cpu.hpp"
+#include <limits>
+#include <cassert>
+#include <tuple>
+#include <algorithm>
 
 namespace claragenomics
 {
@@ -100,7 +102,7 @@ std::vector<int8_t> ukkonen_backtrace(matrix<int> const& scores, int n, int m, i
         res.push_back(2);
         --j;
     }
-    reverse(res.begin(), res.end());
+    std::reverse(res.begin(), res.end());
     return res;
 }
 

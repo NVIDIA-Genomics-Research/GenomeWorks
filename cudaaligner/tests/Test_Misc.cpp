@@ -8,9 +8,9 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-#include "gtest/gtest.h"
-
 #include <claragenomics/utils/mathutils.hpp>
+
+#include "gtest/gtest.h"
 
 namespace claragenomics
 {
