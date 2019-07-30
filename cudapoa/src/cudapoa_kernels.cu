@@ -93,7 +93,6 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
                                   uint16_t* outgoing_edges_coverage_d,
                                   uint16_t* outgoing_edges_coverage_count_d)
 {
-
     // shared error indicator within a warp
     bool warp_error = false;
 
@@ -107,9 +106,8 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
 
     // These are not being changed to int32_t to make use of larger range
     // without having to use 2 registers which would be needed for 64bit
-    uint32_t matrix_sequence_dimension = cuda_banded_alignment ? CUDAPOA_BANDED_MAX_MATRIX_SEQUENCE_DIMENSION : CUDAPOA_MAX_MATRIX_SEQUENCE_DIMENSION;
-    uint32_t max_nodes_per_window      = cuda_banded_alignment ? CUDAPOA_MAX_NODES_PER_WINDOW_BANDED : CUDAPOA_MAX_NODES_PER_WINDOW;
-    uint32_t max_graph_dimension       = cuda_banded_alignment ? CUDAPOA_MAX_MATRIX_GRAPH_DIMENSION_BANDED : CUDAPOA_MAX_MATRIX_GRAPH_DIMENSION;
+    uint32_t max_nodes_per_window = cuda_banded_alignment ? CUDAPOA_MAX_NODES_PER_WINDOW_BANDED : CUDAPOA_MAX_NODES_PER_WINDOW;
+    uint32_t max_graph_dimension  = cuda_banded_alignment ? CUDAPOA_MAX_MATRIX_GRAPH_DIMENSION_BANDED : CUDAPOA_MAX_MATRIX_GRAPH_DIMENSION;
 
     // Find the buffer offsets for each thread within the global memory buffers.
     uint8_t* nodes                        = &nodes_d[max_nodes_per_window * window_idx];
@@ -125,7 +123,15 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
     uint16_t* node_alignment_count        = &node_alignment_count_d[window_idx * max_nodes_per_window];
     uint16_t* sorted_poa_local_edge_count = &sorted_poa_local_edge_count_d[window_idx * max_nodes_per_window];
 
-    int16_t* scores                = &scores_d[max_graph_dimension * matrix_sequence_dimension * window_idx];
+    int32_t scores_width = window_details_d[window_idx].scores_width;
+    size_t scores_offset = window_details_d[window_idx].scores_offset * max_graph_dimension;
+
+    int16_t* scores = 0;
+    if (cuda_banded_alignment)
+        scores = &scores_d[max_graph_dimension * CUDAPOA_BANDED_MAX_MATRIX_SEQUENCE_DIMENSION * window_idx];
+    else
+        scores = &scores_d[scores_offset];
+
     int16_t* alignment_graph       = &alignment_graph_d[max_graph_dimension * window_idx];
     int16_t* alignment_read        = &alignment_read_d[max_graph_dimension * window_idx];
     uint16_t* node_coverage_counts = &node_coverage_counts_d_[max_nodes_per_window * window_idx];
@@ -255,6 +261,7 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
                                                                                    sequence,
                                                                                    seq_len,
                                                                                    scores,
+                                                                                   scores_width,
                                                                                    alignment_graph,
                                                                                    alignment_read,
                                                                                    gap_score,

@@ -237,6 +237,7 @@ NWAnswer testNW(const BasicNW& obj)
           read,
           read_count,
           scores,
+          CUDAPOA_MAX_MATRIX_SEQUENCE_DIMENSION,
           alignment_graph,
           alignment_read,
           gap_score,
