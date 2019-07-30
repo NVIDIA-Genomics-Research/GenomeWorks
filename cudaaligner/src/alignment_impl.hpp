@@ -10,7 +10,7 @@
 
 #pragma once
 
-#include "cudaaligner/alignment.hpp"
+#include <claragenomics/cudaaligner/alignment.hpp>
 
 namespace claragenomics
 {

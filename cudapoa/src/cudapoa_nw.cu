@@ -10,7 +10,9 @@
 
 #include "cudapoa_kernels.cuh"
 #include "cudastructs.cuh"
-#include "cudautils/cudautils.hpp"
+
+#include <claragenomics/utils/cudautils.hpp>
+
 #include <stdio.h>
 
 namespace claragenomics

@@ -10,8 +10,8 @@
 
 #pragma once
 
-#include "ukkonen_gpu.cuh"
 #include "aligner_global.hpp"
+#include "ukkonen_gpu.cuh"
 
 namespace claragenomics
 {

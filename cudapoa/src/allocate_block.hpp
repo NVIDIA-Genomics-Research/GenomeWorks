@@ -10,14 +10,13 @@
 
 #pragma once
 
+#include "cudapoa_kernels.cuh"
+
 #include <memory>
 #include <vector>
 #include <stdint.h>
 #include <string>
-
 #include <cuda_runtime_api.h>
-
-#include "cudapoa_kernels.cuh"
 
 namespace claragenomics
 {

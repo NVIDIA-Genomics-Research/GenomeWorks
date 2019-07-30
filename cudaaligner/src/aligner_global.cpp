@@ -8,17 +8,16 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-#include <cstring>
-#include <algorithm>
-
-#include <cuda_runtime_api.h>
-
-#include <utils/signed_integer_utils.hpp>
-
 #include "aligner_global.hpp"
 #include "alignment_impl.hpp"
-#include <cudautils/cudautils.hpp>
-#include <logging/logging.hpp>
+
+#include <claragenomics/utils/signed_integer_utils.hpp>
+#include <claragenomics/utils/cudautils.hpp>
+#include <claragenomics/logging/logging.hpp>
+
+#include <cstring>
+#include <algorithm>
+#include <cuda_runtime_api.h>
 
 namespace claragenomics
 {

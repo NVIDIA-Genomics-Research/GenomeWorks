@@ -8,10 +8,11 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-#include "gtest/gtest.h"
 #include "../benchmarks/multi-batch/multi_batch.hpp"
 #include "../benchmarks/common/utils.hpp"
 #include "file_location.hpp"
+
+#include "gtest/gtest.h"
 
 namespace claragenomics
 {

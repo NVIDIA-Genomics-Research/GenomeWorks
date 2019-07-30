@@ -10,11 +10,13 @@
 
 #include "cudapoa_kernels.cuh"
 #include "cudastructs.cuh"
-#include "cudautils/cudautils.hpp"
-#include <stdio.h>
+
+#include <claragenomics/utils/cudautils.hpp>
 
 // Extract shorts from bit field.
 #define EXTRACT_SHORT_FROM_BITFIELD(type, val, pos) (type)((val >> (16 * (pos))) & 0xffff)
+
+#include <stdio.h>
 
 namespace claragenomics
 {

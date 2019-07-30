@@ -8,11 +8,12 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-#include <memory>
+#include "../src/alignment_impl.hpp"
+
+#include <claragenomics/utils/signed_integer_utils.hpp>
 
 #include "gtest/gtest.h"
-#include "../src/alignment_impl.hpp"
-#include <utils/signed_integer_utils.hpp>
+#include <memory>
 
 namespace claragenomics
 {

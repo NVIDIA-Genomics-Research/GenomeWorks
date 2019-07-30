@@ -9,7 +9,8 @@
 */
 
 #include "alignment_impl.hpp"
-#include <utils/signed_integer_utils.hpp>
+
+#include <claragenomics/utils/signed_integer_utils.hpp>
 
 namespace claragenomics
 {

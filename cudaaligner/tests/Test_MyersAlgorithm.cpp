@@ -8,11 +8,13 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-#include <gtest/gtest.h>
-#include <utils/genomeutils.hpp>
-#include <random>
 #include "../src/myers_gpu.cuh"
 #include "../src/needleman_wunsch_cpu.hpp"
+
+#include <claragenomics/utils/genomeutils.hpp>
+
+#include <random>
+#include <gtest/gtest.h>
 
 namespace claragenomics
 {
