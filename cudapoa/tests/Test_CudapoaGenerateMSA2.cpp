@@ -30,8 +30,7 @@ class MSATest : public ::testing::Test
 public:
     void SetUp() {}
 
-    void initialize(uint32_t max_poas,
-                    uint32_t max_sequences_per_poa,
+    void initialize(uint32_t max_sequences_per_poa,
                     uint32_t device_id     = 0,
                     int8_t output_mask     = OutputType::msa,
                     int16_t gap_score      = -8,
@@ -44,7 +43,7 @@ public:
         cudaMemGetInfo(&free, &total);
         size_t mem_per_batch = 0.9 * free;
 
-        cudapoa_batch = claragenomics::cudapoa::create_batch(max_poas, max_sequences_per_poa, device_id, mem_per_batch, output_mask, gap_score, mismatch_score, match_score, banded_alignment);
+        cudapoa_batch = claragenomics::cudapoa::create_batch(max_sequences_per_poa, device_id, mem_per_batch, output_mask, gap_score, mismatch_score, match_score, banded_alignment);
     }
 
     std::vector<std::string> spoa_generate_multiple_sequence_alignments(std::vector<std::string> sequences,
@@ -79,7 +78,7 @@ TEST_F(MSATest, CudapoaMSA)
     std::string backbone = claragenomics::genomeutils::generate_random_genome(50, rng);
     auto sequences       = claragenomics::genomeutils::generate_random_sequences(backbone, num_sequences, rng, 10, 5, 10);
 
-    initialize(1, num_sequences + 1); //
+    initialize(num_sequences + 1); //
     Group poa_group;
     std::vector<StatusType> status;
     for (const auto& seq : sequences)

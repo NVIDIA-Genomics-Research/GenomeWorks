@@ -27,7 +27,7 @@ namespace cudapoa
 class BatchBlock
 {
 public:
-    BatchBlock(int32_t device_id_, size_t avail_mem, int32_t max_poas, int32_t max_sequences_per_poa, int8_t output_mask, bool banded_alignment = false);
+    BatchBlock(int32_t device_id_, size_t avail_mem, int32_t max_sequences_per_poa, int8_t output_mask, bool banded_alignment = false);
     ~BatchBlock();
 
     void get_output_details(OutputDetails** output_details_h_p, OutputDetails** output_details_d_p);
@@ -42,8 +42,15 @@ public:
 
     uint8_t* get_block_device();
 
+    int32_t get_max_poas() const { return max_poas_; };
+
 protected:
-    void calculate_size();
+    // Returns amount of host and device memory needed to store metadata per POA entry.
+    // The first two elements of the tuple are fixed host and device sizes that
+    // don't vary based on POA count. The latter two are host and device
+    // buffer sizes that scale with number of POA entries to process. These sizes do
+    // not include the scoring matrix needs for POA processing.
+    std::tuple<size_t, size_t, size_t, size_t> calculate_space_per_poa();
 
 protected:
     // Maximum POAs to process in batch.
@@ -60,15 +67,15 @@ protected:
     uint8_t* block_data_d_;
 
     // Accumulator for the memory size
-    uint64_t total_h_ = 0;
-    uint64_t total_d_ = 0;
+    size_t total_h_ = 0;
+    size_t total_d_ = 0;
 
     // Offset index for pointing a buffer to block memory
-    uint64_t offset_h_ = 0;
-    uint64_t offset_d_ = 0;
+    size_t offset_h_ = 0;
+    size_t offset_d_ = 0;
 
-    int32_t input_size_;
-    int32_t output_size_;
+    size_t input_size_;
+    size_t output_size_;
     int32_t matrix_sequence_dimension_;
     int32_t max_graph_dimension_;
     uint16_t max_nodes_per_window_;

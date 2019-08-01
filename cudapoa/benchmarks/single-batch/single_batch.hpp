@@ -39,7 +39,7 @@ public:
         cudaSetDevice(0);
         cudaMemGetInfo(&free, &total);
         size_t mem_per_batch = 0.9 * free;
-        batch_               = create_batch(max_poas_per_batch, 200, 0, mem_per_batch, OutputType::consensus, -8, -6, 8, false);
+        batch_               = create_batch(200, 0, mem_per_batch, OutputType::consensus, -8, -6, 8, false);
         cudaStream_t stream;
         cudaStreamCreate(&stream);
         batch_->set_cuda_stream(stream);
