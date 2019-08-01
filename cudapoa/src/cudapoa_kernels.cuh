@@ -68,25 +68,6 @@ namespace claragenomics
 namespace cudapoa
 {
 
-// Alignment of memory chunks in cudapoa
-// must be a power of two
-enum
-{
-    ALIGN = 4
-};
-enum
-{
-    MASK = ALIGN - 1
-};
-
-template <typename IntType>
-__host__ __device__ __forceinline__
-    IntType
-    alignTo4(const IntType& size)
-{
-    return (size + MASK) & ~MASK;
-}
-
 /**
  * @brief A struct to hold information about the sequences
  *        inside a window.

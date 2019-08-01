@@ -294,7 +294,7 @@ bool CudapoaBatch::reserve_buf(uint32_t max_seq_length)
 {
     uint32_t max_graph_dimension = banded_alignment_ ? CUDAPOA_MAX_MATRIX_GRAPH_DIMENSION_BANDED : CUDAPOA_MAX_MATRIX_GRAPH_DIMENSION;
 
-    int32_t scores_width = banded_alignment_ ? CUDAPOA_BANDED_MAX_MATRIX_SEQUENCE_DIMENSION : cudapoa::alignTo4(max_seq_length + 1 + CELLS_PER_THREAD);
+    int32_t scores_width = banded_alignment_ ? CUDAPOA_BANDED_MAX_MATRIX_SEQUENCE_DIMENSION : cudautils::align<int32_t, 8>(max_seq_length + 1 + CELLS_PER_THREAD);
     size_t scores_size   = scores_width * max_graph_dimension * sizeof(int16_t);
 
     if (scores_size > avail_scorebuf_mem_)
@@ -374,7 +374,7 @@ StatusType CudapoaBatch::add_seq_to_poa(const char* seq, const int8_t* weights, 
     }
 
     WindowDetails* window_details = &(input_details_h_->window_details[poa_count_ - 1]);
-    int32_t scores_width_         = cudapoa::alignTo4(seq_len + 1 + CELLS_PER_THREAD);
+    int32_t scores_width_         = cudautils::align<int32_t, 8>(seq_len + 1 + CELLS_PER_THREAD);
     if (scores_width_ > window_details->scores_width)
     {
         next_scores_offset_ += (scores_width_ - window_details->scores_width);
