@@ -17,7 +17,7 @@ from libcpp.vector cimport vector
 from libcpp.memory cimport unique_ptr
 from libcpp.string cimport string
 from libc.stdint cimport int8_t, int16_t, uint16_t, int32_t
-from claragenomics.bindings.cuda cimport _Stream
+from claragenomics.bindings.cuda_runtime_api cimport _Stream
 
 # This file declares public structs and API calls 
 # from the ClaraGenomicsAnalysis `cudapoa` module.

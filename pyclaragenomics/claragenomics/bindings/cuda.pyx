@@ -8,7 +8,18 @@
 # license agreement from NVIDIA CORPORATION is strictly prohibited.
 #
 
-from claragenomics.bindings.cuda cimport *
+cimport claragenomics.bindings.cuda_runtime_api as cuda_runtime
+
+class CudaRuntimeError(Exception):
+    """
+    Wrapper class for CUDA error handling.
+    """
+    def __init__(self, error):
+        cdef cuda_runtime._Error e = error
+        cdef bytes err_name = cuda_runtime.cudaGetErrorName(e)
+        cdef bytes err_str = cuda_runtime.cudaGetErrorString(e)
+        err_msg = "{} : {}".format(err_name.decode(), err_str.decode())
+        super().__init__(err_msg)
 
 cdef class CudaStream:
     """
@@ -23,33 +34,59 @@ cdef class CudaStream:
     cdef size_t stream
 
     def __cinit__(self):
-        cdef _Stream s
-        cdef _Error e = cudaStreamCreate(&s)
-        cdef bytes error_str
+        cdef cuda_runtime._Stream s
+        cdef cuda_runtime._Error e = cuda_runtime.cudaStreamCreate(&s)
         if (e != 0):
-            error_str = cudaGetErrorString(e)
-            raise RuntimeError(b'Cannot create stream: ' + error_str)
+            raise CudaRuntimeError(e)
         self.stream = <size_t>s
 
     def __dealloc__(self):
         self.sync()
-        cdef _Stream s = <_Stream>self.stream
-        cdef _Error e = cudaStreamDestroy(s)
-        cdef bytes error_str
+        cdef cuda_runtime._Stream s = <cuda_runtime._Stream>self.stream
+        cdef cuda_runtime._Error e = cuda_runtime.cudaStreamDestroy(s)
         if (e != 0):
-            error_str = cudaGetErrorString(e)
-            raise RuntimeError(b'Cannot destroy stream:' + error_str)
+            raise CudaRuntimeError(e)
 
     def sync(self):
         """
         Synchronize the CUDA stream.
         """
-        cdef _Stream s = <_Stream>self.stream
-        cdef _Error e = cudaStreamSynchronize(s)
-        cdef bytes error_str
+        cdef cuda_runtime._Stream s = <cuda_runtime._Stream>self.stream
+        cdef cuda_runtime._Error e = cuda_runtime.cudaStreamSynchronize(s)
         if (e != 0):
-            error_str = cudaGetErrorString(e)
-            raise RuntimeError(b'Cannot sync stream: ' + error_str)
+            raise CudaRuntimeError(e)
 
     def get_stream(self):
         return self.stream
+
+def cuda_get_device_count():
+    cdef int device_count
+    cdef cuda_runtime._Error e = cuda_runtime.cudaGetDeviceCount(&device_count)
+    if (e != 0):
+        raise CudaRuntimeError(e)
+    return device_count
+
+def cuda_set_device(device_id):
+    cdef cuda_runtime._Error e = cuda_runtime.cudaSetDevice(device_id)
+    if (e != 0):
+        raise CudaRuntimeError(e)
+
+def cuda_get_device():
+    cdef int device_id
+    cdef cuda_runtime._Error e = cuda_runtime.cudaGetDevice(&device_id)
+    if (e != 0):
+        raise CudaRuntimeError(e)
+    return device_id
+
+def cuda_get_mem_info(device_id):
+    cdef size_t free
+    cdef size_t total
+    initial_dev = cuda_get_device()
+    if (initial_dev != device_id):
+        cuda_set_device(device_id)
+    cdef cuda_runtime._Error e = cuda_runtime.cudaMemGetInfo(&free, &total)
+    if (e != 0):
+        raise CudaRuntimeError(e)
+    if (initial_dev != device_id):
+        cuda_set_device(initial_dev)
+    return (free, total)

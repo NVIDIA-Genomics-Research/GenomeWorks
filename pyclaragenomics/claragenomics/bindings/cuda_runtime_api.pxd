@@ -32,3 +32,8 @@ cdef extern from "cuda_runtime_api.h":
     cdef _Error cudaGetLastError()
     cdef const char* cudaGetErrorString(_Error e)
     cdef const char* cudaGetErrorName(_Error e)
+    # CUDA Device Info APIs
+    cdef _Error cudaGetDeviceCount(int* count)
+    cdef _Error cudaSetDevice(int device)
+    cdef _Error cudaGetDevice(int* device)
+    cdef _Error cudaMemGetInfo(size_t* free, size_t* total)
