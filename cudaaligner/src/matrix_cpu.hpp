@@ -88,8 +88,8 @@ public:
 
 private:
     std::vector<T> data_;
-    int n;
-    int m;
+    int n = 0;
+    int m = 0;
 };
 
 template <typename T>

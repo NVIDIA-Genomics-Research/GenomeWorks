@@ -9,15 +9,17 @@
 */
 
 #include "myers_gpu.cuh"
+#include "device_storage.cuh"
+#include "batched_device_matrices.cuh"
+
+#include <claragenomics/utils/signed_integer_utils.hpp>
+#include <claragenomics/utils/mathutils.hpp>
+#include <claragenomics/utils/cudautils.hpp>
+
 #include <cassert>
 #include <climits>
 #include <vector>
 #include <numeric>
-#include <utils/signed_integer_utils.hpp>
-#include <utils/mathutils.hpp>
-#include "device_storage.cuh"
-#include "batched_device_matrices.cuh"
-#include <cudautils/cudautils.hpp>
 
 namespace claragenomics
 {

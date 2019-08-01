@@ -10,14 +10,13 @@
 
 #pragma once
 
-#include <cudapoa/cudapoa.hpp>
+#include <claragenomics/cudapoa/cudapoa.hpp>
 
 #include <memory>
 #include <vector>
 #include <stdint.h>
 #include <string>
 #include <iostream>
-
 #include <cuda_runtime_api.h>
 
 namespace claragenomics
@@ -25,6 +24,20 @@ namespace claragenomics
 
 namespace cudapoa
 {
+
+/// A structure to represent a sequence entry.
+struct Entry
+{
+    /// Pointer to string representing sequence.
+    const char* seq;
+    /// Pointer to array of weight per base in sequence.
+    const int8_t* weights;
+    /// Length of sequence.
+    int32_t length;
+};
+
+/// A type defining the set and order of Entry's in which a POA is processed.
+typedef std::vector<Entry> Group;
 
 /// \class Batch
 /// Batched GPU CUDA POA object
@@ -34,18 +47,22 @@ public:
     /// \brief CudapoaBatch has a custom dtor, so declare ~Batch virtual and give it a default implementation
     virtual ~Batch() = default;
 
-    /// \brief Add new partial order alignment to batch.
-    virtual StatusType add_poa() = 0;
-
-    /// \brief Add sequence to last partial order alignment.
+    /// \brief Add a new group to the batch to run POA algorithm on. Based on the constraints
+    ///        of the batch, now all entries in a group may be added. This will be reflected in
+    ///        the per_seq_status of the call. Those entries that were added will be shown with a success.
     ///
-    /// \param seq New sequence to be added to most recent POA
-    /// \param weights Weight per base in sequence. If no weights are supplied,
-    ///                per base weight defaults to 1.
-    /// \param seq_len Length of sequence added
+    /// \param per_seq_status Reference to an output vector of StatusType that holds
+    ///                       the processing status of each entry in the group.
+    ///                       NOTE: This API clears old entries in the vector.
+    /// \param poa_group      Vector of Entry's to process in POA. Based on the constraints
+    ///                       of the batch, not all entries in a group may be added.
+    ///                       This will be reflected in the per_seq_status of the call. Those entries that were
+    ///                       added will show a success status. The POA algorithm will run with
+    ///                       the sequences that were added.
     ///
-    /// \return Whether sequence could be successfully added to POA
-    virtual StatusType add_seq_to_poa(const char* seq, const int8_t* weights, int32_t seq_len) = 0;
+    /// \return Status representing whether PoaGroup was successfully added to batch.
+    virtual StatusType add_poa_group(std::vector<StatusType>& per_seq_status,
+                                     const Group& poa_group) = 0;
 
     /// \brief Get total number of partial order alignments in batch.
     ///
@@ -89,8 +106,10 @@ public:
 ///
 /// \param max_poas Maximum number of POAs that can be added to the batch
 /// \param max_sequences_per_poa Maximum number of sequences per POA
-/// \param stream CUDA stream to use on GPU
 /// \param device_id GPU device on which to run CUDA POA algorithm
+/// \param stream CUDA stream to use on GPU
+/// \param max_mem Maximum GPU memory to use for this batch.
+/// \param output_mask Which outputs to produce from POA (msa, consensus)
 /// \param gap_score Score to be assigned to a gap
 /// \param mismatch_score Score to be assigned to a mismatch
 /// \param match_score Score to be assigned for a match
@@ -99,13 +118,14 @@ public:
 /// \return Returns a unique pointer to a new Batch object
 std::unique_ptr<Batch> create_batch(int32_t max_poas,
                                     int32_t max_sequences_per_poa,
-                                    cudaStream_t stream,
                                     int32_t device_id,
+                                    cudaStream_t stream,
+                                    size_t max_mem,
                                     int8_t output_mask,
-                                    int16_t gap_score          = -8,
-                                    int16_t mismatch_score     = -6,
-                                    int16_t match_score        = 8,
-                                    bool cuda_banded_alignment = false);
+                                    int16_t gap_score,
+                                    int16_t mismatch_score,
+                                    int16_t match_score,
+                                    bool cuda_banded_alignment);
 
 /// \}
 

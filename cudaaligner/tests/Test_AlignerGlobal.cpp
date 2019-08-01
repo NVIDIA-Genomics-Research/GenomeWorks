@@ -8,13 +8,15 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-#include <random>
-#include "gtest/gtest.h"
 #include "../src/aligner_global_ukkonen.hpp"
 #include "../src/aligner_global_myers.hpp"
-#include "cudaaligner/alignment.hpp"
-#include <utils/signed_integer_utils.hpp>
-#include <utils/genomeutils.hpp>
+
+#include <claragenomics/cudaaligner/alignment.hpp>
+#include <claragenomics/utils/signed_integer_utils.hpp>
+#include <claragenomics/utils/genomeutils.hpp>
+
+#include <random>
+#include "gtest/gtest.h"
 
 namespace claragenomics
 {
@@ -174,8 +176,8 @@ TEST_P(TestAlignerGlobal, TestAlignmentKernel)
         auto alignment = alignments[a];
         EXPECT_EQ(StatusType::success, alignment->get_status()) << "Alignment status is not success";
         EXPECT_EQ(AlignmentType::global, alignment->get_alignment_type()) << "Alignment type is not global";
-        EXPECT_STREQ(cigars[a].c_str(), alignment->convert_to_cigar().c_str()) << "CIGAR doesn't match for alignment " << a
-                                                                               << " using " << (param.algorithm == AlignmentAlgorithm::Ukkonen ? "Ukkonen" : "Myers");
+        EXPECT_EQ(cigars[a], alignment->convert_to_cigar()) << "CIGAR doesn't match for alignment " << a
+                                                            << " using " << (param.algorithm == AlignmentAlgorithm::Ukkonen ? "Ukkonen" : "Myers");
     }
 }
 

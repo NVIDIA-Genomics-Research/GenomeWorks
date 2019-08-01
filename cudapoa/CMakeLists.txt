@@ -25,7 +25,7 @@ cuda_add_library(cudapoa ${cga_library_type}
     src/allocate_block.cpp
     )
 
-target_link_libraries(cudapoa cudautils logging utils)
+target_link_libraries(cudapoa utils logging)
 
 target_compile_options(cudapoa PRIVATE -Werror -Wall -Wextra -march=native)
 

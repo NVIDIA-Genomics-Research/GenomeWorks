@@ -10,8 +10,9 @@
 
 #include "aligner_global_myers.hpp"
 #include "myers_gpu.cuh"
-#include <utils/mathutils.hpp>
 #include "batched_device_matrices.cuh"
+
+#include <claragenomics/utils/mathutils.hpp>
 
 namespace claragenomics
 {

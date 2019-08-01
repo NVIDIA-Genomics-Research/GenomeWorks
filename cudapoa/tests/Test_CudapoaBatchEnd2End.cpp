@@ -8,10 +8,11 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-#include "gtest/gtest.h"
 #include "../benchmarks/multi-batch/multi_batch.hpp"
 #include "../benchmarks/common/utils.hpp"
 #include "file_location.hpp"
+
+#include "gtest/gtest.h"
 
 namespace claragenomics
 {
@@ -42,7 +43,6 @@ std::vector<End2EndBatchTestParam> getCudapoaBatchEnd2EndTestCases()
     test1.batches    = 4;
     test1.batch_size = 128;
     test_cases.push_back(test1);
-
     return test_cases;
 }
 
@@ -69,7 +69,7 @@ public:
 
         std::string golden_genome = parse_golden_value_file(param_.golden_file);
 
-        ASSERT_STREQ(golden_genome.c_str(), genome.c_str());
+        ASSERT_EQ(golden_genome, genome);
     }
 
 private:

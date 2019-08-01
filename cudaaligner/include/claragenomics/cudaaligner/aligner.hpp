@@ -10,12 +10,11 @@
 
 #pragma once
 
+#include <claragenomics/cudaaligner/cudaaligner.hpp>
+
 #include <memory>
 #include <vector>
-
 #include <cuda_runtime_api.h>
-
-#include "cudaaligner/cudaaligner.hpp"
 
 namespace claragenomics
 {

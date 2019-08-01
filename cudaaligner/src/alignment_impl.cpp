@@ -9,7 +9,8 @@
 */
 
 #include "alignment_impl.hpp"
-#include <utils/signed_integer_utils.hpp>
+
+#include <claragenomics/utils/signed_integer_utils.hpp>
 
 namespace claragenomics
 {
@@ -31,16 +32,16 @@ AlignmentImpl::~AlignmentImpl()
     // Nothing to destroy right now.
 }
 
-std::string AlignmentImpl::alignment_state_to_cigar_state(AlignmentState s) const
+char AlignmentImpl::alignment_state_to_cigar_state(AlignmentState s) const
 {
     // CIGAR string format from http://bioinformatics.cvr.ac.uk/blog/tag/cigar-string/
     // Implementing a reduced set of CIGAR states, covering only the M, D and I characters.
     switch (s)
     {
     case AlignmentState::match:
-    case AlignmentState::mismatch: return "M";
-    case AlignmentState::insertion: return "D";
-    case AlignmentState::deletion: return "I";
+    case AlignmentState::mismatch: return 'M';
+    case AlignmentState::insertion: return 'D';
+    case AlignmentState::deletion: return 'I';
     default: throw std::runtime_error("Unrecognized alignment state.");
     }
 }
@@ -52,12 +53,12 @@ std::string AlignmentImpl::convert_to_cigar() const
         return std::string("");
     }
 
-    std::string cigar            = "";
-    std::string last_cigar_state = alignment_state_to_cigar_state(alignment_[0]);
-    int32_t count_last_state     = 0;
+    std::string cigar        = "";
+    char last_cigar_state    = alignment_state_to_cigar_state(alignment_[0]);
+    int32_t count_last_state = 0;
     for (auto const& x : alignment_)
     {
-        std::string cur_cigar_state = alignment_state_to_cigar_state(x);
+        const char cur_cigar_state = alignment_state_to_cigar_state(x);
         if (cur_cigar_state == last_cigar_state)
         {
             count_last_state++;

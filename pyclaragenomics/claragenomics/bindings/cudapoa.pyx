@@ -11,7 +11,7 @@
 # distutils: language = c++
 
 from cython.operator cimport dereference as deref
-from claragenomics.bindings.cudapoa cimport StatusType, OutputType, Batch, create_batch
+from claragenomics.bindings.cudapoa cimport StatusType, OutputType, Entry, Group, Batch, create_batch
 from claragenomics.bindings.cuda import CudaStream
 from libcpp.vector cimport vector
 from libcpp.memory cimport unique_ptr
@@ -28,8 +28,9 @@ cdef class CudaPoaBatch:
             self,
             max_poas,
             max_sequences_per_poa,
-            stream=None,
+            gpu_mem,
             device_id=0,
+            stream=None,
             output_mask=consensus,
             gap_score=-8,
             mismatch_score=-6,
@@ -63,43 +64,51 @@ cdef class CudaPoaBatch:
 
         self.batch = create_batch(max_poas,
                 max_sequences_per_poa, 
-                temp_stream, 
                 device_id,
+                temp_stream,
+                gpu_mem,
                 output_mask,
                 gap_score,
                 mismatch_score,
                 match_score,
                 cuda_banded_alignment)
 
-    def add_poas(self, poas):
+    def add_poa_group(self, poa):
         """
         Set the POA groups to run alignment on.
 
         Args:
             poas : List of POA groups. Each group is a list of
-                   sequences.
+                   sequences. Note that the sequences need be of type
+                   'bytes'.
                    e.g. [["ACTG", "ATCG"], <--- Group 1
                          ["GCTA", "GACT", "ACGTC"] <--- Group 2
                         ]
                    Throws exception if error is encountered while
                    adding POA groups.
         """
-        if (len(poas) < 1):
-            raise RuntimeError("At least one poa must be added to CudaPoaBatch")
-        if (not isinstance(poas[0], list)):
-            poas = [poas]
+        if (not isinstance(poa, list)):
+            poas = [poa]
+        if (len(poa) < 1):
+            raise RuntimeError("At least one sequence must be present in POA group")
         cdef bytes py_bytes
         cdef char* c_string
-        for poa in poas:
-            status = deref(self.batch).add_poa()
-            if status != success:
-                raise RuntimeError("Could not add new POA: " + str(status))
-            for seq in poa:
-                py_bytes = seq.encode()
-                c_string = py_bytes
-                status = deref(self.batch).add_seq_to_poa(c_string, NULL, len(seq))
-                if status != success:
-                    raise RuntimeError("Could not add new sequence to poa")
+        cdef Group poa_group
+        cdef Entry entry
+        cdef vector[StatusType] seq_status
+        for seq in poa:
+            if (not isinstance(seq, bytes)):
+                raise RuntimeError("Sequences need to be of type 'bytes'")
+            py_bytes = seq
+            c_string = py_bytes
+            entry.seq = c_string
+            entry.weights = NULL
+            entry.length = len(seq)
+            poa_group.push_back(entry)
+        status = deref(self.batch).add_poa_group(seq_status, poa_group)
+        if status != success:
+            raise RuntimeError("Could not add POA group: " + str(status))
+        return (status, seq_status)
 
     @property
     def total_poas(self):
@@ -148,7 +157,10 @@ cdef class CudaPoaBatch:
         Get the consensus for each POA group.
 
         Returns:
-            A list with consensus string for each group.
+            A tuple where
+            - first element is list with consensus string for each group
+            - second element is a list of per base coverages for each consensus
+            - third element is status of consensus generation for each group
         """
         cdef vector[string] consensus
         cdef vector[vector[uint16_t]] coverage
@@ -156,7 +168,7 @@ cdef class CudaPoaBatch:
         error = deref(self.batch).get_consensus(consensus, coverage, status)
         if error == output_type_unavailable:
             raise RuntimeError("Output type not requested during batch initialization")
-        return consensus
+        return (consensus, coverage, status)
 
     def reset(self):
         """

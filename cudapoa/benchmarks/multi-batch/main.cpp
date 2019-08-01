@@ -8,13 +8,14 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-#include <benchmark/benchmark.h>
-#include <cuda_runtime_api.h>
-
+#include "../common/utils.hpp"
 #include "multi_batch.hpp"
 #include "file_location.hpp"
-#include "../common/utils.hpp"
-#include "cudautils/cudautils.hpp"
+
+#include <claragenomics/utils/cudautils.hpp>
+
+#include <benchmark/benchmark.h>
+#include <cuda_runtime_api.h>
 
 namespace claragenomics
 {
@@ -24,36 +25,13 @@ namespace cudapoa
 
 static void BM_MultiBatchTest(benchmark::State& state)
 {
-    // TODO: Query size per window from CUDAPOA API
-    //       Assuming 9MB per window.
-    const size_t size_per_window = 9 * 1024 * 1024;
-
-    // Query free total and free GPU memory.
-    size_t free, total;
-    CGA_CU_CHECK_ERR(cudaMemGetInfo(&free, &total));
-
-    int32_t batches     = state.range(0);
-    int32_t batch_size  = state.range(1);
-    size_t total_memory = (batches * batch_size * size_per_window);
-
-    if (total_memory >= free)
+    int32_t batches             = state.range(0);
+    int32_t batch_size          = state.range(1);
+    const int32_t total_windows = 5500;
+    MultiBatch mb(batches, batch_size, std::string(CUDAPOA_BENCHMARK_DATA_DIR) + "/sample-windows.txt", total_windows);
+    for (auto _ : state)
     {
-        state.SkipWithError("Not enough available memory for config, skipping");
-        state.KeepRunning(); // Added as a WAR to Google Benchmark crashing in DEBUG mode.
-    }
-    else if (total_memory < (free / 2))
-    {
-        state.SkipWithError("Config using less than half of available memory, skipping");
-        state.KeepRunning(); // Added as a WAR to Google Benchmark crashing in DEBUG mode.
-    }
-    else
-    {
-        const int32_t total_windows = 5500;
-        MultiBatch mb(batches, batch_size, std::string(CUDAPOA_BENCHMARK_DATA_DIR) + "/sample-windows.txt", total_windows);
-        for (auto _ : state)
-        {
-            mb.process_batches();
-        }
+        mb.process_batches();
     }
 }
 

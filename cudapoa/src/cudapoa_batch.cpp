@@ -8,16 +8,16 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-#include <algorithm>
-#include <cstring>
-
-#include "allocate_block.hpp"
 #include "cudapoa_batch.hpp"
+#include "allocate_block.hpp"
 #include "cudapoa_kernels.cuh"
 
-#include <cudautils/cudautils.hpp>
-#include <logging/logging.hpp>
-#include <utils/signed_integer_utils.hpp>
+#include <claragenomics/utils/cudautils.hpp>
+#include <claragenomics/logging/logging.hpp>
+#include <claragenomics/utils/signed_integer_utils.hpp>
+
+#include <algorithm>
+#include <cstring>
 
 #ifndef TABS
 #define TABS printTabs(bid_)
@@ -67,17 +67,26 @@ void CudapoaBatch::initialize_graph_details()
     batch_block_->get_graph_details(&graph_details_d_);
 }
 
-CudapoaBatch::CudapoaBatch(int32_t max_poas, int32_t max_sequences_per_poa, cudaStream_t stream, int32_t device_id, int8_t output_mask, int16_t gap_score, int16_t mismatch_score, int16_t match_score, bool cuda_banded_alignment)
+CudapoaBatch::CudapoaBatch(int32_t max_poas,
+                           int32_t max_sequences_per_poa,
+                           int32_t device_id,
+                           cudaStream_t stream,
+                           size_t max_mem,
+                           int8_t output_mask,
+                           int16_t gap_score,
+                           int16_t mismatch_score,
+                           int16_t match_score,
+                           bool cuda_banded_alignment)
     : max_poas_(throw_on_negative(max_poas, "Maximum POAs in batch has to be non-negative"))
     , max_sequences_per_poa_(throw_on_negative(max_sequences_per_poa, "Maximum sequences per POA has to be non-negative"))
-    , stream_(stream)
     , device_id_(throw_on_negative(device_id, "Device ID has to be non-negative"))
+    , stream_(stream)
     , output_mask_(output_mask)
     , gap_score_(gap_score)
     , mismatch_score_(mismatch_score)
     , match_score_(match_score)
     , banded_alignment_(cuda_banded_alignment)
-    , batch_block_(new BatchBlock(device_id, max_poas, max_sequences_per_poa, output_mask, cuda_banded_alignment))
+    , batch_block_(new BatchBlock(device_id, max_mem, max_poas, max_sequences_per_poa, output_mask, cuda_banded_alignment))
 {
     bid_ = CudapoaBatch::batches++;
 
@@ -87,68 +96,28 @@ CudapoaBatch::CudapoaBatch(int32_t max_poas, int32_t max_sequences_per_poa, cuda
     print_batch_debug_message(msg);
 
     // Allocate host memory and CUDA memory based on max sequence and target counts.
-
-    // Verify that maximum sequence size is in multiples of tb size.
-    // We subtract one because the matrix dimension needs to be one element larger
-    // than the sequence size.
-    if (CUDAPOA_MAX_SEQUENCE_SIZE % CUDAPOA_THREADS_PER_BLOCK != 0)
-    {
-        CGA_LOG_CRITICAL("Thread block size needs to be in multiples of 32.");
-        exit(-1);
-    }
-
     initialize_input_details();
-
-    int32_t input_size = max_poas_ * max_sequences_per_poa_ * CUDAPOA_MAX_SEQUENCE_SIZE; //TODO how big does this need to be
-    msg                = " Allocated input buffers of size " + std::to_string((static_cast<float>(input_size) / (1024 * 1024))) + "MB on device ";
-    print_batch_debug_message(msg);
-
     initialize_output_details();
-
-    input_size += input_size * sizeof(uint16_t);
-    msg = " Allocated output buffers of size " + std::to_string((static_cast<float>(input_size) / (1024 * 1024))) + "MB on device ";
-    print_batch_debug_message(msg);
-
-    initialize_alignment_details();
     initialize_graph_details();
+    initialize_alignment_details();
 
-    // Debug print for size allocated.
-    int32_t matrix_sequence_dimension = banded_alignment_ ? CUDAPOA_BANDED_MAX_MATRIX_SEQUENCE_DIMENSION : CUDAPOA_MAX_MATRIX_SEQUENCE_DIMENSION;
-    int32_t max_graph_dimension       = cuda_banded_alignment ? CUDAPOA_MAX_MATRIX_GRAPH_DIMENSION_BANDED : CUDAPOA_MAX_MATRIX_GRAPH_DIMENSION;
-
-    int32_t temp_size = (sizeof(int16_t) * max_graph_dimension * matrix_sequence_dimension * max_poas_);
-
-    temp_size += 2 * (sizeof(int16_t) * max_graph_dimension * max_poas_);
-    msg = " Allocated temp buffers of size " + std::to_string((static_cast<float>(temp_size) / (1024 * 1024))) + "MB on device ";
-    print_batch_debug_message(msg);
-
-    // Debug print for size allocated.
-    uint16_t max_nodes_per_window = banded_alignment_ ? CUDAPOA_MAX_NODES_PER_WINDOW_BANDED : CUDAPOA_MAX_NODES_PER_WINDOW;
-    temp_size                     = sizeof(uint8_t) * max_nodes_per_window * max_poas_;
-    temp_size += sizeof(uint16_t) * max_nodes_per_window * CUDAPOA_MAX_NODE_ALIGNMENTS * max_poas_;
-    temp_size += sizeof(uint16_t) * max_nodes_per_window * max_poas_;
-    temp_size += sizeof(uint16_t) * max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES * max_poas_;
-    temp_size += sizeof(uint16_t) * max_nodes_per_window * max_poas_;
-    temp_size += sizeof(uint16_t) * max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES * max_poas_;
-    temp_size += sizeof(uint16_t) * max_nodes_per_window * max_poas_;
-    temp_size += sizeof(uint16_t) * max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES * max_poas_;
-    temp_size += sizeof(uint16_t) * max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES * max_poas_;
-    temp_size += sizeof(uint16_t) * max_nodes_per_window * max_poas_;
-    temp_size += sizeof(uint16_t) * max_nodes_per_window * max_poas_;
-    temp_size += sizeof(int16_t) * max_nodes_per_window * max_poas_;
-    temp_size += sizeof(int16_t) * max_nodes_per_window * max_poas_;
-    temp_size += sizeof(int8_t) * max_nodes_per_window * max_poas_;
-    temp_size += sizeof(bool) * max_nodes_per_window * max_poas_;
-    temp_size += sizeof(uint16_t) * max_nodes_per_window * max_poas_;
-    temp_size += sizeof(uint16_t) * max_nodes_per_window * max_poas_;
-    msg = " Allocated temp buffers of size " + std::to_string((static_cast<float>(temp_size) / (1024 * 1024))) + "MB on device ";
-    print_batch_debug_message(msg);
+    // Call reset function to cleanly initialize members.
+    reset();
 }
 
 CudapoaBatch::~CudapoaBatch()
 {
     std::string msg = "Destroyed buffers on device ";
     print_batch_debug_message(msg);
+}
+
+void CudapoaBatch::reset()
+{
+    poa_count_              = 0;
+    num_nucleotides_copied_ = 0;
+    global_sequence_idx_    = 0;
+    next_scores_offset_     = 0;
+    avail_scorebuf_mem_     = alignment_details_d_->scorebuf_alloc_size;
 }
 
 int32_t CudapoaBatch::batch_id() const
@@ -201,19 +170,19 @@ void CudapoaBatch::decode_cudapoa_kernel_error(claragenomics::cudapoa::StatusTyp
     switch (error_type)
     {
     case claragenomics::cudapoa::StatusType::node_count_exceeded_maximum_graph_size:
-        CGA_LOG_WARN("Kernel Error:: Node count exceeded maximum nodes per graph\n");
+        CGA_LOG_WARN("Kernel Error:: Node count exceeded maximum nodes per graph in batch {}\n", bid_);
         output_status.emplace_back(error_type);
         break;
     case claragenomics::cudapoa::StatusType::edge_count_exceeded_maximum_graph_size:
-        CGA_LOG_WARN("Kernel Error:: Edge count exceeded maximum edges per graph\n");
+        CGA_LOG_WARN("Kernel Error:: Edge count exceeded maximum edges per graph in batch {}\n", bid_);
         output_status.emplace_back(error_type);
         break;
     case claragenomics::cudapoa::StatusType::seq_len_exceeded_maximum_nodes_per_window:
-        CGA_LOG_WARN("Kernel Error::Sequence length exceeded maximum nodes per window\n");
+        CGA_LOG_WARN("Kernel Error::Sequence length exceeded maximum nodes per window in batch {}\n", bid_);
         output_status.emplace_back(error_type);
         break;
     case claragenomics::cudapoa::StatusType::loop_count_exceeded_upper_bound:
-        CGA_LOG_WARN("Kernel Error::Loop count exceeded upper bound in nw algorithm\n");
+        CGA_LOG_WARN("Kernel Error::Loop count exceeded upper bound in nw algorithm in batch {}\n", bid_);
         output_status.emplace_back(error_type);
         break;
     default:
@@ -272,6 +241,7 @@ StatusType CudapoaBatch::get_consensus(std::vector<std::string>& consensus,
                 &(output_details_h_->coverage[poa * CUDAPOA_MAX_CONSENSUS_SIZE]),
                 &(output_details_h_->coverage[poa * CUDAPOA_MAX_CONSENSUS_SIZE + get_size(consensus.back())])));
             std::reverse(coverage.back().begin(), coverage.back().end());
+            //std::cout << consensus.back() << std::endl;
         }
     }
 
@@ -331,6 +301,66 @@ StatusType CudapoaBatch::get_msa(std::vector<std::vector<std::string>>& msa, std
     return StatusType::success;
 }
 
+bool CudapoaBatch::reserve_buf(uint32_t max_seq_length)
+{
+    uint32_t max_graph_dimension = banded_alignment_ ? CUDAPOA_MAX_MATRIX_GRAPH_DIMENSION_BANDED : CUDAPOA_MAX_MATRIX_GRAPH_DIMENSION;
+
+    int32_t scores_width = banded_alignment_ ? CUDAPOA_BANDED_MAX_MATRIX_SEQUENCE_DIMENSION : cudapoa::alignTo4(max_seq_length + 1 + CELLS_PER_THREAD);
+    size_t scores_size   = scores_width * max_graph_dimension * sizeof(int16_t);
+
+    if (scores_size > avail_scorebuf_mem_)
+    {
+        return false;
+    }
+    else
+    {
+        avail_scorebuf_mem_ -= scores_size;
+        return true;
+    }
+}
+
+StatusType CudapoaBatch::add_poa_group(std::vector<StatusType>& per_seq_status,
+                                       const Group& poa_group)
+{
+    // Check if the largest entry in the group fill fit
+    // in available scoring matrix memory or not.
+    auto max_length_entry  = std::max_element(poa_group.begin(),
+                                             poa_group.end(),
+                                             [](const Entry& lhs, const Entry& rhs) {
+                                                 return lhs.length < rhs.length;
+                                             });
+    int32_t max_seq_length = max_length_entry->length;
+
+    //std::cout << "Adding new poa group!" << std::endl;
+
+    if (!reserve_buf(max_seq_length))
+    {
+        return StatusType::exceeded_batch_size;
+    }
+
+    // If matrix fits, see if a new poa group can be added.
+    per_seq_status.clear();
+    StatusType status = add_poa();
+    if (status != StatusType::success)
+    {
+        return status;
+    }
+
+    // If a new group can be added, attempt to add all entries
+    // in the group. If they can't be added, record their status
+    // and continue adding till the end of the group.
+    for (auto& entry : poa_group)
+    {
+        StatusType entry_status = add_seq_to_poa(entry.seq,
+                                                 entry.weights,
+                                                 entry.length);
+
+        per_seq_status.push_back(entry_status);
+    }
+
+    return StatusType::success;
+}
+
 StatusType CudapoaBatch::add_poa()
 {
     if (poa_count_ == max_poas_)
@@ -341,17 +371,12 @@ StatusType CudapoaBatch::add_poa()
     WindowDetails window_details{};
     window_details.seq_len_buffer_offset         = global_sequence_idx_;
     window_details.seq_starts                    = num_nucleotides_copied_;
+    window_details.scores_width                  = 0;
+    window_details.scores_offset                 = next_scores_offset_;
     input_details_h_->window_details[poa_count_] = window_details;
     poa_count_++;
 
     return StatusType::success;
-}
-
-void CudapoaBatch::reset()
-{
-    poa_count_              = 0;
-    num_nucleotides_copied_ = 0;
-    global_sequence_idx_    = 0;
 }
 
 StatusType CudapoaBatch::add_seq_to_poa(const char* seq, const int8_t* weights, int32_t seq_len)
@@ -362,6 +387,12 @@ StatusType CudapoaBatch::add_seq_to_poa(const char* seq, const int8_t* weights, 
     }
 
     WindowDetails* window_details = &(input_details_h_->window_details[poa_count_ - 1]);
+    int32_t scores_width_         = cudapoa::alignTo4(seq_len + 1 + CELLS_PER_THREAD);
+    if (scores_width_ > window_details->scores_width)
+    {
+        next_scores_offset_ += (scores_width_ - window_details->scores_width);
+        window_details->scores_width = scores_width_;
+    }
 
     if (static_cast<int32_t>(window_details->num_seqs) + 1 >= max_sequences_per_poa_)
     {

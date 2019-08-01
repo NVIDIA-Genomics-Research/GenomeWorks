@@ -8,8 +8,9 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-#include "cudapoa/batch.hpp"
 #include "cudapoa_batch.hpp"
+
+#include <claragenomics/cudapoa/batch.hpp>
 
 namespace claragenomics
 {
@@ -19,8 +20,9 @@ namespace cudapoa
 
 std::unique_ptr<Batch> create_batch(int32_t max_poas,
                                     int32_t max_sequences_per_poa,
-                                    cudaStream_t stream,
                                     int32_t device_id,
+                                    cudaStream_t stream,
+                                    size_t max_mem,
                                     int8_t output_mask,
                                     int16_t gap_score,
                                     int16_t mismatch_score,
@@ -29,8 +31,9 @@ std::unique_ptr<Batch> create_batch(int32_t max_poas,
 {
     return std::make_unique<CudapoaBatch>(max_poas,
                                           max_sequences_per_poa,
-                                          stream,
                                           device_id,
+                                          stream,
+                                          max_mem,
                                           output_mask,
                                           gap_score,
                                           mismatch_score,

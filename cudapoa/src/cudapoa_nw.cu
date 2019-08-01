@@ -10,7 +10,9 @@
 
 #include "cudapoa_kernels.cuh"
 #include "cudastructs.cuh"
-#include "cudautils/cudautils.hpp"
+
+#include <claragenomics/utils/cudautils.hpp>
+
 #include <stdio.h>
 
 namespace claragenomics
@@ -18,6 +20,19 @@ namespace claragenomics
 
 namespace cudapoa
 {
+
+template <typename ScoreT>
+__device__ __forceinline__
+    ScoreT4<ScoreT>
+    make_ScoreT4(ScoreT s0)
+{
+    ScoreT4<ScoreT> t;
+    t.s0 = s0;
+    t.s1 = s0;
+    t.s2 = s0;
+    t.s3 = s0;
+    return t;
+}
 
 template <typename SeqT,
           typename IndexT,
@@ -33,6 +48,7 @@ __device__ __forceinline__
                  uint16_t* node_id_to_pos,
                  uint16_t* incoming_edges,
                  ScoreT* scores,
+                 int32_t scores_width,
                  ScoreT gap_score,
                  ScoreT match_score,
                  ScoreT mismatch_score)
@@ -52,7 +68,7 @@ __device__ __forceinline__
     // using a single load inst, and then extracting necessary part of
     // of the data using bit arithmatic. Also reduces register count.
 
-    ScoreT4<ScoreT>* pred_scores = (ScoreT4<ScoreT>*)&scores[pred_idx * CUDAPOA_MAX_MATRIX_SEQUENCE_DIMENSION];
+    ScoreT4<ScoreT>* pred_scores = (ScoreT4<ScoreT>*)&scores[pred_idx * scores_width];
 
     // loads 8 consecutive bytes (4 shorts)
     ScoreT4<ScoreT> score4 = pred_scores[rIdx];
@@ -76,7 +92,7 @@ __device__ __forceinline__
     {
         int16_t pred_idx = node_id_to_pos[incoming_edges[gIdx * CUDAPOA_MAX_NODE_EDGES + p]] + 1;
 
-        ScoreT4<ScoreT>* pred_scores = (ScoreT4<ScoreT>*)&scores[pred_idx * CUDAPOA_MAX_MATRIX_SEQUENCE_DIMENSION];
+        ScoreT4<ScoreT>* pred_scores = (ScoreT4<ScoreT>*)&scores[pred_idx * scores_width];
 
         // Reasoning for 8B preload same as above.
         ScoreT4<ScoreT> score4      = pred_scores[rIdx];
@@ -137,6 +153,7 @@ __device__
                        SeqT* read,
                        uint16_t read_count,
                        ScoreT* scores,
+                       int32_t scores_width,
                        int16_t* alignment_graph,
                        int16_t* alignment_read,
                        ScoreT gap_score,
@@ -169,18 +186,18 @@ __device__
             uint16_t pred_count = incoming_edge_count[node_id];
             if (pred_count == 0)
             {
-                scores[i * CUDAPOA_MAX_MATRIX_SEQUENCE_DIMENSION] = gap_score;
+                scores[i * scores_width] = gap_score;
             }
             else
             {
-                int16_t penalty = SHRT_MIN;
+                ScoreT penalty = SHRT_MIN;
                 for (uint16_t p = 0; p < pred_count; p++)
                 {
                     uint16_t pred_node_id        = incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES + p];
                     uint16_t pred_node_graph_pos = node_id_to_pos[pred_node_id] + 1;
-                    penalty                      = max(penalty, scores[pred_node_graph_pos * CUDAPOA_MAX_MATRIX_SEQUENCE_DIMENSION]);
+                    penalty                      = max(penalty, scores[pred_node_graph_pos * scores_width]);
                 }
-                scores[i * CUDAPOA_MAX_MATRIX_SEQUENCE_DIMENSION] = penalty + gap_score;
+                scores[i * scores_width] = penalty + gap_score;
             }
         }
     }
@@ -199,10 +216,10 @@ __device__
          graph_pos++)
     {
 
-        uint16_t node_id    = graph[graph_pos]; // node id for the graph node
-        uint16_t score_gIdx = graph_pos + 1;    // score matrix index for this graph node
+        uint16_t node_id  = graph[graph_pos]; // node id for the graph node
+        IndexT score_gIdx = graph_pos + 1;    // score matrix index for this graph node
 
-        ScoreT first_element_prev_score = scores[score_gIdx * CUDAPOA_MAX_MATRIX_SEQUENCE_DIMENSION];
+        ScoreT first_element_prev_score = scores[score_gIdx * scores_width];
 
         uint16_t pred_count = incoming_edge_count[node_id];
 
@@ -226,12 +243,17 @@ __device__
 
             SeqT4<SeqT> read4 = d_read4[rIdx];
 
-            ScoreT4<ScoreT> score = computeScore<SeqT, IndexT, ScoreT>(rIdx, read4,
-                                                                       node_id, graph_base,
-                                                                       pred_count, pred_idx,
-                                                                       node_id_to_pos, incoming_edges,
-                                                                       scores, gap_score, match_score, mismatch_score);
+            ScoreT4<ScoreT> score = make_ScoreT4((ScoreT)SHRT_MAX);
 
+            if (read_pos < read_count)
+            {
+                score = computeScore<SeqT, IndexT, ScoreT>(rIdx, read4,
+                                                           node_id, graph_base,
+                                                           pred_count, pred_idx,
+                                                           node_id_to_pos, incoming_edges,
+                                                           scores, scores_width,
+                                                           gap_score, match_score, mismatch_score);
+            }
             // While there are changes to the horizontal score values, keep updating the matrix.
             // So loop will only run the number of time there are corrections in the matrix.
             // The any_sync warp primitive lets us easily check if any of the threads had an update.
@@ -287,11 +309,13 @@ __device__
             first_element_prev_score = __shfl_sync(FULL_MASK, score.s3, WARP_SIZE - 1);
 
             // Index into score matrix.
-            scores[score_gIdx * CUDAPOA_MAX_MATRIX_SEQUENCE_DIMENSION + read_pos + 1] = score.s0;
-            scores[score_gIdx * CUDAPOA_MAX_MATRIX_SEQUENCE_DIMENSION + read_pos + 2] = score.s1;
-            scores[score_gIdx * CUDAPOA_MAX_MATRIX_SEQUENCE_DIMENSION + read_pos + 3] = score.s2;
-            scores[score_gIdx * CUDAPOA_MAX_MATRIX_SEQUENCE_DIMENSION + read_pos + 4] = score.s3;
-
+            if (read_pos < read_count)
+            {
+                scores[score_gIdx * scores_width + read_pos + 1] = score.s0;
+                scores[score_gIdx * scores_width + read_pos + 2] = score.s1;
+                scores[score_gIdx * scores_width + read_pos + 3] = score.s2;
+                scores[score_gIdx * scores_width + read_pos + 4] = score.s3;
+            }
             __syncwarp();
         }
     }
@@ -300,15 +324,15 @@ __device__
     if (lane_idx == 0)
     {
         // Find location of the maximum score in the matrix.
-        int16_t i      = 0;
-        int16_t j      = read_count;
-        int16_t mscore = SHRT_MIN;
+        IndexT i      = 0;
+        IndexT j      = read_count;
+        ScoreT mscore = SHRT_MIN;
 
-        for (int16_t idx = 1; idx <= graph_count; idx++)
+        for (IndexT idx = 1; idx <= graph_count; idx++)
         {
             if (outgoing_edge_count[graph[idx - 1]] == 0)
             {
-                int16_t s = scores[idx * CUDAPOA_MAX_MATRIX_SEQUENCE_DIMENSION + j];
+                ScoreT s = scores[idx * scores_width + j];
                 if (mscore < s)
                 {
                     mscore = s;
@@ -319,10 +343,8 @@ __device__
 
         // Fill in backtrace
 
-        int16_t prev_i = 0;
-        int16_t prev_j = 0;
-
-        //printf("maxi %d maxj %d score %d\n", i, j, scores[i * CUDAPOA_MAX_MATRIX_SEQUENCE_DIMENSION + j]);
+        IndexT prev_i = 0;
+        IndexT prev_j = 0;
 
         // Trace back from maximum score position to generate alignment.
         // Trace back is done by re-calculating the score at each cell
@@ -333,22 +355,18 @@ __device__
         while (!(i == 0 && j == 0) && loop_count < (read_count + graph_count + 2))
         {
             loop_count++;
-            // printf("%d %d\n", i, j);
-            int16_t scores_ij = scores[i * CUDAPOA_MAX_MATRIX_SEQUENCE_DIMENSION + j];
-            bool pred_found   = false;
-            // printf("%d %d node %d\n", i, j, graph[i-1]);
+            ScoreT scores_ij = scores[i * scores_width + j];
+            bool pred_found  = false;
 
             // Check if move is diagonal.
             if (i != 0 && j != 0)
             {
-                uint16_t node_id   = graph[i - 1];
-                int16_t match_cost = (nodes[node_id] == read[j - 1] ? match_score : mismatch_score);
-
+                uint16_t node_id    = graph[i - 1];
+                ScoreT match_cost   = (nodes[node_id] == read[j - 1] ? match_score : mismatch_score);
                 uint16_t pred_count = incoming_edge_count[node_id];
                 uint16_t pred_i     = (pred_count == 0 ? 0 : (node_id_to_pos[incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES]] + 1));
 
-                //printf("j %d\n", j-1);
-                if (scores_ij == (scores[pred_i * CUDAPOA_MAX_MATRIX_SEQUENCE_DIMENSION + (j - 1)] + match_cost))
+                if (scores_ij == (scores[pred_i * scores_width + (j - 1)] + match_cost))
                 {
                     prev_i     = pred_i;
                     prev_j     = j - 1;
@@ -361,7 +379,7 @@ __device__
                     {
                         pred_i = (node_id_to_pos[incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES + p]] + 1);
 
-                        if (scores_ij == (scores[pred_i * CUDAPOA_MAX_MATRIX_SEQUENCE_DIMENSION + (j - 1)] + match_cost))
+                        if (scores_ij == (scores[pred_i * scores_width + (j - 1)] + match_cost))
                         {
                             prev_i     = pred_i;
                             prev_j     = j - 1;
@@ -379,7 +397,7 @@ __device__
                 uint16_t pred_count = incoming_edge_count[node_id];
                 uint16_t pred_i     = (pred_count == 0 ? 0 : node_id_to_pos[incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES]] + 1);
 
-                if (scores_ij == scores[pred_i * CUDAPOA_MAX_MATRIX_SEQUENCE_DIMENSION + j] + gap_score)
+                if (scores_ij == scores[pred_i * scores_width + j] + gap_score)
                 {
                     prev_i     = pred_i;
                     prev_j     = j;
@@ -392,7 +410,7 @@ __device__
                     {
                         pred_i = node_id_to_pos[incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES + p]] + 1;
 
-                        if (scores_ij == scores[pred_i * CUDAPOA_MAX_MATRIX_SEQUENCE_DIMENSION + j] + gap_score)
+                        if (scores_ij == scores[pred_i * scores_width + j] + gap_score)
                         {
                             prev_i     = pred_i;
                             prev_j     = j;
@@ -404,7 +422,7 @@ __device__
             }
 
             // Check if move is horizontal.
-            if (!pred_found && scores_ij == scores[i * CUDAPOA_MAX_MATRIX_SEQUENCE_DIMENSION + (j - 1)] + gap_score)
+            if (!pred_found && scores_ij == scores[i * scores_width + (j - 1)] + gap_score)
             {
                 prev_i     = i;
                 prev_j     = j - 1;
@@ -415,12 +433,8 @@ __device__
             alignment_read[aligned_nodes]  = (j == prev_j ? -1 : j - 1);
             aligned_nodes++;
 
-            //printf("%d %d\n", alignment_graph[aligned_nodes - 1], alignment_read[aligned_nodes-1]);
-
             i = prev_i;
             j = prev_j;
-
-            //printf("loop %d %d\n",i, j);
 
         } // end of while
         if (loop_count >= (read_count + graph_count + 2))
@@ -448,6 +462,7 @@ __global__ void runNeedlemanWunschKernel(uint8_t* nodes,
                                          uint8_t* read,
                                          uint16_t read_count,
                                          int16_t* scores,
+                                         int32_t scores_width,
                                          int16_t* alignment_graph,
                                          int16_t* alignment_read,
                                          int16_t gap_score,
@@ -466,6 +481,7 @@ __global__ void runNeedlemanWunschKernel(uint8_t* nodes,
                                                                         read,
                                                                         read_count,
                                                                         scores,
+                                                                        scores_width,
                                                                         alignment_graph,
                                                                         alignment_read,
                                                                         gap_score,
@@ -484,6 +500,7 @@ void runNW(uint8_t* nodes,
            uint8_t* read,
            uint16_t read_count,
            int16_t* scores,
+           int32_t scores_width,
            int16_t* alignment_graph,
            int16_t* alignment_read,
            int16_t gap_score,
@@ -502,6 +519,7 @@ void runNW(uint8_t* nodes,
                                         read,
                                         read_count,
                                         scores,
+                                        scores_width,
                                         alignment_graph,
                                         alignment_read,
                                         gap_score,

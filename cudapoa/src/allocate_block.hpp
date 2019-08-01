@@ -10,14 +10,13 @@
 
 #pragma once
 
+#include "cudapoa_kernels.cuh"
+
 #include <memory>
 #include <vector>
 #include <stdint.h>
 #include <string>
-
 #include <cuda_runtime_api.h>
-
-#include "cudapoa_kernels.cuh"
 
 namespace claragenomics
 {
@@ -28,7 +27,7 @@ namespace cudapoa
 class BatchBlock
 {
 public:
-    BatchBlock(int32_t device_id_, int32_t max_poas, int32_t max_sequences_per_poa, int8_t output_mask, bool banded_alignment = false);
+    BatchBlock(int32_t device_id_, size_t avail_mem, int32_t max_poas, int32_t max_sequences_per_poa, int8_t output_mask, bool banded_alignment = false);
     ~BatchBlock();
 
     void get_output_details(OutputDetails** output_details_h_p, OutputDetails** output_details_d_p);

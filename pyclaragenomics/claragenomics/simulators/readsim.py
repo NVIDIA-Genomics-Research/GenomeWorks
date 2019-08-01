@@ -23,6 +23,7 @@ class ReadSimulator:
 
 class NoisyReadSimulator(ReadSimulator):
     """Simulate sequencing errors in reads"""
+
     def __init__(self):
         pass
 
@@ -135,7 +136,7 @@ class NoisyReadSimulator(ReadSimulator):
         pos = random.randint(0, reference_length - 1)
 
         def clamp(x):
-            return max(0, min(x, reference_length-1))
+            return max(0, min(x, reference_length - 1))
 
         start = clamp(pos - median_length // 2)
         end = clamp(pos + median_length // 2) + median_length % 2

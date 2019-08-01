@@ -8,12 +8,13 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
+#include <claragenomics/cudapoa/batch.hpp>
+#include <claragenomics/utils/genomeutils.hpp>
+
+#include "gtest/gtest.h"
+#include "spoa/spoa.hpp"
 #include <assert.h>
 #include <algorithm>
-#include "gtest/gtest.h"
-#include "cudapoa/batch.hpp"
-#include <utils/genomeutils.hpp>
-#include "spoa/spoa.hpp"
 
 namespace claragenomics
 {
@@ -31,14 +32,20 @@ public:
 
     void initialize(uint32_t max_poas,
                     uint32_t max_sequences_per_poa,
-                    cudaStream_t stream    = 0,
                     uint32_t device_id     = 0,
+                    cudaStream_t stream    = 0,
                     int8_t output_mask     = OutputType::msa,
                     int16_t gap_score      = -8,
                     int16_t mismatch_score = -6,
-                    int16_t match_score    = 8)
+                    int16_t match_score    = 8,
+                    bool banded_alignment  = false)
     {
-        cudapoa_batch = claragenomics::cudapoa::create_batch(max_poas, max_sequences_per_poa, stream, device_id, output_mask, gap_score, mismatch_score, match_score);
+        size_t total = 0, free = 0;
+        cudaSetDevice(device_id);
+        cudaMemGetInfo(&free, &total);
+        size_t mem_per_batch = 0.9 * free;
+
+        cudapoa_batch = claragenomics::cudapoa::create_batch(max_poas, max_sequences_per_poa, device_id, stream, mem_per_batch, output_mask, gap_score, mismatch_score, match_score, banded_alignment);
     }
 
     std::vector<std::string> spoa_generate_multiple_sequence_alignments(std::vector<std::string> sequences,
@@ -74,11 +81,17 @@ TEST_F(MSATest, CudapoaMSA)
     auto sequences       = claragenomics::genomeutils::generate_random_sequences(backbone, num_sequences, rng, 10, 5, 10);
 
     initialize(1, num_sequences + 1); //
-    EXPECT_EQ(cudapoa_batch->add_poa(), StatusType::success);
+    Group poa_group;
+    std::vector<StatusType> status;
     for (const auto& seq : sequences)
     {
-        EXPECT_EQ(cudapoa_batch->add_seq_to_poa(seq.c_str(), nullptr, seq.length()), StatusType::success); //nullptr for weights will make it all 1
+        Entry e{};
+        e.seq     = seq.c_str();
+        e.weights = nullptr;
+        e.length  = seq.length();
+        poa_group.push_back(e);
     }
+    EXPECT_EQ(cudapoa_batch->add_poa_group(status, poa_group), StatusType::success);
 
     std::vector<std::vector<std::string>> cudapoa_msa;
     std::vector<StatusType> output_status;

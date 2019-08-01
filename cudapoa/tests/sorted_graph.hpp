@@ -8,12 +8,14 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
+#include "basic_graph.hpp"
+#include "../src/cudapoa_kernels.cuh" //CUDAPOA_MAX_NODE_EDGES, CUDAPOA_MAX_NODE_ALIGNMENTS
+
+#include <claragenomics/utils/signed_integer_utils.hpp> // get_size
+
 #include <string>
 #include <vector>
 #include <stdint.h>
-#include "../src/cudapoa_kernels.cuh" //CUDAPOA_MAX_NODE_EDGES, CUDAPOA_MAX_NODE_ALIGNMENTS
-#include "basic_graph.hpp"
-#include <utils/signed_integer_utils.hpp> // get_size
 
 namespace claragenomics
 {

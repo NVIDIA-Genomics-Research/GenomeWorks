@@ -12,13 +12,12 @@
 
 import os.path
 import os
-import shutil
 import subprocess
 
-from distutils.sysconfig import get_python_lib
 from setuptools import setup, find_packages, Extension
 
 from Cython.Build import cythonize
+
 
 class CMakeWrapper():
     """Class to encapsulate building a CMake project."""
@@ -61,10 +60,11 @@ class CMakeWrapper():
             raise RuntimeError("No valid path for requested component exists")
         return installed_path
 
+
 cmake_root_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 cmake_proj = CMakeWrapper(cmake_root_dir,
-             cmake_build_path="cga_build",
-             cmake_extra_args="-Dcga_build_shared=ON")
+                          cmake_build_path="cga_build",
+                          cmake_extra_args="-Dcga_build_shared=ON")
 cmake_proj.build()
 
 extensions = [
