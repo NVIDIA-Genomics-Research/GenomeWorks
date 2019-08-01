@@ -104,7 +104,6 @@ public:
 
 /// \brief Creates a new CUDA Batch object.
 ///
-/// \param max_poas Maximum number of POAs that can be added to the batch
 /// \param max_sequences_per_poa Maximum number of sequences per POA
 /// \param device_id GPU device on which to run CUDA POA algorithm
 /// \param stream CUDA stream to use on GPU
@@ -116,8 +115,7 @@ public:
 /// \param cuda_banded_alignment Whether to use banded alignment
 ///
 /// \return Returns a unique pointer to a new Batch object
-std::unique_ptr<Batch> create_batch(int32_t max_poas,
-                                    int32_t max_sequences_per_poa,
+std::unique_ptr<Batch> create_batch(int32_t max_sequences_per_poa,
                                     int32_t device_id,
                                     cudaStream_t stream,
                                     size_t max_mem,

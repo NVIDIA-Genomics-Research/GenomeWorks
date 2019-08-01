@@ -26,7 +26,6 @@ cdef class CudaPoaBatch:
 
     def __cinit__(
             self,
-            max_poas,
             max_sequences_per_poa,
             gpu_mem,
             device_id=0,
@@ -41,8 +40,6 @@ cdef class CudaPoaBatch:
         partial order alignment across all windows in the batch.
 
         Args:
-            max_poas : Maximum number of partial order alignments to
-                       to perform in batch.
             max_sequences_per_poa : Maximum number of sequences per POA
             stream : CudaStream to use for GPU execution
             device_id : ID of GPU device to use
@@ -62,8 +59,8 @@ cdef class CudaPoaBatch:
             st = stream.get_stream()
             temp_stream = <_Stream>st
 
-        self.batch = create_batch(max_poas,
-                max_sequences_per_poa, 
+        self.batch = create_batch(
+                max_sequences_per_poa,
                 device_id,
                 temp_stream,
                 gpu_mem,

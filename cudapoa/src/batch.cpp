@@ -18,8 +18,7 @@ namespace claragenomics
 namespace cudapoa
 {
 
-std::unique_ptr<Batch> create_batch(int32_t max_poas,
-                                    int32_t max_sequences_per_poa,
+std::unique_ptr<Batch> create_batch(int32_t max_sequences_per_poa,
                                     int32_t device_id,
                                     cudaStream_t stream,
                                     size_t max_mem,
@@ -29,8 +28,7 @@ std::unique_ptr<Batch> create_batch(int32_t max_poas,
                                     int16_t match_score,
                                     bool cuda_banded_alignment)
 {
-    return std::make_unique<CudapoaBatch>(max_poas,
-                                          max_sequences_per_poa,
+    return std::make_unique<CudapoaBatch>(max_sequences_per_poa,
                                           device_id,
                                           stream,
                                           max_mem,

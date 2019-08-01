@@ -29,7 +29,9 @@ cdef extern from "claragenomics/cudapoa/cudapoa.hpp" namespace "claragenomics::c
         exceeded_maximum_poa
         exceeded_maximum_sequence_size
         exceeded_maximum_sequences_per_poa
+        exceeded_batch_size
         node_count_exceeded_maximum_graph_size
+        edge_count_exceeded_maximum_graph_size
         seq_len_exceeded_maximum_nodes_per_window
         loop_count_exceeded_upper_bound
         output_type_unavailable
@@ -59,4 +61,4 @@ cdef extern from "claragenomics/cudapoa/batch.hpp" namespace "claragenomics::cud
         int batch_id() except +
         void reset() except +
 
-    cdef unique_ptr[Batch] create_batch(int32_t, int32_t, int32_t, _Stream, size_t, int8_t, int16_t, int16_t, int16_t, bool)
+    cdef unique_ptr[Batch] create_batch(int32_t, int32_t, _Stream, size_t, int8_t, int16_t, int16_t, int16_t, bool)

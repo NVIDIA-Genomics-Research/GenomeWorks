@@ -18,7 +18,7 @@ from claragenomics.bindings.cuda import CudaStream
 
 @pytest.mark.gpu
 def test_cudapoa_simple_batch():
-    batch = CudaPoaBatch(10, 10, 1e9)
+    batch = CudaPoaBatch(10, 1e9)
     poa_1 = [b"ACTGACTG", b"ACTTACTG", b"ACGGACTG", b"ATCGACTG"]
     poa_2 = [b"ACTGAC", b"ACTTAC", b"ACGGAC", b"ATCGAC"]
     batch.add_poa_group(poa_1)
@@ -32,7 +32,7 @@ def test_cudapoa_simple_batch():
 
 @pytest.mark.gpu
 def test_cudapoa_reset_batch():
-    batch = CudaPoaBatch(10, 10, 1e9)
+    batch = CudaPoaBatch(10, 1e9)
     poa_1 = [b"ACTGACTG", b"ACTTACTG", b"ACGGACTG", b"ATCGACTG"]
     batch.add_poa_group(poa_1)
     batch.generate_poa()
@@ -58,7 +58,7 @@ def test_cudapoa_complex_batch():
         reads.append(new_read.encode())
 
     stream = CudaStream()
-    batch = CudaPoaBatch(10, 1000, 2*1e9, stream=stream)
+    batch = CudaPoaBatch(1000, 2*1e9, stream=stream)
     (add_status, seq_status) = batch.add_poa_group(reads)
     batch.generate_poa()
 

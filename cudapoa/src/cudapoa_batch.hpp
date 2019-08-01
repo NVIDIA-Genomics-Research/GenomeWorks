@@ -45,7 +45,7 @@ class BatchBlock;
 class CudapoaBatch : public Batch
 {
 public:
-    CudapoaBatch(int32_t max_poas, int32_t max_sequences_per_poa, int32_t device_id, cudaStream_t stream, size_t max_mem, int8_t output_mask, int16_t gap_score = -8, int16_t mismatch_score = -6, int16_t match_score = 8, bool cuda_banded_alignment = false);
+    CudapoaBatch(int32_t max_sequences_per_poa, int32_t device_id, cudaStream_t stream, size_t max_mem, int8_t output_mask, int16_t gap_score = -8, int16_t mismatch_score = -6, int16_t match_score = 8, bool cuda_banded_alignment = false);
     ~CudapoaBatch();
 
     virtual StatusType add_poa_group(std::vector<StatusType>& per_seq_status,
@@ -102,9 +102,6 @@ protected:
     bool reserve_buf(uint32_t max_seq_length);
 
 protected:
-    // Maximum POAs to process in batch.
-    int32_t max_poas_ = 0;
-
     // Maximum sequences per POA.
     int32_t max_sequences_per_poa_ = 0;
 
@@ -162,6 +159,9 @@ protected:
 
     // Pointer of a seperate class BatchBlock that implements details on calculating and allocating the memory for each batch
     std::unique_ptr<BatchBlock> batch_block_;
+
+    // Maximum POAs to process in batch.
+    int32_t max_poas_ = 0;
 };
 
 /// \}
