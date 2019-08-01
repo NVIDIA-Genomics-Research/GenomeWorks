@@ -82,7 +82,11 @@ CudapoaBatch::CudapoaBatch(int32_t max_sequences_per_poa,
     , mismatch_score_(mismatch_score)
     , match_score_(match_score)
     , banded_alignment_(cuda_banded_alignment)
-    , batch_block_(new BatchBlock(device_id, max_mem, max_sequences_per_poa, output_mask, cuda_banded_alignment))
+    , batch_block_(new BatchBlock(device_id,
+                                  throw_on_negative(max_mem, "Maximum memory per batch has to be non-negative"),
+                                  max_sequences_per_poa,
+                                  output_mask,
+                                  cuda_banded_alignment))
     , max_poas_(batch_block_->get_max_poas())
 {
     bid_ = CudapoaBatch::batches++;

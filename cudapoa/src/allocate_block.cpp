@@ -23,7 +23,6 @@ namespace cudapoa
 {
 
 BatchBlock::BatchBlock(int32_t device_id, size_t avail_mem, int32_t max_sequences_per_poa, int8_t output_mask, bool banded_alignment)
-    //: max_poas_(throw_on_negative(1U, "Maximum POAs in block has to be non-negative"))
     : max_sequences_per_poa_(throw_on_negative(max_sequences_per_poa, "Maximum sequences per POA has to be non-negative"))
     , banded_alignment_(banded_alignment)
     , device_id_(throw_on_negative(device_id, "Device ID has to be non-negative"))
@@ -38,7 +37,19 @@ BatchBlock::BatchBlock(int32_t device_id, size_t avail_mem, int32_t max_sequence
     size_t host_size_per_poa, device_size_per_poa;
     std::tie(host_size_fixed, device_size_fixed, host_size_per_poa, device_size_per_poa) = calculate_space_per_poa();
 
+    // Using 2x as a buffer.
+    size_t minimum_device_mem = 2 * (device_size_fixed + device_size_per_poa);
+    if (avail_mem < minimum_device_mem)
+    {
+        std::string msg = std::string("Require at least ")
+                              .append(std::to_string(minimum_device_mem))
+                              .append(" bytes of device memory per CUDAPOA batch to process correctly.");
+        throw std::runtime_error(msg);
+    }
+
     // Calculate max POAs possible based on heirustics and available memory.
+    // TODO: Remove this fixed partitioing and making the filling up of buffer
+    // fully dynamic.
     const float fraction_for_metadata = 0.4f;
     max_poas_                         = (avail_mem * fraction_for_metadata) / device_size_per_poa;
 
