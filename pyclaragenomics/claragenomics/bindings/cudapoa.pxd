@@ -13,10 +13,11 @@
 # cython: embedsignature = True
 # cython: language_level = 3
 
-from libcpp.vector cimport vector
 from libcpp.memory cimport unique_ptr
 from libcpp.string cimport string
 from libc.stdint cimport int8_t, int16_t, uint16_t, int32_t
+from libcpp.vector cimport vector
+
 from claragenomics.bindings.cuda_runtime_api cimport _Stream
 
 # This file declares public structs and API calls 

@@ -18,14 +18,14 @@ import claragenomics.bindings.cuda as cuda
 
 @pytest.mark.gpu
 def test_cudapoa_simple_batch():
-    (free, total) = cuda.cuda_get_mem_info(cuda.cuda_get_device())
+    free, total = cuda.cuda_get_mem_info(cuda.cuda_get_device())
     batch = CudaPoaBatch(10, 0.9 * free)
-    poa_1 = [b"ACTGACTG", b"ACTTACTG", b"ACGGACTG", b"ATCGACTG"]
-    poa_2 = [b"ACTGAC", b"ACTTAC", b"ACGGAC", b"ATCGAC"]
+    poa_1 = ["ACTGACTG", "ACTTACTG", "ACGGACTG", "ATCGACTG"]
+    poa_2 = ["ACTGAC", "ACTTAC", "ACGGAC", "ATCGAC"]
     batch.add_poa_group(poa_1)
     batch.add_poa_group(poa_2)
     batch.generate_poa()
-    (consensus, coverage, status) = batch.get_consensus()
+    consensus, coverage, status = batch.get_consensus()
 
     assert(len(consensus) == 2)
     assert(batch.total_poas == 2)
@@ -33,12 +33,12 @@ def test_cudapoa_simple_batch():
 
 @pytest.mark.gpu
 def test_cudapoa_reset_batch():
-    (free, total) = cuda.cuda_get_mem_info(cuda.cuda_get_device())
+    free, total = cuda.cuda_get_mem_info(cuda.cuda_get_device())
     batch = CudaPoaBatch(10, 0.9 * free)
-    poa_1 = [b"ACTGACTG", b"ACTTACTG", b"ACGGACTG", b"ATCGACTG"]
+    poa_1 = ["ACTGACTG", "ACTTACTG", "ACGGACTG", "ATCGACTG"]
     batch.add_poa_group(poa_1)
     batch.generate_poa()
-    (consensus, coverage, status) = batch.get_consensus()
+    consensus, coverage, status = batch.get_consensus()
 
     assert(batch.total_poas == 1)
 
@@ -57,18 +57,18 @@ def test_cudapoa_complex_batch():
     reads = []
     for _ in range(num_reads):
         new_read = ''.join([r if random.random() > mutation_rate else random.choice(['A', 'C', 'G', 'T']) for r in ref])
-        reads.append(new_read.encode())
+        reads.append(new_read)
 
-    (free, total) = cuda.cuda_get_mem_info(cuda.cuda_get_device())
+    free, total = cuda.cuda_get_mem_info(cuda.cuda_get_device())
     stream = cuda.CudaStream()
     batch = CudaPoaBatch(1000, 0.9 * free, stream=stream)
     (add_status, seq_status) = batch.add_poa_group(reads)
     batch.generate_poa()
 
-    (consensus, coverage, status) = batch.get_consensus()
+    consensus, coverage, status = batch.get_consensus()
 
-    consensus = consensus[0].decode('utf-8')
+    consensus = consensus[0]
     assert(len(consensus) == len(ref))
-    matcher = SequenceMatcher(None, ref, consensus)
-    match_ratio = matcher.ratio()
+
+    match_ratio = SequenceMatcher(None, ref, consensus).ratio()
     assert(match_ratio == 1.0)

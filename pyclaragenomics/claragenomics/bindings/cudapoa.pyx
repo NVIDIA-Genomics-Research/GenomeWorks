@@ -11,18 +11,19 @@
 # distutils: language = c++
 
 from cython.operator cimport dereference as deref
-from claragenomics.bindings.cudapoa cimport StatusType, OutputType, Entry, Group, Batch, create_batch
-from claragenomics.bindings.cuda import CudaStream
 from libcpp.vector cimport vector
 from libcpp.memory cimport unique_ptr
 from libcpp.string cimport string
 from libc.stdint cimport uint16_t
 
+from claragenomics.bindings cimport cudapoa
+from claragenomics.bindings import cuda
+
 cdef class CudaPoaBatch:
     """
-    Python API for CUDA accelerated partial order alignment algorithm.
+    Python API for CUDA-accelerated partial order alignment algorithm.
     """
-    cdef unique_ptr[Batch] batch
+    cdef unique_ptr[cudapoa.Batch] batch
 
     def __cinit__(
             self,
@@ -34,9 +35,11 @@ cdef class CudaPoaBatch:
             gap_score=-8,
             mismatch_score=-6,
             match_score=8,
-            cuda_banded_alignment=False):
+            cuda_banded_alignment=False,
+            *args,
+            **kwargs):
         """
-        Construct a CUDAPOA Batch object to run CUDA accelerated
+        Construct a CUDAPOA Batch object to run CUDA-accelerated
         partial order alignment across all windows in the batch.
 
         Args:
@@ -51,15 +54,15 @@ cdef class CudaPoaBatch:
         """
         cdef size_t st
         cdef _Stream temp_stream
-        if (stream == None):
+        if (stream is None):
             temp_stream = NULL
-        elif (not isinstance(stream, CudaStream)):
+        elif (not isinstance(stream, cuda.CudaStream)):
             raise RuntimeError("Type for stream option must be CudaStream")
         else:
-            st = stream.get_stream()
+            st = stream.stream
             temp_stream = <_Stream>st
 
-        self.batch = create_batch(
+        self.batch = cudapoa.create_batch(
                 max_sequences_per_poa,
                 device_id,
                 temp_stream,
@@ -70,14 +73,32 @@ cdef class CudaPoaBatch:
                 match_score,
                 cuda_banded_alignment)
 
+    def __init__(
+            self,
+            max_sequences_per_poa,
+            gpu_mem,
+            device_id=0,
+            stream=None,
+            output_mask=consensus,
+            gap_score=-8,
+            mismatch_score=-6,
+            match_score=8,
+            cuda_banded_alignment=False,
+            *args,
+            **kwargs):
+        """
+        Dummy implementation of __init__ function to allow
+        for Python subclassing.
+        """
+        pass
+
     def add_poa_group(self, poa):
         """
         Set the POA groups to run alignment on.
 
         Args:
             poas : List of POA groups. Each group is a list of
-                   sequences. Note that the sequences need be of type
-                   'bytes'.
+                   sequences.
                    e.g. [["ACTG", "ATCG"], <--- Group 1
                          ["GCTA", "GACT", "ACGTC"] <--- Group 2
                         ]
@@ -88,16 +109,14 @@ cdef class CudaPoaBatch:
             poas = [poa]
         if (len(poa) < 1):
             raise RuntimeError("At least one sequence must be present in POA group")
-        cdef bytes py_bytes
         cdef char* c_string
-        cdef Group poa_group
-        cdef Entry entry
-        cdef vector[StatusType] seq_status
+        cdef cudapoa.Group poa_group
+        cdef cudapoa.Entry entry
+        cdef vector[cudapoa.StatusType] seq_status
+        byte_list = [] # To store byte array of POA sequences
         for seq in poa:
-            if (not isinstance(seq, bytes)):
-                raise RuntimeError("Sequences need to be of type 'bytes'")
-            py_bytes = seq
-            c_string = py_bytes
+            byte_list.append(seq.encode('utf-8'))
+            c_string = byte_list[-1]
             entry.seq = c_string
             entry.weights = NULL
             entry.length = len(seq)
@@ -143,7 +162,7 @@ cdef class CudaPoaBatch:
             represented as a list of alignments.
         """
         cdef vector[vector[string]] msa
-        cdef vector[StatusType] status
+        cdef vector[cudapoa.StatusType] status
         error = deref(self.batch).get_msa(msa, status)
         if error == output_type_unavailable:
             raise RuntimeError("Output type not requested during batch initialization")
@@ -161,11 +180,12 @@ cdef class CudaPoaBatch:
         """
         cdef vector[string] consensus
         cdef vector[vector[uint16_t]] coverage
-        cdef vector[StatusType] status
+        cdef vector[cudapoa.StatusType] status
         error = deref(self.batch).get_consensus(consensus, coverage, status)
         if error == output_type_unavailable:
             raise RuntimeError("Output type not requested during batch initialization")
-        return (consensus, coverage, status)
+        decoded_consensus = [c.decode('utf-8') for c in consensus]
+        return (decoded_consensus, coverage, status)
 
     def reset(self):
         """
