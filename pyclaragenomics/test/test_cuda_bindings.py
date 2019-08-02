@@ -13,6 +13,7 @@ import pytest
 
 from claragenomics.bindings import cuda
 
+
 @pytest.mark.gpu
 def test_cuda_get_device():
     device_count = cuda.cuda_get_device_count()
