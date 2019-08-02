@@ -19,7 +19,8 @@ python setup.py develop
 
 ### Testing installation
 ```
-pytest
+cd test/
+python -m pytest
 ```
 
 ## Generating a simulated genome
