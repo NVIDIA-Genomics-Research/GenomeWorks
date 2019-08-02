@@ -12,9 +12,11 @@
 /// \file
 /// \defgroup cudautils Internal CUDA utilities package
 
+#include <claragenomics/utils/cudaversions.hpp>
 #include <claragenomics/logging/logging.hpp>
 
 #include <cuda_runtime_api.h>
+#include <stdexcept>
 
 /// \ingroup cudautils
 /// \{
@@ -26,24 +28,6 @@
     {                                                                    \
         claragenomics::cudautils::gpu_assert((ans), __FILE__, __LINE__); \
     }
-
-/// \def CGA_CUDA_BEFORE_XX_X
-/// \brief Macros to enable/disable CUDA version specific code
-#define CGA_CUDA_BEFORE_XX_X 1
-
-#if __CUDACC_VER_MAJOR__ < 10 || (__CUDACC_VER_MAJOR__ == 10 && __CUDACC_VER_MINOR__ < 1)
-#define CGA_CUDA_BEFORE_10_1 1
-#else
-#define CGA_CUDA_BEFORE_10_1 0
-#endif
-
-/// \def CGA_CONSTEXPR
-/// \brief C++ constexpr for device code - falls back to const for CUDA 10.0 and earlier
-#if CGA_CUDA_BEFORE_10_1
-#define CGA_CONSTEXPR const
-#else
-#define CGA_CONSTEXPR constexpr
-#endif
 
 /// \}
 
