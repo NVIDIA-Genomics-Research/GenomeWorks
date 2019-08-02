@@ -22,9 +22,9 @@
 /// \ingroup cudautils
 /// \def CGA_CU_CHECK_ERR
 /// \brief Log on CUDA error in enclosed expression
-#define CGA_CU_CHECK_ERR(ans)                                           \
-    {                                                                   \
-        claragenomics::cudautils::gpuAssert((ans), __FILE__, __LINE__); \
+#define CGA_CU_CHECK_ERR(ans)                                            \
+    {                                                                    \
+        claragenomics::cudautils::gpu_assert((ans), __FILE__, __LINE__); \
     }
 
 /// \def CGA_CUDA_BEFORE_XX_X
@@ -53,14 +53,14 @@ namespace claragenomics
 namespace cudautils
 {
 
-/// gpuAssert
+/// gpu_assert
 /// Logs and/or exits on cuda error
 /// \ingroup cudautils
 /// \param code The CUDA status code of the function being asserted
 /// \param file Filename of the calling function
 /// \param line File line number of the calling function
 /// \param abort If true, hard-exit on CUDA error
-inline void gpuAssert(cudaError_t code, const char* file, int line, bool abort = false)
+inline void gpu_assert(cudaError_t code, const char* file, int line, bool abort = false)
 {
     if (code != cudaSuccess)
     {
@@ -78,6 +78,21 @@ inline void gpuAssert(cudaError_t code, const char* file, int line, bool abort =
             throw std::runtime_error(err);
         }
     }
+}
+
+/// align
+/// Alignment of memory chunks in cudapoa. Must be a power of two
+/// \tparam IntType type of data to align
+/// \tparam boundary Boundary to align to (NOTE: must be power of 2)
+/// \param value Input value that is to be aligned
+/// \return Value aligned to boundary
+template <typename IntType, int32_t boundary>
+__host__ __device__ __forceinline__
+    IntType
+    align(const IntType& value)
+{
+    static_assert((boundary & (boundary - 1)) == 0, "Boundary for align must be power of 2");
+    return (value + boundary) & ~(boundary - 1);
 }
 
 } // namespace cudautils
