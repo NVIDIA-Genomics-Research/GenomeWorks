@@ -99,7 +99,7 @@ protected:
     StatusType add_seq_to_poa(const char* seq, const int8_t* weights, int32_t seq_len);
 
     // Check if seq length can fit in available scoring matrix memory.
-    bool reserve_buf(uint32_t max_seq_length);
+    bool reserve_buf(int32_t max_seq_length);
 
 protected:
     // Maximum sequences per POA.

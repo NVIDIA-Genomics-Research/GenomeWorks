@@ -178,16 +178,16 @@ void BatchBlock::get_output_details(OutputDetails** output_details_h_p, OutputDe
 
     // on device
     output_details_d->consensus = &block_data_d_[offset_d_];
-    offset_d_ += output_size_ * sizeof(int8_t);
+    offset_d_ += cudautils::align<size_t, 8>(output_size_ * sizeof(int8_t));
     if (output_mask_ & OutputType::consensus)
     {
         output_details_d->coverage = reinterpret_cast<uint16_t*>(&block_data_d_[offset_d_]);
-        offset_d_ += output_size_ * sizeof(int16_t);
+        offset_d_ += cudautils::align<size_t, 8>(output_size_ * sizeof(int16_t));
     }
     if (output_mask_ & OutputType::msa)
     {
         output_details_d->multiple_sequence_alignments = reinterpret_cast<uint8_t*>(&block_data_d_[offset_d_]);
-        offset_d_ += output_size_ * max_sequences_per_poa_ * sizeof(uint8_t);
+        offset_d_ += cudautils::align<size_t, 8>(output_size_ * max_sequences_per_poa_ * sizeof(uint8_t));
     }
 
     *output_details_h_p = output_details_h;
@@ -221,17 +221,17 @@ void BatchBlock::get_input_details(InputDetails** input_details_h_p, InputDetail
 
     // on device
     input_details_d->sequences = &block_data_d_[offset_d_];
-    offset_d_ += input_size_ * sizeof(uint8_t);
+    offset_d_ += cudautils::align<size_t, 8>(input_size_ * sizeof(uint8_t));
     input_details_d->base_weights = reinterpret_cast<int8_t*>(&block_data_d_[offset_d_]);
-    offset_d_ += input_size_ * sizeof(int8_t);
+    offset_d_ += cudautils::align<size_t, 8>(input_size_ * sizeof(int8_t));
     input_details_d->sequence_lengths = reinterpret_cast<uint16_t*>(&block_data_d_[offset_d_]);
-    offset_d_ += max_poas_ * max_sequences_per_poa_ * sizeof(uint16_t);
+    offset_d_ += cudautils::align<size_t, 8>(max_poas_ * max_sequences_per_poa_ * sizeof(uint16_t));
     input_details_d->window_details = reinterpret_cast<WindowDetails*>(&block_data_d_[offset_d_]);
-    offset_d_ += max_poas_ * sizeof(WindowDetails);
+    offset_d_ += cudautils::align<size_t, 8>(max_poas_ * sizeof(WindowDetails));
     if (output_mask_ & OutputType::msa)
     {
         input_details_d->sequence_begin_nodes_ids = reinterpret_cast<uint16_t*>(&block_data_d_[offset_d_]);
-        offset_d_ += max_poas_ * max_sequences_per_poa_ * sizeof(uint16_t);
+        offset_d_ += cudautils::align<size_t, 8>(max_poas_ * max_sequences_per_poa_ * sizeof(uint16_t));
     }
 
     *input_details_h_p = input_details_h;
@@ -248,9 +248,9 @@ void BatchBlock::get_alignment_details(AlignmentDetails** alignment_details_d_p)
 
     // on device;
     alignment_details_d->alignment_graph = reinterpret_cast<int16_t*>(&block_data_d_[offset_d_]);
-    offset_d_ += sizeof(int16_t) * max_graph_dimension_ * max_poas_;
+    offset_d_ += cudautils::align<size_t, 8>(sizeof(int16_t) * max_graph_dimension_ * max_poas_);
     alignment_details_d->alignment_read = reinterpret_cast<int16_t*>(&block_data_d_[offset_d_]);
-    offset_d_ += sizeof(int16_t) * max_graph_dimension_ * max_poas_;
+    offset_d_ += cudautils::align<size_t, 8>(sizeof(int16_t) * max_graph_dimension_ * max_poas_);
 
     // rest of the available memory is assigned to scores buffer
     alignment_details_d->scorebuf_alloc_size = total_d_ - offset_d_;
@@ -268,53 +268,53 @@ void BatchBlock::get_graph_details(GraphDetails** graph_details_d_p)
 
     // on device
     graph_details_d->nodes = &block_data_d_[offset_d_];
-    offset_d_ += sizeof(uint8_t) * max_nodes_per_window_ * max_poas_;
+    offset_d_ += cudautils::align<size_t, 8>(sizeof(uint8_t) * max_nodes_per_window_ * max_poas_);
     graph_details_d->node_alignments = reinterpret_cast<uint16_t*>(&block_data_d_[offset_d_]);
-    offset_d_ += sizeof(uint16_t) * max_nodes_per_window_ * CUDAPOA_MAX_NODE_ALIGNMENTS * max_poas_;
+    offset_d_ += cudautils::align<size_t, 8>(sizeof(uint16_t) * max_nodes_per_window_ * CUDAPOA_MAX_NODE_ALIGNMENTS * max_poas_);
     graph_details_d->node_alignment_count = reinterpret_cast<uint16_t*>(&block_data_d_[offset_d_]);
-    offset_d_ += sizeof(uint16_t) * max_nodes_per_window_ * max_poas_;
+    offset_d_ += cudautils::align<size_t, 8>(sizeof(uint16_t) * max_nodes_per_window_ * max_poas_);
     graph_details_d->incoming_edges = reinterpret_cast<uint16_t*>(&block_data_d_[offset_d_]);
-    offset_d_ += sizeof(uint16_t) * max_nodes_per_window_ * CUDAPOA_MAX_NODE_EDGES * max_poas_;
+    offset_d_ += cudautils::align<size_t, 8>(sizeof(uint16_t) * max_nodes_per_window_ * CUDAPOA_MAX_NODE_EDGES * max_poas_);
     graph_details_d->incoming_edge_count = reinterpret_cast<uint16_t*>(&block_data_d_[offset_d_]);
-    offset_d_ += sizeof(uint16_t) * max_nodes_per_window_ * max_poas_;
+    offset_d_ += cudautils::align<size_t, 8>(sizeof(uint16_t) * max_nodes_per_window_ * max_poas_);
     graph_details_d->outgoing_edges = reinterpret_cast<uint16_t*>(&block_data_d_[offset_d_]);
-    offset_d_ += sizeof(uint16_t) * max_nodes_per_window_ * CUDAPOA_MAX_NODE_EDGES * max_poas_;
+    offset_d_ += cudautils::align<size_t, 8>(sizeof(uint16_t) * max_nodes_per_window_ * CUDAPOA_MAX_NODE_EDGES * max_poas_);
     graph_details_d->outgoing_edge_count = reinterpret_cast<uint16_t*>(&block_data_d_[offset_d_]);
-    offset_d_ += sizeof(uint16_t) * max_nodes_per_window_ * max_poas_;
+    offset_d_ += cudautils::align<size_t, 8>(sizeof(uint16_t) * max_nodes_per_window_ * max_poas_);
     graph_details_d->incoming_edge_weights = reinterpret_cast<uint16_t*>(&block_data_d_[offset_d_]);
-    offset_d_ += sizeof(uint16_t) * max_nodes_per_window_ * CUDAPOA_MAX_NODE_EDGES * max_poas_;
+    offset_d_ += cudautils::align<size_t, 8>(sizeof(uint16_t) * max_nodes_per_window_ * CUDAPOA_MAX_NODE_EDGES * max_poas_);
     graph_details_d->outgoing_edge_weights = reinterpret_cast<uint16_t*>(&block_data_d_[offset_d_]);
-    offset_d_ += sizeof(uint16_t) * max_nodes_per_window_ * CUDAPOA_MAX_NODE_EDGES * max_poas_;
+    offset_d_ += cudautils::align<size_t, 8>(sizeof(uint16_t) * max_nodes_per_window_ * CUDAPOA_MAX_NODE_EDGES * max_poas_);
     graph_details_d->sorted_poa = reinterpret_cast<uint16_t*>(&block_data_d_[offset_d_]);
-    offset_d_ += sizeof(uint16_t) * max_nodes_per_window_ * max_poas_;
+    offset_d_ += cudautils::align<size_t, 8>(sizeof(uint16_t) * max_nodes_per_window_ * max_poas_);
     graph_details_d->sorted_poa_node_map = reinterpret_cast<uint16_t*>(&block_data_d_[offset_d_]);
-    offset_d_ += sizeof(uint16_t) * max_nodes_per_window_ * max_poas_;
+    offset_d_ += cudautils::align<size_t, 8>(sizeof(uint16_t) * max_nodes_per_window_ * max_poas_);
     graph_details_d->sorted_poa_local_edge_count = reinterpret_cast<uint16_t*>(&block_data_d_[offset_d_]);
-    offset_d_ += sizeof(uint16_t) * max_nodes_per_window_ * max_poas_;
+    offset_d_ += cudautils::align<size_t, 8>(sizeof(uint16_t) * max_nodes_per_window_ * max_poas_);
     if (output_mask_ & OutputType::consensus)
     {
         graph_details_d->consensus_scores = reinterpret_cast<int32_t*>(&block_data_d_[offset_d_]);
-        offset_d_ += sizeof(int32_t) * max_nodes_per_window_ * max_poas_;
+        offset_d_ += cudautils::align<size_t, 8>(sizeof(int32_t) * max_nodes_per_window_ * max_poas_);
         graph_details_d->consensus_predecessors = reinterpret_cast<int16_t*>(&block_data_d_[offset_d_]);
-        offset_d_ += sizeof(int16_t) * max_nodes_per_window_ * max_poas_;
+        offset_d_ += cudautils::align<size_t, 8>(sizeof(int16_t) * max_nodes_per_window_ * max_poas_);
     }
 
     graph_details_d->node_marks = reinterpret_cast<uint8_t*>(&block_data_d_[offset_d_]);
-    offset_d_ += sizeof(int8_t) * max_nodes_per_window_ * max_poas_;
+    offset_d_ += cudautils::align<size_t, 8>(sizeof(int8_t) * max_nodes_per_window_ * max_poas_);
     graph_details_d->check_aligned_nodes = reinterpret_cast<bool*>(&block_data_d_[offset_d_]);
-    offset_d_ += sizeof(bool) * max_nodes_per_window_ * max_poas_;
+    offset_d_ += cudautils::align<size_t, 8>(sizeof(bool) * max_nodes_per_window_ * max_poas_);
     graph_details_d->nodes_to_visit = reinterpret_cast<uint16_t*>(&block_data_d_[offset_d_]);
-    offset_d_ += sizeof(uint16_t) * max_nodes_per_window_ * max_poas_;
+    offset_d_ += cudautils::align<size_t, 8>(sizeof(uint16_t) * max_nodes_per_window_ * max_poas_);
     graph_details_d->node_coverage_counts = reinterpret_cast<uint16_t*>(&block_data_d_[offset_d_]);
-    offset_d_ += sizeof(uint16_t) * max_nodes_per_window_ * max_poas_;
+    offset_d_ += cudautils::align<size_t, 8>(sizeof(uint16_t) * max_nodes_per_window_ * max_poas_);
     if (output_mask_ & OutputType::msa)
     {
         graph_details_d->outgoing_edges_coverage = reinterpret_cast<uint16_t*>(&block_data_d_[offset_d_]);
-        offset_d_ += sizeof(uint16_t) * max_nodes_per_window_ * CUDAPOA_MAX_NODE_EDGES * max_sequences_per_poa_ * max_poas_;
+        offset_d_ += cudautils::align<size_t, 8>(sizeof(uint16_t) * max_nodes_per_window_ * CUDAPOA_MAX_NODE_EDGES * max_sequences_per_poa_ * max_poas_);
         graph_details_d->outgoing_edges_coverage_count = reinterpret_cast<uint16_t*>(&block_data_d_[offset_d_]);
-        offset_d_ += sizeof(uint16_t) * max_nodes_per_window_ * CUDAPOA_MAX_NODE_EDGES * max_poas_;
+        offset_d_ += cudautils::align<size_t, 8>(sizeof(uint16_t) * max_nodes_per_window_ * CUDAPOA_MAX_NODE_EDGES * max_poas_);
         graph_details_d->node_id_to_msa_pos = reinterpret_cast<int16_t*>(&block_data_d_[offset_d_]);
-        offset_d_ += sizeof(uint16_t) * max_nodes_per_window_ * max_poas_;
+        offset_d_ += cudautils::align<size_t, 8>(sizeof(uint16_t) * max_nodes_per_window_ * max_poas_);
     }
 
     *graph_details_d_p = graph_details_d;

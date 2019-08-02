@@ -141,7 +141,58 @@ TEST_F(TestCudapoaBatch, MaxSeqSizeTest)
     poa_group.push_back(e_2);
 
     EXPECT_EQ(cudapoa_batch->add_poa_group(status, poa_group), StatusType::success);
+    EXPECT_EQ(status.at(0), StatusType::success);
     EXPECT_EQ(status.at(1), StatusType::exceeded_maximum_sequence_size);
+}
+
+TEST_F(TestCudapoaBatch, GeneratePoaTest)
+{
+    const int32_t device_id = 0;
+    size_t free             = get_free_device_mem(device_id);
+    initialize(10, 0.9 * free, device_id);
+    Group poa_group;
+    std::vector<StatusType> status;
+    Entry e{};
+
+    int32_t seq_length = 1023;
+
+    // Sequence 1
+    std::string seq(seq_length, 'A');
+    std::vector<int8_t> weights(seq_length, 1);
+    e.seq     = seq.c_str();
+    e.weights = weights.data();
+    e.length  = seq.length();
+    poa_group.push_back(e);
+
+    // Sequence 2
+    std::string seq_2 = std::string(seq_length, 'A');
+    std::vector<int8_t> weights_2(seq_length, 1);
+    e.seq     = seq_2.c_str();
+    e.weights = weights_2.data();
+    e.length  = seq_2.length();
+    poa_group.push_back(e);
+
+    // Sequence 3
+    std::string seq_3 = std::string(seq_length, 'A');
+    std::vector<int8_t> weights_3(seq_length, 1);
+    e.seq     = seq_3.c_str();
+    e.weights = weights_3.data();
+    e.length  = seq_3.length();
+    poa_group.push_back(e);
+
+    EXPECT_EQ(cudapoa_batch->add_poa_group(status, poa_group), StatusType::success);
+
+    // Get consensus
+    std::vector<std::string> consensus;
+    std::vector<std::vector<uint16_t>> coverage;
+    std::vector<claragenomics::cudapoa::StatusType> output_status;
+    cudapoa_batch->generate_poa();
+    cudapoa_batch->get_consensus(consensus, coverage, output_status);
+
+    EXPECT_EQ(output_status[0], StatusType::success);
+    EXPECT_EQ(consensus.size(), 1);
+    // Since all sequences are same, consensus is same as sequences.
+    EXPECT_EQ(consensus[0], seq);
 }
 
 } // namespace cudapoa
