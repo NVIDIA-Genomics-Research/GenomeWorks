@@ -90,7 +90,7 @@ setup(name='pyclaragenomics',
       description='NVIDIA genomics python libraries an utiliites',
       author='NVIDIA Corporation',
       packages=find_packages(),
-      ext_modules=cythonize(extensions),
+      ext_modules=cythonize(extensions, compiler_directives={'embedsignature': True}),
       scripts=[os.path.join(pycga_folder, 'bin', 'genome_simulator'),
                os.path.join(pycga_folder, 'bin', 'assembly_evaluator')],
       )
