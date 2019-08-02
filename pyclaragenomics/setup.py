@@ -61,19 +61,21 @@ class CMakeWrapper():
         return installed_path
 
 
-cmake_root_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+# Initialize builds.
+pycga_folder = os.path.dirname(os.path.realpath(__file__))
+cmake_root_dir = os.path.dirname(pycga_folder)
 cmake_proj = CMakeWrapper(cmake_root_dir,
-                          cmake_build_path="cga_build",
+                          cmake_build_path=os.path.join(pycga_folder, "cga_build"),
                           cmake_extra_args="-Dcga_build_shared=ON")
 cmake_proj.build()
 
 extensions = [
     Extension(
         "*",
-        sources=["claragenomics/**/*.pyx"],
+        sources=[os.path.join(pycga_folder, "claragenomics/**/*.pyx")],
         include_dirs=[
             "/usr/local/cuda/include",
-            "../cudapoa/include",
+            os.path.join(cmake_root_dir, "cudapoa/include"),
         ],
         library_dirs=["/usr/local/cuda/lib64", cmake_proj.get_installed_path("lib")],
         runtime_library_dirs=["/usr/local/cuda/lib64", cmake_proj.get_installed_path("lib")],
@@ -89,6 +91,6 @@ setup(name='pyclaragenomics',
       author='NVIDIA Corporation',
       packages=find_packages(),
       ext_modules=cythonize(extensions),
-      scripts=[os.path.join('bin', 'genome_simulator'),
-               os.path.join('bin', 'assembly_evaluator')],
+      scripts=[os.path.join(pycga_folder, 'bin', 'genome_simulator'),
+               os.path.join(pycga_folder, 'bin', 'assembly_evaluator')],
       )

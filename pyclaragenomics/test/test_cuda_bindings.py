@@ -10,8 +10,8 @@
 
 import pytest
 
-import claragenomics.bindings.cuda as cuda
 
+from claragenomics.bindings import cuda
 
 @pytest.mark.gpu
 def test_cuda_get_device():
