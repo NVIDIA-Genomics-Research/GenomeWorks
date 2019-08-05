@@ -69,6 +69,7 @@ void CudapoaBatch::initialize_graph_details()
 
 CudapoaBatch::CudapoaBatch(int32_t max_sequences_per_poa,
                            int32_t device_id,
+                           cudaStream_t stream,
                            size_t max_mem,
                            int8_t output_mask,
                            int16_t gap_score,
@@ -77,6 +78,7 @@ CudapoaBatch::CudapoaBatch(int32_t max_sequences_per_poa,
                            bool cuda_banded_alignment)
     : max_sequences_per_poa_(throw_on_negative(max_sequences_per_poa, "Maximum sequences per POA has to be non-negative"))
     , device_id_(throw_on_negative(device_id, "Device ID has to be non-negative"))
+    , stream_(stream)
     , output_mask_(output_mask)
     , gap_score_(gap_score)
     , mismatch_score_(mismatch_score)
@@ -191,10 +193,16 @@ void CudapoaBatch::decode_cudapoa_kernel_error(claragenomics::cudapoa::StatusTyp
     }
 }
 
-void CudapoaBatch::get_consensus(std::vector<std::string>& consensus,
-                                 std::vector<std::vector<uint16_t>>& coverage,
-                                 std::vector<StatusType>& output_status)
+StatusType CudapoaBatch::get_consensus(std::vector<std::string>& consensus,
+                                       std::vector<std::vector<uint16_t>>& coverage,
+                                       std::vector<StatusType>& output_status)
 {
+    // Check if consensus was requested at init time.
+    if (!(OutputType::consensus & output_mask_))
+    {
+        return StatusType::output_type_unavailable;
+    }
+
     std::string msg = " Launching memcpy D2H on device ";
     print_batch_debug_message(msg);
     CGA_CU_CHECK_ERR(cudaMemcpyAsync(output_details_h_->consensus,
@@ -236,12 +244,21 @@ void CudapoaBatch::get_consensus(std::vector<std::string>& consensus,
                 &(output_details_h_->coverage[poa * CUDAPOA_MAX_CONSENSUS_SIZE]),
                 &(output_details_h_->coverage[poa * CUDAPOA_MAX_CONSENSUS_SIZE + get_size(consensus.back())])));
             std::reverse(coverage.back().begin(), coverage.back().end());
+            //std::cout << consensus.back() << std::endl;
         }
     }
+
+    return StatusType::success;
 }
 
-void CudapoaBatch::get_msa(std::vector<std::vector<std::string>>& msa, std::vector<StatusType>& output_status)
+StatusType CudapoaBatch::get_msa(std::vector<std::vector<std::string>>& msa, std::vector<StatusType>& output_status)
 {
+    // Check if msa was requested at init time.
+    if (!(OutputType::msa & output_mask_))
+    {
+        return StatusType::output_type_unavailable;
+    }
+
     std::string msg = " Launching memcpy D2H on device for msa ";
     print_batch_debug_message(msg);
 
@@ -283,11 +300,8 @@ void CudapoaBatch::get_msa(std::vector<std::vector<std::string>>& msa, std::vect
             }
         }
     }
-}
 
-void CudapoaBatch::set_cuda_stream(cudaStream_t stream)
-{
-    stream_ = stream;
+    return StatusType::success;
 }
 
 bool CudapoaBatch::reserve_buf(int32_t max_seq_length)
@@ -319,6 +333,8 @@ StatusType CudapoaBatch::add_poa_group(std::vector<StatusType>& per_seq_status,
                                                  return lhs.length < rhs.length;
                                              });
     int32_t max_seq_length = max_length_entry->length;
+
+    //std::cout << "Adding new poa group!" << std::endl;
 
     if (!reserve_buf(max_seq_length))
     {

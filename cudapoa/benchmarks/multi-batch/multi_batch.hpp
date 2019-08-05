@@ -46,10 +46,9 @@ public:
             cudaStream_t stream;
             cudaStreamCreate(&stream);
             batches_.emplace_back(create_batch(200,
-                                               0, mem_per_batch,
+                                               0, stream, mem_per_batch,
                                                OutputType::consensus,
                                                -8, -6, 8, false));
-            batches_.back()->set_cuda_stream(stream);
         }
     }
 

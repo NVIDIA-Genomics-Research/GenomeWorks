@@ -23,6 +23,7 @@ genome_lengths_data = [
 ]
 
 
+@pytest.mark.cpu
 @pytest.mark.parametrize("reference_length, expected", genome_lengths_data)
 def test_markov_length(reference_length, expected):
     """ Test generated length for Markovian genome simulator is correct"""
@@ -32,6 +33,7 @@ def test_markov_length(reference_length, expected):
     assert(len(reference_string) == expected)
 
 
+@pytest.mark.cpu
 @pytest.mark.parametrize("reference_length, expected", genome_lengths_data)
 def test_poisson_length(reference_length, expected):
     """ Test generated length for Poisson genome simulator is correct"""

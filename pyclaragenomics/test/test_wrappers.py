@@ -28,6 +28,7 @@ polished_assembly_CPU_subgraph_gt_filepath = os.path.join(current_dir, "data/pol
 report_CPU_subgraph_gt_filepath = os.path.join(current_dir, "data/polished_assembly_CPU_subgraph_GT.txt")
 
 
+@pytest.mark.cpu
 @pytest.mark.parametrize(
     "reads_filepath, overlaps_gt_filepath, minimap2_tool_path",
     [(reads_filepath, overlaps_gt_filepath, None)],
@@ -43,6 +44,7 @@ def test_minimap2_from_reads(reads_filepath, overlaps_gt_filepath, minimap2_tool
         assert(match)
 
 
+@pytest.mark.cpu
 @pytest.mark.parametrize(
     "reads_filepath, assembly_fa_gt_filepath, minimap2_tool_path",
     [(reads_filepath, assembly_fa_gt_filepath, None)],
@@ -58,6 +60,7 @@ def test_minimap2_from_assembly(reads_filepath, assembly_fa_gt_filepath, minimap
         assert(match)
 
 
+@pytest.mark.cpu
 @pytest.mark.parametrize(
     "reads_filepath, overlaps_gt_filepath, assembly_gfa_gt_filepath, miniasm_tool_path",
     [(reads_filepath, overlaps_gt_filepath, assembly_gfa_gt_filepath, None)],
@@ -73,6 +76,7 @@ def test_miniasm(reads_filepath, overlaps_gt_filepath, assembly_gfa_gt_filepath,
         assert(match)
 
 
+@pytest.mark.cpu
 @pytest.mark.parametrize(
     "assembly_gfa_gt_filepath, assembly_fa_gt_filepath",
     [(assembly_gfa_gt_filepath, assembly_fa_gt_filepath)],
@@ -87,6 +91,7 @@ def test_gfa2fa(assembly_gfa_gt_filepath, assembly_fa_gt_filepath):
         assert(match)
 
 
+@pytest.mark.cpu
 @pytest.mark.parametrize("reads_filepath, overlaps_on_assembly_gt_filepath, assembly_fa_gt_filepath, \
                          polished_assembly_CPU_subgraph_gt_filepath, racon_tool_path",
                          [(reads_filepath, overlaps_on_assembly_gt_filepath, assembly_fa_gt_filepath,

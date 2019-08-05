@@ -35,14 +35,15 @@ public:
 
         assert(get_size(windows_) > 0);
 
+        cudaStream_t stream;
+        cudaStreamCreate(&stream);
+
         size_t total = 0, free = 0;
         cudaSetDevice(0);
         cudaMemGetInfo(&free, &total);
         size_t mem_per_batch = 0.9 * free;
-        batch_               = create_batch(200, 0, mem_per_batch, OutputType::consensus, -8, -6, 8, false);
-        cudaStream_t stream;
-        cudaStreamCreate(&stream);
-        batch_->set_cuda_stream(stream);
+
+        batch_ = create_batch(200, 0, stream, mem_per_batch, OutputType::consensus, -8, -6, 8, false);
     }
 
     ~SingleBatch()

@@ -80,9 +80,9 @@ public:
     ///                 base in each consensus string is returned
     /// \param output_status Reference to vector where the errors
     ///                 during kernel execution is captured
-    virtual void get_consensus(std::vector<std::string>& consensus,
-                               std::vector<std::vector<uint16_t>>& coverage,
-                               std::vector<claragenomics::cudapoa::StatusType>& output_status) = 0;
+    virtual StatusType get_consensus(std::vector<std::string>& consensus,
+                                     std::vector<std::vector<uint16_t>>& coverage,
+                                     std::vector<claragenomics::cudapoa::StatusType>& output_status) = 0;
 
     /// \brief Get the multiple sequence alignments for each POA.
     ///
@@ -90,11 +90,8 @@ public:
     ///                 poa is returned
     /// \param output_status Reference to vector where the errors
     ///                 during kernel execution is captured
-    virtual void get_msa(std::vector<std::vector<std::string>>& msa,
-                         std::vector<StatusType>& output_status) = 0;
-
-    /// \brief Set CUDA stream for GPU device.
-    virtual void set_cuda_stream(cudaStream_t stream) = 0;
+    virtual StatusType get_msa(std::vector<std::vector<std::string>>& msa,
+                               std::vector<StatusType>& output_status) = 0;
 
     /// \brief Return batch ID.
     ///
@@ -109,6 +106,7 @@ public:
 ///
 /// \param max_sequences_per_poa Maximum number of sequences per POA
 /// \param device_id GPU device on which to run CUDA POA algorithm
+/// \param stream CUDA stream to use on GPU
 /// \param max_mem Maximum GPU memory to use for this batch.
 /// \param output_mask Which outputs to produce from POA (msa, consensus)
 /// \param gap_score Score to be assigned to a gap
@@ -119,6 +117,7 @@ public:
 /// \return Returns a unique pointer to a new Batch object
 std::unique_ptr<Batch> create_batch(int32_t max_sequences_per_poa,
                                     int32_t device_id,
+                                    cudaStream_t stream,
                                     size_t max_mem,
                                     int8_t output_mask,
                                     int16_t gap_score,

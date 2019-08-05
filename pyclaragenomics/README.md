@@ -14,6 +14,13 @@ python setup.py install
 ```
 pip install -r requirements.txt
 python setup.py develop
+
+```
+
+### Testing installation
+```
+cd test/
+python -m pytest
 ```
 
 ## Generating a simulated genome

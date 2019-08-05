@@ -22,6 +22,7 @@ num_reads_data = [
 ]
 
 
+@pytest.mark.cpu
 @pytest.mark.parametrize("num_reads, reference_length, num_reads_expected, read_median_length", num_reads_data)
 def test_noisy_generator_number(num_reads, reference_length, num_reads_expected, read_median_length):
     """ Test generated length for Markovian genome simulator is correct"""

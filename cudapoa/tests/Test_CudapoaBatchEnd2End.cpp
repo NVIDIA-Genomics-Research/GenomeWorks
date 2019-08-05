@@ -40,7 +40,6 @@ std::vector<End2EndBatchTestParam> getCudapoaBatchEnd2EndTestCases()
 
     test1.batches = 4;
     test_cases.push_back(test1);
-
     return test_cases;
 }
 
