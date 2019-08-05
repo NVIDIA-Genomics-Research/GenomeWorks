@@ -71,12 +71,12 @@
 #endif
 
 // MUST come after the defines of the logging level!
-#if !(CGA_CUDA_BEFORE_9_2)
-#include <spdlog/spdlog.h>
-#else
+#ifdef CGA_CUDA_BEFORE_9_2
 // Due to a header file incompatibility with nvcc in CUDA 9.0
 // logging through the logger class in CGA is disabled for any .cu files.
 #pragma message("Logging disabled for CUDA Toolkit < 9.2")
+#else
+#include <spdlog/spdlog.h>
 #endif
 
 namespace claragenomics
@@ -133,7 +133,7 @@ LoggingStatus SetHeader(bool logTime, bool logLocation);
 /// \brief Log at warning level
 ///
 /// parameters as per https://github.com/gabime/spdlog/blob/v1.x/README.md
-#if CGA_CUDA_BEFORE_9_2
+#ifdef CGA_CUDA_BEFORE_9_2
 #define CGA_LOG_WARN(...)
 #else
 #define CGA_LOG_WARN(...) SPDLOG_WARN(__VA_ARGS__)
@@ -144,7 +144,7 @@ LoggingStatus SetHeader(bool logTime, bool logLocation);
 /// \brief Log at error level
 ///
 /// parameters as per https://github.com/gabime/spdlog/blob/v1.x/README.md
-#if CGA_CUDA_BEFORE_9_2
+#ifdef CGA_CUDA_BEFORE_9_2
 #define CGA_LOG_ERROR(...)
 #else
 #define CGA_LOG_ERROR(...) SPDLOG_ERROR(__VA_ARGS__)
@@ -155,7 +155,7 @@ LoggingStatus SetHeader(bool logTime, bool logLocation);
 /// \brief Log at fatal/critical error level (does NOT exit)
 ///
 /// parameters as per https://github.com/gabime/spdlog/blob/v1.x/README.md
-#if CGA_CUDA_BEFORE_9_2
+#ifdef CGA_CUDA_BEFORE_9_2
 #define CGA_LOG_CRITICAL(...)
 #else
 #define CGA_LOG_CRITICAL(...) SPDLOG_CRITICAL(__VA_ARGS__)
