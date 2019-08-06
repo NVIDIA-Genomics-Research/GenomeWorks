@@ -11,11 +11,11 @@
 #include "../src/needleman_wunsch_cpu.hpp"
 #include "../src/ukkonen_cpu.hpp"
 #include "../src/ukkonen_gpu.cuh"
-#include "../src/device_storage.cuh"
 #include "../src/batched_device_matrices.cuh"
 
 #include <claragenomics/utils/signed_integer_utils.hpp>
 #include <claragenomics/utils/genomeutils.hpp>
+#include <claragenomics/utils/device_buffer.cuh>
 
 #include <cuda_runtime_api.h>
 #include <random>
@@ -155,17 +155,17 @@ matrix<int> ukkonen_gpu_build_score_matrix(const std::string& target, const std:
     auto score_matrices = std::make_unique<batched_device_matrices<nw_score_t>>(
         1, ukkonen_max_score_matrix_size(query_length, target_length, max_length_difference, ukkonen_p), nullptr, 0);
 
-    device_storage<int8_t> path_d(max_path_length, 0);
+    device_buffer<int8_t> path_d(max_path_length, 0);
     std::vector<int8_t> path_h(max_path_length);
 
-    device_storage<int32_t> path_length_d(1, 0);
+    device_buffer<int32_t> path_length_d(1, 0);
     std::vector<int32_t> path_length_h(1);
 
-    device_storage<char> sequences_d(2 * max_alignment_length, 0);
+    device_buffer<char> sequences_d(2 * max_alignment_length, 0);
     CGA_CU_CHECK_ERR(cudaMemcpy(sequences_d.data(), query.c_str(), sizeof(char) * query_length, cudaMemcpyHostToDevice));
     CGA_CU_CHECK_ERR(cudaMemcpy(sequences_d.data() + max_alignment_length, target.c_str(), sizeof(char) * target_length, cudaMemcpyHostToDevice));
 
-    device_storage<int32_t> sequence_lengths_d(2, 0);
+    device_buffer<int32_t> sequence_lengths_d(2, 0);
     CGA_CU_CHECK_ERR(cudaMemcpy(sequence_lengths_d.data(), &query_length, sizeof(int32_t) * 1, cudaMemcpyHostToDevice));
     CGA_CU_CHECK_ERR(cudaMemcpy(sequence_lengths_d.data() + 1, &target_length, sizeof(int32_t) * 1, cudaMemcpyHostToDevice));
 
@@ -235,17 +235,17 @@ std::vector<int8_t> run_ukkonen_gpu(const std::string& target, const std::string
     auto score_matrices = std::make_unique<batched_device_matrices<nw_score_t>>(
         1, ukkonen_max_score_matrix_size(query_length, target_length, max_length_difference, ukkonen_p), nullptr, 0);
 
-    device_storage<int8_t> path_d(max_path_length, 0);
+    device_buffer<int8_t> path_d(max_path_length, 0);
     std::vector<int8_t> path_h(max_path_length);
 
-    device_storage<int32_t> path_length_d(1, 0);
+    device_buffer<int32_t> path_length_d(1, 0);
     std::vector<int32_t> path_length_h(1);
 
-    device_storage<char> sequences_d(2 * max_alignment_length, 0);
+    device_buffer<char> sequences_d(2 * max_alignment_length, 0);
     CGA_CU_CHECK_ERR(cudaMemcpy(sequences_d.data(), query.c_str(), sizeof(char) * query_length, cudaMemcpyHostToDevice));
     CGA_CU_CHECK_ERR(cudaMemcpy(sequences_d.data() + max_alignment_length, target.c_str(), sizeof(char) * target_length, cudaMemcpyHostToDevice));
 
-    device_storage<int32_t> sequence_lengths_d(2, 0);
+    device_buffer<int32_t> sequence_lengths_d(2, 0);
     CGA_CU_CHECK_ERR(cudaMemcpy(sequence_lengths_d.data(), &query_length, sizeof(int32_t) * 1, cudaMemcpyHostToDevice));
     CGA_CU_CHECK_ERR(cudaMemcpy(sequence_lengths_d.data() + 1, &target_length, sizeof(int32_t) * 1, cudaMemcpyHostToDevice));
 

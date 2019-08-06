@@ -9,12 +9,12 @@
 */
 
 #include "myers_gpu.cuh"
-#include "device_storage.cuh"
 #include "batched_device_matrices.cuh"
 
 #include <claragenomics/utils/signed_integer_utils.hpp>
 #include <claragenomics/utils/mathutils.hpp>
 #include <claragenomics/utils/cudautils.hpp>
+#include <claragenomics/utils/device_buffer.cuh>
 
 #include <cassert>
 #include <climits>
@@ -337,8 +337,8 @@ int32_t myers_compute_edit_distance(std::string const& target, std::string const
     CGA_CU_CHECK_ERR(cudaStreamCreate(&stream));
 
     int32_t max_sequence_length = std::max(get_size(target), get_size(query));
-    device_storage<char> sequences_d(2 * max_sequence_length, device_id);
-    device_storage<int32_t> sequence_lengths_d(2, device_id);
+    device_buffer<char> sequences_d(2 * max_sequence_length, device_id);
+    device_buffer<int32_t> sequence_lengths_d(2, device_id);
 
     const int32_t n_words = (get_size(query) + word_size - 1) / word_size;
     batched_device_matrices<myers::WordType> pv(1, n_words * (get_size(target) + 1), stream, device_id);
@@ -382,8 +382,8 @@ matrix<int32_t> myers_get_full_score_matrix(std::string const& target, std::stri
     CGA_CU_CHECK_ERR(cudaStreamCreate(&stream));
 
     int32_t max_sequence_length = std::max(get_size(target), get_size(query));
-    device_storage<char> sequences_d(2 * max_sequence_length, device_id);
-    device_storage<int32_t> sequence_lengths_d(2, device_id);
+    device_buffer<char> sequences_d(2 * max_sequence_length, device_id);
+    device_buffer<int32_t> sequence_lengths_d(2, device_id);
 
     const int32_t n_words = (get_size(query) + word_size - 1) / word_size;
     batched_device_matrices<myers::WordType> pv(1, n_words * (get_size(target) + 1), stream, device_id);

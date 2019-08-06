@@ -11,7 +11,6 @@
 #pragma once
 
 #include <claragenomics/utils/cudautils.hpp>
-
 #include <exception>
 
 namespace claragenomics
@@ -32,12 +31,12 @@ public:
 };
 
 template <typename T>
-class device_storage
+class device_buffer
 {
 public:
     using value_type = T;
-    device_storage() = delete;
-    device_storage(size_t n_elements, int32_t device_id)
+    device_buffer() = delete;
+    device_buffer(size_t n_elements, int32_t device_id)
         : size_(n_elements)
         , device_id_(device_id)
     {
@@ -48,7 +47,7 @@ public:
         CGA_CU_CHECK_ERR(err);
     }
 
-    ~device_storage()
+    ~device_buffer()
     {
         CGA_CU_CHECK_ERR(cudaSetDevice(device_id_));
         CGA_CU_CHECK_ERR(cudaFree(data_));

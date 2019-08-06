@@ -10,10 +10,10 @@
 
 #pragma once
 
-#include "device_storage.cuh"
 #include "matrix_cpu.hpp"
 
 #include <claragenomics/utils/cudautils.hpp>
+#include <claragenomics/utils/device_buffer.cuh>
 
 #include <tuple>
 #include <cassert>
@@ -145,7 +145,7 @@ public:
     }
 
 private:
-    device_storage<T> storage_;
+    device_buffer<T> storage_;
     device_interface* dev_ = nullptr;
     int32_t max_elements_per_matrix_;
     int32_t n_matrices_;
