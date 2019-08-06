@@ -166,8 +166,10 @@ cdef class CudaPoaBatch:
         Get the multi-sequence alignment for each POA group.
 
         Returns:
-            A list with MSAs for each POA group, with each MSA
+            A tuple where
+            - first element is a list with MSAs for each POA group, with each MSA
             represented as a list of alignments.
+            - second element is status of MSA generation for each group
         """
         cdef vector[vector[string]] msa
         cdef vector[cudapoa.StatusType] status

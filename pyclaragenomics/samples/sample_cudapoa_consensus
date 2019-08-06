@@ -1,5 +1,16 @@
 #!/usr/bin/env python
 
+#
+# Copyright (c) 2019, NVIDIA CORPORATION.  All rights reserved.
+#
+# NVIDIA CORPORATION and its licensors retain all intellectual property
+# and proprietary rights in and to this software, related documentation
+# and any modifications thereto.  Any use, reproduction, disclosure or
+# distribution of this software and related documentation without an express
+# license agreement from NVIDIA CORPORATION is strictly prohibited.
+#
+
+
 import argparse
 import os.path
 
@@ -12,6 +23,13 @@ Sample program for using CUDAPOA Python API for consensus generation.
 """
 
 def run_cudapoa_consensus(groups):
+    """
+    Generate consensus for POA groups.
+
+    Args:
+        groups : A list of groups (i.e. list of sequences) for which
+                 consensus is to be generated.
+    """
     # Get avaialble memory information
     free, total = cuda.cuda_get_mem_info(cuda.cuda_get_device())
 

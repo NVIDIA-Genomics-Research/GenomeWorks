@@ -1,16 +1,40 @@
+#
+# Copyright (c) 2019, NVIDIA CORPORATION.  All rights reserved.
+#
+# NVIDIA CORPORATION and its licensors retain all intellectual property
+# and proprietary rights in and to this software, related documentation
+# and any modifications thereto.  Any use, reproduction, disclosure or
+# distribution of this software and related documentation without an express
+# license agreement from NVIDIA CORPORATION is strictly prohibited.
+#
+
 """
-Utility functions for I/O of custom files. 
+Utility functions for I/O of custom files.
 """
 
+
 def read_poa_group_file(file_path, num_windows=0):
-    # File format is as follows - 
-    # <num sequences>
-    # seq 1...
-    # seq 2...
-    # <num sequences>
-    # seq 1...
-    # seq 2...
-    # seq 3...
+    """
+    Parses data file containing POA groups.
+
+    Args:
+        file_path : Path to POA group file.
+        num_windows : Number of windows to extract from
+                      file. If requested is more than available
+                      in file, windows are repoeated in a circular
+                      loop like fashion.
+                      0 (default) implies using only those windows
+                      available in file.
+
+    File format is as follows -
+    <num sequences>
+    seq 1...
+    seq 2...
+    <num sequences>
+    seq 1...
+    seq 2...
+    seq 3...
+    """
     with open(file_path, "r") as window_file:
         num_seqs_in_group = 0
         group_list = []
