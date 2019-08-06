@@ -29,7 +29,7 @@ int main()
     const std::string input_data = std::string(CUDAPOA_BENCHMARK_DATA_DIR) + "/sample-windows.txt";
     std::vector<std::vector<std::string>> windows;
     claragenomics::cudapoa::parse_window_data_file(windows, input_data, 100); // Generate 100 windows.
-    assert(get_size(windows) > 0);
+    assert(claragenomics::get_size(windows) > 0);
 
     // Get device information.
     int32_t device_count = 0;
