@@ -35,12 +35,11 @@ class device_buffer
 {
 public:
     using value_type = T;
-    device_buffer() = delete;
+    device_buffer()  = delete;
     device_buffer(size_t n_elements, int32_t device_id)
         : size_(n_elements)
-        , device_id_(device_id)
     {
-        CGA_CU_CHECK_ERR(cudaSetDevice(device_id_));
+        CGA_CU_CHECK_ERR(cudaSetDevice(device_id));
         cudaError_t err = cudaMalloc(reinterpret_cast<void**>(&data_), size_ * sizeof(T));
         if (err == cudaErrorMemoryAllocation)
             throw device_memory_allocation_exception();
@@ -49,7 +48,6 @@ public:
 
     ~device_buffer()
     {
-        CGA_CU_CHECK_ERR(cudaSetDevice(device_id_));
         CGA_CU_CHECK_ERR(cudaFree(data_));
     }
 
@@ -60,7 +58,6 @@ public:
 private:
     T* data_;
     size_t size_;
-    int32_t device_id_;
 };
 
 } // end namespace claragenomics
