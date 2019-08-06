@@ -31,7 +31,7 @@ cdef class CudaPoaBatch:
             gpu_mem,
             device_id=0,
             stream=None,
-            output_mask=consensus,
+            output_type="consensus",
             gap_score=-8,
             mismatch_score=-6,
             match_score=8,
@@ -61,6 +61,14 @@ cdef class CudaPoaBatch:
         else:
             st = stream.stream
             temp_stream = <_Stream>st
+
+        cdef int8_t output_mask
+        if (output_type == "consensus"):
+            output_mask = consensus
+        elif (output_type == "msa"):
+            output_mask = msa
+        else:
+            raise RuntimeError("Unknown output_type provided. Must be consensus/msa.")
 
         self.batch = cudapoa.create_batch(
                 max_sequences_per_poa,
@@ -122,8 +130,8 @@ cdef class CudaPoaBatch:
             entry.length = len(seq)
             poa_group.push_back(entry)
         status = deref(self.batch).add_poa_group(seq_status, poa_group)
-        if status != success:
-            raise RuntimeError("Could not add POA group: " + str(status))
+        if status != success and status != exceeded_maximum_poas:
+            raise RuntimeError("Could not add POA group: Error code " + str(status))
         return (status, seq_status)
 
     @property
@@ -166,7 +174,7 @@ cdef class CudaPoaBatch:
         error = deref(self.batch).get_msa(msa, status)
         if error == output_type_unavailable:
             raise RuntimeError("Output type not requested during batch initialization")
-        return msa
+        return (msa, status)
 
     def get_consensus(self):
         """
