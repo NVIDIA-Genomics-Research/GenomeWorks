@@ -23,7 +23,7 @@ Sample program for using CUDAPOA Python API for consensus generation.
 """
 
 
-def run_cudapoa(groups, msa):
+def run_cudapoa(groups, msa, print_output):
     """
     Generate consensus for POA groups.
 
@@ -31,12 +31,13 @@ def run_cudapoa(groups, msa):
         groups : A list of groups (i.e. list of sequences) for which
                  consensus is to be generated.
         msa : Whether to generate MSA or consensus.
+        print_output : Print output MSA or consensus.
     """
     # Get avaialble memory information
     free, total = cuda.cuda_get_mem_info(cuda.cuda_get_device())
 
     # Create batch
-    max_sequences_per_poa = 500
+    max_sequences_per_poa = 100
     gpu_mem_per_batch = 0.9 * free
     batch = cudapoa.CudaPoaBatch(max_sequences_per_poa,
                                  gpu_mem_per_batch,
@@ -56,10 +57,12 @@ def run_cudapoa(groups, msa):
 
             if msa:
                 msa, status = batch.get_msa()
-                print(msa)
+                if print_output:
+                    print(msa)
             else:
                 consensus, coverage, status = batch.get_consensus()
-                print(consensus)
+                if print_output:
+                    print(consensus)
 
             batch.reset()
             print("Processed group {} - {}".format(initial_count, i))
@@ -74,6 +77,9 @@ def parse_args():
         description="CUDAPOA Python API sample program.")
     parser.add_argument('-m',
                         help="Run MSA generation. By default consensusis generated.",
+                        action='store_true')
+    parser.add_argument('-p',
+                        help="Print output MSA or consensus for each POA group.",
                         action='store_true')
     return parser.parse_args()
 
@@ -91,4 +97,4 @@ if __name__ == "__main__":
     groups = read_poa_group_file(sample_windows, 1000)
 
     # Run CUDAPOA.
-    run_cudapoa(groups, args.m)
+    run_cudapoa(groups, args.m, args.p)
