@@ -48,7 +48,7 @@ public:
 
     ~device_buffer()
     {
-        CGA_CU_CHECK_ERR(cudaFree(data_));
+        cudaFree(data_);
     }
 
     T* data() { return data_; }
