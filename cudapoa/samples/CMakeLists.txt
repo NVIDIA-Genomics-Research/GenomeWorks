@@ -10,31 +10,14 @@
 
 project(sample_cudapoa)
 
-# Build consensus generation sample.
-set(MODULE sample_cudapoa_consensus)
+# Build CUDAPOA sample.
+set(MODULE sample_cudapoa)
 
 get_property(cudapoa_data_include_dir GLOBAL PROPERTY cudapoa_data_include_dir)
 include_directories(${cudapoa_data_include_dir})
 
 add_executable(${MODULE}
-               sample_cudapoa_consensus.cpp
-               )
-
-target_link_libraries(${MODULE}
-                      cudapoa
-                      )
-
-install(TARGETS ${MODULE}
-            DESTINATION samples)
-
-# Build MSA generation sample.
-set(MODULE sample_cudapoa_msa)
-
-get_property(cudapoa_data_include_dir GLOBAL PROPERTY cudapoa_data_include_dir)
-include_directories(${cudapoa_data_include_dir})
-
-add_executable(${MODULE}
-               sample_cudapoa_msa.cpp
+               sample_cudapoa.cpp
                )
 
 target_link_libraries(${MODULE}
