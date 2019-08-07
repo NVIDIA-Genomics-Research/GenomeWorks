@@ -11,10 +11,10 @@
 #pragma once
 
 #include "ukkonen_gpu.cuh"
-#include "device_storage.cuh"
 
 #include <claragenomics/cudaaligner/aligner.hpp>
 #include <claragenomics/utils/signed_integer_utils.hpp>
+#include <claragenomics/utils/device_buffer.cuh>
 
 #include <thrust/system/cuda/experimental/pinned_allocator.h>
 
@@ -75,16 +75,16 @@ private:
     int32_t max_alignments_;
     std::vector<std::shared_ptr<Alignment>> alignments_;
 
-    device_storage<char> sequences_d_;
+    device_buffer<char> sequences_d_;
     pinned_host_vector<char> sequences_h_;
 
-    device_storage<int32_t> sequence_lengths_d_;
+    device_buffer<int32_t> sequence_lengths_d_;
     pinned_host_vector<int32_t> sequence_lengths_h_;
 
-    device_storage<int8_t> results_d_;
+    device_buffer<int8_t> results_d_;
     pinned_host_vector<int8_t> results_h_;
 
-    device_storage<int32_t> result_lengths_d_;
+    device_buffer<int32_t> result_lengths_d_;
     pinned_host_vector<int32_t> result_lengths_h_;
 
     cudaStream_t stream_;
