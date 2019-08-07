@@ -12,7 +12,7 @@
 import argparse
 
 
-def evaluate_paf(truth_paf_filepath, test_paf_filepath, pos_tolerance=100):
+def evaluate_paf(truth_paf_filepath, test_paf_filepath, pos_tolerance=500):
     """Given a truth and test set PAF file, count number of in/correctly detected, and non-detected overlaps
     Args:
        truth_paf_filepath (str): Path to truth set PAF file
@@ -60,7 +60,7 @@ def evaluate_paf(truth_paf_filepath, test_paf_filepath, pos_tolerance=100):
             target_end_1 = int(truth_overlap[3])
 
         elif key_reversed in truth_overlaps:
-            truth_overlap = truth_overlaps[key]
+            truth_overlap = truth_overlaps[key_reversed]
 
             query_start_1 = int(truth_overlap[2])
             query_end_1 = int(truth_overlap[3])
