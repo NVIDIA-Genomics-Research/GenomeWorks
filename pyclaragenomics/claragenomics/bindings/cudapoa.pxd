@@ -27,7 +27,7 @@ from claragenomics.bindings.cuda_runtime_api cimport _Stream
 cdef extern from "claragenomics/cudapoa/cudapoa.hpp" namespace "claragenomics::cudapoa":
     cdef enum StatusType:
         success = 0
-        exceeded_maximum_poa
+        exceeded_maximum_poas
         exceeded_maximum_sequence_size
         exceeded_maximum_sequences_per_poa
         exceeded_batch_size

@@ -45,10 +45,6 @@ target_include_directories(cudapoa
 
 add_doxygen_source_dir(${CMAKE_CURRENT_SOURCE_DIR}/include/cudapoa)
 
-# Add tests folder
-add_subdirectory(tests)
-add_subdirectory(benchmarks)
-
 install(TARGETS cudapoa
     COMPONENT logging
     EXPORT cudapoa
@@ -57,6 +53,12 @@ install(TARGETS cudapoa
 )
 install(DIRECTORY include/ DESTINATION include)
 install(EXPORT cudapoa DESTINATION cmake)
+
+# Add other folders.
+add_subdirectory(tests)
+add_subdirectory(benchmarks)
+add_subdirectory(samples)
+
 
 # Add auto formatting.
 cga_enable_auto_formatting("${CMAKE_CURRENT_SOURCE_DIR}")
