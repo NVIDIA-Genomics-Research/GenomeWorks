@@ -138,7 +138,6 @@ __device__ __forceinline__
 template <typename SeqT,
           typename IndexT,
           typename ScoreT,
-          int32_t TPB,
           int32_t CPT = 4>
 __device__
     uint16_t
@@ -470,23 +469,23 @@ __global__ void runNeedlemanWunschKernel(uint8_t* nodes,
                                          int16_t match_score,
                                          uint16_t* aligned_nodes)
 {
-    *aligned_nodes = runNeedlemanWunsch<uint8_t, uint16_t, int16_t, 64>(nodes,
-                                                                        graph,
-                                                                        node_id_to_pos,
-                                                                        graph_count,
-                                                                        incoming_edge_count,
-                                                                        incoming_edges,
-                                                                        outgoing_edge_count,
-                                                                        outgoing_edges,
-                                                                        read,
-                                                                        read_count,
-                                                                        scores,
-                                                                        scores_width,
-                                                                        alignment_graph,
-                                                                        alignment_read,
-                                                                        gap_score,
-                                                                        mismatch_score,
-                                                                        match_score);
+    *aligned_nodes = runNeedlemanWunsch<uint8_t, uint16_t, int16_t>(nodes,
+                                                                    graph,
+                                                                    node_id_to_pos,
+                                                                    graph_count,
+                                                                    incoming_edge_count,
+                                                                    incoming_edges,
+                                                                    outgoing_edge_count,
+                                                                    outgoing_edges,
+                                                                    read,
+                                                                    read_count,
+                                                                    scores,
+                                                                    scores_width,
+                                                                    alignment_graph,
+                                                                    alignment_read,
+                                                                    gap_score,
+                                                                    mismatch_score,
+                                                                    match_score);
 }
 
 void runNW(uint8_t* nodes,
