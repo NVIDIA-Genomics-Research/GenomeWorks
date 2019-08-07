@@ -1,9 +1,21 @@
 #!/usr/bin/env python3
+
+#
+# Copyright (c) 2019, NVIDIA CORPORATION.  All rights reserved.
+#
+# NVIDIA CORPORATION and its licensors retain all intellectual property
+# and proprietary rights in and to this software, related documentation
+# and any modifications thereto.  Any use, reproduction, disclosure or
+# distribution of this software and related documentation without an express
+# license agreement from NVIDIA CORPORATION is strictly prohibited.
+#
+
 """Generate a reference and some noisy reads
 
-Generates two FASTA files:
-    1. A reference file (default name reference.fasta)
-    2. A reads file (default name reads.fasta)
+Generates 3 files:
+    1. A FASTA reference file (default name reference.fasta)
+    2. A FASTA reads file (default name reads.fasta)
+    3. A PAF overlaps file with all-to-all overalps for the reads
 
 Example usage:
     genome_simulator --reference_length 2700000 --num_reads 54000 --median_read_length=10000
@@ -23,6 +35,7 @@ from tqdm import tqdm
 
 from claragenomics import simulators
 from claragenomics.io import fastaio
+from claragenomics.io import pafio
 from claragenomics.simulators import genomesim
 from claragenomics.simulators import readsim
 
@@ -30,14 +43,14 @@ from claragenomics.simulators import readsim
 def _readgen(num_reads, args, read_generator, reference_string):
     reads = []
     for r in range(num_reads):
-        read = read_generator.generate_read(reference_string,
-                                            median_length=args.median_read_length,
-                                            snv_error_rate=args.snv_error_rate,
-                                            insertion_error_rate=args.insertion_error_rate,
-                                            deletion_error_rate=args.deletion_error_rate)
+        read, start, end = read_generator.generate_read(reference_string,
+                                                        median_length=args.median_read_length,
+                                                        snv_error_rate=args.snv_error_rate,
+                                                        insertion_error_rate=args.insertion_error_rate,
+                                                        deletion_error_rate=args.deletion_error_rate)
         read = gzip.compress(bytes(read, 'utf-8'))
         read_id = "read_" + str(uuid.uuid4())
-        reads.append((read_id, read))
+        reads.append((read_id, read, start, end))
     return reads
 
 
@@ -53,6 +66,9 @@ def main():
     parser.add_argument('--reads_filepath',
                         type=str,
                         default='reads.fasta')
+    parser.add_argument('--paf_filepath',
+                        type=str,
+                        default='overlaps.paf')
     parser.add_argument('--random_seed',
                         type=int,
                         default=0)
@@ -97,8 +113,14 @@ def main():
     reads = tqdm(pool.imap(readgen, reads_per_worker), total=len(reads_per_worker))
     reads = [val for sublist in reads for val in sublist]
 
+    overlaps = readsim.generate_overlaps(reads, gzip_compressed=True)
+
+    # Write the overlaps
+    pafio.write_paf(overlaps, args.paf_filepath)
+
     # Write the reference
     fastaio.write_fasta(reference, args.reference_filepath)
+
     # Write the reads
     fastaio.write_fasta(reads, args.reads_filepath, gzip_compressed=True)
 

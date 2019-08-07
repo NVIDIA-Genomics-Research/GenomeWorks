@@ -1,8 +1,110 @@
+#
+# Copyright (c) 2019, NVIDIA CORPORATION.  All rights reserved.
+#
+# NVIDIA CORPORATION and its licensors retain all intellectual property
+# and proprietary rights in and to this software, related documentation
+# and any modifications thereto.  Any use, reproduction, disclosure or
+# distribution of this software and related documentation without an express
+# license agreement from NVIDIA CORPORATION is strictly prohibited.
+#
+
 """Classes to simulate reads from a known reference, mimicking sequencing errors"""
 import abc
+import collections
+import gzip
 import random
 
+
+from sortedcollections import SortedList
+
 from claragenomics.simulators import NUCLEOTIDES
+
+Overlap = collections.namedtuple("Overlap", ["query_sequence_name",
+                                             "query_sequence_length",
+                                             "query_start",
+                                             "query_end",
+                                             "relative_strand",
+                                             "target_sequence_name",
+                                             "target_sequence_length",
+                                             "target_start",
+                                             "target_end",
+                                             "num_residue_matches",
+                                             "alignment_block_length",
+                                             "mapping_quality"])
+
+
+def generate_overlaps(seqs, gzip_compressed=True):
+    """
+    Return a list of overlaps
+
+    Args:
+      seqs: list of Seq objects (4-tuple (read_id, sequence, reference_start, reference_end)
+      gzip_compressed (bool): True if sequence field in seqs tuples is compressed
+
+    Returns: list of overlap objects. Overlaps are named tuples with the follwing fields:
+        * query_sequence_name
+        * query_sequence_length
+        * query_start
+        * query_end
+        * relative_strand
+        * target_sequence_name
+        * target_sequence_length
+        * target_start
+        * target_end
+        * num_residue_matches
+        * alignment_block_length
+        * mapping_quality
+    """
+
+    def startsort(read): return read[2]
+    overlaps = []
+    sorted_seqs = SortedList(seqs, key=startsort)
+    # reads are now sorted by their start position
+    for query_index, query in enumerate(sorted_seqs):
+        query_name = query[0]
+
+        if gzip_compressed:
+            query_seq_len = len(str(gzip.decompress(query[1]), "utf-8"))
+        else:
+            query_seq_len = len(query[1])
+
+        query_reference_start = query[2]
+        query_reference_end = query[3]
+        for target_index, target in enumerate(sorted_seqs[query_index+1:]):
+            target_reference_start = target[2]
+            target_reference_end = target[3]
+            if query_reference_end > target_reference_start:  # overlap found
+                # Calculate the overlap coordinates:
+                if gzip_compressed:
+                    target_seq_len = len(str(gzip.decompress(target[1]), "utf-8"))
+                else:
+                    target_seq_len = len(target[1])
+
+                query_start = target_reference_start - query_reference_start
+                target_start = 0
+
+                if target_reference_end > query_reference_end:
+                    query_end = query_seq_len
+                    target_end = query_reference_end - target_reference_start
+                else:
+                    target_end = target_seq_len
+                    query_end = query_start + target_seq_len
+
+                target_name = target[0]
+                overlap = Overlap(query_sequence_name=query_name,
+                                  query_sequence_length=query_seq_len,
+                                  query_start=query_start,
+                                  query_end=query_end,
+                                  relative_strand="+",  # temporary
+                                  target_sequence_name=target_name,
+                                  target_sequence_length=target_seq_len,
+                                  target_start=target_start,
+                                  target_end=target_end,
+                                  num_residue_matches=1,
+                                  alignment_block_length=-1,
+                                  mapping_quality=255)
+                overlaps.append(overlap)
+    return(overlaps)
 
 
 class ReadSimulator:
@@ -13,6 +115,7 @@ class ReadSimulator:
 
 class NoisyReadSimulator(ReadSimulator):
     """Simulate sequencing errors in reads"""
+
     def __init__(self):
         pass
 
@@ -125,7 +228,7 @@ class NoisyReadSimulator(ReadSimulator):
         pos = random.randint(0, reference_length - 1)
 
         def clamp(x):
-            return max(0, min(x, reference_length-1))
+            return max(0, min(x, reference_length - 1))
 
         start = clamp(pos - median_length // 2)
         end = clamp(pos + median_length // 2) + median_length % 2
@@ -141,4 +244,4 @@ class NoisyReadSimulator(ReadSimulator):
                                               homopolymer_survival_length=homopolymer_survival_length,
                                               clip_rate=homopolymer_clip_rate)
 
-        return read
+        return read, start, end
