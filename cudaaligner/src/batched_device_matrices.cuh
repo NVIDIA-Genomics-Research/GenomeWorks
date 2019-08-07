@@ -10,10 +10,10 @@
 
 #pragma once
 
-#include "device_storage.cuh"
 #include "matrix_cpu.hpp"
 
 #include <claragenomics/utils/cudautils.hpp>
+#include <claragenomics/utils/device_buffer.cuh>
 
 #include <tuple>
 #include <cassert>
@@ -102,13 +102,11 @@ public:
         int32_t n_matrices_;
     };
 
-    batched_device_matrices(int32_t n_matrices, int32_t max_elements_per_matrix, cudaStream_t stream, int32_t device_id)
-        : storage_(static_cast<size_t>(n_matrices) * static_cast<size_t>(max_elements_per_matrix), device_id)
+    batched_device_matrices(int32_t n_matrices, int32_t max_elements_per_matrix, cudaStream_t stream)
+        : storage_(static_cast<size_t>(n_matrices) * static_cast<size_t>(max_elements_per_matrix))
         , max_elements_per_matrix_(max_elements_per_matrix)
         , n_matrices_(n_matrices)
-        , device_id_(device_id)
     {
-        CGA_CU_CHECK_ERR(cudaSetDevice(device_id_));
         CGA_CU_CHECK_ERR(cudaMalloc(reinterpret_cast<void**>(&dev_), sizeof(device_interface)));
         CGA_CU_CHECK_ERR(cudaMemsetAsync(storage_.data(), 0, storage_.size() * sizeof(T), stream));
         device_interface tmp(storage_.data(), n_matrices_, max_elements_per_matrix_);
@@ -118,8 +116,7 @@ public:
 
     ~batched_device_matrices()
     {
-        CGA_CU_CHECK_ERR(cudaSetDevice(device_id_));
-        CGA_CU_CHECK_ERR(cudaFree(dev_));
+        cudaFree(dev_);
     }
 
     device_interface* get_device_interface()
@@ -145,11 +142,10 @@ public:
     }
 
 private:
-    device_storage<T> storage_;
+    device_buffer<T> storage_;
     device_interface* dev_ = nullptr;
     int32_t max_elements_per_matrix_;
     int32_t n_matrices_;
-    int32_t device_id_;
 };
 
 } // end namespace cudaaligner

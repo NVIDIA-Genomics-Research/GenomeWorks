@@ -23,12 +23,12 @@ static constexpr float max_target_query_length_difference = 0.1; // query has to
 AlignerGlobalUkkonen::AlignerGlobalUkkonen(int32_t max_query_length, int32_t max_subject_length, int32_t max_alignments, cudaStream_t stream, int32_t device_id)
     : AlignerGlobal(max_query_length, max_subject_length, max_alignments, stream, device_id), score_matrices_(), ukkonen_p_(100)
 {
+    scoped_device_switch dev(device_id);
     int32_t const allocated_max_length_difference = this->get_max_subject_length() * max_target_query_length_difference;
     score_matrices_                               = std::make_unique<batched_device_matrices<nw_score_t>>(
         max_alignments,
         ukkonen_max_score_matrix_size(this->get_max_query_length(), this->get_max_subject_length(), allocated_max_length_difference, ukkonen_p_),
-        stream,
-        device_id);
+        stream);
 }
 
 AlignerGlobalUkkonen::~AlignerGlobalUkkonen()
