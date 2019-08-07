@@ -12,6 +12,7 @@
 
 #include <claragenomics/utils/cudautils.hpp>
 #include <exception>
+#include <utility>
 
 namespace claragenomics
 {
@@ -35,7 +36,9 @@ class device_buffer
 {
 public:
     using value_type = T;
-    device_buffer()  = delete;
+
+    device_buffer() = default;
+
     explicit device_buffer(size_t n_elements)
         : size_(n_elements)
     {
@@ -48,6 +51,18 @@ public:
     device_buffer(device_buffer const&) = delete;
     device_buffer& operator=(device_buffer const&) = delete;
 
+    device_buffer(device_buffer&& r)
+        : data_(std::exchange(r.data_, nullptr)), size_(std::exchange(r.size_, 0))
+    {
+    }
+
+    device_buffer& operator=(device_buffer&& r)
+    {
+        data_ = std::exchange(r.data_, nullptr);
+        size_ = std::exchange(r.size_, 0);
+        return *this;
+    }
+
     ~device_buffer()
     {
         cudaFree(data_);
@@ -58,8 +73,8 @@ public:
     size_t size() const { return size_; }
 
 private:
-    value_type* data_;
-    size_t size_;
+    value_type* data_ = nullptr;
+    size_t size_      = 0;
 };
 
 } // end namespace claragenomics
