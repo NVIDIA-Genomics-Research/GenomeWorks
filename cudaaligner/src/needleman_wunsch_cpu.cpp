@@ -10,6 +10,7 @@
 
 #include "needleman_wunsch_cpu.hpp"
 
+#include <claragenomics/cudaaligner/cudaaligner.hpp>
 #include <claragenomics/utils/mathutils.hpp>
 
 #include <tuple>
@@ -70,19 +71,19 @@ std::tuple<int, std::vector<int8_t>> needleman_wunsch_backtrace_old(matrix<int> 
         int const left  = scores(i, j - 1);
         if (left + 1 == myscore)
         {
-            r       = 2;
+            r       = static_cast<int8_t>(AlignmentState::insertion);
             myscore = left;
             --j;
         }
         else if (above + 1 == myscore)
         {
-            r       = 1;
+            r       = static_cast<int8_t>(AlignmentState::deletion);
             myscore = above;
             --i;
         }
         else
         {
-            r       = (diag == myscore ? 0 : 3);
+            r       = (diag == myscore ? static_cast<int8_t>(AlignmentState::match) : static_cast<int8_t>(AlignmentState::mismatch));
             myscore = diag;
             --i;
             --j;
@@ -91,12 +92,12 @@ std::tuple<int, std::vector<int8_t>> needleman_wunsch_backtrace_old(matrix<int> 
     }
     while (i > 0)
     {
-        get<1>(res).push_back(1);
+        get<1>(res).push_back(static_cast<int8_t>(AlignmentState::deletion));
         --i;
     }
     while (j > 0)
     {
-        get<1>(res).push_back(2);
+        get<1>(res).push_back(static_cast<int8_t>(AlignmentState::insertion));
         --j;
     }
     reverse(get<1>(res).begin(), get<1>(res).end());

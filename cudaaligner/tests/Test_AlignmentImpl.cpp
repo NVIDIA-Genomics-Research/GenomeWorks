@@ -58,48 +58,48 @@ std::vector<AlignmentTestData> create_alignment_test_cases()
     AlignmentTestData data;
 
     // Test case 1
-    data.subject   = "TTATG";
     data.query     = "AAAA";
+    data.subject   = "TTATG";
     data.alignment = {
         AlignmentState::mismatch,
         AlignmentState::mismatch,
         AlignmentState::match,
         AlignmentState::mismatch,
-        AlignmentState::deletion};
+        AlignmentState::insertion};
     data.formatted_alignment = std::make_pair("AAAA-", "TTATG");
     data.cigar               = "4M1I";
     test_cases.push_back(data);
 
     // Test case 2
-    data.subject   = "CATAA";
     data.query     = "CGATAATG";
+    data.subject   = "CATAA";
     data.alignment = {
-        AlignmentState::insertion,
+        AlignmentState::deletion,
         AlignmentState::mismatch,
         AlignmentState::match,
         AlignmentState::match,
         AlignmentState::match,
         AlignmentState::match,
-        AlignmentState::insertion,
-        AlignmentState::insertion};
+        AlignmentState::deletion,
+        AlignmentState::deletion};
     data.formatted_alignment = std::make_pair("CGATAATG", "-CATAA--");
     data.cigar               = "1D5M2D";
     test_cases.push_back(data);
 
     // Test case 3
-    data.subject   = "AAGTCTAGAA";
     data.query     = "GTTAG";
+    data.subject   = "AAGTCTAGAA";
     data.alignment = {
-        AlignmentState::deletion,
-        AlignmentState::deletion,
+        AlignmentState::insertion,
+        AlignmentState::insertion,
         AlignmentState::match,
         AlignmentState::match,
-        AlignmentState::deletion,
+        AlignmentState::insertion,
         AlignmentState::match,
         AlignmentState::match,
         AlignmentState::match,
-        AlignmentState::deletion,
-        AlignmentState::deletion,
+        AlignmentState::insertion,
+        AlignmentState::insertion,
     };
     data.formatted_alignment = std::make_pair("--GT-TAG--", "AAGTCTAGAA");
     data.cigar               = "2I2M1I3M2I";
@@ -110,10 +110,10 @@ std::vector<AlignmentTestData> create_alignment_test_cases()
     data.query     = "GTTACA";
     data.alignment = {
         AlignmentState::match,
-        AlignmentState::deletion,
-        AlignmentState::match,
-        AlignmentState::match,
         AlignmentState::insertion,
+        AlignmentState::match,
+        AlignmentState::match,
+        AlignmentState::deletion,
         AlignmentState::match,
         AlignmentState::match};
     data.formatted_alignment = std::make_pair("G-TTACA", "GATT-CA");
