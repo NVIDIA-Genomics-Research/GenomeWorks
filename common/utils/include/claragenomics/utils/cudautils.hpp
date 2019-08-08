@@ -97,4 +97,31 @@ __host__ __device__ __forceinline__
 
 } // namespace cudautils
 
+/// \brief A class to switch the CUDA device for the current scope using RAII
+///
+/// This class takes a CUDA device during construction,
+/// switches to the given device using cudaSetDevice,
+/// and switches back to the CUDA device which was current before the switch on destruction.
+class scoped_device_switch
+{
+public:
+    explicit scoped_device_switch(int32_t device_id)
+    {
+        CGA_CU_CHECK_ERR(cudaGetDevice(&device_id_before_));
+        CGA_CU_CHECK_ERR(cudaSetDevice(device_id));
+    }
+
+    ~scoped_device_switch()
+    {
+        cudaSetDevice(device_id_before_);
+    }
+
+    scoped_device_switch()                            = delete;
+    scoped_device_switch(scoped_device_switch const&) = delete;
+    scoped_device_switch& operator=(scoped_device_switch const&) = delete;
+
+private:
+    int32_t device_id_before_;
+};
+
 } // namespace claragenomics
