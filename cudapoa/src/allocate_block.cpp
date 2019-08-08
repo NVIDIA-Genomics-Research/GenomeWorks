@@ -54,8 +54,8 @@ BatchBlock::BatchBlock(int32_t device_id, size_t avail_mem, int32_t max_sequence
     max_poas_                         = (avail_mem * fraction_for_metadata) / device_size_per_poa;
 
     // Update final sizes for block based on calculated maximum POAs.
-    output_size_ = max_poas_ * CUDAPOA_MAX_CONSENSUS_SIZE;
-    input_size_  = max_poas_ * max_sequences_per_poa_ * CUDAPOA_MAX_SEQUENCE_SIZE;
+    output_size_ = max_poas_ * static_cast<size_t>(CUDAPOA_MAX_CONSENSUS_SIZE);
+    input_size_  = max_poas_ * max_sequences_per_poa_ * static_cast<size_t>(CUDAPOA_MAX_SEQUENCE_SIZE);
     total_h_     = max_poas_ * host_size_per_poa + host_size_fixed;
     total_d_     = avail_mem;
 
