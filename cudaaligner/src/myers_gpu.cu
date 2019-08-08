@@ -11,6 +11,7 @@
 #include "myers_gpu.cuh"
 #include "batched_device_matrices.cuh"
 
+#include <claragenomics/cudaaligner/aligner.hpp>
 #include <claragenomics/utils/signed_integer_utils.hpp>
 #include <claragenomics/utils/mathutils.hpp>
 #include <claragenomics/utils/cudautils.hpp>
@@ -132,10 +133,8 @@ __device__ void myers_backtrace(int8_t* paths_base, int32_t* lengths, int32_t ma
     assert(mv.num_rows() == score.num_rows());
     assert(pv.num_cols() == score.num_cols());
     assert(mv.num_cols() == score.num_cols());
-    int32_t i         = query_size;
-    int32_t j         = score.num_cols() - 1;
-    int8_t query_ins  = 2;
-    int8_t target_ins = 3;
+    int32_t i = query_size;
+    int32_t j = score.num_cols() - 1;
 
     int8_t* path = paths_base + id * static_cast<ptrdiff_t>(max_path_length);
 
@@ -151,19 +150,19 @@ __device__ void myers_backtrace(int8_t* paths_base, int32_t* lengths, int32_t ma
         nw_score_t const left  = get_myers_score(i, j - 1, pv, mv, score, last_entry_mask);
         if (left + 1 == myscore)
         {
-            r       = query_ins;
+            r       = static_cast<int8_t>(AlignmentState::insertion);
             myscore = left;
             --j;
         }
         else if (above + 1 == myscore)
         {
-            r       = target_ins;
+            r       = static_cast<int8_t>(AlignmentState::deletion);
             myscore = above;
             --i;
         }
         else
         {
-            r       = (diag == myscore ? 0 : 1);
+            r       = (diag == myscore ? static_cast<int8_t>(AlignmentState::match) : static_cast<int8_t>(AlignmentState::mismatch));
             myscore = diag;
             --i;
             --j;
@@ -173,13 +172,13 @@ __device__ void myers_backtrace(int8_t* paths_base, int32_t* lengths, int32_t ma
     }
     while (i > 0)
     {
-        path[pos] = 1;
+        path[pos] = static_cast<int8_t>(AlignmentState::deletion);
         ++pos;
         --i;
     }
     while (j > 0)
     {
-        path[pos] = 2;
+        path[pos] = static_cast<int8_t>(AlignmentState::insertion);
         ++pos;
         --j;
     }

@@ -10,6 +10,8 @@
 
 #pragma once
 
+#include <cstdint>
+
 /// \defgroup cudaaligner CUDA Aligner package
 /// Base docs for the cudaaligner package (tbd)
 /// \{
@@ -38,7 +40,7 @@ enum class AlignmentType
 };
 
 /// AlignmentState - Enum for encoding each position in alignment.
-enum class AlignmentState
+enum class AlignmentState : int8_t
 {
     match = 0,
     mismatch,
