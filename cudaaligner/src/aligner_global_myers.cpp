@@ -32,11 +32,11 @@ struct AlignerGlobalMyers::Workspace
     batched_device_matrices<myers::WordType> query_patterns;
 };
 
-AlignerGlobalMyers::AlignerGlobalMyers(int32_t max_query_length, int32_t max_subject_length, int32_t max_alignments, cudaStream_t stream, int32_t device_id)
-    : AlignerGlobal(max_query_length, max_subject_length, max_alignments, stream, device_id), workspace_()
+AlignerGlobalMyers::AlignerGlobalMyers(int32_t max_query_length, int32_t max_target_length, int32_t max_alignments, cudaStream_t stream, int32_t device_id)
+    : AlignerGlobal(max_query_length, max_target_length, max_alignments, stream, device_id), workspace_()
 {
     scoped_device_switch dev(device_id);
-    workspace_ = std::make_unique<Workspace>(max_alignments, ceiling_divide<int32_t>(max_query_length, sizeof(myers::WordType)), max_subject_length, stream);
+    workspace_ = std::make_unique<Workspace>(max_alignments, ceiling_divide<int32_t>(max_query_length, sizeof(myers::WordType)), max_target_length, stream);
 }
 
 AlignerGlobalMyers::~AlignerGlobalMyers()

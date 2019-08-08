@@ -27,7 +27,7 @@ namespace cudaaligner
 class AlignerGlobal : public Aligner
 {
 public:
-    AlignerGlobal(int32_t max_query_length, int32_t max_subject_length, int32_t max_alignments, cudaStream_t stream, int32_t device_id);
+    AlignerGlobal(int32_t max_query_length, int32_t max_target_length, int32_t max_alignments, cudaStream_t stream, int32_t device_id);
     virtual ~AlignerGlobal()            = default;
     AlignerGlobal(const AlignerGlobal&) = delete;
 
@@ -35,7 +35,7 @@ public:
 
     virtual StatusType sync_alignments() override;
 
-    virtual StatusType add_alignment(const char* query, int32_t query_length, const char* subject, int32_t subject_length) override;
+    virtual StatusType add_alignment(const char* query, int32_t query_length, const char* target, int32_t target_length) override;
 
     virtual const std::vector<std::shared_ptr<Alignment>>& get_alignments() const override
     {
@@ -54,9 +54,9 @@ public:
 
     virtual void reset() override;
 
-    int32_t get_max_subject_length() const
+    int32_t get_max_target_length() const
     {
-        return max_subject_length_;
+        return max_target_length_;
     }
 
     int32_t get_max_query_length() const
@@ -71,7 +71,7 @@ private:
     virtual void run_alignment(int8_t* results_d, int32_t* result_lengths, int32_t max_result_length, const char* sequences_d, int32_t* sequence_lengths_d, int32_t* sequence_lengths_h, int32_t max_sequence_length, int32_t num_alignments, cudaStream_t stream) = 0;
 
     int32_t max_query_length_;
-    int32_t max_subject_length_;
+    int32_t max_target_length_;
     int32_t max_alignments_;
     std::vector<std::shared_ptr<Alignment>> alignments_;
 
