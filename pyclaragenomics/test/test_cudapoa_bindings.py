@@ -16,9 +16,6 @@ from claragenomics.bindings.cudapoa import CudaPoaBatch
 import claragenomics.bindings.cuda as cuda
 
 
-pytestmark = pytest.mark.skip("tests are fragile, could be related to memory usage")
-
-
 @pytest.mark.gpu
 def test_cudapoa_simple_batch():
     free, total = cuda.cuda_get_mem_info(cuda.cuda_get_device())
