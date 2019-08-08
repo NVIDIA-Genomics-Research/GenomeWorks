@@ -9,7 +9,7 @@
 #
 
 # Check CUDA dependency for project.
-find_package(CUDA 9.0 QUIET REQUIRED)
+find_package(CUDA 9.0 REQUIRED)
 
 if(NOT ${CUDA_FOUND})
     message(FATAL_ERROR "CUDA not detected on system. Please install")
