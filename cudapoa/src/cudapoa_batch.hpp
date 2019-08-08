@@ -10,14 +10,13 @@
 
 #pragma once
 
-#include "cudapoa/batch.hpp"
+#include <claragenomics/cudapoa/batch.hpp>
 
 #include <memory>
 #include <vector>
 #include <stdint.h>
 #include <string>
 #include <iostream>
-
 #include <cuda_runtime_api.h>
 
 namespace claragenomics
@@ -46,14 +45,11 @@ class BatchBlock;
 class CudapoaBatch : public Batch
 {
 public:
-    CudapoaBatch(int32_t max_poas, int32_t max_sequences_per_poa, int32_t device_id, int8_t output_mask, int16_t gap_score = -8, int16_t mismatch_score = -6, int16_t match_score = 8, bool cuda_banded_alignment = false);
+    CudapoaBatch(int32_t max_sequences_per_poa, int32_t device_id, cudaStream_t stream, size_t max_mem, int8_t output_mask, int16_t gap_score = -8, int16_t mismatch_score = -6, int16_t match_score = 8, bool cuda_banded_alignment = false);
     ~CudapoaBatch();
 
-    // Add new partial order alignment to batch.
-    StatusType add_poa();
-
-    // Add sequence to last partial order alignment.
-    StatusType add_seq_to_poa(const char* seq, const int8_t* weights, int32_t seq_len);
+    virtual StatusType add_poa_group(std::vector<StatusType>& per_seq_status,
+                                     const Group& poa_group);
 
     // Get total number of partial order alignments in batch.
     int32_t get_total_poas() const;
@@ -62,16 +58,13 @@ public:
     void generate_poa();
 
     // Get the consensus for each POA.
-    void get_consensus(std::vector<std::string>& consensus,
-                       std::vector<std::vector<uint16_t>>& coverage,
-                       std::vector<claragenomics::cudapoa::StatusType>& output_status);
+    StatusType get_consensus(std::vector<std::string>& consensus,
+                             std::vector<std::vector<uint16_t>>& coverage,
+                             std::vector<claragenomics::cudapoa::StatusType>& output_status);
 
     // Get multiple sequence alignments for each POA
-    void get_msa(std::vector<std::vector<std::string>>& msa,
-                 std::vector<StatusType>& output_status);
-
-    // Set CUDA stream for GPU device.
-    void set_cuda_stream(cudaStream_t stream);
+    StatusType get_msa(std::vector<std::vector<std::string>>& msa,
+                       std::vector<StatusType>& output_status);
 
     // Return batch ID.
     int32_t batch_id() const;
@@ -99,15 +92,24 @@ protected:
     void decode_cudapoa_kernel_error(claragenomics::cudapoa::StatusType error_type,
                                      std::vector<StatusType>& output_status);
 
-protected:
-    // Maximum POAs to process in batch.
-    int32_t max_poas_ = 0;
+    // Add new partial order alignment to batch.
+    StatusType add_poa();
 
+    // Add sequence to last partial order alignment.
+    StatusType add_seq_to_poa(const char* seq, const int8_t* weights, int32_t seq_len);
+
+    // Check if seq length can fit in available scoring matrix memory.
+    bool reserve_buf(int32_t max_seq_length);
+
+protected:
     // Maximum sequences per POA.
     int32_t max_sequences_per_poa_ = 0;
 
     // GPU Device ID
     int32_t device_id_ = 0;
+
+    // CUDA stream for launching kernels.
+    cudaStream_t stream_;
 
     // Bit field for output type
     int8_t output_mask_;
@@ -116,9 +118,6 @@ protected:
     int16_t gap_score_;
     int16_t mismatch_score_;
     int16_t match_score_;
-
-    // CUDA stream for launching kernels.
-    cudaStream_t stream_;
 
     // Host and device buffer for output data.
     OutputDetails* output_details_h_;
@@ -149,11 +148,20 @@ protected:
     // Global sequence index.
     int32_t global_sequence_idx_ = 0;
 
+    // Remaining scores buffer memory available for use.
+    size_t avail_scorebuf_mem_ = 0;
+
+    // Temporary variable to compute the offset to scorebuf.
+    size_t next_scores_offset_ = 0;
+
     // Use banded POA alignment
     bool banded_alignment_;
 
     // Pointer of a seperate class BatchBlock that implements details on calculating and allocating the memory for each batch
     std::unique_ptr<BatchBlock> batch_block_;
+
+    // Maximum POAs to process in batch.
+    int32_t max_poas_ = 0;
 };
 
 /// \}

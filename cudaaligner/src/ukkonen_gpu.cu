@@ -10,11 +10,12 @@
 
 #include "ukkonen_gpu.cuh"
 #include "batched_device_matrices.cuh"
-#include <thrust/tuple.h>
+
 #include <limits>
 #include <cstdint>
 #include <algorithm>
 #include <cassert>
+#include <thrust/tuple.h>
 
 #define CGA_UKKONEN_MAX_THREADS_PER_BLOCK 1024
 
@@ -24,6 +25,27 @@ namespace cudaaligner
 {
 namespace kernels
 {
+
+#ifdef CGA_CUDA_BEFORE_10_1
+template <typename T>
+struct numeric_limits
+{
+};
+
+template <>
+struct numeric_limits<int16_t>
+{
+    CGA_CONSTEXPR static __device__ int16_t max() { return INT16_MAX; }
+};
+
+template <>
+struct numeric_limits<int32_t>
+{
+    CGA_CONSTEXPR static __device__ int32_t max() { return INT32_MAX; }
+};
+#else
+using std::numeric_limits;
+#endif
 
 template <typename T>
 __device__ T min3(T t1, T t2, T t3)
@@ -63,7 +85,7 @@ __launch_bounds__(CGA_UKKONEN_MAX_THREADS_PER_BLOCK) // Workaround for a registe
     if (id >= n_alignments)
         return;
 
-    constexpr nw_score_t max = std::numeric_limits<nw_score_t>::max() - 1;
+    CGA_CONSTEXPR nw_score_t max = numeric_limits<nw_score_t>::max() - 1;
 
     int32_t m         = sequence_lengths_d[2 * id] + 1;
     int32_t n         = sequence_lengths_d[2 * id + 1] + 1;
@@ -139,7 +161,7 @@ __launch_bounds__(CGA_UKKONEN_MAX_THREADS_PER_BLOCK) // Workaround for a registe
 
 __device__ void ukkonen_compute_score_matrix_odd(device_matrix_view<nw_score_t>& scores, int32_t kmax, int32_t k, int32_t m, int32_t n, char const* query, char const* target, int32_t max_target_query_length, int32_t p, int32_t l)
 {
-    constexpr nw_score_t max = std::numeric_limits<nw_score_t>::max() - 1;
+    CGA_CONSTEXPR nw_score_t max = numeric_limits<nw_score_t>::max() - 1;
     while (k < kmax)
     {
         int32_t const lmin = abs(2 * k + 1 - p);
@@ -159,7 +181,7 @@ __device__ void ukkonen_compute_score_matrix_odd(device_matrix_view<nw_score_t>&
 
 __device__ void ukkonen_compute_score_matrix_even(device_matrix_view<nw_score_t>& scores, int32_t kmax, int32_t k, int32_t m, int32_t n, char const* query, char const* target, int32_t max_target_query_length, int32_t p, int32_t l)
 {
-    constexpr nw_score_t max = std::numeric_limits<nw_score_t>::max() - 1;
+    CGA_CONSTEXPR nw_score_t max = numeric_limits<nw_score_t>::max() - 1;
     while (k < kmax)
     {
         int32_t const lmin = abs(2 * k - p);
@@ -179,7 +201,7 @@ __device__ void ukkonen_compute_score_matrix_even(device_matrix_view<nw_score_t>
 
 __device__ void ukkonen_init_score_matrix(device_matrix_view<nw_score_t>& scores, int32_t k, int32_t p)
 {
-    constexpr nw_score_t max = std::numeric_limits<nw_score_t>::max() - 1;
+    CGA_CONSTEXPR nw_score_t max = numeric_limits<nw_score_t>::max() - 1;
     while (k < scores.num_rows())
     {
         for (int32_t l = 0; l < scores.num_cols(); ++l)
@@ -281,11 +303,13 @@ void ukkonen_compute_score_matrix_gpu(batched_device_matrices<nw_score_t>& score
     dim3 const blocks = dim3(1, n_alignments, 1);
 
     ukkonen_compute_score_matrix<<<blocks, compute_blockdims, 0, stream>>>(score_matrices.get_device_interface(), sequences_d, sequence_lengths_d, max_target_query_length, p, max_cols);
+    CGA_CU_CHECK_ERR(cudaPeekAtLastError());
 }
 
 void ukkonen_backtrace_gpu(int8_t* paths_d, int32_t* path_lengths_d, int32_t max_path_length, batched_device_matrices<nw_score_t>& scores, int32_t const* sequence_lengths_d, int32_t n_alignments, int32_t p, cudaStream_t stream)
 {
     kernels::ukkonen_backtrace_kernel<<<n_alignments, 1, 0, stream>>>(paths_d, path_lengths_d, max_path_length, scores.get_device_interface(), sequence_lengths_d, n_alignments, p);
+    CGA_CU_CHECK_ERR(cudaPeekAtLastError());
 }
 
 void ukkonen_gpu(int8_t* paths_d, int32_t* path_lengths_d, int32_t max_path_length,

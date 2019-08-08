@@ -10,24 +10,44 @@
 #
 
 # Ignore errors and set path
-set +e
+set -e
+
+# Logger function for build status output
+function logger() {
+  echo -e "\n>>>> $@\n"
+}
+
+################################################################################
+# Init
+################################################################################
+
 PATH=/conda/bin:$PATH
 
-# Activate common conda env
-source activate gdf
+# Set home to the job's workspace
+export HOME=$WORKSPACE
 
-# Run flake8 and get results/return code
-#FLAKE=`flake8 python`
-#RETVAL=$?
-RETVAL=0
+cd ${WORKSPACE}
 
-# Output results if failure otherwise show pass
-#if [ "$FLAKE" != "" ]; then
-#  echo -e "\n\n>>>> FAILED: flake8 style check; begin output\n\n"
-#  echo -e "$FLAKE"
-#  echo -e "\n\n>>>> FAILED: flake8 style check; end output\n\n"
-#else
-#  echo -e "\n\n>>>> PASSED: flake8 style check\n\n"
-#fi
+source ci/common/prep-init-env.sh ${WORKSPACE}
 
-exit $RETVAL
+################################################################################
+# SDK style check
+################################################################################
+
+# Run copyright header check
+logger "Run Copyright header check..."
+./ci/checks/check_copyright.py
+
+# Run style check
+logger "Run Python formatting check..."
+flake8 pyclaragenomics/
+
+logger "Run C++ formatting check..."
+mkdir --parents ${WORKSPACE}/build
+cd ${WORKSPACE}/build
+
+# Initialize CMake
+cmake .. -DCMAKE_BUILD_TYPE=Release -Dcga_enable_tests=ON -Dcga_enable_benchmarks=ON
+
+# Run format check
+make check-format

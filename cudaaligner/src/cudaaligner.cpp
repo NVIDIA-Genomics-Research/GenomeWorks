@@ -8,8 +8,8 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-#include "cudaaligner/cudaaligner.hpp"
-#include <logging/logging.hpp>
+#include <claragenomics/cudaaligner/cudaaligner.hpp>
+#include <claragenomics/logging/logging.hpp>
 
 namespace claragenomics
 {

@@ -12,13 +12,13 @@
 
 #pragma once
 
+#include <claragenomics/cudapoa/cudapoa.hpp>
+
 #include <stdint.h>
 #include <cuda_runtime_api.h>
 #include <stdio.h>
 #include <string>
 #include <vector>
-
-#include "cudapoa/cudapoa.hpp"
 
 // Maximum vnumber of edges per node.
 #define CUDAPOA_MAX_NODE_EDGES 50
@@ -82,6 +82,12 @@ typedef struct WindowDetails
     /// Offset of first sequence content for specific window
     /// inside global sequences buffer.
     int32_t seq_starts;
+
+    /// Offset to the scores buffer for specific window
+    size_t scores_offset;
+
+    /// Max column width of the score matrix required for specific window
+    int32_t scores_width;
 } WindowDetails;
 
 typedef struct OutputDetails
@@ -113,6 +119,10 @@ typedef struct AlignmentDetails
 {
     // Device buffer for the scoring matrix for all windows.
     int16_t* scores;
+
+    // preallocated size of scores buffer
+    size_t scorebuf_alloc_size = 0;
+
     // Device buffers for alignment backtrace
     int16_t* alignment_graph;
     int16_t* alignment_read;
@@ -281,6 +291,7 @@ void runNW(uint8_t* nodes,
            uint8_t* read,
            uint16_t read_count,
            int16_t* scores,
+           int32_t scores_width,
            int16_t* alignment_graph,
            int16_t* alignment_read,
            int16_t gap_score,
