@@ -1,5 +1,7 @@
 matplotlib==3.0.3
 numpy==1.16.3
 pytest==4.4.1
-tqdm==4.31.1
 quast==5.0.2
+sortedcollections==1.1.2
+sortedcontainers==2.1.0
+tqdm==4.31.1
