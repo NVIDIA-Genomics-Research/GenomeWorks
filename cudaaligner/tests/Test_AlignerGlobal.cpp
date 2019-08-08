@@ -77,25 +77,25 @@ std::vector<AlignerTestData> create_aligner_test_cases()
 
     // Test case 2
     data.inputs    = {{"ATAAAAAAAA", "AAAAAAAAA"}};
-    data.cigars    = {"1M1I8M"};
+    data.cigars    = {"1M1D8M"};
     data.algorithm = AlignmentAlgorithm::Ukkonen;
     test_cases.push_back(data);
 
     // Test case 3
     data.inputs    = {{"AAAAAAAAA", "ATAAAAAAAA"}};
-    data.cigars    = {"1M1D8M"};
+    data.cigars    = {"1M1I8M"};
     data.algorithm = AlignmentAlgorithm::Ukkonen;
     test_cases.push_back(data);
 
     // Test case 4
     data.inputs    = {{"ACTGA", "GCTAG"}};
-    data.cigars    = {"3M1I1M1D"};
+    data.cigars    = {"3M1D1M1I"};
     data.algorithm = AlignmentAlgorithm::Ukkonen;
     test_cases.push_back(data);
 
     // Test case 5
     data.inputs    = {{"ACTGA", "GCTAG"}, {"ACTG", "ACTG"}, {"A", "T"}};
-    data.cigars    = {"3M1I1M1D", "4M", "1M"};
+    data.cigars    = {"3M1D1M1I", "4M", "1M"};
     data.algorithm = AlignmentAlgorithm::Ukkonen;
     test_cases.push_back(data);
 
@@ -103,10 +103,10 @@ std::vector<AlignerTestData> create_aligner_test_cases()
     data.inputs = {
         {"AAAA", "TTAT"}, {"ATAAAAAAAA", "AAAAAAAAA"}, {"AAAAAAAAA", "ATAAAAAAAA"}, {"ACTGA", "GCTAG"}, {"ACTGA", "GCTAG"}, {"ACTG", "ACTG"}, {"A", "T"}, {"AAAA", "TTAT"}, {"ATAAAAAAAA", "AAAAAAAAA"}, {"AAAAAAAAA", "ATAAAAAAAA"}, {"ACTGA", "GCTAG"}, {"ACTGA", "GCTAG"}, {"ACTG", "ACTG"}, {"A", "T"}, {"AAAA", "TTAT"}, {"ATAAAAAAAA", "AAAAAAAAA"}, {"AAAAAAAAA", "ATAAAAAAAA"}, {"ACTGA", "GCTAG"}, {"ACTGA", "GCTAG"}, {"ACTG", "ACTG"}, {"A", "T"}, {"AAAA", "TTAT"}, {"ATAAAAAAAA", "AAAAAAAAA"}, {"AAAAAAAAA", "ATAAAAAAAA"}, {"ACTGA", "GCTAG"}, {"ACTGA", "GCTAG"}, {"ACTG", "ACTG"}, {"A", "T"}};
     data.cigars = {
-        "4M", "1M1I8M", "1M1D8M", "3M1I1M1D", "3M1I1M1D", "4M", "1M",
-        "4M", "1M1I8M", "1M1D8M", "3M1I1M1D", "3M1I1M1D", "4M", "1M",
-        "4M", "1M1I8M", "1M1D8M", "3M1I1M1D", "3M1I1M1D", "4M", "1M",
-        "4M", "1M1I8M", "1M1D8M", "3M1I1M1D", "3M1I1M1D", "4M", "1M"};
+        "4M", "1M1D8M", "1M1I8M", "3M1D1M1I", "3M1D1M1I", "4M", "1M",
+        "4M", "1M1D8M", "1M1I8M", "3M1D1M1I", "3M1D1M1I", "4M", "1M",
+        "4M", "1M1D8M", "1M1I8M", "3M1D1M1I", "3M1D1M1I", "4M", "1M",
+        "4M", "1M1D8M", "1M1I8M", "3M1D1M1I", "3M1D1M1I", "4M", "1M"};
     data.algorithm = AlignmentAlgorithm::Ukkonen;
     test_cases.push_back(data);
 

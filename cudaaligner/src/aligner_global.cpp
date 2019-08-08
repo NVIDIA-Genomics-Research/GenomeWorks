@@ -25,29 +25,29 @@ namespace claragenomics
 namespace cudaaligner
 {
 
-constexpr int32_t calc_max_result_length(int32_t max_query_length, int32_t max_subject_length)
+constexpr int32_t calc_max_result_length(int32_t max_query_length, int32_t max_target_length)
 {
     constexpr int32_t alignment_bytes = 4;
-    const int32_t max_length          = max_query_length + max_subject_length;
+    const int32_t max_length          = max_query_length + max_target_length;
     return max_length + max_length % alignment_bytes;
 }
 
-AlignerGlobal::AlignerGlobal(int32_t max_query_length, int32_t max_subject_length, int32_t max_alignments, cudaStream_t stream, int32_t device_id)
+AlignerGlobal::AlignerGlobal(int32_t max_query_length, int32_t max_target_length, int32_t max_alignments, cudaStream_t stream, int32_t device_id)
     : max_query_length_(throw_on_negative(max_query_length, "max_query_length must be non-negative."))
-    , max_subject_length_(throw_on_negative(max_subject_length, "max_subject_length must be non-negative."))
+    , max_target_length_(throw_on_negative(max_target_length, "max_target_length must be non-negative."))
     , max_alignments_(throw_on_negative(max_alignments, "max_alignments must be non-negative."))
     , alignments_()
-    , sequences_h_(2 * std::max(max_query_length, max_subject_length) * max_alignments)
+    , sequences_h_(2 * std::max(max_query_length, max_target_length) * max_alignments)
     , sequence_lengths_h_(2 * max_alignments)
-    , results_h_(calc_max_result_length(max_query_length, max_subject_length) * max_alignments)
+    , results_h_(calc_max_result_length(max_query_length, max_target_length) * max_alignments)
     , result_lengths_h_(max_alignments)
     , stream_(stream)
     , device_id_(device_id)
 {
     scoped_device_switch dev(device_id);
-    sequences_d_        = device_buffer<char>(2 * std::max(max_query_length, max_subject_length) * max_alignments);
+    sequences_d_        = device_buffer<char>(2 * std::max(max_query_length, max_target_length) * max_alignments);
     sequence_lengths_d_ = device_buffer<int32_t>(2 * max_alignments);
-    results_d_          = device_buffer<int8_t>(calc_max_result_length(max_query_length, max_subject_length) * max_alignments);
+    results_d_          = device_buffer<int8_t>(calc_max_result_length(max_query_length, max_target_length) * max_alignments);
     result_lengths_d_   = device_buffer<int32_t>(max_alignments);
     if (max_alignments < 1)
     {
@@ -55,15 +55,15 @@ AlignerGlobal::AlignerGlobal(int32_t max_query_length, int32_t max_subject_lengt
     }
 }
 
-StatusType AlignerGlobal::add_alignment(const char* query, int32_t query_length, const char* subject, int32_t subject_length)
+StatusType AlignerGlobal::add_alignment(const char* query, int32_t query_length, const char* target, int32_t target_length)
 {
-    if (query_length < 0 || subject_length < 0)
+    if (query_length < 0 || target_length < 0)
     {
-        CGA_LOG_DEBUG("{} {}", "Negative subject or query length is not allowed.");
+        CGA_LOG_DEBUG("{} {}", "Negative target or query length is not allowed.");
         return StatusType::generic_error;
     }
 
-    int32_t const max_alignment_length = std::max(max_query_length_, max_subject_length_);
+    int32_t const max_alignment_length = std::max(max_query_length_, max_target_length_);
     int32_t const num_alignments       = get_size(alignments_);
     if (num_alignments >= max_alignments_)
     {
@@ -77,9 +77,9 @@ StatusType AlignerGlobal::add_alignment(const char* query, int32_t query_length,
         return StatusType::exceeded_max_length;
     }
 
-    if (subject_length > max_subject_length_)
+    if (target_length > max_target_length_)
     {
-        CGA_LOG_DEBUG("{} {}", "Exceeded maximum length of subject allowed : ", max_subject_length_);
+        CGA_LOG_DEBUG("{} {}", "Exceeded maximum length of target allowed : ", max_target_length_);
         return StatusType::exceeded_max_length;
     }
 
@@ -87,16 +87,16 @@ StatusType AlignerGlobal::add_alignment(const char* query, int32_t query_length,
            query,
            sizeof(char) * query_length);
     memcpy(&sequences_h_[(2 * num_alignments + 1) * max_alignment_length],
-           subject,
-           sizeof(char) * subject_length);
+           target,
+           sizeof(char) * target_length);
 
     sequence_lengths_h_[2 * num_alignments]     = query_length;
-    sequence_lengths_h_[2 * num_alignments + 1] = subject_length;
+    sequence_lengths_h_[2 * num_alignments + 1] = target_length;
 
     std::shared_ptr<AlignmentImpl> alignment = std::make_shared<AlignmentImpl>(query,
                                                                                query_length,
-                                                                               subject,
-                                                                               subject_length);
+                                                                               target,
+                                                                               target_length);
     alignment->set_alignment_type(AlignmentType::global);
     alignments_.push_back(alignment);
 
@@ -106,9 +106,9 @@ StatusType AlignerGlobal::add_alignment(const char* query, int32_t query_length,
 StatusType AlignerGlobal::align_all()
 {
     scoped_device_switch dev(device_id_);
-    const int32_t max_alignment_length = std::max(max_query_length_, max_subject_length_);
+    const int32_t max_alignment_length = std::max(max_query_length_, max_target_length_);
     const int32_t num_alignments       = get_size(alignments_);
-    const int32_t max_result_length    = calc_max_result_length(max_query_length_, max_subject_length_);
+    const int32_t max_result_length    = calc_max_result_length(max_query_length_, max_target_length_);
     CGA_CU_CHECK_ERR(cudaSetDevice(device_id_));
     CGA_CU_CHECK_ERR(cudaMemcpyAsync(sequence_lengths_d_.data(),
                                      sequence_lengths_h_.data(),
@@ -147,7 +147,7 @@ StatusType AlignerGlobal::sync_alignments()
     CGA_CU_CHECK_ERR(cudaStreamSynchronize(stream_));
 
     const int32_t n_alignments      = get_size(alignments_);
-    const int32_t max_result_length = calc_max_result_length(max_query_length_, max_subject_length_);
+    const int32_t max_result_length = calc_max_result_length(max_query_length_, max_target_length_);
     std::vector<AlignmentState> al_state;
     for (int32_t i = 0; i < n_alignments; ++i)
     {

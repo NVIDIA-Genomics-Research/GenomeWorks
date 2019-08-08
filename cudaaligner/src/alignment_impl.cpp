@@ -18,9 +18,9 @@ namespace claragenomics
 namespace cudaaligner
 {
 
-AlignmentImpl::AlignmentImpl(const char* query, int32_t query_length, const char* subject, int32_t subject_length)
+AlignmentImpl::AlignmentImpl(const char* query, int32_t query_length, const char* target, int32_t target_length)
     : query_(query, query + throw_on_negative(query_length, "query_length has to be non-negative."))
-    , subject_(subject, subject + throw_on_negative(subject_length, "subject_length has to be non-negative."))
+    , target_(target, target + throw_on_negative(target_length, "target_length has to be non-negative."))
     , status_(StatusType::uninitialized)
     , type_(AlignmentType::unset)
 {
@@ -40,8 +40,8 @@ char AlignmentImpl::alignment_state_to_cigar_state(AlignmentState s) const
     {
     case AlignmentState::match:
     case AlignmentState::mismatch: return 'M';
-    case AlignmentState::insertion: return 'D';
-    case AlignmentState::deletion: return 'I';
+    case AlignmentState::insertion: return 'I';
+    case AlignmentState::deletion: return 'D';
     default: throw std::runtime_error("Unrecognized alignment state.");
     }
 }
@@ -76,25 +76,25 @@ std::string AlignmentImpl::convert_to_cigar() const
 
 FormattedAlignment AlignmentImpl::format_alignment() const
 {
-    std::string t_str = "";
-    int64_t t_pos     = 0;
-    std::string q_str = "";
-    int64_t q_pos     = 0;
+    int64_t t_pos = 0;
+    int64_t q_pos = 0;
+    std::string t_str;
+    std::string q_str;
     for (auto const& x : alignment_)
     {
         switch (x)
         {
         case AlignmentState::match:
         case AlignmentState::mismatch:
-            t_str += subject_[t_pos++];
-            q_str += query_[q_pos++];
-            break;
-        case AlignmentState::insertion:
-            t_str += "-";
+            t_str += target_[t_pos++];
             q_str += query_[q_pos++];
             break;
         case AlignmentState::deletion:
-            t_str += subject_[t_pos++];
+            t_str += "-";
+            q_str += query_[q_pos++];
+            break;
+        case AlignmentState::insertion:
+            t_str += target_[t_pos++];
             q_str += "-";
             break;
         default:
@@ -102,8 +102,7 @@ FormattedAlignment AlignmentImpl::format_alignment() const
         }
     }
 
-    FormattedAlignment output(q_str, t_str);
-    return output;
+    return {q_str, t_str};
 }
 } // namespace cudaaligner
 } // namespace claragenomics

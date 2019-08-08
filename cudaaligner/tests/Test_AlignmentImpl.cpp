@@ -46,7 +46,7 @@ TEST(TestAlignmentImplIndividual, Type)
 typedef struct AlignmentTestData
 {
     std::string query;
-    std::string subject;
+    std::string target;
     std::vector<AlignmentState> alignment;
     FormattedAlignment formatted_alignment;
     std::string cigar;
@@ -58,62 +58,62 @@ std::vector<AlignmentTestData> create_alignment_test_cases()
     AlignmentTestData data;
 
     // Test case 1
-    data.subject   = "TTATG";
     data.query     = "AAAA";
+    data.target    = "TTATG";
     data.alignment = {
         AlignmentState::mismatch,
         AlignmentState::mismatch,
         AlignmentState::match,
         AlignmentState::mismatch,
-        AlignmentState::deletion};
+        AlignmentState::insertion};
     data.formatted_alignment = std::make_pair("AAAA-", "TTATG");
     data.cigar               = "4M1I";
     test_cases.push_back(data);
 
     // Test case 2
-    data.subject   = "CATAA";
     data.query     = "CGATAATG";
+    data.target    = "CATAA";
     data.alignment = {
-        AlignmentState::insertion,
+        AlignmentState::deletion,
         AlignmentState::mismatch,
         AlignmentState::match,
         AlignmentState::match,
         AlignmentState::match,
         AlignmentState::match,
-        AlignmentState::insertion,
-        AlignmentState::insertion};
+        AlignmentState::deletion,
+        AlignmentState::deletion};
     data.formatted_alignment = std::make_pair("CGATAATG", "-CATAA--");
     data.cigar               = "1D5M2D";
     test_cases.push_back(data);
 
     // Test case 3
-    data.subject   = "AAGTCTAGAA";
     data.query     = "GTTAG";
+    data.target    = "AAGTCTAGAA";
     data.alignment = {
-        AlignmentState::deletion,
-        AlignmentState::deletion,
+        AlignmentState::insertion,
+        AlignmentState::insertion,
         AlignmentState::match,
         AlignmentState::match,
-        AlignmentState::deletion,
+        AlignmentState::insertion,
         AlignmentState::match,
         AlignmentState::match,
         AlignmentState::match,
-        AlignmentState::deletion,
-        AlignmentState::deletion,
+        AlignmentState::insertion,
+        AlignmentState::insertion,
     };
     data.formatted_alignment = std::make_pair("--GT-TAG--", "AAGTCTAGAA");
     data.cigar               = "2I2M1I3M2I";
     test_cases.push_back(data);
 
     // Test case 4
-    data.subject   = "GATTCA";
     data.query     = "GTTACA";
+    data.target    = "GATTCA";
     data.alignment = {
         AlignmentState::match,
-        AlignmentState::deletion,
-        AlignmentState::match,
-        AlignmentState::match,
         AlignmentState::insertion,
+        AlignmentState::match,
+        AlignmentState::match,
+        AlignmentState::deletion,
         AlignmentState::match,
         AlignmentState::match};
     data.formatted_alignment = std::make_pair("G-TTACA", "GATT-CA");
@@ -131,8 +131,8 @@ public:
         param_     = GetParam();
         alignment_ = std::make_unique<AlignmentImpl>(param_.query.c_str(),
                                                      param_.query.size(),
-                                                     param_.subject.c_str(),
-                                                     param_.subject.size());
+                                                     param_.target.c_str(),
+                                                     param_.target.size());
         alignment_->set_alignment(param_.alignment);
     }
 
@@ -144,7 +144,7 @@ protected:
 TEST_P(TestAlignmentImpl, StringGetters)
 {
     ASSERT_EQ(param_.query, alignment_->get_query_sequence()) << "Query doesn't match original string";
-    ASSERT_EQ(param_.subject, alignment_->get_subject_sequence()) << "Subject doesn't match original string";
+    ASSERT_EQ(param_.target, alignment_->get_target_sequence()) << "Target doesn't match original string";
 }
 
 TEST_P(TestAlignmentImpl, AlignmentState)
@@ -161,9 +161,9 @@ TEST_P(TestAlignmentImpl, AlignmentFormatting)
 {
     FormattedAlignment formatted_alignment = alignment_->format_alignment();
     std::string query                      = formatted_alignment.first;
-    std::string subject                    = formatted_alignment.second;
+    std::string target                     = formatted_alignment.second;
     ASSERT_EQ(param_.formatted_alignment.first, query);
-    ASSERT_EQ(param_.formatted_alignment.second, subject);
+    ASSERT_EQ(param_.formatted_alignment.second, target);
 }
 
 TEST_P(TestAlignmentImpl, CigarFormatting)

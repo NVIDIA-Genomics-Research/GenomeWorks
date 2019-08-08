@@ -10,6 +10,7 @@
 
 #include "ukkonen_gpu.cuh"
 #include "batched_device_matrices.cuh"
+#include <claragenomics/cudaaligner/cudaaligner.hpp>
 
 #include <limits>
 #include <cstdint>
@@ -87,14 +88,14 @@ __launch_bounds__(CGA_UKKONEN_MAX_THREADS_PER_BLOCK) // Workaround for a registe
 
     CGA_CONSTEXPR nw_score_t max = numeric_limits<nw_score_t>::max() - 1;
 
-    int32_t m         = sequence_lengths_d[2 * id] + 1;
-    int32_t n         = sequence_lengths_d[2 * id + 1] + 1;
-    int8_t query_ins  = 2;
-    int8_t target_ins = 3;
+    int32_t m        = sequence_lengths_d[2 * id] + 1;
+    int32_t n        = sequence_lengths_d[2 * id + 1] + 1;
+    int8_t insertion = static_cast<int8_t>(AlignmentState::insertion);
+    int8_t deletion  = static_cast<int8_t>(AlignmentState::deletion);
     if (m > n)
     {
         swap(n, m);
-        swap(query_ins, target_ins);
+        swap(insertion, deletion);
     }
     int8_t* path = paths_base + id * static_cast<ptrdiff_t>(max_path_length);
     assert(p >= 0);
@@ -124,19 +125,19 @@ __launch_bounds__(CGA_UKKONEN_MAX_THREADS_PER_BLOCK) // Workaround for a registe
 
         if (left + 1 == myscore)
         {
-            r       = query_ins;
+            r       = insertion;
             myscore = left;
             --j;
         }
         else if (above + 1 == myscore)
         {
-            r       = target_ins;
+            r       = deletion;
             myscore = above;
             --i;
         }
         else
         {
-            r       = (diag == myscore ? 0 : 1);
+            r       = (diag == myscore ? static_cast<int8_t>(AlignmentState::match) : static_cast<int8_t>(AlignmentState::mismatch));
             myscore = diag;
             --i;
             --j;
@@ -146,13 +147,13 @@ __launch_bounds__(CGA_UKKONEN_MAX_THREADS_PER_BLOCK) // Workaround for a registe
     }
     while (i > 0)
     {
-        path[pos] = 1;
+        path[pos] = deletion;
         ++pos;
         --i;
     }
     while (j > 0)
     {
-        path[pos] = 2;
+        path[pos] = insertion;
         ++pos;
         --j;
     }

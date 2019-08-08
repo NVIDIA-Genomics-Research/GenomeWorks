@@ -25,9 +25,9 @@ class batched_device_matrices;
 class AlignerGlobalUkkonen : public AlignerGlobal
 {
 public:
-    AlignerGlobalUkkonen(int32_t max_query_length, int32_t max_subject_length, int32_t max_alignments, cudaStream_t stream, int32_t device_id);
+    AlignerGlobalUkkonen(int32_t max_query_length, int32_t max_target_length, int32_t max_alignments, cudaStream_t stream, int32_t device_id);
     virtual ~AlignerGlobalUkkonen();
-    StatusType add_alignment(const char* query, int32_t query_length, const char* subject, int32_t subject_length) override;
+    StatusType add_alignment(const char* query, int32_t query_length, const char* target, int32_t target_length) override;
 
 private:
     using BaseType = AlignerGlobal;
