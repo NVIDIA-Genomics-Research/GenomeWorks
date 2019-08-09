@@ -32,13 +32,13 @@ target_compile_options(index_generator_cpu PRIVATE -Werror)
 cuda_add_library(index_cpu
         src/index_cpu.cpp)
 target_include_directories(index_cpu PUBLIC include)
-target_link_libraries(index_cpu bioparser logging pthread cudautils)
+target_link_libraries(index_cpu bioparser logging pthread utils)
 target_compile_options(index_cpu PRIVATE -Werror)
 
 cuda_add_library(matcher
         src/matcher.cu)
 target_include_directories(matcher PUBLIC include)
-target_link_libraries(matcher cudautils)
+target_link_libraries(matcher utils)
 target_compile_options(matcher PRIVATE -Werror)
 
 add_library(overlapper_naive
@@ -66,7 +66,7 @@ target_include_directories(cudamapper
         $<INSTALL_INTERFACE:include>    
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 )
-target_link_libraries(cudamapper bioparser cudautils index_generator_cpu index_cpu matcher logging)
+target_link_libraries(cudamapper bioparser utils index_generator_cpu index_cpu matcher logging)
 
 # Add tests folder
 add_subdirectory(tests)
