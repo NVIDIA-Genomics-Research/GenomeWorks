@@ -10,13 +10,14 @@
 
 #include <algorithm>
 #include <deque>
+#include <limits>
 #include <string>
 #include <utility>
 #include <thrust/sort.h>
 #include <thrust/execution_policy.h>
 #include "bioparser/bioparser.hpp"
 #include "bioparser_sequence.hpp"
-#include <logging/logging.hpp>
+#include "logging/logging.hpp"
 #include "index_generator_gpu.hpp"
 #include "cudamapper/types.hpp"
 #include <cudautils/cudautils.hpp>
@@ -765,7 +766,7 @@ namespace claragenomics {
 
         //read the query file:
         std::vector <std::unique_ptr<BioParserSequence>> fasta_objects;
-        query_parser->parse(fasta_objects, -1);
+        query_parser->parse(fasta_objects, std::numeric_limits<std::uint64_t>::max());
 
         std::uint64_t total_basepairs = 0;
         std::vector<ArrayBlock> read_id_to_basepairs_section_h;
@@ -1033,6 +1034,7 @@ namespace claragenomics {
         // minimizers are already sorted by representation -> add all minimizers with the same representation to a vector and then add that vector to the hash table
         std::vector<std::unique_ptr<SketchElement>> minimizers_for_representation;
         representation_t current_representation = representations_compressed_h[0];
+        // TODO: this part takes the largest portion of time
         for (std::size_t i = 0; i < representations_compressed_h.size(); ++i) {
             if(representations_compressed_h[i] != current_representation) {
                 // New representation encountered -> add the old vector to the hash table and start building the new one
