@@ -34,7 +34,7 @@ class Aligner
 {
 public:
     /// \brief Virtual destructor for Aligner.
-    virtual ~Aligner() = default;
+    virtual ~Aligner() noexcept = default;
 
     /// \brief Launch CUDA accelerated alignment
     ///

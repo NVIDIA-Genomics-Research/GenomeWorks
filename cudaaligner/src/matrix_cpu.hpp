@@ -36,7 +36,7 @@ public:
     matrix(matrix&&)      = default;
     matrix& operator=(matrix const&) = default;
     matrix& operator=(matrix&&) = default;
-    ~matrix()                   = default;
+    ~matrix() noexcept          = default;
 
     matrix(int n, int m, T value = 0)
         : data_(n * m, value), n(n), m(m)

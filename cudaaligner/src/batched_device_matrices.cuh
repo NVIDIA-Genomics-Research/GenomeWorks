@@ -114,7 +114,7 @@ public:
         CGA_CU_CHECK_ERR(cudaStreamSynchronize(stream)); // sync because tmp will be destroyed.
     }
 
-    ~batched_device_matrices()
+    ~batched_device_matrices() noexcept
     {
         cudaFree(dev_);
     }

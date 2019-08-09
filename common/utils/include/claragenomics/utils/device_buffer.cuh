@@ -63,7 +63,7 @@ public:
         return *this;
     }
 
-    ~device_buffer()
+    ~device_buffer() noexcept
     {
         cudaFree(data_);
     }

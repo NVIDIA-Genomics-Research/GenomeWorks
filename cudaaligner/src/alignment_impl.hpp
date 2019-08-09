@@ -22,7 +22,7 @@ class AlignmentImpl : public Alignment
 {
 public:
     AlignmentImpl(const char* query, int32_t query_length, const char* target, int32_t target_length);
-    ~AlignmentImpl();
+    virtual ~AlignmentImpl() noexcept;
 
     /// \brief Returns query sequence
     virtual const std::string& get_query_sequence() const override

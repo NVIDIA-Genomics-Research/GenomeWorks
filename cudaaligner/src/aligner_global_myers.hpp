@@ -22,7 +22,7 @@ class AlignerGlobalMyers : public AlignerGlobal
 {
 public:
     AlignerGlobalMyers(int32_t max_query_length, int32_t max_target_length, int32_t max_alignments, cudaStream_t stream, int32_t device_id);
-    virtual ~AlignerGlobalMyers();
+    virtual ~AlignerGlobalMyers() noexcept;
 
 private:
     struct Workspace;

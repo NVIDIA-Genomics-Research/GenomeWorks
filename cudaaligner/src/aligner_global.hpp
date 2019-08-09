@@ -28,7 +28,7 @@ class AlignerGlobal : public Aligner
 {
 public:
     AlignerGlobal(int32_t max_query_length, int32_t max_target_length, int32_t max_alignments, cudaStream_t stream, int32_t device_id);
-    virtual ~AlignerGlobal()            = default;
+    virtual ~AlignerGlobal() noexcept   = default;
     AlignerGlobal(const AlignerGlobal&) = delete;
 
     virtual StatusType align_all() override;
