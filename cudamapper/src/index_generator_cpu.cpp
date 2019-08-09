@@ -15,7 +15,7 @@
 #include <utility>
 #include "bioparser/bioparser.hpp"
 #include "bioparser_sequence.hpp"
-#include <logging/logging.hpp>
+#include <claragenomics/logging/logging.hpp>
 #include "index_generator_cpu.hpp"
 
 namespace claragenomics {
