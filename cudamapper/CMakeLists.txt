@@ -33,7 +33,7 @@ cuda_add_library(index_generator_gpu
         src/index_generator_gpu.cu
         src/minimizer.cpp)
 target_include_directories(index_generator_gpu PUBLIC include)
-target_link_libraries(index_generator_gpu bioparser logging pthread cudautils)
+target_link_libraries(index_generator_gpu bioparser logging pthread utils)
 target_compile_options(index_generator_gpu PRIVATE -Werror)
 
 add_library(index_cpu

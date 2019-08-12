@@ -17,10 +17,10 @@
 #include <thrust/execution_policy.h>
 #include "bioparser/bioparser.hpp"
 #include "bioparser_sequence.hpp"
-#include "logging/logging.hpp"
+#include <claragenomics/logging/logging.hpp>
 #include "index_generator_gpu.hpp"
 #include "cudamapper/types.hpp"
-#include <cudautils/cudautils.hpp>
+#include <claragenomics/utils/cudautils.hpp>
 
 namespace claragenomics {
 
