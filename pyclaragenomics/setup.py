@@ -86,7 +86,7 @@ extensions = [
 ]
 
 setup(name='pyclaragenomics',
-      version='0.1',
+      version='0.2.0',
       description='NVIDIA genomics python libraries an utiliites',
       author='NVIDIA Corporation',
       packages=find_packages(),
