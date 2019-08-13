@@ -11,6 +11,7 @@
 #include "ukkonen_gpu.cuh"
 #include "batched_device_matrices.cuh"
 #include <claragenomics/cudaaligner/cudaaligner.hpp>
+#include <claragenomics/utils/limits.cuh>
 
 #include <limits>
 #include <cstdint>
@@ -26,27 +27,6 @@ namespace cudaaligner
 {
 namespace kernels
 {
-
-#ifdef CGA_CUDA_BEFORE_10_1
-template <typename T>
-struct numeric_limits
-{
-};
-
-template <>
-struct numeric_limits<int16_t>
-{
-    CGA_CONSTEXPR static __device__ int16_t max() { return INT16_MAX; }
-};
-
-template <>
-struct numeric_limits<int32_t>
-{
-    CGA_CONSTEXPR static __device__ int32_t max() { return INT32_MAX; }
-};
-#else
-using std::numeric_limits;
-#endif
 
 template <typename T>
 __device__ T min3(T t1, T t2, T t3)
