@@ -23,9 +23,9 @@ namespace claragenomics
 namespace cudaaligner
 {
 
-__device__ inline bool error(int t)
+__device__ inline bool error(int32_t x, int32_t y)
 {
-    printf("assert: %d", t);
+    printf("assert: x=%d, y=%d\n", x, y);
     return false;
 }
 
@@ -40,18 +40,18 @@ public:
 
     __device__ inline T const& operator()(int32_t i, int32_t j) const
     {
-        assert(0 <= i || error(i));
-        assert(i < n_rows_ || error(i));
-        assert(0 <= j || error(j));
-        assert(j < n_cols_ || error(j));
+        assert(0 <= i || error(0, i));
+        assert(i < n_rows_ || error(i, n_rows_));
+        assert(0 <= j || error(0, j));
+        assert(j < n_cols_ || error(j, n_cols_));
         return data_[i + n_rows_ * j];
     }
     __device__ inline T& operator()(int32_t i, int32_t j)
     {
-        assert(0 <= i || error(i));
-        assert(i < n_rows_ || error(i));
-        assert(0 <= j || error(j));
-        assert(j < n_cols_ || error(j));
+        assert(0 <= i || error(0, i));
+        assert(i < n_rows_ || error(i, n_rows_));
+        assert(0 <= j || error(0, j));
+        assert(j < n_cols_ || error(j, n_cols_));
         return data_[i + n_rows_ * j];
     }
     __device__ inline int32_t num_rows() const
