@@ -110,10 +110,18 @@ std::vector<AlignerTestData> create_aligner_test_cases()
     data.algorithm = AlignmentAlgorithm::Ukkonen;
     test_cases.push_back(data);
 
-    test_cases.reserve(2 * test_cases.size());
-    std::transform(test_cases.begin(), test_cases.end(), std::back_inserter(test_cases), [](AlignerTestData td) { td.algorithm = AlignmentAlgorithm::Myers; return td; });
+    std::minstd_rand rng(1);
+    data.inputs    = {{claragenomics::genomeutils::generate_random_genome(4800, rng), claragenomics::genomeutils::generate_random_genome(5000, rng)}};
+    data.cigars    = {}; // do not test cigars
+    data.algorithm = AlignmentAlgorithm::Ukkonen;
+    test_cases.push_back(data);
 
-    return test_cases;
+    std::vector<AlignerTestData> test_cases_final;
+    test_cases_final.reserve(2 * test_cases.size());
+    test_cases_final.insert(test_cases_final.end(), test_cases.begin(), test_cases.end());
+    std::transform(test_cases.begin(), test_cases.end(), std::back_inserter(test_cases_final), [](AlignerTestData td) { td.algorithm = AlignmentAlgorithm::Myers; return td; });
+
+    return test_cases_final;
 };
 
 class TestAlignerGlobal : public ::testing::TestWithParam<AlignerTestData>
@@ -137,7 +145,10 @@ TEST_P(TestAlignerGlobal, TestAlignmentKernel)
     const std::vector<std::pair<std::string, std::string>>& inputs = param.inputs;
     const std::vector<std::string>& cigars                         = param.cigars;
 
-    ASSERT_EQ(inputs.size(), cigars.size()) << "Input data length mismatch";
+    if (!cigars.empty())
+    {
+        ASSERT_EQ(inputs.size(), cigars.size()) << "Input data length mismatch";
+    }
 
     const int32_t max_string_size = get_max_sequence_length(inputs) + 1;
     std::unique_ptr<Aligner> aligner;
@@ -176,8 +187,15 @@ TEST_P(TestAlignerGlobal, TestAlignmentKernel)
         auto alignment = alignments[a];
         EXPECT_EQ(StatusType::success, alignment->get_status()) << "Alignment status is not success";
         EXPECT_EQ(AlignmentType::global, alignment->get_alignment_type()) << "Alignment type is not global";
-        EXPECT_EQ(cigars[a], alignment->convert_to_cigar()) << "CIGAR doesn't match for alignment " << a
-                                                            << " using " << (param.algorithm == AlignmentAlgorithm::Ukkonen ? "Ukkonen" : "Myers");
+        if (!cigars.empty())
+        {
+            EXPECT_EQ(cigars[a], alignment->convert_to_cigar()) << "CIGAR doesn't match for alignment of\n"
+                                                                << alignment->get_query_sequence()
+                                                                << "\nand\n"
+                                                                << alignment->get_target_sequence()
+                                                                << "\nindex: " << a
+                                                                << "\nusing " << (param.algorithm == AlignmentAlgorithm::Ukkonen ? "Ukkonen" : "Myers");
+        }
     }
 }
 
