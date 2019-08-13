@@ -705,7 +705,7 @@ namespace claragenomics {
     }
 
     // helper struct
-    struct ReadPositionDirection {
+    struct ReadidPositionDirection {
         read_id_t read_id_;
         position_in_read_t position_in_read_;
         char direction_;
@@ -730,7 +730,7 @@ namespace claragenomics {
                                         const char* const window_minimizers_direction,
                                         const ArrayBlock* const read_id_to_windows_section,
                                         representation_t* const representations_compressed,
-                                        ReadPositionDirection* const rest_compressed,
+                                        ReadidPositionDirection* const rest_compressed,
                                         const ArrayBlock* const read_id_to_compressed_minimizers
                                         )
     {
@@ -819,16 +819,16 @@ namespace claragenomics {
         merged_basepairs_h.reserve(0);
 
         // for each read find the maximum number of minimizers (one per window), determine their section in the minimizer arrays and allocate the arrays
-        std::uint64_t max_windows = 0;
+        std::uint64_t total_windows = 0;
         std::vector<ArrayBlock> read_id_to_windows_section_h(number_of_reads_, {0,0});
         for (read_id_t read_id = 0; read_id < number_of_reads_; ++read_id)
         {
-            read_id_to_windows_section_h[read_id].first_element_ = max_windows;
+            read_id_to_windows_section_h[read_id].first_element_ = total_windows;
             std::uint32_t windows = window_size_- 1; // front end minimizers
             windows += read_id_to_basepairs_section_h[read_id].block_size_ - (minimizer_size_ + window_size_ - 1) + 1; // central minimizers
             windows += window_size_ - 1;
             read_id_to_windows_section_h[read_id].block_size_ = windows;
-            max_windows += windows;
+            total_windows += windows;
         }
 
         CGA_LOG_INFO("Allocating {} bytes for read_id_to_windows_section_d", read_id_to_windows_section_h.size()*sizeof(decltype(read_id_to_windows_section_h)::value_type));
@@ -839,12 +839,12 @@ namespace claragenomics {
                                     cudaMemcpyHostToDevice)
                         );
 
-        CGA_LOG_INFO("Allocating {} bytes for window_minimizers_representation_d", max_windows*sizeof(representation_t));
-        auto window_minimizers_representation_d = make_unique_cuda_malloc<representation_t>(max_windows);
-        CGA_LOG_INFO("Allocating {} bytes for window_minimizers_direction_d", max_windows*sizeof(char));
-        auto window_minimizers_direction_d = make_unique_cuda_malloc<char>(max_windows);
-        CGA_LOG_INFO("Allocating {} bytes for window_minimizers_position_in_read_d", max_windows*sizeof(position_in_read_t));
-        auto window_minimizers_position_in_read_d = make_unique_cuda_malloc<position_in_read_t>(max_windows);
+        CGA_LOG_INFO("Allocating {} bytes for window_minimizers_representation_d", total_windows*sizeof(representation_t));
+        auto window_minimizers_representation_d = make_unique_cuda_malloc<representation_t>(total_windows);
+        CGA_LOG_INFO("Allocating {} bytes for window_minimizers_direction_d", total_windows*sizeof(char));
+        auto window_minimizers_direction_d = make_unique_cuda_malloc<char>(total_windows);
+        CGA_LOG_INFO("Allocating {} bytes for window_minimizers_position_in_read_d", total_windows*sizeof(position_in_read_t));
+        auto window_minimizers_position_in_read_d = make_unique_cuda_malloc<position_in_read_t>(total_windows);
         CGA_LOG_INFO("Allocating {} bytes for read_id_to_minimizers_written_d", number_of_reads_*sizeof(std::uint32_t));
         auto read_id_to_minimizers_written_d = make_unique_cuda_malloc<std::uint32_t>(number_of_reads_);
         // initially there are no minimizers written to the output arrays
@@ -984,8 +984,8 @@ namespace claragenomics {
         CGA_LOG_INFO("Allocating {} bytes for representations_compressed_d", total_minimizers*sizeof(representation_t));
         auto representations_compressed_d = make_unique_cuda_malloc<representation_t>(total_minimizers);
         // rest = position_in_read, direction and read_id
-        CGA_LOG_INFO("Allocating {} bytes for rest_compressed_d", total_minimizers*sizeof(ReadPositionDirection));
-        auto rest_compressed_d = make_unique_cuda_malloc<ReadPositionDirection>(total_minimizers);
+        CGA_LOG_INFO("Allocating {} bytes for rest_compressed_d", total_minimizers*sizeof(ReadidPositionDirection));
+        auto rest_compressed_d = make_unique_cuda_malloc<ReadidPositionDirection>(total_minimizers);
 
         CGA_LOG_INFO("Launching compress_minimizers with {} bytes of shared memory", 0);
         compress_minimizers<<<number_of_reads_, 128>>>(window_minimizers_representation_d.get(),
@@ -999,11 +999,11 @@ namespace claragenomics {
         CGA_CU_CHECK_ERR(cudaDeviceSynchronize());
 
         // free these arrays as they are not needed anymore
-        CGA_LOG_INFO("Deallocating {} bytes from window_minimizers_representation_d", max_windows*sizeof(representation_t));
+        CGA_LOG_INFO("Deallocating {} bytes from window_minimizers_representation_d", total_windows*sizeof(representation_t));
         window_minimizers_representation_d = nullptr;
-        CGA_LOG_INFO("Deallocating {} bytes from window_minimizers_direction_d", max_windows*sizeof(char));
+        CGA_LOG_INFO("Deallocating {} bytes from window_minimizers_direction_d", total_windows*sizeof(char));
         window_minimizers_direction_d = nullptr;
-        CGA_LOG_INFO("Deallocating {} bytes from window_minimizers_position_d", max_windows*sizeof(position_in_read_t));
+        CGA_LOG_INFO("Deallocating {} bytes from window_minimizers_position_d", total_windows*sizeof(position_in_read_t));
         window_minimizers_position_in_read_d = nullptr;
     
         // *** sort minimizers by representation ***
@@ -1012,7 +1012,7 @@ namespace claragenomics {
 
 
         std::vector<representation_t> representations_compressed_h(total_minimizers);
-        std::vector<ReadPositionDirection> rest_compressed_h(total_minimizers);
+        std::vector<ReadidPositionDirection> rest_compressed_h(total_minimizers);
         CGA_CU_CHECK_ERR(cudaMemcpy(representations_compressed_h.data(),
                                     representations_compressed_d.get(),
                                     representations_compressed_h.size()*sizeof(decltype(representations_compressed_h)::value_type),
@@ -1029,7 +1029,7 @@ namespace claragenomics {
         // free these arrays as they are not needed anymore
         CGA_LOG_INFO("Deallocating {} bytes from representations_compressed_d", total_minimizers*sizeof(representation_t));
         representations_compressed_d = nullptr;
-        CGA_LOG_INFO("Deallocating {} bytes from rest_compressed_d", total_minimizers*sizeof(ReadPositionDirection));
+        CGA_LOG_INFO("Deallocating {} bytes from rest_compressed_d", total_minimizers*sizeof(ReadidPositionDirection));
         rest_compressed_d = nullptr;
 
         // *** add the minimizers to the host side hash map ***
