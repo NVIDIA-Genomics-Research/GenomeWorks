@@ -801,7 +801,7 @@ namespace claragenomics {
 
         // move basepairs to the device
         CGA_LOG_INFO("Allocating {} bytes for read_id_to_basepairs_section_d", read_id_to_basepairs_section_h.size()*sizeof(decltype(read_id_to_basepairs_section_h)::value_type));
-        auto read_id_to_basepairs_section_d = make_unique_cuda_malloc<ArrayBlock>(read_id_to_basepairs_section_h.size());
+        auto read_id_to_basepairs_section_d = make_unique_cuda_malloc<decltype(read_id_to_basepairs_section_h)::value_type>(read_id_to_basepairs_section_h.size());
         CGA_CU_CHECK_ERR(cudaMemcpy(read_id_to_basepairs_section_d.get(),
                                     read_id_to_basepairs_section_h.data(),
                                     read_id_to_basepairs_section_h.size()*sizeof(decltype(read_id_to_basepairs_section_h)::value_type),
@@ -809,7 +809,7 @@ namespace claragenomics {
                         );
 
         CGA_LOG_INFO("Allocating {} bytes for merged_basepairs_d", merged_basepairs_h.size()*sizeof(decltype(merged_basepairs_h)::value_type));
-        auto merged_basepairs_d = make_unique_cuda_malloc<char>(merged_basepairs_h.size());
+        auto merged_basepairs_d = make_unique_cuda_malloc<decltype(merged_basepairs_h)::value_type>(merged_basepairs_h.size());
         CGA_CU_CHECK_ERR(cudaMemcpy(merged_basepairs_d.get(),
                                     merged_basepairs_h.data(),
                                     merged_basepairs_h.size()*sizeof(decltype(merged_basepairs_h)::value_type),
@@ -832,20 +832,20 @@ namespace claragenomics {
         }
 
         CGA_LOG_INFO("Allocating {} bytes for read_id_to_windows_section_d", read_id_to_windows_section_h.size()*sizeof(decltype(read_id_to_windows_section_h)::value_type));
-        auto read_id_to_windows_section_d = make_unique_cuda_malloc<ArrayBlock>(read_id_to_windows_section_h.size());
+        auto read_id_to_windows_section_d = make_unique_cuda_malloc<decltype(read_id_to_windows_section_h)::value_type>(read_id_to_windows_section_h.size());
         CGA_CU_CHECK_ERR(cudaMemcpy(read_id_to_windows_section_d.get(),
                                     read_id_to_windows_section_h.data(),
                                     read_id_to_windows_section_h.size()*sizeof(decltype(read_id_to_windows_section_h)::value_type),
                                     cudaMemcpyHostToDevice)
                         );
 
-        CGA_LOG_INFO("Allocating {} bytes for window_minimizers_representation_d", window_minimizers_representation_h.size()*sizeof(decltype(window_minimizers_representation_h)::value_type));
+        CGA_LOG_INFO("Allocating {} bytes for window_minimizers_representation_d", max_windows*sizeof(representation_t));
         auto window_minimizers_representation_d = make_unique_cuda_malloc<representation_t>(max_windows);
-        CGA_LOG_INFO("Allocating {} bytes for window_minimizers_direction_d", window_minimizers_direction_h.size()*sizeof(decltype(window_minimizers_direction_h)::value_type));
+        CGA_LOG_INFO("Allocating {} bytes for window_minimizers_direction_d", max_windows*sizeof(char));
         auto window_minimizers_direction_d = make_unique_cuda_malloc<char>(max_windows);
-        CGA_LOG_INFO("Allocating {} bytes for window_minimizers_position_in_read_d", window_minimizers_position_in_read_h.size()*sizeof(decltype(window_minimizers_position_in_read_h)::value_type));
+        CGA_LOG_INFO("Allocating {} bytes for window_minimizers_position_in_read_d", max_windows*sizeof(position_in_read_t));
         auto window_minimizers_position_in_read_d = make_unique_cuda_malloc<position_in_read_t>(max_windows);
-        CGA_LOG_INFO("Allocating {} bytes for read_id_to_minimizers_written_d", read_id_to_minimizers_written_h.size()*sizeof(decltype(read_id_to_minimizers_written_h)::value_type));
+        CGA_LOG_INFO("Allocating {} bytes for read_id_to_minimizers_written_d", number_of_reads_*sizeof(std::uint32_t));
         auto read_id_to_minimizers_written_d = make_unique_cuda_malloc<std::uint32_t>(number_of_reads_);
         // initially there are no minimizers written to the output arrays
         CGA_CU_CHECK_ERR(cudaMemset(read_id_to_minimizers_written_d.get(), 0, number_of_reads_*sizeof(std::uint32_t)));
@@ -956,6 +956,8 @@ namespace claragenomics {
                                     cudaMemcpyDeviceToHost
                                     )
                          );
+        CGA_LOG_INFO("Deallocating {} bytes from read_id_to_minimizers_written_d", number_of_reads_*sizeof(std::uint32_t));
+        read_id_to_minimizers_written_d = nullptr;
 
         // *** remove unused elemets from the window minimizers arrays ***
         // In window_minimizers_representation_d and other arrays enough space was allocated to support cases where each window has a different minimizers. In reality many neighboring windows share the same mininizer
@@ -971,7 +973,7 @@ namespace claragenomics {
         }
 
         CGA_LOG_INFO("Allocating {} bytes for read_id_to_compressed_minimizers_d", read_id_to_compressed_minimizers_h.size()*sizeof(decltype(read_id_to_compressed_minimizers_h)::value_type));
-        auto read_id_to_compressed_minimizers_d = make_unique_cuda_malloc<ArrayBlock>(number_of_reads_);
+        auto read_id_to_compressed_minimizers_d = make_unique_cuda_malloc<decltype(read_id_to_compressed_minimizers_h)::value_type>(read_id_to_compressed_minimizers_h.size());
         CGA_CU_CHECK_ERR(cudaMemcpy(read_id_to_compressed_minimizers_d.get(),
                                     read_id_to_compressed_minimizers_h.data(),
                                     read_id_to_compressed_minimizers_h.size()*sizeof(decltype(read_id_to_compressed_minimizers_h)::value_type),
@@ -979,10 +981,10 @@ namespace claragenomics {
                                     )
                          );
 
-        CGA_LOG_INFO("Allocating {} bytes for representations_compressed_d", representations_compressed_h.size()*sizeof(decltype(representations_compressed_h)::value_type));
+        CGA_LOG_INFO("Allocating {} bytes for representations_compressed_d", total_minimizers*sizeof(representation_t));
         auto representations_compressed_d = make_unique_cuda_malloc<representation_t>(total_minimizers);
         // rest = position_in_read, direction and read_id
-        CGA_LOG_INFO("Allocating {} bytes for rest_compressed_d", rest_compressed_h.size()*sizeof(decltype(rest_compressed_h)::value_type));
+        CGA_LOG_INFO("Allocating {} bytes for rest_compressed_d", total_minimizers*sizeof(ReadPositionDirection));
         auto rest_compressed_d = make_unique_cuda_malloc<ReadPositionDirection>(total_minimizers);
 
         CGA_LOG_INFO("Launching compress_minimizers with {} bytes of shared memory", 0);
@@ -997,12 +999,12 @@ namespace claragenomics {
         CGA_CU_CHECK_ERR(cudaDeviceSynchronize());
 
         // free these arrays as they are not needed anymore
-        CGA_LOG_INFO("Deallocating {} bytes from window_minimizers_representation_d", window_minimizers_representation_h.size()*sizeof(decltype(window_minimizers_representation_h)::value_type));
+        CGA_LOG_INFO("Deallocating {} bytes from window_minimizers_representation_d", max_windows*sizeof(representation_t));
         window_minimizers_representation_d = nullptr;
-        CGA_LOG_INFO("Deallocating {} bytes from window_minimizers_position_d", window_minimizers_position_h.size()*sizeof(decltype(window_minimizers_position_h)::value_type));
-        window_minimizers_position_in_read_d = nullptr;
-        CGA_LOG_INFO("Deallocating {} bytes from window_minimizers_direction_d", window_minimizers_direction_h.size()*sizeof(decltype(window_minimizers_direction_h)::value_type));
+        CGA_LOG_INFO("Deallocating {} bytes from window_minimizers_direction_d", max_windows*sizeof(char));
         window_minimizers_direction_d = nullptr;
+        CGA_LOG_INFO("Deallocating {} bytes from window_minimizers_position_d", max_windows*sizeof(position_in_read_t));
+        window_minimizers_position_in_read_d = nullptr;
     
         // *** sort minimizers by representation ***
         // As this is a stable sort and the data was initailly grouper by read_id this means that the minimizers within each representations are sorted by read_id
@@ -1025,9 +1027,9 @@ namespace claragenomics {
                          );
 
         // free these arrays as they are not needed anymore
-        CGA_LOG_INFO("Deallocating {} bytes from representations_compressed_d", representations_compressed_h.size()*sizeof(decltype(representations_compressed_h)::value_type));
+        CGA_LOG_INFO("Deallocating {} bytes from representations_compressed_d", total_minimizers*sizeof(representation_t));
         representations_compressed_d = nullptr;
-        CGA_LOG_INFO("Deallocating {} bytes from rest_compressed_d", rest_compressed_h.size()*sizeof(decltype(rest_compressed_h)::value_type));
+        CGA_LOG_INFO("Deallocating {} bytes from rest_compressed_d", total_minimizers*sizeof(ReadPositionDirection));
         rest_compressed_d = nullptr;
 
         // *** add the minimizers to the host side hash map ***
