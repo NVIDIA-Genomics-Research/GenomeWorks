@@ -140,7 +140,7 @@ __device__ void myers_backtrace(int8_t* paths_base, int32_t* lengths, int32_t ma
 
     const WordType last_entry_mask = query_size % word_size != 0 ? (WordType(1) << (query_size % word_size)) - 1 : ~WordType(0);
 
-    nw_score_t myscore = score(i / word_size, j);
+    nw_score_t myscore = score((i - 1) / word_size, j);
     int32_t pos        = 0;
     while (i > 0 && j > 0)
     {
