@@ -44,15 +44,19 @@ AlignerGlobal::AlignerGlobal(int32_t max_query_length, int32_t max_target_length
     , stream_(stream)
     , device_id_(device_id)
 {
-    scoped_device_switch dev(device_id);
-    sequences_d_        = device_buffer<char>(2 * std::max(max_query_length, max_target_length) * max_alignments);
-    sequence_lengths_d_ = device_buffer<int32_t>(2 * max_alignments);
-    results_d_          = device_buffer<int8_t>(calc_max_result_length(max_query_length, max_target_length) * max_alignments);
-    result_lengths_d_   = device_buffer<int32_t>(max_alignments);
     if (max_alignments < 1)
     {
         throw std::runtime_error("Max alignments must be at least 1.");
     }
+    scoped_device_switch dev(device_id);
+    sequences_d_        = device_buffer<char>(sequences_h_.size());
+    sequence_lengths_d_ = device_buffer<int32_t>(sequence_lengths_h_.size());
+    results_d_          = device_buffer<int8_t>(results_h_.size());
+    result_lengths_d_   = device_buffer<int32_t>(result_lengths_h_.size());
+    device_memset_async(sequences_d_, 0, stream);
+    device_memset_async(sequence_lengths_d_, 0, stream);
+    device_memset_async(results_d_, 0, stream);
+    device_memset_async(result_lengths_d_, 0, stream);
 }
 
 StatusType AlignerGlobal::add_alignment(const char* query, int32_t query_length, const char* target, int32_t target_length)
