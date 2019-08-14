@@ -29,7 +29,14 @@ target_include_directories(index_generator_cpu PUBLIC include)
 target_link_libraries(index_generator_cpu bioparser logging pthread)
 target_compile_options(index_generator_cpu PRIVATE -Werror)
 
-cuda_add_library(index_cpu
+cuda_add_library(index_generator_gpu
+        src/index_generator_gpu.cu
+        src/minimizer.cpp)
+target_include_directories(index_generator_gpu PUBLIC include)
+target_link_libraries(index_generator_gpu bioparser logging pthread utils)
+target_compile_options(index_generator_gpu PRIVATE -Werror)
+
+add_library(index_cpu
         src/index_cpu.cpp)
 target_include_directories(index_cpu PUBLIC include)
 target_link_libraries(index_cpu bioparser logging pthread utils)
@@ -66,7 +73,7 @@ target_include_directories(cudamapper
         $<INSTALL_INTERFACE:include>    
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 )
-target_link_libraries(cudamapper bioparser utils index_generator_cpu index_cpu matcher logging)
+target_link_libraries(cudamapper bioparser utils index_generator_cpu index_generator_gpu index_cpu matcher logging)
 
 # Add tests folder
 add_subdirectory(tests)
