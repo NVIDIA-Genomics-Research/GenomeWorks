@@ -10,27 +10,14 @@
 
 """Classes to simulate reads from a known reference, mimicking sequencing errors"""
 import abc
-import collections
 import gzip
 import random
 
 
 from sortedcollections import SortedList
 
-from claragenomics.simulators import NUCLEOTIDES
-
-Overlap = collections.namedtuple("Overlap", ["query_sequence_name",
-                                             "query_sequence_length",
-                                             "query_start",
-                                             "query_end",
-                                             "relative_strand",
-                                             "target_sequence_name",
-                                             "target_sequence_length",
-                                             "target_start",
-                                             "target_end",
-                                             "num_residue_matches",
-                                             "alignment_block_length",
-                                             "mapping_quality"])
+from . import NUCLEOTIDES
+from ..io import pafio
 
 
 def generate_overlaps(seqs, gzip_compressed=True):
@@ -91,18 +78,18 @@ def generate_overlaps(seqs, gzip_compressed=True):
                     query_end = query_start + target_seq_len
 
                 target_name = target[0]
-                overlap = Overlap(query_sequence_name=query_name,
-                                  query_sequence_length=query_seq_len,
-                                  query_start=query_start,
-                                  query_end=query_end,
-                                  relative_strand="+",  # temporary
-                                  target_sequence_name=target_name,
-                                  target_sequence_length=target_seq_len,
-                                  target_start=target_start,
-                                  target_end=target_end,
-                                  num_residue_matches=1,
-                                  alignment_block_length=-1,
-                                  mapping_quality=255)
+                overlap = pafio.Overlap(query_sequence_name=query_name,
+                                        query_sequence_length=query_seq_len,
+                                        query_start=query_start,
+                                        query_end=query_end,
+                                        relative_strand="+",  # temporary
+                                        target_sequence_name=target_name,
+                                        target_sequence_length=target_seq_len,
+                                        target_start=target_start,
+                                        target_end=target_end,
+                                        num_residue_matches=1,
+                                        alignment_block_length=-1,
+                                        mapping_quality=255)
                 overlaps.append(overlap)
     return(overlaps)
 
