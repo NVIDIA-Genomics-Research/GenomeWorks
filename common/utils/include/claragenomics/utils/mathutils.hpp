@@ -10,16 +10,18 @@
 
 #pragma once
 
-#include <limits>
 #include <cassert>
-#include <stdexcept>
 #include <type_traits>
+#include <cuda_runtime_api.h>
+#ifndef __CUDA_ARCH__
+#include <algorithm>
+#endif
 
 namespace claragenomics
 {
 
 template <typename Integer>
-constexpr inline Integer ceiling_divide(Integer i, Integer j)
+__host__ __device__ constexpr inline Integer ceiling_divide(Integer i, Integer j)
 {
     static_assert(std::is_integral<Integer>::value, "Arguments have to be integer types.");
     assert(i >= 0);
@@ -28,9 +30,13 @@ constexpr inline Integer ceiling_divide(Integer i, Integer j)
 }
 
 template <typename T>
-inline T const& min3(T const& t1, T const& t2, T const& t3)
+__host__ __device__ inline T const& min3(T const& t1, T const& t2, T const& t3)
 {
+#ifdef __CUDA_ARCH__
+    return min(t1, min(t2, t3));
+#else
     return std::min(t1, std::min(t2, t3));
+#endif
 }
 
 } // namespace claragenomics

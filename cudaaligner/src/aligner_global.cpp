@@ -13,6 +13,7 @@
 
 #include <claragenomics/utils/signed_integer_utils.hpp>
 #include <claragenomics/utils/cudautils.hpp>
+#include <claragenomics/utils/mathutils.hpp>
 #include <claragenomics/logging/logging.hpp>
 
 #include <cstring>
@@ -29,7 +30,7 @@ constexpr int32_t calc_max_result_length(int32_t max_query_length, int32_t max_t
 {
     constexpr int32_t alignment_bytes = 4;
     const int32_t max_length          = max_query_length + max_target_length;
-    return max_length + max_length % alignment_bytes;
+    return ceiling_divide(max_length, alignment_bytes) * alignment_bytes;
 }
 
 AlignerGlobal::AlignerGlobal(int32_t max_query_length, int32_t max_target_length, int32_t max_alignments, cudaStream_t stream, int32_t device_id)
@@ -156,6 +157,7 @@ StatusType AlignerGlobal::sync_alignments()
     for (int32_t i = 0; i < n_alignments; ++i)
     {
         al_state.clear();
+        assert(result_lengths_h_[i] < max_result_length);
         const int8_t* r_begin = results_h_.data() + i * max_result_length;
         const int8_t* r_end   = r_begin + result_lengths_h_[i];
         std::transform(r_begin, r_end, std::back_inserter(al_state), [](int8_t x) { return static_cast<AlignmentState>(x); });
