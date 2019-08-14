@@ -69,6 +69,9 @@ typedef struct Overlap {
     std::string target_read_name_;
     /// Number of residues (e.g anchors) between the two reads
     std::uint32_t num_residues_ = 0;
+
+    std::uint32_t query_length_ = 0;
+    std::uint32_t target_length_ = 0;
     /// Whether the overlap is considered valid by the generating overlapper
     bool overlap_complete = false;
 } Overlap;

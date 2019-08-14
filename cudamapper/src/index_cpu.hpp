@@ -62,6 +62,8 @@ namespace claragenomics {
         /// \return mapping of internal read id that goes from 0 to number_of_reads-1 to actual read name from the input
         const std::vector<std::string>& read_id_to_read_name() const override;
 
+        const std::vector<uint32_t >& read_id_to_read_length() const override;
+
         /// \brief returns mapping of read id (vector) and representation (map) to section of data arrays with sketch elements with that read id and representation
         /// \return mapping of read id (vector) and representation (map) to section of data arrays with sketch elements with that read id and representation
         const std::vector<std::map<representation_t, ArrayBlock>>& read_id_and_representation_to_all_its_sketch_elements() const override;
@@ -79,6 +81,8 @@ namespace claragenomics {
         const std::uint64_t number_of_reads_;
 
         const std::vector<std::string> read_id_to_read_name_;
+
+        const std::vector<uint32_t > read_id_to_read_length_;
 
         std::vector<std::map<representation_t, ArrayBlock>> read_id_and_representation_to_all_its_sketch_elements_;
 
