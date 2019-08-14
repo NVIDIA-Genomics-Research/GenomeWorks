@@ -51,7 +51,9 @@ def evaluate_paf(truth_paf_filepath, test_paf_filepath, pos_tolerance=500):
         key_reversed = overlap[5] + overlap[0]  # Unique key for this overlap, switching query and target
 
         matched = False
+        potential_match = False
         if key in truth_overlaps:
+            potential_match = True
             truth_overlap = truth_overlaps[key]
 
             query_start_1 = int(truth_overlap[0])
@@ -60,6 +62,7 @@ def evaluate_paf(truth_paf_filepath, test_paf_filepath, pos_tolerance=500):
             target_end_1 = int(truth_overlap[3])
 
         elif key_reversed in truth_overlaps:
+            potential_match = True
             truth_overlap = truth_overlaps[key_reversed]
 
             query_start_1 = int(truth_overlap[2])
@@ -67,7 +70,8 @@ def evaluate_paf(truth_paf_filepath, test_paf_filepath, pos_tolerance=500):
             target_start_1 = int(truth_overlap[0])
             target_end_1 = int(truth_overlap[1])
 
-        matched = abs(query_start_0 - query_start_1) < pos_tolerance and \
+        matched = potential_match and \
+            abs(query_start_0 - query_start_1) < pos_tolerance and \
             abs(query_end_0 - query_end_1) < pos_tolerance and \
             abs(target_start_0 - target_start_1) < pos_tolerance and \
             abs(target_end_0 - target_end_1) < pos_tolerance
