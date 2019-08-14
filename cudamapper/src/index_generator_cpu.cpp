@@ -10,12 +10,13 @@
 
 #include <algorithm>
 #include <deque>
+#include <limits>
 #include <string>
 #include <iostream>
 #include <utility>
 #include "bioparser/bioparser.hpp"
 #include "bioparser_sequence.hpp"
-#include <logging/logging.hpp>
+#include <claragenomics/logging/logging.hpp>
 #include "index_generator_cpu.hpp"
 
 namespace claragenomics {
@@ -56,7 +57,7 @@ namespace claragenomics {
 
         //read the query file:
         std::vector <std::unique_ptr<BioParserSequence>> fasta_objects;
-        query_parser->parse(fasta_objects, -1);
+        query_parser->parse(fasta_objects, std::numeric_limits<std::uint64_t>::max());
 
         for (std::uint64_t read_id = 0; read_id < fasta_objects.size(); ++read_id) {
             read_id_to_read_name_.push_back(fasta_objects[read_id]->name());

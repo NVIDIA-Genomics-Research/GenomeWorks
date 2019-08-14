@@ -9,6 +9,9 @@
 */
 
 #include "cudapoa_kernels.cuh"
+
+#include <claragenomics/utils/cudautils.hpp>
+
 #include <stdio.h>
 
 namespace claragenomics
@@ -20,7 +23,8 @@ namespace cudapoa
 /**
  * @brief Device function for adding a new alignment to the partial order alignment graph.
  *
- * @param[in/out] nodes                       Device buffer with unique nodes in graph
+ * @param[out] new_node_count             Number of nodes in graph after update
+ * @param[in/out] nodes                   Device buffer with unique nodes in graph
  * @param[in] node_count                  Number of nodes in graph
  * @graph[in] node_alignments             Device buffer with alignment nodes per node in graph
  * @param[in] node_alignment_count        Device buffer with number of aligned nodes
@@ -43,13 +47,14 @@ namespace cudapoa
  * @param[in] s                               Current sequence id
  * @param[in] max_sequences_per_poa           Maximum sequences allowed in a graph
  *
- * @return Number of nodes in graph after update
+ * @return Status code for any errors encountered.
  */
 
 template <bool msa = false>
 __device__
-    uint16_t
-    addAlignmentToGraph(uint8_t* nodes,
+    uint8_t
+    addAlignmentToGraph(uint16_t& new_node_count,
+                        uint8_t* nodes,
                         uint16_t node_count,
                         uint16_t* node_alignments, uint16_t* node_alignment_count,
                         uint16_t* incoming_edges, uint16_t* incoming_edge_count,
@@ -101,7 +106,7 @@ __device__
                 curr_node_id = node_count++;
                 if (node_count >= CUDAPOA_MAX_NODES_PER_WINDOW)
                 {
-                    break;
+                    return static_cast<uint8_t>(StatusType::node_count_exceeded_maximum_graph_size);
                 }
                 //printf("create new node %d\n", curr_node_id);
                 new_node                           = true;
@@ -157,7 +162,7 @@ __device__
                         curr_node_id = node_count++;
                         if (node_count >= CUDAPOA_MAX_NODES_PER_WINDOW)
                         {
-                            break;
+                            return static_cast<uint8_t>(StatusType::node_count_exceeded_maximum_graph_size);
                         }
                         //printf("create new node %d\n", curr_node_id);
                         nodes[curr_node_id]                = read_base;
@@ -232,7 +237,8 @@ __device__
 
                     if (out_count + 1 >= CUDAPOA_MAX_NODE_EDGES || in_count + 1 >= CUDAPOA_MAX_NODE_EDGES)
                     {
-                        printf("exceeded max edge count\n");
+                        return static_cast<uint8_t>(StatusType::edge_count_exceeded_maximum_graph_size);
+                        //printf("exceeded max edge count\n");
                     }
                 }
                 else if (msa) //if edge exists and for msa generation
@@ -261,7 +267,8 @@ __device__
         }
     }
     //printf("final size %d\n", node_count);
-    return node_count;
+    new_node_count = node_count;
+    return static_cast<uint8_t>(StatusType::success);
 }
 
 // kernel that calls the addAlignmentToGraph device funtion
@@ -285,24 +292,26 @@ __global__ void addAlignmentKernel(uint8_t* nodes,
                                    uint32_t max_sequences_per_poa)
 {
     // all pointers will be allocated in unified memory visible to both host and device
-    *node_count = addAlignmentToGraph(nodes,
-                                      *node_count,
-                                      node_alignments, node_alignment_count,
-                                      incoming_edges, incoming_edge_count,
-                                      outgoing_edges, outgoing_edge_count,
-                                      incoming_edge_w, outgoing_edge_w,
-                                      *alignment_length,
-                                      graph,
-                                      alignment_graph,
-                                      read,
-                                      alignment_read,
-                                      node_coverage_counts,
-                                      base_weights,
-                                      sequence_begin_nodes_ids,
-                                      outgoing_edges_coverage,
-                                      outgoing_edges_coverage_count,
-                                      s,
-                                      max_sequences_per_poa);
+    uint16_t new_node_count;
+    uint8_t error_code = addAlignmentToGraph(new_node_count, nodes,
+                                             *node_count,
+                                             node_alignments, node_alignment_count,
+                                             incoming_edges, incoming_edge_count,
+                                             outgoing_edges, outgoing_edge_count,
+                                             incoming_edge_w, outgoing_edge_w,
+                                             *alignment_length,
+                                             graph,
+                                             alignment_graph,
+                                             read,
+                                             alignment_read,
+                                             node_coverage_counts,
+                                             base_weights,
+                                             sequence_begin_nodes_ids,
+                                             outgoing_edges_coverage,
+                                             outgoing_edges_coverage_count,
+                                             s,
+                                             max_sequences_per_poa);
+    *node_count        = new_node_count;
 }
 
 // Host function that calls the kernel
@@ -343,6 +352,7 @@ void addAlignment(uint8_t* nodes,
                                  outgoing_edges_coverage_count,
                                  s,
                                  max_sequences_per_poa);
+    CGA_CU_CHECK_ERR(cudaPeekAtLastError());
 }
 
 } // namespace cudapoa

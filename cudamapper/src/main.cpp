@@ -12,7 +12,7 @@
 #include <iostream>
 #include <chrono>
 
-#include <logging/logging.hpp>
+#include <claragenomics/logging/logging.hpp>
 
 #include "cudamapper/index.hpp"
 #include "matcher.hpp"

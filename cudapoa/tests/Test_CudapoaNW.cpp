@@ -8,12 +8,14 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
+#include "../src/cudapoa_kernels.cuh" //runNW, CUDAPOA_*
+#include "sorted_graph.hpp"           //SortedGraph
+
+#include <claragenomics/utils/cudautils.hpp>            //CGA_CU_CHECK_ERR
+#include <claragenomics/utils/stringutils.hpp>          //array_to_string
+#include <claragenomics/utils/signed_integer_utils.hpp> //get_size
+
 #include "gtest/gtest.h"
-#include "../src/cudapoa_kernels.cuh"     //runNW, CUDAPOA_*
-#include <cudautils/cudautils.hpp>        //CGA_CU_CHECK_ERR
-#include <utils/stringutils.hpp>          //array_to_string
-#include <utils/signed_integer_utils.hpp> //get_size
-#include "sorted_graph.hpp"               //SortedGraph
 
 namespace claragenomics
 {
@@ -237,6 +239,7 @@ NWAnswer testNW(const BasicNW& obj)
           read,
           read_count,
           scores,
+          CUDAPOA_MAX_MATRIX_SEQUENCE_DIMENSION,
           alignment_graph,
           alignment_read,
           gap_score,

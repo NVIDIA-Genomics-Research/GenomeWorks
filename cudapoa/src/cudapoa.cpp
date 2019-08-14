@@ -8,8 +8,8 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-#include <cudapoa/cudapoa.hpp>
-#include <logging/logging.hpp>
+#include <claragenomics/cudapoa/cudapoa.hpp>
+#include <claragenomics/logging/logging.hpp>
 
 namespace claragenomics
 {

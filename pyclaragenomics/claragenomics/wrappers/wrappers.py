@@ -1,3 +1,13 @@
+#
+# Copyright (c) 2019, NVIDIA CORPORATION.  All rights reserved.
+#
+# NVIDIA CORPORATION and its licensors retain all intellectual property
+# and proprietary rights in and to this software, related documentation
+# and any modifications thereto.  Any use, reproduction, disclosure or
+# distribution of this software and related documentation without an express
+# license agreement from NVIDIA CORPORATION is strictly prohibited.
+#
+
 """Classes for tool wrappers"""
 import logging
 import os
@@ -13,15 +23,16 @@ class RaconWrapper:
 
         Args:
             tool_path (string): Path where the racon tool (i.e. racon-gpu) is located
-            gpu (boolean): Indicating using GPU-based Racon or CPU-based Racon 
+            gpu (boolean): Indicating using GPU-based Racon or CPU-based Racon
         """
         self.gpu = gpu
         if tool_path is None:
             self.racon_binary_path = "racon"
         else:
             self.racon_binary_path = tool_path
-    
-    def polish(self, reads_filepath, aligned_filepath, assembly_filepath, polished_filepath, extra_args="-m 8 -x -6 -g -8 -w 500 -t 12 -q -1"):
+
+    def polish(self, reads_filepath, aligned_filepath, assembly_filepath,
+               polished_filepath, extra_args="-m 8 -x -6 -g -8 -w 500 -t 12 -q -1"):
         """Polishes with Racon.
 
         Args:
@@ -33,14 +44,25 @@ class RaconWrapper:
         """
         logging.info("Polish with racon:")
         if os.path.isfile(polished_filepath):
-            logging.info("Overwriting existing file.") 
+            logging.info("Overwriting existing file.")
             os.remove(polished_filepath)
         if self.gpu:
-            cmd = "{} -c4 {} {} {} {} > {}".format(self.racon_binary_path, extra_args, reads_filepath, aligned_filepath, assembly_filepath, polished_filepath)
+            cmd = "{} -c4 {} {} {} {} > {}".format(self.racon_binary_path,
+                                                   extra_args,
+                                                   reads_filepath,
+                                                   aligned_filepath,
+                                                   assembly_filepath,
+                                                   polished_filepath)
         else:
-            cmd = "{} {} {} {} {} > {}".format(self.racon_binary_path, extra_args, reads_filepath, aligned_filepath, assembly_filepath, polished_filepath)
+            cmd = "{} {} {} {} {} > {}".format(
+                self.racon_binary_path,
+                extra_args,
+                reads_filepath,
+                aligned_filepath,
+                assembly_filepath,
+                polished_filepath)
         logging.info(cmd)
-        subprocess.call(cmd, shell=True)   
+        subprocess.call(cmd, shell=True)
 
 
 class Minimap2Wrapper:
@@ -56,7 +78,7 @@ class Minimap2Wrapper:
             self.minimap2_binary_path = "minimap2"
         else:
             self.minimap2_binary_path = tool_path
-    
+
     def overlap(self, refs_filepath, reads_filepath, overlaps_filepath, args="", extra_args=""):
         """Creates overlaps with minimap2 tool for alignment.
 
@@ -70,11 +92,17 @@ class Minimap2Wrapper:
 
         logging.info("Generate overlaps")
         if os.path.isfile(overlaps_filepath):
-            logging.info("Overwriting existing file.") 
+            logging.info("Overwriting existing file.")
             os.remove(overlaps_filepath)
-        cmd = "{} {} {} {} {} > {}".format(self.minimap2_binary_path, args, refs_filepath, reads_filepath, extra_args, overlaps_filepath)
+        cmd = "{} {} {} {} {} > {}".format(
+            self.minimap2_binary_path,
+            args,
+            refs_filepath,
+            reads_filepath,
+            extra_args,
+            overlaps_filepath)
         logging.info(cmd)
-        subprocess.call(cmd, shell=True)   
+        subprocess.call(cmd, shell=True)
 
 
 class MiniasmWrapper:
@@ -90,7 +118,7 @@ class MiniasmWrapper:
             self.miniasm_binary_path = "miniasm"
         else:
             self.miniasm_binary_path = tool_path
-    
+
     def assemble(self, reads_filepath, overlaps_filepath, assembly_filepath):
         """Assembles from reads and alignments.
 
@@ -102,19 +130,19 @@ class MiniasmWrapper:
         """
         logging.info("Assemble overlaps:")
         if os.path.isfile(assembly_filepath):
-            logging.info("Overwriting existing file.") 
+            logging.info("Overwriting existing file.")
             os.remove(assembly_filepath)
         cmd = "{} -f {} {} > {}".format(self.miniasm_binary_path, reads_filepath, overlaps_filepath, assembly_filepath)
         logging.info(cmd)
         subprocess.call(cmd, shell=True)
-        
+
 
 class QuastWrapper:
     """Wrapper class for Quast"""
 
     def __init__(self):
         pass
-    
+
     def assess(self, assembly_filepath, reference_filepath, output_dir):
         """Assesses assembly compared to reference.
 
@@ -125,9 +153,8 @@ class QuastWrapper:
 
         """
         if os.path.exists(output_dir):
-            logging.info("Overwriting existing output folder.") 
+            logging.info("Overwriting existing output folder.")
             shutil.rmtree(output_dir)
         logging.info("Generate report by quast:")
         cmd = "quast.py {} -r {} -o {}".format(assembly_filepath, reference_filepath, output_dir)
         subprocess.call(cmd, shell=True)
-
