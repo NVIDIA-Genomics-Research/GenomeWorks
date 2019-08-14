@@ -35,7 +35,7 @@ if [ "$GPU_TEST" == '1' ]; then
   find ${LOCAL_BUILD_DIR}/install/tests -type f -exec {} \;
 
   logger "Running ClaraGenomicsAnalysis benchmarks..."
-  ${LOCAL_BUILD_DIR}/install/benchmarks/cudapoa/multibatch
-  ${LOCAL_BUILD_DIR}/install/benchmarks/cudaaligner/singlealignment
+  ${LOCAL_BUILD_DIR}/install/benchmarks/cudapoa/benchmark_cudapoa_singlebatch
+  ${LOCAL_BUILD_DIR}/install/benchmarks/cudaaligner/benchmark_cudaaligner_singlebatch_singlealignment
 fi
 

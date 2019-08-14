@@ -18,7 +18,7 @@
 # license agreement from NVIDIA CORPORATION is strictly prohibited.
 #
 
-project(singlealignment)
+project(benchmark_cudaaligner_singlebatch_singlealignment)
 
 set(SOURCES
     main.cpp

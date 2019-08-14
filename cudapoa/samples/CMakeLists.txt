@@ -10,19 +10,16 @@
 
 project(sample_cudapoa)
 
-# Build CUDAPOA sample.
-set(MODULE sample_cudapoa)
-
 get_property(cudapoa_data_include_dir GLOBAL PROPERTY cudapoa_data_include_dir)
 include_directories(${cudapoa_data_include_dir})
 
-add_executable(${MODULE}
+add_executable(${PROJECT_NAME}
                sample_cudapoa.cpp
                )
 
-target_link_libraries(${MODULE}
+target_link_libraries(${PROJECT_NAME}
                       cudapoa
                       )
 
-install(TARGETS ${MODULE}
-            DESTINATION samples)
+install(TARGETS ${PROJECT_NAME}
+            DESTINATION samples/cudapoa)
