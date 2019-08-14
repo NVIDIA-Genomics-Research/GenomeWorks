@@ -10,11 +10,14 @@
 
 #include "ukkonen_gpu.cuh"
 #include "batched_device_matrices.cuh"
-#include <thrust/tuple.h>
+#include <claragenomics/cudaaligner/cudaaligner.hpp>
+#include <claragenomics/utils/limits.cuh>
+
 #include <limits>
 #include <cstdint>
 #include <algorithm>
 #include <cassert>
+#include <thrust/tuple.h>
 
 #define CGA_UKKONEN_MAX_THREADS_PER_BLOCK 1024
 
@@ -63,16 +66,16 @@ __launch_bounds__(CGA_UKKONEN_MAX_THREADS_PER_BLOCK) // Workaround for a registe
     if (id >= n_alignments)
         return;
 
-    constexpr nw_score_t max = std::numeric_limits<nw_score_t>::max() - 1;
+    CGA_CONSTEXPR nw_score_t max = numeric_limits<nw_score_t>::max() - 1;
 
-    int32_t m         = sequence_lengths_d[2 * id] + 1;
-    int32_t n         = sequence_lengths_d[2 * id + 1] + 1;
-    int8_t query_ins  = 2;
-    int8_t target_ins = 3;
+    int32_t m        = sequence_lengths_d[2 * id] + 1;
+    int32_t n        = sequence_lengths_d[2 * id + 1] + 1;
+    int8_t insertion = static_cast<int8_t>(AlignmentState::insertion);
+    int8_t deletion  = static_cast<int8_t>(AlignmentState::deletion);
     if (m > n)
     {
         swap(n, m);
-        swap(query_ins, target_ins);
+        swap(insertion, deletion);
     }
     int8_t* path = paths_base + id * static_cast<ptrdiff_t>(max_path_length);
     assert(p >= 0);
@@ -102,19 +105,19 @@ __launch_bounds__(CGA_UKKONEN_MAX_THREADS_PER_BLOCK) // Workaround for a registe
 
         if (left + 1 == myscore)
         {
-            r       = query_ins;
+            r       = insertion;
             myscore = left;
             --j;
         }
         else if (above + 1 == myscore)
         {
-            r       = target_ins;
+            r       = deletion;
             myscore = above;
             --i;
         }
         else
         {
-            r       = (diag == myscore ? 0 : 1);
+            r       = (diag == myscore ? static_cast<int8_t>(AlignmentState::match) : static_cast<int8_t>(AlignmentState::mismatch));
             myscore = diag;
             --i;
             --j;
@@ -124,13 +127,13 @@ __launch_bounds__(CGA_UKKONEN_MAX_THREADS_PER_BLOCK) // Workaround for a registe
     }
     while (i > 0)
     {
-        path[pos] = 1;
+        path[pos] = deletion;
         ++pos;
         --i;
     }
     while (j > 0)
     {
-        path[pos] = 2;
+        path[pos] = insertion;
         ++pos;
         --j;
     }
@@ -139,7 +142,7 @@ __launch_bounds__(CGA_UKKONEN_MAX_THREADS_PER_BLOCK) // Workaround for a registe
 
 __device__ void ukkonen_compute_score_matrix_odd(device_matrix_view<nw_score_t>& scores, int32_t kmax, int32_t k, int32_t m, int32_t n, char const* query, char const* target, int32_t max_target_query_length, int32_t p, int32_t l)
 {
-    constexpr nw_score_t max = std::numeric_limits<nw_score_t>::max() - 1;
+    CGA_CONSTEXPR nw_score_t max = numeric_limits<nw_score_t>::max() - 1;
     while (k < kmax)
     {
         int32_t const lmin = abs(2 * k + 1 - p);
@@ -159,7 +162,7 @@ __device__ void ukkonen_compute_score_matrix_odd(device_matrix_view<nw_score_t>&
 
 __device__ void ukkonen_compute_score_matrix_even(device_matrix_view<nw_score_t>& scores, int32_t kmax, int32_t k, int32_t m, int32_t n, char const* query, char const* target, int32_t max_target_query_length, int32_t p, int32_t l)
 {
-    constexpr nw_score_t max = std::numeric_limits<nw_score_t>::max() - 1;
+    CGA_CONSTEXPR nw_score_t max = numeric_limits<nw_score_t>::max() - 1;
     while (k < kmax)
     {
         int32_t const lmin = abs(2 * k - p);
@@ -179,7 +182,7 @@ __device__ void ukkonen_compute_score_matrix_even(device_matrix_view<nw_score_t>
 
 __device__ void ukkonen_init_score_matrix(device_matrix_view<nw_score_t>& scores, int32_t k, int32_t p)
 {
-    constexpr nw_score_t max = std::numeric_limits<nw_score_t>::max() - 1;
+    CGA_CONSTEXPR nw_score_t max = numeric_limits<nw_score_t>::max() - 1;
     while (k < scores.num_rows())
     {
         for (int32_t l = 0; l < scores.num_cols(); ++l)
@@ -281,11 +284,13 @@ void ukkonen_compute_score_matrix_gpu(batched_device_matrices<nw_score_t>& score
     dim3 const blocks = dim3(1, n_alignments, 1);
 
     ukkonen_compute_score_matrix<<<blocks, compute_blockdims, 0, stream>>>(score_matrices.get_device_interface(), sequences_d, sequence_lengths_d, max_target_query_length, p, max_cols);
+    CGA_CU_CHECK_ERR(cudaPeekAtLastError());
 }
 
 void ukkonen_backtrace_gpu(int8_t* paths_d, int32_t* path_lengths_d, int32_t max_path_length, batched_device_matrices<nw_score_t>& scores, int32_t const* sequence_lengths_d, int32_t n_alignments, int32_t p, cudaStream_t stream)
 {
     kernels::ukkonen_backtrace_kernel<<<n_alignments, 1, 0, stream>>>(paths_d, path_lengths_d, max_path_length, scores.get_device_interface(), sequence_lengths_d, n_alignments, p);
+    CGA_CU_CHECK_ERR(cudaPeekAtLastError());
 }
 
 void ukkonen_gpu(int8_t* paths_d, int32_t* path_lengths_d, int32_t max_path_length,

@@ -21,7 +21,7 @@ target_include_directories(utils
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 )
 
-install(TARGETS utils 
+install(TARGETS utils
     EXPORT utils
     DESTINATION lib
     INCLUDES DESTINATION include

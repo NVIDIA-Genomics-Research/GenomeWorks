@@ -1,3 +1,13 @@
+#
+# Copyright (c) 2019, NVIDIA CORPORATION.  All rights reserved.
+#
+# NVIDIA CORPORATION and its licensors retain all intellectual property
+# and proprietary rights in and to this software, related documentation
+# and any modifications thereto.  Any use, reproduction, disclosure or
+# distribution of this software and related documentation without an express
+# license agreement from NVIDIA CORPORATION is strictly prohibited.
+#
+
 """
 Functions for FASTA file I/O
 """
@@ -25,7 +35,7 @@ def write_fasta(seqs, filepath, gzip_compressed=False):
             else:
                 read = s[1]
 
-            lines = [read[n*80:(n+1)*80] for n in range((len(read)//80)+1)]
+            lines = [read[n * 80:(n + 1) * 80] for n in range((len(read) // 80) + 1)]
 
             fasta_string += "\n".join(lines)
             if fasta_string[-1] != "\n":

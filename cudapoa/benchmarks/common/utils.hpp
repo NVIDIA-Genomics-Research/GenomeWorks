@@ -14,6 +14,7 @@
 #include <vector>
 #include <sstream>
 #include <fstream>
+#include <cassert>
 
 namespace claragenomics
 {

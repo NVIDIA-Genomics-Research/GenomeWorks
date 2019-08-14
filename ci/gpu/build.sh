@@ -49,4 +49,8 @@ CMAKE_COMMON_VARIABLES="-DCMAKE_BUILD_TYPE=Debug"
 source ci/common/build-test-sdk.sh ${WORKSPACE} ${CMAKE_COMMON_VARIABLES} ${PARALLEL_LEVEL} ${TEST_ON_GPU}
 
 cd ${WORKSPACE}
+if [ "${TEST_PYCLARAGENOMICSANALYSIS}" == '1' ]; then
+    source ci/common/test-pyclaragenomics.sh $WORKSPACE/pyclaragenomics
+fi
+
 rm -rf ${WORKSPACE}/build

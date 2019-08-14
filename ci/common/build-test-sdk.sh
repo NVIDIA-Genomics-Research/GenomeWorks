@@ -22,11 +22,9 @@ mkdir --parents ${LOCAL_BUILD_DIR}
 cd ${LOCAL_BUILD_DIR}
 
 # configure
-cmake $CMAKE_COMMON_VARIABLES ${CMAKE_BUILD_GPU} -Dcga_enable_tests=ON -Dcga_enable_benchmarks=ON -DCMAKE_INSTALL_PREFIX=${LOCAL_BUILD_DIR}/install ..
-# Format files
-make check-format
+cmake .. $CMAKE_COMMON_VARIABLES ${CMAKE_BUILD_GPU} -Dcga_enable_tests=ON -Dcga_enable_benchmarks=ON -DCMAKE_INSTALL_PREFIX=${LOCAL_BUILD_DIR}/install -GNinja
 # build
-make -j${BUILD_THREADS} VERBOSE=1 all docs install
+ninja all docs install
 
 if [ "$GPU_TEST" == '1' ]; then
   logger "GPU config..."
@@ -37,7 +35,7 @@ if [ "$GPU_TEST" == '1' ]; then
   find ${LOCAL_BUILD_DIR}/install/tests -type f -exec {} \;
 
   logger "Running ClaraGenomicsAnalysis benchmarks..."
-  ${LOCAL_BUILD_DIR}/install/benchmarks/cudapoa/multibatch
-  ${LOCAL_BUILD_DIR}/install/benchmarks/cudaaligner/singlealignment
+  ${LOCAL_BUILD_DIR}/install/benchmarks/cudapoa/benchmark_cudapoa_singlebatch
+  ${LOCAL_BUILD_DIR}/install/benchmarks/cudaaligner/benchmark_cudaaligner_singlebatch_singlealignment
 fi
 

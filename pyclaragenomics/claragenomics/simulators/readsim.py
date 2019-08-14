@@ -1,3 +1,13 @@
+#
+# Copyright (c) 2019, NVIDIA CORPORATION.  All rights reserved.
+#
+# NVIDIA CORPORATION and its licensors retain all intellectual property
+# and proprietary rights in and to this software, related documentation
+# and any modifications thereto.  Any use, reproduction, disclosure or
+# distribution of this software and related documentation without an express
+# license agreement from NVIDIA CORPORATION is strictly prohibited.
+#
+
 """Classes to simulate reads from a known reference, mimicking sequencing errors"""
 import abc
 import random
@@ -13,6 +23,7 @@ class ReadSimulator:
 
 class NoisyReadSimulator(ReadSimulator):
     """Simulate sequencing errors in reads"""
+
     def __init__(self):
         pass
 
@@ -125,7 +136,7 @@ class NoisyReadSimulator(ReadSimulator):
         pos = random.randint(0, reference_length - 1)
 
         def clamp(x):
-            return max(0, min(x, reference_length-1))
+            return max(0, min(x, reference_length - 1))
 
         start = clamp(pos - median_length // 2)
         end = clamp(pos + median_length // 2) + median_length % 2

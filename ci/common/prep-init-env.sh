@@ -15,9 +15,6 @@
 logger "Get env..."
 env
 
-logger "Activate conda env..."
-source activate gdf
-
 logger "Check versions..."
 gcc --version
 g++ --version
@@ -33,6 +30,7 @@ conda install \
     -c bioconda \
     doxygen \
     clang-format \
+    ninja \
     minimap2 \
     miniasm \
     racon

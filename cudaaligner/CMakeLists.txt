@@ -8,27 +8,36 @@
 # license agreement from NVIDIA CORPORATION is strictly prohibited.
 #
 
-cmake_minimum_required(VERSION 3.10.2)
 project(cudaaligner)
 
-find_package(CUDA 9.0 QUIET REQUIRED)
-
-if(NOT ${CUDA_FOUND})
-    message(FATAL_ERROR "CUDA not detected on system. Please install")
+# Project specific NVCC flags
+if((CUDA_VERSION_MAJOR GREATER 10) OR (CUDA_VERSION_MAJOR EQUAL 10 AND CUDA_VERSION_MINOR GREATER 0))
+set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -std=c++14 --expt-relaxed-constexpr")
 else()
-    message(STATUS "Using CUDA ${CUDA_VERSION} from ${CUDA_TOOLKIT_ROOT_DIR}")
-    set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -lineinfo --expt-relaxed-constexpr -use_fast_math -Xcompiler -Wno-pedantic,-Wall -std=c++14")
+set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -std=c++14")
 endif()
 
-cuda_add_library(cudaaligner STATIC 
+get_property(cga_library_type GLOBAL PROPERTY cga_library_type)
+cuda_add_library(cudaaligner ${cga_library_type}
     src/cudaaligner.cpp
     src/aligner.cpp
     src/alignment_impl.cpp
     src/aligner_global.cpp
+    src/aligner_global_ukkonen.cpp
+    src/aligner_global_myers.cpp
+    src/aligner_global_hirschberg_myers.cpp
+    src/needleman_wunsch_cpu.cpp
     src/ukkonen_gpu.cu
+    src/myers_gpu.cu
+    src/hirschberg_myers_gpu.cu
     )
 
-target_link_libraries(cudaaligner cudautils logging utils)
+add_library(cudaaligner_internal INTERFACE)
+target_include_directories(cudaaligner_internal INTERFACE
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
+
+target_link_libraries(cudaaligner utils logging)
 
 target_compile_options(cudaaligner PRIVATE -Werror -Wall -Wextra -march=native)
 

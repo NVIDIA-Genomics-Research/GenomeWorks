@@ -9,7 +9,8 @@
 */
 
 #include "alignment_impl.hpp"
-#include <utils/signed_integer_utils.hpp>
+
+#include <claragenomics/utils/signed_integer_utils.hpp>
 
 namespace claragenomics
 {
@@ -17,9 +18,9 @@ namespace claragenomics
 namespace cudaaligner
 {
 
-AlignmentImpl::AlignmentImpl(const char* query, int32_t query_length, const char* subject, int32_t subject_length)
+AlignmentImpl::AlignmentImpl(const char* query, int32_t query_length, const char* target, int32_t target_length)
     : query_(query, query + throw_on_negative(query_length, "query_length has to be non-negative."))
-    , subject_(subject, subject + throw_on_negative(subject_length, "subject_length has to be non-negative."))
+    , target_(target, target + throw_on_negative(target_length, "target_length has to be non-negative."))
     , status_(StatusType::uninitialized)
     , type_(AlignmentType::unset)
 {
@@ -31,16 +32,16 @@ AlignmentImpl::~AlignmentImpl()
     // Nothing to destroy right now.
 }
 
-std::string AlignmentImpl::alignment_state_to_cigar_state(AlignmentState s) const
+char AlignmentImpl::alignment_state_to_cigar_state(AlignmentState s) const
 {
     // CIGAR string format from http://bioinformatics.cvr.ac.uk/blog/tag/cigar-string/
     // Implementing a reduced set of CIGAR states, covering only the M, D and I characters.
     switch (s)
     {
     case AlignmentState::match:
-    case AlignmentState::mismatch: return "M";
-    case AlignmentState::insertion: return "D";
-    case AlignmentState::deletion: return "I";
+    case AlignmentState::mismatch: return 'M';
+    case AlignmentState::insertion: return 'I';
+    case AlignmentState::deletion: return 'D';
     default: throw std::runtime_error("Unrecognized alignment state.");
     }
 }
@@ -52,12 +53,12 @@ std::string AlignmentImpl::convert_to_cigar() const
         return std::string("");
     }
 
-    std::string cigar            = "";
-    std::string last_cigar_state = alignment_state_to_cigar_state(alignment_[0]);
-    int32_t count_last_state     = 0;
+    std::string cigar        = "";
+    char last_cigar_state    = alignment_state_to_cigar_state(alignment_[0]);
+    int32_t count_last_state = 0;
     for (auto const& x : alignment_)
     {
-        std::string cur_cigar_state = alignment_state_to_cigar_state(x);
+        const char cur_cigar_state = alignment_state_to_cigar_state(x);
         if (cur_cigar_state == last_cigar_state)
         {
             count_last_state++;
@@ -75,25 +76,25 @@ std::string AlignmentImpl::convert_to_cigar() const
 
 FormattedAlignment AlignmentImpl::format_alignment() const
 {
-    std::string t_str = "";
-    int64_t t_pos     = 0;
-    std::string q_str = "";
-    int64_t q_pos     = 0;
+    int64_t t_pos = 0;
+    int64_t q_pos = 0;
+    std::string t_str;
+    std::string q_str;
     for (auto const& x : alignment_)
     {
         switch (x)
         {
         case AlignmentState::match:
         case AlignmentState::mismatch:
-            t_str += subject_[t_pos++];
-            q_str += query_[q_pos++];
-            break;
-        case AlignmentState::insertion:
-            t_str += "-";
+            t_str += target_[t_pos++];
             q_str += query_[q_pos++];
             break;
         case AlignmentState::deletion:
-            t_str += subject_[t_pos++];
+            t_str += "-";
+            q_str += query_[q_pos++];
+            break;
+        case AlignmentState::insertion:
+            t_str += target_[t_pos++];
             q_str += "-";
             break;
         default:
@@ -101,8 +102,7 @@ FormattedAlignment AlignmentImpl::format_alignment() const
         }
     }
 
-    FormattedAlignment output(q_str, t_str);
-    return output;
+    return {q_str, t_str};
 }
 } // namespace cudaaligner
 } // namespace claragenomics

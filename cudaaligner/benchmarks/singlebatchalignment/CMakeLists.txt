@@ -18,14 +18,14 @@
 # license agreement from NVIDIA CORPORATION is strictly prohibited.
 #
 
-cmake_minimum_required(VERSION 3.10.2)
-project(singlebatchalignment)
+project(benchmark_cudaaligner_singlebatch_multialignment)
 
 set(SOURCES
     main.cpp
     )
 
 set(LIBS
+    cudaaligner_internal
     cudaaligner
     utils)
 

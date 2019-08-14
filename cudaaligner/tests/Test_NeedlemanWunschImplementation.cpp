@@ -8,17 +8,19 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-#include "gtest/gtest.h"
 #include "../src/needleman_wunsch_cpu.hpp"
 #include "../src/ukkonen_cpu.hpp"
 #include "../src/ukkonen_gpu.cuh"
-#include "../src/device_storage.cuh"
 #include "../src/batched_device_matrices.cuh"
-#include <utils/signed_integer_utils.hpp>
-#include <utils/genomeutils.hpp>
+
+#include <claragenomics/utils/signed_integer_utils.hpp>
+#include <claragenomics/utils/genomeutils.hpp>
+#include <claragenomics/utils/device_buffer.cuh>
+
 #include <cuda_runtime_api.h>
 #include <random>
 #include <algorithm>
+#include "gtest/gtest.h"
 
 namespace claragenomics
 {
@@ -108,7 +110,7 @@ public:
                 if (j - i >= -p && j - i <= std::abs(n - m) + p)
                 {
                     int32_t k, l;
-                    std::tie(k, l) = nw_cpu::to_band_indices(i, j, p);
+                    std::tie(k, l) = to_band_indices(i, j, p);
                     ASSERT_EQ(banded_matrix(k, l), regular_matrix_ref(i, j)) << "(" << k << "," << l << ")d=(" << i << "," << j << ") -- " << banded_matrix(k, l) << " != " << regular_matrix_ref(i, j);
                 }
             }
@@ -151,19 +153,19 @@ matrix<int> ukkonen_gpu_build_score_matrix(const std::string& target, const std:
     int32_t max_length_difference = std::abs(target_length - query_length);
 
     auto score_matrices = std::make_unique<batched_device_matrices<nw_score_t>>(
-        1, ukkonen_max_score_matrix_size(query_length, target_length, max_length_difference, ukkonen_p), nullptr, 0);
+        1, ukkonen_max_score_matrix_size(query_length, target_length, max_length_difference, ukkonen_p), nullptr);
 
-    device_storage<int8_t> path_d(max_path_length, 0);
+    device_buffer<int8_t> path_d(max_path_length);
     std::vector<int8_t> path_h(max_path_length);
 
-    device_storage<int32_t> path_length_d(1, 0);
+    device_buffer<int32_t> path_length_d(1);
     std::vector<int32_t> path_length_h(1);
 
-    device_storage<char> sequences_d(2 * max_alignment_length, 0);
+    device_buffer<char> sequences_d(2 * max_alignment_length);
     CGA_CU_CHECK_ERR(cudaMemcpy(sequences_d.data(), query.c_str(), sizeof(char) * query_length, cudaMemcpyHostToDevice));
     CGA_CU_CHECK_ERR(cudaMemcpy(sequences_d.data() + max_alignment_length, target.c_str(), sizeof(char) * target_length, cudaMemcpyHostToDevice));
 
-    device_storage<int32_t> sequence_lengths_d(2, 0);
+    device_buffer<int32_t> sequence_lengths_d(2);
     CGA_CU_CHECK_ERR(cudaMemcpy(sequence_lengths_d.data(), &query_length, sizeof(int32_t) * 1, cudaMemcpyHostToDevice));
     CGA_CU_CHECK_ERR(cudaMemcpy(sequence_lengths_d.data() + 1, &target_length, sizeof(int32_t) * 1, cudaMemcpyHostToDevice));
 
@@ -187,8 +189,8 @@ matrix<int> ukkonen_gpu_build_score_matrix(const std::string& target, const std:
 
 TEST_P(AlignerImplementation, UkkonenVsNaiveScoringMatrix)
 {
-    matrix<int> u = nw_cpu::ukkonen_build_score_matrix(param_.target, param_.query, param_.p);
-    matrix<int> r = nw_cpu::needleman_wunsch_build_score_matrix_naive(param_.target, param_.query);
+    matrix<int> u = ukkonen_build_score_matrix(param_.target, param_.query, param_.p);
+    matrix<int> r = needleman_wunsch_build_score_matrix_naive(param_.target, param_.query);
 
     compare_banded_score_matrix(r, u, param_.p);
 }
@@ -196,7 +198,7 @@ TEST_P(AlignerImplementation, UkkonenVsNaiveScoringMatrix)
 TEST_P(AlignerImplementation, UkkonenGpuVsUkkonenCpuScoringMatrix)
 {
     matrix<int> u = ukkonen_gpu_build_score_matrix(param_.target, param_.query, param_.p);
-    matrix<int> r = nw_cpu::ukkonen_build_score_matrix(param_.target, param_.query, param_.p);
+    matrix<int> r = ukkonen_build_score_matrix(param_.target, param_.query, param_.p);
     int const m   = param_.query.length() + 1;
     int const n   = param_.target.length() + 1;
     int const p   = param_.p;
@@ -212,9 +214,11 @@ TEST_P(AlignerImplementation, UkkonenGpuVsUkkonenCpuScoringMatrix)
             if (j - i >= -p && j - i <= n - m + p)
             {
                 int k, l;
-                std::tie(k, l) = nw_cpu::to_band_indices(i, j, p);
+                std::tie(k, l) = to_band_indices(i, j, p);
                 if (u(k, l) != r(k, l))
+                {
                     ASSERT_EQ(u(k, l), r(k, l)) << "(" << k << "," << l << ")d[=(" << i << "," << j << ")] -- " << u(k, l) << " != " << r(k, l) << std::endl;
+                }
             }
         }
 }
@@ -229,19 +233,19 @@ std::vector<int8_t> run_ukkonen_gpu(const std::string& target, const std::string
     int32_t max_length_difference = std::abs(target_length - query_length);
 
     auto score_matrices = std::make_unique<batched_device_matrices<nw_score_t>>(
-        1, ukkonen_max_score_matrix_size(query_length, target_length, max_length_difference, ukkonen_p), nullptr, 0);
+        1, ukkonen_max_score_matrix_size(query_length, target_length, max_length_difference, ukkonen_p), nullptr);
 
-    device_storage<int8_t> path_d(max_path_length, 0);
+    device_buffer<int8_t> path_d(max_path_length);
     std::vector<int8_t> path_h(max_path_length);
 
-    device_storage<int32_t> path_length_d(1, 0);
+    device_buffer<int32_t> path_length_d(1);
     std::vector<int32_t> path_length_h(1);
 
-    device_storage<char> sequences_d(2 * max_alignment_length, 0);
+    device_buffer<char> sequences_d(2 * max_alignment_length);
     CGA_CU_CHECK_ERR(cudaMemcpy(sequences_d.data(), query.c_str(), sizeof(char) * query_length, cudaMemcpyHostToDevice));
     CGA_CU_CHECK_ERR(cudaMemcpy(sequences_d.data() + max_alignment_length, target.c_str(), sizeof(char) * target_length, cudaMemcpyHostToDevice));
 
-    device_storage<int32_t> sequence_lengths_d(2, 0);
+    device_buffer<int32_t> sequence_lengths_d(2);
     CGA_CU_CHECK_ERR(cudaMemcpy(sequence_lengths_d.data(), &query_length, sizeof(int32_t) * 1, cudaMemcpyHostToDevice));
     CGA_CU_CHECK_ERR(cudaMemcpy(sequence_lengths_d.data() + 1, &target_length, sizeof(int32_t) * 1, cudaMemcpyHostToDevice));
 
@@ -271,7 +275,7 @@ std::vector<int8_t> run_ukkonen_gpu(const std::string& target, const std::string
 TEST_P(AlignerImplementation, UkkonenCpuFullVsUkkonenGpuFull)
 {
     int32_t const p            = 1;
-    std::vector<int8_t> cpu_bt = nw_cpu::ukkonen_cpu(param_.target, param_.query, p);
+    std::vector<int8_t> cpu_bt = ukkonen_cpu(param_.target, param_.query, p);
     std::vector<int8_t> gpu_bt = run_ukkonen_gpu(param_.target, param_.query, p);
 
     compare_backtrace(cpu_bt, gpu_bt);

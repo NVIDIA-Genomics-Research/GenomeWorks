@@ -18,8 +18,7 @@
 # license agreement from NVIDIA CORPORATION is strictly prohibited.
 #
 
-cmake_minimum_required(VERSION 3.10.2)
-project(multibatch)
+project(benchmark_cudapoa_multibatch)
 
 set(SOURCES
     main.cpp

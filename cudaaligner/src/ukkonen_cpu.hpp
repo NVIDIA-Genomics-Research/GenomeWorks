@@ -11,17 +11,19 @@
 #pragma once
 
 #include "matrix_cpu.hpp"
-#include "needleman_wunsch_cpu.hpp"
+
+#include <claragenomics/utils/mathutils.hpp>
+#include <claragenomics/cudaaligner/cudaaligner.hpp>
+
 #include <limits>
 #include <cassert>
+#include <tuple>
+#include <algorithm>
 
 namespace claragenomics
 {
 
 namespace cudaaligner
-{
-
-namespace nw_cpu
 {
 
 std::tuple<int, int> to_band_indices(int i, int j, int p)
@@ -72,19 +74,19 @@ std::vector<int8_t> ukkonen_backtrace(matrix<int> const& scores, int n, int m, i
         int const left  = k < 0 || k >= scores.num_rows() || l < 0 || l >= scores.num_cols() ? max : scores(k, l);
         if (left + 1 == myscore)
         {
-            r       = 2;
+            r       = static_cast<int8_t>(AlignmentState::insertion);
             myscore = left;
             --j;
         }
         else if (above + 1 == myscore)
         {
-            r       = 3;
+            r       = static_cast<int8_t>(AlignmentState::deletion);
             myscore = above;
             --i;
         }
         else
         {
-            r       = (diag == myscore ? 0 : 1);
+            r       = (diag == myscore ? static_cast<int8_t>(AlignmentState::match) : static_cast<int8_t>(AlignmentState::mismatch));
             myscore = diag;
             --i;
             --j;
@@ -93,15 +95,15 @@ std::vector<int8_t> ukkonen_backtrace(matrix<int> const& scores, int n, int m, i
     }
     while (i > 0)
     {
-        res.push_back(1);
+        res.push_back(static_cast<int8_t>(AlignmentState::deletion));
         --i;
     }
     while (j > 0)
     {
-        res.push_back(2);
+        res.push_back(static_cast<int8_t>(AlignmentState::insertion));
         --j;
     }
-    reverse(res.begin(), res.end());
+    std::reverse(res.begin(), res.end());
     return res;
 }
 
@@ -240,9 +242,9 @@ std::vector<int8_t> ukkonen_cpu(std::string const& target, std::string const& qu
     int const m        = query.size() + 1;
     matrix<int> scores = ukkonen_build_score_matrix(target, query, p);
     std::vector<int8_t> result;
-    result = nw_cpu::ukkonen_backtrace(scores, n, m, p);
+    result = ukkonen_backtrace(scores, n, m, p);
     return result;
 }
-} // namespace nw_cpu
+
 } // namespace cudaaligner
 } // namespace claragenomics

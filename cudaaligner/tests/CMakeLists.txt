@@ -8,14 +8,17 @@
 # license agreement from NVIDIA CORPORATION is strictly prohibited.
 #
 
-cmake_minimum_required(VERSION 3.10.2)
 project(cudaalignertests)
 
 set(SOURCES
     main.cpp
+    Test_Misc.cpp
     Test_AlignmentImpl.cpp
     Test_AlignerGlobal.cpp
-    Test_NeedlemanWunschImplementation.cpp)
+    Test_MyersAlgorithm.cpp
+    Test_HirschbergMyers.cu
+    Test_NeedlemanWunschImplementation.cpp
+    )
 
 set(LIBS
     cudaaligner

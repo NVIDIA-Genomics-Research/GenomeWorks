@@ -10,20 +10,22 @@
 
 #pragma once
 
-#include <cudautils/cudautils.hpp>
+#include "matrix_cpu.hpp"
+
+#include <claragenomics/utils/cudautils.hpp>
+#include <claragenomics/utils/device_buffer.cuh>
+
 #include <tuple>
 #include <cassert>
-#include "device_storage.cuh"
-#include "matrix_cpu.hpp"
 
 namespace claragenomics
 {
 namespace cudaaligner
 {
 
-__device__ inline bool error(int t)
+__device__ inline bool error(int32_t x, int32_t y)
 {
-    printf("assert: %d", t);
+    printf("assert: x=%d, y=%d\n", x, y);
     return false;
 }
 
@@ -38,18 +40,18 @@ public:
 
     __device__ inline T const& operator()(int32_t i, int32_t j) const
     {
-        assert(0 <= i || error(i));
-        assert(i < n_rows_ || error(i));
-        assert(0 <= j || error(j));
-        assert(j < n_cols_ || error(j));
+        assert(0 <= i || error(0, i));
+        assert(i < n_rows_ || error(i, n_rows_));
+        assert(0 <= j || error(0, j));
+        assert(j < n_cols_ || error(j, n_cols_));
         return data_[i + n_rows_ * j];
     }
     __device__ inline T& operator()(int32_t i, int32_t j)
     {
-        assert(0 <= i || error(i));
-        assert(i < n_rows_ || error(i));
-        assert(0 <= j || error(j));
-        assert(j < n_cols_ || error(j));
+        assert(0 <= i || error(0, i));
+        assert(i < n_rows_ || error(i, n_rows_));
+        assert(0 <= j || error(0, j));
+        assert(j < n_cols_ || error(j, n_cols_));
         return data_[i + n_rows_ * j];
     }
     __device__ inline int32_t num_rows() const
@@ -81,7 +83,7 @@ public:
         __device__ device_matrix_view<T> get_matrix_view(int32_t id, int32_t n_rows, int32_t n_cols)
         {
             assert(id < n_matrices_);
-            assert(n_rows * n_cols <= max_elements_per_matrix_);
+            assert(n_rows * n_cols <= max_elements_per_matrix_ || error(n_rows * n_cols, max_elements_per_matrix_));
             if (n_rows * n_cols > max_elements_per_matrix_)
             {
                 n_rows = 0;
@@ -94,19 +96,22 @@ public:
             return storage_ + id * static_cast<ptrdiff_t>(max_elements_per_matrix_);
         }
 
+        __device__ inline int32_t get_max_elements_per_matrix() const
+        {
+            return max_elements_per_matrix_;
+        }
+
     private:
         T* storage_;
         int32_t max_elements_per_matrix_;
         int32_t n_matrices_;
     };
 
-    batched_device_matrices(int32_t n_matrices, int32_t max_elements_per_matrix, cudaStream_t stream, int32_t device_id)
-        : storage_(static_cast<size_t>(n_matrices) * static_cast<size_t>(max_elements_per_matrix), device_id)
+    batched_device_matrices(int32_t n_matrices, int32_t max_elements_per_matrix, cudaStream_t stream)
+        : storage_(static_cast<size_t>(n_matrices) * static_cast<size_t>(max_elements_per_matrix))
         , max_elements_per_matrix_(max_elements_per_matrix)
         , n_matrices_(n_matrices)
-        , device_id_(device_id)
     {
-        CGA_CU_CHECK_ERR(cudaSetDevice(device_id_));
         CGA_CU_CHECK_ERR(cudaMalloc(reinterpret_cast<void**>(&dev_), sizeof(device_interface)));
         CGA_CU_CHECK_ERR(cudaMemsetAsync(storage_.data(), 0, storage_.size() * sizeof(T), stream));
         device_interface tmp(storage_.data(), n_matrices_, max_elements_per_matrix_);
@@ -116,8 +121,7 @@ public:
 
     ~batched_device_matrices()
     {
-        CGA_CU_CHECK_ERR(cudaSetDevice(device_id_));
-        CGA_CU_CHECK_ERR(cudaFree(dev_));
+        cudaFree(dev_);
     }
 
     device_interface* get_device_interface()
@@ -143,11 +147,10 @@ public:
     }
 
 private:
-    device_storage<T> storage_;
+    device_buffer<T> storage_;
     device_interface* dev_ = nullptr;
     int32_t max_elements_per_matrix_;
     int32_t n_matrices_;
-    int32_t device_id_;
 };
 
 } // end namespace cudaaligner
