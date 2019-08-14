@@ -8,13 +8,16 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
+#include "aligner_global_ukkonen.hpp"
+#include "aligner_global_myers.hpp"
+
+#include <claragenomics/utils/genomeutils.hpp>
+#include <claragenomics/utils/cudautils.hpp>
+#include <claragenomics/cudaaligner/aligner.hpp>
+
 #include <benchmark/benchmark.h>
 #include <cuda_runtime_api.h>
 #include <random>
-
-#include "utils/genomeutils.hpp"
-#include "cudautils/cudautils.hpp"
-#include "cudaaligner/aligner.hpp"
 
 namespace claragenomics
 {
@@ -22,43 +25,61 @@ namespace claragenomics
 namespace cudaaligner
 {
 
+class CudaStream
+{
+public:
+    CudaStream()
+    {
+        CGA_CU_CHECK_ERR(cudaStreamCreate(&s_));
+    }
+
+    ~CudaStream()
+    {
+        CGA_CU_CHECK_ERR(cudaStreamDestroy(s_));
+    }
+
+    inline cudaStream_t& get()
+    {
+        return s_;
+    }
+
+private:
+    cudaStream_t s_ = nullptr;
+};
+
+template <typename AlignerT>
 static void BM_SingleBatchAlignment(benchmark::State& state)
 {
+    CudaStream stream;
     int32_t alignments_per_batch = state.range(0);
     int32_t genome_size          = state.range(1);
 
-    // Total memory needed for benchmark
-    // TODO: Get GPU memory needed for alignment from Aligner object
-    const size_t mem_per_alignment = genome_size * 3 * 1024; // 3 KB per unit, emperically calculated.
-    const size_t total_mem         = mem_per_alignment * alignments_per_batch;
-
-    // Query free total and free GPU memory.
-    size_t free, total;
-    CGA_CU_CHECK_ERR(cudaMemGetInfo(&free, &total));
-
-    if (total_mem > free)
-    {
-        state.SkipWithError("Not enough available memory for config, skipping");
-    }
-
+    std::unique_ptr<Aligner> aligner;
     // Create aligner object
-    std::unique_ptr<Aligner> aligner = create_aligner(genome_size,
-                                                      genome_size,
-                                                      alignments_per_batch,
-                                                      AlignmentType::global,
-                                                      0);
-    aligner->set_cuda_stream(0);
-
-    // Generate random sequences
-    std::minstd_rand rng(1);
-    for (int32_t i = 0; i < alignments_per_batch; i++)
+    try
     {
-        // TODO: generate genomes with indels as well
-        std::string genome_1 = claragenomics::genomeutils::generate_random_genome(genome_size, rng);
-        std::string genome_2 = claragenomics::genomeutils::generate_random_genome(genome_size, rng);
+        aligner = std::make_unique<AlignerT>(
+            genome_size,
+            genome_size,
+            alignments_per_batch,
+            stream.get(),
+            0);
 
-        aligner->add_alignment(genome_1.c_str(), genome_1.length(),
-                               genome_2.c_str(), genome_2.length());
+        // Generate random sequences
+        std::minstd_rand rng(1);
+        for (int32_t i = 0; i < alignments_per_batch; i++)
+        {
+            // TODO: generate genomes with indels as well
+            std::string genome_1 = claragenomics::genomeutils::generate_random_genome(genome_size, rng);
+            std::string genome_2 = claragenomics::genomeutils::generate_random_genome(genome_size, rng);
+
+            aligner->add_alignment(genome_1.c_str(), genome_1.length(),
+                                   genome_2.c_str(), genome_2.length());
+        }
+    }
+    catch (device_memory_allocation_exception const& e)
+    {
+        state.SkipWithError("Could not allocate enough memory for config, skipping");
     }
 
     // Run alignment repeatedly
@@ -70,7 +91,12 @@ static void BM_SingleBatchAlignment(benchmark::State& state)
 }
 
 // Register the function as a benchmark
-BENCHMARK(BM_SingleBatchAlignment)
+BENCHMARK_TEMPLATE(BM_SingleBatchAlignment, AlignerGlobalUkkonen)
+    ->Unit(benchmark::kMillisecond)
+    ->RangeMultiplier(2)
+    ->Ranges({{32, 512}, {500, 10000}});
+
+BENCHMARK_TEMPLATE(BM_SingleBatchAlignment, AlignerGlobalMyers)
     ->Unit(benchmark::kMillisecond)
     ->RangeMultiplier(2)
     ->Ranges({{32, 512}, {500, 10000}});

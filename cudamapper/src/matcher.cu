@@ -11,7 +11,7 @@
 #include <algorithm>
 #include <memory>
 #include "matcher.hpp"
-#include <cudautils/cudautils.hpp>
+#include <claragenomics/utils/cudautils.hpp>
 
 namespace claragenomics {
 

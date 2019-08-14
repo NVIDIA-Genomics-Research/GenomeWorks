@@ -8,34 +8,24 @@
 # license agreement from NVIDIA CORPORATION is strictly prohibited.
 #
 
-cmake_minimum_required(VERSION 3.10.2)
 project(cudapoa)
 
 # Process data subdirectory first
 add_subdirectory(data)
 
-find_package(CUDA 9.0 QUIET REQUIRED)
+# Project specific NVCC flags
+set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -std=c++11")
 
-if(NOT ${CUDA_FOUND})
-    message(FATAL_ERROR "CUDA not detected on system. Please install")
-else()
-    message(STATUS "Using CUDA ${CUDA_VERSION} from ${CUDA_TOOLKIT_ROOT_DIR}")
-    set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -std=c++11 -lineinfo -use_fast_math -Xcompiler -Wall,-Wno-pedantic")
-endif()
-
-cuda_add_library(cudapoa STATIC 
+get_property(cga_library_type GLOBAL PROPERTY cga_library_type)
+cuda_add_library(cudapoa ${cga_library_type}
     src/cudapoa.cpp
     src/cudapoa_kernels.cu
-    src/cudapoa_topsort.cu
-    src/cudapoa_add_alignment.cu
-    src/cudapoa_nw.cu
-    src/cudapoa_nw_banded.cu
     src/batch.cpp
     src/cudapoa_batch.cpp
     src/allocate_block.cpp
     )
 
-target_link_libraries(cudapoa cudautils logging utils)
+target_link_libraries(cudapoa utils logging)
 
 target_compile_options(cudapoa PRIVATE -Werror -Wall -Wextra -march=native)
 
@@ -55,10 +45,6 @@ target_include_directories(cudapoa
 
 add_doxygen_source_dir(${CMAKE_CURRENT_SOURCE_DIR}/include/cudapoa)
 
-# Add tests folder
-add_subdirectory(tests)
-add_subdirectory(benchmarks)
-
 install(TARGETS cudapoa
     COMPONENT logging
     EXPORT cudapoa
@@ -67,6 +53,12 @@ install(TARGETS cudapoa
 )
 install(DIRECTORY include/ DESTINATION include)
 install(EXPORT cudapoa DESTINATION cmake)
+
+# Add other folders.
+add_subdirectory(tests)
+add_subdirectory(benchmarks)
+add_subdirectory(samples)
+
 
 # Add auto formatting.
 cga_enable_auto_formatting("${CMAKE_CURRENT_SOURCE_DIR}")

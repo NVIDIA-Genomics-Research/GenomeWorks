@@ -8,11 +8,11 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-#include <benchmark/benchmark.h>
+#include <claragenomics/utils/genomeutils.hpp>
+#include <claragenomics/utils/cudautils.hpp>
+#include <claragenomics/cudaaligner/aligner.hpp>
 
-#include "utils/genomeutils.hpp"
-#include "cudautils/cudautils.hpp"
-#include "cudaaligner/aligner.hpp"
+#include <benchmark/benchmark.h>
 
 namespace claragenomics
 {
@@ -34,8 +34,8 @@ static void BM_SingleAlignment(benchmark::State& state)
                                                       genome_size,
                                                       1,
                                                       AlignmentType::global,
+                                                      0,
                                                       0);
-    aligner->set_cuda_stream(0);
     aligner->add_alignment(genome_1.c_str(), genome_1.length(),
                            genome_2.c_str(), genome_2.length());
 

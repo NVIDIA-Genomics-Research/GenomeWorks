@@ -10,6 +10,7 @@
 """Functions and tools for calculating the accuracy of overlap detection"""
 
 import argparse
+from claragenomics.io import pafio
 
 
 def evaluate_paf(truth_paf_filepath, test_paf_filepath, pos_tolerance=500):
@@ -21,53 +22,49 @@ def evaluate_paf(truth_paf_filepath, test_paf_filepath, pos_tolerance=500):
 
     Returns: 3-tupe consisting of (rue_positive_count, false_positive_count, false_negative_count).
     """
-    with open(truth_paf_filepath) as f:
-        truth_paf = f.readlines()
-
-    with open(test_paf_filepath) as f:
-        test_paf = f.readlines()
 
     # Put the truth paf into a dictionary:
     truth_overlaps = {}
 
-    for paf_entry in truth_paf:
-        overlap = paf_entry.split('\t')
-        key = overlap[0] + overlap[5]  # Unique key for this overlap
-        truth_overlaps[key] = (overlap[2], overlap[3], overlap[7], overlap[8])
+    for truth_overlap in pafio.read_paf(truth_paf_filepath):
+        key = truth_overlap.query_sequence_name + truth_overlap.target_sequence_name
+        truth_overlaps[key] = truth_overlap
 
     true_positive_count = 0
     false_positive_count = 0
     false_negative_count = 0
 
-    for paf_entry in test_paf:
-        overlap = paf_entry.split('\t')
+    for test_overlap in pafio.read_paf(test_paf_filepath):
+        query_start_0 = test_overlap.query_start
+        query_end_0 = test_overlap.query_end
+        target_start_0 = test_overlap.target_start
+        target_end_0 = test_overlap.target_end
 
-        query_start_0 = int(overlap[2])
-        query_end_0 = int(overlap[3])
-        target_start_0 = int(overlap[7])
-        target_end_0 = int(overlap[8])
-
-        key = overlap[0] + overlap[5]  # Unique key for this overlap
-        key_reversed = overlap[5] + overlap[0]  # Unique key for this overlap, switching query and target
+        key = test_overlap.query_sequence_name + test_overlap.target_sequence_name
+        key_reversed = test_overlap.target_sequence_name + test_overlap.query_sequence_name
 
         matched = False
+        potential_match = False
         if key in truth_overlaps:
+            potential_match = True
             truth_overlap = truth_overlaps[key]
 
-            query_start_1 = int(truth_overlap[0])
-            query_end_1 = int(truth_overlap[1])
-            target_start_1 = int(truth_overlap[2])
-            target_end_1 = int(truth_overlap[3])
+            query_start_1 = truth_overlap.query_start
+            query_end_1 = truth_overlap.query_end
+            target_start_1 = truth_overlap.target_start
+            target_end_1 = truth_overlap.target_end
 
         elif key_reversed in truth_overlaps:
+            potential_match = True
             truth_overlap = truth_overlaps[key_reversed]
 
-            query_start_1 = int(truth_overlap[2])
-            query_end_1 = int(truth_overlap[3])
-            target_start_1 = int(truth_overlap[0])
-            target_end_1 = int(truth_overlap[1])
+            query_start_1 = truth_overlap.target_start
+            query_end_1 = truth_overlap.target_end
+            target_start_1 = truth_overlap.query_start
+            target_end_1 = truth_overlap.query_end
 
-        matched = abs(query_start_0 - query_start_1) < pos_tolerance and \
+        matched = potential_match and \
+            abs(query_start_0 - query_start_1) < pos_tolerance and \
             abs(query_end_0 - query_end_1) < pos_tolerance and \
             abs(target_start_0 - target_start_1) < pos_tolerance and \
             abs(target_end_0 - target_end_1) < pos_tolerance
@@ -78,9 +75,8 @@ def evaluate_paf(truth_paf_filepath, test_paf_filepath, pos_tolerance=500):
             false_positive_count += 1
 
     #  Now count the false negatives:
-    num_true_overlaps = len(truth_paf)
+    num_true_overlaps = len(truth_overlaps)
     false_negative_count = num_true_overlaps - true_positive_count
-
     return(true_positive_count, false_positive_count, false_negative_count)
 
 

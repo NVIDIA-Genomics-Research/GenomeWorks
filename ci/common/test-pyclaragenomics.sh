@@ -14,7 +14,17 @@
 ######################################
 set -e
 
-cd $1
-python3 -m pip install -r requirements.txt
-python3 setup.py install
-python3 -m pytest -s
+PYCLARAGENOMICS_DIR=$1
+cd $PYCLARAGENOMICS_DIR
+
+#Install external dependencies.
+python -m pip install -r requirements.txt
+python setup.py install
+
+# Run tests.
+cd test/
+if [ "$GPU_TEST" == '1' ]; then
+    python -m pytest -m gpu -s
+else
+    python -m pytest -m cpu -s
+fi

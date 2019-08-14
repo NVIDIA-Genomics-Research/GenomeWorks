@@ -9,7 +9,7 @@
 */
 
 #include <cudamapper/cudamapper.hpp>
-#include <logging/logging.hpp>
+#include <claragenomics/logging/logging.hpp>
 
 namespace claragenomics {
     namespace cudamapper {

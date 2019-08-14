@@ -10,9 +10,12 @@
 
 #pragma once
 
-#include "cudaaligner/aligner.hpp"
 #include "ukkonen_gpu.cuh"
 #include "device_storage.cuh"
+
+#include <claragenomics/cudaaligner/aligner.hpp>
+#include <claragenomics/utils/signed_integer_utils.hpp>
+
 #include <thrust/system/cuda/experimental/pinned_allocator.h>
 
 namespace claragenomics
@@ -21,14 +24,11 @@ namespace claragenomics
 namespace cudaaligner
 {
 
-template <typename T>
-class batched_device_matrices;
-
 class AlignerGlobal : public Aligner
 {
 public:
-    AlignerGlobal(int32_t max_query_length, int32_t max_subject_length, int32_t max_alignments, int32_t device_id);
-    virtual ~AlignerGlobal();
+    AlignerGlobal(int32_t max_query_length, int32_t max_subject_length, int32_t max_alignments, cudaStream_t stream, int32_t device_id);
+    virtual ~AlignerGlobal()            = default;
     AlignerGlobal(const AlignerGlobal&) = delete;
 
     virtual StatusType align_all() override;
@@ -44,7 +44,7 @@ public:
 
     virtual int32_t num_alignments() const
     {
-        return alignments_.size();
+        return get_size(alignments_);
     }
 
     virtual void set_cuda_stream(cudaStream_t stream) override
@@ -54,9 +54,21 @@ public:
 
     virtual void reset() override;
 
+    int32_t get_max_subject_length() const
+    {
+        return max_subject_length_;
+    }
+
+    int32_t get_max_query_length() const
+    {
+        return max_query_length_;
+    }
+
 private:
     template <typename T>
     using pinned_host_vector = std::vector<T, thrust::system::cuda::experimental::pinned_allocator<T>>;
+
+    virtual void run_alignment(int8_t* results_d, int32_t* result_lengths, int32_t max_result_length, const char* sequences_d, int32_t* sequence_lengths_d, int32_t* sequence_lengths_h, int32_t max_sequence_length, int32_t num_alignments, cudaStream_t stream) = 0;
 
     int32_t max_query_length_;
     int32_t max_subject_length_;
@@ -75,11 +87,9 @@ private:
     device_storage<int32_t> result_lengths_d_;
     pinned_host_vector<int32_t> result_lengths_h_;
 
-    std::unique_ptr<batched_device_matrices<nw_score_t>> score_matrices_;
-
     cudaStream_t stream_;
-
     int32_t device_id_;
 };
+
 } // namespace cudaaligner
 } // namespace claragenomics
