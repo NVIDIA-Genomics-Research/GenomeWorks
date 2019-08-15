@@ -12,9 +12,25 @@
 #include "index_cpu.hpp"
 
 namespace claragenomics {
+
+    std::vector<Overlap> Overlapper::filter_overlaps(const std::vector<Overlap> &overlaps) {
+        size_t  min_residues = 10;
+        std::vector<Overlap> filtered_overlaps;
+        for(auto overlap: overlaps){
+            if (overlap.num_residues_ > min_residues){
+                filtered_overlaps.push_back(overlap);
+            }
+        }
+
+        return filtered_overlaps;
+    }
+
+
     void Overlapper::print_paf(const std::vector<Overlap> &overlaps){
+        auto filtered_overlaps = filter_overlaps(overlaps);
+
         std::string relative_strand = "+";
-        for(const auto& overlap: overlaps){
+        for(const auto& overlap: filtered_overlaps){
             std::printf("%s\t%i\t%i\t%i\t%s\t%s\t%i\t%i\t%i\t%i\t%i\t%i\n",
                         overlap.query_read_name_.c_str(),
                         overlap.query_length_,

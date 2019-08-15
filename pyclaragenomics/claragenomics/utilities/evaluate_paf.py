@@ -13,7 +13,7 @@ import argparse
 from claragenomics.io import pafio
 
 
-def evaluate_paf(truth_paf_filepath, test_paf_filepath, pos_tolerance=500):
+def evaluate_paf(truth_paf_filepath, test_paf_filepath, pos_tolerance=10000):
     """Given a truth and test set PAF file, count number of in/correctly detected, and non-detected overlaps
     Args:
        truth_paf_filepath (str): Path to truth set PAF file

@@ -19,6 +19,9 @@ namespace claragenomics {
     /// Overlapper - given anchors and a read index, calculates overlaps between reads
     class Overlapper {
     public:
+        /// TODO: document
+        static std::vector<Overlap> filter_overlaps(const std::vector<Overlap> &overlaps);
+
         /// \brief returns overlaps for a set of reads
         /// \return vector of Overlap objects
         virtual const std::vector<Overlap> get_overlaps(const std::vector<claragenomics::Anchor> & anchors, const Index & index) = 0;
