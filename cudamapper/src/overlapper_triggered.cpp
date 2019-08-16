@@ -53,7 +53,7 @@ namespace claragenomics {
         }); // TODO: Matcher kernel should return sorted anchors, making this unnecessary
 
         //Loop through the overlaps, "trigger" when an overlap is detected and add it to vector of overlaps
-        //When the overlap is left
+        //when the overlap is left
         std::vector<Overlap> overlaps;
         bool in_chain = false;
         uint16_t tail_length = 0;
@@ -92,7 +92,6 @@ namespace claragenomics {
 
         for(size_t i=0; i<sortedAnchors.size();i++){
             Anchor current_anchor = sortedAnchors[i];
-
             if ((current_anchor.query_read_id_ == prev_anchor.query_read_id_) && (current_anchor.target_read_id_ == prev_anchor.target_read_id_)){ //TODO: For first anchor where prev anchor is not initialised can give incorrect result
                 //In the same read pairing as before
                 int score = anchor_score(prev_anchor, current_anchor);
@@ -103,7 +102,6 @@ namespace claragenomics {
                         overlap_start_anchor = sortedAnchors[i-tail_length + 1]; //TODO check
                     }
                 } else {
-
                     if(in_chain){
                         terminate_anchor();
                     }
@@ -111,7 +109,6 @@ namespace claragenomics {
                     tail_length = 1;
                     in_chain = false;
                 }
-
                 prev_anchor = current_anchor;
             }
             else {
@@ -125,8 +122,7 @@ namespace claragenomics {
                 prev_anchor = current_anchor;
             }
         }
-
-        //Stage 3: Return fused overlaps
+        //Return fused overlaps
         return fuse_overlaps(overlaps);
     }
 }
