@@ -17,6 +17,7 @@
 #include "cudamapper/index.hpp"
 #include "matcher.hpp"
 #include "overlapper_naive.hpp"
+#include "overlapper_triggered.hpp"
 
 int main(int argc, char *argv[])
 {
@@ -43,7 +44,7 @@ int main(int argc, char *argv[])
 
     start_time = std::chrono::high_resolution_clock::now();
     CGA_LOG_INFO("Started overlap detector");
-    auto overlapper = claragenomics::OverlapperNaive();
+    auto overlapper = claragenomics::OverlapperTriggered();
     auto overlaps = overlapper.get_overlaps(matcher.anchors(), static_cast<claragenomics::IndexCPU&>(*(index.get())));
 
     CGA_LOG_INFO("Finished overlap detector");
