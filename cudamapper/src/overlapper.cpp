@@ -13,11 +13,11 @@
 
 namespace claragenomics {
 
-    std::vector<Overlap> Overlapper::filter_overlaps(const std::vector<Overlap> &overlaps) {
-        size_t  min_residues = 10;
+    std::vector<Overlap> Overlapper::filter_overlaps(const std::vector<Overlap> &overlaps,size_t  min_residues = 5, size_t  min_overlap_len = 0) {
         std::vector<Overlap> filtered_overlaps;
         for(auto overlap: overlaps){
-            if (overlap.num_residues_ > min_residues){
+            if ((overlap.num_residues_ >= min_residues) &&
+                ((overlap.query_end_position_in_read_ - overlap.query_start_position_in_read_) > min_overlap_len)){
                 filtered_overlaps.push_back(overlap);
             }
         }

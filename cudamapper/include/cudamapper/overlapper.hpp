@@ -19,15 +19,20 @@ namespace claragenomics {
     /// Overlapper - given anchors and a read index, calculates overlaps between reads
     class Overlapper {
     public:
-        /// TODO: document
-        static std::vector<Overlap> filter_overlaps(const std::vector<Overlap> &overlaps);
-
         /// \brief returns overlaps for a set of reads
+        /// \param anchors vector of anchor objects. Does not need to be ordered
+        /// \param index representation index for reads
         /// \return vector of Overlap objects
-        virtual const std::vector<Overlap> get_overlaps(const std::vector<claragenomics::Anchor> & anchors, const Index & index) = 0;
+        virtual const std::vector<Overlap> get_overlaps(const std::vector<Anchor> &anchors, const Index &index) = 0;
 
         /// \brief prints overlaps to stdout in <a href="https://github.com/lh3/miniasm/blob/master/PAF.md">PAF format</a>
         static void print_paf(const std::vector<Overlap> &overlaps);
+
+        /// \brief removes overlaps which are unlikely to be true overlaps
+        /// \param min_residues smallest number of residues (anchors) for an overlap to be accepted
+        /// \param min_overlap_len the smallest overlap distance which is accepted
+        /// \return vector of filtered Overlap objects
+        std::vector<Overlap> filter_overlaps(const std::vector<Overlap> &overlaps, size_t min_residues, size_t min_overlap_len);
     };
 //}
 }
