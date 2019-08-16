@@ -32,7 +32,8 @@ namespace claragenomics {
         /// \param min_residues smallest number of residues (anchors) for an overlap to be accepted
         /// \param min_overlap_len the smallest overlap distance which is accepted
         /// \return vector of filtered Overlap objects
-        std::vector<Overlap> filter_overlaps(const std::vector<Overlap> &overlaps, size_t min_residues, size_t min_overlap_len);
+        static std::vector<Overlap> filter_overlaps(const std::vector<Overlap> &overlaps, size_t min_residues=5,
+                size_t min_overlap_len=0);
     };
 //}
 }
