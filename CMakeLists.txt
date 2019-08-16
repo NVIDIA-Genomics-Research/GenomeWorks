@@ -56,6 +56,7 @@ set(CMAKE_CXX_STANDARD 17)
 add_subdirectory(common/logging)
 add_subdirectory(common/utils)
 add_subdirectory(cudapoa)
+add_subdirectory(cudamapper)
 add_subdirectory(cudaaligner)
 
 # Add documentation generation.
