@@ -20,6 +20,7 @@ namespace claragenomics
                        const std::uint64_t window_size,
                        const std::uint64_t number_of_reads,
                        const std::vector<std::string>& read_id_to_read_name,
+                       const std::vector<std::uint32_t> read_id_to_read_length,
                        const std::map<representation_t, std::vector<Minimizer>>& representation_to_minimizers) {
         IndexGeneratorGPU index_generator(filename, minimizer_size, window_size);
 
@@ -30,6 +31,7 @@ namespace claragenomics
         ASSERT_EQ(index_generator.read_id_to_read_name().size(), number_of_reads);
         for (std::size_t read_id; read_id < number_of_reads; ++read_id) {
             EXPECT_EQ(index_generator.read_id_to_read_name()[read_id], read_id_to_read_name[read_id]) << "read_id: " << read_id;
+            EXPECT_EQ(index_generator.read_id_to_read_length()[read_id], read_id_to_read_length[read_id]) << "read_id: " << read_id;
         }
 
         const auto& representation_to_sketch_elements = index_generator.representations_to_sketch_elements();
@@ -51,7 +53,7 @@ namespace claragenomics
         }
     }
 
-/*    TEST(TestCudamapperIndexGeneratorGPU, GATT_4_1) {
+    TEST(TestCudamapperIndexGeneratorGPU, GATT_4_1) {
         // >read_0
         // GATT
         std::string filename(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/one_read_one_minimizer.fasta");
@@ -60,7 +62,9 @@ namespace claragenomics
         std::uint64_t number_of_reads = 1;
 
         std::vector<std::string> read_id_to_read_name;
+        std::vector<std::uint32_t> read_id_to_read_length;
         read_id_to_read_name.push_back("read_0");
+        read_id_to_read_length.push_back(4);
 
         std::map<representation_t, std::vector<Minimizer>> representation_to_minimizers;
         { // 0b1101
@@ -73,6 +77,7 @@ namespace claragenomics
                       window_size,
                       number_of_reads,
                       read_id_to_read_name,
+                      read_id_to_read_length,
                       representation_to_minimizers);
     }
 
@@ -85,7 +90,9 @@ namespace claragenomics
         std::uint64_t number_of_reads = 1;
 
         std::vector<std::string> read_id_to_read_name;
+        std::vector<std::uint32_t> read_id_to_read_length;
         read_id_to_read_name.push_back("read_0");
+        read_id_to_read_length.push_back(4);
 
         std::map<representation_t, std::vector<Minimizer>> representation_to_minimizers;
         { // 0b1000
@@ -106,6 +113,7 @@ namespace claragenomics
                       window_size,
                       number_of_reads,
                       read_id_to_read_name,
+                      read_id_to_read_length,
                       representation_to_minimizers);
     }
 
@@ -120,6 +128,7 @@ namespace claragenomics
         std::uint64_t number_of_reads = 0; // the only read will be ignored as it does not fit a single window
 
         std::vector<std::string> read_id_to_read_name;
+        std::vector<std::uint32_t> read_id_to_read_length;
 
         std::map<representation_t, std::vector<Minimizer>> representation_to_minimizers;
 
@@ -128,6 +137,7 @@ namespace claragenomics
                       window_size,
                       number_of_reads,
                       read_id_to_read_name,
+                      read_id_to_read_length,
                       representation_to_minimizers);
     }
 
@@ -167,7 +177,9 @@ namespace claragenomics
         std::uint64_t number_of_reads = 1;
 
         std::vector<std::string> read_id_to_read_name;
+        std::vector<std::uint32_t> read_id_to_read_length;
         read_id_to_read_name.push_back("read_0");
+        read_id_to_read_length.push_back(8);
 
         std::map<representation_t, std::vector<Minimizer>> representation_to_minimizers;
         { // 111
@@ -196,10 +208,11 @@ namespace claragenomics
                       window_size,
                       number_of_reads,
                       read_id_to_read_name,
+                      read_id_to_read_length,
                       representation_to_minimizers);
 
     }
-*/
+
     TEST(TestCudamapperIndexGeneratorGPU, CATCAAG_AAGCTA_3_2) {
         // >read_0
         // CATCAAG
@@ -257,6 +270,10 @@ namespace claragenomics
         read_id_to_read_name.push_back("read_0");
         read_id_to_read_name.push_back("read_1");
 
+        std::vector<std::uint32_t> read_id_to_read_length;
+        read_id_to_read_length.push_back(7);
+        read_id_to_read_length.push_back(6);
+
         std::map<representation_t, std::vector<Minimizer>> representation_to_minimizers;
         { // 032
             std::vector<Minimizer> minimizers{{0b001110, 0, SketchElement::DirectionOfRepresentation::REVERSE, 0}};
@@ -289,6 +306,7 @@ namespace claragenomics
                       window_size,
                       number_of_reads,
                       read_id_to_read_name,
+                      read_id_to_read_length,
                       representation_to_minimizers);
 
     }

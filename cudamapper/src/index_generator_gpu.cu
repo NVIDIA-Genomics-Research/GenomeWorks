@@ -52,6 +52,8 @@ namespace claragenomics {
 
     const std::vector<std::string>& IndexGeneratorGPU::read_id_to_read_name() const { return read_id_to_read_name_; };
 
+    const std::vector<std::uint32_t>& IndexGeneratorGPU::read_id_to_read_length() const { return read_id_to_read_length_; };
+
     std::uint64_t IndexGeneratorGPU::number_of_reads() const { return number_of_reads_; }
 
     /// \brief finds front end minimizers
@@ -778,6 +780,7 @@ namespace claragenomics {
                 read_id_to_basepairs_section_h.emplace_back(ArrayBlock{total_basepairs, static_cast<std::uint32_t>(fasta_objects[fasta_object_id]->data().length())});
                 total_basepairs += fasta_objects[fasta_object_id]->data().length();
                 read_id_to_read_name_.push_back(fasta_objects[fasta_object_id]->name());
+                read_id_to_read_length_.push_back(fasta_objects[fasta_object_id]->data().length());
             } else {
                 CGA_LOG_INFO("Skipping read {}. It has {} basepairs, one window covers {} basepairs", fasta_objects[fasta_object_id]->name(), fasta_objects[fasta_object_id]->data().length(), window_size_ + minimizer_size_ - 1);
             }
