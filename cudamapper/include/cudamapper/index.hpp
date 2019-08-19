@@ -35,7 +35,7 @@ namespace claragenomics {
 
         /// \brief returns an array of directions in which sketch elements were read
         /// \return an array of directions in which sketch elements were read
-        virtual const std::vector<uint32_t>& read_id_to_read_length() const =0;
+        virtual const std::vector<std::uint32_t>& read_id_to_read_length() const =0;
 
         /// \brief returns number of reads in input data
         /// \return number of reads in input data

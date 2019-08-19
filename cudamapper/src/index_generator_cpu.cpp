@@ -35,7 +35,7 @@ namespace claragenomics {
 
     const std::vector<std::string>& IndexGeneratorCPU::read_id_to_read_name() const { return read_id_to_read_name_; };
 
-    const std::vector<uint32_t >& IndexGeneratorCPU::read_id_to_read_length() const { return read_id_to_read_length_; };
+    const std::vector<std::uint32_t>& IndexGeneratorCPU::read_id_to_read_length() const { return read_id_to_read_length_; };
 
     std::uint64_t IndexGeneratorCPU::number_of_reads() const { return number_of_reads_; }
 
