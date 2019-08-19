@@ -13,6 +13,7 @@
 #include "matrix_cpu.hpp"
 
 #include <claragenomics/utils/mathutils.hpp>
+#include <claragenomics/cudaaligner/cudaaligner.hpp>
 
 #include <limits>
 #include <cassert>
@@ -73,19 +74,19 @@ std::vector<int8_t> ukkonen_backtrace(matrix<int> const& scores, int n, int m, i
         int const left  = k < 0 || k >= scores.num_rows() || l < 0 || l >= scores.num_cols() ? max : scores(k, l);
         if (left + 1 == myscore)
         {
-            r       = 2;
+            r       = static_cast<int8_t>(AlignmentState::insertion);
             myscore = left;
             --j;
         }
         else if (above + 1 == myscore)
         {
-            r       = 3;
+            r       = static_cast<int8_t>(AlignmentState::deletion);
             myscore = above;
             --i;
         }
         else
         {
-            r       = (diag == myscore ? 0 : 1);
+            r       = (diag == myscore ? static_cast<int8_t>(AlignmentState::match) : static_cast<int8_t>(AlignmentState::mismatch));
             myscore = diag;
             --i;
             --j;
@@ -94,12 +95,12 @@ std::vector<int8_t> ukkonen_backtrace(matrix<int> const& scores, int n, int m, i
     }
     while (i > 0)
     {
-        res.push_back(1);
+        res.push_back(static_cast<int8_t>(AlignmentState::deletion));
         --i;
     }
     while (j > 0)
     {
-        res.push_back(2);
+        res.push_back(static_cast<int8_t>(AlignmentState::insertion));
         --j;
     }
     std::reverse(res.begin(), res.end());

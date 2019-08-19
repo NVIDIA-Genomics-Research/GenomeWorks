@@ -9,12 +9,13 @@
 */
 
 #include "myers_gpu.cuh"
-#include "device_storage.cuh"
 #include "batched_device_matrices.cuh"
 
+#include <claragenomics/cudaaligner/aligner.hpp>
 #include <claragenomics/utils/signed_integer_utils.hpp>
 #include <claragenomics/utils/mathutils.hpp>
 #include <claragenomics/utils/cudautils.hpp>
+#include <claragenomics/utils/device_buffer.cuh>
 
 #include <cassert>
 #include <climits>
@@ -132,16 +133,14 @@ __device__ void myers_backtrace(int8_t* paths_base, int32_t* lengths, int32_t ma
     assert(mv.num_rows() == score.num_rows());
     assert(pv.num_cols() == score.num_cols());
     assert(mv.num_cols() == score.num_cols());
-    int32_t i         = query_size;
-    int32_t j         = score.num_cols() - 1;
-    int8_t query_ins  = 2;
-    int8_t target_ins = 3;
+    int32_t i = query_size;
+    int32_t j = score.num_cols() - 1;
 
     int8_t* path = paths_base + id * static_cast<ptrdiff_t>(max_path_length);
 
     const WordType last_entry_mask = query_size % word_size != 0 ? (WordType(1) << (query_size % word_size)) - 1 : ~WordType(0);
 
-    nw_score_t myscore = score(i / word_size, j);
+    nw_score_t myscore = score((i - 1) / word_size, j);
     int32_t pos        = 0;
     while (i > 0 && j > 0)
     {
@@ -151,19 +150,19 @@ __device__ void myers_backtrace(int8_t* paths_base, int32_t* lengths, int32_t ma
         nw_score_t const left  = get_myers_score(i, j - 1, pv, mv, score, last_entry_mask);
         if (left + 1 == myscore)
         {
-            r       = query_ins;
+            r       = static_cast<int8_t>(AlignmentState::insertion);
             myscore = left;
             --j;
         }
         else if (above + 1 == myscore)
         {
-            r       = target_ins;
+            r       = static_cast<int8_t>(AlignmentState::deletion);
             myscore = above;
             --i;
         }
         else
         {
-            r       = (diag == myscore ? 0 : 1);
+            r       = (diag == myscore ? static_cast<int8_t>(AlignmentState::match) : static_cast<int8_t>(AlignmentState::mismatch));
             myscore = diag;
             --i;
             --j;
@@ -173,13 +172,13 @@ __device__ void myers_backtrace(int8_t* paths_base, int32_t* lengths, int32_t ma
     }
     while (i > 0)
     {
-        path[pos] = 1;
+        path[pos] = static_cast<int8_t>(AlignmentState::deletion);
         ++pos;
         --i;
     }
     while (j > 0)
     {
-        path[pos] = 2;
+        path[pos] = static_cast<int8_t>(AlignmentState::insertion);
         ++pos;
         --j;
     }
@@ -328,7 +327,6 @@ __global__ void myers_compute_score_matrix_kernel(
 int32_t myers_compute_edit_distance(std::string const& target, std::string const& query)
 {
     constexpr int32_t warp_size = 32;
-    int32_t device_id           = 0;
     constexpr int32_t word_size = sizeof(myers::WordType) * CHAR_BIT;
     if (get_size(query) == 0)
         return get_size(target);
@@ -337,14 +335,14 @@ int32_t myers_compute_edit_distance(std::string const& target, std::string const
     CGA_CU_CHECK_ERR(cudaStreamCreate(&stream));
 
     int32_t max_sequence_length = std::max(get_size(target), get_size(query));
-    device_storage<char> sequences_d(2 * max_sequence_length, device_id);
-    device_storage<int32_t> sequence_lengths_d(2, device_id);
+    device_buffer<char> sequences_d(2 * max_sequence_length);
+    device_buffer<int32_t> sequence_lengths_d(2);
 
     const int32_t n_words = (get_size(query) + word_size - 1) / word_size;
-    batched_device_matrices<myers::WordType> pv(1, n_words * (get_size(target) + 1), stream, device_id);
-    batched_device_matrices<myers::WordType> mv(1, n_words * (get_size(target) + 1), stream, device_id);
-    batched_device_matrices<int32_t> score(1, n_words * (get_size(target) + 1), stream, device_id);
-    batched_device_matrices<myers::WordType> query_patterns(1, n_words * 4, stream, device_id);
+    batched_device_matrices<myers::WordType> pv(1, n_words * (get_size(target) + 1), stream);
+    batched_device_matrices<myers::WordType> mv(1, n_words * (get_size(target) + 1), stream);
+    batched_device_matrices<int32_t> score(1, n_words * (get_size(target) + 1), stream);
+    batched_device_matrices<myers::WordType> query_patterns(1, n_words * 4, stream);
 
     std::array<int32_t, 2> lengths = {static_cast<int32_t>(get_size(query)), static_cast<int32_t>(get_size(target))};
     CGA_CU_CHECK_ERR(cudaMemcpyAsync(sequences_d.data(), query.data(), sizeof(char) * get_size(query), cudaMemcpyHostToDevice, stream));
@@ -362,7 +360,6 @@ int32_t myers_compute_edit_distance(std::string const& target, std::string const
 matrix<int32_t> myers_get_full_score_matrix(std::string const& target, std::string const& query)
 {
     constexpr int32_t warp_size = 32;
-    int32_t device_id           = 0;
     constexpr int32_t word_size = sizeof(myers::WordType) * CHAR_BIT;
 
     if (get_size(target) == 0)
@@ -382,16 +379,16 @@ matrix<int32_t> myers_get_full_score_matrix(std::string const& target, std::stri
     CGA_CU_CHECK_ERR(cudaStreamCreate(&stream));
 
     int32_t max_sequence_length = std::max(get_size(target), get_size(query));
-    device_storage<char> sequences_d(2 * max_sequence_length, device_id);
-    device_storage<int32_t> sequence_lengths_d(2, device_id);
+    device_buffer<char> sequences_d(2 * max_sequence_length);
+    device_buffer<int32_t> sequence_lengths_d(2);
 
     const int32_t n_words = (get_size(query) + word_size - 1) / word_size;
-    batched_device_matrices<myers::WordType> pv(1, n_words * (get_size(target) + 1), stream, device_id);
-    batched_device_matrices<myers::WordType> mv(1, n_words * (get_size(target) + 1), stream, device_id);
-    batched_device_matrices<int32_t> score(1, n_words * (get_size(target) + 1), stream, device_id);
-    batched_device_matrices<myers::WordType> query_patterns(1, n_words * 4, stream, device_id);
+    batched_device_matrices<myers::WordType> pv(1, n_words * (get_size(target) + 1), stream);
+    batched_device_matrices<myers::WordType> mv(1, n_words * (get_size(target) + 1), stream);
+    batched_device_matrices<int32_t> score(1, n_words * (get_size(target) + 1), stream);
+    batched_device_matrices<myers::WordType> query_patterns(1, n_words * 4, stream);
 
-    batched_device_matrices<int32_t> fullscore(1, (get_size(query) + 1) * (get_size(target) + 1), stream, device_id);
+    batched_device_matrices<int32_t> fullscore(1, (get_size(query) + 1) * (get_size(target) + 1), stream);
 
     std::array<int32_t, 2> lengths = {static_cast<int32_t>(get_size(query)), static_cast<int32_t>(get_size(target))};
     CGA_CU_CHECK_ERR(cudaMemcpyAsync(sequences_d.data(), query.data(), sizeof(char) * get_size(query), cudaMemcpyHostToDevice, stream));

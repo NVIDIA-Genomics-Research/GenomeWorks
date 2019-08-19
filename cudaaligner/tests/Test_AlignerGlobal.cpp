@@ -10,6 +10,7 @@
 
 #include "../src/aligner_global_ukkonen.hpp"
 #include "../src/aligner_global_myers.hpp"
+#include "../src/aligner_global_hirschberg_myers.hpp"
 
 #include <claragenomics/cudaaligner/alignment.hpp>
 #include <claragenomics/utils/signed_integer_utils.hpp>
@@ -26,9 +27,23 @@ namespace cudaaligner
 
 enum class AlignmentAlgorithm
 {
-    Ukkonen = 0,
-    Myers
+    Default = 0,
+    Ukkonen,
+    Myers,
+    HirschbergMyers
 };
+
+std::string get_algorithm_name(AlignmentAlgorithm x)
+{
+    switch (x)
+    {
+    case AlignmentAlgorithm::Default: return "Default";
+    case AlignmentAlgorithm::Ukkonen: return "Ukkonen";
+    case AlignmentAlgorithm::Myers: return "Myers";
+    case AlignmentAlgorithm::HirschbergMyers: return "Hirschberg + Myers";
+    default: return "";
+    }
+}
 
 // Common data structures and functions.
 struct AlignerTestData
@@ -72,48 +87,58 @@ std::vector<AlignerTestData> create_aligner_test_cases()
     // Test case 1
     data.inputs    = {{"AAAA", "TTAT"}};
     data.cigars    = {"4M"};
-    data.algorithm = AlignmentAlgorithm::Ukkonen;
+    data.algorithm = AlignmentAlgorithm::Default;
     test_cases.push_back(data);
 
     // Test case 2
     data.inputs    = {{"ATAAAAAAAA", "AAAAAAAAA"}};
-    data.cigars    = {"1M1I8M"};
-    data.algorithm = AlignmentAlgorithm::Ukkonen;
+    data.cigars    = {"1M1D8M"};
+    data.algorithm = AlignmentAlgorithm::Default;
     test_cases.push_back(data);
 
     // Test case 3
     data.inputs    = {{"AAAAAAAAA", "ATAAAAAAAA"}};
-    data.cigars    = {"1M1D8M"};
-    data.algorithm = AlignmentAlgorithm::Ukkonen;
+    data.cigars    = {"1M1I8M"};
+    data.algorithm = AlignmentAlgorithm::Default;
     test_cases.push_back(data);
 
     // Test case 4
     data.inputs    = {{"ACTGA", "GCTAG"}};
-    data.cigars    = {"3M1I1M1D"};
-    data.algorithm = AlignmentAlgorithm::Ukkonen;
+    data.cigars    = {"3M1D1M1I"};
+    data.algorithm = AlignmentAlgorithm::Default;
     test_cases.push_back(data);
 
     // Test case 5
     data.inputs    = {{"ACTGA", "GCTAG"}, {"ACTG", "ACTG"}, {"A", "T"}};
-    data.cigars    = {"3M1I1M1D", "4M", "1M"};
-    data.algorithm = AlignmentAlgorithm::Ukkonen;
+    data.cigars    = {"3M1D1M1I", "4M", "1M"};
+    data.algorithm = AlignmentAlgorithm::Default;
     test_cases.push_back(data);
 
     // Test case 6
     data.inputs = {
         {"AAAA", "TTAT"}, {"ATAAAAAAAA", "AAAAAAAAA"}, {"AAAAAAAAA", "ATAAAAAAAA"}, {"ACTGA", "GCTAG"}, {"ACTGA", "GCTAG"}, {"ACTG", "ACTG"}, {"A", "T"}, {"AAAA", "TTAT"}, {"ATAAAAAAAA", "AAAAAAAAA"}, {"AAAAAAAAA", "ATAAAAAAAA"}, {"ACTGA", "GCTAG"}, {"ACTGA", "GCTAG"}, {"ACTG", "ACTG"}, {"A", "T"}, {"AAAA", "TTAT"}, {"ATAAAAAAAA", "AAAAAAAAA"}, {"AAAAAAAAA", "ATAAAAAAAA"}, {"ACTGA", "GCTAG"}, {"ACTGA", "GCTAG"}, {"ACTG", "ACTG"}, {"A", "T"}, {"AAAA", "TTAT"}, {"ATAAAAAAAA", "AAAAAAAAA"}, {"AAAAAAAAA", "ATAAAAAAAA"}, {"ACTGA", "GCTAG"}, {"ACTGA", "GCTAG"}, {"ACTG", "ACTG"}, {"A", "T"}};
     data.cigars = {
-        "4M", "1M1I8M", "1M1D8M", "3M1I1M1D", "3M1I1M1D", "4M", "1M",
-        "4M", "1M1I8M", "1M1D8M", "3M1I1M1D", "3M1I1M1D", "4M", "1M",
-        "4M", "1M1I8M", "1M1D8M", "3M1I1M1D", "3M1I1M1D", "4M", "1M",
-        "4M", "1M1I8M", "1M1D8M", "3M1I1M1D", "3M1I1M1D", "4M", "1M"};
-    data.algorithm = AlignmentAlgorithm::Ukkonen;
+        "4M", "1M1D8M", "1M1I8M", "3M1D1M1I", "3M1D1M1I", "4M", "1M",
+        "4M", "1M1D8M", "1M1I8M", "3M1D1M1I", "3M1D1M1I", "4M", "1M",
+        "4M", "1M1D8M", "1M1I8M", "3M1D1M1I", "3M1D1M1I", "4M", "1M",
+        "4M", "1M1D8M", "1M1I8M", "3M1D1M1I", "3M1D1M1I", "4M", "1M"};
+    data.algorithm = AlignmentAlgorithm::Default;
     test_cases.push_back(data);
 
-    test_cases.reserve(2 * test_cases.size());
-    std::transform(test_cases.begin(), test_cases.end(), std::back_inserter(test_cases), [](AlignerTestData td) { td.algorithm = AlignmentAlgorithm::Myers; return td; });
+    std::minstd_rand rng(1);
+    data.inputs    = {{claragenomics::genomeutils::generate_random_genome(4800, rng), claragenomics::genomeutils::generate_random_genome(5000, rng)}};
+    data.cigars    = {}; // do not test cigars
+    data.algorithm = AlignmentAlgorithm::Default;
+    test_cases.push_back(data);
 
-    return test_cases;
+    std::vector<AlignerTestData> test_cases_final;
+    test_cases_final.reserve(4 * test_cases.size());
+    test_cases_final.insert(test_cases_final.end(), test_cases.begin(), test_cases.end());
+    std::transform(test_cases.begin(), test_cases.end(), std::back_inserter(test_cases_final), [](AlignerTestData td) { td.algorithm = AlignmentAlgorithm::Ukkonen; return td; });
+    std::transform(test_cases.begin(), test_cases.end(), std::back_inserter(test_cases_final), [](AlignerTestData td) { td.algorithm = AlignmentAlgorithm::Myers; return td; });
+    std::transform(test_cases.begin(), test_cases.end(), std::back_inserter(test_cases_final), [](AlignerTestData td) { td.algorithm = AlignmentAlgorithm::HirschbergMyers; return td; });
+
+    return test_cases_final;
 };
 
 class TestAlignerGlobal : public ::testing::TestWithParam<AlignerTestData>
@@ -137,20 +162,38 @@ TEST_P(TestAlignerGlobal, TestAlignmentKernel)
     const std::vector<std::pair<std::string, std::string>>& inputs = param.inputs;
     const std::vector<std::string>& cigars                         = param.cigars;
 
-    ASSERT_EQ(inputs.size(), cigars.size()) << "Input data length mismatch";
+    if (!cigars.empty())
+    {
+        ASSERT_EQ(inputs.size(), cigars.size()) << "Input data length mismatch";
+    }
 
     const int32_t max_string_size = get_max_sequence_length(inputs) + 1;
     std::unique_ptr<Aligner> aligner;
-    if (param.algorithm == AlignmentAlgorithm::Ukkonen)
+    switch (param.algorithm)
     {
+    case AlignmentAlgorithm::Default:
+        aligner = claragenomics::cudaaligner::create_aligner(max_string_size,
+                                                             max_string_size,
+                                                             param.inputs.size(),
+                                                             claragenomics::cudaaligner::AlignmentType::global,
+                                                             nullptr,
+                                                             0);
+    case AlignmentAlgorithm::Ukkonen:
         aligner = std::make_unique<AlignerGlobalUkkonen>(max_string_size,
                                                          max_string_size,
                                                          param.inputs.size(),
                                                          nullptr,
                                                          0);
-    }
-    else
-    {
+        break;
+    case AlignmentAlgorithm::HirschbergMyers:
+        aligner = std::make_unique<AlignerGlobalHirschbergMyers>(max_string_size,
+                                                                 max_string_size,
+                                                                 param.inputs.size(),
+                                                                 nullptr,
+                                                                 0);
+        break;
+    default:
+    case AlignmentAlgorithm::Myers:
         aligner = std::make_unique<AlignerGlobalMyers>(max_string_size,
                                                        max_string_size,
                                                        param.inputs.size(),
@@ -176,8 +219,15 @@ TEST_P(TestAlignerGlobal, TestAlignmentKernel)
         auto alignment = alignments[a];
         EXPECT_EQ(StatusType::success, alignment->get_status()) << "Alignment status is not success";
         EXPECT_EQ(AlignmentType::global, alignment->get_alignment_type()) << "Alignment type is not global";
-        EXPECT_EQ(cigars[a], alignment->convert_to_cigar()) << "CIGAR doesn't match for alignment " << a
-                                                            << " using " << (param.algorithm == AlignmentAlgorithm::Ukkonen ? "Ukkonen" : "Myers");
+        if (!cigars.empty())
+        {
+            EXPECT_EQ(cigars[a], alignment->convert_to_cigar()) << "CIGAR doesn't match for alignment of\n"
+                                                                << alignment->get_query_sequence()
+                                                                << "\nand\n"
+                                                                << alignment->get_target_sequence()
+                                                                << "\nindex: " << a
+                                                                << "\nusing " << get_algorithm_name(param.algorithm);
+        }
     }
 }
 

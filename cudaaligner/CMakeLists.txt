@@ -25,9 +25,11 @@ cuda_add_library(cudaaligner ${cga_library_type}
     src/aligner_global.cpp
     src/aligner_global_ukkonen.cpp
     src/aligner_global_myers.cpp
+    src/aligner_global_hirschberg_myers.cpp
     src/needleman_wunsch_cpu.cpp
     src/ukkonen_gpu.cu
     src/myers_gpu.cu
+    src/hirschberg_myers_gpu.cu
     )
 
 add_library(cudaaligner_internal INTERFACE)

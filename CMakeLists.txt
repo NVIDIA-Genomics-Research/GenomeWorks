@@ -61,7 +61,7 @@ add_subdirectory(cudaaligner)
 
 # Add documentation generation.
 set_doxygen_mainpage(${CMAKE_CURRENT_SOURCE_DIR}/README.md)
-add_docs_target("ClaraGenomicsAnalysis" "0.1.0")
+add_docs_target("ClaraGenomicsAnalysis" "0.2.0")
 
 # Add auto formatting.
 cga_enable_formatting_targets()
