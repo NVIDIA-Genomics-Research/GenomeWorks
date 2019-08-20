@@ -17,6 +17,7 @@ set(SOURCES
     Test_CudamapperIndexGeneratorCPU.cpp
     Test_CudamapperIndexGeneratorGPU.cpp
     Test_CudamapperMatcher.cpp
+    Test_CudamapperMinimizer.cpp
     Test_PAF_generator.cpp
     ../src/bioparser_sequence.cpp)
 
