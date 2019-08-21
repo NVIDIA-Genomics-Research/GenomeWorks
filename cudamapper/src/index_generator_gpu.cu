@@ -17,26 +17,13 @@
 #include <thrust/execution_policy.h>
 #include "bioparser/bioparser.hpp"
 #include "bioparser_sequence.hpp"
-#include <claragenomics/logging/logging.hpp>
 #include "index_generator_gpu.hpp"
 #include "cudamapper/types.hpp"
+#include <claragenomics/logging/logging.hpp>
 #include <claragenomics/utils/cudautils.hpp>
+#include <claragenomics/utils/device_buffer.cuh>
 
 namespace claragenomics {
-
-    // TODO: replace with device_buffer
-    /// \brief creates a unique pointer to device memory which gets deallocated automatically
-    ///
-    /// \param num_of_elems number of elements to allocate
-    ///
-    /// \return unique pointer to allocated memory
-    template<typename T>
-    std::unique_ptr<T, void(*)(T*)> make_unique_cuda_malloc(std::size_t num_of_elems) {
-        T* tmp_ptr_d = nullptr;
-        CGA_CU_CHECK_ERR(cudaMalloc((void**)&tmp_ptr_d, num_of_elems*sizeof(T)));
-        std::unique_ptr<T, void(*)(T*)> u_ptr_d(tmp_ptr_d, [](T* p) {CGA_CU_CHECK_ERR(cudaFree(p));}); // tmp_prt_d's ownership transfered to u_ptr_d
-        return std::move(u_ptr_d);
-    }
 
     IndexGeneratorGPU::IndexGeneratorGPU(const std::string& query_filename, std::uint64_t minimizer_size, std::uint64_t window_size)
     : minimizer_size_(minimizer_size), window_size_(window_size), index_()
@@ -801,16 +788,16 @@ namespace claragenomics {
 
         // move basepairs to the device
         CGA_LOG_INFO("Allocating {} bytes for read_id_to_basepairs_section_d", read_id_to_basepairs_section_h.size()*sizeof(decltype(read_id_to_basepairs_section_h)::value_type));
-        auto read_id_to_basepairs_section_d = make_unique_cuda_malloc<decltype(read_id_to_basepairs_section_h)::value_type>(read_id_to_basepairs_section_h.size());
-        CGA_CU_CHECK_ERR(cudaMemcpy(read_id_to_basepairs_section_d.get(),
+        device_buffer<decltype(read_id_to_basepairs_section_h)::value_type> read_id_to_basepairs_section_d(read_id_to_basepairs_section_h.size());
+        CGA_CU_CHECK_ERR(cudaMemcpy(read_id_to_basepairs_section_d.data(),
                                     read_id_to_basepairs_section_h.data(),
                                     read_id_to_basepairs_section_h.size()*sizeof(decltype(read_id_to_basepairs_section_h)::value_type),
                                     cudaMemcpyHostToDevice)
                         );
 
         CGA_LOG_INFO("Allocating {} bytes for merged_basepairs_d", merged_basepairs_h.size()*sizeof(decltype(merged_basepairs_h)::value_type));
-        auto merged_basepairs_d = make_unique_cuda_malloc<decltype(merged_basepairs_h)::value_type>(merged_basepairs_h.size());
-        CGA_CU_CHECK_ERR(cudaMemcpy(merged_basepairs_d.get(),
+        device_buffer<decltype(merged_basepairs_h)::value_type> merged_basepairs_d(merged_basepairs_h.size());
+        CGA_CU_CHECK_ERR(cudaMemcpy(merged_basepairs_d.data(),
                                     merged_basepairs_h.data(),
                                     merged_basepairs_h.size()*sizeof(decltype(merged_basepairs_h)::value_type),
                                     cudaMemcpyHostToDevice)
@@ -832,23 +819,23 @@ namespace claragenomics {
         }
 
         CGA_LOG_INFO("Allocating {} bytes for read_id_to_windows_section_d", read_id_to_windows_section_h.size()*sizeof(decltype(read_id_to_windows_section_h)::value_type));
-        auto read_id_to_windows_section_d = make_unique_cuda_malloc<decltype(read_id_to_windows_section_h)::value_type>(read_id_to_windows_section_h.size());
-        CGA_CU_CHECK_ERR(cudaMemcpy(read_id_to_windows_section_d.get(),
+        device_buffer<decltype(read_id_to_windows_section_h)::value_type> read_id_to_windows_section_d(read_id_to_windows_section_h.size());
+        CGA_CU_CHECK_ERR(cudaMemcpy(read_id_to_windows_section_d.data(),
                                     read_id_to_windows_section_h.data(),
                                     read_id_to_windows_section_h.size()*sizeof(decltype(read_id_to_windows_section_h)::value_type),
                                     cudaMemcpyHostToDevice)
                         );
 
         CGA_LOG_INFO("Allocating {} bytes for window_minimizers_representation_d", total_windows*sizeof(representation_t));
-        auto window_minimizers_representation_d = make_unique_cuda_malloc<representation_t>(total_windows);
+        device_buffer<representation_t> window_minimizers_representation_d(total_windows);
         CGA_LOG_INFO("Allocating {} bytes for window_minimizers_direction_d", total_windows*sizeof(char));
-        auto window_minimizers_direction_d = make_unique_cuda_malloc<char>(total_windows);
+        device_buffer<char> window_minimizers_direction_d(total_windows);
         CGA_LOG_INFO("Allocating {} bytes for window_minimizers_position_in_read_d", total_windows*sizeof(position_in_read_t));
-        auto window_minimizers_position_in_read_d = make_unique_cuda_malloc<position_in_read_t>(total_windows);
+        device_buffer<position_in_read_t> window_minimizers_position_in_read_d(total_windows);
         CGA_LOG_INFO("Allocating {} bytes for read_id_to_minimizers_written_d", number_of_reads_*sizeof(std::uint32_t));
-        auto read_id_to_minimizers_written_d = make_unique_cuda_malloc<std::uint32_t>(number_of_reads_);
+        device_buffer<std::uint32_t> read_id_to_minimizers_written_d(number_of_reads_);
         // initially there are no minimizers written to the output arrays
-        CGA_CU_CHECK_ERR(cudaMemset(read_id_to_minimizers_written_d.get(), 0, number_of_reads_*sizeof(std::uint32_t)));
+        CGA_CU_CHECK_ERR(cudaMemset(read_id_to_minimizers_written_d.data(), 0, number_of_reads_*sizeof(std::uint32_t)));
 
         // *** front end minimizers ***
         std::uint32_t num_of_basepairs_for_front_minimizers = (window_size_ - 1) + minimizer_size_ - 1;
@@ -877,13 +864,13 @@ namespace claragenomics {
         CGA_LOG_INFO("Launching find_front_end_minimizers with {} bytes of shared memory", shared_memory_for_kernel);
         find_front_end_minimizers<<<number_of_reads_, num_of_threads, shared_memory_for_kernel>>>(minimizer_size_,
                                                                                                   window_size_,
-                                                                                                  merged_basepairs_d.get(),
-                                                                                                  read_id_to_basepairs_section_d.get(),
-                                                                                                  window_minimizers_representation_d.get(),
-                                                                                                  window_minimizers_direction_d.get(),
-                                                                                                  window_minimizers_position_in_read_d.get(),
-                                                                                                  read_id_to_windows_section_d.get(),
-                                                                                                  read_id_to_minimizers_written_d.get()
+                                                                                                  merged_basepairs_d.data(),
+                                                                                                  read_id_to_basepairs_section_d.data(),
+                                                                                                  window_minimizers_representation_d.data(),
+                                                                                                  window_minimizers_direction_d.data(),
+                                                                                                  window_minimizers_position_in_read_d.data(),
+                                                                                                  read_id_to_windows_section_d.data(),
+                                                                                                  read_id_to_minimizers_written_d.data()
                                                                                                   );
         CGA_CU_CHECK_ERR(cudaDeviceSynchronize());
 
@@ -911,13 +898,13 @@ namespace claragenomics {
         find_central_minimizers<<<number_of_reads_, num_of_threads, shared_memory_for_kernel>>>(minimizer_size_,
                                                                                                 window_size_,
                                                                                                 basepairs_per_thread,
-                                                                                                merged_basepairs_d.get(),
-                                                                                                read_id_to_basepairs_section_d.get(),
-                                                                                                window_minimizers_representation_d.get(),
-                                                                                                window_minimizers_direction_d.get(),
-                                                                                                window_minimizers_position_in_read_d.get(),
-                                                                                                read_id_to_windows_section_d.get(),
-                                                                                                read_id_to_minimizers_written_d.get()
+                                                                                                merged_basepairs_d.data(),
+                                                                                                read_id_to_basepairs_section_d.data(),
+                                                                                                window_minimizers_representation_d.data(),
+                                                                                                window_minimizers_direction_d.data(),
+                                                                                                window_minimizers_position_in_read_d.data(),
+                                                                                                read_id_to_windows_section_d.data(),
+                                                                                                read_id_to_minimizers_written_d.data()
                                                                                                 );
         CGA_CU_CHECK_ERR(cudaDeviceSynchronize());
 
@@ -938,26 +925,32 @@ namespace claragenomics {
         CGA_LOG_INFO("Launching find_back_end_minimizers with {} bytes of shared memory", shared_memory_for_kernel);
         find_back_end_minimizers<<<number_of_reads_, num_of_threads, shared_memory_for_kernel>>>(minimizer_size_,
                                                                                                  window_size_,
-                                                                                                 merged_basepairs_d.get(),
-                                                                                                 read_id_to_basepairs_section_d.get(),
-                                                                                                 window_minimizers_representation_d.get(),
-                                                                                                 window_minimizers_direction_d.get(),
-                                                                                                 window_minimizers_position_in_read_d.get(),
-                                                                                                 read_id_to_windows_section_d.get(),
-                                                                                                 read_id_to_minimizers_written_d.get()
+                                                                                                 merged_basepairs_d.data(),
+                                                                                                 read_id_to_basepairs_section_d.data(),
+                                                                                                 window_minimizers_representation_d.data(),
+                                                                                                 window_minimizers_direction_d.data(),
+                                                                                                 window_minimizers_position_in_read_d.data(),
+                                                                                                 read_id_to_windows_section_d.data(),
+                                                                                                 read_id_to_minimizers_written_d.data()
                                                                                                  );
         CGA_CU_CHECK_ERR(cudaDeviceSynchronize());
+
+        CGA_LOG_INFO("Deallocating {} bytes from read_id_to_basepairs_section_d", read_id_to_basepairs_section_d.size()*sizeof(decltype(read_id_to_basepairs_section_d)::value_type));
+        read_id_to_basepairs_section_d.free();
+
+        CGA_LOG_INFO("Deallocating {} bytes from merged_basepairs_d", merged_basepairs_d.size()*sizeof(decltype(merged_basepairs_d)::value_type));
+        merged_basepairs_d.free();
 
         std::vector<std::uint32_t> read_id_to_minimizers_written_h(number_of_reads_);
 
         CGA_CU_CHECK_ERR(cudaMemcpy(read_id_to_minimizers_written_h.data(),
-                                    read_id_to_minimizers_written_d.get(),
+                                    read_id_to_minimizers_written_d.data(),
                                     read_id_to_minimizers_written_h.size()*sizeof(decltype(read_id_to_minimizers_written_h)::value_type),
                                     cudaMemcpyDeviceToHost
                                     )
                          );
-        CGA_LOG_INFO("Deallocating {} bytes from read_id_to_minimizers_written_d", number_of_reads_*sizeof(std::uint32_t));
-        read_id_to_minimizers_written_d = nullptr;
+        CGA_LOG_INFO("Deallocating {} bytes from read_id_to_minimizers_written_d", read_id_to_minimizers_written_d.size()*sizeof(decltype(read_id_to_minimizers_written_d)::value_type));
+        read_id_to_minimizers_written_d.free();
 
         // *** remove unused elemets from the window minimizers arrays ***
         // In window_minimizers_representation_d and other arrays enough space was allocated to support cases where each window has a different minimizers. In reality many neighboring windows share the same mininizer
@@ -973,8 +966,8 @@ namespace claragenomics {
         }
 
         CGA_LOG_INFO("Allocating {} bytes for read_id_to_compressed_minimizers_d", read_id_to_compressed_minimizers_h.size()*sizeof(decltype(read_id_to_compressed_minimizers_h)::value_type));
-        auto read_id_to_compressed_minimizers_d = make_unique_cuda_malloc<decltype(read_id_to_compressed_minimizers_h)::value_type>(read_id_to_compressed_minimizers_h.size());
-        CGA_CU_CHECK_ERR(cudaMemcpy(read_id_to_compressed_minimizers_d.get(),
+        device_buffer<decltype(read_id_to_compressed_minimizers_h)::value_type> read_id_to_compressed_minimizers_d(read_id_to_compressed_minimizers_h.size());
+        CGA_CU_CHECK_ERR(cudaMemcpy(read_id_to_compressed_minimizers_d.data(),
                                     read_id_to_compressed_minimizers_h.data(),
                                     read_id_to_compressed_minimizers_h.size()*sizeof(decltype(read_id_to_compressed_minimizers_h)::value_type),
                                     cudaMemcpyHostToDevice
@@ -982,55 +975,58 @@ namespace claragenomics {
                          );
 
         CGA_LOG_INFO("Allocating {} bytes for representations_compressed_d", total_minimizers*sizeof(representation_t));
-        auto representations_compressed_d = make_unique_cuda_malloc<representation_t>(total_minimizers);
+        device_buffer<representation_t> representations_compressed_d(total_minimizers);
         // rest = position_in_read, direction and read_id
         CGA_LOG_INFO("Allocating {} bytes for rest_compressed_d", total_minimizers*sizeof(ReadidPositionDirection));
-        auto rest_compressed_d = make_unique_cuda_malloc<ReadidPositionDirection>(total_minimizers);
+        device_buffer<ReadidPositionDirection> rest_compressed_d(total_minimizers);
 
         CGA_LOG_INFO("Launching compress_minimizers with {} bytes of shared memory", 0);
-        compress_minimizers<<<number_of_reads_, 128>>>(window_minimizers_representation_d.get(),
-                                                       window_minimizers_position_in_read_d.get(),
-                                                       window_minimizers_direction_d.get(),
-                                                       read_id_to_windows_section_d.get(),
-                                                       representations_compressed_d.get(),
-                                                       rest_compressed_d.get(),
-                                                       read_id_to_compressed_minimizers_d.get()
+        compress_minimizers<<<number_of_reads_, 128>>>(window_minimizers_representation_d.data(),
+                                                       window_minimizers_position_in_read_d.data(),
+                                                       window_minimizers_direction_d.data(),
+                                                       read_id_to_windows_section_d.data(),
+                                                       representations_compressed_d.data(),
+                                                       rest_compressed_d.data(),
+                                                       read_id_to_compressed_minimizers_d.data()
                                                        );
         CGA_CU_CHECK_ERR(cudaDeviceSynchronize());
 
         // free these arrays as they are not needed anymore
-        CGA_LOG_INFO("Deallocating {} bytes from window_minimizers_representation_d", total_windows*sizeof(representation_t));
-        window_minimizers_representation_d = nullptr;
-        CGA_LOG_INFO("Deallocating {} bytes from window_minimizers_direction_d", total_windows*sizeof(char));
-        window_minimizers_direction_d = nullptr;
-        CGA_LOG_INFO("Deallocating {} bytes from window_minimizers_position_d", total_windows*sizeof(position_in_read_t));
-        window_minimizers_position_in_read_d = nullptr;
+        CGA_LOG_INFO("Deallocating {} bytes from window_minimizers_representation_d", window_minimizers_representation_d.size()*sizeof(decltype(window_minimizers_representation_d)::value_type));
+        window_minimizers_representation_d.free();
+        CGA_LOG_INFO("Deallocating {} bytes from window_minimizers_direction_d", window_minimizers_direction_d.size()*sizeof(decltype(window_minimizers_direction_d)::value_type));
+        window_minimizers_direction_d.free();
+        CGA_LOG_INFO("Deallocating {} bytes from window_minimizers_position_in_read_d", window_minimizers_position_in_read_d.size()*sizeof(decltype(window_minimizers_position_in_read_d)::value_type));
+        window_minimizers_position_in_read_d.free();
+        CGA_LOG_INFO("Deallocating {} bytes from read_id_to_compressed_minimizers_d", read_id_to_compressed_minimizers_d.size()*sizeof(decltype(read_id_to_compressed_minimizers_d)::value_type));
+        read_id_to_compressed_minimizers_d.free();
+        CGA_LOG_INFO("Deallocating {} bytes from read_id_to_windows_section_d", read_id_to_windows_section_d.size()*sizeof(decltype(read_id_to_windows_section_d)::value_type));
+        read_id_to_windows_section_d.free();
     
         // *** sort minimizers by representation ***
         // As this is a stable sort and the data was initailly grouper by read_id this means that the minimizers within each representations are sorted by read_id
-        thrust::stable_sort_by_key(thrust::device, representations_compressed_d.get(), representations_compressed_d.get() + total_minimizers, rest_compressed_d.get());
-
+        thrust::stable_sort_by_key(thrust::device, representations_compressed_d.data(), representations_compressed_d.data() + total_minimizers, rest_compressed_d.data());
 
         std::vector<representation_t> representations_compressed_h(total_minimizers);
         std::vector<ReadidPositionDirection> rest_compressed_h(total_minimizers);
         CGA_CU_CHECK_ERR(cudaMemcpy(representations_compressed_h.data(),
-                                    representations_compressed_d.get(),
+                                    representations_compressed_d.data(),
                                     representations_compressed_h.size()*sizeof(decltype(representations_compressed_h)::value_type),
                                     cudaMemcpyDeviceToHost
                                     )
                          );
         CGA_CU_CHECK_ERR(cudaMemcpy(rest_compressed_h.data(),
-                                    rest_compressed_d.get(),
+                                    rest_compressed_d.data(),
                                     rest_compressed_h.size()*sizeof(decltype(rest_compressed_h)::value_type),
                                     cudaMemcpyDeviceToHost
                                     )
                          );
 
         // free these arrays as they are not needed anymore
-        CGA_LOG_INFO("Deallocating {} bytes from representations_compressed_d", total_minimizers*sizeof(representation_t));
-        representations_compressed_d = nullptr;
-        CGA_LOG_INFO("Deallocating {} bytes from rest_compressed_d", total_minimizers*sizeof(ReadidPositionDirection));
-        rest_compressed_d = nullptr;
+        CGA_LOG_INFO("Deallocating {} bytes from representations_compressed_d", representations_compressed_d.size()*sizeof(decltype(representations_compressed_d)::value_type));
+        representations_compressed_d.free();
+        CGA_LOG_INFO("Deallocating {} bytes from rest_compressed_d", rest_compressed_d.size()*sizeof(decltype(rest_compressed_d)::value_type));
+        rest_compressed_d.free();
 
         // *** add the minimizers to the host side hash map ***
         // minimizers are already sorted by representation -> add all minimizers with the same representation to a vector and then add that vector to the hash table

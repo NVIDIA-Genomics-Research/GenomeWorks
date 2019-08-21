@@ -51,7 +51,7 @@ namespace claragenomics
         }
     }
 
-/*    TEST(TestCudamapperIndexGeneratorGPU, GATT_4_1) {
+    TEST(TestCudamapperIndexGeneratorGPU, GATT_4_1) {
         // >read_0
         // GATT
         std::string filename(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/one_read_one_minimizer.fasta");
@@ -199,7 +199,7 @@ namespace claragenomics
                       representation_to_minimizers);
 
     }
-*/
+
     TEST(TestCudamapperIndexGeneratorGPU, CATCAAG_AAGCTA_3_2) {
         // >read_0
         // CATCAAG
