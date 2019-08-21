@@ -67,6 +67,13 @@ public:
         return *this;
     }
 
+    void free()
+    {
+        CGA_CU_CHECK_ERR(cudaFree(data_));
+        data_ = nullptr;
+        size_ = 0;
+    }
+
     ~device_buffer()
     {
         cudaFree(data_);
