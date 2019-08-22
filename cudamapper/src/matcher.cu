@@ -11,23 +11,11 @@
 #include <algorithm>
 #include <memory>
 #include "matcher.hpp"
+#include <claragenomics/logging/logging.hpp>
 #include <claragenomics/utils/cudautils.hpp>
+#include <claragenomics/utils/device_buffer.cuh>
 
 namespace claragenomics {
-
-    // TODO: move to cudautils?
-    /// \brief creates a unique pointer to device memory which gets deallocated automatically
-    ///
-    /// \param num_of_elems number of elements to allocate
-    ///
-    /// \return unique pointer to allocated memory
-    template<typename T>
-    std::unique_ptr<T, void(*)(T*)> make_unique_cuda_malloc(std::size_t num_of_elems) {
-        T* tmp_ptr_d = nullptr;
-        CGA_CU_CHECK_ERR(cudaMalloc((void**)&tmp_ptr_d, num_of_elems*sizeof(T)));
-        std::unique_ptr<T, void(*)(T*)> u_ptr_d(tmp_ptr_d, [](T* p) {CGA_CU_CHECK_ERR(cudaFree(p));}); // tmp_prt_d's ownership transfered to u_ptr_d
-        return std::move(u_ptr_d);
-    }
 
     /// \brief Generates anchors for all reads
     ///
@@ -105,16 +93,19 @@ namespace claragenomics {
         }
 
         const std::vector<position_in_read_t>& positions_in_reads_h = index.positions_in_reads();
-        auto positions_in_reads_d = make_unique_cuda_malloc<position_in_read_t>(positions_in_reads_h.size());
-        CGA_CU_CHECK_ERR(cudaMemcpy(positions_in_reads_d.get(), positions_in_reads_h.data(), positions_in_reads_h.size()*sizeof(position_in_read_t), cudaMemcpyHostToDevice));
+        CGA_LOG_INFO("Allocating {} bytes for positions_in_reads_d", positions_in_reads_h.size()*sizeof(position_in_read_t));
+        device_buffer<position_in_read_t> positions_in_reads_d(positions_in_reads_h.size());
+        CGA_CU_CHECK_ERR(cudaMemcpy(positions_in_reads_d.data(), positions_in_reads_h.data(), positions_in_reads_h.size()*sizeof(position_in_read_t), cudaMemcpyHostToDevice));
         
         const std::vector<read_id_t>& read_ids_h = index.read_ids();
-        auto read_ids_d = make_unique_cuda_malloc<read_id_t>(read_ids_h.size());
-        CGA_CU_CHECK_ERR(cudaMemcpy(read_ids_d.get(), read_ids_h.data(), read_ids_h.size()*sizeof(read_id_t), cudaMemcpyHostToDevice));
+        CGA_LOG_INFO("Allocating {} bytes for read_ids_d", read_ids_h.size()*sizeof(read_id_t));
+        device_buffer<read_id_t> read_ids_d(read_ids_h.size());
+        CGA_CU_CHECK_ERR(cudaMemcpy(read_ids_d.data(), read_ids_h.data(), read_ids_h.size()*sizeof(read_id_t), cudaMemcpyHostToDevice));
 
         const std::vector<SketchElement::DirectionOfRepresentation>& directions_of_reads_h = index.directions_of_reads();
-        auto directions_of_reads_d = make_unique_cuda_malloc<SketchElement::DirectionOfRepresentation>(directions_of_reads_h.size());
-        CGA_CU_CHECK_ERR(cudaMemcpy(directions_of_reads_d.get(), directions_of_reads_h.data(), directions_of_reads_h.size()*sizeof(SketchElement::DirectionOfRepresentation), cudaMemcpyHostToDevice));
+        CGA_LOG_INFO("Allocating {} bytes for directions_of_reads_d", directions_of_reads_h.size()*sizeof(SketchElement::DirectionOfRepresentation));
+        device_buffer<SketchElement::DirectionOfRepresentation> directions_of_reads_d(directions_of_reads_h.size());
+        CGA_CU_CHECK_ERR(cudaMemcpy(directions_of_reads_d.data(), directions_of_reads_h.data(), directions_of_reads_h.size()*sizeof(SketchElement::DirectionOfRepresentation), cudaMemcpyHostToDevice));
 
         // Each CUDA thread block is responsible for one read. For each sketch element in that read it checks all other reads for sketch elements with the same representation and records those pairs.
         // As read_ids are numbered from 0 to number_of_reads - 1 CUDA thread block is responsible for read with read_id = blockIdx.x.
@@ -188,52 +179,66 @@ namespace claragenomics {
             total_anchors += read_id_to_anchors_section_h[read_id].block_size_;
         }
 
-        auto read_id_to_sketch_elements_d = make_unique_cuda_malloc<ArrayBlock>(read_id_to_sketch_elements_h.size());
-        CGA_CU_CHECK_ERR(cudaMemcpy(read_id_to_sketch_elements_d.get(), read_id_to_sketch_elements_h.data(), read_id_to_sketch_elements_h.size()*sizeof(ArrayBlock), cudaMemcpyHostToDevice));
+        CGA_LOG_INFO("Allocating {} bytes for read_id_to_sketch_elements_d", read_id_to_sketch_elements_h.size()*sizeof(ArrayBlock));
+        device_buffer<ArrayBlock> read_id_to_sketch_elements_d(read_id_to_sketch_elements_h.size());
+        CGA_CU_CHECK_ERR(cudaMemcpy(read_id_to_sketch_elements_d.data(), read_id_to_sketch_elements_h.data(), read_id_to_sketch_elements_h.size()*sizeof(ArrayBlock), cudaMemcpyHostToDevice));
         read_id_to_sketch_elements_h.clear();
         read_id_to_sketch_elements_h.reserve(0);
 
-
-        auto read_id_to_sketch_elements_to_check_d = make_unique_cuda_malloc<ArrayBlock>(read_id_to_sketch_elements_to_check_h.size());
-        CGA_CU_CHECK_ERR(cudaMemcpy(read_id_to_sketch_elements_to_check_d.get(), read_id_to_sketch_elements_to_check_h.data(), read_id_to_sketch_elements_to_check_h.size()*sizeof(ArrayBlock), cudaMemcpyHostToDevice));
+        CGA_LOG_INFO("Allocating {} bytes for read_id_to_sketch_elements_to_check_d", read_id_to_sketch_elements_to_check_h.size()*sizeof(ArrayBlock));
+        device_buffer<ArrayBlock> read_id_to_sketch_elements_to_check_d(read_id_to_sketch_elements_to_check_h.size());
+        CGA_CU_CHECK_ERR(cudaMemcpy(read_id_to_sketch_elements_to_check_d.data(), read_id_to_sketch_elements_to_check_h.data(), read_id_to_sketch_elements_to_check_h.size()*sizeof(ArrayBlock), cudaMemcpyHostToDevice));
         read_id_to_sketch_elements_to_check_h.clear();
         read_id_to_sketch_elements_to_check_h.reserve(0);
 
-        auto read_id_to_pointer_arrays_section_d = make_unique_cuda_malloc<ArrayBlock>(read_id_to_pointer_arrays_section_h.size());
-        CGA_CU_CHECK_ERR(cudaMemcpy(read_id_to_pointer_arrays_section_d.get(), read_id_to_pointer_arrays_section_h.data(), read_id_to_pointer_arrays_section_h.size()*sizeof(ArrayBlock), cudaMemcpyHostToDevice));
+        CGA_LOG_INFO("Allocating {} bytes for read_id_to_pointer_arrays_section_d", read_id_to_pointer_arrays_section_h.size()*sizeof(ArrayBlock));
+        device_buffer<ArrayBlock> read_id_to_pointer_arrays_section_d(read_id_to_pointer_arrays_section_h.size());
+        CGA_CU_CHECK_ERR(cudaMemcpy(read_id_to_pointer_arrays_section_d.data(), read_id_to_pointer_arrays_section_h.data(), read_id_to_pointer_arrays_section_h.size()*sizeof(ArrayBlock), cudaMemcpyHostToDevice));
         read_id_to_pointer_arrays_section_h.clear();
         read_id_to_pointer_arrays_section_h.reserve(0);
 
-        auto anchors_d = make_unique_cuda_malloc<Anchor>(total_anchors);
+        CGA_LOG_INFO("Allocating {} bytes for anchors_d", total_anchors*sizeof(Anchor));
+        device_buffer<Anchor> anchors_d(total_anchors);
 
-        auto read_id_to_anchors_section_d = make_unique_cuda_malloc<ArrayBlock>(read_id_to_anchors_section_h.size());
-        CGA_CU_CHECK_ERR(cudaMemcpy(read_id_to_anchors_section_d.get(), read_id_to_anchors_section_h.data(), read_id_to_anchors_section_h.size()*sizeof(ArrayBlock), cudaMemcpyHostToDevice));
-        // TODO: do we need read_id_to_anchors_section_h after this point?
+        CGA_LOG_INFO("Allocating {} bytes for read_id_to_anchors_section_d", read_id_to_anchors_section_h.size()*sizeof(ArrayBlock));
+        device_buffer<ArrayBlock> read_id_to_anchors_section_d(read_id_to_anchors_section_h.size());
+        CGA_CU_CHECK_ERR(cudaMemcpy(read_id_to_anchors_section_d.data(), read_id_to_anchors_section_h.data(), read_id_to_anchors_section_h.size()*sizeof(ArrayBlock), cudaMemcpyHostToDevice));
+        read_id_to_anchors_section_h.clear();
+        read_id_to_anchors_section_h.reserve(0);
 
-        generate_anchors<<<index.number_of_reads(),32,largest_block_size*sizeof(position_in_read_t)>>>(positions_in_reads_d.get(),
-                                                                                                     read_ids_d.get(),
-                                                                                                     // directions_of_reads_d.get(), // currently we don't use direction
-                                                                                                     read_id_to_sketch_elements_d.get(),
-                                                                                                     read_id_to_sketch_elements_to_check_d.get(),
-                                                                                                     read_id_to_pointer_arrays_section_d.get(),
-                                                                                                     anchors_d.get(),
-                                                                                                     read_id_to_anchors_section_d.get());
+        generate_anchors<<<index.number_of_reads(),32,largest_block_size*sizeof(position_in_read_t)>>>(positions_in_reads_d.data(),
+                                                                                                       read_ids_d.data(),
+                                                                                                       // directions_of_reads_d.data(), // currently we don't use direction
+                                                                                                       read_id_to_sketch_elements_d.data(),
+                                                                                                       read_id_to_sketch_elements_to_check_d.data(),
+                                                                                                       read_id_to_pointer_arrays_section_d.data(),
+                                                                                                       anchors_d.data(),
+                                                                                                       read_id_to_anchors_section_d.data()
+                                                                                                      );
 
         std::vector<Anchor> anchors_h_temp(total_anchors);
-        CGA_CU_CHECK_ERR(cudaMemcpy(anchors_h_temp.data(), anchors_d.get(), total_anchors*sizeof(Anchor), cudaMemcpyDeviceToHost));
+        CGA_CU_CHECK_ERR(cudaMemcpy(anchors_h_temp.data(), anchors_d.data(), total_anchors*sizeof(Anchor), cudaMemcpyDeviceToHost));
         std::swap(anchors_h_temp, anchors_h_);
 
         // clean up device memory
-        read_id_to_anchors_section_d.reset(nullptr);
-        anchors_d.reset(nullptr);
+        CGA_LOG_INFO("Deallocating {} bytes from read_id_to_anchors_section_d", read_id_to_anchors_section_d.size()*sizeof(decltype(read_id_to_anchors_section_d)::value_type));
+        read_id_to_anchors_section_d.free();
+        CGA_LOG_INFO("Deallocating {} bytes from anchors_d", anchors_d.size()*sizeof(decltype(anchors_d)::value_type));
+        anchors_d.free();
 
-        read_id_to_sketch_elements_d.reset(nullptr);
-        read_id_to_sketch_elements_to_check_d.reset(nullptr);
-        read_id_to_pointer_arrays_section_d.reset(nullptr);
+        CGA_LOG_INFO("Deallocating {} bytes from read_id_to_sketch_elements_d", read_id_to_sketch_elements_d.size()*sizeof(decltype(read_id_to_sketch_elements_d)::value_type));
+        read_id_to_sketch_elements_d.free();
+        CGA_LOG_INFO("Deallocating {} bytes from read_id_to_sketch_elements_to_check_d", read_id_to_sketch_elements_to_check_d.size()*sizeof(decltype(read_id_to_sketch_elements_to_check_d)::value_type));
+        read_id_to_sketch_elements_to_check_d.free();
+        CGA_LOG_INFO("Deallocating {} bytes from read_id_to_pointer_arrays_section_d", read_id_to_pointer_arrays_section_d.size()*sizeof(decltype(read_id_to_pointer_arrays_section_d)::value_type));
+        read_id_to_pointer_arrays_section_d.free();
 
-        positions_in_reads_d.reset(nullptr);
-        read_ids_d.reset(nullptr);
-        directions_of_reads_d.reset(nullptr);
+        CGA_LOG_INFO("Deallocating {} bytes from positions_in_reads_d", positions_in_reads_d.size()*sizeof(decltype(positions_in_reads_d)::value_type));
+        positions_in_reads_d.free();
+        CGA_LOG_INFO("Deallocating {} bytes from read_ids_d", read_ids_d.size()*sizeof(decltype(read_ids_d)::value_type));
+        read_ids_d.free();
+        CGA_LOG_INFO("Deallocating {} bytes from directions_of_reads_d", directions_of_reads_d.size()*sizeof(decltype(directions_of_reads_d)::value_type));
+        directions_of_reads_d.free();
     }
 
     const std::vector<Anchor>& Matcher::anchors() const {
