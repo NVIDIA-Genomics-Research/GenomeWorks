@@ -23,14 +23,12 @@ namespace claragenomics {
     ///
     /// Class contains three separate data arrays: read_ids, positions_in_reads and directions_of_reads.
     /// Elements of these three arrays with the same index represent one sketch element
-    /// (read it belongs to, position in that read of the first basepair of sketch element and whether it is forward or reverse complement representation).
+    /// (read_id of the read it belongs to, position in that read of the first basepair of sketch element and whether it is forward or reverse complement representation).
     /// Representation itself is not saved as it is not necessary for matching phase. It can be retrieved from the original data if needed.
     ///
-    /// representation_to_all_its_sketch_elements() returns a hash map that maps a sketch element representation to section of data arrays with all sketch elements with that representation
+    /// Elements of data arrays are grouped by sketch element representation and within those groups by read_id. Both representations and read_ids within representations are sorted in ascending order
     ///
-    /// read_id_and_representation_to_all_its_sketch_elements() similarly maps read id and sketch element representation to srction of data arrays with all sketch elements with that read id representation
-    ///
-    /// Elements of data arrays are grouped by sketch element representation and within those groups by read id. Both representations and read ids within representations are sorted in ascending order
+    /// read_id_and_representation_to_sketch_elements() for each read_id (outer vector) returns a vector in which each element contains a representation from that read, pointer to section of data arrays with sketch elements with that representation and that read_id, and pointer to section of data arrays with skecth elements with that representation and all read_ids. There elements are sorted by representation in increasing order
     class IndexCPU : public Index {
     public:
 
@@ -62,13 +60,9 @@ namespace claragenomics {
         /// \return mapping of internal read id that goes from 0 to number_of_reads-1 to actual read name from the input
         const std::vector<std::string>& read_id_to_read_name() const override;
 
-        /// \brief returns mapping of read id (vector) and representation (map) to section of data arrays with sketch elements with that read id and representation
-        /// \return mapping of read id (vector) and representation (map) to section of data arrays with sketch elements with that read id and representation
-        const std::vector<std::map<representation_t, ArrayBlock>>& read_id_and_representation_to_all_its_sketch_elements() const override;
-
-        /// \brief returns mapping of representation to section of data arrays with sketch elements with that representation (and all read ids)
-        /// \return mapping of representation to section of data arrays with sketch elements with that representation (and all read ids)
-        const std::map<representation_t, ArrayBlock>& representation_to_all_its_sketch_elements() const override;
+        /// \brief For each read_id (outer vector) returns a vector in which each element contains a representation from that read, pointer to section of data arrays with sketch elements with that representation and that read_id, and pointer to section of data arrays with skecth elements with that representation and all read_ids. There elements are sorted by representation in increasing order
+        /// \return the mapping
+        const std::vector<std::vector<Index::RepresentationToSketchElements>>& read_id_and_representation_to_sketch_elements() const override;
 
     private:
 
@@ -80,9 +74,7 @@ namespace claragenomics {
 
         const std::vector<std::string> read_id_to_read_name_;
 
-        std::vector<std::map<representation_t, ArrayBlock>> read_id_and_representation_to_all_its_sketch_elements_;
-
-        std::map<representation_t, ArrayBlock> representation_to_all_its_sketch_elements_;
+        std::vector<std::vector<RepresentationToSketchElements>> read_id_and_representation_to_sketch_elements_;
     };
         
 
