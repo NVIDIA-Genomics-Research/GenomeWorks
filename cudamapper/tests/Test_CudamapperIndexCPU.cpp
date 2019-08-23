@@ -19,10 +19,10 @@ namespace claragenomics {
         // >read_0
         // GATT
 
-        // GATT = 0x2033
-        // AATC = 0x0031 <- minimizer
+        // GATT = 0b10001111
+        // AATC = 0b00001101 <- minimizer
 
-        IndexGeneratorCPU index_generator(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) +  "/one_read_one_minimizer.fasta", 4, 1);
+        IndexGeneratorCPU index_generator(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/one_read_one_minimizer.fasta", 4, 1);
         IndexCPU index(index_generator);
 
         ASSERT_EQ(index.number_of_reads(), 1);
@@ -45,15 +45,15 @@ namespace claragenomics {
 
         const std::vector<std::map<representation_t, ArrayBlock>>& read_id_and_representation_to_all_its_sketch_elements = index.read_id_and_representation_to_all_its_sketch_elements();
         ASSERT_EQ(read_id_and_representation_to_all_its_sketch_elements.size(), 1);
-        ASSERT_NE(read_id_and_representation_to_all_its_sketch_elements[0].find(0x0031), read_id_and_representation_to_all_its_sketch_elements[0].end());
-        EXPECT_EQ(read_id_and_representation_to_all_its_sketch_elements[0].at(0x0031).first_element_, 0);
-        EXPECT_EQ(read_id_and_representation_to_all_its_sketch_elements[0].at(0x0031).block_size_, 1);
+        ASSERT_NE(read_id_and_representation_to_all_its_sketch_elements[0].find(0b00001101), read_id_and_representation_to_all_its_sketch_elements[0].end());
+        EXPECT_EQ(read_id_and_representation_to_all_its_sketch_elements[0].at(0b00001101).first_element_, 0);
+        EXPECT_EQ(read_id_and_representation_to_all_its_sketch_elements[0].at(0b00001101).block_size_, 1);
 
         const std::map<representation_t, ArrayBlock>& representation_to_all_its_sketch_elements = index.representation_to_all_its_sketch_elements();
         ASSERT_EQ(representation_to_all_its_sketch_elements.size(), 1);
-        ASSERT_NE(representation_to_all_its_sketch_elements.find(0x0031), representation_to_all_its_sketch_elements.end());
-        EXPECT_EQ(representation_to_all_its_sketch_elements.at(0x0031).first_element_, 0);
-        EXPECT_EQ(representation_to_all_its_sketch_elements.at(0x0031).block_size_, 1);
+        ASSERT_NE(representation_to_all_its_sketch_elements.find(0b00001101), representation_to_all_its_sketch_elements.end());
+        EXPECT_EQ(representation_to_all_its_sketch_elements.at(0b00001101).first_element_, 0);
+        EXPECT_EQ(representation_to_all_its_sketch_elements.at(0b00001101).block_size_, 1);
     }
 
     TEST(TestCudamapperIndexCPU, TwoReadsMultipleMiniminizers) {
@@ -148,62 +148,62 @@ namespace claragenomics {
         ASSERT_EQ(read_id_and_representation_to_all_its_sketch_elements[0].size(), 4);
         ASSERT_EQ(read_id_and_representation_to_all_its_sketch_elements[1].size(), 3);
         // read_0 AAG(0,1)
-        ASSERT_NE(read_id_and_representation_to_all_its_sketch_elements[0].find(0x002), read_id_and_representation_to_all_its_sketch_elements[0].end());
-        EXPECT_EQ(read_id_and_representation_to_all_its_sketch_elements[0].at(0x002).first_element_, 0);
-        EXPECT_EQ(read_id_and_representation_to_all_its_sketch_elements[0].at(0x002).block_size_, 1);
+        ASSERT_NE(read_id_and_representation_to_all_its_sketch_elements[0].find(0b000010), read_id_and_representation_to_all_its_sketch_elements[0].end());
+        EXPECT_EQ(read_id_and_representation_to_all_its_sketch_elements[0].at(0b000010).first_element_, 0);
+        EXPECT_EQ(read_id_and_representation_to_all_its_sketch_elements[0].at(0b000010).block_size_, 1);
         // read_0 ATC(4,1)
-        ASSERT_NE(read_id_and_representation_to_all_its_sketch_elements[0].find(0x031), read_id_and_representation_to_all_its_sketch_elements[0].end());
-        EXPECT_EQ(read_id_and_representation_to_all_its_sketch_elements[0].at(0x031).first_element_, 4);
-        EXPECT_EQ(read_id_and_representation_to_all_its_sketch_elements[0].at(0x031).block_size_, 1);
+        ASSERT_NE(read_id_and_representation_to_all_its_sketch_elements[0].find(0b001101), read_id_and_representation_to_all_its_sketch_elements[0].end());
+        EXPECT_EQ(read_id_and_representation_to_all_its_sketch_elements[0].at(0b001101).first_element_, 4);
+        EXPECT_EQ(read_id_and_representation_to_all_its_sketch_elements[0].at(0b001101).block_size_, 1);
         // read_0 ATG(5,1)
-        ASSERT_NE(read_id_and_representation_to_all_its_sketch_elements[0].find(0x032), read_id_and_representation_to_all_its_sketch_elements[0].end());
-        EXPECT_EQ(read_id_and_representation_to_all_its_sketch_elements[0].at(0x032).first_element_, 5);
-        EXPECT_EQ(read_id_and_representation_to_all_its_sketch_elements[0].at(0x032).block_size_, 1);
+        ASSERT_NE(read_id_and_representation_to_all_its_sketch_elements[0].find(0b001110), read_id_and_representation_to_all_its_sketch_elements[0].end());
+        EXPECT_EQ(read_id_and_representation_to_all_its_sketch_elements[0].at(0b001110).first_element_, 5);
+        EXPECT_EQ(read_id_and_representation_to_all_its_sketch_elements[0].at(0b001110).block_size_, 1);
         // read_0 CAA(6,1)
-        ASSERT_NE(read_id_and_representation_to_all_its_sketch_elements[0].find(0x100), read_id_and_representation_to_all_its_sketch_elements[0].end());
-        EXPECT_EQ(read_id_and_representation_to_all_its_sketch_elements[0].at(0x100).first_element_, 6);
-        EXPECT_EQ(read_id_and_representation_to_all_its_sketch_elements[0].at(0x100).block_size_, 1);
+        ASSERT_NE(read_id_and_representation_to_all_its_sketch_elements[0].find(0b010000), read_id_and_representation_to_all_its_sketch_elements[0].end());
+        EXPECT_EQ(read_id_and_representation_to_all_its_sketch_elements[0].at(0b010000).first_element_, 6);
+        EXPECT_EQ(read_id_and_representation_to_all_its_sketch_elements[0].at(0b010000).block_size_, 1);
         // read_1 AAG(1,1)
-        ASSERT_NE(read_id_and_representation_to_all_its_sketch_elements[1].find(0x002), read_id_and_representation_to_all_its_sketch_elements[1].end());
-        EXPECT_EQ(read_id_and_representation_to_all_its_sketch_elements[1].at(0x002).first_element_, 1);
-        EXPECT_EQ(read_id_and_representation_to_all_its_sketch_elements[1].at(0x002).block_size_, 1);
+        ASSERT_NE(read_id_and_representation_to_all_its_sketch_elements[1].find(0b000010), read_id_and_representation_to_all_its_sketch_elements[1].end());
+        EXPECT_EQ(read_id_and_representation_to_all_its_sketch_elements[1].at(0b000010).first_element_, 1);
+        EXPECT_EQ(read_id_and_representation_to_all_its_sketch_elements[1].at(0b000010).block_size_, 1);
         // read_1 AGC(2,2)
-        ASSERT_NE(read_id_and_representation_to_all_its_sketch_elements[1].find(0x021), read_id_and_representation_to_all_its_sketch_elements[1].end());
-        EXPECT_EQ(read_id_and_representation_to_all_its_sketch_elements[1].at(0x021).first_element_, 2);
-        EXPECT_EQ(read_id_and_representation_to_all_its_sketch_elements[1].at(0x021).block_size_, 2);
+        ASSERT_NE(read_id_and_representation_to_all_its_sketch_elements[1].find(0b001001), read_id_and_representation_to_all_its_sketch_elements[1].end());
+        EXPECT_EQ(read_id_and_representation_to_all_its_sketch_elements[1].at(0b001001).first_element_, 2);
+        EXPECT_EQ(read_id_and_representation_to_all_its_sketch_elements[1].at(0b001001).block_size_, 2);
         // read_1 CTA(7,1)
-        ASSERT_NE(read_id_and_representation_to_all_its_sketch_elements[1].find(0x130), read_id_and_representation_to_all_its_sketch_elements[1].end());
-        EXPECT_EQ(read_id_and_representation_to_all_its_sketch_elements[1].at(0x130).first_element_, 7);
-        EXPECT_EQ(read_id_and_representation_to_all_its_sketch_elements[1].at(0x130).block_size_, 1);
+        ASSERT_NE(read_id_and_representation_to_all_its_sketch_elements[1].find(0b011100), read_id_and_representation_to_all_its_sketch_elements[1].end());
+        EXPECT_EQ(read_id_and_representation_to_all_its_sketch_elements[1].at(0b011100).first_element_, 7);
+        EXPECT_EQ(read_id_and_representation_to_all_its_sketch_elements[1].at(0b011100).block_size_, 1);
 
         // Test representation_to_all_its_sketch_elements
         // representation_to_all_its_sketch_elements: AAG(0,2),AGC(2,2),ATC(4,1),ATG(5,1),CAA(6,1),CTA(7,1)
         const std::map<representation_t, ArrayBlock>& representation_to_all_its_sketch_elements = index.representation_to_all_its_sketch_elements();
         ASSERT_EQ(representation_to_all_its_sketch_elements.size(), 6);
         // AAG(0,2)
-        ASSERT_NE(representation_to_all_its_sketch_elements.find(0x002), representation_to_all_its_sketch_elements.end());
-        EXPECT_EQ(representation_to_all_its_sketch_elements.at(0x002).first_element_, 0);
-        EXPECT_EQ(representation_to_all_its_sketch_elements.at(0x002).block_size_, 2);
+        ASSERT_NE(representation_to_all_its_sketch_elements.find(0b000010), representation_to_all_its_sketch_elements.end());
+        EXPECT_EQ(representation_to_all_its_sketch_elements.at(0b000010).first_element_, 0);
+        EXPECT_EQ(representation_to_all_its_sketch_elements.at(0b000010).block_size_, 2);
         // AGC(2,2)
-        ASSERT_NE(representation_to_all_its_sketch_elements.find(0x021), representation_to_all_its_sketch_elements.end());
-        EXPECT_EQ(representation_to_all_its_sketch_elements.at(0x021).first_element_, 2);
-        EXPECT_EQ(representation_to_all_its_sketch_elements.at(0x021).block_size_, 2);
+        ASSERT_NE(representation_to_all_its_sketch_elements.find(0b001001), representation_to_all_its_sketch_elements.end());
+        EXPECT_EQ(representation_to_all_its_sketch_elements.at(0b001001).first_element_, 2);
+        EXPECT_EQ(representation_to_all_its_sketch_elements.at(0b001001).block_size_, 2);
         // ATC(4,1)
-        ASSERT_NE(representation_to_all_its_sketch_elements.find(0x031), representation_to_all_its_sketch_elements.end());
-        EXPECT_EQ(representation_to_all_its_sketch_elements.at(0x031).first_element_, 4);
-        EXPECT_EQ(representation_to_all_its_sketch_elements.at(0x031).block_size_, 1);
+        ASSERT_NE(representation_to_all_its_sketch_elements.find(0b001101), representation_to_all_its_sketch_elements.end());
+        EXPECT_EQ(representation_to_all_its_sketch_elements.at(0b001101).first_element_, 4);
+        EXPECT_EQ(representation_to_all_its_sketch_elements.at(0b001101).block_size_, 1);
         // ATG(5,1)
-        ASSERT_NE(representation_to_all_its_sketch_elements.find(0x032), representation_to_all_its_sketch_elements.end());
-        EXPECT_EQ(representation_to_all_its_sketch_elements.at(0x032).first_element_, 5);
-        EXPECT_EQ(representation_to_all_its_sketch_elements.at(0x032).block_size_, 1);
+        ASSERT_NE(representation_to_all_its_sketch_elements.find(0b001110), representation_to_all_its_sketch_elements.end());
+        EXPECT_EQ(representation_to_all_its_sketch_elements.at(0b001110).first_element_, 5);
+        EXPECT_EQ(representation_to_all_its_sketch_elements.at(0b001110).block_size_, 1);
         // CAA(6,1)
-        ASSERT_NE(representation_to_all_its_sketch_elements.find(0x100), representation_to_all_its_sketch_elements.end());
-        EXPECT_EQ(representation_to_all_its_sketch_elements.at(0x100).first_element_, 6);
-        EXPECT_EQ(representation_to_all_its_sketch_elements.at(0x100).block_size_, 1);
+        ASSERT_NE(representation_to_all_its_sketch_elements.find(0b010000), representation_to_all_its_sketch_elements.end());
+        EXPECT_EQ(representation_to_all_its_sketch_elements.at(0b010000).first_element_, 6);
+        EXPECT_EQ(representation_to_all_its_sketch_elements.at(0b010000).block_size_, 1);
         // CTA(7,1)
-        ASSERT_NE(representation_to_all_its_sketch_elements.find(0x130), representation_to_all_its_sketch_elements.end());
-        EXPECT_EQ(representation_to_all_its_sketch_elements.at(0x130).first_element_, 7);
-        EXPECT_EQ(representation_to_all_its_sketch_elements.at(0x130).block_size_, 1);
+        ASSERT_NE(representation_to_all_its_sketch_elements.find(0b011100), representation_to_all_its_sketch_elements.end());
+        EXPECT_EQ(representation_to_all_its_sketch_elements.at(0b011100).first_element_, 7);
+        EXPECT_EQ(representation_to_all_its_sketch_elements.at(0b011100).block_size_, 1);
     }
 
 }

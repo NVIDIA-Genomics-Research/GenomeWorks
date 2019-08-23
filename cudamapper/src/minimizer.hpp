@@ -21,7 +21,7 @@ namespace claragenomics {
     public:
         /// \brief constructor
         ///
-        /// \param representation 4-bit packed representation of a kmer
+        /// \param representation 2-bit packed representation of a kmer
         /// \param position position of the minimizer in the read
         /// \param direction in which the read was read (forward or reverse complimet)
         /// \param read_id read's id
@@ -49,7 +49,7 @@ namespace claragenomics {
         /// \return read ID
         read_id_t read_id() const override;
 
-        /// \brief converts a kmer of length length into 4-bit packed numeric representation
+        /// \brief converts a kmer of length length into 2-bit packed numeric representation
         ///
         /// Representation uses lexicographical ordering. It returns the smaller of forward and reverse complement representation
         ///
