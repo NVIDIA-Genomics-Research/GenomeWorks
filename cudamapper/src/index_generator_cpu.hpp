@@ -43,6 +43,8 @@ namespace claragenomics {
         /// \return mapping of internal read id that goes from 0 to number_of_reads-1 to actual read name from the input
         const std::vector<std::string>& read_id_to_read_name() const override;
 
+        /// \brief returns mapping of internal read id that goes from 0 to number_of_reads-1 to read length
+        /// \return mapping of internal read id that goes from 0 to number_of_reads-1 to read length
         const std::vector<std::uint32_t>& read_id_to_read_length() const override;
 
         /// \brief returns number of reads
