@@ -29,6 +29,7 @@ namespace claragenomics {
         static void print_paf(const std::vector<Overlap> &overlaps);
 
         /// \brief removes overlaps which are unlikely to be true overlaps
+        /// \param overlaps vector of Overlap objects to be filtered
         /// \param min_residues smallest number of residues (anchors) for an overlap to be accepted
         /// \param min_overlap_len the smallest overlap distance which is accepted
         /// \return vector of filtered Overlap objects
