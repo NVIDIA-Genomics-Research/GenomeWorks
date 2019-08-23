@@ -76,6 +76,4 @@ namespace claragenomics {
 
         std::vector<std::vector<RepresentationToSketchElements>> read_id_and_representation_to_sketch_elements_;
     };
-        
-
 }

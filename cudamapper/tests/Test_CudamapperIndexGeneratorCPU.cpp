@@ -26,11 +26,11 @@ namespace claragenomics {
         ASSERT_EQ(index_generator.read_id_to_read_name().size(), 1);
         EXPECT_EQ(index_generator.read_id_to_read_name()[0], std::string("read_0"));
 
-        const auto& representations_to_sketch_elements = index_generator.representations_to_sketch_elements();
-        ASSERT_EQ(representations_to_sketch_elements.size(), 1);
-        ASSERT_NE(representations_to_sketch_elements.find(0b00001101), std::end(representations_to_sketch_elements));
+        const auto& representations_and_sketch_elements = index_generator.representations_and_sketch_elements();
+        ASSERT_EQ(representations_and_sketch_elements.size(), 1);
+        ASSERT_EQ(representations_and_sketch_elements[0].representation_, 0b00001101);
 
-        const std::vector<std::unique_ptr<SketchElement>>& sketch_elements_for_representation = (*representations_to_sketch_elements.find(0b00001101)).second;
+        const std::vector<std::unique_ptr<SketchElement>>& sketch_elements_for_representation = representations_and_sketch_elements[0].sketch_elements_;
         ASSERT_EQ(sketch_elements_for_representation.size(), 1);
         const Minimizer& minimizer = static_cast<const Minimizer&>(*sketch_elements_for_representation[0]);
         EXPECT_EQ(minimizer.representation(), 0b00001101);
@@ -75,14 +75,14 @@ namespace claragenomics {
         EXPECT_EQ(index_generator.read_id_to_read_name()[0], std::string("read_0"));
         EXPECT_EQ(index_generator.read_id_to_read_name()[1], std::string("read_1"));
 
-        const auto& representations_to_sketch_elements = index_generator.representations_to_sketch_elements();
-        ASSERT_EQ(representations_to_sketch_elements.size(), 6);
+        const auto& representations_and_sketch_elements = index_generator.representations_and_sketch_elements();
+        ASSERT_EQ(representations_and_sketch_elements.size(), 6);
 
         // complete datastructure: AAG(4f0), AAG(0f1), AGC(1f1), AGC(2r1), ATC(1f0), ATG(0r0), CAA(3f0), CTA(3f1)
         // AAG (4f0), (0f1)
         {
-            ASSERT_NE(representations_to_sketch_elements.find(0b000010), std::end(representations_to_sketch_elements)) << "AAG";
-            const std::vector<std::unique_ptr<SketchElement>>& sketch_elements_for_representation = (*representations_to_sketch_elements.find(0b000010)).second;
+            ASSERT_EQ(representations_and_sketch_elements[0].representation_, 0b000010) << "AAG";
+            const std::vector<std::unique_ptr<SketchElement>>& sketch_elements_for_representation = representations_and_sketch_elements[0].sketch_elements_;
             ASSERT_EQ(sketch_elements_for_representation.size(), 2) << "AAG";
             {
                 const Minimizer& minimizer = static_cast<const Minimizer&>(*sketch_elements_for_representation[0]);
@@ -101,8 +101,8 @@ namespace claragenomics {
         }
         // AGC (1f1), (2r1)
         {
-            ASSERT_NE(representations_to_sketch_elements.find(0b001001), std::end(representations_to_sketch_elements)) << "AGC";
-            const std::vector<std::unique_ptr<SketchElement>>& sketch_elements_for_representation = (*representations_to_sketch_elements.find(0b001001)).second;
+            ASSERT_EQ(representations_and_sketch_elements[1].representation_, 0b001001) << "AGC";
+            const std::vector<std::unique_ptr<SketchElement>>& sketch_elements_for_representation = representations_and_sketch_elements[1].sketch_elements_;
             ASSERT_EQ(sketch_elements_for_representation.size(), 2) << "AGC";
             {
                 const Minimizer& minimizer = static_cast<const Minimizer&>(*sketch_elements_for_representation[0]);
@@ -121,8 +121,8 @@ namespace claragenomics {
         }
         // ATC (1f0)
         {
-            ASSERT_NE(representations_to_sketch_elements.find(0b001101), std::end(representations_to_sketch_elements)) << "ATC";
-            const std::vector<std::unique_ptr<SketchElement>>& sketch_elements_for_representation = (*representations_to_sketch_elements.find(0b001101)).second;
+            ASSERT_EQ(representations_and_sketch_elements[2].representation_, 0b001101) << "ATC";
+            const std::vector<std::unique_ptr<SketchElement>>& sketch_elements_for_representation = representations_and_sketch_elements[2].sketch_elements_;
             ASSERT_EQ(sketch_elements_for_representation.size(), 1) << "ATC";
             {
                 const Minimizer& minimizer = static_cast<const Minimizer&>(*sketch_elements_for_representation[0]);
@@ -134,8 +134,8 @@ namespace claragenomics {
         }
         // ATG (0r0)
         {
-            ASSERT_NE(representations_to_sketch_elements.find(0b001110), std::end(representations_to_sketch_elements)) << "ATG";
-            const std::vector<std::unique_ptr<SketchElement>>& sketch_elements_for_representation = (*representations_to_sketch_elements.find(0b001110)).second;
+            ASSERT_EQ(representations_and_sketch_elements[3].representation_, 0b001110) << "ATG";
+            const std::vector<std::unique_ptr<SketchElement>>& sketch_elements_for_representation = representations_and_sketch_elements[3].sketch_elements_;
             ASSERT_EQ(sketch_elements_for_representation.size(), 1) << "ATG";
             {
                 const Minimizer& minimizer = static_cast<const Minimizer&>(*sketch_elements_for_representation[0]);
@@ -147,8 +147,8 @@ namespace claragenomics {
         }
         // CAA (3f0)
         {
-            ASSERT_NE(representations_to_sketch_elements.find(0b010000), std::end(representations_to_sketch_elements)) << "CAA";
-            const std::vector<std::unique_ptr<SketchElement>>& sketch_elements_for_representation = (*representations_to_sketch_elements.find(0b010000)).second;
+            ASSERT_EQ(representations_and_sketch_elements[4].representation_, 0b010000) << "CAA";
+            const std::vector<std::unique_ptr<SketchElement>>& sketch_elements_for_representation = representations_and_sketch_elements[4].sketch_elements_;
             ASSERT_EQ(sketch_elements_for_representation.size(), 1) << "CAA";
             {
                 const Minimizer& minimizer = static_cast<const Minimizer&>(*sketch_elements_for_representation[0]);
@@ -160,8 +160,8 @@ namespace claragenomics {
         }
         // CTA (3f1)
         {
-            ASSERT_NE(representations_to_sketch_elements.find(0b011100), std::end(representations_to_sketch_elements)) << "CTA";
-            const std::vector<std::unique_ptr<SketchElement>>& sketch_elements_for_representation = (*representations_to_sketch_elements.find(0b011100)).second;
+            ASSERT_EQ(representations_and_sketch_elements[5].representation_, 0b011100) << "CTA";
+            const std::vector<std::unique_ptr<SketchElement>>& sketch_elements_for_representation = representations_and_sketch_elements[5].sketch_elements_;
             ASSERT_EQ(sketch_elements_for_representation.size(), 1) << "CTA";
             {
                 const Minimizer& minimizer = static_cast<const Minimizer&>(*sketch_elements_for_representation[0]);
@@ -172,5 +172,4 @@ namespace claragenomics {
             }
         }
     }
-
 }

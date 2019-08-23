@@ -11,7 +11,6 @@
 #pragma  once
 
 #include <cstdint>
-#include <map>
 #include <memory>
 #include <string>
 #include <vector>
@@ -26,9 +25,15 @@ namespace claragenomics {
     class IndexGenerator {
         public:
 
-        /// \brief returns a mapping of sketch element representations to all sketch elements with those representations
-        /// \return mapping of sketch element representations to all sketch elements with those representations
-        virtual const std::map<representation_t, std::vector<std::unique_ptr<SketchElement>>>& representations_to_sketch_elements() const = 0;
+        /// \brief Representation and all sketch elements with that representation
+        struct RepresentationAndSketchElements {
+            representation_t representation_;
+            std::vector<std::unique_ptr<SketchElement>> sketch_elements_;
+        };
+
+        /// \brief Returns a vector whose each element is one representation and all sketch elements with that representation. Elements are sorted by representation in increasing order
+        /// \return the vector
+        virtual const std::vector<RepresentationAndSketchElements>& representations_and_sketch_elements() const = 0;
 
         /// \brief returns mapping of internal read id that goes from 0 to number_of_reads-1 to actual read name from the input
         /// returns mapping of internal read id that goes from 0 to number_of_reads-1 to actual read name from the input

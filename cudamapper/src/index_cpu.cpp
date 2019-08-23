@@ -18,12 +18,12 @@ namespace claragenomics {
       read_id_to_read_name_(index_generator.read_id_to_read_name()),
       read_id_and_representation_to_sketch_elements_(index_generator.number_of_reads()) {
 
-        auto const& rep_to_sketch_elem = index_generator.representations_to_sketch_elements();
+        auto const& rep_to_sketch_elem = index_generator.representations_and_sketch_elements();
 
         // determine the overall number of sketch elements and preallocate data arrays
         std::uint64_t total_sketch_elems = 0;
         for (const auto& sketch_elems_for_one_rep : rep_to_sketch_elem) {
-            total_sketch_elems += sketch_elems_for_one_rep.second.size();
+            total_sketch_elems += sketch_elems_for_one_rep.sketch_elements_.size();
         }
 
         positions_in_reads_.reserve(total_sketch_elems);
@@ -31,9 +31,9 @@ namespace claragenomics {
         directions_of_reads_.reserve(total_sketch_elems);
 
         // go through representations one by one
-        for (const auto& key_value_for_current_rep : rep_to_sketch_elem) {
-            const representation_t current_rep = key_value_for_current_rep.first;
-            const auto& sketch_elems_for_current_rep = key_value_for_current_rep.second;
+        for (const auto& sketch_elems_for_one_rep : rep_to_sketch_elem) {
+            const representation_t current_rep = sketch_elems_for_one_rep.representation_;
+            const auto& sketch_elems_for_current_rep = sketch_elems_for_one_rep.sketch_elements_;
             // all sketch elements with the current representation are going to be added to this section of the data arrays
             ArrayBlock array_block_for_current_rep_and_all_read_ids = ArrayBlock{positions_in_reads_.size(), static_cast<std::uint32_t>(sketch_elems_for_current_rep.size())};
             read_id_t current_read = std::numeric_limits<read_id_t>::max();
