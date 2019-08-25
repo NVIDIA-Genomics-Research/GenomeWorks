@@ -32,6 +32,7 @@ namespace claragenomics {
         /// \return vector of Overlap objects
         const std::vector<Overlap> get_overlaps(const std::vector<Anchor> &anchors, const Index &index) override;
 
+    private:
         /// \brief given a vector of overlaps, combines all overlaps from the same read pair
         ///
         /// If two or more overlaps come from the same read pair they are combined into one large overlap:
