@@ -23,7 +23,7 @@ namespace claragenomics {
         std::vector<Overlap> fused_overlaps;
         Overlap fused_overlap = unfused_overlaps[0];
         for (size_t i=0; i< unfused_overlaps.size() - 1; i++){
-            Overlap next_overlap = unfused_overlaps[i+1];
+            const Overlap& next_overlap = unfused_overlaps[i+1];
             if ((fused_overlap.target_read_id_ == next_overlap.target_read_id_) && (fused_overlap.query_read_id_ == next_overlap.query_read_id_)){
                 //need to fuse
                 fused_overlap.num_residues_ += next_overlap.num_residues_;
