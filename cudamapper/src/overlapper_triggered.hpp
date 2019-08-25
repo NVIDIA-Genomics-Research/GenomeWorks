@@ -18,9 +18,10 @@
 
 namespace claragenomics {
 
-    /// OverlapperNaive - generates overlaps and displays them on screen. This overlapper uses a greedy approach where
-    /// very simple chaining is used - if two strings have more than one anchor this is considered to be an overlap.
-    /// The extend of the overlap is the two anchors which are furthest apart.
+    /// OverlapperTriggered - generates overlaps and displays them on screen.
+    /// Uses a dynamic programming approach where an overlap is "triggered" when a run of
+    /// Anchors (e.g 3) with a score above a threshold is encountered and untriggerred
+    /// when a single anchor with a threshold below the value is encountered.
     class OverlapperTriggered: public Overlapper {
 
     public:
