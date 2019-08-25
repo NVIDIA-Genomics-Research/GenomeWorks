@@ -44,7 +44,7 @@ namespace claragenomics {
                 new_overlap.target_length_ = read_lengths[anchor.target_read_id_];
 
                 new_overlap.query_start_position_in_read_ = anchor.query_position_in_read_;
-                new_overlap.target_start_position_in_read_ = anchor.target_position_in_read_; // TODO seems like an error?
+                new_overlap.target_start_position_in_read_ = anchor.target_position_in_read_;
                 reads_to_overlaps[read_pair] = new_overlap;
             } else {
                 //Pair has been seen before
