@@ -29,13 +29,10 @@ namespace claragenomics {
         /// \return an array of reads ids for sketch elements
         virtual const std::vector<read_id_t>& read_ids() const = 0;
 
-        /// \brief returns an array of directions in which sketch elements were read
-        /// \return an array of directions in which sketch elements were read
-        virtual const std::vector<SketchElement::DirectionOfRepresentation>& directions_of_reads() const = 0;
 
         /// \brief returns an array of directions in which sketch elements were read
         /// \return an array of directions in which sketch elements were read
-        virtual const std::vector<std::uint32_t>& read_id_to_read_length() const =0;
+        virtual const std::vector<SketchElement::DirectionOfRepresentation>& directions_of_reads() const = 0;
 
         /// \brief returns number of reads in input data
         /// \return number of reads in input data
@@ -44,6 +41,10 @@ namespace claragenomics {
         /// \brief returns mapping of internal read id that goes from 0 to number_of_reads-1 to actual read name from the input
         /// \return mapping of internal read id that goes from 0 to number_of_reads-1 to actual read name from the input
         virtual const std::vector<std::string>& read_id_to_read_name() const = 0;
+
+        /// \brief returns mapping of internal read id that goes from 0 to read lengths for that read
+        /// \return mapping of internal read id that goes from 0 to read lengths for that read
+        virtual const std::vector<std::uint32_t>& read_id_to_read_length() const =0;
 
         /// \brief returns mapping of read id (vector) and representation (map) to section of data arrays with sketch elements with that read id and representation
         /// \return mapping of read id (vector) and representation (map) to section of data arrays with sketch elements with that read id and representation

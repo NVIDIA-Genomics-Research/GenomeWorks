@@ -26,7 +26,9 @@ namespace claragenomics {
 
     public:
         /// \brief finds all overlaps
-        ///
+        /// Uses a dynamic programming approach where an overlap is "triggered" when a run of
+        /// Anchors (e.g 3) with a score above a threshold is encountered and untriggerred
+        /// when a single anchor with a threshold below the value is encountered.
         /// \param anchors vector of anchors
         /// \param index Index
         /// \return vector of Overlap objects
