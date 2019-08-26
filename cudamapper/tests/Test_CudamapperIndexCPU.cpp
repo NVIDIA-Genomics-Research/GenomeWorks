@@ -43,17 +43,15 @@ namespace claragenomics {
         ASSERT_EQ(directions_of_reads.size(), 1);
         EXPECT_EQ(directions_of_reads[0], SketchElement::DirectionOfRepresentation::REVERSE);
 
-        const std::vector<std::map<representation_t, ArrayBlock>>& read_id_and_representation_to_all_its_sketch_elements = index.read_id_and_representation_to_all_its_sketch_elements();
-        ASSERT_EQ(read_id_and_representation_to_all_its_sketch_elements.size(), 1);
-        ASSERT_NE(read_id_and_representation_to_all_its_sketch_elements[0].find(0b00001101), read_id_and_representation_to_all_its_sketch_elements[0].end());
-        EXPECT_EQ(read_id_and_representation_to_all_its_sketch_elements[0].at(0b00001101).first_element_, 0);
-        EXPECT_EQ(read_id_and_representation_to_all_its_sketch_elements[0].at(0b00001101).block_size_, 1);
-
-        const std::map<representation_t, ArrayBlock>& representation_to_all_its_sketch_elements = index.representation_to_all_its_sketch_elements();
-        ASSERT_EQ(representation_to_all_its_sketch_elements.size(), 1);
-        ASSERT_NE(representation_to_all_its_sketch_elements.find(0b00001101), representation_to_all_its_sketch_elements.end());
-        EXPECT_EQ(representation_to_all_its_sketch_elements.at(0b00001101).first_element_, 0);
-        EXPECT_EQ(representation_to_all_its_sketch_elements.at(0b00001101).block_size_, 1);
+        const std::vector<std::vector<Index::RepresentationToSketchElements>>& read_id_and_representation_to_sketch_elements = index.read_id_and_representation_to_sketch_elements();
+        ASSERT_EQ(read_id_and_representation_to_sketch_elements.size(), 1);
+        const std::vector<Index::RepresentationToSketchElements>& rep_to_se_for_read_0 = read_id_and_representation_to_sketch_elements[0];
+        ASSERT_EQ(rep_to_se_for_read_0.size(), 1);
+        ASSERT_EQ(rep_to_se_for_read_0[0].representation_, 0b00001101);
+        EXPECT_EQ(rep_to_se_for_read_0[0].sketch_elements_for_representation_and_read_id_.first_element_, 0);
+        EXPECT_EQ(rep_to_se_for_read_0[0].sketch_elements_for_representation_and_read_id_.block_size_, 1);
+        EXPECT_EQ(rep_to_se_for_read_0[0].sketch_elements_for_representation_and_all_read_ids_.first_element_, 0);
+        EXPECT_EQ(rep_to_se_for_read_0[0].sketch_elements_for_representation_and_all_read_ids_.block_size_, 1);
     }
 
     TEST(TestCudamapperIndexCPU, TwoReadsMultipleMiniminizers) {
@@ -85,9 +83,9 @@ namespace claragenomics {
         // (1,2) means array block start at element 1 and has 2 elements
 
         //              0         1         2         3         4         5         6         7
-        // data arrays: AAG(4f0), AAG(0f1), AGC(1f1), AGC(2r1), ATC(1f0), ATG(0r0), CA(3f0), CTA(3f1)
-        // read_id_and_representation_to_all_its_sketch_elements: read_0(AAG(0,1),ATC(4,1),ATG(5,1),CAA(6,1)), read_1(AAG(1,1),AGC(2,2),CTA(7,1))
-        // representation_to_all_its_sketch_elements: AAG(0,2),AGC(2,2),ATC(4,1),ATG(5,1),CAA(6,1),CTA(7,1)
+        // data arrays: AAG(4f0), AAG(0f1), AGC(1f1), AGC(2r1), ATC(1f0), ATG(0r0), CAA(3f0), CTA(3f1)
+        // read_id_and_representation_to_sketch_elements: read_0(AAG(0,1)(0,2), ATC(4,1)(4,1), ATG(5,1)(5,1). CAA(6,1)(6,1))
+        //                                                read_1(AAG(1,1)(0,2), AGC(2,2)(2,2), CTA(7,1)(7,1))
 
         IndexGeneratorCPU index_generator(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/two_reads_multiple_minimizers.fasta", 3, 2);
         IndexCPU index(index_generator);
@@ -141,69 +139,53 @@ namespace claragenomics {
         EXPECT_EQ(read_ids[7], 1);
         EXPECT_EQ(directions_of_reads[7], SketchElement::DirectionOfRepresentation::FORWARD);
 
-        // Test read_id_and_representation_to_all_its_sketch_elements
-        // read_id_and_representation_to_all_its_sketch_elements: read_0(AAG(0,1),ATC(4,1),ATG(5,1),CAA(6,1)), read_1(AAG(1,1),AGC(2,2),CTA(7,1))
-        const std::vector<std::map<representation_t, ArrayBlock>>& read_id_and_representation_to_all_its_sketch_elements = index.read_id_and_representation_to_all_its_sketch_elements();
-        ASSERT_EQ(read_id_and_representation_to_all_its_sketch_elements.size(), 2);
-        ASSERT_EQ(read_id_and_representation_to_all_its_sketch_elements[0].size(), 4);
-        ASSERT_EQ(read_id_and_representation_to_all_its_sketch_elements[1].size(), 3);
-        // read_0 AAG(0,1)
-        ASSERT_NE(read_id_and_representation_to_all_its_sketch_elements[0].find(0b000010), read_id_and_representation_to_all_its_sketch_elements[0].end());
-        EXPECT_EQ(read_id_and_representation_to_all_its_sketch_elements[0].at(0b000010).first_element_, 0);
-        EXPECT_EQ(read_id_and_representation_to_all_its_sketch_elements[0].at(0b000010).block_size_, 1);
-        // read_0 ATC(4,1)
-        ASSERT_NE(read_id_and_representation_to_all_its_sketch_elements[0].find(0b001101), read_id_and_representation_to_all_its_sketch_elements[0].end());
-        EXPECT_EQ(read_id_and_representation_to_all_its_sketch_elements[0].at(0b001101).first_element_, 4);
-        EXPECT_EQ(read_id_and_representation_to_all_its_sketch_elements[0].at(0b001101).block_size_, 1);
-        // read_0 ATG(5,1)
-        ASSERT_NE(read_id_and_representation_to_all_its_sketch_elements[0].find(0b001110), read_id_and_representation_to_all_its_sketch_elements[0].end());
-        EXPECT_EQ(read_id_and_representation_to_all_its_sketch_elements[0].at(0b001110).first_element_, 5);
-        EXPECT_EQ(read_id_and_representation_to_all_its_sketch_elements[0].at(0b001110).block_size_, 1);
-        // read_0 CAA(6,1)
-        ASSERT_NE(read_id_and_representation_to_all_its_sketch_elements[0].find(0b010000), read_id_and_representation_to_all_its_sketch_elements[0].end());
-        EXPECT_EQ(read_id_and_representation_to_all_its_sketch_elements[0].at(0b010000).first_element_, 6);
-        EXPECT_EQ(read_id_and_representation_to_all_its_sketch_elements[0].at(0b010000).block_size_, 1);
-        // read_1 AAG(1,1)
-        ASSERT_NE(read_id_and_representation_to_all_its_sketch_elements[1].find(0b000010), read_id_and_representation_to_all_its_sketch_elements[1].end());
-        EXPECT_EQ(read_id_and_representation_to_all_its_sketch_elements[1].at(0b000010).first_element_, 1);
-        EXPECT_EQ(read_id_and_representation_to_all_its_sketch_elements[1].at(0b000010).block_size_, 1);
-        // read_1 AGC(2,2)
-        ASSERT_NE(read_id_and_representation_to_all_its_sketch_elements[1].find(0b001001), read_id_and_representation_to_all_its_sketch_elements[1].end());
-        EXPECT_EQ(read_id_and_representation_to_all_its_sketch_elements[1].at(0b001001).first_element_, 2);
-        EXPECT_EQ(read_id_and_representation_to_all_its_sketch_elements[1].at(0b001001).block_size_, 2);
-        // read_1 CTA(7,1)
-        ASSERT_NE(read_id_and_representation_to_all_its_sketch_elements[1].find(0b011100), read_id_and_representation_to_all_its_sketch_elements[1].end());
-        EXPECT_EQ(read_id_and_representation_to_all_its_sketch_elements[1].at(0b011100).first_element_, 7);
-        EXPECT_EQ(read_id_and_representation_to_all_its_sketch_elements[1].at(0b011100).block_size_, 1);
+        // Test pointers
 
-        // Test representation_to_all_its_sketch_elements
-        // representation_to_all_its_sketch_elements: AAG(0,2),AGC(2,2),ATC(4,1),ATG(5,1),CAA(6,1),CTA(7,1)
-        const std::map<representation_t, ArrayBlock>& representation_to_all_its_sketch_elements = index.representation_to_all_its_sketch_elements();
-        ASSERT_EQ(representation_to_all_its_sketch_elements.size(), 6);
-        // AAG(0,2)
-        ASSERT_NE(representation_to_all_its_sketch_elements.find(0b000010), representation_to_all_its_sketch_elements.end());
-        EXPECT_EQ(representation_to_all_its_sketch_elements.at(0b000010).first_element_, 0);
-        EXPECT_EQ(representation_to_all_its_sketch_elements.at(0b000010).block_size_, 2);
-        // AGC(2,2)
-        ASSERT_NE(representation_to_all_its_sketch_elements.find(0b001001), representation_to_all_its_sketch_elements.end());
-        EXPECT_EQ(representation_to_all_its_sketch_elements.at(0b001001).first_element_, 2);
-        EXPECT_EQ(representation_to_all_its_sketch_elements.at(0b001001).block_size_, 2);
-        // ATC(4,1)
-        ASSERT_NE(representation_to_all_its_sketch_elements.find(0b001101), representation_to_all_its_sketch_elements.end());
-        EXPECT_EQ(representation_to_all_its_sketch_elements.at(0b001101).first_element_, 4);
-        EXPECT_EQ(representation_to_all_its_sketch_elements.at(0b001101).block_size_, 1);
-        // ATG(5,1)
-        ASSERT_NE(representation_to_all_its_sketch_elements.find(0b001110), representation_to_all_its_sketch_elements.end());
-        EXPECT_EQ(representation_to_all_its_sketch_elements.at(0b001110).first_element_, 5);
-        EXPECT_EQ(representation_to_all_its_sketch_elements.at(0b001110).block_size_, 1);
-        // CAA(6,1)
-        ASSERT_NE(representation_to_all_its_sketch_elements.find(0b010000), representation_to_all_its_sketch_elements.end());
-        EXPECT_EQ(representation_to_all_its_sketch_elements.at(0b010000).first_element_, 6);
-        EXPECT_EQ(representation_to_all_its_sketch_elements.at(0b010000).block_size_, 1);
-        // CTA(7,1)
-        ASSERT_NE(representation_to_all_its_sketch_elements.find(0b011100), representation_to_all_its_sketch_elements.end());
-        EXPECT_EQ(representation_to_all_its_sketch_elements.at(0b011100).first_element_, 7);
-        EXPECT_EQ(representation_to_all_its_sketch_elements.at(0b011100).block_size_, 1);
+        const std::vector<std::vector<Index::RepresentationToSketchElements>>& read_id_and_representation_to_sketch_elements = index.read_id_and_representation_to_sketch_elements();
+        ASSERT_EQ(read_id_and_representation_to_sketch_elements.size(), 2);
+
+        // read_0(AAG(0,1)(0,2), ATC(4,1)(4,1), ATG(5,1)(5,1). CAA(6,1)(6,1))
+        const std::vector<Index::RepresentationToSketchElements>& rep_to_se_for_read_0 = read_id_and_representation_to_sketch_elements[0];
+        ASSERT_EQ(rep_to_se_for_read_0.size(), 4);
+        ASSERT_EQ(rep_to_se_for_read_0[0].representation_, 0b000010); // AAG
+        EXPECT_EQ(rep_to_se_for_read_0[0].sketch_elements_for_representation_and_read_id_.first_element_, 0);
+        EXPECT_EQ(rep_to_se_for_read_0[0].sketch_elements_for_representation_and_read_id_.block_size_, 1);
+        EXPECT_EQ(rep_to_se_for_read_0[0].sketch_elements_for_representation_and_all_read_ids_.first_element_, 0);
+        EXPECT_EQ(rep_to_se_for_read_0[0].sketch_elements_for_representation_and_all_read_ids_.block_size_, 2);
+        ASSERT_EQ(rep_to_se_for_read_0[1].representation_, 0b001101); // ATC
+        EXPECT_EQ(rep_to_se_for_read_0[1].sketch_elements_for_representation_and_read_id_.first_element_, 4);
+        EXPECT_EQ(rep_to_se_for_read_0[1].sketch_elements_for_representation_and_read_id_.block_size_, 1);
+        EXPECT_EQ(rep_to_se_for_read_0[1].sketch_elements_for_representation_and_all_read_ids_.first_element_, 4);
+        EXPECT_EQ(rep_to_se_for_read_0[1].sketch_elements_for_representation_and_all_read_ids_.block_size_, 1);
+        ASSERT_EQ(rep_to_se_for_read_0[2].representation_, 0b001110); // ATG
+        EXPECT_EQ(rep_to_se_for_read_0[2].sketch_elements_for_representation_and_read_id_.first_element_, 5);
+        EXPECT_EQ(rep_to_se_for_read_0[2].sketch_elements_for_representation_and_read_id_.block_size_, 1);
+        EXPECT_EQ(rep_to_se_for_read_0[2].sketch_elements_for_representation_and_all_read_ids_.first_element_, 5);
+        EXPECT_EQ(rep_to_se_for_read_0[2].sketch_elements_for_representation_and_all_read_ids_.block_size_, 1);
+        ASSERT_EQ(rep_to_se_for_read_0[3].representation_, 0b010000); // CAA
+        EXPECT_EQ(rep_to_se_for_read_0[3].sketch_elements_for_representation_and_read_id_.first_element_, 6);
+        EXPECT_EQ(rep_to_se_for_read_0[3].sketch_elements_for_representation_and_read_id_.block_size_, 1);
+        EXPECT_EQ(rep_to_se_for_read_0[3].sketch_elements_for_representation_and_all_read_ids_.first_element_, 6);
+        EXPECT_EQ(rep_to_se_for_read_0[3].sketch_elements_for_representation_and_all_read_ids_.block_size_, 1);
+
+        // read_1(AAG(1,1)(0,2), AGC(2,2)(2,2), CTA(7,1)(7,1))
+        const std::vector<Index::RepresentationToSketchElements>& rep_to_se_for_read_1 = read_id_and_representation_to_sketch_elements[1];
+        ASSERT_EQ(rep_to_se_for_read_1.size(), 3);
+        ASSERT_EQ(rep_to_se_for_read_1[0].representation_, 0b000010); // AAG
+        EXPECT_EQ(rep_to_se_for_read_1[0].sketch_elements_for_representation_and_read_id_.first_element_, 1);
+        EXPECT_EQ(rep_to_se_for_read_1[0].sketch_elements_for_representation_and_read_id_.block_size_, 1);
+        EXPECT_EQ(rep_to_se_for_read_1[0].sketch_elements_for_representation_and_all_read_ids_.first_element_, 0);
+        EXPECT_EQ(rep_to_se_for_read_1[0].sketch_elements_for_representation_and_all_read_ids_.block_size_, 2);
+        ASSERT_EQ(rep_to_se_for_read_1[1].representation_, 0b001001); // AGC
+        EXPECT_EQ(rep_to_se_for_read_1[1].sketch_elements_for_representation_and_read_id_.first_element_, 2);
+        EXPECT_EQ(rep_to_se_for_read_1[1].sketch_elements_for_representation_and_read_id_.block_size_, 2);
+        EXPECT_EQ(rep_to_se_for_read_1[1].sketch_elements_for_representation_and_all_read_ids_.first_element_, 2);
+        EXPECT_EQ(rep_to_se_for_read_1[1].sketch_elements_for_representation_and_all_read_ids_.block_size_, 2);
+        ASSERT_EQ(rep_to_se_for_read_1[2].representation_, 0b011100); // CTA
+        EXPECT_EQ(rep_to_se_for_read_1[2].sketch_elements_for_representation_and_read_id_.first_element_, 7);
+        EXPECT_EQ(rep_to_se_for_read_1[2].sketch_elements_for_representation_and_read_id_.block_size_, 1);
+        EXPECT_EQ(rep_to_se_for_read_1[2].sketch_elements_for_representation_and_all_read_ids_.first_element_, 7);
+        EXPECT_EQ(rep_to_se_for_read_1[2].sketch_elements_for_representation_and_all_read_ids_.block_size_, 1);
     }
 
 }

@@ -35,7 +35,7 @@ namespace claragenomics {
 
     std::uint64_t IndexGeneratorGPU::window_size() const { return window_size_; }
 
-    const std::map<representation_t, std::vector<std::unique_ptr<SketchElement>>>& IndexGeneratorGPU::representations_to_sketch_elements() const { return index_; };
+    const std::vector<IndexGenerator::RepresentationAndSketchElements>& IndexGeneratorGPU::representations_and_sketch_elements() const { return index_; };
 
     const std::vector<std::string>& IndexGeneratorGPU::read_id_to_read_name() const { return read_id_to_read_name_; };
 
@@ -1028,7 +1028,7 @@ namespace claragenomics {
         CGA_LOG_INFO("Deallocating {} bytes from rest_compressed_d", rest_compressed_d.size()*sizeof(decltype(rest_compressed_d)::value_type));
         rest_compressed_d.free();
 
-        // *** add the minimizers to the host side hash map ***
+        // *** add the minimizers to the host side index ***
         // minimizers are already sorted by representation -> add all minimizers with the same representation to a vector and then add that vector to the hash table
         std::vector<std::unique_ptr<SketchElement>> minimizers_for_representation;
         representation_t current_representation = representations_compressed_h[0];
@@ -1036,15 +1036,14 @@ namespace claragenomics {
         for (std::size_t i = 0; i < representations_compressed_h.size(); ++i) {
             if(representations_compressed_h[i] != current_representation) {
                 // New representation encountered -> add the old vector to the hash table and start building the new one
-                index_[current_representation] = std::move(minimizers_for_representation);
+                index_.push_back(RepresentationAndSketchElements{current_representation, std::move(minimizers_for_representation)});
                 minimizers_for_representation.clear();
                 current_representation = representations_compressed_h[i];
             }
-            // TODO: why doesn't it see std::make_unique here?
-            minimizers_for_representation.emplace_back(std::unique_ptr<Minimizer>(new Minimizer(representations_compressed_h[i], rest_compressed_h[i].position_in_read_, SketchElement::DirectionOfRepresentation(rest_compressed_h[i].direction_), rest_compressed_h[i].read_id_)));
+            minimizers_for_representation.push_back(std::make_unique<Minimizer>(representations_compressed_h[i], rest_compressed_h[i].position_in_read_, SketchElement::DirectionOfRepresentation(rest_compressed_h[i].direction_), rest_compressed_h[i].read_id_));
         }
         // last representation will not be added in the loop above so add it here
-        index_[current_representation] = std::move(minimizers_for_representation);
+        index_.push_back(RepresentationAndSketchElements{current_representation, std::move(minimizers_for_representation)});
     }
 
 }

@@ -143,36 +143,33 @@ namespace claragenomics {
 
         for (std::size_t read_id = 0; read_id < index.number_of_reads(); ++read_id) {
             // First determine the starting index of section of pointer arrays that belong to read with read_id.
-            // Reads are processed consecutively. Pointer arrays section for read 0 will start at index 0 and if we assume that all sketch elements in read 0 had a total of 10 unique representation.
-            // its section will end at index 9. This means that the section for read 1 belongs at index 0 + 10 = 10.
+            // Reads are processed consecutively. Pointer arrays section for read 0 will start at index 0 and if we assume that all sketch elements in read 0 had a total of 10 unique representation its section will end at index 9. This means that the section for read 1 belongs at index 0 + 10 = 10.
             if (read_id != 0) {
                 read_id_to_pointer_arrays_section_h[read_id].first_element_ = read_id_to_pointer_arrays_section_h[read_id - 1].first_element_ + read_id_to_pointer_arrays_section_h[read_id - 1].block_size_;
                 read_id_to_anchors_section_h[read_id].first_element_ = read_id_to_anchors_section_h[read_id - 1].first_element_ + read_id_to_anchors_section_h[read_id - 1].block_size_;
             }
 
-            const std::map<representation_t, ArrayBlock>& representation_to_all_sketch_elements_with_this_read_id = index.read_id_and_representation_to_all_its_sketch_elements()[read_id];
+            const std::vector<Index::RepresentationToSketchElements>& array_blocks_for_this_read_id = index.read_id_and_representation_to_sketch_elements()[read_id];
 
             read_id_to_pointer_arrays_section_h[read_id].block_size_ = 0;
 
             // go through all representations in this read
-            for (const auto& one_representation_in_this_read : representation_to_all_sketch_elements_with_this_read_id) { // this is a map so we know that representations are sorted in increasing order
-                const representation_t& representation = one_representation_in_this_read.first;
-                const ArrayBlock& data_arrays_section_for_this_representation_and_read = one_representation_in_this_read.second;
-                largest_block_size = std::max(largest_block_size, data_arrays_section_for_this_representation_and_read.block_size_);
-                const ArrayBlock& whole_data_arrays_section_for_representation = (*index.representation_to_all_its_sketch_elements().find(representation)).second; // sketch elements with this representation in all reads
+            for (const auto& one_representation_in_this_read : array_blocks_for_this_read_id) {
+                const ArrayBlock& array_block_for_this_representation_and_read = one_representation_in_this_read.sketch_elements_for_representation_and_read_id_; // sketch elements with this representation and this read_id
+                const ArrayBlock& whole_data_arrays_section_for_representation = one_representation_in_this_read.sketch_elements_for_representation_and_all_read_ids_; // sketch elements with this representation in all read_ids
+                largest_block_size = std::max(largest_block_size, array_block_for_this_representation_and_read.block_size_);
                 // Due to symmetry we only want to check reads with read_id greater than the current read_id.
-                // We are only interested in part of whole_data_array_section_for_representation that comes after data_array_section_for_this_representation_and_read because only sketch
-                // elements in that part have read_id greater than current read_id
+                // We are only interested in part of whole_data_arrays_section_for_representation that comes after array_block_for_this_representation_and_read because only sketch elements in that part have read_id greater than the current read_id
                 ArrayBlock section_to_check;
-                section_to_check.first_element_ = data_arrays_section_for_this_representation_and_read.first_element_ + data_arrays_section_for_this_representation_and_read.block_size_; // element after the last element for this read_id
+                section_to_check.first_element_ = array_block_for_this_representation_and_read.first_element_ + array_block_for_this_representation_and_read.block_size_; // element after the last element for this read_id
                 section_to_check.block_size_ = whole_data_arrays_section_for_representation.first_element_ + whole_data_arrays_section_for_representation.block_size_ - section_to_check.first_element_; // number of remaining elements
 
                 // TODO: if block_size_ == 0
                 if (section_to_check.block_size_) {
-                    read_id_to_sketch_elements_h.emplace_back(data_arrays_section_for_this_representation_and_read);
+                    read_id_to_sketch_elements_h.emplace_back(array_block_for_this_representation_and_read);
                     read_id_to_sketch_elements_to_check_h.emplace_back(section_to_check);
                     // Determine the number of matches for this representation
-                    read_id_to_anchors_section_h[read_id].block_size_ += data_arrays_section_for_this_representation_and_read.block_size_ * section_to_check.block_size_;
+                    read_id_to_anchors_section_h[read_id].block_size_ += array_block_for_this_representation_and_read.block_size_ * section_to_check.block_size_;
                     ++read_id_to_pointer_arrays_section_h[read_id].block_size_;
                 }
             }
