@@ -22,7 +22,7 @@
 namespace claragenomics {
 
     IndexGeneratorCPU::IndexGeneratorCPU(const std::string& query_filename, std::uint64_t minimizer_size, std::uint64_t window_size)
-    : minimizer_size_(minimizer_size), window_size_(window_size), index_()
+    : minimizer_size_(minimizer_size), window_size_(window_size), temporary_index_(), index_()
     {
         generate_index(query_filename);
     }
@@ -31,7 +31,7 @@ namespace claragenomics {
 
     std::uint64_t IndexGeneratorCPU::window_size() const { return window_size_; }
 
-    const std::map<representation_t, std::vector<std::unique_ptr<SketchElement>>>& IndexGeneratorCPU::representations_to_sketch_elements() const { return index_; };
+    const std::vector<IndexGenerator::RepresentationAndSketchElements>& IndexGeneratorCPU::representations_and_sketch_elements() const { return index_; };
 
     const std::vector<std::string>& IndexGeneratorCPU::read_id_to_read_name() const { return read_id_to_read_name_; };
 
@@ -67,6 +67,21 @@ namespace claragenomics {
             add_read_to_index(*fasta_objects[read_id], read_id);
         }
         number_of_reads_ = fasta_objects.size();
+
+        // index is first constructed in a map and here it is transformed into a vector
+        // TODO: This a workaround/quick_and_diry_hack with bad performance. Rewrite is we decide to keep IndexGeneratorCPU implementation
+        for (auto const& sketch_elements_for_one_representation : temporary_index_) {
+            representation_t representation = sketch_elements_for_one_representation.first;
+            index_.push_back(RepresentationAndSketchElements{representation, {}});
+            for (auto const& one_minimizer : sketch_elements_for_one_representation.second) {
+                index_.back().sketch_elements_.push_back(std::make_unique<Minimizer>(one_minimizer->representation(),
+                                                                                     one_minimizer->position_in_read(),
+                                                                                     one_minimizer->direction(),
+                                                                                     one_minimizer->read_id()
+                                                                                    )
+                                                        );
+            }
+        }
     }
 
     void IndexGeneratorCPU::add_read_to_index(const Sequence& read, const read_id_t read_id) {
@@ -102,7 +117,7 @@ namespace claragenomics {
         }
         // add all position of the minimizer of the first window
         for (const std::pair<position_in_read_t, Minimizer::DirectionOfRepresentation>& pos : minimizer_pos) {
-            index_[current_minimizer_representation].emplace_back(std::make_unique<Minimizer>(current_minimizer_representation, pos.first, pos.second, read_id));
+            temporary_index_[current_minimizer_representation].emplace_back(std::make_unique<Minimizer>(current_minimizer_representation, pos.first, pos.second, read_id));
         }
         first_window_minimizer_representation = current_minimizer_representation;
 
@@ -128,28 +143,28 @@ namespace claragenomics {
                         }
                     }
                     for (const std::pair<position_in_read_t, Minimizer::DirectionOfRepresentation>& pos : minimizer_pos) {
-                        index_[current_minimizer_representation].emplace_back(std::make_unique<Minimizer>(current_minimizer_representation, pos.first, pos.second, read_id));
+                        temporary_index_[current_minimizer_representation].emplace_back(std::make_unique<Minimizer>(current_minimizer_representation, pos.first, pos.second, read_id));
                     }
                 } else { // there are other kmers with that value, proceed as if the oldest element was not not the smallest one
                     if (kmers_in_window.back().representation_ == current_minimizer_representation) {
                         minimizer_pos.emplace_back(window_num + minimizer_size_ - 1, kmers_in_window.back().direction_);
-                        index_[current_minimizer_representation].emplace_back(std::make_unique<Minimizer>(current_minimizer_representation, window_num + window_size_ - 1, kmers_in_window.back().direction_, read_id));
+                        temporary_index_[current_minimizer_representation].emplace_back(std::make_unique<Minimizer>(current_minimizer_representation, window_num + window_size_ - 1, kmers_in_window.back().direction_, read_id));
                     } else if (kmers_in_window.back().representation_ < current_minimizer_representation) {
                         minimizer_pos.clear();
                         current_minimizer_representation = kmers_in_window.back().representation_;
                         minimizer_pos.emplace_back(window_num + minimizer_size_ - 1, kmers_in_window.back().direction_);
-                        index_[current_minimizer_representation].emplace_back(std::make_unique<Minimizer>(current_minimizer_representation, window_num + window_size_ - 1, kmers_in_window.back().direction_, read_id));
+                        temporary_index_[current_minimizer_representation].emplace_back(std::make_unique<Minimizer>(current_minimizer_representation, window_num + window_size_ - 1, kmers_in_window.back().direction_, read_id));
                     }
                 }
             } else {  // oldest kmer was not the minimizer
                 if (kmers_in_window.back().representation_ == current_minimizer_representation) {
                     minimizer_pos.emplace_back(window_num + minimizer_size_ - 1, kmers_in_window.back().direction_);
-                    index_[current_minimizer_representation].emplace_back(std::make_unique<Minimizer>(current_minimizer_representation, window_num + window_size_ - 1, kmers_in_window.back().direction_, read_id));
+                    temporary_index_[current_minimizer_representation].emplace_back(std::make_unique<Minimizer>(current_minimizer_representation, window_num + window_size_ - 1, kmers_in_window.back().direction_, read_id));
                 } else if (kmers_in_window.back().representation_ < current_minimizer_representation) {
                     minimizer_pos.clear();
                     current_minimizer_representation = kmers_in_window.back().representation_;
                     minimizer_pos.emplace_back(window_num + minimizer_size_ - 1, kmers_in_window.back().direction_);
-                    index_[current_minimizer_representation].emplace_back(std::make_unique<Minimizer>(current_minimizer_representation, window_num + window_size_ - 1, kmers_in_window.back().direction_, read_id));
+                    temporary_index_[current_minimizer_representation].emplace_back(std::make_unique<Minimizer>(current_minimizer_representation, window_num + window_size_ - 1, kmers_in_window.back().direction_, read_id));
                 }
             }
         }
@@ -184,7 +199,7 @@ namespace claragenomics {
                 if (new_kmer.representation_ < current_minimizer_representation) {
                     current_minimizer_representation = new_kmer.representation_;
                 }
-                index_[current_minimizer_representation].emplace_back(std::make_unique<Minimizer>(current_minimizer_representation, current_window_size-1, new_kmer.direction_, read_id));
+                temporary_index_[current_minimizer_representation].emplace_back(std::make_unique<Minimizer>(current_minimizer_representation, current_window_size-1, new_kmer.direction_, read_id));
             }
         }
 
@@ -200,7 +215,7 @@ namespace claragenomics {
                 if (new_kmer.representation_ < current_minimizer_representation) {
                     current_minimizer_representation = new_kmer.representation_;
                 }
-                index_[current_minimizer_representation].emplace_back(std::make_unique<Minimizer>(current_minimizer_representation, kmer_begin_position, new_kmer.direction_, read_id));
+                temporary_index_[current_minimizer_representation].emplace_back(std::make_unique<Minimizer>(current_minimizer_representation, kmer_begin_position, new_kmer.direction_, read_id));
             }
         }
     }

@@ -18,7 +18,7 @@
 # license agreement from NVIDIA CORPORATION is strictly prohibited.
 #
 
-project(multibatch)
+project(benchmark_cudapoa_multibatch)
 
 set(SOURCES
     main.cpp

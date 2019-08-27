@@ -10,6 +10,7 @@
 
 #include "aligner_global_ukkonen.hpp"
 #include "aligner_global_myers.hpp"
+#include "aligner_global_hirschberg_myers.hpp"
 
 #include <claragenomics/utils/genomeutils.hpp>
 #include <claragenomics/utils/cudautils.hpp>
@@ -97,6 +98,11 @@ BENCHMARK_TEMPLATE(BM_SingleBatchAlignment, AlignerGlobalUkkonen)
     ->Ranges({{32, 512}, {500, 10000}});
 
 BENCHMARK_TEMPLATE(BM_SingleBatchAlignment, AlignerGlobalMyers)
+    ->Unit(benchmark::kMillisecond)
+    ->RangeMultiplier(2)
+    ->Ranges({{32, 512}, {500, 10000}});
+
+BENCHMARK_TEMPLATE(BM_SingleBatchAlignment, AlignerGlobalHirschbergMyers)
     ->Unit(benchmark::kMillisecond)
     ->RangeMultiplier(2)
     ->Ranges({{32, 512}, {500, 10000}});

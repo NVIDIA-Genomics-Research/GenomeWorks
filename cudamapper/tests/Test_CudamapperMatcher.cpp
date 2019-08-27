@@ -79,8 +79,7 @@ namespace claragenomics {
         std::uint64_t number_of_reads() const override { return number_of_reads_; }
         const std::vector<std::string>& read_id_to_read_name() const override { return read_id_to_read_name_; }
         const std::vector<std::uint32_t>& read_id_to_read_length() const override { return read_id_to_read_length_; }
-        const std::vector<std::map<representation_t, ArrayBlock>>& read_id_and_representation_to_all_its_sketch_elements() const override { return read_id_and_representation_to_all_its_sketch_elements_; }
-        const std::map<representation_t, ArrayBlock>& representation_to_all_its_sketch_elements() const override { return representation_to_all_its_sketch_elements_; }
+        const std::vector<std::vector<Index::RepresentationToSketchElements>>& read_id_and_representation_to_sketch_elements() const override { return read_id_and_representation_to_sketch_elements_; }
 
         // setters
         void positions_in_reads(const std::vector<position_in_read_t>& val) { positions_in_reads_ = val; }
@@ -88,8 +87,8 @@ namespace claragenomics {
         void directions_of_reads(const std::vector<SketchElement::DirectionOfRepresentation>& val) { directions_of_reads_ = val; }
         void number_of_reads(std::uint64_t val) { number_of_reads_ = val; }
         void read_id_to_read_name(const std::vector<std::string>& val) { read_id_to_read_name_ = val; }
-        void read_id_and_representation_to_all_its_sketch_elements(const std::vector<std::map<representation_t, ArrayBlock>>& val) { read_id_and_representation_to_all_its_sketch_elements_ = val; }
-        void representation_to_all_its_sketch_elements(const std::map<representation_t, ArrayBlock>& val) { representation_to_all_its_sketch_elements_ = val; }
+        void read_id_and_representation_to_sketch_elements( const std::vector<std::vector<RepresentationToSketchElements>>& val ) { read_id_and_representation_to_sketch_elements_ = val; }
+
     private:
         std::vector<position_in_read_t> positions_in_reads_;
         std::vector<read_id_t> read_ids_;
@@ -97,8 +96,7 @@ namespace claragenomics {
         std::uint64_t number_of_reads_;
         std::vector<std::string> read_id_to_read_name_;
         std::vector<std::uint32_t> read_id_to_read_length_;
-        std::vector<std::map<representation_t, ArrayBlock>> read_id_and_representation_to_all_its_sketch_elements_;
-        std::map<representation_t, ArrayBlock> representation_to_all_its_sketch_elements_;
+        std::vector<std::vector<RepresentationToSketchElements>> read_id_and_representation_to_sketch_elements_;
     };
 
     TEST(TestCudamapperMatcher, CustomIndexTwoReads) {
@@ -120,14 +118,11 @@ namespace claragenomics {
 
         // no need for read_id_to_read_name
 
-        std::vector<std::map<representation_t, ArrayBlock>> read_id_and_representation_to_all_its_sketch_elements(2);
-        read_id_and_representation_to_all_its_sketch_elements[0].emplace(0x023, ArrayBlock{0,50});
-        read_id_and_representation_to_all_its_sketch_elements[1].emplace(0x023, ArrayBlock{50,50});
-        test_index.read_id_and_representation_to_all_its_sketch_elements(read_id_and_representation_to_all_its_sketch_elements);
-
-        std::map<representation_t, ArrayBlock> representation_to_all_its_sketch_elements;
-        representation_to_all_its_sketch_elements.emplace(0x023, ArrayBlock{0,100});
-        test_index.representation_to_all_its_sketch_elements(representation_to_all_its_sketch_elements);
+        // pointers
+        std::vector<std::vector<Index::RepresentationToSketchElements>> read_id_and_representation_to_sketch_elements(2);
+        read_id_and_representation_to_sketch_elements[0].emplace_back(Index::RepresentationToSketchElements{0x23, {0,50}, {0,100}});
+        read_id_and_representation_to_sketch_elements[1].emplace_back(Index::RepresentationToSketchElements{0x23, {50,50}, {0,100}});
+        test_index.read_id_and_representation_to_sketch_elements(read_id_and_representation_to_sketch_elements);
 
         Matcher matcher(test_index);
 
@@ -223,35 +218,24 @@ namespace claragenomics {
 
         // no need for read_id_to_read_name
 
-        // read_id_and_representation_to_all_its_sketch_elements
-        std::vector<std::map<representation_t, ArrayBlock>> read_id_and_representation_to_all_its_sketch_elements(4);
-        read_id_and_representation_to_all_its_sketch_elements[0].emplace(0, ArrayBlock{0,50});
-        read_id_and_representation_to_all_its_sketch_elements[3].emplace(1, ArrayBlock{50,80});
-        read_id_and_representation_to_all_its_sketch_elements[0].emplace(2, ArrayBlock{130,20});
-        read_id_and_representation_to_all_its_sketch_elements[1].emplace(2, ArrayBlock{150,30});
-        read_id_and_representation_to_all_its_sketch_elements[0].emplace(3, ArrayBlock{180,130});
-        read_id_and_representation_to_all_its_sketch_elements[1].emplace(3, ArrayBlock{310,70});
-        read_id_and_representation_to_all_its_sketch_elements[2].emplace(3, ArrayBlock{380,100});
-        read_id_and_representation_to_all_its_sketch_elements[3].emplace(3, ArrayBlock{480,80});
-        read_id_and_representation_to_all_its_sketch_elements[1].emplace(4, ArrayBlock{560,60});
-        read_id_and_representation_to_all_its_sketch_elements[2].emplace(4, ArrayBlock{620,100});
-        read_id_and_representation_to_all_its_sketch_elements[0].emplace(5, ArrayBlock{720,70});
-        read_id_and_representation_to_all_its_sketch_elements[1].emplace(5, ArrayBlock{790,40});
-        read_id_and_representation_to_all_its_sketch_elements[2].emplace(5, ArrayBlock{830,100});
-        read_id_and_representation_to_all_its_sketch_elements[3].emplace(5, ArrayBlock{930,80});
-        read_id_and_representation_to_all_its_sketch_elements[3].emplace(7, ArrayBlock{1010,80});
-        test_index.read_id_and_representation_to_all_its_sketch_elements(read_id_and_representation_to_all_its_sketch_elements);
-
-        // representation_to_all_its_sketch_elements
-        std::map<representation_t, ArrayBlock> representation_to_all_its_sketch_elements;
-        representation_to_all_its_sketch_elements.emplace(0, ArrayBlock{0,50});
-        representation_to_all_its_sketch_elements.emplace(1, ArrayBlock{50,80});
-        representation_to_all_its_sketch_elements.emplace(2, ArrayBlock{130,50});
-        representation_to_all_its_sketch_elements.emplace(3, ArrayBlock{180,380});
-        representation_to_all_its_sketch_elements.emplace(4, ArrayBlock{560,160});
-        representation_to_all_its_sketch_elements.emplace(5, ArrayBlock{720,290});
-        representation_to_all_its_sketch_elements.emplace(7, ArrayBlock{1010,80});
-        test_index.representation_to_all_its_sketch_elements(representation_to_all_its_sketch_elements);
+        // pointers
+        std::vector<std::vector<Index::RepresentationToSketchElements>> read_id_and_representation_to_sketch_elements(4);
+        read_id_and_representation_to_sketch_elements[0].emplace_back(Index::RepresentationToSketchElements{0, {0,   50},  {0,   50}});
+        read_id_and_representation_to_sketch_elements[3].emplace_back(Index::RepresentationToSketchElements{1, {50,  80},  {50,  80}});
+        read_id_and_representation_to_sketch_elements[0].emplace_back(Index::RepresentationToSketchElements{2, {130, 20},  {130, 50}});
+        read_id_and_representation_to_sketch_elements[1].emplace_back(Index::RepresentationToSketchElements{2, {150, 30},  {130, 50}});
+        read_id_and_representation_to_sketch_elements[0].emplace_back(Index::RepresentationToSketchElements{3, {180, 130}, {180, 380}});
+        read_id_and_representation_to_sketch_elements[1].emplace_back(Index::RepresentationToSketchElements{3, {310, 70},  {180, 380}});
+        read_id_and_representation_to_sketch_elements[2].emplace_back(Index::RepresentationToSketchElements{3, {380, 100}, {180, 380}});
+        read_id_and_representation_to_sketch_elements[3].emplace_back(Index::RepresentationToSketchElements{3, {480, 80},  {180, 380}});
+        read_id_and_representation_to_sketch_elements[1].emplace_back(Index::RepresentationToSketchElements{4, {560, 60},  {560, 160}});
+        read_id_and_representation_to_sketch_elements[2].emplace_back(Index::RepresentationToSketchElements{4, {620, 100}, {560, 160}});
+        read_id_and_representation_to_sketch_elements[0].emplace_back(Index::RepresentationToSketchElements{5, {720, 70},  {720, 290}});
+        read_id_and_representation_to_sketch_elements[1].emplace_back(Index::RepresentationToSketchElements{5, {790, 40},  {720, 290}});
+        read_id_and_representation_to_sketch_elements[2].emplace_back(Index::RepresentationToSketchElements{5, {830, 100}, {720, 290}});
+        read_id_and_representation_to_sketch_elements[3].emplace_back(Index::RepresentationToSketchElements{5, {930, 80},  {720, 290}});
+        read_id_and_representation_to_sketch_elements[3].emplace_back(Index::RepresentationToSketchElements{7, {1010,80},  {1010,80}});
+        test_index.read_id_and_representation_to_sketch_elements(read_id_and_representation_to_sketch_elements);
 
         Matcher matcher(test_index);
 

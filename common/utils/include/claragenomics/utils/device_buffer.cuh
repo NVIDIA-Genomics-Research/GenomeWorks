@@ -13,6 +13,10 @@
 #include <claragenomics/utils/cudautils.hpp>
 #include <exception>
 #include <utility>
+#include <cassert>
+#ifndef NDEBUG
+#include <limits>
+#endif
 
 namespace claragenomics
 {
@@ -63,6 +67,13 @@ public:
         return *this;
     }
 
+    void free()
+    {
+        CGA_CU_CHECK_ERR(cudaFree(data_));
+        data_ = nullptr;
+        size_ = 0;
+    }
+
     ~device_buffer()
     {
         cudaFree(data_);
@@ -76,5 +87,12 @@ private:
     value_type* data_ = nullptr;
     size_t size_      = 0;
 };
+
+template <typename T>
+void device_memset_async(device_buffer<T>& buffer, int value, cudaStream_t stream)
+{
+    assert(value <= std::numeric_limits<unsigned char>::max());
+    CGA_CU_CHECK_ERR(cudaMemsetAsync(buffer.data(), value, sizeof(typename device_buffer<T>::value_type) * buffer.size(), stream));
+}
 
 } // end namespace claragenomics
