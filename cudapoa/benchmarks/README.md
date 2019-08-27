@@ -7,7 +7,7 @@ of a single batch of POA.
 
 To run the benchmark, execute
 ```
-./benchmarks/cudapoa/singlebatch
+./benchmarks/cudapoa/benchmark_cudapoa_singlebatch
 ```
 
 ## Multi Batch
@@ -17,5 +17,5 @@ of several batched CUDA POA stream that fill up the GPU.
 
 To the the benchmark, execute
 ```
-./benchmarks/cudapoa/multibatch
+./benchmarks/cudapoa/benchmark_cudapoa_multibatch
 ```

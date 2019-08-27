@@ -50,7 +50,7 @@ protected:
     // don't vary based on POA count. The latter two are host and device
     // buffer sizes that scale with number of POA entries to process. These sizes do
     // not include the scoring matrix needs for POA processing.
-    std::tuple<size_t, size_t, size_t, size_t> calculate_space_per_poa();
+    std::tuple<int64_t, int64_t, int64_t, int64_t> calculate_space_per_poa();
 
 protected:
     // Maximum POAs to process in batch.
@@ -67,18 +67,18 @@ protected:
     uint8_t* block_data_d_;
 
     // Accumulator for the memory size
-    size_t total_h_ = 0;
-    size_t total_d_ = 0;
+    int64_t total_h_ = 0;
+    int64_t total_d_ = 0;
 
     // Offset index for pointing a buffer to block memory
-    size_t offset_h_ = 0;
-    size_t offset_d_ = 0;
+    int64_t offset_h_ = 0;
+    int64_t offset_d_ = 0;
 
-    size_t input_size_;
-    size_t output_size_;
-    int32_t matrix_sequence_dimension_;
-    int32_t max_graph_dimension_;
-    uint16_t max_nodes_per_window_;
+    int64_t input_size_                = 0;
+    int64_t output_size_               = 0;
+    int32_t matrix_sequence_dimension_ = 0;
+    int32_t max_graph_dimension_       = 0;
+    int32_t max_nodes_per_window_      = 0;
     int32_t device_id_;
 
     // Bit field for output type

@@ -27,7 +27,7 @@ namespace cudaaligner
 /// \typedef FormattedAlignment
 /// Holds formatted strings representing an alignment.
 /// FormattedAlignment.first = formatted string for query
-/// FormattedAlignment.second = formatted string for subject
+/// FormattedAlignment.second = formatted string for target
 using FormattedAlignment = std::pair<std::string, std::string>;
 
 /// Alignment - Object encapsulating an alignment between 2 string.
@@ -37,8 +37,8 @@ public:
     /// \brief Returns query sequence
     virtual const std::string& get_query_sequence() const = 0;
 
-    /// \brief Returns subject sequence
-    virtual const std::string& get_subject_sequence() const = 0;
+    /// \brief Returns target sequence
+    virtual const std::string& get_target_sequence() const = 0;
 
     /// \brief Converts an alignment to CIGAR format.
     ///        The is a reduced implementation of the CIGAR standard

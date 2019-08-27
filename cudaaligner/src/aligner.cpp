@@ -10,8 +10,7 @@
 
 #include <claragenomics/cudaaligner/aligner.hpp>
 
-#include "aligner_global_ukkonen.hpp"
-#include "aligner_global_myers.hpp"
+#include "aligner_global_hirschberg_myers.hpp"
 
 namespace claragenomics
 {
@@ -19,11 +18,11 @@ namespace claragenomics
 namespace cudaaligner
 {
 
-std::unique_ptr<Aligner> create_aligner(int32_t max_query_length, int32_t max_subject_length, int32_t max_alignments, AlignmentType type, cudaStream_t stream, int32_t device_id)
+std::unique_ptr<Aligner> create_aligner(int32_t max_query_length, int32_t max_target_length, int32_t max_alignments, AlignmentType type, cudaStream_t stream, int32_t device_id)
 {
     if (type == AlignmentType::global)
     {
-        return std::make_unique<AlignerGlobalUkkonen>(max_query_length, max_subject_length, max_alignments, stream, device_id);
+        return std::make_unique<AlignerGlobalHirschbergMyers>(max_query_length, max_target_length, max_alignments, stream, device_id);
     }
     else
     {

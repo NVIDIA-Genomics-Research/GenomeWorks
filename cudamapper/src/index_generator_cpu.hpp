@@ -11,6 +11,7 @@
 #pragma once
 
 #include <cstdint>
+#include <map>
 #include "cudamapper/index_generator.hpp"
 #include "cudamapper/sequence.hpp"
 #include "cudamapper/types.hpp"
@@ -35,9 +36,9 @@ namespace claragenomics {
         /// \return window size
         std::uint64_t window_size() const;
 
-        /// \brief returns a mapping of minimizer representations to all minimizers with those representations
-        /// \return mapping of minimzer representations to all minimizers with those representations
-        const std::map<representation_t, std::vector<std::unique_ptr<SketchElement>>>& representations_to_sketch_elements() const override;
+        /// \brief Returns a vector whose each element is one representation and all sketch elements with that representation. Elements are sorted by representation in increasing order
+        /// \return the vector
+        virtual const std::vector<RepresentationAndSketchElements>& representations_and_sketch_elements() const override;
 
         /// \brief returns mapping of internal read id that goes from 0 to number_of_reads-1 to actual read name from the input
         /// \return mapping of internal read id that goes from 0 to number_of_reads-1 to actual read name from the input
@@ -80,7 +81,10 @@ namespace claragenomics {
         std::uint64_t minimizer_size_;
         std::uint64_t window_size_;
         std::uint64_t number_of_reads_;
-        std::map<representation_t, std::vector<std::unique_ptr<SketchElement>>> index_;
+        // index is first constructed in a map and than transformed into a vector
+        // TODO: This a workaround with bad performance. Rewrite is we decide to keep IndexGeneratorCPU implementation
+        std::map<representation_t, std::vector<std::unique_ptr<SketchElement>>> temporary_index_;
+        std::vector<RepresentationAndSketchElements> index_;
         std::vector<std::string> read_id_to_read_name_;
         std::vector<std::uint32_t> read_id_to_read_length_;
     };

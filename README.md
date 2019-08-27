@@ -22,6 +22,14 @@ The `cudaaligner` package provides GPU-accelerated global alignment.
 git clone --recursive git@github.com:clara-genomics/ClaraGenomicsAnalysis.git
 ```
 
+## System Requirements
+Minimum requirements -
+
+1. Ubuntu 16.04 or Ubuntu 18.04
+2. CUDA 9.0+
+3. gcc/g++ 5.4.0+
+4. Python 3.6.7+
+
 ## Build Clara Genomics Analysis
 To build Clara Genomics Analysis -
 

@@ -21,6 +21,16 @@ namespace claragenomics {
     class Index {
     public:
 
+        /// RepresentationToSketchElements - representation, pointer to section of data arrays with sketch elements with that representation and a given read_id, and a pointer to section of data arrays with sketch elements with that representation and all read_ids
+        struct RepresentationToSketchElements {
+            /// representation
+            representation_t representation_;
+            /// pointer to all sketch elements for that representation in some read (no need to save which one)
+            ArrayBlock sketch_elements_for_representation_and_read_id_;
+            /// pointer to all sketch elements with that representation in all reads
+            ArrayBlock sketch_elements_for_representation_and_all_read_ids_;
+        };
+
         /// \brief returns an array of starting positions of sketch elements in their reads
         /// \return an array of starting positions of sketch elements in their reads
         virtual const std::vector<position_in_read_t>& positions_in_reads() const = 0;
@@ -46,22 +56,16 @@ namespace claragenomics {
         /// \return mapping of internal read id that goes from 0 to read lengths for that read
         virtual const std::vector<std::uint32_t>& read_id_to_read_length() const =0;
 
-        /// \brief returns mapping of read id (vector) and representation (map) to section of data arrays with sketch elements with that read id and representation
-        /// \return mapping of read id (vector) and representation (map) to section of data arrays with sketch elements with that read id and representation
-        virtual const std::vector<std::map<representation_t, ArrayBlock>>& read_id_and_representation_to_all_its_sketch_elements() const = 0;
-
-        /// \brief returns mapping of representation to section of data arrays with sketch elements with that representation (and all read ids)
-        /// \return mapping of representation to section of data arrays with sketch elements with that representation (and all read ids)
-        virtual const std::map<representation_t, ArrayBlock>& representation_to_all_its_sketch_elements() const = 0;
+        /// \brief For each read_id (outer vector) returns a vector in which each element contains a representation from that read, pointer to section of data arrays with sketch elements with that representation and that read_id, and pointer to section of data arrays with skecth elements with that representation and all read_ids. There elements are sorted by representation in increasing order
+        /// \return the mapping
+        virtual const std::vector<std::vector<RepresentationToSketchElements>>& read_id_and_representation_to_sketch_elements() const = 0;
 
         /// \brief generates a mapping of (k,w)-kmer-representation to all of its occurrences for one or more sequences
-        ///
-        /// \return index
+        /// \return instance of Index
         static std::unique_ptr<Index> create_index(const IndexGenerator& index_generator);
 
-        /// \brief creates an empty index
-        ///
-        /// \return empty index
+        /// \brief creates an empty Index
+        /// \return empty instacne of Index
         static std::unique_ptr<Index> create_index();
     };
 

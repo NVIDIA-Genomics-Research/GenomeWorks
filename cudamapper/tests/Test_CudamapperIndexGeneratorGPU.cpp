@@ -9,6 +9,7 @@
 */
 
 #include "gtest/gtest.h"
+#include <utility>
 #include "cudamapper_file_location.hpp"
 #include "../src/index_generator_gpu.hpp"
 
@@ -21,7 +22,7 @@ namespace claragenomics
                        const std::uint64_t number_of_reads,
                        const std::vector<std::string>& read_id_to_read_name,
                        const std::vector<std::uint32_t> read_id_to_read_length,
-                       const std::map<representation_t, std::vector<Minimizer>>& representation_to_minimizers) {
+                       const std::vector<std::pair<representation_t, std::vector<Minimizer>>>& representation_and_minimizers) {
         IndexGeneratorGPU index_generator(filename, minimizer_size, window_size);
 
         EXPECT_EQ(index_generator.minimizer_size(), minimizer_size);
@@ -34,21 +35,22 @@ namespace claragenomics
             EXPECT_EQ(index_generator.read_id_to_read_length()[read_id], read_id_to_read_length[read_id]) << "read_id: " << read_id;
         }
 
-        const auto& representation_to_sketch_elements = index_generator.representations_to_sketch_elements();
-        ASSERT_EQ(representation_to_sketch_elements.size(), representation_to_minimizers.size());
-        for(const auto& one_representation : representation_to_minimizers) {
-            const representation_t current_representation = one_representation.first;
-            const std::vector<Minimizer>& current_minimizers_expected = one_representation.second;
-            ASSERT_NE(representation_to_sketch_elements.find(current_representation), std::end(representation_to_sketch_elements)) << "representation: " << current_representation;
+        const std::vector<IndexGenerator::RepresentationAndSketchElements>& representations_and_sketch_elements = index_generator.representations_and_sketch_elements();
+        ASSERT_EQ(representations_and_sketch_elements.size(), representation_and_minimizers.size());
+        for(std::size_t i = 0; i < representation_and_minimizers.size(); ++i) {
+            const representation_t representation_expected = representation_and_minimizers[i].first;
+            const representation_t representation_generated = representations_and_sketch_elements[i].representation_;
+            ASSERT_EQ(representation_expected, representation_generated) << "representation: " << representation_expected;
 
-            const std::vector<std::unique_ptr<SketchElement>>& current_minimizers_generated = (*representation_to_sketch_elements.find(current_representation)).second;
-            ASSERT_EQ(current_minimizers_generated.size(), current_minimizers_expected.size()) << "representation: " << current_representation;
+            const std::vector<Minimizer>& current_minimizers_expected = representation_and_minimizers[i].second;
+            const std::vector<std::unique_ptr<SketchElement>>& current_minimizers_generated = representations_and_sketch_elements[i].sketch_elements_;
+            ASSERT_EQ(current_minimizers_expected.size(), current_minimizers_generated.size()) << "representation: " << representation_expected;
 
-            for (std::size_t i = 0; i < current_minimizers_expected.size(); ++i) {
-                EXPECT_EQ(current_minimizers_generated[i]->representation(), current_minimizers_expected[i].representation()) << "representation: " << current_representation << ", index: " << i;
-                EXPECT_EQ(current_minimizers_generated[i]->position_in_read(), current_minimizers_expected[i].position_in_read()) << "representation: " << current_representation << ", index: " << i;
-                EXPECT_EQ(current_minimizers_generated[i]->direction(), current_minimizers_expected[i].direction()) << "representation: " << current_representation << ", index: " << i;
-                EXPECT_EQ(current_minimizers_generated[i]->read_id(), current_minimizers_expected[i].read_id()) << "representation: " << current_representation << ", index: " << i;
+            for (std::size_t j = 0; j < current_minimizers_expected.size(); ++j) {
+                EXPECT_EQ(current_minimizers_generated[j]->representation(), current_minimizers_expected[j].representation()) << "representation: " << representation_expected << ", index: " << j;
+                EXPECT_EQ(current_minimizers_generated[j]->position_in_read(), current_minimizers_expected[j].position_in_read()) << "representation: " << representation_expected << ", index: " << j;
+                EXPECT_EQ(current_minimizers_generated[j]->direction(), current_minimizers_expected[j].direction()) << "representation: " << representation_expected << ", index: " << j;
+                EXPECT_EQ(current_minimizers_generated[j]->read_id(), current_minimizers_expected[j].read_id()) << "representation: " << representation_expected << ", index: " << j;
             }
         }
     }
@@ -66,11 +68,9 @@ namespace claragenomics
         read_id_to_read_name.push_back("read_0");
         read_id_to_read_length.push_back(4);
 
-        std::map<representation_t, std::vector<Minimizer>> representation_to_minimizers;
-        { // 0b1101
-            std::vector<Minimizer> minimizers{{0b1101, 0, SketchElement::DirectionOfRepresentation::REVERSE, 0}};
-            representation_to_minimizers[0b1101] = minimizers;
-        }
+        std::vector<std::pair<representation_t, std::vector<Minimizer>>> representation_and_minimizers;
+        representation_and_minimizers.push_back(std::pair<representation_t, std::vector<Minimizer>>{0b1101, {}});
+        representation_and_minimizers.back().second.push_back({0b1101, 0, SketchElement::DirectionOfRepresentation::REVERSE, 0});
 
         test_function(filename,
                       minimizer_size,
@@ -78,7 +78,7 @@ namespace claragenomics
                       number_of_reads,
                       read_id_to_read_name,
                       read_id_to_read_length,
-                      representation_to_minimizers);
+                      representation_and_minimizers);
     }
 
     TEST(TestCudamapperIndexGeneratorGPU, GATT_2_3) {
@@ -94,19 +94,13 @@ namespace claragenomics
         read_id_to_read_name.push_back("read_0");
         read_id_to_read_length.push_back(4);
 
-        std::map<representation_t, std::vector<Minimizer>> representation_to_minimizers;
-        { // 0b1000
-            std::vector<Minimizer> minimizers{{0b1000, 0, SketchElement::DirectionOfRepresentation::FORWARD, 0}};
-            representation_to_minimizers[0b1000] = minimizers;
-        }
-        { // 0b0011
-            std::vector<Minimizer> minimizers{{0b0011, 1, SketchElement::DirectionOfRepresentation::FORWARD, 0}};
-            representation_to_minimizers[0b0011] = minimizers;
-        }
-        { // 0b0000
-            std::vector<Minimizer> minimizers{{0b0000, 2, SketchElement::DirectionOfRepresentation::REVERSE, 0}};
-            representation_to_minimizers[0b0000] = minimizers;
-        }
+        std::vector<std::pair<representation_t, std::vector<Minimizer>>> representation_and_minimizers;
+        representation_and_minimizers.push_back(std::pair<representation_t, std::vector<Minimizer>>{0b0000, {}});
+        representation_and_minimizers.back().second.push_back({0b0000, 2, SketchElement::DirectionOfRepresentation::REVERSE, 0});
+        representation_and_minimizers.push_back(std::pair<representation_t, std::vector<Minimizer>>{0b0011, {}});
+        representation_and_minimizers.back().second.push_back({0b0011, 1, SketchElement::DirectionOfRepresentation::FORWARD, 0});
+        representation_and_minimizers.push_back(std::pair<representation_t, std::vector<Minimizer>>{0b1000, {}});
+        representation_and_minimizers.back().second.push_back({0b1000, 0, SketchElement::DirectionOfRepresentation::FORWARD, 0});
 
         test_function(filename,
                       minimizer_size,
@@ -114,7 +108,7 @@ namespace claragenomics
                       number_of_reads,
                       read_id_to_read_name,
                       read_id_to_read_length,
-                      representation_to_minimizers);
+                      representation_and_minimizers);
     }
 
     TEST(TestCudamapperIndexGeneratorGPU, CCCATACC_2_8) {
@@ -130,7 +124,7 @@ namespace claragenomics
         std::vector<std::string> read_id_to_read_name;
         std::vector<std::uint32_t> read_id_to_read_length;
 
-        std::map<representation_t, std::vector<Minimizer>> representation_to_minimizers;
+        std::vector<std::pair<representation_t, std::vector<Minimizer>>> representation_and_minimizers;
 
         test_function(filename,
                       minimizer_size,
@@ -138,7 +132,7 @@ namespace claragenomics
                       number_of_reads,
                       read_id_to_read_name,
                       read_id_to_read_length,
-                      representation_to_minimizers);
+                      representation_and_minimizers);
     }
 
     TEST(TestCudamapperIndexGeneratorGPU, CCCATAC_3_5) {
@@ -169,7 +163,8 @@ namespace claragenomics
         // TACC  : 011 5 F
         // ACC   : 011 5 F
 
-        // all minimizers: (111,0,F)m (110,1,F), (032,2,R), (030,3,F), (011,5,F)
+        // all minimizers: (111,0,F), (110,1,F), (032,2,R), (030,3,F), (011,5,F)
+        // all minimizers sorted: (011,5,F), (030,3,F), (032,2,R), (110,1,F), (111,0,F)
 
         std::string filename(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/cccatacc.fasta");
         std::uint64_t minimizer_size = 3;
@@ -181,27 +176,17 @@ namespace claragenomics
         read_id_to_read_name.push_back("read_0");
         read_id_to_read_length.push_back(8);
 
-        std::map<representation_t, std::vector<Minimizer>> representation_to_minimizers;
-        { // 111
-            std::vector<Minimizer> minimizers{{0b010101, 0, SketchElement::DirectionOfRepresentation::FORWARD, 0}};
-            representation_to_minimizers[0b010101] = minimizers;
-        }
-        { // 110
-            std::vector<Minimizer> minimizers{{0b010100, 1, SketchElement::DirectionOfRepresentation::FORWARD, 0}};
-            representation_to_minimizers[0b010100] = minimizers;
-        }
-        { // 032
-            std::vector<Minimizer> minimizers{{0b001110, 2, SketchElement::DirectionOfRepresentation::REVERSE, 0}};
-            representation_to_minimizers[0b001110] = minimizers;
-        }
-        { // 030
-            std::vector<Minimizer> minimizers{{0b001100, 3, SketchElement::DirectionOfRepresentation::FORWARD, 0}};
-            representation_to_minimizers[0b001100] = minimizers;
-        }
-        { // 011
-            std::vector<Minimizer> minimizers{{0b000101, 5, SketchElement::DirectionOfRepresentation::FORWARD, 0}};
-            representation_to_minimizers[0b000101] = minimizers;
-        }
+        std::vector<std::pair<representation_t, std::vector<Minimizer>>> representation_and_minimizers;
+        representation_and_minimizers.push_back(std::pair<representation_t, std::vector<Minimizer>>{0b000101, {}});
+        representation_and_minimizers.back().second.push_back({0b000101, 5, SketchElement::DirectionOfRepresentation::FORWARD, 0});
+        representation_and_minimizers.push_back(std::pair<representation_t, std::vector<Minimizer>>{0b001100, {}});
+        representation_and_minimizers.back().second.push_back({0b001100, 3, SketchElement::DirectionOfRepresentation::FORWARD, 0});
+        representation_and_minimizers.push_back(std::pair<representation_t, std::vector<Minimizer>>{0b001110, {}});
+        representation_and_minimizers.back().second.push_back({0b001110, 2, SketchElement::DirectionOfRepresentation::REVERSE, 0});
+        representation_and_minimizers.push_back(std::pair<representation_t, std::vector<Minimizer>>{0b010100, {}});
+        representation_and_minimizers.back().second.push_back({0b010100, 1, SketchElement::DirectionOfRepresentation::FORWARD, 0});
+        representation_and_minimizers.push_back(std::pair<representation_t, std::vector<Minimizer>>{0b010101, {}});
+        representation_and_minimizers.back().second.push_back({0b010101, 0, SketchElement::DirectionOfRepresentation::FORWARD, 0});
 
         test_function(filename,
                       minimizer_size,
@@ -209,7 +194,7 @@ namespace claragenomics
                       number_of_reads,
                       read_id_to_read_name,
                       read_id_to_read_length,
-                      representation_to_minimizers);
+                      representation_and_minimizers);
 
     }
 
@@ -260,6 +245,7 @@ namespace claragenomics
         // CTA: 130 3 F 1
 
         // all minimizers: (032,0,R,0), (031,1,F,0), (100,3,F,0), (002,4,F,0), (002,0,F,1), (021,2,R,1), (130,3,F,1)
+        // all minimizers sorted: (002,4,F,0), (002,0,F,1), (021,2,R,1), (031,1,F,0), (032,0,R,0), (100,3,F,0), (130,3,F,1)
 
         std::string filename(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/two_reads_multiple_minimizers.fasta");
         std::uint64_t minimizer_size = 3;
@@ -274,32 +260,22 @@ namespace claragenomics
         read_id_to_read_length.push_back(7);
         read_id_to_read_length.push_back(6);
 
-        std::map<representation_t, std::vector<Minimizer>> representation_to_minimizers;
-        { // 032
-            std::vector<Minimizer> minimizers{{0b001110, 0, SketchElement::DirectionOfRepresentation::REVERSE, 0}};
-            representation_to_minimizers[0b001110] = minimizers;
-        }
-        { // 031
-            std::vector<Minimizer> minimizers{{0b001101, 1, SketchElement::DirectionOfRepresentation::FORWARD, 0}};
-            representation_to_minimizers[0b001101] = minimizers;
-        }
-        { // 100
-            std::vector<Minimizer> minimizers{{0b010000, 3, SketchElement::DirectionOfRepresentation::FORWARD, 0}};
-            representation_to_minimizers[0b010000] = minimizers;
-        }
-        { // 002
-            std::vector<Minimizer> minimizers{{0b000010, 4, SketchElement::DirectionOfRepresentation::FORWARD, 0},
-                                              {0b000010, 0, SketchElement::DirectionOfRepresentation::FORWARD, 1}};
-            representation_to_minimizers[0b000010] = minimizers;
-        }
-        { // 021
-            std::vector<Minimizer> minimizers{{0b001001, 2, SketchElement::DirectionOfRepresentation::REVERSE, 1}};
-            representation_to_minimizers[0b001001] = minimizers;
-        }
-        { // 130
-            std::vector<Minimizer> minimizers{{0b011100, 3, SketchElement::DirectionOfRepresentation::FORWARD, 1}};
-            representation_to_minimizers[0b011100] = minimizers;
-        }
+        std::vector<std::pair<representation_t, std::vector<Minimizer>>> representation_and_minimizers;
+
+        representation_and_minimizers.push_back(std::pair<representation_t, std::vector<Minimizer>>{0b000010, {}});
+        representation_and_minimizers.back().second.push_back({0b000010, 4, SketchElement::DirectionOfRepresentation::FORWARD, 0});
+        representation_and_minimizers.back().second.push_back({0b000010, 0, SketchElement::DirectionOfRepresentation::FORWARD, 1});
+        representation_and_minimizers.push_back(std::pair<representation_t, std::vector<Minimizer>>{0b001001, {}});
+        representation_and_minimizers.back().second.push_back({0b001001, 2, SketchElement::DirectionOfRepresentation::REVERSE, 1});
+        representation_and_minimizers.push_back(std::pair<representation_t, std::vector<Minimizer>>{0b001101, {}});
+        representation_and_minimizers.back().second.push_back({0b001101, 1, SketchElement::DirectionOfRepresentation::FORWARD, 0});
+        representation_and_minimizers.push_back(std::pair<representation_t, std::vector<Minimizer>>{0b001110, {}});
+        representation_and_minimizers.back().second.push_back({0b001110, 0, SketchElement::DirectionOfRepresentation::REVERSE, 0});
+        representation_and_minimizers.push_back(std::pair<representation_t, std::vector<Minimizer>>{0b010000, {}});
+        representation_and_minimizers.back().second.push_back({0b010000, 3, SketchElement::DirectionOfRepresentation::FORWARD, 0});
+        representation_and_minimizers.push_back(std::pair<representation_t, std::vector<Minimizer>>{0b011100, {}});
+        representation_and_minimizers.back().second.push_back({0b011100, 3, SketchElement::DirectionOfRepresentation::FORWARD, 1});
+
 
         test_function(filename,
                       minimizer_size,
@@ -307,7 +283,7 @@ namespace claragenomics
                       number_of_reads,
                       read_id_to_read_name,
                       read_id_to_read_length,
-                      representation_to_minimizers);
+                      representation_and_minimizers);
 
     }
 
