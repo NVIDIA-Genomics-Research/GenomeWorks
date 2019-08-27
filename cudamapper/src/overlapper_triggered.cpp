@@ -16,27 +16,10 @@
 
 #include "overlapper_triggered.hpp"
 #include "cudamapper/overlapper.hpp"
+#include "overlapper_utils.hpp"
 #include "matcher.hpp"
 
 namespace claragenomics {
-    std::vector<Overlap> OverlapperTriggered::fuse_overlaps(std::vector<Overlap> unfused_overlaps){
-        std::vector<Overlap> fused_overlaps;
-        Overlap fused_overlap = unfused_overlaps[0];
-        for (size_t i=0; i< unfused_overlaps.size() - 1; i++){
-            const Overlap& next_overlap = unfused_overlaps[i+1];
-            if ((fused_overlap.target_read_id_ == next_overlap.target_read_id_) && (fused_overlap.query_read_id_ == next_overlap.query_read_id_)){
-                //need to fuse
-                fused_overlap.num_residues_ += next_overlap.num_residues_;
-                fused_overlap.query_end_position_in_read_ = next_overlap.query_end_position_in_read_;
-                fused_overlap.target_end_position_in_read_ = next_overlap.target_end_position_in_read_;
-            } else {
-                fused_overlaps.push_back(fused_overlap);
-                fused_overlap = unfused_overlaps[i+1];
-            }
-        }
-        return fused_overlaps;
-    }
-
     std::vector<Overlap> const OverlapperTriggered::get_overlaps(const std::vector<Anchor> &anchors, const Index &index) {
         const auto& read_names = index.read_id_to_read_name();
         const auto& read_lengths = index.read_id_to_read_length();
@@ -61,13 +44,14 @@ namespace claragenomics {
         uint16_t score_threshold = 1;
         Anchor overlap_start_anchor;
         Anchor prev_anchor;
+        Anchor current_anchor;
 
         //Very simple scoring function to quantify quality of overlaps.
         auto anchor_score = [](Anchor a, Anchor b) {
             if ((b.query_position_in_read_ - a.query_position_in_read_) < 350){
                 return 2;
             } else {
-                return 1; //TODO change
+                return 1; //TODO change to a more sophisticated scoring method
             }
 
         };
@@ -91,7 +75,7 @@ namespace claragenomics {
         };
 
         for(size_t i=0; i<sortedAnchors.size();i++){
-            Anchor current_anchor = sortedAnchors[i];
+            current_anchor = sortedAnchors[i];
             if ((current_anchor.query_read_id_ == prev_anchor.query_read_id_) && (current_anchor.target_read_id_ == prev_anchor.target_read_id_)){ //TODO: For first anchor where prev anchor is not initialised can give incorrect result
                 //In the same read pairing as before
                 int score = anchor_score(prev_anchor, current_anchor);
@@ -121,6 +105,11 @@ namespace claragenomics {
                 in_chain = false;
                 prev_anchor = current_anchor;
             }
+        }
+
+        //terminate any hanging anchors
+        if(in_chain){
+            terminate_anchor();
         }
         //Return fused overlaps
         return fuse_overlaps(overlaps);
