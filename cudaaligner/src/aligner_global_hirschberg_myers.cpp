@@ -20,7 +20,7 @@ namespace claragenomics
 namespace cudaaligner
 {
 
-static constexpr int32_t hirschberg_myers_stackbuffer_size = 32 * 64;
+static constexpr int32_t hirschberg_myers_stackbuffer_size = 64;
 
 struct AlignerGlobalHirschbergMyers::Workspace
 {
@@ -29,7 +29,7 @@ struct AlignerGlobalHirschbergMyers::Workspace
         : stackbuffer(max_alignments * hirschberg_myers_stackbuffer_size), pvs(max_alignments, max_n_words * n_cols, stream), mvs(max_alignments, max_n_words * n_cols, stream), scores(max_alignments, std::max(max_n_words * n_cols, (max_target_length + 1) * 2), stream), query_patterns(max_alignments, max_n_words * 8, stream)
     {
     }
-    device_buffer<char> stackbuffer;
+    device_buffer<hirschbergmyers::query_target_range> stackbuffer;
     batched_device_matrices<hirschbergmyers::WordType> pvs;
     batched_device_matrices<hirschbergmyers::WordType> mvs;
     batched_device_matrices<int32_t> scores;

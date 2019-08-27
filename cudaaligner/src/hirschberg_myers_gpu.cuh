@@ -22,9 +22,18 @@ namespace hirschbergmyers
 {
 using WordType   = uint32_t;
 using nw_score_t = int32_t;
+
+struct query_target_range
+{
+    char const* query_begin  = nullptr;
+    char const* query_end    = nullptr;
+    char const* target_begin = nullptr;
+    char const* target_end   = nullptr;
+};
 } // namespace hirschbergmyers
 
-void hirschberg_myers_gpu(device_buffer<char>& stack_buffer, int32_t stacksize_per_alignment,
+void hirschberg_myers_gpu(device_buffer<hirschbergmyers::query_target_range>& stack_buffer,
+                          int32_t stacksize_per_alignment,
                           int8_t* paths_d, int32_t* path_lengths_d, int32_t max_path_length,
                           char const* sequences_d,
                           int32_t const* sequence_lengths_d,

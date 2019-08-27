@@ -509,19 +509,11 @@ __device__ void hirschberg_myers_single_char_warp(int8_t*& path, int32_t* path_l
     }
 }
 
-struct query_target_range
-{
-    char const* query_begin  = nullptr;
-    char const* query_end    = nullptr;
-    char const* target_begin = nullptr;
-    char const* target_end   = nullptr;
-};
-
 template <typename T>
 class warp_shared_stack
 {
 public:
-    __device__ warp_shared_stack(char* buffer_begin, char* buffer_end)
+    __device__ warp_shared_stack(T* buffer_begin, T* buffer_end)
         : buffer_begin_(buffer_begin), cur_end_(buffer_begin), buffer_end_(buffer_end)
     {
         assert(buffer_begin_ < buffer_end_);
@@ -529,15 +521,15 @@ public:
 
     __device__ bool inline push(T const& t, unsigned warp_mask = 0xffff'ffff)
     {
-        if (buffer_end_ - cur_end_ >= sizeof(T))
+        if (buffer_end_ - cur_end_ >= 1)
         {
             __syncwarp(warp_mask);
             if (threadIdx.x == 0)
             {
-                std::memcpy(cur_end_, &t, sizeof(T));
+                *cur_end_ = t;
             }
             __syncwarp(warp_mask);
-            cur_end_ += sizeof(T);
+            ++cur_end_;
             return true;
         }
         else
@@ -553,16 +545,14 @@ public:
     __device__ inline void pop()
     {
         assert(cur_end_ > buffer_begin_);
-        if (cur_end_ - sizeof(T) >= buffer_begin_)
-            cur_end_ -= sizeof(T);
+        if (cur_end_ - 1 >= buffer_begin_)
+            --cur_end_;
     }
 
     __device__ inline T back() const
     {
-        assert(cur_end_ - sizeof(T) >= buffer_begin_);
-        T t;
-        std::memcpy(&t, cur_end_ - sizeof(T), sizeof(T));
-        return t;
+        assert(cur_end_ - 1 >= buffer_begin_);
+        return *(cur_end_ - 1);
     }
 
     __device__ inline bool empty() const
@@ -571,14 +561,14 @@ public:
     }
 
 private:
-    char* buffer_begin_;
-    char* cur_end_;
-    char* buffer_end_;
+    T* buffer_begin_;
+    T* cur_end_;
+    T* buffer_end_;
 };
 
 __device__ void hirschberg_myers(
-    char* stack_buffer_begin,
-    char* stack_buffer_end,
+    query_target_range* stack_buffer_begin,
+    query_target_range* stack_buffer_end,
     int8_t*& path,
     int32_t* path_length,
     int32_t full_myers_threshold,
@@ -648,7 +638,7 @@ __device__ void hirschberg_myers(
 }
 
 __global__ void hirschberg_myers_compute_alignment(
-    char* stack_buffer_base,
+    query_target_range* stack_buffer_base,
     int32_t stack_buffer_size_per_alignment,
     int32_t full_myers_threshold,
     int8_t* paths_base,
@@ -673,7 +663,7 @@ __global__ void hirschberg_myers_compute_alignment(
     const char* const query_end                 = query_begin + sequence_lengths_d[2 * alignment_idx];
     const char* const target_end                = target_begin + sequence_lengths_d[2 * alignment_idx + 1];
     int8_t* path                                = paths_base + alignment_idx * max_path_length;
-    char* stack_buffer_begin                    = stack_buffer_base + alignment_idx * stack_buffer_size_per_alignment;
+    query_target_range* stack_buffer_begin      = stack_buffer_base + alignment_idx * stack_buffer_size_per_alignment;
     device_matrix_view<WordType> query_patterns = query_patternsi->get_matrix_view(alignment_idx, ceiling_divide<int32_t>(query_end - query_begin, word_size), 8);
     myers_preprocess(query_patterns, query_begin, query_end - query_begin);
     hirschberg_myers(stack_buffer_begin, stack_buffer_begin + stack_buffer_size_per_alignment, path, path_lengths + alignment_idx, full_myers_threshold, pvi, mvi, scorei, query_patterns, target_begin, target_end, query_begin, query_end, alignment_idx);
@@ -681,7 +671,8 @@ __global__ void hirschberg_myers_compute_alignment(
 
 } // namespace hirschbergmyers
 
-void hirschberg_myers_gpu(device_buffer<char>& stack_buffer, int32_t stack_buffer_size_per_alignment,
+void hirschberg_myers_gpu(device_buffer<hirschbergmyers::query_target_range>& stack_buffer,
+                          int32_t stack_buffer_size_per_alignment,
                           int8_t* paths_d, int32_t* path_lengths_d, int32_t max_path_length,
                           char const* sequences_d,
                           int32_t const* sequence_lengths_d,
