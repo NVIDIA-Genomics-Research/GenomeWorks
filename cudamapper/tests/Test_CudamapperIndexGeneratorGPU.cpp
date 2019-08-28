@@ -56,7 +56,7 @@ namespace claragenomics
     TEST(TestCudamapperIndexGeneratorGPU, GATT_4_1) {
         // >read_0
         // GATT
-        std::string filename(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/one_read_one_minimizer.fasta");
+        std::string filename(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/gatt.fasta");
         std::uint64_t minimizer_size = 4;
         std::uint64_t window_size = 1;
         std::uint64_t number_of_reads = 1;
@@ -79,7 +79,7 @@ namespace claragenomics
     TEST(TestCudamapperIndexGeneratorGPU, GATT_2_3) {
         // >read_0
         // GATT
-        std::string filename(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/one_read_one_minimizer.fasta");
+        std::string filename(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/gatt.fasta");
         std::uint64_t minimizer_size = 2;
         std::uint64_t window_size = 3;
         std::uint64_t number_of_reads = 1;
@@ -164,7 +164,7 @@ namespace claragenomics
         // all minimizers: (032, 0, R 0), (031, 1, F, 0), (002, 4, F, 0)
         // all minimizers sorted: (002,4,F,0), (031, 1, F, 0), (032, 0, R, 0)
 
-        std::string filename(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "//two_reads_multiple_minimizers.fasta");
+        std::string filename(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "//catcaag_aagcta.fasta");
         std::uint64_t minimizer_size = 3;
         std::uint64_t window_size = 5;
         std::uint64_t number_of_reads = 1; // one read is ignored
@@ -298,7 +298,7 @@ namespace claragenomics
         // all minimizers: (032,0,R,0), (031,1,F,0), (100,3,F,0), (002,4,F,0), (002,0,F,1), (021,2,R,1), (130,3,F,1)
         // all minimizers sorted: (002,4,F,0), (002,0,F,1), (021,2,R,1), (031,1,F,0), (032,0,R,0), (100,3,F,0), (130,3,F,1)
 
-        std::string filename(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/two_reads_multiple_minimizers.fasta");
+        std::string filename(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/catcaag_aagcta.fasta");
         std::uint64_t minimizer_size = 3;
         std::uint64_t window_size = 2;
         std::uint64_t number_of_reads = 2;
