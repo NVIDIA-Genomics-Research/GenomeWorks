@@ -759,8 +759,8 @@ namespace claragenomics {
         std::vector<ArrayBlock> read_id_to_basepairs_section_h;
 
         // find out how many basepairs each read has and determine its section in the big array with all basepairs 
-        for (read_id_t fasta_object_id = 0; fasta_object_id < fasta_objects.size(); ++fasta_object_id) {
-            // skip reads which are shorter than one read
+        for (std::size_t fasta_object_id = 0; fasta_object_id < fasta_objects.size(); ++fasta_object_id) {
+            // skip reads which are shorter than one window
             if (fasta_objects[fasta_object_id]->data().length() >= window_size_ + minimizer_size_ - 1) {
                 read_id_to_basepairs_section_h.emplace_back(ArrayBlock{total_basepairs, static_cast<std::uint32_t>(fasta_objects[fasta_object_id]->data().length())});
                 total_basepairs += fasta_objects[fasta_object_id]->data().length();
@@ -780,11 +780,20 @@ namespace claragenomics {
         std::vector<char> merged_basepairs_h(total_basepairs);
 
         // copy each read to its section of the basepairs array
-        for (read_id_t read_id = 0; read_id < number_of_reads_; ++read_id) {
-            std::copy(std::begin(fasta_objects[read_id]->data()),
-                      std::end(fasta_objects[read_id]->data()),
-                      std::next(std::begin(merged_basepairs_h), read_id_to_basepairs_section_h[read_id].first_element_));
+        read_id_t read_id = 0;
+        for (std::size_t fasta_object_id = 0; fasta_object_id < number_of_reads_; ++fasta_object_id) {
+            // skip reads which are shorter than one window
+            if (fasta_objects[fasta_object_id]->data().length() >= window_size_ + minimizer_size_ - 1) {
+                std::copy(std::begin(fasta_objects[fasta_object_id]->data()),
+                          std::end(fasta_objects[fasta_object_id]->data()),
+                          std::next(std::begin(merged_basepairs_h), read_id_to_basepairs_section_h[read_id].first_element_));
+                ++read_id;
+            }
         }
+
+        // fasta_objects not needed after this point
+        fasta_objects.clear();
+        fasta_objects.reserve(0);
 
         // move basepairs to the device
         CGA_LOG_INFO("Allocating {} bytes for read_id_to_basepairs_section_d", read_id_to_basepairs_section_h.size()*sizeof(decltype(read_id_to_basepairs_section_h)::value_type));
