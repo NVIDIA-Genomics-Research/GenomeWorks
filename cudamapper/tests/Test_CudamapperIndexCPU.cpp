@@ -22,7 +22,7 @@ namespace claragenomics {
         // GATT = 0b10001111
         // AATC = 0b00001101 <- minimizer
 
-        IndexGeneratorCPU index_generator(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/one_read_one_minimizer.fasta", 4, 1);
+        IndexGeneratorCPU index_generator(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/gatt.fasta", 4, 1);
         IndexCPU index(index_generator);
 
         ASSERT_EQ(index.number_of_reads(), 1);
@@ -87,7 +87,7 @@ namespace claragenomics {
         // read_id_and_representation_to_sketch_elements: read_0(AAG(0,1)(0,2), ATC(4,1)(4,1), ATG(5,1)(5,1). CAA(6,1)(6,1))
         //                                                read_1(AAG(1,1)(0,2), AGC(2,2)(2,2), CTA(7,1)(7,1))
 
-        IndexGeneratorCPU index_generator(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/two_reads_multiple_minimizers.fasta", 3, 2);
+        IndexGeneratorCPU index_generator(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/catcaag_aagcta.fasta", 3, 2);
         IndexCPU index(index_generator);
 
         ASSERT_EQ(index.number_of_reads(), 2);

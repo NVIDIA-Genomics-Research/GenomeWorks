@@ -23,7 +23,7 @@ namespace claragenomics {
 
         // only one read -> no anchors
 
-        IndexGeneratorCPU index_generator(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/one_read_one_minimizer.fasta", 4, 1);
+        IndexGeneratorCPU index_generator(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/gatt.fasta", 4, 1);
         IndexCPU index(index_generator);
         Matcher matcher(index);
 
@@ -58,7 +58,7 @@ namespace claragenomics {
 
         // Anchor r0p4 - r1p0
 
-        IndexGeneratorCPU index_generator(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/two_reads_multiple_minimizers.fasta", 3, 2);
+        IndexGeneratorCPU index_generator(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/catcaag_aagcta.fasta", 3, 2);
         IndexCPU index(index_generator);
         Matcher matcher(index);
 
