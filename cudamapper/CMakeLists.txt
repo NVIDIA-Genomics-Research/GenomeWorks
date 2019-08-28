@@ -53,6 +53,15 @@ add_library(overlapper_naive
 target_include_directories(overlapper_naive PUBLIC include)
 target_compile_options(overlapper_naive PRIVATE -Werror)
 
+add_library(overlapper_utils
+        src/overlapper_utils.cpp)
+target_include_directories(overlapper_utils PUBLIC include)
+
+add_library(overlapper_triggerred
+        src/overlapper_triggered.cpp)
+target_include_directories(overlapper_triggerred PUBLIC include)
+target_compile_options(overlapper_triggerred PRIVATE -Werror)
+
 add_doxygen_source_dir(${CMAKE_CURRENT_SOURCE_DIR}/include/cudamapper)
 
 cuda_add_executable(cudamapper
@@ -63,8 +72,7 @@ cuda_add_executable(cudamapper
         src/index.cpp
         src/index_generator.cpp
         src/overlapper.cpp
-        src/overlapper_naive.cpp
-        )
+)
 
 target_compile_options(cudamapper PRIVATE -Werror)
 
@@ -73,7 +81,7 @@ target_include_directories(cudamapper
         $<INSTALL_INTERFACE:include>    
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 )
-target_link_libraries(cudamapper bioparser utils index_generator_cpu index_generator_gpu index_cpu matcher logging)
+target_link_libraries(cudamapper bioparser utils index_generator_cpu index_generator_gpu index_cpu matcher logging overlapper_naive overlapper_triggerred overlapper_utils)
 
 # Add tests folder
 add_subdirectory(tests)

@@ -21,6 +21,7 @@ namespace claragenomics
                        const std::uint64_t window_size,
                        const std::uint64_t number_of_reads,
                        const std::vector<std::string>& read_id_to_read_name,
+                       const std::vector<std::uint32_t> read_id_to_read_length,
                        const std::vector<std::pair<representation_t, std::vector<Minimizer>>>& representation_and_minimizers) {
         IndexGeneratorGPU index_generator(filename, minimizer_size, window_size);
 
@@ -31,6 +32,7 @@ namespace claragenomics
         ASSERT_EQ(index_generator.read_id_to_read_name().size(), number_of_reads);
         for (std::size_t read_id; read_id < number_of_reads; ++read_id) {
             EXPECT_EQ(index_generator.read_id_to_read_name()[read_id], read_id_to_read_name[read_id]) << "read_id: " << read_id;
+            EXPECT_EQ(index_generator.read_id_to_read_length()[read_id], read_id_to_read_length[read_id]) << "read_id: " << read_id;
         }
 
         const std::vector<IndexGenerator::RepresentationAndSketchElements>& representations_and_sketch_elements = index_generator.representations_and_sketch_elements();
@@ -62,7 +64,9 @@ namespace claragenomics
         std::uint64_t number_of_reads = 1;
 
         std::vector<std::string> read_id_to_read_name;
+        std::vector<std::uint32_t> read_id_to_read_length;
         read_id_to_read_name.push_back("read_0");
+        read_id_to_read_length.push_back(4);
 
         std::vector<std::pair<representation_t, std::vector<Minimizer>>> representation_and_minimizers;
         representation_and_minimizers.push_back(std::pair<representation_t, std::vector<Minimizer>>{0b1101, {}});
@@ -73,6 +77,7 @@ namespace claragenomics
                       window_size,
                       number_of_reads,
                       read_id_to_read_name,
+                      read_id_to_read_length,
                       representation_and_minimizers);
     }
 
@@ -85,7 +90,9 @@ namespace claragenomics
         std::uint64_t number_of_reads = 1;
 
         std::vector<std::string> read_id_to_read_name;
+        std::vector<std::uint32_t> read_id_to_read_length;
         read_id_to_read_name.push_back("read_0");
+        read_id_to_read_length.push_back(4);
 
         std::vector<std::pair<representation_t, std::vector<Minimizer>>> representation_and_minimizers;
         representation_and_minimizers.push_back(std::pair<representation_t, std::vector<Minimizer>>{0b0000, {}});
@@ -100,6 +107,7 @@ namespace claragenomics
                       window_size,
                       number_of_reads,
                       read_id_to_read_name,
+                      read_id_to_read_length,
                       representation_and_minimizers);
     }
 
@@ -114,6 +122,7 @@ namespace claragenomics
         std::uint64_t number_of_reads = 0; // the only read will be ignored as it does not fit a single window
 
         std::vector<std::string> read_id_to_read_name;
+        std::vector<std::uint32_t> read_id_to_read_length;
 
         std::vector<std::pair<representation_t, std::vector<Minimizer>>> representation_and_minimizers;
 
@@ -122,6 +131,7 @@ namespace claragenomics
                       window_size,
                       number_of_reads,
                       read_id_to_read_name,
+                      read_id_to_read_length,
                       representation_and_minimizers);
     }
 
@@ -162,7 +172,9 @@ namespace claragenomics
         std::uint64_t number_of_reads = 1;
 
         std::vector<std::string> read_id_to_read_name;
+        std::vector<std::uint32_t> read_id_to_read_length;
         read_id_to_read_name.push_back("read_0");
+        read_id_to_read_length.push_back(8);
 
         std::vector<std::pair<representation_t, std::vector<Minimizer>>> representation_and_minimizers;
         representation_and_minimizers.push_back(std::pair<representation_t, std::vector<Minimizer>>{0b000101, {}});
@@ -181,6 +193,7 @@ namespace claragenomics
                       window_size,
                       number_of_reads,
                       read_id_to_read_name,
+                      read_id_to_read_length,
                       representation_and_minimizers);
 
     }
@@ -243,8 +256,11 @@ namespace claragenomics
         read_id_to_read_name.push_back("read_0");
         read_id_to_read_name.push_back("read_1");
 
-        std::vector<std::pair<representation_t, std::vector<Minimizer>>> representation_and_minimizers;
+        std::vector<std::uint32_t> read_id_to_read_length;
+        read_id_to_read_length.push_back(7);
+        read_id_to_read_length.push_back(6);
 
+        std::vector<std::pair<representation_t, std::vector<Minimizer>>> representation_and_minimizers;
 
         representation_and_minimizers.push_back(std::pair<representation_t, std::vector<Minimizer>>{0b000010, {}});
         representation_and_minimizers.back().second.push_back({0b000010, 4, SketchElement::DirectionOfRepresentation::FORWARD, 0});
@@ -266,6 +282,7 @@ namespace claragenomics
                       window_size,
                       number_of_reads,
                       read_id_to_read_name,
+                      read_id_to_read_length,
                       representation_and_minimizers);
 
     }

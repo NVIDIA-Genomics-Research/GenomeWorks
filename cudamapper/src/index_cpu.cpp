@@ -16,6 +16,7 @@ namespace claragenomics {
     IndexCPU::IndexCPU (const IndexGenerator& index_generator)
     : number_of_reads_(index_generator.number_of_reads()),
       read_id_to_read_name_(index_generator.read_id_to_read_name()),
+      read_id_to_read_length_(index_generator.read_id_to_read_length()),
       read_id_and_representation_to_sketch_elements_(index_generator.number_of_reads()) {
 
         auto const& rep_to_sketch_elem = index_generator.representations_and_sketch_elements();
@@ -69,6 +70,8 @@ namespace claragenomics {
     std::uint64_t IndexCPU::number_of_reads() const { return number_of_reads_; }
 
     const std::vector<std::string>& IndexCPU::read_id_to_read_name() const { return read_id_to_read_name_; }
+
+    const std::vector<std::uint32_t>& IndexCPU::read_id_to_read_length() const { return read_id_to_read_length_; }
 
     const std::vector<std::vector<Index::RepresentationToSketchElements>>& IndexCPU::read_id_and_representation_to_sketch_elements() const { return read_id_and_representation_to_sketch_elements_; }
 }

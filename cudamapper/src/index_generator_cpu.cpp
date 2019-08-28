@@ -35,6 +35,8 @@ namespace claragenomics {
 
     const std::vector<std::string>& IndexGeneratorCPU::read_id_to_read_name() const { return read_id_to_read_name_; };
 
+    const std::vector<std::uint32_t>& IndexGeneratorCPU::read_id_to_read_length() const { return read_id_to_read_length_; };
+
     std::uint64_t IndexGeneratorCPU::number_of_reads() const { return number_of_reads_; }
 
     void IndexGeneratorCPU::generate_index(const std::string &query_filename) {
@@ -61,6 +63,7 @@ namespace claragenomics {
 
         for (std::uint64_t read_id = 0; read_id < fasta_objects.size(); ++read_id) {
             read_id_to_read_name_.push_back(fasta_objects[read_id]->name());
+            read_id_to_read_length_.push_back(fasta_objects[read_id]->data().length());
             add_read_to_index(*fasta_objects[read_id], read_id);
         }
         number_of_reads_ = fasta_objects.size();
