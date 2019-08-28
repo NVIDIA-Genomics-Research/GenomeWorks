@@ -90,24 +90,24 @@ TEST(HirschbergMyers, myers_preprocess_test)
     matrix<WordType> patterns = compute_myers_preprocess_matrix(query);
     ASSERT_EQ(patterns.num_rows(), 2);
     ASSERT_EQ(patterns.num_cols(), 8);
-    // A=0, C=1, G=2, T=3
+    // A=0, C=1, T=2, G=3
     EXPECT_EQ(patterns(0, 0), 0b00010000000001110001000100000011u);
     EXPECT_EQ(patterns(0, 1), 0b00100000001110000010001000001100u);
-    EXPECT_EQ(patterns(0, 2), 0b01000001110000000100010000110000u);
-    EXPECT_EQ(patterns(0, 3), 0b10001110000000001000100011000000u);
+    EXPECT_EQ(patterns(0, 2), 0b10001110000000001000100011000000u);
+    EXPECT_EQ(patterns(0, 3), 0b01000001110000000100010000110000u);
     EXPECT_EQ(patterns(1, 0), 0b001000000000111u);
     EXPECT_EQ(patterns(1, 1), 0b010000000111000u);
-    EXPECT_EQ(patterns(1, 2), 0b100000111000000u);
-    EXPECT_EQ(patterns(1, 3), 0b000111000000000u);
-    // reverse: A=4, C=5, G=6, T=7
+    EXPECT_EQ(patterns(1, 2), 0b000111000000000u);
+    EXPECT_EQ(patterns(1, 3), 0b100000111000000u);
+    // reverse: A=4, C=5, T=6, G=7
     EXPECT_EQ(patterns(0, 4), 0b01110000000001000111000000000100u);
-    EXPECT_EQ(patterns(0, 6), 0b00000001110000010000000111000001u);
     EXPECT_EQ(patterns(0, 5), 0b00001110000000100000111000000010u);
-    EXPECT_EQ(patterns(0, 7), 0b10000000001110001000000000111000u);
+    EXPECT_EQ(patterns(0, 6), 0b10000000001110001000000000111000u);
+    EXPECT_EQ(patterns(0, 7), 0b00000001110000010000000111000001u);
     EXPECT_EQ(patterns(1, 4), 0b110000001000100u);
     EXPECT_EQ(patterns(1, 5), 0b001100000100010u);
-    EXPECT_EQ(patterns(1, 6), 0b000011000010001u);
-    EXPECT_EQ(patterns(1, 7), 0b000000110001000u);
+    EXPECT_EQ(patterns(1, 6), 0b000000110001000u);
+    EXPECT_EQ(patterns(1, 7), 0b000011000010001u);
 
     std::reverse(query.begin(), query.end());
     matrix<WordType> patterns_reversed = compute_myers_preprocess_matrix(query);

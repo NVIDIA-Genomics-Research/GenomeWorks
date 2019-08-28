@@ -225,12 +225,12 @@ __device__ void myers_preprocess(device_matrix_view<WordType>& query_pattern, ch
         // TODO query load is inefficient
         query_pattern(idx, 0) = myers_generate_query_pattern('A', query, query_size, idx * word_size);
         query_pattern(idx, 1) = myers_generate_query_pattern('C', query, query_size, idx * word_size);
-        query_pattern(idx, 2) = myers_generate_query_pattern('G', query, query_size, idx * word_size);
-        query_pattern(idx, 3) = myers_generate_query_pattern('T', query, query_size, idx * word_size);
+        query_pattern(idx, 2) = myers_generate_query_pattern('T', query, query_size, idx * word_size);
+        query_pattern(idx, 3) = myers_generate_query_pattern('G', query, query_size, idx * word_size);
         query_pattern(idx, 4) = myers_generate_query_pattern_reverse('A', query, query_size, idx * word_size);
         query_pattern(idx, 5) = myers_generate_query_pattern_reverse('C', query, query_size, idx * word_size);
-        query_pattern(idx, 6) = myers_generate_query_pattern_reverse('G', query, query_size, idx * word_size);
-        query_pattern(idx, 7) = myers_generate_query_pattern_reverse('T', query, query_size, idx * word_size);
+        query_pattern(idx, 6) = myers_generate_query_pattern_reverse('T', query, query_size, idx * word_size);
+        query_pattern(idx, 7) = myers_generate_query_pattern_reverse('G', query, query_size, idx * word_size);
     }
 }
 
@@ -239,19 +239,8 @@ inline __device__ WordType get_query_pattern(device_matrix_view<WordType>& query
     static_assert(std::is_unsigned<WordType>::value, "WordType has to be an unsigned type for well-defined >> operations.");
     CGA_CONSTEXPR int32_t word_size = sizeof(WordType) * CHAR_BIT;
     const int32_t char_idx          = [](char x) -> int32_t {
-        switch (x)
-        {
-        case 'A':
-            return 0;
-        case 'C':
-            return 1;
-        case 'G':
-            return 2;
-        case 'T':
-            return 3;
-        default:
-            return 0;
-        }
+        int32_t r = x;
+        return (r >> 1) & 0x3;
     }(x) + (reverse ? 4 : 0);
 
     // 4-bit word example:
