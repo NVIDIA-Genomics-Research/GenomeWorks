@@ -19,6 +19,7 @@ set(SOURCES
     Test_CudamapperMatcher.cpp
     Test_CudamapperMinimizer.cpp
     Test_PAF_generator.cpp
+    Test_CudamapperOverlapperTriggered.cpp
     ../src/bioparser_sequence.cpp)
 
 get_property(cudamapper_data_include_dir GLOBAL PROPERTY cudamapper_data_include_dir)
@@ -30,6 +31,8 @@ set(LIBS
     index_generator_gpu
     index_cpu
     matcher
-    overlapper_naive)
+    overlapper_naive
+    overlapper_triggerred
+    overlapper_utils)
 
 cga_add_tests(${PROJECT_NAME} "${SOURCES}" "${LIBS}")

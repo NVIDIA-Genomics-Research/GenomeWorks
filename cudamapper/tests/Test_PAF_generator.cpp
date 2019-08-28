@@ -16,6 +16,7 @@
 
 namespace claragenomics {
 
+
     TEST(TestPAFGenerator, TestGenerateNoOverlapForOneAnchor){
         Anchor anchor{0,1,2,3};
         std::vector<Anchor> anchors;
@@ -26,9 +27,12 @@ namespace claragenomics {
         testv.push_back("READ0");
         testv.push_back("READ1");
         testv.push_back("READ2");
+        std::vector<std::uint32_t> test_read_length(testv.size(), 1000);
 
         EXPECT_CALL(test_index, read_id_to_read_name)
                 .WillRepeatedly(testing::ReturnRef(testv));
+        EXPECT_CALL(test_index, read_id_to_read_length)
+                .WillRepeatedly(testing::ReturnRef(test_read_length));
 
         auto overlapper = OverlapperNaive();
         std::vector<Overlap> overlaps = overlapper.get_overlaps(anchors, test_index);
@@ -59,8 +63,12 @@ namespace claragenomics {
         testv.push_back("READ1");
         testv.push_back("READ2");
         testv.push_back("READ3");
+        std::vector<std::uint32_t> test_read_length(testv.size(), 1000);
+
         EXPECT_CALL(test_index, read_id_to_read_name)
                 .WillRepeatedly(testing::ReturnRef(testv));
+        EXPECT_CALL(test_index, read_id_to_read_length)
+                .WillRepeatedly(testing::ReturnRef(test_read_length));
 
         std::vector<Anchor> anchors;
         anchors.push_back(anchor1);
@@ -95,10 +103,12 @@ namespace claragenomics {
         testv.push_back("READ1");
         testv.push_back("READ2");
         testv.push_back("READ3");
+        std::vector<std::uint32_t> test_read_length(testv.size(), 1000);
 
         EXPECT_CALL(test_index, read_id_to_read_name)
                 .WillRepeatedly(testing::ReturnRef(testv));
-
+        EXPECT_CALL(test_index, read_id_to_read_length)
+                .WillRepeatedly(testing::ReturnRef(test_read_length));
         std::vector<Anchor> anchors;
         anchors.push_back(anchor1);
         anchors.push_back(anchor2);
@@ -139,8 +149,12 @@ namespace claragenomics {
         testv.push_back("READ1");
         testv.push_back("READ2");
         testv.push_back("READ3");
+        std::vector<std::uint32_t> test_read_length(testv.size(), 1000);
+
         EXPECT_CALL(test_index, read_id_to_read_name)
                 .WillRepeatedly(testing::ReturnRef(testv));
+        EXPECT_CALL(test_index, read_id_to_read_length)
+                .WillRepeatedly(testing::ReturnRef(test_read_length));
 
         std::vector<Anchor> anchors;
         anchors.push_back(anchor1);
@@ -153,6 +167,7 @@ namespace claragenomics {
         int num_overlaps_found = overlaps.size();
         EXPECT_EQ(num_overlaps_found, 1);
     }
+
 
     TEST(TestPAFGenerator, TestGenerateOverlap2){
         Anchor anchor1;
@@ -188,8 +203,12 @@ namespace claragenomics {
         testv.push_back("READ1");
         testv.push_back("READ2");
         testv.push_back("READ3");
+        std::vector<std::uint32_t> test_read_length(testv.size(), 1000);
+
         EXPECT_CALL(test_index, read_id_to_read_name)
                 .WillRepeatedly(testing::ReturnRef(testv));
+        EXPECT_CALL(test_index, read_id_to_read_length)
+                .WillRepeatedly(testing::ReturnRef(test_read_length));
 
         auto overlapper = OverlapperNaive();
         std::vector<Overlap> overlaps = overlapper.get_overlaps(anchors, test_index);
@@ -220,9 +239,13 @@ namespace claragenomics {
         testv.push_back("READ1");
         testv.push_back("READ2");
         testv.push_back("READ3");
+        std::vector<std::uint32_t> test_read_length(testv.size(), 1000);
+
 
         EXPECT_CALL(test_index, read_id_to_read_name)
                 .WillRepeatedly(testing::ReturnRef(testv));
+        EXPECT_CALL(test_index, read_id_to_read_length)
+                .WillRepeatedly(testing::ReturnRef(test_read_length));
 
         std::vector<Anchor> anchors;
         anchors.push_back(anchor1);
@@ -232,6 +255,7 @@ namespace claragenomics {
 
         std::vector<Overlap> overlaps = overlapper.get_overlaps(anchors, test_index);
         int num_overlaps_found = overlaps.size();
+
         EXPECT_EQ(num_overlaps_found, 1);
         EXPECT_EQ(overlaps[0].query_read_name_, testv[0]);
         EXPECT_EQ(overlaps[0].target_read_name_, testv[1]);

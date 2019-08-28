@@ -78,6 +78,7 @@ namespace claragenomics {
         const std::vector<SketchElement::DirectionOfRepresentation>& directions_of_reads() const override { return directions_of_reads_; }
         std::uint64_t number_of_reads() const override { return number_of_reads_; }
         const std::vector<std::string>& read_id_to_read_name() const override { return read_id_to_read_name_; }
+        const std::vector<std::uint32_t>& read_id_to_read_length() const override { return read_id_to_read_length_; }
         const std::vector<std::vector<Index::RepresentationToSketchElements>>& read_id_and_representation_to_sketch_elements() const override { return read_id_and_representation_to_sketch_elements_; }
 
         // setters
@@ -94,6 +95,7 @@ namespace claragenomics {
         std::vector<SketchElement::DirectionOfRepresentation> directions_of_reads_;
         std::uint64_t number_of_reads_;
         std::vector<std::string> read_id_to_read_name_;
+        std::vector<std::uint32_t> read_id_to_read_length_;
         std::vector<std::vector<RepresentationToSketchElements>> read_id_and_representation_to_sketch_elements_;
     };
 

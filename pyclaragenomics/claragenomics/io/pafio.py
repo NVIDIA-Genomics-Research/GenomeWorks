@@ -56,7 +56,7 @@ def read_paf(filepath):
             paf_entry = paf_entry.replace('\n', '')
             paf_entry = paf_entry.split('\t')
             paf_entry_sanitised = [int(x) if x.isdigit() else x for x in paf_entry]
-            overlaps.append(Overlap(*paf_entry_sanitised))
+            overlaps.append(Overlap(*paf_entry_sanitised[:12]))
     return overlaps
 
 
