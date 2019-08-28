@@ -30,7 +30,9 @@ Minimum requirements -
 3. gcc/g++ 5.4.0+
 4. Python 3.6.7+
 
-## Build Clara Genomics Analysis
+## Clara Genomics Analysis Setup
+
+### Build
 To build Clara Genomics Analysis -
 
 ```bash
@@ -38,6 +40,20 @@ mkdir build
 cd build
 cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=install
 make -j install
+```
+
+### Install
+To install the SDK -
+
+```bash
+make install
+```
+
+### Debian Package
+To generate a Debian package for the SDK -
+
+```bash
+make package
 ```
 
 ## Enable Unit Tests
