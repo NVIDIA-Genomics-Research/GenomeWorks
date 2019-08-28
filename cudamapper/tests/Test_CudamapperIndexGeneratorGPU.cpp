@@ -104,10 +104,11 @@ namespace claragenomics
     }
 
     TEST(TestCudamapperIndexGeneratorGPU, CCCATACC_2_8) {
+        // *** Read is shorter than one full window, the result should be empty ***
+
         // >read_0
         // CCCATACC
 
-        // Read is shorter than one full window, the result should be empty
         std::string filename(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/cccatacc.fasta");
         std::uint64_t minimizer_size = 2;
         std::uint64_t window_size = 8;
@@ -123,6 +124,69 @@ namespace claragenomics
                       number_of_reads,
                       read_id_to_read_name,
                       representation_and_minimizers);
+    }
+
+    TEST(TestCudamapperIndexGeneratorGPU, CATCAAG_AAGCTA_3_5) {
+        // *** One Read is shorter than one full window, the other is not ***
+
+        // >read_0
+        // CATCAAG
+        // >read_1
+        // AAGCTA
+
+        // ** CATCAAG **
+
+        // kmer representation: forward, reverse
+        // CAT:  103 <032>
+        // ATC: <031> 203
+        // TCA: <310> 320
+        // CAA: <100> 332
+        // AAG: <002> 133
+
+        // front end minimizers: representation, position_in_read, direction, read_id
+        // CAT   : 032 0 R 0
+        // CATC  : 031 1 F 0
+        // CATCA : 031 1 F 0
+        // CATCAA: 031 1 F 0
+
+        // central minimizers
+        // CATCAAG: 002 4 F 0
+
+        // back end minimizers
+        // ATCAAG: 002 4 F 0
+        // TCAAG : 002 4 F 0
+        // CAAG  : 002 4 F 0
+        // AAG   : 002 4 F 0
+
+        // ** AAGCTA **
+        // ** read does not fit one array **
+
+        // all minimizers: (032, 0, R 0), (031, 1, F, 0), (002, 4, F, 0)
+        // all minimizers sorted: (002,4,F,0), (031, 1, F, 0), (032, 0, R, 0)
+
+        std::string filename(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "//two_reads_multiple_minimizers.fasta");
+        std::uint64_t minimizer_size = 3;
+        std::uint64_t window_size = 5;
+        std::uint64_t number_of_reads = 1; // one read is ignored
+
+        std::vector<std::string> read_id_to_read_name;
+        read_id_to_read_name.push_back("read_0");
+
+        std::vector<std::pair<representation_t, std::vector<Minimizer>>> representation_and_minimizers;
+        representation_and_minimizers.push_back(std::pair<representation_t, std::vector<Minimizer>>{0b000010, {}});
+        representation_and_minimizers.back().second.push_back({0b000010, 4, SketchElement::DirectionOfRepresentation::FORWARD, 0});
+        representation_and_minimizers.push_back(std::pair<representation_t, std::vector<Minimizer>>{0b001101, {}});
+        representation_and_minimizers.back().second.push_back({0b001101, 1, SketchElement::DirectionOfRepresentation::FORWARD, 0});
+        representation_and_minimizers.push_back(std::pair<representation_t, std::vector<Minimizer>>{0b001110, {}});
+        representation_and_minimizers.back().second.push_back({0b001110, 0, SketchElement::DirectionOfRepresentation::REVERSE, 0});
+
+        test_function(filename,
+                      minimizer_size,
+                      window_size,
+                      number_of_reads,
+                      read_id_to_read_name,
+                      representation_and_minimizers);
+
     }
 
     TEST(TestCudamapperIndexGeneratorGPU, CCCATAC_3_5) {
