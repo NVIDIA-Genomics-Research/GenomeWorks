@@ -10,6 +10,7 @@
 
 #pragma once
 
+#include <functional>
 #include <vector>
 
 #include "cudamapper/types.hpp"
@@ -44,4 +45,24 @@ namespace claragenomics {
     /// \param unfused_overlaps vector of overlaps, sorted by (query_id, target_id) combination and query_start_position
     /// \return vector of overlaps
     std::vector<Overlap> fuse_overlaps(std::vector<Overlap> unfused_overlaps);
+
+    /// \brief given a std::vector of two or more sorted std::vector objects and a function to compare them, returns one sorted std::vector
+    ///
+    /// \param src object of type std::vector<std::vector<T>> - vector of of two or more sorted vectors.
+    /// \param dst reference to object of type std::vector<T> where result should be written
+    /// \return vector of sorted elements
+    // TODO this algorithm is not very performant - should be reimplemented to run in log2(N) time and use multithreading.
+    template <class T>
+    void merge_n_sorted_vectors(const std::vector<std::vector<T>> &src, std::vector<T> &dst,
+                                std::function<bool(T, T)> comp) {
+        if (src.size() < 1){
+            return;
+        }
+        dst = src[0];
+        for(size_t i=1; i<src.size(); i++) {
+            std::vector<T> tmp (dst.size() + src[i].size());
+            std::merge(dst.begin(), dst.end(), src[i].begin(), src[i].end(), tmp.begin(), comp);
+            dst = tmp;
+        }
+    }
 }
