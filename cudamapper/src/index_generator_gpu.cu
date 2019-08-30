@@ -1131,8 +1131,9 @@ namespace claragenomics {
                 break;
             }
         }
-        // *** add the minimizers to the host side index ***
-        // minimizers are already sorted by representation -> add all minimizers with the same representation to a vector and then add that vector to the hash table
+
+        // Add the minimizers to the host-side index
+        // SketchElements are already sorted by representation. Add all SketchElements with the same representation to a vector and then add that vector to the index
         std::vector<std::pair<representation_t, ReadidPositionDirection>> repr_rest_pairs;
 
         //Lambda function to compare std::pair<representation_t, ReadidPositionDirection>
