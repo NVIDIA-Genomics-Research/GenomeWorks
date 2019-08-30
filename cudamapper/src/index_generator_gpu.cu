@@ -1137,7 +1137,7 @@ namespace claragenomics {
         std::vector<std::pair<representation_t, ReadidPositionDirection>> repr_rest_pairs;
 
         merge_n_sorted_vectors(all_representation_readid_position_direction, repr_rest_pairs,
-                [](std::pair<representation_t, ReadidPositionDirection> a,  std::pair<representation_t, ReadidPositionDirection> b){
+                [](const std::pair<representation_t, ReadidPositionDirection> &a,  const std::pair<representation_t, ReadidPositionDirection> &b){
                     return a.first < b.first;
                 }
         );
