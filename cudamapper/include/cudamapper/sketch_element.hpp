@@ -27,6 +27,9 @@ namespace claragenomics {
             REVERSE
         };
 
+        /// \brief Virtual destructor for SketchElement
+        virtual ~SketchElement() = default;
+
         /// \brief returns integer representation of a kmer
         /// \return integer representation
         virtual representation_t representation() const = 0;

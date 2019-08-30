@@ -14,7 +14,6 @@ project(cudamappertests)
 set(SOURCES
     main.cpp
     Test_CudamapperIndexCPU.cpp
-    Test_CudamapperIndexGeneratorCPU.cpp
     Test_CudamapperIndexGeneratorGPU.cpp
     Test_CudamapperMatcher.cpp
     Test_CudamapperMinimizer.cpp
@@ -27,7 +26,6 @@ include_directories(${cudamapper_data_include_dir})
 
 set(LIBS
     bioparser
-    index_generator_cpu
     index_generator_gpu
     index_cpu
     matcher
