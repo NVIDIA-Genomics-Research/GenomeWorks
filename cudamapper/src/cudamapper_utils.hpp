@@ -60,7 +60,7 @@ namespace claragenomics {
         dst = src[0];
         for(size_t i=1; i<src.size(); i++) {
             std::vector<T> tmp (dst.size() + src[i].size());
-            std::merge(dst.begin(), dst.end(), src[i].begin(), src[i].end(), tmp.begin(), comp);
+            std::merge(std::begin(dst), std::end(dst), std::begin(src[i]), std::end(src[i]), std::begin(tmp), comp);
             dst = tmp;
         }
     }
