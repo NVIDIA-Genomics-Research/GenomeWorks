@@ -31,6 +31,9 @@ namespace claragenomics {
             ArrayBlock sketch_elements_for_representation_and_all_read_ids_;
         };
 
+        /// \brief Virtual destructor for Index
+        virtual ~Index() = default;
+
         /// \brief returns an array of starting positions of sketch elements in their reads
         /// \return an array of starting positions of sketch elements in their reads
         virtual const std::vector<position_in_read_t>& positions_in_reads() const = 0;

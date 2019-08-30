@@ -19,6 +19,10 @@ namespace claragenomics {
     /// Overlapper - given anchors and a read index, calculates overlaps between reads
     class Overlapper {
     public:
+
+        /// \brief Virtual destructor for Overlapper
+        virtual ~Overlapper() = default;
+
         /// \brief returns overlaps for a set of reads
         /// \param anchors vector of anchor objects. Does not need to be ordered
         /// \param index representation index for reads
