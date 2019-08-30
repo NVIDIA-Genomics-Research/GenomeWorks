@@ -1136,12 +1136,11 @@ namespace claragenomics {
         // SketchElements are already sorted by representation. Add all SketchElements with the same representation to a vector and then add that vector to the index
         std::vector<std::pair<representation_t, ReadidPositionDirection>> repr_rest_pairs;
 
-        //Lambda function to compare std::pair<representation_t, ReadidPositionDirection>
-        auto compare = [](std::pair<representation_t, ReadidPositionDirection> a,  std::pair<representation_t, ReadidPositionDirection> b){
-            return a.first < b.first;
-        };
-
-        merge_n_sorted_vectors(all_representation_readid_position_direction, repr_rest_pairs, compare);
+        merge_n_sorted_vectors(all_representation_readid_position_direction, repr_rest_pairs,
+                [](std::pair<representation_t, ReadidPositionDirection> a,  std::pair<representation_t, ReadidPositionDirection> b){
+                    return a.first < b.first;
+                }
+        );
 
         std::vector<std::unique_ptr<SketchElement>> minimizers_for_representation;
         if (repr_rest_pairs.size() < 1){
