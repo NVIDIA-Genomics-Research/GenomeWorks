@@ -48,6 +48,4 @@ source ci/common/build-test-sdk.sh ${WORKSPACE} ${CMAKE_COMMON_VARIABLES} ${PARA
 ################################################################################
 
 cd ${WORKSPACE}
-if [ "${TEST_PYCLARAGENOMICSANALYSIS}" == '1' ]; then
-    source ci/common/test-pyclaragenomics.sh $WORKSPACE/pyclaragenomics
-fi
+source ci/common/test-pyclaragenomics.sh $WORKSPACE/pyclaragenomics
