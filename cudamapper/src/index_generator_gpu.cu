@@ -15,13 +15,16 @@
 #include <utility>
 #include <thrust/sort.h>
 #include <thrust/execution_policy.h>
+
+#include <claragenomics/logging/logging.hpp>
+#include <claragenomics/utils/cudautils.hpp>
+#include <claragenomics/utils/device_buffer.cuh>
+
 #include "bioparser/bioparser.hpp"
 #include "bioparser_sequence.hpp"
 #include "index_generator_gpu.hpp"
 #include "cudamapper/types.hpp"
-#include <claragenomics/logging/logging.hpp>
-#include <claragenomics/utils/cudautils.hpp>
-#include <claragenomics/utils/device_buffer.cuh>
+#include "cudamapper_utils.hpp"
 
 namespace claragenomics {
 
@@ -720,7 +723,8 @@ namespace claragenomics {
                                         const ArrayBlock* const read_id_to_windows_section,
                                         representation_t* const representations_compressed,
                                         ReadidPositionDirection* const rest_compressed,
-                                        const ArrayBlock* const read_id_to_compressed_minimizers
+                                        const ArrayBlock* const read_id_to_compressed_minimizers,
+                                        std::uint32_t offset
                                         )
     {
         const auto& first_input_minimizer = read_id_to_windows_section[blockIdx.x].first_element_;
@@ -729,7 +733,7 @@ namespace claragenomics {
 
         for (std::uint32_t i = threadIdx.x; i < number_of_minimizers; i += blockDim.x) {
             representations_compressed[first_output_minimizer + i] = window_minimizers_representation[first_input_minimizer + i];
-            rest_compressed[first_output_minimizer + i].read_id_ = blockIdx.x;
+            rest_compressed[first_output_minimizer + i].read_id_ = blockIdx.x + offset;
             rest_compressed[first_output_minimizer + i].position_in_read_ = window_minimizers_position_in_read[first_input_minimizer + i];
             rest_compressed[first_output_minimizer + i].direction_ = window_minimizers_direction[first_input_minimizer + i];
         }
@@ -737,7 +741,7 @@ namespace claragenomics {
 
     void IndexGeneratorGPU::generate_index(const std::string &query_filename) {
 
-        std::unique_ptr <bioparser::Parser<BioParserSequence>> query_parser = nullptr;
+        std::unique_ptr<bioparser::Parser<BioParserSequence>> query_parser = nullptr;
 
         auto is_suffix = [](const std::string &src, const std::string &suffix) -> bool {
             if (src.size() < suffix.size()) {
@@ -753,309 +757,415 @@ namespace claragenomics {
                     query_filename);
         }
 
-        //read the query file:
-        std::vector <std::unique_ptr<BioParserSequence>> fasta_objects;
-        query_parser->parse(fasta_objects, std::numeric_limits<std::uint64_t>::max());
+        //TODO Allow user to choose this value
+        std::uint64_t parser_buffer_size_in_bytes = 0.3 * 1024 * 1024 * 1024; // 0.3 GiB
 
-        std::uint64_t total_basepairs = 0;
-        std::vector<ArrayBlock> read_id_to_basepairs_section_h;
+        number_of_reads_ = 0;
 
-        // find out how many basepairs each read has and determine its section in the big array with all basepairs 
-        for (std::size_t fasta_object_id = 0; fasta_object_id < fasta_objects.size(); ++fasta_object_id) {
-            // skip reads which are shorter than one window
-            if (fasta_objects[fasta_object_id]->data().length() >= window_size_ + minimizer_size_ - 1) {
-                read_id_to_basepairs_section_h.emplace_back(ArrayBlock{total_basepairs, static_cast<std::uint32_t>(fasta_objects[fasta_object_id]->data().length())});
-                total_basepairs += fasta_objects[fasta_object_id]->data().length();
-                read_id_to_read_name_.push_back(fasta_objects[fasta_object_id]->name());
-                read_id_to_read_length_.push_back(fasta_objects[fasta_object_id]->data().length());
-            } else {
-                CGA_LOG_INFO("Skipping read {}. It has {} basepairs, one window covers {} basepairs", fasta_objects[fasta_object_id]->name(), fasta_objects[fasta_object_id]->data().length(), window_size_ + minimizer_size_ - 1);
+        std::vector<std::vector<std::pair<representation_t, ReadidPositionDirection>>> all_representation_readid_position_direction;
+
+        while (true) {
+            //read the query file:
+            std::vector<std::unique_ptr<BioParserSequence>> fasta_objects;
+            bool parser_status = query_parser->parse(fasta_objects, parser_buffer_size_in_bytes);
+
+            std::uint64_t total_basepairs = 0;
+            std::vector<ArrayBlock> read_id_to_basepairs_section_h;
+
+            // find out how many basepairs each read has and determine its section in the big array with all basepairs
+            for (std::size_t fasta_object_id = 0; fasta_object_id < fasta_objects.size(); ++fasta_object_id) {
+                // skip reads which are shorter than one window
+                if (fasta_objects[fasta_object_id]->data().length() >= window_size_ + minimizer_size_ - 1) {
+                    read_id_to_basepairs_section_h.emplace_back(ArrayBlock{total_basepairs,
+                                                                           static_cast<std::uint32_t>(fasta_objects[fasta_object_id]->data().length())});
+                    total_basepairs += fasta_objects[fasta_object_id]->data().length();
+                    read_id_to_read_name_.push_back(fasta_objects[fasta_object_id]->name());
+                    read_id_to_read_length_.push_back(fasta_objects[fasta_object_id]->data().length());
+                } else {
+                    CGA_LOG_INFO("Skipping read {}. It has {} basepairs, one window covers {} basepairs",
+                                 fasta_objects[fasta_object_id]->name(),
+                                 fasta_objects[fasta_object_id]->data().length(), window_size_ + minimizer_size_ - 1);
+                }
+            }
+
+            auto number_of_reads_to_add = read_id_to_basepairs_section_h.size(); // This is the number of reads in this specific iteration
+            number_of_reads_ += number_of_reads_to_add; // this is the *total* number of reads.
+
+            //Stop if there are no reads to add
+            if (0 == number_of_reads_to_add) {
+                if (parser_status == false) {
+                    break;
+                }
+                continue;
+            }
+
+            std::vector<char> merged_basepairs_h(total_basepairs);
+
+            // copy each read to its section of the basepairs array
+            read_id_t read_id = 0;
+            for (std::size_t fasta_object_id = 0; fasta_object_id < number_of_reads_to_add; ++fasta_object_id) {
+                // skip reads which are shorter than one window
+                if (fasta_objects[fasta_object_id]->data().length() >= window_size_ + minimizer_size_ - 1) {
+                    std::copy(std::begin(fasta_objects[fasta_object_id]->data()),
+                              std::end(fasta_objects[fasta_object_id]->data()),
+                              std::next(std::begin(merged_basepairs_h),
+                                        read_id_to_basepairs_section_h[read_id].first_element_));
+                    ++read_id;
+                }
+            }
+
+            // fasta_objects not needed after this point
+            fasta_objects.clear();
+            fasta_objects.reserve(0);
+
+            // move basepairs to the device
+            CGA_LOG_INFO("Allocating {} bytes for read_id_to_basepairs_section_d",
+                         read_id_to_basepairs_section_h.size() *
+                         sizeof(decltype(read_id_to_basepairs_section_h)::value_type));
+            device_buffer<decltype(read_id_to_basepairs_section_h)::value_type> read_id_to_basepairs_section_d(
+                    read_id_to_basepairs_section_h.size());
+            CGA_CU_CHECK_ERR(cudaMemcpy(read_id_to_basepairs_section_d.data(),
+                                        read_id_to_basepairs_section_h.data(),
+                                        read_id_to_basepairs_section_h.size() *
+                                        sizeof(decltype(read_id_to_basepairs_section_h)::value_type),
+                                        cudaMemcpyHostToDevice)
+            );
+
+            CGA_LOG_INFO("Allocating {} bytes for merged_basepairs_d",
+                         merged_basepairs_h.size() * sizeof(decltype(merged_basepairs_h)::value_type));
+            device_buffer<decltype(merged_basepairs_h)::value_type> merged_basepairs_d(merged_basepairs_h.size());
+            CGA_CU_CHECK_ERR(cudaMemcpy(merged_basepairs_d.data(),
+                                        merged_basepairs_h.data(),
+                                        merged_basepairs_h.size() * sizeof(decltype(merged_basepairs_h)::value_type),
+                                        cudaMemcpyHostToDevice)
+            );
+            merged_basepairs_h.clear();
+            merged_basepairs_h.reserve(0);
+
+            // for each read find the maximum number of minimizers (one per window), determine their section in the minimizer arrays and allocate the arrays
+            std::uint64_t total_windows = 0;
+            std::vector<ArrayBlock> read_id_to_windows_section_h(number_of_reads_to_add, {0, 0});
+            for (read_id_t read_id = 0; read_id < number_of_reads_to_add; ++read_id) {
+                read_id_to_windows_section_h[read_id].first_element_ = total_windows;
+                std::uint32_t windows = window_size_ - 1; // front end minimizers
+                windows += read_id_to_basepairs_section_h[read_id].block_size_ - (minimizer_size_ + window_size_ - 1) +
+                           1; // central minimizers
+                windows += window_size_ - 1;
+                read_id_to_windows_section_h[read_id].block_size_ = windows;
+                total_windows += windows;
+            }
+
+            CGA_LOG_INFO("Allocating {} bytes for read_id_to_windows_section_d", read_id_to_windows_section_h.size() *
+                                                                                 sizeof(decltype(read_id_to_windows_section_h)::value_type));
+            device_buffer<decltype(read_id_to_windows_section_h)::value_type> read_id_to_windows_section_d(
+                    read_id_to_windows_section_h.size());
+            CGA_CU_CHECK_ERR(cudaMemcpy(read_id_to_windows_section_d.data(),
+                                        read_id_to_windows_section_h.data(),
+                                        read_id_to_windows_section_h.size() *
+                                        sizeof(decltype(read_id_to_windows_section_h)::value_type),
+                                        cudaMemcpyHostToDevice)
+            );
+
+            CGA_LOG_INFO("Allocating {} bytes for window_minimizers_representation_d",
+                         total_windows * sizeof(representation_t));
+            device_buffer<representation_t> window_minimizers_representation_d(total_windows);
+            CGA_LOG_INFO("Allocating {} bytes for window_minimizers_direction_d", total_windows * sizeof(char));
+            device_buffer<char> window_minimizers_direction_d(total_windows);
+            CGA_LOG_INFO("Allocating {} bytes for window_minimizers_position_in_read_d",
+                         total_windows * sizeof(position_in_read_t));
+            device_buffer<position_in_read_t> window_minimizers_position_in_read_d(total_windows);
+            CGA_LOG_INFO("Allocating {} bytes for read_id_to_minimizers_written_d",
+                         number_of_reads_to_add * sizeof(std::uint32_t));
+            device_buffer<std::uint32_t> read_id_to_minimizers_written_d(number_of_reads_to_add);
+            // initially there are no minimizers written to the output arrays
+            CGA_CU_CHECK_ERR(
+                    cudaMemset(read_id_to_minimizers_written_d.data(), 0,
+                               number_of_reads_to_add * sizeof(std::uint32_t)));
+
+            // *** front end minimizers ***
+            std::uint32_t num_of_basepairs_for_front_minimizers = (window_size_ - 1) + minimizer_size_ - 1;
+            std::uint32_t num_of_threads = std::min(num_of_basepairs_for_front_minimizers, 64u);
+            // largest window in end minimizers has the size of window_size_-1, meaning it covers window_size_-1 + minimizer_size - 1 basepairs
+            const std::uint32_t basepairs_for_end_minimizers = (window_size_ - 1 + minimizer_size_ - 1);
+            const std::uint32_t kmers_for_end_minimizers = window_size_ -
+                                                           1; // for end minimizers number of kmers is the as the number of windows because the last window has only one kmer
+            const std::uint32_t windows_for_end_minimizers = window_size_ - 1;
+            // determine total ammount for shared memory needed (see kernel for clarification)
+            // shared memeory is alligned to 8 bytes, so for 1-byte variables (x+7)/8 values are allocate (for 10 1-byte elements (10+7)/8=17/8=2 8-byte elements are allocated, instead of 10/1=1 which would be wrong)
+            // the final number of allocated 8-byte values is multiplied by 8 at the end in order to get number of bytes needed
+            std::uint32_t shared_memory_for_kernel = 0;
+            shared_memory_for_kernel += (basepairs_for_end_minimizers + 7) / 8; // forward basepairs (char)
+            shared_memory_for_kernel += (basepairs_for_end_minimizers + 7) / 8; // reverse basepairs (char)
+            shared_memory_for_kernel += (kmers_for_end_minimizers); // representations of minimizers (representation_t)
+            shared_memory_for_kernel +=
+                    (windows_for_end_minimizers + 7) / 8; // directions of representations of minimizers (char)
+            shared_memory_for_kernel +=
+                    (windows_for_end_minimizers + 1) / 2; // position_in_read of minimizers (position_in_read_t)
+            shared_memory_for_kernel += (windows_for_end_minimizers + 1) /
+                                        2; // does the window have a different minimizer than its left neighbor (position_in_read_t)
+            shared_memory_for_kernel += 1; // representation from previous step
+            shared_memory_for_kernel += (1 + 1) / 2; // position from previous step (char)
+            shared_memory_for_kernel += (1 + 1) / 2; // inclusive sum from previous step (position_in_read_t)
+            shared_memory_for_kernel += 8 / 8; // forward -> reverse complement conversion (char)
+
+            shared_memory_for_kernel *= 8; // before it the number of 8-byte values, now get the number of bytes
+
+            CGA_LOG_INFO("Launching find_front_end_minimizers with {} bytes of shared memory",
+                         shared_memory_for_kernel);
+            find_front_end_minimizers <<< number_of_reads_to_add, num_of_threads, shared_memory_for_kernel >>>
+                                                                                   (minimizer_size_,
+                                                                                           window_size_,
+                                                                                           merged_basepairs_d.data(),
+                                                                                           read_id_to_basepairs_section_d.data(),
+                                                                                           window_minimizers_representation_d.data(),
+                                                                                           window_minimizers_direction_d.data(),
+                                                                                           window_minimizers_position_in_read_d.data(),
+                                                                                           read_id_to_windows_section_d.data(),
+                                                                                           read_id_to_minimizers_written_d.data()
+                                                                                   );
+            CGA_CU_CHECK_ERR(cudaDeviceSynchronize());
+
+            // *** central minimizers ***
+            const std::uint32_t basepairs_per_thread = 8; // arbitrary, tradeoff between the number of thread blocks that can be scheduled simultaneously and the number of basepairs which have to be loaded multiple times beacuse only basepairs_per_thread*num_of_threads-(window_size_ + minimizer_size_ - 1) + 1 can be processed at once, i.e. window_size+minimizer_size-2 basepairs have to be loaded again
+            num_of_threads = 64; // arbitrary
+            const std::uint32_t basepairs_in_loop_step = num_of_threads * basepairs_per_thread;
+            const std::uint32_t minimizers_in_loop_step = basepairs_in_loop_step - minimizer_size_ + 1;
+            const std::uint32_t windows_in_loop_step = minimizers_in_loop_step - window_size_ + 1;
+            //const std::uint32_t windows_in_loop_step = num_of_threads*basepairs_per_thread - (window_size_ + minimizer_size_ - 1) + 1;
+            shared_memory_for_kernel = 0;
+            shared_memory_for_kernel += (basepairs_in_loop_step + 7) / 8; // forward basepairs (char)
+            shared_memory_for_kernel += (basepairs_in_loop_step + 7) / 8; // reverse basepairs (char)
+            shared_memory_for_kernel += minimizers_in_loop_step; // representations of minimizers (representation_t)
+            shared_memory_for_kernel +=
+                    (windows_in_loop_step + 7) / 8; // directions of representations of minimizers (char)
+            shared_memory_for_kernel +=
+                    (windows_in_loop_step + 1) / 2; // position_in_read of minimizers (position_in_read_t)
+            shared_memory_for_kernel +=
+                    (windows_in_loop_step + 1) / 2; // does the window have a different minimizer than its left neighbor
+            shared_memory_for_kernel += (1 + 1) / 2; // position from previous step (char)
+            shared_memory_for_kernel += (1 + 1) / 2; // inclusive sum from previous step (position_in_read_t)
+            shared_memory_for_kernel += 8 / 8; // forward -> reverse complement conversion (char)
+
+            shared_memory_for_kernel *= 8; // before it the number of 8-byte values, now get the number of bytes
+
+            CGA_LOG_INFO("Launching find_central_minimizers with {} bytes of shared memory", shared_memory_for_kernel);
+            find_central_minimizers <<< number_of_reads_to_add, num_of_threads, shared_memory_for_kernel >>>
+                                                                                 (minimizer_size_,
+                                                                                         window_size_,
+                                                                                         basepairs_per_thread,
+                                                                                         merged_basepairs_d.data(),
+                                                                                         read_id_to_basepairs_section_d.data(),
+                                                                                         window_minimizers_representation_d.data(),
+                                                                                         window_minimizers_direction_d.data(),
+                                                                                         window_minimizers_position_in_read_d.data(),
+                                                                                         read_id_to_windows_section_d.data(),
+                                                                                         read_id_to_minimizers_written_d.data()
+                                                                                 );
+            CGA_CU_CHECK_ERR(cudaDeviceSynchronize());
+
+            // *** back end minimizers ***
+            num_of_threads = 64;
+            // largest window should fit shared memory
+            shared_memory_for_kernel = 0;
+            shared_memory_for_kernel += (basepairs_for_end_minimizers + 7) / 8; // forward basepairs (char)
+            shared_memory_for_kernel += (basepairs_for_end_minimizers + 7) / 8; // reverse basepairs (char)
+            shared_memory_for_kernel += kmers_for_end_minimizers; // representations of minimizers (representation_t)
+            shared_memory_for_kernel +=
+                    (kmers_for_end_minimizers + 7) / 8; // directions of representations of minimizers (char)
+            shared_memory_for_kernel +=
+                    (windows_for_end_minimizers + 1) / 2; // position_in_read of minimizers (position_in_read_t)
+            shared_memory_for_kernel += (windows_for_end_minimizers + 1) /
+                                        2; // does the window have a different minimizer than its left neighbor
+            shared_memory_for_kernel += 8 / 8; // forward -> reverse complement conversion (char)
+
+            shared_memory_for_kernel *= 8; // before it the number of 8-byte values, now get the number of bytes
+
+            CGA_LOG_INFO("Launching find_back_end_minimizers with {} bytes of shared memory", shared_memory_for_kernel);
+            find_back_end_minimizers <<< number_of_reads_to_add, num_of_threads, shared_memory_for_kernel >>>
+                                                                                  (minimizer_size_,
+                                                                                          window_size_,
+                                                                                          merged_basepairs_d.data(),
+                                                                                          read_id_to_basepairs_section_d.data(),
+                                                                                          window_minimizers_representation_d.data(),
+                                                                                          window_minimizers_direction_d.data(),
+                                                                                          window_minimizers_position_in_read_d.data(),
+                                                                                          read_id_to_windows_section_d.data(),
+                                                                                          read_id_to_minimizers_written_d.data()
+                                                                                  );
+            CGA_CU_CHECK_ERR(cudaDeviceSynchronize());
+
+            CGA_LOG_INFO("Deallocating {} bytes from read_id_to_basepairs_section_d",
+                         read_id_to_basepairs_section_d.size() *
+                         sizeof(decltype(read_id_to_basepairs_section_d)::value_type));
+            read_id_to_basepairs_section_d.free();
+
+            CGA_LOG_INFO("Deallocating {} bytes from merged_basepairs_d",
+                         merged_basepairs_d.size() * sizeof(decltype(merged_basepairs_d)::value_type));
+            merged_basepairs_d.free();
+
+            std::vector<std::uint32_t> read_id_to_minimizers_written_h(number_of_reads_to_add);
+
+            CGA_CU_CHECK_ERR(cudaMemcpy(read_id_to_minimizers_written_h.data(),
+                                        read_id_to_minimizers_written_d.data(),
+                                        read_id_to_minimizers_written_h.size() *
+                                        sizeof(decltype(read_id_to_minimizers_written_h)::value_type),
+                                        cudaMemcpyDeviceToHost
+            )
+            );
+            CGA_LOG_INFO("Deallocating {} bytes from read_id_to_minimizers_written_d",
+                         read_id_to_minimizers_written_d.size() *
+                         sizeof(decltype(read_id_to_minimizers_written_d)::value_type));
+            read_id_to_minimizers_written_d.free();
+
+            // *** remove unused elemets from the window minimizers arrays ***
+            // In window_minimizers_representation_d and other arrays enough space was allocated to support cases where each window has a different minimizers. In reality many neighboring windows share the same mininizer
+            // As a result there are areas of meaningless data between minimizers belonging to different reads (space_allocated_for_all_possible_minimizers_of_a_read - space_needed_for_the_actuall_minimizers)
+            // At this point all mininizer are put together (compressed) so that the last minimizer of one read is next to the first minimizer of another read
+            // Data is organized in two arrays in order to support usage of thrust::stable_sort_by_key. One contains representations (key) and the other the rest (values)
+            std::vector<ArrayBlock> read_id_to_compressed_minimizers_h(number_of_reads_to_add, {0, 0});
+            std::uint64_t total_minimizers = 0;
+            for (std::size_t read_id = 0; read_id < read_id_to_minimizers_written_h.size(); ++read_id) {
+                read_id_to_compressed_minimizers_h[read_id].first_element_ = total_minimizers;
+                read_id_to_compressed_minimizers_h[read_id].block_size_ = read_id_to_minimizers_written_h[read_id];
+                total_minimizers += read_id_to_minimizers_written_h[read_id];
+            }
+
+            CGA_LOG_INFO("Allocating {} bytes for read_id_to_compressed_minimizers_d",
+                         read_id_to_compressed_minimizers_h.size() *
+                         sizeof(decltype(read_id_to_compressed_minimizers_h)::value_type));
+            device_buffer<decltype(read_id_to_compressed_minimizers_h)::value_type> read_id_to_compressed_minimizers_d(
+                    read_id_to_compressed_minimizers_h.size());
+            CGA_CU_CHECK_ERR(cudaMemcpy(read_id_to_compressed_minimizers_d.data(),
+                                        read_id_to_compressed_minimizers_h.data(),
+                                        read_id_to_compressed_minimizers_h.size() *
+                                        sizeof(decltype(read_id_to_compressed_minimizers_h)::value_type),
+                                        cudaMemcpyHostToDevice
+            )
+            );
+
+            CGA_LOG_INFO("Allocating {} bytes for representations_compressed_d",
+                         total_minimizers * sizeof(representation_t));
+            device_buffer<representation_t> representations_compressed_d(total_minimizers);
+            // rest = position_in_read, direction and read_id
+            CGA_LOG_INFO("Allocating {} bytes for rest_compressed_d",
+                         total_minimizers * sizeof(ReadidPositionDirection));
+            device_buffer<ReadidPositionDirection> rest_compressed_d(total_minimizers);
+
+            CGA_LOG_INFO("Launching compress_minimizers with {} bytes of shared memory", 0);
+            compress_minimizers <<< number_of_reads_to_add, 128 >>> (window_minimizers_representation_d.data(),
+                    window_minimizers_position_in_read_d.data(),
+                    window_minimizers_direction_d.data(),
+                    read_id_to_windows_section_d.data(),
+                    representations_compressed_d.data(),
+                    rest_compressed_d.data(),
+                    read_id_to_compressed_minimizers_d.data(),
+                    number_of_reads_ - number_of_reads_to_add
+            );
+            CGA_CU_CHECK_ERR(cudaDeviceSynchronize());
+
+            // free these arrays as they are not needed anymore
+            CGA_LOG_INFO("Deallocating {} bytes from window_minimizers_representation_d",
+                         window_minimizers_representation_d.size() *
+                         sizeof(decltype(window_minimizers_representation_d)::value_type));
+            window_minimizers_representation_d.free();
+            CGA_LOG_INFO("Deallocating {} bytes from window_minimizers_direction_d",
+                         window_minimizers_direction_d.size() *
+                         sizeof(decltype(window_minimizers_direction_d)::value_type));
+            window_minimizers_direction_d.free();
+            CGA_LOG_INFO("Deallocating {} bytes from window_minimizers_position_in_read_d",
+                         window_minimizers_position_in_read_d.size() *
+                         sizeof(decltype(window_minimizers_position_in_read_d)::value_type));
+            window_minimizers_position_in_read_d.free();
+            CGA_LOG_INFO("Deallocating {} bytes from read_id_to_compressed_minimizers_d",
+                         read_id_to_compressed_minimizers_d.size() *
+                         sizeof(decltype(read_id_to_compressed_minimizers_d)::value_type));
+            read_id_to_compressed_minimizers_d.free();
+            CGA_LOG_INFO("Deallocating {} bytes from read_id_to_windows_section_d",
+                         read_id_to_windows_section_d.size() *
+                         sizeof(decltype(read_id_to_windows_section_d)::value_type));
+            read_id_to_windows_section_d.free();
+
+            // *** sort minimizers by representation ***
+            // As this is a stable sort and the data was initailly grouper by read_id this means that the minimizers within each representations are sorted by read_id
+            thrust::stable_sort_by_key(thrust::device, representations_compressed_d.data(),
+                                       representations_compressed_d.data() + total_minimizers,
+                                       rest_compressed_d.data());
+
+            std::vector<representation_t> representations_compressed_h(total_minimizers);
+            std::vector<ReadidPositionDirection> rest_compressed_h(total_minimizers);
+            CGA_CU_CHECK_ERR(cudaMemcpy(representations_compressed_h.data(),
+                                        representations_compressed_d.data(),
+                                        representations_compressed_h.size() *
+                                        sizeof(decltype(representations_compressed_h)::value_type),
+                                        cudaMemcpyDeviceToHost
+            )
+            );
+            CGA_CU_CHECK_ERR(cudaMemcpy(rest_compressed_h.data(),
+                                        rest_compressed_d.data(),
+                                        rest_compressed_h.size() * sizeof(decltype(rest_compressed_h)::value_type),
+                                        cudaMemcpyDeviceToHost
+            )
+            );
+
+            // free these arrays as they are not needed anymore
+            CGA_LOG_INFO("Deallocating {} bytes from representations_compressed_d",
+                         representations_compressed_d.size() *
+                         sizeof(decltype(representations_compressed_d)::value_type));
+            representations_compressed_d.free();
+            CGA_LOG_INFO("Deallocating {} bytes from rest_compressed_d",
+                         rest_compressed_d.size() * sizeof(decltype(rest_compressed_d)::value_type));
+            rest_compressed_d.free();
+
+            // now create the new one:
+            std::vector<std::pair<representation_t, ReadidPositionDirection>> representation_read_id_position_direction;
+            for(size_t i=0; i< representations_compressed_h.size(); i++){
+                std::pair<representation_t, ReadidPositionDirection> rep_rest_pair;
+                rep_rest_pair.first = representations_compressed_h[i];
+                rep_rest_pair.second = rest_compressed_h[i];
+                representation_read_id_position_direction.push_back(rep_rest_pair);
+            }
+
+            all_representation_readid_position_direction.push_back(representation_read_id_position_direction);
+
+            if (parser_status == false) {
+                break;
             }
         }
 
-        number_of_reads_ = read_id_to_basepairs_section_h.size();
+        // Add the minimizers to the host-side index
+        // SketchElements are already sorted by representation. Add all SketchElements with the same representation to a vector and then add that vector to the index
+        std::vector<std::pair<representation_t, ReadidPositionDirection>> repr_rest_pairs;
 
-        if (0 == number_of_reads_) {
-            CGA_LOG_INFO("No reads to process, exiting");
+        merge_n_sorted_vectors(all_representation_readid_position_direction, repr_rest_pairs,
+                [](const std::pair<representation_t, ReadidPositionDirection> &a,  const std::pair<representation_t, ReadidPositionDirection> &b){
+                    return a.first < b.first;
+                }
+        );
+
+        std::vector<std::unique_ptr<SketchElement>> minimizers_for_representation;
+        if (repr_rest_pairs.size() < 1){
+            CGA_LOG_INFO("No Sketch Elements to be added to index");
             return;
         }
 
-        std::vector<char> merged_basepairs_h(total_basepairs);
-
-        // copy each read to its section of the basepairs array
-        read_id_t read_id = 0;
-        for (std::size_t fasta_object_id = 0; fasta_object_id < number_of_reads_; ++fasta_object_id) {
-            // skip reads which are shorter than one window
-            if (fasta_objects[fasta_object_id]->data().length() >= window_size_ + minimizer_size_ - 1) {
-                std::copy(std::begin(fasta_objects[fasta_object_id]->data()),
-                          std::end(fasta_objects[fasta_object_id]->data()),
-                          std::next(std::begin(merged_basepairs_h), read_id_to_basepairs_section_h[read_id].first_element_));
-                ++read_id;
-            }
-        }
-
-        // fasta_objects not needed after this point
-        fasta_objects.clear();
-        fasta_objects.reserve(0);
-
-        // move basepairs to the device
-        CGA_LOG_INFO("Allocating {} bytes for read_id_to_basepairs_section_d", read_id_to_basepairs_section_h.size()*sizeof(decltype(read_id_to_basepairs_section_h)::value_type));
-        device_buffer<decltype(read_id_to_basepairs_section_h)::value_type> read_id_to_basepairs_section_d(read_id_to_basepairs_section_h.size());
-        CGA_CU_CHECK_ERR(cudaMemcpy(read_id_to_basepairs_section_d.data(),
-                                    read_id_to_basepairs_section_h.data(),
-                                    read_id_to_basepairs_section_h.size()*sizeof(decltype(read_id_to_basepairs_section_h)::value_type),
-                                    cudaMemcpyHostToDevice)
-                        );
-
-        CGA_LOG_INFO("Allocating {} bytes for merged_basepairs_d", merged_basepairs_h.size()*sizeof(decltype(merged_basepairs_h)::value_type));
-        device_buffer<decltype(merged_basepairs_h)::value_type> merged_basepairs_d(merged_basepairs_h.size());
-        CGA_CU_CHECK_ERR(cudaMemcpy(merged_basepairs_d.data(),
-                                    merged_basepairs_h.data(),
-                                    merged_basepairs_h.size()*sizeof(decltype(merged_basepairs_h)::value_type),
-                                    cudaMemcpyHostToDevice)
-                        );
-        merged_basepairs_h.clear();
-        merged_basepairs_h.reserve(0);
-
-        // for each read find the maximum number of minimizers (one per window), determine their section in the minimizer arrays and allocate the arrays
-        std::uint64_t total_windows = 0;
-        std::vector<ArrayBlock> read_id_to_windows_section_h(number_of_reads_, {0,0});
-        for (read_id_t read_id = 0; read_id < number_of_reads_; ++read_id)
-        {
-            read_id_to_windows_section_h[read_id].first_element_ = total_windows;
-            std::uint32_t windows = window_size_- 1; // front end minimizers
-            windows += read_id_to_basepairs_section_h[read_id].block_size_ - (minimizer_size_ + window_size_ - 1) + 1; // central minimizers
-            windows += window_size_ - 1;
-            read_id_to_windows_section_h[read_id].block_size_ = windows;
-            total_windows += windows;
-        }
-
-        CGA_LOG_INFO("Allocating {} bytes for read_id_to_windows_section_d", read_id_to_windows_section_h.size()*sizeof(decltype(read_id_to_windows_section_h)::value_type));
-        device_buffer<decltype(read_id_to_windows_section_h)::value_type> read_id_to_windows_section_d(read_id_to_windows_section_h.size());
-        CGA_CU_CHECK_ERR(cudaMemcpy(read_id_to_windows_section_d.data(),
-                                    read_id_to_windows_section_h.data(),
-                                    read_id_to_windows_section_h.size()*sizeof(decltype(read_id_to_windows_section_h)::value_type),
-                                    cudaMemcpyHostToDevice)
-                        );
-
-        CGA_LOG_INFO("Allocating {} bytes for window_minimizers_representation_d", total_windows*sizeof(representation_t));
-        device_buffer<representation_t> window_minimizers_representation_d(total_windows);
-        CGA_LOG_INFO("Allocating {} bytes for window_minimizers_direction_d", total_windows*sizeof(char));
-        device_buffer<char> window_minimizers_direction_d(total_windows);
-        CGA_LOG_INFO("Allocating {} bytes for window_minimizers_position_in_read_d", total_windows*sizeof(position_in_read_t));
-        device_buffer<position_in_read_t> window_minimizers_position_in_read_d(total_windows);
-        CGA_LOG_INFO("Allocating {} bytes for read_id_to_minimizers_written_d", number_of_reads_*sizeof(std::uint32_t));
-        device_buffer<std::uint32_t> read_id_to_minimizers_written_d(number_of_reads_);
-        // initially there are no minimizers written to the output arrays
-        CGA_CU_CHECK_ERR(cudaMemset(read_id_to_minimizers_written_d.data(), 0, number_of_reads_*sizeof(std::uint32_t)));
-
-        // *** front end minimizers ***
-        std::uint32_t num_of_basepairs_for_front_minimizers = (window_size_ - 1) + minimizer_size_ - 1;
-        std::uint32_t num_of_threads = std::min(num_of_basepairs_for_front_minimizers, 64u);
-        // largest window in end minimizers has the size of window_size_-1, meaning it covers window_size_-1 + minimizer_size - 1 basepairs
-        const std::uint32_t basepairs_for_end_minimizers = (window_size_ - 1 + minimizer_size_ - 1);
-        const std::uint32_t kmers_for_end_minimizers = window_size_ - 1; // for end minimizers number of kmers is the as the number of windows because the last window has only one kmer
-        const std::uint32_t windows_for_end_minimizers = window_size_ - 1;
-        // determine total ammount for shared memory needed (see kernel for clarification)
-        // shared memeory is alligned to 8 bytes, so for 1-byte variables (x+7)/8 values are allocate (for 10 1-byte elements (10+7)/8=17/8=2 8-byte elements are allocated, instead of 10/1=1 which would be wrong)
-        // the final number of allocated 8-byte values is multiplied by 8 at the end in order to get number of bytes needed
-        std::uint32_t shared_memory_for_kernel = 0;
-        shared_memory_for_kernel += (basepairs_for_end_minimizers + 7)/8; // forward basepairs (char)
-        shared_memory_for_kernel += (basepairs_for_end_minimizers + 7)/8; // reverse basepairs (char)
-        shared_memory_for_kernel += (kmers_for_end_minimizers); // representations of minimizers (representation_t)
-        shared_memory_for_kernel += (windows_for_end_minimizers + 7)/8; // directions of representations of minimizers (char)
-        shared_memory_for_kernel += (windows_for_end_minimizers + 1)/2; // position_in_read of minimizers (position_in_read_t)
-        shared_memory_for_kernel += (windows_for_end_minimizers + 1)/2; // does the window have a different minimizer than its left neighbor (position_in_read_t)
-        shared_memory_for_kernel += 1; // representation from previous step
-        shared_memory_for_kernel += (1+1)/2; // position from previous step (char)
-        shared_memory_for_kernel += (1+1)/2; // inclusive sum from previous step (position_in_read_t)
-        shared_memory_for_kernel += 8/8; // forward -> reverse complement conversion (char)
-
-        shared_memory_for_kernel *= 8; // before it the number of 8-byte values, now get the number of bytes
-
-        CGA_LOG_INFO("Launching find_front_end_minimizers with {} bytes of shared memory", shared_memory_for_kernel);
-        find_front_end_minimizers<<<number_of_reads_, num_of_threads, shared_memory_for_kernel>>>(minimizer_size_,
-                                                                                                  window_size_,
-                                                                                                  merged_basepairs_d.data(),
-                                                                                                  read_id_to_basepairs_section_d.data(),
-                                                                                                  window_minimizers_representation_d.data(),
-                                                                                                  window_minimizers_direction_d.data(),
-                                                                                                  window_minimizers_position_in_read_d.data(),
-                                                                                                  read_id_to_windows_section_d.data(),
-                                                                                                  read_id_to_minimizers_written_d.data()
-                                                                                                  );
-        CGA_CU_CHECK_ERR(cudaDeviceSynchronize());
-
-        // *** central minimizers ***
-        const std::uint32_t basepairs_per_thread = 8; // arbitrary, tradeoff between the number of thread blocks that can be scheduled simultaneously and the number of basepairs which have to be loaded multiple times beacuse only basepairs_per_thread*num_of_threads-(window_size_ + minimizer_size_ - 1) + 1 can be processed at once, i.e. window_size+minimizer_size-2 basepairs have to be loaded again
-        num_of_threads = 64; // arbitrary
-        const std::uint32_t basepairs_in_loop_step = num_of_threads*basepairs_per_thread;
-        const std::uint32_t minimizers_in_loop_step = basepairs_in_loop_step - minimizer_size_ + 1;
-        const std::uint32_t windows_in_loop_step = minimizers_in_loop_step - window_size_ + 1;
-        //const std::uint32_t windows_in_loop_step = num_of_threads*basepairs_per_thread - (window_size_ + minimizer_size_ - 1) + 1;
-        shared_memory_for_kernel = 0;
-        shared_memory_for_kernel += (basepairs_in_loop_step + 7)/8; // forward basepairs (char)
-        shared_memory_for_kernel += (basepairs_in_loop_step + 7)/8; // reverse basepairs (char)
-        shared_memory_for_kernel += minimizers_in_loop_step; // representations of minimizers (representation_t)
-        shared_memory_for_kernel += (windows_in_loop_step + 7)/8; // directions of representations of minimizers (char)
-        shared_memory_for_kernel += (windows_in_loop_step + 1)/2; // position_in_read of minimizers (position_in_read_t)
-        shared_memory_for_kernel += (windows_in_loop_step + 1)/2; // does the window have a different minimizer than its left neighbor
-        shared_memory_for_kernel += (1+1)/2; // position from previous step (char)
-        shared_memory_for_kernel += (1+1)/2; // inclusive sum from previous step (position_in_read_t)
-        shared_memory_for_kernel += 8/8; // forward -> reverse complement conversion (char)
-
-        shared_memory_for_kernel *= 8; // before it the number of 8-byte values, now get the number of bytes
-
-        CGA_LOG_INFO("Launching find_central_minimizers with {} bytes of shared memory", shared_memory_for_kernel);
-        find_central_minimizers<<<number_of_reads_, num_of_threads, shared_memory_for_kernel>>>(minimizer_size_,
-                                                                                                window_size_,
-                                                                                                basepairs_per_thread,
-                                                                                                merged_basepairs_d.data(),
-                                                                                                read_id_to_basepairs_section_d.data(),
-                                                                                                window_minimizers_representation_d.data(),
-                                                                                                window_minimizers_direction_d.data(),
-                                                                                                window_minimizers_position_in_read_d.data(),
-                                                                                                read_id_to_windows_section_d.data(),
-                                                                                                read_id_to_minimizers_written_d.data()
-                                                                                                );
-        CGA_CU_CHECK_ERR(cudaDeviceSynchronize());
-
-        // *** back end minimizers ***
-        num_of_threads = 64;
-        // largest window should fit shared memory
-        shared_memory_for_kernel = 0;
-        shared_memory_for_kernel += (basepairs_for_end_minimizers + 7)/8; // forward basepairs (char)
-        shared_memory_for_kernel += (basepairs_for_end_minimizers + 7)/8; // reverse basepairs (char)
-        shared_memory_for_kernel += kmers_for_end_minimizers; // representations of minimizers (representation_t)
-        shared_memory_for_kernel += (kmers_for_end_minimizers + 7)/8; // directions of representations of minimizers (char)
-        shared_memory_for_kernel += (windows_for_end_minimizers + 1)/2; // position_in_read of minimizers (position_in_read_t)
-        shared_memory_for_kernel += (windows_for_end_minimizers + 1)/2; // does the window have a different minimizer than its left neighbor
-        shared_memory_for_kernel += 8/8; // forward -> reverse complement conversion (char)
-
-        shared_memory_for_kernel *= 8; // before it the number of 8-byte values, now get the number of bytes
-
-        CGA_LOG_INFO("Launching find_back_end_minimizers with {} bytes of shared memory", shared_memory_for_kernel);
-        find_back_end_minimizers<<<number_of_reads_, num_of_threads, shared_memory_for_kernel>>>(minimizer_size_,
-                                                                                                 window_size_,
-                                                                                                 merged_basepairs_d.data(),
-                                                                                                 read_id_to_basepairs_section_d.data(),
-                                                                                                 window_minimizers_representation_d.data(),
-                                                                                                 window_minimizers_direction_d.data(),
-                                                                                                 window_minimizers_position_in_read_d.data(),
-                                                                                                 read_id_to_windows_section_d.data(),
-                                                                                                 read_id_to_minimizers_written_d.data()
-                                                                                                 );
-        CGA_CU_CHECK_ERR(cudaDeviceSynchronize());
-
-        CGA_LOG_INFO("Deallocating {} bytes from read_id_to_basepairs_section_d", read_id_to_basepairs_section_d.size()*sizeof(decltype(read_id_to_basepairs_section_d)::value_type));
-        read_id_to_basepairs_section_d.free();
-
-        CGA_LOG_INFO("Deallocating {} bytes from merged_basepairs_d", merged_basepairs_d.size()*sizeof(decltype(merged_basepairs_d)::value_type));
-        merged_basepairs_d.free();
-
-        std::vector<std::uint32_t> read_id_to_minimizers_written_h(number_of_reads_);
-
-        CGA_CU_CHECK_ERR(cudaMemcpy(read_id_to_minimizers_written_h.data(),
-                                    read_id_to_minimizers_written_d.data(),
-                                    read_id_to_minimizers_written_h.size()*sizeof(decltype(read_id_to_minimizers_written_h)::value_type),
-                                    cudaMemcpyDeviceToHost
-                                    )
-                         );
-        CGA_LOG_INFO("Deallocating {} bytes from read_id_to_minimizers_written_d", read_id_to_minimizers_written_d.size()*sizeof(decltype(read_id_to_minimizers_written_d)::value_type));
-        read_id_to_minimizers_written_d.free();
-
-        // *** remove unused elemets from the window minimizers arrays ***
-        // In window_minimizers_representation_d and other arrays enough space was allocated to support cases where each window has a different minimizers. In reality many neighboring windows share the same mininizer
-        // As a result there are areas of meaningless data between minimizers belonging to different reads (space_allocated_for_all_possible_minimizers_of_a_read - space_needed_for_the_actuall_minimizers)
-        // At this point all mininizer are put together (compressed) so that the last minimizer of one read is next to the first minimizer of another read
-        // Data is organized in two arrays in order to support usage of thrust::stable_sort_by_key. One contains representations (key) and the other the rest (values)
-        std::vector<ArrayBlock> read_id_to_compressed_minimizers_h(number_of_reads_, {0,0});
-        std::uint64_t total_minimizers = 0;
-        for (std::size_t read_id = 0; read_id < read_id_to_minimizers_written_h.size(); ++read_id) {
-            read_id_to_compressed_minimizers_h[read_id].first_element_ = total_minimizers;
-            read_id_to_compressed_minimizers_h[read_id].block_size_ = read_id_to_minimizers_written_h[read_id];
-            total_minimizers += read_id_to_minimizers_written_h[read_id];
-        }
-
-        CGA_LOG_INFO("Allocating {} bytes for read_id_to_compressed_minimizers_d", read_id_to_compressed_minimizers_h.size()*sizeof(decltype(read_id_to_compressed_minimizers_h)::value_type));
-        device_buffer<decltype(read_id_to_compressed_minimizers_h)::value_type> read_id_to_compressed_minimizers_d(read_id_to_compressed_minimizers_h.size());
-        CGA_CU_CHECK_ERR(cudaMemcpy(read_id_to_compressed_minimizers_d.data(),
-                                    read_id_to_compressed_minimizers_h.data(),
-                                    read_id_to_compressed_minimizers_h.size()*sizeof(decltype(read_id_to_compressed_minimizers_h)::value_type),
-                                    cudaMemcpyHostToDevice
-                                    )
-                         );
-
-        CGA_LOG_INFO("Allocating {} bytes for representations_compressed_d", total_minimizers*sizeof(representation_t));
-        device_buffer<representation_t> representations_compressed_d(total_minimizers);
-        // rest = position_in_read, direction and read_id
-        CGA_LOG_INFO("Allocating {} bytes for rest_compressed_d", total_minimizers*sizeof(ReadidPositionDirection));
-        device_buffer<ReadidPositionDirection> rest_compressed_d(total_minimizers);
-
-        CGA_LOG_INFO("Launching compress_minimizers with {} bytes of shared memory", 0);
-        compress_minimizers<<<number_of_reads_, 128>>>(window_minimizers_representation_d.data(),
-                                                       window_minimizers_position_in_read_d.data(),
-                                                       window_minimizers_direction_d.data(),
-                                                       read_id_to_windows_section_d.data(),
-                                                       representations_compressed_d.data(),
-                                                       rest_compressed_d.data(),
-                                                       read_id_to_compressed_minimizers_d.data()
-                                                       );
-        CGA_CU_CHECK_ERR(cudaDeviceSynchronize());
-
-        // free these arrays as they are not needed anymore
-        CGA_LOG_INFO("Deallocating {} bytes from window_minimizers_representation_d", window_minimizers_representation_d.size()*sizeof(decltype(window_minimizers_representation_d)::value_type));
-        window_minimizers_representation_d.free();
-        CGA_LOG_INFO("Deallocating {} bytes from window_minimizers_direction_d", window_minimizers_direction_d.size()*sizeof(decltype(window_minimizers_direction_d)::value_type));
-        window_minimizers_direction_d.free();
-        CGA_LOG_INFO("Deallocating {} bytes from window_minimizers_position_in_read_d", window_minimizers_position_in_read_d.size()*sizeof(decltype(window_minimizers_position_in_read_d)::value_type));
-        window_minimizers_position_in_read_d.free();
-        CGA_LOG_INFO("Deallocating {} bytes from read_id_to_compressed_minimizers_d", read_id_to_compressed_minimizers_d.size()*sizeof(decltype(read_id_to_compressed_minimizers_d)::value_type));
-        read_id_to_compressed_minimizers_d.free();
-        CGA_LOG_INFO("Deallocating {} bytes from read_id_to_windows_section_d", read_id_to_windows_section_d.size()*sizeof(decltype(read_id_to_windows_section_d)::value_type));
-        read_id_to_windows_section_d.free();
-    
-        // *** sort minimizers by representation ***
-        // As this is a stable sort and the data was initailly grouper by read_id this means that the minimizers within each representations are sorted by read_id
-        thrust::stable_sort_by_key(thrust::device, representations_compressed_d.data(), representations_compressed_d.data() + total_minimizers, rest_compressed_d.data());
-
-        std::vector<representation_t> representations_compressed_h(total_minimizers);
-        std::vector<ReadidPositionDirection> rest_compressed_h(total_minimizers);
-        CGA_CU_CHECK_ERR(cudaMemcpy(representations_compressed_h.data(),
-                                    representations_compressed_d.data(),
-                                    representations_compressed_h.size()*sizeof(decltype(representations_compressed_h)::value_type),
-                                    cudaMemcpyDeviceToHost
-                                    )
-                         );
-        CGA_CU_CHECK_ERR(cudaMemcpy(rest_compressed_h.data(),
-                                    rest_compressed_d.data(),
-                                    rest_compressed_h.size()*sizeof(decltype(rest_compressed_h)::value_type),
-                                    cudaMemcpyDeviceToHost
-                                    )
-                         );
-
-        // free these arrays as they are not needed anymore
-        CGA_LOG_INFO("Deallocating {} bytes from representations_compressed_d", representations_compressed_d.size()*sizeof(decltype(representations_compressed_d)::value_type));
-        representations_compressed_d.free();
-        CGA_LOG_INFO("Deallocating {} bytes from rest_compressed_d", rest_compressed_d.size()*sizeof(decltype(rest_compressed_d)::value_type));
-        rest_compressed_d.free();
-
-        // *** add the minimizers to the host side index ***
-        // minimizers are already sorted by representation -> add all minimizers with the same representation to a vector and then add that vector to the hash table
-        std::vector<std::unique_ptr<SketchElement>> minimizers_for_representation;
-        representation_t current_representation = representations_compressed_h[0];
+        representation_t current_representation = repr_rest_pairs[0].first;
         // TODO: this part takes the largest portion of time
-        for (std::size_t i = 0; i < representations_compressed_h.size(); ++i) {
-            if(representations_compressed_h[i] != current_representation) {
-                // New representation encountered -> add the old vector to the hash table and start building the new one
-                index_.push_back(RepresentationAndSketchElements{current_representation, std::move(minimizers_for_representation)});
+        for (std::size_t i = 0; i < repr_rest_pairs.size(); ++i) {
+            if (repr_rest_pairs[i].first != current_representation) {
+                // New representation encountered -> add the old vector to index and start building the new one
+                index_.push_back(RepresentationAndSketchElements{current_representation,
+                                                                 std::move(minimizers_for_representation)});
                 minimizers_for_representation.clear();
-                current_representation = representations_compressed_h[i];
+                current_representation = repr_rest_pairs[i].first;
             }
-            minimizers_for_representation.push_back(std::make_unique<Minimizer>(representations_compressed_h[i], rest_compressed_h[i].position_in_read_, SketchElement::DirectionOfRepresentation(rest_compressed_h[i].direction_), rest_compressed_h[i].read_id_));
-        }
+            minimizers_for_representation.push_back(std::make_unique<Minimizer>(repr_rest_pairs[i].first,
+                                                                                repr_rest_pairs[i].second.position_in_read_,
+                                                                                SketchElement::DirectionOfRepresentation(
+                                                                                        repr_rest_pairs[i].second.direction_),
+                                                                                repr_rest_pairs[i].second.read_id_));
+            }
         // last representation will not be added in the loop above so add it here
-        index_.push_back(RepresentationAndSketchElements{current_representation, std::move(minimizers_for_representation)});
+        index_.push_back(
+                RepresentationAndSketchElements{current_representation, std::move(minimizers_for_representation)});
     }
-
 }

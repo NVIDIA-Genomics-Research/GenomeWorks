@@ -16,7 +16,7 @@
 
 #include "overlapper_triggered.hpp"
 #include "cudamapper/overlapper.hpp"
-#include "overlapper_utils.hpp"
+#include "cudamapper_utils.hpp"
 #include "matcher.hpp"
 
 namespace claragenomics {

@@ -46,9 +46,9 @@ add_library(overlapper_naive
 target_include_directories(overlapper_naive PUBLIC include)
 target_compile_options(overlapper_naive PRIVATE -Werror)
 
-add_library(overlapper_utils
-        src/overlapper_utils.cpp)
-target_include_directories(overlapper_utils PUBLIC include)
+add_library(cudamapper_utils
+        src/cudamapper_utils.cpp)
+target_include_directories(cudamapper_utils PUBLIC include)
 
 add_library(overlapper_triggerred
         src/overlapper_triggered.cpp)
@@ -74,7 +74,8 @@ target_include_directories(cudamapper
         $<INSTALL_INTERFACE:include>    
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 )
-target_link_libraries(cudamapper bioparser utils index_generator_gpu index_cpu matcher logging overlapper_naive overlapper_triggerred overlapper_utils)
+
+target_link_libraries(cudamapper bioparser utils index_generator_gpu index_cpu matcher logging overlapper_naive overlapper_triggerred cudamapper_utils)
 
 # Add tests folder
 add_subdirectory(tests)
