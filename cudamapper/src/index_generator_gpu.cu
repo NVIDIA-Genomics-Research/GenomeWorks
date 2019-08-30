@@ -911,7 +911,7 @@ namespace claragenomics {
 
             CGA_LOG_INFO("Launching find_front_end_minimizers with {} bytes of shared memory",
                          shared_memory_for_kernel);
-            find_front_end_minimizers << < number_of_reads_to_add, num_of_threads, shared_memory_for_kernel >> >
+            find_front_end_minimizers <<< number_of_reads_to_add, num_of_threads, shared_memory_for_kernel >>>
                                                                                    (minimizer_size_,
                                                                                            window_size_,
                                                                                            merged_basepairs_d.data(),
@@ -948,7 +948,7 @@ namespace claragenomics {
             shared_memory_for_kernel *= 8; // before it the number of 8-byte values, now get the number of bytes
 
             CGA_LOG_INFO("Launching find_central_minimizers with {} bytes of shared memory", shared_memory_for_kernel);
-            find_central_minimizers << < number_of_reads_to_add, num_of_threads, shared_memory_for_kernel >> >
+            find_central_minimizers <<< number_of_reads_to_add, num_of_threads, shared_memory_for_kernel >>>
                                                                                  (minimizer_size_,
                                                                                          window_size_,
                                                                                          basepairs_per_thread,
@@ -980,7 +980,7 @@ namespace claragenomics {
             shared_memory_for_kernel *= 8; // before it the number of 8-byte values, now get the number of bytes
 
             CGA_LOG_INFO("Launching find_back_end_minimizers with {} bytes of shared memory", shared_memory_for_kernel);
-            find_back_end_minimizers << < number_of_reads_to_add, num_of_threads, shared_memory_for_kernel >> >
+            find_back_end_minimizers <<< number_of_reads_to_add, num_of_threads, shared_memory_for_kernel >>>
                                                                                   (minimizer_size_,
                                                                                           window_size_,
                                                                                           merged_basepairs_d.data(),
@@ -1051,7 +1051,7 @@ namespace claragenomics {
             device_buffer<ReadidPositionDirection> rest_compressed_d(total_minimizers);
 
             CGA_LOG_INFO("Launching compress_minimizers with {} bytes of shared memory", 0);
-            compress_minimizers << < number_of_reads_to_add, 128 >> > (window_minimizers_representation_d.data(),
+            compress_minimizers <<< number_of_reads_to_add, 128 >>> (window_minimizers_representation_d.data(),
                     window_minimizers_position_in_read_d.data(),
                     window_minimizers_direction_d.data(),
                     read_id_to_windows_section_d.data(),
