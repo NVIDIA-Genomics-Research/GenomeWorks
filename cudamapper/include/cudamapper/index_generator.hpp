@@ -33,6 +33,9 @@ namespace claragenomics {
             std::vector<std::unique_ptr<SketchElement>> sketch_elements_;
         };
 
+        /// \brief Virtual destructor for IndexGenerator
+        virtual ~IndexGenerator() = default;
+
         /// \brief Returns a vector whose each element is one representation and all sketch elements with that representation. Elements are sorted by representation in increasing order
         /// \return the vector
         virtual const std::vector<RepresentationAndSketchElements>& representations_and_sketch_elements() const = 0;

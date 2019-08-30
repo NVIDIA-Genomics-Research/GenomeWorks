@@ -20,6 +20,10 @@ namespace claragenomics {
     /// Sequence - represents an individual read (name, DNA nucleotides etc)
     class Sequence {
     public:
+
+        /// \brief Virtual destructor for Sequence
+        virtual ~Sequence() = default;
+
         /// Sequence name
         virtual const std::string &name() const = 0;
 
