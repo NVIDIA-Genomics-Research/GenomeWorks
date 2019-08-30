@@ -10,7 +10,6 @@
 
 #pragma once
 
-#include <functional>
 #include <vector>
 
 #include "cudamapper/types.hpp"
@@ -52,9 +51,9 @@ namespace claragenomics {
     /// \param dst reference to object of type std::vector<T> where result should be written
     /// \return vector of sorted elements
     // TODO this algorithm is not very performant - should be reimplemented to run in log2(N) time and use multithreading.
-    template <class T>
+    template <class T, class Compare>
     void merge_n_sorted_vectors(const std::vector<std::vector<T>> &src, std::vector<T> &dst,
-                                std::function<bool(T, T)> comp) {
+                                Compare comp) {
         if (src.size() < 1){
             return;
         }

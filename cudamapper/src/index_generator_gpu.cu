@@ -1135,8 +1135,7 @@ namespace claragenomics {
         std::vector<std::pair<representation_t, ReadidPositionDirection>> repr_rest_pairs;
 
         //Lambda function to compare std::pair<representation_t, ReadidPositionDirection>
-        std::function<bool(std::pair<representation_t, ReadidPositionDirection>, std::pair<representation_t, ReadidPositionDirection>)> compare =
-                [](std::pair<representation_t, ReadidPositionDirection> a,  std::pair<representation_t, ReadidPositionDirection> b){
+        auto compare = [](std::pair<representation_t, ReadidPositionDirection> a,  std::pair<representation_t, ReadidPositionDirection> b){
             return a.first < b.first;
         };
 
