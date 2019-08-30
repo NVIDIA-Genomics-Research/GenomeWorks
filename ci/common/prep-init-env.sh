@@ -33,7 +33,8 @@ conda install \
     ninja \
     minimap2 \
     miniasm \
-    racon
+    racon \
+    cmake
 
 ################################################################################
 # BUILD - Conda package builds 

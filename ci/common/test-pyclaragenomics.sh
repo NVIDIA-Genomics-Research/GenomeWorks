@@ -23,7 +23,7 @@ python setup.py install
 
 # Run tests.
 cd test/
-if [ "$GPU_TEST" == '1' ]; then
+if [ "${TEST_ON_GPU}" == '1' ]; then
     python -m pytest -m gpu -s
 else
     python -m pytest -m cpu -s
