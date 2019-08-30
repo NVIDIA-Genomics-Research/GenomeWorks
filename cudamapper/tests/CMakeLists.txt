@@ -33,6 +33,6 @@ set(LIBS
     matcher
     overlapper_naive
     overlapper_triggerred
-    overlapper_utils)
+    cudamapper_utils)
 
 cga_add_tests(${PROJECT_NAME} "${SOURCES}" "${LIBS}")
