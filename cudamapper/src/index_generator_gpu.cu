@@ -757,7 +757,8 @@ namespace claragenomics {
                     query_filename);
         }
 
-        std::uint64_t parser_buffer_size_in_bytes = 0.3 * 1024 * 1024 * 1024; // 0.05 GiB
+        //TODO Allow user to choose this value
+        std::uint64_t parser_buffer_size_in_bytes = 0.3 * 1024 * 1024 * 1024; // 0.3 GiB
 
         number_of_reads_ = 0;
 
@@ -1143,6 +1144,7 @@ namespace claragenomics {
 
         std::vector<std::unique_ptr<SketchElement>> minimizers_for_representation;
         if (repr_rest_pairs.size() < 1){
+            CGA_LOG_INFO("No Sketch Elements to be added to index");
             return;
         }
 
@@ -1162,6 +1164,7 @@ namespace claragenomics {
                                                                                         repr_rest_pairs[i].second.direction_),
                                                                                 repr_rest_pairs[i].second.read_id_));
             }
+        // last representation will not be added in the loop above so add it here
         index_.push_back(
                 RepresentationAndSketchElements{current_representation, std::move(minimizers_for_representation)});
     }
