@@ -29,12 +29,6 @@ namespace claragenomics {
         /// \param read_id read's id
         Minimizer(representation_t representation, position_in_read_t position_in_read, DirectionOfRepresentation direction, read_id_t read_id);
 
-        /// \brief representation and its direction
-        struct RepresentationAndDirection {
-            representation_t representation_;
-            DirectionOfRepresentation direction_;
-        };
-
         /// \brief returns minimizers representation
         /// \return minimizer representation
         representation_t representation() const override;
