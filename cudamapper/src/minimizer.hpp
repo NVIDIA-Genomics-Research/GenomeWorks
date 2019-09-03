@@ -61,6 +61,7 @@ namespace claragenomics {
             char direction_;
         };
 
+        // TODO: this will be replaced with Minimizer
         /// \brief a collection of sketch element
         struct GeneratedSketchElements {
             // representations of sketch elements

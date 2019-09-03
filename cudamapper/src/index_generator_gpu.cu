@@ -150,16 +150,17 @@ namespace claragenomics {
             merged_basepairs_h.clear();
             merged_basepairs_h.reserve(0);
 
-            auto res = Minimizer::generate_sketch_elements(number_of_reads_to_add,
-                                                           minimizer_size_,
-                                                           window_size_,
-                                                           number_of_reads_ - number_of_reads_to_add,
-                                                           merged_basepairs_d,
-                                                           read_id_to_basepairs_section_h,
-                                                           read_id_to_basepairs_section_d
-                                                          );
-            auto representations_compressed_d = std::move(res.representations_d);
-            auto rest_compressed_d = std::move(res.rest_d);
+            // sketch elements get generated here
+            auto sketch_elements = Minimizer::generate_sketch_elements(number_of_reads_to_add,
+                                                                       minimizer_size_,
+                                                                       window_size_,
+                                                                       number_of_reads_ - number_of_reads_to_add,
+                                                                       merged_basepairs_d,
+                                                                       read_id_to_basepairs_section_h,
+                                                                       read_id_to_basepairs_section_d
+                                                                      );
+            auto representations_compressed_d = std::move(sketch_elements.representations_d);
+            auto rest_compressed_d = std::move(sketch_elements.rest_d);
 
             CGA_LOG_INFO("Deallocating {} bytes from read_id_to_basepairs_section_d", read_id_to_basepairs_section_d.size() * sizeof(decltype(read_id_to_basepairs_section_d)::value_type));
             read_id_to_basepairs_section_d.free();
