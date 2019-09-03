@@ -91,10 +91,11 @@ CudapoaBatch::CudapoaBatch(int32_t max_sequences_per_poa,
                                   cuda_banded_alignment))
     , max_poas_(batch_block_->get_max_poas())
 {
+    scoped_device_switch dev(device_id_);
+
     bid_ = CudapoaBatch::batches++;
 
     // Set CUDA device
-    CGA_CU_CHECK_ERR(cudaSetDevice(device_id_));
     std::string msg = " Initializing batch on device ";
     print_batch_debug_message(msg);
 
@@ -135,7 +136,8 @@ int32_t CudapoaBatch::get_total_poas() const
 
 void CudapoaBatch::generate_poa()
 {
-    CGA_CU_CHECK_ERR(cudaSetDevice(device_id_));
+    scoped_device_switch dev(device_id_);
+
     //Copy sequencecs, sequence lengths and window details to device
     CGA_CU_CHECK_ERR(cudaMemcpyAsync(input_details_d_->sequences, input_details_h_->sequences,
                                      num_nucleotides_copied_ * sizeof(uint8_t), cudaMemcpyHostToDevice, stream_));
