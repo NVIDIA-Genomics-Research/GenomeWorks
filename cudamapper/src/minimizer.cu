@@ -25,37 +25,6 @@ namespace claragenomics {
 
     Minimizer::DirectionOfRepresentation Minimizer::direction() const { return direction_; }
 
-    Minimizer::RepresentationAndDirection Minimizer::kmer_to_representation(const std::string& basepairs, std::size_t start_element, std::size_t length) {
-        std::uint64_t forward_representation = 0;
-        std::uint64_t reverse_representation = 0;
-
-        // Lookup table that takes four least significant bits of a basepair and returns four least significan bits of its reverse complement
-        constexpr std::uint32_t forward_to_reverse_complement[8] = { 0b0000,
-                                                                     0b0100, // A -> T (0b1 -> 0b10100)
-                                                                     0b0000,
-                                                                     0b0111, // C -> G (0b11 -> 0b111)
-                                                                     0b0001, // T -> A (0b10100 -> 0b1)
-                                                                     0b0000,
-                                                                     0b0000,
-                                                                     0b0011, // G -> C (0b111 -> 0b11)
-                                                                  };
-
-        if (length <= 4*sizeof(representation_t)) {
-            for (std::size_t i = 0; i < length; ++i) {
-                const char bp = basepairs[start_element + i];
-                //forward_representation <<= 2;
-                // first finds lexical ordering representation of basepair, then shifts it to the right position
-                forward_representation |= (0b11 & (bp >> 2 ^ bp >> 1)) << 2*(length - 1 - i);
-                reverse_representation |= (0b11 & (forward_to_reverse_complement[0b1111 & bp] >> 2 ^ forward_to_reverse_complement[0b1111 & bp] >> 1)) << 2*i;
-            }
-        } else {
-            // TODO: throw?
-            forward_representation = reverse_representation = std::numeric_limits<representation_t>::max();
-        }
-
-        return forward_representation <= reverse_representation ? RepresentationAndDirection{forward_representation, DirectionOfRepresentation::FORWARD} : RepresentationAndDirection{reverse_representation, DirectionOfRepresentation::REVERSE};
-    }
-
     /// \brief finds front end minimizers
     ///
     /// Finds the minimizers of windows starting at position 0 and having window size range from 1 to window_size-1

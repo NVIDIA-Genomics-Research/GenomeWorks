@@ -51,17 +51,6 @@ namespace claragenomics {
         /// \return read ID
         read_id_t read_id() const override;
 
-        /// \brief converts a kmer of length length into 2-bit packed numeric representation
-        ///
-        /// Representation uses lexicographical ordering. It returns the smaller of forward and reverse complement representation
-        ///
-        /// \param baseparis
-        /// \param start_element where in basepairs the kmer actually starts
-        /// \param length length of the kmer
-        ///
-        /// \return representation and direction of the read
-        static RepresentationAndDirection kmer_to_representation(const std::string& basepairs, std::size_t start_element, std::size_t length);
-
         /// \brief read_id, position_in_read and direction of a minimizer
         struct ReadidPositionDirection {
             // read id
