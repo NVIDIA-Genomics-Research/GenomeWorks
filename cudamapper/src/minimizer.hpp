@@ -11,6 +11,7 @@
 #pragma once
 
 #include <cstdint>
+#include <vector>
 #include "cudamapper/sketch_element.hpp"
 #include "cudamapper/types.hpp"
 
