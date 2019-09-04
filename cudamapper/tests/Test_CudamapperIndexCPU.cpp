@@ -11,7 +11,6 @@
 #include "gtest/gtest.h"
 #include "cudamapper_file_location.hpp"
 #include "../src/index_cpu.hpp"
-#include "../src/index_generator_gpu.hpp"
 
 namespace claragenomics {
 
@@ -22,8 +21,7 @@ namespace claragenomics {
         // GATT = 0b10001111
         // AATC = 0b00001101 <- minimizer
 
-        IndexGeneratorGPU index_generator(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/gatt.fasta", 4, 1);
-        IndexCPU index(index_generator);
+        IndexCPU index(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/gatt.fasta", 4, 1);
 
         ASSERT_EQ(index.number_of_reads(), 1);
 
@@ -73,7 +71,7 @@ namespace claragenomics {
         // AAGCTA
         // Central minimizers:
         // AAGC: <AAG>, CTT, AGC, GCT
-        // AGCT: <AGC>, GCT, GCT, <AGC>  // only the last AGC is taken by IndexGeneratorGPU
+        // AGCT: <AGC>, GCT, GCT, <AGC>  // only the last AGC is taken by Index
         // GCTA: GCT, <AGC>, CTA, TAG
         // Front end minimizers: none
         // Back end miniminers: <CTA>, TAG
@@ -89,9 +87,7 @@ namespace claragenomics {
         // whereas in all reads there are "2" minimizers with representation AAG and they start at position "0"
         // read_id_and_representation_to_sketch_elements: read_0(AAG(0,1)(0,2), ATC(3,1)(3,1), ATG(4,1)(4,1). CAA(5,1)(5,1))
         //                                                read_1(AAG(1,1)(0,2), AGC(2,1)(2,1), CTA(6,1)(6,1))
-
-        IndexGeneratorGPU index_generator(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/catcaag_aagcta.fasta", 3, 2);
-        IndexCPU index(index_generator);
+        IndexCPU index(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/catcaag_aagcta.fasta", 3, 2);
 
         ASSERT_EQ(index.number_of_reads(), 2);
 
