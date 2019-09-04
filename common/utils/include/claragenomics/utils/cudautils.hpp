@@ -16,7 +16,7 @@
 #include <claragenomics/logging/logging.hpp>
 
 #include <cuda_runtime_api.h>
-#include <stdexcept>
+#include <cassert>
 
 /// \ingroup cudautils
 /// \{
@@ -43,16 +43,18 @@ namespace cudautils
 /// \param code The CUDA status code of the function being asserted
 /// \param file Filename of the calling function
 /// \param line File line number of the calling function
-/// \param cuda_sync Synchronize CUDA device before checking error
-inline void gpu_assert(cudaError_t code, const char* file, int line, bool cuda_sync = false)
+inline void gpu_assert(cudaError_t code, const char* file, int line)
 {
+#ifdef CGA_DEVICE_SYNCHRONIZE
     // This device synchronize forces the most recent CUDA call to fully
     // complete, increasing the chance of catching the CUDA error near the
-    // offending function.
-    if (cuda_sync)
+    // offending function. Only run if existing code is success to avoid
+    // potentially overwriting previous error code.
+    if (code == cudaSuccess)
     {
         code = cudaDeviceSynchronize();
     }
+#endif
 
     if (code != cudaSuccess)
     {
