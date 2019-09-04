@@ -24,7 +24,7 @@ endif()
 
 cuda_add_library(index_generator_gpu
         src/index_generator_gpu.cu
-        src/minimizer.cpp)
+        src/minimizer.cu)
 target_include_directories(index_generator_gpu PUBLIC include)
 target_link_libraries(index_generator_gpu bioparser logging pthread utils)
 target_compile_options(index_generator_gpu PRIVATE -Werror)
