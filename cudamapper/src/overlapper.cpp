@@ -10,7 +10,6 @@
 
 #include <algorithm>
 #include "cudamapper/overlapper.hpp"
-#include "index_gpu.hpp"
 
 namespace claragenomics {
 
