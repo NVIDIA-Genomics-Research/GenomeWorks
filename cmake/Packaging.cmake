@@ -8,9 +8,24 @@
 # license agreement from NVIDIA CORPORATION is strictly prohibited.
 #
 
-message(STATUS "Package generator - DEB")
-SET(CPACK_GENERATOR "DEB")
+# Find Linux Distribution
+EXECUTE_PROCESS(
+    COMMAND "awk" "-F=" "/^NAME/{print $2}" "/etc/os-release"
+    OUTPUT_VARIABLE LINUX_OS_NAME
+    )
+
+if (${LINUX_OS_NAME} MATCHES "Ubuntu")
+    MESSAGE(STATUS "Package generator - DEB")
+    SET(CPACK_GENERATOR "DEB")
+elseif(${LINUX_OS_NAME} MATCHES "CentOS")
+    MESSAGE(STATUS "Package generator - RPM")
+    SET(CPACK_GENERATOR "RPM")
+else()
+    MESSAGE(FATAL_ERROR "Unrecognized Linux distribution - ${LINUX_OS_NAME}")
+endif()
+
 SET(CPACK_DEBIAN_PACKAGE_MAINTAINER "NVIDIA Corporation")
 SET(CPACK_PACKAGE_VERSION "${CGA_VERSION}")
+SET(CPACK_PACKAGING_INSTALL_PREFIX "/usr/local/${CGA_PROJECT_NAME}")
 
 include(CPack)

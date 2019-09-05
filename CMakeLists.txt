@@ -9,8 +9,9 @@
 #
 
 cmake_minimum_required(VERSION 3.10.2)
-project(ClaraGenomicsAnalysis)
+set(CGA_PROJECT_NAME ClaraGenomicsAnalysis)
 set(CGA_VERSION 0.2.0)
+project(${CGA_PROJECT_NAME})
 
 # Process options.
 option(cga_enable_tests "Build ClaraGenomicsAnalysis unit tests" OFF)
