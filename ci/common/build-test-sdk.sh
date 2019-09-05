@@ -24,7 +24,7 @@ cd ${LOCAL_BUILD_DIR}
 # configure
 cmake .. $CMAKE_COMMON_VARIABLES ${CMAKE_BUILD_GPU} -Dcga_enable_tests=ON -Dcga_enable_benchmarks=ON -DCMAKE_INSTALL_PREFIX=${LOCAL_BUILD_DIR}/install -GNinja
 # build
-ninja all docs install
+ninja all install
 
 if [ "$GPU_TEST" == '1' ]; then
   logger "GPU config..."

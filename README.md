@@ -74,6 +74,8 @@ To enable document generation for Clara Genomics Analysis, please install `Doxyg
 make docs
 ```
 
+Docs are also generated as part of the default `all` target when `Doxygen` is available on the system.
+
 ## Code Formatting
 
 ### C++ / CUDA
