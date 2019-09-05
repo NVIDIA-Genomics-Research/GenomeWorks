@@ -42,6 +42,7 @@ function(add_docs_target DOXY_PACKAGE_NAME DOXY_PACKAGE_VERSION)
 
         get_property(final_doxygen_src_dirs GLOBAL PROPERTY doxygen_src_dirs)
         doxygen_add_docs(docs ALL ${final_doxygen_src_dirs})
+        set_target_properties(docs PROPERTIES EXCLUDE_FROM_ALL NO)
         install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/html/ DESTINATION docs)
     else()
         message(STATUS "Doxygen not found. Doc gen disabled.")
