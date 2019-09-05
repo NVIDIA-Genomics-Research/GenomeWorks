@@ -32,14 +32,14 @@ int main(int argc, char *argv[])
 
     start_time = std::chrono::high_resolution_clock::now();
     CGA_LOG_INFO("Started matcher");
-    claragenomics::Matcher matcher(static_cast<claragenomics::IndexGPU&>(*(index.get())));
+    claragenomics::Matcher matcher(*index);
     CGA_LOG_INFO("Finished matcher");
     std::cerr << "Matcher execution time: " << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time).count() << "ms" << std::endl;
 
     start_time = std::chrono::high_resolution_clock::now();
     CGA_LOG_INFO("Started overlap detector");
     auto overlapper = claragenomics::OverlapperTriggered();
-    auto overlaps = overlapper.get_overlaps(matcher.anchors(), static_cast<claragenomics::IndexGPU&>(*(index.get())));
+    auto overlaps = overlapper.get_overlaps(matcher.anchors(), *index);
 
     CGA_LOG_INFO("Finished overlap detector");
     std::cerr << "Overlap detection execution time: " << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time).count() << "ms" << std::endl;
