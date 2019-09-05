@@ -11,7 +11,7 @@
 #pragma once
 
 #include <vector>
-#include "index_gpu.hpp"
+#include "cudamapper/index.hpp"
 
 namespace claragenomics {
 

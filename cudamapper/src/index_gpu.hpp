@@ -10,7 +10,6 @@
 
 #pragma once
 
-#include <map>
 #include <vector>
 #include "cudamapper/index.hpp"
 #include "cudamapper/sketch_element.hpp"
