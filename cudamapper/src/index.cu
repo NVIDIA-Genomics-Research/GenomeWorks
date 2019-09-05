@@ -13,8 +13,8 @@
 #include "minimizer.hpp"
 
 namespace claragenomics {
-    std::unique_ptr<Index> Index::create_index(const std::string& query_filename, const std::uint64_t minimizer_size, const std::uint64_t window_size) {
-        return std::make_unique<IndexGPU<Minimizer>>(query_filename, minimizer_size, window_size);
+    std::unique_ptr<Index> Index::create_index(const std::string& query_filename, const std::uint64_t kmer_size, const std::uint64_t window_size) {
+        return std::make_unique<IndexGPU<Minimizer>>(query_filename, kmer_size, window_size);
     }
 
     std::unique_ptr<Index> Index::create_index() {

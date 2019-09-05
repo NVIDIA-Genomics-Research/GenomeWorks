@@ -49,9 +49,9 @@ namespace claragenomics {
         /// \brief Constructor
         ///
         /// \param query_filename filepath to reads in FASTA or FASTQ format
-        /// \param minimizer_size k - the kmer length used as a minimizer
-        /// \param window_size w - the length of the sliding window used to find minimizer
-        IndexGPU(const std::string& query_filename, const std::uint64_t minimizer_size, const std::uint64_t window_size);
+        /// \param kmer_size k - the kmer length
+        /// \param window_size w - the length of the sliding window used to find sketch elements
+        IndexGPU(const std::string& query_filename, const std::uint64_t kmer_size, const std::uint64_t window_size);
 
         /// \brief Constructor
         IndexGPU();
@@ -90,7 +90,7 @@ namespace claragenomics {
         /// \param query_filename
         void generate_index(const std::string& query_filename);
 
-        const std::uint64_t minimizer_size_;
+        const std::uint64_t kmer_size_;
         const std::uint64_t window_size_;
         std::uint64_t number_of_reads_;
 
@@ -105,15 +105,15 @@ namespace claragenomics {
     };
 
     template <typename SketchElementImpl>
-    IndexGPU<SketchElementImpl>::IndexGPU(const std::string& query_filename, const std::uint64_t minimizer_size, const std::uint64_t window_size)
-    : minimizer_size_(minimizer_size), window_size_(window_size), number_of_reads_(0)
+    IndexGPU<SketchElementImpl>::IndexGPU(const std::string& query_filename, const std::uint64_t kmer_size, const std::uint64_t window_size)
+    : kmer_size_(kmer_size), window_size_(window_size), number_of_reads_(0)
     {
         generate_index(query_filename);
     }
 
     template <typename SketchElementImpl>
     IndexGPU<SketchElementImpl>::IndexGPU()
-    : minimizer_size_(0), window_size_(0), number_of_reads_(0) {
+    : kmer_size_(0), window_size_(0), number_of_reads_(0) {
     }
 
     template <typename SketchElementImpl>
@@ -173,7 +173,7 @@ namespace claragenomics {
             // find out how many basepairs each read has and determine its section in the big array with all basepairs
             for (std::size_t fasta_object_id = 0; fasta_object_id < fasta_objects.size(); ++fasta_object_id) {
                 // skip reads which are shorter than one window
-                if (fasta_objects[fasta_object_id]->data().length() >= window_size_ + minimizer_size_ - 1) {
+                if (fasta_objects[fasta_object_id]->data().length() >= window_size_ + kmer_size_ - 1) {
                     read_id_to_basepairs_section_h.emplace_back(ArrayBlock{total_basepairs, static_cast<std::uint32_t>(fasta_objects[fasta_object_id]->data().length())});
                     total_basepairs += fasta_objects[fasta_object_id]->data().length();
                     read_id_to_read_name_.push_back(fasta_objects[fasta_object_id]->name());
@@ -181,7 +181,7 @@ namespace claragenomics {
                 } else {
                     CGA_LOG_INFO("Skipping read {}. It has {} basepairs, one window covers {} basepairs",
                                  fasta_objects[fasta_object_id]->name(),
-                                 fasta_objects[fasta_object_id]->data().length(), window_size_ + minimizer_size_ - 1
+                                 fasta_objects[fasta_object_id]->data().length(), window_size_ + kmer_size_ - 1
                                 );
                 }
             }
@@ -203,7 +203,7 @@ namespace claragenomics {
             read_id_t read_id = 0;
             for (std::size_t fasta_object_id = 0; fasta_object_id < number_of_reads_to_add; ++fasta_object_id) {
                 // skip reads which are shorter than one window
-                if (fasta_objects[fasta_object_id]->data().length() >= window_size_ + minimizer_size_ - 1) {
+                if (fasta_objects[fasta_object_id]->data().length() >= window_size_ + kmer_size_ - 1) {
                     std::copy(std::begin(fasta_objects[fasta_object_id]->data()),
                               std::end(fasta_objects[fasta_object_id]->data()),
                               std::next(std::begin(merged_basepairs_h), read_id_to_basepairs_section_h[read_id].first_element_)
@@ -239,7 +239,7 @@ namespace claragenomics {
 
             // sketch elements get generated here
             auto sketch_elements = SketchElementImpl::generate_sketch_elements(number_of_reads_to_add,
-                                                                                        minimizer_size_,
+                                                                                        kmer_size_,
                                                                                         window_size_,
                                                                                         number_of_reads_ - number_of_reads_to_add,
                                                                                         merged_basepairs_d,
@@ -254,8 +254,8 @@ namespace claragenomics {
             CGA_LOG_INFO("Deallocating {} bytes from merged_basepairs_d",  merged_basepairs_d.size() * sizeof(decltype(merged_basepairs_d)::value_type));
             merged_basepairs_d.free();
 
-            // *** sort minimizers by representation ***
-            // As this is a stable sort and the data was initailly grouper by read_id this means that the minimizers within each representations are sorted by read_id
+            // *** sort sketch elements by representation ***
+            // As this is a stable sort and the data was initailly grouper by read_id this means that the sketch elements within each representations are sorted by read_id
             thrust::stable_sort_by_key(thrust::device, representations_compressed_d.data(),
                                        representations_compressed_d.data() + representations_compressed_d.size(),
                                        rest_compressed_d.data()
@@ -298,7 +298,7 @@ namespace claragenomics {
             }
         }
 
-        // Add the minimizers to the host-side index
+        // Add the sketch elements to the host-side index
         // SketchElements are already sorted by representation. Add all SketchElements with the same representation to a vector and then add that vector to the index
         std::vector<std::pair<representation_t, typename SketchElementImpl::ReadidPositionDirection>> repr_rest_pairs;
 
@@ -309,7 +309,7 @@ namespace claragenomics {
                                }
                               );
 
-        std::vector<SketchElementImpl> minimizers_for_representation;
+        std::vector<SketchElementImpl> sketch_elements_for_representation;
         if (repr_rest_pairs.size() < 1){
             CGA_LOG_INFO("No Sketch Elements to be added to index");
             return;
@@ -330,18 +330,18 @@ namespace claragenomics {
         for (std::size_t i = 0; i < repr_rest_pairs.size(); ++i) {
             if (repr_rest_pairs[i].first != current_representation) {
                 // New representation encountered -> add the old vector to index and start building the new one
-                rep_to_sketch_elem.push_back(RepresentationAndSketchElements{current_representation, std::move(minimizers_for_representation)});
-                minimizers_for_representation.clear();
+                rep_to_sketch_elem.push_back(RepresentationAndSketchElements{current_representation, std::move(sketch_elements_for_representation)});
+                sketch_elements_for_representation.clear();
                 current_representation = repr_rest_pairs[i].first;
             }
-            minimizers_for_representation.push_back(SketchElementImpl(repr_rest_pairs[i].first,
-                                                                      repr_rest_pairs[i].second.position_in_read_,
-                                                                      typename SketchElementImpl::DirectionOfRepresentation(repr_rest_pairs[i].second.direction_),
-                                                                      repr_rest_pairs[i].second.read_id_)
+            sketch_elements_for_representation.push_back(SketchElementImpl(repr_rest_pairs[i].first,
+                                                                           repr_rest_pairs[i].second.position_in_read_,
+                                                                           typename SketchElementImpl::DirectionOfRepresentation(repr_rest_pairs[i].second.direction_),
+                                                                           repr_rest_pairs[i].second.read_id_)
                                                    );
             }
         // last representation will not be added in the loop above so add it here
-        rep_to_sketch_elem.push_back(RepresentationAndSketchElements{current_representation, std::move(minimizers_for_representation)});
+        rep_to_sketch_elem.push_back(RepresentationAndSketchElements{current_representation, std::move(sketch_elements_for_representation)});
 
         // TODO: this is a merge of code from IndexGenerator and Index. It is going to be heavily optimized
 
