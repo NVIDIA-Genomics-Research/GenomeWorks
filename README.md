@@ -49,15 +49,16 @@ To install the SDK -
 make install
 ```
 
-### Debian package generation
-Debian generation packages the libraries, headers and binaries built by the `make` command above
-into a `.deb` for portability and easy installation. The package generation itself doesn't
+### Package generation
+Package generation puts the libraries, headers and binaries built by the `make` command above
+into a `.deb`/`.rpm` for portability and easy installation. The package generation itself doesn't
 guarantee any cross-platform compatibility.
 
 It is recommended that a separate build and packaging be performed for each distribution and
 CUDA version that needs to be supported.
 
-To generate a package for the SDK -
+The type of package (deb vs rpm) is determined automatically based on the platform the code
+is being run on. To generate a package for the SDK -
 
 ```bash
 make package

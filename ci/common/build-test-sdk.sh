@@ -21,7 +21,7 @@ export LOCAL_BUILD_DIR=${LOCAL_BUILD_ROOT}/build
 mkdir --parents ${LOCAL_BUILD_DIR}
 cd ${LOCAL_BUILD_DIR}
 
-# configure
+logger "Configure CMake..."
 cmake .. $CMAKE_COMMON_VARIABLES ${CMAKE_BUILD_GPU} \
     -Dcga_enable_tests=ON \
     -Dcga_enable_benchmarks=ON \
@@ -29,10 +29,10 @@ cmake .. $CMAKE_COMMON_VARIABLES ${CMAKE_BUILD_GPU} \
     -DCMAKE_INSTALL_PREFIX=${LOCAL_BUILD_DIR}/install \
     -GNinja
 
-# build
+logger "Run build..."
 ninja all install package
 
-# Install package
+logger "Install package..."
 DISTRO=$(awk -F= '/^NAME/{print $2}' /etc/os-release)
 DISTRO=${DISTRO//\"/}
 
@@ -47,9 +47,11 @@ else
     exit 1
 fi
 
-# Create symlink to installed directory
+logger "Creating symlink to installed package..."
 CGA_SYMLINK_PATH="$PACKAGE_DIR/usr/local/ClaraGenomicsAnalysis"
 ln -nsf $(readlink -f $PACKAGE_DIR/usr/local/ClaraGenomicsAnalysis*) $CGA_SYMLINK_PATH
+CGA_LIB_DIR=${CGA_SYMLINK_PATH}/lib
+ls ${CGA_LIB_DIR}
 
 # Run tests
 if [ "$GPU_TEST" == '1' ]; then
@@ -57,10 +59,10 @@ if [ "$GPU_TEST" == '1' ]; then
   nvidia-smi
 
   logger "Running ClaraGenomicsAnalysis unit tests..."
-  LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CGA_SYMLINK_PATH find ${LOCAL_BUILD_DIR}/install/tests -type f -exec {} \;
+  LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CGA_LIB_DIR find ${LOCAL_BUILD_DIR}/install/tests -type f -exec {} \;
 
   logger "Running ClaraGenomicsAnalysis benchmarks..."
-  LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CGA_SYMLINK_PATH ${LOCAL_BUILD_DIR}/install/benchmarks/cudapoa/benchmark_cudapoa_singlebatch
-  LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CGA_SYMLINK_PATH ${LOCAL_BUILD_DIR}/install/benchmarks/cudaaligner/benchmark_cudaaligner_singlebatch_singlealignment
+  LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CGA_LIB_DIR ${LOCAL_BUILD_DIR}/install/benchmarks/cudapoa/benchmark_cudapoa_singlebatch
+  LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CGA_LIB_DIR ${LOCAL_BUILD_DIR}/install/benchmarks/cudaaligner/benchmark_cudaaligner_singlebatch_singlealignment
 fi
 
