@@ -10,7 +10,7 @@
 
 #include <numeric>
 #include "gtest/gtest.h"
-#include "mock_index.hpp"
+#include "mock_index.cuh"
 #include "cudamapper_file_location.hpp"
 #include "../src/cudamapper_utils.hpp"
 #include "../src/overlapper_triggered.hpp"

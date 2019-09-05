@@ -13,11 +13,11 @@ project(cudamappertests)
 
 set(SOURCES
     main.cpp
-    Test_CudamapperIndexGPU.cpp
-    Test_CudamapperMatcher.cpp
+    Test_CudamapperIndexGPU.cu
+    Test_CudamapperMatcher.cu
     Test_CudamapperMinimizer.cpp
-    Test_PAF_generator.cpp
-    Test_CudamapperOverlapperTriggered.cpp
+    Test_PAF_generator.cu
+    Test_CudamapperOverlapperTriggered.cu
     ../src/bioparser_sequence.cpp)
 
 get_property(cudamapper_data_include_dir GLOBAL PROPERTY cudamapper_data_include_dir)
