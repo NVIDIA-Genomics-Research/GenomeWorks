@@ -22,20 +22,45 @@ mkdir --parents ${LOCAL_BUILD_DIR}
 cd ${LOCAL_BUILD_DIR}
 
 # configure
-cmake .. $CMAKE_COMMON_VARIABLES ${CMAKE_BUILD_GPU} -Dcga_enable_tests=ON -Dcga_enable_benchmarks=ON -DCMAKE_INSTALL_PREFIX=${LOCAL_BUILD_DIR}/install -GNinja
+cmake .. $CMAKE_COMMON_VARIABLES ${CMAKE_BUILD_GPU} \
+    -Dcga_enable_tests=ON \
+    -Dcga_enable_benchmarks=ON \
+    -Dcga_build_shared=ON \
+    -DCMAKE_INSTALL_PREFIX=${LOCAL_BUILD_DIR}/install \
+    -GNinja
+
 # build
 ninja all install package
 
+# Install package
+DISTRO=$(awk -F= '/^NAME/{print $2}' /etc/os-release)
+DISTRO=${DISTRO//\"/}
+
+PACKAGE_DIR=${LOCAL_BUILD_ROOT}/package/
+mkdir -p $PACKAGE_DIR
+if [ "$DISTRO" == "Ubuntu" ]; then
+    dpkg-deb -X ${LOCAL_BUILD_DIR}/*.deb $PACKAGE_DIR
+elif [ "$DISTRO" == "Ubuntu" ]; then
+    rpm --prefix=$PACKAGE_DIR ${LOCAL_BUILD_DIR}/*.rpm
+else
+    echo "Unknown OS found - ${DISTRO}."
+    exit 1
+fi
+
+# Create symlink to installed directory
+CGA_SYMLINK_PATH="$PACKAGE_DIR/usr/local/ClaraGenomicsAnalysis"
+ln -nsf $(readlink -f $PACKAGE_DIR/usr/local/ClaraGenomicsAnalysis*) $CGA_SYMLINK_PATH
+
+# Run tests
 if [ "$GPU_TEST" == '1' ]; then
   logger "GPU config..."
   nvidia-smi
 
   logger "Running ClaraGenomicsAnalysis unit tests..."
-  #run-parts -v ${LOCAL_BUILD_DIR}/install/tests
-  find ${LOCAL_BUILD_DIR}/install/tests -type f -exec {} \;
+  LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CGA_SYMLINK_PATH find ${LOCAL_BUILD_DIR}/install/tests -type f -exec {} \;
 
   logger "Running ClaraGenomicsAnalysis benchmarks..."
-  ${LOCAL_BUILD_DIR}/install/benchmarks/cudapoa/benchmark_cudapoa_singlebatch
-  ${LOCAL_BUILD_DIR}/install/benchmarks/cudaaligner/benchmark_cudaaligner_singlebatch_singlealignment
+  LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CGA_SYMLINK_PATH ${LOCAL_BUILD_DIR}/install/benchmarks/cudapoa/benchmark_cudapoa_singlebatch
+  LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CGA_SYMLINK_PATH ${LOCAL_BUILD_DIR}/install/benchmarks/cudaaligner/benchmark_cudaaligner_singlebatch_singlealignment
 fi
 
