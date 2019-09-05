@@ -29,10 +29,6 @@
 
 #include "cudamapper_utils.hpp"
 
-/////////////
-#include "minimizer.hpp"
-/////////////
-
 namespace claragenomics {
 
     /// IndexGPU - Contains sketch elements grouped by representation and by read id within the representation
@@ -71,7 +67,7 @@ namespace claragenomics {
 
         /// \brief returns an array of directions in which sketch elements were read
         /// \return an array of directions in which sketch elements were read
-        const std::vector<SketchElement::DirectionOfRepresentation>& directions_of_reads() const override;
+        const std::vector<typename SketchElementImpl::DirectionOfRepresentation>& directions_of_reads() const override;
 
         /// \brief returns number of reads in input data
         /// \return number of reads in input data
@@ -101,7 +97,7 @@ namespace claragenomics {
 
         std::vector<position_in_read_t> positions_in_reads_;
         std::vector<read_id_t> read_ids_;
-        std::vector<SketchElement::DirectionOfRepresentation> directions_of_reads_;
+        std::vector<typename SketchElementImpl::DirectionOfRepresentation> directions_of_reads_;
 
         std::vector<std::string> read_id_to_read_name_;
         std::vector<std::uint32_t> read_id_to_read_length_;
@@ -128,7 +124,7 @@ namespace claragenomics {
     const std::vector<read_id_t>& IndexGPU<SketchElementImpl>::read_ids() const { return read_ids_; }
 
     template <typename SketchElementImpl>
-    const std::vector<SketchElement::DirectionOfRepresentation>& IndexGPU<SketchElementImpl>::directions_of_reads() const { return directions_of_reads_; }
+    const std::vector<typename SketchElementImpl::DirectionOfRepresentation>& IndexGPU<SketchElementImpl>::directions_of_reads() const { return directions_of_reads_; }
 
     template <typename SketchElementImpl>
     std::uint64_t IndexGPU<SketchElementImpl>::number_of_reads() const { return number_of_reads_; }
@@ -165,7 +161,7 @@ namespace claragenomics {
 
         number_of_reads_ = 0;
 
-        std::vector<std::vector<std::pair<representation_t, Minimizer::ReadidPositionDirection>>> all_representation_readid_position_direction;
+        std::vector<std::vector<std::pair<representation_t, typename SketchElementImpl::ReadidPositionDirection>>> all_representation_readid_position_direction;
 
         while (true) {
             //read the query file:
@@ -243,16 +239,16 @@ namespace claragenomics {
             merged_basepairs_h.reserve(0);
 
             // sketch elements get generated here
-            auto sketch_elements = Minimizer::generate_sketch_elements(number_of_reads_to_add,
-                                                                       minimizer_size_,
-                                                                       window_size_,
-                                                                       number_of_reads_ - number_of_reads_to_add,
-                                                                       merged_basepairs_d,
-                                                                       read_id_to_basepairs_section_h,
-                                                                       read_id_to_basepairs_section_d
-                                                                      );
-            auto representations_compressed_d = std::move(sketch_elements.representations_d);
-            auto rest_compressed_d = std::move(sketch_elements.rest_d);
+            auto sketch_elements = SketchElementImpl::generate_sketch_elements(number_of_reads_to_add,
+                                                                                        minimizer_size_,
+                                                                                        window_size_,
+                                                                                        number_of_reads_ - number_of_reads_to_add,
+                                                                                        merged_basepairs_d,
+                                                                                        read_id_to_basepairs_section_h,
+                                                                                        read_id_to_basepairs_section_d
+                                                                                       );
+            device_buffer<representation_t> representations_compressed_d = std::move(sketch_elements.representations_d);
+            device_buffer<typename SketchElementImpl::ReadidPositionDirection> rest_compressed_d = std::move(sketch_elements.rest_d);
 
             CGA_LOG_INFO("Deallocating {} bytes from read_id_to_basepairs_section_d", read_id_to_basepairs_section_d.size() * sizeof(decltype(read_id_to_basepairs_section_d)::value_type));
             read_id_to_basepairs_section_d.free();
@@ -267,7 +263,7 @@ namespace claragenomics {
                                       );
 
             std::vector<representation_t> representations_compressed_h(representations_compressed_d.size());
-            std::vector<Minimizer::ReadidPositionDirection> rest_compressed_h(representations_compressed_d.size());
+            std::vector<typename SketchElementImpl::ReadidPositionDirection> rest_compressed_h(representations_compressed_d.size());
             CGA_CU_CHECK_ERR(cudaMemcpy(representations_compressed_h.data(),
                                         representations_compressed_d.data(),
                                         representations_compressed_h.size() * sizeof(decltype(representations_compressed_h)::value_type),
@@ -276,7 +272,7 @@ namespace claragenomics {
                             );
             CGA_CU_CHECK_ERR(cudaMemcpy(rest_compressed_h.data(),
                                         rest_compressed_d.data(),
-                                        rest_compressed_h.size() * sizeof(decltype(rest_compressed_h)::value_type),
+                                        rest_compressed_h.size() * sizeof(typename decltype(rest_compressed_h)::value_type),
                                         cudaMemcpyDeviceToHost
                                        )
                             );
@@ -288,9 +284,9 @@ namespace claragenomics {
             rest_compressed_d.free();
 
             // now create the new one:
-            std::vector<std::pair<representation_t, Minimizer::ReadidPositionDirection>> representation_read_id_position_direction;
+            std::vector<std::pair<representation_t, typename SketchElementImpl::ReadidPositionDirection>> representation_read_id_position_direction;
             for(size_t i=0; i< representations_compressed_h.size(); i++){
-                std::pair<representation_t, Minimizer::ReadidPositionDirection> rep_rest_pair;
+                std::pair<representation_t, typename SketchElementImpl::ReadidPositionDirection> rep_rest_pair;
                 rep_rest_pair.first = representations_compressed_h[i];
                 rep_rest_pair.second = rest_compressed_h[i];
                 representation_read_id_position_direction.push_back(rep_rest_pair);
@@ -305,11 +301,11 @@ namespace claragenomics {
 
         // Add the minimizers to the host-side index
         // SketchElements are already sorted by representation. Add all SketchElements with the same representation to a vector and then add that vector to the index
-        std::vector<std::pair<representation_t, Minimizer::ReadidPositionDirection>> repr_rest_pairs;
+        std::vector<std::pair<representation_t, typename SketchElementImpl::ReadidPositionDirection>> repr_rest_pairs;
 
         merge_n_sorted_vectors(all_representation_readid_position_direction,
                                repr_rest_pairs,
-                               [](const std::pair<representation_t, Minimizer::ReadidPositionDirection> &a, const std::pair<representation_t, Minimizer::ReadidPositionDirection> &b){
+                               [](const std::pair<representation_t, typename SketchElementImpl::ReadidPositionDirection> &a, const std::pair<representation_t, typename SketchElementImpl::ReadidPositionDirection> &b){
                                    return a.first < b.first;
                                }
                               );
@@ -339,10 +335,10 @@ namespace claragenomics {
                 minimizers_for_representation.clear();
                 current_representation = repr_rest_pairs[i].first;
             }
-            minimizers_for_representation.push_back(std::make_unique<Minimizer>(repr_rest_pairs[i].first,
-                                                                                repr_rest_pairs[i].second.position_in_read_,
-                                                                                SketchElement::DirectionOfRepresentation(repr_rest_pairs[i].second.direction_),
-                                                                                repr_rest_pairs[i].second.read_id_));
+            minimizers_for_representation.push_back(std::make_unique<SketchElementImpl>(repr_rest_pairs[i].first,
+                                                                                        repr_rest_pairs[i].second.position_in_read_,
+                                                                                        typename SketchElementImpl::DirectionOfRepresentation(repr_rest_pairs[i].second.direction_),
+                                                                                        repr_rest_pairs[i].second.read_id_));
             }
         // last representation will not be added in the loop above so add it here
         rep_to_sketch_elem.push_back(RepresentationAndSketchElements{current_representation, std::move(minimizers_for_representation)});
