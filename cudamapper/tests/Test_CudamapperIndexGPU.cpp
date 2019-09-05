@@ -10,7 +10,7 @@
 
 #include "gtest/gtest.h"
 #include "cudamapper_file_location.hpp"
-#include "../src/index_cpu.hpp"
+#include "../src/index_gpu.hpp"
 
 namespace claragenomics {
 
@@ -26,7 +26,7 @@ namespace claragenomics {
                        const std::vector<SketchElement::DirectionOfRepresentation>& expected_directions_of_reads
                       )
     {
-        IndexCPU index(filename, minimizer_size, window_size);
+        IndexGPU index(filename, minimizer_size, window_size);
         ASSERT_EQ(index.number_of_reads(), expected_number_of_reads);
 
         const std::vector<std::string>& read_id_to_read_name = index.read_id_to_read_name();
@@ -77,7 +77,7 @@ namespace claragenomics {
     }
 
 
-    TEST(TestCudamapperIndexCPU, GATT_4_1) {
+    TEST(TestCudamapperIndexGPU, GATT_4_1) {
         // >read_0
         // GATT
 
@@ -119,7 +119,7 @@ namespace claragenomics {
                      );
     }
 
-    TEST(TestCudamapperIndexCPU, GATT_2_3) {
+    TEST(TestCudamapperIndexGPU, GATT_2_3) {
         // >read_0
         // GATT
 
@@ -195,7 +195,7 @@ namespace claragenomics {
     }
 
 
-    TEST(TestCudamapperIndexCPU, CCCATACC_2_8) {
+    TEST(TestCudamapperIndexGPU, CCCATACC_2_8) {
         // *** Read is shorter than one full window, the result should be empty ***
 
         // >read_0
@@ -232,7 +232,7 @@ namespace claragenomics {
                      );
     }
 
-    TEST(TestCudamapperIndexCPU, CATCAAG_AAGCTA_3_5) {
+    TEST(TestCudamapperIndexGPU, CATCAAG_AAGCTA_3_5) {
         // *** One Read is shorter than one full window, the other is not ***
 
         // >read_0
@@ -322,7 +322,7 @@ namespace claragenomics {
                      );
     }
 
-    TEST(TestCudamapperIndexCPU, CCCATACC_3_5) {
+    TEST(TestCudamapperIndexGPU, CCCATACC_3_5) {
         // >read_0
         // CCCATACC
 
@@ -415,7 +415,7 @@ namespace claragenomics {
                      );
     }
 
-    TEST(TestCudamapperIndexCPU, CATCAAG_AAGCTA_3_2) {
+    TEST(TestCudamapperIndexGPU, CATCAAG_AAGCTA_3_2) {
         // >read_0
         // CATCAAG
         // >read_1

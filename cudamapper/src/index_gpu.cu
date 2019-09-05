@@ -20,42 +20,42 @@
 #include "bioparser/bioparser.hpp"
 #include "bioparser_sequence.hpp"
 
-#include "index_cpu.hpp"
+#include "index_gpu.hpp"
 #include "cudamapper_utils.hpp"
 
 /////////////
-// TODO: this will be removed once IndexCPU is templated
+// TODO: this will be removed once IndexGPU is templated
 #include "minimizer.hpp"
 /////////////
 
 namespace claragenomics {
 
-    IndexCPU::IndexCPU(const std::string& query_filename, const std::uint64_t minimizer_size, const std::uint64_t window_size)
+    IndexGPU::IndexGPU(const std::string& query_filename, const std::uint64_t minimizer_size, const std::uint64_t window_size)
     : minimizer_size_(minimizer_size), window_size_(window_size), number_of_reads_(0)
     {
         generate_index(query_filename);
     }
 
-    IndexCPU::IndexCPU()
+    IndexGPU::IndexGPU()
     : minimizer_size_(0), window_size_(0), number_of_reads_(0) {
     }
 
-    const std::vector<position_in_read_t>& IndexCPU::positions_in_reads() const { return positions_in_reads_; }
+    const std::vector<position_in_read_t>& IndexGPU::positions_in_reads() const { return positions_in_reads_; }
 
-    const std::vector<read_id_t>& IndexCPU::read_ids() const { return read_ids_; }
+    const std::vector<read_id_t>& IndexGPU::read_ids() const { return read_ids_; }
 
-    const std::vector<SketchElement::DirectionOfRepresentation>& IndexCPU::directions_of_reads() const { return directions_of_reads_; }
+    const std::vector<SketchElement::DirectionOfRepresentation>& IndexGPU::directions_of_reads() const { return directions_of_reads_; }
 
-    std::uint64_t IndexCPU::number_of_reads() const { return number_of_reads_; }
+    std::uint64_t IndexGPU::number_of_reads() const { return number_of_reads_; }
 
-    const std::vector<std::string>& IndexCPU::read_id_to_read_name() const { return read_id_to_read_name_; }
+    const std::vector<std::string>& IndexGPU::read_id_to_read_name() const { return read_id_to_read_name_; }
 
-    const std::vector<std::uint32_t>& IndexCPU::read_id_to_read_length() const { return read_id_to_read_length_; }
+    const std::vector<std::uint32_t>& IndexGPU::read_id_to_read_length() const { return read_id_to_read_length_; }
 
-    const std::vector<std::vector<Index::RepresentationToSketchElements>>& IndexCPU::read_id_and_representation_to_sketch_elements() const { return read_id_and_representation_to_sketch_elements_; }
+    const std::vector<std::vector<Index::RepresentationToSketchElements>>& IndexGPU::read_id_and_representation_to_sketch_elements() const { return read_id_and_representation_to_sketch_elements_; }
 
     // TODO: This function will be split into several functions
-    void IndexCPU::generate_index(const std::string& query_filename) {
+    void IndexGPU::generate_index(const std::string& query_filename) {
         std::unique_ptr<bioparser::Parser<BioParserSequence>> query_parser = nullptr;
 
         auto is_suffix = [](const std::string &src, const std::string &suffix) -> bool {

@@ -18,7 +18,7 @@
 
 namespace claragenomics {
 
-    /// IndexCPU - Contains sketch elements grouped by representation and by read id within the representation
+    /// IndexGPU - Contains sketch elements grouped by representation and by read id within the representation
     ///
     /// Class contains three separate data arrays: read_ids, positions_in_reads and directions_of_reads.
     /// Elements of these three arrays with the same index represent one sketch element
@@ -28,7 +28,7 @@ namespace claragenomics {
     /// Elements of data arrays are grouped by sketch element representation and within those groups by read_id. Both representations and read_ids within representations are sorted in ascending order
     ///
     /// read_id_and_representation_to_sketch_elements() for each read_id (outer vector) returns a vector in which each element contains a representation from that read, pointer to section of data arrays with sketch elements with that representation and that read_id, and pointer to section of data arrays with skecth elements with that representation and all read_ids. There elements are sorted by representation in increasing order
-    class IndexCPU : public Index {
+    class IndexGPU : public Index {
     public:
 
         /// \brief Constructor
@@ -36,10 +36,10 @@ namespace claragenomics {
         /// \param query_filename filepath to reads in FASTA or FASTQ format
         /// \param minimizer_size k - the kmer length used as a minimizer
         /// \param window_size w - the length of the sliding window used to find minimizer
-        IndexCPU(const std::string& query_filename, const std::uint64_t minimizer_size, const std::uint64_t window_size);
+        IndexGPU(const std::string& query_filename, const std::uint64_t minimizer_size, const std::uint64_t window_size);
 
         /// \brief Constructor
-        IndexCPU();
+        IndexGPU();
 
         /// \brief returns an array of starting positions of sketch elements in their reads
         /// \return an array of starting positions of sketch elements in their reads

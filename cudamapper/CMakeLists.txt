@@ -22,12 +22,12 @@ else()
     set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -lineinfo -use_fast_math -Xcompiler -Wall,-Wno-pedantic -std=c++14")
 endif()
 
-cuda_add_library(index_cpu
-        src/index_cpu.cu
+cuda_add_library(index_gpu
+        src/index_gpu.cu
         src/minimizer.cu)
-target_include_directories(index_cpu PUBLIC include)
-target_link_libraries(index_cpu bioparser logging pthread utils)
-target_compile_options(index_cpu PRIVATE -Werror)
+target_include_directories(index_gpu PUBLIC include)
+target_link_libraries(index_gpu bioparser logging pthread utils)
+target_compile_options(index_gpu PRIVATE -Werror)
 
 cuda_add_library(matcher
         src/matcher.cu)
@@ -68,7 +68,7 @@ target_include_directories(cudamapper
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 )
 
-target_link_libraries(cudamapper bioparser utils index_cpu matcher logging overlapper_naive overlapper_triggerred cudamapper_utils)
+target_link_libraries(cudamapper bioparser utils index_gpu matcher logging overlapper_naive overlapper_triggerred cudamapper_utils)
 
 # Add tests folder
 add_subdirectory(tests)

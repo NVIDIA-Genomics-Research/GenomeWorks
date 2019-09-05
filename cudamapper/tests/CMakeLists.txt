@@ -13,7 +13,7 @@ project(cudamappertests)
 
 set(SOURCES
     main.cpp
-    Test_CudamapperIndexCPU.cpp
+    Test_CudamapperIndexGPU.cpp
     Test_CudamapperMatcher.cpp
     Test_CudamapperMinimizer.cpp
     Test_PAF_generator.cpp
@@ -25,7 +25,7 @@ include_directories(${cudamapper_data_include_dir})
 
 set(LIBS
     bioparser
-    index_cpu
+    index_gpu
     matcher
     overlapper_naive
     overlapper_triggerred
