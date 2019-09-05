@@ -43,7 +43,7 @@ namespace claragenomics {
         unfused_overlaps.push_back(overlap2);
         auto fused_overlaps = fuse_overlaps(unfused_overlaps);
 
-        ASSERT_EQ(fused_overlaps.size(), 1);
+        ASSERT_EQ(fused_overlaps.size(), 1u);
     }
 
     TEST(TestCudamapperOverlapperTriggerred, DoNotuseTwoOverlaps) {
@@ -71,7 +71,7 @@ namespace claragenomics {
         unfused_overlaps.push_back(overlap2);
         auto fused_overlaps = fuse_overlaps(unfused_overlaps);
 
-        ASSERT_EQ(fused_overlaps.size(), 2);
+        ASSERT_EQ(fused_overlaps.size(), 2u);
     }
 
 
@@ -91,7 +91,7 @@ namespace claragenomics {
 
         auto fused_overlaps = fuse_overlaps(unfused_overlaps);
 
-        ASSERT_EQ(fused_overlaps.size(), 1);
+        ASSERT_EQ(fused_overlaps.size(), 1u);
     }
 
     TEST(TestCudamapperOverlapperTriggerred, NoOverlaps) {
@@ -102,7 +102,7 @@ namespace claragenomics {
 
         auto fused_overlaps = fuse_overlaps(unfused_overlaps);
 
-        ASSERT_EQ(fused_overlaps.size(), 0);
+        ASSERT_EQ(fused_overlaps.size(), 0u);
     }
 
     TEST(TestCudamapperOverlapperTriggerred, Fusee3Overlapsto2) {
@@ -140,7 +140,7 @@ namespace claragenomics {
 
         auto fused_overlaps = fuse_overlaps(unfused_overlaps);
 
-        ASSERT_EQ(fused_overlaps.size(), 2);
+        ASSERT_EQ(fused_overlaps.size(), 2u);
     }
 
     TEST(TestCudamapperOverlapperTriggerred, OneAchorNoOverlaps) {
@@ -166,7 +166,7 @@ namespace claragenomics {
         anchors.push_back(anchor1);
 
         auto overlaps = overlapper.get_overlaps(anchors, test_index);
-        ASSERT_EQ(overlaps.size(), 0);
+        ASSERT_EQ(overlaps.size(), 0u);
     }
 
     TEST(TestCudamapperOverlapperTriggerred, FourAnchorsOneOverlap) {
@@ -217,13 +217,13 @@ namespace claragenomics {
         anchors.push_back(anchor4);
 
         auto overlaps = overlapper.get_overlaps(anchors, test_index);
-        ASSERT_EQ(overlaps.size(), 1);
-        ASSERT_EQ(overlaps[0].query_read_id_, 1);
-        ASSERT_EQ(overlaps[0].target_read_id_, 2);
-        ASSERT_EQ(overlaps[0].query_start_position_in_read_, 100);
-        ASSERT_EQ(overlaps[0].query_end_position_in_read_, 400);
-        ASSERT_EQ(overlaps[0].target_start_position_in_read_, 1000);
-        ASSERT_EQ(overlaps[0].target_end_position_in_read_, 1300);
+        ASSERT_EQ(overlaps.size(), 1u);
+        ASSERT_EQ(overlaps[0].query_read_id_, 1u);
+        ASSERT_EQ(overlaps[0].target_read_id_, 2u);
+        ASSERT_EQ(overlaps[0].query_start_position_in_read_, 100u);
+        ASSERT_EQ(overlaps[0].query_end_position_in_read_, 400u);
+        ASSERT_EQ(overlaps[0].target_start_position_in_read_, 1000u);
+        ASSERT_EQ(overlaps[0].target_end_position_in_read_, 1300u);
     }
 
     TEST(TestCudamapperOverlapperTriggerred, FourAnchorsNoOverlap) {
@@ -274,7 +274,7 @@ namespace claragenomics {
         anchors.push_back(anchor4);
 
         auto overlaps = overlapper.get_overlaps(anchors, test_index);
-        ASSERT_EQ(overlaps.size(), 0);
+        ASSERT_EQ(overlaps.size(), 0u);
     }
 
     TEST(TestCudamapperOverlapperTriggerred, FourColinearAnchorsOneOverlap) {
@@ -325,7 +325,7 @@ namespace claragenomics {
         anchors.push_back(anchor4);
 
         auto overlaps = overlapper.get_overlaps(anchors, test_index);
-        ASSERT_EQ(overlaps.size(), 0);
+        ASSERT_EQ(overlaps.size(), 0u);
     }
 
     TEST(TestCudamapperOverlapperTriggerred, FourAnchorsLastNotInOverlap) {
@@ -376,12 +376,12 @@ namespace claragenomics {
         anchors.push_back(anchor4);
 
         auto overlaps = overlapper.get_overlaps(anchors, test_index);
-        ASSERT_EQ(overlaps.size(), 1);
-        ASSERT_EQ(overlaps[0].query_read_id_, 1);
-        ASSERT_EQ(overlaps[0].target_read_id_, 2);
-        ASSERT_EQ(overlaps[0].query_start_position_in_read_, 100);
-        ASSERT_EQ(overlaps[0].query_end_position_in_read_, 300);
-        ASSERT_EQ(overlaps[0].target_start_position_in_read_, 1000);
-        ASSERT_EQ(overlaps[0].target_end_position_in_read_, 1200);
+        ASSERT_EQ(overlaps.size(), 1u);
+        ASSERT_EQ(overlaps[0].query_read_id_, 1u);
+        ASSERT_EQ(overlaps[0].target_read_id_, 2u);
+        ASSERT_EQ(overlaps[0].query_start_position_in_read_, 100u);
+        ASSERT_EQ(overlaps[0].query_end_position_in_read_, 300u);
+        ASSERT_EQ(overlaps[0].target_start_position_in_read_, 1000u);
+        ASSERT_EQ(overlaps[0].target_end_position_in_read_, 1200u);
     }
 }
