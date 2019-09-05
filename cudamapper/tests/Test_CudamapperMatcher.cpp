@@ -11,8 +11,7 @@
 #include <numeric>
 #include "gtest/gtest.h"
 #include "cudamapper_file_location.hpp"
-#include "../src/index_cpu.hpp"
-#include "../src/index_generator_gpu.hpp"
+#include "../src/index_gpu.hpp"
 #include "../src/matcher.hpp"
 
 namespace claragenomics {
@@ -23,8 +22,7 @@ namespace claragenomics {
 
         // only one read -> no anchors
 
-        IndexGeneratorGPU index_generator(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/gatt.fasta", 4, 1);
-        IndexCPU index(index_generator);
+        IndexGPU index(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/gatt.fasta", 4, 1);
         Matcher matcher(index);
 
         const std::vector<Anchor>& anchors = matcher.anchors();
@@ -58,8 +56,7 @@ namespace claragenomics {
 
         // Anchor r0p4 - r1p0
 
-        IndexGeneratorGPU index_generator(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/catcaag_aagcta.fasta", 3, 2);
-        IndexCPU index(index_generator);
+        IndexGPU index(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/catcaag_aagcta.fasta", 3, 2);
         Matcher matcher(index);
 
         const std::vector<Anchor>& anchors = matcher.anchors();

@@ -11,7 +11,10 @@
 #pragma once
 
 #include <memory>
-#include "cudamapper/index_generator.hpp"
+#include <string>
+#include <vector>
+#include "cudamapper/sketch_element.hpp"
+#include "cudamapper/types.hpp"
 
 namespace claragenomics {
 /// \addtogroup cudamapper
@@ -65,7 +68,7 @@ namespace claragenomics {
 
         /// \brief generates a mapping of (k,w)-kmer-representation to all of its occurrences for one or more sequences
         /// \return instance of Index
-        static std::unique_ptr<Index> create_index(const IndexGenerator& index_generator);
+        static std::unique_ptr<Index> create_index(const std::string& query_filename, const std::uint64_t minimizer_size, const std::uint64_t window_size);
 
         /// \brief creates an empty Index
         /// \return empty instacne of Index

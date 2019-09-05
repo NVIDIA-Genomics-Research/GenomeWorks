@@ -9,14 +9,14 @@
 */
 
 #include "cudamapper/index.hpp"
-#include "index_cpu.hpp"
+#include "index_gpu.hpp"
 
 namespace claragenomics {
-    std::unique_ptr<Index> Index::create_index(const IndexGenerator& index_generator) {
-        return std::make_unique<IndexCPU>(index_generator);
+    std::unique_ptr<Index> Index::create_index(const std::string& query_filename, const std::uint64_t minimizer_size, const std::uint64_t window_size) {
+        return std::make_unique<IndexGPU>(query_filename, minimizer_size, window_size);
     }
 
     std::unique_ptr<Index> Index::create_index() {
-        return std::make_unique<IndexCPU>();
+        return std::make_unique<IndexGPU>();
     }
 }

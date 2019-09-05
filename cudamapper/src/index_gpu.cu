@@ -8,11 +8,8 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-#include <algorithm>
-#include <deque>
-#include <limits>
-#include <string>
 #include <utility>
+
 #include <thrust/sort.h>
 #include <thrust/execution_policy.h>
 
@@ -22,37 +19,43 @@
 
 #include "bioparser/bioparser.hpp"
 #include "bioparser_sequence.hpp"
-#include "index_generator_gpu.hpp"
-#include "cudamapper/types.hpp"
+
+#include "index_gpu.hpp"
 #include "cudamapper_utils.hpp"
 
 /////////////
-// TODO: this will be removed once IndexGeneratorGPU is templated
+// TODO: this will be removed once IndexGPU is templated
 #include "minimizer.hpp"
 /////////////
 
 namespace claragenomics {
 
-    IndexGeneratorGPU::IndexGeneratorGPU(const std::string& query_filename, std::uint64_t minimizer_size, std::uint64_t window_size)
-    : minimizer_size_(minimizer_size), window_size_(window_size), index_()
+    IndexGPU::IndexGPU(const std::string& query_filename, const std::uint64_t minimizer_size, const std::uint64_t window_size)
+    : minimizer_size_(minimizer_size), window_size_(window_size), number_of_reads_(0)
     {
         generate_index(query_filename);
     }
 
-    std::uint64_t IndexGeneratorGPU::minimizer_size() const { return minimizer_size_; }
+    IndexGPU::IndexGPU()
+    : minimizer_size_(0), window_size_(0), number_of_reads_(0) {
+    }
 
-    std::uint64_t IndexGeneratorGPU::window_size() const { return window_size_; }
+    const std::vector<position_in_read_t>& IndexGPU::positions_in_reads() const { return positions_in_reads_; }
 
-    const std::vector<IndexGenerator::RepresentationAndSketchElements>& IndexGeneratorGPU::representations_and_sketch_elements() const { return index_; };
+    const std::vector<read_id_t>& IndexGPU::read_ids() const { return read_ids_; }
 
-    const std::vector<std::string>& IndexGeneratorGPU::read_id_to_read_name() const { return read_id_to_read_name_; };
+    const std::vector<SketchElement::DirectionOfRepresentation>& IndexGPU::directions_of_reads() const { return directions_of_reads_; }
 
-    const std::vector<std::uint32_t>& IndexGeneratorGPU::read_id_to_read_length() const { return read_id_to_read_length_; };
+    std::uint64_t IndexGPU::number_of_reads() const { return number_of_reads_; }
 
-    std::uint64_t IndexGeneratorGPU::number_of_reads() const { return number_of_reads_; }
+    const std::vector<std::string>& IndexGPU::read_id_to_read_name() const { return read_id_to_read_name_; }
 
-    void IndexGeneratorGPU::generate_index(const std::string &query_filename) {
+    const std::vector<std::uint32_t>& IndexGPU::read_id_to_read_length() const { return read_id_to_read_length_; }
 
+    const std::vector<std::vector<Index::RepresentationToSketchElements>>& IndexGPU::read_id_and_representation_to_sketch_elements() const { return read_id_and_representation_to_sketch_elements_; }
+
+    // TODO: This function will be split into several functions
+    void IndexGPU::generate_index(const std::string& query_filename) {
         std::unique_ptr<bioparser::Parser<BioParserSequence>> query_parser = nullptr;
 
         auto is_suffix = [](const std::string &src, const std::string &suffix) -> bool {
@@ -228,12 +231,22 @@ namespace claragenomics {
             return;
         }
 
+        /// RepresentationAndSketchElements - Representation and all sketch elements with that representation
+        struct RepresentationAndSketchElements {
+            /// representation
+            representation_t representation_;
+            /// all sketch elements with that representation (in all reads)
+            std::vector<std::unique_ptr<SketchElement>> sketch_elements_;
+        };
+
+        std::vector<RepresentationAndSketchElements> rep_to_sketch_elem;
+
         representation_t current_representation = repr_rest_pairs[0].first;
         // TODO: this part takes the largest portion of time
         for (std::size_t i = 0; i < repr_rest_pairs.size(); ++i) {
             if (repr_rest_pairs[i].first != current_representation) {
                 // New representation encountered -> add the old vector to index and start building the new one
-                index_.push_back(RepresentationAndSketchElements{current_representation, std::move(minimizers_for_representation)});
+                rep_to_sketch_elem.push_back(RepresentationAndSketchElements{current_representation, std::move(minimizers_for_representation)});
                 minimizers_for_representation.clear();
                 current_representation = repr_rest_pairs[i].first;
             }
@@ -243,6 +256,47 @@ namespace claragenomics {
                                                                                 repr_rest_pairs[i].second.read_id_));
             }
         // last representation will not be added in the loop above so add it here
-        index_.push_back(RepresentationAndSketchElements{current_representation, std::move(minimizers_for_representation)});
+        rep_to_sketch_elem.push_back(RepresentationAndSketchElements{current_representation, std::move(minimizers_for_representation)});
+
+        // TODO: this is a merge of code from IndexGenerator and Index. It is going to be heavily optimized
+
+        std::vector<std::vector<RepresentationToSketchElements>> read_id_and_representation_to_sketch_elements_temp(number_of_reads_);
+
+        // determine the overall number of sketch elements and preallocate data arrays
+        std::uint64_t total_sketch_elems = 0;
+        for (const auto& sketch_elems_for_one_rep : rep_to_sketch_elem) {
+            total_sketch_elems += sketch_elems_for_one_rep.sketch_elements_.size();
+        }
+
+        positions_in_reads_.reserve(total_sketch_elems);
+        read_ids_.reserve(total_sketch_elems);
+        directions_of_reads_.reserve(total_sketch_elems);
+
+        // go through representations one by one
+        for (const auto& sketch_elems_for_one_rep : rep_to_sketch_elem) {
+            const representation_t current_rep = sketch_elems_for_one_rep.representation_;
+            const auto& sketch_elems_for_current_rep = sketch_elems_for_one_rep.sketch_elements_;
+            // all sketch elements with the current representation are going to be added to this section of the data arrays
+            ArrayBlock array_block_for_current_rep_and_all_read_ids = ArrayBlock{positions_in_reads_.size(), static_cast<std::uint32_t>(sketch_elems_for_current_rep.size())};
+            read_id_t current_read = std::numeric_limits<read_id_t>::max();
+            for (const auto& sketch_elem_ptr : sketch_elems_for_current_rep) {
+                const read_id_t read_of_current_sketch_elem = sketch_elem_ptr->read_id();
+                // within array block for one representation sketch elements are gouped by read_id (in increasing order)
+                if (read_of_current_sketch_elem != current_read) {
+                    // if new read_id add new block for it
+                    current_read = read_of_current_sketch_elem;
+                    read_id_and_representation_to_sketch_elements_temp[read_of_current_sketch_elem].push_back(RepresentationToSketchElements{current_rep, {positions_in_reads_.size(), 1}, array_block_for_current_rep_and_all_read_ids});
+                } else {
+                    // if a block for that read_id alreay exists just increase the counter for the number of elements with that representation and read_id
+                    ++read_id_and_representation_to_sketch_elements_temp[read_of_current_sketch_elem].back().sketch_elements_for_representation_and_read_id_.block_size_;
+                }
+                // add sketch element to data arrays
+                positions_in_reads_.emplace_back(sketch_elem_ptr->position_in_read());
+                read_ids_.emplace_back(sketch_elem_ptr->read_id());
+                directions_of_reads_.emplace_back(sketch_elem_ptr->direction());
+            }
+        }
+
+        std::swap(read_id_and_representation_to_sketch_elements_, read_id_and_representation_to_sketch_elements_temp);
     }
 }
