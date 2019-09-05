@@ -36,7 +36,7 @@ logger "Install package..."
 DISTRO=$(awk -F= '/^NAME/{print $2}' /etc/os-release)
 DISTRO=${DISTRO//\"/}
 
-PACKAGE_DIR=${LOCAL_BUILD_ROOT}/package/
+PACKAGE_DIR=${LOCAL_BUILD_ROOT}/package
 mkdir -p $PACKAGE_DIR
 if [ "$DISTRO" == "Ubuntu" ]; then
     dpkg-deb -X ${LOCAL_BUILD_DIR}/*.deb $PACKAGE_DIR
@@ -47,9 +47,11 @@ else
     exit 1
 fi
 
+set -x
 logger "Creating symlink to installed package..."
-CGA_SYMLINK_PATH="$PACKAGE_DIR/usr/local/ClaraGenomicsAnalysis"
-ln -nsf $(readlink -f $PACKAGE_DIR/usr/local/ClaraGenomicsAnalysis*) $CGA_SYMLINK_PATH
+UNPACK_ROOT=$(readlink -f "$PACKAGE_DIR/usr/local")
+CGA_SYMLINK_PATH="$UNPACK_ROOT/ClaraGenomicsAnalysis"
+ln -s $UNPACK_ROOT/ClaraGenomicsAnalysis-* $CGA_SYMLINK_PATH
 CGA_LIB_DIR=${CGA_SYMLINK_PATH}/lib
 ls ${CGA_LIB_DIR}
 
