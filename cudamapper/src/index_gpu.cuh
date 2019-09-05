@@ -21,7 +21,6 @@
 #include <claragenomics/utils/device_buffer.cuh>
 
 #include "cudamapper/index.hpp"
-#include "cudamapper/sketch_element.hpp"
 #include "cudamapper/types.hpp"
 
 #include "bioparser/bioparser.hpp"
@@ -310,7 +309,7 @@ namespace claragenomics {
                                }
                               );
 
-        std::vector<std::unique_ptr<SketchElement>> minimizers_for_representation;
+        std::vector<SketchElementImpl> minimizers_for_representation;
         if (repr_rest_pairs.size() < 1){
             CGA_LOG_INFO("No Sketch Elements to be added to index");
             return;
@@ -321,7 +320,7 @@ namespace claragenomics {
             /// representation
             representation_t representation_;
             /// all sketch elements with that representation (in all reads)
-            std::vector<std::unique_ptr<SketchElement>> sketch_elements_;
+            std::vector<SketchElementImpl> sketch_elements_;
         };
 
         std::vector<RepresentationAndSketchElements> rep_to_sketch_elem;
@@ -335,10 +334,11 @@ namespace claragenomics {
                 minimizers_for_representation.clear();
                 current_representation = repr_rest_pairs[i].first;
             }
-            minimizers_for_representation.push_back(std::make_unique<SketchElementImpl>(repr_rest_pairs[i].first,
-                                                                                        repr_rest_pairs[i].second.position_in_read_,
-                                                                                        typename SketchElementImpl::DirectionOfRepresentation(repr_rest_pairs[i].second.direction_),
-                                                                                        repr_rest_pairs[i].second.read_id_));
+            minimizers_for_representation.push_back(SketchElementImpl(repr_rest_pairs[i].first,
+                                                                      repr_rest_pairs[i].second.position_in_read_,
+                                                                      typename SketchElementImpl::DirectionOfRepresentation(repr_rest_pairs[i].second.direction_),
+                                                                      repr_rest_pairs[i].second.read_id_)
+                                                   );
             }
         // last representation will not be added in the loop above so add it here
         rep_to_sketch_elem.push_back(RepresentationAndSketchElements{current_representation, std::move(minimizers_for_representation)});
@@ -365,7 +365,7 @@ namespace claragenomics {
             ArrayBlock array_block_for_current_rep_and_all_read_ids = ArrayBlock{positions_in_reads_.size(), static_cast<std::uint32_t>(sketch_elems_for_current_rep.size())};
             read_id_t current_read = std::numeric_limits<read_id_t>::max();
             for (const auto& sketch_elem_ptr : sketch_elems_for_current_rep) {
-                const read_id_t read_of_current_sketch_elem = sketch_elem_ptr->read_id();
+                const read_id_t read_of_current_sketch_elem = sketch_elem_ptr.read_id();
                 // within array block for one representation sketch elements are gouped by read_id (in increasing order)
                 if (read_of_current_sketch_elem != current_read) {
                     // if new read_id add new block for it
@@ -376,9 +376,9 @@ namespace claragenomics {
                     ++read_id_and_representation_to_sketch_elements_temp[read_of_current_sketch_elem].back().sketch_elements_for_representation_and_read_id_.block_size_;
                 }
                 // add sketch element to data arrays
-                positions_in_reads_.emplace_back(sketch_elem_ptr->position_in_read());
-                read_ids_.emplace_back(sketch_elem_ptr->read_id());
-                directions_of_reads_.emplace_back(sketch_elem_ptr->direction());
+                positions_in_reads_.emplace_back(sketch_elem_ptr.position_in_read());
+                read_ids_.emplace_back(sketch_elem_ptr.read_id());
+                directions_of_reads_.emplace_back(sketch_elem_ptr.direction());
             }
         }
 
