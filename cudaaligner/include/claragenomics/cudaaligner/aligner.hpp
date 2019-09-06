@@ -64,11 +64,6 @@ public:
     /// \return Vector of Alignments.
     virtual const std::vector<std::shared_ptr<Alignment>>& get_alignments() const = 0;
 
-    /// \brief Set CUDA stream for aligner.
-    ///
-    /// \param stream CUDA stream
-    virtual void set_cuda_stream(cudaStream_t stream) = 0;
-
     /// \brief Reset aligner object.
     virtual void reset() = 0;
 };
