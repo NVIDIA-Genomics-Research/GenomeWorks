@@ -18,6 +18,15 @@ python setup.py develop
 ```
 
 ### Testing installation
+
+The following binaries should be on the `PATH` in order for the tests to pass:
+
+* racon
+* minimap2
+* miniasm
+
+To test the installation execute:
+
 ```
 cd test/
 python -m pytest
