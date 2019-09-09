@@ -38,7 +38,8 @@ class CMakeWrapper():
 
     def run_cmake_cmd(self):
         cmake_args = ['-DCMAKE_INSTALL_PREFIX=' + self.cmake_install_dir,
-                      '-DCMAKE_BUILD_TYPE=' + 'Release']
+                      '-DCMAKE_BUILD_TYPE=' + 'Release',
+                      '-DCMAKE_INSTALL_RPATH=' + os.path.join(self.cmake_install_dir, "lib")]
         cmake_args += [self.cmake_extra_args]
 
         if not os.path.exists(self.build_path):
