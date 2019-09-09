@@ -18,6 +18,15 @@ python setup.py develop
 ```
 
 ### Testing installation
+
+The following binaries should be on the `PATH` in order for the tests to pass:
+
+* racon
+* minimap2
+* miniasm
+
+To test the installation execute:
+
 ```
 cd test/
 python -m pytest
@@ -25,13 +34,13 @@ python -m pytest
 
 ## Generating a simulated genome
 
-A genome can be simulated without any parameters, to generate a 1Mbp reference with 200x coverage and median read length of 10kbp:
+A genome can be simulated without any parameters, to generate a 1Mbp reference with 20x coverage and median read length of 10kbp:
 
 ```
 genome_simulator --snv_error_rate 0.01 --insertion_error_rate 0.005 --deletion_error_rate 0.005  --reference_length 1000000 --num_reads 2000 --median_read_length=10000
 ```
 
-this will generate a 1Mbp reference genome with 100x coverage (default errors) reads in two files:
+this will generate a 1Mbp reference genome with 20x coverage (default errors) reads in two files:
 
 1. `ref.fasta` - the reference genome
 2. `reads.fasta` - the corresponding reads
