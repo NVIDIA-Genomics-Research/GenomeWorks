@@ -10,6 +10,7 @@
 
 #pragma once
 
+#include <algorithm>
 #include <utility>
 #include <vector>
 
@@ -384,4 +385,53 @@ namespace claragenomics {
 
         std::swap(read_id_and_representation_to_sketch_elements_, read_id_and_representation_to_sketch_elements_temp);
     }
-}
+
+namespace index_gpu {
+
+namespace detail {
+
+    /// @brief Takes multiple arrays of sketch elements and determines an array of representations such that the number of elements between each two representations is similar to the given value
+    ///
+    /// Function takes multiple arrays of sketch elements. Elements of each array are sorted by representation
+    /// The function generates an array of representations such that if all input arrays were sorted together the number of sketch elements
+    /// between neighboring elements would not be similar to approximate_sketch_elements_per_bucket.
+    /// The number of element in a bucket is guaranteed to be <= approximate_sketch_elements_per_bucket, unless members_with_some_representation >= approximate_sketch_elements_per_bucket,
+    /// in which case the number of elements in its bucket is guaranteed to be  <= members_with_that_representation + approximate_sketch_elements_per_bucket (this is not expect with genomes as
+    /// approximate_sketch_elements_per_bucket should be the number of elements that can fit one GPU).
+    /// All elements with the same representation are guaranteed to be in the same bucket
+    ///
+    /// Take the following three arrays and approximate_sketch_elements_per_bucket = 5:
+    /// (0 1 2 3 3 5 6 7 7 9) <- index
+    /// (1 1 2 2 4 4 6 6 9 9)
+    /// (0 0 1 5 5 5 7 8 8 8)
+    /// (1 1 1 3 3 4 5 7 9 9)
+    ///
+    /// When all three arrays are merged and sorte this give:
+    /// (0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29)
+    /// (0  0  1  1  1  1  1  1  2  2  3  3  3  4  4  5  5  5  5  6  6  7  7  7  8  8  9  9  9  9)
+    ///  ^     ^                 ^              ^     ^           ^              ^     ^
+    ///
+    /// Representation in the output array and the respective chunks would be:
+    /// 0: 0 0
+    /// 1: 1 1 1 1 1 1 <- larger the approximate_sketch_elements_per_bucket, so only one representation in this chunk
+    /// 2: 2 2 3 3 3
+    /// 4: 4 4
+    /// 5: 5 5 5 5
+    /// 6: 6 6 7 7 7
+    /// 8: 8 8
+    /// 9: 9 9 9 9
+    ///
+    /// Note that the line 1 could also be "1 1 1 1 1 1 2 2" or  "1 1 1 1 1 1 2 2 3 3 3", but not "1 1 1 1 1 1 2 2 3 3 3 4 4"
+    ///
+    /// \param arrays_of_sketch_elements multiple arrays of sketch elements in which sketch elements are sorted by representation
+    /// \param approximate_sketch_elements_per_bucket approximate number of sketch elements between two representations
+    /// \return list of representations that limit the buckets (left boundary inclusive, right exclusive)
+    std::vector<representation_t> representation_buckets(const std::vector<std::vector<representation_t>>& arrays_of_representations,
+                                                         const std::uint64_t approximate_sketch_elements_per_bucket
+                                                        );
+
+} // namespace index_gpu
+
+} // namespace detail
+
+} // namespace claragenomics

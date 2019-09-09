@@ -537,4 +537,163 @@ namespace claragenomics {
                       expected_directions_of_reads
                      );
     }
-}
+
+namespace index_gpu {
+namespace detail {
+
+    // ************ Test representation_buckets **************
+
+    TEST(TestCudamapperIndexGPU, representation_buckets_1) {
+        // approximate_sketch_elements_per_bucket = 7
+        // sample_length = 7 / 3 = 2
+        //
+        // (1 1 2 2 4 4 6 6 9 9)
+        //  ^   ^   ^   ^   ^
+        // (0 0 1 5 5 5 7 8 8 8)
+        //  ^   ^   ^   ^   ^
+        // (1 1 1 1 3 4 5 7 9 9)
+        //  ^   ^   ^   ^   ^
+        //
+        // samples_in_one_bucket = 2 * 3 = 6
+        // Sorted: 0 1 1 1 1 2 3 4 5 5 6 7 8 9 9
+        //         ^     ^     ^     ^     ^
+
+        std::vector<std::vector<representation_t>> arrays_of_representations;
+        arrays_of_representations.push_back({{1, 1, 2, 2, 4, 4, 6, 6, 9, 9}});
+        arrays_of_representations.push_back({{0, 0, 1, 5, 5, 5, 7, 8, 8, 8}});
+        arrays_of_representations.push_back({{1, 1, 1, 1, 3, 4, 5, 7, 9, 9}});
+
+        std::vector<representation_t> res = representation_buckets(arrays_of_representations, 7);
+
+        std::vector<representation_t> expected_res = {0, 1, 3, 5, 8};
+
+        ASSERT_EQ(res.size(), expected_res.size());
+        for (std::size_t i = 0; i < expected_res.size(); ++i) {
+            EXPECT_EQ(res[i], expected_res[i]) << "index: " << i;
+        }
+    }
+
+    TEST(TestCudamapperIndexGPU, representation_buckets_2) {
+        // approximate_sketch_elements_per_bucket = 5
+        // sample_length = 5 / 3 = 1
+        //
+        // (1 1 2 2 4 4 6 6 9 9)
+        //  ^ ^ ^ ^ ^ ^ ^ ^ ^ ^
+        // (0 0 1 5 5 5 7 8 8 8)
+        //  ^ ^ ^ ^ ^ ^ ^ ^ ^ ^
+        // (1 1 1 3 3 4 5 7 9 9)
+        //  ^ ^ ^ ^ ^ ^ ^ ^ ^ ^
+        //
+        // samples_in_one_bucket = 5 / 1 = 5
+        // Sorted: 0 0 1 1 1 1 1 1 2 2 3 3 4 4 4 5 5 5 5 6 6 7 7 8 8 8 9 9 9 9
+        //         ^         ^         ^         ^         ^         ^
+
+        std::vector<std::vector<representation_t>> arrays_of_representations;
+        arrays_of_representations.push_back({{1, 1, 2, 2, 4, 4, 6, 6, 9, 9}});
+        arrays_of_representations.push_back({{0, 0, 1, 5, 5, 5, 7, 8, 8, 8}});
+        arrays_of_representations.push_back({{1, 1, 1, 3, 3, 4, 5, 7, 9, 9}});
+
+        std::vector<representation_t> res = representation_buckets(arrays_of_representations, 5);
+
+        std::vector<representation_t> expected_res = {0, 1, 3, 5, 6, 8};
+
+        ASSERT_EQ(res.size(), expected_res.size());
+        for (std::size_t i = 0; i < expected_res.size(); ++i) {
+            EXPECT_EQ(res[i], expected_res[i]) << "index: " << i;
+        }
+    }
+
+
+    TEST(TestCudamapperIndexGPU, representation_buckets_3) {
+        // approximate_sketch_elements_per_bucket = 3
+        // sample_length = 3 / 3 = 1
+        //
+        // (1 1 2 2 4 4 6 6 9 9)
+        //  ^ ^ ^ ^ ^ ^ ^ ^ ^ ^
+        // (0 0 1 5 5 5 7 8 8 8)
+        //  ^ ^ ^ ^ ^ ^ ^ ^ ^ ^
+        // (1 1 1 3 3 4 5 7 9 9)
+        //  ^ ^ ^ ^ ^ ^ ^ ^ ^ ^
+        //
+        // samples_in_one_bucket = 3 / 1 = 3
+        // Sorted: 0 0 1 1 1 1 1 1 2 2 3 3 4 4 4 5 5 5 5 6 6 7 7 8 8 8 9 9 9 9
+        //         ^     ^     ^     ^     ^     ^     ^     ^     ^     ^
+
+        std::vector<std::vector<representation_t>> arrays_of_representations;
+        arrays_of_representations.push_back({{1, 1, 2, 2, 4, 4, 6, 6, 9, 9}});
+        arrays_of_representations.push_back({{0, 0, 1, 5, 5, 5, 7, 8, 8, 8}});
+        arrays_of_representations.push_back({{1, 1, 1, 3, 3, 4, 5, 7, 9, 9}});
+
+        std::vector<representation_t> res = representation_buckets(arrays_of_representations, 3);
+
+        std::vector<representation_t> expected_res = {0, 1, 2, 4, 5, 7, 8, 9};
+
+        ASSERT_EQ(res.size(), expected_res.size());
+        for (std::size_t i = 0; i < expected_res.size(); ++i) {
+            EXPECT_EQ(res[i], expected_res[i]) << "index: " << i;
+        }
+    }
+
+    TEST(TestCudamapperIndexGPU, representation_buckets_4) {
+        // approximate_sketch_elements_per_bucket = 9
+        // sample_length = 9 / 3 = 3
+        //
+        // (1 1 2 2 4 4 6 6 9 9)
+        //  ^     ^     ^     ^
+        // (0 0 1 5 5 5 7 8 8 8)
+        //  ^     ^     ^     ^
+        // (1 1 1 3 3 4 5 7 9 9)
+        //  ^     ^     ^     ^
+        //
+        // samples_in_one_bucket = 9 / 3 = 3
+        // Sorted: 0 1 1 2 3 5 5 6 7 8 9 9
+        //         ^     ^     ^     ^
+
+        std::vector<std::vector<representation_t>> arrays_of_representations;
+        arrays_of_representations.push_back({{1, 1, 2, 2, 4, 4, 6, 6, 9, 9}});
+        arrays_of_representations.push_back({{0, 0, 1, 5, 5, 5, 7, 8, 8, 8}});
+        arrays_of_representations.push_back({{1, 1, 1, 3, 3, 4, 5, 7, 9, 9}});
+
+        std::vector<representation_t> res = representation_buckets(arrays_of_representations, 9);
+
+        std::vector<representation_t> expected_res = {0, 2, 5, 8};
+
+        ASSERT_EQ(res.size(), expected_res.size());
+        for (std::size_t i = 0; i < expected_res.size(); ++i) {
+            EXPECT_EQ(res[i], expected_res[i]) << "index: " << i;
+        }
+    }
+
+    TEST(TestCudamapperIndexGPU, representation_buckets_5) {
+        // approximate_sketch_elements_per_bucket = 9
+        // sample_length = 9 / 3 = 3
+        //
+        // (1 1 2)
+        //  ^
+        // (0 0 1)
+        //  ^
+        // (1 1 1)
+        //  ^
+        //
+        // samples_in_one_bucket = 9 / 3 = 3
+        // Sorted: 0 1 1
+        //         ^
+
+        std::vector<std::vector<representation_t>> arrays_of_representations;
+        arrays_of_representations.push_back({{1, 1, 2}});
+        arrays_of_representations.push_back({{0, 0, 1}});
+        arrays_of_representations.push_back({{1, 1, 1}});
+
+        std::vector<representation_t> res = representation_buckets(arrays_of_representations, 9);
+
+        std::vector<representation_t> expected_res = {0};
+
+        ASSERT_EQ(res.size(), expected_res.size());
+        for (std::size_t i = 0; i < expected_res.size(); ++i) {
+            EXPECT_EQ(res[i], expected_res[i]) << "index: " << i;
+        }
+    }
+
+} // namespace index_gpu
+} // namespace detail
+} // namespace claragenomics
