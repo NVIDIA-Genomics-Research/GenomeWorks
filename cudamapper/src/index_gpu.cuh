@@ -279,7 +279,7 @@ namespace claragenomics {
             // free these arrays as they are not needed anymore
             CGA_LOG_INFO("Deallocating {} bytes from representations_compressed_d", representations_compressed_d.size() * sizeof(decltype(representations_compressed_d)::value_type));
             representations_compressed_d.free();
-            CGA_LOG_INFO("Deallocating {} bytes from rest_compressed_d", rest_compressed_d.size() * sizeof(decltype(rest_compressed_d)::value_type));
+            CGA_LOG_INFO("Deallocating {} bytes from rest_compressed_d", rest_compressed_d.size() * sizeof(typename decltype(rest_compressed_d)::value_type));
             rest_compressed_d.free();
 
             // now create the new one:
