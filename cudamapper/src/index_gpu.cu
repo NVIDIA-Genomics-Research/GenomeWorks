@@ -114,6 +114,37 @@ namespace detail {
         return representation_indices;
     }
 
+    std::vector<std::vector<std::pair<std::size_t, std::size_t>>> generate_bucket_boundary_indices(const std::vector<std::vector<representation_t>>& arrays_of_representations,
+                                                                                                   const std::vector<representation_t>& representation_buckets
+                                                                                                  )
+    {
+        const std::size_t number_of_arrays = arrays_of_representations.size();
+        const std::size_t number_of_buckets = representation_buckets.size();
+
+        std::vector<std::vector<std::pair<std::size_t, std::size_t>>> bucket_boundary_indices(number_of_buckets);
+
+        // all buckets start from 0
+        std::vector<std::size_t> first_index_per_array(number_of_arrays, 0);
+        // treat last bucket separately as its last representation is not saved in representation_buckets
+        for (std::size_t bucket_index = 0; bucket_index < number_of_buckets - 1; ++bucket_index) {
+            std::vector<std::size_t> last_index_per_array = generate_representation_indices(arrays_of_representations, representation_buckets[bucket_index + 1]);
+            for (std::size_t array_index = 0; array_index < number_of_arrays; ++array_index) {
+                bucket_boundary_indices[bucket_index].emplace_back(first_index_per_array[array_index],
+                                                                   last_index_per_array[array_index]
+                                                                  );
+            }
+            first_index_per_array = std::move(last_index_per_array);
+        }
+        // now deal with the last bucket (last bucket always goes up to the last element in the array)
+        for (std::size_t array_index = 0; array_index < number_of_arrays; ++array_index) {
+            bucket_boundary_indices.back().emplace_back(first_index_per_array[array_index],
+                                                        arrays_of_representations[array_index].size()
+                                                       );
+        }
+
+        return bucket_boundary_indices;
+    }
+
 } // namespace index_gpu
 
 } // namespace detail

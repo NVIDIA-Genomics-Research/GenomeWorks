@@ -738,6 +738,54 @@ namespace detail {
         EXPECT_EQ(res[2], 12u);
     }
 
+    // ************ Test generate_bucket_boundary_indices **************
+
+    void test_generate_bucket_boundary_indices(const std::vector<std::vector<representation_t>>& arrays_of_representations,
+                                               const std::vector<representation_t>& representation_buckets,
+                                               const std::vector<std::vector<std::pair<std::size_t, std::size_t>>>& expected_bucket_boundary_indices
+                                              )
+    {
+        const std::size_t number_of_arrays = arrays_of_representations.size();
+        const std::size_t number_of_buckets = representation_buckets.size();
+
+        const std::vector<std::vector<std::pair<std::size_t, std::size_t>>> bucket_boundary_indices = generate_bucket_boundary_indices(arrays_of_representations, representation_buckets);
+        ASSERT_EQ(bucket_boundary_indices.size(), number_of_buckets);
+
+        for (std::size_t bucket_index = 0; bucket_index < number_of_buckets; ++bucket_index) {
+            ASSERT_EQ(bucket_boundary_indices[bucket_index].size(), number_of_arrays) << "bucket: " << bucket_index;
+
+            for (std::size_t array_index = 0; array_index < number_of_arrays; ++array_index) {
+                EXPECT_EQ(bucket_boundary_indices[bucket_index][array_index].first,
+                          expected_bucket_boundary_indices[bucket_index][array_index].first) << "bucket: " << bucket_index << ", array: " << array_index;
+                EXPECT_EQ(bucket_boundary_indices[bucket_index][array_index].second,
+                          expected_bucket_boundary_indices[bucket_index][array_index].second) << "bucket: " << bucket_index << ", array: " << array_index;
+            }
+
+        }
+    }
+
+    TEST(TestCudamapperIndexGPU, generate_bucket_boundary_indices) {
+        std::vector<std::vector<representation_t>> arrays_of_representations;
+        //                                    0  1  2  3  4  5  6  7  8  9 10 11 12 13
+        arrays_of_representations.push_back({{1, 1, 2, 2, 2, 3, 3, 3, 4, 6, 7, 8, 9, 9}});
+        arrays_of_representations.push_back({{0, 0, 0, 3, 3, 5, 5, 5, 6, 7, 7}});
+        arrays_of_representations.push_back({{6, 7, 7, 7, 7, 8, 8, 8, 9, 9, 9, 9}});
+
+        std::vector<representation_t> representation_buckets = {0, 5, 7, 9};
+
+        std::vector<std::vector<std::pair<std::size_t, std::size_t>>> expected_bucket_boundary_indices;
+        expected_bucket_boundary_indices.push_back({{ 0, 9}, { 0, 5}, {0, 0}});
+        expected_bucket_boundary_indices.push_back({{ 9,10}, { 5, 9}, {0, 1}});
+        expected_bucket_boundary_indices.push_back({{10,12}, { 9,11}, {1, 8}});
+        expected_bucket_boundary_indices.push_back({{12,14}, {11,11}, {8,12}});
+
+        test_generate_bucket_boundary_indices(arrays_of_representations,
+                                              representation_buckets,
+                                              expected_bucket_boundary_indices
+                                             );
+
+    }
+
 } // namespace index_gpu
 } // namespace detail
 } // namespace claragenomics
