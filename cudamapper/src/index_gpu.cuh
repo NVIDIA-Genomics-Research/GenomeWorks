@@ -423,12 +423,22 @@ namespace detail {
     ///
     /// Note that the line 1 could also be "1 1 1 1 1 1 2 2" or  "1 1 1 1 1 1 2 2 3 3 3", but not "1 1 1 1 1 1 2 2 3 3 3 4 4"
     ///
-    /// \param arrays_of_sketch_elements multiple arrays of sketch elements in which sketch elements are sorted by representation
+    /// \param arrays_of_sketch_elements multiple arrays of sketch element representations in which elements are sorted by representation
     /// \param approximate_sketch_elements_per_bucket approximate number of sketch elements between two representations
     /// \return list of representations that limit the buckets (left boundary inclusive, right exclusive)
-    std::vector<representation_t> representation_buckets(const std::vector<std::vector<representation_t>>& arrays_of_representations,
-                                                         const std::uint64_t approximate_sketch_elements_per_bucket
-                                                        );
+    std::vector<representation_t> generate_representation_buckets(const std::vector<std::vector<representation_t>>& arrays_of_representations,
+                                                                  const std::uint64_t approximate_sketch_elements_per_bucket
+                                                                 );
+
+    /// \brief Gets the index of first occurrence of the given representation in each array
+    ///
+    /// \param arrays_of_representations multiple arrays of sketch element representations in which elements are sorted by representation
+    /// \param representation representation to look for
+    /// \return for each array in arrays_of_representations contains the index for the first element greater or equal to representation, or the index of past-the-last element if all elements have a smaller representation
+   std::vector<std::size_t> generate_representation_indices(const std::vector<std::vector<representation_t>>& arrays_of_representations,
+                                                            const representation_t representation
+                                                           );
+
 
 } // namespace index_gpu
 

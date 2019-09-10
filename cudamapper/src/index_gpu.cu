@@ -16,9 +16,9 @@ namespace index_gpu {
 
 namespace detail {
 
-    std::vector<representation_t> representation_buckets(const std::vector<std::vector<representation_t>>& arrays_of_representations,
-                                                         const std::uint64_t approximate_sketch_elements_per_bucket
-                                                        )
+    std::vector<representation_t> generate_representation_buckets(const std::vector<std::vector<representation_t>>& arrays_of_representations,
+                                                                  const std::uint64_t approximate_sketch_elements_per_bucket
+                                                                 )
     {
         // The function samples every approximate_sketch_elements_per_bucket/number_of_arrays element of each array and sorts them by representation.
         // For the following input and approximate_sketch_elements_per_bucket = 7 this means sampling every second element:
@@ -97,6 +97,22 @@ namespace detail {
         return representation_buckets;
     }
 
+    std::vector<std::size_t> generate_representation_indices(const std::vector<std::vector<representation_t>>& arrays_of_representations,
+                                                             const representation_t representation
+                                                            )
+    {
+        std::vector<std::size_t> representation_indices;
+
+        for (const auto& one_array_of_representations : arrays_of_representations) {
+            auto representation_iterator = std::lower_bound(std::begin(one_array_of_representations),
+                                                            std::end(one_array_of_representations),
+                                                            representation
+                                                           );
+            representation_indices.push_back(representation_iterator - std::cbegin(one_array_of_representations));
+        }
+
+        return representation_indices;
+    }
 
 } // namespace index_gpu
 

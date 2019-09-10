@@ -563,7 +563,7 @@ namespace detail {
         arrays_of_representations.push_back({{0, 0, 1, 5, 5, 5, 7, 8, 8, 8}});
         arrays_of_representations.push_back({{1, 1, 1, 1, 3, 4, 5, 7, 9, 9}});
 
-        std::vector<representation_t> res = representation_buckets(arrays_of_representations, 7);
+        std::vector<representation_t> res = generate_representation_buckets(arrays_of_representations, 7);
 
         std::vector<representation_t> expected_res = {0, 1, 3, 5, 8};
 
@@ -593,7 +593,7 @@ namespace detail {
         arrays_of_representations.push_back({{0, 0, 1, 5, 5, 5, 7, 8, 8, 8}});
         arrays_of_representations.push_back({{1, 1, 1, 3, 3, 4, 5, 7, 9, 9}});
 
-        std::vector<representation_t> res = representation_buckets(arrays_of_representations, 5);
+        std::vector<representation_t> res = generate_representation_buckets(arrays_of_representations, 5);
 
         std::vector<representation_t> expected_res = {0, 1, 3, 5, 6, 8};
 
@@ -624,7 +624,7 @@ namespace detail {
         arrays_of_representations.push_back({{0, 0, 1, 5, 5, 5, 7, 8, 8, 8}});
         arrays_of_representations.push_back({{1, 1, 1, 3, 3, 4, 5, 7, 9, 9}});
 
-        std::vector<representation_t> res = representation_buckets(arrays_of_representations, 3);
+        std::vector<representation_t> res = generate_representation_buckets(arrays_of_representations, 3);
 
         std::vector<representation_t> expected_res = {0, 1, 2, 4, 5, 7, 8, 9};
 
@@ -654,7 +654,7 @@ namespace detail {
         arrays_of_representations.push_back({{0, 0, 1, 5, 5, 5, 7, 8, 8, 8}});
         arrays_of_representations.push_back({{1, 1, 1, 3, 3, 4, 5, 7, 9, 9}});
 
-        std::vector<representation_t> res = representation_buckets(arrays_of_representations, 9);
+        std::vector<representation_t> res = generate_representation_buckets(arrays_of_representations, 9);
 
         std::vector<representation_t> expected_res = {0, 2, 5, 8};
 
@@ -684,7 +684,7 @@ namespace detail {
         arrays_of_representations.push_back({{0, 0, 1}});
         arrays_of_representations.push_back({{1, 1, 1}});
 
-        std::vector<representation_t> res = representation_buckets(arrays_of_representations, 9);
+        std::vector<representation_t> res = generate_representation_buckets(arrays_of_representations, 9);
 
         std::vector<representation_t> expected_res = {0};
 
@@ -692,6 +692,50 @@ namespace detail {
         for (std::size_t i = 0; i < expected_res.size(); ++i) {
             EXPECT_EQ(res[i], expected_res[i]) << "index: " << i;
         }
+    }
+
+    // ************ Test representation_iterators **************
+    TEST(TestCudamapperIndexGPU, representation_iterators) {
+        std::vector<std::vector<representation_t>> arrays_of_representations;
+        //                                    0  1  2  3  4  5  6  7  8  9 10 11 12 13
+        arrays_of_representations.push_back({{1, 1, 2, 2, 2, 3, 3, 3, 4, 6, 7, 8, 9, 9}});
+        arrays_of_representations.push_back({{0, 0, 0, 3, 3, 5, 5, 5, 6, 7, 7}});
+        arrays_of_representations.push_back({{6, 7, 7, 7, 7, 8, 8, 8, 9, 9, 9, 9}});
+
+        auto res = generate_representation_indices(arrays_of_representations, 0);
+        EXPECT_EQ(res[0], 0u);
+        EXPECT_EQ(res[1], 0u);
+        EXPECT_EQ(res[2], 0u);
+
+        res = generate_representation_indices(arrays_of_representations, 1);
+        EXPECT_EQ(res[0], 0u);
+        EXPECT_EQ(res[1], 3u);
+        EXPECT_EQ(res[2], 0u);
+
+        res = generate_representation_indices(arrays_of_representations, 6);
+        EXPECT_EQ(res[0], 9u);
+        EXPECT_EQ(res[1], 8u);
+        EXPECT_EQ(res[2], 0u);
+
+        res = generate_representation_indices(arrays_of_representations, 7);
+        EXPECT_EQ(res[0], 10u);
+        EXPECT_EQ(res[1], 9u);
+        EXPECT_EQ(res[2], 1u);
+
+        res = generate_representation_indices(arrays_of_representations, 8);
+        EXPECT_EQ(res[0], 11u);
+        EXPECT_EQ(res[1], 11u);
+        EXPECT_EQ(res[2], 5u);
+
+        res = generate_representation_indices(arrays_of_representations, 9);
+        EXPECT_EQ(res[0], 12u);
+        EXPECT_EQ(res[1], 11u);
+        EXPECT_EQ(res[2], 8u);
+
+        res = generate_representation_indices(arrays_of_representations, 10);
+        EXPECT_EQ(res[0], 14u);
+        EXPECT_EQ(res[1], 11u);
+        EXPECT_EQ(res[2], 12u);
     }
 
 } // namespace index_gpu
