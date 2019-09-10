@@ -16,7 +16,7 @@
 #include <claragenomics/logging/logging.hpp>
 
 #include <cuda_runtime_api.h>
-#include <stdexcept>
+#include <cassert>
 
 /// \ingroup cudautils
 /// \{
@@ -43,24 +43,30 @@ namespace cudautils
 /// \param code The CUDA status code of the function being asserted
 /// \param file Filename of the calling function
 /// \param line File line number of the calling function
-/// \param abort If true, hard-exit on CUDA error
-inline void gpu_assert(cudaError_t code, const char* file, int line, bool abort = false)
+inline void gpu_assert(cudaError_t code, const char* file, int line)
 {
+#ifdef CGA_DEVICE_SYNCHRONIZE
+    // This device synchronize forces the most recent CUDA call to fully
+    // complete, increasing the chance of catching the CUDA error near the
+    // offending function. Only run if existing code is success to avoid
+    // potentially overwriting previous error code.
+    if (code == cudaSuccess)
+    {
+        code = cudaDeviceSynchronize();
+    }
+#endif
+
     if (code != cudaSuccess)
     {
         std::string err = "GPU Error:: " +
                           std::string(cudaGetErrorString(code)) +
                           " " + std::string(file) +
                           " " + std::to_string(line);
-        if (abort)
-        {
-            CGA_LOG_ERROR("{}\n", err);
-            std::abort();
-        }
-        else
-        {
-            throw std::runtime_error(err);
-        }
+        CGA_LOG_ERROR("{}\n", err);
+        // In Debug mode, this assert will cause a debugger trap
+        // which is beneficial when debugging errors.
+        assert(false);
+        std::abort();
     }
 }
 

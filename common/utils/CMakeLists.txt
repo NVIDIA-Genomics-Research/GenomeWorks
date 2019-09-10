@@ -21,6 +21,13 @@ target_include_directories(utils
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 )
 
+if (cga_device_synchronize_kernels)
+target_compile_definitions(utils
+    INTERFACE
+    CGA_DEVICE_SYNCHRONIZE)
+endif()
+
+
 install(TARGETS utils
     EXPORT utils
     DESTINATION lib
