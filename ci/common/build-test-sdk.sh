@@ -36,24 +36,23 @@ logger "Install package..."
 DISTRO=$(awk -F= '/^NAME/{print $2}' /etc/os-release)
 DISTRO=${DISTRO//\"/}
 
-PACKAGE_DIR=${LOCAL_BUILD_ROOT}/package
+PACKAGE_DIR=${LOCAL_BUILD_DIR}/cga-package
 mkdir -p $PACKAGE_DIR
 if [ "$DISTRO" == "Ubuntu" ]; then
     dpkg-deb -X ${LOCAL_BUILD_DIR}/*.deb $PACKAGE_DIR
-elif [ "$DISTRO" == "Ubuntu" ]; then
-    rpm --prefix=$PACKAGE_DIR ${LOCAL_BUILD_DIR}/*.rpm
+elif [ "$DISTRO" == "CentOS Linux" ]; then
+    rpm2cpio ${LOCAL_BUILD_DIR}/*.rpm | cpio -idmv
+    mv usr/ $PACKAGE_DIR/
 else
     echo "Unknown OS found - ${DISTRO}."
     exit 1
 fi
 
-set -x
 logger "Creating symlink to installed package..."
 UNPACK_ROOT=$(readlink -f "$PACKAGE_DIR/usr/local")
 CGA_SYMLINK_PATH="$UNPACK_ROOT/ClaraGenomicsAnalysis"
 ln -s $UNPACK_ROOT/ClaraGenomicsAnalysis-* $CGA_SYMLINK_PATH
 CGA_LIB_DIR=${CGA_SYMLINK_PATH}/lib
-ls ${CGA_LIB_DIR}
 
 # Run tests
 if [ "$GPU_TEST" == '1' ]; then
