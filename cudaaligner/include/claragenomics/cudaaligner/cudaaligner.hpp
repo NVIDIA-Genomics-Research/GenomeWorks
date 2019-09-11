@@ -35,7 +35,7 @@ enum StatusType
 /// AlignmentType - Enum for storing type of alignment.
 enum AlignmentType
 {
-    global = 0,
+    global_alignment = 0,
     unset
 };
 

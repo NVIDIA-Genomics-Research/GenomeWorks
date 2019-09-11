@@ -77,10 +77,11 @@ extensions = [
         include_dirs=[
             "/usr/local/cuda/include",
             os.path.join(cmake_root_dir, "cudapoa/include"),
+            os.path.join(cmake_root_dir, "cudaaligner/include"),
         ],
         library_dirs=["/usr/local/cuda/lib64", cmake_proj.get_installed_path("lib")],
         runtime_library_dirs=["/usr/local/cuda/lib64", cmake_proj.get_installed_path("lib")],
-        libraries=["cudapoa", "cudart"],
+        libraries=["cudapoa", "cudaaligner", "cudart"],
         language="c++",
         extra_compile_args=["-std=c++14"],
     )

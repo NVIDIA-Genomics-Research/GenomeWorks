@@ -102,7 +102,7 @@ StatusType AlignerGlobal::add_alignment(const char* query, int32_t query_length,
                                                                                query_length,
                                                                                target,
                                                                                target_length);
-    alignment->set_alignment_type(AlignmentType::global);
+    alignment->set_alignment_type(AlignmentType::global_alignment);
     alignments_.push_back(alignment);
 
     return StatusType::success;

@@ -16,7 +16,7 @@
 from libcpp.pair cimport pair
 from libcpp.string cimport string
 from libcpp.vector cimport vector
-from libcpp.stdint cimport int32_t
+from libc.stdint cimport int32_t
 from libcpp.memory cimport unique_ptr, shared_ptr
 
 from claragenomics.bindings.cuda_runtime_api cimport _Stream
@@ -35,7 +35,7 @@ cdef extern from "claragenomics/cudaaligner/cudaaligner.hpp" namespace "claragen
         generic_error
 
     cdef enum AlignmentType:
-        global = 0
+        global_alignment = 0
         unset
 
     cdef enum AlignmentState:
@@ -60,7 +60,7 @@ cdef extern from "claragenomics/cudaaligner/alignment.hpp" namespace "claragenom
         FormattedAlignment format_alignment() except +
 
 cdef extern from "claragenomics/cudaaligner/aligner.hpp" namespace "claragenomics::cudaaligner":
-    cdef class Aligner:
+    cdef cppclass Aligner:
         StatusType align_all() except +
         StatusType sync_alignments() except +
         StatusType add_alignment(const char*, int32_t, const char*, int32_t) except +
