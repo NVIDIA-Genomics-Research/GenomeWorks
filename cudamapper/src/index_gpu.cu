@@ -12,9 +12,9 @@
 
 namespace claragenomics {
 
-namespace index_gpu {
+namespace details {
 
-namespace detail {
+namespace index_gpu {
 
     std::vector<representation_t> generate_representation_buckets(const std::vector<std::vector<representation_t>>& arrays_of_representations,
                                                                   const std::uint64_t approximate_sketch_elements_per_bucket
@@ -76,21 +76,32 @@ namespace detail {
 
         const std::uint64_t sample_length = approximate_sketch_elements_per_bucket / arrays_of_representations.size();
 
+        if (sample_length == 0) {
+            throw approximate_sketch_elements_per_bucket_too_small("approximate_sketch_elements_per_bucket is " + std::to_string(approximate_sketch_elements_per_bucket) +
+                                                                   " but should be at least " + std::to_string(arrays_of_representations.size()));
+        }
+
+        // sample every sample_length representation
         for (std::size_t array_index = 0; array_index < arrays_of_representations.size(); ++array_index) {
             for (std::size_t sample_index = 0; sample_index < arrays_of_representations[array_index].size(); sample_index += sample_length) {
                 sampled_representations.push_back(arrays_of_representations[array_index][sample_index]);
             }
         }
 
+        // The number of samples whose sketch elements fit one bucket on the gpu when grouped together
         const std::uint64_t samples_in_one_bucket = approximate_sketch_elements_per_bucket / sample_length;
         std::vector<representation_t> representation_buckets;
 
         std::sort(std::begin(sampled_representations), std::end(sampled_representations));
 
+        // Merge every samples_in_one_bucket samples into one bucket, skipping samples that have the same representation as the previosuly added sample
+        // in order to avoid having representations split across multiple buckets
         representation_buckets.push_back(sampled_representations[0]);
         for (std::size_t sample_index = samples_in_one_bucket; sample_index < sampled_representations.size(); sample_index += samples_in_one_bucket) {
             if(sampled_representations[sample_index] != representation_buckets.back()) {
                 representation_buckets.push_back(sampled_representations[sample_index]);
+            } else {
+                CGA_LOG_INFO("Representation {} does not fit one bucket", sampled_representations[sample_index]);
             }
         }
 
@@ -147,6 +158,6 @@ namespace detail {
 
 } // namespace index_gpu
 
-} // namespace detail
+} // namespace details
 
 } // namespace claragenomics

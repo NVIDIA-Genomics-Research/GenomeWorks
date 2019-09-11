@@ -538,8 +538,9 @@ namespace claragenomics {
                      );
     }
 
+namespace details {
+
 namespace index_gpu {
-namespace detail {
 
     // ************ Test representation_buckets **************
 
@@ -694,6 +695,21 @@ namespace detail {
         }
     }
 
+    TEST(TestCudamapperIndexGPU, representation_buckets_exception) {
+        // approximate_sketch_elements_per_bucket is smaller than the number of arrays -> function throws
+
+        std::vector<std::vector<representation_t>> arrays_of_representations;
+        arrays_of_representations.push_back({{1, 1, 2}});
+        arrays_of_representations.push_back({{0, 0, 1}});
+        arrays_of_representations.push_back({{1, 1, 1}});
+
+        EXPECT_NO_THROW(generate_representation_buckets(arrays_of_representations, 3));
+
+        EXPECT_THROW(generate_representation_buckets(arrays_of_representations, 2),
+                                                     approximate_sketch_elements_per_bucket_too_small
+                                                    );
+    }
+
     // ************ Test representation_iterators **************
     TEST(TestCudamapperIndexGPU, representation_iterators) {
         std::vector<std::vector<representation_t>> arrays_of_representations;
@@ -783,9 +799,174 @@ namespace detail {
                                               representation_buckets,
                                               expected_bucket_boundary_indices
                                              );
-
     }
 
+    // ************ Test merge_sketch_element_arrays **************
+
+    template <typename ReadidPositionDirection>
+    void test_merge_sketch_element_arrays(const std::vector<std::vector<representation_t>>& arrays_of_representations,
+                                          const std::vector<std::vector<ReadidPositionDirection>>& arrays_of_readids_positions_directions,
+                                          const std::uint64_t available_device_memory_bytes,
+                                          const std::vector<representation_t>& expected_merged_representations,
+                                          const std::vector<ReadidPositionDirection>& expected_merged_readids_positions_directions
+                                        )
+    {
+        std::vector<representation_t> generated_merged_representations;
+        std::vector<ReadidPositionDirection> generated_merged_readids_positions_directions;
+
+        merge_sketch_element_arrays(arrays_of_representations,
+                                    arrays_of_readids_positions_directions,
+                                    available_device_memory_bytes,
+                                    generated_merged_representations,
+                                    generated_merged_readids_positions_directions
+                                   );
+
+        ASSERT_EQ(generated_merged_representations.size(), expected_merged_representations.size()) << "available_memory: " << available_device_memory_bytes;
+        ASSERT_EQ(generated_merged_readids_positions_directions.size(), expected_merged_readids_positions_directions.size()) << "available_memory: " << available_device_memory_bytes;
+        ASSERT_EQ(generated_merged_representations.size(), generated_merged_readids_positions_directions.size()) << "available_memory: " << available_device_memory_bytes;
+
+        for (std::size_t i = 0; i < expected_merged_representations.size(); ++i) {
+            ASSERT_EQ(generated_merged_representations[i], expected_merged_representations[i]) << "available_memory: " << available_device_memory_bytes << ", index: " << i;
+            ASSERT_EQ(generated_merged_readids_positions_directions[i].read_id_, expected_merged_readids_positions_directions[i].read_id_) << "available_memory: " << available_device_memory_bytes << ", index: " << i;
+            ASSERT_EQ(generated_merged_readids_positions_directions[i].position_in_read_, expected_merged_readids_positions_directions[i].position_in_read_) << "available_memory: " << available_device_memory_bytes << ", index: " << i;
+            ASSERT_EQ(generated_merged_readids_positions_directions[i].direction_, expected_merged_readids_positions_directions[i].direction_) << "available_memory: " << available_device_memory_bytes << ", index: " << i;
+        }
+    }
+
+    TEST(TestCudamapperIndexGPU, merge_sketch_element_arrays) {
+        std::vector<std::vector<representation_t>> arrays_of_representations;
+        //                                    0  1  2  3  4  5  6  7  8  9 10 11 12 13
+        arrays_of_representations.push_back({{1, 1, 2, 2, 2, 3, 3, 3, 4, 6, 7, 8, 9, 9}});
+        arrays_of_representations.push_back({{0, 0, 0, 3, 3, 5, 5, 5, 6, 7, 7}});
+        arrays_of_representations.push_back({{6, 7, 7, 7, 7, 8, 8, 8, 9, 9, 9, 9}});
+
+        std::vector<std::vector<Minimizer::ReadidPositionDirection>> arrays_of_readids_positions_directions;
+        arrays_of_readids_positions_directions.push_back({{0, 1, 1}, // 1
+                                                          {0, 2, 0}, // 1
+                                                          {4, 7, 1}, // 2
+                                                          {5, 5, 1}, // 2
+                                                          {6, 9, 1}, // 2
+                                                          {1, 2, 0}, // 3
+                                                          {2, 8, 1}, // 3
+                                                          {4, 6, 1}, // 3
+                                                          {5, 8, 1}, // 4
+                                                          {3, 2, 0}, // 6
+                                                          {8, 1, 0}, // 7
+                                                          {0, 4, 1}, // 8
+                                                          {2, 7, 0}, // 9
+                                                          {2, 9, 0}, // 9
+                                                         }
+                                                        );
+        arrays_of_readids_positions_directions.push_back({{10, 7, 0}, // 0
+                                                          {10, 9, 0}, // 0
+                                                          {12, 2, 1}, // 0
+                                                          {13, 4, 1}, // 3
+                                                          {15, 1, 1}, // 3
+                                                          {12, 4, 1}, // 5
+                                                          {13, 3, 0}, // 5
+                                                          {13, 7, 0}, // 5
+                                                          {14, 8, 1}, // 6
+                                                          {15, 6, 1}, // 7
+                                                          {15, 7, 0}, // 7
+                                                         }
+                                                        );
+        arrays_of_readids_positions_directions.push_back({{25, 5, 0}, // 6
+                                                          {26, 7, 0}, // 7
+                                                          {26, 9, 1}, // 7
+                                                          {27, 1, 1}, // 7
+                                                          {27, 2, 1}, // 7
+                                                          {20, 3, 1}, // 8
+                                                          {20, 5, 0}, // 8
+                                                          {20, 7, 1}, // 8
+                                                          {20, 2, 0}, // 9
+                                                          {20, 4, 0}, // 9
+                                                          {20, 6, 1}, // 9
+                                                          {20, 8, 1}, // 9
+                                                         }
+                                                        );
+
+        std::vector<representation_t> expected_merged_representations = {0, 0, 0, 1, 1, 2, 2, 2, 3, 3,
+                                                                         3, 3, 3, 4, 5, 5, 5, 6, 6, 6,
+                                                                         7, 7, 7, 7, 7, 7, 7, 8, 8, 8,
+                                                                         8, 9, 9, 9, 9, 9, 9};
+        std::vector<Minimizer::ReadidPositionDirection> expected_merged_readids_positions_directions;
+        expected_merged_readids_positions_directions.push_back({10, 7, 0}); // 0
+        expected_merged_readids_positions_directions.push_back({10, 9, 0}); // 0
+        expected_merged_readids_positions_directions.push_back({12, 2, 1}); // 0
+        expected_merged_readids_positions_directions.push_back({ 0, 1, 1}); // 1
+        expected_merged_readids_positions_directions.push_back({ 0, 2, 0}); // 1
+        expected_merged_readids_positions_directions.push_back({ 4, 7, 1}); // 2
+        expected_merged_readids_positions_directions.push_back({ 5, 5, 1}); // 2
+        expected_merged_readids_positions_directions.push_back({ 6, 9, 1}); // 2
+        expected_merged_readids_positions_directions.push_back({ 1, 2, 0}); // 3
+        expected_merged_readids_positions_directions.push_back({ 2, 8, 1}); // 3
+        expected_merged_readids_positions_directions.push_back({ 4, 6, 1}); // 3
+        expected_merged_readids_positions_directions.push_back({13, 4, 1}); // 3
+        expected_merged_readids_positions_directions.push_back({15, 1, 1}); // 3
+        expected_merged_readids_positions_directions.push_back({ 5, 8, 1}); // 4
+        expected_merged_readids_positions_directions.push_back({12, 4, 1}); // 5
+        expected_merged_readids_positions_directions.push_back({13, 3, 0}); // 5
+        expected_merged_readids_positions_directions.push_back({13, 7, 0}); // 5
+        expected_merged_readids_positions_directions.push_back({ 3, 2, 0}); // 6
+        expected_merged_readids_positions_directions.push_back({14, 8, 1}); // 6
+        expected_merged_readids_positions_directions.push_back({25, 5, 0}); // 6
+        expected_merged_readids_positions_directions.push_back({ 8, 1, 0}); // 7
+        expected_merged_readids_positions_directions.push_back({15, 6, 1}); // 7
+        expected_merged_readids_positions_directions.push_back({15, 7, 0}); // 7
+        expected_merged_readids_positions_directions.push_back({26, 7, 0}); // 7
+        expected_merged_readids_positions_directions.push_back({26, 9, 1}); // 7
+        expected_merged_readids_positions_directions.push_back({27, 1, 1}); // 7
+        expected_merged_readids_positions_directions.push_back({27, 2, 1}); // 7
+        expected_merged_readids_positions_directions.push_back({ 0, 4, 1}); // 8
+        expected_merged_readids_positions_directions.push_back({20, 3, 1}); // 8
+        expected_merged_readids_positions_directions.push_back({20, 5, 0}); // 8
+        expected_merged_readids_positions_directions.push_back({20, 7, 1}); // 8
+        expected_merged_readids_positions_directions.push_back({ 2, 7, 0}); // 9
+        expected_merged_readids_positions_directions.push_back({ 2, 9, 0}); // 9
+        expected_merged_readids_positions_directions.push_back({20, 2, 0}); // 9
+        expected_merged_readids_positions_directions.push_back({20, 4, 0}); // 9
+        expected_merged_readids_positions_directions.push_back({20, 6, 1}); // 9
+        expected_merged_readids_positions_directions.push_back({20, 8, 1}); // 9
+
+        // all elements fit in one sort call
+        test_merge_sketch_element_arrays(arrays_of_representations,
+                                         arrays_of_readids_positions_directions,
+                                         10000000,
+                                         expected_merged_representations,
+                                         expected_merged_readids_positions_directions
+                                       );
+
+        std::size_t element_size = sizeof(representation_t) + sizeof(Minimizer::ReadidPositionDirection);
+        std::size_t data_in_bytes = expected_merged_representations.size() * element_size;
+
+        // merge_sketch_element_arrays needs 2.1*data_in_bytes memory, so passing merge_sketch_element_arrays as available memory will cause it to chunk the merging process
+        test_merge_sketch_element_arrays(arrays_of_representations,
+                                         arrays_of_readids_positions_directions,
+                                         data_in_bytes,
+                                         expected_merged_representations,
+                                         expected_merged_readids_positions_directions
+                                       );
+
+        // a really small amount of memory
+        test_merge_sketch_element_arrays(arrays_of_representations,
+                                         arrays_of_readids_positions_directions,
+                                         200,
+                                         expected_merged_representations,
+                                         expected_merged_readids_positions_directions
+                                       );
+
+        // amount memory too small to do the merge
+        EXPECT_THROW(test_merge_sketch_element_arrays(arrays_of_representations,
+                                                      arrays_of_readids_positions_directions,
+                                                      100,
+                                                      expected_merged_representations,
+                                                      expected_merged_readids_positions_directions
+                                                    ),
+                    approximate_sketch_elements_per_bucket_too_small
+                   );
+    }
+
+
 } // namespace index_gpu
-} // namespace detail
+} // namespace details
 } // namespace claragenomics
