@@ -91,11 +91,11 @@ CudapoaBatch::CudapoaBatch(int32_t max_sequences_per_poa,
                                   cuda_banded_alignment))
     , max_poas_(batch_block_->get_max_poas())
 {
+    // Set CUDA device
     scoped_device_switch dev(device_id_);
 
     bid_ = CudapoaBatch::batches++;
 
-    // Set CUDA device
     std::string msg = " Initializing batch on device ";
     print_batch_debug_message(msg);
 
