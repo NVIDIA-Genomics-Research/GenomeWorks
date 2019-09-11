@@ -86,6 +86,8 @@ namespace claragenomics {
         void number_of_reads(std::uint64_t val) { number_of_reads_ = val; }
         void read_id_to_read_name(const std::vector<std::string>& val) { read_id_to_read_name_ = val; }
         void read_id_and_representation_to_sketch_elements( const std::vector<std::vector<RepresentationToSketchElements>>& val ) { read_id_and_representation_to_sketch_elements_ = val; }
+        std::uint64_t minimum_representation() const override {return 0;};
+        std::uint64_t maximum_representation() const override {return 1 << (15 * 2);}; //kmer_size = 15
 
     private:
         std::vector<position_in_read_t> positions_in_reads_;
