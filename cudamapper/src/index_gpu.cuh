@@ -84,6 +84,14 @@ namespace claragenomics {
         /// \return the mapping
         const std::vector<std::vector<Index::RepresentationToSketchElements>>& read_id_and_representation_to_sketch_elements() const override;
 
+        /// \brief min_representation
+        /// \return the smallest possible representation
+        std::uint64_t minimum_representation() const override {return 0;};
+
+        /// \brief max_representation
+        /// \return the largest possible representation
+        std::uint64_t maximum_representation() const override {return 1 << (kmer_size_ * 2);};
+
     private:
 
         /// \brief generates the index

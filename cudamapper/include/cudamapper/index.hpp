@@ -62,6 +62,14 @@ namespace claragenomics {
         /// \return mapping of internal read id that goes from 0 to read lengths for that read
         virtual const std::vector<std::uint32_t>& read_id_to_read_length() const =0;
 
+        /// \brief minimum possible representation
+        /// \return the smallest possible representation
+        virtual std::uint64_t minimum_representation() const = 0;
+
+        /// \brief maximum possible representation
+        /// \return the largest possible representation
+        virtual std::uint64_t maximum_representation() const = 0;
+
         /// \brief For each read_id (outer vector) returns a vector in which each element contains a representation from that read, pointer to section of data arrays with sketch elements with that representation and that read_id, and pointer to section of data arrays with skecth elements with that representation and all read_ids. There elements are sorted by representation in increasing order
         /// \return the mapping
         virtual const std::vector<std::vector<RepresentationToSketchElements>>& read_id_and_representation_to_sketch_elements() const = 0;

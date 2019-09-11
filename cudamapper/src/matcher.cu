@@ -98,8 +98,8 @@ namespace claragenomics {
 
         size_t increment = 10000000;
 
-        size_t max_representation = index.get_max_represntation();
-        size_t representation_min_range = index.get_min_represntation();
+        size_t max_representation = index.maximum_representation();
+        size_t representation_min_range = index.minimum_representation();
 
         size_t representation_max_range = increment;
 
