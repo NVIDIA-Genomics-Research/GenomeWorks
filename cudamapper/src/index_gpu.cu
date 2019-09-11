@@ -8,15 +8,10 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-#include "cudamapper/index.hpp"
-#include "index_cpu.hpp"
+// TODO: remove this file if not needed anymore
+
+#include "index_gpu.cuh"
 
 namespace claragenomics {
-    std::unique_ptr<Index> Index::create_index(const IndexGenerator& index_generator) {
-        return std::make_unique<IndexCPU>(index_generator);
-    }
 
-    std::unique_ptr<Index> Index::create_index() {
-        return std::make_unique<IndexCPU>();
-    }
 }

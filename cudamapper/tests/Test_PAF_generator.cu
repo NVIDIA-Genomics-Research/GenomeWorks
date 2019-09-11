@@ -11,7 +11,7 @@
 #include "gtest/gtest.h"
 #include "../src/matcher.hpp"
 #include "../src/overlapper_naive.hpp"
-#include "mock_index.hpp"
+#include "mock_index.cuh"
 #include "cudamapper/types.hpp"
 
 namespace claragenomics {

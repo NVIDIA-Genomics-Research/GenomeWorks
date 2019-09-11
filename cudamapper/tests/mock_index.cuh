@@ -12,10 +12,15 @@
 
 #include "gmock/gmock.h"
 
-#include "../src/index_cpu.hpp"
+#include "../src/index_gpu.cuh"
+#include "../src/minimizer.hpp"
 
-class MockIndex : public claragenomics::IndexCPU {
-public:
-    MOCK_CONST_METHOD0(read_id_to_read_name, std::vector<std::string>&());
-    MOCK_CONST_METHOD0(read_id_to_read_length, std::vector<std::uint32_t>&());
-};
+namespace claragenomics {
+
+    class MockIndex : public IndexGPU<Minimizer> {
+    public:
+        MOCK_CONST_METHOD0(read_id_to_read_name, std::vector<std::string>&());
+        MOCK_CONST_METHOD0(read_id_to_read_length, std::vector<std::uint32_t>&());
+    };
+
+}

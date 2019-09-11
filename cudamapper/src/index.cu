@@ -8,11 +8,16 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-#include "bioparser/bioparser.hpp"
-#include "index_generator_gpu.hpp"
+#include "cudamapper/index.hpp"
+#include "index_gpu.cuh"
+#include "minimizer.hpp"
 
 namespace claragenomics {
-    std::unique_ptr<IndexGenerator> IndexGenerator::create_index_generator(const std::string &query_filename, std::uint64_t kmer_length, std::uint64_t window_size) {
-        return std::make_unique<IndexGeneratorGPU>(query_filename, kmer_length, window_size);
+    std::unique_ptr<Index> Index::create_index(const std::string& query_filename, const std::uint64_t kmer_size, const std::uint64_t window_size) {
+        return std::make_unique<IndexGPU<Minimizer>>(query_filename, kmer_size, window_size);
+    }
+
+    std::unique_ptr<Index> Index::create_index() {
+        return std::make_unique<IndexGPU<Minimizer>>();
     }
 }

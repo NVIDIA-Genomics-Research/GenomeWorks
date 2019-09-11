@@ -22,28 +22,23 @@ else()
     set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -lineinfo -use_fast_math -Xcompiler -Wall,-Wno-pedantic -std=c++14")
 endif()
 
-cuda_add_library(index_generator_gpu
-        src/index_generator_gpu.cu
+cuda_add_library(index_gpu
+        src/index_gpu.cu
         src/minimizer.cu)
-target_include_directories(index_generator_gpu PUBLIC include)
-target_link_libraries(index_generator_gpu bioparser logging pthread utils)
-target_compile_options(index_generator_gpu PRIVATE -Werror)
-
-add_library(index_cpu
-        src/index_cpu.cpp)
-target_include_directories(index_cpu PUBLIC include)
-target_link_libraries(index_cpu bioparser logging pthread utils)
-target_compile_options(index_cpu PRIVATE -Werror)
+target_include_directories(index_gpu PUBLIC include)
+target_link_libraries(index_gpu bioparser logging pthread utils)
+target_compile_options(index_gpu PRIVATE -Werror)
 
 cuda_add_library(matcher
         src/matcher.cu)
 target_include_directories(matcher PUBLIC include)
-target_link_libraries(matcher utils)
+target_link_libraries(matcher logging utils)
 target_compile_options(matcher PRIVATE -Werror)
 
 add_library(overlapper_naive
         src/overlapper_naive.cpp)
 target_include_directories(overlapper_naive PUBLIC include)
+target_link_libraries(overlapper_naive logging utils)
 target_compile_options(overlapper_naive PRIVATE -Werror)
 
 add_library(cudamapper_utils
@@ -53,6 +48,7 @@ target_include_directories(cudamapper_utils PUBLIC include)
 add_library(overlapper_triggerred
         src/overlapper_triggered.cpp)
 target_include_directories(overlapper_triggerred PUBLIC include)
+target_link_libraries(overlapper_triggerred logging utils)
 target_compile_options(overlapper_triggerred PRIVATE -Werror)
 
 add_doxygen_source_dir(${CMAKE_CURRENT_SOURCE_DIR}/include/cudamapper)
@@ -62,8 +58,7 @@ cuda_add_executable(cudamapper
         src/main.cpp
         src/sequence.cpp
         src/bioparser_sequence.cpp
-        src/index.cpp
-        src/index_generator.cpp
+        src/index.cu
         src/overlapper.cpp
 )
 
@@ -75,7 +70,7 @@ target_include_directories(cudamapper
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 )
 
-target_link_libraries(cudamapper bioparser utils index_generator_gpu index_cpu matcher logging overlapper_naive overlapper_triggerred cudamapper_utils)
+target_link_libraries(cudamapper bioparser utils index_gpu matcher logging overlapper_naive overlapper_triggerred cudamapper_utils)
 
 # Add tests folder
 add_subdirectory(tests)
