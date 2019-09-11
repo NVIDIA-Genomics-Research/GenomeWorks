@@ -96,12 +96,14 @@ namespace claragenomics {
 
         //Now perform the matching in a loop
 
-        size_t increment = 10000000;
+        size_t increment = index.maximum_representation();
 
         size_t max_representation = index.maximum_representation();
         size_t representation_min_range = index.minimum_representation();
-
         size_t representation_max_range = increment;
+        size_t max_anchor_buffer_size_GB = 4;
+        size_t max_anchor_buffer_size = max_anchor_buffer_size_GB * 1024 * 1024 * 1024; //TODO: Make this dynamically chosen by available GPU memory
+        size_t max_anchors = max_anchor_buffer_size / sizeof(Anchor);
 
          while (representation_min_range < max_representation) {
 
@@ -127,7 +129,7 @@ namespace claragenomics {
                                          directions_of_reads_h.size() * sizeof(SketchElement::DirectionOfRepresentation),
                                          cudaMemcpyHostToDevice));
 
-            std::cerr << "Computing representation " << representation_min_range << "->" << representation_max_range << std::endl;
+            CGA_LOG_INFO("Computing representation {} -> {}", representation_min_range, representation_max_range);
             // Each CUDA thread block is responsible for one read. For each sketch element in that read it checks all other reads for sketch elements with the same representation and records those pairs.
             // As read_ids are numbered from 0 to number_of_reads - 1 CUDA thread block is responsible for read with read_id = blockIdx.x.
             //
@@ -159,7 +161,6 @@ namespace claragenomics {
             // This means we know upfront how many anchors are there going to be for each read_id and we can merge all anchors in one array and assign its sections to different read_ids
             std::vector<ArrayBlock> read_id_to_anchors_section_h(index.number_of_reads(), {0, 0});
             std::uint64_t total_anchors = 0;
-
             std::uint32_t largest_block_size = 0;
 
             for (std::size_t read_id = 0; read_id < index.number_of_reads(); ++read_id) {
@@ -210,6 +211,21 @@ namespace claragenomics {
                     }
                 }
                 total_anchors += read_id_to_anchors_section_h[read_id].block_size_;
+
+                if (total_anchors > max_anchors){
+                    //Need to recompute these reads with a smaller representation range, reset all host buffers and variables
+                    read_id_to_sketch_elements_h.clear();
+                    read_id_to_sketch_elements_to_check_h.clear();
+                    total_anchors = 0;
+                    largest_block_size = 0;
+                    auto growth_coefficient = 4;
+                    increment /= growth_coefficient; //TODO investigate best coefficient
+                    representation_max_range /= growth_coefficient; //TODO investigate best coefficient
+                    read_id = 0;
+                    read_id_to_anchors_section_h = std::vector<ArrayBlock> (index.number_of_reads(), {0, 0});
+                    read_id_to_pointer_arrays_section_h = std::vector<ArrayBlock> (index.number_of_reads(), {0, 0});
+                    CGA_LOG_INFO("Backing off - max range adjusted to {}", representation_max_range);
+                }
             }
 
             // Now done with the read IDs
@@ -306,8 +322,9 @@ namespace claragenomics {
                          directions_of_reads_d.size() * sizeof(decltype(directions_of_reads_d)::value_type));
             directions_of_reads_d.free();
 
-            representation_max_range += increment;
             representation_min_range += increment;
+            increment *= 2; // TODO: investigate best coefficient
+            representation_max_range += increment;
 
         }
     }
