@@ -10,7 +10,8 @@
 
 #include "gtest/gtest.h"
 #include "cudamapper_file_location.hpp"
-#include "../src/index_gpu.hpp"
+#include "../src/index_gpu.cuh"
+#include "../src/minimizer.hpp"
 
 namespace claragenomics {
 
@@ -26,7 +27,7 @@ namespace claragenomics {
                        const std::vector<SketchElement::DirectionOfRepresentation>& expected_directions_of_reads
                       )
     {
-        IndexGPU index(filename, minimizer_size, window_size);
+        IndexGPU<Minimizer> index(filename, minimizer_size, window_size);
         ASSERT_EQ(index.number_of_reads(), expected_number_of_reads);
 
         const std::vector<std::string>& read_id_to_read_name = index.read_id_to_read_name();

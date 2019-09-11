@@ -11,8 +11,9 @@
 #include <numeric>
 #include "gtest/gtest.h"
 #include "cudamapper_file_location.hpp"
-#include "../src/index_gpu.hpp"
+#include "../src/index_gpu.cuh"
 #include "../src/matcher.hpp"
+#include "../src/minimizer.hpp"
 
 namespace claragenomics {
 
@@ -22,11 +23,11 @@ namespace claragenomics {
 
         // only one read -> no anchors
 
-        IndexGPU index(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/gatt.fasta", 4, 1);
+        IndexGPU<Minimizer> index(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/gatt.fasta", 4, 1);
         Matcher matcher(index);
 
         const std::vector<Anchor>& anchors = matcher.anchors();
-        ASSERT_EQ(anchors.size(), 0);
+        ASSERT_EQ(anchors.size(), 0u);
     }
 
     TEST(TestCudamapperMatcher, TwoReadsMultipleMiniminizers) {
@@ -56,15 +57,15 @@ namespace claragenomics {
 
         // Anchor r0p4 - r1p0
 
-        IndexGPU index(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/catcaag_aagcta.fasta", 3, 2);
+        IndexGPU<Minimizer> index(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/catcaag_aagcta.fasta", 3, 2);
         Matcher matcher(index);
 
         const std::vector<Anchor>& anchors = matcher.anchors();
-        ASSERT_EQ(anchors.size(), 1);
-        EXPECT_EQ(anchors[0].query_read_id_, 0);
-        EXPECT_EQ(anchors[0].target_read_id_, 1);
-        EXPECT_EQ(anchors[0].query_position_in_read_, 4);
-        EXPECT_EQ(anchors[0].target_position_in_read_, 0);
+        ASSERT_EQ(anchors.size(), 1u);
+        EXPECT_EQ(anchors[0].query_read_id_, 0u);
+        EXPECT_EQ(anchors[0].target_read_id_, 1u);
+        EXPECT_EQ(anchors[0].query_position_in_read_, 4u);
+        EXPECT_EQ(anchors[0].target_position_in_read_, 0u);
     }
 
     class TestIndex : public Index{
@@ -124,14 +125,14 @@ namespace claragenomics {
         Matcher matcher(test_index);
 
         const std::vector<Anchor>& anchors = matcher.anchors();
-        ASSERT_EQ(anchors.size(), 2500);
+        ASSERT_EQ(anchors.size(), 2500u);
 
         for (std::size_t read_0_sketch_element = 0; read_0_sketch_element < 50; ++read_0_sketch_element) {
             for (std::size_t read_1_sketch_element = 0; read_1_sketch_element < 50; ++read_1_sketch_element) {
-                ASSERT_EQ(anchors[read_0_sketch_element*50 + read_1_sketch_element].query_read_id_, 0) << read_0_sketch_element << " " <<read_1_sketch_element;
-                ASSERT_EQ(anchors[read_0_sketch_element*50 + read_1_sketch_element].target_read_id_, 1) << read_0_sketch_element << " " <<read_1_sketch_element;
+                ASSERT_EQ(anchors[read_0_sketch_element*50 + read_1_sketch_element].query_read_id_, 0u) << read_0_sketch_element << " " <<read_1_sketch_element;
+                ASSERT_EQ(anchors[read_0_sketch_element*50 + read_1_sketch_element].target_read_id_, 1u) << read_0_sketch_element << " " <<read_1_sketch_element;
                 ASSERT_EQ(anchors[read_0_sketch_element*50 + read_1_sketch_element].query_position_in_read_, read_0_sketch_element) << read_0_sketch_element << " " <<read_1_sketch_element;
-                ASSERT_EQ(anchors[read_0_sketch_element*50 + read_1_sketch_element].target_position_in_read_, read_1_sketch_element + 50) << read_0_sketch_element << " " <<read_1_sketch_element;
+                ASSERT_EQ(anchors[read_0_sketch_element*50 + read_1_sketch_element].target_position_in_read_, read_1_sketch_element + 50u) << read_0_sketch_element << " " <<read_1_sketch_element;
             }
         }
     }
@@ -237,7 +238,7 @@ namespace claragenomics {
         Matcher matcher(test_index);
 
         const std::vector<Anchor>& anchors = matcher.anchors();
-        ASSERT_EQ(anchors.size(), 90300);
+        ASSERT_EQ(anchors.size(), 90300u);
 
         // Anchors are grouped by query read id and within that by representation (both in increasing order).
         // Assume q0p4t2p8 means anchor of read id 0 at position 4 and read id 2 at position 8.
@@ -249,10 +250,10 @@ namespace claragenomics {
         // read 1 - rep 2: 30
         for (std::size_t query = 0; query < 20; ++query) {
             for (std::size_t target = 0; target < 30; ++target) {
-                ASSERT_EQ(anchors[0 + query*30 + target].query_read_id_, 0) << "query: " << query << ", target: " << target;
-                ASSERT_EQ(anchors[0 + query*30 + target].target_read_id_, 1) << "query: " << query << ", target: " << target;
-                ASSERT_EQ(anchors[0 + query*30 + target].query_position_in_read_, query + 50) << "query: " << query << ", target: " << target; // position_in_read for read 0 rep 2 starts from 50
-                ASSERT_EQ(anchors[0 + query*30 + target].target_position_in_read_, target + 0) << "query: " << query << ", target: " << target; // position_in_read for read 1 rep 2 starts from 0
+                ASSERT_EQ(anchors[0 + query*30 + target].query_read_id_, 0u) << "query: " << query << ", target: " << target;
+                ASSERT_EQ(anchors[0 + query*30 + target].target_read_id_, 1u) << "query: " << query << ", target: " << target;
+                ASSERT_EQ(anchors[0 + query*30 + target].query_position_in_read_, query + 50u) << "query: " << query << ", target: " << target; // position_in_read for read 0 rep 2 starts from 50
+                ASSERT_EQ(anchors[0 + query*30 + target].target_position_in_read_, target + 0u) << "query: " << query << ", target: " << target; // position_in_read for read 1 rep 2 starts from 0
             }
         }
 
@@ -262,22 +263,22 @@ namespace claragenomics {
         // read 3 - rep 3: 80
         for (std::size_t query = 0; query < 130; ++query) { // block starts from 20*30 = 600
             for (std::size_t target = 0; target < 70; ++target) { // read 1 - no shift
-                ASSERT_EQ(anchors[600 + query*250 + target].query_read_id_, 0)  << "query: " << query << ", target: " << target;
-                ASSERT_EQ(anchors[600 + query*250 + target].target_read_id_, 1)  << "query: " << query << ", target: " << target;
-                ASSERT_EQ(anchors[600 + query*250 + target].query_position_in_read_, query + 70)  << "query: " << query << ", target: " << target; // position_in_read for read 0 rep 3 starts from 70
-                ASSERT_EQ(anchors[600 + query*250 + target].target_position_in_read_, target + 30)  << "query: " << query << ", target: " << target; // position_in_read for read 1 rep 3 starts from 30
+                ASSERT_EQ(anchors[600 + query*250 + target].query_read_id_, 0u)  << "query: " << query << ", target: " << target;
+                ASSERT_EQ(anchors[600 + query*250 + target].target_read_id_, 1u)  << "query: " << query << ", target: " << target;
+                ASSERT_EQ(anchors[600 + query*250 + target].query_position_in_read_, query + 70u)  << "query: " << query << ", target: " << target; // position_in_read for read 0 rep 3 starts from 70
+                ASSERT_EQ(anchors[600 + query*250 + target].target_position_in_read_, target + 30u)  << "query: " << query << ", target: " << target; // position_in_read for read 1 rep 3 starts from 30
             }
             for (std::size_t target = 0; target < 100; ++target) { // read 2 - shift 70 due to read 1
-                ASSERT_EQ(anchors[600 + 70 + query*250 + target].query_read_id_, 0)  << "query: " << query << ", target: " << target;
-                ASSERT_EQ(anchors[600 + 70 + query*250 + target].target_read_id_, 2)  << "query: " << query << ", target: " << target;
-                ASSERT_EQ(anchors[600 + 70 + query*250 + target].query_position_in_read_, query + 70)  << "query: " << query << ", target: " << target; // position_in_read for read 0 rep 3 starts from 70
-                ASSERT_EQ(anchors[600 + 70 + query*250 + target].target_position_in_read_, target + 0)  << "query: " << query << ", target: " << target; // position_in_read for read 2 rep 3 starts from 0
+                ASSERT_EQ(anchors[600 + 70 + query*250 + target].query_read_id_, 0u)  << "query: " << query << ", target: " << target;
+                ASSERT_EQ(anchors[600 + 70 + query*250 + target].target_read_id_, 2u)  << "query: " << query << ", target: " << target;
+                ASSERT_EQ(anchors[600 + 70 + query*250 + target].query_position_in_read_, query + 70u)  << "query: " << query << ", target: " << target; // position_in_read for read 0 rep 3 starts from 70
+                ASSERT_EQ(anchors[600 + 70 + query*250 + target].target_position_in_read_, target + 0u)  << "query: " << query << ", target: " << target; // position_in_read for read 2 rep 3 starts from 0
             }
             for (std::size_t target = 0; target < 80; ++target) { // read 8 - shift 170 due to read 1 and read 2
-                ASSERT_EQ(anchors[600 + 170 + query*250 + target].query_read_id_, 0)  << "query: " << query << ", target: " << target;
-                ASSERT_EQ(anchors[600 + 170 + query*250 + target].target_read_id_, 3)  << "query: " << query << ", target: " << target;
-                ASSERT_EQ(anchors[600 + 170 + query*250 + target].query_position_in_read_, query + 70)  << "query: " << query << ", target: " << target; // position_in_read for read 0 rep 3 starts from 70
-                ASSERT_EQ(anchors[600 + 170 + query*250 + target].target_position_in_read_, target + 80)  << "query: " << query << ", target: " << target; // position_in_read for read 3 rep 3 starts from 80
+                ASSERT_EQ(anchors[600 + 170 + query*250 + target].query_read_id_, 0u)  << "query: " << query << ", target: " << target;
+                ASSERT_EQ(anchors[600 + 170 + query*250 + target].target_read_id_, 3u)  << "query: " << query << ", target: " << target;
+                ASSERT_EQ(anchors[600 + 170 + query*250 + target].query_position_in_read_, query + 70u)  << "query: " << query << ", target: " << target; // position_in_read for read 0 rep 3 starts from 70
+                ASSERT_EQ(anchors[600 + 170 + query*250 + target].target_position_in_read_, target + 80u)  << "query: " << query << ", target: " << target; // position_in_read for read 3 rep 3 starts from 80
             }
         }
 
@@ -287,22 +288,22 @@ namespace claragenomics {
         // read 3 - rep 5: 80
         for (std::size_t query = 0; query < 70; ++query) { // block starts from 600 + 130*250 = 33100
             for (std::size_t target = 0; target < 40; ++target) { // read 1 - no shift
-                ASSERT_EQ(anchors[33100 + query*220 + target].query_read_id_, 0)  << "query: " << query << ", target: " << target;
-                ASSERT_EQ(anchors[33100 + query*220 + target].target_read_id_, 1)  << "query: " << query << ", target: " << target;
-                ASSERT_EQ(anchors[33100 + query*220 + target].query_position_in_read_, query + 200)  << "query: " << query << ", target: " << target; // position_in_read for read 0 rep 5 starts from 200
-                ASSERT_EQ(anchors[33100 + query*220 + target].target_position_in_read_, target + 160)  << "query: " << query << ", target: " << target; // position_in_read for read 1 rep 5 starts from 160
+                ASSERT_EQ(anchors[33100 + query*220 + target].query_read_id_, 0u)  << "query: " << query << ", target: " << target;
+                ASSERT_EQ(anchors[33100 + query*220 + target].target_read_id_, 1u)  << "query: " << query << ", target: " << target;
+                ASSERT_EQ(anchors[33100 + query*220 + target].query_position_in_read_, query + 200u)  << "query: " << query << ", target: " << target; // position_in_read for read 0 rep 5 starts from 200
+                ASSERT_EQ(anchors[33100 + query*220 + target].target_position_in_read_, target + 160u)  << "query: " << query << ", target: " << target; // position_in_read for read 1 rep 5 starts from 160
             }
             for (std::size_t target = 0; target < 100; ++target) { // read 2 - shift 40 due to read 1
-                ASSERT_EQ(anchors[33100 + 40 + query*220 + target].query_read_id_, 0)  << "query: " << query << ", target: " << target;
-                ASSERT_EQ(anchors[33100 + 40 + query*220 + target].target_read_id_, 2)  << "query: " << query << ", target: " << target;
-                ASSERT_EQ(anchors[33100 + 40 + query*220 + target].query_position_in_read_, query + 200)  << "query: " << query << ", target: " << target; // position_in_read for read 0 rep 5 starts from 200
-                ASSERT_EQ(anchors[33100 + 40 + query*220 + target].target_position_in_read_, target + 200)  << "query: " << query << ", target: " << target; // position_in_read for read 2 rep 5 starts from 200
+                ASSERT_EQ(anchors[33100 + 40 + query*220 + target].query_read_id_, 0u)  << "query: " << query << ", target: " << target;
+                ASSERT_EQ(anchors[33100 + 40 + query*220 + target].target_read_id_, 2u)  << "query: " << query << ", target: " << target;
+                ASSERT_EQ(anchors[33100 + 40 + query*220 + target].query_position_in_read_, query + 200u)  << "query: " << query << ", target: " << target; // position_in_read for read 0 rep 5 starts from 200
+                ASSERT_EQ(anchors[33100 + 40 + query*220 + target].target_position_in_read_, target + 200u)  << "query: " << query << ", target: " << target; // position_in_read for read 2 rep 5 starts from 200
             }
             for (std::size_t target = 0; target < 80; ++target) { // read 8 - shift 140 due to read 1 and read 2
-                ASSERT_EQ(anchors[33100 + 140 + query*220 + target].query_read_id_, 0)  << "query: " << query << ", target: " << target;
-                ASSERT_EQ(anchors[33100 + 140 + query*220 + target].target_read_id_, 3)  << "query: " << query << ", target: " << target;
-                ASSERT_EQ(anchors[33100 + 140 + query*220 + target].query_position_in_read_, query + 200)  << "query: " << query << ", target: " << target; // position_in_read for read 0 rep 5 starts from 200
-                ASSERT_EQ(anchors[33100 + 140 + query*220 + target].target_position_in_read_, target + 160)  << "query: " << query << ", target: " << target; // position_in_read for read 3 rep 5 starts from 160
+                ASSERT_EQ(anchors[33100 + 140 + query*220 + target].query_read_id_, 0u)  << "query: " << query << ", target: " << target;
+                ASSERT_EQ(anchors[33100 + 140 + query*220 + target].target_read_id_, 3u)  << "query: " << query << ", target: " << target;
+                ASSERT_EQ(anchors[33100 + 140 + query*220 + target].query_position_in_read_, query + 200u)  << "query: " << query << ", target: " << target; // position_in_read for read 0 rep 5 starts from 200
+                ASSERT_EQ(anchors[33100 + 140 + query*220 + target].target_position_in_read_, target + 160u)  << "query: " << query << ", target: " << target; // position_in_read for read 3 rep 5 starts from 160
             }
         }
 
@@ -311,16 +312,16 @@ namespace claragenomics {
         // read 3 - rep 3: 80
         for (std::size_t query = 0; query < 70; ++query) { // block starts from 33100 + 70 * 220 = 48500
             for (std::size_t target = 0; target < 100; ++target) { // read 2 - no shift
-                ASSERT_EQ(anchors[48500 + query*180 + target].query_read_id_, 1)  << "query: " << query << ", target: " << target;
-                ASSERT_EQ(anchors[48500 + query*180 + target].target_read_id_, 2)  << "query: " << query << ", target: " << target;
-                ASSERT_EQ(anchors[48500 + query*180 + target].query_position_in_read_, query + 30)  << "query: " << query << ", target: " << target; // position_in_read for read 1 rep 3 starts from 30
-                ASSERT_EQ(anchors[48500 + query*180 + target].target_position_in_read_, target + 0)  << "query: " << query << ", target: " << target; // position_in_read for read 2 rep 3 starts from 0
+                ASSERT_EQ(anchors[48500 + query*180 + target].query_read_id_, 1u)  << "query: " << query << ", target: " << target;
+                ASSERT_EQ(anchors[48500 + query*180 + target].target_read_id_, 2u)  << "query: " << query << ", target: " << target;
+                ASSERT_EQ(anchors[48500 + query*180 + target].query_position_in_read_, query + 30u)  << "query: " << query << ", target: " << target; // position_in_read for read 1 rep 3 starts from 30
+                ASSERT_EQ(anchors[48500 + query*180 + target].target_position_in_read_, target + 0u)  << "query: " << query << ", target: " << target; // position_in_read for read 2 rep 3 starts from 0
             }
             for (std::size_t target = 0; target < 80; ++target) { // read 3 - shift 100 due to read 2
-                ASSERT_EQ(anchors[48500 + 100 + query*180 + target].query_read_id_, 1)  << "query: " << query << ", target: " << target;
-                ASSERT_EQ(anchors[48500 + 100 + query*180 + target].target_read_id_, 3)  << "query: " << query << ", target: " << target;
-                ASSERT_EQ(anchors[48500 + 100 + query*180 + target].query_position_in_read_, query + 30)  << "query: " << query << ", target: " << target; // position_in_read for read 1 rep 3 starts from 30
-                ASSERT_EQ(anchors[48500 + 100 + query*180 + target].target_position_in_read_, target + 80)  << "query: " << query << ", target: " << target; // position_in_read for read 2 rep 3 starts from 80
+                ASSERT_EQ(anchors[48500 + 100 + query*180 + target].query_read_id_, 1u)  << "query: " << query << ", target: " << target;
+                ASSERT_EQ(anchors[48500 + 100 + query*180 + target].target_read_id_, 3u)  << "query: " << query << ", target: " << target;
+                ASSERT_EQ(anchors[48500 + 100 + query*180 + target].query_position_in_read_, query + 30u)  << "query: " << query << ", target: " << target; // position_in_read for read 1 rep 3 starts from 30
+                ASSERT_EQ(anchors[48500 + 100 + query*180 + target].target_position_in_read_, target + 80u)  << "query: " << query << ", target: " << target; // position_in_read for read 2 rep 3 starts from 80
             }
         }
 
@@ -328,10 +329,10 @@ namespace claragenomics {
         // read 2 - rep 4: 100
         for (std::size_t query = 0; query < 60; ++query) { // block starts from 48500 + 70 * 180 = 61100
             for (std::size_t target = 0; target < 100; ++target) { // read 2 - no shift
-                ASSERT_EQ(anchors[61100 + query*100 + target].query_read_id_, 1)  << "query: " << query << ", target: " << target;
-                ASSERT_EQ(anchors[61100 + query*100 + target].target_read_id_, 2)  << "query: " << query << ", target: " << target;
-                ASSERT_EQ(anchors[61100 + query*100 + target].query_position_in_read_, query + 100)  << "query: " << query << ", target: " << target; // position_in_read for read 1 rep 4 starts from 100
-                ASSERT_EQ(anchors[61100 + query*100 + target].target_position_in_read_, target + 100)  << "query: " << query << ", target: " << target; // position_in_read for read 2 rep 4 starts from 100
+                ASSERT_EQ(anchors[61100 + query*100 + target].query_read_id_, 1u)  << "query: " << query << ", target: " << target;
+                ASSERT_EQ(anchors[61100 + query*100 + target].target_read_id_, 2u)  << "query: " << query << ", target: " << target;
+                ASSERT_EQ(anchors[61100 + query*100 + target].query_position_in_read_, query + 100u)  << "query: " << query << ", target: " << target; // position_in_read for read 1 rep 4 starts from 100
+                ASSERT_EQ(anchors[61100 + query*100 + target].target_position_in_read_, target + 100u)  << "query: " << query << ", target: " << target; // position_in_read for read 2 rep 4 starts from 100
             }
         }
 
@@ -340,16 +341,16 @@ namespace claragenomics {
         // read 3 - rep 5: 80
         for (std::size_t query = 0; query < 40; ++query) { // block starts from 61100 + 60 * 100 = 67100
             for (std::size_t target = 0; target < 100; ++target) { // read 2 - no shift
-                ASSERT_EQ(anchors[67100 + query*180 + target].query_read_id_, 1)  << "query: " << query << ", target: " << target;
-                ASSERT_EQ(anchors[67100 + query*180 + target].target_read_id_, 2)  << "query: " << query << ", target: " << target;
-                ASSERT_EQ(anchors[67100 + query*180 + target].query_position_in_read_, query + 160)  << "query: " << query << ", target: " << target; // position_in_read for read 1 rep 5 starts from 160
-                ASSERT_EQ(anchors[67100 + query*180 + target].target_position_in_read_, target + 200)  << "query: " << query << ", target: " << target; // position_in_read for read 2 rep 5 starts from 200
+                ASSERT_EQ(anchors[67100 + query*180 + target].query_read_id_, 1u)  << "query: " << query << ", target: " << target;
+                ASSERT_EQ(anchors[67100 + query*180 + target].target_read_id_, 2u)  << "query: " << query << ", target: " << target;
+                ASSERT_EQ(anchors[67100 + query*180 + target].query_position_in_read_, query + 160u)  << "query: " << query << ", target: " << target; // position_in_read for read 1 rep 5 starts from 160
+                ASSERT_EQ(anchors[67100 + query*180 + target].target_position_in_read_, target + 200u)  << "query: " << query << ", target: " << target; // position_in_read for read 2 rep 5 starts from 200
             }
             for (std::size_t target = 0; target < 80; ++target) { // read 3 - shift 100 due to read 2
-                ASSERT_EQ(anchors[67100 + 100 + query*180 + target].query_read_id_, 1)  << "query: " << query << ", target: " << target;
-                ASSERT_EQ(anchors[67100 + 100 + query*180 + target].target_read_id_, 3)  << "query: " << query << ", target: " << target;
-                ASSERT_EQ(anchors[67100 + 100 + query*180 + target].query_position_in_read_, query + 160)  << "query: " << query << ", target: " << target; // position_in_read for read 1 rep 5 starts from 160
-                ASSERT_EQ(anchors[67100 + 100 + query*180 + target].target_position_in_read_, target + 160)  << "query: " << query << ", target: " << target; // position_in_read for read 2 rep 5 starts from 160
+                ASSERT_EQ(anchors[67100 + 100 + query*180 + target].query_read_id_, 1u)  << "query: " << query << ", target: " << target;
+                ASSERT_EQ(anchors[67100 + 100 + query*180 + target].target_read_id_, 3u)  << "query: " << query << ", target: " << target;
+                ASSERT_EQ(anchors[67100 + 100 + query*180 + target].query_position_in_read_, query + 160u)  << "query: " << query << ", target: " << target; // position_in_read for read 1 rep 5 starts from 160
+                ASSERT_EQ(anchors[67100 + 100 + query*180 + target].target_position_in_read_, target + 160u)  << "query: " << query << ", target: " << target; // position_in_read for read 2 rep 5 starts from 160
             }
         }
 
@@ -357,10 +358,10 @@ namespace claragenomics {
         // read 3 - rep 3: 80
         for (std::size_t query = 0; query < 100; ++query) { // block starts from 67100 + 40 * 180 = 74300
             for (std::size_t target = 0; target < 80; ++target) { // read 3 - no shift
-                ASSERT_EQ(anchors[74300 + query*80 + target].query_read_id_, 2)  << "query: " << query << ", target: " << target;
-                ASSERT_EQ(anchors[74300 + query*80 + target].target_read_id_, 3)  << "query: " << query << ", target: " << target;
-                ASSERT_EQ(anchors[74300 + query*80 + target].query_position_in_read_, query + 0)  << "query: " << query << ", target: " << target; // position_in_read for read 2 rep 3 starts from 0
-                ASSERT_EQ(anchors[74300 + query*80 + target].target_position_in_read_, target + 80)  << "query: " << query << ", target: " << target; // position_in_read for read 3 rep 3 starts from 80
+                ASSERT_EQ(anchors[74300 + query*80 + target].query_read_id_, 2u)  << "query: " << query << ", target: " << target;
+                ASSERT_EQ(anchors[74300 + query*80 + target].target_read_id_, 3u)  << "query: " << query << ", target: " << target;
+                ASSERT_EQ(anchors[74300 + query*80 + target].query_position_in_read_, query + 0u)  << "query: " << query << ", target: " << target; // position_in_read for read 2 rep 3 starts from 0
+                ASSERT_EQ(anchors[74300 + query*80 + target].target_position_in_read_, target + 80u)  << "query: " << query << ", target: " << target; // position_in_read for read 3 rep 3 starts from 80
             }
         }
 
@@ -368,10 +369,10 @@ namespace claragenomics {
         // read 3 - rep 5: 80
         for (std::size_t query = 0; query < 100; ++query) { // block starts from 74300 + 100*800 = 82300
             for (std::size_t target = 0; target < 80; ++target) { // read 3 - no shift
-                ASSERT_EQ(anchors[82300 + query*80 + target].query_read_id_, 2)  << "query: " << query << ", target: " << target;
-                ASSERT_EQ(anchors[82300 + query*80 + target].target_read_id_, 3)  << "query: " << query << ", target: " << target;
-                ASSERT_EQ(anchors[82300 + query*80 + target].query_position_in_read_, query + 200)  << "query: " << query << ", target: " << target; // position_in_read for read 2 rep 5 starts from 200
-                ASSERT_EQ(anchors[82300 + query*80 + target].target_position_in_read_, target + 160)  << "query: " << query << ", target: " << target; // position_in_read for read 3 rep 5 starts from 160
+                ASSERT_EQ(anchors[82300 + query*80 + target].query_read_id_, 2u)  << "query: " << query << ", target: " << target;
+                ASSERT_EQ(anchors[82300 + query*80 + target].target_read_id_, 3u)  << "query: " << query << ", target: " << target;
+                ASSERT_EQ(anchors[82300 + query*80 + target].query_position_in_read_, query + 200u)  << "query: " << query << ", target: " << target; // position_in_read for read 2 rep 5 starts from 200
+                ASSERT_EQ(anchors[82300 + query*80 + target].target_position_in_read_, target + 160u)  << "query: " << query << ", target: " << target; // position_in_read for read 3 rep 5 starts from 160
             }
         }
     }

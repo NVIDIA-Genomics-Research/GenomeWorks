@@ -32,12 +32,13 @@ target_compile_options(index_gpu PRIVATE -Werror)
 cuda_add_library(matcher
         src/matcher.cu)
 target_include_directories(matcher PUBLIC include)
-target_link_libraries(matcher utils)
+target_link_libraries(matcher logging utils)
 target_compile_options(matcher PRIVATE -Werror)
 
 add_library(overlapper_naive
         src/overlapper_naive.cpp)
 target_include_directories(overlapper_naive PUBLIC include)
+target_link_libraries(overlapper_naive logging utils)
 target_compile_options(overlapper_naive PRIVATE -Werror)
 
 add_library(cudamapper_utils
@@ -47,6 +48,7 @@ target_include_directories(cudamapper_utils PUBLIC include)
 add_library(overlapper_triggerred
         src/overlapper_triggered.cpp)
 target_include_directories(overlapper_triggerred PUBLIC include)
+target_link_libraries(overlapper_triggerred logging utils)
 target_compile_options(overlapper_triggerred PRIVATE -Werror)
 
 add_doxygen_source_dir(${CMAKE_CURRENT_SOURCE_DIR}/include/cudamapper)
@@ -56,7 +58,7 @@ cuda_add_executable(cudamapper
         src/main.cpp
         src/sequence.cpp
         src/bioparser_sequence.cpp
-        src/index.cpp
+        src/index.cu
         src/overlapper.cpp
 )
 
