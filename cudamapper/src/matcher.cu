@@ -294,11 +294,11 @@ namespace claragenomics {
                                                                );
 
             cudaDeviceSynchronize();
-            std::vector<Anchor> anchors_h_temp(total_anchors);
-            CGA_CU_CHECK_ERR(cudaMemcpy(anchors_h_temp.data(), anchors_d.data(), total_anchors * sizeof(Anchor),
+
+            anchors_h_.resize(anchors_h_.size() + total_anchors);
+            CGA_CU_CHECK_ERR(cudaMemcpy(anchors_h_.data(), anchors_d.data(), total_anchors * sizeof(Anchor),
                                         cudaMemcpyDeviceToHost));
 
-            anchors_h_.insert(anchors_h_.end(), anchors_h_temp.begin(), anchors_h_temp.end());
             // clean up device memory
             CGA_LOG_INFO("Deallocating {} bytes from read_id_to_anchors_section_d",
                          read_id_to_anchors_section_d.size() *
