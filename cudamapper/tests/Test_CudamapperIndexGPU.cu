@@ -8,6 +8,8 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
+#include <math.h>
+
 #include "gtest/gtest.h"
 #include "cudamapper_file_location.hpp"
 #include "../src/index_gpu.cuh"
@@ -75,6 +77,8 @@ namespace claragenomics {
             EXPECT_EQ(directions_of_reads[i], expected_directions_of_reads[i]) << "i: " << i;
         }
 
+        ASSERT_EQ(index.minimum_representation(), std::uint64_t(0));
+        ASSERT_EQ(index.maximum_representation(), pow(4,std::uint64_t(minimizer_size))-1);
     }
 
 
