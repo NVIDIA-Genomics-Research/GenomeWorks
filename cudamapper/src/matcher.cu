@@ -113,9 +113,12 @@ namespace claragenomics {
                                         1024; //TODO: Make this dynamically chosen by available GPU memory
         size_t max_anchors = max_anchor_buffer_size / sizeof(Anchor);
 
+        const std::vector<position_in_read_t> &positions_in_reads_h = index.positions_in_reads();
+        const std::vector<read_id_t> &read_ids_h = index.read_ids();
+        const std::vector<SketchElement::DirectionOfRepresentation> &directions_of_reads_h = index.directions_of_reads();
+
         while (representation_min_range < max_representation) {
 
-            const std::vector<position_in_read_t> &positions_in_reads_h = index.positions_in_reads();
             CGA_LOG_INFO("Allocating {} bytes for positions_in_reads_d",
                          positions_in_reads_h.size() * sizeof(position_in_read_t));
             device_buffer<position_in_read_t> positions_in_reads_d(positions_in_reads_h.size());
@@ -123,13 +126,11 @@ namespace claragenomics {
                                         positions_in_reads_h.size() * sizeof(position_in_read_t),
                                         cudaMemcpyHostToDevice));
 
-            const std::vector<read_id_t> &read_ids_h = index.read_ids();
             CGA_LOG_INFO("Allocating {} bytes for read_ids_d", read_ids_h.size() * sizeof(read_id_t));
             device_buffer<read_id_t> read_ids_d(read_ids_h.size());
             CGA_CU_CHECK_ERR(cudaMemcpy(read_ids_d.data(), read_ids_h.data(), read_ids_h.size() * sizeof(read_id_t),
                                         cudaMemcpyHostToDevice));
 
-            const std::vector<SketchElement::DirectionOfRepresentation> &directions_of_reads_h = index.directions_of_reads();
             CGA_LOG_INFO("Allocating {} bytes for directions_of_reads_d",
                          directions_of_reads_h.size() * sizeof(SketchElement::DirectionOfRepresentation));
             device_buffer<SketchElement::DirectionOfRepresentation> directions_of_reads_d(directions_of_reads_h.size());
