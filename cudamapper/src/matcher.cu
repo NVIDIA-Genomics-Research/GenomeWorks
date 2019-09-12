@@ -138,7 +138,7 @@ namespace claragenomics {
                                         directions_of_reads_h.size() * sizeof(SketchElement::DirectionOfRepresentation),
                                         cudaMemcpyHostToDevice));
 
-            CGA_LOG_INFO("Computing representation {} -> {}", representation_min_range, representation_max_range);
+            CGA_LOG_INFO("Computing representation [{},{})", representation_min_range, representation_max_range);
             // Each CUDA thread block is responsible for one read. For each sketch element in that read it checks all other reads for sketch elements with the same representation and records those pairs.
             // As read_ids are numbered from 0 to number_of_reads - 1 CUDA thread block is responsible for read with read_id = blockIdx.x.
             //
