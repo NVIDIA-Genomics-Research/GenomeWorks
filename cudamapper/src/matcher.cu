@@ -14,7 +14,6 @@
 #include <claragenomics/logging/logging.hpp>
 #include <claragenomics/utils/cudautils.hpp>
 #include <claragenomics/utils/device_buffer.cuh>
-#include <iostream>
 
 namespace claragenomics {
 
@@ -38,14 +37,14 @@ namespace claragenomics {
     /// \param read_id_to_pointer_arrays_section_d every element belongs to one read_id and points to its sections of read_id_to_sketch_elements_d and read_id_to_sketch_elements_to_check_d
     /// \param anchors_d pairs of sketch elements with the same representation that belong to different reads
     /// \param read_id_to_anchors_section_d points to parts of anchors_d in which all anchors have the same read_id
-    __global__ void generate_anchors(const position_in_read_t* const positions_in_reads_d,
-                                     const read_id_t* const read_ids_d,
-                                     // const SketchElement::DirectionOfRepresentation* const directions_of_reads_d, // currently we don't use direction
-                                     ArrayBlock* read_id_to_sketch_elements_d,
-                                     ArrayBlock* read_id_to_sketch_elements_to_check_d,
-                                     ArrayBlock* read_id_to_pointer_arrays_section_d,
-                                     Anchor* const anchors_d,
-                                     ArrayBlock* read_id_to_anchors_section_d) {
+    __global__ void generate_anchors(const position_in_read_t *const positions_in_reads_d,
+                                     const read_id_t *const read_ids_d,
+            // const SketchElement::DirectionOfRepresentation* const directions_of_reads_d, // currently we don't use direction
+                                     ArrayBlock *read_id_to_sketch_elements_d,
+                                     ArrayBlock *read_id_to_sketch_elements_to_check_d,
+                                     ArrayBlock *read_id_to_pointer_arrays_section_d,
+                                     Anchor *const anchors_d,
+                                     ArrayBlock *read_id_to_anchors_section_d) {
 
         extern __shared__ position_in_read_t query_positions[]; // size = largest value of block_size in read_id_to_sketch_elements_d
 
@@ -57,8 +56,8 @@ namespace claragenomics {
 
         // go over all representations in this read one by one
         for (auto representation_index = pointer_to_arrays_section.first_element_;
-            representation_index < pointer_to_arrays_section.first_element_ + pointer_to_arrays_section.block_size_;
-            ++representation_index) {
+             representation_index < pointer_to_arrays_section.first_element_ + pointer_to_arrays_section.block_size_;
+             ++representation_index) {
 
             // load all position_in_read for this read and representation (query)
             ArrayBlock query_sketch_elements_section = read_id_to_sketch_elements_d[representation_index];
@@ -71,23 +70,31 @@ namespace claragenomics {
             ArrayBlock target_sketch_elements_section = read_id_to_sketch_elements_to_check_d[representation_index];
             for (auto i = threadIdx.x; i < target_sketch_elements_section.block_size_; i += blockDim.x) {
                 const read_id_t target_read_id = read_ids_d[target_sketch_elements_section.first_element_ + i];
-                const position_in_read_t target_position_in_read = positions_in_reads_d[target_sketch_elements_section.first_element_ + i];
+                const position_in_read_t target_position_in_read = positions_in_reads_d[
+                        target_sketch_elements_section.first_element_ + i];
                 for (int j = 0; j < query_sketch_elements_section.block_size_; ++j) {
                     // writing anchors in form (q1t1,q1t2,q1t3...q2t1,q2t2,q3t3....) for coalescing
                     // TODO: split anchors_d into four arrays for better coalescing?
-                    anchors_d[read_id_to_anchors_section_d[query_read_id].first_element_ + anchors_written_so_far + j*target_sketch_elements_section.block_size_ + i].query_read_id_ = query_read_id;
-                    anchors_d[read_id_to_anchors_section_d[query_read_id].first_element_ + anchors_written_so_far + j*target_sketch_elements_section.block_size_ + i].target_read_id_ = target_read_id;
-                    anchors_d[read_id_to_anchors_section_d[query_read_id].first_element_ + anchors_written_so_far + j*target_sketch_elements_section.block_size_ + i].query_position_in_read_ = query_positions[j];
-                    anchors_d[read_id_to_anchors_section_d[query_read_id].first_element_ + anchors_written_so_far + j*target_sketch_elements_section.block_size_ + i].target_position_in_read_ = target_position_in_read;
+                    anchors_d[read_id_to_anchors_section_d[query_read_id].first_element_ + anchors_written_so_far +
+                              j * target_sketch_elements_section.block_size_ + i].query_read_id_ = query_read_id;
+                    anchors_d[read_id_to_anchors_section_d[query_read_id].first_element_ + anchors_written_so_far +
+                              j * target_sketch_elements_section.block_size_ + i].target_read_id_ = target_read_id;
+                    anchors_d[read_id_to_anchors_section_d[query_read_id].first_element_ + anchors_written_so_far +
+                              j * target_sketch_elements_section.block_size_ +
+                              i].query_position_in_read_ = query_positions[j];
+                    anchors_d[read_id_to_anchors_section_d[query_read_id].first_element_ + anchors_written_so_far +
+                              j * target_sketch_elements_section.block_size_ +
+                              i].target_position_in_read_ = target_position_in_read;
                 }
             }
             __syncthreads();
-            if (0 == threadIdx.x) anchors_written_so_far += target_sketch_elements_section.block_size_ * query_sketch_elements_section.block_size_;
+            if (0 == threadIdx.x) anchors_written_so_far += target_sketch_elements_section.block_size_ *
+                                                            query_sketch_elements_section.block_size_;
             __syncthreads();
         }
     }
 
-    Matcher::Matcher(const Index& index) {
+    Matcher::Matcher(const Index &index) {
 
         if (0 == index.number_of_reads()) {
             return;
@@ -102,32 +109,33 @@ namespace claragenomics {
         size_t representation_min_range = index.minimum_representation();
         size_t representation_max_range = increment;
         size_t max_anchor_buffer_size_GB = 4;
-        size_t max_anchor_buffer_size = max_anchor_buffer_size_GB * 1024 * 1024 * 1024; //TODO: Make this dynamically chosen by available GPU memory
+        size_t max_anchor_buffer_size = max_anchor_buffer_size_GB * 1024 * 1024 *
+                                        1024; //TODO: Make this dynamically chosen by available GPU memory
         size_t max_anchors = max_anchor_buffer_size / sizeof(Anchor);
 
-         while (representation_min_range < max_representation) {
+        while (representation_min_range < max_representation) {
 
-             const std::vector<position_in_read_t> &positions_in_reads_h = index.positions_in_reads();
-             CGA_LOG_INFO("Allocating {} bytes for positions_in_reads_d",
-                          positions_in_reads_h.size() * sizeof(position_in_read_t));
-             device_buffer<position_in_read_t> positions_in_reads_d(positions_in_reads_h.size());
-             CGA_CU_CHECK_ERR(cudaMemcpy(positions_in_reads_d.data(), positions_in_reads_h.data(),
-                                         positions_in_reads_h.size() * sizeof(position_in_read_t),
-                                         cudaMemcpyHostToDevice));
+            const std::vector<position_in_read_t> &positions_in_reads_h = index.positions_in_reads();
+            CGA_LOG_INFO("Allocating {} bytes for positions_in_reads_d",
+                         positions_in_reads_h.size() * sizeof(position_in_read_t));
+            device_buffer<position_in_read_t> positions_in_reads_d(positions_in_reads_h.size());
+            CGA_CU_CHECK_ERR(cudaMemcpy(positions_in_reads_d.data(), positions_in_reads_h.data(),
+                                        positions_in_reads_h.size() * sizeof(position_in_read_t),
+                                        cudaMemcpyHostToDevice));
 
-             const std::vector<read_id_t> &read_ids_h = index.read_ids();
-             CGA_LOG_INFO("Allocating {} bytes for read_ids_d", read_ids_h.size() * sizeof(read_id_t));
-             device_buffer<read_id_t> read_ids_d(read_ids_h.size());
-             CGA_CU_CHECK_ERR(cudaMemcpy(read_ids_d.data(), read_ids_h.data(), read_ids_h.size() * sizeof(read_id_t),
-                                         cudaMemcpyHostToDevice));
+            const std::vector<read_id_t> &read_ids_h = index.read_ids();
+            CGA_LOG_INFO("Allocating {} bytes for read_ids_d", read_ids_h.size() * sizeof(read_id_t));
+            device_buffer<read_id_t> read_ids_d(read_ids_h.size());
+            CGA_CU_CHECK_ERR(cudaMemcpy(read_ids_d.data(), read_ids_h.data(), read_ids_h.size() * sizeof(read_id_t),
+                                        cudaMemcpyHostToDevice));
 
-             const std::vector<SketchElement::DirectionOfRepresentation> &directions_of_reads_h = index.directions_of_reads();
-             CGA_LOG_INFO("Allocating {} bytes for directions_of_reads_d",
-                          directions_of_reads_h.size() * sizeof(SketchElement::DirectionOfRepresentation));
-             device_buffer<SketchElement::DirectionOfRepresentation> directions_of_reads_d(directions_of_reads_h.size());
-             CGA_CU_CHECK_ERR(cudaMemcpy(directions_of_reads_d.data(), directions_of_reads_h.data(),
-                                         directions_of_reads_h.size() * sizeof(SketchElement::DirectionOfRepresentation),
-                                         cudaMemcpyHostToDevice));
+            const std::vector<SketchElement::DirectionOfRepresentation> &directions_of_reads_h = index.directions_of_reads();
+            CGA_LOG_INFO("Allocating {} bytes for directions_of_reads_d",
+                         directions_of_reads_h.size() * sizeof(SketchElement::DirectionOfRepresentation));
+            device_buffer<SketchElement::DirectionOfRepresentation> directions_of_reads_d(directions_of_reads_h.size());
+            CGA_CU_CHECK_ERR(cudaMemcpy(directions_of_reads_d.data(), directions_of_reads_h.data(),
+                                        directions_of_reads_h.size() * sizeof(SketchElement::DirectionOfRepresentation),
+                                        cudaMemcpyHostToDevice));
 
             CGA_LOG_INFO("Computing representation {} -> {}", representation_min_range, representation_max_range);
             // Each CUDA thread block is responsible for one read. For each sketch element in that read it checks all other reads for sketch elements with the same representation and records those pairs.
@@ -212,18 +220,19 @@ namespace claragenomics {
                 }
                 total_anchors += read_id_to_anchors_section_h[read_id].block_size_;
 
-                if (total_anchors > max_anchors){
-                    //Need to recompute these reads with a smaller representation range, reset all host buffers and variables
+                if (total_anchors > max_anchors) {
+                    // If the maximum number of anchors has been exceeded all host buffers are re-initialised
+                    // and the loop is restarted with a smaller representation range to compute.
                     read_id_to_sketch_elements_h.clear();
                     read_id_to_sketch_elements_to_check_h.clear();
                     total_anchors = 0;
                     largest_block_size = 0;
                     auto growth_coefficient = 4;
                     increment /= growth_coefficient; //TODO investigate best coefficient
-                    representation_max_range /= growth_coefficient; //TODO investigate best coefficient
+                    representation_max_range = representation_min_range + increment;
                     read_id = 0;
-                    read_id_to_anchors_section_h = std::vector<ArrayBlock> (index.number_of_reads(), {0, 0});
-                    read_id_to_pointer_arrays_section_h = std::vector<ArrayBlock> (index.number_of_reads(), {0, 0});
+                    read_id_to_anchors_section_h = std::vector<ArrayBlock>(index.number_of_reads(), {0, 0});
+                    read_id_to_pointer_arrays_section_h = std::vector<ArrayBlock>(index.number_of_reads(), {0, 0});
                     CGA_LOG_INFO("Backing off - max range adjusted to {}", representation_max_range);
                 }
             }
@@ -273,7 +282,7 @@ namespace claragenomics {
             read_id_to_anchors_section_h.clear();
             read_id_to_anchors_section_h.reserve(0);
 
-            generate_anchors << < index.number_of_reads(), 32, largest_block_size * sizeof(position_in_read_t) >> >
+            generate_anchors <<<index.number_of_reads(), 32, largest_block_size * sizeof(position_in_read_t)>>>
                                                                (positions_in_reads_d.data(),
                                                                        read_ids_d.data(),
                                                                        // directions_of_reads_d.data(), // currently we don't use direction
@@ -329,7 +338,7 @@ namespace claragenomics {
         }
     }
 
-    const std::vector<Anchor>& Matcher::anchors() const {
+    const std::vector<Anchor> &Matcher::anchors() const {
         return anchors_h_;
     }
 
