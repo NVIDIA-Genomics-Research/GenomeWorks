@@ -117,7 +117,7 @@ namespace claragenomics {
         const std::vector<read_id_t> &read_ids_h = index.read_ids();
         const std::vector<SketchElement::DirectionOfRepresentation> &directions_of_reads_h = index.directions_of_reads();
 
-        while (representation_min_range < max_representation) {
+        while (representation_min_range <= max_representation) {
 
             CGA_LOG_INFO("Allocating {} bytes for positions_in_reads_d",
                          positions_in_reads_h.size() * sizeof(position_in_read_t));
@@ -299,7 +299,7 @@ namespace claragenomics {
                                                                        read_id_to_anchors_section_d.data()
                                                                );
 
-            cudaDeviceSynchronize();
+            CGA_CU_CHECK_ERR(cudaDeviceSynchronize());
 
             anchors_h_.resize(anchors_h_.size() + total_anchors);
             CGA_CU_CHECK_ERR(cudaMemcpy(anchors_h_.data(), anchors_d.data(), total_anchors * sizeof(Anchor),

@@ -90,7 +90,7 @@ namespace claragenomics {
 
         /// \brief max_representation
         /// \return the largest possible representation
-        std::uint64_t maximum_representation() const override {return 1 << (kmer_size_ * 2);};
+        std::uint64_t maximum_representation() const override {return (1 << (kmer_size_ * 2)) - 1;};
 
     private:
 
