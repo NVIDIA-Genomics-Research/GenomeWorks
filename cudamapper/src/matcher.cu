@@ -190,7 +190,12 @@ namespace claragenomics {
 
                 // go through all representations in this read
                 for (const auto &one_representation_in_this_read : array_blocks_for_this_read_id) {
-                    //Check if we are in the correct range
+                    // Check if we are in the correct range
+                    // TODO: code right now loops over `array_blocks_for_this_read_id ` in every while loop iteration.
+                    //  We could save the iterator to array_blocks_for_this_read_id in order to know from which
+                    //  element to continue in the next while loop iteration and also break out of the loop once we
+                    //  reach representation_max_range.
+                    //  We can do this because the element in `array_blocks_for_this_read_id` are sorted by representation.
                     if ((one_representation_in_this_read.representation_ < representation_max_range) && (
                             one_representation_in_this_read.representation_ >= representation_min_range)) {
 
