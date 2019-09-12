@@ -17,10 +17,15 @@ import claragenomics.bindings.cuda as cuda
 @pytest.mark.gpu
 def test_cudapoa_simple_batch():
     stream = cuda.CudaStream()
-    batch = CudaAlignerBatch(100, 100, 2, "global", stream, 0)
-    batch.add_alignment(["AAAAAAA", "TTTTTTT"])
+    batch = CudaAlignerBatch(100, 100, 10, "global", stream, 0)
+    batch.add_alignment("AAAAAAA", "TTTTTTT")
+    batch.add_alignment("AAATC", "TACGTTTT")
+    batch.add_alignment("TACGTA", "ACATAC")
+    batch.add_alignment("TGCA", "ATACGCT")
     batch.align_all()
-    batch.sync_alignments()
     alignments = batch.get_alignments()
 
-    assert(a.cigar == '7M')
+    print("")
+    for alignment in alignments:
+        print(alignment.query, alignment.target, alignment.cigar, alignment.alignment_type,
+                alignment.alignment, alignment.format_alignment)

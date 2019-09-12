@@ -59,6 +59,7 @@ cdef extern from "claragenomics/cudaaligner/alignment.hpp" namespace "claragenom
         vector[AlignmentState] get_alignment() except +
         FormattedAlignment format_alignment() except +
 
+# Declare structs and APIs from aligner.hpp
 cdef extern from "claragenomics/cudaaligner/aligner.hpp" namespace "claragenomics::cudaaligner":
     cdef cppclass Aligner:
         StatusType align_all() except +

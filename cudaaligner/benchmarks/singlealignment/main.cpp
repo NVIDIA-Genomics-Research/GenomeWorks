@@ -33,7 +33,7 @@ static void BM_SingleAlignment(benchmark::State& state)
     std::unique_ptr<Aligner> aligner = create_aligner(genome_size,
                                                       genome_size,
                                                       1,
-                                                      AlignmentType::global,
+                                                      AlignmentType::global_alignment,
                                                       0,
                                                       0);
     aligner->add_alignment(genome_1.c_str(), genome_1.length(),
