@@ -643,7 +643,7 @@ __global__ void hirschberg_myers_compute_alignment(
 {
     CGA_CONSTEXPR int32_t word_size = sizeof(WordType) * CHAR_BIT;
 
-    const int32_t alignment_idx = blockIdx.y * blockDim.y + threadIdx.y;
+    const int32_t alignment_idx = blockIdx.z * blockDim.z + threadIdx.z;
     if (alignment_idx >= n_alignments)
         return;
 
@@ -677,7 +677,7 @@ void hirschberg_myers_gpu(device_buffer<hirschbergmyers::query_target_range>& st
     constexpr int32_t warp_size        = 32;
     {
         const dim3 threads(warp_size, 1, 1);
-        const dim3 blocks(1, ceiling_divide<int32_t>(n_alignments, threads.y), 1);
+        const dim3 blocks(1, 1, ceiling_divide<int32_t>(n_alignments, threads.z));
         hirschbergmyers::hirschberg_myers_compute_alignment<<<blocks, threads, 0, stream>>>(stack_buffer.data(), stack_buffer_size_per_alignment, full_myers_threshold, paths_d, path_lengths_d, max_path_length, pv.get_device_interface(), mv.get_device_interface(), score.get_device_interface(), query_patterns.get_device_interface(), sequences_d, sequence_lengths_d, max_sequence_length, n_alignments);
     }
 }
