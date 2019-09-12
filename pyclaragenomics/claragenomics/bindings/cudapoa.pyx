@@ -19,6 +19,35 @@ from libc.stdint cimport uint16_t
 from claragenomics.bindings cimport cudapoa
 from claragenomics.bindings import cuda
 
+def status_to_str(status):
+    """
+    Convert status to their string representations.
+    """
+    if status == success:
+        return "success"
+    elif status == exceeded_maximum_poas:
+        return "exceeded_maximum_poas"
+    elif status == exceeded_maximum_sequence_size:
+        return "exceeded_maximum_sequence_size"
+    elif status == exceeded_maximum_sequences_per_poa:
+        return "exceeded_maximum_sequences_per_poa"
+    elif status == exceeded_batch_size:
+        return "exceeded_batch_size"
+    elif status == node_count_exceeded_maximum_graph_size:
+        return "node_count_exceeded_maximum_graph_size"
+    elif status == edge_count_exceeded_maximum_graph_size:
+        return "edge_count_exceeded_maximum_graph_size"
+    elif status == seq_len_exceeded_maximum_nodes_per_window:
+        return "seq_len_exceeded_maximum_nodes_per_window"
+    elif status == loop_count_exceeded_upper_bound:
+        return "loop_count_exceeded_upper_bound"
+    elif status == output_type_unavailable:
+        return "output_type_unavailable"
+    elif status == generic_error:
+        return "generic_error"
+    else:
+        raise RuntimeError("Unknown error status : " + status)
+
 cdef class CudaPoaBatch:
     """
     Python API for CUDA-accelerated partial order alignment algorithm.
@@ -131,7 +160,7 @@ cdef class CudaPoaBatch:
             poa_group.push_back(entry)
         status = deref(self.batch).add_poa_group(seq_status, poa_group)
         if status != success and status != exceeded_maximum_poas:
-            raise RuntimeError("Could not add POA group: Error code " + str(status))
+            raise RuntimeError("Could not add POA group: Error code " + status_to_str(status))
         return (status, seq_status)
 
     @property

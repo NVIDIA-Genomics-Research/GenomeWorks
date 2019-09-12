@@ -184,13 +184,10 @@ cdef class CudaAlignerBatch:
             query - query string
             target - target string
         """
-        query = align_pair[0]
-        target = align_pair[1]
-
         encoded_query = query.encode('utf-8')
         encoded_target = target.encode('utf-8')
         status = deref(self.aligner).add_alignment(encoded_query, len(query),
-                                                   encoded_target, len(target))i
+                                                   encoded_target, len(target))
         if status != success:
             raise RuntimeError("Could not add alignment: Error code " + status_to_str(status))
 
