@@ -29,7 +29,7 @@ def test_cudaaligner_simple_batch(query, target, cigar):
     """
     device = cuda.cuda_get_device()
     stream = cuda.CudaStream()
-    batch = CudaAlignerBatch(len(query), len(target), 1, "global", stream, device)
+    batch = CudaAlignerBatch(len(query), len(target), 1, alignment_type="global", stream=stream, device_id=device)
     batch.add_alignment(query, target)
     batch.align_all()
     alignments = batch.get_alignments()
@@ -52,7 +52,7 @@ def test_cudaaligner_long_alignments(ref_length, num_alignments):
     genome_sim = PoissonGenomeSimulator()
     read_sim = NoisyReadSimulator()
 
-    batch = CudaAlignerBatch(ref_length, ref_length, num_alignments, "global", None, device)
+    batch = CudaAlignerBatch(ref_length, ref_length, num_alignments, device_id=device)
 
     for _ in range(num_alignments):
         reference = genome_sim.build_reference(ref_length)
@@ -80,7 +80,7 @@ def test_cudaaligner_various_arguments(max_seq_len, max_alignments, seq_len, num
     genome_sim = PoissonGenomeSimulator()
     read_sim = NoisyReadSimulator()
 
-    batch = CudaAlignerBatch(max_seq_len, max_seq_len, max_alignments, "global", None, device)
+    batch = CudaAlignerBatch(max_seq_len, max_seq_len, max_alignments, device_id=device)
 
     try:
         for _ in range(num_alignments):

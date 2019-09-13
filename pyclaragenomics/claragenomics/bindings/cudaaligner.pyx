@@ -119,9 +119,9 @@ cdef class CudaAlignerBatch:
             max_query_length,
             max_target_length,
             max_alignments,
-            alignment_type,
-            stream,
-            device_id,
+            alignment_type="global",
+            stream=None,
+            device_id=0,
             *args,
             **kwargs):
         """
@@ -165,9 +165,9 @@ cdef class CudaAlignerBatch:
             max_query_length,
             max_target_length,
             max_alignments,
-            alignment_type,
-            stream,
-            device_id,
+            alignment_type="global",
+            stream=None,
+            device_id=0,
             *args,
             **kwargs):
         """
