@@ -224,6 +224,11 @@ namespace index_gpu {
         // how many elements can be sorted at once (thrust::stable_sort_by_key is done out-of-place, hence 2.1)
         std::uint64_t elements_per_merge = ( (available_device_memory_bytes / 21 ) * 10 ) / size_of_one_element;
 
+        CGA_LOG_DEBUG("Performing GPU merge with {} bytes of device memory, i.e. {} elements_per_merge",
+                      available_device_memory_bytes,
+                      elements_per_merge
+                     );
+
         // generate buckets
         std::vector<std::vector<std::pair<std::size_t, std::size_t>>> bucket_boundary_indices = generate_bucket_boundary_indices(arrays_of_representations,
                                                                                                                                  generate_representation_buckets(arrays_of_representations,
@@ -621,10 +626,14 @@ namespace index_gpu {
         std::vector<typename SketchElementImpl::ReadidPositionDirection> merged_rest_h;
 
         if (representations_from_all_loops_h.size() > 1) {
+            std::size_t free_device_memory = 0;
+            std::size_t total_device_memory = 0;
+            CGA_CU_CHECK_ERR(cudaMemGetInfo(&free_device_memory, &total_device_memory));
+
             // if there is more than one array in representations_from_all_loops_h and rest_from_all_loops_h merge those arrays together
             details::index_gpu::merge_sketch_element_arrays(representations_from_all_loops_h,
                                                             rest_from_all_loops_h,
-                                                            1'000'000'000, // TODO: dynamically determine this value
+                                                            (free_device_memory / 100) * 90, // do not take all available device memory
                                                             merged_representations_h,
                                                             merged_rest_h
                                                            );
