@@ -108,8 +108,8 @@ namespace claragenomics {
         size_t max_representation = index.maximum_representation();
         size_t representation_min_range = index.minimum_representation();
         size_t representation_max_range = increment;
-        size_t max_anchor_buffer_size_GB = 4;
-        size_t max_anchor_buffer_size = max_anchor_buffer_size_GB * 1024 * 1024 *
+        size_t max_anchor_buffer_size_MiB = 4000;
+        size_t max_anchor_buffer_size = max_anchor_buffer_size_MiB * 1024 *
                                         1024; //TODO: Make this dynamically chosen by available GPU memory
         size_t max_anchors = max_anchor_buffer_size / sizeof(Anchor);
 
@@ -301,8 +301,9 @@ namespace claragenomics {
 
             CGA_CU_CHECK_ERR(cudaDeviceSynchronize());
 
-            anchors_h_.resize(anchors_h_.size() + total_anchors);
-            CGA_CU_CHECK_ERR(cudaMemcpy(anchors_h_.data(), anchors_d.data(), total_anchors * sizeof(Anchor),
+            auto num_anchors_so_far = anchors_h_.size();
+            anchors_h_.resize(num_anchors_so_far + total_anchors);
+            CGA_CU_CHECK_ERR(cudaMemcpy(anchors_h_.data() + num_anchors_so_far, anchors_d.data(), total_anchors * sizeof(Anchor),
                                         cudaMemcpyDeviceToHost));
 
             // clean up device memory
