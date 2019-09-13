@@ -966,6 +966,405 @@ namespace index_gpu {
                    );
     }
 
+    // ************ Test build_index **************
+
+    template <typename ReadidPositionDirection>
+    void test_build_index(const std::vector<representation_t>& input_representations,
+                          const std::vector<ReadidPositionDirection>& input_readids_positions_directions,
+                          const std::vector<std::vector<Index::RepresentationToSketchElements>>& expected_read_id_and_representation_to_sketch_elements) {
+        std::uint64_t number_of_reads = expected_read_id_and_representation_to_sketch_elements.size();
+
+        ASSERT_EQ(input_representations.size(), input_readids_positions_directions.size());
+
+        std::vector<position_in_read_t> generated_positions_in_reads;
+        std::vector<read_id_t> generated_read_ids;
+        std::vector<Minimizer::DirectionOfRepresentation> generated_directions_of_reads;
+        std::vector<std::vector<Index::RepresentationToSketchElements>> generated_read_id_and_representation_to_sketch_elements;
+
+        build_index(number_of_reads,
+                    input_representations,
+                    input_readids_positions_directions,
+                    generated_positions_in_reads,
+                    generated_read_ids,
+                    generated_directions_of_reads,
+                    generated_read_id_and_representation_to_sketch_elements
+                   );
+
+        ASSERT_EQ(input_readids_positions_directions.size(), generated_positions_in_reads.size());
+        ASSERT_EQ(input_readids_positions_directions.size(), generated_read_ids.size());
+        ASSERT_EQ(input_readids_positions_directions.size(), generated_directions_of_reads.size());
+
+        for (std::size_t i = 0; i < input_readids_positions_directions.size(); ++i) {
+            EXPECT_EQ(input_readids_positions_directions[i].position_in_read_, generated_positions_in_reads[i]) << "index: " << i;
+            EXPECT_EQ(input_readids_positions_directions[i].read_id_, generated_read_ids[i]) << "index: " << i;
+            EXPECT_EQ(Minimizer::DirectionOfRepresentation(input_readids_positions_directions[i].direction_), generated_directions_of_reads[i]) << "index: " << i;
+        }
+
+        ASSERT_EQ(expected_read_id_and_representation_to_sketch_elements.size(), generated_read_id_and_representation_to_sketch_elements.size());
+        for (std::size_t read_id = 0; read_id < expected_read_id_and_representation_to_sketch_elements.size(); ++read_id) {
+            ASSERT_EQ(expected_read_id_and_representation_to_sketch_elements[read_id].size(), generated_read_id_and_representation_to_sketch_elements[read_id].size()) << "read id: " << read_id;
+            //for (const auto& foo : generated_read_id_and_representation_to_sketch_elements[read_id]) std::cout << foo.representation_ << std::endl;
+            for (std::size_t representation_index = 0; representation_index < expected_read_id_and_representation_to_sketch_elements[read_id].size(); ++representation_index) {
+                const auto& expected_data = expected_read_id_and_representation_to_sketch_elements[read_id][representation_index];
+                const auto& generated_data = generated_read_id_and_representation_to_sketch_elements[read_id][representation_index];
+                // check representation
+                EXPECT_EQ(expected_data.representation_, generated_data.representation_) << "read id: " << read_id << ", representation index: " << representation_index;
+                // check sketch_elements_for_representation_and_read_id_
+                EXPECT_EQ(expected_data.sketch_elements_for_representation_and_read_id_.first_element_,
+                          generated_data.sketch_elements_for_representation_and_read_id_.first_element_) << "read id: " << read_id << ", representation index: " << representation_index;
+                EXPECT_EQ(expected_data.sketch_elements_for_representation_and_read_id_.block_size_,
+                          generated_data.sketch_elements_for_representation_and_read_id_.block_size_) << "read id: " << read_id << ", representation index: " << representation_index;
+                // check sketch_elements_for_representation_and_all_read_ids_
+                EXPECT_EQ(expected_data.sketch_elements_for_representation_and_all_read_ids_.first_element_,
+                          generated_data.sketch_elements_for_representation_and_all_read_ids_.first_element_) << "read id: " << read_id << ", representation index: " << representation_index;
+                EXPECT_EQ(expected_data.sketch_elements_for_representation_and_all_read_ids_.block_size_,
+                          generated_data.sketch_elements_for_representation_and_all_read_ids_.block_size_) << "read id: " << read_id << ", representation index: " << representation_index;
+            }
+        }
+    }
+
+    TEST(TestCudamapperIndexGPU, build_index_GATT_4_1) {
+        // >read_0
+        // GATT
+
+        // GATT = 0b10001111
+        // AATC = 0b00001101 <- minimizer
+
+        std::vector<representation_t> input_representations({{0b00001101}});
+        std::vector<Minimizer::ReadidPositionDirection> input_readids_positions_directions({{0, 0, 1}});
+
+        std::vector<std::vector<Index::RepresentationToSketchElements>> expected_read_id_and_representation_to_sketch_elements(1);
+        expected_read_id_and_representation_to_sketch_elements[0].push_back({0b00001101, {0, 1}, {0, 1}});
+
+        test_build_index(input_representations,
+                         input_readids_positions_directions,
+                         expected_read_id_and_representation_to_sketch_elements);
+    }
+
+    TEST(TestCudamapperIndexGPU, build_index_GATT_2_3) {
+        // >read_0
+        // GATT
+
+        // kmer representation: forward, reverse
+        // GA: <20> 31
+        // AT: <03> 03
+        // TT:  33 <00>
+
+        // front end minimizers: representation, position_in_read, direction, read_id
+        // GA : 20 0 F 0
+        // GAT: 03 1 F 0
+
+        // central minimizers
+        // GATT: 00 2 R 0
+
+        // back end minimizers
+        // ATT: 00 2 R 0
+        // TT : 00 2 R 0
+
+        // All minimizers: GA(0f), AT(1f), AA(2r)
+
+        // (2r1) means position 2, reverse direction, read 1
+        // (1,2) means array block start at element 1 and has 2 elements
+
+        //              0        1        2
+        // data arrays: GA(0f0), AT(1f0), AA(2r0)
+        //
+        // read_1(AAG(1,1)(0,2)) means read_1 has "1" minimizer with representation AAG starting at position "1",
+        // whereas in all reads there are "2" minimizers with representation AAG and they start at position "0"
+        // read_id_and_representation_to_sketch_elements: read_0(AA(0,1)(0,1), AT(1,1)(1,1), GA(2,1)(2,1)
+
+        std::vector<representation_t> input_representations;
+        input_representations.push_back(0b1000);
+        input_representations.push_back(0b0011);
+        input_representations.push_back(0b0000);
+        std::vector<Minimizer::ReadidPositionDirection> input_readids_positions_directions;
+        input_readids_positions_directions.push_back({0, 0, 0});
+        input_readids_positions_directions.push_back({0, 1, 0});
+        input_readids_positions_directions.push_back({0, 2, 1});
+
+        std::vector<std::vector<Index::RepresentationToSketchElements>> expected_read_id_and_representation_to_sketch_elements(1);
+        expected_read_id_and_representation_to_sketch_elements[0].push_back({0b1000, {0, 1}, {0, 1}});
+        expected_read_id_and_representation_to_sketch_elements[0].push_back({0b0011, {1, 1}, {1, 1}});
+        expected_read_id_and_representation_to_sketch_elements[0].push_back({0b0000, {2, 1}, {2, 1}});
+
+        test_build_index(input_representations,
+                         input_readids_positions_directions,
+                         expected_read_id_and_representation_to_sketch_elements);
+    }
+
+    TEST(TestCudamapperIndexGPU, build_index_CCCATACC_3_5) {
+        // >read_0
+        // CCCATACC
+
+        // ** CCCATAC **
+
+        // kmer representation: forward, reverse
+        // CCC: <111> 222
+        // CCA: <110> 322
+        // CAT:  103 <032>
+        // ATA: <030> 303
+        // TAC:  301 <230>
+        // ACC: <011> 223
+
+        // front end minimizers: representation, position_in_read, direction
+        // CCC   : 111 0 F
+        // CCCA  : 110 1 F
+        // CCCAT : 032 2 R
+        // CCCATA: 030 3 F
+
+        // central minimizers
+        // CCCATAC: 030 3 F
+        // CCATACC: 011 5 F
+
+        // back end minimizers
+        // CATACC: 011 5 F
+        // ATACC : 011 5 F
+        // TACC  : 011 5 F
+        // ACC   : 011 5 F
+
+        // All minimizers: CCC(0f), CCA(1f), ATG(2r), ATA(3f), ACC(5f)
+
+        // (2r1) means position 2, reverse direction, read 1
+        // (1,2) means array block start at element 1 and has 2 elements
+
+        //              0         1         2
+        // data arrays: ACC(5f0), ATA(3f0), ATG(2r0), CCA(1f0), CCC(0f0)
+        //
+        // read_1(AAG(1,1)(0,2)) means read_1 has "1" minimizer with representation AAG starting at position "1",
+        // whereas in all reads there are "2" minimizers with representation AAG and they start at position "0"
+        // read_id_and_representation_to_sketch_elements: read_0(AAC(0,1)(0,1), AAT(1,1)(1,1), ATG(2,1)(2,1), CCA(3,1)(3,1), CCC(4,1)(4,1)
+
+        std::vector<representation_t> input_representations;
+        input_representations.push_back(0b000101); // ACC
+        input_representations.push_back(0b001100); // ATA
+        input_representations.push_back(0b001110); // ATG
+        input_representations.push_back(0b010000); // CAA
+        input_representations.push_back(0b010101); // CCC
+        std::vector<Minimizer::ReadidPositionDirection> input_readids_positions_directions;
+        input_readids_positions_directions.push_back({0, 5, 0}); // ACC
+        input_readids_positions_directions.push_back({0, 3, 0}); // ATA
+        input_readids_positions_directions.push_back({0, 2, 1}); // ATG
+        input_readids_positions_directions.push_back({0, 1, 0}); // CCA
+        input_readids_positions_directions.push_back({0, 0, 0}); // CCC
+
+        std::vector<std::vector<Index::RepresentationToSketchElements>> expected_read_id_and_representation_to_sketch_elements(1);
+        expected_read_id_and_representation_to_sketch_elements[0].push_back({0b000101, {0,1}, {0,1}});
+        expected_read_id_and_representation_to_sketch_elements[0].push_back({0b001100, {1,1}, {1,1}});
+        expected_read_id_and_representation_to_sketch_elements[0].push_back({0b001110, {2,1}, {2,1}});
+        expected_read_id_and_representation_to_sketch_elements[0].push_back({0b010000, {3,1}, {3,1}});
+        expected_read_id_and_representation_to_sketch_elements[0].push_back({0b010101, {4,1}, {4,1}});
+
+        test_build_index(input_representations,
+                         input_readids_positions_directions,
+                         expected_read_id_and_representation_to_sketch_elements);
+    }
+
+    TEST(TestCudamapperIndexGPU, build_index_CATCAAG_AAGCTA_3_2) {
+        // >read_0
+        // CATCAAG
+        // >read_1
+        // AAGCTA
+
+        // ** CATCAAG **
+
+        // kmer representation: forward, reverse
+        // CAT:  103 <032>
+        // ATC: <031> 203
+        // TCA: <310> 320
+        // CAA: <100> 332
+        // AAG: <002> 133
+
+        // front end minimizers: representation, position_in_read, direction, read_id
+        // CAT: 032 0 R 0
+
+        // central minimizers
+        // CATC: 031 1 F 0
+        // ATCA: 031 1 F 0
+        // TCAA: 100 3 F 0
+        // CAAG: 002 4 F 0
+
+        // back end minimizers
+        // AAG: 002 4 F 0
+
+        // All minimizers: ATC(1f), CAA(3f), AAG(4f), ATG(0r)
+
+        // ** AAGCTA **
+
+        // kmer representation: forward, reverse
+        // AAG: <002> 133
+        // AGC: <021> 213
+        // GCT:  213 <021>
+        // CTA: <130> 302
+
+        // front end minimizers: representation, position_in_read, direction, read_id
+        // AAG: 002 0 F 1
+
+        // central minimizers
+        // AAGC: 002 0 F 1
+        // AGCT: 021 2 R 1 // only the last minimizer is saved
+        // GCTA: 021 2 R 1
+
+        // back end minimizers
+        // CTA: 130 3 F 1
+
+        // All minimizers: AAG(0f), AGC(1f), CTA(3f)
+
+        // (2r1) means position 2, reverse direction, read 1
+        // (1,2) means array block start at element 1 and has 2 elements
+
+        //              0         1         2         3         4         5         6
+        // data arrays: AAG(4f0), AAG(0f1), AGC(2r1), ATC(1f0), ATG(0r0), CAA(3f0), CTA(3f1)
+        //
+        // read_1(AAG(1,1)(0,2)) means read_1 has "1" minimizer with representation AAG starting at position "1",
+        // whereas in all reads there are "2" minimizers with representation AAG and they start at position "0"
+        // read_id_and_representation_to_sketch_elements: read_0(AAG(0,1)(0,2), ATC(3,1)(3,1), ATG(4,1)(4,1), CAA(5,1)(5,1))
+        //                                                read_1(AAG(1,1)(0,2), AGC(2,1)(2,1), CTA(6,1)(6,1))
+
+        std::vector<representation_t> input_representations;
+        input_representations.push_back(0b000010); // AAG
+        input_representations.push_back(0b000010); // AAG
+        input_representations.push_back(0b001001); // AGC
+        input_representations.push_back(0b001101); // ATC
+        input_representations.push_back(0b001110); // ATG
+        input_representations.push_back(0b010000); // CAA
+        input_representations.push_back(0b011100); // CTA
+        std::vector<Minimizer::ReadidPositionDirection> input_readids_positions_directions;
+        input_readids_positions_directions.push_back({0, 4, 0}); // AAG
+        input_readids_positions_directions.push_back({1, 0, 0}); // AAG
+        input_readids_positions_directions.push_back({1, 2, 1}); // AGC
+        input_readids_positions_directions.push_back({0, 1, 0}); // ATC
+        input_readids_positions_directions.push_back({0, 0, 1}); // ATG
+        input_readids_positions_directions.push_back({0, 3, 0}); // CAA
+        input_readids_positions_directions.push_back({1, 3, 0}); // CTA
+
+        std::vector<std::vector<Index::RepresentationToSketchElements>> expected_read_id_and_representation_to_sketch_elements(2);
+        expected_read_id_and_representation_to_sketch_elements[0].push_back({0b000010, {0, 1}, {0, 2}});
+        expected_read_id_and_representation_to_sketch_elements[0].push_back({0b001101, {3, 1}, {3, 1}});
+        expected_read_id_and_representation_to_sketch_elements[0].push_back({0b001110, {4, 1}, {4, 1}});
+        expected_read_id_and_representation_to_sketch_elements[0].push_back({0b010000, {5, 1}, {5, 1}});
+        expected_read_id_and_representation_to_sketch_elements[1].push_back({0b000010, {1, 1}, {0, 2}});
+        expected_read_id_and_representation_to_sketch_elements[1].push_back({0b001001, {2, 1}, {2, 1}});
+        expected_read_id_and_representation_to_sketch_elements[1].push_back({0b011100, {6, 1}, {6, 1}});
+
+        test_build_index(input_representations,
+                         input_readids_positions_directions,
+                         expected_read_id_and_representation_to_sketch_elements);
+    }
+
+    TEST(TestCudamapperIndexGPU, build_index_AAAACTGAA_GCCAAAG_2_3) {
+        // >read_0
+        // AAAACTGAA
+        // >read_1
+        // GCCAAAG
+
+        // ** AAAACTGAA **
+
+        // kmer representation: forward, reverse
+        // AA: <00> 33
+        // AA: <00> 33
+        // AA: <00> 33
+        // AC: <01> 23
+        // CT:  13 <02>
+        // TG:  32 <10>
+        // GA: <20> 31
+        // AA: <00> 33
+
+        // front end minimizers: representation, position_in_read, direction, read_id
+        // AA : 00 0 F 0
+        // AAA: 00 1 F 0
+
+        // central minimizers
+        // AAAA: 00 2 F 0
+        // AAAC: 00 2 F 0
+        // AACT: 00 2 F 0
+        // ACTG: 01 3 F 0
+        // CTGA: 02 4 R 0
+        // TGAA: 00 7 F 0
+
+        // back end minimizers
+        // GAA: 00 7 F 0
+        // AA : 00 7 F 0
+
+        // All minimizers: AA(0f), AA(1f), AA(2f), AC(3f), AG(4r), AA (7f)
+
+        // ** GCCAAAG **
+
+        // kmer representation: forward, reverse
+        // GC: <21> 21
+        // CC: <11> 22
+        // CA: <10> 32
+        // AA: <00> 33
+        // AA: <00> 33
+        // AG: <03> 21
+
+        // front end minimizers: representation, position_in_read, direction, read_id
+        // GC : 21 0 F 0
+        // GCC: 11 1 F 0
+
+        // central minimizers
+        // GCCA: 10 2 F 0
+        // CCAA: 00 3 F 0
+        // CAAA: 00 4 F 0
+        // AAAG: 00 4 F 0
+
+        // back end minimizers
+        // AAG: 00 4 F 0
+        // AG : 03 5 F 0
+
+        // All minimizers: GC(0f), CC(1f), CA(2f), AA(3f), AA(4f), AG(5f)
+
+        // (2r1) means position 2, reverse direction, read 1
+        // (1,2) means array block start at element 1 and has 2 elements
+
+        //              0        1        2        3        4        5        6        7        8        9        10       11
+        // data arrays: AA(0f0), AA(1f0), AA(2f0), AA(7f0), AA(3f1), AA(4f1), AC(3f0), AG(4r0), AG(5f1), CA(2f1), CC(1f1), GC(0f1)
+        //
+        // read_1(AAG(1,1)(0,2)) means read_1 has "1" minimizer with representation AAG starting at position "1",
+        // whereas in all reads there are "2" minimizers with representation AAG and they start at position "0"
+        // read_id_and_representation_to_sketch_elements: read_0(AA(0,4)(0,6), AC(6,1)(6,1), AG(7,1)(7,2)
+        //                                                read_1(AA(4,2)(0,6), AG(8,1)(7,2), CA(9,1)(9,1), CC(10,1)(10,1), GC(11,1)(11,1)
+
+        std::vector<representation_t> input_representations;
+        input_representations.push_back(0b0000); // AA
+        input_representations.push_back(0b0000); // AA
+        input_representations.push_back(0b0000); // AA
+        input_representations.push_back(0b0000); // AA
+        input_representations.push_back(0b0000); // AA
+        input_representations.push_back(0b0000); // AA
+        input_representations.push_back(0b0001); // AC
+        input_representations.push_back(0b0010); // AG
+        input_representations.push_back(0b0010); // AG
+        input_representations.push_back(0b0100); // CA
+        input_representations.push_back(0b0101); // CC
+        input_representations.push_back(0b1001); // GC
+        std::vector<Minimizer::ReadidPositionDirection> input_readids_positions_directions;
+        input_readids_positions_directions.push_back({0, 0, 0}); // AA
+        input_readids_positions_directions.push_back({0, 1, 0}); // AA
+        input_readids_positions_directions.push_back({0, 2, 0}); // AA
+        input_readids_positions_directions.push_back({0, 7, 0}); // AA
+        input_readids_positions_directions.push_back({1, 3, 0}); // AA
+        input_readids_positions_directions.push_back({1, 4, 0}); // AA
+        input_readids_positions_directions.push_back({0, 3, 0}); // AC
+        input_readids_positions_directions.push_back({0, 4, 1}); // AG
+        input_readids_positions_directions.push_back({1, 5, 0}); // AG
+        input_readids_positions_directions.push_back({1, 2, 0}); // CA
+        input_readids_positions_directions.push_back({1, 1, 0}); // CC
+        input_readids_positions_directions.push_back({1, 0, 0}); // GC
+
+        std::vector<std::vector<Index::RepresentationToSketchElements>> expected_read_id_and_representation_to_sketch_elements(2);
+        expected_read_id_and_representation_to_sketch_elements[0].push_back({0b0000, { 0, 4}, { 0, 6}});
+        expected_read_id_and_representation_to_sketch_elements[0].push_back({0b0001, { 6, 1}, { 6, 1}});
+        expected_read_id_and_representation_to_sketch_elements[0].push_back({0b0010, { 7, 1}, { 7, 2}});
+        expected_read_id_and_representation_to_sketch_elements[1].push_back({0b0000, { 4, 2}, { 0, 6}});
+        expected_read_id_and_representation_to_sketch_elements[1].push_back({0b0010, { 8, 1}, { 7, 2}});
+        expected_read_id_and_representation_to_sketch_elements[1].push_back({0b0100, { 9, 1}, { 9, 1}});
+        expected_read_id_and_representation_to_sketch_elements[1].push_back({0b0101, {10, 1}, {10, 1}});
+        expected_read_id_and_representation_to_sketch_elements[1].push_back({0b1001, {11, 1}, {11, 1}});
+
+        test_build_index(input_representations,
+                         input_readids_positions_directions,
+                         expected_read_id_and_representation_to_sketch_elements);
+    }
 
 } // namespace index_gpu
 } // namespace details
