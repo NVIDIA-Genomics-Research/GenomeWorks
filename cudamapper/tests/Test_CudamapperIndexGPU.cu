@@ -77,7 +77,6 @@ namespace claragenomics {
 
     }
 
-
     TEST(TestCudamapperIndexGPU, GATT_4_1) {
         // >read_0
         // GATT
@@ -195,7 +194,6 @@ namespace claragenomics {
                      );
     }
 
-
     TEST(TestCudamapperIndexGPU, CCCATACC_2_8) {
         // *** Read is shorter than one full window, the result should be empty ***
 
@@ -268,17 +266,17 @@ namespace claragenomics {
         // ** AAGCTA **
         // ** read does not fit one array **
 
-        // All minimizers: CAT(0r0), ATC(1f0), AAG(4f0)
+        // All minimizers: ATG(0r0), ATC(1f0), AAG(4f0)
 
         // (2r1) means position 2, reverse direction, read 1
         // (1,2) means array block start at element 1 and has 2 elements
 
         //              0         1         2
-        // data arrays: AAG(4f0), ATC(1f0), CAT(0r0)
+        // data arrays: AAG(4f0), ATC(1f0), ATG(0r0)
         //
         // read_1(AAG(1,1)(0,2)) means read_1 has "1" minimizer with representation AAG starting at position "1",
         // whereas in all reads there are "2" minimizers with representation AAG and they start at position "0"
-        // read_id_and_representation_to_sketch_elements: read_0(AAG(0,1)(0,1), ATC(1,1)(1,1), CAT(2,1)(2,1)
+        // read_id_and_representation_to_sketch_elements: read_0(AAG(0,1)(0,1), ATC(1,1)(1,1), ATG(2,1)(2,1)
 
         const std::string filename = std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/catcaag_aagcta.fasta";
         const std::uint64_t minimizer_size = 3;
@@ -295,7 +293,7 @@ namespace claragenomics {
         std::vector<std::vector<Index::RepresentationToSketchElements>> expected_read_id_and_representation_to_sketch_elements(1);
         expected_read_id_and_representation_to_sketch_elements[0].push_back({0b000010, {0,1}, {0,1}}); // AAG
         expected_read_id_and_representation_to_sketch_elements[0].push_back({0b001101, {1,1}, {1,1}}); // ATC
-        expected_read_id_and_representation_to_sketch_elements[0].push_back({0b001110, {2,1}, {2,1}}); // CAT
+        expected_read_id_and_representation_to_sketch_elements[0].push_back({0b001110, {2,1}, {2,1}}); // ATG
 
         std::vector<position_in_read_t> expected_positions_in_reads;
         std::vector<read_id_t> expected_read_ids;
@@ -306,7 +304,7 @@ namespace claragenomics {
         expected_positions_in_reads.push_back(1); // ATC(1f0)
         expected_read_ids.push_back(0);
         expected_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::FORWARD);
-        expected_positions_in_reads.push_back(0); // CAT(0r0)
+        expected_positions_in_reads.push_back(0); // ATG(0r0)
         expected_read_ids.push_back(0);
         expected_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::REVERSE);
 
@@ -353,17 +351,17 @@ namespace claragenomics {
         // TACC  : 011 5 F
         // ACC   : 011 5 F
 
-        // All minimizers: CCC(0f), CAA(1f), CAT(2r), ATA(3f), ACC(5f)
+        // All minimizers: CCC(0f), CCA(1f), ATG(2r), ATA(3f), ACC(5f)
 
         // (2r1) means position 2, reverse direction, read 1
         // (1,2) means array block start at element 1 and has 2 elements
 
         //              0         1         2
-        // data arrays: ACC(5f0), ATA(3f0), CAT(2r0), CAA(1f0), CCC(0f0)
+        // data arrays: ACC(5f0), ATA(3f0), ATG(2r0), CCA(1f0), CCC(0f0)
         //
         // read_1(AAG(1,1)(0,2)) means read_1 has "1" minimizer with representation AAG starting at position "1",
         // whereas in all reads there are "2" minimizers with representation AAG and they start at position "0"
-        // read_id_and_representation_to_sketch_elements: read_0(AAC(0,1)(0,1), AAT(1,1)(1,1), CAT(2,1)(2,1), CAA(3,1)(3,1), CCC(4,1)(4,1)
+        // read_id_and_representation_to_sketch_elements: read_0(AAC(0,1)(0,1), AAT(1,1)(1,1), ATG(2,1)(2,1), CCA(3,1)(3,1), CCC(4,1)(4,1)
 
         const std::string filename = std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/cccatacc.fasta";
         const std::uint64_t minimizer_size = 3;
@@ -380,8 +378,8 @@ namespace claragenomics {
         std::vector<std::vector<Index::RepresentationToSketchElements>> expected_read_id_and_representation_to_sketch_elements(1);
         expected_read_id_and_representation_to_sketch_elements[0].push_back({0b000101, {0,1}, {0,1}}); // ACC
         expected_read_id_and_representation_to_sketch_elements[0].push_back({0b001100, {1,1}, {1,1}}); // ATA
-        expected_read_id_and_representation_to_sketch_elements[0].push_back({0b001110, {2,1}, {2,1}}); // CAT
-        expected_read_id_and_representation_to_sketch_elements[0].push_back({0b010100, {3,1}, {3,1}}); // CAA
+        expected_read_id_and_representation_to_sketch_elements[0].push_back({0b001110, {2,1}, {2,1}}); // ATG
+        expected_read_id_and_representation_to_sketch_elements[0].push_back({0b010100, {3,1}, {3,1}}); // CCA
         expected_read_id_and_representation_to_sketch_elements[0].push_back({0b010101, {4,1}, {4,1}}); // CCC
 
         std::vector<position_in_read_t> expected_positions_in_reads;
@@ -393,7 +391,7 @@ namespace claragenomics {
         expected_positions_in_reads.push_back(3); // ATA(3f0)
         expected_read_ids.push_back(0);
         expected_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::FORWARD);
-        expected_positions_in_reads.push_back(2); // CAT(2r0)
+        expected_positions_in_reads.push_back(2); // ATG(2r0)
         expected_read_ids.push_back(0);
         expected_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::REVERSE);
         expected_positions_in_reads.push_back(1); // CAA(1f0)
@@ -463,6 +461,7 @@ namespace claragenomics {
 
         // back end minimizers
         // CTA: 130 3 F 1
+
         // All minimizers: AAG(0f), AGC(1f), CTA(3f)
 
         // (2r1) means position 2, reverse direction, read 1
@@ -475,7 +474,6 @@ namespace claragenomics {
         // whereas in all reads there are "2" minimizers with representation AAG and they start at position "0"
         // read_id_and_representation_to_sketch_elements: read_0(AAG(0,1)(0,2), ATC(3,1)(3,1), ATG(4,1)(4,1), CAA(5,1)(5,1))
         //                                                read_1(AAG(1,1)(0,2), AGC(2,1)(2,1), CTA(6,1)(6,1))
-
 
         const std::string filename = std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/catcaag_aagcta.fasta";
         const std::uint64_t minimizer_size = 3;
@@ -522,6 +520,156 @@ namespace claragenomics {
         expected_read_ids.push_back(0);
         expected_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::FORWARD);
         expected_positions_in_reads.push_back(3); // CTA(3f1)
+        expected_read_ids.push_back(1);
+        expected_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::FORWARD);
+
+        test_function(filename,
+                      minimizer_size,
+                      window_size,
+                      expected_number_of_reads,
+                      expected_read_id_to_read_name,
+                      expected_read_id_to_read_length,
+                      expected_read_id_and_representation_to_sketch_elements,
+                      expected_positions_in_reads,
+                      expected_read_ids,
+                      expected_directions_of_reads
+                     );
+    }
+
+    TEST(TestCudamapperIndexGPU, AAAACTGAA_GCCAAAG_2_3) {
+        // >read_0
+        // AAAACTGAA
+        // >read_1
+        // GCCAAAG
+
+        // ** AAAACTGAA **
+
+        // kmer representation: forward, reverse
+        // AA: <00> 33
+        // AA: <00> 33
+        // AA: <00> 33
+        // AC: <01> 23
+        // CT:  13 <02>
+        // TG:  32 <10>
+        // GA: <20> 31
+        // AA: <00> 33
+
+        // front end minimizers: representation, position_in_read, direction, read_id
+        // AA : 00 0 F 0
+        // AAA: 00 1 F 0
+
+        // central minimizers
+        // AAAA: 00 2 F 0
+        // AAAC: 00 2 F 0
+        // AACT: 00 2 F 0
+        // ACTG: 01 3 F 0
+        // CTGA: 02 4 R 0
+        // TGAA: 00 7 F 0
+
+        // back end minimizers
+        // GAA: 00 7 F 0
+        // AA : 00 7 F 0
+
+        // All minimizers: AA(0f), AA(1f), AA(2f), AC(3f), AG(4r), AA (7f)
+
+        // ** GCCAAAG **
+
+        // kmer representation: forward, reverse
+        // GC: <21> 21
+        // CC: <11> 22
+        // CA: <10> 32
+        // AA: <00> 33
+        // AA: <00> 33
+        // AG: <03> 21
+
+        // front end minimizers: representation, position_in_read, direction, read_id
+        // GC : 21 0 F 0
+        // GCC: 11 1 F 0
+
+        // central minimizers
+        // GCCA: 10 2 F 0
+        // CCAA: 00 3 F 0
+        // CAAA: 00 4 F 0
+        // AAAG: 00 4 F 0
+
+        // back end minimizers
+        // AAG: 00 4 F 0
+        // AG : 03 5 F 0
+
+        // All minimizers: GC(0f), CC(1f), CA(2f), AA(3f), AA(4f), AG(5f)
+
+        // (2r1) means position 2, reverse direction, read 1
+        // (1,2) means array block start at element 1 and has 2 elements
+
+        //              0        1        2        3        4        5        6        7        8        9        10       11
+        // data arrays: AA(0f0), AA(1f0), AA(2f0), AA(7f0), AA(3f1), AA(4f1), AC(3f0), AG(4r0), AG(5f1), CA(2f1), CC(1f1), GC(0f1)
+        //
+        // read_1(AAG(1,1)(0,2)) means read_1 has "1" minimizer with representation AAG starting at position "1",
+        // whereas in all reads there are "2" minimizers with representation AAG and they start at position "0"
+        // read_id_and_representation_to_sketch_elements: read_0(AA(0,4)(0,6), AC(6,1)(6,1), AG(7,1)(7,2)
+        //                                                read_1(AA(4,2)(0,6), AG(8,1)(7,2), CA(9,1)(9,1), CC(10,1)(10,1), GC(11,1)(11,1)
+
+        const std::string filename = std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/aaaactgaa_gccaaag.fasta";
+        const std::uint64_t minimizer_size = 2;
+        const std::uint64_t window_size = 3;
+
+        const std::uint64_t expected_number_of_reads = 2;
+
+        std::vector<std::string> expected_read_id_to_read_name;
+        expected_read_id_to_read_name.push_back("read_0");
+        expected_read_id_to_read_name.push_back("read_1");
+
+        std::vector<std::uint32_t> expected_read_id_to_read_length;
+        expected_read_id_to_read_length.push_back(9);
+        expected_read_id_to_read_length.push_back(7);
+
+        std::vector<std::vector<Index::RepresentationToSketchElements>> expected_read_id_and_representation_to_sketch_elements(2);
+        expected_read_id_and_representation_to_sketch_elements[0].push_back({0b0000, { 0, 4}, { 0, 6}}); // AA
+        expected_read_id_and_representation_to_sketch_elements[0].push_back({0b0001, { 6, 1}, { 6, 1}}); // AC
+        expected_read_id_and_representation_to_sketch_elements[0].push_back({0b0010, { 7, 1}, { 7, 2}}); // AG
+        expected_read_id_and_representation_to_sketch_elements[1].push_back({0b0000, { 4, 2}, { 0, 6}}); // AA
+        expected_read_id_and_representation_to_sketch_elements[1].push_back({0b0010, { 8, 1}, { 7, 2}}); // AG
+        expected_read_id_and_representation_to_sketch_elements[1].push_back({0b0100, { 9, 1}, { 9, 1}}); // CA
+        expected_read_id_and_representation_to_sketch_elements[1].push_back({0b0101, {10, 1}, {10, 1}}); // CC
+        expected_read_id_and_representation_to_sketch_elements[1].push_back({0b1001, {11, 1}, {11, 1}}); // GC
+
+        std::vector<position_in_read_t> expected_positions_in_reads;
+        std::vector<read_id_t> expected_read_ids;
+        std::vector<SketchElement::DirectionOfRepresentation> expected_directions_of_reads;
+        expected_positions_in_reads.push_back(0); // AA(0f0)
+        expected_read_ids.push_back(0);
+        expected_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::FORWARD);
+        expected_positions_in_reads.push_back(1); // AA(1f0)
+        expected_read_ids.push_back(0);
+        expected_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::FORWARD);
+        expected_positions_in_reads.push_back(2); // AA(2f0)
+        expected_read_ids.push_back(0);
+        expected_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::FORWARD);
+        expected_positions_in_reads.push_back(7); // AA(7f0)
+        expected_read_ids.push_back(0);
+        expected_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::FORWARD);
+        expected_positions_in_reads.push_back(3); // AA(3f1)
+        expected_read_ids.push_back(1);
+        expected_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::FORWARD);
+        expected_positions_in_reads.push_back(4); // AA(4f1)
+        expected_read_ids.push_back(1);
+        expected_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::FORWARD);
+        expected_positions_in_reads.push_back(3); // AC(3f0)
+        expected_read_ids.push_back(0);
+        expected_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::FORWARD);
+        expected_positions_in_reads.push_back(4); // AG(4r0)
+        expected_read_ids.push_back(0);
+        expected_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::REVERSE);
+        expected_positions_in_reads.push_back(5); // AG(5f1)
+        expected_read_ids.push_back(1);
+        expected_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::FORWARD);
+        expected_positions_in_reads.push_back(2); // CA(2f1)
+        expected_read_ids.push_back(1);
+        expected_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::FORWARD);
+        expected_positions_in_reads.push_back(1); // CC(1f1)
+        expected_read_ids.push_back(1);
+        expected_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::FORWARD);
+        expected_positions_in_reads.push_back(0); // GC(0f1)
         expected_read_ids.push_back(1);
         expected_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::FORWARD);
 
