@@ -27,8 +27,9 @@ from claragenomics.simulators.readsim import NoisyReadSimulator
 def test_cudaaligner_simple_batch(query, target, cigar):
     """Test valid calculation of alignments by checking cigar strings.
     """
+    device = cuda.cuda_get_device()
     stream = cuda.CudaStream()
-    batch = CudaAlignerBatch(len(query), len(target), 1, "global", stream, 0)
+    batch = CudaAlignerBatch(len(query), len(target), 1, "global", stream, device)
     batch.add_alignment(query, target)
     batch.align_all()
     alignments = batch.get_alignments()
@@ -47,10 +48,11 @@ def test_cudaaligner_long_alignments(ref_length, num_alignments):
     """Test varying batches of long and short alignments and check for successful
     completion of alignment.
     """
+    device = cuda.cuda_get_device()
     genome_sim = PoissonGenomeSimulator()
     read_sim = NoisyReadSimulator()
 
-    batch = CudaAlignerBatch(ref_length, ref_length, num_alignments, "global", None, 0)
+    batch = CudaAlignerBatch(ref_length, ref_length, num_alignments, "global", None, device)
 
     for _ in range(num_alignments):
         reference = genome_sim.build_reference(ref_length)
@@ -74,10 +76,11 @@ def test_cudaaligner_various_arguments(max_seq_len, max_alignments, seq_len, num
     """
     Pass legal and illegal arguments, and test for correct exception throwing behavior.
     """
+    device = cuda.cuda_get_device()
     genome_sim = PoissonGenomeSimulator()
     read_sim = NoisyReadSimulator()
 
-    batch = CudaAlignerBatch(max_seq_len, max_seq_len, max_alignments, "global", None, 0)
+    batch = CudaAlignerBatch(max_seq_len, max_seq_len, max_alignments, "global", None, device)
 
     try:
         for _ in range(num_alignments):
