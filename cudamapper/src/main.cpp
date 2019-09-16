@@ -16,7 +16,6 @@
 
 #include "cudamapper/index.hpp"
 #include "matcher.hpp"
-#include "overlapper_naive.hpp"
 #include "overlapper_triggered.hpp"
 
 int main(int argc, char *argv[])

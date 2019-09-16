@@ -28,12 +28,16 @@ namespace claragenomics {
         //Sort the anchors by two keys (read_id, query_start)
         std::vector<Anchor> sortedAnchors = anchors;
         std::sort(sortedAnchors.begin(), sortedAnchors.end(), [](Anchor i, Anchor j) -> bool {
-                return (i.query_read_id_ < j.query_read_id_) ||
-                ((i.query_read_id_ == j.query_read_id_) &&
-                (i.target_read_id_ < j.target_read_id_)) ||
-                ((i.query_read_id_ == j.query_read_id_) &&
-                (i.target_read_id_ == j.target_read_id_) &&
-                (i.query_position_in_read_ < j.query_position_in_read_));
+            return  (i.query_read_id_ < j.query_read_id_) ||
+                    ((i.query_read_id_ == j.query_read_id_) &&
+                     (i.target_read_id_ < j.target_read_id_)) ||
+                    ((i.query_read_id_ == j.query_read_id_) &&
+                     (i.target_read_id_ == j.target_read_id_) &&
+                     (i.query_position_in_read_ < j.query_position_in_read_)) ||
+                    ((i.query_read_id_ == j.query_read_id_) &&
+                     (i.target_read_id_ == j.target_read_id_) &&
+                     (i.query_position_in_read_ == j.query_position_in_read_) &&
+                     (i.target_position_in_read_ < j.target_position_in_read_));
         }); // TODO: Matcher kernel should return sorted anchors, making this unnecessary
 
         //Loop through the overlaps, "trigger" when an overlap is detected and add it to vector of overlaps
