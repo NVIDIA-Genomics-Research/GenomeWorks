@@ -175,7 +175,7 @@ TEST_P(TestAlignerGlobal, TestAlignmentKernel)
         aligner = claragenomics::cudaaligner::create_aligner(max_string_size,
                                                              max_string_size,
                                                              param.inputs.size(),
-                                                             claragenomics::cudaaligner::AlignmentType::global,
+                                                             claragenomics::cudaaligner::AlignmentType::global_alignment,
                                                              nullptr,
                                                              0);
     case AlignmentAlgorithm::Ukkonen:
@@ -218,7 +218,7 @@ TEST_P(TestAlignerGlobal, TestAlignmentKernel)
     {
         auto alignment = alignments[a];
         EXPECT_EQ(StatusType::success, alignment->get_status()) << "Alignment status is not success";
-        EXPECT_EQ(AlignmentType::global, alignment->get_alignment_type()) << "Alignment type is not global";
+        EXPECT_EQ(AlignmentType::global_alignment, alignment->get_alignment_type()) << "Alignment type is not global";
         if (!cigars.empty())
         {
             EXPECT_EQ(cigars[a], alignment->convert_to_cigar()) << "CIGAR doesn't match for alignment of\n"
