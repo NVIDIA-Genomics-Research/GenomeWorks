@@ -16,8 +16,7 @@ set(SOURCES
     Test_CudamapperIndexGPU.cu
     Test_CudamapperMatcher.cu
     Test_CudamapperMinimizer.cpp
-    Test_PAF_generator.cu
-    Test_CudamapperOverlapperTriggered.cu
+        Test_CudamapperOverlapperTriggered.cu
     ../src/bioparser_sequence.cpp)
 
 get_property(cudamapper_data_include_dir GLOBAL PROPERTY cudamapper_data_include_dir)
@@ -27,7 +26,6 @@ set(LIBS
     bioparser
     index_gpu
     matcher
-    overlapper_naive
     overlapper_triggerred
     cudamapper_utils)
 
