@@ -108,6 +108,12 @@ class CudaAlignment:
         else:
             raise RuntimeError("Unknown alignment state encountered: " + s)
 
+    def __str__(self):
+        """
+        Print formatted alignment.
+        """
+        return "{}\n{}\n".format(self.format_alignment[0], self.format_alignment[1])
+
 cdef class CudaAlignerBatch:
     """
     Python API for CUDA-accelerated sequence to sequence alignment.
