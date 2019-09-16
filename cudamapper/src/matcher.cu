@@ -100,7 +100,6 @@ namespace claragenomics {
             return;
         }
 
-
         //Now perform the matching in a loop
 
         size_t increment = index.maximum_representation();
@@ -117,26 +116,35 @@ namespace claragenomics {
         const std::vector<read_id_t> &read_ids_h = index.read_ids();
         const std::vector<SketchElement::DirectionOfRepresentation> &directions_of_reads_h = index.directions_of_reads();
 
+        CGA_LOG_INFO("Allocating {} bytes for positions_in_reads_d",
+                     positions_in_reads_h.size() * sizeof(position_in_read_t));
+        device_buffer<position_in_read_t> positions_in_reads_d(positions_in_reads_h.size());
+        CGA_CU_CHECK_ERR(cudaMemcpy(positions_in_reads_d.data(),
+                                    positions_in_reads_h.data(),
+                                    positions_in_reads_h.size() * sizeof(position_in_read_t),
+                                    cudaMemcpyHostToDevice
+                                   )
+                        );
+
+        CGA_LOG_INFO("Allocating {} bytes for read_ids_d", read_ids_h.size() * sizeof(read_id_t));
+        device_buffer<read_id_t> read_ids_d(read_ids_h.size());
+        CGA_CU_CHECK_ERR(cudaMemcpy(read_ids_d.data(),
+                                    read_ids_h.data(),
+                                    read_ids_h.size() * sizeof(read_id_t),
+                                    cudaMemcpyHostToDevice
+                                   )
+                        );
+
+        CGA_LOG_INFO("Allocating {} bytes for directions_of_reads_d", directions_of_reads_h.size() * sizeof(SketchElement::DirectionOfRepresentation));
+        device_buffer<SketchElement::DirectionOfRepresentation> directions_of_reads_d(directions_of_reads_h.size());
+        CGA_CU_CHECK_ERR(cudaMemcpy(directions_of_reads_d.data(),
+                                    directions_of_reads_h.data(),
+                                    directions_of_reads_h.size() * sizeof(SketchElement::DirectionOfRepresentation),
+                                    cudaMemcpyHostToDevice
+                                   )
+                        );
+
         while (representation_min_range <= max_representation) {
-
-            CGA_LOG_INFO("Allocating {} bytes for positions_in_reads_d",
-                         positions_in_reads_h.size() * sizeof(position_in_read_t));
-            device_buffer<position_in_read_t> positions_in_reads_d(positions_in_reads_h.size());
-            CGA_CU_CHECK_ERR(cudaMemcpy(positions_in_reads_d.data(), positions_in_reads_h.data(),
-                                        positions_in_reads_h.size() * sizeof(position_in_read_t),
-                                        cudaMemcpyHostToDevice));
-
-            CGA_LOG_INFO("Allocating {} bytes for read_ids_d", read_ids_h.size() * sizeof(read_id_t));
-            device_buffer<read_id_t> read_ids_d(read_ids_h.size());
-            CGA_CU_CHECK_ERR(cudaMemcpy(read_ids_d.data(), read_ids_h.data(), read_ids_h.size() * sizeof(read_id_t),
-                                        cudaMemcpyHostToDevice));
-
-            CGA_LOG_INFO("Allocating {} bytes for directions_of_reads_d",
-                         directions_of_reads_h.size() * sizeof(SketchElement::DirectionOfRepresentation));
-            device_buffer<SketchElement::DirectionOfRepresentation> directions_of_reads_d(directions_of_reads_h.size());
-            CGA_CU_CHECK_ERR(cudaMemcpy(directions_of_reads_d.data(), directions_of_reads_h.data(),
-                                        directions_of_reads_h.size() * sizeof(SketchElement::DirectionOfRepresentation),
-                                        cudaMemcpyHostToDevice));
 
             CGA_LOG_INFO("Computing representation [{},{})", representation_min_range, representation_max_range);
             // Each CUDA thread block is responsible for one read. For each sketch element in that read it checks all other reads for sketch elements with the same representation and records those pairs.
@@ -328,21 +336,21 @@ namespace claragenomics {
                          sizeof(decltype(read_id_to_pointer_arrays_section_d)::value_type));
             read_id_to_pointer_arrays_section_d.free();
 
-            CGA_LOG_INFO("Deallocating {} bytes from positions_in_reads_d",
-                         positions_in_reads_d.size() * sizeof(decltype(positions_in_reads_d)::value_type));
-            positions_in_reads_d.free();
-            CGA_LOG_INFO("Deallocating {} bytes from read_ids_d",
-                         read_ids_d.size() * sizeof(decltype(read_ids_d)::value_type));
-            read_ids_d.free();
-            CGA_LOG_INFO("Deallocating {} bytes from directions_of_reads_d",
-                         directions_of_reads_d.size() * sizeof(decltype(directions_of_reads_d)::value_type));
-            directions_of_reads_d.free();
-
             representation_min_range += increment;
             increment *= 2; // TODO: investigate best coefficient
             representation_max_range += increment;
 
         }
+
+        CGA_LOG_INFO("Deallocating {} bytes from positions_in_reads_d",
+                     positions_in_reads_d.size() * sizeof(decltype(positions_in_reads_d)::value_type));
+        positions_in_reads_d.free();
+        CGA_LOG_INFO("Deallocating {} bytes from read_ids_d",
+                     read_ids_d.size() * sizeof(decltype(read_ids_d)::value_type));
+        read_ids_d.free();
+        CGA_LOG_INFO("Deallocating {} bytes from directions_of_reads_d",
+                     directions_of_reads_d.size() * sizeof(decltype(directions_of_reads_d)::value_type));
+        directions_of_reads_d.free();
     }
 
     const std::vector<Anchor> &Matcher::anchors() const {
