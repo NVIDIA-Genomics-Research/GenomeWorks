@@ -185,6 +185,8 @@ cdef class CudaAlignerBatch:
     def add_alignment(self, query, target):
         """
         Add new pair of sequences to the batch for alignment.
+        The characters in the string must be from the set [ACGT] for
+        correct alignment results.
 
         Args:
             query - query string
