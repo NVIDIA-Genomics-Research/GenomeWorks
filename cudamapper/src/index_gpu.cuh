@@ -10,6 +10,9 @@
 
 #pragma once
 
+#include <algorithm>
+#include <exception>
+#include <numeric>
 #include <utility>
 #include <vector>
 
@@ -112,6 +115,329 @@ namespace claragenomics {
         std::vector<std::vector<RepresentationToSketchElements>> read_id_and_representation_to_sketch_elements_;
     };
 
+namespace details {
+
+namespace index_gpu {
+
+    /// approximate_sketch_elements_per_bucket_too_short - exception thrown when the number of sketch_elements_per_bucket is too small
+    class approximate_sketch_elements_per_bucket_too_small : public std::exception
+    {
+    public:
+        approximate_sketch_elements_per_bucket_too_small(const std::string& message)
+        : message_(message) {}
+        approximate_sketch_elements_per_bucket_too_small(approximate_sketch_elements_per_bucket_too_small const&)            = default;
+        approximate_sketch_elements_per_bucket_too_small& operator=(approximate_sketch_elements_per_bucket_too_small const&) = default;
+        virtual ~approximate_sketch_elements_per_bucket_too_small()                                                          = default;
+
+        virtual const char* what() const noexcept override
+        {
+            return message_.data();
+        }
+    private:
+        const std::string message_;
+    };
+
+    /// @brief Takes multiple arrays of sketch elements and determines an array of representations such that the number of elements between each two representations is similar to the given value
+    ///
+    /// Function takes multiple arrays of sketch elements. Elements of each array are sorted by representation
+    /// The function generates an array of representations such that if all input arrays were sorted together the number of sketch elements
+    /// between neighboring elements would not be similar to approximate_sketch_elements_per_bucket.
+    /// The number of element in a bucket is guaranteed to be <= approximate_sketch_elements_per_bucket, unless members_with_some_representation >= approximate_sketch_elements_per_bucket,
+    /// in which case the number of elements in its bucket is guaranteed to be  <= members_with_that_representation + approximate_sketch_elements_per_bucket (this is not expect with genomes as
+    /// approximate_sketch_elements_per_bucket should be the number of elements that can fit one GPU).
+    /// All elements with the same representation are guaranteed to be in the same bucket
+    ///
+    /// Take the following three arrays and approximate_sketch_elements_per_bucket = 5:
+    /// (0 1 2 3 3 5 6 7 7 9) <- index
+    /// (1 1 2 2 4 4 6 6 9 9)
+    /// (0 0 1 5 5 5 7 8 8 8)
+    /// (1 1 1 3 3 4 5 7 9 9)
+    ///
+    /// When all three arrays are merged and sorte this give:
+    /// (0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29)
+    /// (0  0  1  1  1  1  1  1  2  2  3  3  3  4  4  5  5  5  5  6  6  7  7  7  8  8  9  9  9  9)
+    ///  ^     ^                 ^              ^     ^           ^              ^     ^
+    ///
+    /// Representation in the output array and the respective chunks would be:
+    /// 0: 0 0
+    /// 1: 1 1 1 1 1 1 <- larger the approximate_sketch_elements_per_bucket, so only one representation in this chunk
+    /// 2: 2 2 3 3 3
+    /// 4: 4 4
+    /// 5: 5 5 5 5
+    /// 6: 6 6 7 7 7
+    /// 8: 8 8
+    /// 9: 9 9 9 9
+    ///
+    /// Note that the line 1 could also be "1 1 1 1 1 1 2 2" or  "1 1 1 1 1 1 2 2 3 3 3", but not "1 1 1 1 1 1 2 2 3 3 3 4 4"
+    ///
+    /// \param arrays_of_representations multiple arrays of sketch element representations in which elements are sorted by representation
+    /// \param approximate_sketch_elements_per_bucket approximate number of sketch elements between two representations
+    /// \return list of representations that limit the buckets (left boundary inclusive, right exclusive)
+    /// \throw approximate_sketch_elements_per_bucket_too_small if approximate_sketch_elements_per_bucket is too small
+    std::vector<representation_t> generate_representation_buckets(const std::vector<std::vector<representation_t>>& arrays_of_representations,
+                                                                  const std::uint64_t approximate_sketch_elements_per_bucket
+                                                                 );
+
+    /// \brief Gets the index of first occurrence of the given representation in each array
+    ///
+    /// \param arrays_of_representations multiple arrays of sketch element representations in which elements are sorted by representation
+    /// \param representation representation to look for
+    /// \return for each array in arrays_of_representations contains the index for the first element greater or equal to representation, or the index of past-the-last element if all elements have a smaller representation
+    std::vector<std::size_t> generate_representation_indices(const std::vector<std::vector<representation_t>>& arrays_of_representations,
+                                                             const representation_t representation
+                                                            );
+
+    /// \brief For each bucket generates first and past-the-last index that fall into that bucket for each array of representations
+    ///
+    /// \param arrays_of_representations multiple arrays of sketch element representations in which elements are sorted by representation
+    /// \param generate_representation_buckets first reprentation in each bucket
+    /// \return outer vector goes over all buckets, inner gives first and past-the-last index of that bucket in every array of representations, if first and past-the-last index are the same that means that there are no elements of that bucket in that array
+    std::vector<std::vector<std::pair<std::size_t, std::size_t>>> generate_bucket_boundary_indices(const std::vector<std::vector<representation_t>>& arrays_of_representations,
+                                                                                                   const std::vector<representation_t>& representation_buckets
+                                                                                                  );
+
+    /// \brief Takes multiple arrays of sketch elements and merges them together so that the output array is sorted
+    ///
+    /// Function takes multiple arrays of sketch elements (each of those arrays is actually split into two arrays, one containing representations
+    /// and the other read ids, positions in reads and directions, but for the sake of simplicity they are treated as one array in comments).
+    /// Sketch elements in each input array are sorted by representation.
+    /// On the output all arrays are merged in one big array and sorted by representations.
+    /// Within each representation group the order of the elements from arrays_of_readids_positions_directions remains the same and they are ordered
+    /// by the index of their array in arrays_of_readids_positions_directions, i.e. first come elements from arrays_of_readids_positions_directions[0],
+    /// than arrays_of_readids_positions_directions[1]...
+    ///
+    /// \param arrays_of_representations multiple arrays of sketch element representations in which elements are sorted by representation
+    /// \param arrays_of_readids_positions_directions multiple arrays of sketch elements (excluding representation) in which elements are sorted by representation
+    /// \param available_device_memory_bytes how much GPU memory is available for this merge
+    /// \param merged_representations on output contains all sketch element representations from all arrays_of_representations_h subarrays, sorted by representation and further sorted by read_id within each representation group
+    /// \param merged_readids_positions_directions contains all sketch elements (excluding representation) from all arrays_of_readid_position_direction_h subarrays, sorted by representation and further sorted by read_id within each representation group
+    ///
+    /// \tparam ReadidPositionDirection any implementation of SketchElement::ReadidPositionDirection
+    template <typename ReadidPositionDirection>
+    void merge_sketch_element_arrays(const std::vector<std::vector<representation_t>>& arrays_of_representations,
+                                     const std::vector<std::vector<ReadidPositionDirection>>& arrays_of_readids_positions_directions,
+                                     const std::uint64_t available_device_memory_bytes,
+                                     std::vector<representation_t>& merged_representations,
+                                     std::vector<ReadidPositionDirection>& merged_readids_positions_directions)
+    {
+        // Each array in arrays_of_representations (and arrays_of_readids_positions_directions) is sorted by representation.
+        // The goal is to have the data from all arrays merged together. If data from all arrays fits the device memory this can be done by copying from all arrays to one
+        // device array, sorting it on device and copying it back to host.
+        // If the data is too large merging has to be done in chunks. As the data in arrays is already sorted it is possible to take the data for all representations
+        // between rep_x and rep_y from all arrays, put it on device, sort and move the sorted data back to host.
+        // If these chunks are chosen as ((rep_0, rep_x), (rep_x + 1, rep_y), (rep_y + 1, rep_z) ...) the final result will be completely sorted.
+        // generate_bucket_boundary_indices generates buckets/chunks of representations so that they fit the device memory
+
+        std::uint64_t size_of_one_element = sizeof(representation_t) + sizeof(ReadidPositionDirection);
+        // how many elements can be sorted at once (thrust::stable_sort_by_key is done out-of-place, hence 2.1)
+        std::uint64_t elements_per_merge = ( (available_device_memory_bytes / 21 ) * 10 ) / size_of_one_element;
+
+        CGA_LOG_DEBUG("Performing GPU merge with {} bytes of device memory, i.e. {} elements_per_merge",
+                      available_device_memory_bytes,
+                      elements_per_merge
+                     );
+
+        // generate buckets
+        std::vector<std::vector<std::pair<std::size_t, std::size_t>>> bucket_boundary_indices = generate_bucket_boundary_indices(arrays_of_representations,
+                                                                                                                                 generate_representation_buckets(arrays_of_representations,
+                                                                                                                                                                 elements_per_merge
+                                                                                                                                                                )
+                                                                                                                                );
+
+        const std::size_t number_of_buckets = bucket_boundary_indices.size();
+        const std::size_t number_of_arrays = arrays_of_representations.size();
+
+        // find longest output bucket
+        std::size_t longest_merged_bucket_length = 0;
+        for (const auto& input_buckets_for_one_output_bucket : bucket_boundary_indices) {
+            std::size_t length = 0;
+            for (const auto& one_input_bucket : input_buckets_for_one_output_bucket) {
+                length += one_input_bucket.second - one_input_bucket.first;
+            }
+            longest_merged_bucket_length = std::max(longest_merged_bucket_length, length);
+        }
+
+        // allocate the array that will be used for merging
+        CGA_LOG_INFO("Allocating {} bytes for representations_bucket_to_merge_d", longest_merged_bucket_length * sizeof(representation_t));
+        device_buffer<representation_t> representations_bucket_to_merge_d(longest_merged_bucket_length);
+        CGA_LOG_INFO("Allocating {} bytes for readids_positions_directions_bucket_to_merge_d", longest_merged_bucket_length * sizeof(ReadidPositionDirection));
+        device_buffer<ReadidPositionDirection> readids_positions_directions_bucket_to_merge_d(longest_merged_bucket_length);
+
+        // find total number of sketch elements in all subarrays
+        std::size_t total_sketch_elements = 0;
+        total_sketch_elements = std::accumulate(std::begin(arrays_of_representations),
+                                                std::end(arrays_of_representations),
+                                                0,
+                                                [](auto counter, const auto& one_array) { return counter += one_array.size(); }
+                                               );
+
+        // allocate enough space for merged sketch elements
+        merged_representations.resize(total_sketch_elements);
+        merged_readids_positions_directions.resize(total_sketch_elements);
+
+        // go bucket by bucket
+        std::size_t output_elements_written = 0;
+        for (std::size_t bucket_index = 0; bucket_index < number_of_buckets; ++bucket_index) {
+            // copy data from all arrays which belongs to that bucket
+            std::size_t elements_written = 0;
+            for (std::size_t array_index = 0; array_index < number_of_arrays; ++array_index) {
+                std::size_t elements_to_copy = bucket_boundary_indices[bucket_index][array_index].second - bucket_boundary_indices[bucket_index][array_index].first;
+                if (elements_to_copy > 0) {
+                    // to reduce the number of cudaMemcpys one could do all copies to a host buffer and than copy all data to device at once, but that would take more space
+                    CGA_CU_CHECK_ERR(cudaMemcpy(representations_bucket_to_merge_d.data() + elements_written,
+                                                arrays_of_representations[array_index].data() + bucket_boundary_indices[bucket_index][array_index].first,
+                                                elements_to_copy * sizeof(representation_t),
+                                                cudaMemcpyHostToDevice
+                                               )
+                                    );
+                    CGA_CU_CHECK_ERR(cudaMemcpy(readids_positions_directions_bucket_to_merge_d.data() + elements_written,
+                                                arrays_of_readids_positions_directions[array_index].data() + bucket_boundary_indices[bucket_index][array_index].first,
+                                                elements_to_copy * sizeof(ReadidPositionDirection),
+                                                cudaMemcpyHostToDevice
+                                               )
+                                    );
+                    elements_written += elements_to_copy;
+                }
+            }
+            // sort bucket
+            thrust::stable_sort_by_key(thrust::device,
+                                       representations_bucket_to_merge_d.data(),
+                                       representations_bucket_to_merge_d.data() + elements_written,
+                                       readids_positions_directions_bucket_to_merge_d.data()
+                                      );
+            // copy sorted bucket to host output array
+            CGA_CU_CHECK_ERR(cudaMemcpy(merged_representations.data() + output_elements_written,
+                                        representations_bucket_to_merge_d.data(),
+                                        elements_written * sizeof(representation_t),
+                                        cudaMemcpyDeviceToHost
+                                       )
+                                    );
+            CGA_CU_CHECK_ERR(cudaMemcpy(merged_readids_positions_directions.data() + output_elements_written,
+                                        readids_positions_directions_bucket_to_merge_d.data(),
+                                        elements_written * sizeof(ReadidPositionDirection),
+                                        cudaMemcpyDeviceToHost
+                                       )
+                                    );
+            output_elements_written += elements_written;
+        }
+
+        CGA_LOG_INFO("Deallocating {} bytes from representations_bucket_to_merge_d", longest_merged_bucket_length * sizeof(representation_t));
+        representations_bucket_to_merge_d.free();
+        CGA_LOG_INFO("Deallocating {} bytes from readids_positions_directions_bucket_to_merge_d", longest_merged_bucket_length * sizeof(ReadidPositionDirection));
+        readids_positions_directions_bucket_to_merge_d.free();
+    }
+
+    /// \brief Constructs the index and splits parts of sketch elements into separate arays
+    ///
+    /// Builds the index (read_id_and_representation_to_sketch_elements) based on input_representations and read_ids from input_readids_positions_directions.
+    /// Index has one subarray for each read_id. Each element of subarrays corresponds to its read_id and some representation.
+    /// Element points to parts of other output arrays with sketch elements with that read_id and representation, as well as representation and all read_ids
+    /// In adition splits data from input_readids_positions_directions into positions_in_reads, read_ids and directions_of_reads.
+    ///
+    /// \param number_of_reads number of reads in input data
+    /// \param input_representations representations of all sketch elements, soreted by representation
+    /// \param input_readids_positions_directions read_ids, positions in reads and directions of sketch element, each element corresponds the element of input_representations with the same index, elements are sorted by read_id within same representation
+    /// \param positions_in_reads positions in reads extracted from positions_in_reads
+    /// \param read_ids read_ids extracted from positions_in_reads
+    /// \param directions_of_reads directions of reads extracted from positions_in_reads
+    /// \param read_id_and_representation_to_sketch_elements index, as explained above
+    ///
+    /// \tparam ReadidPositionDirection any implementation of SketchElement::ReadidPositionDirection
+    /// \tparam DirectionOfRepresentation any implementation of SketchElement::DirectionOfRepresentation
+    template <typename ReadidPositionDirection, typename DirectionOfRepresentation>
+    void build_index(const std::uint64_t number_of_reads,
+                     const std::vector<representation_t>& input_representations,
+                     const std::vector<ReadidPositionDirection>& input_readids_positions_directions,
+                     std::vector<position_in_read_t>& positions_in_reads,
+                     std::vector<read_id_t>& read_ids,
+                     std::vector<DirectionOfRepresentation>& directions_of_reads,
+                     std::vector<std::vector<Index::RepresentationToSketchElements>>& read_id_and_representation_to_sketch_elements
+                    )
+    {
+        read_id_and_representation_to_sketch_elements.resize(number_of_reads);
+        positions_in_reads.reserve(input_readids_positions_directions.size());
+        read_ids.reserve(input_readids_positions_directions.size());
+        directions_of_reads.reserve(input_readids_positions_directions.size());
+
+        representation_t current_representation = input_representations[0];
+        read_id_t current_read_id = input_readids_positions_directions[0].read_id_;
+        decltype(ArrayBlock::block_size_) sketch_elements_with_curr_representation_and_read_id = 1;
+        decltype(ArrayBlock::block_size_) sketch_elements_with_curr_representation = 0;
+        decltype(ArrayBlock::first_element_) first_sketch_element_with_this_representation = 0;
+        std::vector<read_id_t> read_ids_with_current_representation;
+        read_ids_with_current_representation.push_back(current_read_id);
+        read_id_and_representation_to_sketch_elements[current_read_id].push_back({current_representation,
+                                                                                   {0, 0},
+                                                                                   {first_sketch_element_with_this_representation, 0}
+                                                                                  }
+                                                                                 );
+        positions_in_reads.push_back(input_readids_positions_directions[0].position_in_read_);
+        read_ids.push_back(input_readids_positions_directions[0].read_id_);
+        directions_of_reads.push_back(DirectionOfRepresentation(input_readids_positions_directions[0].direction_));
+
+        for (std::size_t sketch_element_index = 1; sketch_element_index < input_representations.size(); ++sketch_element_index) {
+            // TODO: edit the interface so this copy is not needed
+            positions_in_reads.push_back(input_readids_positions_directions[sketch_element_index].position_in_read_);
+            read_ids.push_back(input_readids_positions_directions[sketch_element_index].read_id_);
+            directions_of_reads.push_back(DirectionOfRepresentation(input_readids_positions_directions[sketch_element_index].direction_));
+
+            if (input_representations[sketch_element_index] != current_representation) { // new representation -> save data for the previous one
+                // increase the number of sketch elements with previous representation
+                sketch_elements_with_curr_representation += sketch_elements_with_curr_representation_and_read_id;
+                // save the number sketch elements with the previous representation and read_id
+                read_id_and_representation_to_sketch_elements[current_read_id].back().sketch_elements_for_representation_and_read_id_.block_size_ = sketch_elements_with_curr_representation_and_read_id;
+                // update the number of sketch elements with previous representation and all read_ids
+                for (const read_id_t read_id_to_update : read_ids_with_current_representation) {
+                    read_id_and_representation_to_sketch_elements[read_id_to_update].back().sketch_elements_for_representation_and_all_read_ids_.block_size_ = sketch_elements_with_curr_representation;
+                }
+                // start processing new representation
+                current_representation = input_representations[sketch_element_index];
+                current_read_id = input_readids_positions_directions[sketch_element_index].read_id_;
+                sketch_elements_with_curr_representation_and_read_id = 1;
+                sketch_elements_with_curr_representation = 0;
+                first_sketch_element_with_this_representation = sketch_element_index;
+                read_ids_with_current_representation.clear();
+                read_ids_with_current_representation.push_back(current_read_id);
+                read_id_and_representation_to_sketch_elements[current_read_id].push_back({current_representation,
+                                                                                           {sketch_element_index, 0},
+                                                                                           {first_sketch_element_with_this_representation, 0}
+                                                                                          }
+                                                                                         );
+            } else { // still the same representation
+                if (input_readids_positions_directions[sketch_element_index].read_id_ != current_read_id) { // new read_id -> save the data for the previous one
+                    // increase the number of sketch elements with this representation
+                    sketch_elements_with_curr_representation += sketch_elements_with_curr_representation_and_read_id;
+                    // save the number of sketch elements for the previous read_id
+                    read_id_and_representation_to_sketch_elements[current_read_id].back().sketch_elements_for_representation_and_read_id_.block_size_ = sketch_elements_with_curr_representation_and_read_id;
+                    // start processing new read_id
+                    current_read_id = input_readids_positions_directions[sketch_element_index].read_id_;
+                    sketch_elements_with_curr_representation_and_read_id = 1;
+                    read_ids_with_current_representation.push_back(current_read_id);
+                    read_id_and_representation_to_sketch_elements[current_read_id].push_back({current_representation,
+                                                                                               {sketch_element_index, 0},
+                                                                                               {first_sketch_element_with_this_representation, 0}
+                                                                                              }
+                                                                                             );
+                } else { // still the same read_id
+                    ++sketch_elements_with_curr_representation_and_read_id;
+                }
+            }
+        }
+        // process the last element
+        // increase the number of sketch elements with last representation
+        sketch_elements_with_curr_representation += sketch_elements_with_curr_representation_and_read_id;
+        // save the number sketch elements with last representation and read_id
+        read_id_and_representation_to_sketch_elements[current_read_id].back().sketch_elements_for_representation_and_read_id_.block_size_ = sketch_elements_with_curr_representation_and_read_id;
+        // update the number of sketch elements with last representation and all read_ids
+        for (const read_id_t read_id_to_update : read_ids_with_current_representation) {
+            read_id_and_representation_to_sketch_elements[read_id_to_update].back().sketch_elements_for_representation_and_all_read_ids_.block_size_ = sketch_elements_with_curr_representation;
+        }
+    }
+
+} // namespace index_gpu
+
+} // namespace details
+
     template <typename SketchElementImpl>
     IndexGPU<SketchElementImpl>::IndexGPU(const std::string& query_filename, const std::uint64_t kmer_size, const std::uint64_t window_size)
     : kmer_size_(kmer_size), window_size_(window_size), number_of_reads_(0)
@@ -168,7 +494,8 @@ namespace claragenomics {
 
         number_of_reads_ = 0;
 
-        std::vector<std::vector<std::pair<representation_t, typename SketchElementImpl::ReadidPositionDirection>>> all_representation_readid_position_direction;
+        std::vector<std::vector<representation_t>> representations_from_all_loops_h;
+        std::vector<std::vector<typename SketchElementImpl::ReadidPositionDirection>> rest_from_all_loops_h;
 
         while (true) {
             //read the query file:
@@ -254,8 +581,8 @@ namespace claragenomics {
                                                                                         read_id_to_basepairs_section_h,
                                                                                         read_id_to_basepairs_section_d
                                                                                        );
-            device_buffer<representation_t> representations_compressed_d = std::move(sketch_elements.representations_d);
-            device_buffer<typename SketchElementImpl::ReadidPositionDirection> rest_compressed_d = std::move(sketch_elements.rest_d);
+            device_buffer<representation_t> representations_from_this_loop_d = std::move(sketch_elements.representations_d);
+            device_buffer<typename SketchElementImpl::ReadidPositionDirection> rest_from_this_loop_d = std::move(sketch_elements.rest_d);
 
             CGA_LOG_INFO("Deallocating {} bytes from read_id_to_basepairs_section_d", read_id_to_basepairs_section_d.size() * sizeof(decltype(read_id_to_basepairs_section_d)::value_type));
             read_id_to_basepairs_section_d.free();
@@ -264,132 +591,81 @@ namespace claragenomics {
 
             // *** sort sketch elements by representation ***
             // As this is a stable sort and the data was initailly grouper by read_id this means that the sketch elements within each representations are sorted by read_id
-            thrust::stable_sort_by_key(thrust::device, representations_compressed_d.data(),
-                                       representations_compressed_d.data() + representations_compressed_d.size(),
-                                       rest_compressed_d.data()
+            thrust::stable_sort_by_key(thrust::device,
+                                       representations_from_this_loop_d.data(),
+                                       representations_from_this_loop_d.data() + representations_from_this_loop_d.size(),
+                                       rest_from_this_loop_d.data()
                                       );
 
-            std::vector<representation_t> representations_compressed_h(representations_compressed_d.size());
-            std::vector<typename SketchElementImpl::ReadidPositionDirection> rest_compressed_h(representations_compressed_d.size());
-            CGA_CU_CHECK_ERR(cudaMemcpy(representations_compressed_h.data(),
-                                        representations_compressed_d.data(),
-                                        representations_compressed_h.size() * sizeof(decltype(representations_compressed_h)::value_type),
+            representations_from_all_loops_h.push_back(decltype(representations_from_all_loops_h)::value_type(representations_from_this_loop_d.size()));
+            CGA_CU_CHECK_ERR(cudaMemcpy(representations_from_all_loops_h.back().data(),
+                                        representations_from_this_loop_d.data(),
+                                        representations_from_this_loop_d.size() * sizeof(decltype(representations_from_this_loop_d)::value_type),
                                         cudaMemcpyDeviceToHost
                                        )
                             );
-            CGA_CU_CHECK_ERR(cudaMemcpy(rest_compressed_h.data(),
-                                        rest_compressed_d.data(),
-                                        rest_compressed_h.size() * sizeof(typename decltype(rest_compressed_h)::value_type),
+            rest_from_all_loops_h.push_back(typename decltype(rest_from_all_loops_h)::value_type(rest_from_this_loop_d.size()));
+            CGA_CU_CHECK_ERR(cudaMemcpy(rest_from_all_loops_h.back().data(),
+                                        rest_from_this_loop_d.data(),
+                                        rest_from_this_loop_d.size() * sizeof(typename decltype(rest_from_this_loop_d)::value_type),
                                         cudaMemcpyDeviceToHost
                                        )
                             );
 
             // free these arrays as they are not needed anymore
-            CGA_LOG_INFO("Deallocating {} bytes from representations_compressed_d", representations_compressed_d.size() * sizeof(decltype(representations_compressed_d)::value_type));
-            representations_compressed_d.free();
-            CGA_LOG_INFO("Deallocating {} bytes from rest_compressed_d", rest_compressed_d.size() * sizeof(typename decltype(rest_compressed_d)::value_type));
-            rest_compressed_d.free();
-
-            // now create the new one:
-            std::vector<std::pair<representation_t, typename SketchElementImpl::ReadidPositionDirection>> representation_read_id_position_direction;
-            for(size_t i=0; i< representations_compressed_h.size(); i++){
-                std::pair<representation_t, typename SketchElementImpl::ReadidPositionDirection> rep_rest_pair;
-                rep_rest_pair.first = representations_compressed_h[i];
-                rep_rest_pair.second = rest_compressed_h[i];
-                representation_read_id_position_direction.push_back(rep_rest_pair);
-            }
-
-            all_representation_readid_position_direction.push_back(representation_read_id_position_direction);
+            CGA_LOG_INFO("Deallocating {} bytes from representations_from_this_loop_d", representations_from_this_loop_d.size() * sizeof(decltype(representations_from_this_loop_d)::value_type));
+            representations_from_this_loop_d.free();
+            CGA_LOG_INFO("Deallocating {} bytes from rest_from_this_loop_d", rest_from_this_loop_d.size() * sizeof(typename decltype(rest_from_this_loop_d)::value_type));
+            rest_from_this_loop_d.free();
 
             if (parser_status == false) {
                 break;
             }
         }
 
-        // Add the sketch elements to the host-side index
-        // SketchElements are already sorted by representation. Add all SketchElements with the same representation to a vector and then add that vector to the index
-        std::vector<std::pair<representation_t, typename SketchElementImpl::ReadidPositionDirection>> repr_rest_pairs;
-
-        merge_n_sorted_vectors(all_representation_readid_position_direction,
-                               repr_rest_pairs,
-                               [](const std::pair<representation_t, typename SketchElementImpl::ReadidPositionDirection> &a, const std::pair<representation_t, typename SketchElementImpl::ReadidPositionDirection> &b){
-                                   return a.first < b.first;
-                               }
-                              );
-
-        std::vector<SketchElementImpl> sketch_elements_for_representation;
-        if (repr_rest_pairs.size() < 1){
+        // check if there is at least one sketch element (code above guarantees that each element of representations_from_all_loops_h has at least one sketch element)
+        if (0 == representations_from_all_loops_h.size()){
             CGA_LOG_INFO("No Sketch Elements to be added to index");
             return;
         }
 
-        /// RepresentationAndSketchElements - Representation and all sketch elements with that representation
-        struct RepresentationAndSketchElements {
-            /// representation
-            representation_t representation_;
-            /// all sketch elements with that representation (in all reads)
-            std::vector<SketchElementImpl> sketch_elements_;
-        };
+        // merge sketch elements arrays from previous arrays in one big array
+        std::vector<representation_t> merged_representations_h;
+        std::vector<typename SketchElementImpl::ReadidPositionDirection> merged_rest_h;
 
-        std::vector<RepresentationAndSketchElements> rep_to_sketch_elem;
+        if (representations_from_all_loops_h.size() > 1) {
+            std::size_t free_device_memory = 0;
+            std::size_t total_device_memory = 0;
+            CGA_CU_CHECK_ERR(cudaMemGetInfo(&free_device_memory, &total_device_memory));
 
-        representation_t current_representation = repr_rest_pairs[0].first;
-        // TODO: this part takes the largest portion of time
-        for (std::size_t i = 0; i < repr_rest_pairs.size(); ++i) {
-            if (repr_rest_pairs[i].first != current_representation) {
-                // New representation encountered -> add the old vector to index and start building the new one
-                rep_to_sketch_elem.push_back(RepresentationAndSketchElements{current_representation, std::move(sketch_elements_for_representation)});
-                sketch_elements_for_representation.clear();
-                current_representation = repr_rest_pairs[i].first;
-            }
-            sketch_elements_for_representation.push_back(SketchElementImpl(repr_rest_pairs[i].first,
-                                                                           repr_rest_pairs[i].second.position_in_read_,
-                                                                           typename SketchElementImpl::DirectionOfRepresentation(repr_rest_pairs[i].second.direction_),
-                                                                           repr_rest_pairs[i].second.read_id_)
-                                                   );
-            }
-        // last representation will not be added in the loop above so add it here
-        rep_to_sketch_elem.push_back(RepresentationAndSketchElements{current_representation, std::move(sketch_elements_for_representation)});
-
-        // TODO: this is a merge of code from IndexGenerator and Index. It is going to be heavily optimized
-
-        std::vector<std::vector<RepresentationToSketchElements>> read_id_and_representation_to_sketch_elements_temp(number_of_reads_);
-
-        // determine the overall number of sketch elements and preallocate data arrays
-        std::uint64_t total_sketch_elems = 0;
-        for (const auto& sketch_elems_for_one_rep : rep_to_sketch_elem) {
-            total_sketch_elems += sketch_elems_for_one_rep.sketch_elements_.size();
+            // if there is more than one array in representations_from_all_loops_h and rest_from_all_loops_h merge those arrays together
+            details::index_gpu::merge_sketch_element_arrays(representations_from_all_loops_h,
+                                                            rest_from_all_loops_h,
+                                                            (free_device_memory / 100) * 90, // do not take all available device memory
+                                                            merged_representations_h,
+                                                            merged_rest_h
+                                                           );
+        } else {
+            // if there is only one array in each array there is nothing to be merged
+            merged_representations_h = std::move(representations_from_all_loops_h[0]);
+            merged_rest_h = std::move(rest_from_all_loops_h[0]);
         }
 
-        positions_in_reads_.reserve(total_sketch_elems);
-        read_ids_.reserve(total_sketch_elems);
-        directions_of_reads_.reserve(total_sketch_elems);
+        representations_from_all_loops_h.clear();
+        representations_from_all_loops_h.reserve(0);
+        rest_from_all_loops_h.clear();
+        rest_from_all_loops_h.reserve(0);
 
-        // go through representations one by one
-        for (const auto& sketch_elems_for_one_rep : rep_to_sketch_elem) {
-            const representation_t current_rep = sketch_elems_for_one_rep.representation_;
-            const auto& sketch_elems_for_current_rep = sketch_elems_for_one_rep.sketch_elements_;
-            // all sketch elements with the current representation are going to be added to this section of the data arrays
-            ArrayBlock array_block_for_current_rep_and_all_read_ids = ArrayBlock{positions_in_reads_.size(), static_cast<std::uint32_t>(sketch_elems_for_current_rep.size())};
-            read_id_t current_read = std::numeric_limits<read_id_t>::max();
-            for (const auto& sketch_elem_ptr : sketch_elems_for_current_rep) {
-                const read_id_t read_of_current_sketch_elem = sketch_elem_ptr.read_id();
-                // within array block for one representation sketch elements are gouped by read_id (in increasing order)
-                if (read_of_current_sketch_elem != current_read) {
-                    // if new read_id add new block for it
-                    current_read = read_of_current_sketch_elem;
-                    read_id_and_representation_to_sketch_elements_temp[read_of_current_sketch_elem].push_back(RepresentationToSketchElements{current_rep, {positions_in_reads_.size(), 1}, array_block_for_current_rep_and_all_read_ids});
-                } else {
-                    // if a block for that read_id alreay exists just increase the counter for the number of elements with that representation and read_id
-                    ++read_id_and_representation_to_sketch_elements_temp[read_of_current_sketch_elem].back().sketch_elements_for_representation_and_read_id_.block_size_;
-                }
-                // add sketch element to data arrays
-                positions_in_reads_.emplace_back(sketch_elem_ptr.position_in_read());
-                read_ids_.emplace_back(sketch_elem_ptr.read_id());
-                directions_of_reads_.emplace_back(sketch_elem_ptr.direction());
-            }
-        }
-
-        std::swap(read_id_and_representation_to_sketch_elements_, read_id_and_representation_to_sketch_elements_temp);
+        // build read_id_and_representation_to_sketch_elements_ and copy sketch elements to output arrays
+        // TODO: This part takes a significant amount out time, think of a way to accelerate it
+        details::index_gpu::build_index(number_of_reads_,
+                                        merged_representations_h,
+                                        merged_rest_h,
+                                        positions_in_reads_,
+                                        read_ids_,
+                                        directions_of_reads_,
+                                        read_id_and_representation_to_sketch_elements_
+                                       );
     }
-}
+
+} // namespace claragenomics
