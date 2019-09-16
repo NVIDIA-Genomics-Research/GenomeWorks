@@ -8,7 +8,9 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
+#include <algorithm>
 #include <numeric>
+#include <random>
 #include "gtest/gtest.h"
 #include "mock_index.cuh"
 #include "cudamapper_file_location.hpp"
@@ -384,4 +386,77 @@ namespace claragenomics {
         ASSERT_EQ(overlaps[0].target_start_position_in_read_, 1000u);
         ASSERT_EQ(overlaps[0].target_end_position_in_read_, 1200u);
     }
+
+    TEST(TestCudamapperOverlapperTriggerred, ShuffledAnchors) {
+    OverlapperTriggered overlapper;
+
+    std::vector<Overlap> unfused_overlaps;
+    std::vector<Anchor> anchors;
+
+    MockIndex test_index;
+    std::vector<std::string> testv;
+    testv.push_back("READ0");
+    testv.push_back("READ1");
+    testv.push_back("READ2");
+    std::vector<std::uint32_t> test_read_length(testv.size(), 1000);
+
+    EXPECT_CALL(test_index, read_id_to_read_name)
+    .WillRepeatedly(testing::ReturnRef(testv));
+    EXPECT_CALL(test_index, read_id_to_read_length)
+    .WillRepeatedly(testing::ReturnRef(test_read_length));
+
+    Anchor anchor1;
+    anchor1.query_read_id_ = 1;
+    anchor1.target_read_id_ = 2;
+    anchor1.query_position_in_read_ = 100;
+    anchor1.target_position_in_read_ = 1000;
+
+    Anchor anchor2;
+    anchor2.query_read_id_ = 1;
+    anchor2.target_read_id_ = 2;
+    anchor2.query_position_in_read_ = 200;
+    anchor2.target_position_in_read_ = 1100;
+
+    Anchor anchor3;
+    anchor3.query_read_id_ = 1;
+    anchor3.target_read_id_ = 2;
+    anchor3.query_position_in_read_ = 300;
+    anchor3.target_position_in_read_ = 1200;
+
+    Anchor anchor4;
+    anchor4.query_read_id_ = 1;
+    anchor4.target_read_id_ = 2;
+    anchor4.query_position_in_read_ = 400 + 2000;
+    anchor4.target_position_in_read_ = 1300 + 2000;
+
+    // This anchor has the same query_id, target_id and query position as anchor 3 - should not affect result at all.
+    // because it's target id is lower
+    Anchor anchor5;
+    anchor5.query_read_id_ = 1;
+    anchor5.target_read_id_ = 2;
+    anchor5.query_position_in_read_ = 300;
+    anchor5.target_position_in_read_ = 1050;
+
+    anchors.push_back(anchor1);
+    anchors.push_back(anchor2);
+    anchors.push_back(anchor3);
+    anchors.push_back(anchor4);
+    anchors.push_back(anchor5);
+
+    auto rng = std::default_random_engine {};
+    rng.seed(2);
+    //Shuffle the anchors 100 times and check that the generated overlaps are always the same.
+    for (size_t i = 0; i < 100; i++){
+        auto overlaps = overlapper.get_overlaps(anchors, test_index);
+        std::shuffle(std::begin(overlaps), std::end(overlaps), rng);
+        ASSERT_EQ(overlaps.size(), 1u);
+        ASSERT_EQ(overlaps[0].query_read_id_, 1u);
+        ASSERT_EQ(overlaps[0].target_read_id_, 2u);
+        ASSERT_EQ(overlaps[0].query_start_position_in_read_, 100u);
+        ASSERT_EQ(overlaps[0].query_end_position_in_read_, 300u);
+        ASSERT_EQ(overlaps[0].target_start_position_in_read_, 1000u);
+        ASSERT_EQ(overlaps[0].target_end_position_in_read_, 1200u);
+    }
+}
+
 }
