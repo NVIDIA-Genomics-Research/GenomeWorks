@@ -13,7 +13,7 @@ project(utils)
 add_library(utils INTERFACE)
 target_link_libraries(utils INTERFACE logging)
 
-add_doxygen_source_dir(${CMAKE_CURRENT_SOURCE_DIR}/include/utils)
+add_doxygen_source_dir(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 target_include_directories(utils
     INTERFACE 

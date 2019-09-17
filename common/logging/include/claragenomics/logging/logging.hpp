@@ -41,11 +41,17 @@
 /// \ingroup logging
 /// \{
 
+/// \def cga_log_level_debug DEBUG log level
 #define cga_log_level_debug 0
+/// \def cga_log_level_info Info log level
 #define cga_log_level_info 1
+/// \def cga_log_level_warn WARN log level
 #define cga_log_level_warn 2
+/// \def cga_log_level_error ERROR log level
 #define cga_log_level_error 3
+/// \def cga_log_level_critical CRITICAL log level
 #define cga_log_level_critical 4
+/// \def cga_log_level_off No logging
 #define cga_log_level_off 5
 
 #ifndef CGA_LOG_LEVEL
