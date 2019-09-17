@@ -12,15 +12,15 @@
 
 #include <cstdint>
 
-/// \defgroup cudaaligner CUDA Aligner package
-/// Base docs for the cudaaligner package (tbd)
-/// \{
-
 namespace claragenomics
 {
 
 namespace cudaaligner
 {
+/// \defgroup cudaaligner CUDA Aligner package
+/// Base docs for the cudaaligner package (tbd)
+/// \{
+
 /// CUDA Aligner error type
 enum StatusType
 {
@@ -48,7 +48,8 @@ enum AlignmentState : int8_t
     deletion   // Present in query, absent in target
 };
 
+/// Initialize CUDA Aligner context.
 StatusType Init();
+/// \}
 } // namespace cudaaligner
 } // namespace claragenomics
-/// \}

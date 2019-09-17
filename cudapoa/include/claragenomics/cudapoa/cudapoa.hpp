@@ -10,14 +10,14 @@
 
 #pragma once
 
-/// \defgroup cudapoa CUDA POA package
-/// Base docs for the cudapoa package (tbd)
-/// \{
-
 namespace claragenomics
 {
 namespace cudapoa
 {
+/// \defgroup cudapoa CUDA POA package
+/// Base docs for the cudapoa package (tbd)
+/// \{
+
 /// CUDA POA error type
 enum StatusType
 {
@@ -34,14 +34,16 @@ enum StatusType
     generic_error
 };
 
+/// Initialize CUDA POA context.
 StatusType Init();
 
+/// OutputType - Enum for encoding type of output
 enum OutputType
 {
     consensus = 0x1,
     msa       = 0x1 << 1
 };
 
+/// \}
 } // namespace cudapoa
 } // namespace claragenomics
-/// \}

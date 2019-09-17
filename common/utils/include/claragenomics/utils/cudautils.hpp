@@ -95,12 +95,16 @@ __host__ __device__ __forceinline__
 class scoped_device_switch
 {
 public:
+    /// \brief Constructor
+    ///
+    /// \param device_id ID of CUDA device to switch to while class is in scope
     explicit scoped_device_switch(int32_t device_id)
     {
         CGA_CU_CHECK_ERR(cudaGetDevice(&device_id_before_));
         CGA_CU_CHECK_ERR(cudaSetDevice(device_id));
     }
 
+    /// \brief Destructor switches back to original device ID
     ~scoped_device_switch()
     {
         cudaSetDevice(device_id_before_);
