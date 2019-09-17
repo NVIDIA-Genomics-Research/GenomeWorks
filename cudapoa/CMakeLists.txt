@@ -43,7 +43,7 @@ target_include_directories(cudapoa
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 )
 
-add_doxygen_source_dir(${CMAKE_CURRENT_SOURCE_DIR}/include/cudapoa)
+add_doxygen_source_dir(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 install(TARGETS cudapoa
     COMPONENT logging

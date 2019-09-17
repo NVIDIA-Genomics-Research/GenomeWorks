@@ -25,6 +25,9 @@ namespace claragenomics
 namespace cudapoa
 {
 
+/// \addtogroup cudapoa
+/// \{
+
 /// A structure to represent a sequence entry.
 struct Entry
 {

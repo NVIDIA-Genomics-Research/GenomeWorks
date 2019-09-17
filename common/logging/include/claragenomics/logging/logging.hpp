@@ -41,32 +41,46 @@
 /// \ingroup logging
 /// \{
 
+/// \brief DEBUG log level
 #define cga_log_level_debug 0
+/// \brief INFO log level
 #define cga_log_level_info 1
+/// \brief WARN log level
 #define cga_log_level_warn 2
+/// \brief ERROR log level
 #define cga_log_level_error 3
+/// \brief CRITICAL log level
 #define cga_log_level_critical 4
+/// \brief No logging
 #define cga_log_level_off 5
 
 #ifndef CGA_LOG_LEVEL
 #ifndef NDEBUG
+/// \brief Defines the logging level used in the current module
 #define CGA_LOG_LEVEL cga_log_level_debug
 #else // NDEBUG
+/// \brief Defines the logging level used in the current module
 #define CGA_LOG_LEVEL cga_log_level_error
 #endif // NDEBUG
 #endif // CGA_LOG_LEVEL
 
 #if CGA_LOG_LEVEL == cga_log_level_info
+/// \brief Set log level to INFO
 #define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_INFO
 #elif CGA_LOG_LEVEL == cga_log_level_debug
+/// \brief Set log level to DEBUG
 #define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_DEBUG
 #elif CGA_LOG_LEVEL == cga_log_level_warn
+/// \brief Set log level to WARN
 #define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_WARN
 #elif CGA_LOG_LEVEL == cga_log_level_error
+/// \brief Set log level to ERROR
 #define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_ERROR
 #elif CGA_LOG_LEVEL == cga_log_level_critical
+/// \brief Set log level to CRITICAL
 #define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_CRITICAL
 #else
+/// \brief Set log level to OFF
 #define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_OFF
 #endif
 
