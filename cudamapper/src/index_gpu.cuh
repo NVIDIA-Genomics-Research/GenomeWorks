@@ -549,7 +549,7 @@ namespace index_gpu {
 
             // fasta_objects not needed after this point
             fasta_objects.clear();
-            fasta_objects.reserve(0);
+            fasta_objects.shrink_to_fit();
 
             // move basepairs to the device
             CGA_LOG_INFO("Allocating {} bytes for read_id_to_basepairs_section_d", read_id_to_basepairs_section_h.size() * sizeof(decltype(read_id_to_basepairs_section_h)::value_type));
@@ -570,7 +570,7 @@ namespace index_gpu {
                                        )
                             );
             merged_basepairs_h.clear();
-            merged_basepairs_h.reserve(0);
+            merged_basepairs_h.shrink_to_fit();
 
             // sketch elements get generated here
             auto sketch_elements = SketchElementImpl::generate_sketch_elements(number_of_reads_to_add,
@@ -652,9 +652,9 @@ namespace index_gpu {
         }
 
         representations_from_all_loops_h.clear();
-        representations_from_all_loops_h.reserve(0);
+        representations_from_all_loops_h.shrink_to_fit();
         rest_from_all_loops_h.clear();
-        rest_from_all_loops_h.reserve(0);
+        rest_from_all_loops_h.shrink_to_fit();
 
         // build read_id_and_representation_to_sketch_elements_ and copy sketch elements to output arrays
         // TODO: This part takes a significant amount out time, think of a way to accelerate it

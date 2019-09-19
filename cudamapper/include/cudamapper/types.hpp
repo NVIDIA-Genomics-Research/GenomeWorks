@@ -36,6 +36,8 @@ using read_id_t = std::uint64_t; // can this be 32-bit?
 ///
 /// Anchor is a pair of two sketch elements with the same sketch element representation from different reads
 struct Anchor{
+    /// empty default constructor to prevent costly instantiations of all elements when initializing containers
+    Anchor(){}
     /// read ID of query
     read_id_t query_read_id_;
     /// read ID of target
