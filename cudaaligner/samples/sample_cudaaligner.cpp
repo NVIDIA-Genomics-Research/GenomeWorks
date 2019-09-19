@@ -38,15 +38,15 @@ std::unique_ptr<Aligner> initialize_batch(int32_t max_query_size,
     Init();
 
     // Initialize CUDA Aligner batch object for batched processing of alignments on the GPU.
-    const int32_t device_id                   = 0;
-    cudaStream_t stream                       = 0;
+    const int32_t device_id = 0;
+    cudaStream_t stream     = 0;
 
     std::unique_ptr<Aligner> batch = create_aligner(max_query_size,
-                                                  max_target_size,
-                                                  max_alignments_per_batch,
-                                                  AlignmentType::global_alignment,
-                                                  stream,
-                                                  device_id);
+                                                    max_target_size,
+                                                    max_alignments_per_batch,
+                                                    AlignmentType::global_alignment,
+                                                    stream,
+                                                    device_id);
 
     return std::move(batch);
 }
@@ -60,9 +60,8 @@ void generate_data(std::vector<std::pair<std::string, std::string>>& data,
     for (int32_t i = 0; i < num_examples; i++)
     {
         data.emplace_back(std::make_pair(
-                    generate_random_genome(max_query_size, rng),
-                    generate_random_genome(max_target_size, rng)
-                    ));
+            generate_random_genome(max_query_size, rng),
+            generate_random_genome(max_target_size, rng)));
     }
 }
 
@@ -96,9 +95,9 @@ int main(int argc, char** argv)
         std::exit(0);
     }
 
-    const int32_t query_length = 10000;
+    const int32_t query_length  = 10000;
     const int32_t target_length = 15000;
-    const uint32_t num_entries = 1000;
+    const uint32_t num_entries  = 1000;
 
     std::cout << "Running pairwise alignment for " << num_entries << " pairs..." << std::endl;
 
@@ -112,9 +111,9 @@ int main(int argc, char** argv)
 
     // Loop over all the alignment pairs, add them to the batch and process them.
     uint32_t data_id = 0;
-    while(data_id != num_entries)
+    while (data_id != num_entries)
     {
-        const std::string& query = data[data_id].first;
+        const std::string& query  = data[data_id].first;
         const std::string& target = data[data_id].second;
 
         // Add a pair to the batch, and check for status.
@@ -131,7 +130,9 @@ int main(int argc, char** argv)
                 for (const auto& alignment : alignments)
                 {
                     FormattedAlignment formatted = alignment->format_alignment();
-                    std::cout << formatted.first << "\n" << formatted.second << "\n" << std::endl;
+                    std::cout << formatted.first << "\n"
+                              << formatted.second << "\n"
+                              << std::endl;
                 }
             }
             // Reset batch to reuse memory for new alignments.
