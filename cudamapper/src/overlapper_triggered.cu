@@ -15,6 +15,9 @@
 #include <vector>
 #include <unordered_map>
 
+#include <thrust/device_vector.h>
+#include <thrust/sort.h>
+
 #include "overlapper_triggered.hpp"
 #include "cudamapper/overlapper.hpp"
 #include "cudamapper_utils.hpp"
@@ -25,20 +28,23 @@ namespace claragenomics {
         const auto& read_names = index.read_id_to_read_name();
         const auto& read_lengths = index.read_id_to_read_length();
 
-        //Sort the anchors by two keys (read_id, query_start)
-        std::vector<Anchor> sortedAnchors = anchors;
-        std::sort(sortedAnchors.begin(), sortedAnchors.end(), [](Anchor i, Anchor j) -> bool {
-            return  (i.query_read_id_ < j.query_read_id_) ||
-                    ((i.query_read_id_ == j.query_read_id_) &&
-                     (i.target_read_id_ < j.target_read_id_)) ||
-                    ((i.query_read_id_ == j.query_read_id_) &&
-                     (i.target_read_id_ == j.target_read_id_) &&
-                     (i.query_position_in_read_ < j.query_position_in_read_)) ||
-                    ((i.query_read_id_ == j.query_read_id_) &&
-                     (i.target_read_id_ == j.target_read_id_) &&
-                     (i.query_position_in_read_ == j.query_position_in_read_) &&
-                     (i.target_position_in_read_ < j.target_position_in_read_));
-        }); // TODO: Matcher kernel should return sorted anchors, making this unnecessary
+	thrust::device_vector<Anchor> anchors_d(anchors.begin(), anchors.end());
+
+	thrust::sort(anchors_d.begin(), anchors_d.end(),
+		     [] __device__(Anchor i, Anchor j) -> bool {
+			 return (i.query_read_id_ < j.query_read_id_) ||
+			     ((i.query_read_id_ == j.query_read_id_) &&
+			      (i.target_read_id_ < j.target_read_id_)) ||
+			     ((i.query_read_id_ == j.query_read_id_) &&
+			      (i.target_read_id_ == j.target_read_id_) &&
+			      (i.query_position_in_read_ < j.query_position_in_read_)) ||
+			     ((i.query_read_id_ == j.query_read_id_) &&
+			      (i.target_read_id_ == j.target_read_id_) &&
+			      (i.query_position_in_read_ == j.query_position_in_read_) &&
+			      (i.target_position_in_read_ < j.target_position_in_read_));
+		     }); // TODO: Matcher kernel should return sorted anchors, making this unnecessary
+
+	thrust::host_vector<Anchor> sortedAnchors(anchors_d.begin(), anchors_d.end());
 
         //Loop through the overlaps, "trigger" when an overlap is detected and add it to vector of overlaps
         //when the overlap is left
