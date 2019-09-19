@@ -19,4 +19,4 @@ target_link_libraries(${PROJECT_NAME}
                       )
 
 install(TARGETS ${PROJECT_NAME}
-            DESTINATION samples/cudaaligner)
+            DESTINATION samples)

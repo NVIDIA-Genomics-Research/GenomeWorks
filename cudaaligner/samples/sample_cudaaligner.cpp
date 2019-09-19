@@ -112,7 +112,7 @@ int main(int argc, char** argv)
 
     // Loop over all the alignment pairs, add them to the batch and process them.
     uint32_t data_id = 0;
-    while(data_id != num_entries - 1)
+    while(data_id != num_entries)
     {
         const std::string& query = data[data_id].first;
         const std::string& target = data[data_id].second;
@@ -136,13 +136,15 @@ int main(int argc, char** argv)
             }
             // Reset batch to reuse memory for new alignments.
             batch->reset();
-            std::cout << "Aligned till " << data_id << "." << std::endl;
+            std::cout << "Aligned till " << (data_id - 1) << "." << std::endl;
         }
         else if (status != success)
         {
             throw std::runtime_error("Experienced error type " + std::to_string(status));
         }
-        else
+
+        // If alignment was add successfully, increment counter.
+        if (status == success)
         {
             data_id++;
         }

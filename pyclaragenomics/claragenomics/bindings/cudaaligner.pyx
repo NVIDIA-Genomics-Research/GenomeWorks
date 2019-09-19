@@ -196,8 +196,8 @@ cdef class CudaAlignerBatch:
         encoded_target = target.encode('utf-8')
         status = deref(self.aligner).add_alignment(encoded_query, len(query),
                                                    encoded_target, len(target))
-        if status != success:
-            raise RuntimeError("Could not add alignment: Error code " + status_to_str(status))
+
+        return status
 
     def align_all(self):
         """
@@ -251,3 +251,10 @@ cdef class CudaAlignerBatch:
                 state,
                 format_alignment))
         return alignments
+
+    def reset(self):
+        """
+        Reset the contents of the batch so the same GPU memory can be used to
+        align a new set of sequences.
+        """
+        deref(self.aligner).reset()
