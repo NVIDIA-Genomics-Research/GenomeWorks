@@ -8,9 +8,10 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-#include <string>
-#include <iostream>
 #include <chrono>
+#include <getopt.h>
+#include <iostream>
+#include <string>
 
 #include <claragenomics/logging/logging.hpp>
 
@@ -18,14 +19,49 @@
 #include "matcher.hpp"
 #include "overlapper_triggered.hpp"
 
+
+static struct option options[] = {
+        {"window-size", required_argument , 0, 'w'},
+        {"kmer-size", required_argument, 0, 'k'},
+        {"help", no_argument, 0, 'h'},
+};
+
+void help();
+
 int main(int argc, char *argv[])
 {
     claragenomics::logging::Init();
 
+    uint32_t k = 15;
+    uint32_t w = 15;
+    std::string optstring = "k:w:h";
+    uint32_t argument;
+    while ((argument = getopt_long(argc, argv, optstring.c_str(), options, nullptr)) != -1){
+        switch (argument) {
+            case 'k':
+                k = atoi(optarg);
+                break;
+            case 'w':
+                w = atoi(optarg);
+                break;
+            case 'h':
+                help();
+                exit(0);
+            default:
+                exit(1);
+        }
+    }
+
     auto start_time = std::chrono::high_resolution_clock::now();
     CGA_LOG_INFO("Creating index");
-    // TODO: pass kmer and window size as parameters
-    std::unique_ptr<claragenomics::Index> index = claragenomics::Index::create_index(std::string(argv[1]), 15, 15);
+
+    if (optind >= argc){
+        help();
+        exit(1);
+    }
+
+    std::string input_filepath = std::string(argv[optind]);
+    std::unique_ptr<claragenomics::Index> index = claragenomics::Index::create_index(input_filepath, k, w);
     CGA_LOG_INFO("Created index");
     std::cerr << "Index execution time: " << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time).count() << "ms" << std::endl;
 
@@ -45,4 +81,19 @@ int main(int argc, char *argv[])
 
     overlapper.print_paf(overlaps);
     return  0;
+}
+
+void help() {
+    std::cout<<
+            "usage: cudamapper [options ...] <sequences>" << std::endl <<
+            std::endl <<
+            "    <sequences>" << std::endl <<
+            "        Input file in FASTA/FASTQ format (can be compressed with gzip)" << std::endl <<
+            "        containing sequences used for all-to-all overlapping" << std::endl <<
+            std::endl <<
+            "    options:" << std:: endl <<
+            "        -k, --kmer-size" << std:: endl <<
+            "            length of kmer to use for minimizers" << std::endl <<
+            "        -w, --window-size" << std::endl <<
+            "            length of window to use for minimizers" << std::endl;
 }
