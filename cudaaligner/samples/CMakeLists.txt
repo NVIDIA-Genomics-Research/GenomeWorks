@@ -8,17 +8,14 @@
 # license agreement from NVIDIA CORPORATION is strictly prohibited.
 #
 
-project(sample_cudapoa)
-
-get_property(cudapoa_data_include_dir GLOBAL PROPERTY cudapoa_data_include_dir)
-include_directories(${cudapoa_data_include_dir})
+project(sample_cudaaligner)
 
 add_executable(${PROJECT_NAME}
-               sample_cudapoa.cpp
+               sample_cudaaligner.cpp
                )
 
 target_link_libraries(${PROJECT_NAME}
-                      cudapoa
+                      cudaaligner
                       )
 
 install(TARGETS ${PROJECT_NAME}

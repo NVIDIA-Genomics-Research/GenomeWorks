@@ -64,6 +64,10 @@ def test_cudaaligner_long_alignments(ref_length, num_alignments):
     batch.align_all()
     batch.get_alignments()
 
+    # Test reset
+    batch.reset()
+    assert(len(batch.get_alignments()) == 0)
+
 
 @pytest.mark.gpu
 @pytest.mark.parametrize("max_seq_len, max_alignments, seq_len, num_alignments, should_succeed", [
@@ -82,23 +86,16 @@ def test_cudaaligner_various_arguments(max_seq_len, max_alignments, seq_len, num
 
     batch = CudaAlignerBatch(max_seq_len, max_seq_len, max_alignments, device_id=device)
 
-    try:
-        for _ in range(num_alignments):
-            reference = genome_sim.build_reference(seq_len)
-            query = read_sim.generate_read(reference, seq_len, insertion_error_rate=0.0)
-            target = read_sim.generate_read(reference, seq_len, insertion_error_rate=0.0)
+    success = True
+    for _ in range(num_alignments):
+        reference = genome_sim.build_reference(seq_len)
+        query = read_sim.generate_read(reference, seq_len, insertion_error_rate=0.0)
+        target = read_sim.generate_read(reference, seq_len, insertion_error_rate=0.0)
 
-            batch.add_alignment(query, target)
+        status = batch.add_alignment(query, target)
+        if status != 0:
+            success &= False
 
-        batch.align_all()
+    batch.align_all()
 
-        if should_succeed:
-            assert(True)
-            return
-    except RuntimeError:
-        if not should_succeed:
-            assert(True)
-            return
-
-    # If not returned in any of the above scenarios, then fail.
-    assert(False)
+    assert(success is should_succeed)
