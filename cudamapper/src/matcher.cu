@@ -261,7 +261,7 @@ namespace claragenomics {
                                         cudaMemcpyHostToDevice));
 
             read_id_to_sketch_elements_h.clear();
-            read_id_to_sketch_elements_h.reserve(0);
+            read_id_to_sketch_elements_h.shrink_to_fit();
 
             CGA_LOG_INFO("Allocating {} bytes for read_id_to_sketch_elements_to_check_d",
                          read_id_to_sketch_elements_to_check_h.size() * sizeof(ArrayBlock));
@@ -272,17 +272,16 @@ namespace claragenomics {
                                         read_id_to_sketch_elements_to_check_h.size() * sizeof(ArrayBlock),
                                         cudaMemcpyHostToDevice));
             read_id_to_sketch_elements_to_check_h.clear();
-            read_id_to_sketch_elements_to_check_h.reserve(0);
+            read_id_to_sketch_elements_to_check_h.shrink_to_fit();
 
             CGA_LOG_INFO("Allocating {} bytes for read_id_to_pointer_arrays_section_d",
                          read_id_to_pointer_arrays_section_h.size() * sizeof(ArrayBlock));
             device_buffer<ArrayBlock> read_id_to_pointer_arrays_section_d(read_id_to_pointer_arrays_section_h.size());
-            CGA_CU_CHECK_ERR(
-                    cudaMemcpy(read_id_to_pointer_arrays_section_d.data(), read_id_to_pointer_arrays_section_h.data(),
-                               read_id_to_pointer_arrays_section_h.size() * sizeof(ArrayBlock),
-                               cudaMemcpyHostToDevice));
+            CGA_CU_CHECK_ERR(cudaMemcpy(read_id_to_pointer_arrays_section_d.data(), read_id_to_pointer_arrays_section_h.data(),
+                                        read_id_to_pointer_arrays_section_h.size() * sizeof(ArrayBlock),
+                                        cudaMemcpyHostToDevice));
             read_id_to_pointer_arrays_section_h.clear();
-            read_id_to_pointer_arrays_section_h.reserve(0);
+            read_id_to_pointer_arrays_section_h.shrink_to_fit();
 
             CGA_LOG_INFO("Allocating {} bytes for anchors_d", total_anchors * sizeof(Anchor));
             device_buffer<Anchor> anchors_d(total_anchors);
@@ -294,7 +293,7 @@ namespace claragenomics {
                                         read_id_to_anchors_section_h.size() * sizeof(ArrayBlock),
                                         cudaMemcpyHostToDevice));
             read_id_to_anchors_section_h.clear();
-            read_id_to_anchors_section_h.reserve(0);
+            read_id_to_anchors_section_h.shrink_to_fit();
 
             generate_anchors <<<index.number_of_reads(), 32, largest_block_size * sizeof(position_in_read_t)>>>
                                                                (positions_in_reads_d.data(),
