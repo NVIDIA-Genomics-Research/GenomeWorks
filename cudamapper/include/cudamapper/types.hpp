@@ -68,6 +68,8 @@ typedef struct Overlap {
     std::string query_read_name_;
     /// target read name (e.g from FASTA)
     std::string target_read_name_;
+    /// Relative strand: "+" or "-"
+    std::string relative_strand;
     /// Number of residues (e.g anchors) between the two reads
     std::uint32_t num_residues_ = 0;
     /// Length of query sequence

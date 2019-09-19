@@ -68,7 +68,7 @@ namespace claragenomics {
             new_overlap.query_read_name_ = read_names[prev_anchor.query_read_id_];
             new_overlap.target_read_id_ = prev_anchor.target_read_id_;
             new_overlap.target_read_name_ = read_names[prev_anchor.target_read_id_];
-            new_overlap.query_length_ = read_lengths[prev_anchor.target_read_id_];
+            new_overlap.query_length_ = read_lengths[prev_anchor.query_read_id_];
             new_overlap.target_length_ = read_lengths[prev_anchor.target_read_id_];
             new_overlap.num_residues_ = tail_length;
             new_overlap.target_end_position_in_read_ = prev_anchor.target_position_in_read_;

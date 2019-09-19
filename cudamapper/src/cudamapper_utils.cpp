@@ -17,6 +17,17 @@ namespace claragenomics {
     std::vector<Overlap> fuse_overlaps(std::vector<Overlap> unfused_overlaps) {
         std::vector<Overlap> fused_overlaps;
 
+        auto set_relative_strand = [](Overlap &o){
+            if (o.target_start_position_in_read_ > o.target_end_position_in_read_){
+                o.relative_strand = "-";
+                auto tmp = o.target_end_position_in_read_;
+                o.target_end_position_in_read_ = o.target_start_position_in_read_;
+                o.target_start_position_in_read_  = tmp;
+            } else {
+                o.relative_strand = "+";
+            }
+        };
+
         if (unfused_overlaps.size() == 0) {
             return fused_overlaps;
         }
@@ -32,10 +43,13 @@ namespace claragenomics {
                 fused_overlap.query_end_position_in_read_ = next_overlap.query_end_position_in_read_;
                 fused_overlap.target_end_position_in_read_ = next_overlap.target_end_position_in_read_;
             } else {
+                set_relative_strand(fused_overlap);
                 fused_overlaps.push_back(fused_overlap);
                 fused_overlap = unfused_overlaps[i + 1];
             }
         }
+
+        set_relative_strand(fused_overlap);
         fused_overlaps.push_back(fused_overlap);
         return fused_overlaps;
     }
