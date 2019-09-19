@@ -11,9 +11,7 @@
 #
 
 import argparse
-import os.path
 
-from claragenomics.bindings import cuda
 from claragenomics.bindings import cudaaligner
 from claragenomics.simulators.genomesim import PoissonGenomeSimulator
 
