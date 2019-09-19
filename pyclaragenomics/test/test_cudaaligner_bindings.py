@@ -98,4 +98,4 @@ def test_cudaaligner_various_arguments(max_seq_len, max_alignments, seq_len, num
 
     batch.align_all()
 
-    assert(success == should_succeed)
+    assert(success is should_succeed)
