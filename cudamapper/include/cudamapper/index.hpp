@@ -84,6 +84,14 @@ namespace claragenomics {
         /// \brief creates an empty Index
         /// \return empty instacne of Index
         static std::unique_ptr<Index> create_index();
+
+        /// \brief Return the maximum kmer length allowable.
+        /// This is just the size of the representation in bits divided by two (since 2 bits are required to
+        /// represent a DNA nucleotide).
+        /// \return Return the maximum kmer length allowable
+        static uint64_t maximum_kmer_size(){
+            return sizeof(representation_t) * 8 / 2;
+        }
     };
 
 /// \}
