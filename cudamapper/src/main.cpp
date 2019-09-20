@@ -85,15 +85,13 @@ int main(int argc, char *argv[])
 
 void help() {
     std::cout<<
-            "usage: cudamapper [options ...] <sequences>" << std::endl <<
-            std::endl <<
-            "    <sequences>" << std::endl <<
-            "        Input file in FASTA/FASTQ format (can be compressed with gzip)" << std::endl <<
-            "        containing sequences used for all-to-all overlapping" << std::endl <<
-            std::endl <<
-            "    options:" << std:: endl <<
-            "        -k, --kmer-size" << std:: endl <<
-            "            length of kmer to use for minimizers" << std::endl <<
-            "        -w, --window-size" << std::endl <<
-            "            length of window to use for minimizers" << std::endl;
+    R"(usage: cudamapper [options ...] <sequences>
+            <sequences>
+                Input file in FASTA/FASTQ format (can be compressed with gzip)
+                containing sequences used for all-to-all overlapping
+            options:
+                -k, --kmer-size
+                    length of kmer to use for minimizers
+                -w, --window-size
+                    length of window to use for minimizers)";
 }
