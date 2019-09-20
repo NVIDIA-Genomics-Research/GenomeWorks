@@ -459,4 +459,58 @@ namespace claragenomics {
     }
 }
 
+    TEST(TestCudamapperOverlapperTriggerred, ReverseStrand) {
+        OverlapperTriggered overlapper;
+
+        std::vector<Overlap> unfused_overlaps;
+        std::vector<Anchor> anchors;
+
+        MockIndex test_index;
+        std::vector<std::string> testv;
+        testv.push_back("READ0");
+        testv.push_back("READ1");
+        testv.push_back("READ2");
+        std::vector<std::uint32_t> test_read_length(testv.size(), 1000);
+
+        EXPECT_CALL(test_index, read_id_to_read_name)
+                .WillRepeatedly(testing::ReturnRef(testv));
+        EXPECT_CALL(test_index, read_id_to_read_length)
+                .WillRepeatedly(testing::ReturnRef(test_read_length));
+
+        Anchor anchor1;
+        anchor1.query_read_id_ = 1;
+        anchor1.target_read_id_ = 2;
+        anchor1.query_position_in_read_ = 100;
+        anchor1.target_position_in_read_ = 1300;
+
+        Anchor anchor2;
+        anchor2.query_read_id_ = 1;
+        anchor2.target_read_id_ = 2;
+        anchor2.query_position_in_read_ = 200;
+        anchor2.target_position_in_read_ = 1200;
+
+        Anchor anchor3;
+        anchor3.query_read_id_ = 1;
+        anchor3.target_read_id_ = 2;
+        anchor3.query_position_in_read_ = 300;
+        anchor3.target_position_in_read_ = 1100;
+
+        Anchor anchor4;
+        anchor4.query_read_id_ = 1;
+        anchor4.target_read_id_ = 2;
+        anchor4.query_position_in_read_ = 400;
+        anchor4.target_position_in_read_ = 1000;
+
+        anchors.push_back(anchor1);
+        anchors.push_back(anchor2);
+        anchors.push_back(anchor3);
+        anchors.push_back(anchor4);
+
+        auto overlaps = overlapper.get_overlaps(anchors, test_index);
+        ASSERT_EQ(overlaps.size(), 1u);
+        ASSERT_GT(overlaps[0].target_end_position_in_read_, overlaps[0].target_start_position_in_read_);
+        ASSERT_EQ(overlaps[0].relative_strand, RelativeStrand::Reverse);
+        ASSERT_EQ(char(overlaps[0].relative_strand), '-');
+    }
+
 }
