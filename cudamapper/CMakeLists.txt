@@ -19,7 +19,7 @@ if(NOT ${CUDA_FOUND})
     message(FATAL_ERROR "CUDA not detected on system. Please install")
 else()
     message(STATUS "Using CUDA ${CUDA_VERSION} from ${CUDA_TOOLKIT_ROOT_DIR}")
-    set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -lineinfo -use_fast_math -Xcompiler -Wall,-Wno-pedantic -std=c++14")
+    set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -lineinfo --expt-extended-lambda -use_fast_math -Xcompiler -Wall,-Wno-pedantic -std=c++14")
 endif()
 
 cuda_add_library(index_gpu
@@ -39,8 +39,8 @@ add_library(cudamapper_utils
         src/cudamapper_utils.cpp)
 target_include_directories(cudamapper_utils PUBLIC include)
 
-add_library(overlapper_triggerred
-        src/overlapper_triggered.cpp)
+cuda_add_library(overlapper_triggerred
+        src/overlapper_triggered.cu)
 target_include_directories(overlapper_triggerred PUBLIC include)
 target_link_libraries(overlapper_triggerred logging utils)
 target_compile_options(overlapper_triggerred PRIVATE -Werror)

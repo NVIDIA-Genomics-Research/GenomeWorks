@@ -35,7 +35,7 @@ namespace claragenomics {
 
         /// \brief return anchors
         /// \return anchors
-        const std::vector<Anchor>& anchors() const;
+        std::vector<Anchor>& anchors();
     private:
 
         /// \biref list of anchors

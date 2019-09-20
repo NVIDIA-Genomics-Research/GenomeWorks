@@ -27,7 +27,7 @@ namespace claragenomics {
         /// \param anchors vector of anchor objects. Does not need to be ordered
         /// \param index representation index for reads
         /// \return vector of Overlap objects
-        virtual const std::vector<Overlap> get_overlaps(const std::vector<Anchor> &anchors, const Index &index) = 0;
+        virtual const std::vector<Overlap> get_overlaps(std::vector<Anchor> &anchors, const Index &index) = 0;
 
         /// \brief prints overlaps to stdout in <a href="https://github.com/lh3/miniasm/blob/master/PAF.md">PAF format</a>
         static void print_paf(const std::vector<Overlap> &overlaps);
