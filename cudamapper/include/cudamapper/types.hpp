@@ -32,6 +32,13 @@ using representation_t = std::uint64_t; // this depends on kmer size, in some ca
 /// read_id_t
 using read_id_t = std::uint64_t; // can this be 32-bit?
 
+/// Relative strand - represents whether query and target
+/// are on the same DNA strand (i.e Forward) or not (i.e Reverse).
+enum class RelativeStrand : unsigned char {
+    Forward = '+',
+    Reverse = '-',
+};
+
 /// Anchor - represents one anchor
 ///
 /// Anchor is a pair of two sketch elements with the same sketch element representation from different reads
@@ -70,8 +77,8 @@ typedef struct Overlap {
     std::string query_read_name_;
     /// target read name (e.g from FASTA)
     std::string target_read_name_;
-    /// Relative strand: "+" or "-"
-    std::string relative_strand;
+    /// Relative strand: Forward ("+") or Reverse("-")
+    RelativeStrand relative_strand;
     /// Number of residues (e.g anchors) between the two reads
     std::uint32_t num_residues_ = 0;
     /// Length of query sequence

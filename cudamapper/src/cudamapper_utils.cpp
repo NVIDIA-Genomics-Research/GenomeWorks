@@ -22,12 +22,12 @@ namespace claragenomics {
         // reads. TODO: Incorporate sketchelement direction value when this is implemented
         auto set_relative_strand = [](Overlap &o){
             if (o.target_start_position_in_read_ > o.target_end_position_in_read_){
-                o.relative_strand = "-";
+                o.relative_strand = RelativeStrand::Reverse;
                 auto tmp = o.target_end_position_in_read_;
                 o.target_end_position_in_read_ = o.target_start_position_in_read_;
                 o.target_start_position_in_read_  = tmp;
             } else {
-                o.relative_strand = "+";
+                o.relative_strand = RelativeStrand::Forward;
             }
         };
 

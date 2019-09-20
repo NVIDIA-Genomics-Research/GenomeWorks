@@ -509,7 +509,8 @@ namespace claragenomics {
         auto overlaps = overlapper.get_overlaps(anchors, test_index);
         ASSERT_EQ(overlaps.size(), 1u);
         ASSERT_GT(overlaps[0].target_end_position_in_read_, overlaps[0].target_start_position_in_read_);
-        ASSERT_EQ(overlaps[0].relative_strand, "-");
+        ASSERT_EQ(overlaps[0].relative_strand, RelativeStrand::Reverse);
+        ASSERT_EQ(char(overlaps[0].relative_strand), '-');
     }
 
 }
