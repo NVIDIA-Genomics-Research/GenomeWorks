@@ -60,6 +60,12 @@ int main(int argc, char *argv[])
         exit(1);
     }
 
+    if (k > claragenomics::Index::maximum_kmer_size()){
+        std::cerr << "kmer of size " << k << " is not allowed, maximum k = " <<
+            claragenomics::Index::maximum_kmer_size() << std::endl;
+        exit(1);
+    }
+
     std::string input_filepath = std::string(argv[optind]);
     std::unique_ptr<claragenomics::Index> index = claragenomics::Index::create_index(input_filepath, k, w);
     CGA_LOG_INFO("Created index");
@@ -85,13 +91,13 @@ int main(int argc, char *argv[])
 
 void help() {
     std::cout<<
-    R"(usage: cudamapper [options ...] <sequences>
-            <sequences>
-                Input file in FASTA/FASTQ format (can be compressed with gzip)
-                containing sequences used for all-to-all overlapping
-            options:
-                -k, --kmer-size
-                    length of kmer to use for minimizers
-                -w, --window-size
-                    length of window to use for minimizers)";
+    R"(Usage: cudamapper [options ...] <sequences>
+     <sequences>
+        Input file in FASTA/FASTQ format (can be compressed with gzip)
+        containing sequences used for all-to-all overlapping
+     options:
+        -k, --kmer-size
+            length of kmer to use for minimizers [15] (Max=)" << claragenomics::Index::maximum_kmer_size() << ")" << R"(
+        -w, --window-size
+            length of window to use for minimizers [15])" << std::endl;
 }
