@@ -13,6 +13,7 @@
 #include <cstdint>
 #include <string>
 
+
 namespace claragenomics {
 
 /// ArrayBlock - points to a part of an array
@@ -44,7 +45,11 @@ enum class RelativeStrand : unsigned char {
 /// Anchor is a pair of two sketch elements with the same sketch element representation from different reads
 struct Anchor{
     /// empty default constructor to prevent costly instantiations of all elements when initializing containers
+#ifdef __CUDACC__
+    __host__ __device__ Anchor(){}
+#else
     Anchor(){}
+#endif
     /// read ID of query
     read_id_t query_read_id_;
     /// read ID of target

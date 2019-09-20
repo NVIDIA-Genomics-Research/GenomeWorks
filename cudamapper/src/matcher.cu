@@ -352,7 +352,7 @@ namespace claragenomics {
         directions_of_reads_d.free();
     }
 
-    const std::vector<Anchor> &Matcher::anchors() const {
+    std::vector<Anchor> &Matcher::anchors() {
         return anchors_h_;
     }
 

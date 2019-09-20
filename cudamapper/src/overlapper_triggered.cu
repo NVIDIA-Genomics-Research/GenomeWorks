@@ -13,36 +13,81 @@
 #include <map>
 #include <string>
 #include <vector>
+#include <iterator>
 #include <unordered_map>
 
+#include <thrust/device_vector.h>
+#include <thrust/sort.h>
+
+#include <claragenomics/utils/cudautils.hpp>
 #include "overlapper_triggered.hpp"
 #include "cudamapper/overlapper.hpp"
 #include "cudamapper_utils.hpp"
 #include "matcher.hpp"
 
 namespace claragenomics {
-    std::vector<Overlap> const OverlapperTriggered::get_overlaps(const std::vector<Anchor> &anchors, const Index &index) {
+    std::vector<Overlap> const OverlapperTriggered::get_overlaps(std::vector<Anchor> &anchors, const Index &index) {
         const auto& read_names = index.read_id_to_read_name();
         const auto& read_lengths = index.read_id_to_read_length();
+	size_t total_anchors = anchors.size();
 
-        //Sort the anchors by two keys (read_id, query_start)
-        std::vector<Anchor> sortedAnchors = anchors;
-        std::sort(sortedAnchors.begin(), sortedAnchors.end(), [](Anchor i, Anchor j) -> bool {
-            return  (i.query_read_id_ < j.query_read_id_) ||
-                    ((i.query_read_id_ == j.query_read_id_) &&
-                     (i.target_read_id_ < j.target_read_id_)) ||
-                    ((i.query_read_id_ == j.query_read_id_) &&
-                     (i.target_read_id_ == j.target_read_id_) &&
-                     (i.query_position_in_read_ < j.query_position_in_read_)) ||
-                    ((i.query_read_id_ == j.query_read_id_) &&
-                     (i.target_read_id_ == j.target_read_id_) &&
-                     (i.query_position_in_read_ == j.query_position_in_read_) &&
-                     (i.target_position_in_read_ < j.target_position_in_read_));
-        }); // TODO: Matcher kernel should return sorted anchors, making this unnecessary
+	// fetch memory info of the current device
+	size_t total = 0, free = 0;
+	CGA_CU_CHECK_ERR(cudaMemGetInfo(&free, &total));
+
+	// Using 80% of available memory as heuristic since not all available memory can be used
+	// due to fragmentation.
+	size_t max_anchors_per_block = 0.8 * free/sizeof(Anchor);
+
+	// comparison function object
+	auto comp = [] __host__ __device__ (Anchor i, Anchor j) -> bool {
+	    return (i.query_read_id_ < j.query_read_id_) ||
+	    ((i.query_read_id_ == j.query_read_id_) &&
+	     (i.target_read_id_ < j.target_read_id_)) ||
+	    ((i.query_read_id_ == j.query_read_id_) &&
+	     (i.target_read_id_ == j.target_read_id_) &&
+	     (i.query_position_in_read_ < j.query_position_in_read_)) ||
+	    ((i.query_read_id_ == j.query_read_id_) &&
+	     (i.target_read_id_ == j.target_read_id_) &&
+	     (i.query_position_in_read_ == j.query_position_in_read_) &&
+	     (i.target_position_in_read_ < j.target_position_in_read_));
+	};
+
+	thrust::device_vector<Anchor> anchors_buf;
+
+	// chunking anchors array to a size that fits in memory
+	// sort the individual chunks and merge the sorted chunks into host array
+	for(std::vector<Anchor>::iterator anchors_iter = anchors.begin();
+	    anchors_iter < anchors.end();
+	    anchors_iter += max_anchors_per_block){
+
+	    auto curblock_start = anchors_iter;
+	    auto curblock_end = anchors_iter + max_anchors_per_block;
+	    if(curblock_end > anchors.end())
+		curblock_end = anchors.end();
+
+	    auto n_anchors_curblock = curblock_end - curblock_start;
+
+	    // move current block to device
+	    anchors_buf.resize(n_anchors_curblock);
+	    thrust::copy(curblock_start, curblock_end, anchors_buf.begin());
+
+	    // sort on device
+	    thrust::sort(thrust::device, anchors_buf.begin(), anchors_buf.end(), comp);
+
+	    // move sorted anchors in current block back to host
+	    thrust::copy(anchors_buf.begin(), anchors_buf.end(), curblock_start);
+
+	    // start merging the sorted anchor blocks from second iteration
+	    if(anchors_iter != anchors.begin()){
+		std::inplace_merge(anchors.begin(), curblock_start, curblock_end, comp);
+	    }
+	}
 
         //Loop through the overlaps, "trigger" when an overlap is detected and add it to vector of overlaps
         //when the overlap is left
         std::vector<Overlap> overlaps;
+
         bool in_chain = false;
         uint16_t tail_length = 0;
         uint16_t tail_length_for_chain = 3;
@@ -79,8 +124,8 @@ namespace claragenomics {
             overlaps.push_back(new_overlap);
         };
 
-        for(size_t i=0; i<sortedAnchors.size();i++){
-            current_anchor = sortedAnchors[i];
+        for(size_t i=0; i<anchors.size();i++){
+            current_anchor = anchors[i];
             if ((current_anchor.query_read_id_ == prev_anchor.query_read_id_) && (current_anchor.target_read_id_ == prev_anchor.target_read_id_)){ //TODO: For first anchor where prev anchor is not initialised can give incorrect result
                 //In the same read pairing as before
                 int score = anchor_score(prev_anchor, current_anchor);
@@ -88,7 +133,7 @@ namespace claragenomics {
                     tail_length++;
                     if (tail_length == tail_length_for_chain) {//we enter a chain
                         in_chain = true;
-                        overlap_start_anchor = sortedAnchors[i-tail_length + 1]; //TODO check
+                        overlap_start_anchor = anchors[i-tail_length + 1]; //TODO check
                     }
                 } else {
                     if(in_chain){
@@ -116,6 +161,7 @@ namespace claragenomics {
         if(in_chain){
             terminate_anchor();
         }
+
         //Return fused overlaps
         return fuse_overlaps(overlaps);
     }
