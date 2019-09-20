@@ -498,7 +498,7 @@ __device__ void hirschberg_myers_single_char_warp(int8_t* path, char query_char,
 template <typename T>
 struct parallel_warp_shared_stack_state
 {
-    int32_t mutex_;
+    uint32_t mutex_;
     int32_t active_warps_;
     T* buffer_begin_;
     T* cur_end_;
@@ -512,7 +512,7 @@ public:
     __device__ parallel_warp_shared_stack(parallel_warp_shared_stack_state<T>* data, T* buffer_begin, T* buffer_end)
         : data_(data)
     {
-        constexpr int32_t warp_size        = 32;
+        constexpr int32_t warp_size = 32;
         assert(buffer_begin < buffer_end);
         if (threadIdx.x == 0 && threadIdx.y == 0 && threadIdx.z == 0)
         {
@@ -532,8 +532,8 @@ public:
 
     __device__ bool inline push(T const& t)
     {
-        constexpr int32_t warp_size        = 32;
-        lock_mutex();
+        constexpr int32_t warp_size = 32;
+        lock_mutex_high_priority();
         bool success = false;
         __syncwarp();
 
@@ -561,7 +561,7 @@ public:
 
     __device__ inline bool pop(T& element)
     {
-        constexpr int32_t warp_size        = 32;
+        constexpr int32_t warp_size = 32;
         lock_mutex();
         if (threadIdx.x % warp_size == 0)
         {
@@ -602,21 +602,35 @@ public:
 private:
     __device__ inline void release_mutex()
     {
-        constexpr int32_t warp_size        = 32;
+        constexpr int32_t warp_size = 32;
         __threadfence_block();
         if (threadIdx.x % warp_size == 0)
         {
-            atomicExch(&(data_->mutex_), 0);
+            atomicAnd(&(data_->mutex_), 0x0000'0002u);
         }
     };
 
     __device__ inline void lock_mutex()
     {
-        constexpr int32_t warp_size        = 32;
+        constexpr int32_t warp_size = 32;
         if (threadIdx.x % warp_size == 0)
         {
             while (0 != atomicCAS(&(data_->mutex_), 0, 1))
             {
+            };
+        }
+        __threadfence_block();
+    }
+
+    __device__ inline void lock_mutex_high_priority() const
+    {
+        constexpr int32_t warp_size = 32;
+        if (threadIdx.x % warp_size == 0)
+        {
+            atomicOr(&(data_->mutex_), 0x0000'0002u); // reserve mutex
+            while (2 != atomicCAS(&(data_->mutex_), 2, 1))
+            {
+                atomicOr(&(data_->mutex_), 0x0000'0002u); // reserve mutex
             };
         }
         __threadfence_block();
@@ -641,7 +655,7 @@ __device__ bool hirschberg_myers(
     char const* query_end_absolute,
     int32_t alignment_idx)
 {
-    constexpr int32_t warp_size        = 32;
+    constexpr int32_t warp_size = 32;
     assert(blockDim.x == warp_size);
     assert(blockDim.z == 1);
     assert(query_begin_absolute <= query_end_absolute);
@@ -742,7 +756,7 @@ __global__ void hirschberg_myers_compute_alignment(
     int32_t max_sequence_length,
     int32_t n_alignments)
 {
-    constexpr int32_t warp_size        = 32;
+    constexpr int32_t warp_size     = 32;
     CGA_CONSTEXPR int32_t word_size = sizeof(WordType) * CHAR_BIT;
 
     assert(blockDim.x == warp_size);
