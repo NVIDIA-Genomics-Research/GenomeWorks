@@ -67,7 +67,7 @@ int main(int argc, char *argv[])
     }
 
     std::string input_filepath = std::string(argv[optind]);
-    std::unique_ptr<claragenomics::Index> index = claragenomics::Index::create_index(input_filepath, k, w);
+    std::unique_ptr<claragenomics::Index> index = claragenomics::Index::create_index(input_filepath, k, w, 7, 7);
     CGA_LOG_INFO("Created index");
     std::cerr << "Index execution time: " << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time).count() << "ms" << std::endl;
 

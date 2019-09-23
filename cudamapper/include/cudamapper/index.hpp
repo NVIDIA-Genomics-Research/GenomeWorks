@@ -79,7 +79,9 @@ namespace claragenomics {
         /// \param kmer_size k - the kmer length
         /// \param window_size w - the length of the sliding window used to find sketch elements
         /// \return instance of Index
-        static std::unique_ptr<Index> create_index(const std::string& query_filename, const std::uint64_t kmer_size, const std::uint64_t window_size);
+        static std::unique_ptr<Index>
+        create_index(const std::string &query_filename, const std::uint64_t kmer_size, const std::uint64_t window_size,
+                     const std::uint64_t first_read, const std::uint64_t last_read);
 
         /// \brief creates an empty Index
         /// \return empty instacne of Index

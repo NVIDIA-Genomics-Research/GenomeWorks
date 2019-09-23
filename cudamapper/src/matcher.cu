@@ -94,7 +94,7 @@ namespace claragenomics {
         }
     }
 
-    Matcher::Matcher(const Index &index, unsigned long match_point) {
+    Matcher::Matcher(const Index &index, uint32_t query_target_division_idx) {
 
         if (0 == index.number_of_reads()) {
             return;
@@ -180,7 +180,12 @@ namespace claragenomics {
             std::uint64_t total_anchors = 0;
             std::uint32_t largest_block_size = 0;
 
-            for (std::size_t read_id = 0; read_id < match_point; ++read_id) {
+            auto num_reads_to_query = query_target_division_idx;
+            if (query_target_division_idx == 0){
+                num_reads_to_query = index.number_of_reads();
+            }
+
+            for (std::size_t read_id = 0; read_id < num_reads_to_query; ++read_id) {
                 // First determine the starting index of section of pointer arrays that belong to read with read_id.
                 // Reads are processed consecutively. Pointer arrays section for read 0 will start at index 0 and if we assume that all sketch elements in read 0 had a total of 10 unique representation its section will end at index 9. This means that the section for read 1 belongs at index 0 + 10 = 10.
                 if (read_id != 0) {
@@ -216,25 +221,25 @@ namespace claragenomics {
                         ArrayBlock section_to_check;
 
 
-                        //This is the part we need to modify
-
                         auto start = array_block_for_this_representation_and_read.first_element_ +
                                                           array_block_for_this_representation_and_read.block_size_; // element after the last element for this read_id
+
                         auto end = whole_data_arrays_section_for_representation.first_element_ + whole_data_arrays_section_for_representation.block_size_;
 
-
-                        section_to_check.block_size_ = 0;
-                        //TODO: This should be a bisectional search.
-                        for (int sketch_element_idx=start; sketch_element_idx<end; sketch_element_idx++){
-                            if (read_ids_h[sketch_element_idx] >= match_point) {
-                                section_to_check.first_element_ = sketch_element_idx;
-                                section_to_check.block_size_ = end - section_to_check.first_element_; // number of remaining elements
-                                break;
+                        if (query_target_division_idx == 0){
+                            section_to_check.first_element_ = start;
+                            section_to_check.block_size_ = end - start;
+                        }else{
+                            section_to_check.block_size_ = 0;
+                            //TODO: This should be a bisectional search.
+                            for (int sketch_element_idx = start; sketch_element_idx < end; sketch_element_idx++) {
+                                if (read_ids_h[sketch_element_idx] >= query_target_division_idx) {
+                                    section_to_check.first_element_ = sketch_element_idx;
+                                    section_to_check.block_size_ = end - section_to_check.first_element_; // number of remaining elements
+                                    break;
+                                }
                             }
                         }
-
-                        //section_to_check.first_element_ = start;
-                        //section_to_check.block_size_ = end - start;
                         // TODO: if block_size_ == 0
                         if (section_to_check.block_size_) {
                             read_id_to_sketch_elements_h.emplace_back(array_block_for_this_representation_and_read);

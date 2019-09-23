@@ -54,7 +54,7 @@ namespace claragenomics {
         /// \param query_filename filepath to reads in FASTA or FASTQ format
         /// \param kmer_size k - the kmer length
         /// \param window_size w - the length of the sliding window used to find sketch elements
-        IndexGPU(const std::string& query_filename, const std::uint64_t kmer_size, const std::uint64_t window_size);
+        IndexGPU(const std::string& query_filename, const std::uint64_t kmer_size, const std::uint64_t window_size, const std::uint32_t first_read, const std::uint32_t last_read);
 
         /// \brief Constructor
         IndexGPU();
@@ -104,6 +104,8 @@ namespace claragenomics {
         const std::uint64_t kmer_size_;
         const std::uint64_t window_size_;
         std::uint64_t number_of_reads_;
+        std::uint32_t first_read_;
+        std::uint32_t last_read_;
 
         std::vector<position_in_read_t> positions_in_reads_;
         std::vector<read_id_t> read_ids_;
@@ -439,8 +441,8 @@ namespace index_gpu {
 } // namespace details
 
     template <typename SketchElementImpl>
-    IndexGPU<SketchElementImpl>::IndexGPU(const std::string& query_filename, const std::uint64_t kmer_size, const std::uint64_t window_size)
-    : kmer_size_(kmer_size), window_size_(window_size), number_of_reads_(0)
+    IndexGPU<SketchElementImpl>::IndexGPU(const std::string& query_filename, const std::uint64_t kmer_size, const std::uint64_t window_size, const std::uint32_t first_read, const std::uint32_t last_read)
+    : kmer_size_(kmer_size), window_size_(window_size), number_of_reads_(0), first_read_(first_read), last_read_(last_read)
     {
         generate_index(query_filename);
     }
@@ -497,29 +499,60 @@ namespace index_gpu {
         std::vector<std::vector<representation_t>> representations_from_all_loops_h;
         std::vector<std::vector<typename SketchElementImpl::ReadidPositionDirection>> rest_from_all_loops_h;
 
+        std::cerr << first_read_;
+        std::cerr << std::endl;
+        std::cerr << last_read_;
+        std::cerr << std::endl;
+
+
+        std::uint32_t current_chunk_start = 0;
+        std::uint32_t current_chunk_end = 0;
+
         while (true) {
+            std::cerr << "In the loop" << std::endl;
             //read the query file:
             std::vector<std::unique_ptr<BioParserSequence>> fasta_objects;
             bool parser_status = query_parser->parse(fasta_objects, parser_buffer_size_in_bytes);
+
+            current_chunk_end += fasta_objects.size() - 1;
+
+            //Nothing to do
+            if (current_chunk_end < first_read_){
+                continue;
+            };
+
+            // Exceeded the number of reads to check, leave the loop
+            if (current_chunk_start > last_read_){
+                break;
+            };
 
             std::uint64_t total_basepairs = 0;
             std::vector<ArrayBlock> read_id_to_basepairs_section_h;
 
             // find out how many basepairs each read has and determine its section in the big array with all basepairs
             for (std::size_t fasta_object_id = 0; fasta_object_id < fasta_objects.size(); ++fasta_object_id) {
-                // skip reads which are shorter than one window
-                if (fasta_objects[fasta_object_id]->data().length() >= window_size_ + kmer_size_ - 1) {
-                    read_id_to_basepairs_section_h.emplace_back(ArrayBlock{total_basepairs, static_cast<std::uint32_t>(fasta_objects[fasta_object_id]->data().length())});
-                    total_basepairs += fasta_objects[fasta_object_id]->data().length();
-                    read_id_to_read_name_.push_back(fasta_objects[fasta_object_id]->name());
-                    read_id_to_read_length_.push_back(fasta_objects[fasta_object_id]->data().length());
-                } else {
-                    CGA_LOG_INFO("Skipping read {}. It has {} basepairs, one window covers {} basepairs",
-                                 fasta_objects[fasta_object_id]->name(),
-                                 fasta_objects[fasta_object_id]->data().length(), window_size_ + kmer_size_ - 1
-                                );
+
+
+                if (((current_chunk_start + fasta_object_id) >= first_read_)  &&  ((current_chunk_start + fasta_object_id) <= last_read_)){
+
+                    std::cerr << "Adding read " << fasta_object_id << std::endl;
+
+                    if (fasta_objects[fasta_object_id]->data().length() >= window_size_ + kmer_size_ - 1) {
+                        read_id_to_basepairs_section_h.emplace_back(ArrayBlock{total_basepairs,
+                                                                               static_cast<std::uint32_t>(fasta_objects[fasta_object_id]->data().length())});
+                        total_basepairs += fasta_objects[fasta_object_id]->data().length();
+                        read_id_to_read_name_.push_back(fasta_objects[fasta_object_id]->name());
+                        read_id_to_read_length_.push_back(fasta_objects[fasta_object_id]->data().length());
+                    } else {
+                        CGA_LOG_INFO("Skipping read {}. It has {} basepairs, one window covers {} basepairs",
+                                     fasta_objects[fasta_object_id]->name(),
+                                     fasta_objects[fasta_object_id]->data().length(), window_size_ + kmer_size_ - 1
+                        );
+                    }
                 }
             }
+
+            current_chunk_start += fasta_objects.size();
 
             auto number_of_reads_to_add = read_id_to_basepairs_section_h.size(); // This is the number of reads in this specific iteration
             number_of_reads_ += number_of_reads_to_add; // this is the *total* number of reads.
@@ -554,6 +587,8 @@ namespace index_gpu {
             // move basepairs to the device
             CGA_LOG_INFO("Allocating {} bytes for read_id_to_basepairs_section_d", read_id_to_basepairs_section_h.size() * sizeof(decltype(read_id_to_basepairs_section_h)::value_type));
             device_buffer<decltype(read_id_to_basepairs_section_h)::value_type> read_id_to_basepairs_section_d( read_id_to_basepairs_section_h.size());
+            //device_buffer<ArrayBlock> read_id_to_basepairs_section_d(1);
+            CGA_LOG_INFO("Allocated");
             CGA_CU_CHECK_ERR(cudaMemcpy(read_id_to_basepairs_section_d.data(),
                                         read_id_to_basepairs_section_h.data(),
                                         read_id_to_basepairs_section_h.size() * sizeof(decltype(read_id_to_basepairs_section_h)::value_type),

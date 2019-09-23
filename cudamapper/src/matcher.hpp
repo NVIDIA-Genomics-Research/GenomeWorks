@@ -31,7 +31,7 @@ namespace claragenomics {
 
         /// \brief Construtor
         /// \param index index to generate anchors from
-        Matcher(const Index &index, unsigned long i);
+        Matcher(const Index &index, uint32_t query_target_division_idx);
 
         /// \brief return anchors
         /// \return anchors
