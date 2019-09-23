@@ -94,7 +94,7 @@ namespace claragenomics {
         }
     }
 
-    Matcher::Matcher(const Index &index) {
+    Matcher::Matcher(const Index &index, unsigned long match_point) {
 
         if (0 == index.number_of_reads()) {
             return;
@@ -180,7 +180,7 @@ namespace claragenomics {
             std::uint64_t total_anchors = 0;
             std::uint32_t largest_block_size = 0;
 
-            for (std::size_t read_id = 0; read_id < index.number_of_reads(); ++read_id) {
+            for (std::size_t read_id = 0; read_id < match_point; ++read_id) {
                 // First determine the starting index of section of pointer arrays that belong to read with read_id.
                 // Reads are processed consecutively. Pointer arrays section for read 0 will start at index 0 and if we assume that all sketch elements in read 0 had a total of 10 unique representation its section will end at index 9. This means that the section for read 1 belongs at index 0 + 10 = 10.
                 if (read_id != 0) {
@@ -214,12 +214,27 @@ namespace claragenomics {
                         // Due to symmetry we only want to check reads with read_id greater than the current read_id.
                         // We are only interested in part of whole_data_arrays_section_for_representation that comes after array_block_for_this_representation_and_read because only sketch elements in that part have read_id greater than the current read_id
                         ArrayBlock section_to_check;
-                        section_to_check.first_element_ = array_block_for_this_representation_and_read.first_element_ +
-                                                          array_block_for_this_representation_and_read.block_size_; // element after the last element for this read_id
-                        section_to_check.block_size_ = whole_data_arrays_section_for_representation.first_element_ +
-                                                       whole_data_arrays_section_for_representation.block_size_ -
-                                                       section_to_check.first_element_; // number of remaining elements
 
+
+                        //This is the part we need to modify
+
+                        auto start = array_block_for_this_representation_and_read.first_element_ +
+                                                          array_block_for_this_representation_and_read.block_size_; // element after the last element for this read_id
+                        auto end = whole_data_arrays_section_for_representation.first_element_ + whole_data_arrays_section_for_representation.block_size_;
+
+
+                        section_to_check.block_size_ = 0;
+                        //TODO: This should be a bisectional search.
+                        for (int sketch_element_idx=start; sketch_element_idx<end; sketch_element_idx++){
+                            if (read_ids_h[sketch_element_idx] >= match_point) {
+                                section_to_check.first_element_ = sketch_element_idx;
+                                section_to_check.block_size_ = end - section_to_check.first_element_; // number of remaining elements
+                                break;
+                            }
+                        }
+
+                        //section_to_check.first_element_ = start;
+                        //section_to_check.block_size_ = end - start;
                         // TODO: if block_size_ == 0
                         if (section_to_check.block_size_) {
                             read_id_to_sketch_elements_h.emplace_back(array_block_for_this_representation_and_read);
@@ -297,13 +312,13 @@ namespace claragenomics {
 
             generate_anchors <<<index.number_of_reads(), 32, largest_block_size * sizeof(position_in_read_t)>>>
                                                                (positions_in_reads_d.data(),
-                                                                       read_ids_d.data(),
-                                                                       // directions_of_reads_d.data(), // currently we don't use direction
-                                                                       read_id_to_sketch_elements_d.data(),
-                                                                       read_id_to_sketch_elements_to_check_d.data(),
-                                                                       read_id_to_pointer_arrays_section_d.data(),
-                                                                       anchors_d.data(),
-                                                                       read_id_to_anchors_section_d.data()
+                                                                read_ids_d.data(),
+                                                                // directions_of_reads_d.data(), // currently we don't use direction
+                                                                read_id_to_sketch_elements_d.data(),
+                                                                read_id_to_sketch_elements_to_check_d.data(),
+                                                                read_id_to_pointer_arrays_section_d.data(),
+                                                                anchors_d.data(),
+                                                                read_id_to_anchors_section_d.data()
                                                                );
 
             CGA_CU_CHECK_ERR(cudaDeviceSynchronize());

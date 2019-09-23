@@ -71,9 +71,12 @@ int main(int argc, char *argv[])
     CGA_LOG_INFO("Created index");
     std::cerr << "Index execution time: " << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time).count() << "ms" << std::endl;
 
+    auto num_reads = index.get()->number_of_reads();
+    auto match_point = num_reads / 2; // Let's say half the reads are query and half are target.
+
     start_time = std::chrono::high_resolution_clock::now();
     CGA_LOG_INFO("Started matcher");
-    claragenomics::Matcher matcher(*index);
+    claragenomics::Matcher matcher(*index, match_point);
     CGA_LOG_INFO("Finished matcher");
     std::cerr << "Matcher execution time: " << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time).count() << "ms" << std::endl;
 

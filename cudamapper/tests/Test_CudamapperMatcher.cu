@@ -24,7 +24,7 @@ namespace claragenomics {
         // only one read -> no anchors
 
         IndexGPU<Minimizer> index(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/gatt.fasta", 4, 1);
-        Matcher matcher(index);
+        Matcher matcher(index, 0);
 
         const std::vector<Anchor>& anchors = matcher.anchors();
         ASSERT_EQ(anchors.size(), 0u);
