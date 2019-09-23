@@ -499,17 +499,10 @@ namespace index_gpu {
         std::vector<std::vector<representation_t>> representations_from_all_loops_h;
         std::vector<std::vector<typename SketchElementImpl::ReadidPositionDirection>> rest_from_all_loops_h;
 
-        std::cerr << first_read_;
-        std::cerr << std::endl;
-        std::cerr << last_read_;
-        std::cerr << std::endl;
-
-
         std::uint32_t current_chunk_start = 0;
         std::uint32_t current_chunk_end = 0;
 
         while (true) {
-            std::cerr << "In the loop" << std::endl;
             //read the query file:
             std::vector<std::unique_ptr<BioParserSequence>> fasta_objects;
             bool parser_status = query_parser->parse(fasta_objects, parser_buffer_size_in_bytes);
@@ -529,14 +522,10 @@ namespace index_gpu {
             std::uint64_t total_basepairs = 0;
             std::vector<ArrayBlock> read_id_to_basepairs_section_h;
 
+            size_t fasta_object_id_offset = 0;
             // find out how many basepairs each read has and determine its section in the big array with all basepairs
             for (std::size_t fasta_object_id = 0; fasta_object_id < fasta_objects.size(); ++fasta_object_id) {
-
-
                 if (((current_chunk_start + fasta_object_id) >= first_read_)  &&  ((current_chunk_start + fasta_object_id) <= last_read_)){
-
-                    std::cerr << "Adding read " << fasta_object_id << std::endl;
-
                     if (fasta_objects[fasta_object_id]->data().length() >= window_size_ + kmer_size_ - 1) {
                         read_id_to_basepairs_section_h.emplace_back(ArrayBlock{total_basepairs,
                                                                                static_cast<std::uint32_t>(fasta_objects[fasta_object_id]->data().length())});
@@ -549,6 +538,8 @@ namespace index_gpu {
                                      fasta_objects[fasta_object_id]->data().length(), window_size_ + kmer_size_ - 1
                         );
                     }
+                } else if ((current_chunk_start + fasta_object_id) < first_read_){
+                    fasta_object_id_offset += 1;
                 }
             }
 
@@ -569,7 +560,7 @@ namespace index_gpu {
 
             // copy each read to its section of the basepairs array
             read_id_t read_id = 0;
-            for (std::size_t fasta_object_id = 0; fasta_object_id < number_of_reads_to_add; ++fasta_object_id) {
+            for (std::size_t fasta_object_id = fasta_object_id_offset; fasta_object_id < number_of_reads_to_add + fasta_object_id_offset; ++fasta_object_id) { //TODO do not start from zero
                 // skip reads which are shorter than one window
                 if (fasta_objects[fasta_object_id]->data().length() >= window_size_ + kmer_size_ - 1) {
                     std::copy(std::begin(fasta_objects[fasta_object_id]->data()),
