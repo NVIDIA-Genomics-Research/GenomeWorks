@@ -71,8 +71,6 @@ add_subdirectory(tests)
 
 install(TARGETS cudamapper 
     EXPORT cudamapper
-    DESTINATION lib
-    INCLUDES DESTINATION include
+    DESTINATION bin
 )
-install(DIRECTORY include/ DESTINATION include)
 install(EXPORT cudamapper DESTINATION cmake)
