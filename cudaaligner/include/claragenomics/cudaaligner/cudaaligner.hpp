@@ -12,17 +12,17 @@
 
 #include <cstdint>
 
-/// \defgroup cudaaligner CUDA Aligner package
-/// Base docs for the cudaaligner package (tbd)
-/// \{
-
 namespace claragenomics
 {
 
 namespace cudaaligner
 {
+/// \defgroup cudaaligner CUDA Aligner package
+/// Base docs for the cudaaligner package (tbd)
+/// \{
+
 /// CUDA Aligner error type
-enum class StatusType
+enum StatusType
 {
     success = 0,
     uninitialized,
@@ -33,14 +33,14 @@ enum class StatusType
 };
 
 /// AlignmentType - Enum for storing type of alignment.
-enum class AlignmentType
+enum AlignmentType
 {
-    global = 0,
+    global_alignment = 0,
     unset
 };
 
 /// AlignmentState - Enum for encoding each position in alignment.
-enum class AlignmentState : int8_t
+enum AlignmentState : int8_t
 {
     match = 0,
     mismatch,
@@ -48,7 +48,8 @@ enum class AlignmentState : int8_t
     deletion   // Present in query, absent in target
 };
 
+/// Initialize CUDA Aligner context.
 StatusType Init();
+/// \}
 } // namespace cudaaligner
 } // namespace claragenomics
-/// \}
