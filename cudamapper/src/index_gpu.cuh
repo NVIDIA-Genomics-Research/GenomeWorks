@@ -360,83 +360,127 @@ namespace index_gpu {
                      std::vector<std::vector<Index::RepresentationToSketchElements>>& read_id_and_representation_to_sketch_elements
                     )
     {
-        read_id_and_representation_to_sketch_elements.resize(number_of_reads);
-        positions_in_reads.reserve(input_readids_positions_directions.size());
-        read_ids.reserve(input_readids_positions_directions.size());
-        directions_of_reads.reserve(input_readids_positions_directions.size());
+        std::vector<std::pair<std::size_t, std::size_t>> sections_for_threads = generate_sections_for_multithreaded_index_building(input_representations);
 
-        representation_t current_representation = input_representations[0];
-        read_id_t current_read_id = input_readids_positions_directions[0].read_id_;
-        decltype(ArrayBlock::block_size_) sketch_elements_with_curr_representation_and_read_id = 1;
-        decltype(ArrayBlock::block_size_) sketch_elements_with_curr_representation = 0;
-        decltype(ArrayBlock::first_element_) first_sketch_element_with_this_representation = 0;
-        std::vector<read_id_t> read_ids_with_current_representation;
-        read_ids_with_current_representation.push_back(current_read_id);
-        read_id_and_representation_to_sketch_elements[current_read_id].push_back({current_representation,
-                                                                                   {0, 0},
-                                                                                   {first_sketch_element_with_this_representation, 0}
-                                                                                  }
-                                                                                 );
-        positions_in_reads.push_back(input_readids_positions_directions[0].position_in_read_);
-        read_ids.push_back(input_readids_positions_directions[0].read_id_);
-        directions_of_reads.push_back(DirectionOfRepresentation(input_readids_positions_directions[0].direction_));
+        std::vector<std::vector<std::vector<Index::RepresentationToSketchElements>>> read_id_and_representation_to_sketch_elements_per_section(sections_for_threads.size());
+        positions_in_reads.resize(input_readids_positions_directions.size());
+        read_ids.resize(input_readids_positions_directions.size());
+        directions_of_reads.resize(input_readids_positions_directions.size());
 
-        for (std::size_t sketch_element_index = 1; sketch_element_index < input_representations.size(); ++sketch_element_index) {
-            // TODO: edit the interface so this copy is not needed
-            positions_in_reads.push_back(input_readids_positions_directions[sketch_element_index].position_in_read_);
-            read_ids.push_back(input_readids_positions_directions[sketch_element_index].read_id_);
-            directions_of_reads.push_back(DirectionOfRepresentation(input_readids_positions_directions[sketch_element_index].direction_));
+        auto build_index_lambda = [number_of_reads,
+                                   &read_id_and_representation_to_sketch_elements_per_section,
+                                   &positions_in_reads,
+                                   &read_ids,
+                                   &directions_of_reads,
+                                   &input_representations,
+                                   &input_readids_positions_directions,
+                                   &sections_for_threads
+                                   ]
+                                   (std::uint32_t section_id)
+        {
+            read_id_and_representation_to_sketch_elements_per_section[section_id].resize(number_of_reads);
 
-            if (input_representations[sketch_element_index] != current_representation) { // new representation -> save data for the previous one
-                // increase the number of sketch elements with previous representation
-                sketch_elements_with_curr_representation += sketch_elements_with_curr_representation_and_read_id;
-                // save the number sketch elements with the previous representation and read_id
-                read_id_and_representation_to_sketch_elements[current_read_id].back().sketch_elements_for_representation_and_read_id_.block_size_ = sketch_elements_with_curr_representation_and_read_id;
-                // update the number of sketch elements with previous representation and all read_ids
-                for (const read_id_t read_id_to_update : read_ids_with_current_representation) {
-                    read_id_and_representation_to_sketch_elements[read_id_to_update].back().sketch_elements_for_representation_and_all_read_ids_.block_size_ = sketch_elements_with_curr_representation;
-                }
-                // start processing new representation
-                current_representation = input_representations[sketch_element_index];
-                current_read_id = input_readids_positions_directions[sketch_element_index].read_id_;
-                sketch_elements_with_curr_representation_and_read_id = 1;
-                sketch_elements_with_curr_representation = 0;
-                first_sketch_element_with_this_representation = sketch_element_index;
-                read_ids_with_current_representation.clear();
-                read_ids_with_current_representation.push_back(current_read_id);
-                read_id_and_representation_to_sketch_elements[current_read_id].push_back({current_representation,
-                                                                                           {sketch_element_index, 0},
-                                                                                           {first_sketch_element_with_this_representation, 0}
-                                                                                          }
-                                                                                         );
-            } else { // still the same representation
-                if (input_readids_positions_directions[sketch_element_index].read_id_ != current_read_id) { // new read_id -> save the data for the previous one
-                    // increase the number of sketch elements with this representation
+            std::size_t first_element_in_this_section = sections_for_threads[section_id].first;
+            std::size_t last_element_in_this_section = sections_for_threads[section_id].second;
+
+            representation_t current_representation = input_representations[first_element_in_this_section];
+            read_id_t current_read_id = input_readids_positions_directions[first_element_in_this_section].read_id_;
+            decltype(ArrayBlock::block_size_) sketch_elements_with_curr_representation_and_read_id = 1;
+            decltype(ArrayBlock::block_size_) sketch_elements_with_curr_representation = 0;
+            decltype(ArrayBlock::first_element_) first_sketch_element_with_this_representation = first_element_in_this_section;
+            std::vector<read_id_t> read_ids_with_current_representation;
+            read_ids_with_current_representation.push_back(current_read_id);
+            read_id_and_representation_to_sketch_elements_per_section[section_id][current_read_id].push_back({current_representation,
+                                                                                                              {first_element_in_this_section, 0},
+                                                                                                              {first_sketch_element_with_this_representation, 0}
+                                                                                                             }
+                                                                                                            );
+
+            positions_in_reads[first_element_in_this_section] = input_readids_positions_directions[first_element_in_this_section].position_in_read_;
+            read_ids[first_element_in_this_section] = input_readids_positions_directions[first_element_in_this_section].read_id_;
+            directions_of_reads[first_element_in_this_section] = DirectionOfRepresentation(input_readids_positions_directions[first_element_in_this_section].direction_);
+
+            for (std::size_t sketch_element_index = first_element_in_this_section + 1; sketch_element_index < last_element_in_this_section; ++sketch_element_index) {
+                // TODO: edit the interface so this copy is not needed
+                positions_in_reads[sketch_element_index] = input_readids_positions_directions[sketch_element_index].position_in_read_;
+                read_ids[sketch_element_index] = input_readids_positions_directions[sketch_element_index].read_id_;
+                directions_of_reads[sketch_element_index] = DirectionOfRepresentation(input_readids_positions_directions[sketch_element_index].direction_);
+
+                if (input_representations[sketch_element_index] != current_representation) { // new representation -> save data for the previous one
+                    // increase the number of sketch elements with previous representation
                     sketch_elements_with_curr_representation += sketch_elements_with_curr_representation_and_read_id;
-                    // save the number of sketch elements for the previous read_id
-                    read_id_and_representation_to_sketch_elements[current_read_id].back().sketch_elements_for_representation_and_read_id_.block_size_ = sketch_elements_with_curr_representation_and_read_id;
-                    // start processing new read_id
+                    // save the number sketch elements with the previous representation and read_id
+                    read_id_and_representation_to_sketch_elements_per_section[section_id][current_read_id].back().sketch_elements_for_representation_and_read_id_.block_size_ = sketch_elements_with_curr_representation_and_read_id;
+                    // update the number of sketch elements with previous representation and all read_ids
+                    for (const read_id_t read_id_to_update : read_ids_with_current_representation) {
+                        read_id_and_representation_to_sketch_elements_per_section[section_id][read_id_to_update].back().sketch_elements_for_representation_and_all_read_ids_.block_size_ = sketch_elements_with_curr_representation;
+                    }
+                    // start processing new representation
+                    current_representation = input_representations[sketch_element_index];
                     current_read_id = input_readids_positions_directions[sketch_element_index].read_id_;
                     sketch_elements_with_curr_representation_and_read_id = 1;
+                    sketch_elements_with_curr_representation = 0;
+                    first_sketch_element_with_this_representation = sketch_element_index;
+                    read_ids_with_current_representation.clear();
                     read_ids_with_current_representation.push_back(current_read_id);
-                    read_id_and_representation_to_sketch_elements[current_read_id].push_back({current_representation,
-                                                                                               {sketch_element_index, 0},
-                                                                                               {first_sketch_element_with_this_representation, 0}
-                                                                                              }
-                                                                                             );
-                } else { // still the same read_id
-                    ++sketch_elements_with_curr_representation_and_read_id;
+                    read_id_and_representation_to_sketch_elements_per_section[section_id][current_read_id].push_back({current_representation,
+                                                                                                                      {sketch_element_index, 0},
+                                                                                                                      {first_sketch_element_with_this_representation, 0}
+                                                                                                                     }
+                                                                                                                    );
+                } else { // still the same representation
+                    if (input_readids_positions_directions[sketch_element_index].read_id_ != current_read_id) { // new read_id -> save the data for the previous one
+                        // increase the number of sketch elements with this representation
+                        sketch_elements_with_curr_representation += sketch_elements_with_curr_representation_and_read_id;
+                        // save the number of sketch elements for the previous read_id
+                        read_id_and_representation_to_sketch_elements_per_section[section_id][current_read_id].back().sketch_elements_for_representation_and_read_id_.block_size_ = sketch_elements_with_curr_representation_and_read_id;
+                        // start processing new read_id
+                        current_read_id = input_readids_positions_directions[sketch_element_index].read_id_;
+                        sketch_elements_with_curr_representation_and_read_id = 1;
+                        read_ids_with_current_representation.push_back(current_read_id);
+                        read_id_and_representation_to_sketch_elements_per_section[section_id][current_read_id].push_back({current_representation,
+                                                                                                                          {sketch_element_index, 0},
+                                                                                                                          {first_sketch_element_with_this_representation, 0}
+                                                                                                                         }
+                                                                                                                        );
+                    } else { // still the same read_id
+                        ++sketch_elements_with_curr_representation_and_read_id;
+                    }
                 }
             }
+            // process the last element
+            // increase the number of sketch elements with last representation
+            sketch_elements_with_curr_representation += sketch_elements_with_curr_representation_and_read_id;
+            // save the number sketch elements with last representation and read_id
+            read_id_and_representation_to_sketch_elements_per_section[section_id][current_read_id].back().sketch_elements_for_representation_and_read_id_.block_size_ = sketch_elements_with_curr_representation_and_read_id;
+            // update the number of sketch elements with last representation and all read_ids
+            for (const read_id_t read_id_to_update : read_ids_with_current_representation) {
+                read_id_and_representation_to_sketch_elements_per_section[section_id][read_id_to_update].back().sketch_elements_for_representation_and_all_read_ids_.block_size_ = sketch_elements_with_curr_representation;
+            }
+        };
+
+        // build index for each section in a separate thread
+        std::vector<std::thread> index_building_threads;
+        for (std::size_t section_num = 0; section_num < sections_for_threads.size(); ++ section_num) {
+            index_building_threads.emplace_back(build_index_lambda,
+                                                section_num
+                                               );
         }
-        // process the last element
-        // increase the number of sketch elements with last representation
-        sketch_elements_with_curr_representation += sketch_elements_with_curr_representation_and_read_id;
-        // save the number sketch elements with last representation and read_id
-        read_id_and_representation_to_sketch_elements[current_read_id].back().sketch_elements_for_representation_and_read_id_.block_size_ = sketch_elements_with_curr_representation_and_read_id;
-        // update the number of sketch elements with last representation and all read_ids
-        for (const read_id_t read_id_to_update : read_ids_with_current_representation) {
-            read_id_and_representation_to_sketch_elements[read_id_to_update].back().sketch_elements_for_representation_and_all_read_ids_.block_size_ = sketch_elements_with_curr_representation;
+
+        for (std::size_t section_num = 0; section_num < sections_for_threads.size(); ++ section_num) {
+            index_building_threads[section_num].join();
+        }
+
+        // now merge the resulting index
+        // data gets merged in the same order it was split to threads, so the resulting arrays are still sorted by representation
+        // this merge could probably also be done in parallel
+        read_id_and_representation_to_sketch_elements.resize(number_of_reads);
+        for (std::size_t read_id = 0; read_id < number_of_reads; ++read_id) {
+            for (std::size_t section_num = 0; section_num < read_id_and_representation_to_sketch_elements_per_section.size(); ++section_num) {
+                read_id_and_representation_to_sketch_elements[read_id].insert(std::end(read_id_and_representation_to_sketch_elements[read_id]),
+                                                                                       std::begin(read_id_and_representation_to_sketch_elements_per_section[section_num][read_id]),
+                                                                                       std::end(read_id_and_representation_to_sketch_elements_per_section[section_num][read_id]));
+            }
         }
     }
 
@@ -663,7 +707,6 @@ namespace index_gpu {
         rest_from_all_loops_h.shrink_to_fit();
 
         // build read_id_and_representation_to_sketch_elements_ and copy sketch elements to output arrays
-        // TODO: This part takes a significant amount out time, think of a way to accelerate it
         details::index_gpu::build_index(number_of_reads_,
                                         merged_representations_h,
                                         merged_rest_h,
