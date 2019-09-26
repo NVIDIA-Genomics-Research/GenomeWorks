@@ -43,6 +43,7 @@ void hirschberg_myers_gpu(device_buffer<hirschbergmyers::query_target_range>& st
                           batched_device_matrices<hirschbergmyers::WordType>& mv,
                           batched_device_matrices<int32_t>& score,
                           batched_device_matrices<hirschbergmyers::WordType>& query_patterns,
+                          int32_t switch_to_myers_threshold,
                           int32_t warps_per_alignment,
                           cudaStream_t stream);
 

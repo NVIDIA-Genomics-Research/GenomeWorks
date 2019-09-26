@@ -406,8 +406,8 @@ __device__ const char* hirschberg_myers_compute_target_mid_warp(
     if (query_begin < query_mid)
     {
         const int32_t n_words           = ceiling_divide<int32_t>(query_mid - query_begin, word_size);
-        device_matrix_view<WordType> pv = pvi->get_matrix_view(blockDim.y * alignment_idx + threadIdx.y, n_words, 2);
-        device_matrix_view<WordType> mv = mvi->get_matrix_view(blockDim.y * alignment_idx + threadIdx.y, n_words, 2);
+        device_matrix_view<WordType> pv = pvi->get_matrix_view(blockDim.y * alignment_idx + threadIdx.y, n_words, 1);
+        device_matrix_view<WordType> mv = mvi->get_matrix_view(blockDim.y * alignment_idx + threadIdx.y, n_words, 1);
         myers_compute_scores(pv, mv, score, query_patterns, target_begin, target_end, query_begin, query_mid, query_begin - query_begin_absolute, false, false);
     }
     else
@@ -422,8 +422,8 @@ __device__ const char* hirschberg_myers_compute_target_mid_warp(
 
     {
         const int32_t n_words           = ceiling_divide<int32_t>(query_end - query_mid, word_size);
-        device_matrix_view<WordType> pv = pvi->get_matrix_view(blockDim.y * alignment_idx + threadIdx.y, n_words, 2);
-        device_matrix_view<WordType> mv = mvi->get_matrix_view(blockDim.y * alignment_idx + threadIdx.y, n_words, 2);
+        device_matrix_view<WordType> pv = pvi->get_matrix_view(blockDim.y * alignment_idx + threadIdx.y, n_words, 1);
+        device_matrix_view<WordType> mv = mvi->get_matrix_view(blockDim.y * alignment_idx + threadIdx.y, n_words, 1);
         myers_compute_scores(pv, mv, score, query_patterns, target_begin, target_end, query_mid, query_end, query_end_absolute - query_end, false, true);
     }
 
@@ -788,16 +788,15 @@ void hirschberg_myers_gpu(device_buffer<hirschbergmyers::query_target_range>& st
                           batched_device_matrices<hirschbergmyers::WordType>& mv,
                           batched_device_matrices<int32_t>& score,
                           batched_device_matrices<hirschbergmyers::WordType>& query_patterns,
+                          int32_t switch_to_myers_threshold,
                           int32_t warps_per_alignment,
                           cudaStream_t stream)
 {
     using hirschbergmyers::warp_size;
-    const int32_t full_myers_threshold = 2048;
-    {
-        const dim3 threads(warp_size, warps_per_alignment, 1);
-        const dim3 blocks(1, 1, ceiling_divide<int32_t>(n_alignments, threads.z));
-        hirschbergmyers::hirschberg_myers_compute_alignment<<<blocks, threads, 0, stream>>>(stack_buffer.data(), stack_buffer_size_per_alignment, full_myers_threshold, paths_d, path_lengths_d, max_path_length, pv.get_device_interface(), mv.get_device_interface(), score.get_device_interface(), query_patterns.get_device_interface(), sequences_d, sequence_lengths_d, max_sequence_length, n_alignments);
-    }
+
+    const dim3 threads(warp_size, warps_per_alignment, 1);
+    const dim3 blocks(1, 1, ceiling_divide<int32_t>(n_alignments, threads.z));
+    hirschbergmyers::hirschberg_myers_compute_alignment<<<blocks, threads, 0, stream>>>(stack_buffer.data(), stack_buffer_size_per_alignment, switch_to_myers_threshold, paths_d, path_lengths_d, max_path_length, pv.get_device_interface(), mv.get_device_interface(), score.get_device_interface(), query_patterns.get_device_interface(), sequences_d, sequence_lengths_d, max_sequence_length, n_alignments);
 }
 
 } // namespace cudaaligner
