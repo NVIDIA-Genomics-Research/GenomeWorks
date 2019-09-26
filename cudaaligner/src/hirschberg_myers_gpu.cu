@@ -26,9 +26,11 @@ namespace cudaaligner
 namespace hirschbergmyers
 {
 
+constexpr int32_t warp_size = 32;
+constexpr int32_t word_size = sizeof(WordType) * CHAR_BIT;
+
 inline __device__ WordType warp_leftshift_sync(uint32_t warp_mask, WordType v)
 {
-    CGA_CONSTEXPR int32_t word_size = sizeof(WordType) * CHAR_BIT;
     const WordType x                = __shfl_up_sync(warp_mask, v >> (word_size - 1), 1);
     v <<= 1;
     if (threadIdx.x != 0)
@@ -97,7 +99,6 @@ __device__ int32_t myers_advance_block(uint32_t warp_mask, WordType highest_bit,
 inline __device__ int32_t get_myers_score(int32_t i, int32_t j, device_matrix_view<WordType> const& pv, device_matrix_view<WordType> const& mv, device_matrix_view<int32_t> const& score, WordType last_entry_mask)
 {
     assert(i > 0); // row 0 is implicit, NW matrix is shifted by i -> i-1
-    CGA_CONSTEXPR int32_t word_size = sizeof(WordType) * CHAR_BIT;
     const int32_t word_idx          = (i - 1) / word_size;
     const int32_t bit_idx           = (i - 1) % word_size;
     int32_t s                       = score(word_idx, j);
@@ -113,7 +114,6 @@ __device__ int32_t append_myers_backtrace(int8_t* path, device_matrix_view<WordT
 {
     assert(threadIdx.x == 0);
     using nw_score_t                = int32_t;
-    CGA_CONSTEXPR int32_t word_size = sizeof(WordType) * CHAR_BIT;
     assert(pv.num_rows() == score.num_rows());
     assert(mv.num_rows() == score.num_rows());
     assert(pv.num_cols() == score.num_cols());
@@ -186,7 +186,6 @@ inline __device__ void hirschberg_myers_fill_path_warp(int8_t* path, int32_t n, 
 __device__ WordType myers_generate_query_pattern(char x, char const* query, int32_t query_size, int32_t offset)
 {
     // Sets a 1 bit at the position of every matching character
-    CGA_CONSTEXPR int32_t word_size = sizeof(WordType) * CHAR_BIT;
     assert(offset < query_size);
     const int32_t max_i = min(query_size - offset, word_size);
     WordType r          = 0;
@@ -201,7 +200,6 @@ __device__ WordType myers_generate_query_pattern(char x, char const* query, int3
 __device__ WordType myers_generate_query_pattern_reverse(char x, char const* query, int32_t query_size, int32_t offset)
 {
     // Sets a 1 bit at the position of every matching character
-    CGA_CONSTEXPR int32_t word_size = sizeof(WordType) * CHAR_BIT;
     assert(offset < query_size);
     const int32_t max_i = min(query_size - offset, word_size);
     WordType r          = 0;
@@ -216,7 +214,6 @@ __device__ WordType myers_generate_query_pattern_reverse(char x, char const* que
 
 __device__ void myers_preprocess(device_matrix_view<WordType>& query_pattern, char const* query, int32_t query_size)
 {
-    CGA_CONSTEXPR int32_t word_size = sizeof(WordType) * CHAR_BIT;
     const int32_t n_words           = ceiling_divide(query_size, word_size);
     int32_t idx                     = threadIdx.y * blockDim.x + threadIdx.x;
     const int32_t inc               = blockDim.x * blockDim.y;
@@ -238,7 +235,6 @@ __device__ void myers_preprocess(device_matrix_view<WordType>& query_pattern, ch
 inline __device__ WordType get_query_pattern(device_matrix_view<WordType>& query_patterns, int32_t idx, int32_t query_begin_offset, char x, bool reverse)
 {
     static_assert(std::is_unsigned<WordType>::value, "WordType has to be an unsigned type for well-defined >> operations.");
-    CGA_CONSTEXPR int32_t word_size = sizeof(WordType) * CHAR_BIT;
     const int32_t char_idx          = [](char x) -> int32_t {
         int32_t r = x;
         return (r >> 1) & 0x3;
@@ -284,8 +280,6 @@ myers_compute_scores(
     bool full_score_matrix,
     bool reverse)
 {
-    CGA_CONSTEXPR int32_t word_size = sizeof(WordType) * CHAR_BIT;
-    CGA_CONSTEXPR int32_t warp_size = 32;
     assert(warpSize == warp_size);
     assert(threadIdx.x < warp_size);
     assert(blockIdx.x == 0);
@@ -376,7 +370,6 @@ __device__ void hirschberg_myers_compute_path(
     int32_t alignment_idx)
 {
     assert(query_begin < query_end);
-    CGA_CONSTEXPR int32_t word_size   = sizeof(WordType) * CHAR_BIT;
     const int32_t n_words             = ceiling_divide<int32_t>(query_end - query_begin, word_size);
     device_matrix_view<int32_t> score = scorei->get_matrix_view(blockDim.y * alignment_idx + threadIdx.y, n_words, target_end - target_begin + 1);
     device_matrix_view<WordType> pv   = pvi->get_matrix_view(blockDim.y * alignment_idx + threadIdx.y, n_words, target_end - target_begin + 1);
@@ -403,12 +396,10 @@ __device__ const char* hirschberg_myers_compute_target_mid_warp(
     char const* query_end_absolute,
     int32_t alignment_idx)
 {
-    //    assert(query_begin < query_mid);
+    assert(query_begin <= query_mid);
     assert(query_mid < query_end);
     assert(target_begin < target_end);
 
-    CGA_CONSTEXPR int32_t word_size = sizeof(WordType) * CHAR_BIT;
-    CGA_CONSTEXPR int32_t warp_size = 32;
 
     device_matrix_view<int32_t> score = scorei->get_matrix_view(blockDim.y * alignment_idx + threadIdx.y, target_end - target_begin + 1, 2);
 
@@ -512,7 +503,6 @@ public:
     __device__ parallel_warp_shared_stack(parallel_warp_shared_stack_state<T>* data, T* buffer_begin, T* buffer_end)
         : data_(data)
     {
-        constexpr int32_t warp_size = 32;
         assert(buffer_begin < buffer_end);
         if (threadIdx.x == 0 && threadIdx.y == 0 && threadIdx.z == 0)
         {
@@ -532,7 +522,6 @@ public:
 
     __device__ bool inline push(T const& t)
     {
-        constexpr int32_t warp_size = 32;
         lock_mutex_high_priority();
         bool success = false;
         __syncwarp();
@@ -561,7 +550,6 @@ public:
 
     __device__ inline bool pop(T& element)
     {
-        constexpr int32_t warp_size = 32;
         lock_mutex();
         if (threadIdx.x % warp_size == 0)
         {
@@ -605,7 +593,6 @@ public:
 private:
     __device__ inline void release_mutex()
     {
-        constexpr int32_t warp_size = 32;
         __threadfence_block();
         if (threadIdx.x % warp_size == 0)
         {
@@ -615,7 +602,6 @@ private:
 
     __device__ inline void lock_mutex()
     {
-        constexpr int32_t warp_size = 32;
         if (threadIdx.x % warp_size == 0)
         {
             while (0 != atomicCAS(&(data_->mutex_), 0, 1))
@@ -630,7 +616,6 @@ private:
 
     __device__ inline void lock_mutex_high_priority() const
     {
-        constexpr int32_t warp_size = 32;
         if (threadIdx.x % warp_size == 0)
         {
             atomicOr(&(data_->mutex_), 0x0000'0002u); // reserve mutex
@@ -664,13 +649,10 @@ __device__ bool hirschberg_myers(
     char const* query_end_absolute,
     int32_t alignment_idx)
 {
-    constexpr int32_t warp_size = 32;
     assert(blockDim.x == warp_size);
     assert(blockDim.z == 1);
     assert(query_begin_absolute <= query_end_absolute);
     assert(target_begin_absolute <= target_end_absolute);
-
-    CGA_CONSTEXPR int32_t word_size = sizeof(WordType) * CHAR_BIT;
 
     __shared__ parallel_warp_shared_stack_state<query_target_range> stack_data;
     parallel_warp_shared_stack<query_target_range> stack(&stack_data, stack_buffer_begin, stack_buffer_end);
@@ -765,9 +747,6 @@ __global__ void hirschberg_myers_compute_alignment(
     int32_t max_sequence_length,
     int32_t n_alignments)
 {
-    constexpr int32_t warp_size     = 32;
-    CGA_CONSTEXPR int32_t word_size = sizeof(WordType) * CHAR_BIT;
-
     assert(blockDim.x == warp_size);
     assert(blockDim.z == 1);
 
@@ -812,8 +791,8 @@ void hirschberg_myers_gpu(device_buffer<hirschbergmyers::query_target_range>& st
                           int32_t warps_per_alignment,
                           cudaStream_t stream)
 {
+    using hirschbergmyers::warp_size;
     const int32_t full_myers_threshold = 2048;
-    constexpr int32_t warp_size        = 32;
     {
         const dim3 threads(warp_size, warps_per_alignment, 1);
         const dim3 blocks(1, 1, ceiling_divide<int32_t>(n_alignments, threads.z));
