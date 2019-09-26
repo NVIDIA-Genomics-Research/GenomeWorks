@@ -327,6 +327,12 @@ namespace index_gpu {
         readids_positions_directions_bucket_to_merge_d.free();
     }
 
+    /// \brief Splits input_representations into sections of equally the same size where no representation is split across multiple sections
+    ///
+    /// \param input_representations representations of all sketch elements, soreted by representation
+    /// \return for eaction it returns a pair of the index of the first element and past-the-last element
+    std::vector<std::pair<std::size_t, std::size_t>> generate_sections_for_multithreaded_index_building(const std::vector<representation_t>& input_representations);
+
     /// \brief Constructs the index and splits parts of sketch elements into separate arays
     ///
     /// Builds the index (read_id_and_representation_to_sketch_elements) based on input_representations and read_ids from input_readids_positions_directions.
