@@ -73,12 +73,22 @@ int main(int argc, char *argv[])
     size_t index_size = 1000;
     size_t query_start = 0;
 
-    while(true) {
+    while(true) { // outer loop over query
+
 
         //first generate a2a for query
+        std::vector<std::pair<std::uint64_t, std::uint64_t>> v1;
+        std::pair<std::uint64_t, std::uint64_t> r1 {query_start, query_start + index_size};
+        std::pair<std::uint64_t, std::uint64_t> r2 {query_start + index_size, query_start + index_size * 2};
+        std::pair<std::uint64_t, std::uint64_t> r3 {query_start, query_start + index_size * 2};
 
         std::string input_filepath = std::string(argv[optind]);
-        std::unique_ptr<claragenomics::Index> index = claragenomics::Index::create_index(input_filepath, k, w, query_start, query_start + index_size);
+
+        v1.push_back(r3);
+        //v1.push_back(r2);
+
+        std::unique_ptr<claragenomics::Index> index = claragenomics::Index::create_index(input_filepath, k, w, v1);
+
         CGA_LOG_INFO("Created index");
         std::cerr << "Index execution time: " << std::chrono::duration_cast<std::chrono::milliseconds>(
                 std::chrono::high_resolution_clock::now() - start_time).count() << "ms" << std::endl;
@@ -113,7 +123,7 @@ int main(int argc, char *argv[])
 
 
 
-
+    break;//tmp
     }
     return 0;
 }

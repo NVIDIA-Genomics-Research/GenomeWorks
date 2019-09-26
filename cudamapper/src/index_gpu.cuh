@@ -54,7 +54,7 @@ namespace claragenomics {
         /// \param query_filename filepath to reads in FASTA or FASTQ format
         /// \param kmer_size k - the kmer length
         /// \param window_size w - the length of the sliding window used to find sketch elements
-        IndexGPU(const std::string& query_filename, const std::uint64_t kmer_size, const std::uint64_t window_size, const std::uint32_t first_read, const std::uint32_t last_read);
+        IndexGPU(const std::string& query_filename, const std::uint64_t kmer_size, const std::uint64_t window_size, const std::vector<std::pair<std::uint64_t, std::uint64_t>> read_ranges);
 
         /// \brief Constructor
         IndexGPU();
@@ -104,8 +104,7 @@ namespace claragenomics {
         const std::uint64_t kmer_size_;
         const std::uint64_t window_size_;
         std::uint64_t number_of_reads_;
-        std::uint32_t first_read_;
-        std::uint32_t last_read_;
+        const std::vector<std::pair<std::uint64_t, std::uint64_t>> read_ranges;
 
         std::vector<position_in_read_t> positions_in_reads_;
         std::vector<read_id_t> read_ids_;
@@ -441,8 +440,8 @@ namespace index_gpu {
 } // namespace details
 
     template <typename SketchElementImpl>
-    IndexGPU<SketchElementImpl>::IndexGPU(const std::string& query_filename, const std::uint64_t kmer_size, const std::uint64_t window_size, const std::uint32_t first_read, const std::uint32_t last_read)
-    : kmer_size_(kmer_size), window_size_(window_size), number_of_reads_(0), first_read_(first_read), last_read_(last_read)
+    IndexGPU<SketchElementImpl>::IndexGPU(const std::string& query_filename, const std::uint64_t kmer_size, const std::uint64_t window_size, const std::vector<std::pair<std::uint64_t, std::uint64_t>> read_ranges)
+    : kmer_size_(kmer_size), window_size_(window_size), number_of_reads_(0), read_ranges(read_ranges)
     {
         generate_index(query_filename);
     }
@@ -503,13 +502,16 @@ namespace index_gpu {
         std::uint32_t current_chunk_end = 0;
 
         while (true) {
+
+            auto first_read_ = read_ranges[0].first;
+            auto last_read_ = read_ranges[0].second;
             //read the query file:
             std::vector<std::unique_ptr<BioParserSequence>> fasta_objects;
             bool parser_status = query_parser->parse(fasta_objects, parser_buffer_size_in_bytes);
 
             current_chunk_end += fasta_objects.size() - 1;
 
-            //Nothing to do
+/*            //Nothing to do
             if (current_chunk_end < first_read_){
                 continue;
             };
@@ -517,6 +519,15 @@ namespace index_gpu {
             // Exceeded the number of reads to check, leave the loop
             if (current_chunk_start > last_read_){
                 break;
+            };*/
+
+            auto read_in_ranges = [&](std::size_t global_read_id) -> bool {
+                for (auto range: read_ranges) {
+                    if (((global_read_id) >= range.first) && ((global_read_id) <= range.second)) {
+                        return true;
+                    }
+                }
+                return false;
             };
 
             std::uint64_t total_basepairs = 0;
@@ -525,7 +536,9 @@ namespace index_gpu {
             size_t fasta_object_id_offset = 0;
             // find out how many basepairs each read has and determine its section in the big array with all basepairs
             for (std::size_t fasta_object_id = 0; fasta_object_id < fasta_objects.size(); ++fasta_object_id) {
-                if (((current_chunk_start + fasta_object_id) >= first_read_)  &&  ((current_chunk_start + fasta_object_id) <= last_read_)){
+
+                auto global_read_id = current_chunk_start + fasta_object_id;
+                if (read_in_ranges(global_read_id)){
                     if (fasta_objects[fasta_object_id]->data().length() >= window_size_ + kmer_size_ - 1) {
                         read_id_to_basepairs_section_h.emplace_back(ArrayBlock{total_basepairs,
                                                                                static_cast<std::uint32_t>(fasta_objects[fasta_object_id]->data().length())});

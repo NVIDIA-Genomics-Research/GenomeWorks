@@ -15,9 +15,8 @@
 namespace claragenomics {
     std::unique_ptr<Index> Index::create_index(const std::string &query_filename, const std::uint64_t kmer_size,
                                                const std::uint64_t window_size,
-                                               const std::uint64_t first_read,
-                                               const std::uint64_t last_read) {
-        return std::make_unique<IndexGPU<Minimizer>>(query_filename, kmer_size, window_size, first_read, last_read);
+                                               const std::vector<std::pair<std::uint64_t, std::uint64_t>> read_ranges){
+        return std::make_unique<IndexGPU<Minimizer>>(query_filename, kmer_size, window_size, read_ranges);
     }
 
     std::unique_ptr<Index> Index::create_index() {

@@ -81,7 +81,7 @@ namespace claragenomics {
         /// \return instance of Index
         static std::unique_ptr<Index>
         create_index(const std::string &query_filename, const std::uint64_t kmer_size, const std::uint64_t window_size,
-                     const std::uint64_t first_read, const std::uint64_t last_read);
+                     std::vector<std::pair<std::uint64_t, std::uint64_t>>);
 
         /// \brief creates an empty Index
         /// \return empty instacne of Index
