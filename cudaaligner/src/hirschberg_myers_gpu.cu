@@ -31,7 +31,7 @@ constexpr int32_t word_size = sizeof(WordType) * CHAR_BIT;
 
 inline __device__ WordType warp_leftshift_sync(uint32_t warp_mask, WordType v)
 {
-    const WordType x                = __shfl_up_sync(warp_mask, v >> (word_size - 1), 1);
+    const WordType x = __shfl_up_sync(warp_mask, v >> (word_size - 1), 1);
     v <<= 1;
     if (threadIdx.x != 0)
         v |= x;
@@ -99,10 +99,10 @@ __device__ int32_t myers_advance_block(uint32_t warp_mask, WordType highest_bit,
 inline __device__ int32_t get_myers_score(int32_t i, int32_t j, device_matrix_view<WordType> const& pv, device_matrix_view<WordType> const& mv, device_matrix_view<int32_t> const& score, WordType last_entry_mask)
 {
     assert(i > 0); // row 0 is implicit, NW matrix is shifted by i -> i-1
-    const int32_t word_idx          = (i - 1) / word_size;
-    const int32_t bit_idx           = (i - 1) % word_size;
-    int32_t s                       = score(word_idx, j);
-    WordType mask                   = (~WordType(1)) << bit_idx;
+    const int32_t word_idx = (i - 1) / word_size;
+    const int32_t bit_idx  = (i - 1) % word_size;
+    int32_t s              = score(word_idx, j);
+    WordType mask          = (~WordType(1)) << bit_idx;
     if (word_idx == score.num_rows() - 1)
         mask &= last_entry_mask;
     s -= __popc(mask & pv(word_idx, j));
@@ -113,7 +113,7 @@ inline __device__ int32_t get_myers_score(int32_t i, int32_t j, device_matrix_vi
 __device__ int32_t append_myers_backtrace(int8_t* path, device_matrix_view<WordType> const& pv, device_matrix_view<WordType> const& mv, device_matrix_view<int32_t> const& score, int32_t query_size)
 {
     assert(threadIdx.x == 0);
-    using nw_score_t                = int32_t;
+    using nw_score_t = int32_t;
     assert(pv.num_rows() == score.num_rows());
     assert(mv.num_rows() == score.num_rows());
     assert(pv.num_cols() == score.num_cols());
@@ -214,9 +214,9 @@ __device__ WordType myers_generate_query_pattern_reverse(char x, char const* que
 
 __device__ void myers_preprocess(device_matrix_view<WordType>& query_pattern, char const* query, int32_t query_size)
 {
-    const int32_t n_words           = ceiling_divide(query_size, word_size);
-    int32_t idx                     = threadIdx.y * blockDim.x + threadIdx.x;
-    const int32_t inc               = blockDim.x * blockDim.y;
+    const int32_t n_words = ceiling_divide(query_size, word_size);
+    int32_t idx           = threadIdx.y * blockDim.x + threadIdx.x;
+    const int32_t inc     = blockDim.x * blockDim.y;
     while (idx < n_words)
     {
         // TODO query load is inefficient
@@ -235,7 +235,7 @@ __device__ void myers_preprocess(device_matrix_view<WordType>& query_pattern, ch
 inline __device__ WordType get_query_pattern(device_matrix_view<WordType>& query_patterns, int32_t idx, int32_t query_begin_offset, char x, bool reverse)
 {
     static_assert(std::is_unsigned<WordType>::value, "WordType has to be an unsigned type for well-defined >> operations.");
-    const int32_t char_idx          = [](char x) -> int32_t {
+    const int32_t char_idx = [](char x) -> int32_t {
         int32_t r = x;
         return (r >> 1) & 0x3;
     }(x) + (reverse ? 4 : 0);
@@ -399,7 +399,6 @@ __device__ const char* hirschberg_myers_compute_target_mid_warp(
     assert(query_begin <= query_mid);
     assert(query_mid < query_end);
     assert(target_begin < target_end);
-
 
     device_matrix_view<int32_t> score = scorei->get_matrix_view(blockDim.y * alignment_idx + threadIdx.y, target_end - target_begin + 1, 2);
 
