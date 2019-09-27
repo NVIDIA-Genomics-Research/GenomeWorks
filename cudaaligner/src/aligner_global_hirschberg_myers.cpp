@@ -20,16 +20,18 @@ namespace claragenomics
 namespace cudaaligner
 {
 
-static constexpr int32_t hirschberg_myers_stackbuffer_size = 32 * 64;
+static constexpr int32_t hirschberg_myers_stackbuffer_size     = 64;
+static constexpr int32_t hirschberg_myers_warps_per_alignment  = 4;
+static constexpr int32_t hirschberg_myers_switch_to_myers_size = 63; // ideally a value 16*n-1, since memory allocation will require one more element.
 
 struct AlignerGlobalHirschbergMyers::Workspace
 {
-    static constexpr int32_t n_cols = 256; // has to be at least 2 (hirschberg fwd + hirschberg bwd).
-    Workspace(int32_t max_alignments, int32_t max_n_words, int32_t max_target_length, cudaStream_t stream)
-        : stackbuffer(max_alignments * hirschberg_myers_stackbuffer_size), pvs(max_alignments, max_n_words * n_cols, stream), mvs(max_alignments, max_n_words * n_cols, stream), scores(max_alignments, std::max(max_n_words * n_cols, (max_target_length + 1) * 2), stream), query_patterns(max_alignments, max_n_words * 8, stream)
+    Workspace(int32_t max_alignments, int32_t max_n_words, int32_t max_target_length, int32_t warps_per_alignment, int32_t switch_to_myers_size, cudaStream_t stream)
+        : stackbuffer(max_alignments * hirschberg_myers_stackbuffer_size), pvs(max_alignments * warps_per_alignment, max_n_words * (switch_to_myers_size + 1), stream), mvs(max_alignments * warps_per_alignment, max_n_words * (switch_to_myers_size + 1), stream), scores(max_alignments * warps_per_alignment, std::max(max_n_words * (switch_to_myers_size + 1), (max_target_length + 1) * 2), stream), query_patterns(max_alignments, max_n_words * 8, stream)
     {
+        assert(switch_to_myers_size >= 1);
     }
-    device_buffer<char> stackbuffer;
+    device_buffer<hirschbergmyers::query_target_range> stackbuffer;
     batched_device_matrices<hirschbergmyers::WordType> pvs;
     batched_device_matrices<hirschbergmyers::WordType> mvs;
     batched_device_matrices<int32_t> scores;
@@ -40,7 +42,7 @@ AlignerGlobalHirschbergMyers::AlignerGlobalHirschbergMyers(int32_t max_query_len
     : AlignerGlobal(max_query_length, max_target_length, max_alignments, stream, device_id)
 {
     scoped_device_switch dev(device_id);
-    workspace_ = std::make_unique<Workspace>(max_alignments, ceiling_divide<int32_t>(max_query_length, sizeof(hirschbergmyers::WordType)), max_target_length, stream);
+    workspace_ = std::make_unique<Workspace>(max_alignments, ceiling_divide<int32_t>(max_query_length, sizeof(hirschbergmyers::WordType)), max_target_length, hirschberg_myers_warps_per_alignment, hirschberg_myers_switch_to_myers_size, stream);
 }
 
 AlignerGlobalHirschbergMyers::~AlignerGlobalHirschbergMyers()
@@ -56,6 +58,7 @@ void AlignerGlobalHirschbergMyers::run_alignment(int8_t* results_d, int32_t* res
     hirschberg_myers_gpu(workspace_->stackbuffer, hirschberg_myers_stackbuffer_size, results_d, result_lengths_d, max_result_length,
                          sequences_d, sequence_lengths_d, max_sequence_length, num_alignments,
                          workspace_->pvs, workspace_->mvs, workspace_->scores, workspace_->query_patterns,
+                         hirschberg_myers_switch_to_myers_size, hirschberg_myers_warps_per_alignment,
                          stream);
 }
 
