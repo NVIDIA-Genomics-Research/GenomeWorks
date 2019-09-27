@@ -70,31 +70,29 @@ int main(int argc, char *argv[])
 
     //Now carry out all the looped polling
 
-    size_t index_size = 1000;
+    size_t index_size = 10000;
     size_t query_start = 0;
+    size_t query_end = query_start + index_size;
+
+    std::string input_filepath = std::string(argv[optind]);
 
     while(true) { // outer loop over query
 
 
         //first generate a2a for query
-        std::vector<std::pair<std::uint64_t, std::uint64_t>> v1;
-        std::pair<std::uint64_t, std::uint64_t> r1 {query_start, query_start + index_size};
-        std::pair<std::uint64_t, std::uint64_t> r2 {query_start + index_size, query_start + index_size * 2};
-        std::pair<std::uint64_t, std::uint64_t> r3 {query_start, query_start + index_size * 2};
+        std::vector<std::pair<std::uint64_t, std::uint64_t>> ranges;
+        std::pair<std::uint64_t, std::uint64_t> query_range {query_start, query_end};
 
-        std::string input_filepath = std::string(argv[optind]);
+        ranges.push_back(query_range);
 
-        v1.push_back(r3);
-        //v1.push_back(r2);
-
-        std::unique_ptr<claragenomics::Index> index = claragenomics::Index::create_index(input_filepath, k, w, v1);
+        std::unique_ptr<claragenomics::Index> index = claragenomics::Index::create_index(input_filepath, k, w, ranges);
 
         CGA_LOG_INFO("Created index");
         std::cerr << "Index execution time: " << std::chrono::duration_cast<std::chrono::milliseconds>(
                 std::chrono::high_resolution_clock::now() - start_time).count() << "ms" << std::endl;
 
-        auto num_reads = index.get()->number_of_reads();
-        auto match_point = 0; // Let's say half the reads are query and half are target.
+        //auto num_reads = index.get()->number_of_reads();
+        auto match_point = 0; // all to all
 
         start_time = std::chrono::high_resolution_clock::now();
         CGA_LOG_INFO("Started matcher");
@@ -114,16 +112,65 @@ int main(int argc, char *argv[])
 
         overlapper.print_paf(overlaps);
 
+        size_t target_start = query_end + 1;
+        size_t target_end = target_start + index_size;
+
         if (index.get()->number_of_reads()  < index_size){ //reached the end of the reads
             break;
+        }
+
+        while(true){ //Now loop over the targets
+            std::cerr << "Entering target loop" << std::endl;
+            //first generate a2a for query
+            std::vector<std::pair<std::uint64_t, std::uint64_t>> target_ranges;
+            std::pair<std::uint64_t, std::uint64_t> target_range {target_start, target_end};
+
+            target_ranges.push_back(query_range);
+            target_ranges.push_back(target_range);
+
+            std::cerr << "Starting on index" << std::endl;
+            std::cerr << "tranges size" << target_ranges.size() << std::endl;
+            std::cerr << "target ranges:" << target_ranges[1].first << " - "  << target_ranges[1].second << std::endl;
+            auto new_index = claragenomics::Index::create_index(input_filepath, k, w, target_ranges);
+
+            CGA_LOG_INFO("Created index");
+            std::cerr << "Index execution time: " << std::chrono::duration_cast<std::chrono::milliseconds>(
+                    std::chrono::high_resolution_clock::now() - start_time).count() << "ms" << std::endl;
+
+            match_point = (query_range.second - query_range.first);
+
+            start_time = std::chrono::high_resolution_clock::now();
+            CGA_LOG_INFO("Started matcher");
+            claragenomics::Matcher qt_matcher(*new_index, match_point);
+            CGA_LOG_INFO("Finished matcher");
+            std::cerr << "Matcher execution time: " << std::chrono::duration_cast<std::chrono::milliseconds>(
+                    std::chrono::high_resolution_clock::now() - start_time).count() << "ms" << std::endl;
+
+            start_time = std::chrono::high_resolution_clock::now();
+            CGA_LOG_INFO("Started overlap detector");
+            //auto overlapper = claragenomics::OverlapperTriggered();
+            overlaps = overlapper.get_overlaps(qt_matcher.anchors(), *new_index);
+
+            CGA_LOG_INFO("Finished overlap detector");
+            std::cerr << "Overlap detection execution time: " << std::chrono::duration_cast<std::chrono::milliseconds>(
+                    std::chrono::high_resolution_clock::now() - start_time).count() << "ms" << std::endl;
+
+            overlapper.print_paf(overlaps);
+
+            if (new_index.get()->number_of_reads()  < (index_size * 2)){ //reached the end of the reads
+                break;
+            }
+
+            target_start = target_end + 1;
+            target_end = target_start + index_size;
         }
 
 
 
 
-
-
-    break;//tmp
+        //update query positions
+        query_start = query_end + 1;
+        query_end = query_start + index_size;
     }
     return 0;
 }
