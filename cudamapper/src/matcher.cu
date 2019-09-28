@@ -107,9 +107,12 @@ namespace claragenomics {
         size_t max_representation = index.maximum_representation();
         size_t representation_min_range = index.minimum_representation();
         size_t representation_max_range = increment;
-        size_t max_anchor_buffer_size_MiB = 4000;
-        size_t max_anchor_buffer_size = max_anchor_buffer_size_MiB * 1024 *
-                                        1024; //TODO: Make this dynamically chosen by available GPU memory
+
+        // Get available device memory
+        size_t free_device_memory = 0;
+        size_t total_device_memory = 0;
+        CGA_CU_CHECK_ERR(cudaMemGetInfo(&free_device_memory, &total_device_memory));
+        size_t max_anchor_buffer_size = 0.95 * free_device_memory;
         size_t max_anchors = max_anchor_buffer_size / sizeof(Anchor);
 
         const std::vector<position_in_read_t> &positions_in_reads_h = index.positions_in_reads();
