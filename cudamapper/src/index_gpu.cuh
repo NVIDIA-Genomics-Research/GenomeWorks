@@ -19,15 +19,13 @@
 #include <thrust/sort.h>
 #include <thrust/execution_policy.h>
 
+#include <claragenomics/io/fasta_parser.hpp>
 #include <claragenomics/logging/logging.hpp>
 #include <claragenomics/utils/cudautils.hpp>
 #include <claragenomics/utils/device_buffer.cuh>
 
 #include "cudamapper/index.hpp"
 #include "cudamapper/types.hpp"
-
-#include "bioparser/bioparser.hpp"
-#include "bioparser_sequence.hpp"
 
 #include "cudamapper_utils.hpp"
 
@@ -488,187 +486,147 @@ namespace index_gpu {
                 [](std::pair<std::uint64_t, std::uint64_t> a, std::pair<std::uint64_t, std::uint64_t> b)
                 { return a.second < b.second;})->second;
 
-        std::unique_ptr<bioparser::Parser<BioParserSequence>> query_parser = nullptr;
-
-        auto is_suffix = [](const std::string &src, const std::string &suffix) -> bool {
-            if (src.size() < suffix.size()) {
-                return false;
-            }
-            return src.compare(src.size() - suffix.size(), suffix.size(), suffix) == 0;
-        };
-
-        if (is_suffix(query_filename, ".fasta") || is_suffix(query_filename, ".fa") ||
-            is_suffix(query_filename, ".fasta.gz") || is_suffix(query_filename, ".fa.gz")) {
-            CGA_LOG_INFO("Getting Query data");
-            query_parser = bioparser::createParser<bioparser::FastaParser, BioParserSequence>(query_filename);
-        }
-
-        //TODO Allow user to choose this value
-        std::uint64_t parser_buffer_size_in_bytes = 0.3 * 1024 * 1024 * 1024; // 0.3 GiB
+        std::unique_ptr<FastaParser> fasta_parser = create_fasta_parser(query_filename);
+        int32_t total_reads = fasta_parser->get_num_seqences();
 
         number_of_reads_ = 0;
 
         std::vector<std::vector<representation_t>> representations_from_all_loops_h;
         std::vector<std::vector<typename SketchElementImpl::ReadidPositionDirection>> rest_from_all_loops_h;
 
-        std::size_t current_chunk_start = 0;
+        std::uint64_t total_basepairs = 0;
+        std::vector<ArrayBlock> read_id_to_basepairs_section_h;
+        std::vector<FastaSequence> fasta_sequences;
+        std::vector<std::size_t> fasta_sequence_indices;
 
-        while (true) {
-            auto first_read_ = read_ranges[0].first;
+        read_id_t global_read_id = 0;
+        // find out how many basepairs each read has and determine its section in the big array with all basepairs
+        for (auto range: read_ranges) {
+            auto first_read_ = range.first;
+            auto last_read_ = std::min(range.second, static_cast<size_t>(total_reads - 1));
 
-            //read the query file:
-            std::vector<std::unique_ptr<BioParserSequence>> fasta_objects;
-            bool parser_status = query_parser->parse(fasta_objects, parser_buffer_size_in_bytes);
-
-            auto read_in_ranges = [&](std::size_t global_read_id) -> bool {
-                for (auto range: read_ranges) {
-                    if (((global_read_id) >= range.first) && ((global_read_id) <= range.second)) {
-                        return true;
-                    }
-                }
-                return false;
-            };
-
-            std::uint64_t total_basepairs = 0;
-            std::vector<ArrayBlock> read_id_to_basepairs_section_h;
-            std::size_t global_read_id = 0;
-            std::vector<std::size_t> fasta_indices;
-            // find out how many basepairs each read has and determine its section in the big array with all basepairs
-            for (std::size_t fasta_object_id = 0; fasta_object_id < fasta_objects.size(); ++fasta_object_id) {
-                global_read_id = current_chunk_start + fasta_object_id;
-                if (read_in_ranges(global_read_id)){
-                    if (fasta_objects[fasta_object_id]->data().length() >= window_size_ + kmer_size_ - 1) {
-                        read_id_to_basepairs_section_h.emplace_back(ArrayBlock{total_basepairs,
-                                                                               static_cast<std::uint32_t>(fasta_objects[fasta_object_id]->data().length())});
-                        total_basepairs += fasta_objects[fasta_object_id]->data().length();
-                        read_id_to_read_name_.push_back(fasta_objects[fasta_object_id]->name());
-                        read_id_to_read_length_.push_back(fasta_objects[fasta_object_id]->data().length());
-                        fasta_indices.push_back(fasta_object_id);
-                    } else {
-                        CGA_LOG_INFO("Skipping read {}. It has {} basepairs, one window covers {} basepairs",
-                                     fasta_objects[fasta_object_id]->name(),
-                                     fasta_objects[fasta_object_id]->data().length(), window_size_ + kmer_size_ - 1
-                        );
-                    }
-                }
-            }
-
-            current_chunk_start += fasta_objects.size();
-
-            auto number_of_reads_to_add = read_id_to_basepairs_section_h.size(); // This is the number of reads in this specific iteration
-            number_of_reads_ += number_of_reads_to_add; // this is the *total* number of reads.
-
-            //Stop if there are no reads to add
-            if (0 == number_of_reads_to_add) {
-                if (parser_status == false) { // If there are no reads to add, and we've reached the end of the file, break
-                    if (max_read_id > global_read_id) {
-                        reached_end_of_input_ = true;
-                    }
-                    break;
-                }
-                continue;
-            }
-
-            std::vector<char> merged_basepairs_h(total_basepairs);
-
-            // copy each read to its section of the basepairs array
-            read_id_t read_id = 0;
-            for (auto fasta_object_id: fasta_indices) { //TODO do not start from zero
-                // skip reads which are shorter than one window
-                if (fasta_objects[fasta_object_id]->data().length() >= window_size_ + kmer_size_ - 1) {
-                    std::copy(std::begin(fasta_objects[fasta_object_id]->data()),
-                              std::end(fasta_objects[fasta_object_id]->data()),
-                              std::next(std::begin(merged_basepairs_h), read_id_to_basepairs_section_h[read_id].first_element_)
-                             );
-                    ++read_id;
-                }
-            }
-
-            // fasta_objects not needed after this point
-            fasta_objects.clear();
-            fasta_objects.shrink_to_fit();
-
-            // move basepairs to the device
-            CGA_LOG_INFO("Allocating {} bytes for read_id_to_basepairs_section_d", read_id_to_basepairs_section_h.size() * sizeof(decltype(read_id_to_basepairs_section_h)::value_type));
-            device_buffer<decltype(read_id_to_basepairs_section_h)::value_type> read_id_to_basepairs_section_d( read_id_to_basepairs_section_h.size());
-
-            CGA_CU_CHECK_ERR(cudaMemcpy(read_id_to_basepairs_section_d.data(),
-                                        read_id_to_basepairs_section_h.data(),
-                                        read_id_to_basepairs_section_h.size() * sizeof(decltype(read_id_to_basepairs_section_h)::value_type),
-                                        cudaMemcpyHostToDevice
-                                       )
+            for(auto read_id = first_read_; read_id <= last_read_; read_id++) {
+                fasta_sequences.emplace_back(fasta_parser->get_sequence_by_id(read_id));
+                const std::string& seq = fasta_sequences.back().seq;
+                const std::string& name = fasta_sequences.back().name;
+                if (seq.length() >= window_size_ + kmer_size_ - 1) {
+                    read_id_to_basepairs_section_h.emplace_back(ArrayBlock{total_basepairs, static_cast<std::uint32_t>(seq.length())});
+                    total_basepairs += seq.length();
+                    read_id_to_read_name_.push_back(name);
+                    read_id_to_read_length_.push_back(seq.length());
+                    fasta_sequence_indices.push_back(global_read_id);
+                } else {
+                    CGA_LOG_INFO("Skipping read {}. It has {} basepairs, one window covers {} basepairs",
+                            s.name,
+                            s.seq.length(), window_size_ + kmer_size_ - 1
                             );
-
-            CGA_LOG_INFO("Allocating {} bytes for merged_basepairs_d", merged_basepairs_h.size() * sizeof(decltype(merged_basepairs_h)::value_type));
-            device_buffer<decltype(merged_basepairs_h)::value_type> merged_basepairs_d(merged_basepairs_h.size());
-            CGA_CU_CHECK_ERR(cudaMemcpy(merged_basepairs_d.data(),
-                                        merged_basepairs_h.data(),
-                                        merged_basepairs_h.size() * sizeof(decltype(merged_basepairs_h)::value_type),
-                                        cudaMemcpyHostToDevice
-                                       )
-                            );
-            merged_basepairs_h.clear();
-            merged_basepairs_h.shrink_to_fit();
-
-            // sketch elements get generated here
-            auto sketch_elements = SketchElementImpl::generate_sketch_elements(number_of_reads_to_add,
-                                                                                        kmer_size_,
-                                                                                        window_size_,
-                                                                                        number_of_reads_ - number_of_reads_to_add,
-                                                                                        merged_basepairs_d,
-                                                                                        read_id_to_basepairs_section_h,
-                                                                                        read_id_to_basepairs_section_d
-                                                                                       );
-            device_buffer<representation_t> representations_from_this_loop_d = std::move(sketch_elements.representations_d);
-            device_buffer<typename SketchElementImpl::ReadidPositionDirection> rest_from_this_loop_d = std::move(sketch_elements.rest_d);
-
-            CGA_LOG_INFO("Deallocating {} bytes from read_id_to_basepairs_section_d", read_id_to_basepairs_section_d.size() * sizeof(decltype(read_id_to_basepairs_section_d)::value_type));
-            read_id_to_basepairs_section_d.free();
-            CGA_LOG_INFO("Deallocating {} bytes from merged_basepairs_d",  merged_basepairs_d.size() * sizeof(decltype(merged_basepairs_d)::value_type));
-            merged_basepairs_d.free();
-
-            // *** sort sketch elements by representation ***
-            // As this is a stable sort and the data was initailly grouper by read_id this means that the sketch elements within each representations are sorted by read_id
-            thrust::stable_sort_by_key(thrust::device,
-                                       representations_from_this_loop_d.data(),
-                                       representations_from_this_loop_d.data() + representations_from_this_loop_d.size(),
-                                       rest_from_this_loop_d.data()
-                                      );
-
-            representations_from_all_loops_h.push_back(decltype(representations_from_all_loops_h)::value_type(representations_from_this_loop_d.size()));
-            CGA_CU_CHECK_ERR(cudaMemcpy(representations_from_all_loops_h.back().data(),
-                                        representations_from_this_loop_d.data(),
-                                        representations_from_this_loop_d.size() * sizeof(decltype(representations_from_this_loop_d)::value_type),
-                                        cudaMemcpyDeviceToHost
-                                       )
-                            );
-            rest_from_all_loops_h.push_back(typename decltype(rest_from_all_loops_h)::value_type(rest_from_this_loop_d.size()));
-            CGA_CU_CHECK_ERR(cudaMemcpy(rest_from_all_loops_h.back().data(),
-                                        rest_from_this_loop_d.data(),
-                                        rest_from_this_loop_d.size() * sizeof(typename decltype(rest_from_this_loop_d)::value_type),
-                                        cudaMemcpyDeviceToHost
-                                       )
-                            );
-
-            // free these arrays as they are not needed anymore
-            CGA_LOG_INFO("Deallocating {} bytes from representations_from_this_loop_d", representations_from_this_loop_d.size() * sizeof(decltype(representations_from_this_loop_d)::value_type));
-            representations_from_this_loop_d.free();
-            CGA_LOG_INFO("Deallocating {} bytes from rest_from_this_loop_d", rest_from_this_loop_d.size() * sizeof(typename decltype(rest_from_this_loop_d)::value_type));
-            rest_from_this_loop_d.free();
-
-            if (parser_status == false) {
-                if (max_read_id > global_read_id) {
-                    reached_end_of_input_ = true;
                 }
-                break;
+                global_read_id++;
             }
         }
 
-        // check if there is at least one sketch element (code above guarantees that each element of representations_from_all_loops_h has at least one sketch element)
-        if (0 == representations_from_all_loops_h.size()){
+        if (max_read_id >= static_cast<size_t>(total_reads))
+        {
+            reached_end_of_input_ = true;
+        }
+
+        auto number_of_reads_to_add = read_id_to_basepairs_section_h.size(); // This is the number of reads in this specific iteration
+        number_of_reads_ += number_of_reads_to_add; // this is the *total* number of reads.
+
+        // check if there are any reads to process
+        if (0 == number_of_reads_){
             CGA_LOG_INFO("No Sketch Elements to be added to index");
             return;
         }
+
+        std::vector<char> merged_basepairs_h(total_basepairs);
+
+        // copy each read to its section of the basepairs array
+        read_id_t read_id = 0;
+        for (auto fasta_object_id: fasta_sequence_indices) { //TODO do not start from zero
+            // skip reads which are shorter than one window
+            const std::string& seq = fasta_sequences[fasta_object_id].seq;
+            if (seq.length() >= window_size_ + kmer_size_ - 1) {
+                std::copy(std::begin(seq),
+                        std::end(seq),
+                        std::next(std::begin(merged_basepairs_h), read_id_to_basepairs_section_h[read_id].first_element_)
+                        );
+                ++read_id;
+            }
+        }
+
+        // fasta_sequences not needed after this point
+        fasta_sequences.clear();
+        fasta_sequences.shrink_to_fit();
+
+        // move basepairs to the device
+        CGA_LOG_INFO("Allocating {} bytes for read_id_to_basepairs_section_d", read_id_to_basepairs_section_h.size() * sizeof(decltype(read_id_to_basepairs_section_h)::value_type));
+        device_buffer<decltype(read_id_to_basepairs_section_h)::value_type> read_id_to_basepairs_section_d( read_id_to_basepairs_section_h.size());
+        //device_buffer<ArrayBlock> read_id_to_basepairs_section_d(1);
+        CGA_LOG_INFO("Allocated");
+        CGA_CU_CHECK_ERR(cudaMemcpy(read_id_to_basepairs_section_d.data(),
+                    read_id_to_basepairs_section_h.data(),
+                    read_id_to_basepairs_section_h.size() * sizeof(decltype(read_id_to_basepairs_section_h)::value_type),
+                    cudaMemcpyHostToDevice
+                    )
+                );
+
+        CGA_LOG_INFO("Allocating {} bytes for merged_basepairs_d", merged_basepairs_h.size() * sizeof(decltype(merged_basepairs_h)::value_type));
+        device_buffer<decltype(merged_basepairs_h)::value_type> merged_basepairs_d(merged_basepairs_h.size());
+        CGA_CU_CHECK_ERR(cudaMemcpy(merged_basepairs_d.data(),
+                    merged_basepairs_h.data(),
+                    merged_basepairs_h.size() * sizeof(decltype(merged_basepairs_h)::value_type),
+                    cudaMemcpyHostToDevice
+                    )
+                );
+        merged_basepairs_h.clear();
+        merged_basepairs_h.shrink_to_fit();
+
+        // sketch elements get generated here
+        auto sketch_elements = SketchElementImpl::generate_sketch_elements(number_of_reads_to_add,
+                kmer_size_,
+                window_size_,
+                number_of_reads_ - number_of_reads_to_add,
+                merged_basepairs_d,
+                read_id_to_basepairs_section_h,
+                read_id_to_basepairs_section_d
+                );
+        device_buffer<representation_t> representations_from_this_loop_d = std::move(sketch_elements.representations_d);
+        device_buffer<typename SketchElementImpl::ReadidPositionDirection> rest_from_this_loop_d = std::move(sketch_elements.rest_d);
+
+        CGA_LOG_INFO("Deallocating {} bytes from read_id_to_basepairs_section_d", read_id_to_basepairs_section_d.size() * sizeof(decltype(read_id_to_basepairs_section_d)::value_type));
+        read_id_to_basepairs_section_d.free();
+        CGA_LOG_INFO("Deallocating {} bytes from merged_basepairs_d",  merged_basepairs_d.size() * sizeof(decltype(merged_basepairs_d)::value_type));
+        merged_basepairs_d.free();
+
+        // *** sort sketch elements by representation ***
+        // As this is a stable sort and the data was initailly grouper by read_id this means that the sketch elements within each representations are sorted by read_id
+        thrust::stable_sort_by_key(thrust::device,
+                representations_from_this_loop_d.data(),
+                representations_from_this_loop_d.data() + representations_from_this_loop_d.size(),
+                rest_from_this_loop_d.data()
+                );
+
+        representations_from_all_loops_h.push_back(decltype(representations_from_all_loops_h)::value_type(representations_from_this_loop_d.size()));
+        CGA_CU_CHECK_ERR(cudaMemcpy(representations_from_all_loops_h.back().data(),
+                    representations_from_this_loop_d.data(),
+                    representations_from_this_loop_d.size() * sizeof(decltype(representations_from_this_loop_d)::value_type),
+                    cudaMemcpyDeviceToHost
+                    )
+                );
+        rest_from_all_loops_h.push_back(typename decltype(rest_from_all_loops_h)::value_type(rest_from_this_loop_d.size()));
+        CGA_CU_CHECK_ERR(cudaMemcpy(rest_from_all_loops_h.back().data(),
+                    rest_from_this_loop_d.data(),
+                    rest_from_this_loop_d.size() * sizeof(typename decltype(rest_from_this_loop_d)::value_type),
+                    cudaMemcpyDeviceToHost
+                    )
+                );
+
+        // free these arrays as they are not needed anymore
+        CGA_LOG_INFO("Deallocating {} bytes from representations_from_this_loop_d", representations_from_this_loop_d.size() * sizeof(decltype(representations_from_this_loop_d)::value_type));
+        representations_from_this_loop_d.free();
+        CGA_LOG_INFO("Deallocating {} bytes from rest_from_this_loop_d", rest_from_this_loop_d.size() * sizeof(typename decltype(rest_from_this_loop_d)::value_type));
+        rest_from_this_loop_d.free();
 
         // merge sketch elements arrays from previous arrays in one big array
         std::vector<representation_t> merged_representations_h;

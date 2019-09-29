@@ -26,7 +26,7 @@ cuda_add_library(index_gpu
         src/index_gpu.cu
         src/minimizer.cu)
 target_include_directories(index_gpu PUBLIC include)
-target_link_libraries(index_gpu bioparser logging pthread utils)
+target_link_libraries(index_gpu logging pthread utils cgaio)
 target_compile_options(index_gpu PRIVATE -Werror)
 
 cuda_add_library(matcher
@@ -50,8 +50,6 @@ add_doxygen_source_dir(${CMAKE_CURRENT_SOURCE_DIR}/include/cudamapper)
 cuda_add_executable(cudamapper
         src/cudamapper.cpp
         src/main.cpp
-        src/sequence.cpp
-        src/bioparser_sequence.cpp
         src/index.cu
         src/overlapper.cpp
 )
@@ -64,7 +62,7 @@ target_include_directories(cudamapper
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 )
 
-target_link_libraries(cudamapper bioparser utils index_gpu matcher logging overlapper_triggerred cudamapper_utils)
+target_link_libraries(cudamapper utils index_gpu matcher logging overlapper_triggerred cudamapper_utils)
 
 # Add tests folder
 add_subdirectory(tests)
