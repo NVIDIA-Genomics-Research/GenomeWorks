@@ -22,8 +22,11 @@ namespace claragenomics {
         // GATT
 
         // only one read -> no anchors
+        std::vector<std::pair<std::uint64_t, std::uint64_t>> read_ranges;
+        const std::pair<std::uint64_t, std::uint64_t> query_range {0, std::numeric_limits<std::uint64_t>::max()};
+        read_ranges.push_back(query_range);
 
-        IndexGPU<Minimizer> index(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/gatt.fasta", 4, 1);
+        IndexGPU<Minimizer> index(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/gatt.fasta", 4, 1, read_ranges);
         Matcher matcher(index, 0);
 
         const std::vector<Anchor>& anchors = matcher.anchors();
@@ -57,8 +60,12 @@ namespace claragenomics {
 
         // Anchor r0p4 - r1p0
 
-        IndexGPU<Minimizer> index(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/catcaag_aagcta.fasta", 3, 2);
-        Matcher matcher(index);
+        std::vector<std::pair<std::uint64_t, std::uint64_t>> read_ranges;
+        const std::pair<std::uint64_t, std::uint64_t> query_range {0, std::numeric_limits<std::uint64_t>::max()};
+        read_ranges.push_back(query_range);
+
+        IndexGPU<Minimizer> index(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/catcaag_aagcta.fasta", 3, 2, read_ranges);
+        Matcher matcher(index, 0);
 
         const std::vector<Anchor>& anchors = matcher.anchors();
         ASSERT_EQ(anchors.size(), 1u);
@@ -124,7 +131,7 @@ namespace claragenomics {
         read_id_and_representation_to_sketch_elements[1].emplace_back(Index::RepresentationToSketchElements{0x23, {50,50}, {0,100}});
         test_index.read_id_and_representation_to_sketch_elements(read_id_and_representation_to_sketch_elements);
 
-        Matcher matcher(test_index);
+        Matcher matcher(test_index, 0);
 
         const std::vector<Anchor>& anchors = matcher.anchors();
         ASSERT_EQ(anchors.size(), 2500u);
@@ -237,7 +244,7 @@ namespace claragenomics {
         read_id_and_representation_to_sketch_elements[3].emplace_back(Index::RepresentationToSketchElements{7, {1010,80},  {1010,80}});
         test_index.read_id_and_representation_to_sketch_elements(read_id_and_representation_to_sketch_elements);
 
-        Matcher matcher(test_index);
+        Matcher matcher(test_index, 0);
 
         const std::vector<Anchor>& anchors = matcher.anchors();
         ASSERT_EQ(anchors.size(), 90300u);

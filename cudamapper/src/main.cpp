@@ -78,7 +78,6 @@ int main(int argc, char *argv[])
 
     while(true) { // outer loop over query
 
-
         //first generate a2a for query
         std::vector<std::pair<std::uint64_t, std::uint64_t>> ranges;
         std::pair<std::uint64_t, std::uint64_t> query_range {query_start, query_end};
@@ -120,7 +119,6 @@ int main(int argc, char *argv[])
         }
 
         while(true){ //Now loop over the targets
-            std::cerr << "Entering target loop" << std::endl;
             //first generate a2a for query
             std::vector<std::pair<std::uint64_t, std::uint64_t>> target_ranges;
             std::pair<std::uint64_t, std::uint64_t> target_range {target_start, target_end};
@@ -128,9 +126,6 @@ int main(int argc, char *argv[])
             target_ranges.push_back(query_range);
             target_ranges.push_back(target_range);
 
-            std::cerr << "Starting on index" << std::endl;
-            std::cerr << "tranges size" << target_ranges.size() << std::endl;
-            std::cerr << "target ranges:" << target_ranges[1].first << " - "  << target_ranges[1].second << std::endl;
             auto new_index = claragenomics::Index::create_index(input_filepath, k, w, target_ranges);
 
             CGA_LOG_INFO("Created index");

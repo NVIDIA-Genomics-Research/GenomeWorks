@@ -502,7 +502,6 @@ namespace index_gpu {
 
         while (true) {
             auto first_read_ = read_ranges[0].first;
-            auto last_read_ = read_ranges[0].second;
 
             //read the query file:
             std::vector<std::unique_ptr<BioParserSequence>> fasta_objects;
@@ -520,12 +519,9 @@ namespace index_gpu {
             std::uint64_t total_basepairs = 0;
             std::vector<ArrayBlock> read_id_to_basepairs_section_h;
 
-            size_t fasta_object_id_offset = 0;
-
             std::vector<std::size_t> fasta_indices;
             // find out how many basepairs each read has and determine its section in the big array with all basepairs
             for (std::size_t fasta_object_id = 0; fasta_object_id < fasta_objects.size(); ++fasta_object_id) {
-
                 auto global_read_id = current_chunk_start + fasta_object_id;
                 if (read_in_ranges(global_read_id)){
                     if (fasta_objects[fasta_object_id]->data().length() >= window_size_ + kmer_size_ - 1) {
@@ -541,8 +537,6 @@ namespace index_gpu {
                                      fasta_objects[fasta_object_id]->data().length(), window_size_ + kmer_size_ - 1
                         );
                     }
-                } else if ((current_chunk_start + fasta_object_id) < first_read_){
-                    fasta_object_id_offset += 1;
                 }
             }
 
