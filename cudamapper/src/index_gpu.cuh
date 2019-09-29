@@ -54,6 +54,7 @@ namespace claragenomics {
         /// \param query_filename filepath to reads in FASTA or FASTQ format
         /// \param kmer_size k - the kmer length
         /// \param window_size w - the length of the sliding window used to find sketch elements
+        /// \param read_ranges - the ranges of reads in the query file to use for mapping, index by their position (e.g in the FASA file)
         IndexGPU(const std::string& query_filename, const std::uint64_t kmer_size, const std::uint64_t window_size, const std::vector<std::pair<std::uint64_t, std::uint64_t>> read_ranges);
 
         /// \brief Constructor

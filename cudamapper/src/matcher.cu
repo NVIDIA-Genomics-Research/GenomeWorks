@@ -233,7 +233,7 @@ namespace claragenomics {
                             section_to_check.block_size_ = 0;
                             //TODO: This should be a bisectional search.
                             for (int sketch_element_idx = start; sketch_element_idx < end; sketch_element_idx++) {
-                                if (read_ids_h[sketch_element_idx] >= query_target_division_idx) {
+                                if (read_ids_h[sketch_element_idx] > query_target_division_idx) {
                                     section_to_check.first_element_ = sketch_element_idx;
                                     section_to_check.block_size_ = end - section_to_check.first_element_; // number of remaining elements
                                     break;

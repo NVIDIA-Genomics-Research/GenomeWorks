@@ -66,10 +66,7 @@ int main(int argc, char *argv[])
         exit(1);
     }
 
-
-
     //Now carry out all the looped polling
-
     size_t index_size = 10000;
     size_t query_start = 0;
     size_t query_end = query_start + index_size;
@@ -159,10 +156,6 @@ int main(int argc, char *argv[])
             target_start = target_end + 1;
             target_end = target_start + index_size;
         }
-
-
-
-
         //update query positions
         query_start = query_end + 1;
         query_end = query_start + index_size;
