@@ -18,8 +18,9 @@ import claragenomics.bindings.cuda as cuda
 
 @pytest.mark.gpu
 def test_cudapoa_simple_batch():
-    free, total = cuda.cuda_get_mem_info(cuda.cuda_get_device())
-    batch = CudaPoaBatch(10, 0.9 * free)
+    device = cuda.cuda_get_device()
+    free, total = cuda.cuda_get_mem_info(device)
+    batch = CudaPoaBatch(10, 0.9 * free, deivce_id=device)
     poa_1 = ["ACTGACTG", "ACTTACTG", "ACGGACTG", "ATCGACTG"]
     poa_2 = ["ACTGAC", "ACTTAC", "ACGGAC", "ATCGAC"]
     batch.add_poa_group(poa_1)
@@ -33,8 +34,9 @@ def test_cudapoa_simple_batch():
 
 @pytest.mark.gpu
 def test_cudapoa_reset_batch():
-    free, total = cuda.cuda_get_mem_info(cuda.cuda_get_device())
-    batch = CudaPoaBatch(10, 0.9 * free)
+    device = cuda.cuda_get_device()
+    free, total = cuda.cuda_get_mem_info(device)
+    batch = CudaPoaBatch(10, 0.9 * free, device_id=device)
     poa_1 = ["ACTGACTG", "ACTTACTG", "ACGGACTG", "ATCGACTG"]
     batch.add_poa_group(poa_1)
     batch.generate_poa()
@@ -59,9 +61,10 @@ def test_cudapoa_complex_batch():
         new_read = ''.join([r if random.random() > mutation_rate else random.choice(['A', 'C', 'G', 'T']) for r in ref])
         reads.append(new_read)
 
-    free, total = cuda.cuda_get_mem_info(cuda.cuda_get_device())
+    device = cuda.cuda_get_device()
+    free, total = cuda.cuda_get_mem_info(device)
     stream = cuda.CudaStream()
-    batch = CudaPoaBatch(1000, 0.9 * free, stream=stream)
+    batch = CudaPoaBatch(1000, 0.9 * free, stream=stream, device_id=device)
     (add_status, seq_status) = batch.add_poa_group(reads)
     batch.generate_poa()
 

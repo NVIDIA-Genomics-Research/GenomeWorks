@@ -28,7 +28,7 @@ namespace cudaaligner
 /// Holds formatted strings representing an alignment.
 /// FormattedAlignment.first = formatted string for query
 /// FormattedAlignment.second = formatted string for target
-using FormattedAlignment = std::pair<std::string, std::string>;
+typedef std::pair<std::string, std::string> FormattedAlignment;
 
 /// Alignment - Object encapsulating an alignment between 2 string.
 class Alignment

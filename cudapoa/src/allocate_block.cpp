@@ -28,6 +28,8 @@ BatchBlock::BatchBlock(int32_t device_id, size_t avail_mem, int32_t max_sequence
     , device_id_(throw_on_negative(device_id, "Device ID has to be non-negative"))
     , output_mask_(output_mask)
 {
+    scoped_device_switch dev(device_id_);
+
     matrix_sequence_dimension_ = banded_alignment_ ? CUDAPOA_BANDED_MAX_MATRIX_SEQUENCE_DIMENSION : CUDAPOA_MAX_MATRIX_SEQUENCE_DIMENSION;
     max_graph_dimension_       = banded_alignment_ ? CUDAPOA_MAX_MATRIX_GRAPH_DIMENSION_BANDED : CUDAPOA_MAX_MATRIX_GRAPH_DIMENSION;
     max_nodes_per_window_      = banded_alignment_ ? CUDAPOA_MAX_NODES_PER_WINDOW_BANDED : CUDAPOA_MAX_NODES_PER_WINDOW;
@@ -60,7 +62,6 @@ BatchBlock::BatchBlock(int32_t device_id, size_t avail_mem, int32_t max_sequence
     total_d_     = avail_mem;
 
     // Allocate.
-    CGA_CU_CHECK_ERR(cudaSetDevice(device_id_));
     CGA_CU_CHECK_ERR(cudaHostAlloc((void**)&block_data_h_, total_h_, cudaHostAllocDefault));
     CGA_CU_CHECK_ERR(cudaMalloc((void**)&block_data_d_, total_d_));
 }

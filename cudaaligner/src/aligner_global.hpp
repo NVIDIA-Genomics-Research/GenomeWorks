@@ -47,11 +47,6 @@ public:
         return get_size(alignments_);
     }
 
-    virtual void set_cuda_stream(cudaStream_t stream) override
-    {
-        stream_ = stream;
-    }
-
     virtual void reset() override;
 
     int32_t get_max_target_length() const

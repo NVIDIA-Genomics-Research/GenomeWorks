@@ -15,7 +15,7 @@ add_library(logging ${cga_library_type}
         src/logging.cpp)
 target_link_libraries(logging PUBLIC spdlog pthread utils)
 
-add_doxygen_source_dir(${CMAKE_CURRENT_SOURCE_DIR}/include/logging)
+add_doxygen_source_dir(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 target_include_directories(logging
     PUBLIC 

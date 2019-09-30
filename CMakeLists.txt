@@ -9,12 +9,15 @@
 #
 
 cmake_minimum_required(VERSION 3.10.2)
-project(ClaraGenomicsAnalysisCPP)
+set(CGA_PROJECT_NAME ClaraGenomicsAnalysis)
+set(CGA_VERSION 0.2.0)
+project(${CGA_PROJECT_NAME})
 
 # Process options.
 option(cga_enable_tests "Build ClaraGenomicsAnalysis unit tests" OFF)
 option(cga_enable_benchmarks "Build ClaraGenomicsAnalysis benchmarks" OFF)
 option(cga_build_shared "Build ClaraGenomicsAnalysis libraries as shared objects" OFF)
+option(cga_device_synchronize_kernels "Run cudaDeviceSynchronize() in CGA_CU_CHECK_ERR calls" OFF)
 # The spoa_accurate option runs a different (and slower) version of
 # the topological sort in cudapoa which exactly matches the output
 # of the topological sort implementation in the SPOA library. This is
@@ -43,14 +46,14 @@ else()
     set_property(GLOBAL PROPERTY cga_library_type STATIC)
 endif()
 
+include(cmake/CXX.cmake)
 include(cmake/CUDA.cmake)
 include(cmake/Doxygen.cmake)
 include(cmake/3rdparty.cmake)
 include(cmake/Tests.cmake)
 include(cmake/Benchmarks.cmake)
 include(cmake/Format.cmake)
-
-set(CMAKE_CXX_STANDARD 17)
+include(cmake/Packaging.cmake)
 
 # Add ClaraGenomicsAnalysis projects.
 add_subdirectory(common/logging)
@@ -61,7 +64,7 @@ add_subdirectory(cudaaligner)
 
 # Add documentation generation.
 set_doxygen_mainpage(${CMAKE_CURRENT_SOURCE_DIR}/README.md)
-add_docs_target("ClaraGenomicsAnalysis" "0.2.0")
+add_docs_target("ClaraGenomicsAnalysis" "${CGA_VERSION}")
 
 # Add auto formatting.
 cga_enable_formatting_targets()

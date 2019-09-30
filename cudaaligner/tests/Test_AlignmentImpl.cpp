@@ -38,8 +38,8 @@ TEST(TestAlignmentImplIndividual, Type)
     std::unique_ptr<AlignmentImpl> alignment_ = std::make_unique<AlignmentImpl>("A", 1, "T", 1);
     ASSERT_EQ(AlignmentType::unset, alignment_->get_alignment_type()) << "Initial type incorrect";
 
-    alignment_->set_alignment_type(AlignmentType::global);
-    ASSERT_EQ(AlignmentType::global, alignment_->get_alignment_type()) << "Type not set properly";
+    alignment_->set_alignment_type(AlignmentType::global_alignment);
+    ASSERT_EQ(AlignmentType::global_alignment, alignment_->get_alignment_type()) << "Type not set properly";
 }
 
 // Parametrized tests

@@ -38,6 +38,9 @@ namespace claragenomics {
 	// Using 80% of available memory as heuristic since not all available memory can be used
 	// due to fragmentation.
 	size_t max_anchors_per_block = 0.8 * free/sizeof(Anchor);
+    // The thurst sort function makes a local copy of the array, so we need twice
+    // twice the device memory available for the sort to succeed.
+    max_anchors_per_block /= 2;
 
 	// comparison function object
 	auto comp = [] __host__ __device__ (Anchor i, Anchor j) -> bool {

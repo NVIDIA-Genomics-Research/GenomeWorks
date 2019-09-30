@@ -30,7 +30,9 @@ Minimum requirements -
 3. gcc/g++ 5.4.0+
 4. Python 3.6.7+
 
-## Build Clara Genomics Analysis
+## Clara Genomics Analysis Setup
+
+### Build
 To build Clara Genomics Analysis -
 
 ```bash
@@ -38,6 +40,28 @@ mkdir build
 cd build
 cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=install
 make -j install
+```
+
+### Install
+To install the SDK -
+
+```bash
+make install
+```
+
+### Package generation
+Package generation puts the libraries, headers and binaries built by the `make` command above
+into a `.deb`/`.rpm` for portability and easy installation. The package generation itself doesn't
+guarantee any cross-platform compatibility.
+
+It is recommended that a separate build and packaging be performed for each distribution and
+CUDA version that needs to be supported.
+
+The type of package (deb vs rpm) is determined automatically based on the platform the code
+is being run on. To generate a package for the SDK -
+
+```bash
+make package
 ```
 
 ## Enable Unit Tests
@@ -73,6 +97,8 @@ To enable document generation for Clara Genomics Analysis, please install `Doxyg
 ```bash
 make docs
 ```
+
+Docs are also generated as part of the default `all` target when `Doxygen` is available on the system.
 
 ## Code Formatting
 
