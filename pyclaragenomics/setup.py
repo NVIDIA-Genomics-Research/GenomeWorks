@@ -48,7 +48,7 @@ class CMakeWrapper():
         subprocess.check_call(['cmake', self.cmake_root_dir] + cmake_args, cwd=self.build_path)
 
     def run_build_cmd(self):
-        build_args = ['--', '-j16', 'docs', 'install']
+        build_args = ['--', '-j16', 'install']
         subprocess.check_call(['cmake', '--build', '.'] + build_args, cwd=self.build_path)
 
     def build(self):
