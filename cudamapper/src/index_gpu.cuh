@@ -511,7 +511,7 @@ namespace index_gpu {
         std::vector<std::vector<representation_t>> representations_from_all_loops_h;
         std::vector<std::vector<typename SketchElementImpl::ReadidPositionDirection>> rest_from_all_loops_h;
 
-        std::uint32_t current_chunk_start = 0;
+        std::size_t current_chunk_start = 0;
 
         while (true) {
             auto first_read_ = read_ranges[0].first;
