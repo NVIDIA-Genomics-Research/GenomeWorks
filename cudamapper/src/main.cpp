@@ -67,7 +67,7 @@ int main(int argc, char *argv[])
     }
 
     //Now carry out all the looped polling
-    size_t index_size = 10000;
+    size_t index_size = 40000;
     size_t query_start = 0;
     size_t query_end = query_start + index_size;
 
@@ -108,10 +108,13 @@ int main(int argc, char *argv[])
 
         overlapper.print_paf(overlaps);
 
+        //Now that the all-to-all overlaps for the query have been generated,
+        //the first read in the targets s set to be the read after the last read in the query.
         size_t target_start = query_end + 1;
         size_t target_end = target_start + index_size;
 
-        if (index.get()->number_of_reads()  < index_size){ //reached the end of the reads
+        // No more reads to process.
+        if (index.get()->reached_end_of_input()){
             break;
         }
 
@@ -129,6 +132,9 @@ int main(int argc, char *argv[])
             std::cerr << "Index execution time: " << std::chrono::duration_cast<std::chrono::milliseconds>(
                     std::chrono::high_resolution_clock::now() - start_time).count() << "ms" << std::endl;
 
+            // Match point is the index up to which all reads in the query are part of the index
+            // We therefore set it to be the number of reads in the query (query read index end - query read index start)
+            //The number of reads in the whole target chunk is set to be index size.
             match_point = (query_range.second - query_range.first);
 
             start_time = std::chrono::high_resolution_clock::now();
@@ -153,6 +159,10 @@ int main(int argc, char *argv[])
                 break;
             }
 
+            //Now that mappings from query to one range of targets has been completed,
+            //the new target start is set to be the next read index after the last read
+            //from the previous chunk
+            //The number of reads in the whole target chunk is set to be index size.
             target_start = target_end + 1;
             target_end = target_start + index_size;
         }
