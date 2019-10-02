@@ -96,8 +96,9 @@ int main(int argc, char *argv[])
         std::cerr << "Index execution time: " << std::chrono::duration_cast<std::chrono::milliseconds>(
                 std::chrono::high_resolution_clock::now() - start_time).count() << "ms" << std::endl;
 
-        //auto num_reads = index.get()->number_of_reads();
-        auto match_point = 0; // all to all
+        // Match point is the index up to which all reads in the query are part of the index
+        // if match_point = 0 all vs all mapping is performed
+        auto match_point = 0;
 
         start_time = std::chrono::high_resolution_clock::now();
         CGA_LOG_INFO("Started matcher");
