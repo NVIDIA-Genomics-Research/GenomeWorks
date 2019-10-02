@@ -66,27 +66,121 @@ int main(int argc, char *argv[])
         exit(1);
     }
 
+    //Now carry out all the looped polling
+    size_t index_size = 40000;
+    size_t query_start = 0;
+    size_t query_end = query_start + index_size - 1;
+
     std::string input_filepath = std::string(argv[optind]);
-    std::unique_ptr<claragenomics::Index> index = claragenomics::Index::create_index(input_filepath, k, w);
-    CGA_LOG_INFO("Created index");
-    std::cerr << "Index execution time: " << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time).count() << "ms" << std::endl;
 
-    start_time = std::chrono::high_resolution_clock::now();
-    CGA_LOG_INFO("Started matcher");
-    claragenomics::Matcher matcher(*index);
-    CGA_LOG_INFO("Finished matcher");
-    std::cerr << "Matcher execution time: " << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time).count() << "ms" << std::endl;
+    while(true) { // outer loop over query
 
-    start_time = std::chrono::high_resolution_clock::now();
-    CGA_LOG_INFO("Started overlap detector");
-    auto overlapper = claragenomics::OverlapperTriggered();
-    auto overlaps = overlapper.get_overlaps(matcher.anchors(), *index);
+        //For every range of reads the process is to first generate all-vs-all overlaps
+        //for that chunk and then to generate its overlaps with subsequent chunks.
+        //For example, if a FASTA was chunked into 4 chunks: A,B,C,D the process would be as follows:
+        //
+        // Add overlaps for All-vs-all for chunk A
+        // Add overlaps for Chunk A vs Chunk B
+        // Add overlaps for Chunk A vs Chunk C
+        // Add overlaps for All-vs-all for chunk B
+        // Add overlaps for Chunk B vs Chunk C
+        // Add overlaps for All-vs-all for chunk C
+        std::vector<std::pair<std::uint64_t, std::uint64_t>> ranges;
+        std::pair<std::uint64_t, std::uint64_t> query_range {query_start, query_end};
 
-    CGA_LOG_INFO("Finished overlap detector");
-    std::cerr << "Overlap detection execution time: " << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time).count() << "ms" << std::endl;
+        ranges.push_back(query_range);
 
-    overlapper.print_paf(overlaps);
-    return  0;
+        std::unique_ptr<claragenomics::Index> index = claragenomics::Index::create_index(input_filepath, k, w, ranges);
+
+        CGA_LOG_INFO("Created index");
+        std::cerr << "Index execution time: " << std::chrono::duration_cast<std::chrono::milliseconds>(
+                std::chrono::high_resolution_clock::now() - start_time).count() << "ms" << std::endl;
+
+        // Match point is the index up to which all reads in the query are part of the index
+        // if match_point = 0 all vs all mapping is performed
+        auto match_point = 0;
+
+        start_time = std::chrono::high_resolution_clock::now();
+        CGA_LOG_INFO("Started matcher");
+        claragenomics::Matcher matcher(*index, match_point);
+        CGA_LOG_INFO("Finished matcher");
+        std::cerr << "Matcher execution time: " << std::chrono::duration_cast<std::chrono::milliseconds>(
+                std::chrono::high_resolution_clock::now() - start_time).count() << "ms" << std::endl;
+
+        start_time = std::chrono::high_resolution_clock::now();
+        CGA_LOG_INFO("Started overlap detector");
+        auto overlapper = claragenomics::OverlapperTriggered();
+        auto overlaps = overlapper.get_overlaps(matcher.anchors(), *index);
+
+        CGA_LOG_INFO("Finished overlap detector");
+        std::cerr << "Overlap detection execution time: " << std::chrono::duration_cast<std::chrono::milliseconds>(
+                std::chrono::high_resolution_clock::now() - start_time).count() << "ms" << std::endl;
+
+        overlapper.print_paf(overlaps);
+
+        //Now that the all-to-all overlaps for the query have been generated,
+        //the first read in the targets s set to be the read after the last read in the query.
+        size_t target_start = query_end + 1;
+        size_t target_end = target_start + index_size;
+
+        // No more reads to process.
+        if (index.get()->reached_end_of_input()){
+            break;
+        }
+
+        while(true){ //Now loop over the targets
+            //first generate a2a for query
+            std::vector<std::pair<std::uint64_t, std::uint64_t>> target_ranges;
+            std::pair<std::uint64_t, std::uint64_t> target_range {target_start, target_end};
+
+            target_ranges.push_back(query_range);
+            target_ranges.push_back(target_range);
+
+            auto new_index = claragenomics::Index::create_index(input_filepath, k, w, target_ranges);
+
+            CGA_LOG_INFO("Created index");
+            std::cerr << "Index execution time: " << std::chrono::duration_cast<std::chrono::milliseconds>(
+                    std::chrono::high_resolution_clock::now() - start_time).count() << "ms" << std::endl;
+
+            // Match point is the index up to which all reads in the query are part of the index
+            // We therefore set it to be the number of reads in the query (query read index end - query read index start)
+            //The number of reads in the whole target chunk is set to be index size.
+            match_point = (query_range.second - query_range.first);
+
+            start_time = std::chrono::high_resolution_clock::now();
+            CGA_LOG_INFO("Started matcher");
+            claragenomics::Matcher qt_matcher(*new_index, match_point);
+            CGA_LOG_INFO("Finished matcher");
+            std::cerr << "Matcher execution time: " << std::chrono::duration_cast<std::chrono::milliseconds>(
+                    std::chrono::high_resolution_clock::now() - start_time).count() << "ms" << std::endl;
+
+            start_time = std::chrono::high_resolution_clock::now();
+            CGA_LOG_INFO("Started overlap detector");
+            //auto overlapper = claragenomics::OverlapperTriggered();
+            overlaps = overlapper.get_overlaps(qt_matcher.anchors(), *new_index);
+
+            CGA_LOG_INFO("Finished overlap detector");
+            std::cerr << "Overlap detection execution time: " << std::chrono::duration_cast<std::chrono::milliseconds>(
+                    std::chrono::high_resolution_clock::now() - start_time).count() << "ms" << std::endl;
+
+            overlapper.print_paf(overlaps);
+
+            if (new_index.get()->number_of_reads()  < (index_size * 2)){ //reached the end of the reads
+                break;
+            }
+
+            //Now that mappings from query to one range of targets has been completed,
+            //the new target start is set to be the next read index after the last read
+            //from the previous chunk
+            //The number of reads in the whole target chunk is set to be index size.
+            target_start = target_end + 1;
+            target_end = target_start + index_size;
+        }
+        //update query positions
+        query_start = query_end + 1;
+        query_end = query_start + index_size;
+    }
+    return 0;
 }
 
 void help() {

@@ -29,7 +29,12 @@ namespace claragenomics {
                        const std::vector<SketchElement::DirectionOfRepresentation>& expected_directions_of_reads
                       )
     {
-        IndexGPU<Minimizer> index(filename, minimizer_size, window_size);
+        std::vector<std::pair<std::uint64_t, std::uint64_t>> read_ranges;
+        std::pair<std::uint64_t, std::uint64_t> query_range {0, std::numeric_limits<uint64_t>::max()};
+        read_ranges.push_back(query_range);
+
+        IndexGPU<Minimizer> index(filename, minimizer_size, window_size, read_ranges);
+
         ASSERT_EQ(index.number_of_reads(), expected_number_of_reads);
 
         const std::vector<std::string>& read_id_to_read_name = index.read_id_to_read_name();

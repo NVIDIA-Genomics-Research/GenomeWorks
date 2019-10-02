@@ -78,8 +78,14 @@ namespace claragenomics {
         /// \param query_filename filepath to reads in FASTA or FASTQ format
         /// \param kmer_size k - the kmer length
         /// \param window_size w - the length of the sliding window used to find sketch elements
+        /// \param ranges - the ranges of reads in the query file to use for mapping, index by their position (e.g in the FASTA file)
         /// \return instance of Index
-        static std::unique_ptr<Index> create_index(const std::string& query_filename, const std::uint64_t kmer_size, const std::uint64_t window_size);
+        static std::unique_ptr<Index>
+        create_index(const std::string &query_filename, const std::uint64_t kmer_size, const std::uint64_t window_size, const std::vector<std::pair<std::uint64_t, std::uint64_t>> & ranges);
+
+        /// \brief Returns whether there are any more reads to process in the reads file (e.g FASTA file)
+        /// \return Returns whether there are any more reads to process in the reads file (e.g FASTA file)
+        virtual bool reached_end_of_input() const = 0;
 
         /// \brief creates an empty Index
         /// \return empty instacne of Index

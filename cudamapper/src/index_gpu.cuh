@@ -54,7 +54,8 @@ namespace claragenomics {
         /// \param query_filename filepath to reads in FASTA or FASTQ format
         /// \param kmer_size k - the kmer length
         /// \param window_size w - the length of the sliding window used to find sketch elements
-        IndexGPU(const std::string& query_filename, const std::uint64_t kmer_size, const std::uint64_t window_size);
+        /// \param read_ranges - the ranges of reads in the query file to use for mapping, index by their position (e.g in the FASA file)
+        IndexGPU(const std::string& query_filename, const std::uint64_t kmer_size, const std::uint64_t window_size, const std::vector<std::pair<std::uint64_t, std::uint64_t>> &read_ranges);
 
         /// \brief Constructor
         IndexGPU();
@@ -74,6 +75,10 @@ namespace claragenomics {
         /// \brief returns number of reads in input data
         /// \return number of reads in input data
         std::uint64_t number_of_reads() const override;
+
+        /// \brief Returns whether there are any more reads to process in the reads file (e.g FASTA file) or if the given rang has exceeded the number of reads in the file
+        /// \return Returns whether there are any more reads to process in the reads file (e.g FASTA file) or if the given rang has exceeded the number of reads in the file
+        bool reached_end_of_input() const override;
 
         /// \brief returns mapping of internal read id that goes from 0 to number_of_reads-1 to actual read name from the input
         /// \return mapping of internal read id that goes from 0 to number_of_reads-1 to actual read name from the input
@@ -99,11 +104,12 @@ namespace claragenomics {
 
         /// \brief generates the index
         /// \param query_filename
-        void generate_index(const std::string& query_filename);
+        void generate_index(const std::string& query_filename, const std::vector<std::pair<std::uint64_t, std::uint64_t>> &read_ranges);
 
         const std::uint64_t kmer_size_;
         const std::uint64_t window_size_;
         std::uint64_t number_of_reads_;
+        bool reached_end_of_input_;
 
         std::vector<position_in_read_t> positions_in_reads_;
         std::vector<read_id_t> read_ids_;
@@ -439,10 +445,10 @@ namespace index_gpu {
 } // namespace details
 
     template <typename SketchElementImpl>
-    IndexGPU<SketchElementImpl>::IndexGPU(const std::string& query_filename, const std::uint64_t kmer_size, const std::uint64_t window_size)
-    : kmer_size_(kmer_size), window_size_(window_size), number_of_reads_(0)
+    IndexGPU<SketchElementImpl>::IndexGPU(const std::string& query_filename, const std::uint64_t kmer_size, const std::uint64_t window_size, const std::vector<std::pair<std::uint64_t, std::uint64_t>> &read_ranges)
+    : kmer_size_(kmer_size), window_size_(window_size), number_of_reads_(0), reached_end_of_input_(false)
     {
-        generate_index(query_filename);
+        generate_index(query_filename, read_ranges);
     }
 
     template <typename SketchElementImpl>
@@ -463,6 +469,9 @@ namespace index_gpu {
     std::uint64_t IndexGPU<SketchElementImpl>::number_of_reads() const { return number_of_reads_; }
 
     template <typename SketchElementImpl>
+    bool IndexGPU<SketchElementImpl>::reached_end_of_input() const { return reached_end_of_input_; }
+
+    template <typename SketchElementImpl>
     const std::vector<std::string>& IndexGPU<SketchElementImpl>::read_id_to_read_name() const { return read_id_to_read_name_; }
 
     template <typename SketchElementImpl>
@@ -473,7 +482,12 @@ namespace index_gpu {
 
     // TODO: This function will be split into several functions
     template <typename SketchElementImpl>
-    void IndexGPU<SketchElementImpl>::generate_index(const std::string& query_filename) {
+    void IndexGPU<SketchElementImpl>::generate_index(const std::string& query_filename, const std::vector<std::pair<std::uint64_t, std::uint64_t>> &read_ranges) {
+
+        auto max_read_id = std::max_element(read_ranges.begin(), read_ranges.end(),
+                [](std::pair<std::uint64_t, std::uint64_t> a, std::pair<std::uint64_t, std::uint64_t> b)
+                { return a.second < b.second;})->second;
+
         std::unique_ptr<bioparser::Parser<BioParserSequence>> query_parser = nullptr;
 
         auto is_suffix = [](const std::string &src, const std::string &suffix) -> bool {
@@ -497,36 +511,59 @@ namespace index_gpu {
         std::vector<std::vector<representation_t>> representations_from_all_loops_h;
         std::vector<std::vector<typename SketchElementImpl::ReadidPositionDirection>> rest_from_all_loops_h;
 
+        std::size_t current_chunk_start = 0;
+
         while (true) {
+            auto first_read_ = read_ranges[0].first;
+
             //read the query file:
             std::vector<std::unique_ptr<BioParserSequence>> fasta_objects;
             bool parser_status = query_parser->parse(fasta_objects, parser_buffer_size_in_bytes);
 
+            auto read_in_ranges = [&](std::size_t global_read_id) -> bool {
+                for (auto range: read_ranges) {
+                    if (((global_read_id) >= range.first) && ((global_read_id) <= range.second)) {
+                        return true;
+                    }
+                }
+                return false;
+            };
+
             std::uint64_t total_basepairs = 0;
             std::vector<ArrayBlock> read_id_to_basepairs_section_h;
-
+            std::size_t global_read_id = 0;
+            std::vector<std::size_t> fasta_indices;
             // find out how many basepairs each read has and determine its section in the big array with all basepairs
             for (std::size_t fasta_object_id = 0; fasta_object_id < fasta_objects.size(); ++fasta_object_id) {
-                // skip reads which are shorter than one window
-                if (fasta_objects[fasta_object_id]->data().length() >= window_size_ + kmer_size_ - 1) {
-                    read_id_to_basepairs_section_h.emplace_back(ArrayBlock{total_basepairs, static_cast<std::uint32_t>(fasta_objects[fasta_object_id]->data().length())});
-                    total_basepairs += fasta_objects[fasta_object_id]->data().length();
-                    read_id_to_read_name_.push_back(fasta_objects[fasta_object_id]->name());
-                    read_id_to_read_length_.push_back(fasta_objects[fasta_object_id]->data().length());
-                } else {
-                    CGA_LOG_INFO("Skipping read {}. It has {} basepairs, one window covers {} basepairs",
-                                 fasta_objects[fasta_object_id]->name(),
-                                 fasta_objects[fasta_object_id]->data().length(), window_size_ + kmer_size_ - 1
-                                );
+                global_read_id = current_chunk_start + fasta_object_id;
+                if (read_in_ranges(global_read_id)){
+                    if (fasta_objects[fasta_object_id]->data().length() >= window_size_ + kmer_size_ - 1) {
+                        read_id_to_basepairs_section_h.emplace_back(ArrayBlock{total_basepairs,
+                                                                               static_cast<std::uint32_t>(fasta_objects[fasta_object_id]->data().length())});
+                        total_basepairs += fasta_objects[fasta_object_id]->data().length();
+                        read_id_to_read_name_.push_back(fasta_objects[fasta_object_id]->name());
+                        read_id_to_read_length_.push_back(fasta_objects[fasta_object_id]->data().length());
+                        fasta_indices.push_back(fasta_object_id);
+                    } else {
+                        CGA_LOG_INFO("Skipping read {}. It has {} basepairs, one window covers {} basepairs",
+                                     fasta_objects[fasta_object_id]->name(),
+                                     fasta_objects[fasta_object_id]->data().length(), window_size_ + kmer_size_ - 1
+                        );
+                    }
                 }
             }
+
+            current_chunk_start += fasta_objects.size();
 
             auto number_of_reads_to_add = read_id_to_basepairs_section_h.size(); // This is the number of reads in this specific iteration
             number_of_reads_ += number_of_reads_to_add; // this is the *total* number of reads.
 
             //Stop if there are no reads to add
             if (0 == number_of_reads_to_add) {
-                if (parser_status == false) {
+                if (parser_status == false) { // If there are no reads to add, and we've reached the end of the file, break
+                    if (max_read_id > global_read_id) {
+                        reached_end_of_input_ = true;
+                    }
                     break;
                 }
                 continue;
@@ -536,7 +573,7 @@ namespace index_gpu {
 
             // copy each read to its section of the basepairs array
             read_id_t read_id = 0;
-            for (std::size_t fasta_object_id = 0; fasta_object_id < number_of_reads_to_add; ++fasta_object_id) {
+            for (auto fasta_object_id: fasta_indices) { //TODO do not start from zero
                 // skip reads which are shorter than one window
                 if (fasta_objects[fasta_object_id]->data().length() >= window_size_ + kmer_size_ - 1) {
                     std::copy(std::begin(fasta_objects[fasta_object_id]->data()),
@@ -554,6 +591,7 @@ namespace index_gpu {
             // move basepairs to the device
             CGA_LOG_INFO("Allocating {} bytes for read_id_to_basepairs_section_d", read_id_to_basepairs_section_h.size() * sizeof(decltype(read_id_to_basepairs_section_h)::value_type));
             device_buffer<decltype(read_id_to_basepairs_section_h)::value_type> read_id_to_basepairs_section_d( read_id_to_basepairs_section_h.size());
+
             CGA_CU_CHECK_ERR(cudaMemcpy(read_id_to_basepairs_section_d.data(),
                                         read_id_to_basepairs_section_h.data(),
                                         read_id_to_basepairs_section_h.size() * sizeof(decltype(read_id_to_basepairs_section_h)::value_type),
@@ -619,6 +657,9 @@ namespace index_gpu {
             rest_from_this_loop_d.free();
 
             if (parser_status == false) {
+                if (max_read_id > global_read_id) {
+                    reached_end_of_input_ = true;
+                }
                 break;
             }
         }

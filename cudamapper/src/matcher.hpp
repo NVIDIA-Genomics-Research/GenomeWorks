@@ -17,6 +17,9 @@ namespace claragenomics {
 
     /// Matcher - finds anchors
     ///
+    /// For a given index, all reads equal to or less than query_target_division_idx are mapped to all other reads.
+    /// If query_target_division_idx is 0 then all-vs-all mapping is performed.
+    ///
     /// Anchor is a pair of two sketch elements with the same sketch element representation from different reads.
     /// Anchors are symmetrical, so only one anchor is generated for each pair (if sketch element from read 5 overlaps a sketch element from read 8
     /// then the same sketch element from read 8 overlaps the sketch element from read 5).
@@ -31,7 +34,8 @@ namespace claragenomics {
 
         /// \brief Construtor
         /// \param index index to generate anchors from
-        Matcher(const Index& index);
+        /// \param query_target_division_idx the index after which all reads are target reads. If set to 0 then all-vs-all mapping is performed
+        Matcher(const Index &index, uint32_t query_target_division_idx);
 
         /// \brief return anchors
         /// \return anchors

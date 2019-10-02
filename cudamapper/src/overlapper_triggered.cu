@@ -67,7 +67,7 @@ namespace claragenomics {
 	    auto curblock_start = anchors_iter;
 	    auto curblock_end = anchors_iter + max_anchors_per_block;
 	    if(curblock_end > anchors.end())
-		curblock_end = anchors.end();
+		    curblock_end = anchors.end();
 
 	    auto n_anchors_curblock = curblock_end - curblock_start;
 
