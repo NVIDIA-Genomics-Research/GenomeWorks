@@ -591,8 +591,7 @@ namespace index_gpu {
             // move basepairs to the device
             CGA_LOG_INFO("Allocating {} bytes for read_id_to_basepairs_section_d", read_id_to_basepairs_section_h.size() * sizeof(decltype(read_id_to_basepairs_section_h)::value_type));
             device_buffer<decltype(read_id_to_basepairs_section_h)::value_type> read_id_to_basepairs_section_d( read_id_to_basepairs_section_h.size());
-            //device_buffer<ArrayBlock> read_id_to_basepairs_section_d(1);
-            CGA_LOG_INFO("Allocated");
+
             CGA_CU_CHECK_ERR(cudaMemcpy(read_id_to_basepairs_section_d.data(),
                                         read_id_to_basepairs_section_h.data(),
                                         read_id_to_basepairs_section_h.size() * sizeof(decltype(read_id_to_basepairs_section_h)::value_type),
