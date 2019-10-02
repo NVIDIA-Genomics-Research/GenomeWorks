@@ -26,7 +26,7 @@
 #include "matcher.hpp"
 
 namespace claragenomics {
-    std::vector<Overlap> const OverlapperTriggered::get_overlaps(std::vector<Anchor> &anchors, const Index &index) {
+    void OverlapperTriggered::get_overlaps(std::vector<Overlap>& fused_overlaps, std::vector<Anchor> &anchors, const Index &index) {
         const auto& read_names = index.read_id_to_read_name();
         const auto& read_lengths = index.read_id_to_read_length();
 	size_t total_anchors = anchors.size();
@@ -166,6 +166,6 @@ namespace claragenomics {
         }
 
         //Return fused overlaps
-        return fuse_overlaps(overlaps);
+        fuse_overlaps(fused_overlaps, overlaps);
     }
 }
