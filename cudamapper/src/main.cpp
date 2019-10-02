@@ -69,7 +69,7 @@ int main(int argc, char *argv[])
     //Now carry out all the looped polling
     size_t index_size = 40000;
     size_t query_start = 0;
-    size_t query_end = query_start + index_size;
+    size_t query_end = query_start + index_size - 1;
 
     std::string input_filepath = std::string(argv[optind]);
 

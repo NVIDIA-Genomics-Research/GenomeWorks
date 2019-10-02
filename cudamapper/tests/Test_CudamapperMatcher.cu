@@ -95,6 +95,7 @@ namespace claragenomics {
         void read_id_and_representation_to_sketch_elements( const std::vector<std::vector<RepresentationToSketchElements>>& val ) { read_id_and_representation_to_sketch_elements_ = val; }
         std::uint64_t minimum_representation() const override {return 0;};
         std::uint64_t maximum_representation() const override {return 1 << (15 * 2);}; //kmer_size = 15
+        bool reached_end_of_input() const override {return false;};
 
     private:
         std::vector<position_in_read_t> positions_in_reads_;
