@@ -64,9 +64,10 @@ def run_cudapoa(groups, msa, print_output):
                 if print_output:
                     print(consensus)
 
-            batch.reset()
             print("Processed group {} - {}".format(initial_count, i))
             initial_count = i
+            batch.reset()
+            group_status, seq_status = batch.add_poa_group(group)
 
 
 def parse_args():
