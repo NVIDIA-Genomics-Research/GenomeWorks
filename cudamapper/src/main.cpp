@@ -75,7 +75,16 @@ int main(int argc, char *argv[])
 
     while(true) { // outer loop over query
 
-        //first generate a2a for query
+        //For every range of reads the process is to first generate all-vs-all overlaps
+        //for that chunk and then to generate its overlaps with subsequent chunks.
+        //For example, if a FASTA was chunked into 4 chunks: A,B,C,D the process would be as follows:
+        //
+        // Add overlaps for All-vs-all for chunk A
+        // Add overlaps for Chunk A vs Chunk B
+        // Add overlaps for Chunk A vs Chunk C
+        // Add overlaps for All-vs-all for chunk B
+        // Add overlaps for Chunk B vs Chunk C
+        // Add overlaps for All-vs-all for chunk C
         std::vector<std::pair<std::uint64_t, std::uint64_t>> ranges;
         std::pair<std::uint64_t, std::uint64_t> query_range {query_start, query_end};
 
