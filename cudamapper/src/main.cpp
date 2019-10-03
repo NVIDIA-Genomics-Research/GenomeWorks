@@ -12,10 +12,16 @@
 #include <getopt.h>
 #include <iostream>
 #include <string>
+#include <deque>
+#include <mutex>
+#include <future>
+#include <thread>
+#include <atomic>
 
 #include <claragenomics/logging/logging.hpp>
 
 #include "cudamapper/index.hpp"
+#include "cudamapper/overlapper.hpp"
 #include "matcher.hpp"
 #include "overlapper_triggered.hpp"
 
@@ -76,11 +82,61 @@ int main(int argc, char *argv[])
 
     std::string input_filepath = std::string(argv[optind]);
 
+    // Data structure for holding overlaps to be written out
+    std::mutex overlaps_writer_mtx;
+    std::deque<std::vector<claragenomics::Overlap>> overlaps_to_write;
+
+    // Function for adding new overlaps to writer
+    auto add_overlaps_to_write_queue = [&overlaps_to_write, &overlaps_writer_mtx](claragenomics::Overlapper& overlapper,
+                                                                  std::vector<claragenomics::Anchor> &anchors,
+                                                                  const claragenomics::Index &index)
+    {
+        overlaps_writer_mtx.lock();
+        overlaps_to_write.push_back(std::vector<claragenomics::Overlap>());
+        overlapper.get_overlaps(overlaps_to_write.back(), anchors, index);
+        if (0 == overlaps_to_write.back().size())
+        {
+            overlaps_to_write.pop_back();
+        }
+        overlaps_writer_mtx.unlock();
+    };
+
+    // Start async thread for writing out PAF
+    auto overlaps_writer_func = [&overlaps_to_write, &overlaps_writer_mtx]()
+    {
+        while (true)
+        {
+            bool done = false;
+            overlaps_writer_mtx.lock();
+            if (!overlaps_to_write.empty())
+            {
+                std::vector<claragenomics::Overlap>& overlaps = overlaps_to_write.front();
+                // An empty overlap vector indicates end of processing.
+                if (overlaps.size() > 0)
+                {
+                    claragenomics::Overlapper::print_paf(overlaps);
+                    overlaps_to_write.pop_front();
+                    overlaps_to_write.shrink_to_fit();
+                }
+                else
+                {
+                    done = true;
+                }
+            }
+            overlaps_writer_mtx.unlock();
+            if (done)
+            {
+                break;
+            }
+            std::this_thread::yield();
+        }
+    };
+    std::future<void> overlap_result(std::async(std::launch::async, overlaps_writer_func));
+
     // Track overall time
     std::chrono::milliseconds index_time = std::chrono::duration_values<std::chrono::milliseconds>::zero();
     std::chrono::milliseconds matcher_time = std::chrono::duration_values<std::chrono::milliseconds>::zero();
     std::chrono::milliseconds overlapper_time = std::chrono::duration_values<std::chrono::milliseconds>::zero();
-    std::chrono::milliseconds paf_time = std::chrono::duration_values<std::chrono::milliseconds>::zero();
 
     while(true) { // outer loop over query
         auto start_time = std::chrono::high_resolution_clock::now();
@@ -124,19 +180,12 @@ int main(int argc, char *argv[])
         start_time = std::chrono::high_resolution_clock::now();
         CGA_LOG_INFO("Started overlap detector");
         auto overlapper = claragenomics::OverlapperTriggered();
-        auto overlaps = overlapper.get_overlaps(matcher.anchors(), *index);
+        add_overlaps_to_write_queue(overlapper, matcher.anchors(), *index);
 
         CGA_LOG_INFO("Finished overlap detector");
         std::cerr << "Overlap detection execution time: " << std::chrono::duration_cast<std::chrono::milliseconds>(
                 std::chrono::high_resolution_clock::now() - start_time).count() << "ms" << std::endl;
         overlapper_time += std::chrono::duration_cast<std::chrono::milliseconds>(
-                std::chrono::high_resolution_clock::now() - start_time);
-
-        start_time = std::chrono::high_resolution_clock::now();
-        overlapper.print_paf(overlaps);
-        std::cerr << "PAF output execution time: " << std::chrono::duration_cast<std::chrono::milliseconds>(
-                std::chrono::high_resolution_clock::now() - start_time).count() << "ms" << std::endl;
-        paf_time += std::chrono::duration_cast<std::chrono::milliseconds>(
                 std::chrono::high_resolution_clock::now() - start_time);
 
         //Now that the all-to-all overlaps for the query have been generated,
@@ -182,20 +231,12 @@ int main(int argc, char *argv[])
 
             start_time = std::chrono::high_resolution_clock::now();
             CGA_LOG_INFO("Started overlap detector");
-            //auto overlapper = claragenomics::OverlapperTriggered();
-            overlaps = overlapper.get_overlaps(qt_matcher.anchors(), *new_index);
+            add_overlaps_to_write_queue(overlapper, qt_matcher.anchors(), *new_index);
 
             CGA_LOG_INFO("Finished overlap detector");
             std::cerr << "Overlap detection execution time: " << std::chrono::duration_cast<std::chrono::milliseconds>(
                     std::chrono::high_resolution_clock::now() - start_time).count() << "ms" << std::endl;
             overlapper_time += std::chrono::duration_cast<std::chrono::milliseconds>(
-                    std::chrono::high_resolution_clock::now() - start_time);
-
-            start_time = std::chrono::high_resolution_clock::now();
-            overlapper.print_paf(overlaps);
-            std::cerr << "PAF output execution time: " << std::chrono::duration_cast<std::chrono::milliseconds>(
-                    std::chrono::high_resolution_clock::now() - start_time).count() << "ms" << std::endl;
-            paf_time += std::chrono::duration_cast<std::chrono::milliseconds>(
                     std::chrono::high_resolution_clock::now() - start_time);
 
             if (new_index.get()->number_of_reads()  < (index_size * 2)){ //reached the end of the reads
@@ -213,11 +254,27 @@ int main(int argc, char *argv[])
         query_start = query_end + 1;
         query_end = query_start + index_size;
     }
+
+    // Insert empty overlap vector to denote end of processing.
+    // The lambda function for adding overlaps to queue ensures that no empty
+    // overlaps are added to the queue so as not to confuse it with the
+    // empty overlap inserted to indicate end of processing.
+    auto start_time = std::chrono::high_resolution_clock::now();
+    overlaps_writer_mtx.lock();
+    overlaps_to_write.push_back(std::vector<claragenomics::Overlap>());
+    overlaps_writer_mtx.unlock();
+    auto paf_time = std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::high_resolution_clock::now() - start_time);
+
     std::cerr << "\n\n" << std::endl;
             std::cerr << "Index execution time: " << index_time.count() << "ms" << std::endl;
             std::cerr << "Matcher execution time: " << matcher_time.count() << "ms" << std::endl;
             std::cerr << "Overlap detection execution time: " << overlapper_time.count() << "ms" << std::endl;
-            std::cerr << "PAF output execution time: " << paf_time.count() << "ms" << std::endl;
+            std::cerr << "PAF detection execution time: " << paf_time.count() << "ms" << std::endl;
+
+    // Sync overlap writer threads.
+    overlap_result.get();
+
     return 0;
 }
 
