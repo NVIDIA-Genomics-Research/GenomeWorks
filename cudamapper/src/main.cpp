@@ -234,6 +234,9 @@ int main(int argc, char *argv[])
     }
 
     // Insert empty overlap vector to denote end of processing.
+    // The lambda function for adding overlaps to queue ensures that no empty
+    // overlaps are added to the queue so as not to confuse it with the
+    // empty overlap inserted to indicate end of processing.
     overlaps_writer_mtx.lock();
     overlaps_to_write.push_back(std::vector<claragenomics::Overlap>());
     overlaps_writer_mtx.unlock();

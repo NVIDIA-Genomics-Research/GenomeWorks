@@ -44,7 +44,7 @@ namespace claragenomics {
     ///
     /// \param fused_overlaps Output vector for fused overlaps
     /// \param unfused_overlaps vector of overlaps, sorted by (query_id, target_id) combination and query_start_position
-    void fuse_overlaps(std::vector<Overlap>& fused_overlaps, std::vector<Overlap> unfused_overlaps);
+    void fuse_overlaps(std::vector<Overlap>& fused_overlaps, const std::vector<Overlap>& unfused_overlaps);
 
     /// \brief given a std::vector of two or more sorted std::vector objects and a function to compare them, returns one sorted std::vector
     ///

@@ -165,7 +165,7 @@ namespace claragenomics {
             terminate_anchor();
         }
 
-        //Return fused overlaps
+        //Fuse overlaps
         fuse_overlaps(fused_overlaps, overlaps);
     }
 }

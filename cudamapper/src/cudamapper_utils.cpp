@@ -14,7 +14,7 @@
 
 namespace claragenomics {
 
-    void fuse_overlaps(std::vector<Overlap>& fused_overlaps, std::vector<Overlap> unfused_overlaps) {
+    void fuse_overlaps(std::vector<Overlap>& fused_overlaps, const std::vector<Overlap>& unfused_overlaps) {
         // If the target start position is greater than the target end position
         // We can safely assume that the query and target are template and complement
         // reads. TODO: Incorporate sketchelement direction value when this is implemented
