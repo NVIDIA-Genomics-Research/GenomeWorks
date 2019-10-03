@@ -517,8 +517,8 @@ namespace index_gpu {
                     fasta_sequence_indices.push_back(global_read_id);
                 } else {
                     CGA_LOG_INFO("Skipping read {}. It has {} basepairs, one window covers {} basepairs",
-                            s.name,
-                            s.seq.length(), window_size_ + kmer_size_ - 1
+                            name,
+                            seq.length(), window_size_ + kmer_size_ - 1
                             );
                 }
                 global_read_id++;
