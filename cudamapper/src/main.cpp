@@ -29,6 +29,7 @@
 static struct option options[] = {
         {"window-size", required_argument , 0, 'w'},
         {"kmer-size", required_argument, 0, 'k'},
+        {"index-size", optional_argument, 0, 'i'},
         {"help", no_argument, 0, 'h'},
 };
 
@@ -40,7 +41,8 @@ int main(int argc, char *argv[])
 
     uint32_t k = 15;
     uint32_t w = 15;
-    std::string optstring = "k:w:h";
+    size_t index_size = 10000;
+    std::string optstring = "i:k:w:h";
     uint32_t argument;
     while ((argument = getopt_long(argc, argv, optstring.c_str(), options, nullptr)) != -1){
         switch (argument) {
@@ -50,6 +52,9 @@ int main(int argc, char *argv[])
             case 'w':
                 w = atoi(optarg);
                 break;
+            case 'i':
+                index_size = atoi(optarg);
+                break;
             case 'h':
                 help();
                 exit(0);
@@ -58,7 +63,6 @@ int main(int argc, char *argv[])
         }
     }
 
-    auto start_time = std::chrono::high_resolution_clock::now();
     CGA_LOG_INFO("Creating index");
 
     if (optind >= argc){
@@ -73,7 +77,6 @@ int main(int argc, char *argv[])
     }
 
     //Now carry out all the looped polling
-    size_t index_size = 60000;
     size_t query_start = 0;
     size_t query_end = query_start + index_size - 1;
 
@@ -130,7 +133,13 @@ int main(int argc, char *argv[])
     };
     std::future<void> overlap_result(std::async(std::launch::async, overlaps_writer_func));
 
+    // Track overall time
+    std::chrono::milliseconds index_time = std::chrono::duration_values<std::chrono::milliseconds>::zero();
+    std::chrono::milliseconds matcher_time = std::chrono::duration_values<std::chrono::milliseconds>::zero();
+    std::chrono::milliseconds overlapper_time = std::chrono::duration_values<std::chrono::milliseconds>::zero();
+
     while(true) { // outer loop over query
+        auto start_time = std::chrono::high_resolution_clock::now();
 
         //For every range of reads the process is to first generate all-vs-all overlaps
         //for that chunk and then to generate its overlaps with subsequent chunks.
@@ -153,6 +162,8 @@ int main(int argc, char *argv[])
         std::cerr << "Index execution time: " << std::chrono::duration_cast<std::chrono::milliseconds>(
                 std::chrono::high_resolution_clock::now() - start_time).count() << "ms" << std::endl;
 
+        index_time += std::chrono::duration_cast<std::chrono::milliseconds>(
+                std::chrono::high_resolution_clock::now() - start_time);
         // Match point is the index up to which all reads in the query are part of the index
         // if match_point = 0 all vs all mapping is performed
         auto match_point = 0;
@@ -163,6 +174,8 @@ int main(int argc, char *argv[])
         CGA_LOG_INFO("Finished matcher");
         std::cerr << "Matcher execution time: " << std::chrono::duration_cast<std::chrono::milliseconds>(
                 std::chrono::high_resolution_clock::now() - start_time).count() << "ms" << std::endl;
+        matcher_time += std::chrono::duration_cast<std::chrono::milliseconds>(
+                std::chrono::high_resolution_clock::now() - start_time);
 
         start_time = std::chrono::high_resolution_clock::now();
         CGA_LOG_INFO("Started overlap detector");
@@ -172,6 +185,8 @@ int main(int argc, char *argv[])
         CGA_LOG_INFO("Finished overlap detector");
         std::cerr << "Overlap detection execution time: " << std::chrono::duration_cast<std::chrono::milliseconds>(
                 std::chrono::high_resolution_clock::now() - start_time).count() << "ms" << std::endl;
+        overlapper_time += std::chrono::duration_cast<std::chrono::milliseconds>(
+                std::chrono::high_resolution_clock::now() - start_time);
 
         //Now that the all-to-all overlaps for the query have been generated,
         //the first read in the targets s set to be the read after the last read in the query.
@@ -184,6 +199,7 @@ int main(int argc, char *argv[])
         }
 
         while(true){ //Now loop over the targets
+            start_time = std::chrono::high_resolution_clock::now();
             //first generate a2a for query
             std::vector<std::pair<std::uint64_t, std::uint64_t>> target_ranges;
             std::pair<std::uint64_t, std::uint64_t> target_range {target_start, target_end};
@@ -196,6 +212,8 @@ int main(int argc, char *argv[])
             CGA_LOG_INFO("Created index");
             std::cerr << "Index execution time: " << std::chrono::duration_cast<std::chrono::milliseconds>(
                     std::chrono::high_resolution_clock::now() - start_time).count() << "ms" << std::endl;
+            index_time += std::chrono::duration_cast<std::chrono::milliseconds>(
+                    std::chrono::high_resolution_clock::now() - start_time);
 
             // Match point is the index up to which all reads in the query are part of the index
             // We therefore set it to be the number of reads in the query (query read index end - query read index start)
@@ -208,6 +226,8 @@ int main(int argc, char *argv[])
             CGA_LOG_INFO("Finished matcher");
             std::cerr << "Matcher execution time: " << std::chrono::duration_cast<std::chrono::milliseconds>(
                     std::chrono::high_resolution_clock::now() - start_time).count() << "ms" << std::endl;
+            matcher_time += std::chrono::duration_cast<std::chrono::milliseconds>(
+                    std::chrono::high_resolution_clock::now() - start_time);
 
             start_time = std::chrono::high_resolution_clock::now();
             CGA_LOG_INFO("Started overlap detector");
@@ -216,6 +236,8 @@ int main(int argc, char *argv[])
             CGA_LOG_INFO("Finished overlap detector");
             std::cerr << "Overlap detection execution time: " << std::chrono::duration_cast<std::chrono::milliseconds>(
                     std::chrono::high_resolution_clock::now() - start_time).count() << "ms" << std::endl;
+            overlapper_time += std::chrono::duration_cast<std::chrono::milliseconds>(
+                    std::chrono::high_resolution_clock::now() - start_time);
 
             if (new_index.get()->number_of_reads()  < (index_size * 2)){ //reached the end of the reads
                 break;
@@ -237,9 +259,18 @@ int main(int argc, char *argv[])
     // The lambda function for adding overlaps to queue ensures that no empty
     // overlaps are added to the queue so as not to confuse it with the
     // empty overlap inserted to indicate end of processing.
+    auto start_time = std::chrono::high_resolution_clock::now();
     overlaps_writer_mtx.lock();
     overlaps_to_write.push_back(std::vector<claragenomics::Overlap>());
     overlaps_writer_mtx.unlock();
+    auto paf_time = std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::high_resolution_clock::now() - start_time);
+
+    std::cerr << "\n\n" << std::endl;
+            std::cerr << "Index execution time: " << index_time.count() << "ms" << std::endl;
+            std::cerr << "Matcher execution time: " << matcher_time.count() << "ms" << std::endl;
+            std::cerr << "Overlap detection execution time: " << overlapper_time.count() << "ms" << std::endl;
+            std::cerr << "PAF detection execution time: " << paf_time.count() << "ms" << std::endl;
 
     // Sync overlap writer threads.
     overlap_result.get();
@@ -257,5 +288,7 @@ void help() {
         -k, --kmer-size
             length of kmer to use for minimizers [15] (Max=)" << claragenomics::Index::maximum_kmer_size() << ")" << R"(
         -w, --window-size
-            length of window to use for minimizers [15])" << std::endl;
+            length of window to use for minimizers [15])" << R"(
+        -i, --index-size
+            length of index batch size to use [10000])" << std::endl;
 }

@@ -36,6 +36,15 @@ conda install \
     racon \
     cmake
 
+# Update LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
+
+# Show currentl installed paths
+set -x
+ls /usr/local/include
+ls /usr/local/lib
+set +x
+
 ################################################################################
 # BUILD - Conda package builds 
 ################################################################################
