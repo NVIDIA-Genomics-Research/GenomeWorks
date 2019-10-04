@@ -58,7 +58,9 @@ include(cmake/Packaging.cmake)
 # Add ClaraGenomicsAnalysis projects.
 add_subdirectory(common/logging)
 add_subdirectory(common/utils)
+add_subdirectory(common/io)
 add_subdirectory(cudapoa)
+add_subdirectory(cudamapper)
 add_subdirectory(cudaaligner)
 
 # Add documentation generation.

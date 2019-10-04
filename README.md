@@ -29,6 +29,7 @@ Minimum requirements -
 2. CUDA 9.0+
 3. gcc/g++ 5.4.0+
 4. Python 3.6.7+
+5. htslib 1.9+ (https://github.com/samtools/htslib)
 
 ## Clara Genomics Analysis Setup
 

@@ -56,8 +56,8 @@ def test_cudaaligner_long_alignments(ref_length, num_alignments):
 
     for _ in range(num_alignments):
         reference = genome_sim.build_reference(ref_length)
-        query = read_sim.generate_read(reference, ref_length, insertion_error_rate=0.0)
-        target = read_sim.generate_read(reference, ref_length, insertion_error_rate=0.0)
+        query, start, end = read_sim.generate_read(reference, ref_length, insertion_error_rate=0.0)
+        target, start, end = read_sim.generate_read(reference, ref_length, insertion_error_rate=0.0)
 
         batch.add_alignment(query, target)
 
@@ -89,8 +89,8 @@ def test_cudaaligner_various_arguments(max_seq_len, max_alignments, seq_len, num
     success = True
     for _ in range(num_alignments):
         reference = genome_sim.build_reference(seq_len)
-        query = read_sim.generate_read(reference, seq_len, insertion_error_rate=0.0)
-        target = read_sim.generate_read(reference, seq_len, insertion_error_rate=0.0)
+        query, start, end = read_sim.generate_read(reference, seq_len, insertion_error_rate=0.0)
+        target, start, end = read_sim.generate_read(reference, seq_len, insertion_error_rate=0.0)
 
         status = batch.add_alignment(query, target)
         if status != 0:
