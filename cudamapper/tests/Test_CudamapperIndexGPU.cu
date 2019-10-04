@@ -1139,8 +1139,9 @@ namespace index_gpu {
         // ^   ^   ^   ^
         // Perfect case, every section has the same number of elements
 
-        auto number_of_threads = std::thread::hardware_concurrency();
-        number_of_threads = std::max(1u, number_of_threads);
+        //auto number_of_threads = std::thread::hardware_concurrency();
+        //number_of_threads = std::max(1u, number_of_threads);
+        std::uint32_t number_of_threads = 4;
 
         std::vector<representation_t> representations;
         std::vector<std::pair<std::size_t, std::size_t>> expected_sections;
@@ -1183,8 +1184,9 @@ namespace index_gpu {
         //           ^     ^
         // ...
 
-        auto number_of_threads = std::thread::hardware_concurrency();
-        number_of_threads = std::max(1u, number_of_threads);
+        //auto number_of_threads = std::thread::hardware_concurrency();
+        //number_of_threads = std::max(1u, number_of_threads);
+        std::uint32_t number_of_threads = 4;
 
         std::vector<representation_t> representations;
         std::vector<std::pair<std::size_t, std::size_t>> expected_sections;
@@ -1207,8 +1209,9 @@ namespace index_gpu {
     TEST(TestCudamapperIndexGPU, generate_sections_for_multithreaded_index_building_3) {
         // only one representation -> all threads except for the first one get no sections
 
-        auto number_of_threads = std::thread::hardware_concurrency();
-        number_of_threads = std::max(1u, number_of_threads);
+        //auto number_of_threads = std::thread::hardware_concurrency();
+        //number_of_threads = std::max(1u, number_of_threads);
+        std::uint32_t number_of_threads = 4;
 
         std::vector<representation_t> representations(2*number_of_threads, 0);
         std::vector<std::pair<std::size_t, std::size_t>> expected_sections;
@@ -1222,8 +1225,9 @@ namespace index_gpu {
     TEST(TestCudamapperIndexGPU, generate_sections_for_multithreaded_index_building_4) {
         // only two representation -> all threads except for the first one get no sections
 
-        auto number_of_threads = std::thread::hardware_concurrency();
-        number_of_threads = std::max(1u, number_of_threads);
+        //auto number_of_threads = std::thread::hardware_concurrency();
+        //number_of_threads = std::max(1u, number_of_threads);
+        std::uint32_t number_of_threads = 4;
 
         if (number_of_threads <= 2u) {return;
             std::cout << "Only " << number_of_threads << " threads, no need to execute this test";
@@ -1244,8 +1248,9 @@ namespace index_gpu {
     TEST(TestCudamapperIndexGPU, generate_sections_for_multithreaded_index_building_5) {
         // less elements in representation than threads
 
-        auto number_of_threads = std::thread::hardware_concurrency();
-        number_of_threads = std::max(1u, number_of_threads);
+        //auto number_of_threads = std::thread::hardware_concurrency();
+        //number_of_threads = std::max(1u, number_of_threads);
+        std::uint32_t number_of_threads = 4;
 
         if (number_of_threads <= 2u) {return;
             std::cout << "Only " << number_of_threads << " threads, no need to execute this test";

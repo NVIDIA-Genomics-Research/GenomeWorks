@@ -158,7 +158,9 @@ namespace index_gpu {
 
     std::vector<std::pair<std::size_t, std::size_t>> generate_sections_for_multithreaded_index_building(const std::vector<representation_t>& input_representations)
     {
-        auto number_of_threads = std::thread::hardware_concurrency();
+        // TODO: When too many threads are used performance gets worse. Hardcoding the number of threads for now
+        //auto number_of_threads = std::thread::hardware_concurrency();
+        std::uint32_t number_of_threads = 4;
 
         if (0 == number_of_threads) {
             CGA_LOG_INFO("Could not get the number of supported threads, building index with one thread");
@@ -173,16 +175,22 @@ namespace index_gpu {
         for (std::size_t thread_id = 0; thread_id < number_of_threads; ++thread_id) {
             std::size_t first_index = 0;
             if (thread_id != 0) first_index = sections_for_threads.back().second;
-            std::size_t approx_past_the_last_index = first_index + approx_sketch_elements_per_thread;
-            approx_past_the_last_index = std::min(approx_past_the_last_index, input_representations.size());
-            representation_t last_representation_in_section = input_representations[approx_past_the_last_index - 1];
-            auto past_the_last_iterator_in_section = std::upper_bound(std::begin(input_representations),
-                                                                     std::end(input_representations),
-                                                                     last_representation_in_section
-                                                                    );
+            if (thread_id == number_of_threads - 1) { // last thread includes all remaining elements
+                if (first_index < input_representations.size()) { // there is at least one element left
+                    sections_for_threads.push_back(std::pair<std::size_t, std::size_t>(first_index, input_representations.size()));
+                }
+            } else {
+                std::size_t approx_past_the_last_index = first_index + approx_sketch_elements_per_thread;
+                approx_past_the_last_index = std::min(approx_past_the_last_index, input_representations.size());
+                representation_t last_representation_in_section = input_representations[approx_past_the_last_index - 1];
+                auto past_the_last_iterator_in_section = std::upper_bound(std::begin(input_representations),
+                                                                         std::end(input_representations),
+                                                                         last_representation_in_section
+                                                                        );
 
-            std::size_t actuall_past_the_last_index = past_the_last_iterator_in_section - std::begin(input_representations);
-            if (actuall_past_the_last_index > first_index) sections_for_threads.push_back(std::pair<std::size_t, std::size_t>(first_index, actuall_past_the_last_index));
+                std::size_t actuall_past_the_last_index = past_the_last_iterator_in_section - std::begin(input_representations);
+                if (actuall_past_the_last_index > first_index) sections_for_threads.push_back(std::pair<std::size_t, std::size_t>(first_index, actuall_past_the_last_index));
+            }
         }
 
         return sections_for_threads;
