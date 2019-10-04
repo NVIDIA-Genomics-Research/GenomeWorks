@@ -13,6 +13,7 @@
 #include <algorithm>
 #include <exception>
 #include <numeric>
+#include <thread>
 #include <utility>
 #include <vector>
 
