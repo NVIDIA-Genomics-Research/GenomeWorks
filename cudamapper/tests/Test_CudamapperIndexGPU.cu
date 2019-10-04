@@ -8,6 +8,7 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
+#include <algorithm>
 #include <math.h>
 
 #include "gtest/gtest.h"
@@ -1121,6 +1122,155 @@ namespace index_gpu {
                                                     ),
                     approximate_sketch_elements_per_bucket_too_small
                    );
+    }
+
+    // ************ Test generate_sections_for_multithreaded_index_building **************
+    void test_generate_sections_for_multithreaded_index_building(const std::vector<representation_t>& input_representations,
+                                                                 const std::vector<std::pair<std::size_t, std::size_t>>& expected_sections
+                                                                )
+    {
+        auto generated_sections = generate_sections_for_multithreaded_index_building(input_representations);
+
+        ASSERT_EQ(generated_sections.size(), expected_sections.size()) << "std::thread::hardware_concurrency: " << std::thread::hardware_concurrency();
+
+        for (std::size_t i = 0; i < generated_sections.size(); ++i) {
+            EXPECT_EQ(generated_sections[i].first, expected_sections[i].first) << "std::thread::hardware_concurrency: " << std::thread::hardware_concurrency() << ", index: " << i;
+            EXPECT_EQ(generated_sections[i].second, expected_sections[i].second) << "std::thread::hardware_concurrency: " << std::thread::hardware_concurrency() << ", index: " << i;
+        }
+    }
+
+    TEST(TestCudamapperIndexGPU, generate_sections_for_multithreaded_index_building_1) {
+        // 0 0 1 1 2 2 3 3 ...
+        // ^   ^   ^   ^
+        // Perfect case, every section has the same number of elements
+
+        //auto number_of_threads = std::thread::hardware_concurrency();
+        //number_of_threads = std::max(1u, number_of_threads);
+        std::uint32_t number_of_threads = 4;
+
+        std::vector<representation_t> representations;
+        std::vector<std::pair<std::size_t, std::size_t>> expected_sections;
+        for (std::size_t thread_id = 0; thread_id < number_of_threads; ++thread_id) {
+            representations.push_back(thread_id);
+            representations.push_back(thread_id);
+            expected_sections.push_back({2*thread_id, 2*(thread_id+1)});
+        }
+
+        test_generate_sections_for_multithreaded_index_building(representations,
+                                                                expected_sections
+                                                               );
+    }
+
+    TEST(TestCudamapperIndexGPU, generate_sections_for_multithreaded_index_building_2) {
+        // 0 0 0 1 1 2 2 2 3 3 4 4 4 5 5
+        // number_of_thread = 6
+        // number_of_elements = 15
+        // elements_per_section = 15/6 = 2
+        //
+        // * section 0 *
+        // 0 0 0 1 1 2 2 2 3 3 4 4 4 5 5
+        // ^   ^
+        // after looking for upper bound for the element left of past_the_last
+        // 0 0 0 1 1 2 2 2 3 3 4 4 4 5 5
+        // ^     ^
+        //
+        // * section 1 *
+        // 0 0 0 1 1 2 2 2 3 3 4 4 4 5 5
+        //       ^   ^
+        // after looking for upper bound for the element left of past_the_last
+        // 0 0 0 1 1 2 2 2 3 3 4 4 4 5 5
+        //       ^   ^
+        //
+        // * section 2 *
+        // 0 0 0 1 1 2 2 2 3 3 4 4 4 5 5
+        //           ^   ^
+        // after looking for upper bound for the element left of past_the_last
+        // 0 0 0 1 1 2 2 2 3 3 4 4 4 5 5
+        //           ^     ^
+        // ...
+
+        //auto number_of_threads = std::thread::hardware_concurrency();
+        //number_of_threads = std::max(1u, number_of_threads);
+        std::uint32_t number_of_threads = 4;
+
+        std::vector<representation_t> representations;
+        std::vector<std::pair<std::size_t, std::size_t>> expected_sections;
+        for (std::size_t thread_id = 0; thread_id < number_of_threads; ++thread_id) {
+            representations.push_back(thread_id);
+            representations.push_back(thread_id);
+            if (thread_id % 2 == 0) representations.push_back(thread_id);
+
+            std::size_t first_element = 0;
+            if (thread_id != 0) first_element = expected_sections.back().second;
+            if (thread_id % 2 == 0) expected_sections.push_back({first_element, first_element + 3});
+            else expected_sections.push_back({first_element, first_element + 2});
+        }
+
+        test_generate_sections_for_multithreaded_index_building(representations,
+                                                                expected_sections
+                                                               );
+    }
+
+    TEST(TestCudamapperIndexGPU, generate_sections_for_multithreaded_index_building_3) {
+        // only one representation -> all threads except for the first one get no sections
+
+        //auto number_of_threads = std::thread::hardware_concurrency();
+        //number_of_threads = std::max(1u, number_of_threads);
+        std::uint32_t number_of_threads = 4;
+
+        std::vector<representation_t> representations(2*number_of_threads, 0);
+        std::vector<std::pair<std::size_t, std::size_t>> expected_sections;
+        expected_sections.push_back({0, 2*number_of_threads});
+
+        test_generate_sections_for_multithreaded_index_building(representations,
+                                                                expected_sections
+                                                               );
+    }
+
+    TEST(TestCudamapperIndexGPU, generate_sections_for_multithreaded_index_building_4) {
+        // only two representation -> all threads except for the first one get no sections
+
+        //auto number_of_threads = std::thread::hardware_concurrency();
+        //number_of_threads = std::max(1u, number_of_threads);
+        std::uint32_t number_of_threads = 4;
+
+        if (number_of_threads <= 2u) {return;
+            std::cout << "Only " << number_of_threads << " threads, no need to execute this test";
+        }
+
+        std::vector<representation_t> representations(2*number_of_threads);
+        std::fill(std::begin(representations), std::begin(representations) + number_of_threads, 0);
+        std::fill(std::begin(representations) + number_of_threads, std::end(representations), 1);
+        std::vector<std::pair<std::size_t, std::size_t>> expected_sections;
+        expected_sections.push_back({0, number_of_threads});
+        expected_sections.push_back({number_of_threads, 2*number_of_threads});
+
+        test_generate_sections_for_multithreaded_index_building(representations,
+                                                                expected_sections
+                                                               );
+    }
+
+    TEST(TestCudamapperIndexGPU, generate_sections_for_multithreaded_index_building_5) {
+        // less elements in representation than threads
+
+        //auto number_of_threads = std::thread::hardware_concurrency();
+        //number_of_threads = std::max(1u, number_of_threads);
+        std::uint32_t number_of_threads = 4;
+
+        if (number_of_threads <= 2u) {return;
+            std::cout << "Only " << number_of_threads << " threads, no need to execute this test";
+        }
+
+
+        std::vector<representation_t> representations;
+        representations.push_back(0); // only two elements
+        representations.push_back(0);
+        std::vector<std::pair<std::size_t, std::size_t>> expected_sections;
+        expected_sections.push_back({0, 2});
+
+        test_generate_sections_for_multithreaded_index_building(representations,
+                                                                expected_sections
+                                                               );
     }
 
     // ************ Test build_index **************
