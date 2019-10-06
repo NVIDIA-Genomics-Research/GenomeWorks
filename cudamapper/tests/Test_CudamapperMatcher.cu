@@ -26,7 +26,10 @@ namespace claragenomics {
         const std::pair<std::uint64_t, std::uint64_t> query_range {0, std::numeric_limits<std::uint64_t>::max()};
         read_ranges.push_back(query_range);
 
-        IndexGPU<Minimizer> index(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/gatt.fasta", 4, 1, read_ranges);
+        std::unique_ptr<FastaParser> parser = create_fasta_parser(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/gatt.fasta");
+        std::vector<FastaParser*> parsers;
+        parsers.push_back(parser.get());
+        IndexGPU<Minimizer> index(parsers, 4, 1, read_ranges);
         Matcher matcher(index, 0);
 
         const std::vector<Anchor>& anchors = matcher.anchors();
@@ -64,7 +67,10 @@ namespace claragenomics {
         const std::pair<std::uint64_t, std::uint64_t> query_range {0, std::numeric_limits<std::uint64_t>::max()};
         read_ranges.push_back(query_range);
 
-        IndexGPU<Minimizer> index(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/catcaag_aagcta.fasta", 3, 2, read_ranges);
+        std::unique_ptr<FastaParser> parser = create_fasta_parser(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/catcaag_aagcta.fasta");
+        std::vector<FastaParser*> parsers;
+        parsers.push_back(parser.get());
+        IndexGPU<Minimizer> index(parsers, 3, 2, read_ranges);
         Matcher matcher(index, 0);
 
         const std::vector<Anchor>& anchors = matcher.anchors();

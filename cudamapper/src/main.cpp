@@ -19,6 +19,7 @@
 #include <atomic>
 
 #include <claragenomics/logging/logging.hpp>
+#include <claragenomics/io/fasta_parser.hpp>
 
 #include "cudamapper/index.hpp"
 #include "cudamapper/overlapper.hpp"
@@ -29,7 +30,8 @@
 static struct option options[] = {
         {"window-size", required_argument , 0, 'w'},
         {"kmer-size", required_argument, 0, 'k'},
-        {"index-size", optional_argument, 0, 'i'},
+        {"index-size", required_argument, 0, 'i'},
+        {"target-index-size", required_argument, 0, 't'},
         {"help", no_argument, 0, 'h'},
 };
 
@@ -42,7 +44,8 @@ int main(int argc, char *argv[])
     uint32_t k = 15;
     uint32_t w = 15;
     size_t index_size = 10000;
-    std::string optstring = "i:k:w:h";
+    size_t target_index_size = 10000;
+    std::string optstring = "t:i:k:w:h";
     uint32_t argument;
     while ((argument = getopt_long(argc, argv, optstring.c_str(), options, nullptr)) != -1){
         switch (argument) {
@@ -54,6 +57,9 @@ int main(int argc, char *argv[])
                 break;
             case 'i':
                 index_size = atoi(optarg);
+                break;
+            case 't':
+                target_index_size = atoi(optarg);
                 break;
             case 'h':
                 help();
@@ -76,11 +82,25 @@ int main(int argc, char *argv[])
         exit(1);
     }
 
-    //Now carry out all the looped polling
-    size_t query_start = 0;
-    size_t query_end = query_start + index_size - 1;
+    std::string query_filepath = std::string(argv[optind++]);
+    std::string target_filepath = std::string(argv[optind++]);
 
-    std::string input_filepath = std::string(argv[optind]);
+    bool denovo = false;
+    if (query_filepath == target_filepath)
+    {
+        denovo = true;
+        target_index_size = index_size;
+        std::cerr << "NOTE - Since query and target files are same, activating denovo mode. Target index size used for both files." << std::endl;
+    }
+
+    std::unique_ptr<claragenomics::FastaParser> query_parser = claragenomics::create_fasta_parser(query_filepath);
+    int32_t queries = query_parser->get_num_seqences();
+
+    std::unique_ptr<claragenomics::FastaParser> target_parser = claragenomics::create_fasta_parser(target_filepath);
+    int32_t targets = target_parser->get_num_seqences();
+
+    std::cerr << "Query " << query_filepath << " index " << queries << std::endl;
+    std::cerr << "Target " << target_filepath << " index " << targets << std::endl;
 
     // Data structure for holding overlaps to be written out
     std::mutex overlaps_writer_mtx;
@@ -138,7 +158,12 @@ int main(int argc, char *argv[])
     std::chrono::milliseconds matcher_time = std::chrono::duration_values<std::chrono::milliseconds>::zero();
     std::chrono::milliseconds overlapper_time = std::chrono::duration_values<std::chrono::milliseconds>::zero();
 
-    while(true) { // outer loop over query
+    //Now carry out all the looped polling
+    //size_t query_start = 0;
+    //size_t query_end = query_start + index_size - 1;
+
+    for(size_t query_start = 0; query_start < queries; query_start += index_size) { // outer loop over query
+        size_t query_end = std::min(query_start + index_size, static_cast<size_t>(queries));
         auto start_time = std::chrono::high_resolution_clock::now();
 
         //For every range of reads the process is to first generate all-vs-all overlaps
@@ -151,63 +176,46 @@ int main(int argc, char *argv[])
         // Add overlaps for All-vs-all for chunk B
         // Add overlaps for Chunk B vs Chunk C
         // Add overlaps for All-vs-all for chunk C
-        std::vector<std::pair<std::uint64_t, std::uint64_t>> ranges;
         std::pair<std::uint64_t, std::uint64_t> query_range {query_start, query_end};
 
-        ranges.push_back(query_range);
-
-        std::unique_ptr<claragenomics::Index> index = claragenomics::Index::create_index(input_filepath, k, w, ranges);
-
-        CGA_LOG_INFO("Created index");
-        std::cerr << "Index execution time: " << std::chrono::duration_cast<std::chrono::milliseconds>(
-                std::chrono::high_resolution_clock::now() - start_time).count() << "ms" << std::endl;
-
-        index_time += std::chrono::duration_cast<std::chrono::milliseconds>(
-                std::chrono::high_resolution_clock::now() - start_time);
-        // Match point is the index up to which all reads in the query are part of the index
-        // if match_point = 0 all vs all mapping is performed
-        auto match_point = 0;
-
-        start_time = std::chrono::high_resolution_clock::now();
-        CGA_LOG_INFO("Started matcher");
-        claragenomics::Matcher matcher(*index, match_point);
-        CGA_LOG_INFO("Finished matcher");
-        std::cerr << "Matcher execution time: " << std::chrono::duration_cast<std::chrono::milliseconds>(
-                std::chrono::high_resolution_clock::now() - start_time).count() << "ms" << std::endl;
-        matcher_time += std::chrono::duration_cast<std::chrono::milliseconds>(
-                std::chrono::high_resolution_clock::now() - start_time);
-
-        start_time = std::chrono::high_resolution_clock::now();
-        CGA_LOG_INFO("Started overlap detector");
         auto overlapper = claragenomics::OverlapperTriggered();
-        add_overlaps_to_write_queue(overlapper, matcher.anchors(), *index);
 
-        CGA_LOG_INFO("Finished overlap detector");
-        std::cerr << "Overlap detection execution time: " << std::chrono::duration_cast<std::chrono::milliseconds>(
-                std::chrono::high_resolution_clock::now() - start_time).count() << "ms" << std::endl;
-        overlapper_time += std::chrono::duration_cast<std::chrono::milliseconds>(
-                std::chrono::high_resolution_clock::now() - start_time);
-
-        //Now that the all-to-all overlaps for the query have been generated,
-        //the first read in the targets s set to be the read after the last read in the query.
-        size_t target_start = query_end + 1;
-        size_t target_end = target_start + index_size;
-
-        // No more reads to process.
-        if (index.get()->reached_end_of_input()){
-            break;
+        size_t target_start = 0;
+        // If denovo mode, then we can optimzie by starting the target sequences from the same index as
+        // query because all indices before the current query index are guaranteed to have been processed in
+        // a2a mapping.
+        if (denovo)
+        {
+            target_start = query_start;
         }
+        for(; target_start < targets; target_start += target_index_size) { //Now loop over the targets
+            size_t target_end = std::min(target_start + target_index_size, static_cast<size_t>(targets));
 
-        while(true){ //Now loop over the targets
             start_time = std::chrono::high_resolution_clock::now();
-            //first generate a2a for query
-            std::vector<std::pair<std::uint64_t, std::uint64_t>> target_ranges;
-            std::pair<std::uint64_t, std::uint64_t> target_range {target_start, target_end};
 
-            target_ranges.push_back(query_range);
-            target_ranges.push_back(target_range);
+            std::vector<std::pair<std::uint64_t, std::uint64_t>> ranges;
+            std::vector<claragenomics::FastaParser*> parsers;
 
-            auto new_index = claragenomics::Index::create_index(input_filepath, k, w, target_ranges);
+            ranges.push_back(query_range);
+            parsers.push_back(query_parser.get());
+            auto match_point = (query_range.second - query_range.first);
+
+            if (!(denovo && target_start == query_start && target_end == query_end))
+            {
+                // Only add a new range if it is not the case that mode is denovo and ranges between target and query match.
+                std::pair<std::uint64_t, std::uint64_t> target_range {target_start, target_end};
+                ranges.push_back(target_range);
+                parsers.push_back(target_parser.get());
+            }
+            else
+            {
+                // However, if mode is denovo and ranges match exactly, then do all to all mapping for this index.
+                match_point = 0;
+            }
+
+            std::cerr << "Ranges: query " << query_start << "," << query_end << " | target " << target_start << "," << target_end << std::endl;
+
+            auto new_index = claragenomics::Index::create_index(parsers, k, w, ranges);
 
             CGA_LOG_INFO("Created index");
             std::cerr << "Index execution time: " << std::chrono::duration_cast<std::chrono::milliseconds>(
@@ -218,7 +226,9 @@ int main(int argc, char *argv[])
             // Match point is the index up to which all reads in the query are part of the index
             // We therefore set it to be the number of reads in the query (query read index end - query read index start)
             //The number of reads in the whole target chunk is set to be index size.
-            match_point = (query_range.second - query_range.first);
+            //auto match_point = (query_range.second - query_range.first);
+            std::cerr << "match point " << match_point << std::endl;
+            std::cerr << "Number of reads in index " << new_index->number_of_reads() << std::endl;
 
             start_time = std::chrono::high_resolution_clock::now();
             CGA_LOG_INFO("Started matcher");
@@ -239,20 +249,10 @@ int main(int argc, char *argv[])
             overlapper_time += std::chrono::duration_cast<std::chrono::milliseconds>(
                     std::chrono::high_resolution_clock::now() - start_time);
 
-            if (new_index.get()->number_of_reads()  < (index_size * 2)){ //reached the end of the reads
-                break;
-            }
-
             //Now that mappings from query to one range of targets has been completed,
             //the new target start is set to be the next read index after the last read
             //from the previous chunk
-            //The number of reads in the whole target chunk is set to be index size.
-            target_start = target_end + 1;
-            target_end = target_start + index_size;
         }
-        //update query positions
-        query_start = query_end + 1;
-        query_end = query_start + index_size;
     }
 
     // Insert empty overlap vector to denote end of processing.
