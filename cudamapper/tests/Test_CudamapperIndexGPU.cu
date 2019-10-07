@@ -34,7 +34,10 @@ namespace claragenomics {
         std::pair<std::uint64_t, std::uint64_t> query_range {0, std::numeric_limits<uint64_t>::max()};
         read_ranges.push_back(query_range);
 
-        IndexGPU<Minimizer> index(filename, minimizer_size, window_size, read_ranges);
+        std::unique_ptr<FastaParser> parser = create_fasta_parser(filename);
+        std::vector<FastaParser*> parsers;
+        parsers.push_back(parser.get());
+        IndexGPU<Minimizer> index(parsers, minimizer_size, window_size, read_ranges);
 
         ASSERT_EQ(index.number_of_reads(), expected_number_of_reads);
 

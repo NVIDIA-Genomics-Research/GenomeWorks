@@ -54,7 +54,7 @@ namespace claragenomics {
         /// \param kmer_size k - the kmer length
         /// \param window_size w - the length of the sliding window used to find sketch elements
         /// \param read_ranges - the ranges of reads in the query file to use for mapping, index by their position (e.g in the FASA file)
-        IndexGPU(const std::string& query_filename, const std::uint64_t kmer_size, const std::uint64_t window_size, const std::vector<std::pair<std::uint64_t, std::uint64_t>> &read_ranges);
+        IndexGPU(const std::vector<FastaParser*>& parsers, const std::uint64_t kmer_size, const std::uint64_t window_size, const std::vector<std::pair<std::uint64_t, std::uint64_t>> &read_ranges);
 
         /// \brief Constructor
         IndexGPU();
@@ -103,7 +103,7 @@ namespace claragenomics {
 
         /// \brief generates the index
         /// \param query_filename
-        void generate_index(const std::string& query_filename, const std::vector<std::pair<std::uint64_t, std::uint64_t>> &read_ranges);
+        void generate_index(const std::vector<FastaParser*>& parsers, const std::vector<std::pair<std::uint64_t, std::uint64_t>> &read_ranges);
 
         const std::uint64_t kmer_size_;
         const std::uint64_t window_size_;
@@ -494,10 +494,10 @@ namespace index_gpu {
 } // namespace details
 
     template <typename SketchElementImpl>
-    IndexGPU<SketchElementImpl>::IndexGPU(const std::string& query_filename, const std::uint64_t kmer_size, const std::uint64_t window_size, const std::vector<std::pair<std::uint64_t, std::uint64_t>> &read_ranges)
+    IndexGPU<SketchElementImpl>::IndexGPU(const std::vector<FastaParser*>& parsers, const std::uint64_t kmer_size, const std::uint64_t window_size, const std::vector<std::pair<std::uint64_t, std::uint64_t>> &read_ranges)
     : kmer_size_(kmer_size), window_size_(window_size), number_of_reads_(0), reached_end_of_input_(false)
     {
-        generate_index(query_filename, read_ranges);
+        generate_index(parsers, read_ranges);
     }
 
     template <typename SketchElementImpl>
@@ -531,14 +531,7 @@ namespace index_gpu {
 
     // TODO: This function will be split into several functions
     template <typename SketchElementImpl>
-    void IndexGPU<SketchElementImpl>::generate_index(const std::string& query_filename, const std::vector<std::pair<std::uint64_t, std::uint64_t>> &read_ranges) {
-
-        auto max_read_id = std::max_element(read_ranges.begin(), read_ranges.end(),
-                [](std::pair<std::uint64_t, std::uint64_t> a, std::pair<std::uint64_t, std::uint64_t> b)
-                { return a.second < b.second;})->second;
-
-        std::unique_ptr<FastaParser> fasta_parser = create_fasta_parser(query_filename);
-        int32_t total_reads = fasta_parser->get_num_seqences();
+    void IndexGPU<SketchElementImpl>::generate_index(const std::vector<FastaParser*>& parsers, const std::vector<std::pair<std::uint64_t, std::uint64_t>> &read_ranges) {
 
         number_of_reads_ = 0;
 
@@ -552,12 +545,14 @@ namespace index_gpu {
 
         read_id_t global_read_id = 0;
         // find out how many basepairs each read has and determine its section in the big array with all basepairs
+        int32_t count = 0;
         for (auto range: read_ranges) {
+            FastaParser* parser = parsers[count];
             auto first_read_ = range.first;
-            auto last_read_ = std::min(range.second, static_cast<size_t>(total_reads - 1));
+            auto last_read_ = std::min(range.second, static_cast<size_t>(parser->get_num_seqences()));
 
-            for(auto read_id = first_read_; read_id <= last_read_; read_id++) {
-                fasta_sequences.emplace_back(fasta_parser->get_sequence_by_id(read_id));
+            for(auto read_id = first_read_; read_id < last_read_; read_id++) {
+                fasta_sequences.emplace_back(parser->get_sequence_by_id(read_id));
                 const std::string& seq = fasta_sequences.back().seq;
                 const std::string& name = fasta_sequences.back().name;
                 if (seq.length() >= window_size_ + kmer_size_ - 1) {
@@ -574,11 +569,8 @@ namespace index_gpu {
                 }
                 global_read_id++;
             }
-        }
 
-        if (max_read_id >= static_cast<size_t>(total_reads))
-        {
-            reached_end_of_input_ = true;
+            count++;
         }
 
         auto number_of_reads_to_add = read_id_to_basepairs_section_h.size(); // This is the number of reads in this specific iteration
