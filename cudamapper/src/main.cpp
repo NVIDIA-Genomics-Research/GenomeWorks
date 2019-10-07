@@ -85,12 +85,19 @@ int main(int argc, char *argv[])
     std::string query_filepath = std::string(argv[optind++]);
     std::string target_filepath = std::string(argv[optind++]);
 
-    bool denovo = false;
+    if (query_filepath == "" || target_filepath == "")
+    {
+        std::cerr << "Invalid inputs. Please refer to the help function." << std::endl;
+        help();
+        exit(1);
+    }
+
+    bool all_to_all = false;
     if (query_filepath == target_filepath)
     {
-        denovo = true;
+        all_to_all = true;
         target_index_size = index_size;
-        std::cerr << "NOTE - Since query and target files are same, activating denovo mode. Target index size used for both files." << std::endl;
+        std::cerr << "NOTE - Since query and target files are same, activating all_to_all mode. Query index size used for both files." << std::endl;
     }
 
     std::unique_ptr<claragenomics::FastaParser> query_parser = claragenomics::create_fasta_parser(query_filepath);
@@ -181,10 +188,10 @@ int main(int argc, char *argv[])
         auto overlapper = claragenomics::OverlapperTriggered();
 
         size_t target_start = 0;
-        // If denovo mode, then we can optimzie by starting the target sequences from the same index as
+        // If all_to_all mode, then we can optimzie by starting the target sequences from the same index as
         // query because all indices before the current query index are guaranteed to have been processed in
         // a2a mapping.
-        if (denovo)
+        if (all_to_all)
         {
             target_start = query_start;
         }
@@ -200,16 +207,16 @@ int main(int argc, char *argv[])
             parsers.push_back(query_parser.get());
             auto match_point = (query_range.second - query_range.first);
 
-            if (!(denovo && target_start == query_start && target_end == query_end))
+            if (!(all_to_all && target_start == query_start && target_end == query_end))
             {
-                // Only add a new range if it is not the case that mode is denovo and ranges between target and query match.
+                // Only add a new range if it is not the case that mode is all_to_all and ranges between target and query match.
                 std::pair<std::uint64_t, std::uint64_t> target_range {target_start, target_end};
                 ranges.push_back(target_range);
                 parsers.push_back(target_parser.get());
             }
             else
             {
-                // However, if mode is denovo and ranges match exactly, then do all to all mapping for this index.
+                // However, if mode is all_to_all and ranges match exactly, then do all to all mapping for this index.
                 match_point = 0;
             }
 
@@ -227,7 +234,6 @@ int main(int argc, char *argv[])
             // We therefore set it to be the number of reads in the query (query read index end - query read index start)
             //The number of reads in the whole target chunk is set to be index size.
             //auto match_point = (query_range.second - query_range.first);
-            std::cerr << "match point " << match_point << std::endl;
             std::cerr << "Number of reads in index " << new_index->number_of_reads() << std::endl;
 
             start_time = std::chrono::high_resolution_clock::now();
@@ -280,7 +286,7 @@ int main(int argc, char *argv[])
 
 void help() {
     std::cout<<
-    R"(Usage: cudamapper [options ...] <sequences>
+    R"(Usage: cudamapper [options ...] <query_sequences> <target_sequences>
      <sequences>
         Input file in FASTA/FASTQ format (can be compressed with gzip)
         containing sequences used for all-to-all overlapping
@@ -290,5 +296,7 @@ void help() {
         -w, --window-size
             length of window to use for minimizers [15])" << R"(
         -i, --index-size
-            length of index batch size to use [10000])" << std::endl;
+            length of batch size used for query [10000])"  << R"(
+        -t --target-index-size
+            length of batch sized used for target [10000])" << std::endl;
 }
