@@ -14,38 +14,43 @@
 #include <string>
 #include "claragenomics/cudamapper/sequence.hpp"
 
-namespace claragenomics {
-namespace cudamapper {
-    ///BioParserSequence - represents sequence. Compatible with BioParser's FastaParser
-    class BioParserSequence: public Sequence {
-    public:
-        ~BioParserSequence() = default;
+namespace claragenomics
+{
+namespace cudamapper
+{
+///BioParserSequence - represents sequence. Compatible with BioParser's FastaParser
+class BioParserSequence : public Sequence
+{
+public:
+    ~BioParserSequence() = default;
 
-        /// returns sequence read name.
-        /// \return `name_` private variable
-        const std::string &name() const {
-            return name_;
-        }
+    /// returns sequence read name.
+    /// \return `name_` private variable
+    const std::string& name() const
+    {
+        return name_;
+    }
 
-        /// returns sequence read data. Typically DNA bases
-        /// \return `data_` private variable
-        const std::string &data() const {
-            return data_;
-        }
+    /// returns sequence read data. Typically DNA bases
+    /// \return `data_` private variable
+    const std::string& data() const
+    {
+        return data_;
+    }
 
-        /// \brief BioParserSequence constructor - constructs a Sequence implementation compatible with bioparser's
-        /// FastaParser
-        ///
-        /// \param name sequence name
-        /// \param name_length length of name
-        /// \param data DNA bases (typically sequence of characters from set A,C,T,G)
-        /// \param data_length sequence length
-        BioParserSequence(const char *name, uint32_t name_length, const char *data,
-                 uint32_t data_length);
+    /// \brief BioParserSequence constructor - constructs a Sequence implementation compatible with bioparser's
+    /// FastaParser
+    ///
+    /// \param name sequence name
+    /// \param name_length length of name
+    /// \param data DNA bases (typically sequence of characters from set A,C,T,G)
+    /// \param data_length sequence length
+    BioParserSequence(const char* name, uint32_t name_length, const char* data,
+                      uint32_t data_length);
 
-    private:
-        std::string name_;
-        std::string data_;
-    };
-}
-}
+private:
+    std::string name_;
+    std::string data_;
+};
+} // namespace cudamapper
+} // namespace claragenomics

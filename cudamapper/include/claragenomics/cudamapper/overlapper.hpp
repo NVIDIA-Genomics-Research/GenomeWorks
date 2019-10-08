@@ -13,36 +13,38 @@
 #include "index.hpp"
 #include "types.hpp"
 
-namespace claragenomics {
+namespace claragenomics
+{
 
-namespace cudamapper {
+namespace cudamapper
+{
 /// \addtogroup cudamapper
 /// \{
-    /// Overlapper - given anchors and a read index, calculates overlaps between reads
-    class Overlapper {
-    public:
+/// Overlapper - given anchors and a read index, calculates overlaps between reads
+class Overlapper
+{
+public:
+    /// \brief Virtual destructor for Overlapper
+    virtual ~Overlapper() = default;
 
-        /// \brief Virtual destructor for Overlapper
-        virtual ~Overlapper() = default;
+    /// \brief returns overlaps for a set of reads
+    /// \param overlaps Output vector into which generated overlaps will be placed
+    /// \param anchors vector of anchor objects. Does not need to be ordered
+    /// \param index representation index for reads
+    virtual void get_overlaps(std::vector<Overlap>& overlaps, std::vector<Anchor>& anchors, const Index& index) = 0;
 
-        /// \brief returns overlaps for a set of reads
-        /// \param overlaps Output vector into which generated overlaps will be placed
-        /// \param anchors vector of anchor objects. Does not need to be ordered
-        /// \param index representation index for reads
-        virtual void get_overlaps(std::vector<Overlap>& overlaps, std::vector<Anchor> &anchors, const Index &index) = 0;
+    /// \brief prints overlaps to stdout in <a href="https://github.com/lh3/miniasm/blob/master/PAF.md">PAF format</a>
+    static void print_paf(const std::vector<Overlap>& overlaps);
 
-        /// \brief prints overlaps to stdout in <a href="https://github.com/lh3/miniasm/blob/master/PAF.md">PAF format</a>
-        static void print_paf(const std::vector<Overlap> &overlaps);
-
-        /// \brief removes overlaps which are unlikely to be true overlaps
-        /// \param filtered_overlaps Output vector in which to place filtered overlaps
-        /// \param overlaps vector of Overlap objects to be filtered
-        /// \param min_residues smallest number of residues (anchors) for an overlap to be accepted
-        /// \param min_overlap_len the smallest overlap distance which is accepted
-        static void filter_overlaps(std::vector<Overlap>& filtered_overlaps, const std::vector<Overlap> &overlaps, size_t min_residues=5,
-                size_t min_overlap_len=0);
-    };
+    /// \brief removes overlaps which are unlikely to be true overlaps
+    /// \param filtered_overlaps Output vector in which to place filtered overlaps
+    /// \param overlaps vector of Overlap objects to be filtered
+    /// \param min_residues smallest number of residues (anchors) for an overlap to be accepted
+    /// \param min_overlap_len the smallest overlap distance which is accepted
+    static void filter_overlaps(std::vector<Overlap>& filtered_overlaps, const std::vector<Overlap>& overlaps, size_t min_residues = 5,
+                                size_t min_overlap_len = 0);
+};
 //}
-}
+} // namespace cudamapper
 
-}
+} // namespace claragenomics

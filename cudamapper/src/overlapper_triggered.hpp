@@ -16,25 +16,28 @@
 #include "claragenomics/cudamapper/overlapper.hpp"
 #include "matcher.hpp"
 
-namespace claragenomics {
-namespace cudamapper {
+namespace claragenomics
+{
+namespace cudamapper
+{
 
-    /// OverlapperTriggered - generates overlaps and displays them on screen.
+/// OverlapperTriggered - generates overlaps and displays them on screen.
+/// Uses a dynamic programming approach where an overlap is "triggered" when a run of
+/// Anchors (e.g 3) with a score above a threshold is encountered and untriggerred
+/// when a single anchor with a threshold below the value is encountered.
+class OverlapperTriggered : public Overlapper
+{
+
+public:
+    /// \brief finds all overlaps
     /// Uses a dynamic programming approach where an overlap is "triggered" when a run of
     /// Anchors (e.g 3) with a score above a threshold is encountered and untriggerred
     /// when a single anchor with a threshold below the value is encountered.
-    class OverlapperTriggered: public Overlapper {
-
-    public:
-        /// \brief finds all overlaps
-        /// Uses a dynamic programming approach where an overlap is "triggered" when a run of
-        /// Anchors (e.g 3) with a score above a threshold is encountered and untriggerred
-        /// when a single anchor with a threshold below the value is encountered.
-        /// \param overlaps Output vector into which generated overlaps will be placed
-        /// \param anchors vector of anchors
-        /// \param index Index
-        /// \return vector of Overlap objects
-        void get_overlaps(std::vector<Overlap>& overlaps, std::vector<Anchor> &anchors, const Index &index) override;
-    };
-}
-}
+    /// \param overlaps Output vector into which generated overlaps will be placed
+    /// \param anchors vector of anchors
+    /// \param index Index
+    /// \return vector of Overlap objects
+    void get_overlaps(std::vector<Overlap>& overlaps, std::vector<Anchor>& anchors, const Index& index) override;
+};
+} // namespace cudamapper
+} // namespace claragenomics

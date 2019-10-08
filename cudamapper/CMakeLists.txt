@@ -72,3 +72,6 @@ install(TARGETS cudamapper
     DESTINATION bin
 )
 install(EXPORT cudamapper DESTINATION cmake)
+
+# Add auto formatting.
+cga_enable_auto_formatting("${CMAKE_CURRENT_SOURCE_DIR}")

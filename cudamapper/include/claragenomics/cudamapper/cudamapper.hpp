@@ -8,21 +8,24 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-#pragma  once
+#pragma once
 
 /// \defgroup cudamapper CUDA mapper package
 /// Base docs for the cudamapper package (tbd)
 /// \{
 
-namespace claragenomics {
-    namespace cudamapper {
-        enum class StatusType {
-            success = 0,
-            generic_error
-        };
-
-        StatusType Init();
-    };
+namespace claragenomics
+{
+namespace cudamapper
+{
+enum class StatusType
+{
+    success = 0,
+    generic_error
 };
+
+StatusType Init();
+}; // namespace cudamapper
+}; // namespace claragenomics
 
 /// \}

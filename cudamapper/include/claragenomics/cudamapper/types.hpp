@@ -13,15 +13,17 @@
 #include <cstdint>
 #include <string>
 
+namespace claragenomics
+{
 
-namespace claragenomics {
-
-namespace cudamapper {
+namespace cudamapper
+{
 
 /// ArrayBlock - points to a part of an array
 ///
 /// Contains the index of the first element in the block and the number of elements
-struct ArrayBlock {
+struct ArrayBlock
+{
     /// index of the first element of the block
     size_t first_element_;
     /// number of elements of the block
@@ -37,7 +39,8 @@ using read_id_t = std::uint64_t; // can this be 32-bit?
 
 /// Relative strand - represents whether query and target
 /// are on the same DNA strand (i.e Forward) or not (i.e Reverse).
-enum class RelativeStrand : unsigned char {
+enum class RelativeStrand : unsigned char
+{
     Forward = '+',
     Reverse = '-',
 };
@@ -45,12 +48,17 @@ enum class RelativeStrand : unsigned char {
 /// Anchor - represents one anchor
 ///
 /// Anchor is a pair of two sketch elements with the same sketch element representation from different reads
-struct Anchor{
+struct Anchor
+{
     /// empty default constructor to prevent costly instantiations of all elements when initializing containers
 #ifdef __CUDACC__
-    __host__ __device__ Anchor(){}
+    __host__ __device__ Anchor()
+    {
+    }
 #else
-    Anchor(){}
+    Anchor()
+    {
+    }
 #endif
     /// read ID of query
     read_id_t query_read_id_;
@@ -62,12 +70,12 @@ struct Anchor{
     position_in_read_t target_position_in_read_;
 };
 
-
 /// Overlap - represents one overlap between two substrings
 ///
 /// Overlap is a region of two strings which is considered to be the same underlying biological sequence.
 /// The overlapping region need not be identical across both substrings.
-typedef struct Overlap {
+typedef struct Overlap
+{
     /// internal read ID for query
     read_id_t query_read_id_;
     /// internal read ID for target
@@ -95,6 +103,6 @@ typedef struct Overlap {
     /// Whether the overlap is considered valid by the generating overlapper
     bool overlap_complete = false;
 } Overlap;
-}
+} // namespace cudamapper
 
-}
+} // namespace claragenomics
