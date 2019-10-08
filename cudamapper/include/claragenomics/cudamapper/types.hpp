@@ -16,6 +16,8 @@
 
 namespace claragenomics {
 
+namespace cudamapper {
+
 /// ArrayBlock - points to a part of an array
 ///
 /// Contains the index of the first element in the block and the number of elements
@@ -93,4 +95,6 @@ typedef struct Overlap {
     /// Whether the overlap is considered valid by the generating overlapper
     bool overlap_complete = false;
 } Overlap;
+}
+
 }

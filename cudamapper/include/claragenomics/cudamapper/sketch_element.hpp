@@ -12,9 +12,11 @@
 
 #include <cstdint>
 #include <memory>
-#include "cudamapper/types.hpp"
+#include "claragenomics/cudamapper/types.hpp"
 
 namespace claragenomics {
+
+namespace cudamapper {
 /// \addtogroup cudamapper
 /// \{
 
@@ -48,5 +50,7 @@ namespace claragenomics {
     };
 
 /// \}
+
+}
 
 }

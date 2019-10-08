@@ -13,9 +13,10 @@
 #include <algorithm>
 #include <vector>
 
-#include "cudamapper/types.hpp"
+#include "claragenomics/cudamapper/types.hpp"
 
 namespace claragenomics {
+namespace cudamapper {
     /// \brief given a vector of overlaps, combines all overlaps from the same read pair
     ///
     /// If two or more overlaps come from the same read pair they are combined into one large overlap:
@@ -65,4 +66,5 @@ namespace claragenomics {
             dst = tmp;
         }
     }
+}
 }

@@ -19,6 +19,7 @@
 
 
 namespace claragenomics {
+namespace cudamapper {
 
     TEST(TestCudamapperOverlapperTriggerred, FuseTwoOverlaps) {
         OverlapperTriggered overlapper;
@@ -172,7 +173,7 @@ namespace claragenomics {
 
         anchors.push_back(anchor1);
 
-        std::vector<claragenomics::Overlap> overlaps;
+        std::vector<Overlap> overlaps;
         overlapper.get_overlaps(overlaps, anchors, test_index);
         ASSERT_EQ(overlaps.size(), 0u);
     }
@@ -224,7 +225,7 @@ namespace claragenomics {
         anchors.push_back(anchor3);
         anchors.push_back(anchor4);
 
-        std::vector<claragenomics::Overlap> overlaps;
+        std::vector<Overlap> overlaps;
         overlapper.get_overlaps(overlaps, anchors, test_index);
         ASSERT_EQ(overlaps.size(), 1u);
         ASSERT_EQ(overlaps[0].query_read_id_, 1u);
@@ -282,7 +283,7 @@ namespace claragenomics {
         anchors.push_back(anchor3);
         anchors.push_back(anchor4);
 
-        std::vector<claragenomics::Overlap> overlaps;
+        std::vector<Overlap> overlaps;
         overlapper.get_overlaps(overlaps, anchors, test_index);
         ASSERT_EQ(overlaps.size(), 0u);
     }
@@ -334,7 +335,7 @@ namespace claragenomics {
         anchors.push_back(anchor3);
         anchors.push_back(anchor4);
 
-        std::vector<claragenomics::Overlap> overlaps;
+        std::vector<Overlap> overlaps;
         overlapper.get_overlaps(overlaps, anchors, test_index);
         ASSERT_EQ(overlaps.size(), 0u);
     }
@@ -386,7 +387,7 @@ namespace claragenomics {
         anchors.push_back(anchor3);
         anchors.push_back(anchor4);
 
-        std::vector<claragenomics::Overlap> overlaps;
+        std::vector<Overlap> overlaps;
         overlapper.get_overlaps(overlaps, anchors, test_index);
         ASSERT_EQ(overlaps.size(), 1u);
         ASSERT_EQ(overlaps[0].query_read_id_, 1u);
@@ -457,7 +458,7 @@ namespace claragenomics {
     rng.seed(2);
     //Shuffle the anchors 100 times and check that the generated overlaps are always the same.
     for (size_t i = 0; i < 100; i++){
-        std::vector<claragenomics::Overlap> overlaps;
+        std::vector<Overlap> overlaps;
         overlapper.get_overlaps(overlaps, anchors, test_index);
         std::shuffle(std::begin(overlaps), std::end(overlaps), rng);
         ASSERT_EQ(overlaps.size(), 1u);
@@ -517,7 +518,7 @@ namespace claragenomics {
         anchors.push_back(anchor3);
         anchors.push_back(anchor4);
 
-        std::vector<claragenomics::Overlap> overlaps;
+        std::vector<Overlap> overlaps;
         overlapper.get_overlaps(overlaps, anchors, test_index);
         ASSERT_EQ(overlaps.size(), 1u);
         ASSERT_GT(overlaps[0].target_end_position_in_read_, overlaps[0].target_start_position_in_read_);
@@ -525,4 +526,5 @@ namespace claragenomics {
         ASSERT_EQ(char(overlaps[0].relative_strand), '-');
     }
 
+}
 }

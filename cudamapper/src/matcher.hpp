@@ -11,9 +11,10 @@
 #pragma once
 
 #include <vector>
-#include "cudamapper/index.hpp"
+#include "claragenomics/cudamapper/index.hpp"
 
 namespace claragenomics {
+namespace cudamapper {
 
     /// Matcher - finds anchors
     ///
@@ -45,4 +46,5 @@ namespace claragenomics {
         /// \biref list of anchors
         std::vector<Anchor> anchors_h_;
     };
+}
 }

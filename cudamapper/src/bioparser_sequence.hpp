@@ -12,9 +12,10 @@
 
 #include <memory>
 #include <string>
-#include "cudamapper/sequence.hpp"
+#include "claragenomics/cudamapper/sequence.hpp"
 
 namespace claragenomics {
+namespace cudamapper {
     ///BioParserSequence - represents sequence. Compatible with BioParser's FastaParser
     class BioParserSequence: public Sequence {
     public:
@@ -46,4 +47,5 @@ namespace claragenomics {
         std::string name_;
         std::string data_;
     };
+}
 }

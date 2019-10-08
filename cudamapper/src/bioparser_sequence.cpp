@@ -13,6 +13,7 @@
 
 namespace claragenomics {
 
+namespace cudamapper {
     BioParserSequence::BioParserSequence(const char *name, uint32_t name_length, const char *data,
                                          uint32_t data_length)
             : name_(name, name_length), data_(){
@@ -22,4 +23,6 @@ namespace claragenomics {
             data_ += std::toupper(data[i]);
         }
     }
+}
+
 }

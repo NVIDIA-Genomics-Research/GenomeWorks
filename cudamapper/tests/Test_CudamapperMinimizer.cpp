@@ -12,6 +12,7 @@
 #include "../src/minimizer.hpp"
 
 namespace claragenomics {
+namespace cudamapper {
 
     void test_function(const std::uint64_t number_of_reads_to_add,
                        const std::uint64_t minimizer_size,
@@ -382,4 +383,5 @@ namespace claragenomics {
                       expected_rest_h
                      );
     }
+}
 }

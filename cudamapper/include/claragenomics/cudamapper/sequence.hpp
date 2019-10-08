@@ -14,6 +14,8 @@
 #include <string>
 
 namespace claragenomics {
+
+namespace cudamapper {
 /// \addtogroup cudamapper
 /// \{
 
@@ -41,4 +43,6 @@ namespace claragenomics {
     };
 
 /// \}
+}
+
 }

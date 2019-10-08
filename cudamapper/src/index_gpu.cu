@@ -11,6 +11,7 @@
 #include "index_gpu.cuh"
 
 namespace claragenomics {
+namespace cudamapper {
 
 namespace details {
 
@@ -200,4 +201,5 @@ namespace index_gpu {
 
 } // namespace details
 
+} // namespace cudamapper
 } // namespace claragenomics

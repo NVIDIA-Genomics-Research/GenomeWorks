@@ -10,9 +10,10 @@
 
 #include <vector>
 
-#include "cudamapper/types.hpp"
+#include "claragenomics/cudamapper/types.hpp"
 
 namespace claragenomics {
+namespace cudamapper {
 
     void fuse_overlaps(std::vector<Overlap>& fused_overlaps, const std::vector<Overlap>& unfused_overlaps) {
         // If the target start position is greater than the target end position
@@ -54,4 +55,4 @@ namespace claragenomics {
         fused_overlaps.push_back(fused_overlap);
     }
 }
-
+}

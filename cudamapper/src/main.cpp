@@ -21,8 +21,8 @@
 #include <claragenomics/logging/logging.hpp>
 #include <claragenomics/io/fasta_parser.hpp>
 
-#include "cudamapper/index.hpp"
-#include "cudamapper/overlapper.hpp"
+#include "claragenomics/cudamapper/index.hpp"
+#include "claragenomics/cudamapper/overlapper.hpp"
 #include "matcher.hpp"
 #include "overlapper_triggered.hpp"
 
@@ -68,9 +68,9 @@ int main(int argc, char *argv[])
         }
     }
 
-    if (k > claragenomics::Index::maximum_kmer_size()){
+    if (k > claragenomics::cudamapper::Index::maximum_kmer_size()){
         std::cerr << "kmer of size " << k << " is not allowed, maximum k = " <<
-            claragenomics::Index::maximum_kmer_size() << std::endl;
+            claragenomics::cudamapper::Index::maximum_kmer_size() << std::endl;
         exit(1);
     }
 
@@ -103,15 +103,15 @@ int main(int argc, char *argv[])
 
     // Data structure for holding overlaps to be written out
     std::mutex overlaps_writer_mtx;
-    std::deque<std::vector<claragenomics::Overlap>> overlaps_to_write;
+    std::deque<std::vector<claragenomics::cudamapper::Overlap>> overlaps_to_write;
 
     // Function for adding new overlaps to writer
-    auto add_overlaps_to_write_queue = [&overlaps_to_write, &overlaps_writer_mtx](claragenomics::Overlapper& overlapper,
-                                                                  std::vector<claragenomics::Anchor> &anchors,
-                                                                  const claragenomics::Index &index)
+    auto add_overlaps_to_write_queue = [&overlaps_to_write, &overlaps_writer_mtx](claragenomics::cudamapper::Overlapper& overlapper,
+                                                                  std::vector<claragenomics::cudamapper::Anchor> &anchors,
+                                                                  const claragenomics::cudamapper::Index &index)
     {
         overlaps_writer_mtx.lock();
-        overlaps_to_write.push_back(std::vector<claragenomics::Overlap>());
+        overlaps_to_write.push_back(std::vector<claragenomics::cudamapper::Overlap>());
         overlapper.get_overlaps(overlaps_to_write.back(), anchors, index);
         if (0 == overlaps_to_write.back().size())
         {
@@ -129,11 +129,11 @@ int main(int argc, char *argv[])
             overlaps_writer_mtx.lock();
             if (!overlaps_to_write.empty())
             {
-                std::vector<claragenomics::Overlap>& overlaps = overlaps_to_write.front();
+                std::vector<claragenomics::cudamapper::Overlap>& overlaps = overlaps_to_write.front();
                 // An empty overlap vector indicates end of processing.
                 if (overlaps.size() > 0)
                 {
-                    claragenomics::Overlapper::print_paf(overlaps);
+                    claragenomics::cudamapper::Overlapper::print_paf(overlaps);
                     overlaps_to_write.pop_front();
                     overlaps_to_write.shrink_to_fit();
                 }
@@ -177,7 +177,7 @@ int main(int argc, char *argv[])
         // Add overlaps for All-vs-all for chunk C
         std::pair<std::uint64_t, std::uint64_t> query_range {query_start, query_end};
 
-        auto overlapper = claragenomics::OverlapperTriggered();
+        auto overlapper = claragenomics::cudamapper::OverlapperTriggered();
 
         size_t target_start = 0;
         // If all_to_all mode, then we can optimzie by starting the target sequences from the same index as
@@ -218,7 +218,7 @@ int main(int argc, char *argv[])
 
             std::cerr << "Ranges: query " << query_start << "," << query_end << " | target " << target_start << "," << target_end << std::endl;
 
-            auto new_index = claragenomics::Index::create_index(parsers, k, w, ranges);
+            auto new_index = claragenomics::cudamapper::Index::create_index(parsers, k, w, ranges);
 
             CGA_LOG_INFO("Creating index");
             std::cerr << "Index execution time: " << std::chrono::duration_cast<std::chrono::milliseconds>(
@@ -229,7 +229,7 @@ int main(int argc, char *argv[])
 
             start_time = std::chrono::high_resolution_clock::now();
             CGA_LOG_INFO("Started matcher");
-            claragenomics::Matcher qt_matcher(*new_index, match_point);
+            claragenomics::cudamapper::Matcher qt_matcher(*new_index, match_point);
             CGA_LOG_INFO("Finished matcher");
             std::cerr << "Matcher execution time: " << std::chrono::duration_cast<std::chrono::milliseconds>(
                     std::chrono::high_resolution_clock::now() - start_time).count() << "ms" << std::endl;
@@ -258,7 +258,7 @@ int main(int argc, char *argv[])
     // empty overlap inserted to indicate end of processing.
     auto start_time = std::chrono::high_resolution_clock::now();
     overlaps_writer_mtx.lock();
-    overlaps_to_write.push_back(std::vector<claragenomics::Overlap>());
+    overlaps_to_write.push_back(std::vector<claragenomics::cudamapper::Overlap>());
     overlaps_writer_mtx.unlock();
     auto paf_time = std::chrono::duration_cast<std::chrono::milliseconds>(
             std::chrono::high_resolution_clock::now() - start_time);
@@ -283,7 +283,7 @@ void help(int32_t exit_code = 0) {
         containing sequences used for all-to-all overlapping
      options:
         -k, --kmer-size
-            length of kmer to use for minimizers [15] (Max=)" << claragenomics::Index::maximum_kmer_size() << ")" << R"(
+            length of kmer to use for minimizers [15] (Max=)" << claragenomics::cudamapper::Index::maximum_kmer_size() << ")" << R"(
         -w, --window-size
             length of window to use for minimizers [15])" << R"(
         -i, --index-size

@@ -17,6 +17,7 @@
 #include "../src/minimizer.hpp"
 
 namespace claragenomics {
+namespace cudamapper {
 
     void test_function(const std::string& filename,
                        const std::uint64_t minimizer_size,
@@ -1678,4 +1679,5 @@ namespace index_gpu {
 
 } // namespace index_gpu
 } // namespace details
+} // namespace cudamapper
 } // namespace claragenomics

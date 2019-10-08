@@ -25,12 +25,13 @@
 #include <claragenomics/utils/cudautils.hpp>
 #include <claragenomics/utils/device_buffer.cuh>
 
-#include "cudamapper/index.hpp"
-#include "cudamapper/types.hpp"
+#include "claragenomics/cudamapper/index.hpp"
+#include "claragenomics/cudamapper/types.hpp"
 
 #include "cudamapper_utils.hpp"
 
 namespace claragenomics {
+namespace cudamapper {
 
     /// IndexGPU - Contains sketch elements grouped by representation and by read id within the representation
     ///
@@ -714,4 +715,5 @@ namespace index_gpu {
                                        );
     }
 
+} // namespace cudamapper
 } // namespace claragenomics

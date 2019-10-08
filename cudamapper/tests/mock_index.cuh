@@ -16,6 +16,7 @@
 #include "../src/minimizer.hpp"
 
 namespace claragenomics {
+namespace cudamapper {
 
     class MockIndex : public IndexGPU<Minimizer> {
     public:
@@ -23,4 +24,5 @@ namespace claragenomics {
         MOCK_CONST_METHOD0(read_id_to_read_length, std::vector<std::uint32_t>&());
     };
 
+}
 }

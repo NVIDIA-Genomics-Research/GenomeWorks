@@ -14,6 +14,8 @@
 #include "types.hpp"
 
 namespace claragenomics {
+
+namespace cudamapper {
 /// \addtogroup cudamapper
 /// \{
     /// Overlapper - given anchors and a read index, calculates overlaps between reads
@@ -41,4 +43,6 @@ namespace claragenomics {
                 size_t min_overlap_len=0);
     };
 //}
+}
+
 }

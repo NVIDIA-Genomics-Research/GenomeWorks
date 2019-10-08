@@ -12,12 +12,13 @@
 
 #include <cstdint>
 #include <vector>
-#include "cudamapper/sketch_element.hpp"
-#include "cudamapper/types.hpp"
+#include "claragenomics/cudamapper/sketch_element.hpp"
+#include "claragenomics/cudamapper/types.hpp"
 
 #include <claragenomics/utils/device_buffer.cuh>
 
 namespace claragenomics {
+namespace cudamapper {
 
     /// Minimizer - represents one occurrance of a minimizer
     class Minimizer : public SketchElement {
@@ -90,4 +91,5 @@ namespace claragenomics {
         read_id_t read_id_;
     };
 
+}
 }

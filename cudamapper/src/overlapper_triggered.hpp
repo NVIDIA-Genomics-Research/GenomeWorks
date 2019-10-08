@@ -12,11 +12,12 @@
 
 #include <vector>
 
-#include "cudamapper/types.hpp"
-#include "cudamapper/overlapper.hpp"
+#include "claragenomics/cudamapper/types.hpp"
+#include "claragenomics/cudamapper/overlapper.hpp"
 #include "matcher.hpp"
 
 namespace claragenomics {
+namespace cudamapper {
 
     /// OverlapperTriggered - generates overlaps and displays them on screen.
     /// Uses a dynamic programming approach where an overlap is "triggered" when a run of
@@ -35,4 +36,5 @@ namespace claragenomics {
         /// \return vector of Overlap objects
         void get_overlaps(std::vector<Overlap>& overlaps, std::vector<Anchor> &anchors, const Index &index) override;
     };
+}
 }

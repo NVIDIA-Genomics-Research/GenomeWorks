@@ -21,11 +21,12 @@
 
 #include <claragenomics/utils/cudautils.hpp>
 #include "overlapper_triggered.hpp"
-#include "cudamapper/overlapper.hpp"
+#include "claragenomics/cudamapper/overlapper.hpp"
 #include "cudamapper_utils.hpp"
 #include "matcher.hpp"
 
 namespace claragenomics {
+namespace cudamapper {
     void OverlapperTriggered::get_overlaps(std::vector<Overlap>& fused_overlaps, std::vector<Anchor> &anchors, const Index &index) {
         const auto& read_names = index.read_id_to_read_name();
         const auto& read_lengths = index.read_id_to_read_length();
@@ -168,4 +169,5 @@ namespace claragenomics {
         //Fuse overlaps
         fuse_overlaps(fused_overlaps, overlaps);
     }
+}
 }

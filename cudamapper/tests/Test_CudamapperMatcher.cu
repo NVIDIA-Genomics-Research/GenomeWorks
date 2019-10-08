@@ -16,6 +16,7 @@
 #include "../src/minimizer.hpp"
 
 namespace claragenomics {
+namespace cudamapper {
 
     TEST(TestCudamapperMatcher, OneReadOneMinimizer) {
         // >read_0
@@ -392,4 +393,5 @@ namespace claragenomics {
             }
         }
     }
+}
 }

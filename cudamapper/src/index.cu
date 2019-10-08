@@ -8,11 +8,12 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-#include "cudamapper/index.hpp"
+#include "claragenomics/cudamapper/index.hpp"
 #include "index_gpu.cuh"
 #include "minimizer.hpp"
 
 namespace claragenomics {
+namespace cudamapper {
     std::unique_ptr<Index> Index::create_index(const std::vector<FastaParser*>& parsers,
                                                const std::uint64_t kmer_size,
                                                const std::uint64_t window_size,
@@ -23,4 +24,5 @@ namespace claragenomics {
     std::unique_ptr<Index> Index::create_index() {
         return std::make_unique<IndexGPU<Minimizer>>();
     }
+}
 }

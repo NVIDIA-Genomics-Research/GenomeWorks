@@ -8,10 +8,11 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-#include <cudamapper/cudamapper.hpp>
+#include <claragenomics/cudamapper/cudamapper.hpp>
 #include <claragenomics/logging/logging.hpp>
 
 namespace claragenomics {
+namespace cudamapper {
     namespace cudamapper {
 
         StatusType Init()
@@ -23,4 +24,6 @@ namespace claragenomics {
         }
 
     };
-};
+}
+
+}

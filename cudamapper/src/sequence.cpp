@@ -13,6 +13,7 @@
 
 
 namespace claragenomics {
+namespace cudamapper {
     std::unique_ptr<Sequence> Sequence::create_sequence(const char *name, uint32_t name_length, const char *data,
                                                         uint32_t data_length) {
         return std::make_unique<BioParserSequence>(name, name_length, data, data_length);
@@ -22,4 +23,5 @@ namespace claragenomics {
         return std::make_unique<BioParserSequence>(name.c_str(), name.size(), data.c_str(), data.size());
     }
 
+}
 }

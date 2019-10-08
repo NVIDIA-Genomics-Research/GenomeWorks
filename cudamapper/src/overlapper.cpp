@@ -9,9 +9,10 @@
 */
 
 #include <algorithm>
-#include "cudamapper/overlapper.hpp"
+#include "claragenomics/cudamapper/overlapper.hpp"
 
 namespace claragenomics {
+namespace cudamapper {
 
     void Overlapper::filter_overlaps(std::vector<Overlap>& filtered_overlaps, const std::vector<Overlap> &overlaps, size_t  min_residues, size_t min_overlap_len) {
         auto valid_overlap = [&min_residues, &min_overlap_len](Overlap overlap){return ((overlap.num_residues_ >= min_residues) &&
@@ -43,4 +44,5 @@ namespace claragenomics {
             );
         }
     }
+}
 }

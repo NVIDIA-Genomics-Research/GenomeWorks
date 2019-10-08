@@ -16,6 +16,7 @@
 #include <claragenomics/utils/device_buffer.cuh>
 
 namespace claragenomics {
+namespace cudamapper {
 
     /// \brief Generates anchors for all reads
     ///
@@ -379,4 +380,5 @@ namespace claragenomics {
         return anchors_h_;
     }
 
+}
 }
