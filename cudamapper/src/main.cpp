@@ -35,7 +35,7 @@ static struct option options[] = {
         {"help", no_argument, 0, 'h'},
 };
 
-void help();
+void help(int32_t exit_code);
 
 int main(int argc, char *argv[])
 {
@@ -62,18 +62,10 @@ int main(int argc, char *argv[])
                 target_index_size = atoi(optarg);
                 break;
             case 'h':
-                help();
-                exit(0);
+                help(0);
             default:
                 exit(1);
         }
-    }
-
-    CGA_LOG_INFO("Creating index");
-
-    if (optind >= argc){
-        help();
-        exit(1);
     }
 
     if (k > claragenomics::Index::maximum_kmer_size()){
@@ -82,15 +74,15 @@ int main(int argc, char *argv[])
         exit(1);
     }
 
-    std::string query_filepath = std::string(argv[optind++]);
-    std::string target_filepath = std::string(argv[optind++]);
-
-    if (query_filepath == "" || target_filepath == "")
+    // Check remaining argument count.
+    if ((argc - optind) < 2)
     {
         std::cerr << "Invalid inputs. Please refer to the help function." << std::endl;
-        help();
-        exit(1);
+        help(1);
     }
+
+    std::string query_filepath = std::string(argv[optind++]);
+    std::string target_filepath = std::string(argv[optind++]);
 
     bool all_to_all = false;
     if (query_filepath == target_filepath)
@@ -205,6 +197,10 @@ int main(int argc, char *argv[])
 
             ranges.push_back(query_range);
             parsers.push_back(query_parser.get());
+
+            // Match point is the index up to which all reads in the query are part of the index
+            // We therefore set it to be the number of reads in the query (query read index end - query read index start)
+            //The number of reads in the whole target chunk is set to be index size.
             auto match_point = (query_range.second - query_range.first);
 
             if (!(all_to_all && target_start == query_start && target_end == query_end))
@@ -224,17 +220,12 @@ int main(int argc, char *argv[])
 
             auto new_index = claragenomics::Index::create_index(parsers, k, w, ranges);
 
-            CGA_LOG_INFO("Created index");
+            CGA_LOG_INFO("Creating index");
             std::cerr << "Index execution time: " << std::chrono::duration_cast<std::chrono::milliseconds>(
                     std::chrono::high_resolution_clock::now() - start_time).count() << "ms" << std::endl;
             index_time += std::chrono::duration_cast<std::chrono::milliseconds>(
                     std::chrono::high_resolution_clock::now() - start_time);
-
-            // Match point is the index up to which all reads in the query are part of the index
-            // We therefore set it to be the number of reads in the query (query read index end - query read index start)
-            //The number of reads in the whole target chunk is set to be index size.
-            //auto match_point = (query_range.second - query_range.first);
-            std::cerr << "Number of reads in index " << new_index->number_of_reads() << std::endl;
+            CGA_LOG_INFO("Created index");
 
             start_time = std::chrono::high_resolution_clock::now();
             CGA_LOG_INFO("Started matcher");
@@ -284,8 +275,8 @@ int main(int argc, char *argv[])
     return 0;
 }
 
-void help() {
-    std::cout<<
+void help(int32_t exit_code = 0) {
+    std::cerr<<
     R"(Usage: cudamapper [options ...] <query_sequences> <target_sequences>
      <sequences>
         Input file in FASTA/FASTQ format (can be compressed with gzip)
@@ -299,4 +290,6 @@ void help() {
             length of batch size used for query [10000])"  << R"(
         -t --target-index-size
             length of batch sized used for target [10000])" << std::endl;
+
+    exit(exit_code);
 }
