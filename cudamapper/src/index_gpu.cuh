@@ -13,6 +13,7 @@
 #include <algorithm>
 #include <exception>
 #include <numeric>
+#include <thread>
 #include <utility>
 #include <vector>
 
@@ -53,7 +54,7 @@ namespace claragenomics {
         /// \param kmer_size k - the kmer length
         /// \param window_size w - the length of the sliding window used to find sketch elements
         /// \param read_ranges - the ranges of reads in the query file to use for mapping, index by their position (e.g in the FASA file)
-        IndexGPU(const std::string& query_filename, const std::uint64_t kmer_size, const std::uint64_t window_size, const std::vector<std::pair<std::uint64_t, std::uint64_t>> &read_ranges);
+        IndexGPU(const std::vector<FastaParser*>& parsers, const std::uint64_t kmer_size, const std::uint64_t window_size, const std::vector<std::pair<std::uint64_t, std::uint64_t>> &read_ranges);
 
         /// \brief Constructor
         IndexGPU();
@@ -102,7 +103,7 @@ namespace claragenomics {
 
         /// \brief generates the index
         /// \param query_filename
-        void generate_index(const std::string& query_filename, const std::vector<std::pair<std::uint64_t, std::uint64_t>> &read_ranges);
+        void generate_index(const std::vector<FastaParser*>& parsers, const std::vector<std::pair<std::uint64_t, std::uint64_t>> &read_ranges);
 
         const std::uint64_t kmer_size_;
         const std::uint64_t window_size_;
@@ -331,6 +332,12 @@ namespace index_gpu {
         readids_positions_directions_bucket_to_merge_d.free();
     }
 
+    /// \brief Splits input_representations into sections of equally the same size where no representation is split across multiple sections
+    ///
+    /// \param input_representations representations of all sketch elements, soreted by representation
+    /// \return for eaction it returns a pair of the index of the first element and past-the-last element
+    std::vector<std::pair<std::size_t, std::size_t>> generate_sections_for_multithreaded_index_building(const std::vector<representation_t>& input_representations);
+
     /// \brief Constructs the index and splits parts of sketch elements into separate arays
     ///
     /// Builds the index (read_id_and_representation_to_sketch_elements) based on input_representations and read_ids from input_readids_positions_directions.
@@ -358,83 +365,127 @@ namespace index_gpu {
                      std::vector<std::vector<Index::RepresentationToSketchElements>>& read_id_and_representation_to_sketch_elements
                     )
     {
-        read_id_and_representation_to_sketch_elements.resize(number_of_reads);
-        positions_in_reads.reserve(input_readids_positions_directions.size());
-        read_ids.reserve(input_readids_positions_directions.size());
-        directions_of_reads.reserve(input_readids_positions_directions.size());
+        std::vector<std::pair<std::size_t, std::size_t>> sections_for_threads = generate_sections_for_multithreaded_index_building(input_representations);
 
-        representation_t current_representation = input_representations[0];
-        read_id_t current_read_id = input_readids_positions_directions[0].read_id_;
-        decltype(ArrayBlock::block_size_) sketch_elements_with_curr_representation_and_read_id = 1;
-        decltype(ArrayBlock::block_size_) sketch_elements_with_curr_representation = 0;
-        decltype(ArrayBlock::first_element_) first_sketch_element_with_this_representation = 0;
-        std::vector<read_id_t> read_ids_with_current_representation;
-        read_ids_with_current_representation.push_back(current_read_id);
-        read_id_and_representation_to_sketch_elements[current_read_id].push_back({current_representation,
-                                                                                   {0, 0},
-                                                                                   {first_sketch_element_with_this_representation, 0}
-                                                                                  }
-                                                                                 );
-        positions_in_reads.push_back(input_readids_positions_directions[0].position_in_read_);
-        read_ids.push_back(input_readids_positions_directions[0].read_id_);
-        directions_of_reads.push_back(DirectionOfRepresentation(input_readids_positions_directions[0].direction_));
+        std::vector<std::vector<std::vector<Index::RepresentationToSketchElements>>> read_id_and_representation_to_sketch_elements_per_section(sections_for_threads.size());
+        positions_in_reads.resize(input_readids_positions_directions.size());
+        read_ids.resize(input_readids_positions_directions.size());
+        directions_of_reads.resize(input_readids_positions_directions.size());
 
-        for (std::size_t sketch_element_index = 1; sketch_element_index < input_representations.size(); ++sketch_element_index) {
-            // TODO: edit the interface so this copy is not needed
-            positions_in_reads.push_back(input_readids_positions_directions[sketch_element_index].position_in_read_);
-            read_ids.push_back(input_readids_positions_directions[sketch_element_index].read_id_);
-            directions_of_reads.push_back(DirectionOfRepresentation(input_readids_positions_directions[sketch_element_index].direction_));
+        auto build_index_lambda = [number_of_reads,
+                                   &read_id_and_representation_to_sketch_elements_per_section,
+                                   &positions_in_reads,
+                                   &read_ids,
+                                   &directions_of_reads,
+                                   &input_representations,
+                                   &input_readids_positions_directions,
+                                   &sections_for_threads
+                                   ]
+                                   (std::uint32_t section_id)
+        {
+            read_id_and_representation_to_sketch_elements_per_section[section_id].resize(number_of_reads);
 
-            if (input_representations[sketch_element_index] != current_representation) { // new representation -> save data for the previous one
-                // increase the number of sketch elements with previous representation
-                sketch_elements_with_curr_representation += sketch_elements_with_curr_representation_and_read_id;
-                // save the number sketch elements with the previous representation and read_id
-                read_id_and_representation_to_sketch_elements[current_read_id].back().sketch_elements_for_representation_and_read_id_.block_size_ = sketch_elements_with_curr_representation_and_read_id;
-                // update the number of sketch elements with previous representation and all read_ids
-                for (const read_id_t read_id_to_update : read_ids_with_current_representation) {
-                    read_id_and_representation_to_sketch_elements[read_id_to_update].back().sketch_elements_for_representation_and_all_read_ids_.block_size_ = sketch_elements_with_curr_representation;
-                }
-                // start processing new representation
-                current_representation = input_representations[sketch_element_index];
-                current_read_id = input_readids_positions_directions[sketch_element_index].read_id_;
-                sketch_elements_with_curr_representation_and_read_id = 1;
-                sketch_elements_with_curr_representation = 0;
-                first_sketch_element_with_this_representation = sketch_element_index;
-                read_ids_with_current_representation.clear();
-                read_ids_with_current_representation.push_back(current_read_id);
-                read_id_and_representation_to_sketch_elements[current_read_id].push_back({current_representation,
-                                                                                           {sketch_element_index, 0},
-                                                                                           {first_sketch_element_with_this_representation, 0}
-                                                                                          }
-                                                                                         );
-            } else { // still the same representation
-                if (input_readids_positions_directions[sketch_element_index].read_id_ != current_read_id) { // new read_id -> save the data for the previous one
-                    // increase the number of sketch elements with this representation
+            std::size_t first_element_in_this_section = sections_for_threads[section_id].first;
+            std::size_t last_element_in_this_section = sections_for_threads[section_id].second;
+
+            representation_t current_representation = input_representations[first_element_in_this_section];
+            read_id_t current_read_id = input_readids_positions_directions[first_element_in_this_section].read_id_;
+            decltype(ArrayBlock::block_size_) sketch_elements_with_curr_representation_and_read_id = 1;
+            decltype(ArrayBlock::block_size_) sketch_elements_with_curr_representation = 0;
+            decltype(ArrayBlock::first_element_) first_sketch_element_with_this_representation = first_element_in_this_section;
+            std::vector<read_id_t> read_ids_with_current_representation;
+            read_ids_with_current_representation.push_back(current_read_id);
+            read_id_and_representation_to_sketch_elements_per_section[section_id][current_read_id].push_back({current_representation,
+                                                                                                              {first_element_in_this_section, 0},
+                                                                                                              {first_sketch_element_with_this_representation, 0}
+                                                                                                             }
+                                                                                                            );
+
+            positions_in_reads[first_element_in_this_section] = input_readids_positions_directions[first_element_in_this_section].position_in_read_;
+            read_ids[first_element_in_this_section] = input_readids_positions_directions[first_element_in_this_section].read_id_;
+            directions_of_reads[first_element_in_this_section] = DirectionOfRepresentation(input_readids_positions_directions[first_element_in_this_section].direction_);
+
+            for (std::size_t sketch_element_index = first_element_in_this_section + 1; sketch_element_index < last_element_in_this_section; ++sketch_element_index) {
+                // TODO: edit the interface so this copy is not needed
+                positions_in_reads[sketch_element_index] = input_readids_positions_directions[sketch_element_index].position_in_read_;
+                read_ids[sketch_element_index] = input_readids_positions_directions[sketch_element_index].read_id_;
+                directions_of_reads[sketch_element_index] = DirectionOfRepresentation(input_readids_positions_directions[sketch_element_index].direction_);
+
+                if (input_representations[sketch_element_index] != current_representation) { // new representation -> save data for the previous one
+                    // increase the number of sketch elements with previous representation
                     sketch_elements_with_curr_representation += sketch_elements_with_curr_representation_and_read_id;
-                    // save the number of sketch elements for the previous read_id
-                    read_id_and_representation_to_sketch_elements[current_read_id].back().sketch_elements_for_representation_and_read_id_.block_size_ = sketch_elements_with_curr_representation_and_read_id;
-                    // start processing new read_id
+                    // save the number sketch elements with the previous representation and read_id
+                    read_id_and_representation_to_sketch_elements_per_section[section_id][current_read_id].back().sketch_elements_for_representation_and_read_id_.block_size_ = sketch_elements_with_curr_representation_and_read_id;
+                    // update the number of sketch elements with previous representation and all read_ids
+                    for (const read_id_t read_id_to_update : read_ids_with_current_representation) {
+                        read_id_and_representation_to_sketch_elements_per_section[section_id][read_id_to_update].back().sketch_elements_for_representation_and_all_read_ids_.block_size_ = sketch_elements_with_curr_representation;
+                    }
+                    // start processing new representation
+                    current_representation = input_representations[sketch_element_index];
                     current_read_id = input_readids_positions_directions[sketch_element_index].read_id_;
                     sketch_elements_with_curr_representation_and_read_id = 1;
+                    sketch_elements_with_curr_representation = 0;
+                    first_sketch_element_with_this_representation = sketch_element_index;
+                    read_ids_with_current_representation.clear();
                     read_ids_with_current_representation.push_back(current_read_id);
-                    read_id_and_representation_to_sketch_elements[current_read_id].push_back({current_representation,
-                                                                                               {sketch_element_index, 0},
-                                                                                               {first_sketch_element_with_this_representation, 0}
-                                                                                              }
-                                                                                             );
-                } else { // still the same read_id
-                    ++sketch_elements_with_curr_representation_and_read_id;
+                    read_id_and_representation_to_sketch_elements_per_section[section_id][current_read_id].push_back({current_representation,
+                                                                                                                      {sketch_element_index, 0},
+                                                                                                                      {first_sketch_element_with_this_representation, 0}
+                                                                                                                     }
+                                                                                                                    );
+                } else { // still the same representation
+                    if (input_readids_positions_directions[sketch_element_index].read_id_ != current_read_id) { // new read_id -> save the data for the previous one
+                        // increase the number of sketch elements with this representation
+                        sketch_elements_with_curr_representation += sketch_elements_with_curr_representation_and_read_id;
+                        // save the number of sketch elements for the previous read_id
+                        read_id_and_representation_to_sketch_elements_per_section[section_id][current_read_id].back().sketch_elements_for_representation_and_read_id_.block_size_ = sketch_elements_with_curr_representation_and_read_id;
+                        // start processing new read_id
+                        current_read_id = input_readids_positions_directions[sketch_element_index].read_id_;
+                        sketch_elements_with_curr_representation_and_read_id = 1;
+                        read_ids_with_current_representation.push_back(current_read_id);
+                        read_id_and_representation_to_sketch_elements_per_section[section_id][current_read_id].push_back({current_representation,
+                                                                                                                          {sketch_element_index, 0},
+                                                                                                                          {first_sketch_element_with_this_representation, 0}
+                                                                                                                         }
+                                                                                                                        );
+                    } else { // still the same read_id
+                        ++sketch_elements_with_curr_representation_and_read_id;
+                    }
                 }
             }
+            // process the last element
+            // increase the number of sketch elements with last representation
+            sketch_elements_with_curr_representation += sketch_elements_with_curr_representation_and_read_id;
+            // save the number sketch elements with last representation and read_id
+            read_id_and_representation_to_sketch_elements_per_section[section_id][current_read_id].back().sketch_elements_for_representation_and_read_id_.block_size_ = sketch_elements_with_curr_representation_and_read_id;
+            // update the number of sketch elements with last representation and all read_ids
+            for (const read_id_t read_id_to_update : read_ids_with_current_representation) {
+                read_id_and_representation_to_sketch_elements_per_section[section_id][read_id_to_update].back().sketch_elements_for_representation_and_all_read_ids_.block_size_ = sketch_elements_with_curr_representation;
+            }
+        };
+
+        // build index for each section in a separate thread
+        std::vector<std::thread> index_building_threads;
+        for (std::size_t section_num = 0; section_num < sections_for_threads.size(); ++ section_num) {
+            index_building_threads.emplace_back(build_index_lambda,
+                                                section_num
+                                               );
         }
-        // process the last element
-        // increase the number of sketch elements with last representation
-        sketch_elements_with_curr_representation += sketch_elements_with_curr_representation_and_read_id;
-        // save the number sketch elements with last representation and read_id
-        read_id_and_representation_to_sketch_elements[current_read_id].back().sketch_elements_for_representation_and_read_id_.block_size_ = sketch_elements_with_curr_representation_and_read_id;
-        // update the number of sketch elements with last representation and all read_ids
-        for (const read_id_t read_id_to_update : read_ids_with_current_representation) {
-            read_id_and_representation_to_sketch_elements[read_id_to_update].back().sketch_elements_for_representation_and_all_read_ids_.block_size_ = sketch_elements_with_curr_representation;
+
+        for (std::size_t section_num = 0; section_num < sections_for_threads.size(); ++ section_num) {
+            index_building_threads[section_num].join();
+        }
+
+        // now merge the resulting index
+        // data gets merged in the same order it was split to threads, so the resulting arrays are still sorted by representation
+        // this merge could probably also be done in parallel
+        read_id_and_representation_to_sketch_elements.resize(number_of_reads);
+        for (std::size_t read_id = 0; read_id < number_of_reads; ++read_id) {
+            for (std::size_t section_num = 0; section_num < read_id_and_representation_to_sketch_elements_per_section.size(); ++section_num) {
+                read_id_and_representation_to_sketch_elements[read_id].insert(std::end(read_id_and_representation_to_sketch_elements[read_id]),
+                                                                                       std::begin(read_id_and_representation_to_sketch_elements_per_section[section_num][read_id]),
+                                                                                       std::end(read_id_and_representation_to_sketch_elements_per_section[section_num][read_id]));
+            }
         }
     }
 
@@ -443,10 +494,10 @@ namespace index_gpu {
 } // namespace details
 
     template <typename SketchElementImpl>
-    IndexGPU<SketchElementImpl>::IndexGPU(const std::string& query_filename, const std::uint64_t kmer_size, const std::uint64_t window_size, const std::vector<std::pair<std::uint64_t, std::uint64_t>> &read_ranges)
+    IndexGPU<SketchElementImpl>::IndexGPU(const std::vector<FastaParser*>& parsers, const std::uint64_t kmer_size, const std::uint64_t window_size, const std::vector<std::pair<std::uint64_t, std::uint64_t>> &read_ranges)
     : kmer_size_(kmer_size), window_size_(window_size), number_of_reads_(0), reached_end_of_input_(false)
     {
-        generate_index(query_filename, read_ranges);
+        generate_index(parsers, read_ranges);
     }
 
     template <typename SketchElementImpl>
@@ -480,14 +531,12 @@ namespace index_gpu {
 
     // TODO: This function will be split into several functions
     template <typename SketchElementImpl>
-    void IndexGPU<SketchElementImpl>::generate_index(const std::string& query_filename, const std::vector<std::pair<std::uint64_t, std::uint64_t>> &read_ranges) {
+    void IndexGPU<SketchElementImpl>::generate_index(const std::vector<FastaParser*>& parsers, const std::vector<std::pair<std::uint64_t, std::uint64_t>> &read_ranges) {
 
-        auto max_read_id = std::max_element(read_ranges.begin(), read_ranges.end(),
-                [](std::pair<std::uint64_t, std::uint64_t> a, std::pair<std::uint64_t, std::uint64_t> b)
-                { return a.second < b.second;})->second;
-
-        std::unique_ptr<FastaParser> fasta_parser = create_fasta_parser(query_filename);
-        int32_t total_reads = fasta_parser->get_num_seqences();
+        if (parsers.size() != read_ranges.size())
+        {
+            throw std::runtime_error("Number of parsers must match number of read ranges in index generation.");
+        }
 
         number_of_reads_ = 0;
 
@@ -501,12 +550,14 @@ namespace index_gpu {
 
         read_id_t global_read_id = 0;
         // find out how many basepairs each read has and determine its section in the big array with all basepairs
+        int32_t count = 0;
         for (auto range: read_ranges) {
+            FastaParser* parser = parsers[count];
             auto first_read_ = range.first;
-            auto last_read_ = std::min(range.second, static_cast<size_t>(total_reads - 1));
+            auto last_read_ = std::min(range.second, static_cast<size_t>(parser->get_num_seqences()));
 
-            for(auto read_id = first_read_; read_id <= last_read_; read_id++) {
-                fasta_sequences.emplace_back(fasta_parser->get_sequence_by_id(read_id));
+            for(auto read_id = first_read_; read_id < last_read_; read_id++) {
+                fasta_sequences.emplace_back(parser->get_sequence_by_id(read_id));
                 const std::string& seq = fasta_sequences.back().seq;
                 const std::string& name = fasta_sequences.back().name;
                 if (seq.length() >= window_size_ + kmer_size_ - 1) {
@@ -523,11 +574,8 @@ namespace index_gpu {
                 }
                 global_read_id++;
             }
-        }
 
-        if (max_read_id >= static_cast<size_t>(total_reads))
-        {
-            reached_end_of_input_ = true;
+            count++;
         }
 
         auto number_of_reads_to_add = read_id_to_basepairs_section_h.size(); // This is the number of reads in this specific iteration
@@ -656,7 +704,6 @@ namespace index_gpu {
         rest_from_all_loops_h.shrink_to_fit();
 
         // build read_id_and_representation_to_sketch_elements_ and copy sketch elements to output arrays
-        // TODO: This part takes a significant amount out time, think of a way to accelerate it
         details::index_gpu::build_index(number_of_reads_,
                                         merged_representations_h,
                                         merged_rest_h,
