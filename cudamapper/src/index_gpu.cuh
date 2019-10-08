@@ -533,6 +533,11 @@ namespace index_gpu {
     template <typename SketchElementImpl>
     void IndexGPU<SketchElementImpl>::generate_index(const std::vector<FastaParser*>& parsers, const std::vector<std::pair<std::uint64_t, std::uint64_t>> &read_ranges) {
 
+        if (parsers.size() != read_ranges.size())
+        {
+            throw std::runtime_error("Number of parsers must match number of read ranges in index generation.");
+        }
+
         number_of_reads_ = 0;
 
         std::vector<std::vector<representation_t>> representations_from_all_loops_h;
