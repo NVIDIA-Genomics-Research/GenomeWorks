@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['overlap_5fcomplete',['overlap_complete',['../structclaragenomics_1_1Overlap.html#a7ec04efd92437288c01bdc202a3272fb',1,'claragenomics::Overlap']]]
+  ['weights_117',['weights',['../structclaragenomics_1_1cudapoa_1_1Entry.html#ab8564c38982af7716c70b06d029fb277',1,'claragenomics::cudapoa::Entry']]]
 ];

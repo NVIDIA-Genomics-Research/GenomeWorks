@@ -1,4 +1,5 @@
 var searchData=
 [
-  ['scoped_5fdevice_5fswitch_71',['scoped_device_switch',['../classclaragenomics_1_1scoped__device__switch.html',1,'claragenomics']]]
+  ['fastaparser_77',['FastaParser',['../classclaragenomics_1_1io_1_1FastaParser.html',1,'claragenomics::io']]],
+  ['fastasequence_78',['FastaSequence',['../structclaragenomics_1_1io_1_1FastaSequence.html',1,'claragenomics::io']]]
 ];

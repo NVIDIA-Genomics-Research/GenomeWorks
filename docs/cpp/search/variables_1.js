@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['seq_104',['seq',['../structclaragenomics_1_1cudapoa_1_1Entry.html#a4ada5ced9af7930c95d7a49fb5ecdac4',1,'claragenomics::cudapoa::Entry']]]
+  ['name_115',['name',['../structclaragenomics_1_1io_1_1FastaSequence.html#aea0664ca6e856203c4b954b519183bec',1,'claragenomics::io::FastaSequence']]]
 ];
