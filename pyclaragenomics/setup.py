@@ -35,12 +35,16 @@ class CMakeWrapper():
         self.cmake_root_dir = os.path.abspath(cmake_root_dir)
         self.cmake_install_dir = os.path.join(self.build_path, "install")
         self.cmake_extra_args = cmake_extra_args
+        self.cuda_toolkit_root_dir = os.environ.get("CUDA_TOOLKIT_ROOT_DIR")
 
     def run_cmake_cmd(self):
         cmake_args = ['-DCMAKE_INSTALL_PREFIX=' + self.cmake_install_dir,
                       '-DCMAKE_BUILD_TYPE=' + 'Release',
                       '-DCMAKE_INSTALL_RPATH=' + os.path.join(self.cmake_install_dir, "lib")]
         cmake_args += [self.cmake_extra_args]
+
+        if self.cuda_toolkit_root_dir:
+            cmake_args += ["-DCUDA_TOOLKIT_ROOT_DIR=%s" % self.cuda_toolkit_root_dir]
 
         if not os.path.exists(self.build_path):
             os.makedirs(self.build_path)
