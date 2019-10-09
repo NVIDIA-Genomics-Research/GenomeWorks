@@ -18,6 +18,8 @@ extern "C" {
 
 namespace claragenomics
 {
+namespace io
+{
 
 FastaParserHTS::FastaParserHTS(const std::string& fasta_file)
 {
@@ -74,4 +76,5 @@ FastaSequence FastaParserHTS::get_sequence_by_name(const std::string& name) cons
     return s;
 }
 
+} // namespace io
 } // namespace claragenomics

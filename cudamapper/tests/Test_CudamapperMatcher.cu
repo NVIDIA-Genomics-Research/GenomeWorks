@@ -30,8 +30,8 @@ TEST(TestCudamapperMatcher, OneReadOneMinimizer)
     const std::pair<std::uint64_t, std::uint64_t> query_range{0, std::numeric_limits<std::uint64_t>::max()};
     read_ranges.push_back(query_range);
 
-    std::unique_ptr<FastaParser> parser = create_fasta_parser(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/gatt.fasta");
-    std::vector<FastaParser*> parsers;
+    std::unique_ptr<io::FastaParser> parser = io::create_fasta_parser(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/gatt.fasta");
+    std::vector<io::FastaParser*> parsers;
     parsers.push_back(parser.get());
     IndexGPU<Minimizer> index(parsers, 4, 1, read_ranges);
     Matcher matcher(index, 0);
@@ -72,8 +72,8 @@ TEST(TestCudamapperMatcher, TwoReadsMultipleMiniminizers)
     const std::pair<std::uint64_t, std::uint64_t> query_range{0, std::numeric_limits<std::uint64_t>::max()};
     read_ranges.push_back(query_range);
 
-    std::unique_ptr<FastaParser> parser = create_fasta_parser(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/catcaag_aagcta.fasta");
-    std::vector<FastaParser*> parsers;
+    std::unique_ptr<io::FastaParser> parser = io::create_fasta_parser(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/catcaag_aagcta.fasta");
+    std::vector<io::FastaParser*> parsers;
     parsers.push_back(parser.get());
     IndexGPU<Minimizer> index(parsers, 3, 2, read_ranges);
     Matcher matcher(index, 0);

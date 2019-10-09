@@ -19,6 +19,8 @@ extern "C" {
 
 namespace claragenomics
 {
+namespace io
+{
 
 class FastaParserHTS : public FastaParser
 {
@@ -37,4 +39,5 @@ private:
     int32_t num_seqequences_;
 };
 
+} // namespace io
 } // namespace claragenomics
