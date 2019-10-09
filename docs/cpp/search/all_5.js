@@ -1,15 +1,9 @@
 var searchData=
 [
-  ['generate_5fpoa_35',['generate_poa',['../classclaragenomics_1_1cudapoa_1_1Batch.html#a7387b746531d4e8ac1e5806ac2824f09',1,'claragenomics::cudapoa::Batch']]],
-  ['get_5falignment_36',['get_alignment',['../classclaragenomics_1_1cudaaligner_1_1Alignment.html#a5139f26517193e077000dcddfbc15f70',1,'claragenomics::cudaaligner::Alignment']]],
-  ['get_5falignment_5ftype_37',['get_alignment_type',['../classclaragenomics_1_1cudaaligner_1_1Alignment.html#ab22457c02ac00ec205dcd5a75b253881',1,'claragenomics::cudaaligner::Alignment']]],
-  ['get_5falignments_38',['get_alignments',['../classclaragenomics_1_1cudaaligner_1_1Aligner.html#a1d775f9821ce3ecdcdc67cb07f35a4d8',1,'claragenomics::cudaaligner::Aligner']]],
-  ['get_5fconsensus_39',['get_consensus',['../classclaragenomics_1_1cudapoa_1_1Batch.html#a3224d1595caa5950c34708f4b7d64fe0',1,'claragenomics::cudapoa::Batch']]],
-  ['get_5fmsa_40',['get_msa',['../classclaragenomics_1_1cudapoa_1_1Batch.html#ab39956c82d5d5a2d8df1b1695e15d9d2',1,'claragenomics::cudapoa::Batch']]],
-  ['get_5fquery_5fsequence_41',['get_query_sequence',['../classclaragenomics_1_1cudaaligner_1_1Alignment.html#ab29dceafccd3cb0a2e87023c5d48a780',1,'claragenomics::cudaaligner::Alignment']]],
-  ['get_5fstatus_42',['get_status',['../classclaragenomics_1_1cudaaligner_1_1Alignment.html#a7665f284b7929998357c89461e444f78',1,'claragenomics::cudaaligner::Alignment']]],
-  ['get_5ftarget_5fsequence_43',['get_target_sequence',['../classclaragenomics_1_1cudaaligner_1_1Alignment.html#a4a61cdee74c32930f49cb878fc17db57',1,'claragenomics::cudaaligner::Alignment']]],
-  ['get_5ftotal_5fpoas_44',['get_total_poas',['../classclaragenomics_1_1cudapoa_1_1Batch.html#af2b27869811283b869700c181a75cfdc',1,'claragenomics::cudapoa::Batch']]],
-  ['gpu_5fassert_45',['gpu_assert',['../group__cudautils.html#gaec6d00242f9acb524fb790d0c46cf0b6',1,'claragenomics::cudautils']]],
-  ['group_46',['Group',['../group__cudapoa.html#ga6b301a3a6ac7edccc403ec75e7497d32',1,'claragenomics::cudapoa']]]
+  ['fastaparser_43',['FastaParser',['../classclaragenomics_1_1io_1_1FastaParser.html',1,'claragenomics::io']]],
+  ['fastasequence_44',['FastaSequence',['../structclaragenomics_1_1io_1_1FastaSequence.html',1,'claragenomics::io']]],
+  ['filter_5foverlaps_45',['filter_overlaps',['../group__cudamapper.html#ga3e5732f34489315ec8d1ef8b82ccea5c',1,'claragenomics::cudamapper::Overlapper']]],
+  ['first_5felement_5f_46',['first_element_',['../structclaragenomics_1_1cudamapper_1_1ArrayBlock.html#a3fca81e893b35e0648977b00f21b7e7e',1,'claragenomics::cudamapper::ArrayBlock']]],
+  ['format_5falignment_47',['format_alignment',['../classclaragenomics_1_1cudaaligner_1_1Alignment.html#a4be4bb544d593f3fd7624628f2bda29c',1,'claragenomics::cudaaligner::Alignment']]],
+  ['formattedalignment_48',['FormattedAlignment',['../group__cudaaligner.html#ga228dcdd4bf0cf40c64786cce6b045c40',1,'claragenomics::cudaaligner']]]
 ];

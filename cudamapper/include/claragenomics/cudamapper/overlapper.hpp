@@ -20,7 +20,9 @@ namespace cudamapper
 {
 /// \addtogroup cudamapper
 /// \{
-/// Overlapper - given anchors and a read index, calculates overlaps between reads
+
+/// class Overlapper
+/// Given anchors and a read index, calculates overlaps between reads
 class Overlapper
 {
 public:

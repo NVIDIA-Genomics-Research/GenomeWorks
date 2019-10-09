@@ -45,7 +45,7 @@ target_include_directories(overlapper_triggerred PUBLIC include)
 target_link_libraries(overlapper_triggerred logging utils cgaio)
 target_compile_options(overlapper_triggerred PRIVATE -Werror)
 
-add_doxygen_source_dir(${CMAKE_CURRENT_SOURCE_DIR}/include/cudamapper)
+add_doxygen_source_dir(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 cuda_add_executable(cudamapper
         src/cudamapper.cpp

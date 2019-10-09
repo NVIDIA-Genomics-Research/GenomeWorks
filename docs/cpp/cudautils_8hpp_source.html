@@ -22,7 +22,7 @@
  <tr style="height: 56px;">
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">ClaraGenomicsAnalysis
-   &#160;<span id="projectnumber">0.2.0</span>
+   &#160;<span id="projectnumber">0.3.0</span>
    </div>
   </td>
  </tr>
@@ -86,7 +86,7 @@ $(function() {
 <div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;<span class="preprocessor">#include &lt;<a class="code" href="logging_8hpp.html">claragenomics/logging/logging.hpp</a>&gt;</span></div>
 <div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160; </div>
 <div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;<span class="preprocessor">#include &lt;cuda_runtime_api.h&gt;</span></div>
-<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;<span class="preprocessor">#include &lt;stdexcept&gt;</span></div>
+<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;<span class="preprocessor">#include &lt;cassert&gt;</span></div>
 <div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160; </div>
 <div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160; </div>
 <div class="line"><a name="l00027"></a><span class="lineno"><a class="line" href="group__cudautils.html#ga161535c48fe399e086ac6277b527fb41">   27</a></span>&#160;<span class="preprocessor">#define CGA_CU_CHECK_ERR(ans)                                            \</span></div>
@@ -101,69 +101,76 @@ $(function() {
 <div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;<span class="keyword">namespace </span>cudautils</div>
 <div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;{</div>
 <div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160; </div>
-<div class="line"><a name="l00047"></a><span class="lineno"><a class="line" href="group__cudautils.html#gaec6d00242f9acb524fb790d0c46cf0b6">   47</a></span>&#160;<span class="keyword">inline</span> <span class="keywordtype">void</span> <a class="code" href="group__cudautils.html#gaec6d00242f9acb524fb790d0c46cf0b6">gpu_assert</a>(cudaError_t code, <span class="keyword">const</span> <span class="keywordtype">char</span>* file, <span class="keywordtype">int</span> line, <span class="keywordtype">bool</span> abort = <span class="keyword">false</span>)</div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;{</div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;    <span class="keywordflow">if</span> (code != cudaSuccess)</div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;    {</div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;        std::string err = <span class="stringliteral">&quot;GPU Error:: &quot;</span> +</div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;                          std::string(cudaGetErrorString(code)) +</div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;                          <span class="stringliteral">&quot; &quot;</span> + std::string(file) +</div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;                          <span class="stringliteral">&quot; &quot;</span> + std::to_string(line);</div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;        <span class="keywordflow">if</span> (abort)</div>
-<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;        {</div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;            <a class="code" href="group__logging.html#gacd5f9588e4976ef45d2ddece37b78003">CGA_LOG_ERROR</a>(<span class="stringliteral">&quot;{}\n&quot;</span>, err);</div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;            std::abort();</div>
-<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;        }</div>
-<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;        <span class="keywordflow">else</span></div>
-<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;        {</div>
-<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;            <span class="keywordflow">throw</span> std::runtime_error(err);</div>
-<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;        }</div>
-<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;    }</div>
-<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;}</div>
-<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160; </div>
-<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> IntType, <span class="keywordtype">int</span>32_t boundary&gt;</div>
-<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;__host__ __device__ __forceinline__</div>
-<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;    IntType</div>
-<div class="line"><a name="l00076"></a><span class="lineno"><a class="line" href="cudautils_8hpp.html#a9ace0fde2c5420f52b40ca77276943ca">   76</a></span>&#160;    <a class="code" href="cudautils_8hpp.html#a9ace0fde2c5420f52b40ca77276943ca">align</a>(<span class="keyword">const</span> IntType&amp; value)</div>
-<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;{</div>
-<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;    static_assert((boundary &amp; (boundary - 1)) == 0, <span class="stringliteral">&quot;Boundary for align must be power of 2&quot;</span>);</div>
-<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;    <span class="keywordflow">return</span> (value + boundary) &amp; ~(boundary - 1);</div>
-<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;}</div>
-<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160; </div>
-<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;} <span class="comment">// namespace cudautils</span></div>
-<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160; </div>
-<div class="line"><a name="l00089"></a><span class="lineno"><a class="line" href="classclaragenomics_1_1scoped__device__switch.html">   89</a></span>&#160;<span class="keyword">class </span><a class="code" href="classclaragenomics_1_1scoped__device__switch.html">scoped_device_switch</a></div>
-<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;{</div>
-<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;<span class="keyword">public</span>:</div>
-<div class="line"><a name="l00095"></a><span class="lineno"><a class="line" href="classclaragenomics_1_1scoped__device__switch.html#a41381ff64aeb0750803a315020a13650">   95</a></span>&#160;    <span class="keyword">explicit</span> <a class="code" href="classclaragenomics_1_1scoped__device__switch.html#a41381ff64aeb0750803a315020a13650">scoped_device_switch</a>(int32_t device_id)</div>
-<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;    {</div>
-<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;        <a class="code" href="group__cudautils.html#ga161535c48fe399e086ac6277b527fb41">CGA_CU_CHECK_ERR</a>(cudaGetDevice(&amp;device_id_before_));</div>
-<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;        <a class="code" href="group__cudautils.html#ga161535c48fe399e086ac6277b527fb41">CGA_CU_CHECK_ERR</a>(cudaSetDevice(device_id));</div>
-<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;    }</div>
-<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160; </div>
-<div class="line"><a name="l00102"></a><span class="lineno"><a class="line" href="classclaragenomics_1_1scoped__device__switch.html#ad17a140b9fc9badff82487e685013125">  102</a></span>&#160;    <a class="code" href="classclaragenomics_1_1scoped__device__switch.html#ad17a140b9fc9badff82487e685013125">~scoped_device_switch</a>()</div>
-<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;    {</div>
-<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;        cudaSetDevice(device_id_before_);</div>
+<div class="line"><a name="l00046"></a><span class="lineno"><a class="line" href="group__cudautils.html#ga3769a812992df47886894f48f26edf6f">   46</a></span>&#160;<span class="keyword">inline</span> <span class="keywordtype">void</span> <a class="code" href="group__cudautils.html#ga3769a812992df47886894f48f26edf6f">gpu_assert</a>(cudaError_t code, <span class="keyword">const</span> <span class="keywordtype">char</span>* file, <span class="keywordtype">int</span> line)</div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;{</div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;<span class="preprocessor">#ifdef CGA_DEVICE_SYNCHRONIZE</span></div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;    <span class="comment">// This device synchronize forces the most recent CUDA call to fully</span></div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;    <span class="comment">// complete, increasing the chance of catching the CUDA error near the</span></div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;    <span class="comment">// offending function. Only run if existing code is success to avoid</span></div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;    <span class="comment">// potentially overwriting previous error code.</span></div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;    <span class="keywordflow">if</span> (code == cudaSuccess)</div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;    {</div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;        code = cudaDeviceSynchronize();</div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;    }</div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160; </div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;    <span class="keywordflow">if</span> (code != cudaSuccess)</div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;    {</div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;        std::string err = <span class="stringliteral">&quot;GPU Error:: &quot;</span> +</div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;                          std::string(cudaGetErrorString(code)) +</div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;                          <span class="stringliteral">&quot; &quot;</span> + std::string(file) +</div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;                          <span class="stringliteral">&quot; &quot;</span> + std::to_string(line);</div>
+<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;        <a class="code" href="group__logging.html#gacd5f9588e4976ef45d2ddece37b78003">CGA_LOG_ERROR</a>(<span class="stringliteral">&quot;{}\n&quot;</span>, err);</div>
+<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;        <span class="comment">// In Debug mode, this assert will cause a debugger trap</span></div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;        <span class="comment">// which is beneficial when debugging errors.</span></div>
+<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;        assert(<span class="keyword">false</span>);</div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;        std::abort();</div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;    }</div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;}</div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160; </div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> IntType, <span class="keywordtype">int</span>32_t boundary&gt;</div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;__host__ __device__ __forceinline__</div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;    IntType</div>
+<div class="line"><a name="l00082"></a><span class="lineno"><a class="line" href="cudautils_8hpp.html#a9ace0fde2c5420f52b40ca77276943ca">   82</a></span>&#160;    <a class="code" href="cudautils_8hpp.html#a9ace0fde2c5420f52b40ca77276943ca">align</a>(<span class="keyword">const</span> IntType&amp; value)</div>
+<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;{</div>
+<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;    static_assert((boundary &amp; (boundary - 1)) == 0, <span class="stringliteral">&quot;Boundary for align must be power of 2&quot;</span>);</div>
+<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;    <span class="keywordflow">return</span> (value + boundary) &amp; ~(boundary - 1);</div>
+<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;}</div>
+<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160; </div>
+<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;} <span class="comment">// namespace cudautils</span></div>
+<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160; </div>
+<div class="line"><a name="l00095"></a><span class="lineno"><a class="line" href="classclaragenomics_1_1scoped__device__switch.html">   95</a></span>&#160;<span class="keyword">class </span><a class="code" href="classclaragenomics_1_1scoped__device__switch.html">scoped_device_switch</a></div>
+<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;{</div>
+<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;<span class="keyword">public</span>:</div>
+<div class="line"><a name="l00101"></a><span class="lineno"><a class="line" href="classclaragenomics_1_1scoped__device__switch.html#a41381ff64aeb0750803a315020a13650">  101</a></span>&#160;    <span class="keyword">explicit</span> <a class="code" href="classclaragenomics_1_1scoped__device__switch.html#a41381ff64aeb0750803a315020a13650">scoped_device_switch</a>(int32_t device_id)</div>
+<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;    {</div>
+<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;        <a class="code" href="group__cudautils.html#ga161535c48fe399e086ac6277b527fb41">CGA_CU_CHECK_ERR</a>(cudaGetDevice(&amp;device_id_before_));</div>
+<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;        <a class="code" href="group__cudautils.html#ga161535c48fe399e086ac6277b527fb41">CGA_CU_CHECK_ERR</a>(cudaSetDevice(device_id));</div>
 <div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;    }</div>
 <div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160; </div>
-<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;    <a class="code" href="classclaragenomics_1_1scoped__device__switch.html">scoped_device_switch</a>()                            = <span class="keyword">delete</span>;</div>
-<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;    <a class="code" href="classclaragenomics_1_1scoped__device__switch.html">scoped_device_switch</a>(<a class="code" href="classclaragenomics_1_1scoped__device__switch.html">scoped_device_switch</a> <span class="keyword">const</span>&amp;) = <span class="keyword">delete</span>;</div>
-<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;    <a class="code" href="classclaragenomics_1_1scoped__device__switch.html">scoped_device_switch</a>&amp; operator=(<a class="code" href="classclaragenomics_1_1scoped__device__switch.html">scoped_device_switch</a> <span class="keyword">const</span>&amp;) = <span class="keyword">delete</span>;</div>
-<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160; </div>
-<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;<span class="keyword">private</span>:</div>
-<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;    int32_t device_id_before_;</div>
-<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;};</div>
-<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160; </div>
-<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;} <span class="comment">// namespace claragenomics</span></div>
+<div class="line"><a name="l00108"></a><span class="lineno"><a class="line" href="classclaragenomics_1_1scoped__device__switch.html#ad17a140b9fc9badff82487e685013125">  108</a></span>&#160;    <a class="code" href="classclaragenomics_1_1scoped__device__switch.html#ad17a140b9fc9badff82487e685013125">~scoped_device_switch</a>()</div>
+<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;    {</div>
+<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;        cudaSetDevice(device_id_before_);</div>
+<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;    }</div>
+<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160; </div>
+<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;    <a class="code" href="classclaragenomics_1_1scoped__device__switch.html">scoped_device_switch</a>()                            = <span class="keyword">delete</span>;</div>
+<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;    <a class="code" href="classclaragenomics_1_1scoped__device__switch.html">scoped_device_switch</a>(<a class="code" href="classclaragenomics_1_1scoped__device__switch.html">scoped_device_switch</a> <span class="keyword">const</span>&amp;) = <span class="keyword">delete</span>;</div>
+<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;    <a class="code" href="classclaragenomics_1_1scoped__device__switch.html">scoped_device_switch</a>&amp; operator=(<a class="code" href="classclaragenomics_1_1scoped__device__switch.html">scoped_device_switch</a> <span class="keyword">const</span>&amp;) = <span class="keyword">delete</span>;</div>
+<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160; </div>
+<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;<span class="keyword">private</span>:</div>
+<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;    int32_t device_id_before_;</div>
+<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;};</div>
+<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160; </div>
+<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;} <span class="comment">// namespace claragenomics</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="agroup__cudautils_html_ga161535c48fe399e086ac6277b527fb41"><div class="ttname"><a href="group__cudautils.html#ga161535c48fe399e086ac6277b527fb41">CGA_CU_CHECK_ERR</a></div><div class="ttdeci">#define CGA_CU_CHECK_ERR(ans)</div><div class="ttdoc">Log on CUDA error in enclosed expression.</div><div class="ttdef"><b>Definition:</b> cudautils.hpp:27</div></div>
 <div class="ttc" id="agroup__logging_html_gacd5f9588e4976ef45d2ddece37b78003"><div class="ttname"><a href="group__logging.html#gacd5f9588e4976ef45d2ddece37b78003">CGA_LOG_ERROR</a></div><div class="ttdeci">#define CGA_LOG_ERROR(...)</div><div class="ttdoc">Log at error level.</div><div class="ttdef"><b>Definition:</b> logging.hpp:164</div></div>
-<div class="ttc" id="agroup__cudautils_html_gaec6d00242f9acb524fb790d0c46cf0b6"><div class="ttname"><a href="group__cudautils.html#gaec6d00242f9acb524fb790d0c46cf0b6">claragenomics::cudautils::gpu_assert</a></div><div class="ttdeci">void gpu_assert(cudaError_t code, const char *file, int line, bool abort=false)</div><div class="ttdef"><b>Definition:</b> cudautils.hpp:47</div></div>
-<div class="ttc" id="aclassclaragenomics_1_1scoped__device__switch_html_a41381ff64aeb0750803a315020a13650"><div class="ttname"><a href="classclaragenomics_1_1scoped__device__switch.html#a41381ff64aeb0750803a315020a13650">claragenomics::scoped_device_switch::scoped_device_switch</a></div><div class="ttdeci">scoped_device_switch(int32_t device_id)</div><div class="ttdoc">Constructor.</div><div class="ttdef"><b>Definition:</b> cudautils.hpp:95</div></div>
-<div class="ttc" id="aclassclaragenomics_1_1scoped__device__switch_html_ad17a140b9fc9badff82487e685013125"><div class="ttname"><a href="classclaragenomics_1_1scoped__device__switch.html#ad17a140b9fc9badff82487e685013125">claragenomics::scoped_device_switch::~scoped_device_switch</a></div><div class="ttdeci">~scoped_device_switch()</div><div class="ttdoc">Destructor switches back to original device ID.</div><div class="ttdef"><b>Definition:</b> cudautils.hpp:102</div></div>
-<div class="ttc" id="aclassclaragenomics_1_1scoped__device__switch_html"><div class="ttname"><a href="classclaragenomics_1_1scoped__device__switch.html">claragenomics::scoped_device_switch</a></div><div class="ttdoc">A class to switch the CUDA device for the current scope using RAII.</div><div class="ttdef"><b>Definition:</b> cudautils.hpp:89</div></div>
+<div class="ttc" id="aclassclaragenomics_1_1scoped__device__switch_html_a41381ff64aeb0750803a315020a13650"><div class="ttname"><a href="classclaragenomics_1_1scoped__device__switch.html#a41381ff64aeb0750803a315020a13650">claragenomics::scoped_device_switch::scoped_device_switch</a></div><div class="ttdeci">scoped_device_switch(int32_t device_id)</div><div class="ttdoc">Constructor.</div><div class="ttdef"><b>Definition:</b> cudautils.hpp:101</div></div>
+<div class="ttc" id="aclassclaragenomics_1_1scoped__device__switch_html_ad17a140b9fc9badff82487e685013125"><div class="ttname"><a href="classclaragenomics_1_1scoped__device__switch.html#ad17a140b9fc9badff82487e685013125">claragenomics::scoped_device_switch::~scoped_device_switch</a></div><div class="ttdeci">~scoped_device_switch()</div><div class="ttdoc">Destructor switches back to original device ID.</div><div class="ttdef"><b>Definition:</b> cudautils.hpp:108</div></div>
+<div class="ttc" id="aclassclaragenomics_1_1scoped__device__switch_html"><div class="ttname"><a href="classclaragenomics_1_1scoped__device__switch.html">claragenomics::scoped_device_switch</a></div><div class="ttdoc">A class to switch the CUDA device for the current scope using RAII.</div><div class="ttdef"><b>Definition:</b> cudautils.hpp:95</div></div>
 <div class="ttc" id="alogging_8hpp_html"><div class="ttname"><a href="logging_8hpp.html">logging.hpp</a></div></div>
-<div class="ttc" id="acudautils_8hpp_html_a9ace0fde2c5420f52b40ca77276943ca"><div class="ttname"><a href="cudautils_8hpp.html#a9ace0fde2c5420f52b40ca77276943ca">claragenomics::cudautils::align</a></div><div class="ttdeci">__host__ __device__ __forceinline__ IntType align(const IntType &amp;value)</div><div class="ttdef"><b>Definition:</b> cudautils.hpp:76</div></div>
+<div class="ttc" id="agroup__cudautils_html_ga3769a812992df47886894f48f26edf6f"><div class="ttname"><a href="group__cudautils.html#ga3769a812992df47886894f48f26edf6f">claragenomics::cudautils::gpu_assert</a></div><div class="ttdeci">void gpu_assert(cudaError_t code, const char *file, int line)</div><div class="ttdef"><b>Definition:</b> cudautils.hpp:46</div></div>
+<div class="ttc" id="acudautils_8hpp_html_a9ace0fde2c5420f52b40ca77276943ca"><div class="ttname"><a href="cudautils_8hpp.html#a9ace0fde2c5420f52b40ca77276943ca">claragenomics::cudautils::align</a></div><div class="ttdeci">__host__ __device__ __forceinline__ IntType align(const IntType &amp;value)</div><div class="ttdef"><b>Definition:</b> cudautils.hpp:82</div></div>
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
 Generated by &#160;<a href="http://www.doxygen.org/index.html">

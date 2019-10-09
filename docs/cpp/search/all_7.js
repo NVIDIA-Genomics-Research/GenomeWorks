@@ -1,6 +1,7 @@
 var searchData=
 [
-  ['length_50',['length',['../structclaragenomics_1_1cudapoa_1_1Entry.html#a2211688d275c808bf9b4f85336db6712',1,'claragenomics::cudapoa::Entry']]],
-  ['logging_2ehpp_51',['logging.hpp',['../logging_8hpp.html',1,'']]],
-  ['loggingstatus_52',['LoggingStatus',['../group__logging.html#gaa716171cacca628efa44969863d3c43b',1,'claragenomics::logging']]]
+  ['internal_20cuda_20utilities_20package_65',['Internal CUDA utilities package',['../group__cudautils.html',1,'']]],
+  ['index_66',['Index',['../classclaragenomics_1_1cudamapper_1_1Index.html',1,'claragenomics::cudamapper']]],
+  ['init_67',['Init',['../group__logging.html#ga1e6ecad63f4d5d90cc01578f653f6e94',1,'claragenomics::logging::Init()'],['../group__cudapoa.html#ga20324a870a7cad68e1b02dcc1d5b02a1',1,'claragenomics::cudapoa::Init()'],['../group__cudaaligner.html#ga1d5dd3c4f48d7a735cbf6d7b5937d41a',1,'claragenomics::cudaaligner::Init()']]],
+  ['internal_20logging_20package_68',['Internal logging package',['../group__logging.html',1,'']]]
 ];
