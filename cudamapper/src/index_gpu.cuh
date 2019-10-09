@@ -57,7 +57,7 @@ public:
     /// \param kmer_size k - the kmer length
     /// \param window_size w - the length of the sliding window used to find sketch elements
     /// \param read_ranges - the ranges of reads in the query file to use for mapping, index by their position (e.g in the FASA file)
-    IndexGPU(const std::vector<FastaParser*>& parsers, const std::uint64_t kmer_size, const std::uint64_t window_size, const std::vector<std::pair<std::uint64_t, std::uint64_t>>& read_ranges);
+    IndexGPU(const std::vector<io::FastaParser*>& parsers, const std::uint64_t kmer_size, const std::uint64_t window_size, const std::vector<std::pair<std::uint64_t, std::uint64_t>>& read_ranges);
 
     /// \brief Constructor
     IndexGPU();
@@ -105,7 +105,7 @@ public:
 private:
     /// \brief generates the index
     /// \param query_filename
-    void generate_index(const std::vector<FastaParser*>& parsers, const std::vector<std::pair<std::uint64_t, std::uint64_t>>& read_ranges);
+    void generate_index(const std::vector<io::FastaParser*>& parsers, const std::vector<std::pair<std::uint64_t, std::uint64_t>>& read_ranges);
 
     const std::uint64_t kmer_size_;
     const std::uint64_t window_size_;
@@ -490,7 +490,7 @@ void build_index(const std::uint64_t number_of_reads,
 } // namespace details
 
 template <typename SketchElementImpl>
-IndexGPU<SketchElementImpl>::IndexGPU(const std::vector<FastaParser*>& parsers, const std::uint64_t kmer_size, const std::uint64_t window_size, const std::vector<std::pair<std::uint64_t, std::uint64_t>>& read_ranges)
+IndexGPU<SketchElementImpl>::IndexGPU(const std::vector<io::FastaParser*>& parsers, const std::uint64_t kmer_size, const std::uint64_t window_size, const std::vector<std::pair<std::uint64_t, std::uint64_t>>& read_ranges)
     : kmer_size_(kmer_size), window_size_(window_size), number_of_reads_(0), reached_end_of_input_(false)
 {
     generate_index(parsers, read_ranges);
@@ -552,7 +552,7 @@ const std::vector<std::vector<Index::RepresentationToSketchElements>>& IndexGPU<
 
 // TODO: This function will be split into several functions
 template <typename SketchElementImpl>
-void IndexGPU<SketchElementImpl>::generate_index(const std::vector<FastaParser*>& parsers, const std::vector<std::pair<std::uint64_t, std::uint64_t>>& read_ranges)
+void IndexGPU<SketchElementImpl>::generate_index(const std::vector<io::FastaParser*>& parsers, const std::vector<std::pair<std::uint64_t, std::uint64_t>>& read_ranges)
 {
 
     if (parsers.size() != read_ranges.size())
@@ -567,7 +567,7 @@ void IndexGPU<SketchElementImpl>::generate_index(const std::vector<FastaParser*>
 
     std::uint64_t total_basepairs = 0;
     std::vector<ArrayBlock> read_id_to_basepairs_section_h;
-    std::vector<FastaSequence> fasta_sequences;
+    std::vector<io::FastaSequence> fasta_sequences;
     std::vector<std::size_t> fasta_sequence_indices;
 
     read_id_t global_read_id = 0;
@@ -575,9 +575,9 @@ void IndexGPU<SketchElementImpl>::generate_index(const std::vector<FastaParser*>
     int32_t count = 0;
     for (auto range : read_ranges)
     {
-        FastaParser* parser = parsers[count];
-        auto first_read_    = range.first;
-        auto last_read_     = std::min(range.second, static_cast<size_t>(parser->get_num_seqences()));
+        io::FastaParser* parser = parsers[count];
+        auto first_read_        = range.first;
+        auto last_read_         = std::min(range.second, static_cast<size_t>(parser->get_num_seqences()));
 
         for (auto read_id = first_read_; read_id < last_read_; read_id++)
         {

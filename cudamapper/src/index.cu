@@ -16,7 +16,7 @@ namespace claragenomics
 {
 namespace cudamapper
 {
-std::unique_ptr<Index> Index::create_index(const std::vector<FastaParser*>& parsers,
+std::unique_ptr<Index> Index::create_index(const std::vector<io::FastaParser*>& parsers,
                                            const std::uint64_t kmer_size,
                                            const std::uint64_t window_size,
                                            const std::vector<std::pair<std::uint64_t, std::uint64_t>>& read_ranges)

@@ -14,6 +14,8 @@
 
 namespace claragenomics
 {
+namespace io
+{
 
 /// A structure to hold details of a single FASTA entry.
 typedef struct
@@ -59,4 +61,5 @@ public:
 /// \return A unique pointer to a constructed parser object.
 std::unique_ptr<FastaParser> create_fasta_parser(const std::string& fasta_file);
 
-} // namespace claragenomics
+} // namespace io
+} // namespace claragenomicsi

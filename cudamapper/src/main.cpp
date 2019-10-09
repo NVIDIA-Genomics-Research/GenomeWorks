@@ -93,11 +93,11 @@ int main(int argc, char* argv[])
         std::cerr << "NOTE - Since query and target files are same, activating all_to_all mode. Query index size used for both files." << std::endl;
     }
 
-    std::unique_ptr<claragenomics::FastaParser> query_parser = claragenomics::create_fasta_parser(query_filepath);
-    int32_t queries                                          = query_parser->get_num_seqences();
+    std::unique_ptr<claragenomics::io::FastaParser> query_parser = claragenomics::io::create_fasta_parser(query_filepath);
+    int32_t queries                                              = query_parser->get_num_seqences();
 
-    std::unique_ptr<claragenomics::FastaParser> target_parser = claragenomics::create_fasta_parser(target_filepath);
-    int32_t targets                                           = target_parser->get_num_seqences();
+    std::unique_ptr<claragenomics::io::FastaParser> target_parser = claragenomics::io::create_fasta_parser(target_filepath);
+    int32_t targets                                               = target_parser->get_num_seqences();
 
     std::cerr << "Query " << query_filepath << " index " << queries << std::endl;
     std::cerr << "Target " << target_filepath << " index " << targets << std::endl;
@@ -194,7 +194,7 @@ int main(int argc, char* argv[])
             start_time = std::chrono::high_resolution_clock::now();
 
             std::vector<std::pair<std::uint64_t, std::uint64_t>> ranges;
-            std::vector<claragenomics::FastaParser*> parsers;
+            std::vector<claragenomics::io::FastaParser*> parsers;
 
             ranges.push_back(query_range);
             parsers.push_back(query_parser.get());
