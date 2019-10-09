@@ -48,7 +48,16 @@ public:
     {
         cudaError_t err = cudaMalloc(reinterpret_cast<void**>(&data_), size_ * sizeof(T));
         if (err == cudaErrorMemoryAllocation)
+        {
+            // Clear the error from the runtime...
+            err = cudaGetLastError();
+            // Did a different async error happen in the meantime?
+            if (err != cudaErrorMemoryAllocation)
+            {
+                CGA_CU_CHECK_ERR(err);
+            }
             throw device_memory_allocation_exception();
+        }
         CGA_CU_CHECK_ERR(err);
     }
 
@@ -65,6 +74,13 @@ public:
         data_ = std::exchange(r.data_, nullptr);
         size_ = std::exchange(r.size_, 0);
         return *this;
+    }
+
+    void free()
+    {
+        CGA_CU_CHECK_ERR(cudaFree(data_));
+        data_ = nullptr;
+        size_ = 0;
     }
 
     ~device_buffer()

@@ -51,7 +51,8 @@ public:
     /// on the GPU to come to completion.
     virtual StatusType sync_alignments() = 0;
 
-    /// \brief Add new alignment object
+    /// \brief Add new alignment object. Only strings with characters
+    ///        from the alphabet [ACGT] are guaranteed to provide correct results.
     ///
     /// \param query Query string
     /// \param query_length  Query string length
@@ -63,11 +64,6 @@ public:
     ///
     /// \return Vector of Alignments.
     virtual const std::vector<std::shared_ptr<Alignment>>& get_alignments() const = 0;
-
-    /// \brief Set CUDA stream for aligner.
-    ///
-    /// \param stream CUDA stream
-    virtual void set_cuda_stream(cudaStream_t stream) = 0;
 
     /// \brief Reset aligner object.
     virtual void reset() = 0;

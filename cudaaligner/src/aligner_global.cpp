@@ -102,7 +102,7 @@ StatusType AlignerGlobal::add_alignment(const char* query, int32_t query_length,
                                                                                query_length,
                                                                                target,
                                                                                target_length);
-    alignment->set_alignment_type(AlignmentType::global);
+    alignment->set_alignment_type(AlignmentType::global_alignment);
     alignments_.push_back(alignment);
 
     return StatusType::success;
@@ -114,7 +114,6 @@ StatusType AlignerGlobal::align_all()
     const int32_t max_alignment_length = std::max(max_query_length_, max_target_length_);
     const int32_t num_alignments       = get_size(alignments_);
     const int32_t max_result_length    = calc_max_result_length(max_query_length_, max_target_length_);
-    CGA_CU_CHECK_ERR(cudaSetDevice(device_id_));
     CGA_CU_CHECK_ERR(cudaMemcpyAsync(sequence_lengths_d_.data(),
                                      sequence_lengths_h_.data(),
                                      2 * sizeof(int32_t) * num_alignments,

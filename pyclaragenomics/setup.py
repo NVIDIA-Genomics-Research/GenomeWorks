@@ -52,7 +52,7 @@ class CMakeWrapper():
         subprocess.check_call(['cmake', self.cmake_root_dir] + cmake_args, cwd=self.build_path)
 
     def run_build_cmd(self):
-        build_args = ['--', '-j16', 'docs', 'install']
+        build_args = ['--', '-j16', 'install']
         subprocess.check_call(['cmake', '--build', '.'] + build_args, cwd=self.build_path)
 
     def build(self):
@@ -81,10 +81,11 @@ extensions = [
         include_dirs=[
             "/usr/local/cuda/include",
             os.path.join(cmake_root_dir, "cudapoa/include"),
+            os.path.join(cmake_root_dir, "cudaaligner/include"),
         ],
         library_dirs=["/usr/local/cuda/lib64", cmake_proj.get_installed_path("lib")],
         runtime_library_dirs=["/usr/local/cuda/lib64", cmake_proj.get_installed_path("lib")],
-        libraries=["cudapoa", "cudart"],
+        libraries=["cudapoa", "cudaaligner", "cudart"],
         language="c++",
         extra_compile_args=["-std=c++14"],
     )

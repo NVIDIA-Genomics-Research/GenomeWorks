@@ -94,18 +94,18 @@ static void BM_SingleBatchAlignment(benchmark::State& state)
 // Register the function as a benchmark
 BENCHMARK_TEMPLATE(BM_SingleBatchAlignment, AlignerGlobalUkkonen)
     ->Unit(benchmark::kMillisecond)
-    ->RangeMultiplier(2)
-    ->Ranges({{32, 512}, {500, 10000}});
+    ->RangeMultiplier(4)
+    ->Ranges({{32, 1024}, {512, 65536}});
 
 BENCHMARK_TEMPLATE(BM_SingleBatchAlignment, AlignerGlobalMyers)
     ->Unit(benchmark::kMillisecond)
-    ->RangeMultiplier(2)
-    ->Ranges({{32, 512}, {500, 10000}});
+    ->RangeMultiplier(4)
+    ->Ranges({{32, 1024}, {512, 65536}});
 
 BENCHMARK_TEMPLATE(BM_SingleBatchAlignment, AlignerGlobalHirschbergMyers)
     ->Unit(benchmark::kMillisecond)
-    ->RangeMultiplier(2)
-    ->Ranges({{32, 512}, {500, 10000}});
+    ->RangeMultiplier(4)
+    ->Ranges({{32, 1024}, {512, 65536}});
 
 } // namespace cudaaligner
 } // namespace claragenomics
