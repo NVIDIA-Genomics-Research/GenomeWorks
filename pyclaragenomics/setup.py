@@ -95,7 +95,7 @@ extensions = [
 os.chdir(pycga_directory)
 
 setup(name='pyclaragenomics',
-      version='0.2.0',
+      version='0.3.0',
       description='NVIDIA genomics python libraries an utiliites',
       author='NVIDIA Corporation',
       packages=find_packages(where=pycga_directory),
