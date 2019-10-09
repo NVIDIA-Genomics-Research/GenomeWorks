@@ -8,19 +8,24 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-#pragma  once
+#pragma once
 
 #include "gmock/gmock.h"
 
 #include "../src/index_gpu.cuh"
 #include "../src/minimizer.hpp"
 
-namespace claragenomics {
+namespace claragenomics
+{
+namespace cudamapper
+{
 
-    class MockIndex : public IndexGPU<Minimizer> {
-    public:
-        MOCK_CONST_METHOD0(read_id_to_read_name, std::vector<std::string>&());
-        MOCK_CONST_METHOD0(read_id_to_read_length, std::vector<std::uint32_t>&());
-    };
+class MockIndex : public IndexGPU<Minimizer>
+{
+public:
+    MOCK_CONST_METHOD0(read_id_to_read_name, std::vector<std::string>&());
+    MOCK_CONST_METHOD0(read_id_to_read_length, std::vector<std::uint32_t>&());
+};
 
-}
+} // namespace cudamapper
+} // namespace claragenomics

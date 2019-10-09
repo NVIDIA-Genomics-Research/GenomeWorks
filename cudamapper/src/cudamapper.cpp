@@ -8,19 +8,25 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-#include <cudamapper/cudamapper.hpp>
+#include <claragenomics/cudamapper/cudamapper.hpp>
 #include <claragenomics/logging/logging.hpp>
 
-namespace claragenomics {
-    namespace cudamapper {
+namespace claragenomics
+{
+namespace cudamapper
+{
+namespace cudamapper
+{
 
-        StatusType Init()
-        {
-            if (logging::LoggingStatus::success != logging::Init())
-                return StatusType::generic_error;
-                
-            return StatusType::success;
-        }
+StatusType Init()
+{
+    if (logging::LoggingStatus::success != logging::Init())
+        return StatusType::generic_error;
 
-    };
-};
+    return StatusType::success;
+}
+
+}; // namespace cudamapper
+} // namespace cudamapper
+
+} // namespace claragenomics
