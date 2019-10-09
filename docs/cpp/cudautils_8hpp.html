@@ -22,7 +22,7 @@
  <tr style="height: 56px;">
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">ClaraGenomicsAnalysis
-   &#160;<span id="projectnumber">0.2.0</span>
+   &#160;<span id="projectnumber">0.3.0</span>
    </div>
   </td>
  </tr>
@@ -76,7 +76,7 @@ $(function() {
 <div class="textblock"><code>#include &lt;claragenomics/utils/cudaversions.hpp&gt;</code><br />
 <code>#include &lt;<a class="el" href="logging_8hpp_source.html">claragenomics/logging/logging.hpp</a>&gt;</code><br />
 <code>#include &lt;cuda_runtime_api.h&gt;</code><br />
-<code>#include &lt;stdexcept&gt;</code><br />
+<code>#include &lt;cassert&gt;</code><br />
 </div>
 <p><a href="cudautils_8hpp_source.html">Go to the source code of this file.</a></p>
 <table class="memberdecls">
@@ -95,8 +95,8 @@ Macros</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:gaec6d00242f9acb524fb790d0c46cf0b6"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__cudautils.html#gaec6d00242f9acb524fb790d0c46cf0b6">claragenomics::cudautils::gpu_assert</a> (cudaError_t code, const char *file, int line, bool abort=false)</td></tr>
-<tr class="separator:gaec6d00242f9acb524fb790d0c46cf0b6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga3769a812992df47886894f48f26edf6f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__cudautils.html#ga3769a812992df47886894f48f26edf6f">claragenomics::cudautils::gpu_assert</a> (cudaError_t code, const char *file, int line)</td></tr>
+<tr class="separator:ga3769a812992df47886894f48f26edf6f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9ace0fde2c5420f52b40ca77276943ca"><td class="memTemplParams" colspan="2">template&lt;typename IntType , int32_t boundary&gt; </td></tr>
 <tr class="memitem:a9ace0fde2c5420f52b40ca77276943ca"><td class="memTemplItemLeft" align="right" valign="top">__host__ __device__ __forceinline__ IntType&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="cudautils_8hpp.html#a9ace0fde2c5420f52b40ca77276943ca">claragenomics::cudautils::align</a> (const IntType &amp;value)</td></tr>
 <tr class="separator:a9ace0fde2c5420f52b40ca77276943ca"><td class="memSeparator" colspan="2">&#160;</td></tr>

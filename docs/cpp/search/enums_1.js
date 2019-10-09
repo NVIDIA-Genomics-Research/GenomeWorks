@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['loggingstatus_110',['LoggingStatus',['../group__logging.html#gaa716171cacca628efa44969863d3c43b',1,'claragenomics::logging']]]
+  ['directionofrepresentation_232',['DirectionOfRepresentation',['../classclaragenomics_1_1cudamapper_1_1SketchElement.html#a83beb5c091c4b0bfec99c04b6bc8777a',1,'claragenomics::cudamapper::SketchElement']]]
 ];

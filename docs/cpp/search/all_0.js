@@ -7,5 +7,7 @@ var searchData=
   ['aligner_4',['Aligner',['../classclaragenomics_1_1cudaaligner_1_1Aligner.html',1,'claragenomics::cudaaligner']]],
   ['alignment_5',['Alignment',['../classclaragenomics_1_1cudaaligner_1_1Alignment.html',1,'claragenomics::cudaaligner']]],
   ['alignmentstate_6',['AlignmentState',['../group__cudaaligner.html#ga8ee40da066dcb49eb0516b6a763ec45d',1,'claragenomics::cudaaligner']]],
-  ['alignmenttype_7',['AlignmentType',['../group__cudaaligner.html#gafcccbe51c86f9772ccf837fc433f518b',1,'claragenomics::cudaaligner']]]
+  ['alignmenttype_7',['AlignmentType',['../group__cudaaligner.html#gafcccbe51c86f9772ccf837fc433f518b',1,'claragenomics::cudaaligner']]],
+  ['anchor_8',['Anchor',['../structclaragenomics_1_1cudamapper_1_1Anchor.html',1,'claragenomics::cudamapper::Anchor'],['../structclaragenomics_1_1cudamapper_1_1Anchor.html#af4dc10f114030a8e3a53f3bad3cd20b2',1,'claragenomics::cudamapper::Anchor::Anchor()']]],
+  ['arrayblock_9',['ArrayBlock',['../structclaragenomics_1_1cudamapper_1_1ArrayBlock.html',1,'claragenomics::cudamapper']]]
 ];
