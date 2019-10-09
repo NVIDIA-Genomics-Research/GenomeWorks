@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['weights_105',['weights',['../structclaragenomics_1_1cudapoa_1_1Entry.html#ab8564c38982af7716c70b06d029fb277',1,'claragenomics::cudapoa::Entry']]]
+  ['seq_116',['seq',['../structclaragenomics_1_1io_1_1FastaSequence.html#a9ac5e894fc08745c47b326a7038aa488',1,'claragenomics::io::FastaSequence::seq()'],['../structclaragenomics_1_1cudapoa_1_1Entry.html#a4ada5ced9af7930c95d7a49fb5ecdac4',1,'claragenomics::cudapoa::Entry::seq()']]]
 ];
