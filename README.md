@@ -17,6 +17,25 @@ algorithm. It is heavily influenced by [SPOA](https://github.com/rvaser/spoa) an
 
 The `cudaaligner` package provides GPU-accelerated global alignment.
 
+### cudamapper
+
+**Note** cudamapper is still in pre-alpha stage and should be considered experimental.
+
+The `cudamapper` package provides minimizer-based GPU-accelerated approximate mapping. `cudamapper` outputs mappings in
+the PAF format and is currently optimised for all-vs-all long read (ONT, Pacific Biosciences) sequences.
+
+To run all-vs all overlaps use the following command:
+
+`cudamapper in.fasta in.fasta`
+
+A query fasta can be mapped to a reference as follows:
+
+`cudamapper query.fasta target.fasta`
+
+#### cudamapper usage information
+
+To access more information about running cudamapper, run `cudamapper --help`.
+
 ## Clone Clara Genomics Analysis
 ```bash
 git clone --recursive git@github.com:clara-genomics/ClaraGenomicsAnalysis.git
