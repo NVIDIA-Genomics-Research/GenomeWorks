@@ -110,41 +110,36 @@ int main(int argc, char* argv[])
     auto add_overlaps_to_write_queue = [&overlaps_to_write, &overlaps_writer_mtx](claragenomics::cudamapper::Overlapper& overlapper,
                                                                                   std::vector<claragenomics::cudamapper::Anchor>& anchors,
                                                                                   const claragenomics::cudamapper::Index& index) {
-        overlaps_writer_mtx.lock();
+        std::lock_guard<std::mutex> lk(overlaps_writer_mtx);
         overlaps_to_write.push_back(std::vector<claragenomics::cudamapper::Overlap>());
         overlapper.get_overlaps(overlaps_to_write.back(), anchors, index);
-        if (0 == overlaps_to_write.back().size())
+        if (overlaps_to_write.back().empty())
         {
             overlaps_to_write.pop_back();
         }
-        overlaps_writer_mtx.unlock();
     };
 
     // Start async thread for writing out PAF
     auto overlaps_writer_func = [&overlaps_to_write, &overlaps_writer_mtx]() {
         while (true)
         {
-            bool done = false;
-            overlaps_writer_mtx.lock();
-            if (!overlaps_to_write.empty())
             {
-                std::vector<claragenomics::cudamapper::Overlap>& overlaps = overlaps_to_write.front();
-                // An empty overlap vector indicates end of processing.
-                if (overlaps.size() > 0)
+                std::lock_guard<std::mutex> lk(overlaps_writer_mtx);
+                if (!overlaps_to_write.empty())
                 {
-                    claragenomics::cudamapper::Overlapper::print_paf(overlaps);
-                    overlaps_to_write.pop_front();
-                    overlaps_to_write.shrink_to_fit();
+                    std::vector<claragenomics::cudamapper::Overlap>& overlaps = overlaps_to_write.front();
+                    // An empty overlap vector indicates end of processing.
+                    if (overlaps.size() > 0)
+                    {
+                        claragenomics::cudamapper::Overlapper::print_paf(overlaps);
+                        overlaps_to_write.pop_front();
+                        overlaps_to_write.shrink_to_fit();
+                    }
+                    else
+                    {
+                        break;
+                    }
                 }
-                else
-                {
-                    done = true;
-                }
-            }
-            overlaps_writer_mtx.unlock();
-            if (done)
-            {
-                break;
             }
             std::this_thread::yield();
         }
@@ -255,9 +250,10 @@ int main(int argc, char* argv[])
     // overlaps are added to the queue so as not to confuse it with the
     // empty overlap inserted to indicate end of processing.
     auto start_time = std::chrono::high_resolution_clock::now();
-    overlaps_writer_mtx.lock();
-    overlaps_to_write.push_back(std::vector<claragenomics::cudamapper::Overlap>());
-    overlaps_writer_mtx.unlock();
+    {
+        std::lock_guard<std::mutex> lk(overlaps_writer_mtx);
+        overlaps_to_write.push_back(std::vector<claragenomics::cudamapper::Overlap>());
+    }
     auto paf_time = std::chrono::duration_cast<std::chrono::milliseconds>(
         std::chrono::high_resolution_clock::now() - start_time);
 
