@@ -10,6 +10,7 @@
 
 #pragma once
 
+#include <claragenomics/io/fasta_parser.hpp>
 #include "index.hpp"
 #include "types.hpp"
 
@@ -38,13 +39,14 @@ public:
     /// \brief prints overlaps to stdout in <a href="https://github.com/lh3/miniasm/blob/master/PAF.md">PAF format</a>
     static void print_paf(const std::vector<Overlap>& overlaps);
 
+    static void generate_alignments(std::vector<Overlap>& overlaps, claragenomics::io::FastaParser const& query_parser, claragenomics::io::FastaParser const& target_parser);
+
     /// \brief removes overlaps which are unlikely to be true overlaps
     /// \param filtered_overlaps Output vector in which to place filtered overlaps
     /// \param overlaps vector of Overlap objects to be filtered
     /// \param min_residues smallest number of residues (anchors) for an overlap to be accepted
     /// \param min_overlap_len the smallest overlap distance which is accepted
-    static void filter_overlaps(std::vector<Overlap>& filtered_overlaps, const std::vector<Overlap>& overlaps, size_t min_residues = 5,
-                                size_t min_overlap_len = 0);
+    static void filter_overlaps(std::vector<Overlap>& filtered_overlaps, size_t min_residues = 5, size_t min_overlap_len = 0);
 };
 //}
 } // namespace cudamapper

@@ -62,7 +62,7 @@ target_include_directories(cudamapper
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 )
 
-target_link_libraries(cudamapper utils index_gpu matcher logging overlapper_triggerred cudamapper_utils)
+target_link_libraries(cudamapper utils index_gpu matcher logging overlapper_triggerred cudamapper_utils cudaaligner)
 
 # Add tests folder
 add_subdirectory(tests)

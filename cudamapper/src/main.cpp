@@ -109,13 +109,16 @@ int main(int argc, char* argv[])
     // Function for adding new overlaps to writer
     auto add_overlaps_to_write_queue = [&overlaps_to_write, &overlaps_writer_mtx](claragenomics::cudamapper::Overlapper& overlapper,
                                                                                   std::vector<claragenomics::cudamapper::Anchor>& anchors,
-                                                                                  const claragenomics::cudamapper::Index& index) {
+                                                                                  const claragenomics::cudamapper::Index& index,
+                                                                                  const claragenomics::io::FastaParser& query_parser, const claragenomics::io::FastaParser& target_parser) {
         std::lock_guard<std::mutex> lk(overlaps_writer_mtx);
-        overlaps_to_write.push_back(std::vector<claragenomics::cudamapper::Overlap>());
-        overlapper.get_overlaps(overlaps_to_write.back(), anchors, index);
-        if (overlaps_to_write.back().empty())
+        std::vector<claragenomics::cudamapper::Overlap> overlaps;
+        overlapper.get_overlaps(overlaps, anchors, index);
+        claragenomics::cudamapper::Overlapper::filter_overlaps(overlaps);
+        claragenomics::cudamapper::Overlapper::generate_alignments(overlaps, query_parser, target_parser);
+        if (!overlaps.empty())
         {
-            overlaps_to_write.pop_back();
+            overlaps_to_write.push_back(std::move(overlaps));
         }
     };
 
@@ -232,7 +235,7 @@ int main(int argc, char* argv[])
 
             start_time = std::chrono::high_resolution_clock::now();
             CGA_LOG_INFO("Started overlap detector");
-            add_overlaps_to_write_queue(overlapper, qt_matcher.anchors(), *new_index);
+            add_overlaps_to_write_queue(overlapper, qt_matcher.anchors(), *new_index, *query_parser, *target_parser);
 
             CGA_LOG_INFO("Finished overlap detector");
             std::cerr << "Overlap detection execution time: " << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time).count() << "ms" << std::endl;
