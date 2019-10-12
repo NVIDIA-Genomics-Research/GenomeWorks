@@ -14,6 +14,7 @@
 #include "claragenomics/cudamapper/overlapper.hpp"
 #include "claragenomics/cudaaligner/aligner.hpp"
 #include "claragenomics/cudaaligner/alignment.hpp"
+#include <iostream>
 
 namespace claragenomics
 {
@@ -59,6 +60,7 @@ void Overlapper::generate_alignments(std::vector<Overlap>& overlaps, claragenomi
     cudaStream_t stream;
     cudaStreamCreate(&stream);
 
+
     int32_t max_query_length = 0;
     int32_t max_target_length = 0;
     for(auto const& o : overlaps)
@@ -67,31 +69,39 @@ void Overlapper::generate_alignments(std::vector<Overlap>& overlaps, claragenomi
         max_target_length = std::max<int32_t>(max_target_length, o.target_end_position_in_read_ - o.target_start_position_in_read_);
     }
 
-    int32_t batch_size = 256;
+    std::cerr << "Total alignments " << overlaps.size() << std::endl;
+
+    int32_t batch_size = 3072;
 
     std::unique_ptr<cudaaligner::Aligner> aligner = cudaaligner::create_aligner(max_query_length, max_target_length, batch_size, cudaaligner::global_alignment, stream, device_id);
 
     int32_t i = 0;
     auto it = begin(overlaps);
+    int32_t processed = 0;
     while( it != end(overlaps) )
     {
         std::string query = get_query_from_overlap(*it, query_parser);
         std::string target = get_target_from_overlap(*it, target_parser);
         aligner->add_alignment(query.data(), query.size(), target.data(), target.size());
-        ++i;
 
         if(i == batch_size)
         {
             aligner->align_all();
             aligner->sync_alignments();
             std::vector<std::shared_ptr<cudaaligner::Alignment> > alignments = aligner->get_alignments();
+            if (alignments.size() != batch_size)
+                std::cerr << "SOMETHING IS WRONGGG!" << std::endl;
             for(int32_t j=0; j < batch_size; ++j)
             {
                 (it - batch_size + j)->cigar_ = alignments[j]->convert_to_cigar();
             }
+            processed += batch_size;
+            std::cerr << "Processed " << processed << std::endl;
             i=0;
+            continue;
         }
         ++it;
+        ++i;
     }
     aligner->align_all();
     aligner->sync_alignments();
