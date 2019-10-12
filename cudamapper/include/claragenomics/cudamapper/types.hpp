@@ -102,6 +102,8 @@ typedef struct Overlap
     std::uint32_t target_length_ = 0;
     /// Whether the overlap is considered valid by the generating overlapper
     bool overlap_complete = false;
+    /// CIGAR string for alignment of mapped section.
+    std::string cigar_ = "";
 } Overlap;
 } // namespace cudamapper
 
