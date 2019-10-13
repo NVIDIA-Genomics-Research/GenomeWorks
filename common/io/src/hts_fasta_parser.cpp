@@ -21,6 +21,30 @@ namespace claragenomics
 namespace io
 {
 
+namespace
+{
+
+FastaSequence get_sequence_by_name_impl(faidx_t* fasta_index, const char* name)
+{
+    int32_t length;
+    char* seq = fai_fetch(fasta_index, name, &length);
+    if (length < 0)
+    {
+        throw std::runtime_error(std::string("Error in reading sequence information for seq ID ") + name);
+    }
+
+    FastaSequence s{};
+    s.name = std::string(name);
+    s.seq  = std::string(seq);
+
+    // Since htslib allocates space for the seq using malloc()
+    free(seq);
+
+    return s;
+}
+
+} // namespace
+
 FastaParserHTS::FastaParserHTS(const std::string& fasta_file)
 {
     fasta_index_ = fai_load3(fasta_file.c_str(), NULL, NULL, FAI_CREATE);
@@ -54,26 +78,12 @@ FastaSequence FastaParserHTS::get_sequence_by_id(int32_t i) const
         throw std::runtime_error("No sequence found for ID " + std::to_string(i));
     }
 
-    return get_sequence_by_name(std::string(name));
+    return get_sequence_by_name_impl(fasta_index_, name);
 }
 
 FastaSequence FastaParserHTS::get_sequence_by_name(const std::string& name) const
 {
-    int32_t length;
-    char* seq = fai_fetch(fasta_index_, name.c_str(), &length);
-    if (length < 0)
-    {
-        throw std::runtime_error("Error in reading sequence information for seq ID " + name);
-    }
-
-    FastaSequence s{};
-    s.name = std::string(name);
-    s.seq  = std::string(seq);
-
-    // Since htslib allocates space for the seq using malloc()
-    free(seq);
-
-    return s;
+    return get_sequence_by_name_impl(fasta_index_, name.c_str());
 }
 
 } // namespace io
