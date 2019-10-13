@@ -24,29 +24,29 @@ namespace cudamapper
 std::string get_query_from_overlap(Overlap const& overlap, claragenomics::io::FastaParser const& parser)
 {
     claragenomics::io::FastaSequence s = parser.get_sequence_by_name(overlap.query_read_name_);
-    if(overlap.query_start_position_in_read_ >= s.seq.size() || overlap.query_end_position_in_read_ >= s.seq.size())
+    if (overlap.query_start_position_in_read_ >= s.seq.size() || overlap.query_end_position_in_read_ >= s.seq.size())
         throw std::runtime_error("Overlap expected a longer FastaSequence.");
     std::string r;
     r.reserve(overlap.query_end_position_in_read_ - overlap.query_start_position_in_read_);
-    std::copy(begin(s.seq)+overlap.query_start_position_in_read_, begin(s.seq) + overlap.query_end_position_in_read_, std::back_inserter(r));
+    std::copy(begin(s.seq) + overlap.query_start_position_in_read_, begin(s.seq) + overlap.query_end_position_in_read_, std::back_inserter(r));
     return r;
 }
 
 std::string get_target_from_overlap(Overlap const& overlap, claragenomics::io::FastaParser const& parser)
 {
     claragenomics::io::FastaSequence s = parser.get_sequence_by_name(overlap.target_read_name_);
-    if(overlap.target_start_position_in_read_ >= s.seq.size() || overlap.target_end_position_in_read_ >= s.seq.size())
+    if (overlap.target_start_position_in_read_ >= s.seq.size() || overlap.target_end_position_in_read_ >= s.seq.size())
         throw std::runtime_error("Overlap expected a longer FastaSequence.");
     std::string r;
     r.reserve(overlap.target_end_position_in_read_ - overlap.target_start_position_in_read_);
-    std::copy(begin(s.seq)+overlap.target_start_position_in_read_, begin(s.seq) + overlap.target_end_position_in_read_, std::back_inserter(r));
+    std::copy(begin(s.seq) + overlap.target_start_position_in_read_, begin(s.seq) + overlap.target_end_position_in_read_, std::back_inserter(r));
     return r;
 }
 
 void Overlapper::filter_overlaps(std::vector<Overlap>& overlaps, size_t min_residues, size_t min_overlap_len)
 {
     auto invalid_overlap = [&min_residues, &min_overlap_len](Overlap overlap) { return !((overlap.num_residues_ >= min_residues) &&
-                                                                                      ((overlap.query_end_position_in_read_ - overlap.query_start_position_in_read_) > min_overlap_len)); };
+                                                                                         ((overlap.query_end_position_in_read_ - overlap.query_start_position_in_read_) > min_overlap_len)); };
 
     auto newend = std::remove_if(overlaps.begin(), overlaps.end(), invalid_overlap);
     overlaps.erase(newend, overlaps.end());
@@ -60,12 +60,11 @@ void Overlapper::generate_alignments(std::vector<Overlap>& overlaps, claragenomi
     cudaStream_t stream;
     cudaStreamCreate(&stream);
 
-
-    int32_t max_query_length = 0;
+    int32_t max_query_length  = 0;
     int32_t max_target_length = 0;
-    for(auto const& o : overlaps)
+    for (auto const& o : overlaps)
     {
-        max_query_length = std::max<int32_t>(max_query_length, o.query_end_position_in_read_ - o.query_start_position_in_read_);
+        max_query_length  = std::max<int32_t>(max_query_length, o.query_end_position_in_read_ - o.query_start_position_in_read_);
         max_target_length = std::max<int32_t>(max_target_length, o.target_end_position_in_read_ - o.target_start_position_in_read_);
     }
 
@@ -75,29 +74,29 @@ void Overlapper::generate_alignments(std::vector<Overlap>& overlaps, claragenomi
 
     std::unique_ptr<cudaaligner::Aligner> aligner = cudaaligner::create_aligner(max_query_length, max_target_length, batch_size, cudaaligner::global_alignment, stream, device_id);
 
-    int32_t i = 0;
-    auto it = begin(overlaps);
+    int32_t i         = 0;
+    auto it           = begin(overlaps);
     int32_t processed = 0;
-    while( it != end(overlaps) )
+    while (it != end(overlaps))
     {
-        std::string query = get_query_from_overlap(*it, query_parser);
+        std::string query  = get_query_from_overlap(*it, query_parser);
         std::string target = get_target_from_overlap(*it, target_parser);
         aligner->add_alignment(query.data(), query.size(), target.data(), target.size());
 
-        if(i == batch_size)
+        if (i == batch_size)
         {
             aligner->align_all();
             aligner->sync_alignments();
-            std::vector<std::shared_ptr<cudaaligner::Alignment> > alignments = aligner->get_alignments();
+            std::vector<std::shared_ptr<cudaaligner::Alignment>> alignments = aligner->get_alignments();
             if (alignments.size() != batch_size)
                 std::cerr << "SOMETHING IS WRONGGG!" << std::endl;
-            for(int32_t j=0; j < batch_size; ++j)
+            for (int32_t j = 0; j < batch_size; ++j)
             {
                 (it - batch_size + j)->cigar_ = alignments[j]->convert_to_cigar();
             }
             processed += batch_size;
             std::cerr << "Processed " << processed << std::endl;
-            i=0;
+            i = 0;
             continue;
         }
         ++it;
@@ -106,8 +105,8 @@ void Overlapper::generate_alignments(std::vector<Overlap>& overlaps, claragenomi
     aligner->align_all();
     aligner->sync_alignments();
 
-    std::vector<std::shared_ptr<cudaaligner::Alignment> > alignments = aligner->get_alignments();
-    for(int32_t j=0; j < i; ++j)
+    std::vector<std::shared_ptr<cudaaligner::Alignment>> alignments = aligner->get_alignments();
+    for (int32_t j = 0; j < i; ++j)
     {
         (it - i + j)->cigar_ = alignments[j]->convert_to_cigar();
     }
