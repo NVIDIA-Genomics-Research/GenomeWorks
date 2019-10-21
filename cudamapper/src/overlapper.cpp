@@ -33,7 +33,8 @@ void Overlapper::print_paf(const std::vector<Overlap>& overlaps)
 
     for (const auto& overlap : filtered_overlaps)
     {
-        std::printf("%s\t%i\t%i\t%i\t%c\t%s\t%i\t%i\t%i\t%i\t%i\t%i\n",
+        // Add basic overlap information.
+        std::printf("%s\t%i\t%i\t%i\t%c\t%s\t%i\t%i\t%i\t%i\t%i\t%i",
                     overlap.query_read_name_.c_str(),
                     overlap.query_length_,
                     overlap.query_start_position_in_read_,
@@ -46,6 +47,13 @@ void Overlapper::print_paf(const std::vector<Overlap>& overlaps)
                     overlap.num_residues_,
                     0,
                     255);
+        // If CIGAR string is generated, output in PAF.
+        if (overlap.cigar_ != "")
+        {
+            std::printf("\tcg:Z:%s", overlap.cigar_.c_str());
+        }
+        // Add new line to demarcate new entry.
+        std::printf("\n");
     }
 }
 } // namespace cudamapper
