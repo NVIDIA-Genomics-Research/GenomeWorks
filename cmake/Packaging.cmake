@@ -8,6 +8,8 @@
 # license agreement from NVIDIA CORPORATION is strictly prohibited.
 #
 
+set(CGA_ENABLE_PACKAGING TRUE)
+
 # Find Linux Distribution
 EXECUTE_PROCESS(
     COMMAND "awk" "-F=" "/^NAME/{print $2}" "/etc/os-release"
@@ -21,11 +23,14 @@ elseif(${LINUX_OS_NAME} MATCHES "CentOS")
     MESSAGE(STATUS "Package generator - RPM")
     SET(CPACK_GENERATOR "RPM")
 else()
-    MESSAGE(FATAL_ERROR "Unrecognized Linux distribution - ${LINUX_OS_NAME}")
+    MESSAGE(STATUS "Unrecognized Linux distribution - ${LINUX_OS_NAME}. Disabling packaging.")
+    set(CGA_ENABLE_PACKAGING FALSE)
 endif()
 
-SET(CPACK_DEBIAN_PACKAGE_MAINTAINER "NVIDIA Corporation")
-SET(CPACK_PACKAGE_VERSION "${CGA_VERSION}")
-SET(CPACK_PACKAGING_INSTALL_PREFIX "/usr/local/${CGA_PROJECT_NAME}-${CGA_VERSION}")
+if (CGA_ENABLE_PACKAGING)
+    SET(CPACK_DEBIAN_PACKAGE_MAINTAINER "NVIDIA Corporation")
+    SET(CPACK_PACKAGE_VERSION "${CGA_VERSION}")
+    SET(CPACK_PACKAGING_INSTALL_PREFIX "/usr/local/${CGA_PROJECT_NAME}-${CGA_VERSION}")
 
-include(CPack)
+    include(CPack)
+endif()
