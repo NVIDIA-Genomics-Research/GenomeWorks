@@ -18,6 +18,10 @@
 #include <cuda_runtime_api.h>
 #include <cassert>
 
+#ifdef CGA_PROFILING
+#include <nvToolsExt.h>
+#endif // CGA_PROFILING
+
 /// \ingroup cudautils
 /// \{
 
@@ -84,6 +88,32 @@ __host__ __device__ __forceinline__
     static_assert((boundary & (boundary - 1)) == 0, "Boundary for align must be power of 2");
     return (value + boundary) & ~(boundary - 1);
 }
+
+#ifdef CGA_PROFILING
+/// \ingroup cudautils
+/// \def CGA_NVTX_RANGE
+/// \brief starts an NVTX range for profiling which stops automatically at the end of the scope
+/// \param varname an arbitrary variable name for the nvtx_range object, which doesn't conflict with other variables in the scope
+/// \param label the label/name of the NVTX range
+#define CGA_NVTX_RANGE(varname, label) ::claragenomics::cudautils::nvtx_range varname(label)
+/// nvtx_range
+/// implementation of CGA_NVTX_RANGE
+class nvtx_range
+{
+public:
+    explicit nvtx_range(char const* name)
+    {
+        nvtxRangePush(name);
+    }
+
+    ~nvtx_range()
+    {
+        nvtxRangePop();
+    }
+};
+#else
+#define CGA_NVTX_RANGE(name)
+#endif // CGA_PROFILING
 
 } // namespace cudautils
 
