@@ -28,7 +28,9 @@ class BasicGenerateConsensus
 public:
     BasicGenerateConsensus(std::vector<uint8_t> nodes, std::vector<uint16_t> sorted_graph, Uint16Vec2D node_alignments,
                            Uint16Vec2D outgoing_edges, std::vector<uint16_t> node_coverage_counts, Uint16Vec2D outgoing_edge_w)
-        : graph_(nodes, sorted_graph, node_alignments, node_coverage_counts, outgoing_edges), outgoing_edge_w_(outgoing_edge_w), outgoing_edges_(outgoing_edges)
+        : graph_(nodes, sorted_graph, node_alignments, node_coverage_counts, outgoing_edges)
+        , outgoing_edge_w_(outgoing_edge_w)
+        , outgoing_edges_(outgoing_edges)
     {
     }
 

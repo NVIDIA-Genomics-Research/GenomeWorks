@@ -34,7 +34,9 @@ class device_matrix_view
 {
 public:
     __device__ device_matrix_view(T* storage, int32_t n_rows, int32_t n_cols)
-        : data_(storage), n_rows_(n_rows), n_cols_(n_cols)
+        : data_(storage)
+        , n_rows_(n_rows)
+        , n_cols_(n_cols)
     {
     }
 
@@ -77,7 +79,9 @@ public:
     {
     public:
         device_interface(T* storage, int32_t n_matrices, int32_t max_elements_per_matrix)
-            : storage_(storage), max_elements_per_matrix_(max_elements_per_matrix), n_matrices_(n_matrices)
+            : storage_(storage)
+            , max_elements_per_matrix_(max_elements_per_matrix)
+            , n_matrices_(n_matrices)
         {
         }
         __device__ device_matrix_view<T> get_matrix_view(int32_t id, int32_t n_rows, int32_t n_cols)

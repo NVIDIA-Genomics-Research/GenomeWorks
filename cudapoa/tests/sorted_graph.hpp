@@ -28,7 +28,8 @@ class SortedGraph : public BasicGraph
 
 public:
     SortedGraph(std::vector<uint8_t> nodes, std::vector<uint16_t> sorted_graph, Uint16Vec2D outgoing_edges)
-        : BasicGraph(nodes, outgoing_edges), sorted_graph_(sorted_graph)
+        : BasicGraph(nodes, outgoing_edges)
+        , sorted_graph_(sorted_graph)
     {
         // do nothing for now
     }
@@ -36,7 +37,8 @@ public:
     SortedGraph(std::vector<uint8_t> nodes, std::vector<uint16_t> sorted_graph,
                 Uint16Vec2D node_alignments, std::vector<uint16_t> node_coverage_counts,
                 Uint16Vec2D outgoing_edges, Uint16Vec3D outgoing_edges_coverage = {})
-        : BasicGraph(nodes, outgoing_edges, node_alignments, node_coverage_counts, outgoing_edges_coverage), sorted_graph_(sorted_graph)
+        : BasicGraph(nodes, outgoing_edges, node_alignments, node_coverage_counts, outgoing_edges_coverage)
+        , sorted_graph_(sorted_graph)
     {
         // do nothing for now
     }
