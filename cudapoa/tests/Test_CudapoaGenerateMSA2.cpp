@@ -8,6 +8,8 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
+#include "../src/cudapoa_kernels.cuh"
+
 #include <claragenomics/cudapoa/batch.hpp>
 #include <claragenomics/utils/genomeutils.hpp>
 
@@ -90,7 +92,7 @@ TEST_F(MSATest, CudapoaMSA)
         e.length  = seq.length();
         poa_group.push_back(e);
     }
-    EXPECT_EQ(cudapoa_batch->add_poa_group(status, poa_group), StatusType::success);
+    ASSERT_EQ(cudapoa_batch->add_poa_group(status, poa_group), StatusType::success);
 
     std::vector<std::vector<std::string>> cudapoa_msa;
     std::vector<StatusType> output_status;
@@ -98,6 +100,8 @@ TEST_F(MSATest, CudapoaMSA)
     cudapoa_batch->generate_poa();
 
     cudapoa_batch->get_msa(cudapoa_msa, output_status);
+
+    ASSERT_EQ(output_status[0], StatusType::success);
 
     auto spoa_msa = spoa_generate_multiple_sequence_alignments(sequences);
 
@@ -107,11 +111,41 @@ TEST_F(MSATest, CudapoaMSA)
 
         std::string msa = cudapoa_msa[0][i];
         msa.erase(std::remove(msa.begin(), msa.end(), '-'), msa.end());
-        EXPECT_EQ(msa, sequences[i]);
+        ASSERT_EQ(msa, sequences[i]);
     }
 #else
-    EXPECT_EQ(spoa_msa, cudapoa_msa[0]);
+    ASSERT_EQ(spoa_msa, cudapoa_msa[0]);
 #endif
+}
+
+TEST_F(MSATest, CudapoaMSAFailure)
+{
+    std::minstd_rand rng(1);
+    int num_sequences    = 10;
+    std::string backbone = claragenomics::genomeutils::generate_random_genome(CUDAPOA_MAX_CONSENSUS_SIZE - 1, rng);
+    auto sequences       = claragenomics::genomeutils::generate_random_sequences(backbone, num_sequences, rng, 10, 5, 10);
+
+    initialize(num_sequences);
+    Group poa_group;
+    std::vector<StatusType> status;
+    for (const auto& seq : sequences)
+    {
+        Entry e{};
+        e.seq     = seq.c_str();
+        e.weights = nullptr;
+        e.length  = seq.length();
+        poa_group.push_back(e);
+    }
+    ASSERT_EQ(cudapoa_batch->add_poa_group(status, poa_group), StatusType::success);
+
+    std::vector<std::vector<std::string>> cudapoa_msa;
+    std::vector<StatusType> output_status;
+
+    cudapoa_batch->generate_poa();
+
+    cudapoa_batch->get_msa(cudapoa_msa, output_status);
+
+    ASSERT_EQ(output_status[0], StatusType::exceeded_maximum_sequence_size);
 }
 
 } // namespace cudapoa
