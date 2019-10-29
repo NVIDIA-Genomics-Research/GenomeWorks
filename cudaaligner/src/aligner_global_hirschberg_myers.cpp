@@ -27,7 +27,11 @@ static constexpr int32_t hirschberg_myers_switch_to_myers_size = 63; // ideally 
 struct AlignerGlobalHirschbergMyers::Workspace
 {
     Workspace(int32_t max_alignments, int32_t max_n_words, int32_t max_target_length, int32_t warps_per_alignment, int32_t switch_to_myers_size, cudaStream_t stream)
-        : stackbuffer(max_alignments * hirschberg_myers_stackbuffer_size), pvs(max_alignments * warps_per_alignment, max_n_words * (switch_to_myers_size + 1), stream), mvs(max_alignments * warps_per_alignment, max_n_words * (switch_to_myers_size + 1), stream), scores(max_alignments * warps_per_alignment, std::max(max_n_words * (switch_to_myers_size + 1), (max_target_length + 1) * 2), stream), query_patterns(max_alignments, max_n_words * 8, stream)
+        : stackbuffer(max_alignments * hirschberg_myers_stackbuffer_size)
+        , pvs(max_alignments * warps_per_alignment, max_n_words * (switch_to_myers_size + 1), stream)
+        , mvs(max_alignments * warps_per_alignment, max_n_words * (switch_to_myers_size + 1), stream)
+        , scores(max_alignments * warps_per_alignment, std::max(max_n_words * (switch_to_myers_size + 1), (max_target_length + 1) * 2), stream)
+        , query_patterns(max_alignments, max_n_words * 8, stream)
     {
         assert(switch_to_myers_size >= 1);
     }
