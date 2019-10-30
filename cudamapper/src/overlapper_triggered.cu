@@ -31,6 +31,7 @@ namespace cudamapper
 {
 void OverlapperTriggered::get_overlaps(std::vector<Overlap>& fused_overlaps, std::vector<Anchor>& anchors, const Index& index)
 {
+    CGA_NVTX_RANGE(profiler, "OverlapperTriggered::get_overlaps");
     const auto& read_names   = index.read_id_to_read_name();
     const auto& read_lengths = index.read_id_to_read_length();
     size_t total_anchors     = anchors.size();
