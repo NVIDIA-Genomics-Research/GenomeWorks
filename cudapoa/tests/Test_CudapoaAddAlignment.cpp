@@ -29,7 +29,10 @@ public:
     BasicAlignment(std::vector<uint8_t> nodes, Uint16Vec2D outgoing_edges,
                    Uint16Vec2D node_alignments, std::vector<uint16_t> node_coverage_counts,
                    std::vector<uint8_t> read, std::vector<int8_t> base_weights, std::vector<int16_t> alignment_graph, std::vector<int16_t> alignment_read)
-        : graph(nodes, outgoing_edges, node_alignments, node_coverage_counts), read_(read), alignment_graph_(alignment_graph), alignment_read_(alignment_read)
+        : graph(nodes, outgoing_edges, node_alignments, node_coverage_counts)
+        , read_(read)
+        , alignment_graph_(alignment_graph)
+        , alignment_read_(alignment_read)
     {
         //do nothing for now
     }

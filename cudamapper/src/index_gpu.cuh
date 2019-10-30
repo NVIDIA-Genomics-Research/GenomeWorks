@@ -133,7 +133,9 @@ class approximate_sketch_elements_per_bucket_too_small : public std::exception
 {
 public:
     approximate_sketch_elements_per_bucket_too_small(const std::string& message)
-        : message_(message) {}
+        : message_(message)
+    {
+    }
     approximate_sketch_elements_per_bucket_too_small(approximate_sketch_elements_per_bucket_too_small const&) = default;
     approximate_sketch_elements_per_bucket_too_small& operator=(approximate_sketch_elements_per_bucket_too_small const&) = default;
     virtual ~approximate_sketch_elements_per_bucket_too_small()                                                          = default;
@@ -491,14 +493,19 @@ void build_index(const std::uint64_t number_of_reads,
 
 template <typename SketchElementImpl>
 IndexGPU<SketchElementImpl>::IndexGPU(const std::vector<io::FastaParser*>& parsers, const std::uint64_t kmer_size, const std::uint64_t window_size, const std::vector<std::pair<std::uint64_t, std::uint64_t>>& read_ranges)
-    : kmer_size_(kmer_size), window_size_(window_size), number_of_reads_(0), reached_end_of_input_(false)
+    : kmer_size_(kmer_size)
+    , window_size_(window_size)
+    , number_of_reads_(0)
+    , reached_end_of_input_(false)
 {
     generate_index(parsers, read_ranges);
 }
 
 template <typename SketchElementImpl>
 IndexGPU<SketchElementImpl>::IndexGPU()
-    : kmer_size_(0), window_size_(0), number_of_reads_(0)
+    : kmer_size_(0)
+    , window_size_(0)
+    , number_of_reads_(0)
 {
 }
 
