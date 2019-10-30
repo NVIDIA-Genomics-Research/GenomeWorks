@@ -9,8 +9,7 @@
 #
 
 # Add benchmarks
-add_subdirectory(single-batch)
-add_subdirectory(multi-batch)
+add_subdirectory(run-batch)
 
 install(FILES README.md
     DESTINATION benchmarks/cudapoa)
