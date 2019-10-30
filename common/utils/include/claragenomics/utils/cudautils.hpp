@@ -112,7 +112,12 @@ public:
     }
 };
 #else
-#define CGA_NVTX_RANGE(name)
+/// \ingroup cudautils
+/// \def CGA_NVTX_RANGE
+/// \brief Dummy implementation for CGA_NVTX_RANGE macro
+/// \param varname Unused variable
+/// \param label Unused variable
+#define CGA_NVTX_RANGE(varname, label)
 #endif // CGA_PROFILING
 
 } // namespace cudautils
