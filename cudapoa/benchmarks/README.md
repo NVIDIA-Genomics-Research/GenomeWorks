@@ -7,7 +7,7 @@ of a single batch of POA.
 
 To run the benchmark, execute
 ```
-./benchmarks/cudapoa/benchmark_cudapoa_run_batch --benchmark_filter="BM_SingleBatchTest"
+./benchmarks/cudapoa/benchmark_cudapoa --benchmark_filter="BM_SingleBatchTest"
 ```
 
 ## Multi Batch
@@ -17,5 +17,5 @@ of several batched CUDA POA stream that fill up the GPU.
 
 To the the benchmark, execute
 ```
-./benchmarks/cudapoa/benchmark_cudapoa_run_batch --benchmark_filter="BM_MultiBatchTest"
+./benchmarks/cudapoa/benchmark_cudapoa --benchmark_filter="BM_MultiBatchTest"
 ```
