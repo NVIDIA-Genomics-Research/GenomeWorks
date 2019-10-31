@@ -20,6 +20,7 @@
 
 #include <claragenomics/logging/logging.hpp>
 #include <claragenomics/io/fasta_parser.hpp>
+#include <claragenomics/utils/cudautils.hpp>
 
 #include "claragenomics/cudamapper/index.hpp"
 #include "claragenomics/cudamapper/overlapper.hpp"
@@ -110,6 +111,7 @@ int main(int argc, char* argv[])
     auto add_overlaps_to_write_queue = [&overlaps_to_write, &overlaps_writer_mtx](claragenomics::cudamapper::Overlapper& overlapper,
                                                                                   std::vector<claragenomics::cudamapper::Anchor>& anchors,
                                                                                   const claragenomics::cudamapper::Index& index) {
+        CGA_NVTX_RANGE(profiler, "add_overlaps_to_write_queue");
         overlaps_writer_mtx.lock();
         overlaps_to_write.push_back(std::vector<claragenomics::cudamapper::Overlap>());
         overlapper.get_overlaps(overlaps_to_write.back(), anchors, index);
@@ -128,6 +130,7 @@ int main(int argc, char* argv[])
             overlaps_writer_mtx.lock();
             if (!overlaps_to_write.empty())
             {
+                CGA_NVTX_RANGE(profile, "overlaps_writer");
                 std::vector<claragenomics::cudamapper::Overlap>& overlaps = overlaps_to_write.front();
                 // An empty overlap vector indicates end of processing.
                 if (overlaps.size() > 0)

@@ -12,6 +12,11 @@ project(utils)
 
 add_library(utils INTERFACE)
 target_link_libraries(utils INTERFACE logging)
+if (cga_profiling)
+    find_library(NVTX_LIBRARY nvToolsExt HINTS ${CUDA_TOOLKIT_ROOT_DIR}/lib64)
+    target_compile_definitions(utils INTERFACE -DCGA_PROFILING)
+    target_link_libraries(utils INTERFACE ${NVTX_LIBRARY})
+endif()
 
 add_doxygen_source_dir(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
