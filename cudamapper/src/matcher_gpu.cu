@@ -56,6 +56,31 @@ __global__ void create_new_value_mask(const representation_t* const representati
     }
 }
 
+__global__ void copy_index_of_first_occurence(const std::uint64_t* const representation_index_mask_d,
+                                              const std::size_t number_of_input_elements,
+                                              std::size_t* const starting_index_of_each_representation)
+{
+    std::uint64_t index = blockIdx.x * blockDim.x + threadIdx.x;
+
+    if (index >= number_of_input_elements)
+        return;
+
+    if (index == 0)
+    {
+        starting_index_of_each_representation[0] = 0;
+    }
+    else
+    {
+        if (representation_index_mask_d[index] != representation_index_mask_d[index - 1])
+        {
+            // if new representation (= not the same as its left neighbor)
+            // save the index at which that representation starts
+            // representation_index_mask_d gives a unique index to each representation, starting from 1, thus '-1'
+            starting_index_of_each_representation[representation_index_mask_d[index] - 1] = index;
+        }
+    }
+}
+
 } // namespace matcher_gpu
 
 } // namespace details

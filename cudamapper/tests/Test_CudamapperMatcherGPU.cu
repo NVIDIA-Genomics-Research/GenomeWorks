@@ -27,7 +27,7 @@ void test_create_new_value_mask(const thrust::host_vector<representation_t>& rep
                                 const thrust::host_vector<std::uint8_t>& expected_new_value_mask_h,
                                 std::uint32_t number_of_threads)
 {
-    thrust::device_vector<representation_t> representations_d(representations_h);
+    const thrust::device_vector<representation_t> representations_d(representations_h);
     thrust::device_vector<std::uint8_t> new_value_mask_d(representations_h.size());
 
     std::uint32_t number_of_blocks = (representations_h.size() - 1) / number_of_threads + 1;
@@ -38,7 +38,7 @@ void test_create_new_value_mask(const thrust::host_vector<representation_t>& rep
 
     CGA_CU_CHECK_ERR(cudaDeviceSynchronize());
 
-    thrust::host_vector<std::uint8_t> new_value_mask_h(new_value_mask_d);
+    const thrust::host_vector<std::uint8_t> new_value_mask_h(new_value_mask_d);
 
     ASSERT_EQ(new_value_mask_h.size(), expected_new_value_mask_h.size());
     for (std::size_t i = 0; i < expected_new_value_mask_h.size(); ++i)
@@ -95,8 +95,8 @@ TEST(TestCudamapperMatcherGPU, test_create_new_value_mask_small_example)
 
 TEST(TestCudamapperMatcherGPU, test_create_new_value_mask_small_data_large_example)
 {
-    std::uint64_t total_sketch_elements                    = 10000000;
-    std::uint32_t sketch_elements_with_same_representation = 1000;
+    const std::uint64_t total_sketch_elements                    = 10000000;
+    const std::uint32_t sketch_elements_with_same_representation = 1000;
 
     thrust::host_vector<representation_t> representations_h;
     thrust::host_vector<std::uint8_t> expected_new_value_mask_h;
@@ -114,6 +114,82 @@ TEST(TestCudamapperMatcherGPU, test_create_new_value_mask_small_data_large_examp
     test_create_new_value_mask(representations_h,
                                expected_new_value_mask_h,
                                number_of_threads);
+}
+void test_copy_index_of_first_occurence(const thrust::host_vector<std::uint64_t>& representation_index_mask_h,
+                                        const thrust::host_vector<std::size_t>& expected_starting_index_of_each_representation_h,
+                                        const std::uint32_t number_of_threads)
+{
+    const thrust::device_vector<std::uint64_t> representation_index_mask_d(representation_index_mask_h);
+    ASSERT_EQ(expected_starting_index_of_each_representation_h.size(), representation_index_mask_h.back());
+    thrust::device_vector<std::size_t> starting_index_of_each_representation_d(expected_starting_index_of_each_representation_h.size());
+
+    std::uint32_t number_of_blocks = (representation_index_mask_d.size() - 1) / number_of_threads + 1;
+
+    details::matcher_gpu::copy_index_of_first_occurence<<<number_of_blocks, number_of_threads>>>(thrust::raw_pointer_cast(representation_index_mask_d.data()),
+                                                                                                 representation_index_mask_d.size(),
+                                                                                                 thrust::raw_pointer_cast(starting_index_of_each_representation_d.data()));
+    CGA_CU_CHECK_ERR(cudaDeviceSynchronize());
+
+    const thrust::host_vector<std::size_t> starting_index_of_each_representation_h(starting_index_of_each_representation_d);
+
+    ASSERT_EQ(starting_index_of_each_representation_h.size(), expected_starting_index_of_each_representation_h.size());
+    for (std::size_t i = 0; i < expected_starting_index_of_each_representation_h.size(); ++i)
+    {
+        EXPECT_EQ(starting_index_of_each_representation_h[i], expected_starting_index_of_each_representation_h[i]) << "index: " << i;
+    }
+}
+
+TEST(TestCudamapperMatcherGPU, test_copy_index_of_first_occurence_small_example)
+{
+    thrust::host_vector<std::uint64_t> representation_index_mask_h;
+    thrust::host_vector<std::size_t> expected_starting_index_of_each_representation_h;
+    representation_index_mask_h.push_back(1);
+    expected_starting_index_of_each_representation_h.push_back(0);
+    representation_index_mask_h.push_back(1);
+    representation_index_mask_h.push_back(1);
+    representation_index_mask_h.push_back(1);
+    representation_index_mask_h.push_back(2);
+    expected_starting_index_of_each_representation_h.push_back(4);
+    representation_index_mask_h.push_back(3);
+    expected_starting_index_of_each_representation_h.push_back(5);
+    representation_index_mask_h.push_back(3);
+    representation_index_mask_h.push_back(3);
+    representation_index_mask_h.push_back(3);
+    representation_index_mask_h.push_back(4);
+    expected_starting_index_of_each_representation_h.push_back(9);
+    representation_index_mask_h.push_back(4);
+    representation_index_mask_h.push_back(4);
+    representation_index_mask_h.push_back(5);
+    expected_starting_index_of_each_representation_h.push_back(12);
+    representation_index_mask_h.push_back(6);
+    expected_starting_index_of_each_representation_h.push_back(13);
+
+    std::uint32_t number_of_threads = 3;
+
+    test_copy_index_of_first_occurence(representation_index_mask_h,
+                                       expected_starting_index_of_each_representation_h,
+                                       number_of_threads);
+}
+
+TEST(TestCudamapperMatcherGPU, test_copy_index_of_first_occurence_large_example)
+{
+    const std::uint64_t total_sketch_elements                    = 10000000;
+    const std::uint32_t sketch_elements_with_same_representation = 1000;
+
+    thrust::host_vector<std::uint64_t> representation_index_mask_h;
+    thrust::host_vector<std::size_t> expected_starting_index_of_each_representation_h;
+    for (std::size_t i = 0; i < total_sketch_elements; ++i)
+    {
+        representation_index_mask_h.push_back(i / sketch_elements_with_same_representation + 1);
+        if (i % sketch_elements_with_same_representation == 0)
+            expected_starting_index_of_each_representation_h.push_back(i);
+    }
+
+    std::uint32_t number_of_threads = 256;
+
+    test_copy_index_of_first_occurence(representation_index_mask_h,
+                                       expected_starting_index_of_each_representation_h,
+                                       number_of_threads);
 }
 
 } // namespace cudamapper
