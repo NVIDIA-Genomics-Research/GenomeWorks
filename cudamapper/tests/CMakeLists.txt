@@ -15,6 +15,7 @@ set(SOURCES
     main.cpp
     Test_CudamapperIndexGPU.cu
     Test_CudamapperMatcher.cu
+    Test_CudamapperMatcherGPU.cu
     Test_CudamapperMinimizer.cpp
         Test_CudamapperOverlapperTriggered.cu
     ../src/bioparser_sequence.cpp)
@@ -26,6 +27,7 @@ set(LIBS
     bioparser
     index_gpu
     matcher
+    matcher_gpu
     overlapper_triggerred
     cudamapper_utils)
 

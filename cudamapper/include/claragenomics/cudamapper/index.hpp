@@ -13,9 +13,9 @@
 #include <memory>
 #include <string>
 #include <vector>
-#include "claragenomics/cudamapper/sketch_element.hpp"
-#include "claragenomics/cudamapper/types.hpp"
-#include "claragenomics/io/fasta_parser.hpp"
+#include <claragenomics/cudamapper/sketch_element.hpp>
+#include <claragenomics/cudamapper/types.hpp>
+#include <claragenomics/io/fasta_parser.hpp>
 
 namespace claragenomics
 {

@@ -35,6 +35,12 @@ target_include_directories(matcher PUBLIC include)
 target_link_libraries(matcher logging utils cgaio)
 target_compile_options(matcher PRIVATE -Werror)
 
+cuda_add_library(matcher_gpu
+        src/matcher_gpu.cu)
+target_include_directories(matcher_gpu PUBLIC include)
+target_link_libraries(matcher_gpu logging utils cgaio)
+target_compile_options(matcher_gpu PRIVATE -Werror)
+
 add_library(cudamapper_utils
         src/cudamapper_utils.cpp)
 target_include_directories(cudamapper_utils PUBLIC include)
@@ -62,7 +68,7 @@ target_include_directories(cudamapper
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 )
 
-target_link_libraries(cudamapper utils index_gpu matcher logging overlapper_triggerred cudamapper_utils)
+target_link_libraries(cudamapper utils index_gpu matcher matcher_gpu logging overlapper_triggerred cudamapper_utils)
 
 # Add tests folder
 add_subdirectory(tests)
