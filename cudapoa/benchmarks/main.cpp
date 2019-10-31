@@ -8,7 +8,7 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-#include "../common/utils.hpp"
+#include "common/utils.hpp"
 #include "multi_batch.hpp"
 #include "single_batch.hpp"
 #include "file_location.hpp"
