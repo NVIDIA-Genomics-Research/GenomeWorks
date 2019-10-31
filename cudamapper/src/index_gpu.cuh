@@ -580,35 +580,38 @@ void IndexGPU<SketchElementImpl>::generate_index(const std::vector<io::FastaPars
     read_id_t global_read_id = 0;
     // find out how many basepairs each read has and determine its section in the big array with all basepairs
     int32_t count = 0;
-    for (auto range : read_ranges)
     {
-        io::FastaParser* parser = parsers[count];
-        auto first_read_        = range.first;
-        auto last_read_         = std::min(range.second, static_cast<size_t>(parser->get_num_seqences()));
-
-        for (auto read_id = first_read_; read_id < last_read_; read_id++)
+        CGA_NVTX_RANGE(profile_reads, "reading fasta");
+        for (auto range : read_ranges)
         {
-            fasta_sequences.emplace_back(parser->get_sequence_by_id(read_id));
-            const std::string& seq  = fasta_sequences.back().seq;
-            const std::string& name = fasta_sequences.back().name;
-            if (seq.length() >= window_size_ + kmer_size_ - 1)
-            {
-                read_id_to_basepairs_section_h.emplace_back(ArrayBlock{total_basepairs, static_cast<std::uint32_t>(seq.length())});
-                total_basepairs += seq.length();
-                read_id_to_read_name_.push_back(name);
-                read_id_to_read_length_.push_back(seq.length());
-                fasta_sequence_indices.push_back(global_read_id);
-            }
-            else
-            {
-                CGA_LOG_INFO("Skipping read {}. It has {} basepairs, one window covers {} basepairs",
-                             name,
-                             seq.length(), window_size_ + kmer_size_ - 1);
-            }
-            global_read_id++;
-        }
+            io::FastaParser* parser = parsers[count];
+            auto first_read_        = range.first;
+            auto last_read_         = std::min(range.second, static_cast<size_t>(parser->get_num_seqences()));
 
-        count++;
+            for (auto read_id = first_read_; read_id < last_read_; read_id++)
+            {
+                fasta_sequences.emplace_back(parser->get_sequence_by_id(read_id));
+                const std::string& seq  = fasta_sequences.back().seq;
+                const std::string& name = fasta_sequences.back().name;
+                if (seq.length() >= window_size_ + kmer_size_ - 1)
+                {
+                    read_id_to_basepairs_section_h.emplace_back(ArrayBlock{total_basepairs, static_cast<std::uint32_t>(seq.length())});
+                    total_basepairs += seq.length();
+                    read_id_to_read_name_.push_back(name);
+                    read_id_to_read_length_.push_back(seq.length());
+                    fasta_sequence_indices.push_back(global_read_id);
+                }
+                else
+                {
+                    CGA_LOG_INFO("Skipping read {}. It has {} basepairs, one window covers {} basepairs",
+                                 name,
+                                 seq.length(), window_size_ + kmer_size_ - 1);
+                }
+                global_read_id++;
+            }
+
+            count++;
+        }
     }
 
     auto number_of_reads_to_add = read_id_to_basepairs_section_h.size(); // This is the number of reads in this specific iteration
