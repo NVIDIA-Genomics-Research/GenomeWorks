@@ -10,6 +10,11 @@
 
 #include "matcher_gpu.cuh"
 
+#include <thrust/scan.h>
+#include <thrust/execution_policy.h>
+
+#include <claragenomics/utils/cudautils.hpp>
+
 namespace claragenomics
 {
 
@@ -31,10 +36,56 @@ namespace details
 
 namespace matcher_gpu
 {
+thrust::device_vector<std::uint32_t> find_first_occurrences_of_representations(const thrust::device_vector<representation_t>& representations_d)
+{
+    // each element has value 1 if representation with the same index in representations_d has a different value than it's neighbour to the left, 0 otehrwise
+    // underlying type is 32-bit because a scan operation will be performed on the array, so the elements should be capable of holding a number that is equal to
+    // the total number of 1s in the array
+    thrust::device_vector<std::uint32_t> new_value_mask_d(representations_d.size());
+
+    // TODO: Currently maximum number of thread blocks is 2^31-1. This means we support representations of up to (2^31-1) * number_of_threads
+    // With 256 that's (2^31-1)*2^8 ~= 2^39. If representation is 4-byte (we expect it to be 4 or 8) that's 2^39*2^2 = 2^41 = 2TB. We don't expect to hit this limit any time soon
+    // The kernel can be modified to process several representation per thread to support arbitrary size
+    std::uint32_t number_of_threads = 256; // arbitrary value
+    std::uint32_t number_of_blocks  = (representations_d.size() - 1) / number_of_threads + 1;
+
+    create_new_value_mask<<<number_of_blocks, number_of_threads>>>(thrust::raw_pointer_cast(representations_d.data()),
+                                                                   representations_d.size(),
+                                                                   thrust::raw_pointer_cast(new_value_mask_d.data()));
+    CGA_CU_CHECK_ERR(cudaDeviceSynchronize()); // sync not necessary, here only to detect the error immediately
+
+    // do inclusive scan
+    // for example for
+    // 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20
+    // 0  0  0  0 12 12 12 12 12 12 23 23 23 32 32 32 32 32 46 46 46
+    // 1  0  0  0  1  0  0  0  0  0  1  0  0  1  0  0  0  0  1  0  0
+    // gives
+    // 1  1  1  1  2  2  2  2  2  2  3  3  3  4  4  4  4  4  5  5  5
+    // meaning all elements with the same representation have the same value and those values are sorted in increasing order starting from 1
+    thrust::device_vector<std::uint64_t> representation_index_mask_d(new_value_mask_d.size());
+    thrust::inclusive_scan(thrust::device,
+                           new_value_mask_d.begin(),
+                           new_value_mask_d.end(),
+                           representation_index_mask_d.begin());
+    new_value_mask_d.clear();
+    new_value_mask_d.shrink_to_fit();
+
+    std::uint64_t number_of_unique_representations = representation_index_mask_d.back(); // D2H copy
+
+    thrust::device_vector<std::uint32_t> starting_index_of_each_representation(number_of_unique_representations + 1);
+
+    copy_index_of_first_occurence<<<number_of_blocks, number_of_threads>>>(thrust::raw_pointer_cast(representation_index_mask_d.data()),
+                                                                           representation_index_mask_d.size(),
+                                                                           thrust::raw_pointer_cast(starting_index_of_each_representation.data()));
+    // last element is the total number of elements in representations array
+    starting_index_of_each_representation.back() = representations_d.size(); // H2D copy
+
+    return starting_index_of_each_representation;
+}
 
 __global__ void create_new_value_mask(const representation_t* const representations_d,
                                       const std::size_t number_of_elements,
-                                      std::uint8_t* const new_value_mask_d)
+                                      std::uint32_t* const new_value_mask_d)
 {
     std::uint64_t index = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -58,7 +109,7 @@ __global__ void create_new_value_mask(const representation_t* const representati
 
 __global__ void copy_index_of_first_occurence(const std::uint64_t* const representation_index_mask_d,
                                               const std::size_t number_of_input_elements,
-                                              std::size_t* const starting_index_of_each_representation)
+                                              std::uint32_t* const starting_index_of_each_representation)
 {
     std::uint64_t index = blockIdx.x * blockDim.x + threadIdx.x;
 
