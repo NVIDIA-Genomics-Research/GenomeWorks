@@ -17,7 +17,10 @@ namespace cudamapper
 {
 
 Minimizer::Minimizer(representation_t representation, position_in_read_t position_in_read, DirectionOfRepresentation direction, read_id_t read_id)
-    : representation_(representation), position_in_read_(position_in_read), direction_(direction), read_id_(read_id)
+    : representation_(representation)
+    , position_in_read_(position_in_read)
+    , direction_(direction)
+    , read_id_(read_id)
 {
 }
 

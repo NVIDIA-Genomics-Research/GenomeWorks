@@ -27,6 +27,7 @@ option(cga_device_synchronize_kernels "Run cudaDeviceSynchronize() in CGA_CU_CHE
 # overall consensus generated, and hence makes it harder to validate and debug.
 option(spoa_accurate "Run cudapoa code in mode that matches spoa" OFF)
 option(cga_enable_cudapoa_nw_print "Enable verbose prints within cudapoa NW kernel" OFF)
+option(cga_profiling "Compile a binary for profiling with NVTX markers." OFF)
 
 if (cga_enable_tests)
     message(STATUS "Enabling ClaraGenomicsAnalysis unit tests")

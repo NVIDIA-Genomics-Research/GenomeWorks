@@ -30,7 +30,11 @@ class BasicGraph
 {
 public:
     BasicGraph(std::vector<uint8_t> nodes, Uint16Vec2D outgoing_edges, Uint16Vec2D node_alignments, std::vector<uint16_t> node_coverage_counts, Uint16Vec3D outgoing_edges_coverage = {})
-        : nodes_(nodes), outgoing_edges_(outgoing_edges), node_alignments_(node_alignments), node_coverage_counts_(node_coverage_counts), outgoing_edges_coverage_(outgoing_edges_coverage)
+        : nodes_(nodes)
+        , outgoing_edges_(outgoing_edges)
+        , node_alignments_(node_alignments)
+        , node_coverage_counts_(node_coverage_counts)
+        , outgoing_edges_coverage_(outgoing_edges_coverage)
     {
         graph_complete_ = true;
         node_count_     = get_size(nodes_);

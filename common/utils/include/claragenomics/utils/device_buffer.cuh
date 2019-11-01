@@ -65,7 +65,8 @@ public:
     device_buffer& operator=(device_buffer const&) = delete;
 
     device_buffer(device_buffer&& r)
-        : data_(std::exchange(r.data_, nullptr)), size_(std::exchange(r.size_, 0))
+        : data_(std::exchange(r.data_, nullptr))
+        , size_(std::exchange(r.size_, 0))
     {
     }
 

@@ -39,7 +39,9 @@ public:
     ~matrix()                   = default;
 
     matrix(int n, int m, T value = 0)
-        : data_(n * m, value), n(n), m(m)
+        : data_(n * m, value)
+        , n(n)
+        , m(m)
     {
     }
 
