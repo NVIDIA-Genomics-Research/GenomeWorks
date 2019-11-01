@@ -9,6 +9,7 @@
 */
 
 #include "claragenomics/cudamapper/index.hpp"
+#include <claragenomics/utils/cudautils.hpp>
 #include "index_gpu.cuh"
 #include "minimizer.hpp"
 
@@ -21,6 +22,7 @@ std::unique_ptr<Index> Index::create_index(const std::vector<io::FastaParser*>& 
                                            const std::uint64_t window_size,
                                            const std::vector<std::pair<std::uint64_t, std::uint64_t>>& read_ranges)
 {
+    CGA_NVTX_RANGE(profiler, "create_index");
     return std::make_unique<IndexGPU<Minimizer>>(parsers, kmer_size, window_size, read_ranges);
 }
 

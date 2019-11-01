@@ -405,7 +405,7 @@ StatusType CudapoaBatch::add_seq_to_poa(const char* seq, const int8_t* weights, 
         window_details->scores_width = scores_width_;
     }
 
-    if (static_cast<int32_t>(window_details->num_seqs) + 1 >= max_sequences_per_poa_)
+    if (static_cast<int32_t>(window_details->num_seqs) >= max_sequences_per_poa_)
     {
         return StatusType::exceeded_maximum_sequences_per_poa;
     }

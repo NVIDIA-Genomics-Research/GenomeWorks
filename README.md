@@ -37,6 +37,19 @@ A query fasta can be mapped to a reference as follows:
 To access more information about running cudamapper, run `cudamapper --help`.
 
 ## Clone Clara Genomics Analysis
+
+### Latest released version
+This will clone the repo to the `master` branch, which contains code for latest released version
+and hot-fixes.
+
+```
+git clone --recursive -b master git@github.com:clara-genomics/ClaraGenomicsAnalysis.git
+```
+
+### Latest development version
+This will clone the repo to the default branch, which is set to be the latest development branch.
+This branch is subject to change frequently as features and bug fixes are pushed.
+
 ```bash
 git clone --recursive git@github.com:clara-genomics/ClaraGenomicsAnalysis.git
 ```

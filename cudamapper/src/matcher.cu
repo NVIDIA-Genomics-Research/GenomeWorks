@@ -109,7 +109,7 @@ __global__ void generate_anchors(const position_in_read_t* const positions_in_re
 
 Matcher::Matcher(const Index& index, uint32_t query_target_division_idx)
 {
-
+    CGA_NVTX_RANGE(profile, "matcher");
     if (0 == index.number_of_reads())
     {
         return;
