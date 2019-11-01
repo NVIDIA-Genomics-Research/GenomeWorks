@@ -92,16 +92,17 @@ TEST_F(TestCudapoaBatch, AddPOATest)
 
 TEST_F(TestCudapoaBatch, MaxSeqPerPOATest)
 {
-    const int32_t device_id = 0;
-    size_t free             = get_free_device_mem(device_id);
-    initialize(10, 0.9 * free, device_id);
+    const int32_t device_id             = 0;
+    const int32_t max_sequences_per_poa = 10;
+    size_t free                         = get_free_device_mem(device_id);
+    initialize(max_sequences_per_poa, 0.9 * free, device_id);
     Group poa_group;
     std::vector<StatusType> status;
 
     int32_t seq_length = 20;
     std::string seq(seq_length, 'A');
     std::vector<int8_t> weights(seq_length, 1);
-    for (uint16_t i = 0; i < 10; ++i)
+    for (uint16_t i = 0; i < (max_sequences_per_poa + 1); ++i)
     {
         Entry e{};
         e.seq     = seq.c_str();
@@ -111,7 +112,7 @@ TEST_F(TestCudapoaBatch, MaxSeqPerPOATest)
     }
     EXPECT_EQ(cudapoa_batch->add_poa_group(status, poa_group), StatusType::success);
     EXPECT_EQ(cudapoa_batch->get_total_poas(), 1);
-    EXPECT_EQ(status.at(9), StatusType::exceeded_maximum_sequences_per_poa);
+    EXPECT_EQ(status.at(max_sequences_per_poa), StatusType::exceeded_maximum_sequences_per_poa);
 }
 
 TEST_F(TestCudapoaBatch, MaxSeqSizeTest)
