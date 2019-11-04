@@ -64,6 +64,6 @@ if [ "$GPU_TEST" == '1' ]; then
 
   logger "Running ClaraGenomicsAnalysis benchmarks..."
   LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CGA_LIB_DIR ${LOCAL_BUILD_DIR}/install/benchmarks/cudapoa/benchmark_cudapoa --benchmark_filter="BM_SingleBatchTest"
-  LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CGA_LIB_DIR ${LOCAL_BUILD_DIR}/install/benchmarks/cudaaligner/benchmark_cudaaligner_singlebatch_singlealignment
+  LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CGA_LIB_DIR ${LOCAL_BUILD_DIR}/install/benchmarks/cudaaligner/benchmark_cudaaligner --benchmark_filter="BM_SingleAlignment"
 fi
 
