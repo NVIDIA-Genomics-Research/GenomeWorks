@@ -7,7 +7,7 @@ of a single alignment in CUDA.
 
 To run the benchmark, execute
 ```
-./benchmarks/cudaaligner/benchmark_cudaaligner_singlebatch --benchmark_filter="BM_SingleAlignment"
+./benchmarks/cudaaligner/benchmark_cudaaligner --benchmark_filter="BM_SingleAlignment"
 ```
 
 ## Single Batch Alignment
@@ -16,5 +16,5 @@ sizes. The intention of this benchmark is to measure performanceo of batched ali
 
 To the the benchmark, execute
 ```
-./benchmarks/cudaaligner/benchmark_cudaaligner_singlebatch --benchmark_filter="BM_SingleBatchAlignment"
+./benchmarks/cudaaligner/benchmark_cudaaligner --benchmark_filter="BM_SingleBatchAlignment"
 ```

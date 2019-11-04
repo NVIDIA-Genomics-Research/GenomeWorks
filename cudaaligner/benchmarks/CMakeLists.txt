@@ -9,7 +9,7 @@
 #
 
 
-project(benchmark_cudaaligner_singlebatch)
+project(benchmark_cudaaligner)
 
 set(SOURCES
     main.cpp
