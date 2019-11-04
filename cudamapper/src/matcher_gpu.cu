@@ -14,6 +14,8 @@
 #include <thrust/execution_policy.h>
 
 #include <claragenomics/utils/cudautils.hpp>
+#include <claragenomics/utils/mathutils.hpp>
+#include <claragenomics/utils/signed_integer_utils.hpp>
 
 namespace claragenomics
 {
@@ -83,6 +85,16 @@ thrust::device_vector<std::uint32_t> find_first_occurrences_of_representations(c
     return starting_index_of_each_representation;
 }
 
+void find_query_target_matches(thrust::device_vector<std::int64_t>& found_target_indices_d, const thrust::device_vector<representation_t>& query_representations_d, const thrust::device_vector<representation_t>& target_representations_d)
+{
+    assert(found_target_indices_d.size() == query_representations_d.size());
+
+    const int32_t n_threads = 256;
+    const int32_t n_blocks  = ceiling_divide<int64_t>(query_representations_d.size(), n_threads);
+
+    find_query_target_matches_kernel<<<n_blocks, n_threads>>>(found_target_indices_d.data().get(), query_representations_d.data().get(), get_size(query_representations_d), target_representations_d.data().get(), get_size(target_representations_d));
+}
+
 __global__ void create_new_value_mask(const representation_t* const representations_d,
                                       const std::size_t number_of_elements,
                                       std::uint32_t* const new_value_mask_d)
@@ -130,6 +142,35 @@ __global__ void copy_index_of_first_occurence(const std::uint64_t* const represe
             starting_index_of_each_representation[representation_index_mask_d[index] - 1] = index;
         }
     }
+}
+
+__global__ void find_query_target_matches_kernel(int64_t* const found_target_indices, const representation_t* const query_representations_d, const int64_t n_query_representations, const representation_t* const target_representations_d, const int64_t n_target_representations)
+{
+    const int64_t i = blockIdx.x * blockDim.x + threadIdx.x;
+
+    if (i >= n_query_representations)
+        return;
+
+    const representation_t query        = query_representations_d[i];
+    const representation_t* lower_bound = target_representations_d;
+    const representation_t* upper_bound = target_representations_d + n_target_representations;
+    int64_t found_target_index          = -1;
+    while (upper_bound - lower_bound > 0)
+    {
+        const representation_t* mid   = lower_bound + (upper_bound - lower_bound) / 2;
+        const representation_t target = *mid;
+        if (target < query)
+            lower_bound = mid + 1;
+        else if (target > query)
+            upper_bound = mid;
+        else
+        {
+            found_target_index = mid - target_representations_d;
+            break;
+        }
+    }
+
+    found_target_indices[i] = found_target_index;
 }
 
 } // namespace matcher_gpu
