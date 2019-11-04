@@ -26,6 +26,33 @@ namespace claragenomics
 namespace cudaaligner
 {
 
+static void BM_SingleAlignment(benchmark::State& state)
+{
+    int32_t genome_size = state.range(0);
+
+    // Generate random sequences
+    std::minstd_rand rng(1);
+    std::string genome_1 = claragenomics::genomeutils::generate_random_genome(genome_size, rng);
+    std::string genome_2 = claragenomics::genomeutils::generate_random_genome(genome_size, rng);
+
+    // Create aligner object
+    std::unique_ptr<Aligner> aligner = create_aligner(genome_size,
+                                                      genome_size,
+                                                      1,
+                                                      AlignmentType::global_alignment,
+                                                      0,
+                                                      0);
+    aligner->add_alignment(genome_1.c_str(), genome_1.length(),
+                           genome_2.c_str(), genome_2.length());
+
+    // Run alignment repeatedly
+    for (auto _ : state)
+    {
+        aligner->align_all();
+        aligner->sync_alignments();
+    }
+}
+
 class CudaStream
 {
 public:
@@ -91,7 +118,12 @@ static void BM_SingleBatchAlignment(benchmark::State& state)
     }
 }
 
-// Register the function as a benchmark
+// Register the functions as a benchmark
+BENCHMARK(BM_SingleAlignment)
+    ->Unit(benchmark::kMillisecond)
+    ->RangeMultiplier(10)
+    ->Range(100, 100000);
+
 BENCHMARK_TEMPLATE(BM_SingleBatchAlignment, AlignerGlobalUkkonen)
     ->Unit(benchmark::kMillisecond)
     ->RangeMultiplier(4)
