@@ -8,9 +8,19 @@
 # license agreement from NVIDIA CORPORATION is strictly prohibited.
 #
 
-# Add benchmarks
-add_subdirectory(singlealignment)
-add_subdirectory(singlebatchalignment)
+
+project(benchmark_cudaaligner_singlebatch)
+
+set(SOURCES
+    main.cpp
+    )
+
+set(LIBS
+    cudaaligner_internal
+    cudaaligner
+    utils)
+
+cga_add_benchmarks(${PROJECT_NAME} "cudaaligner" "${SOURCES}" "${LIBS}")
 
 install(FILES README.md
-    DESTINATION benchmarks/cudapoa)
+    DESTINATION benchmarks/cudaaligner)
