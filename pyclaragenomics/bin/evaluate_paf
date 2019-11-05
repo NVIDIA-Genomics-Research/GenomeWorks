@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 #
 # Copyright (c) 2019, NVIDIA CORPORATION.  All rights reserved.
 #
@@ -11,6 +13,7 @@
 
 import argparse
 from claragenomics.io import pafio
+from collections import defaultdict
 
 
 def evaluate_paf(truth_paf_filepath, test_paf_filepath, pos_tolerance=400):
@@ -24,11 +27,14 @@ def evaluate_paf(truth_paf_filepath, test_paf_filepath, pos_tolerance=400):
     """
 
     # Put the truth paf into a dictionary:
-    truth_overlaps = {}
+    truth_overlaps = defaultdict(list)
 
+    num_true_overlaps = 0
     for truth_overlap in pafio.read_paf(truth_paf_filepath):
         key = truth_overlap.query_sequence_name + truth_overlap.target_sequence_name
-        truth_overlaps[key] = truth_overlap
+
+        truth_overlaps[key].append(truth_overlap)
+        num_true_overlaps += 1
 
     true_positive_count = 0
     false_positive_count = 0
@@ -41,41 +47,49 @@ def evaluate_paf(truth_paf_filepath, test_paf_filepath, pos_tolerance=400):
         target_end_0 = test_overlap.target_end
 
         key = test_overlap.query_sequence_name + test_overlap.target_sequence_name
-        key_reversed = test_overlap.target_sequence_name + test_overlap.query_sequence_name
+        key_reversed = test_overlap.target_sequence_name + "_" + test_overlap.query_sequence_name
 
-        matched = False
-        potential_match = False
         if key in truth_overlaps:
-            potential_match = True
-            truth_overlap = truth_overlaps[key]
+            found_match = False
+            for truth_overlap in truth_overlaps[key]:
+                query_start_1 = truth_overlap.query_start
+                query_end_1 = truth_overlap.query_end
+                target_start_1 = truth_overlap.target_start
+                target_end_1 = truth_overlap.target_end
 
-            query_start_1 = truth_overlap.query_start
-            query_end_1 = truth_overlap.query_end
-            target_start_1 = truth_overlap.target_start
-            target_end_1 = truth_overlap.target_end
+                matched = abs(query_start_0 - query_start_1) < pos_tolerance and \
+                    abs(query_end_0 - query_end_1) < pos_tolerance and \
+                    abs(target_start_0 - target_start_1) < pos_tolerance and \
+                    abs(target_end_0 - target_end_1) < pos_tolerance
+
+                if matched:
+                    true_positive_count += 1
+                    found_match = True
+                    break
+            if not found_match:
+                false_positive_count += 1
 
         elif key_reversed in truth_overlaps:
-            potential_match = True
-            truth_overlap = truth_overlaps[key_reversed]
+            found_match = False
+            for truth_overlap in truth_overlaps[key_reversed]:
+                query_start_1 = truth_overlap.target_start
+                query_end_1 = truth_overlap.target_end
+                target_start_1 = truth_overlap.query_start
+                target_end_1 = truth_overlap.query_end
 
-            query_start_1 = truth_overlap.target_start
-            query_end_1 = truth_overlap.target_end
-            target_start_1 = truth_overlap.query_start
-            target_end_1 = truth_overlap.query_end
+                matched = abs(query_start_0 - query_start_1) < pos_tolerance and \
+                    abs(query_end_0 - query_end_1) < pos_tolerance and \
+                    abs(target_start_0 - target_start_1) < pos_tolerance and \
+                    abs(target_end_0 - target_end_1) < pos_tolerance
 
-        matched = potential_match and \
-            abs(query_start_0 - query_start_1) < pos_tolerance and \
-            abs(query_end_0 - query_end_1) < pos_tolerance and \
-            abs(target_start_0 - target_start_1) < pos_tolerance and \
-            abs(target_end_0 - target_end_1) < pos_tolerance
-
-        if matched:
-            true_positive_count += 1
-        else:
-            false_positive_count += 1
+                if matched:
+                    true_positive_count += 1
+                    found_match = True
+                    break
+            if not found_match:
+                false_positive_count += 1
 
     #  Now count the false negatives:
-    num_true_overlaps = len(truth_overlaps)
     false_negative_count = num_true_overlaps - true_positive_count
     return(true_positive_count, false_positive_count, false_negative_count)
 
