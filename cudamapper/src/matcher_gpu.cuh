@@ -82,13 +82,13 @@ thrust::device_vector<std::uint32_t> find_first_occurrences_of_representations(c
 /// \param target_representations_d An sorted array of target representations
 void find_query_target_matches(thrust::device_vector<std::int64_t>& found_target_indices_d, const thrust::device_vector<representation_t>& query_representations_d, const thrust::device_vector<representation_t>& target_representations_d);
 
-/// \brief Computes the number of anchors for matches in a query and target arrays.
+/// \brief Computes the starting indices for an array of anchors based on the matches in query and target arrays.
 ///
 /// Takes the arrays which store the positions of the first occurrences the different representations
 /// in the query and target representation arrays (see find_first_occurrences_of_representations)
-/// and the array with the found matches (see find_query_target_matches) and computes the total number
-/// of anchors which can be computed from the query and target arrays.
-/// The number of anchors is the number of all-to-all combinations of the matching representations in query and target.
+/// and the array with the found matches (see find_query_target_matches) and computes the starting indices to construct an array of anchors.
+/// The i-1-th element tells the starting point of the i-th element in the query array (including invalid entries for unmatched queries).
+/// The last element is the total number of anchors.
 /// For example:
 ///   query:
 ///     representation: 0 12 23 32 46
@@ -101,14 +101,20 @@ void find_query_target_matches(thrust::device_vector<std::int64_t>& found_target
 ///     array-index:    0  1  2  3  4
 ///     target-index:  -1  1  3 -1  6 (-1 indicates no matching representation in target)
 ///
+///     anchors per representation:
+///     12: (10-4)*(7-3)
+///     23: (13-10)*(13-9)
+///     46: (21-18)*(21-18)
 ///   gives:
-///     (10-4)*(7-3) + (13-10)*(13-9) + (21-18)*(21-18) = 45
+///     query representation:                 0 12 23 32 46
+///     number of anchors per representation: 0 24 12  0  9
+///     anchor starting index:                0 24 36 36 45
 ///
+/// \param anchor_starting_indices_d The starting indices for the anchors based on each query
 /// \param query_starting_index_of_each_representation_d
 /// \param found_target_indices_d
 /// \param target_starting_index_of_each_representation_d
-/// \return The number of anchors which can be generated from the query and target arrays
-std::int64_t compute_number_of_anchors(const thrust::device_vector<std::uint32_t> query_starting_index_of_each_representation_d, const thrust::device_vector<std::int64_t>& found_target_indices_d, const thrust::device_vector<std::uint32_t> target_starting_index_of_each_representation_d);
+void compute_anchor_starting_indices(thrust::device_vector<std::int64_t>& anchor_starting_indices_d, const thrust::device_vector<std::uint32_t> query_starting_index_of_each_representation_d, const thrust::device_vector<std::int64_t>& found_target_indices_d, const thrust::device_vector<std::uint32_t> target_starting_index_of_each_representation_d);
 
 /// \brief Writes 0 to the output array if the value to the left is the same as the current value, 1 otherwise. First element is always 1
 ///

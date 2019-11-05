@@ -355,15 +355,21 @@ TEST(TestCudamapperMatcherGPU, test_query_target_matches_large_example)
 void test_compute_number_of_anchors(const thrust::host_vector<std::uint32_t>& query_starting_index_of_each_representation_h,
                                     const thrust::host_vector<std::int64_t>& found_target_indices_h,
                                     const thrust::host_vector<std::uint32_t>& target_starting_index_of_each_representation_h,
-                                    const std::int64_t expected_n_anchors)
+                                    const thrust::host_vector<std::int64_t>& expected_anchor_starting_indices_h)
 {
     const thrust::device_vector<std::uint32_t> query_starting_index_of_each_representation_d(query_starting_index_of_each_representation_h);
     const thrust::device_vector<std::uint32_t> target_starting_index_of_each_representation_d(target_starting_index_of_each_representation_h);
-    const thrust::device_vector<int64_t> found_target_indices_d(found_target_indices_h);
+    const thrust::device_vector<std::int64_t> found_target_indices_d(found_target_indices_h);
+    thrust::device_vector<std::int64_t> anchor_starting_indices_d(found_target_indices_h.size());
 
-    const std::int64_t n_anchors = details::matcher_gpu::compute_number_of_anchors(query_starting_index_of_each_representation_d, found_target_indices_d, target_starting_index_of_each_representation_d);
+    details::matcher_gpu::compute_anchor_starting_indices(anchor_starting_indices_d, query_starting_index_of_each_representation_d, found_target_indices_d, target_starting_index_of_each_representation_d);
 
-    EXPECT_EQ(n_anchors, expected_n_anchors);
+    thrust::host_vector<std::int64_t> anchor_starting_indices_h(anchor_starting_indices_d);
+
+    for (int32_t i = 0; i < get_size(found_target_indices_h); ++i)
+    {
+        EXPECT_EQ(anchor_starting_indices_h[i], expected_anchor_starting_indices_h[i]);
+    }
 }
 
 TEST(TestCudamapperMatcherGPU, test_compute_number_of_anchors_small_example)
@@ -393,12 +399,17 @@ TEST(TestCudamapperMatcherGPU, test_compute_number_of_anchors_small_example)
     found_target_indices_h.push_back(-1);
     found_target_indices_h.push_back(6);
 
-    const int64_t expected_n_anchors = 45;
+    thrust::host_vector<int64_t> expected_anchor_starting_indices;
+    expected_anchor_starting_indices.push_back(0);
+    expected_anchor_starting_indices.push_back(24);
+    expected_anchor_starting_indices.push_back(36);
+    expected_anchor_starting_indices.push_back(36);
+    expected_anchor_starting_indices.push_back(45);
 
     test_compute_number_of_anchors(query_starting_index_of_each_representation_h,
                                    found_target_indices_h,
                                    target_starting_index_of_each_representation_h,
-                                   expected_n_anchors);
+                                   expected_anchor_starting_indices);
 }
 
 TEST(TestCudamapperMatcherGPU, test_compute_number_of_anchors_large_example)
@@ -408,6 +419,7 @@ TEST(TestCudamapperMatcherGPU, test_compute_number_of_anchors_large_example)
     thrust::host_vector<representation_t> query_starting_index_of_each_representation_h;
     thrust::host_vector<representation_t> target_starting_index_of_each_representation_h;
     thrust::host_vector<std::int64_t> found_target_indices_h(length - 1, -1);
+    thrust::host_vector<std::int64_t> expected_anchor_starting_indices_h;
     std::int64_t expected_n_anchors = 0;
     for (std::int64_t i = 0; i < length; ++i)
     {
@@ -418,12 +430,14 @@ TEST(TestCudamapperMatcherGPU, test_compute_number_of_anchors_large_example)
             found_target_indices_h[i] = i;
             expected_n_anchors += 2 * (10 + (i + 1) % 10 - i % 10);
         }
+        if (i < length - 1)
+            expected_anchor_starting_indices_h.push_back(expected_n_anchors);
     }
 
     test_compute_number_of_anchors(query_starting_index_of_each_representation_h,
                                    found_target_indices_h,
                                    target_starting_index_of_each_representation_h,
-                                   expected_n_anchors);
+                                   expected_anchor_starting_indices_h);
 }
 
 } // namespace cudamapper
