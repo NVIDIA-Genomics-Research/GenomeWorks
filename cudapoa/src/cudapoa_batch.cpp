@@ -183,14 +183,20 @@ void CudapoaBatch::decode_cudapoa_kernel_error(claragenomics::cudapoa::StatusTyp
         output_status.emplace_back(error_type);
         break;
     case claragenomics::cudapoa::StatusType::seq_len_exceeded_maximum_nodes_per_window:
-        CGA_LOG_WARN("Kernel Error::Sequence length exceeded maximum nodes per window in batch {}\n", bid_);
+        CGA_LOG_WARN("Kernel Error:: Sequence length exceeded maximum nodes per window in batch {}\n", bid_);
         output_status.emplace_back(error_type);
         break;
     case claragenomics::cudapoa::StatusType::loop_count_exceeded_upper_bound:
-        CGA_LOG_WARN("Kernel Error::Loop count exceeded upper bound in nw algorithm in batch {}\n", bid_);
+        CGA_LOG_WARN("Kernel Error:: Loop count exceeded upper bound in nw algorithm in batch {}\n", bid_);
+        output_status.emplace_back(error_type);
+        break;
+    case claragenomics::cudapoa::StatusType::exceeded_maximum_sequence_size:
+        CGA_LOG_WARN("Kernel Error:: Consensus/MSA sequence size exceeded max sequence size in batch {}\n", bid_);
         output_status.emplace_back(error_type);
         break;
     default:
+        CGA_LOG_WARN("Kernel Error:: Unknown error in batch {}\n", bid_);
+        output_status.emplace_back(error_type);
         break;
     }
 }
