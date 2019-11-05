@@ -224,7 +224,13 @@ __device__ void generateConsensus(uint8_t* nodes,
         return;
     }
 
+    // Use consensus_pos to track which position to put new element in. Clip this to the maximum
+    // size of consensus so as not to overwrite other good data.
     uint16_t consensus_pos = 0;
+    // Use consensus_count to track how many elements are in consensus. If more than the maximum
+    // size, then consensus cannot be properly represented. So throw error.
+    uint16_t consensus_count = 0;
+
     while (predecessors[max_score_id] != -1)
     {
         consensus[consensus_pos] = nodes[max_score_id];
@@ -235,7 +241,8 @@ __device__ void generateConsensus(uint8_t* nodes,
         }
         coverage[consensus_pos] = cov;
         max_score_id            = predecessors[max_score_id];
-        consensus_pos++;
+        consensus_pos           = min(consensus_pos + 1, CUDAPOA_MAX_CONSENSUS_SIZE - 1);
+        consensus_count++;
     }
     consensus[consensus_pos] = nodes[max_score_id];
     uint16_t cov             = node_coverage_counts[max_score_id];
@@ -244,7 +251,19 @@ __device__ void generateConsensus(uint8_t* nodes,
         cov += node_coverage_counts[node_alignments[max_score_id * CUDAPOA_MAX_NODE_ALIGNMENTS + a]];
     }
     coverage[consensus_pos] = cov;
+
+    // Check consensus count against maximum size.
+    if (consensus_count >= (CUDAPOA_MAX_CONSENSUS_SIZE - 1))
+    {
+        consensus[0] = CUDAPOA_KERNEL_ERROR_ENCOUNTERED;
+        consensus[1] = static_cast<uint8_t>(StatusType::exceeded_maximum_sequence_size);
+        return;
+    }
+
+    // Now we can increment consensus_pos without checking for upper bound because the max length
+    // test above guarantees that consensus_pos <= (CUDAPOA_MAX_CONSENSUS_SIZE - 2).
     consensus_pos++;
+    // Add EOL character at the end of the string.
     consensus[consensus_pos] = '\0';
 }
 
