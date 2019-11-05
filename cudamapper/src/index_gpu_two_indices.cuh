@@ -20,6 +20,7 @@
 #include <claragenomics/io/fasta_parser.hpp>
 #include <claragenomics/logging/logging.hpp>
 #include <claragenomics/utils/device_buffer.cuh>
+#include <claragenomics/utils/mathutils.hpp>
 
 namespace claragenomics
 {
@@ -58,13 +59,13 @@ public:
     /// \return an array of representations of sketch elements
     const thrust::device_vector<representation_t>& representations() const;
 
-    /// \brief returns an array of starting positions of sketch elements in their reads
-    /// \return an array of starting positions of sketch elements in their reads
-    const thrust::device_vector<position_in_read_t>& positions_in_reads() const;
-
     /// \brief returns an array of reads ids for sketch elements
     /// \return an array of reads ids for sketch elements
     const thrust::device_vector<read_id_t>& read_ids() const;
+
+    /// \brief returns an array of starting positions of sketch elements in their reads
+    /// \return an array of starting positions of sketch elements in their reads
+    const thrust::device_vector<position_in_read_t>& positions_in_reads() const;
 
     /// \brief returns an array of directions in which sketch elements were read
     /// \return an array of directions in which sketch elements were read
@@ -91,8 +92,8 @@ private:
                         const read_id_t past_the_last_read_id);
 
     thrust::device_vector<representation_t> representations_d_;
-    thrust::device_vector<position_in_read_t> positions_in_reads_d_;
     thrust::device_vector<read_id_t> read_ids_d_;
+    thrust::device_vector<position_in_read_t> positions_in_reads_d_;
     thrust::device_vector<typename SketchElementImpl::DirectionOfRepresentation> directions_of_reads_d_;
 
     std::vector<std::string> read_id_to_read_name_;
@@ -103,6 +104,41 @@ private:
     const std::uint64_t window_size_;
     std::uint64_t number_of_reads_;
 };
+
+namespace details
+{
+namespace index_gpu_two_indices
+{
+
+/// \brief Splits array of structs into one array per struct element
+///
+/// \param rest_d original struct
+/// \param positions_in_reads_d output array
+/// \param read_ids_d output array
+/// \param directions_of_reads_d output array
+/// \param total_elements number of elements in each array
+///
+/// \tparam ReadidPositionDirection any implementation of SketchElementImpl::ReadidPositionDirection
+/// \tparam DirectionOfRepresentation any implementation of SketchElementImpl::SketchElementImpl::DirectionOfRepresentation
+template <typename ReadidPositionDirection, typename DirectionOfRepresentation>
+__global__ void copy_rest_to_separate_arrays(const ReadidPositionDirection* const rest_d,
+                                             read_id_t* const read_ids_d,
+                                             position_in_read_t* const positions_in_reads_d,
+                                             DirectionOfRepresentation* const directions_of_reads_d,
+                                             const std::size_t total_elements)
+{
+    auto i = blockIdx.x * blockDim.x + threadIdx.x;
+
+    if (i >= total_elements)
+        return;
+
+    read_ids_d[i]            = rest_d[i].read_id_;
+    positions_in_reads_d[i]  = rest_d[i].position_in_read_;
+    directions_of_reads_d[i] = DirectionOfRepresentation(rest_d[i].direction_);
+}
+
+} // namespace index_gpu_two_indices
+} // namespace details
 
 template <typename SketchElementImpl>
 IndexGPUTwoIndices<SketchElementImpl>::IndexGPUTwoIndices(io::FastaParser* parser,
@@ -132,15 +168,15 @@ const thrust::device_vector<representation_t>& IndexGPUTwoIndices<SketchElementI
 };
 
 template <typename SketchElementImpl>
-const thrust::device_vector<position_in_read_t>& IndexGPUTwoIndices<SketchElementImpl>::positions_in_reads() const
-{
-    return positions_in_reads_d_;
-}
-
-template <typename SketchElementImpl>
 const thrust::device_vector<read_id_t>& IndexGPUTwoIndices<SketchElementImpl>::read_ids() const
 {
     return read_ids_d_;
+}
+
+template <typename SketchElementImpl>
+const thrust::device_vector<position_in_read_t>& IndexGPUTwoIndices<SketchElementImpl>::positions_in_reads() const
+{
+    return positions_in_reads_d_;
 }
 
 template <typename SketchElementImpl>
@@ -282,29 +318,22 @@ void IndexGPUTwoIndices<SketchElementImpl>::generate_index(io::FastaParser* pars
                  representations_d_.begin());
     representations_d.free();
 
-    // TODO: implement this on GPU
-    thrust::device_vector<typename SketchElementImpl::ReadidPositionDirection> rest_d_thrust(rest_d.data(), rest_d.data() + rest_d.size());
-    rest_d.free();
-    rest_d_thrust.shrink_to_fit();
+    read_ids_d_.resize(representations_d_.size());
+    read_ids_d_.shrink_to_fit();
+    positions_in_reads_d_.resize(representations_d_.size());
+    positions_in_reads_d_.shrink_to_fit();
+    directions_of_reads_d_.resize(representations_d_.size());
+    directions_of_reads_d_.shrink_to_fit();
 
-    thrust::host_vector<typename SketchElementImpl::ReadidPositionDirection> rest_h(rest_d_thrust);
-    rest_d_thrust.clear();
-    rest_d_thrust.shrink_to_fit();
+    const std::uint32_t threads = 256;
+    const std::uint32_t blocks  = ceiling_divide<int64_t>(representations_d_.size(), threads);
 
-    thrust::host_vector<position_in_read_t> positions_in_reads_h(rest_h.size());
-    thrust::host_vector<read_id_t> read_ids_h(rest_h.size());
-    thrust::host_vector<typename SketchElementImpl::DirectionOfRepresentation> directions_of_reads_h(rest_h.size());
-
-    for (std::size_t i = 0; i < rest_h.size(); ++i)
-    {
-        read_ids_h[i]            = rest_h[i].read_id_;
-        positions_in_reads_h[i]  = rest_h[i].position_in_read_;
-        directions_of_reads_h[i] = typename SketchElementImpl::DirectionOfRepresentation(rest_h[i].direction_);
-    }
-
-    read_ids_d_            = read_ids_h;
-    positions_in_reads_d_  = positions_in_reads_h;
-    directions_of_reads_d_ = directions_of_reads_h;
+    details::index_gpu_two_indices::copy_rest_to_separate_arrays<<<blocks, threads>>>(rest_d.data(),
+                                                                                      thrust::raw_pointer_cast(read_ids_d_.data()),
+                                                                                      thrust::raw_pointer_cast(positions_in_reads_d_.data()),
+                                                                                      thrust::raw_pointer_cast(directions_of_reads_d_.data()),
+                                                                                      representations_d_.size());
+    CGA_CU_CHECK_ERR(cudaDeviceSynchronize());
 }
 
 } // namespace cudamapper

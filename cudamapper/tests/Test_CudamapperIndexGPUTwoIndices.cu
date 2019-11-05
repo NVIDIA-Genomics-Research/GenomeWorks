@@ -17,6 +17,8 @@
 #include "../src/index_gpu_two_indices.cuh"
 #include "../src/minimizer.hpp"
 
+#include <claragenomics/utils/mathutils.hpp>
+
 namespace claragenomics
 {
 namespace cudamapper
@@ -763,6 +765,148 @@ TEST(TestCudamapperIndexGPUTwoIndices, AAAACTGAA_GCCAAAG_2_3_only_second_read_in
                   expected_read_id_to_read_length,
                   1);
 }
+
+namespace details
+{
+namespace index_gpu_two_indices
+{
+// ************ Test copy_rest_to_separate_arrays **************
+
+template <typename ReadidPositionDirection, typename DirectionOfRepresentation>
+void test_function_copy_rest_to_separate_arrays(const thrust::host_vector<ReadidPositionDirection>& rest_h,
+                                                const thrust::host_vector<read_id_t>& expected_read_ids_h,
+                                                const thrust::host_vector<position_in_read_t>& expected_positions_in_reads_h,
+                                                const thrust::host_vector<DirectionOfRepresentation>& expected_directions_of_reads_h,
+                                                const std::uint32_t threads)
+{
+    ASSERT_EQ(rest_h.size(), expected_read_ids_h.size());
+    ASSERT_EQ(rest_h.size(), expected_positions_in_reads_h.size());
+    ASSERT_EQ(rest_h.size(), expected_directions_of_reads_h.size());
+    thrust::device_vector<read_id_t> generated_read_ids_d(rest_h.size());
+    thrust::device_vector<position_in_read_t> generated_positions_in_reads_d(rest_h.size());
+    thrust::device_vector<DirectionOfRepresentation> generated_directions_of_reads_d(rest_h.size());
+
+    const thrust::device_vector<ReadidPositionDirection> rest_d(rest_h);
+
+    const std::uint32_t blocks = ceiling_divide<int64_t>(rest_h.size(), threads);
+
+    copy_rest_to_separate_arrays<<<blocks, threads>>>(thrust::raw_pointer_cast(rest_d.data()),
+                                                      thrust::raw_pointer_cast(generated_read_ids_d.data()),
+                                                      thrust::raw_pointer_cast(generated_positions_in_reads_d.data()),
+                                                      thrust::raw_pointer_cast(generated_directions_of_reads_d.data()),
+                                                      rest_h.size());
+
+    const thrust::host_vector<read_id_t>& generated_read_ids_h(generated_read_ids_d);
+    const thrust::host_vector<position_in_read_t>& generated_positions_in_reads_h(generated_positions_in_reads_d);
+    const thrust::host_vector<DirectionOfRepresentation>& generated_directions_of_reads_h(generated_directions_of_reads_d);
+
+    for (std::size_t i = 0; i < rest_h.size(); ++i)
+    {
+        EXPECT_EQ(generated_read_ids_h[i], expected_read_ids_h[i]);
+        EXPECT_EQ(generated_positions_in_reads_h[i], expected_positions_in_reads_h[i]);
+        EXPECT_EQ(generated_directions_of_reads_h[i], expected_directions_of_reads_h[i]);
+    }
+}
+
+TEST(TestCudamapperIndexGPUTwoIndices, test_function_copy_rest_to_separate_arrays)
+{
+    thrust::host_vector<Minimizer::ReadidPositionDirection> rest_h;
+    thrust::host_vector<read_id_t> expected_read_ids_h;
+    thrust::host_vector<position_in_read_t> expected_positions_in_reads_h;
+    thrust::host_vector<Minimizer::DirectionOfRepresentation> expected_directions_of_reads_h;
+
+    rest_h.push_back({5, 8, 0});
+    expected_read_ids_h.push_back(5);
+    expected_positions_in_reads_h.push_back(8);
+    expected_directions_of_reads_h.push_back(Minimizer::DirectionOfRepresentation::FORWARD);
+    rest_h.push_back({15, 6, 0});
+    expected_read_ids_h.push_back(15);
+    expected_positions_in_reads_h.push_back(6);
+    expected_directions_of_reads_h.push_back(Minimizer::DirectionOfRepresentation::FORWARD);
+    rest_h.push_back({2, 4, 1});
+    expected_read_ids_h.push_back(2);
+    expected_positions_in_reads_h.push_back(4);
+    expected_directions_of_reads_h.push_back(Minimizer::DirectionOfRepresentation::REVERSE);
+    rest_h.push_back({18, 15, 0});
+    expected_read_ids_h.push_back(18);
+    expected_positions_in_reads_h.push_back(15);
+    expected_directions_of_reads_h.push_back(Minimizer::DirectionOfRepresentation::FORWARD);
+    rest_h.push_back({6, 4, 1});
+    expected_read_ids_h.push_back(6);
+    expected_positions_in_reads_h.push_back(4);
+    expected_directions_of_reads_h.push_back(Minimizer::DirectionOfRepresentation::REVERSE);
+    rest_h.push_back({6, 3, 1});
+    expected_read_ids_h.push_back(6);
+    expected_positions_in_reads_h.push_back(3);
+    expected_directions_of_reads_h.push_back(Minimizer::DirectionOfRepresentation::REVERSE);
+    rest_h.push_back({89, 45, 0});
+    expected_read_ids_h.push_back(89);
+    expected_positions_in_reads_h.push_back(45);
+    expected_directions_of_reads_h.push_back(Minimizer::DirectionOfRepresentation::FORWARD);
+    rest_h.push_back({547, 25, 0});
+    expected_read_ids_h.push_back(547);
+    expected_positions_in_reads_h.push_back(25);
+    expected_directions_of_reads_h.push_back(Minimizer::DirectionOfRepresentation::FORWARD);
+    rest_h.push_back({14, 16, 1});
+    expected_read_ids_h.push_back(14);
+    expected_positions_in_reads_h.push_back(16);
+    expected_directions_of_reads_h.push_back(Minimizer::DirectionOfRepresentation::REVERSE);
+    rest_h.push_back({18, 16, 0});
+    expected_read_ids_h.push_back(18);
+    expected_positions_in_reads_h.push_back(16);
+    expected_directions_of_reads_h.push_back(Minimizer::DirectionOfRepresentation::FORWARD);
+    rest_h.push_back({45, 44, 0});
+    expected_read_ids_h.push_back(45);
+    expected_positions_in_reads_h.push_back(44);
+    expected_directions_of_reads_h.push_back(Minimizer::DirectionOfRepresentation::FORWARD);
+    rest_h.push_back({65, 45, 1});
+    expected_read_ids_h.push_back(65);
+    expected_positions_in_reads_h.push_back(45);
+    expected_directions_of_reads_h.push_back(Minimizer::DirectionOfRepresentation::REVERSE);
+    rest_h.push_back({15, 20, 0});
+    expected_read_ids_h.push_back(15);
+    expected_positions_in_reads_h.push_back(20);
+    expected_directions_of_reads_h.push_back(Minimizer::DirectionOfRepresentation::FORWARD);
+    rest_h.push_back({45, 654, 1});
+    expected_read_ids_h.push_back(45);
+    expected_positions_in_reads_h.push_back(654);
+    expected_directions_of_reads_h.push_back(Minimizer::DirectionOfRepresentation::REVERSE);
+    rest_h.push_back({782, 216, 0});
+    expected_read_ids_h.push_back(782);
+    expected_positions_in_reads_h.push_back(216);
+    expected_directions_of_reads_h.push_back(Minimizer::DirectionOfRepresentation::FORWARD);
+    rest_h.push_back({255, 245, 1});
+    expected_read_ids_h.push_back(255);
+    expected_positions_in_reads_h.push_back(245);
+    expected_directions_of_reads_h.push_back(Minimizer::DirectionOfRepresentation::REVERSE);
+    rest_h.push_back({346, 579, 0});
+    expected_read_ids_h.push_back(346);
+    expected_positions_in_reads_h.push_back(579);
+    expected_directions_of_reads_h.push_back(Minimizer::DirectionOfRepresentation::FORWARD);
+    rest_h.push_back({12, 8, 0});
+    expected_read_ids_h.push_back(12);
+    expected_positions_in_reads_h.push_back(8);
+    expected_directions_of_reads_h.push_back(Minimizer::DirectionOfRepresentation::FORWARD);
+    rest_h.push_back({65, 42, 1});
+    expected_read_ids_h.push_back(65);
+    expected_positions_in_reads_h.push_back(42);
+    expected_directions_of_reads_h.push_back(Minimizer::DirectionOfRepresentation::REVERSE);
+    rest_h.push_back({566, 42, 0});
+    expected_read_ids_h.push_back(566);
+    expected_positions_in_reads_h.push_back(42);
+    expected_directions_of_reads_h.push_back(Minimizer::DirectionOfRepresentation::FORWARD);
+
+    const std::uint32_t threads = 8;
+
+    test_function_copy_rest_to_separate_arrays(rest_h,
+                                               expected_read_ids_h,
+                                               expected_positions_in_reads_h,
+                                               expected_directions_of_reads_h,
+                                               threads);
+}
+
+} // namespace index_gpu_two_indices
+} // namespace details
 
 } // namespace cudamapper
 } // namespace claragenomics
