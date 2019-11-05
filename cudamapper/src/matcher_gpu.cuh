@@ -82,6 +82,34 @@ thrust::device_vector<std::uint32_t> find_first_occurrences_of_representations(c
 /// \param target_representations_d An sorted array of target representations
 void find_query_target_matches(thrust::device_vector<std::int64_t>& found_target_indices_d, const thrust::device_vector<representation_t>& query_representations_d, const thrust::device_vector<representation_t>& target_representations_d);
 
+/// \brief Computes the number of anchors for matches in a query and target arrays.
+///
+/// Takes the arrays which store the positions of the first occurrences the different representations
+/// in the query and target representation arrays (see find_first_occurrences_of_representations)
+/// and the array with the found matches (see find_query_target_matches) and computes the total number
+/// of anchors which can be computed from the query and target arrays.
+/// The number of anchors is the number of all-to-all combinations of the matching representations in query and target.
+/// For example:
+///   query:
+///     representation: 0 12 23 32 46
+///     starting index: 0  4 10 13 18 21
+///   target:
+///     representation: 5 12 16 23 24 25 46
+///     starting index: 0  3  7  9 13 16 18 21
+///
+///   found_target_indicies_d: (matching representations: 12, 23, 46)
+///     array-index:    0  1  2  3  4
+///     target-index:  -1  1  3 -1  6 (-1 indicates no matching representation in target)
+///
+///   gives:
+///     (10-4)*(7-3) + (13-10)*(13-9) + (21-18)*(21-18) = 45
+///
+/// \param query_starting_index_of_each_representation_d
+/// \param found_target_indices_d
+/// \param target_starting_index_of_each_representation_d
+/// \return The number of anchors which can be generated from the query and target arrays
+std::int64_t compute_number_of_anchors(const thrust::device_vector<std::uint32_t> query_starting_index_of_each_representation_d, const thrust::device_vector<std::int64_t>& found_target_indices_d, const thrust::device_vector<std::uint32_t> target_starting_index_of_each_representation_d);
+
 /// \brief Writes 0 to the output array if the value to the left is the same as the current value, 1 otherwise. First element is always 1
 ///
 /// For example:

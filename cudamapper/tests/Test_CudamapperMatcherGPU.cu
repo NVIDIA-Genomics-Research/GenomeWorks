@@ -352,5 +352,79 @@ TEST(TestCudamapperMatcherGPU, test_query_target_matches_large_example)
     test_find_query_target_matches(query_representations_h, target_representations_h, expected_found_target_indices_h);
 }
 
+void test_compute_number_of_anchors(const thrust::host_vector<std::uint32_t>& query_starting_index_of_each_representation_h,
+                                    const thrust::host_vector<std::int64_t>& found_target_indices_h,
+                                    const thrust::host_vector<std::uint32_t>& target_starting_index_of_each_representation_h,
+                                    const std::int64_t expected_n_anchors)
+{
+    const thrust::device_vector<std::uint32_t> query_starting_index_of_each_representation_d(query_starting_index_of_each_representation_h);
+    const thrust::device_vector<std::uint32_t> target_starting_index_of_each_representation_d(target_starting_index_of_each_representation_h);
+    const thrust::device_vector<int64_t> found_target_indices_d(found_target_indices_h);
+
+    const std::int64_t n_anchors = details::matcher_gpu::compute_number_of_anchors(query_starting_index_of_each_representation_d, found_target_indices_d, target_starting_index_of_each_representation_d);
+
+    EXPECT_EQ(n_anchors, expected_n_anchors);
+}
+
+TEST(TestCudamapperMatcherGPU, test_compute_number_of_anchors_small_example)
+{
+    thrust::host_vector<representation_t> query_starting_index_of_each_representation_h;
+    query_starting_index_of_each_representation_h.push_back(0);
+    query_starting_index_of_each_representation_h.push_back(4);
+    query_starting_index_of_each_representation_h.push_back(10);
+    query_starting_index_of_each_representation_h.push_back(13);
+    query_starting_index_of_each_representation_h.push_back(18);
+    query_starting_index_of_each_representation_h.push_back(21);
+
+    thrust::host_vector<representation_t> target_starting_index_of_each_representation_h;
+    target_starting_index_of_each_representation_h.push_back(0);
+    target_starting_index_of_each_representation_h.push_back(3);
+    target_starting_index_of_each_representation_h.push_back(7);
+    target_starting_index_of_each_representation_h.push_back(9);
+    target_starting_index_of_each_representation_h.push_back(13);
+    target_starting_index_of_each_representation_h.push_back(16);
+    target_starting_index_of_each_representation_h.push_back(18);
+    target_starting_index_of_each_representation_h.push_back(21);
+
+    thrust::host_vector<int64_t> found_target_indices_h;
+    found_target_indices_h.push_back(-1);
+    found_target_indices_h.push_back(1);
+    found_target_indices_h.push_back(3);
+    found_target_indices_h.push_back(-1);
+    found_target_indices_h.push_back(6);
+
+    const int64_t expected_n_anchors = 45;
+
+    test_compute_number_of_anchors(query_starting_index_of_each_representation_h,
+                                   found_target_indices_h,
+                                   target_starting_index_of_each_representation_h,
+                                   expected_n_anchors);
+}
+
+TEST(TestCudamapperMatcherGPU, test_compute_number_of_anchors_large_example)
+{
+    const std::int64_t length = 100000;
+
+    thrust::host_vector<representation_t> query_starting_index_of_each_representation_h;
+    thrust::host_vector<representation_t> target_starting_index_of_each_representation_h;
+    thrust::host_vector<std::int64_t> found_target_indices_h(length - 1, -1);
+    std::int64_t expected_n_anchors = 0;
+    for (std::int64_t i = 0; i < length; ++i)
+    {
+        query_starting_index_of_each_representation_h.push_back(2 * i);
+        target_starting_index_of_each_representation_h.push_back(10 * i + i % 10);
+        if (i % 3 == 0 && i < length - 1)
+        {
+            found_target_indices_h[i] = i;
+            expected_n_anchors += 2 * (10 + (i + 1) % 10 - i % 10);
+        }
+    }
+
+    test_compute_number_of_anchors(query_starting_index_of_each_representation_h,
+                                   found_target_indices_h,
+                                   target_starting_index_of_each_representation_h,
+                                   expected_n_anchors);
+}
+
 } // namespace cudamapper
 } // namespace claragenomics

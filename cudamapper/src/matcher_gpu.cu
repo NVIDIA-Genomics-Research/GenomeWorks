@@ -11,6 +11,7 @@
 #include "matcher_gpu.cuh"
 
 #include <thrust/scan.h>
+#include <thrust/transform_reduce.h>
 #include <thrust/execution_policy.h>
 
 #include <claragenomics/utils/cudautils.hpp>
@@ -93,6 +94,25 @@ void find_query_target_matches(thrust::device_vector<std::int64_t>& found_target
     const int32_t n_blocks  = ceiling_divide<int64_t>(query_representations_d.size(), n_threads);
 
     find_query_target_matches_kernel<<<n_blocks, n_threads>>>(found_target_indices_d.data().get(), query_representations_d.data().get(), get_size(query_representations_d), target_representations_d.data().get(), get_size(target_representations_d));
+}
+
+std::int64_t compute_number_of_anchors(const thrust::device_vector<std::uint32_t> query_starting_index_of_each_representation_d, const thrust::device_vector<std::int64_t>& found_target_indices_d, const thrust::device_vector<std::uint32_t> target_starting_index_of_each_representation_d)
+{
+    assert(query_starting_index_of_each_representation_d.size() == found_target_indices_d.size() + 1);
+    const std::uint32_t* const query_starting_indices  = query_starting_index_of_each_representation_d.data().get();
+    const std::uint32_t* const target_starting_indices = target_starting_index_of_each_representation_d.data().get();
+    const std::int64_t* const found_target_indices     = found_target_indices_d.data().get();
+
+    return thrust::transform_reduce(thrust::make_counting_iterator(std::int64_t(0)), thrust::make_counting_iterator(get_size(query_starting_index_of_each_representation_d) - 1),
+                                    [query_starting_indices, target_starting_indices, found_target_indices] __device__(std::uint32_t query_index) -> std::int64_t {
+                                        std::int32_t n_queries_with_representation = query_starting_indices[query_index + 1] - query_starting_indices[query_index];
+                                        std::int64_t target_index                  = found_target_indices[query_index];
+                                        std::int32_t n_targets_with_representation = 0;
+                                        if (target_index >= 0)
+                                            n_targets_with_representation = target_starting_indices[target_index + 1] - target_starting_indices[target_index];
+                                        return n_queries_with_representation * n_targets_with_representation;
+                                    },
+                                    std::int64_t(0), thrust::plus<std::int64_t>());
 }
 
 __global__ void create_new_value_mask(const representation_t* const representations_d,
