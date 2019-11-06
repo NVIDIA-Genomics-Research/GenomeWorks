@@ -41,19 +41,24 @@ namespace matcher_gpu
 {
 /// \brief Creates compressed representation of index
 ///
-/// Creates an array in which n-th element represents the first occurrence of n-th representation.
-/// Last element of the array is the total number of elements in representations_d array
+/// Creates two arrays: first one contains a list of unique representations and the second one the index
+/// at which that representation occurrs for the first time in the original data.
+/// Second element contains one additional elemet at the end, containing the total number of elemets in the original array.
 ///
 /// For example:
 /// 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20
 /// 0  0  0  0 12 12 12 12 12 12 23 23 23 32 32 32 32 32 46 46 46
 /// ^           ^                 ^        ^              ^       ^
 /// gives:
-/// 0 4 10 13 18 21
+/// 0 12 23 32 46
+/// 0  4 10 13 18 21
 ///
-/// \param representations_d
-/// \return first_element_for_representation
-thrust::device_vector<std::uint32_t> find_first_occurrences_of_representations(const thrust::device_vector<representation_t>& representations_d);
+/// \param unique_representations_d empty on input, contains one value of each representation on the output
+/// \param first_occurrence_index_d empty on input, index of first occurrence of each representation and additional elemnt on the output
+/// \param input_representations_d an array of representaton where representations with the same value stand next to each other
+void find_first_occurrences_of_representations(thrust::device_vector<representation_t>& unique_representations_d,
+                                               thrust::device_vector<std::uint32_t>& first_occurrence_index_d,
+                                               const thrust::device_vector<representation_t>& input_representations_d);
 
 /// \brief Finds the array index of the target representation for each query representation
 ///
@@ -135,7 +140,10 @@ __global__ void create_new_value_mask(const representation_t* const representati
                                       const std::size_t number_of_elements,
                                       std::uint32_t* const new_value_mask_d);
 
-/// \brief Creates an array in which each element represents the index in representation_index_mask_d at which a new representation starts
+/// \brief Helper kernel for find_first_occurrences_of_representations
+///
+/// Creates two arrays: first one contains a list of unique representations and the second one the index
+/// at which that representation occurrs for the first time in the original data.
 ///
 /// For example:
 /// 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20
@@ -144,14 +152,19 @@ __global__ void create_new_value_mask(const representation_t* const representati
 /// 1  1  1  1  2  2  2  2  2  2  3  3  3  4  4  4  4  4  5  5  5
 /// ^           ^                 ^        ^              ^
 /// gives:
+/// 0 12 23 32 46
 /// 0  4 10 13 18
 ///
 /// \param representation_index_mask_d
+/// \param input_representatons_d
 /// \param number_of_input_elements
-/// \param starting_index_of_each_representation
-__global__ void copy_index_of_first_occurence(const std::uint64_t* const representation_index_mask_d,
-                                              const std::size_t number_of_input_elements,
-                                              std::uint32_t* const starting_index_of_each_representation);
+/// \param starting_index_of_each_representation_d
+/// \param unique_representations_d
+__global__ void find_first_occurrences_of_representations_kernel(const std::uint64_t* const representation_index_mask_d,
+                                                                 const representation_t* const input_representations_d,
+                                                                 const std::size_t number_of_input_elements,
+                                                                 std::uint32_t* const starting_index_of_each_representation_d,
+                                                                 representation_t* const unique_representations_d);
 
 /// \brief Performs a binary search on target_representations_d for each element of query_representations_d and stores the found index (or -1 iff not found) in found_target_indices.
 ///

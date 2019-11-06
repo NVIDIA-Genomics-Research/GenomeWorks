@@ -116,81 +116,128 @@ TEST(TestCudamapperMatcherGPU, test_create_new_value_mask_small_data_large_examp
                                expected_new_value_mask_h,
                                number_of_threads);
 }
-void test_copy_index_of_first_occurence(const thrust::host_vector<std::uint64_t>& representation_index_mask_h,
-                                        const thrust::host_vector<std::uint32_t>& expected_starting_index_of_each_representation_h,
-                                        const std::uint32_t number_of_threads)
+void test_find_first_occurrences_of_representations_kernel(const thrust::host_vector<std::uint64_t>& representation_index_mask_h,
+                                                           const thrust::host_vector<representation_t>& input_representations_h,
+                                                           const thrust::host_vector<std::uint32_t>& expected_starting_index_of_each_representation_h,
+                                                           const thrust::host_vector<representation_t>& expected_unique_representations_h,
+                                                           const std::uint32_t number_of_threads)
 {
     const thrust::device_vector<std::uint64_t> representation_index_mask_d(representation_index_mask_h);
+    const thrust::device_vector<representation_t> input_representations_d(input_representations_h);
     ASSERT_EQ(expected_starting_index_of_each_representation_h.size(), representation_index_mask_h.back());
+    ASSERT_EQ(expected_unique_representations_h.size(), representation_index_mask_h.back());
     thrust::device_vector<std::uint32_t> starting_index_of_each_representation_d(expected_starting_index_of_each_representation_h.size());
+    thrust::device_vector<representation_t> unique_representations_d(expected_starting_index_of_each_representation_h.size());
 
     std::uint32_t number_of_blocks = (representation_index_mask_d.size() - 1) / number_of_threads + 1;
 
-    details::matcher_gpu::copy_index_of_first_occurence<<<number_of_blocks, number_of_threads>>>(thrust::raw_pointer_cast(representation_index_mask_d.data()),
-                                                                                                 representation_index_mask_d.size(),
-                                                                                                 thrust::raw_pointer_cast(starting_index_of_each_representation_d.data()));
+    details::matcher_gpu::find_first_occurrences_of_representations_kernel<<<number_of_blocks, number_of_threads>>>(representation_index_mask_d.data().get(),
+                                                                                                                    input_representations_d.data().get(),
+                                                                                                                    representation_index_mask_d.size(),
+                                                                                                                    starting_index_of_each_representation_d.data().get(),
+                                                                                                                    unique_representations_d.data().get());
     CGA_CU_CHECK_ERR(cudaDeviceSynchronize());
 
     const thrust::host_vector<std::uint32_t> starting_index_of_each_representation_h(starting_index_of_each_representation_d);
+    const thrust::host_vector<representation_t> unique_representations_h(unique_representations_d);
 
     ASSERT_EQ(starting_index_of_each_representation_h.size(), expected_starting_index_of_each_representation_h.size());
+    ASSERT_EQ(unique_representations_h.size(), expected_unique_representations_h.size());
     for (std::size_t i = 0; i < expected_starting_index_of_each_representation_h.size(); ++i)
     {
         EXPECT_EQ(starting_index_of_each_representation_h[i], expected_starting_index_of_each_representation_h[i]) << "index: " << i;
+        EXPECT_EQ(unique_representations_h[i], expected_unique_representations_h[i]) << "index: " << i;
     }
 }
 
-TEST(TestCudamapperMatcherGPU, test_copy_index_of_first_occurence_small_example)
+TEST(TestCudamapperMatcherGPU, test_find_first_occurrences_of_representations_kernel_small_example)
 {
     thrust::host_vector<std::uint64_t> representation_index_mask_h;
+    thrust::host_vector<representation_t> input_representations_h;
     thrust::host_vector<std::uint32_t> expected_starting_index_of_each_representation_h;
+    thrust::host_vector<representation_t> expected_unique_representations_h;
     representation_index_mask_h.push_back(1);
+    input_representations_h.push_back(10);
     expected_starting_index_of_each_representation_h.push_back(0);
+    expected_unique_representations_h.push_back(10);
     representation_index_mask_h.push_back(1);
+    input_representations_h.push_back(10);
     representation_index_mask_h.push_back(1);
+    input_representations_h.push_back(10);
     representation_index_mask_h.push_back(1);
+    input_representations_h.push_back(10);
+    //
     representation_index_mask_h.push_back(2);
+    input_representations_h.push_back(20);
     expected_starting_index_of_each_representation_h.push_back(4);
+    expected_unique_representations_h.push_back(20);
+    //
     representation_index_mask_h.push_back(3);
+    input_representations_h.push_back(30);
     expected_starting_index_of_each_representation_h.push_back(5);
+    expected_unique_representations_h.push_back(30);
     representation_index_mask_h.push_back(3);
+    input_representations_h.push_back(30);
     representation_index_mask_h.push_back(3);
+    input_representations_h.push_back(30);
     representation_index_mask_h.push_back(3);
+    input_representations_h.push_back(30);
+    //
     representation_index_mask_h.push_back(4);
+    input_representations_h.push_back(40);
     expected_starting_index_of_each_representation_h.push_back(9);
+    expected_unique_representations_h.push_back(40);
     representation_index_mask_h.push_back(4);
+    input_representations_h.push_back(40);
     representation_index_mask_h.push_back(4);
+    input_representations_h.push_back(40);
+    //
     representation_index_mask_h.push_back(5);
+    input_representations_h.push_back(50);
     expected_starting_index_of_each_representation_h.push_back(12);
+    expected_unique_representations_h.push_back(50);
+    //
     representation_index_mask_h.push_back(6);
+    input_representations_h.push_back(60);
     expected_starting_index_of_each_representation_h.push_back(13);
+    expected_unique_representations_h.push_back(60);
 
     std::uint32_t number_of_threads = 3;
 
-    test_copy_index_of_first_occurence(representation_index_mask_h,
-                                       expected_starting_index_of_each_representation_h,
-                                       number_of_threads);
+    test_find_first_occurrences_of_representations_kernel(representation_index_mask_h,
+                                                          input_representations_h,
+                                                          expected_starting_index_of_each_representation_h,
+                                                          expected_unique_representations_h,
+                                                          number_of_threads);
 }
 
-TEST(TestCudamapperMatcherGPU, test_copy_index_of_first_occurence_large_example)
+TEST(TestCudamapperMatcherGPU, test_find_first_occurrences_of_representations_kernel_large_example)
 {
     const std::uint64_t total_sketch_elements                    = 10000000;
     const std::uint32_t sketch_elements_with_same_representation = 1000;
 
     thrust::host_vector<std::uint64_t> representation_index_mask_h;
+    thrust::host_vector<representation_t> input_representations_h;
     thrust::host_vector<std::size_t> expected_starting_index_of_each_representation_h;
+    thrust::host_vector<representation_t> expected_unique_representations_h;
     for (std::size_t i = 0; i < total_sketch_elements; ++i)
     {
         representation_index_mask_h.push_back(i / sketch_elements_with_same_representation + 1);
+        input_representations_h.push_back(representation_index_mask_h.back() * 10);
         if (i % sketch_elements_with_same_representation == 0)
+        {
             expected_starting_index_of_each_representation_h.push_back(i);
+            expected_unique_representations_h.push_back(input_representations_h.back());
+        }
     }
 
     std::uint32_t number_of_threads = 256;
 
-    test_copy_index_of_first_occurence(representation_index_mask_h,
-                                       expected_starting_index_of_each_representation_h,
-                                       number_of_threads);
+    test_find_first_occurrences_of_representations_kernel(representation_index_mask_h,
+                                                          input_representations_h,
+                                                          expected_starting_index_of_each_representation_h,
+                                                          expected_unique_representations_h,
+                                                          number_of_threads);
 }
 
 void test_find_first_occurrences_of_representations(const thrust::host_vector<representation_t>& representations_h,
@@ -198,7 +245,11 @@ void test_find_first_occurrences_of_representations(const thrust::host_vector<re
 {
     const thrust::device_vector<representation_t> representations_d(representations_h);
 
-    const thrust::device_vector<std::uint32_t> starting_index_of_each_representation_d = details::matcher_gpu::find_first_occurrences_of_representations(representations_d);
+    thrust::device_vector<std::uint32_t> starting_index_of_each_representation_d;
+    thrust::device_vector<representation_t> unique_representations_d;
+    details::matcher_gpu::find_first_occurrences_of_representations(unique_representations_d,
+                                                                    starting_index_of_each_representation_d,
+                                                                    representations_d);
 
     const thrust::host_vector<std::uint32_t> starting_index_of_each_representation_h(starting_index_of_each_representation_d);
 

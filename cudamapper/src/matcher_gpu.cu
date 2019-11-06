@@ -39,22 +39,24 @@ namespace details
 
 namespace matcher_gpu
 {
-thrust::device_vector<std::uint32_t> find_first_occurrences_of_representations(const thrust::device_vector<representation_t>& representations_d)
+void find_first_occurrences_of_representations(thrust::device_vector<representation_t>& unique_representations_d,
+                                               thrust::device_vector<std::uint32_t>& first_occurrence_index_d,
+                                               const thrust::device_vector<representation_t>& input_representations_d)
 {
     // each element has value 1 if representation with the same index in representations_d has a different value than it's neighbour to the left, 0 otehrwise
     // underlying type is 32-bit because a scan operation will be performed on the array, so the elements should be capable of holding a number that is equal to
     // the total number of 1s in the array
-    thrust::device_vector<std::uint32_t> new_value_mask_d(representations_d.size());
+    thrust::device_vector<std::uint32_t> new_value_mask_d(input_representations_d.size());
 
     // TODO: Currently maximum number of thread blocks is 2^31-1. This means we support representations of up to (2^31-1) * number_of_threads
     // With 256 that's (2^31-1)*2^8 ~= 2^39. If representation is 4-byte (we expect it to be 4 or 8) that's 2^39*2^2 = 2^41 = 2TB. We don't expect to hit this limit any time soon
     // The kernel can be modified to process several representation per thread to support arbitrary size
     std::uint32_t number_of_threads = 256; // arbitrary value
-    std::uint32_t number_of_blocks  = (representations_d.size() - 1) / number_of_threads + 1;
+    std::uint32_t number_of_blocks  = (input_representations_d.size() - 1) / number_of_threads + 1;
 
-    create_new_value_mask<<<number_of_blocks, number_of_threads>>>(thrust::raw_pointer_cast(representations_d.data()),
-                                                                   representations_d.size(),
-                                                                   thrust::raw_pointer_cast(new_value_mask_d.data()));
+    create_new_value_mask<<<number_of_blocks, number_of_threads>>>(input_representations_d.data().get(),
+                                                                   input_representations_d.size(),
+                                                                   new_value_mask_d.data().get());
     CGA_CU_CHECK_ERR(cudaDeviceSynchronize()); // sync not necessary, here only to detect the error immediately
 
     // do inclusive scan
@@ -75,15 +77,18 @@ thrust::device_vector<std::uint32_t> find_first_occurrences_of_representations(c
 
     std::uint64_t number_of_unique_representations = representation_index_mask_d.back(); // D2H copy
 
-    thrust::device_vector<std::uint32_t> starting_index_of_each_representation(number_of_unique_representations + 1);
+    first_occurrence_index_d.resize(number_of_unique_representations + 1); // <- +1 for the additional element
+    first_occurrence_index_d.shrink_to_fit();
+    unique_representations_d.resize(number_of_unique_representations);
+    unique_representations_d.shrink_to_fit();
 
-    copy_index_of_first_occurence<<<number_of_blocks, number_of_threads>>>(thrust::raw_pointer_cast(representation_index_mask_d.data()),
-                                                                           representation_index_mask_d.size(),
-                                                                           thrust::raw_pointer_cast(starting_index_of_each_representation.data()));
+    find_first_occurrences_of_representations_kernel<<<number_of_blocks, number_of_threads>>>(representation_index_mask_d.data().get(),
+                                                                                              input_representations_d.data().get(),
+                                                                                              representation_index_mask_d.size(),
+                                                                                              first_occurrence_index_d.data().get(),
+                                                                                              unique_representations_d.data().get());
     // last element is the total number of elements in representations array
-    starting_index_of_each_representation.back() = representations_d.size(); // H2D copy
-
-    return starting_index_of_each_representation;
+    first_occurrence_index_d.back() = input_representations_d.size(); // H2D copy
 }
 
 void find_query_target_matches(thrust::device_vector<std::int64_t>& found_target_indices_d, const thrust::device_vector<representation_t>& query_representations_d, const thrust::device_vector<representation_t>& target_representations_d)
@@ -147,9 +152,11 @@ __global__ void create_new_value_mask(const representation_t* const representati
     }
 }
 
-__global__ void copy_index_of_first_occurence(const std::uint64_t* const representation_index_mask_d,
-                                              const std::size_t number_of_input_elements,
-                                              std::uint32_t* const starting_index_of_each_representation)
+__global__ void find_first_occurrences_of_representations_kernel(const std::uint64_t* const representation_index_mask_d,
+                                                                 const representation_t* const input_representations_d,
+                                                                 const std::size_t number_of_input_elements,
+                                                                 std::uint32_t* const starting_index_of_each_representation_d,
+                                                                 representation_t* const unique_representations_d)
 {
     std::uint64_t index = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -158,16 +165,18 @@ __global__ void copy_index_of_first_occurence(const std::uint64_t* const represe
 
     if (index == 0)
     {
-        starting_index_of_each_representation[0] = 0;
+        starting_index_of_each_representation_d[0] = 0;
+        unique_representations_d[0]                = input_representations_d[0];
     }
     else
     {
         if (representation_index_mask_d[index] != representation_index_mask_d[index - 1])
         {
-            // if new representation (= not the same as its left neighbor)
+            // if new representation is not the same as its left neighbor
             // save the index at which that representation starts
             // representation_index_mask_d gives a unique index to each representation, starting from 1, thus '-1'
-            starting_index_of_each_representation[representation_index_mask_d[index] - 1] = index;
+            starting_index_of_each_representation_d[representation_index_mask_d[index] - 1] = index;
+            unique_representations_d[representation_index_mask_d[index] - 1]                = input_representations_d[index];
         }
     }
 }
