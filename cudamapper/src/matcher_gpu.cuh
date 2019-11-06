@@ -115,7 +115,10 @@ void find_query_target_matches(thrust::device_vector<std::int64_t>& found_target
 /// \param query_starting_index_of_each_representation_d
 /// \param found_target_indices_d
 /// \param target_starting_index_of_each_representation_d
-void compute_anchor_starting_indices(thrust::device_vector<std::int64_t>& anchor_starting_indices_d, const thrust::device_vector<std::uint32_t> query_starting_index_of_each_representation_d, const thrust::device_vector<std::int64_t>& found_target_indices_d, const thrust::device_vector<std::uint32_t> target_starting_index_of_each_representation_d);
+void compute_anchor_starting_indices(thrust::device_vector<std::int64_t>& anchor_starting_indices_d,
+                                     const thrust::device_vector<std::uint32_t>& query_starting_index_of_each_representation_d,
+                                     const thrust::device_vector<std::int64_t>& found_target_indices_d,
+                                     const thrust::device_vector<std::uint32_t>& target_starting_index_of_each_representation_d);
 
 /// \brief Writes 0 to the output array if the value to the left is the same as the current value, 1 otherwise. First element is always 1
 ///

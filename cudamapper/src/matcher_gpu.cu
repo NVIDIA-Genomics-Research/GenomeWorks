@@ -96,7 +96,10 @@ void find_query_target_matches(thrust::device_vector<std::int64_t>& found_target
     find_query_target_matches_kernel<<<n_blocks, n_threads>>>(found_target_indices_d.data().get(), query_representations_d.data().get(), get_size(query_representations_d), target_representations_d.data().get(), get_size(target_representations_d));
 }
 
-void compute_anchor_starting_indices(thrust::device_vector<std::int64_t>& anchor_starting_indices_d, const thrust::device_vector<std::uint32_t> query_starting_index_of_each_representation_d, const thrust::device_vector<std::int64_t>& found_target_indices_d, const thrust::device_vector<std::uint32_t> target_starting_index_of_each_representation_d)
+void compute_anchor_starting_indices(thrust::device_vector<std::int64_t>& anchor_starting_indices_d,
+                                     const thrust::device_vector<std::uint32_t>& query_starting_index_of_each_representation_d,
+                                     const thrust::device_vector<std::int64_t>& found_target_indices_d,
+                                     const thrust::device_vector<std::uint32_t>& target_starting_index_of_each_representation_d)
 {
     assert(query_starting_index_of_each_representation_d.size() == found_target_indices_d.size() + 1);
     assert(anchor_starting_indices_d.size() == found_target_indices_d.size());
