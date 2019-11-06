@@ -64,6 +64,7 @@ cuda_add_executable(cudamapper
         src/cudamapper.cpp
         src/main.cpp
         src/index.cu
+        src/index_two_indices.cu
         src/overlapper.cpp
 )
 

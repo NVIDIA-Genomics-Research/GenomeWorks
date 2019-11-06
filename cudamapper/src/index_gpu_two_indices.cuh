@@ -16,6 +16,7 @@
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
 
+#include "claragenomics/cudamapper/index_two_indices.hpp"
 #include "claragenomics/cudamapper/types.hpp"
 #include <claragenomics/io/fasta_parser.hpp>
 #include <claragenomics/logging/logging.hpp>
@@ -36,7 +37,7 @@ namespace cudamapper
 ///
 /// \tparam SketchElementImpl any implementation of SketchElement
 template <typename SketchElementImpl>
-class IndexGPUTwoIndices
+class IndexGPUTwoIndices : public IndexTwoIndices
 {
 public:
     /// \brief Constructor
@@ -57,33 +58,33 @@ public:
 
     /// \brief returns an array of representations of sketch elements
     /// \return an array of representations of sketch elements
-    const thrust::device_vector<representation_t>& representations() const;
+    const thrust::device_vector<representation_t>& representations() const override;
 
     /// \brief returns an array of reads ids for sketch elements
     /// \return an array of reads ids for sketch elements
-    const thrust::device_vector<read_id_t>& read_ids() const;
+    const thrust::device_vector<read_id_t>& read_ids() const override;
 
     /// \brief returns an array of starting positions of sketch elements in their reads
     /// \return an array of starting positions of sketch elements in their reads
-    const thrust::device_vector<position_in_read_t>& positions_in_reads() const;
+    const thrust::device_vector<position_in_read_t>& positions_in_reads() const override;
 
     /// \brief returns an array of directions in which sketch elements were read
     /// \return an array of directions in which sketch elements were read
-    const thrust::device_vector<typename SketchElementImpl::DirectionOfRepresentation>& directions_of_reads() const;
+    const thrust::device_vector<typename SketchElementImpl::DirectionOfRepresentation>& directions_of_reads() const override;
 
     /// \brief returns read name of read with the given read_id
     /// \param read_id
     /// \return read name of read with the given read_id
-    const std::string& read_id_to_read_name(const read_id_t read_id) const;
+    const std::string& read_id_to_read_name(const read_id_t read_id) const override;
 
     /// \brief returns read length for the read with the gived read_id
     /// \param read_id
     /// \return read length for the read with the gived read_id
-    const std::uint32_t& read_id_to_read_length(const read_id_t read_id) const;
+    const std::uint32_t& read_id_to_read_length(const read_id_t read_id) const override;
 
     /// \brief returns number of reads in input data
     /// \return number of reads in input data
-    std::uint64_t number_of_reads() const;
+    std::uint64_t number_of_reads() const override;
 
 private:
     /// \brief generates the index
@@ -158,6 +159,10 @@ IndexGPUTwoIndices<SketchElementImpl>::IndexGPUTwoIndices(io::FastaParser* parse
 
 template <typename SketchElementImpl>
 IndexGPUTwoIndices<SketchElementImpl>::IndexGPUTwoIndices()
+    : first_read_id_(0)
+    , kmer_size_(0)
+    , window_size_(0)
+    , number_of_reads_(0)
 {
 }
 
