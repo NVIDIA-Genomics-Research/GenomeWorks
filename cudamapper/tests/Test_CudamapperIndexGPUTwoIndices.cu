@@ -790,10 +790,10 @@ void test_function_copy_rest_to_separate_arrays(const thrust::host_vector<Readid
 
     const std::uint32_t blocks = ceiling_divide<int64_t>(rest_h.size(), threads);
 
-    copy_rest_to_separate_arrays<<<blocks, threads>>>(thrust::raw_pointer_cast(rest_d.data()),
-                                                      thrust::raw_pointer_cast(generated_read_ids_d.data()),
-                                                      thrust::raw_pointer_cast(generated_positions_in_reads_d.data()),
-                                                      thrust::raw_pointer_cast(generated_directions_of_reads_d.data()),
+    copy_rest_to_separate_arrays<<<blocks, threads>>>(rest_d.data().get(),
+                                                      generated_read_ids_d.data().get(),
+                                                      generated_positions_in_reads_d.data().get(),
+                                                      generated_directions_of_reads_d.data().get(),
                                                       rest_h.size());
 
     const thrust::host_vector<read_id_t>& generated_read_ids_h(generated_read_ids_d);

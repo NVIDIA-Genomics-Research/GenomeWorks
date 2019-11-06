@@ -329,9 +329,9 @@ void IndexGPUTwoIndices<SketchElementImpl>::generate_index(io::FastaParser* pars
     const std::uint32_t blocks  = ceiling_divide<int64_t>(representations_d_.size(), threads);
 
     details::index_gpu_two_indices::copy_rest_to_separate_arrays<<<blocks, threads>>>(rest_d.data(),
-                                                                                      thrust::raw_pointer_cast(read_ids_d_.data()),
-                                                                                      thrust::raw_pointer_cast(positions_in_reads_d_.data()),
-                                                                                      thrust::raw_pointer_cast(directions_of_reads_d_.data()),
+                                                                                      read_ids_d_.data().get(),
+                                                                                      positions_in_reads_d_.data().get(),
+                                                                                      directions_of_reads_d_.data().get(),
                                                                                       representations_d_.size());
     CGA_CU_CHECK_ERR(cudaDeviceSynchronize());
 }
