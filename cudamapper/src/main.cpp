@@ -166,17 +166,19 @@ int main(int argc, char* argv[])
 
         std::cerr << "Query range: " << query_start << " - " << query_end << std::endl;
 
-        {
-                CGA_NVTX_RANGE(profiler, "generate_query_index");
-                auto start_time  = std::chrono::high_resolution_clock::now();
-                auto query_index = claragenomics::cudamapper::IndexTwoIndices::create_index(query_parser.get(),
-                                                                                            query_start,
-                                                                                            query_end + 1, // <- past the last
-                                                                                            k,
-                                                                                            w);
-                index_time += std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time);
-                std::cerr << "Query index generation time: " << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time).count() << "ms" << std::endl;
+	std::unique_ptr<claragenomics::cudamapper::IndexTwoIndices> query_index(nullptr);
+	std::unique_ptr<claragenomics::cudamapper::IndexTwoIndices> target_index(nullptr);
 
+        {
+            CGA_NVTX_RANGE(profiler, "generate_query_index");
+            auto start_time  = std::chrono::high_resolution_clock::now();
+            query_index = claragenomics::cudamapper::IndexTwoIndices::create_index(query_parser.get(),
+                                                                                   query_start,
+                                                                                   query_end + 1, // <- past the last
+                                                                                   k,
+                                                                                   w);
+            index_time += std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time);
+            std::cerr << "Query index generation time: " << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time).count() << "ms" << std::endl;
         }
 
         size_t target_start = 0;
@@ -196,7 +198,7 @@ int main(int argc, char* argv[])
             {
                 CGA_NVTX_RANGE(profiler, "generate_target_index");
                 auto start_time  = std::chrono::high_resolution_clock::now();
-                auto target_index = claragenomics::cudamapper::IndexTwoIndices::create_index(target_parser.get(),
+                target_index = claragenomics::cudamapper::IndexTwoIndices::create_index(target_parser.get(),
                                                                                              target_start,
                                                                                              target_end + 1, // <- past the last
                                                                                              k,
