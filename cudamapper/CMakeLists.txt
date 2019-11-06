@@ -14,12 +14,15 @@ project(cudamapper)
 add_subdirectory(data)
 
 find_package(CUDA 9.0 QUIET REQUIRED)
+link_directories(/usr/local/cuda/targets/x86_64-linux/lib/)
+
+
 
 if(NOT ${CUDA_FOUND})
     message(FATAL_ERROR "CUDA not detected on system. Please install")
 else()
     message(STATUS "Using CUDA ${CUDA_VERSION} from ${CUDA_TOOLKIT_ROOT_DIR}")
-    set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -lineinfo --expt-extended-lambda -use_fast_math -Xcompiler -Wall,-Wno-pedantic -std=c++14")
+    set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -lineinfo --expt-extended-lambda -use_fast_math -Xcompiler -fopenmp,-Wall,-Wno-pedantic -std=c++14 -x cu")
 endif()
 
 cuda_add_library(index_gpu
@@ -42,14 +45,14 @@ target_include_directories(cudamapper_utils PUBLIC include)
 cuda_add_library(overlapper_triggerred
         src/overlapper_triggered.cu)
 target_include_directories(overlapper_triggerred PUBLIC include)
-target_link_libraries(overlapper_triggerred logging utils cgaio)
+target_link_libraries(overlapper_triggerred logging utils cgaio omp)
 target_compile_options(overlapper_triggerred PRIVATE -Werror)
 
 add_doxygen_source_dir(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 cuda_add_executable(cudamapper
         src/cudamapper.cpp
-        src/main.cpp
+        src/main.cu
         src/index.cu
         src/overlapper.cpp
 )

@@ -14,6 +14,7 @@
 #include <claragenomics/logging/logging.hpp>
 #include <claragenomics/utils/cudautils.hpp>
 #include <claragenomics/utils/device_buffer.cuh>
+#include <thrust/device_vector.h>
 
 namespace claragenomics
 {
@@ -351,8 +352,8 @@ Matcher::Matcher(const Index& index, uint32_t query_target_division_idx)
 
         auto num_anchors_so_far = anchors_h_.size();
         anchors_h_.resize(num_anchors_so_far + total_anchors);
-        CGA_CU_CHECK_ERR(cudaMemcpy(anchors_h_.data() + num_anchors_so_far, anchors_d.data(), total_anchors * sizeof(Anchor),
-                                    cudaMemcpyDeviceToHost));
+        thrust::copy(anchors_d.data(), anchors_d.data() + total_anchors, anchors_h_.data() + num_anchors_so_far);
+        //CGA_CU_CHECK_ERR(cudaMemcpy(anchors_h_.data() + num_anchors_so_far, anchors_d.data(), total_anchors * sizeof(Anchor),cudaMemcpyDeviceToHost));
 
         // clean up device memory
         CGA_LOG_INFO("Deallocating {} bytes from read_id_to_anchors_section_d",
@@ -392,7 +393,7 @@ Matcher::Matcher(const Index& index, uint32_t query_target_division_idx)
     directions_of_reads_d.free();
 }
 
-std::vector<Anchor>& Matcher::anchors()
+thrust::device_vector<Anchor>& Matcher::anchors()
 {
     return anchors_h_;
 }
