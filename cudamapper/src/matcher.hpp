@@ -46,7 +46,7 @@ public:
 
 private:
     /// \biref list of anchors
-    thrust::device_vector<Anchor> anchors_h_;
+    thrust::device_vector<Anchor> anchors_d_;
 };
 } // namespace cudamapper
 } // namespace claragenomics

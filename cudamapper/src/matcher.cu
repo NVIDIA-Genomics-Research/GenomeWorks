@@ -157,6 +157,8 @@ Matcher::Matcher(const Index& index, uint32_t query_target_division_idx)
                                 directions_of_reads_h.size() * sizeof(SketchElement::DirectionOfRepresentation),
                                 cudaMemcpyHostToDevice));
 
+    anchors_d_.resize(0);
+
     while (representation_min_range <= max_representation)
     {
 
@@ -327,8 +329,9 @@ Matcher::Matcher(const Index& index, uint32_t query_target_division_idx)
         read_id_to_pointer_arrays_section_h.clear();
         read_id_to_pointer_arrays_section_h.shrink_to_fit();
 
-        CGA_LOG_INFO("Allocating {} bytes for anchors_d", total_anchors * sizeof(Anchor));
-        device_buffer<Anchor> anchors_d(total_anchors);
+        auto num_anchors_so_far = anchors_d_.size();
+        anchors_d_.resize(num_anchors_so_far + total_anchors);
+        Anchor* anchors_d = thrust::raw_pointer_cast(anchors_d_.data()) + num_anchors_so_far;
 
         CGA_LOG_INFO("Allocating {} bytes for read_id_to_anchors_section_d",
                      read_id_to_anchors_section_h.size() * sizeof(ArrayBlock));
@@ -345,24 +348,16 @@ Matcher::Matcher(const Index& index, uint32_t query_target_division_idx)
                                                                                                            read_id_to_sketch_elements_d.data(),
                                                                                                            read_id_to_sketch_elements_to_check_d.data(),
                                                                                                            read_id_to_pointer_arrays_section_d.data(),
-                                                                                                           anchors_d.data(),
+                                                                                                           anchors_d,
                                                                                                            read_id_to_anchors_section_d.data());
 
         CGA_CU_CHECK_ERR(cudaDeviceSynchronize());
-
-        auto num_anchors_so_far = anchors_h_.size();
-        anchors_h_.resize(num_anchors_so_far + total_anchors);
-        thrust::copy(anchors_d.data(), anchors_d.data() + total_anchors, anchors_h_.data() + num_anchors_so_far);
-        //CGA_CU_CHECK_ERR(cudaMemcpy(anchors_h_.data() + num_anchors_so_far, anchors_d.data(), total_anchors * sizeof(Anchor),cudaMemcpyDeviceToHost));
 
         // clean up device memory
         CGA_LOG_INFO("Deallocating {} bytes from read_id_to_anchors_section_d",
                      read_id_to_anchors_section_d.size() *
                          sizeof(decltype(read_id_to_anchors_section_d)::value_type));
         read_id_to_anchors_section_d.free();
-        CGA_LOG_INFO("Deallocating {} bytes from anchors_d",
-                     anchors_d.size() * sizeof(decltype(anchors_d)::value_type));
-        anchors_d.free();
 
         CGA_LOG_INFO("Deallocating {} bytes from read_id_to_sketch_elements_d",
                      read_id_to_sketch_elements_d.size() *
@@ -395,7 +390,7 @@ Matcher::Matcher(const Index& index, uint32_t query_target_division_idx)
 
 thrust::device_vector<Anchor>& Matcher::anchors()
 {
-    return anchors_h_;
+    return anchors_d_;
 }
 
 } // namespace cudamapper
