@@ -25,6 +25,7 @@
 #include "claragenomics/cudamapper/index.hpp"
 #include "claragenomics/cudamapper/index_two_indices.hpp"
 #include "claragenomics/cudamapper/overlapper.hpp"
+#include "claragenomics/cudamapper/matcher_two_indices.hpp"
 #include "matcher.hpp"
 #include "overlapper_triggered.hpp"
 
@@ -166,13 +167,14 @@ int main(int argc, char* argv[])
 
         std::cerr << "Query range: " << query_start << " - " << query_end << std::endl;
 
-	std::unique_ptr<claragenomics::cudamapper::IndexTwoIndices> query_index(nullptr);
-	std::unique_ptr<claragenomics::cudamapper::IndexTwoIndices> target_index(nullptr);
+        std::unique_ptr<claragenomics::cudamapper::IndexTwoIndices> query_index(nullptr);
+        std::unique_ptr<claragenomics::cudamapper::IndexTwoIndices> target_index(nullptr);
+        std::unique_ptr<claragenomics::cudamapper::MatcherTwoIndices> matcher(nullptr);
 
         {
             CGA_NVTX_RANGE(profiler, "generate_query_index");
-            auto start_time  = std::chrono::high_resolution_clock::now();
-            query_index = claragenomics::cudamapper::IndexTwoIndices::create_index(query_parser.get(),
+            auto start_time = std::chrono::high_resolution_clock::now();
+            query_index     = claragenomics::cudamapper::IndexTwoIndices::create_index(query_parser.get(),
                                                                                    query_start,
                                                                                    query_end + 1, // <- past the last
                                                                                    k,
@@ -197,18 +199,25 @@ int main(int argc, char* argv[])
 
             {
                 CGA_NVTX_RANGE(profiler, "generate_target_index");
-                auto start_time  = std::chrono::high_resolution_clock::now();
-                target_index = claragenomics::cudamapper::IndexTwoIndices::create_index(target_parser.get(),
-                                                                                             target_start,
-                                                                                             target_end + 1, // <- past the last
-                                                                                             k,
-                                                                                             w);
+                auto start_time = std::chrono::high_resolution_clock::now();
+                target_index    = claragenomics::cudamapper::IndexTwoIndices::create_index(target_parser.get(),
+                                                                                        target_start,
+                                                                                        target_end + 1, // <- past the last
+                                                                                        k,
+                                                                                        w);
                 index_time += std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time);
                 std::cerr << "Target index generation time: " << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time).count() << "ms" << std::endl;
             }
+            {
+                CGA_NVTX_RANGE(profiler, "generate_matcher");
+                auto start_time = std::chrono::high_resolution_clock::now();
+                matcher         = claragenomics::cudamapper::MatcherTwoIndices::create_matcher(*query_index,
+                                                                                       *target_index);
+                matcher_time += std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time);
+                std::cerr << "Matcher generation time: " << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time).count() << "ms" << std::endl;
+            }
         }
     }
-
 
     /*for (size_t query_start = 0; query_start < queries; query_start += index_size)
     { // outer loop over query

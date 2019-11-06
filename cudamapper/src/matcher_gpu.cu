@@ -24,12 +24,12 @@ namespace claragenomics
 namespace cudamapper
 {
 
-MatcherGPU::MatcherGPU(const Index& query_index,
-                       const Index& target_index)
+MatcherGPU::MatcherGPU(const IndexTwoIndices& query_index,
+                       const IndexTwoIndices& target_index)
 {
 }
 
-std::vector<Anchor>& MatcherGPU::anchors()
+thrust::device_vector<Anchor>& MatcherGPU::anchors()
 {
     return anchors_h_;
 }
