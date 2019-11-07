@@ -31,6 +31,9 @@ def evaluate_paf(truth_paf_filepath, test_paf_filepath, pos_tolerance=400):
 
     num_true_overlaps = 0
     for truth_overlap in pafio.read_paf(truth_paf_filepath):
+        if truth_overlap.query_sequence_name == truth_overlap.target_sequence_name:
+            print("Skipping")
+            continue
         key = truth_overlap.query_sequence_name + truth_overlap.target_sequence_name
 
         truth_overlaps[key].append(truth_overlap)
