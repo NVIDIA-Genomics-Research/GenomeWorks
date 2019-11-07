@@ -29,10 +29,12 @@ void test_function(const std::string& filename,
                    const read_id_t past_the_last_read_id,
                    const std::uint64_t kmer_size,
                    const std::uint64_t window_size,
-                   const thrust::host_vector<representation_t>& expected_representations,
-                   const thrust::host_vector<position_in_read_t>& expected_positions_in_reads,
-                   const thrust::host_vector<read_id_t>& expected_read_ids,
-                   const thrust::host_vector<SketchElement::DirectionOfRepresentation>& expected_directions_of_reads,
+                   const std::vector<representation_t>& expected_representations,
+                   const std::vector<position_in_read_t>& expected_positions_in_reads,
+                   const std::vector<read_id_t>& expected_read_ids,
+                   const std::vector<SketchElement::DirectionOfRepresentation>& expected_directions_of_reads,
+                   const std::vector<representation_t>& expected_unique_representations,
+                   const std::vector<std::uint32_t>& expected_first_occurrence_of_representations,
                    const std::vector<std::string>& expected_read_id_to_read_name,
                    const std::vector<std::uint32_t>& expected_read_id_to_read_length,
                    const std::uint64_t expected_number_of_reads)
@@ -81,6 +83,21 @@ void test_function(const std::string& filename,
         EXPECT_EQ(read_ids_h[i], expected_read_ids[i]) << "i: " << i;
         EXPECT_EQ(directions_of_reads_h[i], expected_directions_of_reads[i]) << "i: " << i;
     }
+
+    const thrust::device_vector<representation_t> unique_representations_d = index.unique_representations();
+    const thrust::device_vector<std::uint32_t> first_occurrence_of_representations_d = index.first_occurrence_of_representations();
+    const thrust::host_vector<representation_t> unique_representations_h(unique_representations_d);
+    const thrust::host_vector<representation_t> first_occurrence_of_representations_h(first_occurrence_of_representations_d);
+    ASSERT_EQ(expected_unique_representations.size() + 1, expected_first_occurrence_of_representations.size());
+    ASSERT_EQ(unique_representations_h.size(), expected_unique_representations.size());
+    ASSERT_EQ(first_occurrence_of_representations_h.size(), expected_first_occurrence_of_representations.size());
+    for (std::size_t i = 0; i < expected_unique_representations.size(); ++i)
+    {
+        EXPECT_EQ(expected_unique_representations[i], unique_representations_h[i]) << "index: " << i;
+        EXPECT_EQ(expected_first_occurrence_of_representations[i], first_occurrence_of_representations_h[i]) << "index: " << i;
+    }
+    EXPECT_EQ(expected_first_occurrence_of_representations.back(), expected_representations.size());
+
 }
 
 TEST(TestCudamapperIndexGPUTwoIndices, GATT_4_1)
@@ -105,10 +122,17 @@ TEST(TestCudamapperIndexGPUTwoIndices, GATT_4_1)
     std::vector<position_in_read_t> expected_positions_in_reads;
     std::vector<read_id_t> expected_read_ids;
     std::vector<SketchElement::DirectionOfRepresentation> expected_directions_of_reads;
+    std::vector<representation_t> expected_unique_representations;
+    std::vector<std::uint32_t> expected_first_occurrence_of_representations;
+
     expected_representations.push_back(0b1101);
     expected_positions_in_reads.push_back(0);
     expected_read_ids.push_back(0);
     expected_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::REVERSE);
+    expected_unique_representations.push_back(0b1101);
+    expected_first_occurrence_of_representations.push_back(0);
+
+    expected_first_occurrence_of_representations.push_back(1);
 
     test_function(filename,
                   0,
@@ -119,6 +143,8 @@ TEST(TestCudamapperIndexGPUTwoIndices, GATT_4_1)
                   expected_positions_in_reads,
                   expected_read_ids,
                   expected_directions_of_reads,
+                  expected_unique_representations,
+                  expected_first_occurrence_of_representations,
                   expected_read_id_to_read_name,
                   expected_read_id_to_read_length,
                   1);
@@ -167,19 +193,29 @@ TEST(TestCudamapperIndexGPUTwoIndices, GATT_2_3)
     std::vector<position_in_read_t> expected_positions_in_reads;
     std::vector<read_id_t> expected_read_ids;
     std::vector<SketchElement::DirectionOfRepresentation> expected_directions_of_reads;
+    std::vector<representation_t> expected_unique_representations;
+    std::vector<std::uint32_t> expected_first_occurrence_of_representations;
 
     expected_representations.push_back(0b0000); // AA(2r0)
     expected_positions_in_reads.push_back(2);
     expected_read_ids.push_back(0);
     expected_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::REVERSE);
+    expected_unique_representations.push_back(0b0000);
+    expected_first_occurrence_of_representations.push_back(0);
     expected_representations.push_back(0b0011); // AT(1f0)
     expected_positions_in_reads.push_back(1);
     expected_read_ids.push_back(0);
     expected_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::FORWARD);
+    expected_unique_representations.push_back(0b0011);
+    expected_first_occurrence_of_representations.push_back(1);
     expected_representations.push_back(0b1000); // GA(0f0)
     expected_positions_in_reads.push_back(0);
     expected_read_ids.push_back(0);
     expected_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::FORWARD);
+    expected_unique_representations.push_back(0b1000);
+    expected_first_occurrence_of_representations.push_back(2);
+
+    expected_first_occurrence_of_representations.push_back(3);
 
     test_function(filename,
                   0,
@@ -190,6 +226,8 @@ TEST(TestCudamapperIndexGPUTwoIndices, GATT_2_3)
                   expected_positions_in_reads,
                   expected_read_ids,
                   expected_directions_of_reads,
+                  expected_unique_representations,
+                  expected_first_occurrence_of_representations,
                   expected_read_id_to_read_name,
                   expected_read_id_to_read_length,
                   1);
@@ -216,6 +254,8 @@ TEST(TestCudamapperIndexGPUTwoIndices, CCCATACC_2_8)
     std::vector<position_in_read_t> expected_positions_in_reads;
     std::vector<read_id_t> expected_read_ids;
     std::vector<SketchElement::DirectionOfRepresentation> expected_directions_of_reads;
+    std::vector<representation_t> expected_unique_representations;
+    std::vector<std::uint32_t> expected_first_occurrence_of_representations;
 
     test_function(filename,
                   0,
@@ -226,96 +266,98 @@ TEST(TestCudamapperIndexGPUTwoIndices, CCCATACC_2_8)
                   expected_positions_in_reads,
                   expected_read_ids,
                   expected_directions_of_reads,
+                  expected_unique_representations,
+                  expected_first_occurrence_of_representations,
                   expected_read_id_to_read_name,
                   expected_read_id_to_read_length,
                   0);
 }
 
 // TODO: Cover this case as well
-/*TEST(TestCudamapperIndexGPUTwoIndices, CATCAAG_AAGCTA_3_5)
-{
-    // *** One Read is shorter than one full window, the other is not ***
-
-    // >read_0
-    // CATCAAG
-    // >read_1
-    // AAGCTA
-
-    // ** CATCAAG **
-
-    // kmer representation: forward, reverse
-    // CAT:  103 <032>
-    // ATC: <031> 203
-    // TCA: <310> 320
-    // CAA: <100> 332
-    // AAG: <002> 133
-
-    // front end minimizers: representation, position_in_read, direction, read_id
-    // CAT   : 032 0 R 0
-    // CATC  : 031 1 F 0
-    // CATCA : 031 1 F 0
-    // CATCAA: 031 1 F 0
-
-    // central minimizers
-    // CATCAAG: 002 4 F 0
-
-    // back end minimizers
-    // ATCAAG: 002 4 F 0
-    // TCAAG : 002 4 F 0
-    // CAAG  : 002 4 F 0
-    // AAG   : 002 4 F 0
-
-    // ** AAGCTA **
-    // ** read does not fit one array **
-
-    // All minimizers: ATG(0r0), ATC(1f0), AAG(4f0)
-
-    // (2r1) means position 2, reverse direction, read 1
-    // (1,2) means array block start at element 1 and has 2 elements
-
-    //              0         1         2
-    // data arrays: AAG(4f0), ATC(1f0), ATG(0r0)
-
-    const std::string filename         = std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/catcaag_aagcta.fasta";
-    const std::uint64_t minimizer_size = 3;
-    const std::uint64_t window_size    = 5;
-
-    std::vector<std::string> expected_read_id_to_read_name;
-    expected_read_id_to_read_name.push_back("read_0");
-
-    std::vector<std::uint32_t> expected_read_id_to_read_length;
-    expected_read_id_to_read_length.push_back(7);
-
-    std::vector<representation_t> expected_representations;
-    std::vector<position_in_read_t> expected_positions_in_reads;
-    std::vector<read_id_t> expected_read_ids;
-    std::vector<SketchElement::DirectionOfRepresentation> expected_directions_of_reads;
-    expected_representations.push_back(0b000010); // AAG(4f0)
-    expected_positions_in_reads.push_back(4);
-    expected_read_ids.push_back(0);
-    expected_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::FORWARD);
-    expected_representations.push_back(0b001101); // ATC(1f0)
-    expected_positions_in_reads.push_back(1);
-    expected_read_ids.push_back(0);
-    expected_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::FORWARD);
-    expected_representations.push_back(0b001110); // ATG(0r0)
-    expected_positions_in_reads.push_back(0);
-    expected_read_ids.push_back(0);
-    expected_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::REVERSE);
-
-    test_function(filename,
-                  0,
-                  2,
-                  minimizer_size,
-                  window_size,
-                  expected_representations,
-                  expected_positions_in_reads,
-                  expected_read_ids,
-                  expected_directions_of_reads,
-                  expected_read_id_to_read_name,
-                  expected_read_id_to_read_length,
-                  1); // <- only one read goes into index, the other is too short
-}*/
+//TEST(TestCudamapperIndexGPUTwoIndices, CATCAAG_AAGCTA_3_5)
+//{
+//    // *** One Read is shorter than one full window, the other is not ***
+//
+//    // >read_0
+//    // CATCAAG
+//    // >read_1
+//    // AAGCTA
+//
+//    // ** CATCAAG **
+//
+//    // kmer representation: forward, reverse
+//    // CAT:  103 <032>
+//    // ATC: <031> 203
+//    // TCA: <310> 320
+//    // CAA: <100> 332
+//    // AAG: <002> 133
+//
+//    // front end minimizers: representation, position_in_read, direction, read_id
+//    // CAT   : 032 0 R 0
+//    // CATC  : 031 1 F 0
+//    // CATCA : 031 1 F 0
+//    // CATCAA: 031 1 F 0
+//
+//    // central minimizers
+//    // CATCAAG: 002 4 F 0
+//
+//    // back end minimizers
+//    // ATCAAG: 002 4 F 0
+//    // TCAAG : 002 4 F 0
+//    // CAAG  : 002 4 F 0
+//    // AAG   : 002 4 F 0
+//
+//    // ** AAGCTA **
+//    // ** read does not fit one array **
+//
+//    // All minimizers: ATG(0r0), ATC(1f0), AAG(4f0)
+//
+//    // (2r1) means position 2, reverse direction, read 1
+//    // (1,2) means array block start at element 1 and has 2 elements
+//
+//    //              0         1         2
+//    // data arrays: AAG(4f0), ATC(1f0), ATG(0r0)
+//
+//    const std::string filename         = std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/catcaag_aagcta.fasta";
+//    const std::uint64_t minimizer_size = 3;
+//    const std::uint64_t window_size    = 5;
+//
+//    std::vector<std::string> expected_read_id_to_read_name;
+//    expected_read_id_to_read_name.push_back("read_0");
+//
+//    std::vector<std::uint32_t> expected_read_id_to_read_length;
+//    expected_read_id_to_read_length.push_back(7);
+//
+//    std::vector<representation_t> expected_representations;
+//    std::vector<position_in_read_t> expected_positions_in_reads;
+//    std::vector<read_id_t> expected_read_ids;
+//    std::vector<SketchElement::DirectionOfRepresentation> expected_directions_of_reads;
+//    expected_representations.push_back(0b000010); // AAG(4f0)
+//    expected_positions_in_reads.push_back(4);
+//    expected_read_ids.push_back(0);
+//    expected_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::FORWARD);
+//    expected_representations.push_back(0b001101); // ATC(1f0)
+//    expected_positions_in_reads.push_back(1);
+//    expected_read_ids.push_back(0);
+//    expected_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::FORWARD);
+//    expected_representations.push_back(0b001110); // ATG(0r0)
+//    expected_positions_in_reads.push_back(0);
+//    expected_read_ids.push_back(0);
+//    expected_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::REVERSE);
+//
+//    test_function(filename,
+//                  0,
+//                  2,
+//                  minimizer_size,
+//                  window_size,
+//                  expected_representations,
+//                  expected_positions_in_reads,
+//                  expected_read_ids,
+//                  expected_directions_of_reads,
+//                  expected_read_id_to_read_name,
+//                  expected_read_id_to_read_length,
+//                  1); // <- only one read goes into index, the other is too short
+//}
 
 TEST(TestCudamapperIndexGPUTwoIndices, CCCATACC_3_5)
 {
@@ -370,26 +412,41 @@ TEST(TestCudamapperIndexGPUTwoIndices, CCCATACC_3_5)
     std::vector<position_in_read_t> expected_positions_in_reads;
     std::vector<read_id_t> expected_read_ids;
     std::vector<SketchElement::DirectionOfRepresentation> expected_directions_of_reads;
+    std::vector<representation_t> expected_unique_representations;
+    std::vector<std::uint32_t> expected_first_occurrence_of_representations;
+
     expected_representations.push_back(0b000101); // ACC(5f0)
     expected_positions_in_reads.push_back(5);
     expected_read_ids.push_back(0);
     expected_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::FORWARD);
+    expected_unique_representations.push_back(0b000101);
+    expected_first_occurrence_of_representations.push_back(0);
     expected_representations.push_back(0b001100); // ATA(3f0)
     expected_positions_in_reads.push_back(3);
     expected_read_ids.push_back(0);
     expected_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::FORWARD);
+    expected_unique_representations.push_back(0b001100);
+    expected_first_occurrence_of_representations.push_back(1);
     expected_representations.push_back(0b001110); // ATG(2r0)
     expected_positions_in_reads.push_back(2);
     expected_read_ids.push_back(0);
     expected_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::REVERSE);
+    expected_unique_representations.push_back(0b001110);
+    expected_first_occurrence_of_representations.push_back(2);
     expected_representations.push_back(0b010100); // CCA(1f0)
     expected_positions_in_reads.push_back(1);
     expected_read_ids.push_back(0);
     expected_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::FORWARD);
+    expected_unique_representations.push_back(0b010100);
+    expected_first_occurrence_of_representations.push_back(3);
     expected_representations.push_back(0b010101); // CCC(0f0)
     expected_positions_in_reads.push_back(0);
     expected_read_ids.push_back(0);
     expected_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::FORWARD);
+    expected_unique_representations.push_back(0b010101);
+    expected_first_occurrence_of_representations.push_back(4);
+
+    expected_first_occurrence_of_representations.push_back(5);
 
     test_function(filename,
                   0,
@@ -400,6 +457,8 @@ TEST(TestCudamapperIndexGPUTwoIndices, CCCATACC_3_5)
                   expected_positions_in_reads,
                   expected_read_ids,
                   expected_directions_of_reads,
+                  expected_unique_representations,
+                  expected_first_occurrence_of_representations,
                   expected_read_id_to_read_name,
                   expected_read_id_to_read_length,
                   1);
@@ -478,11 +537,15 @@ TEST(TestCudamapperIndexGPUTwoIndices, CATCAAG_AAGCTA_3_2)
     std::vector<position_in_read_t> expected_positions_in_reads;
     std::vector<read_id_t> expected_read_ids;
     std::vector<SketchElement::DirectionOfRepresentation> expected_directions_of_reads;
+    std::vector<representation_t> expected_unique_representations;
+    std::vector<std::uint32_t> expected_first_occurrence_of_representations;
 
     expected_representations.push_back(0b000010); // AAG(4f0)
     expected_positions_in_reads.push_back(4);
     expected_read_ids.push_back(0);
     expected_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::FORWARD);
+    expected_unique_representations.push_back(0b0010);
+    expected_first_occurrence_of_representations.push_back(0);
     expected_representations.push_back(0b000010); // AAG(0f1)
     expected_positions_in_reads.push_back(0);
     expected_read_ids.push_back(1);
@@ -491,22 +554,34 @@ TEST(TestCudamapperIndexGPUTwoIndices, CATCAAG_AAGCTA_3_2)
     expected_positions_in_reads.push_back(2);
     expected_read_ids.push_back(1);
     expected_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::REVERSE);
+    expected_unique_representations.push_back(0b001001);
+    expected_first_occurrence_of_representations.push_back(2);
     expected_representations.push_back(0b001101); // ATC(1f0)
     expected_positions_in_reads.push_back(1);
     expected_read_ids.push_back(0);
     expected_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::FORWARD);
+    expected_unique_representations.push_back(0b001101);
+    expected_first_occurrence_of_representations.push_back(3);
     expected_representations.push_back(0b001110); // ATG(0r0)
     expected_positions_in_reads.push_back(0);
     expected_read_ids.push_back(0);
     expected_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::REVERSE);
+    expected_unique_representations.push_back(0b001110);
+    expected_first_occurrence_of_representations.push_back(4);
     expected_representations.push_back(0b010000); // CAA(3f0)
     expected_positions_in_reads.push_back(3);
     expected_read_ids.push_back(0);
+    expected_unique_representations.push_back(0b010000);
+    expected_first_occurrence_of_representations.push_back(5);
     expected_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::FORWARD);
     expected_representations.push_back(0b011100); // CTA(3f1)
     expected_positions_in_reads.push_back(3);
     expected_read_ids.push_back(1);
     expected_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::FORWARD);
+    expected_unique_representations.push_back(0b011100);
+    expected_first_occurrence_of_representations.push_back(6);
+
+    expected_first_occurrence_of_representations.push_back(7);
 
     test_function(filename,
                   0,
@@ -517,6 +592,8 @@ TEST(TestCudamapperIndexGPUTwoIndices, CATCAAG_AAGCTA_3_2)
                   expected_positions_in_reads,
                   expected_read_ids,
                   expected_directions_of_reads,
+                  expected_unique_representations,
+                  expected_first_occurrence_of_representations,
                   expected_read_id_to_read_name,
                   expected_read_id_to_read_length,
                   2);
@@ -607,10 +684,15 @@ TEST(TestCudamapperIndexGPUTwoIndices, AAAACTGAA_GCCAAAG_2_3)
     std::vector<position_in_read_t> expected_positions_in_reads;
     std::vector<read_id_t> expected_read_ids;
     std::vector<SketchElement::DirectionOfRepresentation> expected_directions_of_reads;
+    std::vector<representation_t> expected_unique_representations;
+    std::vector<std::uint32_t> expected_first_occurrence_of_representations;
+
     expected_representations.push_back(0b0000); // AA(0f0)
     expected_positions_in_reads.push_back(0);
     expected_read_ids.push_back(0);
     expected_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::FORWARD);
+    expected_unique_representations.push_back(0b0000);
+    expected_first_occurrence_of_representations.push_back(0);
     expected_representations.push_back(0b0000); // AA(1f0)
     expected_positions_in_reads.push_back(1);
     expected_read_ids.push_back(0);
@@ -635,10 +717,14 @@ TEST(TestCudamapperIndexGPUTwoIndices, AAAACTGAA_GCCAAAG_2_3)
     expected_positions_in_reads.push_back(3);
     expected_read_ids.push_back(0);
     expected_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::FORWARD);
+    expected_unique_representations.push_back(0b0001);
+    expected_first_occurrence_of_representations.push_back(6);
     expected_representations.push_back(0b0010); // AG(4r0)
     expected_positions_in_reads.push_back(4);
     expected_read_ids.push_back(0);
     expected_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::REVERSE);
+    expected_unique_representations.push_back(0b0010);
+    expected_first_occurrence_of_representations.push_back(7);
     expected_representations.push_back(0b0010); // AG(5f1)
     expected_positions_in_reads.push_back(5);
     expected_read_ids.push_back(1);
@@ -647,14 +733,22 @@ TEST(TestCudamapperIndexGPUTwoIndices, AAAACTGAA_GCCAAAG_2_3)
     expected_positions_in_reads.push_back(2);
     expected_read_ids.push_back(1);
     expected_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::FORWARD);
+    expected_unique_representations.push_back(0b0100);
+    expected_first_occurrence_of_representations.push_back(9);
     expected_representations.push_back(0b0101); // CC(1f1)
     expected_positions_in_reads.push_back(1);
     expected_read_ids.push_back(1);
     expected_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::FORWARD);
+    expected_unique_representations.push_back(0b0101);
+    expected_first_occurrence_of_representations.push_back(10);
     expected_representations.push_back(0b1001); // GC(0f1)
     expected_positions_in_reads.push_back(0);
     expected_read_ids.push_back(1);
     expected_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::FORWARD);
+    expected_unique_representations.push_back(0b1001);
+    expected_first_occurrence_of_representations.push_back(11);
+
+    expected_first_occurrence_of_representations.push_back(12);
 
     test_function(filename,
                   0,
@@ -665,6 +759,8 @@ TEST(TestCudamapperIndexGPUTwoIndices, AAAACTGAA_GCCAAAG_2_3)
                   expected_positions_in_reads,
                   expected_read_ids,
                   expected_directions_of_reads,
+                  expected_unique_representations,
+                  expected_first_occurrence_of_representations,
                   expected_read_id_to_read_name,
                   expected_read_id_to_read_length,
                   2);
@@ -727,10 +823,15 @@ TEST(TestCudamapperIndexGPUTwoIndices, AAAACTGAA_GCCAAAG_2_3_only_second_read_in
     std::vector<position_in_read_t> expected_positions_in_reads;
     std::vector<read_id_t> expected_read_ids;
     std::vector<SketchElement::DirectionOfRepresentation> expected_directions_of_reads;
+    std::vector<representation_t> expected_unique_representations;
+    std::vector<std::uint32_t> expected_first_occurrence_of_representations;
+
     expected_representations.push_back(0b0000); // AA(3f1)
     expected_positions_in_reads.push_back(3);
     expected_read_ids.push_back(1);
     expected_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::FORWARD);
+    expected_unique_representations.push_back(0b00);
+    expected_first_occurrence_of_representations.push_back(0);
     expected_representations.push_back(0b0000); // AA(4f1)
     expected_positions_in_reads.push_back(4);
     expected_read_ids.push_back(1);
@@ -739,18 +840,28 @@ TEST(TestCudamapperIndexGPUTwoIndices, AAAACTGAA_GCCAAAG_2_3_only_second_read_in
     expected_positions_in_reads.push_back(5);
     expected_read_ids.push_back(1);
     expected_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::FORWARD);
+    expected_unique_representations.push_back(0b0010);
+    expected_first_occurrence_of_representations.push_back(2);
     expected_representations.push_back(0b0100); // CA(2f1)
     expected_positions_in_reads.push_back(2);
     expected_read_ids.push_back(1);
     expected_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::FORWARD);
+    expected_unique_representations.push_back(0b0100);
+    expected_first_occurrence_of_representations.push_back(3);
     expected_representations.push_back(0b0101); // CC(1f1)
     expected_positions_in_reads.push_back(1);
     expected_read_ids.push_back(1);
     expected_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::FORWARD);
+    expected_unique_representations.push_back(0b0101);
+    expected_first_occurrence_of_representations.push_back(4);
     expected_representations.push_back(0b1001); // GC(0f1)
     expected_positions_in_reads.push_back(0);
     expected_read_ids.push_back(1);
     expected_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::FORWARD);
+    expected_unique_representations.push_back(0b1001);
+    expected_first_occurrence_of_representations.push_back(5);
+
+    expected_first_occurrence_of_representations.push_back(6);
 
     test_function(filename,
                   1, // <- only take second read
@@ -761,6 +872,8 @@ TEST(TestCudamapperIndexGPUTwoIndices, AAAACTGAA_GCCAAAG_2_3_only_second_read_in
                   expected_positions_in_reads,
                   expected_read_ids,
                   expected_directions_of_reads,
+                  expected_unique_representations,
+                  expected_first_occurrence_of_representations,
                   expected_read_id_to_read_name,
                   expected_read_id_to_read_length,
                   1);

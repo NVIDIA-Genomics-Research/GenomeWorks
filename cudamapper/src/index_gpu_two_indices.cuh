@@ -29,11 +29,16 @@ namespace cudamapper
 {
 /// IndexGPU - Contains sketch elements grouped by representation and by read id within the representation
 ///
-/// Class contains four separate data arrays: representations, read_ids, positions_in_reads and directions_of_reads.
+/// Sketch elements are separated in four data arrays: representations, read_ids, positions_in_reads and directions_of_reads.
 /// Elements of these four arrays with the same index represent one sketch element
-/// (representation, read_id of the read it belongs to, position in that read of the first basepair of sketch element and whether it is forward or reverse complement representation).
+/// (representation, read_id of the read it belongs to, position in that read of the first basepair of sketch element and whether it is
+/// forward or reverse complement representation).
 ///
-/// Elements of data arrays are grouped by sketch element representation and within those groups by read_id. Both representations and read_ids within representations are sorted in ascending order
+/// Elements of data arrays are grouped by sketch element representation and within those groups by read_id. Both representations and read_ids within
+/// representations are sorted in ascending order
+///
+/// In addition to this the class contains an array where each representation is recorder only once (unique_representations) sorted by representation
+/// and an array in which the index of first occurrence of that representation is recorded
 ///
 /// \tparam SketchElementImpl any implementation of SketchElement
 template <typename SketchElementImpl>
@@ -72,6 +77,14 @@ public:
     /// \return an array of directions in which sketch elements were read
     const thrust::device_vector<typename SketchElementImpl::DirectionOfRepresentation>& directions_of_reads() const override;
 
+    /// \brief returns an array where each representation is recorder only once, sorted by representation
+    /// \return an array where each representation is recorder only once, sorted by representation
+    const thrust::device_vector<representation_t>& unique_representations() const override;
+
+    /// \brief returns first occurrence of corresponding representation from unique_representations() in data arrays
+    /// \return first occurrence of corresponding representation from unique_representations() in data arrays
+    const thrust::device_vector<std::uint32_t>& first_occurrence_of_representations() const override;
+
     /// \brief returns read name of read with the given read_id
     /// \param read_id
     /// \return read name of read with the given read_id
@@ -96,6 +109,9 @@ private:
     thrust::device_vector<read_id_t> read_ids_d_;
     thrust::device_vector<position_in_read_t> positions_in_reads_d_;
     thrust::device_vector<typename SketchElementImpl::DirectionOfRepresentation> directions_of_reads_d_;
+
+    thrust::device_vector<representation_t> unique_representations_d_;
+    thrust::device_vector<std::uint32_t> first_occurrence_of_representations_d_;
 
     std::vector<std::string> read_id_to_read_name_;
     std::vector<std::uint32_t> read_id_to_read_length_;
@@ -252,6 +268,18 @@ const thrust::device_vector<typename SketchElementImpl::DirectionOfRepresentatio
 }
 
 template <typename SketchElementImpl>
+const thrust::device_vector<representation_t>& IndexGPUTwoIndices<SketchElementImpl>::unique_representations() const
+{
+    return unique_representations_d_;
+}
+
+template <typename SketchElementImpl>
+const thrust::device_vector<std::uint32_t>& IndexGPUTwoIndices<SketchElementImpl>::first_occurrence_of_representations() const
+{
+    return first_occurrence_of_representations_d_;
+}
+
+template <typename SketchElementImpl>
 const std::string& IndexGPUTwoIndices<SketchElementImpl>::read_id_to_read_name(const read_id_t read_id) const
 {
     return read_id_to_read_name_[read_id - first_read_id_];
@@ -400,6 +428,11 @@ void IndexGPUTwoIndices<SketchElementImpl>::generate_index(io::FastaParser* pars
                                                                                       directions_of_reads_d_.data().get(),
                                                                                       representations_d_.size());
     CGA_CU_CHECK_ERR(cudaDeviceSynchronize());
+
+    // now generate the index elements
+    details::index_gpu_two_indices::find_first_occurrences_of_representations(unique_representations_d_,
+                                                                              first_occurrence_of_representations_d_,
+                                                                              representations_d_);
 }
 
 } // namespace cudamapper

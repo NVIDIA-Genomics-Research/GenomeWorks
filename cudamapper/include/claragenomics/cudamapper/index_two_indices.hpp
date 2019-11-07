@@ -52,6 +52,14 @@ public:
     /// \return read name of read with the given read_id
     virtual const std::string& read_id_to_read_name(const read_id_t read_id) const = 0;
 
+    /// \brief returns an array where each representation is recorder only once, sorted by representation
+    /// \return an array where each representation is recorder only once, sorted by representation
+    virtual const thrust::device_vector<representation_t>& unique_representations() const = 0;
+
+    /// \brief returns first occurrence of corresponding representation from unique_representations() in data arrays
+    /// \return first occurrence of corresponding representation from unique_representations() in data arrays
+    virtual const thrust::device_vector<std::uint32_t>& first_occurrence_of_representations() const = 0;
+
     /// \brief returns read length for the read with the gived read_id
     /// \param read_id
     /// \return read length for the read with the gived read_id
