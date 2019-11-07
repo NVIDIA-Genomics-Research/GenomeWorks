@@ -110,6 +110,67 @@ namespace details
 {
 namespace index_gpu_two_indices
 {
+/// \brief Creates compressed representation of index
+///
+/// Creates two arrays: first one contains a list of unique representations and the second one the index
+/// at which that representation occurrs for the first time in the original data.
+/// Second element contains one additional elemet at the end, containing the total number of elemets in the original array.
+///
+/// For example:
+/// 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20
+/// 0  0  0  0 12 12 12 12 12 12 23 23 23 32 32 32 32 32 46 46 46
+/// ^           ^                 ^        ^              ^       ^
+/// gives:
+/// 0 12 23 32 46
+/// 0  4 10 13 18 21
+///
+/// \param unique_representations_d empty on input, contains one value of each representation on the output
+/// \param first_occurrence_index_d empty on input, index of first occurrence of each representation and additional elemnt on the output
+/// \param input_representations_d an array of representaton where representations with the same value stand next to each other
+void find_first_occurrences_of_representations(thrust::device_vector<representation_t>& unique_representations_d,
+                                               thrust::device_vector<std::uint32_t>& first_occurrence_index_d,
+                                               const thrust::device_vector<representation_t>& input_representations_d);
+
+/// \brief Writes 0 to the output array if the value to the left is the same as the current value, 1 otherwise. First element is always 1
+///
+/// For example:
+/// 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20
+/// 0  0  0  0 12 12 12 12 12 12 23 23 23 32 32 32 32 32 46 46 46
+/// gives:
+/// 1  0  0  0  1  0  0  0  0  0  1  0  0  1  0  0  0  0  1  0  0
+///
+/// \param representations_d
+/// \param number_of_elements
+/// \param new_value_mask_d generated array
+__global__ void create_new_value_mask(const representation_t* const representations_d,
+                                      const std::size_t number_of_elements,
+                                      std::uint32_t* const new_value_mask_d);
+
+/// \brief Helper kernel for find_first_occurrences_of_representations
+///
+/// Creates two arrays: first one contains a list of unique representations and the second one the index
+/// at which that representation occurrs for the first time in the original data.
+///
+/// For example:
+/// 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20
+/// 0  0  0  0 12 12 12 12 12 12 23 23 23 32 32 32 32 32 46 46 46
+/// 1  0  0  0  1  0  0  0  0  0  1  0  0  1  0  0  0  0  1  0  0
+/// 1  1  1  1  2  2  2  2  2  2  3  3  3  4  4  4  4  4  5  5  5
+/// ^           ^                 ^        ^              ^
+/// gives:
+/// 0 12 23 32 46
+/// 0  4 10 13 18
+///
+/// \param representation_index_mask_d
+/// \param input_representatons_d
+/// \param number_of_input_elements
+/// \param starting_index_of_each_representation_d
+/// \param unique_representations_d
+__global__ void find_first_occurrences_of_representations_kernel(const std::uint64_t* const representation_index_mask_d,
+                                                                 const representation_t* const input_representations_d,
+                                                                 const std::size_t number_of_input_elements,
+                                                                 std::uint32_t* const starting_index_of_each_representation_d,
+                                                                 representation_t* const unique_representations_d);
 
 /// \brief Splits array of structs into one array per struct element
 ///

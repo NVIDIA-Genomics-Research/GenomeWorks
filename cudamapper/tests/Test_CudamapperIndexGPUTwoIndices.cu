@@ -770,6 +770,315 @@ namespace details
 {
 namespace index_gpu_two_indices
 {
+// ************ Test find_first_occurrences_of_representations **************
+
+void test_find_first_occurrences_of_representations(const thrust::host_vector<representation_t>& representations_h,
+                                                    const thrust::host_vector<std::uint32_t>& expected_starting_index_of_each_representation_h)
+{
+    const thrust::device_vector<representation_t> representations_d(representations_h);
+
+    thrust::device_vector<std::uint32_t> starting_index_of_each_representation_d;
+    thrust::device_vector<representation_t> unique_representations_d;
+    find_first_occurrences_of_representations(unique_representations_d,
+                                              starting_index_of_each_representation_d,
+                                              representations_d);
+
+    const thrust::host_vector<std::uint32_t> starting_index_of_each_representation_h(starting_index_of_each_representation_d);
+
+    ASSERT_EQ(starting_index_of_each_representation_h.size(), expected_starting_index_of_each_representation_h.size());
+
+    for (std::size_t i = 0; i < expected_starting_index_of_each_representation_h.size(); ++i)
+    {
+        EXPECT_EQ(starting_index_of_each_representation_h[i], expected_starting_index_of_each_representation_h[i]) << "index: " << i;
+    }
+}
+
+TEST(TestCudamapperIndexGPUTwoIndices, test_find_first_occurrences_of_representations_small_example)
+{
+    /// 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20
+    /// 0  0  0  0 12 12 12 12 12 12 23 23 23 32 32 32 32 32 46 46 46
+    /// 1  0  0  0  1  0  0  0  0  0  1  0  0  1  0  0  0  0  1  0  0
+    /// 1  1  1  1  2  2  2  2  2  2  3  3  3  4  4  4  4  4  5  5  5
+    /// ^           ^                 ^        ^              ^       ^
+    /// 0  4 10 13 18 21
+
+    thrust::host_vector<representation_t> representations_h;
+    thrust::device_vector<std::uint32_t> expected_starting_index_of_each_representation_h;
+    representations_h.push_back(0);
+    expected_starting_index_of_each_representation_h.push_back(0);
+    representations_h.push_back(0);
+    representations_h.push_back(0);
+    representations_h.push_back(0);
+    representations_h.push_back(12);
+    expected_starting_index_of_each_representation_h.push_back(4);
+    representations_h.push_back(12);
+    representations_h.push_back(12);
+    representations_h.push_back(12);
+    representations_h.push_back(12);
+    representations_h.push_back(12);
+    representations_h.push_back(23);
+    expected_starting_index_of_each_representation_h.push_back(10);
+    representations_h.push_back(23);
+    representations_h.push_back(23);
+    representations_h.push_back(32);
+    expected_starting_index_of_each_representation_h.push_back(13);
+    representations_h.push_back(32);
+    representations_h.push_back(32);
+    representations_h.push_back(32);
+    representations_h.push_back(32);
+    representations_h.push_back(46);
+    expected_starting_index_of_each_representation_h.push_back(18);
+    representations_h.push_back(46);
+    representations_h.push_back(46);
+    expected_starting_index_of_each_representation_h.push_back(21);
+
+    test_find_first_occurrences_of_representations(representations_h,
+                                                   expected_starting_index_of_each_representation_h);
+}
+
+TEST(TestCudamapperIndexGPUTwoIndices, test_find_first_occurrences_of_representations_large_example)
+{
+    const std::uint64_t total_sketch_elements                    = 10000000;
+    const std::uint32_t sketch_elements_with_same_representation = 1000;
+
+    thrust::host_vector<representation_t> representations_h;
+    thrust::device_vector<std::uint32_t> expected_starting_index_of_each_representation_h;
+
+    for (std::size_t i = 0; i < total_sketch_elements; ++i)
+    {
+        representations_h.push_back(i / sketch_elements_with_same_representation);
+        if (i % sketch_elements_with_same_representation == 0)
+        {
+            expected_starting_index_of_each_representation_h.push_back(i);
+        }
+    }
+    expected_starting_index_of_each_representation_h.push_back(total_sketch_elements);
+
+    test_find_first_occurrences_of_representations(representations_h,
+                                                   expected_starting_index_of_each_representation_h);
+}
+
+// ************ Test create_new_value_mask **************
+
+void test_create_new_value_mask(const thrust::host_vector<representation_t>& representations_h,
+                                const thrust::host_vector<std::uint32_t>& expected_new_value_mask_h,
+                                std::uint32_t number_of_threads)
+{
+    const thrust::device_vector<representation_t> representations_d(representations_h);
+    thrust::device_vector<std::uint32_t> new_value_mask_d(representations_h.size());
+
+    std::uint32_t number_of_blocks = (representations_h.size() - 1) / number_of_threads + 1;
+
+    create_new_value_mask<<<number_of_blocks, number_of_threads>>>(thrust::raw_pointer_cast(representations_d.data()),
+                                                                   representations_d.size(),
+                                                                   thrust::raw_pointer_cast(new_value_mask_d.data()));
+
+    CGA_CU_CHECK_ERR(cudaDeviceSynchronize());
+
+    const thrust::host_vector<std::uint32_t> new_value_mask_h(new_value_mask_d);
+
+    ASSERT_EQ(new_value_mask_h.size(), expected_new_value_mask_h.size());
+    for (std::size_t i = 0; i < expected_new_value_mask_h.size(); ++i)
+    {
+        EXPECT_EQ(new_value_mask_h[i], expected_new_value_mask_h[i]) << "index: " << i;
+    }
+}
+
+TEST(TestCudamapperIndexGPUTwoIndices, test_create_new_value_mask_small_example)
+{
+    thrust::host_vector<representation_t> representations_h;
+    thrust::host_vector<std::uint32_t> expected_new_value_mask_h;
+    representations_h.push_back(0);
+    expected_new_value_mask_h.push_back(1);
+    representations_h.push_back(0);
+    expected_new_value_mask_h.push_back(0);
+    representations_h.push_back(0);
+    expected_new_value_mask_h.push_back(0);
+    representations_h.push_back(0);
+    expected_new_value_mask_h.push_back(0);
+    representations_h.push_back(0);
+    expected_new_value_mask_h.push_back(0);
+    representations_h.push_back(3);
+    expected_new_value_mask_h.push_back(1);
+    representations_h.push_back(3);
+    expected_new_value_mask_h.push_back(0);
+    representations_h.push_back(3);
+    expected_new_value_mask_h.push_back(0);
+    representations_h.push_back(4);
+    expected_new_value_mask_h.push_back(1);
+    representations_h.push_back(5);
+    expected_new_value_mask_h.push_back(1);
+    representations_h.push_back(5);
+    expected_new_value_mask_h.push_back(0);
+    representations_h.push_back(8);
+    expected_new_value_mask_h.push_back(1);
+    representations_h.push_back(8);
+    expected_new_value_mask_h.push_back(0);
+    representations_h.push_back(8);
+    expected_new_value_mask_h.push_back(0);
+    representations_h.push_back(9);
+    expected_new_value_mask_h.push_back(1);
+    representations_h.push_back(9);
+    expected_new_value_mask_h.push_back(0);
+    representations_h.push_back(9);
+    expected_new_value_mask_h.push_back(0);
+
+    std::uint32_t number_of_threads = 3;
+
+    test_create_new_value_mask(representations_h,
+                               expected_new_value_mask_h,
+                               number_of_threads);
+}
+
+TEST(TestCudamapperIndexGPUTwoIndices, test_create_new_value_mask_small_data_large_example)
+{
+    const std::uint64_t total_sketch_elements                    = 10000000;
+    const std::uint32_t sketch_elements_with_same_representation = 1000;
+
+    thrust::host_vector<representation_t> representations_h;
+    thrust::host_vector<std::uint32_t> expected_new_value_mask_h;
+    for (std::size_t i = 0; i < total_sketch_elements; ++i)
+    {
+        representations_h.push_back(i / sketch_elements_with_same_representation);
+        if (i % sketch_elements_with_same_representation == 0)
+            expected_new_value_mask_h.push_back(1);
+        else
+            expected_new_value_mask_h.push_back(0);
+    }
+
+    std::uint32_t number_of_threads = 256;
+
+    test_create_new_value_mask(representations_h,
+                               expected_new_value_mask_h,
+                               number_of_threads);
+}
+
+// ************ Test find_first_occurrences_of_representations_kernel **************
+
+void test_find_first_occurrences_of_representations_kernel(const thrust::host_vector<std::uint64_t>& representation_index_mask_h,
+                                                           const thrust::host_vector<representation_t>& input_representations_h,
+                                                           const thrust::host_vector<std::uint32_t>& expected_starting_index_of_each_representation_h,
+                                                           const thrust::host_vector<representation_t>& expected_unique_representations_h,
+                                                           const std::uint32_t number_of_threads)
+{
+    const thrust::device_vector<std::uint64_t> representation_index_mask_d(representation_index_mask_h);
+    const thrust::device_vector<representation_t> input_representations_d(input_representations_h);
+    ASSERT_EQ(expected_starting_index_of_each_representation_h.size(), representation_index_mask_h.back());
+    ASSERT_EQ(expected_unique_representations_h.size(), representation_index_mask_h.back());
+    thrust::device_vector<std::uint32_t> starting_index_of_each_representation_d(expected_starting_index_of_each_representation_h.size());
+    thrust::device_vector<representation_t> unique_representations_d(expected_starting_index_of_each_representation_h.size());
+
+    std::uint32_t number_of_blocks = (representation_index_mask_d.size() - 1) / number_of_threads + 1;
+
+    find_first_occurrences_of_representations_kernel<<<number_of_blocks, number_of_threads>>>(representation_index_mask_d.data().get(),
+                                                                                              input_representations_d.data().get(),
+                                                                                              representation_index_mask_d.size(),
+                                                                                              starting_index_of_each_representation_d.data().get(),
+                                                                                              unique_representations_d.data().get());
+    CGA_CU_CHECK_ERR(cudaDeviceSynchronize());
+
+    const thrust::host_vector<std::uint32_t> starting_index_of_each_representation_h(starting_index_of_each_representation_d);
+    const thrust::host_vector<representation_t> unique_representations_h(unique_representations_d);
+
+    ASSERT_EQ(starting_index_of_each_representation_h.size(), expected_starting_index_of_each_representation_h.size());
+    ASSERT_EQ(unique_representations_h.size(), expected_unique_representations_h.size());
+    for (std::size_t i = 0; i < expected_starting_index_of_each_representation_h.size(); ++i)
+    {
+        EXPECT_EQ(starting_index_of_each_representation_h[i], expected_starting_index_of_each_representation_h[i]) << "index: " << i;
+        EXPECT_EQ(unique_representations_h[i], expected_unique_representations_h[i]) << "index: " << i;
+    }
+}
+
+TEST(TestCudamapperIndexGPUTwoIndices, test_find_first_occurrences_of_representations_kernel_small_example)
+{
+    thrust::host_vector<std::uint64_t> representation_index_mask_h;
+    thrust::host_vector<representation_t> input_representations_h;
+    thrust::host_vector<std::uint32_t> expected_starting_index_of_each_representation_h;
+    thrust::host_vector<representation_t> expected_unique_representations_h;
+    representation_index_mask_h.push_back(1);
+    input_representations_h.push_back(10);
+    expected_starting_index_of_each_representation_h.push_back(0);
+    expected_unique_representations_h.push_back(10);
+    representation_index_mask_h.push_back(1);
+    input_representations_h.push_back(10);
+    representation_index_mask_h.push_back(1);
+    input_representations_h.push_back(10);
+    representation_index_mask_h.push_back(1);
+    input_representations_h.push_back(10);
+    //
+    representation_index_mask_h.push_back(2);
+    input_representations_h.push_back(20);
+    expected_starting_index_of_each_representation_h.push_back(4);
+    expected_unique_representations_h.push_back(20);
+    //
+    representation_index_mask_h.push_back(3);
+    input_representations_h.push_back(30);
+    expected_starting_index_of_each_representation_h.push_back(5);
+    expected_unique_representations_h.push_back(30);
+    representation_index_mask_h.push_back(3);
+    input_representations_h.push_back(30);
+    representation_index_mask_h.push_back(3);
+    input_representations_h.push_back(30);
+    representation_index_mask_h.push_back(3);
+    input_representations_h.push_back(30);
+    //
+    representation_index_mask_h.push_back(4);
+    input_representations_h.push_back(40);
+    expected_starting_index_of_each_representation_h.push_back(9);
+    expected_unique_representations_h.push_back(40);
+    representation_index_mask_h.push_back(4);
+    input_representations_h.push_back(40);
+    representation_index_mask_h.push_back(4);
+    input_representations_h.push_back(40);
+    //
+    representation_index_mask_h.push_back(5);
+    input_representations_h.push_back(50);
+    expected_starting_index_of_each_representation_h.push_back(12);
+    expected_unique_representations_h.push_back(50);
+    //
+    representation_index_mask_h.push_back(6);
+    input_representations_h.push_back(60);
+    expected_starting_index_of_each_representation_h.push_back(13);
+    expected_unique_representations_h.push_back(60);
+
+    std::uint32_t number_of_threads = 3;
+
+    test_find_first_occurrences_of_representations_kernel(representation_index_mask_h,
+                                                          input_representations_h,
+                                                          expected_starting_index_of_each_representation_h,
+                                                          expected_unique_representations_h,
+                                                          number_of_threads);
+}
+
+TEST(TestCudamapperIndexGPUTwoIndices, test_find_first_occurrences_of_representations_kernel_large_example)
+{
+    const std::uint64_t total_sketch_elements                    = 10000000;
+    const std::uint32_t sketch_elements_with_same_representation = 1000;
+
+    thrust::host_vector<std::uint64_t> representation_index_mask_h;
+    thrust::host_vector<representation_t> input_representations_h;
+    thrust::host_vector<std::size_t> expected_starting_index_of_each_representation_h;
+    thrust::host_vector<representation_t> expected_unique_representations_h;
+    for (std::size_t i = 0; i < total_sketch_elements; ++i)
+    {
+        representation_index_mask_h.push_back(i / sketch_elements_with_same_representation + 1);
+        input_representations_h.push_back(representation_index_mask_h.back() * 10);
+        if (i % sketch_elements_with_same_representation == 0)
+        {
+            expected_starting_index_of_each_representation_h.push_back(i);
+            expected_unique_representations_h.push_back(input_representations_h.back());
+        }
+    }
+
+    std::uint32_t number_of_threads = 256;
+
+    test_find_first_occurrences_of_representations_kernel(representation_index_mask_h,
+                                                          input_representations_h,
+                                                          expected_starting_index_of_each_representation_h,
+                                                          expected_unique_representations_h,
+                                                          number_of_threads);
+}
+
 // ************ Test copy_rest_to_separate_arrays **************
 
 template <typename ReadidPositionDirection, typename DirectionOfRepresentation>
