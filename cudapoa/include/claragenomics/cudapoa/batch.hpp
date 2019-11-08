@@ -12,6 +12,8 @@
 
 #include <claragenomics/cudapoa/cudapoa.hpp>
 
+#include <claragenomics/utils/graph.hpp>
+
 #include <memory>
 #include <vector>
 #include <stdint.h>
@@ -99,6 +101,9 @@ public:
     /// \return Status indicating whether MSA generation is available for this batch.
     virtual StatusType get_msa(std::vector<std::vector<std::string>>& msa,
                                std::vector<StatusType>& output_status) = 0;
+
+    virtual StatusType get_graphs(std::vector<DirectedGraph>& graphs,
+                                  std::vector<StatusType>& output_status) = 0;
 
     /// \brief Return batch ID.
     ///

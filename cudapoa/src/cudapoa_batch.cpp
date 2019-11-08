@@ -64,7 +64,7 @@ void CudapoaBatch::initialize_alignment_details()
 
 void CudapoaBatch::initialize_graph_details()
 {
-    batch_block_->get_graph_details(&graph_details_d_);
+    batch_block_->get_graph_details(&graph_details_d_, &graph_details_h_);
 }
 
 CudapoaBatch::CudapoaBatch(int32_t max_sequences_per_poa,
@@ -306,6 +306,68 @@ StatusType CudapoaBatch::get_msa(std::vector<std::vector<std::string>>& msa, std
                 char* c = reinterpret_cast<char*>(&(output_details_h_->multiple_sequence_alignments[(poa * max_sequences_per_poa_ + i) * CUDAPOA_MAX_CONSENSUS_SIZE]));
                 msa[poa].emplace_back(std::string(c));
             }
+        }
+    }
+
+    return StatusType::success;
+}
+
+StatusType CudapoaBatch::get_graphs(std::vector<DirectedGraph>& graphs, std::vector<StatusType>& output_status)
+{
+    int32_t max_nodes_per_window_ = banded_alignment_ ? CUDAPOA_MAX_NODES_PER_WINDOW_BANDED : CUDAPOA_MAX_NODES_PER_WINDOW;
+    CGA_CU_CHECK_ERR(cudaMemcpyAsync(graph_details_h_->nodes,
+                                     graph_details_d_->nodes,
+                                     sizeof(uint8_t) * max_nodes_per_window_ * max_poas_,
+                                     cudaMemcpyDeviceToHost,
+                                     stream_));
+
+    CGA_CU_CHECK_ERR(cudaMemcpyAsync(graph_details_h_->outgoing_edges,
+                                     graph_details_d_->outgoing_edges,
+                                     sizeof(uint16_t) * max_nodes_per_window_ * CUDAPOA_MAX_NODE_EDGES * max_poas_,
+                                     cudaMemcpyDeviceToHost,
+                                     stream_));
+
+    CGA_CU_CHECK_ERR(cudaMemcpyAsync(graph_details_h_->outgoing_edge_count,
+                                     graph_details_d_->outgoing_edge_count,
+                                     sizeof(uint16_t) * max_nodes_per_window_ * max_poas_,
+                                     cudaMemcpyDeviceToHost,
+                                     stream_));
+
+    CGA_CU_CHECK_ERR(cudaMemcpyAsync(input_details_h_->sequence_lengths,
+                                     input_details_d_->sequence_lengths,
+                                     global_sequence_idx_ * sizeof(uint16_t),
+                                     cudaMemcpyDeviceToHost,
+                                     stream_));
+
+    CGA_CU_CHECK_ERR(cudaMemcpyAsync(output_details_h_->consensus,
+                                     output_details_d_->consensus,
+                                     CUDAPOA_MAX_CONSENSUS_SIZE * max_poas_ * sizeof(uint8_t),
+                                     cudaMemcpyDeviceToHost,
+                                     stream_));
+
+    CGA_CU_CHECK_ERR(cudaStreamSynchronize(stream_));
+
+    for (int32_t poa = 0; poa < poa_count_; poa++)
+    {
+        graphs.emplace_back(DirectedGraph());
+        char* c = reinterpret_cast<char*>(&(output_details_h_->consensus[poa * CUDAPOA_MAX_CONSENSUS_SIZE]));
+        // We use the first two entries in the consensus buffer to log error during kernel execution
+        // c[0] == 0 means an error occured and when that happens the error type is saved in c[1]
+        if (static_cast<uint8_t>(c[0]) == CUDAPOA_KERNEL_ERROR_ENCOUNTERED)
+        {
+            decode_cudapoa_kernel_error(static_cast<claragenomics::cudapoa::StatusType>(c[1]), output_status);
+        }
+        else
+        {
+            output_status.emplace_back(claragenomics::cudapoa::StatusType::success);
+            int32_t num_nodes = input_details_h_->sequence_lengths[input_details_h_->window_details[poa].seq_len_buffer_offset];
+            uint8_t* nodes    = &graph_details_h_->nodes[max_nodes_per_window_ * poa];
+            printf("%d\n", num_nodes);
+            for (int32_t a = 0; a < num_nodes; a++)
+            {
+                printf("%c,", nodes[a]);
+            }
+            printf("\n");
         }
     }
 

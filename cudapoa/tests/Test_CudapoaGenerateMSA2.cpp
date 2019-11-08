@@ -77,7 +77,7 @@ public:
 TEST_F(MSATest, CudapoaMSA)
 {
     std::minstd_rand rng(1);
-    int num_sequences    = 500;
+    int num_sequences    = 2;
     std::string backbone = claragenomics::genomeutils::generate_random_genome(50, rng);
     auto sequences       = claragenomics::genomeutils::generate_random_sequences(backbone, num_sequences, rng, 10, 5, 10);
 
@@ -103,6 +103,10 @@ TEST_F(MSATest, CudapoaMSA)
 
     ASSERT_EQ(output_status[0], StatusType::success);
     ASSERT_EQ(poa_group.size(), cudapoa_msa[0].size());
+
+    std::vector<DirectedGraph> cudapoa_graphs;
+    output_status.clear();
+    cudapoa_batch->get_graphs(cudapoa_graphs, output_status);
 
     auto spoa_msa = spoa_generate_multiple_sequence_alignments(sequences);
 
