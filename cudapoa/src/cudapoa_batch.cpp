@@ -360,14 +360,23 @@ StatusType CudapoaBatch::get_graphs(std::vector<DirectedGraph>& graphs, std::vec
         else
         {
             output_status.emplace_back(claragenomics::cudapoa::StatusType::success);
-            int32_t num_nodes = input_details_h_->sequence_lengths[input_details_h_->window_details[poa].seq_len_buffer_offset];
-            uint8_t* nodes    = &graph_details_h_->nodes[max_nodes_per_window_ * poa];
-            printf("%d\n", num_nodes);
-            for (int32_t a = 0; a < num_nodes; a++)
+            DirectedGraph& graph = graphs.back();
+            int32_t seq_0_offset = input_details_h_->window_details[poa].seq_len_buffer_offset;
+            int32_t num_nodes    = input_details_h_->sequence_lengths[seq_0_offset];
+            uint8_t* nodes       = &graph_details_h_->nodes[max_nodes_per_window_ * poa];
+            for (int32_t n = 0; n < num_nodes; n++)
             {
-                printf("%c,", nodes[a]);
+                // For each node, find it's outgoing edges and add the edge to the graph,
+                // along with its label.
+                node_id_t src = n;
+                graph.add_label(src, std::string(1, static_cast<char>(nodes[n])));
+                uint16_t num_edges = graph_details_h_->outgoing_edge_count[poa * max_nodes_per_window_ + n];
+                for (uint16_t e = 0; e < num_edges; e++)
+                {
+                    node_id_t sink = graph_details_h_->outgoing_edges[poa * max_nodes_per_window_ * CUDAPOA_MAX_NODE_EDGES + n * CUDAPOA_MAX_NODE_EDGES + e];
+                    graph.add_edge(src, sink);
+                }
             }
-            printf("\n");
         }
     }
 

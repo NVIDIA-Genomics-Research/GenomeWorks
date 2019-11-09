@@ -16,6 +16,7 @@
 #include <stdint.h>
 #include <string>
 #include <iostream>
+#include <sstream>
 #include <algorithm>
 
 namespace claragenomics
@@ -104,6 +105,24 @@ public:
         {
             throw std::runtime_error("No node found with given ID");
         }
+    }
+
+    virtual std::string serialize_to_dot() const
+    {
+        std::ostringstream dot_str;
+        dot_str << "digraph g {\n";
+        for (auto iter : adjacent_nodes_)
+        {
+            node_id_t src    = iter.first;
+            auto label_found = node_labels_.find(src);
+            dot_str << src << " [label=\"" << label_found->second << "\"];\n";
+            for (node_id_t sink : iter.second)
+            {
+                dot_str << src << " -> " << sink << "\n";
+            }
+        }
+        dot_str << "\n";
+        return dot_str.str();
     }
 
 private:
