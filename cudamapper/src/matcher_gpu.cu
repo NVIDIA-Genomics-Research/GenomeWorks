@@ -27,6 +27,29 @@ namespace cudamapper
 MatcherGPU::MatcherGPU(const IndexTwoIndices& query_index,
                        const IndexTwoIndices& target_index)
 {
+
+    CGA_NVTX_RANGE(profile, "matcherGPU");
+    if (query_index.number_of_reads() == 0 || target_index.number_of_reads() == 0)
+        return;
+
+    thrust::device_vector<std::int64_t> found_target_indices_d(query_index.unique_representations().size());
+    thrust::device_vector<std::int64_t> anchor_starting_indices_d(query_index.unique_representations().size());
+    details::matcher_gpu::find_query_target_matches(found_target_indices_d, query_index.unique_representations(), target_index.unique_representations());
+    details::matcher_gpu::compute_anchor_starting_indices(anchor_starting_indices_d, query_index.first_occurrence_of_representations(), found_target_indices_d, target_index.first_occurrence_of_representations());
+
+    const int64_t n_anchors = anchor_starting_indices_d.back(); // D->H transfer
+
+    anchors_d_.resize(n_anchors);
+
+    details::matcher_gpu::generate_anchors(anchors_d_,
+                                           anchor_starting_indices_d,
+                                           query_index.first_occurrence_of_representations(),
+                                           found_target_indices_d,
+                                           target_index.first_occurrence_of_representations(),
+                                           query_index.read_ids(),
+                                           query_index.positions_in_reads(),
+                                           target_index.read_ids(),
+                                           target_index.positions_in_reads());
 }
 
 thrust::device_vector<Anchor>& MatcherGPU::anchors()

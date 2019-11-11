@@ -30,6 +30,7 @@ target_link_libraries(index_gpu logging pthread utils cgaio)
 target_compile_options(index_gpu PRIVATE -Werror)
 
 cuda_add_library(index_gpu_two_indices
+        src/index_two_indices.cu
         src/index_gpu_two_indices.cu
         src/minimizer.cu)
 target_include_directories(index_gpu_two_indices PUBLIC include)
@@ -64,7 +65,6 @@ cuda_add_executable(cudamapper
         src/cudamapper.cpp
         src/main.cpp
         src/index.cu
-        src/index_two_indices.cu
         src/matcher_two_indices.cu
         src/overlapper.cpp
 )

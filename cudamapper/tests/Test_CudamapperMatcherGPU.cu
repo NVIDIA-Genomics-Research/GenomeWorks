@@ -10,6 +10,8 @@
 
 #include "gtest/gtest.h"
 
+#include "cudamapper_file_location.hpp"
+
 #include <thrust/host_vector.h>
 #include <thrust/device_vector.h>
 
@@ -323,6 +325,17 @@ TEST(TestCudamapperMatcherGPU, test_generate_anchors_small_example)
         query_positions_in_read_h,
         target_read_ids_h,
         target_positions_in_read_h);
+}
+
+TEST(TestCudamapperMatcherGPU, OneReadOneMinimizer)
+{
+    std::unique_ptr<io::FastaParser> parser       = io::create_fasta_parser(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/gatt.fasta");
+    std::unique_ptr<IndexTwoIndices> query_index  = IndexTwoIndices::create_index(parser.get(), 0, parser->get_num_seqences(), 4, 1);
+    std::unique_ptr<IndexTwoIndices> target_index = IndexTwoIndices::create_index(parser.get(), 0, parser->get_num_seqences(), 4, 1);
+    MatcherGPU matcher(*query_index, *target_index);
+
+    const thrust::host_vector<Anchor> anchors(matcher.anchors());
+    ASSERT_EQ(get_size(anchors), 1);
 }
 
 } // namespace cudamapper

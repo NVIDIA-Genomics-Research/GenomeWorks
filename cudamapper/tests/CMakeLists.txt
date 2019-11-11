@@ -18,7 +18,7 @@ set(SOURCES
     Test_CudamapperMatcher.cu
     Test_CudamapperMatcherGPU.cu
     Test_CudamapperMinimizer.cpp
-        Test_CudamapperOverlapperTriggered.cu
+    Test_CudamapperOverlapperTriggered.cu
     ../src/bioparser_sequence.cpp)
 
 get_property(cudamapper_data_include_dir GLOBAL PROPERTY cudamapper_data_include_dir)
