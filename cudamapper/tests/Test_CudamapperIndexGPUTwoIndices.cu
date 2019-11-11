@@ -84,7 +84,7 @@ void test_function(const std::string& filename,
         EXPECT_EQ(directions_of_reads_h[i], expected_directions_of_reads[i]) << "i: " << i;
     }
 
-    const thrust::device_vector<representation_t> unique_representations_d = index.unique_representations();
+    const thrust::device_vector<representation_t> unique_representations_d           = index.unique_representations();
     const thrust::device_vector<std::uint32_t> first_occurrence_of_representations_d = index.first_occurrence_of_representations();
     const thrust::host_vector<representation_t> unique_representations_h(unique_representations_d);
     const thrust::host_vector<representation_t> first_occurrence_of_representations_h(first_occurrence_of_representations_d);
@@ -97,7 +97,6 @@ void test_function(const std::string& filename,
         EXPECT_EQ(expected_first_occurrence_of_representations[i], first_occurrence_of_representations_h[i]) << "index: " << i;
     }
     EXPECT_EQ(expected_first_occurrence_of_representations.back(), expected_representations.size());
-
 }
 
 TEST(TestCudamapperIndexGPUTwoIndices, GATT_4_1)

@@ -31,7 +31,7 @@ public:
     thrust::device_vector<Anchor>& anchors() override;
 
 private:
-    thrust::device_vector<Anchor> anchors_h_;
+    thrust::device_vector<Anchor> anchors_d_;
 };
 
 namespace details
@@ -104,6 +104,16 @@ void compute_anchor_starting_indices(thrust::device_vector<std::int64_t>& anchor
                                      const thrust::device_vector<std::int64_t>& found_target_indices_d,
                                      const thrust::device_vector<std::uint32_t>& target_starting_index_of_each_representation_d);
 
+///TODO
+void generate_anchors(thrust::device_vector<Anchor>& anchors,
+                      const thrust::device_vector<std::int64_t>& anchor_starting_indices,
+                      const thrust::device_vector<std::uint32_t>& query_starting_index_of_each_representation_d,
+                      const thrust::device_vector<std::int64_t>& found_target_indices_d,
+                      const thrust::device_vector<std::uint32_t>& target_starting_index_of_each_representation_d,
+                      const thrust::device_vector<read_id_t>& query_read_ids,
+                      const thrust::device_vector<position_in_read_t>& query_positions_in_read,
+                      const thrust::device_vector<read_id_t>& target_read_ids,
+                      const thrust::device_vector<position_in_read_t>& target_positions_in_read);
 /// \brief Performs a binary search on target_representations_d for each element of query_representations_d and stores the found index (or -1 iff not found) in found_target_indices.
 ///
 /// For example:
@@ -125,6 +135,19 @@ void compute_anchor_starting_indices(thrust::device_vector<std::int64_t>& anchor
 /// \param target_representations_d the array of targets to be searched
 /// \param n_target_representations size of \param target_representations_d
 __global__ void find_query_target_matches_kernel(int64_t* const found_target_indices_d, const representation_t* const query_representations_d, const int64_t n_query_representations, const representation_t* const target_representations_d, const int64_t n_target_representations);
+
+/// TODO
+__global__ void generate_anchors_kernel(
+    Anchor* const anchors_d,
+    const int64_t* const anchor_starting_index_d,
+    const std::uint32_t* const query_starting_index_of_each_representation_d,
+    const std::int64_t* const found_target_indices_d,
+    int32_t n_query_representations,
+    const std::uint32_t* const target_starting_index_of_each_representation_d,
+    const read_id_t* const query_read_ids,
+    const position_in_read_t* const query_positions_in_read,
+    const read_id_t* const target_read_ids,
+    const position_in_read_t* const target_positions_in_read);
 } // namespace matcher_gpu
 
 } // namespace details

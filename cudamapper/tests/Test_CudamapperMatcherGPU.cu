@@ -188,5 +188,142 @@ TEST(TestCudamapperMatcherGPU, test_compute_number_of_anchors_large_example)
                                    expected_anchor_starting_indices_h);
 }
 
+void test_generate_anchors(
+    const thrust::host_vector<Anchor>& expected_anchors_h,
+    const thrust::host_vector<std::int64_t>& anchor_starting_indices_h,
+    const thrust::host_vector<std::uint32_t>& query_starting_index_of_each_representation_h,
+    const thrust::host_vector<std::int64_t>& found_target_indices_h,
+    const thrust::host_vector<std::uint32_t>& target_starting_index_of_each_representation_h,
+    const thrust::host_vector<read_id_t>& query_read_ids_h,
+    const thrust::host_vector<position_in_read_t>& query_positions_in_read_h,
+    const thrust::host_vector<read_id_t>& target_read_ids_h,
+    const thrust::host_vector<position_in_read_t>& target_positions_in_read_h)
+{
+    const thrust::device_vector<std::int64_t> anchor_starting_indices_d(anchor_starting_indices_h);
+    const thrust::device_vector<std::uint32_t> query_starting_index_of_each_representation_d(query_starting_index_of_each_representation_h);
+    const thrust::device_vector<std::int64_t> found_target_indices_d(found_target_indices_h);
+    const thrust::device_vector<std::uint32_t> target_starting_index_of_each_representation_d(target_starting_index_of_each_representation_h);
+    const thrust::device_vector<read_id_t> query_read_ids_d(query_read_ids_h);
+    const thrust::device_vector<position_in_read_t> query_positions_in_read_d(query_positions_in_read_h);
+    const thrust::device_vector<read_id_t> target_read_ids_d(target_read_ids_h);
+    const thrust::device_vector<position_in_read_t> target_positions_in_read_d(target_positions_in_read_h);
+
+    thrust::device_vector<Anchor> anchors_d(anchor_starting_indices_h.back());
+
+    details::matcher_gpu::generate_anchors(anchors_d,
+                                           anchor_starting_indices_d,
+                                           query_starting_index_of_each_representation_d,
+                                           found_target_indices_d,
+                                           target_starting_index_of_each_representation_d,
+                                           query_read_ids_d,
+                                           query_positions_in_read_d,
+                                           target_read_ids_d,
+                                           target_positions_in_read_d);
+
+    thrust::host_vector<Anchor> anchors_h(anchors_d);
+    ASSERT_EQ(anchors_h.size(), expected_anchors_h.size());
+
+    for (int64_t i = 0; i < get_size(anchors_h); ++i)
+    {
+        EXPECT_EQ(anchors_h[i].query_read_id_, expected_anchors_h[i].query_read_id_) << " index: " << i;
+        EXPECT_EQ(anchors_h[i].query_position_in_read_, expected_anchors_h[i].query_position_in_read_) << " index: " << i;
+        EXPECT_EQ(anchors_h[i].target_read_id_, expected_anchors_h[i].target_read_id_) << " index: " << i;
+        EXPECT_EQ(anchors_h[i].target_position_in_read_, expected_anchors_h[i].target_position_in_read_) << " index: " << i;
+    }
+}
+
+TEST(TestCudamapperMatcherGPU, test_generate_anchors_small_example)
+{
+    thrust::host_vector<representation_t> query_starting_index_of_each_representation_h;
+    query_starting_index_of_each_representation_h.push_back(0);
+    query_starting_index_of_each_representation_h.push_back(4);
+    query_starting_index_of_each_representation_h.push_back(10);
+    query_starting_index_of_each_representation_h.push_back(13);
+    query_starting_index_of_each_representation_h.push_back(18);
+    query_starting_index_of_each_representation_h.push_back(21);
+
+    thrust::host_vector<representation_t> target_starting_index_of_each_representation_h;
+    target_starting_index_of_each_representation_h.push_back(0);
+    target_starting_index_of_each_representation_h.push_back(3);
+    target_starting_index_of_each_representation_h.push_back(7);
+    target_starting_index_of_each_representation_h.push_back(9);
+    target_starting_index_of_each_representation_h.push_back(13);
+    target_starting_index_of_each_representation_h.push_back(16);
+    target_starting_index_of_each_representation_h.push_back(18);
+    target_starting_index_of_each_representation_h.push_back(21);
+
+    thrust::host_vector<int64_t> found_target_indices_h;
+    found_target_indices_h.push_back(-1);
+    found_target_indices_h.push_back(1);
+    found_target_indices_h.push_back(3);
+    found_target_indices_h.push_back(-1);
+    found_target_indices_h.push_back(6);
+
+    thrust::host_vector<int64_t> anchor_starting_indices_h;
+    anchor_starting_indices_h.push_back(0);
+    anchor_starting_indices_h.push_back(24);
+    anchor_starting_indices_h.push_back(36);
+    anchor_starting_indices_h.push_back(36);
+    anchor_starting_indices_h.push_back(45);
+
+    thrust::host_vector<read_id_t> query_read_ids_h;
+    thrust::host_vector<position_in_read_t> query_positions_in_read_h;
+    for (std::uint32_t i = 0; i < query_starting_index_of_each_representation_h.back(); ++i)
+    {
+        query_read_ids_h.push_back(i);
+        query_positions_in_read_h.push_back(10 * i);
+    }
+
+    thrust::host_vector<read_id_t> target_read_ids_h;
+    thrust::host_vector<position_in_read_t> target_positions_in_read_h;
+    for (std::uint32_t i = 0; i < target_starting_index_of_each_representation_h.back(); ++i)
+    {
+        target_read_ids_h.push_back(100 * i);
+        target_positions_in_read_h.push_back(1000 * i);
+    }
+
+    thrust::host_vector<Anchor> expected_anchors(anchor_starting_indices_h.back());
+    for (int32_t i = 0; i < 6; ++i)
+        for (int32_t j = 0; j < 4; ++j)
+        {
+            Anchor& a                  = expected_anchors[i * 4 + j];
+            a.query_read_id_           = 4 + i;
+            a.query_position_in_read_  = 10 * (4 + i);
+            a.target_read_id_          = 100 * (j + 3);
+            a.target_position_in_read_ = 1000 * (j + 3);
+        }
+
+    for (int32_t i = 0; i < 3; ++i)
+        for (int32_t j = 0; j < 4; ++j)
+        {
+            Anchor& a                  = expected_anchors[i * 4 + j + 24];
+            a.query_read_id_           = 10 + i;
+            a.query_position_in_read_  = 10 * (10 + i);
+            a.target_read_id_          = 100 * (j + 9);
+            a.target_position_in_read_ = 1000 * (j + 9);
+        }
+
+    for (int32_t i = 0; i < 3; ++i)
+        for (int32_t j = 0; j < 3; ++j)
+        {
+            Anchor& a                  = expected_anchors[i * 3 + j + 36];
+            a.query_read_id_           = 18 + i;
+            a.query_position_in_read_  = 10 * (18 + i);
+            a.target_read_id_          = 100 * (j + 18);
+            a.target_position_in_read_ = 1000 * (j + 18);
+        }
+
+    test_generate_anchors(
+        expected_anchors,
+        anchor_starting_indices_h,
+        query_starting_index_of_each_representation_h,
+        found_target_indices_h,
+        target_starting_index_of_each_representation_h,
+        query_read_ids_h,
+        query_positions_in_read_h,
+        target_read_ids_h,
+        target_positions_in_read_h);
+}
+
 } // namespace cudamapper
 } // namespace claragenomics
