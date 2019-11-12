@@ -39,6 +39,18 @@ read_id_t Minimizer::read_id() const
     return read_id_;
 }
 
+
+__device__ representation_t wang_hash64(representation_t key){
+    key = (~key) + (key << 21);// key = (key << 21) - key - 1;
+    key = key ^ (key >> 24);
+    key = (key + (key << 3)) + (key << 8);// key * 265
+    key = key ^ (key >> 14);
+    key = (key + (key << 2)) + (key << 4);// key * 21
+    key = key ^ (key >> 28);
+    key = key + (key << 31);
+    return key;
+}
+
 Minimizer::DirectionOfRepresentation Minimizer::direction() const
 {
     return direction_;
@@ -193,6 +205,10 @@ __global__ void find_front_end_minimizers(const std::uint64_t minimizer_size,
                 forward_representation |= forward_basepair_hashes[threadIdx.x + i] << 2 * (minimizer_size - i - 1);
                 reverse_representation |= reverse_basepair_hashes[threadIdx.x + i] << 2 * i;
             }
+
+            forward_representation = wang_hash64(forward_representation);
+            reverse_representation = wang_hash64(reverse_representation);
+
             if (forward_representation <= reverse_representation)
             {
                 minimizers_representation[threadIdx.x] = forward_representation;
@@ -456,6 +472,10 @@ __global__ void find_central_minimizers(const std::uint64_t minimizer_size,
                 forward_representation |= forward_basepair_hashes[kmer_index + i] << 2 * (minimizer_size - i - 1);
                 reverse_representation |= reverse_basepair_hashes[kmer_index + i] << 2 * i;
             }
+
+            forward_representation = wang_hash64(forward_representation);
+            reverse_representation = wang_hash64(reverse_representation);
+
             if (forward_representation <= reverse_representation)
             {
                 minimizers_representation[kmer_index] = forward_representation;
@@ -680,6 +700,11 @@ __global__ void find_back_end_minimizers(const std::uint64_t minimizer_size,
             forward_representation |= forward_basepair_hashes[kmer_index + i] << 2 * (minimizer_size - i - 1);
             reverse_representation |= reverse_basepair_hashes[kmer_index + i] << 2 * i;
         }
+
+        //printf("Pre hash %lu, Post hash %lu\n", forward_representation, wang_hash64(forward_representation));
+        forward_representation = wang_hash64(forward_representation);
+        reverse_representation = wang_hash64(reverse_representation);
+
         if (forward_representation <= reverse_representation)
         {
             minimizers_representation[kmer_index] = forward_representation;
