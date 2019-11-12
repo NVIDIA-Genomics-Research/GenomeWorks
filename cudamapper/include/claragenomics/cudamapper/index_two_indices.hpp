@@ -31,6 +31,9 @@ namespace cudamapper
 class IndexTwoIndices
 {
 public:
+    /// \brief Virtual destructor
+    virtual ~IndexTwoIndices() = default;
+
     /// \brief returns an array of representations of sketch elements
     /// \return an array of representations of sketch elements
     virtual const thrust::device_vector<representation_t>& representations() const = 0;

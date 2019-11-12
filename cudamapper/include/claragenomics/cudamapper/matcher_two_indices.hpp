@@ -26,6 +26,9 @@ namespace cudamapper
 class MatcherTwoIndices
 {
 public:
+    /// \brief Virtual destructor
+    virtual ~MatcherTwoIndices() = default;
+
     /// \brief returns anchors
     /// \return anchors
     virtual thrust::device_vector<Anchor>& anchors() = 0;
