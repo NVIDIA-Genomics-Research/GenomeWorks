@@ -124,14 +124,16 @@ e.g.
 A description of each of the benchmarks is present in a README under the module's benchmark folder.
 
 ## Enable Doc Generation
-To enable document generation for Clara Genomics Analysis, please install `Doxygen` on your system. Once
-`Doxygen` has been installed, run the following to build documents.
+To enable document generation for Clara Genomics Analysis, please install `Doxygen` on your system.
+Once`Doxygen` has been installed, run the following to build documents.
 
 ```bash
 make docs
 ```
 
 Docs are also generated as part of the default `all` target when `Doxygen` is available on the system.
+
+To disable documentation generation add `-Dcga_generate_docs=OFF` to the `cmake` command in the [build step](#build).
 
 ## Code Formatting
 
