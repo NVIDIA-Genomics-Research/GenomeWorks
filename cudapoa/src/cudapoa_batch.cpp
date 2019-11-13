@@ -312,7 +312,7 @@ StatusType CudapoaBatch::get_msa(std::vector<std::vector<std::string>>& msa, std
     return StatusType::success;
 }
 
-StatusType CudapoaBatch::get_graphs(std::vector<DirectedGraph>& graphs, std::vector<StatusType>& output_status)
+void CudapoaBatch::get_graphs(std::vector<DirectedGraph>& graphs, std::vector<StatusType>& output_status)
 {
     int32_t max_nodes_per_window_ = banded_alignment_ ? CUDAPOA_MAX_NODES_PER_WINDOW_BANDED : CUDAPOA_MAX_NODES_PER_WINDOW;
     CGA_CU_CHECK_ERR(cudaMemcpyAsync(graph_details_h_->nodes,
@@ -369,7 +369,7 @@ StatusType CudapoaBatch::get_graphs(std::vector<DirectedGraph>& graphs, std::vec
                 // For each node, find it's outgoing edges and add the edge to the graph,
                 // along with its label.
                 node_id_t src = n;
-                graph.add_label(src, std::string(1, static_cast<char>(nodes[n])));
+                graph.set_node_label(src, std::string(1, static_cast<char>(nodes[n])));
                 uint16_t num_edges = graph_details_h_->outgoing_edge_count[poa * max_nodes_per_window_ + n];
                 for (uint16_t e = 0; e < num_edges; e++)
                 {
@@ -379,8 +379,6 @@ StatusType CudapoaBatch::get_graphs(std::vector<DirectedGraph>& graphs, std::vec
             }
         }
     }
-
-    return StatusType::success;
 }
 
 bool CudapoaBatch::reserve_buf(int32_t max_seq_length)

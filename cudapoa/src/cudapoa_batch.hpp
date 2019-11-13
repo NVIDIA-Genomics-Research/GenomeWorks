@@ -66,8 +66,8 @@ public:
     StatusType get_msa(std::vector<std::vector<std::string>>& msa,
                        std::vector<StatusType>& output_status);
 
-    StatusType get_graphs(std::vector<DirectedGraph>& graphs,
-                          std::vector<StatusType>& output_status);
+    void get_graphs(std::vector<DirectedGraph>& graphs,
+                    std::vector<StatusType>& output_status);
 
     // Return batch ID.
     int32_t batch_id() const;

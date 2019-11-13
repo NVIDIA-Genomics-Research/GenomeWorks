@@ -102,8 +102,14 @@ public:
     virtual StatusType get_msa(std::vector<std::vector<std::string>>& msa,
                                std::vector<StatusType>& output_status) = 0;
 
-    virtual StatusType get_graphs(std::vector<DirectedGraph>& graphs,
-                                  std::vector<StatusType>& output_status) = 0;
+    /// \brief Get the graph representation for each POA.
+    ///
+    /// \param graphs Reference to a vector where directed graph of each poa
+    ///               is returned.
+    /// \param output_status Reference to vector where the errors
+    ///                 during kernel execution is captured
+    virtual void get_graphs(std::vector<DirectedGraph>& graphs,
+                            std::vector<StatusType>& output_status) = 0;
 
     /// \brief Return batch ID.
     ///
