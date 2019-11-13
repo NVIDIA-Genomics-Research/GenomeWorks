@@ -41,8 +41,7 @@ public:
     }
 };
 
-/// \class Graph
-/// Object representing a generic graph structure
+/// \brief Object representing a generic graph structure
 class Graph
 {
 public:
@@ -53,6 +52,7 @@ public:
     ///
     /// \param node_id_from Source node ID
     /// \param node_id_to Sink node ID
+    /// \param weight Edge weight
     virtual void add_edge(node_id_t node_id_from, node_id_t node_id_to, edge_weight_t weight) = 0;
 
     /// \brief Get a list of adjacent nodes to a given node
@@ -167,6 +167,9 @@ protected:
         }
     }
 
+    /// \brief Serialize node labels to dot format
+    ///
+    /// \param dot_str Output string stream to serialize labels to
     void node_labels_to_dot(std::ostringstream& dot_str) const
     {
         const std::vector<node_id_t> nodes = get_node_ids();
@@ -180,6 +183,10 @@ protected:
         }
     }
 
+    /// \brief Serialize edges to dot format
+    ///
+    /// \param dot_str Output string stream to serialize labels to
+    /// \param node_separator DOT delimiter for edge description
     void edges_to_dot(std::ostringstream& dot_str, const std::string& node_separator) const
     {
         for (auto iter : edges_)
@@ -204,8 +211,7 @@ protected:
     const std::vector<node_id_t> empty_;
 };
 
-/// \class DirectedGraph
-/// Object representing a directed graph structure
+/// \brief DirectedGraph Object representing a directed graph structure
 class DirectedGraph : public Graph
 {
 public:
@@ -213,6 +219,11 @@ public:
 
     ~DirectedGraph() = default;
 
+    /// \brief Add directed edges to graph.
+    ///
+    /// \param node_id_from Source node ID
+    /// \param node_id_to Sink node ID
+    /// \param weight Edge weight
     virtual void add_edge(node_id_t node_id_from, node_id_t node_id_to, edge_weight_t weight = 0) override
     {
         auto edge = edge_t(node_id_from, node_id_to);
@@ -223,6 +234,9 @@ public:
         }
     }
 
+    /// \brief Serialize graph structure to dot format
+    ///
+    /// \return A string encoding the graph in dot format
     virtual std::string serialize_to_dot() const override
     {
         std::ostringstream dot_str;
@@ -239,8 +253,7 @@ public:
     }
 };
 
-/// \class UndirectedGraph
-/// Object representing an undirected graph structure
+/// \brief UndirectedGraph Object representing an undirected graph structure
 class UndirectedGraph : public Graph
 {
 public:
@@ -248,6 +261,11 @@ public:
 
     ~UndirectedGraph() = default;
 
+    /// \brief Add undirected edges to graph.
+    ///
+    /// \param node_id_from Source node ID
+    /// \param node_id_to Sink node ID
+    /// \param weight Edge weight
     virtual void add_edge(node_id_t node_id_from, node_id_t node_id_to, edge_weight_t weight = 0) override
     {
         auto edge          = edge_t(node_id_from, node_id_to);
@@ -260,6 +278,9 @@ public:
         }
     }
 
+    /// \brief Serialize graph structure to dot format
+    ///
+    /// \return A string encoding the graph in dot format
     virtual std::string serialize_to_dot() const override
     {
         std::ostringstream dot_str;
