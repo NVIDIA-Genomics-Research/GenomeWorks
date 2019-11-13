@@ -18,7 +18,8 @@ set(SOURCES
     Test_CudapoaNW.cpp
     Test_CudapoaGenerateConsensus.cpp
     Test_CudapoaBatchEnd2End.cpp
-    Test_CudapoaGenerateMSA2.cpp)
+    Test_CudapoaGenerateMSA2.cpp
+    Test_CudapoaSerializeGraph.cpp)
 
 get_property(cudapoa_data_include_dir GLOBAL PROPERTY cudapoa_data_include_dir)
 include_directories(${cudapoa_data_include_dir})

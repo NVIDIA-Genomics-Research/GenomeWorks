@@ -22,8 +22,9 @@
 namespace claragenomics
 {
 
-using node_id_t = int32_t;
-using edge_t    = std::pair<node_id_t, node_id_t>;
+using node_id_t     = int32_t;
+using edge_weight_t = int32_t;
+using edge_t        = std::pair<node_id_t, node_id_t>;
 
 /// \struct PairHash
 /// Hash function for a pair
@@ -52,7 +53,7 @@ public:
     ///
     /// \param node_id_from Source node ID
     /// \param node_id_to Sink node ID
-    virtual void add_edge(node_id_t node_id_from, node_id_t node_id_to) = 0;
+    virtual void add_edge(node_id_t node_id_from, node_id_t node_id_to, edge_weight_t weight) = 0;
 
     /// \brief Get a list of adjacent nodes to a given node
     ///
@@ -88,12 +89,12 @@ public:
     /// \brief Get a list of all edges in the graph
     ///
     /// \return A vector of edges
-    virtual const std::vector<edge_t> get_edges() const
+    virtual const std::vector<std::pair<edge_t, edge_weight_t>> get_edges() const
     {
-        std::vector<edge_t> edges;
+        std::vector<std::pair<edge_t, edge_weight_t>> edges;
         for (auto iter : edges_)
         {
-            edges.push_back(iter);
+            edges.push_back({iter.first, iter.second});
         }
         return edges;
     }
@@ -166,11 +167,35 @@ protected:
         }
     }
 
+    void node_labels_to_dot(std::ostringstream& dot_str) const
+    {
+        const std::vector<node_id_t> nodes = get_node_ids();
+        for (auto node : nodes)
+        {
+            auto label_found = node_labels_.find(node);
+            if (label_found != node_labels_.end())
+            {
+                dot_str << node << " [label=\"" << label_found->second << "\"];\n";
+            }
+        }
+    }
+
+    void edges_to_dot(std::ostringstream& dot_str, const std::string& node_separator) const
+    {
+        for (auto iter : edges_)
+        {
+            const edge_t& edge          = iter.first;
+            const edge_weight_t& weight = iter.second;
+            dot_str << edge.first << " " << node_separator << " " << edge.second;
+            dot_str << " [label=\"" << weight << "\"];\n";
+        }
+    }
+
     /// List of adjacent nodes per node ID
     std::unordered_map<node_id_t, std::vector<node_id_t>> adjacent_nodes_;
 
     /// All edges in the graph
-    std::unordered_set<edge_t, PairHash> edges_;
+    std::unordered_map<edge_t, edge_weight_t, PairHash> edges_;
 
     /// Label per node
     std::unordered_map<node_id_t, std::string> node_labels_;
@@ -188,12 +213,12 @@ public:
 
     ~DirectedGraph() = default;
 
-    virtual void add_edge(node_id_t node_id_from, node_id_t node_id_to) override
+    virtual void add_edge(node_id_t node_id_from, node_id_t node_id_to, edge_weight_t weight = 0) override
     {
         auto edge = edge_t(node_id_from, node_id_to);
         if (!directed_edge_exists(edge))
         {
-            edges_.insert(edge);
+            edges_.insert({edge, weight});
             update_adject_nodes(edge);
         }
     }
@@ -202,19 +227,13 @@ public:
     {
         std::ostringstream dot_str;
         dot_str << "digraph g {\n";
-        for (auto iter : adjacent_nodes_)
-        {
-            node_id_t src    = iter.first;
-            auto label_found = node_labels_.find(src);
-            if (label_found != node_labels_.end())
-            {
-                dot_str << src << " [label=\"" << label_found->second << "\"];\n";
-            }
-            for (node_id_t sink : iter.second)
-            {
-                dot_str << src << " -> " << sink << "\n";
-            }
-        }
+
+        // Get nodel labels, if any.
+        node_labels_to_dot(dot_str);
+
+        // Get edges.
+        edges_to_dot(dot_str, "->");
+
         dot_str << "}\n";
         return dot_str.str();
     }
@@ -229,13 +248,13 @@ public:
 
     ~UndirectedGraph() = default;
 
-    virtual void add_edge(node_id_t node_id_from, node_id_t node_id_to) override
+    virtual void add_edge(node_id_t node_id_from, node_id_t node_id_to, edge_weight_t weight = 0) override
     {
         auto edge          = edge_t(node_id_from, node_id_to);
         auto edge_reversed = edge_t(node_id_to, node_id_from);
         if (!directed_edge_exists(edge) && !directed_edge_exists(edge_reversed))
         {
-            edges_.insert(edge);
+            edges_.insert({edge, weight});
             update_adject_nodes(edge);
             update_adject_nodes(edge_reversed);
         }
@@ -247,21 +266,10 @@ public:
         dot_str << "graph g {\n";
 
         // Get nodel labels, if any.
-        const std::vector<node_id_t> nodes = get_node_ids();
-        for (auto node : nodes)
-        {
-            auto label_found = node_labels_.find(node);
-            if (label_found != node_labels_.end())
-            {
-                dot_str << node << " [label=\"" << label_found->second << "\"];\n";
-            }
-        }
+        node_labels_to_dot(dot_str);
 
         // Get edges.
-        for (auto iter : edges_)
-        {
-            dot_str << iter.first << " -- " << iter.second << "\n";
-        }
+        edges_to_dot(dot_str, "--");
 
         dot_str << "}\n";
         return dot_str.str();

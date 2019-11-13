@@ -123,8 +123,9 @@ std::tuple<int64_t, int64_t, int64_t, int64_t> BatchBlock::calculate_space_per_p
     host_size_fixed += sizeof(GraphDetails);                                                            // graph_details_h_
     host_size_fixed += sizeof(GraphDetails);                                                            // graph_details_d_
     host_size_per_poa += sizeof(uint8_t) * max_nodes_per_window_ * poa_count;                           // graph_details_h_->nodes
-    host_size_per_poa += sizeof(uint16_t) * max_nodes_per_window_ * CUDAPOA_MAX_NODE_EDGES * poa_count; // graph_details_d_->outgoing_edges
-    host_size_per_poa += sizeof(uint16_t) * max_nodes_per_window_ * poa_count;                          // graph_details_d_->outgoing_edge_count
+    host_size_per_poa += sizeof(uint16_t) * max_nodes_per_window_ * CUDAPOA_MAX_NODE_EDGES * poa_count; // graph_details_d_->incoming_edges
+    host_size_per_poa += sizeof(uint16_t) * max_nodes_per_window_ * CUDAPOA_MAX_NODE_EDGES * poa_count; // graph_details_d_->incoming_edge_weights
+    host_size_per_poa += sizeof(uint16_t) * max_nodes_per_window_ * poa_count;                          // graph_details_d_->incoming_edge_count
 
     // for graph - device
     device_size_per_poa += sizeof(uint8_t) * max_nodes_per_window_ * poa_count;                                                                                           // graph_details_d_->nodes
@@ -274,9 +275,11 @@ void BatchBlock::get_graph_details(GraphDetails** graph_details_d_p, GraphDetail
     offset_h_ += sizeof(GraphDetails);
     graph_details_h->nodes = &block_data_h_[offset_h_];
     offset_h_ += sizeof(uint8_t) * max_nodes_per_window_ * max_poas_;
-    graph_details_h->outgoing_edges = reinterpret_cast<uint16_t*>(&block_data_h_[offset_h_]);
+    graph_details_h->incoming_edges = reinterpret_cast<uint16_t*>(&block_data_h_[offset_h_]);
     offset_h_ += sizeof(uint16_t) * max_nodes_per_window_ * CUDAPOA_MAX_NODE_EDGES * max_poas_;
-    graph_details_h->outgoing_edge_count = reinterpret_cast<uint16_t*>(&block_data_h_[offset_h_]);
+    graph_details_h->incoming_edge_weights = reinterpret_cast<uint16_t*>(&block_data_h_[offset_h_]);
+    offset_h_ += sizeof(uint16_t) * max_nodes_per_window_ * CUDAPOA_MAX_NODE_EDGES * max_poas_;
+    graph_details_h->incoming_edge_count = reinterpret_cast<uint16_t*>(&block_data_h_[offset_h_]);
     offset_h_ += sizeof(uint16_t) * max_nodes_per_window_ * max_poas_;
     graph_details_d = reinterpret_cast<GraphDetails*>(&block_data_h_[offset_h_]);
     offset_h_ += sizeof(GraphDetails);

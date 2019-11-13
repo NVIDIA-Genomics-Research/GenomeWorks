@@ -321,14 +321,20 @@ void CudapoaBatch::get_graphs(std::vector<DirectedGraph>& graphs, std::vector<St
                                      cudaMemcpyDeviceToHost,
                                      stream_));
 
-    CGA_CU_CHECK_ERR(cudaMemcpyAsync(graph_details_h_->outgoing_edges,
-                                     graph_details_d_->outgoing_edges,
+    CGA_CU_CHECK_ERR(cudaMemcpyAsync(graph_details_h_->incoming_edges,
+                                     graph_details_d_->incoming_edges,
                                      sizeof(uint16_t) * max_nodes_per_window_ * CUDAPOA_MAX_NODE_EDGES * max_poas_,
                                      cudaMemcpyDeviceToHost,
                                      stream_));
 
-    CGA_CU_CHECK_ERR(cudaMemcpyAsync(graph_details_h_->outgoing_edge_count,
-                                     graph_details_d_->outgoing_edge_count,
+    CGA_CU_CHECK_ERR(cudaMemcpyAsync(graph_details_h_->incoming_edge_weights,
+                                     graph_details_d_->incoming_edge_weights,
+                                     sizeof(uint16_t) * max_nodes_per_window_ * CUDAPOA_MAX_NODE_EDGES * max_poas_,
+                                     cudaMemcpyDeviceToHost,
+                                     stream_));
+
+    CGA_CU_CHECK_ERR(cudaMemcpyAsync(graph_details_h_->incoming_edge_count,
+                                     graph_details_d_->incoming_edge_count,
                                      sizeof(uint16_t) * max_nodes_per_window_ * max_poas_,
                                      cudaMemcpyDeviceToHost,
                                      stream_));
@@ -366,15 +372,17 @@ void CudapoaBatch::get_graphs(std::vector<DirectedGraph>& graphs, std::vector<St
             uint8_t* nodes       = &graph_details_h_->nodes[max_nodes_per_window_ * poa];
             for (int32_t n = 0; n < num_nodes; n++)
             {
-                // For each node, find it's outgoing edges and add the edge to the graph,
+                // For each node, find it's incoming edges and add the edge to the graph,
                 // along with its label.
-                node_id_t src = n;
-                graph.set_node_label(src, std::string(1, static_cast<char>(nodes[n])));
-                uint16_t num_edges = graph_details_h_->outgoing_edge_count[poa * max_nodes_per_window_ + n];
+                node_id_t sink = n;
+                graph.set_node_label(sink, std::string(1, static_cast<char>(nodes[n])));
+                uint16_t num_edges = graph_details_h_->incoming_edge_count[poa * max_nodes_per_window_ + n];
                 for (uint16_t e = 0; e < num_edges; e++)
                 {
-                    node_id_t sink = graph_details_h_->outgoing_edges[poa * max_nodes_per_window_ * CUDAPOA_MAX_NODE_EDGES + n * CUDAPOA_MAX_NODE_EDGES + e];
-                    graph.add_edge(src, sink);
+                    int32_t idx          = poa * max_nodes_per_window_ * CUDAPOA_MAX_NODE_EDGES + n * CUDAPOA_MAX_NODE_EDGES + e;
+                    node_id_t src        = graph_details_h_->incoming_edges[idx];
+                    edge_weight_t weight = graph_details_h_->incoming_edge_weights[idx];
+                    graph.add_edge(src, sink, weight);
                 }
             }
         }
@@ -496,7 +504,7 @@ StatusType CudapoaBatch::add_seq_to_poa(const char* seq, const int8_t* weights, 
         // Verify that weightsw are positive.
         for (int32_t i = 0; i < seq_len; i++)
         {
-            throw_on_negative(weights[i], "Base weights need have to be non-negative");
+            throw_on_negative(weights[i], "Base weights need to be non-negative");
         }
         memcpy(&(input_details_h_->base_weights[num_nucleotides_copied_]),
                weights,
