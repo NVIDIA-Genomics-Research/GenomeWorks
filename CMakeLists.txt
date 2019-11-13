@@ -63,6 +63,14 @@ include(cmake/Benchmarks.cmake)
 include(cmake/Format.cmake)
 include(cmake/Packaging.cmake)
 
+# Add ClaraGenomicsAnalysis projects.
+add_subdirectory(common/logging)
+add_subdirectory(common/utils)
+add_subdirectory(common/io)
+add_subdirectory(cudapoa)
+add_subdirectory(cudamapper)
+add_subdirectory(cudaaligner)
+
 # Add documentation generation.
 validate_boolean(cga_generate_docs)
 if (cga_generate_docs)
@@ -72,14 +80,6 @@ if (cga_generate_docs)
 else()
     message(STATUS "Disabling Doxygen documentation generation")
 endif()
-
-# Add ClaraGenomicsAnalysis projects.
-add_subdirectory(common/logging)
-add_subdirectory(common/utils)
-add_subdirectory(common/io)
-add_subdirectory(cudapoa)
-add_subdirectory(cudamapper)
-add_subdirectory(cudaaligner)
 
 # Add auto formatting.
 cga_enable_formatting_targets()
