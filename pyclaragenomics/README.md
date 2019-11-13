@@ -6,15 +6,14 @@ Python libraries and utilities for manipulating genomics data
 
 ```
 pip install -r requirements.txt
-python setup.py install
+python setup_pyclaragenomics.py --build_output_folder BUILD_FOLDER
 ```
 
 *Note* if you are developing pyclaragenomics you should do a develop build instead, changes you make to the source code will then be picked up on immediately:
 
 ```
 pip install -r requirements.txt
-python setup.py develop
-
+python setup_pyclaragenomics.py --build_output_folder BUILD_FOLDER --develop
 ```
 
 ### Testing installation

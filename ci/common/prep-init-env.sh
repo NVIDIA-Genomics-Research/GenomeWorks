@@ -56,6 +56,6 @@ if [ "${CUDA:0:2}" == '10' ]; then
 fi
 
 # Cleanup local git
-cd $1
+cd "$1"
 git clean -xdf
 
