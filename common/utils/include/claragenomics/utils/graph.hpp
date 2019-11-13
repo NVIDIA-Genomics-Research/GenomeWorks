@@ -188,7 +188,7 @@ public:
 
     ~DirectedGraph() = default;
 
-    virtual void add_edge(node_id_t node_id_from, node_id_t node_id_to)
+    virtual void add_edge(node_id_t node_id_from, node_id_t node_id_to) override
     {
         auto edge = edge_t(node_id_from, node_id_to);
         if (!directed_edge_exists(edge))
@@ -198,7 +198,7 @@ public:
         }
     }
 
-    virtual std::string serialize_to_dot() const
+    virtual std::string serialize_to_dot() const override
     {
         std::ostringstream dot_str;
         dot_str << "digraph g {\n";
@@ -229,7 +229,7 @@ public:
 
     ~UndirectedGraph() = default;
 
-    virtual void add_edge(node_id_t node_id_from, node_id_t node_id_to)
+    virtual void add_edge(node_id_t node_id_from, node_id_t node_id_to) override
     {
         auto edge          = edge_t(node_id_from, node_id_to);
         auto edge_reversed = edge_t(node_id_to, node_id_from);
@@ -241,7 +241,7 @@ public:
         }
     }
 
-    virtual std::string serialize_to_dot() const
+    virtual std::string serialize_to_dot() const override
     {
         std::ostringstream dot_str;
         dot_str << "graph g {\n";
