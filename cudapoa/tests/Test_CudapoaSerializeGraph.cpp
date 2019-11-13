@@ -8,14 +8,11 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-#include "../src/cudapoa_kernels.cuh"
-
 #include <claragenomics/cudapoa/batch.hpp>
 #include <claragenomics/utils/genomeutils.hpp>
+#include <claragenomics/utils/graph.hpp>
 
 #include "gtest/gtest.h"
-#include <assert.h>
-#include <algorithm>
 
 namespace claragenomics
 {
