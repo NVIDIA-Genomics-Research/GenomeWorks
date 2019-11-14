@@ -36,3 +36,7 @@ if (NOT TARGET spoa)
 # Don't show warnings when compiling the 3rd party library
     target_compile_options(spoa PRIVATE -w)
 endif()
+
+set(CUB_DIR ${PROJECT_SOURCE_DIR}/3rdparty/cub CACHE STRING
+	  "Path to cub repo")
+
