@@ -23,3 +23,6 @@
 [submodule "3rdparty/spoa"]
 	path = 3rdparty/spoa
 	url = https://github.com/rvaser/spoa.git
+[submodule "3rdparty/cub"]
+	path = 3rdparty/cub
+	url = git@github.com:NVlabs/cub.git
