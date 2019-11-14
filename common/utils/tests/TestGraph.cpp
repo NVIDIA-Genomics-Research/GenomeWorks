@@ -15,7 +15,7 @@
 namespace claragenomics
 {
 
-TEST(GraphTest, DirectediGraph)
+TEST(GraphTest, DirectedGraph)
 {
     DirectedGraph graph;
 
@@ -44,7 +44,7 @@ TEST(GraphTest, DirectediGraph)
     EXPECT_EQ(std::find(adjacent_nodes_to_3.begin(), adjacent_nodes_to_3.end(), 2), adjacent_nodes_to_3.end());
 }
 
-TEST(GraphTest, UndirectediGraph)
+TEST(GraphTest, UndirectedGraph)
 {
     UndirectedGraph graph;
 

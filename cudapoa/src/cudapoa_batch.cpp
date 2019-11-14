@@ -351,11 +351,13 @@ void CudapoaBatch::get_graphs(std::vector<DirectedGraph>& graphs, std::vector<St
                                      cudaMemcpyDeviceToHost,
                                      stream_));
 
+    // Reservet host space for graphs
+    graphs.resize(poa_count_);
+
     CGA_CU_CHECK_ERR(cudaStreamSynchronize(stream_));
 
     for (int32_t poa = 0; poa < poa_count_; poa++)
     {
-        graphs.emplace_back(DirectedGraph());
         char* c = reinterpret_cast<char*>(&(output_details_h_->consensus[poa * CUDAPOA_MAX_CONSENSUS_SIZE]));
         // We use the first two entries in the consensus buffer to log error during kernel execution
         // c[0] == 0 means an error occured and when that happens the error type is saved in c[1]
@@ -366,7 +368,7 @@ void CudapoaBatch::get_graphs(std::vector<DirectedGraph>& graphs, std::vector<St
         else
         {
             output_status.emplace_back(claragenomics::cudapoa::StatusType::success);
-            DirectedGraph& graph = graphs.back();
+            DirectedGraph& graph = graphs[poa];
             int32_t seq_0_offset = input_details_h_->window_details[poa].seq_len_buffer_offset;
             int32_t num_nodes    = input_details_h_->sequence_lengths[seq_0_offset];
             uint8_t* nodes       = &graph_details_h_->nodes[max_nodes_per_window_ * poa];
@@ -374,14 +376,14 @@ void CudapoaBatch::get_graphs(std::vector<DirectedGraph>& graphs, std::vector<St
             {
                 // For each node, find it's incoming edges and add the edge to the graph,
                 // along with its label.
-                node_id_t sink = n;
+                Graph::node_id_t sink = n;
                 graph.set_node_label(sink, std::string(1, static_cast<char>(nodes[n])));
                 uint16_t num_edges = graph_details_h_->incoming_edge_count[poa * max_nodes_per_window_ + n];
                 for (uint16_t e = 0; e < num_edges; e++)
                 {
-                    int32_t idx          = poa * max_nodes_per_window_ * CUDAPOA_MAX_NODE_EDGES + n * CUDAPOA_MAX_NODE_EDGES + e;
-                    node_id_t src        = graph_details_h_->incoming_edges[idx];
-                    edge_weight_t weight = graph_details_h_->incoming_edge_weights[idx];
+                    int32_t idx                 = poa * max_nodes_per_window_ * CUDAPOA_MAX_NODE_EDGES + n * CUDAPOA_MAX_NODE_EDGES + e;
+                    Graph::node_id_t src        = graph_details_h_->incoming_edges[idx];
+                    Graph::edge_weight_t weight = graph_details_h_->incoming_edge_weights[idx];
                     graph.add_edge(src, sink, weight);
                 }
             }

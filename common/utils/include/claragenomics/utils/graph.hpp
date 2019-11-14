@@ -13,7 +13,7 @@
 #include <vector>
 #include <unordered_map>
 #include <unordered_set>
-#include <stdint.h>
+#include <cstdint>
 #include <string>
 #include <iostream>
 #include <sstream>
@@ -21,10 +21,6 @@
 
 namespace claragenomics
 {
-
-using node_id_t     = int32_t;
-using edge_weight_t = int32_t;
-using edge_t        = std::pair<node_id_t, node_id_t>;
 
 /// \struct PairHash
 /// Hash function for a pair
@@ -45,21 +41,18 @@ public:
 class Graph
 {
 public:
-    /// \brief Default dtor
-    ~Graph() = default;
-
-    /// \brief Add edges to a graph
-    ///
-    /// \param node_id_from Source node ID
-    /// \param node_id_to Sink node ID
-    /// \param weight Edge weight
-    virtual void add_edge(node_id_t node_id_from, node_id_t node_id_to, edge_weight_t weight) = 0;
+    /// Typedef for node ID
+    using node_id_t = int32_t;
+    /// Tpyedef for edge weight
+    using edge_weight_t = int32_t;
+    /// Typedef for edge
+    using edge_t = std::pair<node_id_t, node_id_t>;
 
     /// \brief Get a list of adjacent nodes to a given node
     ///
     /// \param node Node for which adjacent nodes are requested
     /// \return Vector of adjacent node IDs
-    virtual const std::vector<node_id_t>& get_adjacent_nodes(node_id_t node) const
+    const std::vector<node_id_t>& get_adjacent_nodes(node_id_t node) const
     {
         auto iter = adjacent_nodes_.find(node);
         if (iter != adjacent_nodes_.end())
@@ -68,14 +61,14 @@ public:
         }
         else
         {
-            return empty_;
+            return Graph::empty_;
         }
     }
 
     /// \brief List all node IDs in the graph
     ///
     /// \return A vector of node IDs
-    virtual const std::vector<node_id_t> get_node_ids() const
+    const std::vector<node_id_t> get_node_ids() const
     {
         std::vector<node_id_t> nodes;
         for (auto iter : adjacent_nodes_)
@@ -89,21 +82,16 @@ public:
     /// \brief Get a list of all edges in the graph
     ///
     /// \return A vector of edges
-    virtual const std::vector<std::pair<edge_t, edge_weight_t>> get_edges() const
+    const std::vector<std::pair<edge_t, edge_weight_t>> get_edges() const
     {
-        std::vector<std::pair<edge_t, edge_weight_t>> edges;
-        for (auto iter : edges_)
-        {
-            edges.push_back({iter.first, iter.second});
-        }
-        return edges;
+        return {begin(edges_), end(edges_)};
     }
 
     /// \brief Add string labels to a node ID
     ///
     /// \param node ID of node
     /// \param label Label to attach to that node ID
-    virtual void set_node_label(node_id_t node, const std::string& label)
+    void set_node_label(node_id_t node, const std::string& label)
     {
         node_labels_.insert({node, label});
     }
@@ -113,7 +101,7 @@ public:
     /// \param node node ID for label query
     /// \return String label for associated node. Returns empty string if
     //          no label is associated or node ID doesn't exist.
-    virtual std::string get_node_label(node_id_t node) const
+    std::string get_node_label(node_id_t node) const
     {
         auto found_node = node_labels_.find(node);
         if (found_node != node_labels_.end())
@@ -126,29 +114,14 @@ public:
         }
     }
 
-    /// \brief Serialize graph structure to dot format
-    ///
-    /// \return A string encoding the graph in dot format
-    virtual std::string serialize_to_dot() const = 0;
-
 protected:
-    Graph() = default;
-
     /// \brief Check if a directed edge exists in the grph
     ///
     /// \param edge A directed edge
     /// \return Boolean result of check
     bool directed_edge_exists(edge_t edge)
     {
-        auto find_edge = edges_.find(edge);
-        if (find_edge == edges_.end())
-        {
-            return false;
-        }
-        else
-        {
-            return true;
-        }
+        return edges_.find(edge) != edges_.end();
     }
 
     /// \brief Update the adjacent nodes based on edge information
@@ -173,12 +146,13 @@ protected:
     void node_labels_to_dot(std::ostringstream& dot_str) const
     {
         const std::vector<node_id_t> nodes = get_node_ids();
-        for (auto node : nodes)
+        for (auto iter : adjacent_nodes_)
         {
-            auto label_found = node_labels_.find(node);
+            auto& node_id    = iter.first;
+            auto label_found = node_labels_.find(node_id);
             if (label_found != node_labels_.end())
             {
-                dot_str << node << " [label=\"" << label_found->second << "\"];\n";
+                dot_str << node_id << " [label=\"" << label_found->second << "\"];\n";
             }
         }
     }
@@ -215,16 +189,12 @@ protected:
 class DirectedGraph : public Graph
 {
 public:
-    DirectedGraph() = default;
-
-    ~DirectedGraph() = default;
-
     /// \brief Add directed edges to graph.
     ///
     /// \param node_id_from Source node ID
     /// \param node_id_to Sink node ID
     /// \param weight Edge weight
-    virtual void add_edge(node_id_t node_id_from, node_id_t node_id_to, edge_weight_t weight = 0) override
+    void add_edge(node_id_t node_id_from, node_id_t node_id_to, edge_weight_t weight = 0)
     {
         auto edge = edge_t(node_id_from, node_id_to);
         if (!directed_edge_exists(edge))
@@ -237,7 +207,7 @@ public:
     /// \brief Serialize graph structure to dot format
     ///
     /// \return A string encoding the graph in dot format
-    virtual std::string serialize_to_dot() const override
+    std::string serialize_to_dot() const
     {
         std::ostringstream dot_str;
         dot_str << "digraph g {\n";
@@ -257,16 +227,12 @@ public:
 class UndirectedGraph : public Graph
 {
 public:
-    UndirectedGraph() = default;
-
-    ~UndirectedGraph() = default;
-
     /// \brief Add undirected edges to graph.
     ///
     /// \param node_id_from Source node ID
     /// \param node_id_to Sink node ID
     /// \param weight Edge weight
-    virtual void add_edge(node_id_t node_id_from, node_id_t node_id_to, edge_weight_t weight = 0) override
+    void add_edge(node_id_t node_id_from, node_id_t node_id_to, edge_weight_t weight = 0)
     {
         auto edge          = edge_t(node_id_from, node_id_to);
         auto edge_reversed = edge_t(node_id_to, node_id_from);
@@ -281,7 +247,7 @@ public:
     /// \brief Serialize graph structure to dot format
     ///
     /// \return A string encoding the graph in dot format
-    virtual std::string serialize_to_dot() const override
+    std::string serialize_to_dot() const
     {
         std::ostringstream dot_str;
         dot_str << "graph g {\n";
