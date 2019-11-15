@@ -39,6 +39,15 @@ read_id_t Minimizer::read_id() const
     return read_id_;
 }
 
+/// \brief Apply a hash function to a representation
+///
+/// Because of the non-Poisson distribuition of DNA, some common sequences with common kmer-content (e.g long poly-A runs)
+/// may be over-represented in sketches. By applying a hash function, kmers are mapped to representations over
+/// a more uniform space. The hash function implemented here was developed by Thomas Wang and is described
+/// [here](https://gist.github.com/badboy/6267743). A mask is applied to the output so that all representations are mapped
+/// to a 32 bit space.
+///
+/// \param key the input representation
 __device__ representation_t wang_hash64(representation_t key)
 {
     uint64_t  mask = (uint64_t(1) << 32) - 1;

@@ -57,6 +57,7 @@ public:
     /// \param kmer_size k - the kmer length
     /// \param window_size w - the length of the sliding window used to find sketch elements
     /// \param read_ranges - the ranges of reads in the query file to use for mapping, index by their position (e.g in the FASA file)
+    /// \param hash_representations - if true, apply hash function to all representations
     IndexGPU(const std::vector<io::FastaParser*>& parsers, const std::uint64_t kmer_size, const std::uint64_t window_size, const std::vector<std::pair<std::uint64_t, std::uint64_t>>& read_ranges, const bool hash_representations = true);
 
     /// \brief Constructor
@@ -99,8 +100,14 @@ public:
     std::uint64_t minimum_representation() const override { return 0; };
 
     /// \brief max_representation
-    /// \return the largest possible representation
-    std::uint64_t maximum_representation() const override { return (uint64_t(1) << 32) - 1;; };
+    /// \return the largest possible representation,
+    std::uint64_t maximum_representation() const override {
+        if (hash_representations){
+            return (uint64_t(1) << 32) - 1;
+        }else {
+            return (1 << (kmer_size_ * 2)) - 1;
+        }
+    };
 
 private:
     /// \brief generates the index
