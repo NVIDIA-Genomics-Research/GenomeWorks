@@ -39,15 +39,16 @@ read_id_t Minimizer::read_id() const
     return read_id_;
 }
 
-
-__device__ representation_t wang_hash64(representation_t key){
-    key = (~key) + (key << 21);// key = (key << 21) - key - 1;
-    key = key ^ (key >> 24);
-    key = (key + (key << 3)) + (key << 8);// key * 265
-    key = key ^ (key >> 14);
-    key = (key + (key << 2)) + (key << 4);// key * 21
-    key = key ^ (key >> 28);
-    key = key + (key << 31);
+__device__ representation_t wang_hash64(representation_t key)
+{
+    uint64_t  mask = (uint64_t(1) << 32) - 1;
+    key = (~key + (key << 21)) & mask;
+    key = key ^ key >> 24;
+    key = ((key + (key << 3)) + (key << 8)) & mask;
+    key = key ^ key >> 14;
+    key = ((key + (key << 2)) + (key << 4)) & mask;
+    key = key ^ key >> 28;
+    key = (key + (key << 31)) & mask;
     return key;
 }
 
@@ -77,7 +78,8 @@ __global__ void find_front_end_minimizers(const std::uint64_t minimizer_size,
                                           char* const window_minimizers_direction,
                                           position_in_read_t* const window_minimizers_position_in_read,
                                           const ArrayBlock* const read_id_to_windows_section,
-                                          std::uint32_t* const read_id_to_minimizers_written)
+                                          std::uint32_t* const read_id_to_minimizers_written,
+                                          const bool hash_representations)
 {
     // TODO: simplify this method similarly to find_back_end_minimizers
 
@@ -206,8 +208,10 @@ __global__ void find_front_end_minimizers(const std::uint64_t minimizer_size,
                 reverse_representation |= reverse_basepair_hashes[threadIdx.x + i] << 2 * i;
             }
 
-            forward_representation = wang_hash64(forward_representation);
-            reverse_representation = wang_hash64(reverse_representation);
+            if (hash_representations) {
+                forward_representation = wang_hash64(forward_representation);
+                reverse_representation = wang_hash64(reverse_representation);
+            }
 
             if (forward_representation <= reverse_representation)
             {
@@ -378,7 +382,8 @@ __global__ void find_central_minimizers(const std::uint64_t minimizer_size,
                                         char* const window_minimizers_direction,
                                         position_in_read_t* const window_minimizers_position_in_read,
                                         const ArrayBlock* const read_id_to_windows_section,
-                                        std::uint32_t* const read_id_to_minimizers_written)
+                                        std::uint32_t* const read_id_to_minimizers_written,
+                                        const bool hash_representations)
 {
     // See find_front_end_minimizers for more details about the algorithm
 
@@ -473,9 +478,10 @@ __global__ void find_central_minimizers(const std::uint64_t minimizer_size,
                 reverse_representation |= reverse_basepair_hashes[kmer_index + i] << 2 * i;
             }
 
-            forward_representation = wang_hash64(forward_representation);
-            reverse_representation = wang_hash64(reverse_representation);
-
+            if (hash_representations) {
+                forward_representation = wang_hash64(forward_representation);
+                reverse_representation = wang_hash64(reverse_representation);
+            }
             if (forward_representation <= reverse_representation)
             {
                 minimizers_representation[kmer_index] = forward_representation;
@@ -616,7 +622,8 @@ __global__ void find_back_end_minimizers(const std::uint64_t minimizer_size,
                                          char* const window_minimizers_direction,
                                          position_in_read_t* const window_minimizers_position_in_read,
                                          const ArrayBlock* const read_id_to_windows_section,
-                                         std::uint32_t* const read_id_to_minimizers_written)
+                                         std::uint32_t* const read_id_to_minimizers_written,
+                                         const bool hash_representations)
 {
     // See find_front_end_minimizers for more details about the algorithm
 
@@ -701,10 +708,10 @@ __global__ void find_back_end_minimizers(const std::uint64_t minimizer_size,
             reverse_representation |= reverse_basepair_hashes[kmer_index + i] << 2 * i;
         }
 
-        //printf("Pre hash %lu, Post hash %lu\n", forward_representation, wang_hash64(forward_representation));
-        forward_representation = wang_hash64(forward_representation);
-        reverse_representation = wang_hash64(reverse_representation);
-
+        if (hash_representations) {
+            forward_representation = wang_hash64(forward_representation);
+            reverse_representation = wang_hash64(reverse_representation);
+        }
         if (forward_representation <= reverse_representation)
         {
             minimizers_representation[kmer_index] = forward_representation;
@@ -844,7 +851,8 @@ Minimizer::GeneratedSketchElements Minimizer::generate_sketch_elements(const std
                                                                        const std::uint64_t read_id_of_first_read,
                                                                        const device_buffer<char>& merged_basepairs_d,
                                                                        const std::vector<ArrayBlock>& read_id_to_basepairs_section_h,
-                                                                       const device_buffer<ArrayBlock>& read_id_to_basepairs_section_d)
+                                                                       const device_buffer<ArrayBlock>& read_id_to_basepairs_section_d,
+                                                                       const bool hash_representations)
 {
     // for each read find the maximum number of minimizers (one per window), determine their section in the minimizer arrays and allocate the arrays
     std::uint64_t total_windows = 0;
@@ -910,7 +918,8 @@ Minimizer::GeneratedSketchElements Minimizer::generate_sketch_elements(const std
                                                                                                     window_minimizers_direction_d.data(),
                                                                                                     window_minimizers_position_in_read_d.data(),
                                                                                                     read_id_to_windows_section_d.data(),
-                                                                                                    read_id_to_minimizers_written_d.data());
+                                                                                                    read_id_to_minimizers_written_d.data(),
+                                                                                                    hash_representations);
     CGA_CU_CHECK_ERR(cudaDeviceSynchronize());
 
     // *** central minimizers ***
@@ -943,7 +952,8 @@ Minimizer::GeneratedSketchElements Minimizer::generate_sketch_elements(const std
                                                                                                   window_minimizers_direction_d.data(),
                                                                                                   window_minimizers_position_in_read_d.data(),
                                                                                                   read_id_to_windows_section_d.data(),
-                                                                                                  read_id_to_minimizers_written_d.data());
+                                                                                                  read_id_to_minimizers_written_d.data(),
+                                                                                                  hash_representations);
     CGA_CU_CHECK_ERR(cudaDeviceSynchronize());
 
     // *** back end minimizers ***
@@ -969,7 +979,8 @@ Minimizer::GeneratedSketchElements Minimizer::generate_sketch_elements(const std
                                                                                                    window_minimizers_direction_d.data(),
                                                                                                    window_minimizers_position_in_read_d.data(),
                                                                                                    read_id_to_windows_section_d.data(),
-                                                                                                   read_id_to_minimizers_written_d.data());
+                                                                                                   read_id_to_minimizers_written_d.data(),
+                                                                                                   hash_representations);
     CGA_CU_CHECK_ERR(cudaDeviceSynchronize());
 
     std::vector<std::uint32_t> read_id_to_minimizers_written_h(number_of_reads_to_add);

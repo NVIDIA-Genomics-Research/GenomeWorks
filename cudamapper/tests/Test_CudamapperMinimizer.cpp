@@ -43,7 +43,8 @@ void test_function(const std::uint64_t number_of_reads_to_add,
                                                                read_id_of_first_read,
                                                                merged_basepairs_d,
                                                                read_id_to_basepairs_section_h,
-                                                               read_id_to_basepairs_section_d);
+                                                               read_id_to_basepairs_section_d,
+                                                               false);
 
     device_buffer<representation_t> representations_d = std::move(sketch_elements.representations_d);
     std::vector<representation_t> representations_h(representations_d.size());

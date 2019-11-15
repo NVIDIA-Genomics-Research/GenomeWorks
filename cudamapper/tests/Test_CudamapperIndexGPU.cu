@@ -39,7 +39,7 @@ void test_function(const std::string& filename,
     std::unique_ptr<io::FastaParser> parser = io::create_fasta_parser(filename);
     std::vector<io::FastaParser*> parsers;
     parsers.push_back(parser.get());
-    IndexGPU<Minimizer> index(parsers, minimizer_size, window_size, read_ranges);
+    IndexGPU<Minimizer> index(parsers, minimizer_size, window_size, read_ranges, false );
 
     ASSERT_EQ(index.number_of_reads(), expected_number_of_reads);
 
@@ -92,7 +92,7 @@ void test_function(const std::string& filename,
     }
 
     ASSERT_EQ(index.minimum_representation(), std::uint64_t(0));
-    ASSERT_EQ(index.maximum_representation(), pow(4, std::uint64_t(minimizer_size)) - 1);
+    ASSERT_EQ(index.maximum_representation(), pow(4, std::uint64_t(16)) - 1);
 }
 
 TEST(TestCudamapperIndexGPU, GATT_4_1)
