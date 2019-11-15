@@ -18,6 +18,39 @@
 #include <claragenomics/utils/mathutils.hpp>
 #include <claragenomics/utils/signed_integer_utils.hpp>
 
+namespace
+{
+template <typename RandomAccessIterator, typename ValueType>
+__device__ RandomAccessIterator lower_bound(RandomAccessIterator lower_bound, RandomAccessIterator upper_bound, ValueType query)
+{
+    while (upper_bound - lower_bound > 0)
+    {
+        RandomAccessIterator mid = lower_bound + (upper_bound - lower_bound) / 2;
+        const auto mid_value     = *mid;
+        if (mid_value < query)
+            lower_bound = mid + 1;
+        else
+            upper_bound = mid;
+    }
+    return lower_bound;
+}
+
+template <typename RandomAccessIterator, typename ValueType>
+__device__ RandomAccessIterator upper_bound(RandomAccessIterator lower_bound, RandomAccessIterator upper_bound, ValueType query)
+{
+    while (upper_bound - lower_bound > 0)
+    {
+        RandomAccessIterator mid = lower_bound + (upper_bound - lower_bound) / 2;
+        const auto mid_value     = *mid;
+        if (mid_value <= query)
+            lower_bound = mid + 1;
+        else
+            upper_bound = mid;
+    }
+    return lower_bound;
+}
+} // namespace
+
 namespace claragenomics
 {
 
@@ -107,24 +140,11 @@ __global__ void find_query_target_matches_kernel(int64_t* const found_target_ind
     if (i >= n_query_representations)
         return;
 
-    const representation_t query        = query_representations_d[i];
-    const representation_t* lower_bound = target_representations_d;
-    const representation_t* upper_bound = target_representations_d + n_target_representations;
-    int64_t found_target_index          = -1;
-    while (upper_bound - lower_bound > 0)
-    {
-        const representation_t* mid   = lower_bound + (upper_bound - lower_bound) / 2;
-        const representation_t target = *mid;
-        if (target < query)
-            lower_bound = mid + 1;
-        else if (target > query)
-            upper_bound = mid;
-        else
-        {
-            found_target_index = mid - target_representations_d;
-            break;
-        }
-    }
+    const representation_t query = query_representations_d[i];
+    int64_t found_target_index   = -1;
+    const representation_t* lb   = lower_bound(target_representations_d, target_representations_d + n_target_representations, query);
+    if (*lb == query)
+        found_target_index = lb - target_representations_d;
 
     found_target_indices[i] = found_target_index;
 }
@@ -145,9 +165,10 @@ void generate_anchors(thrust::device_vector<Anchor>& anchors,
     assert(target_read_ids.size() == target_positions_in_read.size());
 
     const int32_t n_threads = 256;
-    const int32_t n_blocks  = ceiling_divide<int64_t>(get_size(found_target_indices_d), n_threads);
+    const int32_t n_blocks  = ceiling_divide<int64_t>(get_size(anchors), n_threads);
     generate_anchors_kernel<<<n_blocks, n_threads>>>(
         anchors.data().get(),
+        get_size(anchors),
         anchor_starting_indices.data().get(),
         query_starting_index_of_each_representation_d.data().get(),
         found_target_indices_d.data().get(),
@@ -161,6 +182,7 @@ void generate_anchors(thrust::device_vector<Anchor>& anchors,
 
 __global__ void generate_anchors_kernel(
     Anchor* const anchors_d,
+    int64_t n_anchors,
     const int64_t* const anchor_starting_index_d,
     const std::uint32_t* const query_starting_index_of_each_representation_d,
     const std::int64_t* const found_target_indices_d,
@@ -171,40 +193,37 @@ __global__ void generate_anchors_kernel(
     const read_id_t* const target_read_ids,
     const position_in_read_t* const target_positions_in_read)
 {
-    const std::int32_t i = blockIdx.x * blockDim.x + threadIdx.x;
+    std::int64_t anchor_idx = blockIdx.x * blockDim.x + threadIdx.x;
 
-    if (i >= n_query_representations)
+    if (anchor_idx >= n_anchors)
         return;
 
-    const std::int64_t j = found_target_indices_d[i];
-    if (j < 0)
-        return;
+    const std::int64_t representation_idx = upper_bound(anchor_starting_index_d, anchor_starting_index_d + n_query_representations, anchor_idx) - anchor_starting_index_d;
 
-    std::int64_t anchor_idx = 0;
-    if (i > 0)
-        anchor_idx = anchor_starting_index_d[i - 1];
-    std::uint32_t query_idx          = query_starting_index_of_each_representation_d[i];
-    const std::uint32_t query_end    = query_starting_index_of_each_representation_d[i + 1];
+    assert(representation_idx < n_query_representations);
+
+    std::uint32_t relative_anchor_index = anchor_idx;
+    if (representation_idx > 0)
+        relative_anchor_index -= anchor_starting_index_d[representation_idx - 1];
+
+    const std::int64_t j = found_target_indices_d[representation_idx];
+    assert(j >= 0);
+    const std::uint32_t query_begin  = query_starting_index_of_each_representation_d[representation_idx];
     const std::uint32_t target_begin = target_starting_index_of_each_representation_d[j];
     const std::uint32_t target_end   = target_starting_index_of_each_representation_d[j + 1];
 
-    while (query_idx < query_end)
-    {
-        std::uint32_t target_idx = target_begin;
-        while (target_idx < target_end)
-        {
-            Anchor a;
-            a.query_read_id_           = query_read_ids[query_idx];
-            a.target_read_id_          = target_read_ids[target_idx];
-            a.query_position_in_read_  = query_positions_in_read[query_idx];
-            a.target_position_in_read_ = target_positions_in_read[target_idx];
-            anchors_d[anchor_idx]      = a;
-            ++anchor_idx;
-            ++target_idx;
-        }
-        ++query_idx;
-    }
-    assert(anchor_idx == anchor_starting_index_d[i] || anchor_starting_index_d[i - 1] == anchor_starting_index_d[i]);
+    const std::uint32_t n_targets  = target_end - target_begin;
+    const std::uint32_t query_idx  = query_begin + relative_anchor_index / n_targets;
+    const std::uint32_t target_idx = target_begin + relative_anchor_index % n_targets;
+
+    assert(query_idx < query_starting_index_of_each_representation_d[representation_idx + 1]);
+
+    Anchor a;
+    a.query_read_id_           = query_read_ids[query_idx];
+    a.target_read_id_          = target_read_ids[target_idx];
+    a.query_position_in_read_  = query_positions_in_read[query_idx];
+    a.target_position_in_read_ = target_positions_in_read[target_idx];
+    anchors_d[anchor_idx]      = a;
 }
 
 } // namespace matcher_gpu

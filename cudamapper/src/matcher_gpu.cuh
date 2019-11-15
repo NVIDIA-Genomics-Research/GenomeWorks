@@ -139,6 +139,7 @@ __global__ void find_query_target_matches_kernel(int64_t* const found_target_ind
 /// TODO
 __global__ void generate_anchors_kernel(
     Anchor* const anchors_d,
+    int64_t n_anchors,
     const int64_t* const anchor_starting_index_d,
     const std::uint32_t* const query_starting_index_of_each_representation_d,
     const std::int64_t* const found_target_indices_d,
