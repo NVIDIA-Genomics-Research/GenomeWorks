@@ -22,7 +22,7 @@ namespace cudamapper
 /// \addtogroup cudamapper
 /// \{
 
-/// MatcehrTwoIndice - base matcher
+/// MatcherTwoIndices - base matcher
 class MatcherTwoIndices
 {
 public:
