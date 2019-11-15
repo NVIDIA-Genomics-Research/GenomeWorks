@@ -41,5 +41,8 @@ install(TARGETS utils
 install(DIRECTORY include/ DESTINATION include)
 install(EXPORT utils DESTINATION cmake)
 
+# Add tests
+add_subdirectory(tests)
+
 # Adding formatting
 cga_enable_auto_formatting("${CMAKE_CURRENT_SOURCE_DIR}")
