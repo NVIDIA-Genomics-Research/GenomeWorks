@@ -8,8 +8,7 @@
 # license agreement from NVIDIA CORPORATION is strictly prohibited.
 #
 
-cmake_minimum_required(VERSION 3.10.2)
-project(cudamappertests)
+set(TARGET_NAME cudamappertests)
 
 set(SOURCES
     main.cpp
@@ -33,4 +32,4 @@ set(LIBS
     overlapper_triggerred
     cudamapper_utils)
 
-cga_add_tests(${PROJECT_NAME} "${SOURCES}" "${LIBS}")
+cga_add_tests(${TARGET_NAME} "${SOURCES}" "${LIBS}")

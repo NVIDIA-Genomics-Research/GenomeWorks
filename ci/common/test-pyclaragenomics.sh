@@ -19,7 +19,7 @@ cd $PYCLARAGENOMICS_DIR
 
 #Install external dependencies.
 python -m pip install -r requirements.txt
-python setup.py install
+python setup_pyclaragenomics.py
 
 # Run tests.
 cd test/

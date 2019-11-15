@@ -8,20 +8,8 @@
 # license agreement from NVIDIA CORPORATION is strictly prohibited.
 #
 
-set(TARGET_NAME cudaalignertests)
-
-set(SOURCES
-    main.cpp
-    Test_Misc.cpp
-    Test_AlignmentImpl.cpp
-    Test_AlignerGlobal.cpp
-    Test_MyersAlgorithm.cpp
-    Test_HirschbergMyers.cu
-    Test_NeedlemanWunschImplementation.cpp
-    )
-
-set(LIBS
-    cudaaligner
-    utils)
-
-cga_add_tests(${TARGET_NAME} "${SOURCES}" "${LIBS}")
+function(validate_boolean CMAKE_OPTION)
+    if ((NOT ${CMAKE_OPTION} STREQUAL "ON") AND (NOT ${CMAKE_OPTION} STREQUAL "OFF"))
+        message(FATAL_ERROR "${CMAKE_OPTION}  can only be set to ON/OFF")
+    endif()
+endfunction(validate_boolean)
