@@ -28,17 +28,24 @@ option(cga_device_synchronize_kernels "Run cudaDeviceSynchronize() in CGA_CU_CHE
 option(spoa_accurate "Run cudapoa code in mode that matches spoa" OFF)
 option(cga_enable_cudapoa_nw_print "Enable verbose prints within cudapoa NW kernel" OFF)
 option(cga_profiling "Compile a binary for profiling with NVTX markers." OFF)
+option(cga_generate_docs "Generate Doxygen documentation" ON)
 
+# Must be included before others for options value validation
+include(cmake/Utils.cmake)
+
+validate_boolean(cga_enable_tests)
 if (cga_enable_tests)
     message(STATUS "Enabling ClaraGenomicsAnalysis unit tests")
     set_property(GLOBAL PROPERTY enable_tests ON)
 endif()
 
+validate_boolean(cga_enable_benchmarks)
 if (cga_enable_benchmarks)
     message(STATUS "Enabling ClaraGenomicsAnalysis benchmarks")
     set_property(GLOBAL PROPERTY enable_benchmarks ON)
 endif()
 
+validate_boolean(cga_build_shared)
 if (cga_build_shared)
     message(STATUS "Building ClaraGenomicsAnalysis libraries as shared objects")
     set_property(GLOBAL PROPERTY cga_library_type SHARED)
@@ -65,8 +72,14 @@ add_subdirectory(cudamapper)
 add_subdirectory(cudaaligner)
 
 # Add documentation generation.
-set_doxygen_mainpage(${CMAKE_CURRENT_SOURCE_DIR}/README.md)
-add_docs_target("ClaraGenomicsAnalysis" "${CGA_VERSION}")
+validate_boolean(cga_generate_docs)
+if (cga_generate_docs)
+    message(STATUS "Enabling Doxygen documentation generation")
+    set_doxygen_mainpage(${CMAKE_CURRENT_SOURCE_DIR}/README.md)
+    add_docs_target("ClaraGenomicsAnalysis" "${CGA_VERSION}")
+else()
+    message(STATUS "Disabling Doxygen documentation generation")
+endif()
 
 # Add auto formatting.
 cga_enable_formatting_targets()
