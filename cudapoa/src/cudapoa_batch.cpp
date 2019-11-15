@@ -376,14 +376,14 @@ void CudapoaBatch::get_graphs(std::vector<DirectedGraph>& graphs, std::vector<St
             {
                 // For each node, find it's incoming edges and add the edge to the graph,
                 // along with its label.
-                Graph::node_id_t sink = n;
+                DirectedGraph::node_id_t sink = n;
                 graph.set_node_label(sink, std::string(1, static_cast<char>(nodes[n])));
                 uint16_t num_edges = graph_details_h_->incoming_edge_count[poa * max_nodes_per_window_ + n];
                 for (uint16_t e = 0; e < num_edges; e++)
                 {
-                    int32_t idx                 = poa * max_nodes_per_window_ * CUDAPOA_MAX_NODE_EDGES + n * CUDAPOA_MAX_NODE_EDGES + e;
-                    Graph::node_id_t src        = graph_details_h_->incoming_edges[idx];
-                    Graph::edge_weight_t weight = graph_details_h_->incoming_edge_weights[idx];
+                    int32_t idx                         = poa * max_nodes_per_window_ * CUDAPOA_MAX_NODE_EDGES + n * CUDAPOA_MAX_NODE_EDGES + e;
+                    DirectedGraph::node_id_t src        = graph_details_h_->incoming_edges[idx];
+                    DirectedGraph::edge_weight_t weight = graph_details_h_->incoming_edge_weights[idx];
                     graph.add_edge(src, sink, weight);
                 }
             }

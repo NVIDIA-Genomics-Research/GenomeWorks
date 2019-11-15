@@ -8,7 +8,7 @@
 # license agreement from NVIDIA CORPORATION is strictly prohibited.
 #
 
-project(cudapoatests)
+set(TARGET_NAME cudapoatests)
 
 set(SOURCES
     main.cpp
@@ -28,4 +28,4 @@ set(LIBS
     cudapoa
     spoa)
 
-cga_add_tests(${PROJECT_NAME} "${SOURCES}" "${LIBS}")
+cga_add_tests(${TARGET_NAME} "${SOURCES}" "${LIBS}")

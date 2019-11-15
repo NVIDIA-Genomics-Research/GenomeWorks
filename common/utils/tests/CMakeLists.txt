@@ -8,7 +8,7 @@
 # license agreement from NVIDIA CORPORATION is strictly prohibited.
 #
 
-project(cgautilstests)
+set(TARGET_NAME cgautilstests)
 
 set(SOURCES
     main.cpp
@@ -17,4 +17,4 @@ set(SOURCES
 set(LIBS
     utils)
 
-cga_add_tests(${PROJECT_NAME} "${SOURCES}" "${LIBS}")
+cga_add_tests(${TARGET_NAME} "${SOURCES}" "${LIBS}")

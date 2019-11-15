@@ -145,15 +145,9 @@ protected:
     /// \param dot_str Output string stream to serialize labels to
     void node_labels_to_dot(std::ostringstream& dot_str) const
     {
-        const std::vector<node_id_t> nodes = get_node_ids();
-        for (auto iter : adjacent_nodes_)
+        for (auto iter : node_labels_)
         {
-            auto& node_id    = iter.first;
-            auto label_found = node_labels_.find(node_id);
-            if (label_found != node_labels_.end())
-            {
-                dot_str << node_id << " [label=\"" << label_found->second << "\"];\n";
-            }
+            dot_str << iter.first << " [label=\"" << iter.second << "\"];\n";
         }
     }
 
@@ -189,6 +183,13 @@ protected:
 class DirectedGraph : public Graph
 {
 public:
+    /// Typedef for node ID
+    using Graph::node_id_t;
+    /// Tpyedef for edge weight
+    using Graph::edge_weight_t;
+    /// Typedef for edge
+    using Graph::edge_t;
+
     /// \brief Add directed edges to graph.
     ///
     /// \param node_id_from Source node ID
@@ -227,6 +228,13 @@ public:
 class UndirectedGraph : public Graph
 {
 public:
+    /// Typedef for node ID
+    using Graph::node_id_t;
+    /// Tpyedef for edge weight
+    using Graph::edge_weight_t;
+    /// Typedef for edge
+    using Graph::edge_t;
+
     /// \brief Add undirected edges to graph.
     ///
     /// \param node_id_from Source node ID
