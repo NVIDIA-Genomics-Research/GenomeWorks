@@ -50,14 +50,14 @@ read_id_t Minimizer::read_id() const
 /// \param key the input representation
 __device__ representation_t wang_hash64(representation_t key)
 {
-    uint64_t  mask = (uint64_t(1) << 32) - 1;
-    key = (~key + (key << 21)) & mask;
-    key = key ^ key >> 24;
-    key = ((key + (key << 3)) + (key << 8)) & mask;
-    key = key ^ key >> 14;
-    key = ((key + (key << 2)) + (key << 4)) & mask;
-    key = key ^ key >> 28;
-    key = (key + (key << 31)) & mask;
+    uint64_t mask = (uint64_t(1) << 32) - 1;
+    key           = (~key + (key << 21)) & mask;
+    key           = key ^ key >> 24;
+    key           = ((key + (key << 3)) + (key << 8)) & mask;
+    key           = key ^ key >> 14;
+    key           = ((key + (key << 2)) + (key << 4)) & mask;
+    key           = key ^ key >> 28;
+    key           = (key + (key << 31)) & mask;
     return key;
 }
 
@@ -217,7 +217,8 @@ __global__ void find_front_end_minimizers(const std::uint64_t minimizer_size,
                 reverse_representation |= reverse_basepair_hashes[threadIdx.x + i] << 2 * i;
             }
 
-            if (hash_representations) {
+            if (hash_representations)
+            {
                 forward_representation = wang_hash64(forward_representation);
                 reverse_representation = wang_hash64(reverse_representation);
             }
@@ -487,7 +488,8 @@ __global__ void find_central_minimizers(const std::uint64_t minimizer_size,
                 reverse_representation |= reverse_basepair_hashes[kmer_index + i] << 2 * i;
             }
 
-            if (hash_representations) {
+            if (hash_representations)
+            {
                 forward_representation = wang_hash64(forward_representation);
                 reverse_representation = wang_hash64(reverse_representation);
             }
@@ -717,7 +719,8 @@ __global__ void find_back_end_minimizers(const std::uint64_t minimizer_size,
             reverse_representation |= reverse_basepair_hashes[kmer_index + i] << 2 * i;
         }
 
-        if (hash_representations) {
+        if (hash_representations)
+        {
             forward_representation = wang_hash64(forward_representation);
             reverse_representation = wang_hash64(reverse_representation);
         }
