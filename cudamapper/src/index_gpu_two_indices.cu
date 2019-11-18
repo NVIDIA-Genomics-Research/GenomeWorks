@@ -36,7 +36,6 @@ void find_first_occurrences_of_representations(thrust::device_vector<representat
     create_new_value_mask<<<number_of_blocks, number_of_threads>>>(input_representations_d.data().get(),
                                                                    input_representations_d.size(),
                                                                    new_value_mask_d.data().get());
-    CGA_CU_CHECK_ERR(cudaDeviceSynchronize()); // sync not necessary, here only to detect the error immediately
 
     // do inclusive scan
     // for example for

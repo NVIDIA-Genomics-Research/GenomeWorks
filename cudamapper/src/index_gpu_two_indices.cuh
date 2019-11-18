@@ -427,7 +427,6 @@ void IndexGPUTwoIndices<SketchElementImpl>::generate_index(io::FastaParser* pars
                                                                                       positions_in_reads_d_.data().get(),
                                                                                       directions_of_reads_d_.data().get(),
                                                                                       representations_d_.size());
-    CGA_CU_CHECK_ERR(cudaDeviceSynchronize());
 
     // now generate the index elements
     details::index_gpu_two_indices::find_first_occurrences_of_representations(unique_representations_d_,
