@@ -99,6 +99,7 @@ __global__ void find_first_occurrences_of_representations_kernel(const std::uint
                                                                  std::uint32_t* const starting_index_of_each_representation_d,
                                                                  representation_t* const unique_representations_d)
 {
+    // one thread per element of input_representations_d (i.e. sketch_element)
     std::uint64_t index = blockIdx.x * blockDim.x + threadIdx.x;
 
     if (index >= number_of_input_elements)
@@ -111,13 +112,14 @@ __global__ void find_first_occurrences_of_representations_kernel(const std::uint
     }
     else
     {
-        if (representation_index_mask_d[index] != representation_index_mask_d[index - 1])
+        // representation_index_mask_d gives a unique index to each representation, starting from 1, thus '-1'
+        const auto representation_index_mask_for_this_index = representation_index_mask_d[index];
+        if (representation_index_mask_for_this_index != representation_index_mask_d[index - 1])
         {
             // if new representation is not the same as its left neighbor
             // save the index at which that representation starts
-            // representation_index_mask_d gives a unique index to each representation, starting from 1, thus '-1'
-            starting_index_of_each_representation_d[representation_index_mask_d[index] - 1] = index;
-            unique_representations_d[representation_index_mask_d[index] - 1]                = input_representations_d[index];
+            starting_index_of_each_representation_d[representation_index_mask_for_this_index - 1] = index;
+            unique_representations_d[representation_index_mask_for_this_index - 1]                = input_representations_d[index];
         }
     }
 }

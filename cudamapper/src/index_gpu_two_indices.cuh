@@ -177,11 +177,11 @@ __global__ void create_new_value_mask(const representation_t* const representati
 /// 0 12 23 32 46
 /// 0  4 10 13 18
 ///
-/// \param representation_index_mask_d
-/// \param input_representatons_d
-/// \param number_of_input_elements
-/// \param starting_index_of_each_representation_d
-/// \param unique_representations_d
+/// \param representation_index_mask_d an array in which each element from input_representatons_d is mapped to an ordinal number of that representation (array "1  1  1  1  2  2  2  2  2  2  3  3  3  4  4  4  4  4  5  5  5" in the example)
+/// \param input_representatons_d all representations (array "0  0  0  0 12 12 12 12 12 12 23 23 23 32 32 32 32 32 46 46 46" in the example)
+/// \param number_of_input_elements number of elements in input_representatons_d and representation_index_mask_d
+/// \param starting_index_of_each_representation_d index with first occurrence of each representation (array "0 12 23 32 46" in the example)
+/// \param unique_representations_d representation that corresponds to each element in starting_index_of_each_representation_d (array "0  4 10 13 18" in the example)
 __global__ void find_first_occurrences_of_representations_kernel(const std::uint64_t* const representation_index_mask_d,
                                                                  const representation_t* const input_representations_d,
                                                                  const std::size_t number_of_input_elements,
