@@ -184,10 +184,10 @@ void OverlapperTriggered::get_overlaps(std::vector<Overlap>& fused_overlaps,
 {
 
     CGA_NVTX_RANGE(profiler, "OverlapperTriggered::get_overlaps");
-    const auto& read_names     = index.read_id_to_read_name();
-    const auto& read_lengths   = index.read_id_to_read_length();
-    auto tail_length_for_chain = 3;
-    auto n_anchors             = d_anchors.size();
+    const auto& read_names           = index.read_id_to_read_name();
+    const auto& read_lengths         = index.read_id_to_read_length();
+    const auto tail_length_for_chain = 3;
+    auto n_anchors                   = d_anchors.size();
 
     // comparison operator - lambda used to compare Anchors in sort
     auto comp = [] __host__ __device__(const Anchor& i, const Anchor& j) -> bool {
@@ -215,7 +215,7 @@ void OverlapperTriggered::get_overlaps(std::vector<Overlap>& fused_overlaps,
     // >>>>>>>>>
 
     // d_start_anchor[i] contains the starting anchor of chain i
-    thrust::device_vector<Anchor> d_start_anchor(d_anchors.size());
+    thrust::device_vector<Anchor> d_start_anchor(n_anchors);
 
     // d_chain_length[i] contains the length of chain i
     thrust::device_vector<int32_t> d_chain_length(n_anchors);

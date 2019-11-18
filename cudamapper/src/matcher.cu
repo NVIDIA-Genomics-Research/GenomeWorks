@@ -157,8 +157,6 @@ Matcher::Matcher(const Index& index, uint32_t query_target_division_idx)
                                 directions_of_reads_h.size() * sizeof(SketchElement::DirectionOfRepresentation),
                                 cudaMemcpyHostToDevice));
 
-    anchors_d_.resize(0);
-
     while (representation_min_range <= max_representation)
     {
 
