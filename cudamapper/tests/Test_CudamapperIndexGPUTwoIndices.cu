@@ -985,8 +985,6 @@ void test_create_new_value_mask(const thrust::host_vector<representation_t>& rep
                                                                    representations_d.size(),
                                                                    thrust::raw_pointer_cast(new_value_mask_d.data()));
 
-    CGA_CU_CHECK_ERR(cudaDeviceSynchronize());
-
     const thrust::host_vector<std::uint32_t> new_value_mask_h(new_value_mask_d);
 
     ASSERT_EQ(new_value_mask_h.size(), expected_new_value_mask_h.size());
@@ -1087,7 +1085,6 @@ void test_find_first_occurrences_of_representations_kernel(const thrust::host_ve
                                                                                               representation_index_mask_d.size(),
                                                                                               starting_index_of_each_representation_d.data().get(),
                                                                                               unique_representations_d.data().get());
-    CGA_CU_CHECK_ERR(cudaDeviceSynchronize());
 
     const thrust::host_vector<std::uint32_t> starting_index_of_each_representation_h(starting_index_of_each_representation_d);
     const thrust::host_vector<representation_t> unique_representations_h(unique_representations_d);
