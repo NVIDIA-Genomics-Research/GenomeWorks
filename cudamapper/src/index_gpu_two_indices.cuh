@@ -59,7 +59,7 @@ public:
                        const std::uint64_t window_size);
 
     /// \brief Constructor
-    IndexGPUTwoIndices();
+    IndexGPUTwoIndices() = default;
 
     /// \brief returns an array of representations of sketch elements
     /// \return an array of representations of sketch elements
@@ -116,10 +116,10 @@ private:
     std::vector<std::string> read_id_to_read_name_;
     std::vector<std::uint32_t> read_id_to_read_length_;
 
-    const read_id_t first_read_id_;
-    const std::uint64_t kmer_size_;
-    const std::uint64_t window_size_;
-    std::uint64_t number_of_reads_;
+    const read_id_t first_read_id_ = 0;
+    const std::uint64_t kmer_size_ = 0;
+    const std::uint64_t window_size_ = 0;
+    std::uint64_t number_of_reads_ = 0;
 };
 
 namespace details
@@ -232,15 +232,6 @@ IndexGPUTwoIndices<SketchElementImpl>::IndexGPUTwoIndices(io::FastaParser* parse
     generate_index(parser,
                    first_read_id_,
                    past_the_last_read_id);
-}
-
-template <typename SketchElementImpl>
-IndexGPUTwoIndices<SketchElementImpl>::IndexGPUTwoIndices()
-    : first_read_id_(0)
-    , kmer_size_(0)
-    , window_size_(0)
-    , number_of_reads_(0)
-{
 }
 
 template <typename SketchElementImpl>
