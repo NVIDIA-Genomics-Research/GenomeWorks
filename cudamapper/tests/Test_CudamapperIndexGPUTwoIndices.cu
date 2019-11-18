@@ -40,7 +40,7 @@ void test_function(const std::string& filename,
                    const std::uint64_t expected_number_of_reads)
 {
     std::unique_ptr<io::FastaParser> parser = io::create_fasta_parser(filename);
-    IndexGPUTwoIndices<Minimizer> index(parser.get(),
+    IndexGPUTwoIndices<Minimizer> index(*parser,
                                         first_read_id,
                                         past_the_last_read_id,
                                         kmer_size,

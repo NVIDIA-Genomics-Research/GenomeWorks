@@ -80,7 +80,7 @@ public:
     /// \param window_size w - the length of the sliding window used to find sketch elements
     /// \return instance of IndexTwoIndices
     static std::unique_ptr<IndexTwoIndices>
-    create_index(io::FastaParser* parser,
+    create_index(const io::FastaParser& parser,
                  const read_id_t first_read_id,
                  const read_id_t past_the_last_read_id,
                  const std::uint64_t kmer_size,
