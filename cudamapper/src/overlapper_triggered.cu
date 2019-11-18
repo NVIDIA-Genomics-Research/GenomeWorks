@@ -232,7 +232,7 @@ void OverlapperTriggered::get_overlaps(std::vector<Overlap>& fused_overlaps,
 
     // allocate temporary storage
     d_temp_buf.resize(temp_storage_bytes);
-    d_temp_storage = thrust::raw_pointer_cast(d_temp_buf.data());
+    d_temp_storage = d_temp_buf.data().get();
 
     // run encoding
     cub::DeviceRunLengthEncode::Encode(
@@ -258,7 +258,7 @@ void OverlapperTriggered::get_overlaps(std::vector<Overlap>& fused_overlaps,
 
     // allocate temporary storage
     d_temp_buf.resize(temp_storage_bytes);
-    d_temp_storage = thrust::raw_pointer_cast(d_temp_buf.data());
+    d_temp_storage = d_temp_buf.data().get();
 
     cub::DeviceScan::ExclusiveSum(d_temp_storage, temp_storage_bytes,
                                   d_chain_length.data(), d_chain_start.data(),
@@ -288,19 +288,18 @@ void OverlapperTriggered::get_overlaps(std::vector<Overlap>& fused_overlaps,
     // fuse overlaps using reduce by key operations
 
     // key is a minimal data structure that is required to compare the overlaps
-    cuOverlapKey_transform key_op(thrust::raw_pointer_cast(d_anchors.data()),
-                                  thrust::raw_pointer_cast(d_chain_start.data()));
+    cuOverlapKey_transform key_op(d_anchors.data().get(),
+                                  d_chain_start.data().get());
     cub::TransformInputIterator<cuOverlapKey, cuOverlapKey_transform, int32_t*>
-        d_keys_in(thrust::raw_pointer_cast(d_overlaps.data()),
+        d_keys_in(d_overlaps.data().get(),
                   key_op);
 
     // value is a minimal data structure that represents a overlap
-    cuOverlapArgs_transform value_op(
-        thrust::raw_pointer_cast(d_chain_start.data()),
-        thrust::raw_pointer_cast(d_chain_length.data()));
+    cuOverlapArgs_transform value_op(d_chain_start.data().get(),
+                                     d_chain_length.data().get());
 
     cub::TransformInputIterator<cuOverlapArgs, cuOverlapArgs_transform, int32_t*>
-        d_values_in(thrust::raw_pointer_cast(d_overlaps.data()),
+        d_values_in(d_overlaps.data().get(),
                     value_op);
 
     thrust::device_vector<cuOverlapKey> d_fusedoverlap_keys(n_overlaps);
@@ -318,7 +317,7 @@ void OverlapperTriggered::get_overlaps(std::vector<Overlap>& fused_overlaps,
 
     // allocate temporary storage
     d_temp_buf.resize(temp_storage_bytes);
-    d_temp_storage = thrust::raw_pointer_cast(d_temp_buf.data());
+    d_temp_storage = d_temp_buf.data().get();
 
     cub::DeviceReduce::ReduceByKey(d_temp_storage, temp_storage_bytes, d_keys_in,
                                    d_fusedoverlap_keys.data(), d_values_in,
@@ -329,7 +328,7 @@ void OverlapperTriggered::get_overlaps(std::vector<Overlap>& fused_overlaps,
     auto n_fused_overlap = d_nfused_overlaps[0];
 
     // construct overlap from the overlap args
-    CreateOverlap fuse_op(thrust::raw_pointer_cast(d_anchors.data()));
+    CreateOverlap fuse_op(d_anchors.data().get());
     thrust::device_vector<Overlap> d_fused_overlaps(n_fused_overlap);
     thrust::transform(d_fusedoverlaps_args.data(),
                       d_fusedoverlaps_args.data() + n_fused_overlap,
