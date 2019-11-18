@@ -116,10 +116,10 @@ private:
     std::vector<std::string> read_id_to_read_name_;
     std::vector<std::uint32_t> read_id_to_read_length_;
 
-    const read_id_t first_read_id_ = 0;
-    const std::uint64_t kmer_size_ = 0;
+    const read_id_t first_read_id_   = 0;
+    const std::uint64_t kmer_size_   = 0;
     const std::uint64_t window_size_ = 0;
-    std::uint64_t number_of_reads_ = 0;
+    std::uint64_t number_of_reads_   = 0;
 };
 
 namespace details
