@@ -24,6 +24,475 @@ namespace claragenomics
 namespace cudamapper
 {
 
+namespace details
+{
+namespace index_gpu_two_indices
+{
+
+// ************ Test find_first_occurrences_of_representations_kernel **************
+
+void test_find_first_occurrences_of_representations_kernel(const thrust::host_vector<std::uint64_t>& representation_index_mask_h,
+                                                           const thrust::host_vector<representation_t>& input_representations_h,
+                                                           const thrust::host_vector<std::uint32_t>& expected_starting_index_of_each_representation_h,
+                                                           const thrust::host_vector<representation_t>& expected_unique_representations_h,
+                                                           const std::uint32_t number_of_threads)
+{
+    const thrust::device_vector<std::uint64_t> representation_index_mask_d(representation_index_mask_h);
+    const thrust::device_vector<representation_t> input_representations_d(input_representations_h);
+    ASSERT_EQ(expected_starting_index_of_each_representation_h.size(), representation_index_mask_h.back());
+    ASSERT_EQ(expected_unique_representations_h.size(), representation_index_mask_h.back());
+
+    const std::uint64_t number_of_unique_representations = representation_index_mask_h.back();
+    ASSERT_EQ(expected_starting_index_of_each_representation_h.size(), number_of_unique_representations);
+    ASSERT_EQ(expected_unique_representations_h.size(), number_of_unique_representations);
+    thrust::device_vector<std::uint32_t> starting_index_of_each_representation_d(number_of_unique_representations);
+    thrust::device_vector<representation_t> unique_representations_d(number_of_unique_representations);
+
+    std::uint32_t number_of_blocks = (representation_index_mask_d.size() - 1) / number_of_threads + 1;
+
+    find_first_occurrences_of_representations_kernel<<<number_of_blocks, number_of_threads>>>(representation_index_mask_d.data().get(),
+                                                                                              input_representations_d.data().get(),
+                                                                                              representation_index_mask_d.size(),
+                                                                                              starting_index_of_each_representation_d.data().get(),
+                                                                                              unique_representations_d.data().get());
+
+    const thrust::host_vector<std::uint32_t> starting_index_of_each_representation_h(starting_index_of_each_representation_d);
+    const thrust::host_vector<representation_t> unique_representations_h(unique_representations_d);
+
+    ASSERT_EQ(starting_index_of_each_representation_h.size(), expected_starting_index_of_each_representation_h.size());
+    ASSERT_EQ(unique_representations_h.size(), expected_unique_representations_h.size());
+    for (std::size_t i = 0; i < expected_starting_index_of_each_representation_h.size(); ++i)
+    {
+        EXPECT_EQ(starting_index_of_each_representation_h[i], expected_starting_index_of_each_representation_h[i]) << "index: " << i;
+        EXPECT_EQ(unique_representations_h[i], expected_unique_representations_h[i]) << "index: " << i;
+    }
+}
+
+TEST(TestCudamapperIndexGPUTwoIndices, test_find_first_occurrences_of_representations_kernel_small_example)
+{
+    thrust::host_vector<std::uint64_t> representation_index_mask_h;
+    thrust::host_vector<representation_t> input_representations_h;
+    thrust::host_vector<std::uint32_t> expected_starting_index_of_each_representation_h;
+    thrust::host_vector<representation_t> expected_unique_representations_h;
+    representation_index_mask_h.push_back(1);
+    input_representations_h.push_back(10);
+    expected_starting_index_of_each_representation_h.push_back(0);
+    expected_unique_representations_h.push_back(10);
+    representation_index_mask_h.push_back(1);
+    input_representations_h.push_back(10);
+    representation_index_mask_h.push_back(1);
+    input_representations_h.push_back(10);
+    representation_index_mask_h.push_back(1);
+    input_representations_h.push_back(10);
+    //
+    representation_index_mask_h.push_back(2);
+    input_representations_h.push_back(20);
+    expected_starting_index_of_each_representation_h.push_back(4);
+    expected_unique_representations_h.push_back(20);
+    //
+    representation_index_mask_h.push_back(3);
+    input_representations_h.push_back(30);
+    expected_starting_index_of_each_representation_h.push_back(5);
+    expected_unique_representations_h.push_back(30);
+    representation_index_mask_h.push_back(3);
+    input_representations_h.push_back(30);
+    representation_index_mask_h.push_back(3);
+    input_representations_h.push_back(30);
+    representation_index_mask_h.push_back(3);
+    input_representations_h.push_back(30);
+    //
+    representation_index_mask_h.push_back(4);
+    input_representations_h.push_back(40);
+    expected_starting_index_of_each_representation_h.push_back(9);
+    expected_unique_representations_h.push_back(40);
+    representation_index_mask_h.push_back(4);
+    input_representations_h.push_back(40);
+    representation_index_mask_h.push_back(4);
+    input_representations_h.push_back(40);
+    //
+    representation_index_mask_h.push_back(5);
+    input_representations_h.push_back(50);
+    expected_starting_index_of_each_representation_h.push_back(12);
+    expected_unique_representations_h.push_back(50);
+    //
+    representation_index_mask_h.push_back(6);
+    input_representations_h.push_back(60);
+    expected_starting_index_of_each_representation_h.push_back(13);
+    expected_unique_representations_h.push_back(60);
+
+    std::uint32_t number_of_threads = 3;
+
+    test_find_first_occurrences_of_representations_kernel(representation_index_mask_h,
+                                                          input_representations_h,
+                                                          expected_starting_index_of_each_representation_h,
+                                                          expected_unique_representations_h,
+                                                          number_of_threads);
+}
+
+TEST(TestCudamapperIndexGPUTwoIndices, test_find_first_occurrences_of_representations_kernel_large_example)
+{
+    const std::uint64_t total_sketch_elements                    = 10000000;
+    const std::uint32_t sketch_elements_with_same_representation = 1000;
+
+    thrust::host_vector<std::uint64_t> representation_index_mask_h;
+    thrust::host_vector<representation_t> input_representations_h;
+    thrust::host_vector<std::size_t> expected_starting_index_of_each_representation_h;
+    thrust::host_vector<representation_t> expected_unique_representations_h;
+    for (std::size_t i = 0; i < total_sketch_elements; ++i)
+    {
+        representation_index_mask_h.push_back(i / sketch_elements_with_same_representation + 1);
+        input_representations_h.push_back(representation_index_mask_h.back() * 10);
+        if (i % sketch_elements_with_same_representation == 0)
+        {
+            expected_starting_index_of_each_representation_h.push_back(i);
+            expected_unique_representations_h.push_back(input_representations_h.back());
+        }
+    }
+
+    std::uint32_t number_of_threads = 256;
+
+    test_find_first_occurrences_of_representations_kernel(representation_index_mask_h,
+                                                          input_representations_h,
+                                                          expected_starting_index_of_each_representation_h,
+                                                          expected_unique_representations_h,
+                                                          number_of_threads);
+}
+
+// ************ Test find_first_occurrences_of_representations **************
+
+void test_find_first_occurrences_of_representations(const thrust::host_vector<representation_t>& representations_h,
+                                                    const thrust::host_vector<std::uint32_t>& expected_starting_index_of_each_representation_h,
+                                                    const thrust::host_vector<representation_t>& expected_unique_representations_h)
+{
+    const thrust::device_vector<representation_t> representations_d(representations_h);
+
+    thrust::device_vector<std::uint32_t> starting_index_of_each_representation_d;
+    thrust::device_vector<representation_t> unique_representations_d;
+    find_first_occurrences_of_representations(unique_representations_d,
+                                              starting_index_of_each_representation_d,
+                                              representations_d);
+
+    const thrust::host_vector<std::uint32_t> starting_index_of_each_representation_h(starting_index_of_each_representation_d);
+    const thrust::host_vector<representation_t> unique_representations_h(unique_representations_d);
+
+    ASSERT_EQ(starting_index_of_each_representation_h.size(), expected_starting_index_of_each_representation_h.size());
+    ASSERT_EQ(unique_representations_h.size(), expected_unique_representations_h.size());
+    ASSERT_EQ(starting_index_of_each_representation_h.size(), unique_representations_h.size() + 1); // starting_index_of_each_representation_h has an additional element for the past-the-end element
+
+    for (std::size_t i = 0; i < unique_representations_h.size(); ++i)
+    {
+        EXPECT_EQ(starting_index_of_each_representation_h[i], expected_starting_index_of_each_representation_h[i]) << "index: " << i;
+        EXPECT_EQ(unique_representations_h[i], expected_unique_representations_h[i]) << "index: " << i;
+    }
+    EXPECT_EQ(starting_index_of_each_representation_h.back(), expected_starting_index_of_each_representation_h.back()) << "index: " << expected_starting_index_of_each_representation_h.size() - 1;
+}
+
+TEST(TestCudamapperIndexGPUTwoIndices, test_find_first_occurrences_of_representations_small_example)
+{
+    /// 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20
+    /// 0  0  0  0 12 12 12 12 12 12 23 23 23 32 32 32 32 32 46 46 46
+    /// 1  0  0  0  1  0  0  0  0  0  1  0  0  1  0  0  0  0  1  0  0
+    /// 1  1  1  1  2  2  2  2  2  2  3  3  3  4  4  4  4  4  5  5  5
+    /// ^           ^                 ^        ^              ^       ^
+    /// 0  4 10 13 18 21
+
+    thrust::host_vector<representation_t> representations_h;
+    thrust::host_vector<std::uint32_t> expected_starting_index_of_each_representation_h;
+    thrust::host_vector<representation_t> expected_unique_representations_h;
+    representations_h.push_back(0);
+    expected_starting_index_of_each_representation_h.push_back(0);
+    expected_unique_representations_h.push_back(0);
+    representations_h.push_back(0);
+    representations_h.push_back(0);
+    representations_h.push_back(0);
+    representations_h.push_back(12);
+    expected_starting_index_of_each_representation_h.push_back(4);
+    expected_unique_representations_h.push_back(12);
+    representations_h.push_back(12);
+    representations_h.push_back(12);
+    representations_h.push_back(12);
+    representations_h.push_back(12);
+    representations_h.push_back(12);
+    representations_h.push_back(23);
+    expected_starting_index_of_each_representation_h.push_back(10);
+    expected_unique_representations_h.push_back(23);
+    representations_h.push_back(23);
+    representations_h.push_back(23);
+    representations_h.push_back(32);
+    expected_starting_index_of_each_representation_h.push_back(13);
+    expected_unique_representations_h.push_back(32);
+    representations_h.push_back(32);
+    representations_h.push_back(32);
+    representations_h.push_back(32);
+    representations_h.push_back(32);
+    representations_h.push_back(46);
+    expected_starting_index_of_each_representation_h.push_back(18);
+    expected_unique_representations_h.push_back(46);
+    representations_h.push_back(46);
+    representations_h.push_back(46);
+    expected_starting_index_of_each_representation_h.push_back(21);
+
+    test_find_first_occurrences_of_representations(representations_h,
+                                                   expected_starting_index_of_each_representation_h,
+                                                   expected_unique_representations_h);
+}
+
+TEST(TestCudamapperIndexGPUTwoIndices, test_find_first_occurrences_of_representations_large_example)
+{
+    const std::uint64_t total_sketch_elements                    = 10000000;
+    const std::uint32_t sketch_elements_with_same_representation = 1000;
+
+    thrust::host_vector<representation_t> representations_h;
+    thrust::host_vector<std::uint32_t> expected_starting_index_of_each_representation_h;
+    thrust::host_vector<representation_t> expected_unique_representations_h;
+
+    for (std::size_t i = 0; i < total_sketch_elements; ++i)
+    {
+        representations_h.push_back(i / sketch_elements_with_same_representation);
+        if (i % sketch_elements_with_same_representation == 0)
+        {
+            expected_starting_index_of_each_representation_h.push_back(i);
+            expected_unique_representations_h.push_back(i / sketch_elements_with_same_representation);
+        }
+    }
+    expected_starting_index_of_each_representation_h.push_back(total_sketch_elements);
+
+    test_find_first_occurrences_of_representations(representations_h,
+                                                   expected_starting_index_of_each_representation_h,
+                                                   expected_unique_representations_h);
+}
+
+// ************ Test create_new_value_mask **************
+
+void test_create_new_value_mask(const thrust::host_vector<representation_t>& representations_h,
+                                const thrust::host_vector<std::uint32_t>& expected_new_value_mask_h,
+                                std::uint32_t number_of_threads)
+{
+    const thrust::device_vector<representation_t> representations_d(representations_h);
+    thrust::device_vector<std::uint32_t> new_value_mask_d(representations_h.size());
+
+    std::uint32_t number_of_blocks = (representations_h.size() - 1) / number_of_threads + 1;
+
+    create_new_value_mask<<<number_of_blocks, number_of_threads>>>(thrust::raw_pointer_cast(representations_d.data()),
+                                                                   representations_d.size(),
+                                                                   thrust::raw_pointer_cast(new_value_mask_d.data()));
+
+    const thrust::host_vector<std::uint32_t> new_value_mask_h(new_value_mask_d);
+
+    ASSERT_EQ(new_value_mask_h.size(), expected_new_value_mask_h.size());
+    for (std::size_t i = 0; i < expected_new_value_mask_h.size(); ++i)
+    {
+        EXPECT_EQ(new_value_mask_h[i], expected_new_value_mask_h[i]) << "index: " << i;
+    }
+}
+
+TEST(TestCudamapperIndexGPUTwoIndices, test_create_new_value_mask_small_example)
+{
+    thrust::host_vector<representation_t> representations_h;
+    thrust::host_vector<std::uint32_t> expected_new_value_mask_h;
+    representations_h.push_back(0);
+    expected_new_value_mask_h.push_back(1);
+    representations_h.push_back(0);
+    expected_new_value_mask_h.push_back(0);
+    representations_h.push_back(0);
+    expected_new_value_mask_h.push_back(0);
+    representations_h.push_back(0);
+    expected_new_value_mask_h.push_back(0);
+    representations_h.push_back(0);
+    expected_new_value_mask_h.push_back(0);
+    representations_h.push_back(3);
+    expected_new_value_mask_h.push_back(1);
+    representations_h.push_back(3);
+    expected_new_value_mask_h.push_back(0);
+    representations_h.push_back(3);
+    expected_new_value_mask_h.push_back(0);
+    representations_h.push_back(4);
+    expected_new_value_mask_h.push_back(1);
+    representations_h.push_back(5);
+    expected_new_value_mask_h.push_back(1);
+    representations_h.push_back(5);
+    expected_new_value_mask_h.push_back(0);
+    representations_h.push_back(8);
+    expected_new_value_mask_h.push_back(1);
+    representations_h.push_back(8);
+    expected_new_value_mask_h.push_back(0);
+    representations_h.push_back(8);
+    expected_new_value_mask_h.push_back(0);
+    representations_h.push_back(9);
+    expected_new_value_mask_h.push_back(1);
+    representations_h.push_back(9);
+    expected_new_value_mask_h.push_back(0);
+    representations_h.push_back(9);
+    expected_new_value_mask_h.push_back(0);
+
+    std::uint32_t number_of_threads = 3;
+
+    test_create_new_value_mask(representations_h,
+                               expected_new_value_mask_h,
+                               number_of_threads);
+}
+
+TEST(TestCudamapperIndexGPUTwoIndices, test_create_new_value_mask_small_data_large_example)
+{
+    const std::uint64_t total_sketch_elements                    = 10000000;
+    const std::uint32_t sketch_elements_with_same_representation = 1000;
+
+    thrust::host_vector<representation_t> representations_h;
+    thrust::host_vector<std::uint32_t> expected_new_value_mask_h;
+    for (std::size_t i = 0; i < total_sketch_elements; ++i)
+    {
+        representations_h.push_back(i / sketch_elements_with_same_representation);
+        if (i % sketch_elements_with_same_representation == 0)
+            expected_new_value_mask_h.push_back(1);
+        else
+            expected_new_value_mask_h.push_back(0);
+    }
+
+    std::uint32_t number_of_threads = 256;
+
+    test_create_new_value_mask(representations_h,
+                               expected_new_value_mask_h,
+                               number_of_threads);
+}
+
+// ************ Test copy_rest_to_separate_arrays **************
+
+template <typename ReadidPositionDirection, typename DirectionOfRepresentation>
+void test_function_copy_rest_to_separate_arrays(const thrust::host_vector<ReadidPositionDirection>& rest_h,
+                                                const thrust::host_vector<read_id_t>& expected_read_ids_h,
+                                                const thrust::host_vector<position_in_read_t>& expected_positions_in_reads_h,
+                                                const thrust::host_vector<DirectionOfRepresentation>& expected_directions_of_reads_h,
+                                                const std::uint32_t threads)
+{
+    ASSERT_EQ(rest_h.size(), expected_read_ids_h.size());
+    ASSERT_EQ(rest_h.size(), expected_positions_in_reads_h.size());
+    ASSERT_EQ(rest_h.size(), expected_directions_of_reads_h.size());
+    thrust::device_vector<read_id_t> generated_read_ids_d(rest_h.size());
+    thrust::device_vector<position_in_read_t> generated_positions_in_reads_d(rest_h.size());
+    thrust::device_vector<DirectionOfRepresentation> generated_directions_of_reads_d(rest_h.size());
+
+    const thrust::device_vector<ReadidPositionDirection> rest_d(rest_h);
+
+    const std::uint32_t blocks = ceiling_divide<int64_t>(rest_h.size(), threads);
+
+    copy_rest_to_separate_arrays<<<blocks, threads>>>(rest_d.data().get(),
+                                                      generated_read_ids_d.data().get(),
+                                                      generated_positions_in_reads_d.data().get(),
+                                                      generated_directions_of_reads_d.data().get(),
+                                                      rest_h.size());
+
+    const thrust::host_vector<read_id_t>& generated_read_ids_h(generated_read_ids_d);
+    const thrust::host_vector<position_in_read_t>& generated_positions_in_reads_h(generated_positions_in_reads_d);
+    const thrust::host_vector<DirectionOfRepresentation>& generated_directions_of_reads_h(generated_directions_of_reads_d);
+
+    for (std::size_t i = 0; i < rest_h.size(); ++i)
+    {
+        EXPECT_EQ(generated_read_ids_h[i], expected_read_ids_h[i]);
+        EXPECT_EQ(generated_positions_in_reads_h[i], expected_positions_in_reads_h[i]);
+        EXPECT_EQ(generated_directions_of_reads_h[i], expected_directions_of_reads_h[i]);
+    }
+}
+
+TEST(TestCudamapperIndexGPUTwoIndices, test_function_copy_rest_to_separate_arrays)
+{
+    thrust::host_vector<Minimizer::ReadidPositionDirection> rest_h;
+    thrust::host_vector<read_id_t> expected_read_ids_h;
+    thrust::host_vector<position_in_read_t> expected_positions_in_reads_h;
+    thrust::host_vector<Minimizer::DirectionOfRepresentation> expected_directions_of_reads_h;
+
+    rest_h.push_back({5, 8, 0});
+    expected_read_ids_h.push_back(5);
+    expected_positions_in_reads_h.push_back(8);
+    expected_directions_of_reads_h.push_back(Minimizer::DirectionOfRepresentation::FORWARD);
+    rest_h.push_back({15, 6, 0});
+    expected_read_ids_h.push_back(15);
+    expected_positions_in_reads_h.push_back(6);
+    expected_directions_of_reads_h.push_back(Minimizer::DirectionOfRepresentation::FORWARD);
+    rest_h.push_back({2, 4, 1});
+    expected_read_ids_h.push_back(2);
+    expected_positions_in_reads_h.push_back(4);
+    expected_directions_of_reads_h.push_back(Minimizer::DirectionOfRepresentation::REVERSE);
+    rest_h.push_back({18, 15, 0});
+    expected_read_ids_h.push_back(18);
+    expected_positions_in_reads_h.push_back(15);
+    expected_directions_of_reads_h.push_back(Minimizer::DirectionOfRepresentation::FORWARD);
+    rest_h.push_back({6, 4, 1});
+    expected_read_ids_h.push_back(6);
+    expected_positions_in_reads_h.push_back(4);
+    expected_directions_of_reads_h.push_back(Minimizer::DirectionOfRepresentation::REVERSE);
+    rest_h.push_back({6, 3, 1});
+    expected_read_ids_h.push_back(6);
+    expected_positions_in_reads_h.push_back(3);
+    expected_directions_of_reads_h.push_back(Minimizer::DirectionOfRepresentation::REVERSE);
+    rest_h.push_back({89, 45, 0});
+    expected_read_ids_h.push_back(89);
+    expected_positions_in_reads_h.push_back(45);
+    expected_directions_of_reads_h.push_back(Minimizer::DirectionOfRepresentation::FORWARD);
+    rest_h.push_back({547, 25, 0});
+    expected_read_ids_h.push_back(547);
+    expected_positions_in_reads_h.push_back(25);
+    expected_directions_of_reads_h.push_back(Minimizer::DirectionOfRepresentation::FORWARD);
+    rest_h.push_back({14, 16, 1});
+    expected_read_ids_h.push_back(14);
+    expected_positions_in_reads_h.push_back(16);
+    expected_directions_of_reads_h.push_back(Minimizer::DirectionOfRepresentation::REVERSE);
+    rest_h.push_back({18, 16, 0});
+    expected_read_ids_h.push_back(18);
+    expected_positions_in_reads_h.push_back(16);
+    expected_directions_of_reads_h.push_back(Minimizer::DirectionOfRepresentation::FORWARD);
+    rest_h.push_back({45, 44, 0});
+    expected_read_ids_h.push_back(45);
+    expected_positions_in_reads_h.push_back(44);
+    expected_directions_of_reads_h.push_back(Minimizer::DirectionOfRepresentation::FORWARD);
+    rest_h.push_back({65, 45, 1});
+    expected_read_ids_h.push_back(65);
+    expected_positions_in_reads_h.push_back(45);
+    expected_directions_of_reads_h.push_back(Minimizer::DirectionOfRepresentation::REVERSE);
+    rest_h.push_back({15, 20, 0});
+    expected_read_ids_h.push_back(15);
+    expected_positions_in_reads_h.push_back(20);
+    expected_directions_of_reads_h.push_back(Minimizer::DirectionOfRepresentation::FORWARD);
+    rest_h.push_back({45, 654, 1});
+    expected_read_ids_h.push_back(45);
+    expected_positions_in_reads_h.push_back(654);
+    expected_directions_of_reads_h.push_back(Minimizer::DirectionOfRepresentation::REVERSE);
+    rest_h.push_back({782, 216, 0});
+    expected_read_ids_h.push_back(782);
+    expected_positions_in_reads_h.push_back(216);
+    expected_directions_of_reads_h.push_back(Minimizer::DirectionOfRepresentation::FORWARD);
+    rest_h.push_back({255, 245, 1});
+    expected_read_ids_h.push_back(255);
+    expected_positions_in_reads_h.push_back(245);
+    expected_directions_of_reads_h.push_back(Minimizer::DirectionOfRepresentation::REVERSE);
+    rest_h.push_back({346, 579, 0});
+    expected_read_ids_h.push_back(346);
+    expected_positions_in_reads_h.push_back(579);
+    expected_directions_of_reads_h.push_back(Minimizer::DirectionOfRepresentation::FORWARD);
+    rest_h.push_back({12, 8, 0});
+    expected_read_ids_h.push_back(12);
+    expected_positions_in_reads_h.push_back(8);
+    expected_directions_of_reads_h.push_back(Minimizer::DirectionOfRepresentation::FORWARD);
+    rest_h.push_back({65, 42, 1});
+    expected_read_ids_h.push_back(65);
+    expected_positions_in_reads_h.push_back(42);
+    expected_directions_of_reads_h.push_back(Minimizer::DirectionOfRepresentation::REVERSE);
+    rest_h.push_back({566, 42, 0});
+    expected_read_ids_h.push_back(566);
+    expected_positions_in_reads_h.push_back(42);
+    expected_directions_of_reads_h.push_back(Minimizer::DirectionOfRepresentation::FORWARD);
+
+    const std::uint32_t threads = 8;
+
+    test_function_copy_rest_to_separate_arrays(rest_h,
+                                               expected_read_ids_h,
+                                               expected_positions_in_reads_h,
+                                               expected_directions_of_reads_h,
+                                               threads);
+}
+
+} // namespace index_gpu_two_indices
+} // namespace details
+
 void test_function(const std::string& filename,
                    const read_id_t first_read_id,
                    const read_id_t past_the_last_read_id,
@@ -877,474 +1346,6 @@ TEST(TestCudamapperIndexGPUTwoIndices, AAAACTGAA_GCCAAAG_2_3_only_second_read_in
                   expected_read_id_to_read_length,
                   1);
 }
-
-namespace details
-{
-namespace index_gpu_two_indices
-{
-// ************ Test find_first_occurrences_of_representations **************
-
-void test_find_first_occurrences_of_representations(const thrust::host_vector<representation_t>& representations_h,
-                                                    const thrust::host_vector<std::uint32_t>& expected_starting_index_of_each_representation_h,
-                                                    const thrust::host_vector<representation_t>& expected_unique_representations_h)
-{
-    const thrust::device_vector<representation_t> representations_d(representations_h);
-
-    thrust::device_vector<std::uint32_t> starting_index_of_each_representation_d;
-    thrust::device_vector<representation_t> unique_representations_d;
-    find_first_occurrences_of_representations(unique_representations_d,
-                                              starting_index_of_each_representation_d,
-                                              representations_d);
-
-    const thrust::host_vector<std::uint32_t> starting_index_of_each_representation_h(starting_index_of_each_representation_d);
-    const thrust::host_vector<representation_t> unique_representations_h(unique_representations_d);
-
-    ASSERT_EQ(starting_index_of_each_representation_h.size(), expected_starting_index_of_each_representation_h.size());
-    ASSERT_EQ(unique_representations_h.size(), expected_unique_representations_h.size());
-    ASSERT_EQ(starting_index_of_each_representation_h.size(), unique_representations_h.size() + 1); // starting_index_of_each_representation_h has an additional element for the past-the-end element
-
-    for (std::size_t i = 0; i < unique_representations_h.size(); ++i)
-    {
-        EXPECT_EQ(starting_index_of_each_representation_h[i], expected_starting_index_of_each_representation_h[i]) << "index: " << i;
-        EXPECT_EQ(unique_representations_h[i], expected_unique_representations_h[i]) << "index: " << i;
-    }
-    EXPECT_EQ(starting_index_of_each_representation_h.back(), expected_starting_index_of_each_representation_h.back()) << "index: " << expected_starting_index_of_each_representation_h.size() - 1;
-}
-
-TEST(TestCudamapperIndexGPUTwoIndices, test_find_first_occurrences_of_representations_small_example)
-{
-    /// 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20
-    /// 0  0  0  0 12 12 12 12 12 12 23 23 23 32 32 32 32 32 46 46 46
-    /// 1  0  0  0  1  0  0  0  0  0  1  0  0  1  0  0  0  0  1  0  0
-    /// 1  1  1  1  2  2  2  2  2  2  3  3  3  4  4  4  4  4  5  5  5
-    /// ^           ^                 ^        ^              ^       ^
-    /// 0  4 10 13 18 21
-
-    thrust::host_vector<representation_t> representations_h;
-    thrust::host_vector<std::uint32_t> expected_starting_index_of_each_representation_h;
-    thrust::host_vector<representation_t> expected_unique_representations_h;
-    representations_h.push_back(0);
-    expected_starting_index_of_each_representation_h.push_back(0);
-    expected_unique_representations_h.push_back(0);
-    representations_h.push_back(0);
-    representations_h.push_back(0);
-    representations_h.push_back(0);
-    representations_h.push_back(12);
-    expected_starting_index_of_each_representation_h.push_back(4);
-    expected_unique_representations_h.push_back(12);
-    representations_h.push_back(12);
-    representations_h.push_back(12);
-    representations_h.push_back(12);
-    representations_h.push_back(12);
-    representations_h.push_back(12);
-    representations_h.push_back(23);
-    expected_starting_index_of_each_representation_h.push_back(10);
-    expected_unique_representations_h.push_back(23);
-    representations_h.push_back(23);
-    representations_h.push_back(23);
-    representations_h.push_back(32);
-    expected_starting_index_of_each_representation_h.push_back(13);
-    expected_unique_representations_h.push_back(32);
-    representations_h.push_back(32);
-    representations_h.push_back(32);
-    representations_h.push_back(32);
-    representations_h.push_back(32);
-    representations_h.push_back(46);
-    expected_starting_index_of_each_representation_h.push_back(18);
-    expected_unique_representations_h.push_back(46);
-    representations_h.push_back(46);
-    representations_h.push_back(46);
-    expected_starting_index_of_each_representation_h.push_back(21);
-
-    test_find_first_occurrences_of_representations(representations_h,
-                                                   expected_starting_index_of_each_representation_h,
-                                                   expected_unique_representations_h);
-}
-
-TEST(TestCudamapperIndexGPUTwoIndices, test_find_first_occurrences_of_representations_large_example)
-{
-    const std::uint64_t total_sketch_elements                    = 10000000;
-    const std::uint32_t sketch_elements_with_same_representation = 1000;
-
-    thrust::host_vector<representation_t> representations_h;
-    thrust::host_vector<std::uint32_t> expected_starting_index_of_each_representation_h;
-    thrust::host_vector<representation_t> expected_unique_representations_h;
-
-    for (std::size_t i = 0; i < total_sketch_elements; ++i)
-    {
-        representations_h.push_back(i / sketch_elements_with_same_representation);
-        if (i % sketch_elements_with_same_representation == 0)
-        {
-            expected_starting_index_of_each_representation_h.push_back(i);
-            expected_unique_representations_h.push_back(i / sketch_elements_with_same_representation);
-        }
-    }
-    expected_starting_index_of_each_representation_h.push_back(total_sketch_elements);
-
-    test_find_first_occurrences_of_representations(representations_h,
-                                                   expected_starting_index_of_each_representation_h,
-                                                   expected_unique_representations_h);
-}
-
-// ************ Test create_new_value_mask **************
-
-void test_create_new_value_mask(const thrust::host_vector<representation_t>& representations_h,
-                                const thrust::host_vector<std::uint32_t>& expected_new_value_mask_h,
-                                std::uint32_t number_of_threads)
-{
-    const thrust::device_vector<representation_t> representations_d(representations_h);
-    thrust::device_vector<std::uint32_t> new_value_mask_d(representations_h.size());
-
-    std::uint32_t number_of_blocks = (representations_h.size() - 1) / number_of_threads + 1;
-
-    create_new_value_mask<<<number_of_blocks, number_of_threads>>>(thrust::raw_pointer_cast(representations_d.data()),
-                                                                   representations_d.size(),
-                                                                   thrust::raw_pointer_cast(new_value_mask_d.data()));
-
-    const thrust::host_vector<std::uint32_t> new_value_mask_h(new_value_mask_d);
-
-    ASSERT_EQ(new_value_mask_h.size(), expected_new_value_mask_h.size());
-    for (std::size_t i = 0; i < expected_new_value_mask_h.size(); ++i)
-    {
-        EXPECT_EQ(new_value_mask_h[i], expected_new_value_mask_h[i]) << "index: " << i;
-    }
-}
-
-TEST(TestCudamapperIndexGPUTwoIndices, test_create_new_value_mask_small_example)
-{
-    thrust::host_vector<representation_t> representations_h;
-    thrust::host_vector<std::uint32_t> expected_new_value_mask_h;
-    representations_h.push_back(0);
-    expected_new_value_mask_h.push_back(1);
-    representations_h.push_back(0);
-    expected_new_value_mask_h.push_back(0);
-    representations_h.push_back(0);
-    expected_new_value_mask_h.push_back(0);
-    representations_h.push_back(0);
-    expected_new_value_mask_h.push_back(0);
-    representations_h.push_back(0);
-    expected_new_value_mask_h.push_back(0);
-    representations_h.push_back(3);
-    expected_new_value_mask_h.push_back(1);
-    representations_h.push_back(3);
-    expected_new_value_mask_h.push_back(0);
-    representations_h.push_back(3);
-    expected_new_value_mask_h.push_back(0);
-    representations_h.push_back(4);
-    expected_new_value_mask_h.push_back(1);
-    representations_h.push_back(5);
-    expected_new_value_mask_h.push_back(1);
-    representations_h.push_back(5);
-    expected_new_value_mask_h.push_back(0);
-    representations_h.push_back(8);
-    expected_new_value_mask_h.push_back(1);
-    representations_h.push_back(8);
-    expected_new_value_mask_h.push_back(0);
-    representations_h.push_back(8);
-    expected_new_value_mask_h.push_back(0);
-    representations_h.push_back(9);
-    expected_new_value_mask_h.push_back(1);
-    representations_h.push_back(9);
-    expected_new_value_mask_h.push_back(0);
-    representations_h.push_back(9);
-    expected_new_value_mask_h.push_back(0);
-
-    std::uint32_t number_of_threads = 3;
-
-    test_create_new_value_mask(representations_h,
-                               expected_new_value_mask_h,
-                               number_of_threads);
-}
-
-TEST(TestCudamapperIndexGPUTwoIndices, test_create_new_value_mask_small_data_large_example)
-{
-    const std::uint64_t total_sketch_elements                    = 10000000;
-    const std::uint32_t sketch_elements_with_same_representation = 1000;
-
-    thrust::host_vector<representation_t> representations_h;
-    thrust::host_vector<std::uint32_t> expected_new_value_mask_h;
-    for (std::size_t i = 0; i < total_sketch_elements; ++i)
-    {
-        representations_h.push_back(i / sketch_elements_with_same_representation);
-        if (i % sketch_elements_with_same_representation == 0)
-            expected_new_value_mask_h.push_back(1);
-        else
-            expected_new_value_mask_h.push_back(0);
-    }
-
-    std::uint32_t number_of_threads = 256;
-
-    test_create_new_value_mask(representations_h,
-                               expected_new_value_mask_h,
-                               number_of_threads);
-}
-
-// ************ Test find_first_occurrences_of_representations_kernel **************
-
-void test_find_first_occurrences_of_representations_kernel(const thrust::host_vector<std::uint64_t>& representation_index_mask_h,
-                                                           const thrust::host_vector<representation_t>& input_representations_h,
-                                                           const thrust::host_vector<std::uint32_t>& expected_starting_index_of_each_representation_h,
-                                                           const thrust::host_vector<representation_t>& expected_unique_representations_h,
-                                                           const std::uint32_t number_of_threads)
-{
-    const thrust::device_vector<std::uint64_t> representation_index_mask_d(representation_index_mask_h);
-    const thrust::device_vector<representation_t> input_representations_d(input_representations_h);
-    ASSERT_EQ(expected_starting_index_of_each_representation_h.size(), representation_index_mask_h.back());
-    ASSERT_EQ(expected_unique_representations_h.size(), representation_index_mask_h.back());
-
-    const std::uint64_t number_of_unique_representations = representation_index_mask_h.back();
-    ASSERT_EQ(expected_starting_index_of_each_representation_h.size(), number_of_unique_representations);
-    ASSERT_EQ(expected_unique_representations_h.size(), number_of_unique_representations);
-    thrust::device_vector<std::uint32_t> starting_index_of_each_representation_d(number_of_unique_representations);
-    thrust::device_vector<representation_t> unique_representations_d(number_of_unique_representations);
-
-    std::uint32_t number_of_blocks = (representation_index_mask_d.size() - 1) / number_of_threads + 1;
-
-    find_first_occurrences_of_representations_kernel<<<number_of_blocks, number_of_threads>>>(representation_index_mask_d.data().get(),
-                                                                                              input_representations_d.data().get(),
-                                                                                              representation_index_mask_d.size(),
-                                                                                              starting_index_of_each_representation_d.data().get(),
-                                                                                              unique_representations_d.data().get());
-
-    const thrust::host_vector<std::uint32_t> starting_index_of_each_representation_h(starting_index_of_each_representation_d);
-    const thrust::host_vector<representation_t> unique_representations_h(unique_representations_d);
-
-    ASSERT_EQ(starting_index_of_each_representation_h.size(), expected_starting_index_of_each_representation_h.size());
-    ASSERT_EQ(unique_representations_h.size(), expected_unique_representations_h.size());
-    for (std::size_t i = 0; i < expected_starting_index_of_each_representation_h.size(); ++i)
-    {
-        EXPECT_EQ(starting_index_of_each_representation_h[i], expected_starting_index_of_each_representation_h[i]) << "index: " << i;
-        EXPECT_EQ(unique_representations_h[i], expected_unique_representations_h[i]) << "index: " << i;
-    }
-}
-
-TEST(TestCudamapperIndexGPUTwoIndices, test_find_first_occurrences_of_representations_kernel_small_example)
-{
-    thrust::host_vector<std::uint64_t> representation_index_mask_h;
-    thrust::host_vector<representation_t> input_representations_h;
-    thrust::host_vector<std::uint32_t> expected_starting_index_of_each_representation_h;
-    thrust::host_vector<representation_t> expected_unique_representations_h;
-    representation_index_mask_h.push_back(1);
-    input_representations_h.push_back(10);
-    expected_starting_index_of_each_representation_h.push_back(0);
-    expected_unique_representations_h.push_back(10);
-    representation_index_mask_h.push_back(1);
-    input_representations_h.push_back(10);
-    representation_index_mask_h.push_back(1);
-    input_representations_h.push_back(10);
-    representation_index_mask_h.push_back(1);
-    input_representations_h.push_back(10);
-    //
-    representation_index_mask_h.push_back(2);
-    input_representations_h.push_back(20);
-    expected_starting_index_of_each_representation_h.push_back(4);
-    expected_unique_representations_h.push_back(20);
-    //
-    representation_index_mask_h.push_back(3);
-    input_representations_h.push_back(30);
-    expected_starting_index_of_each_representation_h.push_back(5);
-    expected_unique_representations_h.push_back(30);
-    representation_index_mask_h.push_back(3);
-    input_representations_h.push_back(30);
-    representation_index_mask_h.push_back(3);
-    input_representations_h.push_back(30);
-    representation_index_mask_h.push_back(3);
-    input_representations_h.push_back(30);
-    //
-    representation_index_mask_h.push_back(4);
-    input_representations_h.push_back(40);
-    expected_starting_index_of_each_representation_h.push_back(9);
-    expected_unique_representations_h.push_back(40);
-    representation_index_mask_h.push_back(4);
-    input_representations_h.push_back(40);
-    representation_index_mask_h.push_back(4);
-    input_representations_h.push_back(40);
-    //
-    representation_index_mask_h.push_back(5);
-    input_representations_h.push_back(50);
-    expected_starting_index_of_each_representation_h.push_back(12);
-    expected_unique_representations_h.push_back(50);
-    //
-    representation_index_mask_h.push_back(6);
-    input_representations_h.push_back(60);
-    expected_starting_index_of_each_representation_h.push_back(13);
-    expected_unique_representations_h.push_back(60);
-
-    std::uint32_t number_of_threads = 3;
-
-    test_find_first_occurrences_of_representations_kernel(representation_index_mask_h,
-                                                          input_representations_h,
-                                                          expected_starting_index_of_each_representation_h,
-                                                          expected_unique_representations_h,
-                                                          number_of_threads);
-}
-
-TEST(TestCudamapperIndexGPUTwoIndices, test_find_first_occurrences_of_representations_kernel_large_example)
-{
-    const std::uint64_t total_sketch_elements                    = 10000000;
-    const std::uint32_t sketch_elements_with_same_representation = 1000;
-
-    thrust::host_vector<std::uint64_t> representation_index_mask_h;
-    thrust::host_vector<representation_t> input_representations_h;
-    thrust::host_vector<std::size_t> expected_starting_index_of_each_representation_h;
-    thrust::host_vector<representation_t> expected_unique_representations_h;
-    for (std::size_t i = 0; i < total_sketch_elements; ++i)
-    {
-        representation_index_mask_h.push_back(i / sketch_elements_with_same_representation + 1);
-        input_representations_h.push_back(representation_index_mask_h.back() * 10);
-        if (i % sketch_elements_with_same_representation == 0)
-        {
-            expected_starting_index_of_each_representation_h.push_back(i);
-            expected_unique_representations_h.push_back(input_representations_h.back());
-        }
-    }
-
-    std::uint32_t number_of_threads = 256;
-
-    test_find_first_occurrences_of_representations_kernel(representation_index_mask_h,
-                                                          input_representations_h,
-                                                          expected_starting_index_of_each_representation_h,
-                                                          expected_unique_representations_h,
-                                                          number_of_threads);
-}
-
-// ************ Test copy_rest_to_separate_arrays **************
-
-template <typename ReadidPositionDirection, typename DirectionOfRepresentation>
-void test_function_copy_rest_to_separate_arrays(const thrust::host_vector<ReadidPositionDirection>& rest_h,
-                                                const thrust::host_vector<read_id_t>& expected_read_ids_h,
-                                                const thrust::host_vector<position_in_read_t>& expected_positions_in_reads_h,
-                                                const thrust::host_vector<DirectionOfRepresentation>& expected_directions_of_reads_h,
-                                                const std::uint32_t threads)
-{
-    ASSERT_EQ(rest_h.size(), expected_read_ids_h.size());
-    ASSERT_EQ(rest_h.size(), expected_positions_in_reads_h.size());
-    ASSERT_EQ(rest_h.size(), expected_directions_of_reads_h.size());
-    thrust::device_vector<read_id_t> generated_read_ids_d(rest_h.size());
-    thrust::device_vector<position_in_read_t> generated_positions_in_reads_d(rest_h.size());
-    thrust::device_vector<DirectionOfRepresentation> generated_directions_of_reads_d(rest_h.size());
-
-    const thrust::device_vector<ReadidPositionDirection> rest_d(rest_h);
-
-    const std::uint32_t blocks = ceiling_divide<int64_t>(rest_h.size(), threads);
-
-    copy_rest_to_separate_arrays<<<blocks, threads>>>(rest_d.data().get(),
-                                                      generated_read_ids_d.data().get(),
-                                                      generated_positions_in_reads_d.data().get(),
-                                                      generated_directions_of_reads_d.data().get(),
-                                                      rest_h.size());
-
-    const thrust::host_vector<read_id_t>& generated_read_ids_h(generated_read_ids_d);
-    const thrust::host_vector<position_in_read_t>& generated_positions_in_reads_h(generated_positions_in_reads_d);
-    const thrust::host_vector<DirectionOfRepresentation>& generated_directions_of_reads_h(generated_directions_of_reads_d);
-
-    for (std::size_t i = 0; i < rest_h.size(); ++i)
-    {
-        EXPECT_EQ(generated_read_ids_h[i], expected_read_ids_h[i]);
-        EXPECT_EQ(generated_positions_in_reads_h[i], expected_positions_in_reads_h[i]);
-        EXPECT_EQ(generated_directions_of_reads_h[i], expected_directions_of_reads_h[i]);
-    }
-}
-
-TEST(TestCudamapperIndexGPUTwoIndices, test_function_copy_rest_to_separate_arrays)
-{
-    thrust::host_vector<Minimizer::ReadidPositionDirection> rest_h;
-    thrust::host_vector<read_id_t> expected_read_ids_h;
-    thrust::host_vector<position_in_read_t> expected_positions_in_reads_h;
-    thrust::host_vector<Minimizer::DirectionOfRepresentation> expected_directions_of_reads_h;
-
-    rest_h.push_back({5, 8, 0});
-    expected_read_ids_h.push_back(5);
-    expected_positions_in_reads_h.push_back(8);
-    expected_directions_of_reads_h.push_back(Minimizer::DirectionOfRepresentation::FORWARD);
-    rest_h.push_back({15, 6, 0});
-    expected_read_ids_h.push_back(15);
-    expected_positions_in_reads_h.push_back(6);
-    expected_directions_of_reads_h.push_back(Minimizer::DirectionOfRepresentation::FORWARD);
-    rest_h.push_back({2, 4, 1});
-    expected_read_ids_h.push_back(2);
-    expected_positions_in_reads_h.push_back(4);
-    expected_directions_of_reads_h.push_back(Minimizer::DirectionOfRepresentation::REVERSE);
-    rest_h.push_back({18, 15, 0});
-    expected_read_ids_h.push_back(18);
-    expected_positions_in_reads_h.push_back(15);
-    expected_directions_of_reads_h.push_back(Minimizer::DirectionOfRepresentation::FORWARD);
-    rest_h.push_back({6, 4, 1});
-    expected_read_ids_h.push_back(6);
-    expected_positions_in_reads_h.push_back(4);
-    expected_directions_of_reads_h.push_back(Minimizer::DirectionOfRepresentation::REVERSE);
-    rest_h.push_back({6, 3, 1});
-    expected_read_ids_h.push_back(6);
-    expected_positions_in_reads_h.push_back(3);
-    expected_directions_of_reads_h.push_back(Minimizer::DirectionOfRepresentation::REVERSE);
-    rest_h.push_back({89, 45, 0});
-    expected_read_ids_h.push_back(89);
-    expected_positions_in_reads_h.push_back(45);
-    expected_directions_of_reads_h.push_back(Minimizer::DirectionOfRepresentation::FORWARD);
-    rest_h.push_back({547, 25, 0});
-    expected_read_ids_h.push_back(547);
-    expected_positions_in_reads_h.push_back(25);
-    expected_directions_of_reads_h.push_back(Minimizer::DirectionOfRepresentation::FORWARD);
-    rest_h.push_back({14, 16, 1});
-    expected_read_ids_h.push_back(14);
-    expected_positions_in_reads_h.push_back(16);
-    expected_directions_of_reads_h.push_back(Minimizer::DirectionOfRepresentation::REVERSE);
-    rest_h.push_back({18, 16, 0});
-    expected_read_ids_h.push_back(18);
-    expected_positions_in_reads_h.push_back(16);
-    expected_directions_of_reads_h.push_back(Minimizer::DirectionOfRepresentation::FORWARD);
-    rest_h.push_back({45, 44, 0});
-    expected_read_ids_h.push_back(45);
-    expected_positions_in_reads_h.push_back(44);
-    expected_directions_of_reads_h.push_back(Minimizer::DirectionOfRepresentation::FORWARD);
-    rest_h.push_back({65, 45, 1});
-    expected_read_ids_h.push_back(65);
-    expected_positions_in_reads_h.push_back(45);
-    expected_directions_of_reads_h.push_back(Minimizer::DirectionOfRepresentation::REVERSE);
-    rest_h.push_back({15, 20, 0});
-    expected_read_ids_h.push_back(15);
-    expected_positions_in_reads_h.push_back(20);
-    expected_directions_of_reads_h.push_back(Minimizer::DirectionOfRepresentation::FORWARD);
-    rest_h.push_back({45, 654, 1});
-    expected_read_ids_h.push_back(45);
-    expected_positions_in_reads_h.push_back(654);
-    expected_directions_of_reads_h.push_back(Minimizer::DirectionOfRepresentation::REVERSE);
-    rest_h.push_back({782, 216, 0});
-    expected_read_ids_h.push_back(782);
-    expected_positions_in_reads_h.push_back(216);
-    expected_directions_of_reads_h.push_back(Minimizer::DirectionOfRepresentation::FORWARD);
-    rest_h.push_back({255, 245, 1});
-    expected_read_ids_h.push_back(255);
-    expected_positions_in_reads_h.push_back(245);
-    expected_directions_of_reads_h.push_back(Minimizer::DirectionOfRepresentation::REVERSE);
-    rest_h.push_back({346, 579, 0});
-    expected_read_ids_h.push_back(346);
-    expected_positions_in_reads_h.push_back(579);
-    expected_directions_of_reads_h.push_back(Minimizer::DirectionOfRepresentation::FORWARD);
-    rest_h.push_back({12, 8, 0});
-    expected_read_ids_h.push_back(12);
-    expected_positions_in_reads_h.push_back(8);
-    expected_directions_of_reads_h.push_back(Minimizer::DirectionOfRepresentation::FORWARD);
-    rest_h.push_back({65, 42, 1});
-    expected_read_ids_h.push_back(65);
-    expected_positions_in_reads_h.push_back(42);
-    expected_directions_of_reads_h.push_back(Minimizer::DirectionOfRepresentation::REVERSE);
-    rest_h.push_back({566, 42, 0});
-    expected_read_ids_h.push_back(566);
-    expected_positions_in_reads_h.push_back(42);
-    expected_directions_of_reads_h.push_back(Minimizer::DirectionOfRepresentation::FORWARD);
-
-    const std::uint32_t threads = 8;
-
-    test_function_copy_rest_to_separate_arrays(rest_h,
-                                               expected_read_ids_h,
-                                               expected_positions_in_reads_h,
-                                               expected_directions_of_reads_h,
-                                               threads);
-}
-
-} // namespace index_gpu_two_indices
-} // namespace details
 
 } // namespace cudamapper
 } // namespace claragenomics
