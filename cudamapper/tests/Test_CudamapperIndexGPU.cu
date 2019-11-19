@@ -39,7 +39,7 @@ void test_function(const std::string& filename,
     std::unique_ptr<io::FastaParser> parser = io::create_fasta_parser(filename);
     std::vector<io::FastaParser*> parsers;
     parsers.push_back(parser.get());
-    IndexGPU<Minimizer> index(parsers, minimizer_size, window_size, read_ranges);
+    IndexGPU<Minimizer> index(parsers, minimizer_size, window_size, read_ranges, false);
 
     ASSERT_EQ(index.number_of_reads(), expected_number_of_reads);
 
