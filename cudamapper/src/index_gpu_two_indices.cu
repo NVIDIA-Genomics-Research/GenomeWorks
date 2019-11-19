@@ -53,7 +53,7 @@ void find_first_occurrences_of_representations(thrust::device_vector<representat
     new_value_mask_d.clear();
     new_value_mask_d.shrink_to_fit();
 
-    std::uint64_t number_of_unique_representations = representation_index_mask_d.back(); // D2H copy
+    const std::uint64_t number_of_unique_representations = representation_index_mask_d.back(); // D2H copy
 
     first_occurrence_index_d.resize(number_of_unique_representations + 1); // <- +1 for the additional element
     first_occurrence_index_d.shrink_to_fit();

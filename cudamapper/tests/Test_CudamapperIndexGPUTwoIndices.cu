@@ -1091,8 +1091,12 @@ void test_find_first_occurrences_of_representations_kernel(const thrust::host_ve
     const thrust::device_vector<representation_t> input_representations_d(input_representations_h);
     ASSERT_EQ(expected_starting_index_of_each_representation_h.size(), representation_index_mask_h.back());
     ASSERT_EQ(expected_unique_representations_h.size(), representation_index_mask_h.back());
-    thrust::device_vector<std::uint32_t> starting_index_of_each_representation_d(expected_starting_index_of_each_representation_h.size());
-    thrust::device_vector<representation_t> unique_representations_d(expected_starting_index_of_each_representation_h.size());
+
+    const std::uint64_t number_of_unique_representations = representation_index_mask_h.back();
+    ASSERT_EQ(expected_starting_index_of_each_representation_h.size(), number_of_unique_representations);
+    ASSERT_EQ(expected_unique_representations_h.size(), number_of_unique_representations);
+    thrust::device_vector<std::uint32_t> starting_index_of_each_representation_d(number_of_unique_representations);
+    thrust::device_vector<representation_t> unique_representations_d(number_of_unique_representations);
 
     std::uint32_t number_of_blocks = (representation_index_mask_d.size() - 1) / number_of_threads + 1;
 
