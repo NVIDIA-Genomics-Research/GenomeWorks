@@ -73,31 +73,38 @@ FormattedAlignment AlignmentImpl::format_alignment() const
 {
     int64_t t_pos = 0;
     int64_t q_pos = 0;
-    std::string t_str;
-    std::string q_str;
+    FormattedAlignment ret_formatted_alignment;
+
     for (auto const& x : alignment_)
     {
         switch (x)
         {
         case AlignmentState::match:
+            ret_formatted_alignment.second += target_[t_pos++];
+            ret_formatted_alignment.first += query_[q_pos++];
+            ret_formatted_alignment.pairing += "|";
+            break;
         case AlignmentState::mismatch:
-            t_str += target_[t_pos++];
-            q_str += query_[q_pos++];
+            ret_formatted_alignment.second += target_[t_pos++];
+            ret_formatted_alignment.first += query_[q_pos++];
+            ret_formatted_alignment.pairing += "x";
             break;
         case AlignmentState::deletion:
-            t_str += "-";
-            q_str += query_[q_pos++];
+            ret_formatted_alignment.second += "-";
+            ret_formatted_alignment.first += query_[q_pos++];
+            ret_formatted_alignment.pairing += " ";
             break;
         case AlignmentState::insertion:
-            t_str += target_[t_pos++];
-            q_str += "-";
+            ret_formatted_alignment.second += target_[t_pos++];
+            ret_formatted_alignment.first += "-";
+            ret_formatted_alignment.pairing += " ";
             break;
         default:
             throw std::runtime_error("Unknown alignment state");
         }
     }
 
-    return {q_str, t_str};
+    return ret_formatted_alignment;
 }
 } // namespace cudaaligner
 } // namespace claragenomics

@@ -131,6 +131,7 @@ int main(int argc, char** argv)
                 {
                     FormattedAlignment formatted = alignment->format_alignment();
                     std::cout << formatted.first << "\n"
+                              << formatted.pairing << "\n"
                               << formatted.second << "\n"
                               << std::endl;
                 }

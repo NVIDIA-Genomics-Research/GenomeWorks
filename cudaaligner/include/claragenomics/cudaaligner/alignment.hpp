@@ -24,11 +24,16 @@ namespace cudaaligner
 /// \addtogroup cudaaligner
 /// \{
 
-/// \typedef FormattedAlignment
-/// Holds formatted strings representing an alignment.
-/// FormattedAlignment.first = formatted string for query
-/// FormattedAlignment.second = formatted string for target
-typedef std::pair<std::string, std::string> FormattedAlignment;
+/// FormattedAlignment -Holds formatted strings representing an alignment.
+typedef struct FormattedAlignment
+{
+    /// \brief FormattedAlignment.first = formatted string for query
+    std::string first;
+    /// \brief FormattedAlignment.pairing = formatted pairing string
+    std::string pairing;
+    /// \brief FormattedAlignment.first = formatted string for target
+    std::string second;
+} FormattedAlignment;
 
 /// Alignment - Object encapsulating an alignment between 2 string.
 class Alignment
