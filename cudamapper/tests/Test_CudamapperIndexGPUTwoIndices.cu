@@ -885,7 +885,8 @@ namespace index_gpu_two_indices
 // ************ Test find_first_occurrences_of_representations **************
 
 void test_find_first_occurrences_of_representations(const thrust::host_vector<representation_t>& representations_h,
-                                                    const thrust::host_vector<std::uint32_t>& expected_starting_index_of_each_representation_h)
+                                                    const thrust::host_vector<std::uint32_t>& expected_starting_index_of_each_representation_h,
+                                                    const thrust::host_vector<representation_t>& expected_unique_representations_h)
 {
     const thrust::device_vector<representation_t> representations_d(representations_h);
 
@@ -896,13 +897,18 @@ void test_find_first_occurrences_of_representations(const thrust::host_vector<re
                                               representations_d);
 
     const thrust::host_vector<std::uint32_t> starting_index_of_each_representation_h(starting_index_of_each_representation_d);
+    const thrust::host_vector<representation_t> unique_representations_h(unique_representations_d);
 
     ASSERT_EQ(starting_index_of_each_representation_h.size(), expected_starting_index_of_each_representation_h.size());
+    ASSERT_EQ(unique_representations_h.size(), expected_unique_representations_h.size());
+    ASSERT_EQ(starting_index_of_each_representation_h.size(), unique_representations_h.size() + 1); // starting_index_of_each_representation_h has an additional element for the past-the-end element
 
-    for (std::size_t i = 0; i < expected_starting_index_of_each_representation_h.size(); ++i)
+    for (std::size_t i = 0; i < unique_representations_h.size(); ++i)
     {
         EXPECT_EQ(starting_index_of_each_representation_h[i], expected_starting_index_of_each_representation_h[i]) << "index: " << i;
+        EXPECT_EQ(unique_representations_h[i], expected_unique_representations_h[i]) << "index: " << i;
     }
+    EXPECT_EQ(starting_index_of_each_representation_h.back(), expected_starting_index_of_each_representation_h.back()) << "index: " << expected_starting_index_of_each_representation_h.size() - 1;
 }
 
 TEST(TestCudamapperIndexGPUTwoIndices, test_find_first_occurrences_of_representations_small_example)
@@ -915,14 +921,17 @@ TEST(TestCudamapperIndexGPUTwoIndices, test_find_first_occurrences_of_representa
     /// 0  4 10 13 18 21
 
     thrust::host_vector<representation_t> representations_h;
-    thrust::device_vector<std::uint32_t> expected_starting_index_of_each_representation_h;
+    thrust::host_vector<std::uint32_t> expected_starting_index_of_each_representation_h;
+    thrust::host_vector<representation_t> expected_unique_representations_h;
     representations_h.push_back(0);
     expected_starting_index_of_each_representation_h.push_back(0);
+    expected_unique_representations_h.push_back(0);
     representations_h.push_back(0);
     representations_h.push_back(0);
     representations_h.push_back(0);
     representations_h.push_back(12);
     expected_starting_index_of_each_representation_h.push_back(4);
+    expected_unique_representations_h.push_back(12);
     representations_h.push_back(12);
     representations_h.push_back(12);
     representations_h.push_back(12);
@@ -930,22 +939,26 @@ TEST(TestCudamapperIndexGPUTwoIndices, test_find_first_occurrences_of_representa
     representations_h.push_back(12);
     representations_h.push_back(23);
     expected_starting_index_of_each_representation_h.push_back(10);
+    expected_unique_representations_h.push_back(23);
     representations_h.push_back(23);
     representations_h.push_back(23);
     representations_h.push_back(32);
     expected_starting_index_of_each_representation_h.push_back(13);
+    expected_unique_representations_h.push_back(32);
     representations_h.push_back(32);
     representations_h.push_back(32);
     representations_h.push_back(32);
     representations_h.push_back(32);
     representations_h.push_back(46);
     expected_starting_index_of_each_representation_h.push_back(18);
+    expected_unique_representations_h.push_back(46);
     representations_h.push_back(46);
     representations_h.push_back(46);
     expected_starting_index_of_each_representation_h.push_back(21);
 
     test_find_first_occurrences_of_representations(representations_h,
-                                                   expected_starting_index_of_each_representation_h);
+                                                   expected_starting_index_of_each_representation_h,
+                                                   expected_unique_representations_h);
 }
 
 TEST(TestCudamapperIndexGPUTwoIndices, test_find_first_occurrences_of_representations_large_example)
@@ -954,7 +967,8 @@ TEST(TestCudamapperIndexGPUTwoIndices, test_find_first_occurrences_of_representa
     const std::uint32_t sketch_elements_with_same_representation = 1000;
 
     thrust::host_vector<representation_t> representations_h;
-    thrust::device_vector<std::uint32_t> expected_starting_index_of_each_representation_h;
+    thrust::host_vector<std::uint32_t> expected_starting_index_of_each_representation_h;
+    thrust::host_vector<representation_t> expected_unique_representations_h;
 
     for (std::size_t i = 0; i < total_sketch_elements; ++i)
     {
@@ -962,12 +976,14 @@ TEST(TestCudamapperIndexGPUTwoIndices, test_find_first_occurrences_of_representa
         if (i % sketch_elements_with_same_representation == 0)
         {
             expected_starting_index_of_each_representation_h.push_back(i);
+            expected_unique_representations_h.push_back(i / sketch_elements_with_same_representation);
         }
     }
     expected_starting_index_of_each_representation_h.push_back(total_sketch_elements);
 
     test_find_first_occurrences_of_representations(representations_h,
-                                                   expected_starting_index_of_each_representation_h);
+                                                   expected_starting_index_of_each_representation_h,
+                                                   expected_unique_representations_h);
 }
 
 // ************ Test create_new_value_mask **************
