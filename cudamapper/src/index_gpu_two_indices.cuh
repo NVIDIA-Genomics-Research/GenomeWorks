@@ -58,9 +58,6 @@ public:
                        const std::uint64_t kmer_size,
                        const std::uint64_t window_size);
 
-    /// \brief Constructor
-    IndexGPUTwoIndices() = default;
-
     /// \brief returns an array of representations of sketch elements
     /// \return an array of representations of sketch elements
     const thrust::device_vector<representation_t>& representations() const override;
@@ -116,9 +113,9 @@ private:
     std::vector<std::string> read_id_to_read_name_;
     std::vector<std::uint32_t> read_id_to_read_length_;
 
-    const read_id_t first_read_id_   = 0;
+    const read_id_t first_read_id_ = 0;
     // number of basepairs in a k-mer
-    const std::uint64_t kmer_size_   = 0;
+    const std::uint64_t kmer_size_ = 0;
     // the number of adjacent k-mers in a window, adjacent = shifted by one basepair
     const std::uint64_t window_size_ = 0;
     std::uint64_t number_of_reads_   = 0;

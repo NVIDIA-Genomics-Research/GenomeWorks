@@ -85,10 +85,6 @@ public:
                  const read_id_t past_the_last_read_id,
                  const std::uint64_t kmer_size,
                  const std::uint64_t window_size);
-
-    /// \brief creates an empty IndexTwoIndices
-    /// \return empty instacne of IndexTwoIndices
-    static std::unique_ptr<IndexTwoIndices> create_index();
 };
 
 /// \}

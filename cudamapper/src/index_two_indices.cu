@@ -17,6 +17,7 @@ namespace claragenomics
 {
 namespace cudamapper
 {
+
 std::unique_ptr<IndexTwoIndices> IndexTwoIndices::create_index(const io::FastaParser& parser,
                                                                const read_id_t first_read_id,
                                                                const read_id_t past_the_last_read_id,
@@ -31,9 +32,5 @@ std::unique_ptr<IndexTwoIndices> IndexTwoIndices::create_index(const io::FastaPa
                                                            window_size);
 }
 
-std::unique_ptr<IndexTwoIndices> IndexTwoIndices::create_index()
-{
-    return std::make_unique<IndexGPUTwoIndices<Minimizer>>();
-}
 } // namespace cudamapper
 } // namespace claragenomics
