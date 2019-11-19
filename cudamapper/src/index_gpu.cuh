@@ -63,6 +63,10 @@ public:
     /// \brief Constructor
     IndexGPU();
 
+    /// \brief returns an array of representations of sketch elements
+    /// \return an array of representations of sketch elements
+    const std::vector<representation_t>& representations() const override;
+
     /// \brief returns an array of starting positions of sketch elements in their reads
     /// \return an array of starting positions of sketch elements in their reads
     const std::vector<position_in_read_t>& positions_in_reads() const override;
@@ -124,6 +128,7 @@ private:
     const bool hash_representations;
     bool reached_end_of_input_;
 
+    std::vector<representation_t> representations_;
     std::vector<position_in_read_t> positions_in_reads_;
     std::vector<read_id_t> read_ids_;
     std::vector<typename SketchElementImpl::DirectionOfRepresentation> directions_of_reads_;
@@ -524,6 +529,12 @@ IndexGPU<SketchElementImpl>::IndexGPU()
 }
 
 template <typename SketchElementImpl>
+const std::vector<representation_t>& IndexGPU<SketchElementImpl>::representations() const
+{
+    return representations_;
+};
+
+template <typename SketchElementImpl>
 const std::vector<position_in_read_t>& IndexGPU<SketchElementImpl>::positions_in_reads() const
 {
     return positions_in_reads_;
@@ -720,7 +731,6 @@ void IndexGPU<SketchElementImpl>::generate_index(const std::vector<io::FastaPars
     rest_from_this_loop_d.free();
 
     // merge sketch elements arrays from previous arrays in one big array
-    std::vector<representation_t> merged_representations_h;
     std::vector<typename SketchElementImpl::ReadidPositionDirection> merged_rest_h;
 
     if (representations_from_all_loops_h.size() > 1)
@@ -733,14 +743,14 @@ void IndexGPU<SketchElementImpl>::generate_index(const std::vector<io::FastaPars
         details::index_gpu::merge_sketch_element_arrays(representations_from_all_loops_h,
                                                         rest_from_all_loops_h,
                                                         (free_device_memory / 100) * 90, // do not take all available device memory
-                                                        merged_representations_h,
+                                                        representations_,
                                                         merged_rest_h);
     }
     else
     {
         // if there is only one array in each array there is nothing to be merged
-        merged_representations_h = std::move(representations_from_all_loops_h[0]);
-        merged_rest_h            = std::move(rest_from_all_loops_h[0]);
+        representations_ = std::move(representations_from_all_loops_h[0]);
+        merged_rest_h    = std::move(rest_from_all_loops_h[0]);
     }
 
     representations_from_all_loops_h.clear();
@@ -750,7 +760,7 @@ void IndexGPU<SketchElementImpl>::generate_index(const std::vector<io::FastaPars
 
     // build read_id_and_representation_to_sketch_elements_ and copy sketch elements to output arrays
     details::index_gpu::build_index(number_of_reads_,
-                                    merged_representations_h,
+                                    representations_,
                                     merged_rest_h,
                                     positions_in_reads_,
                                     read_ids_,

@@ -13,9 +13,9 @@
 #include <memory>
 #include <string>
 #include <vector>
-#include "claragenomics/cudamapper/sketch_element.hpp"
-#include "claragenomics/cudamapper/types.hpp"
-#include "claragenomics/io/fasta_parser.hpp"
+#include <claragenomics/cudamapper/sketch_element.hpp>
+#include <claragenomics/cudamapper/types.hpp>
+#include <claragenomics/io/fasta_parser.hpp>
 
 namespace claragenomics
 {
@@ -42,6 +42,10 @@ public:
 
     /// \brief Virtual destructor for Index
     virtual ~Index() = default;
+
+    /// \brief returns an array of representations of sketch elements
+    /// \return an array of representations of sketch elements
+    virtual const std::vector<representation_t>& representations() const = 0;
 
     /// \brief returns an array of starting positions of sketch elements in their reads
     /// \return an array of starting positions of sketch elements in their reads

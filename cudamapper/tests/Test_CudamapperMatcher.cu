@@ -90,6 +90,7 @@ class TestIndex : public Index
 {
 public:
     // getters
+    const std::vector<representation_t>& representations() const override { return representations_; }
     const std::vector<position_in_read_t>& positions_in_reads() const override { return positions_in_reads_; }
     const std::vector<read_id_t>& read_ids() const override { return read_ids_; }
     const std::vector<SketchElement::DirectionOfRepresentation>& directions_of_reads() const override { return directions_of_reads_; }
@@ -99,6 +100,7 @@ public:
     const std::vector<std::vector<Index::RepresentationToSketchElements>>& read_id_and_representation_to_sketch_elements() const override { return read_id_and_representation_to_sketch_elements_; }
 
     // setters
+    void representations(const std::vector<representation_t>& val) { representations_ = val; }
     void positions_in_reads(const std::vector<position_in_read_t>& val) { positions_in_reads_ = val; }
     void read_ids(const std::vector<read_id_t>& val) { read_ids_ = val; }
     void directions_of_reads(const std::vector<SketchElement::DirectionOfRepresentation>& val) { directions_of_reads_ = val; }
@@ -110,6 +112,7 @@ public:
     bool reached_end_of_input() const override { return false; };
 
 private:
+    std::vector<representation_t> representations_;
     std::vector<position_in_read_t> positions_in_reads_;
     std::vector<read_id_t> read_ids_;
     std::vector<SketchElement::DirectionOfRepresentation> directions_of_reads_;
