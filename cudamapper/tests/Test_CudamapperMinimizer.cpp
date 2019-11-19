@@ -166,7 +166,6 @@ TEST(TestCudamappperMinimizer, GATT_2_3)
                   expected_rest_h,
                   false);
 
-
     // Test with minimizer hashing enabled
     std::vector<representation_t> expected_representations_hashed_h;
     expected_representations_hashed_h.push_back(1023180699);
@@ -499,7 +498,6 @@ TEST(TestCudamappperMinimizer, CATCAAG_AAGCTA_3_2_read_id_offset_5)
                   expected_rest_hashed_h,
                   true);
     // Test with minimizer hashing enabled
-
 }
 } // namespace cudamapper
 } // namespace claragenomics
