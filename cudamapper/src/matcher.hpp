@@ -45,7 +45,7 @@ public:
     thrust::device_vector<Anchor>& anchors();
 
 private:
-    /// \biref list of anchors
+    /// \brief list of anchors
     thrust::device_vector<Anchor> anchors_d_;
 };
 } // namespace cudamapper
