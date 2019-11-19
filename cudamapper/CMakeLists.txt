@@ -22,11 +22,17 @@ else()
     set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -lineinfo --expt-extended-lambda -use_fast_math -Xcompiler -Wall,-Wno-pedantic -std=c++14")
 endif()
 
+cuda_add_library(minimizer
+        src/minimizer.cu)
+target_include_directories(minimizer PUBLIC include)
+target_link_libraries(minimizer logging pthread utils)
+target_compile_options(minimizer PRIVATE -Werror)
+
 cuda_add_library(index_gpu
         src/index_gpu.cu
         src/minimizer.cu)
 target_include_directories(index_gpu PUBLIC include)
-target_link_libraries(index_gpu logging pthread utils cgaio)
+target_link_libraries(index_gpu logging minimizer pthread utils cgaio)
 target_compile_options(index_gpu PRIVATE -Werror)
 
 cuda_add_library(index_gpu_two_indices
@@ -34,7 +40,7 @@ cuda_add_library(index_gpu_two_indices
         src/index_gpu_two_indices.cu
         src/minimizer.cu)
 target_include_directories(index_gpu_two_indices PUBLIC include)
-target_link_libraries(index_gpu_two_indices logging pthread utils cgaio)
+target_link_libraries(index_gpu_two_indices logging minimizer pthread utils cgaio)
 target_compile_options(index_gpu_two_indices PRIVATE -Werror)
 
 cuda_add_library(matcher
