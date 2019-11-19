@@ -23,7 +23,8 @@ void test_function(const std::uint64_t number_of_reads_to_add,
                    const std::vector<char>& merged_basepairs_h,
                    const std::vector<ArrayBlock>& read_id_to_basepairs_section_h,
                    const std::vector<representation_t>& expected_representations_h,
-                   const std::vector<Minimizer::ReadidPositionDirection>& expected_rest_h)
+                   const std::vector<Minimizer::ReadidPositionDirection>& expected_rest_h,
+                   const bool hash_minimizers)
 {
     device_buffer<char> merged_basepairs_d(merged_basepairs_h.size());
     CGA_CU_CHECK_ERR(cudaMemcpy(merged_basepairs_d.data(),
@@ -43,7 +44,8 @@ void test_function(const std::uint64_t number_of_reads_to_add,
                                                                read_id_of_first_read,
                                                                merged_basepairs_d,
                                                                read_id_to_basepairs_section_h,
-                                                               read_id_to_basepairs_section_d);
+                                                               read_id_to_basepairs_section_d,
+                                                               hash_minimizers);
 
     device_buffer<representation_t> representations_d = std::move(sketch_elements.representations_d);
     std::vector<representation_t> representations_h(representations_d.size());
@@ -96,7 +98,24 @@ TEST(TestCudamappperMinimizer, GATT_4_1)
                   merged_basepairs_h,
                   read_id_to_basepairs_section_h,
                   expected_representations_h,
-                  expected_rest_h);
+                  expected_rest_h,
+                  false);
+
+    // Test with minimizer hashing enabled
+    std::vector<representation_t> expected_representations_hashed_h;
+    expected_representations_hashed_h.push_back(304626093);
+    std::vector<Minimizer::ReadidPositionDirection> expected_rest_hashed_h;
+    expected_rest_hashed_h.push_back({0, 0, 0});
+
+    test_function(number_of_reads_to_add,
+                  minimizer_size,
+                  window_size,
+                  read_id_of_first_read,
+                  merged_basepairs_h,
+                  read_id_to_basepairs_section_h,
+                  expected_representations_hashed_h,
+                  expected_rest_hashed_h,
+                  true);
 }
 
 TEST(TestCudamappperMinimizer, GATT_2_3)
@@ -144,7 +163,28 @@ TEST(TestCudamappperMinimizer, GATT_2_3)
                   merged_basepairs_h,
                   read_id_to_basepairs_section_h,
                   expected_representations_h,
-                  expected_rest_h);
+                  expected_rest_h,
+                  false);
+
+    // Test with minimizer hashing enabled
+    std::vector<representation_t> expected_representations_hashed_h;
+    expected_representations_hashed_h.push_back(1023180699);
+    expected_representations_hashed_h.push_back(2797583197);
+    expected_representations_hashed_h.push_back(3255840626);
+    std::vector<Minimizer::ReadidPositionDirection> expected_rest_hashed_h;
+    expected_rest_hashed_h.push_back({0, 0, 0});
+    expected_rest_hashed_h.push_back({0, 1, 0});
+    expected_rest_hashed_h.push_back({0, 2, 0});
+
+    test_function(number_of_reads_to_add,
+                  minimizer_size,
+                  window_size,
+                  read_id_of_first_read,
+                  merged_basepairs_h,
+                  read_id_to_basepairs_section_h,
+                  expected_representations_hashed_h,
+                  expected_rest_hashed_h,
+                  true);
 }
 
 TEST(TestCudamappperMinimizer, CCCATACC_2_7)
@@ -211,7 +251,31 @@ TEST(TestCudamappperMinimizer, CCCATACC_2_7)
                   merged_basepairs_h,
                   read_id_to_basepairs_section_h,
                   expected_representations_h,
-                  expected_rest_h);
+                  expected_rest_h,
+                  false);
+
+    // Test with minimizer hashing enabled
+    std::vector<representation_t> expected_representations_hashed_h;
+    expected_representations_hashed_h.push_back(2515151312);
+    expected_representations_hashed_h.push_back(2515151312);
+    expected_representations_hashed_h.push_back(1582582417);
+    expected_representations_hashed_h.push_back(2515151312);
+
+    std::vector<Minimizer::ReadidPositionDirection> expected_rest_hashed_h;
+    expected_rest_hashed_h.push_back({0, 0, 0});
+    expected_rest_hashed_h.push_back({0, 1, 0});
+    expected_rest_hashed_h.push_back({0, 2, 0});
+    expected_rest_hashed_h.push_back({0, 6, 0});
+
+    test_function(number_of_reads_to_add,
+                  minimizer_size,
+                  window_size,
+                  read_id_of_first_read,
+                  merged_basepairs_h,
+                  read_id_to_basepairs_section_h,
+                  expected_representations_hashed_h,
+                  expected_rest_hashed_h,
+                  true);
 }
 
 TEST(TestCudamappperMinimizer, CATCAAG_AAGCTA_3_2)
@@ -293,7 +357,36 @@ TEST(TestCudamappperMinimizer, CATCAAG_AAGCTA_3_2)
                   merged_basepairs_h,
                   read_id_to_basepairs_section_h,
                   expected_representations_h,
-                  expected_rest_h);
+                  expected_rest_h,
+                  false);
+
+    // Test with minimizer hashing enabled
+    std::vector<representation_t> expected_representations_hashed_h;
+    expected_representations_hashed_h.push_back(549100223);
+    expected_representations_hashed_h.push_back(447855090);
+    expected_representations_hashed_h.push_back(1279515286);
+    expected_representations_hashed_h.push_back(1865025060);
+    expected_representations_hashed_h.push_back(1865025060);
+    expected_representations_hashed_h.push_back(4103259927);
+    expected_representations_hashed_h.push_back(357458314);
+    std::vector<Minimizer::ReadidPositionDirection> expected_rest_hashed_h;
+    expected_rest_hashed_h.push_back({0, 0, 0});
+    expected_rest_hashed_h.push_back({0, 1, 1});
+    expected_rest_hashed_h.push_back({0, 2, 0});
+    expected_rest_hashed_h.push_back({0, 4, 0});
+    expected_rest_hashed_h.push_back({1, 0, 0});
+    expected_rest_hashed_h.push_back({1, 2, 1});
+    expected_rest_hashed_h.push_back({1, 3, 0});
+
+    test_function(number_of_reads_to_add,
+                  minimizer_size,
+                  window_size,
+                  read_id_of_first_read,
+                  merged_basepairs_h,
+                  read_id_to_basepairs_section_h,
+                  expected_representations_hashed_h,
+                  expected_rest_hashed_h,
+                  true);
 }
 
 TEST(TestCudamappperMinimizer, CATCAAG_AAGCTA_3_2_read_id_offset_5)
@@ -375,7 +468,36 @@ TEST(TestCudamappperMinimizer, CATCAAG_AAGCTA_3_2_read_id_offset_5)
                   merged_basepairs_h,
                   read_id_to_basepairs_section_h,
                   expected_representations_h,
-                  expected_rest_h);
+                  expected_rest_h,
+                  false);
+
+    std::vector<representation_t> expected_representations_hashed_h;
+    expected_representations_hashed_h.push_back(549100223);
+    expected_representations_hashed_h.push_back(447855090);
+    expected_representations_hashed_h.push_back(1279515286);
+    expected_representations_hashed_h.push_back(1865025060);
+    expected_representations_hashed_h.push_back(1865025060);
+    expected_representations_hashed_h.push_back(4103259927);
+    expected_representations_hashed_h.push_back(357458314);
+    std::vector<Minimizer::ReadidPositionDirection> expected_rest_hashed_h;
+    expected_rest_hashed_h.push_back({5, 0, 0});
+    expected_rest_hashed_h.push_back({5, 1, 1});
+    expected_rest_hashed_h.push_back({5, 2, 0});
+    expected_rest_hashed_h.push_back({5, 4, 0});
+    expected_rest_hashed_h.push_back({6, 0, 0});
+    expected_rest_hashed_h.push_back({6, 2, 1});
+    expected_rest_hashed_h.push_back({6, 3, 0});
+
+    test_function(number_of_reads_to_add,
+                  minimizer_size,
+                  window_size,
+                  read_id_of_first_read,
+                  merged_basepairs_h,
+                  read_id_to_basepairs_section_h,
+                  expected_representations_hashed_h,
+                  expected_rest_hashed_h,
+                  true);
+    // Test with minimizer hashing enabled
 }
 } // namespace cudamapper
 } // namespace claragenomics
