@@ -65,7 +65,10 @@ namespace matcher_gpu
 /// \param found_target_indices_d The array which will filled with the resulting target indices. This array has to be of same size as query_representations_d.
 /// \param query_representations_d An array of query representations
 /// \param target_representations_d An sorted array of target representations
-void find_query_target_matches(thrust::device_vector<std::int64_t>& found_target_indices_d, const thrust::device_vector<representation_t>& query_representations_d, const thrust::device_vector<representation_t>& target_representations_d);
+void find_query_target_matches(
+    thrust::device_vector<std::int64_t>& found_target_indices_d,
+    const thrust::device_vector<representation_t>& query_representations_d,
+    const thrust::device_vector<representation_t>& target_representations_d);
 
 /// \brief Computes the starting indices for an array of anchors based on the matches in query and target arrays.
 ///
@@ -99,10 +102,11 @@ void find_query_target_matches(thrust::device_vector<std::int64_t>& found_target
 /// \param query_starting_index_of_each_representation_d
 /// \param found_target_indices_d
 /// \param target_starting_index_of_each_representation_d
-void compute_anchor_starting_indices(thrust::device_vector<std::int64_t>& anchor_starting_indices_d,
-                                     const thrust::device_vector<std::uint32_t>& query_starting_index_of_each_representation_d,
-                                     const thrust::device_vector<std::int64_t>& found_target_indices_d,
-                                     const thrust::device_vector<std::uint32_t>& target_starting_index_of_each_representation_d);
+void compute_anchor_starting_indices(
+    thrust::device_vector<std::int64_t>& anchor_starting_indices_d,
+    const thrust::device_vector<std::uint32_t>& query_starting_index_of_each_representation_d,
+    const thrust::device_vector<std::int64_t>& found_target_indices_d,
+    const thrust::device_vector<std::uint32_t>& target_starting_index_of_each_representation_d);
 
 /// \brief Generates an array of anchors from matches of representations of the query and target index
 ///
@@ -110,7 +114,7 @@ void compute_anchor_starting_indices(thrust::device_vector<std::int64_t>& anchor
 /// anchor_starting_indices for each unique representation of the query index.
 /// The anchor_starting_indices can be computed by compute_anchor_starting_indices and the size of the
 /// anchors array must match the last element of anchor_starting_indices.
-/// 
+///
 /// For example:
 ///   (see also compute_anchor_starting_indices() )
 ///   anchor_starting_indices:
@@ -152,15 +156,16 @@ void compute_anchor_starting_indices(thrust::device_vector<std::int64_t>& anchor
 /// \param query_positions_in_read the array of positions of the (read id, position)-pairs in query index
 /// \param target_read_ids the array of read ids of the (read id, position)-pairs in target index
 /// \param target_positions_in_read the array of positions of the (read id, position)-pairs in target index
-void generate_anchors(thrust::device_vector<Anchor>& anchors,
-                      const thrust::device_vector<std::int64_t>& anchor_starting_indices_d,
-                      const thrust::device_vector<std::uint32_t>& query_starting_index_of_each_representation_d,
-                      const thrust::device_vector<std::int64_t>& found_target_indices_d,
-                      const thrust::device_vector<std::uint32_t>& target_starting_index_of_each_representation_d,
-                      const thrust::device_vector<read_id_t>& query_read_ids,
-                      const thrust::device_vector<position_in_read_t>& query_positions_in_read,
-                      const thrust::device_vector<read_id_t>& target_read_ids,
-                      const thrust::device_vector<position_in_read_t>& target_positions_in_read);
+void generate_anchors(
+    thrust::device_vector<Anchor>& anchors,
+    const thrust::device_vector<std::int64_t>& anchor_starting_indices_d,
+    const thrust::device_vector<std::uint32_t>& query_starting_index_of_each_representation_d,
+    const thrust::device_vector<std::int64_t>& found_target_indices_d,
+    const thrust::device_vector<std::uint32_t>& target_starting_index_of_each_representation_d,
+    const thrust::device_vector<read_id_t>& query_read_ids,
+    const thrust::device_vector<position_in_read_t>& query_positions_in_read,
+    const thrust::device_vector<read_id_t>& target_read_ids,
+    const thrust::device_vector<position_in_read_t>& target_positions_in_read);
 
 /// \brief Performs a binary search on target_representations_d for each element of query_representations_d and stores the found index (or -1 iff not found) in found_target_indices.
 ///
@@ -182,7 +187,12 @@ void generate_anchors(thrust::device_vector<Anchor>& anchors,
 /// \param n_query_representations size of \param query_representations_d and \param found_target_indices_d
 /// \param target_representations_d the array of targets to be searched
 /// \param n_target_representations size of \param target_representations_d
-__global__ void find_query_target_matches_kernel(int64_t* const found_target_indices_d, const representation_t* const query_representations_d, const int64_t n_query_representations, const representation_t* const target_representations_d, const int64_t n_target_representations);
+__global__ void find_query_target_matches_kernel(
+    int64_t* const found_target_indices_d,
+    const representation_t* const query_representations_d,
+    const int64_t n_query_representations,
+    const representation_t* const target_representations_d,
+    const int64_t n_target_representations);
 
 /// \brief Generates an array of anchors from matches of representations of the query and target index
 ///

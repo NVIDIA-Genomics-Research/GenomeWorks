@@ -120,7 +120,10 @@ namespace details
 namespace matcher_gpu
 {
 
-void find_query_target_matches(thrust::device_vector<std::int64_t>& found_target_indices_d, const thrust::device_vector<representation_t>& query_representations_d, const thrust::device_vector<representation_t>& target_representations_d)
+void find_query_target_matches(
+    thrust::device_vector<std::int64_t>& found_target_indices_d,
+    const thrust::device_vector<representation_t>& query_representations_d,
+    const thrust::device_vector<representation_t>& target_representations_d)
 {
     assert(found_target_indices_d.size() == query_representations_d.size());
 
@@ -130,10 +133,11 @@ void find_query_target_matches(thrust::device_vector<std::int64_t>& found_target
     find_query_target_matches_kernel<<<n_blocks, n_threads>>>(found_target_indices_d.data().get(), query_representations_d.data().get(), get_size(query_representations_d), target_representations_d.data().get(), get_size(target_representations_d));
 }
 
-void compute_anchor_starting_indices(thrust::device_vector<std::int64_t>& anchor_starting_indices_d,
-                                     const thrust::device_vector<std::uint32_t>& query_starting_index_of_each_representation_d,
-                                     const thrust::device_vector<std::int64_t>& found_target_indices_d,
-                                     const thrust::device_vector<std::uint32_t>& target_starting_index_of_each_representation_d)
+void compute_anchor_starting_indices(
+    thrust::device_vector<std::int64_t>& anchor_starting_indices_d,
+    const thrust::device_vector<std::uint32_t>& query_starting_index_of_each_representation_d,
+    const thrust::device_vector<std::int64_t>& found_target_indices_d,
+    const thrust::device_vector<std::uint32_t>& target_starting_index_of_each_representation_d)
 {
     assert(query_starting_index_of_each_representation_d.size() == found_target_indices_d.size() + 1);
     assert(anchor_starting_indices_d.size() == found_target_indices_d.size());
@@ -157,7 +161,12 @@ void compute_anchor_starting_indices(thrust::device_vector<std::int64_t>& anchor
         thrust::plus<std::int64_t>());
 }
 
-__global__ void find_query_target_matches_kernel(int64_t* const found_target_indices, const representation_t* const query_representations_d, const int64_t n_query_representations, const representation_t* const target_representations_d, const int64_t n_target_representations)
+__global__ void find_query_target_matches_kernel(
+    int64_t* const found_target_indices,
+    const representation_t* const query_representations_d,
+    const int64_t n_query_representations,
+    const representation_t* const target_representations_d,
+    const int64_t n_target_representations)
 {
     const int64_t i = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -243,7 +252,7 @@ __global__ void generate_anchors_kernel(
     const std::uint32_t target_begin = target_starting_index_of_each_representation_d[j];
     const std::uint32_t target_end   = target_starting_index_of_each_representation_d[j + 1];
 
-    const std::uint32_t n_targets  = target_end - target_begin;
+    const std::uint32_t n_targets = target_end - target_begin;
 
     // Overall we want to do an all-to-all (n*m) matching between the query and target entries
     // with the same representation.
