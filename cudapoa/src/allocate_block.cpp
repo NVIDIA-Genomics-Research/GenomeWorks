@@ -120,7 +120,13 @@ std::tuple<int64_t, int64_t, int64_t, int64_t> BatchBlock::calculate_space_per_p
     device_size_per_poa += (output_mask_ & OutputType::msa) ? poa_count * max_sequences_per_poa_ * sizeof(uint16_t) : 0; // input_details_d_->sequence_begin_nodes_ids
 
     // for graph - host
-    host_size_fixed += sizeof(GraphDetails); // graph_details_d_
+    host_size_fixed += sizeof(GraphDetails);                                                            // graph_details_h_
+    host_size_fixed += sizeof(GraphDetails);                                                            // graph_details_d_
+    host_size_per_poa += sizeof(uint8_t) * max_nodes_per_window_ * poa_count;                           // graph_details_h_->nodes
+    host_size_per_poa += sizeof(uint16_t) * max_nodes_per_window_ * CUDAPOA_MAX_NODE_EDGES * poa_count; // graph_details_d_->incoming_edges
+    host_size_per_poa += sizeof(uint16_t) * max_nodes_per_window_ * CUDAPOA_MAX_NODE_EDGES * poa_count; // graph_details_d_->incoming_edge_weights
+    host_size_per_poa += sizeof(uint16_t) * max_nodes_per_window_ * poa_count;                          // graph_details_d_->incoming_edge_count
+
     // for graph - device
     device_size_per_poa += sizeof(uint8_t) * max_nodes_per_window_ * poa_count;                                                                                           // graph_details_d_->nodes
     device_size_per_poa += sizeof(uint16_t) * max_nodes_per_window_ * CUDAPOA_MAX_NODE_ALIGNMENTS * poa_count;                                                            // graph_details_d_->node_alignments
@@ -259,13 +265,25 @@ void BatchBlock::get_alignment_details(AlignmentDetails** alignment_details_d_p)
     *alignment_details_d_p                   = alignment_details_d;
 }
 
-void BatchBlock::get_graph_details(GraphDetails** graph_details_d_p)
+void BatchBlock::get_graph_details(GraphDetails** graph_details_d_p, GraphDetails** graph_details_h_p)
 {
     GraphDetails* graph_details_d{};
+    GraphDetails* graph_details_h{};
 
     // on host
+    graph_details_h = reinterpret_cast<GraphDetails*>(&block_data_h_[offset_h_]);
+    offset_h_ += sizeof(GraphDetails);
+    graph_details_h->nodes = &block_data_h_[offset_h_];
+    offset_h_ += sizeof(uint8_t) * max_nodes_per_window_ * max_poas_;
+    graph_details_h->incoming_edges = reinterpret_cast<uint16_t*>(&block_data_h_[offset_h_]);
+    offset_h_ += sizeof(uint16_t) * max_nodes_per_window_ * CUDAPOA_MAX_NODE_EDGES * max_poas_;
+    graph_details_h->incoming_edge_weights = reinterpret_cast<uint16_t*>(&block_data_h_[offset_h_]);
+    offset_h_ += sizeof(uint16_t) * max_nodes_per_window_ * CUDAPOA_MAX_NODE_EDGES * max_poas_;
+    graph_details_h->incoming_edge_count = reinterpret_cast<uint16_t*>(&block_data_h_[offset_h_]);
+    offset_h_ += sizeof(uint16_t) * max_nodes_per_window_ * max_poas_;
     graph_details_d = reinterpret_cast<GraphDetails*>(&block_data_h_[offset_h_]);
     offset_h_ += sizeof(GraphDetails);
+    graph_details_d->nodes = &block_data_h_[offset_h_];
 
     // on device
     graph_details_d->nodes = &block_data_d_[offset_d_];
@@ -319,6 +337,7 @@ void BatchBlock::get_graph_details(GraphDetails** graph_details_d_p)
     }
 
     *graph_details_d_p = graph_details_d;
+    *graph_details_h_p = graph_details_h;
 }
 
 } // namespace cudapoa

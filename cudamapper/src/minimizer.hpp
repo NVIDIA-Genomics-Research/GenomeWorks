@@ -88,7 +88,7 @@ public:
                                                             const device_buffer<char>& merged_basepairs_d,
                                                             const std::vector<ArrayBlock>& read_id_to_basepairs_section_h,
                                                             const device_buffer<ArrayBlock>& read_id_to_basepairs_section_d,
-                                                            const bool hash_representations=true);
+                                                            const bool hash_representations = true);
 
 private:
     representation_t representation_;

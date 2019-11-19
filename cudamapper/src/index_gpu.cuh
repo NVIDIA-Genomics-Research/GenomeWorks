@@ -101,10 +101,14 @@ public:
 
     /// \brief max_representation
     /// \return the largest possible representation,
-    std::uint64_t maximum_representation() const override {
-        if (hash_representations){
+    std::uint64_t maximum_representation() const override
+    {
+        if (hash_representations)
+        {
             return (uint64_t(1) << 32) - 1;
-        }else {
+        }
+        else
+        {
             return (1 << (kmer_size_ * 2)) - 1;
         }
     };
@@ -675,7 +679,7 @@ void IndexGPU<SketchElementImpl>::generate_index(const std::vector<io::FastaPars
     merged_basepairs_h.shrink_to_fit();
 
     // sketch elements get generated here
-    auto sketch_elements = SketchElementImpl::generate_sketch_elements(number_of_reads_to_add,
+    auto sketch_elements                                                                     = SketchElementImpl::generate_sketch_elements(number_of_reads_to_add,
                                                                        kmer_size_,
                                                                        window_size_,
                                                                        number_of_reads_ - number_of_reads_to_add,
