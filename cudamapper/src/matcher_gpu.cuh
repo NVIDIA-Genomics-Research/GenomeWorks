@@ -104,9 +104,56 @@ void compute_anchor_starting_indices(thrust::device_vector<std::int64_t>& anchor
                                      const thrust::device_vector<std::int64_t>& found_target_indices_d,
                                      const thrust::device_vector<std::uint32_t>& target_starting_index_of_each_representation_d);
 
-///TODO
+/// \brief Generates an array of anchors from matches of representations of the query and target index
+///
+/// Fills the array of anchors with anchors of matches between the query and target index by using the
+/// anchor_starting_indices for each unique representation of the query index.
+/// The anchor_starting_indices can be computed by compute_anchor_starting_indices and the size of the
+/// anchors array must match the last element of anchor_starting_indices.
+/// 
+/// For example:
+///   (see also compute_anchor_starting_indices() )
+///   anchor_starting_indices:
+///   query:
+///     (representation: 0 12 23 32 46)
+///      starting index: 0  4 10 13 18 21
+///   target:
+///     (representation: 5 12 16 23 24 25 46)
+///      starting index: 0  3  7  9 13 16 18 21
+///   matching representations are 12, 23, 46
+///
+///   (query representation:      0 12 23 32 46)
+///   array-index:                0  1  2  3  4
+///   found_target_indices_d:    -1  1  3 -1  6 (-1 indicates no matching representation in target)
+///   anchor_starting_indices_d:  0 24 36 36 45
+///
+///   query:
+///     read_ids (arbitrary data):           0  1  2  3  4  5  6  7  8  9  10 ... 21
+///     positions_in_read (arbitrary data):  0 10 20 30 40 50 60 70 80 90 100 ... 210
+///   target:
+///     read_ids (arbitrary data):          60 61 62 63 64 65 66 67 68 69  70 ...  81
+///     positions_in_read (arbitrary data):  0 11 22 33 44 55 66 77 88 99 110 ... 231
+///
+///   anchors:
+///     all-to-all combinations of representations 12, 23, 46:
+///     format:
+///     representation: anchors (query_read_id, query_position, target_read_id, target_position)
+///     12: (4,40,63,33), (4,40,64,44), ..., (4,40,66,66), (5,50,63,33), ..., (5,50,66,66), ..., ..., (9,90,66,66) -- 24 elements in total
+///     23: (10,100,69,99), (10,100,70,110), ..., (10,100,72,132), (11,110,69,99), ..., ..., (12,120,72,132) --  12 elements in total
+///     46: (18,180,78,198), ..., ..., (20,200,80,220) -- 9 elements in total
+///
+///
+/// \param anchors the array to be filled with anchors, the size of this array has to be equal to the last element of anchor_starting_indices
+/// \param anchor_starting_indices_d the array of starting indices of the set of anchors for each unique representation of the query index (representations with no match in target will have the same starting index as the last matching representation)
+/// \param query_starting_index_of_each_representation_d the starting index of a representation in query_read_ids and query_positions_in_read
+/// \param found_target_indices_d the found matches in the array of unique target representation for each unique representation of query index
+/// \param target_starting_index_of_each_representation_d the starting index of a representation in target_read_ids and target_positions_in_read
+/// \param query_read_ids the array of read ids of the (read id, position)-pairs in query index
+/// \param query_positions_in_read the array of positions of the (read id, position)-pairs in query index
+/// \param target_read_ids the array of read ids of the (read id, position)-pairs in target index
+/// \param target_positions_in_read the array of positions of the (read id, position)-pairs in target index
 void generate_anchors(thrust::device_vector<Anchor>& anchors,
-                      const thrust::device_vector<std::int64_t>& anchor_starting_indices,
+                      const thrust::device_vector<std::int64_t>& anchor_starting_indices_d,
                       const thrust::device_vector<std::uint32_t>& query_starting_index_of_each_representation_d,
                       const thrust::device_vector<std::int64_t>& found_target_indices_d,
                       const thrust::device_vector<std::uint32_t>& target_starting_index_of_each_representation_d,
@@ -114,6 +161,7 @@ void generate_anchors(thrust::device_vector<Anchor>& anchors,
                       const thrust::device_vector<position_in_read_t>& query_positions_in_read,
                       const thrust::device_vector<read_id_t>& target_read_ids,
                       const thrust::device_vector<position_in_read_t>& target_positions_in_read);
+
 /// \brief Performs a binary search on target_representations_d for each element of query_representations_d and stores the found index (or -1 iff not found) in found_target_indices.
 ///
 /// For example:
@@ -136,14 +184,28 @@ void generate_anchors(thrust::device_vector<Anchor>& anchors,
 /// \param n_target_representations size of \param target_representations_d
 __global__ void find_query_target_matches_kernel(int64_t* const found_target_indices_d, const representation_t* const query_representations_d, const int64_t n_query_representations, const representation_t* const target_representations_d, const int64_t n_target_representations);
 
-/// TODO
+/// \brief Generates an array of anchors from matches of representations of the query and target index
+///
+/// see generate_anchors()
+///
+/// \param anchors the array to be filled with anchors, the size of this array has to be equal to the last element of anchor_starting_indices
+/// \param n_anchors the size of the anchors array
+/// \param anchor_starting_indices_d the array of starting indices of the set of anchors for each unique representation of the query index (representations with no match in target will have the same starting index as the last matching representation)
+/// \param query_starting_index_of_each_representation_d the starting index of a representation in query_read_ids and query_positions_in_read
+/// \param found_target_indices_d the found matches in the array of unique target representation for each unique representation of query index
+/// \param target_starting_index_of_each_representation_d the starting index of a representation in target_read_ids and target_positions_in_read
+/// \param n_query_representations the size of the query_starting_index_of_each_representation_d and found_target_indices_d arrays, ie. the number of unique representations in the query index
+/// \param query_read_ids the array of read ids of the (read id, position)-pairs in query index
+/// \param query_positions_in_read the array of positions of the (read id, position)-pairs in query index
+/// \param target_read_ids the array of read ids of the (read id, position)-pairs in target index
+/// \param target_positions_in_read the array of positions of the (read id, position)-pairs in target index
 __global__ void generate_anchors_kernel(
     Anchor* const anchors_d,
-    int64_t n_anchors,
+    const int64_t n_anchors,
     const int64_t* const anchor_starting_index_d,
     const std::uint32_t* const query_starting_index_of_each_representation_d,
     const std::int64_t* const found_target_indices_d,
-    int32_t n_query_representations,
+    const int32_t n_query_representations,
     const std::uint32_t* const target_starting_index_of_each_representation_d,
     const read_id_t* const query_read_ids,
     const position_in_read_t* const query_positions_in_read,
