@@ -51,7 +51,7 @@ public:
     /// \param first_read_id read_id of the first read to the included in this index
     /// \param past_the_last_read_id read_id+1 of the last read to be included in this index
     /// \param kmer_size k - the kmer length
-    /// \param window_size w - the length of the sliding window used to find sketch elements
+    /// \param window_size w - the length of the sliding window used to find sketch elements (i.e. the number of adjacent k-mers in a window, adjacent = shifted by one basepair)
     IndexGPUTwoIndices(const io::FastaParser& parser,
                        const read_id_t first_read_id,
                        const read_id_t past_the_last_read_id,
@@ -117,7 +117,9 @@ private:
     std::vector<std::uint32_t> read_id_to_read_length_;
 
     const read_id_t first_read_id_   = 0;
+    // number of basepairs in a k-mer
     const std::uint64_t kmer_size_   = 0;
+    // the number of adjacent k-mers in a window, adjacent = shifted by one basepair
     const std::uint64_t window_size_ = 0;
     std::uint64_t number_of_reads_   = 0;
 };

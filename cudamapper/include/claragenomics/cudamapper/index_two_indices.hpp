@@ -77,7 +77,7 @@ public:
     /// \param first_read_id read_id of the first read to the included in this index
     /// \param past_the_last_read_id read_id+1 of the last read to be included in this index
     /// \param kmer_size k - the kmer length
-    /// \param window_size w - the length of the sliding window used to find sketch elements
+    /// \param window_size w - the length of the sliding window used to find sketch elements  (i.e. the number of adjacent k-mers in a window, adjacent = shifted by one basepair)
     /// \return instance of IndexTwoIndices
     static std::unique_ptr<IndexTwoIndices>
     create_index(const io::FastaParser& parser,
