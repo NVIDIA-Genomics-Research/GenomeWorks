@@ -8,24 +8,13 @@
 # license agreement from NVIDIA CORPORATION is strictly prohibited.
 #
 
-set(TARGET_NAME cudapoatests)
+set(TARGET_NAME cgautilstests)
 
 set(SOURCES
     main.cpp
-    Test_CudapoaBatch.cpp
-    Test_CudapoaTopSort.cpp
-    Test_CudapoaAddAlignment.cpp
-    Test_CudapoaNW.cpp
-    Test_CudapoaGenerateConsensus.cpp
-    Test_CudapoaBatchEnd2End.cpp
-    Test_CudapoaGenerateMSA2.cpp
-    Test_CudapoaSerializeGraph.cpp)
-
-get_property(cudapoa_data_include_dir GLOBAL PROPERTY cudapoa_data_include_dir)
-include_directories(${cudapoa_data_include_dir})
+    TestGraph.cpp)
 
 set(LIBS
-    cudapoa
-    spoa)
+    utils)
 
 cga_add_tests(${TARGET_NAME} "${SOURCES}" "${LIBS}")

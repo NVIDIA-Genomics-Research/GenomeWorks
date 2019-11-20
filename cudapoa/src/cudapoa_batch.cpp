@@ -64,7 +64,7 @@ void CudapoaBatch::initialize_alignment_details()
 
 void CudapoaBatch::initialize_graph_details()
 {
-    batch_block_->get_graph_details(&graph_details_d_);
+    batch_block_->get_graph_details(&graph_details_d_, &graph_details_h_);
 }
 
 CudapoaBatch::CudapoaBatch(int32_t max_sequences_per_poa,
@@ -312,6 +312,85 @@ StatusType CudapoaBatch::get_msa(std::vector<std::vector<std::string>>& msa, std
     return StatusType::success;
 }
 
+void CudapoaBatch::get_graphs(std::vector<DirectedGraph>& graphs, std::vector<StatusType>& output_status)
+{
+    int32_t max_nodes_per_window_ = banded_alignment_ ? CUDAPOA_MAX_NODES_PER_WINDOW_BANDED : CUDAPOA_MAX_NODES_PER_WINDOW;
+    CGA_CU_CHECK_ERR(cudaMemcpyAsync(graph_details_h_->nodes,
+                                     graph_details_d_->nodes,
+                                     sizeof(uint8_t) * max_nodes_per_window_ * max_poas_,
+                                     cudaMemcpyDeviceToHost,
+                                     stream_));
+
+    CGA_CU_CHECK_ERR(cudaMemcpyAsync(graph_details_h_->incoming_edges,
+                                     graph_details_d_->incoming_edges,
+                                     sizeof(uint16_t) * max_nodes_per_window_ * CUDAPOA_MAX_NODE_EDGES * max_poas_,
+                                     cudaMemcpyDeviceToHost,
+                                     stream_));
+
+    CGA_CU_CHECK_ERR(cudaMemcpyAsync(graph_details_h_->incoming_edge_weights,
+                                     graph_details_d_->incoming_edge_weights,
+                                     sizeof(uint16_t) * max_nodes_per_window_ * CUDAPOA_MAX_NODE_EDGES * max_poas_,
+                                     cudaMemcpyDeviceToHost,
+                                     stream_));
+
+    CGA_CU_CHECK_ERR(cudaMemcpyAsync(graph_details_h_->incoming_edge_count,
+                                     graph_details_d_->incoming_edge_count,
+                                     sizeof(uint16_t) * max_nodes_per_window_ * max_poas_,
+                                     cudaMemcpyDeviceToHost,
+                                     stream_));
+
+    CGA_CU_CHECK_ERR(cudaMemcpyAsync(input_details_h_->sequence_lengths,
+                                     input_details_d_->sequence_lengths,
+                                     global_sequence_idx_ * sizeof(uint16_t),
+                                     cudaMemcpyDeviceToHost,
+                                     stream_));
+
+    CGA_CU_CHECK_ERR(cudaMemcpyAsync(output_details_h_->consensus,
+                                     output_details_d_->consensus,
+                                     CUDAPOA_MAX_CONSENSUS_SIZE * max_poas_ * sizeof(uint8_t),
+                                     cudaMemcpyDeviceToHost,
+                                     stream_));
+
+    // Reservet host space for graphs
+    graphs.resize(poa_count_);
+
+    CGA_CU_CHECK_ERR(cudaStreamSynchronize(stream_));
+
+    for (int32_t poa = 0; poa < poa_count_; poa++)
+    {
+        char* c = reinterpret_cast<char*>(&(output_details_h_->consensus[poa * CUDAPOA_MAX_CONSENSUS_SIZE]));
+        // We use the first two entries in the consensus buffer to log error during kernel execution
+        // c[0] == 0 means an error occured and when that happens the error type is saved in c[1]
+        if (static_cast<uint8_t>(c[0]) == CUDAPOA_KERNEL_ERROR_ENCOUNTERED)
+        {
+            decode_cudapoa_kernel_error(static_cast<claragenomics::cudapoa::StatusType>(c[1]), output_status);
+        }
+        else
+        {
+            output_status.emplace_back(claragenomics::cudapoa::StatusType::success);
+            DirectedGraph& graph = graphs[poa];
+            int32_t seq_0_offset = input_details_h_->window_details[poa].seq_len_buffer_offset;
+            int32_t num_nodes    = input_details_h_->sequence_lengths[seq_0_offset];
+            uint8_t* nodes       = &graph_details_h_->nodes[max_nodes_per_window_ * poa];
+            for (int32_t n = 0; n < num_nodes; n++)
+            {
+                // For each node, find it's incoming edges and add the edge to the graph,
+                // along with its label.
+                DirectedGraph::node_id_t sink = n;
+                graph.set_node_label(sink, std::string(1, static_cast<char>(nodes[n])));
+                uint16_t num_edges = graph_details_h_->incoming_edge_count[poa * max_nodes_per_window_ + n];
+                for (uint16_t e = 0; e < num_edges; e++)
+                {
+                    int32_t idx                         = poa * max_nodes_per_window_ * CUDAPOA_MAX_NODE_EDGES + n * CUDAPOA_MAX_NODE_EDGES + e;
+                    DirectedGraph::node_id_t src        = graph_details_h_->incoming_edges[idx];
+                    DirectedGraph::edge_weight_t weight = graph_details_h_->incoming_edge_weights[idx];
+                    graph.add_edge(src, sink, weight);
+                }
+            }
+        }
+    }
+}
+
 bool CudapoaBatch::reserve_buf(int32_t max_seq_length)
 {
     int32_t max_graph_dimension = banded_alignment_ ? CUDAPOA_MAX_MATRIX_GRAPH_DIMENSION_BANDED : CUDAPOA_MAX_MATRIX_GRAPH_DIMENSION;
@@ -427,7 +506,7 @@ StatusType CudapoaBatch::add_seq_to_poa(const char* seq, const int8_t* weights, 
         // Verify that weightsw are positive.
         for (int32_t i = 0; i < seq_len; i++)
         {
-            throw_on_negative(weights[i], "Base weights need have to be non-negative");
+            throw_on_negative(weights[i], "Base weights need to be non-negative");
         }
         memcpy(&(input_details_h_->base_weights[num_nucleotides_copied_]),
                weights,

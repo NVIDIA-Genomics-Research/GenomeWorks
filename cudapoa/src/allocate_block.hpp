@@ -36,7 +36,7 @@ public:
 
     void get_alignment_details(AlignmentDetails** alignment_details_d_p);
 
-    void get_graph_details(GraphDetails** graph_details_d_p);
+    void get_graph_details(GraphDetails** graph_details_d_p, GraphDetails** graph_details_h_p);
 
     uint8_t* get_block_host();
 

@@ -57,10 +57,15 @@ public:
     /// \param kmer_size k - the kmer length
     /// \param window_size w - the length of the sliding window used to find sketch elements
     /// \param read_ranges - the ranges of reads in the query file to use for mapping, index by their position (e.g in the FASA file)
-    IndexGPU(const std::vector<io::FastaParser*>& parsers, const std::uint64_t kmer_size, const std::uint64_t window_size, const std::vector<std::pair<std::uint64_t, std::uint64_t>>& read_ranges);
+    /// \param hash_representations - if true, apply hash function to all representations
+    IndexGPU(const std::vector<io::FastaParser*>& parsers, const std::uint64_t kmer_size, const std::uint64_t window_size, const std::vector<std::pair<std::uint64_t, std::uint64_t>>& read_ranges, const bool hash_representations = true);
 
     /// \brief Constructor
     IndexGPU();
+
+    /// \brief returns an array of representations of sketch elements
+    /// \return an array of representations of sketch elements
+    const std::vector<representation_t>& representations() const override;
 
     /// \brief returns an array of starting positions of sketch elements in their reads
     /// \return an array of starting positions of sketch elements in their reads
@@ -99,8 +104,18 @@ public:
     std::uint64_t minimum_representation() const override { return 0; };
 
     /// \brief max_representation
-    /// \return the largest possible representation
-    std::uint64_t maximum_representation() const override { return (1 << (kmer_size_ * 2)) - 1; };
+    /// \return the largest possible representation,
+    std::uint64_t maximum_representation() const override
+    {
+        if (hash_representations)
+        {
+            return (uint64_t(1) << 32) - 1;
+        }
+        else
+        {
+            return (1 << (kmer_size_ * 2)) - 1;
+        }
+    };
 
 private:
     /// \brief generates the index
@@ -110,8 +125,10 @@ private:
     const std::uint64_t kmer_size_;
     const std::uint64_t window_size_;
     std::uint64_t number_of_reads_;
+    const bool hash_representations;
     bool reached_end_of_input_;
 
+    std::vector<representation_t> representations_;
     std::vector<position_in_read_t> positions_in_reads_;
     std::vector<read_id_t> read_ids_;
     std::vector<typename SketchElementImpl::DirectionOfRepresentation> directions_of_reads_;
@@ -492,11 +509,12 @@ void build_index(const std::uint64_t number_of_reads,
 } // namespace details
 
 template <typename SketchElementImpl>
-IndexGPU<SketchElementImpl>::IndexGPU(const std::vector<io::FastaParser*>& parsers, const std::uint64_t kmer_size, const std::uint64_t window_size, const std::vector<std::pair<std::uint64_t, std::uint64_t>>& read_ranges)
+IndexGPU<SketchElementImpl>::IndexGPU(const std::vector<io::FastaParser*>& parsers, const std::uint64_t kmer_size, const std::uint64_t window_size, const std::vector<std::pair<std::uint64_t, std::uint64_t>>& read_ranges, const bool hash_representations)
     : kmer_size_(kmer_size)
     , window_size_(window_size)
     , number_of_reads_(0)
     , reached_end_of_input_(false)
+    , hash_representations(hash_representations)
 {
     generate_index(parsers, read_ranges);
 }
@@ -506,8 +524,15 @@ IndexGPU<SketchElementImpl>::IndexGPU()
     : kmer_size_(0)
     , window_size_(0)
     , number_of_reads_(0)
+    , hash_representations(true)
 {
 }
+
+template <typename SketchElementImpl>
+const std::vector<representation_t>& IndexGPU<SketchElementImpl>::representations() const
+{
+    return representations_;
+};
 
 template <typename SketchElementImpl>
 const std::vector<position_in_read_t>& IndexGPU<SketchElementImpl>::positions_in_reads() const
@@ -671,7 +696,8 @@ void IndexGPU<SketchElementImpl>::generate_index(const std::vector<io::FastaPars
                                                                        number_of_reads_ - number_of_reads_to_add,
                                                                        merged_basepairs_d,
                                                                        read_id_to_basepairs_section_h,
-                                                                       read_id_to_basepairs_section_d);
+                                                                       read_id_to_basepairs_section_d,
+                                                                       hash_representations);
     device_buffer<representation_t> representations_from_this_loop_d                         = std::move(sketch_elements.representations_d);
     device_buffer<typename SketchElementImpl::ReadidPositionDirection> rest_from_this_loop_d = std::move(sketch_elements.rest_d);
 
@@ -705,7 +731,6 @@ void IndexGPU<SketchElementImpl>::generate_index(const std::vector<io::FastaPars
     rest_from_this_loop_d.free();
 
     // merge sketch elements arrays from previous arrays in one big array
-    std::vector<representation_t> merged_representations_h;
     std::vector<typename SketchElementImpl::ReadidPositionDirection> merged_rest_h;
 
     if (representations_from_all_loops_h.size() > 1)
@@ -718,14 +743,14 @@ void IndexGPU<SketchElementImpl>::generate_index(const std::vector<io::FastaPars
         details::index_gpu::merge_sketch_element_arrays(representations_from_all_loops_h,
                                                         rest_from_all_loops_h,
                                                         (free_device_memory / 100) * 90, // do not take all available device memory
-                                                        merged_representations_h,
+                                                        representations_,
                                                         merged_rest_h);
     }
     else
     {
         // if there is only one array in each array there is nothing to be merged
-        merged_representations_h = std::move(representations_from_all_loops_h[0]);
-        merged_rest_h            = std::move(rest_from_all_loops_h[0]);
+        representations_ = std::move(representations_from_all_loops_h[0]);
+        merged_rest_h    = std::move(rest_from_all_loops_h[0]);
     }
 
     representations_from_all_loops_h.clear();
@@ -735,7 +760,7 @@ void IndexGPU<SketchElementImpl>::generate_index(const std::vector<io::FastaPars
 
     // build read_id_and_representation_to_sketch_elements_ and copy sketch elements to output arrays
     details::index_gpu::build_index(number_of_reads_,
-                                    merged_representations_h,
+                                    representations_,
                                     merged_rest_h,
                                     positions_in_reads_,
                                     read_ids_,

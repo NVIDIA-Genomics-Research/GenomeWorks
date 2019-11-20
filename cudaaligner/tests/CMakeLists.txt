@@ -8,7 +8,7 @@
 # license agreement from NVIDIA CORPORATION is strictly prohibited.
 #
 
-project(cudaalignertests)
+set(TARGET_NAME cudaalignertests)
 
 set(SOURCES
     main.cpp
@@ -24,4 +24,4 @@ set(LIBS
     cudaaligner
     utils)
 
-cga_add_tests(${PROJECT_NAME} "${SOURCES}" "${LIBS}")
+cga_add_tests(${TARGET_NAME} "${SOURCES}" "${LIBS}")

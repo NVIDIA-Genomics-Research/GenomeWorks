@@ -28,6 +28,7 @@ void test_function(const std::string& filename,
                    const std::vector<std::string>& expected_read_id_to_read_name,
                    const std::vector<std::uint32_t>& expected_read_id_to_read_length,
                    const std::vector<std::vector<Index::RepresentationToSketchElements>>& expected_read_id_and_representation_to_sketch_elements,
+                   const std::vector<representation_t>& expected_representations,
                    const std::vector<position_in_read_t>& expected_positions_in_reads,
                    const std::vector<read_id_t>& expected_read_ids,
                    const std::vector<SketchElement::DirectionOfRepresentation>& expected_directions_of_reads)
@@ -39,7 +40,7 @@ void test_function(const std::string& filename,
     std::unique_ptr<io::FastaParser> parser = io::create_fasta_parser(filename);
     std::vector<io::FastaParser*> parsers;
     parsers.push_back(parser.get());
-    IndexGPU<Minimizer> index(parsers, minimizer_size, window_size, read_ranges);
+    IndexGPU<Minimizer> index(parsers, minimizer_size, window_size, read_ranges, false);
 
     ASSERT_EQ(index.number_of_reads(), expected_number_of_reads);
 
@@ -76,16 +77,20 @@ void test_function(const std::string& filename,
     }
 
     // check arrays
+    const std::vector<representation_t>& representations                             = index.representations();
     const std::vector<position_in_read_t>& positions_in_reads                        = index.positions_in_reads();
     const std::vector<read_id_t>& read_ids                                           = index.read_ids();
     const std::vector<SketchElement::DirectionOfRepresentation>& directions_of_reads = index.directions_of_reads();
+    ASSERT_EQ(representations.size(), expected_representations.size());
     ASSERT_EQ(positions_in_reads.size(), expected_positions_in_reads.size());
     ASSERT_EQ(read_ids.size(), expected_read_ids.size());
     ASSERT_EQ(directions_of_reads.size(), expected_directions_of_reads.size());
+    ASSERT_EQ(representations.size(), positions_in_reads.size());
     ASSERT_EQ(positions_in_reads.size(), read_ids.size());
-    ASSERT_EQ(positions_in_reads.size(), directions_of_reads.size());
+    ASSERT_EQ(read_ids.size(), directions_of_reads.size());
     for (std::size_t i = 0; i < expected_positions_in_reads.size(); ++i)
     {
+        EXPECT_EQ(representations[i], expected_representations[i]) << "i: " << i;
         EXPECT_EQ(positions_in_reads[i], expected_positions_in_reads[i]) << "i: " << i;
         EXPECT_EQ(read_ids[i], expected_read_ids[i]) << "i: " << i;
         EXPECT_EQ(directions_of_reads[i], expected_directions_of_reads[i]) << "i: " << i;
@@ -118,9 +123,11 @@ TEST(TestCudamapperIndexGPU, GATT_4_1)
     std::vector<std::vector<Index::RepresentationToSketchElements>> expected_read_id_and_representation_to_sketch_elements(1);
     expected_read_id_and_representation_to_sketch_elements[0].push_back({0b00001101, {0, 1}, {0, 1}});
 
+    std::vector<representation_t> expected_representations;
     std::vector<position_in_read_t> expected_positions_in_reads;
     std::vector<read_id_t> expected_read_ids;
     std::vector<SketchElement::DirectionOfRepresentation> expected_directions_of_reads;
+    expected_representations.push_back(0b1101);
     expected_positions_in_reads.push_back(0);
     expected_read_ids.push_back(0);
     expected_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::REVERSE);
@@ -132,6 +139,7 @@ TEST(TestCudamapperIndexGPU, GATT_4_1)
                   expected_read_id_to_read_name,
                   expected_read_id_to_read_length,
                   expected_read_id_and_representation_to_sketch_elements,
+                  expected_representations,
                   expected_positions_in_reads,
                   expected_read_ids,
                   expected_directions_of_reads);
@@ -187,16 +195,21 @@ TEST(TestCudamapperIndexGPU, GATT_2_3)
     expected_read_id_and_representation_to_sketch_elements[0].push_back({0b0011, {1, 1}, {1, 1}}); // AT
     expected_read_id_and_representation_to_sketch_elements[0].push_back({0b1000, {2, 1}, {2, 1}}); // GA
 
+    std::vector<representation_t> expected_representations;
     std::vector<position_in_read_t> expected_positions_in_reads;
     std::vector<read_id_t> expected_read_ids;
     std::vector<SketchElement::DirectionOfRepresentation> expected_directions_of_reads;
-    expected_positions_in_reads.push_back(2); // AA(2r0)
+
+    expected_representations.push_back(0b0000); // AA(2r0)
+    expected_positions_in_reads.push_back(2);
     expected_read_ids.push_back(0);
     expected_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::REVERSE);
-    expected_positions_in_reads.push_back(1); // AT(1f0)
+    expected_representations.push_back(0b0011); // AT(1f0)
+    expected_positions_in_reads.push_back(1);
     expected_read_ids.push_back(0);
     expected_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::FORWARD);
-    expected_positions_in_reads.push_back(0); // GA(0f0)
+    expected_representations.push_back(0b1000); // GA(0f0)
+    expected_positions_in_reads.push_back(0);
     expected_read_ids.push_back(0);
     expected_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::FORWARD);
 
@@ -207,6 +220,7 @@ TEST(TestCudamapperIndexGPU, GATT_2_3)
                   expected_read_id_to_read_name,
                   expected_read_id_to_read_length,
                   expected_read_id_and_representation_to_sketch_elements,
+                  expected_representations,
                   expected_positions_in_reads,
                   expected_read_ids,
                   expected_directions_of_reads);
@@ -233,6 +247,7 @@ TEST(TestCudamapperIndexGPU, CCCATACC_2_8)
 
     std::vector<std::vector<Index::RepresentationToSketchElements>> expected_read_id_and_representation_to_sketch_elements(0);
 
+    std::vector<representation_t> expected_representations;
     std::vector<position_in_read_t> expected_positions_in_reads;
     std::vector<read_id_t> expected_read_ids;
     std::vector<SketchElement::DirectionOfRepresentation> expected_directions_of_reads;
@@ -244,6 +259,7 @@ TEST(TestCudamapperIndexGPU, CCCATACC_2_8)
                   expected_read_id_to_read_name,
                   expected_read_id_to_read_length,
                   expected_read_id_and_representation_to_sketch_elements,
+                  expected_representations,
                   expected_positions_in_reads,
                   expected_read_ids,
                   expected_directions_of_reads);
@@ -314,16 +330,20 @@ TEST(TestCudamapperIndexGPU, CATCAAG_AAGCTA_3_5)
     expected_read_id_and_representation_to_sketch_elements[0].push_back({0b001101, {1, 1}, {1, 1}}); // ATC
     expected_read_id_and_representation_to_sketch_elements[0].push_back({0b001110, {2, 1}, {2, 1}}); // ATG
 
+    std::vector<representation_t> expected_representations;
     std::vector<position_in_read_t> expected_positions_in_reads;
     std::vector<read_id_t> expected_read_ids;
     std::vector<SketchElement::DirectionOfRepresentation> expected_directions_of_reads;
-    expected_positions_in_reads.push_back(4); // AAG(4f0)
+    expected_representations.push_back(0b000010); // AAG(4f0)
+    expected_positions_in_reads.push_back(4);
     expected_read_ids.push_back(0);
     expected_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::FORWARD);
-    expected_positions_in_reads.push_back(1); // ATC(1f0)
+    expected_representations.push_back(0b001101); // ATC(1f0)
+    expected_positions_in_reads.push_back(1);
     expected_read_ids.push_back(0);
     expected_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::FORWARD);
-    expected_positions_in_reads.push_back(0); // ATG(0r0)
+    expected_representations.push_back(0b001110); // ATG(0r0)
+    expected_positions_in_reads.push_back(0);
     expected_read_ids.push_back(0);
     expected_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::REVERSE);
 
@@ -334,6 +354,7 @@ TEST(TestCudamapperIndexGPU, CATCAAG_AAGCTA_3_5)
                   expected_read_id_to_read_name,
                   expected_read_id_to_read_length,
                   expected_read_id_and_representation_to_sketch_elements,
+                  expected_representations,
                   expected_positions_in_reads,
                   expected_read_ids,
                   expected_directions_of_reads);
@@ -401,22 +422,28 @@ TEST(TestCudamapperIndexGPU, CCCATACC_3_5)
     expected_read_id_and_representation_to_sketch_elements[0].push_back({0b010100, {3, 1}, {3, 1}}); // CCA
     expected_read_id_and_representation_to_sketch_elements[0].push_back({0b010101, {4, 1}, {4, 1}}); // CCC
 
+    std::vector<representation_t> expected_representations;
     std::vector<position_in_read_t> expected_positions_in_reads;
     std::vector<read_id_t> expected_read_ids;
     std::vector<SketchElement::DirectionOfRepresentation> expected_directions_of_reads;
-    expected_positions_in_reads.push_back(5); // ACC(5f0)
+    expected_representations.push_back(0b000101); // ACC(5f0)
+    expected_positions_in_reads.push_back(5);
     expected_read_ids.push_back(0);
     expected_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::FORWARD);
-    expected_positions_in_reads.push_back(3); // ATA(3f0)
+    expected_representations.push_back(0b001100); // ATA(3f0)
+    expected_positions_in_reads.push_back(3);
     expected_read_ids.push_back(0);
     expected_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::FORWARD);
-    expected_positions_in_reads.push_back(2); // ATG(2r0)
+    expected_representations.push_back(0b001110); // ATG(2r0)
+    expected_positions_in_reads.push_back(2);
     expected_read_ids.push_back(0);
     expected_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::REVERSE);
-    expected_positions_in_reads.push_back(1); // CAA(1f0)
+    expected_representations.push_back(0b010100); // CCA(1f0)
+    expected_positions_in_reads.push_back(1);
     expected_read_ids.push_back(0);
     expected_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::FORWARD);
-    expected_positions_in_reads.push_back(0); // CCC(0f0)
+    expected_representations.push_back(0b010101); // CCC(0f0)
+    expected_positions_in_reads.push_back(0);
     expected_read_ids.push_back(0);
     expected_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::FORWARD);
 
@@ -427,6 +454,7 @@ TEST(TestCudamapperIndexGPU, CCCATACC_3_5)
                   expected_read_id_to_read_name,
                   expected_read_id_to_read_length,
                   expected_read_id_and_representation_to_sketch_elements,
+                  expected_representations,
                   expected_positions_in_reads,
                   expected_read_ids,
                   expected_directions_of_reads);
@@ -517,28 +545,37 @@ TEST(TestCudamapperIndexGPU, CATCAAG_AAGCTA_3_2)
     expected_read_id_and_representation_to_sketch_elements[1].push_back({0b001001, {2, 1}, {2, 1}}); // AGC
     expected_read_id_and_representation_to_sketch_elements[1].push_back({0b011100, {6, 1}, {6, 1}}); // CTA
 
+    std::vector<representation_t> expected_representations;
     std::vector<position_in_read_t> expected_positions_in_reads;
     std::vector<read_id_t> expected_read_ids;
     std::vector<SketchElement::DirectionOfRepresentation> expected_directions_of_reads;
-    expected_positions_in_reads.push_back(4); // AAG(4f0)
+
+    expected_representations.push_back(0b000010); // AAG(4f0)
+    expected_positions_in_reads.push_back(4);
     expected_read_ids.push_back(0);
     expected_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::FORWARD);
-    expected_positions_in_reads.push_back(0); // AAG(0f1)
+    expected_representations.push_back(0b000010); // AAG(0f1)
+    expected_positions_in_reads.push_back(0);
     expected_read_ids.push_back(1);
     expected_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::FORWARD);
-    expected_positions_in_reads.push_back(2); // AGC(2r1)
+    expected_representations.push_back(0b001001); // AGC(2r1)
+    expected_positions_in_reads.push_back(2);
     expected_read_ids.push_back(1);
     expected_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::REVERSE);
-    expected_positions_in_reads.push_back(1); // ATC(1f0)
+    expected_representations.push_back(0b001101); // ATC(1f0)
+    expected_positions_in_reads.push_back(1);
     expected_read_ids.push_back(0);
     expected_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::FORWARD);
-    expected_positions_in_reads.push_back(0); // ATG(0r0)
+    expected_representations.push_back(0b001110); // ATG(0r0)
+    expected_positions_in_reads.push_back(0);
     expected_read_ids.push_back(0);
     expected_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::REVERSE);
-    expected_positions_in_reads.push_back(3); // CAA(3f0)
+    expected_representations.push_back(0b010000); // CAA(3f0)
+    expected_positions_in_reads.push_back(3);
     expected_read_ids.push_back(0);
     expected_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::FORWARD);
-    expected_positions_in_reads.push_back(3); // CTA(3f1)
+    expected_representations.push_back(0b011100); // CTA(3f1)
+    expected_positions_in_reads.push_back(3);
     expected_read_ids.push_back(1);
     expected_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::FORWARD);
 
@@ -549,6 +586,7 @@ TEST(TestCudamapperIndexGPU, CATCAAG_AAGCTA_3_2)
                   expected_read_id_to_read_name,
                   expected_read_id_to_read_length,
                   expected_read_id_and_representation_to_sketch_elements,
+                  expected_representations,
                   expected_positions_in_reads,
                   expected_read_ids,
                   expected_directions_of_reads);
@@ -652,43 +690,56 @@ TEST(TestCudamapperIndexGPU, AAAACTGAA_GCCAAAG_2_3)
     expected_read_id_and_representation_to_sketch_elements[1].push_back({0b0101, {10, 1}, {10, 1}}); // CC
     expected_read_id_and_representation_to_sketch_elements[1].push_back({0b1001, {11, 1}, {11, 1}}); // GC
 
+    std::vector<representation_t> expected_representations;
     std::vector<position_in_read_t> expected_positions_in_reads;
     std::vector<read_id_t> expected_read_ids;
     std::vector<SketchElement::DirectionOfRepresentation> expected_directions_of_reads;
-    expected_positions_in_reads.push_back(0); // AA(0f0)
+    expected_representations.push_back(0b0000); // AA(0f0)
+    expected_positions_in_reads.push_back(0);
     expected_read_ids.push_back(0);
     expected_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::FORWARD);
-    expected_positions_in_reads.push_back(1); // AA(1f0)
+    expected_representations.push_back(0b0000); // AA(1f0)
+    expected_positions_in_reads.push_back(1);
     expected_read_ids.push_back(0);
     expected_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::FORWARD);
-    expected_positions_in_reads.push_back(2); // AA(2f0)
+    expected_representations.push_back(0b0000); // AA(2f0)
+    expected_positions_in_reads.push_back(2);
     expected_read_ids.push_back(0);
     expected_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::FORWARD);
-    expected_positions_in_reads.push_back(7); // AA(7f0)
+    expected_representations.push_back(0b0000); // AA(7f0)
+    expected_positions_in_reads.push_back(7);
     expected_read_ids.push_back(0);
     expected_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::FORWARD);
-    expected_positions_in_reads.push_back(3); // AA(3f1)
+    expected_representations.push_back(0b0000); // AA(3f1)
+    expected_positions_in_reads.push_back(3);
     expected_read_ids.push_back(1);
     expected_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::FORWARD);
-    expected_positions_in_reads.push_back(4); // AA(4f1)
+    expected_representations.push_back(0b0000); // AA(4f1)
+    expected_positions_in_reads.push_back(4);
     expected_read_ids.push_back(1);
     expected_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::FORWARD);
-    expected_positions_in_reads.push_back(3); // AC(3f0)
+    expected_representations.push_back(0b0001); // AC(3f0)
+    expected_positions_in_reads.push_back(3);
     expected_read_ids.push_back(0);
     expected_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::FORWARD);
-    expected_positions_in_reads.push_back(4); // AG(4r0)
+    expected_representations.push_back(0b0010); // AG(4r0)
+    expected_positions_in_reads.push_back(4);
     expected_read_ids.push_back(0);
     expected_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::REVERSE);
-    expected_positions_in_reads.push_back(5); // AG(5f1)
+    expected_representations.push_back(0b0010); // AG(5f1)
+    expected_positions_in_reads.push_back(5);
     expected_read_ids.push_back(1);
     expected_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::FORWARD);
-    expected_positions_in_reads.push_back(2); // CA(2f1)
+    expected_representations.push_back(0b0100); // CA(2f1)
+    expected_positions_in_reads.push_back(2);
     expected_read_ids.push_back(1);
     expected_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::FORWARD);
-    expected_positions_in_reads.push_back(1); // CC(1f1)
+    expected_representations.push_back(0b0101); // CC(1f1)
+    expected_positions_in_reads.push_back(1);
     expected_read_ids.push_back(1);
     expected_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::FORWARD);
-    expected_positions_in_reads.push_back(0); // GC(0f1)
+    expected_representations.push_back(0b1001); // GC(0f1)
+    expected_positions_in_reads.push_back(0);
     expected_read_ids.push_back(1);
     expected_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::FORWARD);
 
@@ -699,6 +750,7 @@ TEST(TestCudamapperIndexGPU, AAAACTGAA_GCCAAAG_2_3)
                   expected_read_id_to_read_name,
                   expected_read_id_to_read_length,
                   expected_read_id_and_representation_to_sketch_elements,
+                  expected_representations,
                   expected_positions_in_reads,
                   expected_read_ids,
                   expected_directions_of_reads);
