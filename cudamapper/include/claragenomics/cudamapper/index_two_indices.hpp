@@ -77,14 +77,16 @@ public:
     /// \param first_read_id read_id of the first read to the included in this index
     /// \param past_the_last_read_id read_id+1 of the last read to be included in this index
     /// \param kmer_size k - the kmer length
-    /// \param window_size w - the length of the sliding window used to find sketch elements  (i.e. the number of adjacent k-mers in a window, adjacent = shifted by one basepair)
+    /// \param window_size w - the length of the sliding window used to find sketch elements  (i.e. the number of adjacent kmers in a window, adjacent = shifted by one basepair)
+    /// \param hash_representations - if true, hash kmer representations
     /// \return instance of IndexTwoIndices
     static std::unique_ptr<IndexTwoIndices>
     create_index(const io::FastaParser& parser,
                  const read_id_t first_read_id,
                  const read_id_t past_the_last_read_id,
                  const std::uint64_t kmer_size,
-                 const std::uint64_t window_size);
+                 const std::uint64_t window_size,
+                 const bool hash_representations = true);
 };
 
 /// \}
