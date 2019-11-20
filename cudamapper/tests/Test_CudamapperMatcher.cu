@@ -36,7 +36,7 @@ TEST(TestCudamapperMatcher, OneReadOneMinimizer)
     IndexGPU<Minimizer> index(parsers, 4, 1, read_ranges);
     Matcher matcher(index, 0);
 
-    const std::vector<Anchor>& anchors = matcher.anchors();
+    const thrust::host_vector<Anchor>& anchors = matcher.anchors();
     ASSERT_EQ(anchors.size(), 0u);
 }
 
@@ -78,7 +78,7 @@ TEST(TestCudamapperMatcher, TwoReadsMultipleMiniminizers)
     IndexGPU<Minimizer> index(parsers, 3, 2, read_ranges);
     Matcher matcher(index, 0);
 
-    const std::vector<Anchor>& anchors = matcher.anchors();
+    const thrust::host_vector<Anchor>& anchors = matcher.anchors();
     ASSERT_EQ(anchors.size(), 1u);
     EXPECT_EQ(anchors[0].query_read_id_, 0u);
     EXPECT_EQ(anchors[0].target_read_id_, 1u);
@@ -150,7 +150,7 @@ TEST(TestCudamapperMatcher, CustomIndexTwoReads)
 
     Matcher matcher(test_index, 0);
 
-    const std::vector<Anchor>& anchors = matcher.anchors();
+    const thrust::host_vector<Anchor>& anchors = matcher.anchors();
     ASSERT_EQ(anchors.size(), 2500u);
 
     for (std::size_t read_0_sketch_element = 0; read_0_sketch_element < 50; ++read_0_sketch_element)
@@ -266,7 +266,7 @@ TEST(TestCudamapperMatcher, CustomIndexFourReads)
 
     Matcher matcher(test_index, 0);
 
-    const std::vector<Anchor>& anchors = matcher.anchors();
+    const thrust::host_vector<Anchor>& anchors = matcher.anchors();
     ASSERT_EQ(anchors.size(), 90300u);
 
     // Anchors are grouped by query read id and within that by representation (both in increasing order).

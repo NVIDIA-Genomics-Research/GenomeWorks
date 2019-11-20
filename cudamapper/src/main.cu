@@ -109,7 +109,7 @@ int main(int argc, char* argv[])
 
     // Function for adding new overlaps to writer
     auto add_overlaps_to_write_queue = [&overlaps_to_write, &overlaps_writer_mtx](claragenomics::cudamapper::Overlapper& overlapper,
-                                                                                  std::vector<claragenomics::cudamapper::Anchor>& anchors,
+                                                                                  thrust::device_vector<claragenomics::cudamapper::Anchor>& anchors,
                                                                                   const claragenomics::cudamapper::Index& index) {
         CGA_NVTX_RANGE(profiler, "add_overlaps_to_write_queue");
         overlaps_writer_mtx.lock();

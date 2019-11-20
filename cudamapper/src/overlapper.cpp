@@ -35,12 +35,12 @@ void Overlapper::print_paf(const std::vector<Overlap>& overlaps)
     {
         // Add basic overlap information.
         std::printf("%s\t%i\t%i\t%i\t%c\t%s\t%i\t%i\t%i\t%i\t%i\t%i",
-                    overlap.query_read_name_.c_str(),
+                    overlap.query_read_name_,
                     overlap.query_length_,
                     overlap.query_start_position_in_read_,
                     overlap.query_end_position_in_read_,
                     static_cast<unsigned char>(overlap.relative_strand),
-                    overlap.target_read_name_.c_str(),
+                    overlap.target_read_name_,
                     overlap.target_length_,
                     overlap.target_start_position_in_read_,
                     overlap.target_end_position_in_read_,
@@ -48,9 +48,9 @@ void Overlapper::print_paf(const std::vector<Overlap>& overlaps)
                     0,
                     255);
         // If CIGAR string is generated, output in PAF.
-        if (overlap.cigar_ != "")
+        if (overlap.cigar_ != 0)
         {
-            std::printf("\tcg:Z:%s", overlap.cigar_.c_str());
+            std::printf("\tcg:Z:%s", overlap.cigar_);
         }
         // Add new line to demarcate new entry.
         std::printf("\n");

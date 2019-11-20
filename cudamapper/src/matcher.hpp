@@ -10,7 +10,7 @@
 
 #pragma once
 
-#include <vector>
+#include <thrust/device_vector.h>
 #include "claragenomics/cudamapper/index.hpp"
 
 namespace claragenomics
@@ -42,11 +42,11 @@ public:
 
     /// \brief return anchors
     /// \return anchors
-    std::vector<Anchor>& anchors();
+    thrust::device_vector<Anchor>& anchors();
 
 private:
-    /// \biref list of anchors
-    std::vector<Anchor> anchors_h_;
+    /// \brief list of anchors
+    thrust::device_vector<Anchor> anchors_d_;
 };
 } // namespace cudamapper
 } // namespace claragenomics
