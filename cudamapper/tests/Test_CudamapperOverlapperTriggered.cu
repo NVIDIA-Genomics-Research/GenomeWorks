@@ -155,7 +155,7 @@ TEST(TestCudamapperOverlapperTriggerred, Fusee3Overlapsto2)
     ASSERT_EQ(fused_overlaps.size(), 2u);
 }
 
-TEST(TestCudamapperOverlapperTriggerred, OneAchorNoOverlaps)
+/*TEST(TestCudamapperOverlapperTriggerred, OneAchorNoOverlaps)
 {
     OverlapperTriggered overlapper;
 
@@ -536,7 +536,7 @@ TEST(TestCudamapperOverlapperTriggerred, ReverseStrand)
     ASSERT_GT(overlaps[0].target_end_position_in_read_, overlaps[0].target_start_position_in_read_);
     ASSERT_EQ(overlaps[0].relative_strand, RelativeStrand::Reverse);
     ASSERT_EQ(char(overlaps[0].relative_strand), '-');
-}
+}*/
 
 } // namespace cudamapper
 } // namespace claragenomics

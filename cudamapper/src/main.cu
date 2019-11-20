@@ -23,6 +23,8 @@
 #include <claragenomics/utils/cudautils.hpp>
 
 #include "claragenomics/cudamapper/index.hpp"
+#include "claragenomics/cudamapper/index_two_indices.hpp"
+#include "claragenomics/cudamapper/matcher_two_indices.hpp"
 #include "claragenomics/cudamapper/overlapper.hpp"
 #include "matcher.hpp"
 #include "overlapper_triggered.hpp"
@@ -110,11 +112,12 @@ int main(int argc, char* argv[])
     // Function for adding new overlaps to writer
     auto add_overlaps_to_write_queue = [&overlaps_to_write, &overlaps_writer_mtx](claragenomics::cudamapper::Overlapper& overlapper,
                                                                                   thrust::device_vector<claragenomics::cudamapper::Anchor>& anchors,
-                                                                                  const claragenomics::cudamapper::Index& index) {
+                                                                                  const claragenomics::cudamapper::IndexTwoIndices& index_query,
+                                                                                  const claragenomics::cudamapper::IndexTwoIndices& index_target) {
         CGA_NVTX_RANGE(profiler, "add_overlaps_to_write_queue");
         overlaps_writer_mtx.lock();
         overlaps_to_write.push_back(std::vector<claragenomics::cudamapper::Overlap>());
-        overlapper.get_overlaps(overlaps_to_write.back(), anchors, index);
+        overlapper.get_overlaps(overlaps_to_write.back(), anchors, index_query, index_target);
         if (0 == overlaps_to_write.back().size())
         {
             overlaps_to_write.pop_back();
@@ -154,16 +157,79 @@ int main(int argc, char* argv[])
     };
     std::future<void> overlap_result(std::async(std::launch::async, overlaps_writer_func));
 
+    auto overlapper = claragenomics::cudamapper::OverlapperTriggered();
+
     // Track overall time
     std::chrono::milliseconds index_time      = std::chrono::duration_values<std::chrono::milliseconds>::zero();
     std::chrono::milliseconds matcher_time    = std::chrono::duration_values<std::chrono::milliseconds>::zero();
     std::chrono::milliseconds overlapper_time = std::chrono::duration_values<std::chrono::milliseconds>::zero();
 
-    //Now carry out all the looped polling
-    //size_t query_start = 0;
-    //size_t query_end = query_start + index_size - 1;
-
     for (size_t query_start = 0; query_start < queries; query_start += index_size)
+    { // outer loop over query
+        size_t query_end = std::min(query_start + index_size, static_cast<size_t>(queries) - 1);
+
+        std::cerr << "Query range: " << query_start << " - " << query_end << std::endl;
+
+        std::unique_ptr<claragenomics::cudamapper::IndexTwoIndices> query_index(nullptr);
+        std::unique_ptr<claragenomics::cudamapper::IndexTwoIndices> target_index(nullptr);
+        std::unique_ptr<claragenomics::cudamapper::MatcherTwoIndices> matcher(nullptr);
+
+        {
+            CGA_NVTX_RANGE(profiler, "generate_query_index");
+            auto start_time = std::chrono::high_resolution_clock::now();
+            query_index     = claragenomics::cudamapper::IndexTwoIndices::create_index(*query_parser,
+                                                                                       query_start,
+                                                                                       query_end + 1, // <- past the last
+                                                                                       k,
+                                                                                       w);
+            index_time += std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time);
+            std::cerr << "Query index generation time: " << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time).count() << "ms" << std::endl;
+        }
+
+        size_t target_start = 0;
+        // If all_to_all mode, then we can optimzie by starting the target sequences from the same index as
+        // query because all indices before the current query index are guaranteed to have been processed in
+        // a2a mapping.
+        if (all_to_all)
+        {
+            target_start = query_start;
+        }
+        for (; target_start < targets; target_start += target_index_size)
+        {
+            size_t target_end = std::min(target_start + target_index_size, static_cast<size_t>(targets) - 1);
+
+            std::cerr << "Target range: " << target_start << " - " << target_end << std::endl;
+
+            {
+                CGA_NVTX_RANGE(profiler, "generate_target_index");
+                auto start_time = std::chrono::high_resolution_clock::now();
+                target_index    = claragenomics::cudamapper::IndexTwoIndices::create_index(*target_parser,
+                                                                                           target_start,
+                                                                                           target_end + 1, // <- past the last
+                                                                                           k,
+                                                                                           w);
+                index_time += std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time);
+                std::cerr << "Target index generation time: " << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time).count() << "ms" << std::endl;
+            }
+            {
+                CGA_NVTX_RANGE(profiler, "generate_matcher");
+                auto start_time = std::chrono::high_resolution_clock::now();
+                matcher         = claragenomics::cudamapper::MatcherTwoIndices::create_matcher(*query_index,
+                                                                                               *target_index);
+                matcher_time += std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time);
+                std::cerr << "Matcher generation time: " << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time).count() << "ms" << std::endl;
+            }
+            {
+                CGA_NVTX_RANGE(profiler, "generate_overlaps");
+                auto start_time = std::chrono::high_resolution_clock::now();
+                add_overlaps_to_write_queue(overlapper, matcher->anchors(), *query_index, *target_index);
+                overlapper_time += std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time);
+                std::cerr << "Overlapper time: " << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time).count() << "ms" << std::endl;
+            }
+        }
+    }
+
+ /*   for (size_t query_start = 0; query_start < queries; query_start += index_size)
     { // outer loop over query
         size_t query_end = std::min(query_start + index_size, static_cast<size_t>(queries));
         auto start_time  = std::chrono::high_resolution_clock::now();
@@ -251,7 +317,7 @@ int main(int argc, char* argv[])
             //the new target start is set to be the next read index after the last read
             //from the previous chunk
         }
-    }
+    }*/
 
     // Insert empty overlap vector to denote end of processing.
     // The lambda function for adding overlaps to queue ensures that no empty
