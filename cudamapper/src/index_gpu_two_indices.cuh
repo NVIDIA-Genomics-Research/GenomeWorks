@@ -52,11 +52,13 @@ public:
     /// \param past_the_last_read_id read_id+1 of the last read to be included in this index
     /// \param kmer_size k - the kmer length
     /// \param window_size w - the length of the sliding window used to find sketch elements (i.e. the number of adjacent k-mers in a window, adjacent = shifted by one basepair)
+    /// \param hash_representations - if true, hash kmer representations
     IndexGPUTwoIndices(const io::FastaParser& parser,
                        const read_id_t first_read_id,
                        const read_id_t past_the_last_read_id,
                        const std::uint64_t kmer_size,
-                       const std::uint64_t window_size);
+                       const std::uint64_t window_size,
+                       const bool hash_representations = true);
 
     /// \brief returns an array of representations of sketch elements
     /// \return an array of representations of sketch elements
@@ -100,7 +102,8 @@ private:
     /// \brief generates the index
     void generate_index(const io::FastaParser& query_parser,
                         const read_id_t first_read_id,
-                        const read_id_t past_the_last_read_id);
+                        const read_id_t past_the_last_read_id,
+                        const bool hash_representations);
 
     thrust::device_vector<representation_t> representations_d_;
     thrust::device_vector<read_id_t> read_ids_d_;
@@ -222,7 +225,8 @@ IndexGPUTwoIndices<SketchElementImpl>::IndexGPUTwoIndices(const io::FastaParser&
                                                           const read_id_t first_read_id,
                                                           const read_id_t past_the_last_read_id,
                                                           const std::uint64_t kmer_size,
-                                                          const std::uint64_t window_size)
+                                                          const std::uint64_t window_size,
+                                                          const bool hash_representations)
     : first_read_id_(first_read_id)
     , kmer_size_(kmer_size)
     , window_size_(window_size)
@@ -230,7 +234,8 @@ IndexGPUTwoIndices<SketchElementImpl>::IndexGPUTwoIndices(const io::FastaParser&
 {
     generate_index(parser,
                    first_read_id_,
-                   past_the_last_read_id);
+                   past_the_last_read_id,
+                   hash_representations);
 }
 
 template <typename SketchElementImpl>
@@ -290,7 +295,8 @@ std::uint64_t IndexGPUTwoIndices<SketchElementImpl>::number_of_reads() const
 template <typename SketchElementImpl>
 void IndexGPUTwoIndices<SketchElementImpl>::generate_index(const io::FastaParser& parser,
                                                            const read_id_t first_read_id,
-                                                           const read_id_t past_the_last_read_id)
+                                                           const read_id_t past_the_last_read_id,
+                                                           const bool hash_representations)
 {
 
     // check if there are any reads to process
@@ -377,7 +383,8 @@ void IndexGPUTwoIndices<SketchElementImpl>::generate_index(const io::FastaParser
                                                                        first_read_id,
                                                                        merged_basepairs_d,
                                                                        read_id_to_basepairs_section_h,
-                                                                       read_id_to_basepairs_section_d);
+                                                                       read_id_to_basepairs_section_d,
+                                                                       hash_representations);
     device_buffer<representation_t> representations_d                         = std::move(sketch_elements.representations_d);
     device_buffer<typename SketchElementImpl::ReadidPositionDirection> rest_d = std::move(sketch_elements.rest_d);
 
