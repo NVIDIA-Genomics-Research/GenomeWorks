@@ -28,18 +28,13 @@ __host__ __device__ bool operator==(const Anchor& lhs,
                                     const Anchor& rhs)
 {
     auto score_threshold = 1;
+
     // Very simple scoring function to quantify quality of overlaps.
-    auto anchor_score = [] __host__ __device__(const Anchor& a, const Anchor& b) {
-        if ((b.query_position_in_read_ - a.query_position_in_read_) < 350)
-        {
-            return 2;
-        }
-        else
-        {
-            return 1; // TODO change to a more sophisticated scoring method
-        }
-    };
-    auto score = anchor_score(lhs, rhs);
+    // TODO change to a more sophisticated scoring method
+    auto score = 1;
+    if ((rhs.query_position_in_read_ - lhs.query_position_in_read_) < 350)
+        score = 2;
+
     return ((lhs.query_read_id_ == rhs.query_read_id_) &&
             (lhs.target_read_id_ == rhs.target_read_id_) &&
             score > score_threshold);

@@ -329,7 +329,7 @@ Matcher::Matcher(const Index& index, uint32_t query_target_division_idx)
 
         auto num_anchors_so_far = anchors_d_.size();
         anchors_d_.resize(num_anchors_so_far + total_anchors);
-        Anchor* anchors_d = thrust::raw_pointer_cast(anchors_d_.data()) + num_anchors_so_far;
+        Anchor* anchors_d = anchors_d_.data().get() + num_anchors_so_far;
 
         CGA_LOG_INFO("Allocating {} bytes for read_id_to_anchors_section_d",
                      read_id_to_anchors_section_h.size() * sizeof(ArrayBlock));
