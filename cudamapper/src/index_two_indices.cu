@@ -22,14 +22,16 @@ std::unique_ptr<IndexTwoIndices> IndexTwoIndices::create_index(const io::FastaPa
                                                                const read_id_t first_read_id,
                                                                const read_id_t past_the_last_read_id,
                                                                const std::uint64_t kmer_size,
-                                                               const std::uint64_t window_size)
+                                                               const std::uint64_t window_size,
+                                                               const bool hash_representations)
 {
     CGA_NVTX_RANGE(profiler, "create_index");
     return std::make_unique<IndexGPUTwoIndices<Minimizer>>(parser,
                                                            first_read_id,
                                                            past_the_last_read_id,
                                                            kmer_size,
-                                                           window_size);
+                                                           window_size,
+                                                           hash_representations);
 }
 
 } // namespace cudamapper
