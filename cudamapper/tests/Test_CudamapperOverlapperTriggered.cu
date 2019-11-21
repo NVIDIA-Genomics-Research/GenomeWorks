@@ -160,7 +160,7 @@ TEST(TestCudamapperOverlapperTriggerred, OneAchorNoOverlaps)
     OverlapperTriggered overlapper;
 
     std::vector<Overlap> unfused_overlaps;
-    std::vector<Anchor> anchors;
+    thrust::device_vector<Anchor> anchors;
 
     MockIndex test_index;
     std::vector<std::string> testv;
@@ -188,7 +188,7 @@ TEST(TestCudamapperOverlapperTriggerred, FourAnchorsOneOverlap)
     OverlapperTriggered overlapper;
 
     std::vector<Overlap> unfused_overlaps;
-    std::vector<Anchor> anchors;
+    thrust::device_vector<Anchor> anchors;
 
     MockIndex test_index;
     std::vector<std::string> testv;
@@ -247,7 +247,7 @@ TEST(TestCudamapperOverlapperTriggerred, FourAnchorsNoOverlap)
     OverlapperTriggered overlapper;
 
     std::vector<Overlap> unfused_overlaps;
-    std::vector<Anchor> anchors;
+    thrust::device_vector<Anchor> anchors;
 
     MockIndex test_index;
     std::vector<std::string> testv;
@@ -300,7 +300,7 @@ TEST(TestCudamapperOverlapperTriggerred, FourColinearAnchorsOneOverlap)
     OverlapperTriggered overlapper;
 
     std::vector<Overlap> unfused_overlaps;
-    std::vector<Anchor> anchors;
+    thrust::device_vector<Anchor> anchors;
 
     MockIndex test_index;
     std::vector<std::string> testv;
@@ -353,7 +353,7 @@ TEST(TestCudamapperOverlapperTriggerred, FourAnchorsLastNotInOverlap)
     OverlapperTriggered overlapper;
 
     std::vector<Overlap> unfused_overlaps;
-    std::vector<Anchor> anchors;
+    thrust::device_vector<Anchor> anchors;
 
     MockIndex test_index;
     std::vector<std::string> testv;
@@ -412,7 +412,7 @@ TEST(TestCudamapperOverlapperTriggerred, ShuffledAnchors)
     OverlapperTriggered overlapper;
 
     std::vector<Overlap> unfused_overlaps;
-    std::vector<Anchor> anchors;
+    thrust::device_vector<Anchor> anchors;
 
     MockIndex test_index;
     std::vector<std::string> testv;
@@ -487,7 +487,7 @@ TEST(TestCudamapperOverlapperTriggerred, ReverseStrand)
     OverlapperTriggered overlapper;
 
     std::vector<Overlap> unfused_overlaps;
-    std::vector<Anchor> anchors;
+    thrust::device_vector<Anchor> anchors;
 
     MockIndex test_index;
     std::vector<std::string> testv;

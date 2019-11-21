@@ -37,7 +37,7 @@ public:
     /// \param anchors vector of anchors
     /// \param index Index
     /// \return vector of Overlap objects
-    void get_overlaps(std::vector<Overlap>& overlaps, std::vector<Anchor>& anchors, const Index& index) override;
+    void get_overlaps(std::vector<Overlap>& overlaps, thrust::device_vector<Anchor>& anchors, const Index& index) override;
 };
 } // namespace cudamapper
 } // namespace claragenomics
