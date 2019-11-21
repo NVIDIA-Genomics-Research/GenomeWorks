@@ -155,7 +155,7 @@ TEST(TestCudamapperOverlapperTriggerred, Fusee3Overlapsto2)
     ASSERT_EQ(fused_overlaps.size(), 2u);
 }
 
-/*TEST(TestCudamapperOverlapperTriggerred, OneAchorNoOverlaps)
+TEST(TestCudamapperOverlapperTriggerred, OneAchorNoOverlaps)
 {
     OverlapperTriggered overlapper;
 
@@ -169,17 +169,18 @@ TEST(TestCudamapperOverlapperTriggerred, Fusee3Overlapsto2)
     testv.push_back("READ2");
     std::vector<std::uint32_t> test_read_length(testv.size(), 1000);
 
-    EXPECT_CALL(test_index, read_id_to_read_name)
-        .WillRepeatedly(testing::ReturnRef(testv));
-    EXPECT_CALL(test_index, read_id_to_read_length)
-        .WillRepeatedly(testing::ReturnRef(test_read_length));
+    for (std::size_t i = 0; i < testv.size(); ++i)
+    {
+        EXPECT_CALL(test_index, read_id_to_read_name(i)).WillRepeatedly(testing::ReturnRef(testv[i]));
+        EXPECT_CALL(test_index, read_id_to_read_length(i)).WillRepeatedly(testing::ReturnRef(test_read_length[i]));
+    }
 
     Anchor anchor1;
 
     anchors.push_back(anchor1);
 
     std::vector<Overlap> overlaps;
-    overlapper.get_overlaps(overlaps, anchors, test_index);
+    overlapper.get_overlaps(overlaps, anchors, test_index, test_index);
     ASSERT_EQ(overlaps.size(), 0u);
 }
 
@@ -197,10 +198,11 @@ TEST(TestCudamapperOverlapperTriggerred, FourAnchorsOneOverlap)
     testv.push_back("READ2");
     std::vector<std::uint32_t> test_read_length(testv.size(), 1000);
 
-    EXPECT_CALL(test_index, read_id_to_read_name)
-        .WillRepeatedly(testing::ReturnRef(testv));
-    EXPECT_CALL(test_index, read_id_to_read_length)
-        .WillRepeatedly(testing::ReturnRef(test_read_length));
+    for (std::size_t i = 0; i < testv.size(); ++i)
+    {
+        EXPECT_CALL(test_index, read_id_to_read_name(i)).WillRepeatedly(testing::ReturnRef(testv[i]));
+        EXPECT_CALL(test_index, read_id_to_read_length(i)).WillRepeatedly(testing::ReturnRef(test_read_length[i]));
+    }
 
     Anchor anchor1;
     anchor1.query_read_id_           = 1;
@@ -232,7 +234,7 @@ TEST(TestCudamapperOverlapperTriggerred, FourAnchorsOneOverlap)
     anchors.push_back(anchor4);
 
     std::vector<Overlap> overlaps;
-    overlapper.get_overlaps(overlaps, anchors, test_index);
+    overlapper.get_overlaps(overlaps, anchors, test_index, test_index);
     ASSERT_EQ(overlaps.size(), 1u);
     ASSERT_EQ(overlaps[0].query_read_id_, 1u);
     ASSERT_EQ(overlaps[0].target_read_id_, 2u);
@@ -256,10 +258,11 @@ TEST(TestCudamapperOverlapperTriggerred, FourAnchorsNoOverlap)
     testv.push_back("READ2");
     std::vector<std::uint32_t> test_read_length(testv.size(), 1000);
 
-    EXPECT_CALL(test_index, read_id_to_read_name)
-        .WillRepeatedly(testing::ReturnRef(testv));
-    EXPECT_CALL(test_index, read_id_to_read_length)
-        .WillRepeatedly(testing::ReturnRef(test_read_length));
+    for (std::size_t i = 0; i < testv.size(); ++i)
+    {
+        EXPECT_CALL(test_index, read_id_to_read_name(i)).WillRepeatedly(testing::ReturnRef(testv[i]));
+        EXPECT_CALL(test_index, read_id_to_read_length(i)).WillRepeatedly(testing::ReturnRef(test_read_length[i]));
+    }
 
     Anchor anchor1;
     anchor1.query_read_id_           = 1;
@@ -291,7 +294,7 @@ TEST(TestCudamapperOverlapperTriggerred, FourAnchorsNoOverlap)
     anchors.push_back(anchor4);
 
     std::vector<Overlap> overlaps;
-    overlapper.get_overlaps(overlaps, anchors, test_index);
+    overlapper.get_overlaps(overlaps, anchors, test_index, test_index);
     ASSERT_EQ(overlaps.size(), 0u);
 }
 
@@ -309,10 +312,11 @@ TEST(TestCudamapperOverlapperTriggerred, FourColinearAnchorsOneOverlap)
     testv.push_back("READ2");
     std::vector<std::uint32_t> test_read_length(testv.size(), 1000);
 
-    EXPECT_CALL(test_index, read_id_to_read_name)
-        .WillRepeatedly(testing::ReturnRef(testv));
-    EXPECT_CALL(test_index, read_id_to_read_length)
-        .WillRepeatedly(testing::ReturnRef(test_read_length));
+    for (std::size_t i = 0; i < testv.size(); ++i)
+    {
+        EXPECT_CALL(test_index, read_id_to_read_name(i)).WillRepeatedly(testing::ReturnRef(testv[i]));
+        EXPECT_CALL(test_index, read_id_to_read_length(i)).WillRepeatedly(testing::ReturnRef(test_read_length[i]));
+    }
 
     Anchor anchor1;
     anchor1.query_read_id_           = 1;
@@ -344,7 +348,7 @@ TEST(TestCudamapperOverlapperTriggerred, FourColinearAnchorsOneOverlap)
     anchors.push_back(anchor4);
 
     std::vector<Overlap> overlaps;
-    overlapper.get_overlaps(overlaps, anchors, test_index);
+    overlapper.get_overlaps(overlaps, anchors, test_index, test_index);
     ASSERT_EQ(overlaps.size(), 0u);
 }
 
@@ -362,10 +366,11 @@ TEST(TestCudamapperOverlapperTriggerred, FourAnchorsLastNotInOverlap)
     testv.push_back("READ2");
     std::vector<std::uint32_t> test_read_length(testv.size(), 1000);
 
-    EXPECT_CALL(test_index, read_id_to_read_name)
-        .WillRepeatedly(testing::ReturnRef(testv));
-    EXPECT_CALL(test_index, read_id_to_read_length)
-        .WillRepeatedly(testing::ReturnRef(test_read_length));
+    for (std::size_t i = 0; i < testv.size(); ++i)
+    {
+        EXPECT_CALL(test_index, read_id_to_read_name(i)).WillRepeatedly(testing::ReturnRef(testv[i]));
+        EXPECT_CALL(test_index, read_id_to_read_length(i)).WillRepeatedly(testing::ReturnRef(test_read_length[i]));
+    }
 
     Anchor anchor1;
     anchor1.query_read_id_           = 1;
@@ -397,7 +402,7 @@ TEST(TestCudamapperOverlapperTriggerred, FourAnchorsLastNotInOverlap)
     anchors.push_back(anchor4);
 
     std::vector<Overlap> overlaps;
-    overlapper.get_overlaps(overlaps, anchors, test_index);
+    overlapper.get_overlaps(overlaps, anchors, test_index, test_index);
     ASSERT_EQ(overlaps.size(), 1u);
     ASSERT_EQ(overlaps[0].query_read_id_, 1u);
     ASSERT_EQ(overlaps[0].target_read_id_, 2u);
@@ -421,10 +426,11 @@ TEST(TestCudamapperOverlapperTriggerred, ShuffledAnchors)
     testv.push_back("READ2");
     std::vector<std::uint32_t> test_read_length(testv.size(), 1000);
 
-    EXPECT_CALL(test_index, read_id_to_read_name)
-        .WillRepeatedly(testing::ReturnRef(testv));
-    EXPECT_CALL(test_index, read_id_to_read_length)
-        .WillRepeatedly(testing::ReturnRef(test_read_length));
+    for (std::size_t i = 0; i < testv.size(); ++i)
+    {
+        EXPECT_CALL(test_index, read_id_to_read_name(i)).WillRepeatedly(testing::ReturnRef(testv[i]));
+        EXPECT_CALL(test_index, read_id_to_read_length(i)).WillRepeatedly(testing::ReturnRef(test_read_length[i]));
+    }
 
     Anchor anchor1;
     anchor1.query_read_id_           = 1;
@@ -470,7 +476,7 @@ TEST(TestCudamapperOverlapperTriggerred, ShuffledAnchors)
     for (size_t i = 0; i < 100; i++)
     {
         std::vector<Overlap> overlaps;
-        overlapper.get_overlaps(overlaps, anchors, test_index);
+        overlapper.get_overlaps(overlaps, anchors, test_index, test_index);
         std::shuffle(std::begin(overlaps), std::end(overlaps), rng);
         ASSERT_EQ(overlaps.size(), 1u);
         ASSERT_EQ(overlaps[0].query_read_id_, 1u);
@@ -496,10 +502,11 @@ TEST(TestCudamapperOverlapperTriggerred, ReverseStrand)
     testv.push_back("READ2");
     std::vector<std::uint32_t> test_read_length(testv.size(), 1000);
 
-    EXPECT_CALL(test_index, read_id_to_read_name)
-        .WillRepeatedly(testing::ReturnRef(testv));
-    EXPECT_CALL(test_index, read_id_to_read_length)
-        .WillRepeatedly(testing::ReturnRef(test_read_length));
+    for (std::size_t i = 0; i < testv.size(); ++i)
+    {
+        EXPECT_CALL(test_index, read_id_to_read_name(i)).WillRepeatedly(testing::ReturnRef(testv[i]));
+        EXPECT_CALL(test_index, read_id_to_read_length(i)).WillRepeatedly(testing::ReturnRef(test_read_length[i]));
+    }
 
     Anchor anchor1;
     anchor1.query_read_id_           = 1;
@@ -531,12 +538,12 @@ TEST(TestCudamapperOverlapperTriggerred, ReverseStrand)
     anchors.push_back(anchor4);
 
     std::vector<Overlap> overlaps;
-    overlapper.get_overlaps(overlaps, anchors, test_index);
+    overlapper.get_overlaps(overlaps, anchors, test_index, test_index);
     ASSERT_EQ(overlaps.size(), 1u);
     ASSERT_GT(overlaps[0].target_end_position_in_read_, overlaps[0].target_start_position_in_read_);
     ASSERT_EQ(overlaps[0].relative_strand, RelativeStrand::Reverse);
     ASSERT_EQ(char(overlaps[0].relative_strand), '-');
-}*/
+}
 
 } // namespace cudamapper
 } // namespace claragenomics
