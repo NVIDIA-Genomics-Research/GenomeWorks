@@ -25,13 +25,14 @@ class MockIndex : public IndexGPUTwoIndices<Minimizer>
 {
 public:
     MockIndex()
-    : IndexGPUTwoIndices(*(claragenomics::io::create_fasta_parser(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/gatt.fasta")),
-                         0,
-                         0,
-                         0,
-                         0,
-                         true)
-                         {}
+        : IndexGPUTwoIndices(*(claragenomics::io::create_fasta_parser(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/gatt.fasta")),
+                             0,
+                             0,
+                             0,
+                             0,
+                             true)
+    {
+    }
 
     MOCK_METHOD(const std::string&, read_id_to_read_name, (const read_id_t read_id), (const override));
     MOCK_METHOD(const std::uint32_t&, read_id_to_read_length, (const read_id_t read_id), (const, override));
