@@ -95,11 +95,12 @@ def setup_python_binding(is_develop_mode, pycga_dir, cga_install_dir):
 if __name__ == "__main__":
 
     args = parse_arguments()
+    cga_build_folder = os.path.realpath(args.build_output_folder)
     current_dir = os.path.dirname(os.path.realpath(__file__))
-    cga_installation_directory = os.path.join(args.build_output_folder, "install")
+    cga_installation_directory = os.path.join(cga_build_folder, "install")
     # Build & install Clara Genomics Analysis SDK
     cmake_proj = CMakeWrapper(cmake_root_dir=os.path.dirname(current_dir),
-                              cmake_build_path=args.build_output_folder,
+                              cmake_build_path=cga_build_folder,
                               cga_install_dir=cga_installation_directory,
                               cmake_extra_args="-Dcga_build_shared=ON")
     cmake_proj.build()
