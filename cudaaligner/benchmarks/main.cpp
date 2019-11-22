@@ -122,7 +122,7 @@ static void BM_SingleBatchAlignment(benchmark::State& state)
 BENCHMARK(BM_SingleAlignment)
     ->Unit(benchmark::kMillisecond)
     ->RangeMultiplier(10)
-    ->Range(100, 100000);
+    ->Range(100, 10000);
 
 BENCHMARK_TEMPLATE(BM_SingleBatchAlignment, AlignerGlobalUkkonen)
     ->Unit(benchmark::kMillisecond)
