@@ -155,16 +155,16 @@ int main(int argc, char* argv[])
     };
     std::future<void> overlap_result(std::async(std::launch::async, overlaps_writer_func));
 
-    auto overlapper = claragenomics::cudamapper::OverlapperTriggered();
+    claragenomics::cudamapper::OverlapperTriggered overlapper;
 
     // Track overall time
     std::chrono::milliseconds index_time      = std::chrono::duration_values<std::chrono::milliseconds>::zero();
     std::chrono::milliseconds matcher_time    = std::chrono::duration_values<std::chrono::milliseconds>::zero();
     std::chrono::milliseconds overlapper_time = std::chrono::duration_values<std::chrono::milliseconds>::zero();
 
-    for (size_t query_start = 0; query_start < queries; query_start += index_size)
+    for (std::int32_t query_start = 0; query_start < queries; query_start += index_size)
     { // outer loop over query
-        size_t query_end = std::min(query_start + index_size, static_cast<size_t>(queries) - 1);
+        std::int32_t query_end = std::min(query_start + index_size, static_cast<size_t>(queries) - 1);
 
         std::cerr << "Query range: " << query_start << " - " << query_end << std::endl;
 
@@ -184,7 +184,7 @@ int main(int argc, char* argv[])
             std::cerr << "Query index generation time: " << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time).count() << "ms" << std::endl;
         }
 
-        size_t target_start = 0;
+        std::int32_t target_start = 0;
         // If all_to_all mode, then we can optimzie by starting the target sequences from the same index as
         // query because all indices before the current query index are guaranteed to have been processed in
         // a2a mapping.
@@ -194,7 +194,7 @@ int main(int argc, char* argv[])
         }
         for (; target_start < targets; target_start += target_index_size)
         {
-            size_t target_end = std::min(target_start + target_index_size, static_cast<size_t>(targets) - 1);
+            std::int32_t target_end = std::min(target_start + target_index_size, static_cast<size_t>(targets) - 1);
 
             std::cerr << "Target range: " << target_start << " - " << target_end << std::endl;
 
