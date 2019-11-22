@@ -126,7 +126,7 @@ private:
 
 namespace details
 {
-namespace index_gpu_two_indices
+namespace index_gpu
 {
 /// \brief Creates compressed representation of index
 ///
@@ -217,7 +217,7 @@ __global__ void copy_rest_to_separate_arrays(const ReadidPositionDirection* cons
     directions_of_reads_d[i] = DirectionOfRepresentation(rest_d[i].direction_);
 }
 
-} // namespace index_gpu_two_indices
+} // namespace index_gpu
 } // namespace details
 
 template <typename SketchElementImpl>
@@ -419,16 +419,16 @@ void IndexGPU<SketchElementImpl>::generate_index(const io::FastaParser& parser,
     const std::uint32_t threads = 256;
     const std::uint32_t blocks  = ceiling_divide<int64_t>(representations_d_.size(), threads);
 
-    details::index_gpu_two_indices::copy_rest_to_separate_arrays<<<blocks, threads>>>(rest_d.data(),
-                                                                                      read_ids_d_.data().get(),
-                                                                                      positions_in_reads_d_.data().get(),
-                                                                                      directions_of_reads_d_.data().get(),
-                                                                                      representations_d_.size());
+    details::index_gpu::copy_rest_to_separate_arrays<<<blocks, threads>>>(rest_d.data(),
+                                                                          read_ids_d_.data().get(),
+                                                                          positions_in_reads_d_.data().get(),
+                                                                          directions_of_reads_d_.data().get(),
+                                                                          representations_d_.size());
 
     // now generate the index elements
-    details::index_gpu_two_indices::find_first_occurrences_of_representations(unique_representations_d_,
-                                                                              first_occurrence_of_representations_d_,
-                                                                              representations_d_);
+    details::index_gpu::find_first_occurrences_of_representations(unique_representations_d_,
+                                                                  first_occurrence_of_representations_d_,
+                                                                  representations_d_);
 }
 
 } // namespace cudamapper

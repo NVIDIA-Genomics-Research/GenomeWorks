@@ -16,7 +16,7 @@ namespace cudamapper
 {
 namespace details
 {
-namespace index_gpu_two_indices
+namespace index_gpu
 {
 void find_first_occurrences_of_representations(thrust::device_vector<representation_t>& unique_representations_d,
                                                thrust::device_vector<std::uint32_t>& first_occurrence_index_d,
@@ -123,7 +123,7 @@ __global__ void find_first_occurrences_of_representations_kernel(const std::uint
         }
     }
 }
-} // namespace index_gpu_two_indices
+} // namespace index_gpu
 } // namespace details
 
 } // namespace cudamapper

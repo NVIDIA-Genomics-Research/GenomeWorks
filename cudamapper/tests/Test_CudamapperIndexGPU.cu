@@ -26,7 +26,7 @@ namespace cudamapper
 
 namespace details
 {
-namespace index_gpu_two_indices
+namespace index_gpu
 {
 
 // ************ Test find_first_occurrences_of_representations_kernel **************
@@ -490,7 +490,7 @@ TEST(TestCudamapperIndexGPU, test_function_copy_rest_to_separate_arrays)
                                                threads);
 }
 
-} // namespace index_gpu_two_indices
+} // namespace index_gpu
 } // namespace details
 
 void test_function(const std::string& filename,
