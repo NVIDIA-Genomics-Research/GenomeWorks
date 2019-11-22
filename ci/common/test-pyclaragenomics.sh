@@ -19,7 +19,7 @@ cd $PYCLARAGENOMICS_DIR
 
 #Install external dependencies.
 python -m pip install -r requirements.txt
-python setup_pyclaragenomics.py
+python setup_pyclaragenomics.py --build_output_folder cga_build
 
 # Run tests.
 cd test/
