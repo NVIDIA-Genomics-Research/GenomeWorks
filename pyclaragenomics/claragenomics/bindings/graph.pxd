@@ -14,9 +14,8 @@
 # cython: language_level = 3
 
 from libcpp.pair cimport pair
-from libcpp.memory cimport unique_ptr
 from libcpp.string cimport string
-from libc.stdint cimport int8_t, int16_t, uint16_t, int32_t
+from libc.stdint cimport int32_t
 from libcpp.vector cimport vector
 
 # This file declares public structs and API calls 
