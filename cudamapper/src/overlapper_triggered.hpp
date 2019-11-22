@@ -12,8 +12,8 @@
 
 #include <vector>
 
-#include "claragenomics/cudamapper/types.hpp"
-#include "claragenomics/cudamapper/overlapper.hpp"
+#include <claragenomics/cudamapper/types.hpp>
+#include <claragenomics/cudamapper/overlapper.hpp>
 
 namespace claragenomics
 {
