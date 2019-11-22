@@ -51,7 +51,7 @@ static void BM_SingleAlignment(benchmark::State& state)
 BENCHMARK(BM_SingleAlignment)
     ->Unit(benchmark::kMillisecond)
     ->RangeMultiplier(10)
-    ->Range(100, 100000);
+    ->Range(100, 10000);
 } // namespace cudaaligner
 } // namespace claragenomics
 

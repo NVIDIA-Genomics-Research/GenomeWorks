@@ -10,7 +10,7 @@
 
 #include <claragenomics/cudaaligner/aligner.hpp>
 
-#include "aligner_global_hirschberg_myers.hpp"
+#include "aligner_global_myers.hpp"
 
 namespace claragenomics
 {
@@ -22,7 +22,7 @@ std::unique_ptr<Aligner> create_aligner(int32_t max_query_length, int32_t max_ta
 {
     if (type == AlignmentType::global_alignment)
     {
-        return std::make_unique<AlignerGlobalHirschbergMyers>(max_query_length, max_target_length, max_alignments, stream, device_id);
+        return std::make_unique<AlignerGlobalMyers>(max_query_length, max_target_length, max_alignments, stream, device_id);
     }
     else
     {
