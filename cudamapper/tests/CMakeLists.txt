@@ -13,8 +13,6 @@ set(TARGET_NAME cudamappertests)
 set(SOURCES
     main.cpp
     Test_CudamapperIndexGPU.cu
-    Test_CudamapperIndexGPUTwoIndices.cu
-    Test_CudamapperMatcher.cu
     Test_CudamapperMatcherGPU.cu
     Test_CudamapperMinimizer.cpp
     Test_CudamapperOverlapperTriggered.cu
@@ -26,8 +24,6 @@ include_directories(${cudamapper_data_include_dir})
 set(LIBS
     bioparser
     index_gpu
-    index_gpu_two_indices
-    matcher
     matcher_gpu
     overlapper_triggerred
     cudamapper_utils)

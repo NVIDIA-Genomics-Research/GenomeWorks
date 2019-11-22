@@ -12,7 +12,7 @@
 
 #include <cstdint>
 #include <memory>
-#include "claragenomics/cudamapper/types.hpp"
+#include <claragenomics/cudamapper/types.hpp>
 
 namespace claragenomics
 {

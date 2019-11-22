@@ -33,8 +33,12 @@ public:
     /// \brief returns overlaps for a set of reads
     /// \param overlaps Output vector into which generated overlaps will be placed
     /// \param anchors vector of anchor objects. Does not need to be ordered
-    /// \param index representation index for reads
-    virtual void get_overlaps(std::vector<Overlap>& overlaps, thrust::device_vector<Anchor>& anchors, const Index& index) = 0;
+    /// \param index_query representation index for reads
+    /// \param index_target
+    virtual void get_overlaps(std::vector<Overlap>& overlaps,
+                              thrust::device_vector<Anchor>& anchors,
+                              const Index& index_query,
+                              const Index& index_target) = 0;
 
     /// \brief prints overlaps to stdout in <a href="https://github.com/lh3/miniasm/blob/master/PAF.md">PAF format</a>
     static void print_paf(const std::vector<Overlap>& overlaps);
