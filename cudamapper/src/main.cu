@@ -162,11 +162,11 @@ int main(int argc, char* argv[])
     std::chrono::milliseconds matcher_time    = std::chrono::duration_values<std::chrono::milliseconds>::zero();
     std::chrono::milliseconds overlapper_time = std::chrono::duration_values<std::chrono::milliseconds>::zero();
 
-    for (std::int32_t query_start = 0; query_start < queries; query_start += index_size)
+    for (std::int32_t query_start_index = 0; query_start_index < queries; query_start_index += index_size)
     { // outer loop over query
-        std::int32_t query_end = std::min(query_start + index_size, static_cast<size_t>(queries) - 1);
+        std::int32_t query_end_index = std::min(query_start_index + index_size, static_cast<size_t>(queries));
 
-        std::cerr << "Query range: " << query_start << " - " << query_end << std::endl;
+        std::cerr << "Query range: " << query_start_index << " - " << query_end_index - 1 << std::endl;
 
         std::unique_ptr<claragenomics::cudamapper::Index> query_index(nullptr);
         std::unique_ptr<claragenomics::cudamapper::Index> target_index(nullptr);
@@ -176,34 +176,34 @@ int main(int argc, char* argv[])
             CGA_NVTX_RANGE(profiler, "generate_query_index");
             auto start_time = std::chrono::high_resolution_clock::now();
             query_index     = claragenomics::cudamapper::Index::create_index(*query_parser,
-                                                                         query_start,
-                                                                         query_end + 1, // <- past the last
+                                                                         query_start_index,
+                                                                         query_end_index,
                                                                          k,
                                                                          w);
             index_time += std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time);
             std::cerr << "Query index generation time: " << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time).count() << "ms" << std::endl;
         }
 
-        std::int32_t target_start = 0;
+        std::int32_t target_start_index = 0;
         // If all_to_all mode, then we can optimzie by starting the target sequences from the same index as
         // query because all indices before the current query index are guaranteed to have been processed in
         // a2a mapping.
         if (all_to_all)
         {
-            target_start = query_start;
+            target_start_index = query_start_index;
         }
-        for (; target_start < targets; target_start += target_index_size)
+        for (; target_start_index < targets; target_start_index += target_index_size)
         {
-            std::int32_t target_end = std::min(target_start + target_index_size, static_cast<size_t>(targets) - 1);
+            std::int32_t target_end_index = std::min(target_start_index + target_index_size, static_cast<size_t>(targets));
 
-            std::cerr << "Target range: " << target_start << " - " << target_end << std::endl;
+            std::cerr << "Target range: " << target_start_index << " - " << target_end_index - 1 << std::endl;
 
             {
                 CGA_NVTX_RANGE(profiler, "generate_target_index");
                 auto start_time = std::chrono::high_resolution_clock::now();
                 target_index    = claragenomics::cudamapper::Index::create_index(*target_parser,
-                                                                              target_start,
-                                                                              target_end + 1, // <- past the last
+                                                                              target_start_index,
+                                                                              target_end_index,
                                                                               k,
                                                                               w);
                 index_time += std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time);
