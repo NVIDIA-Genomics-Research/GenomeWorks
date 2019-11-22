@@ -22,11 +22,9 @@
 #include <claragenomics/io/fasta_parser.hpp>
 #include <claragenomics/utils/cudautils.hpp>
 
-#include "claragenomics/cudamapper/index.hpp"
 #include "claragenomics/cudamapper/index_two_indices.hpp"
 #include "claragenomics/cudamapper/matcher_two_indices.hpp"
 #include "claragenomics/cudamapper/overlapper.hpp"
-#include "matcher.hpp"
 #include "overlapper_triggered.hpp"
 
 static struct option options[] = {
@@ -72,11 +70,11 @@ int main(int argc, char* argv[])
         }
     }
 
-    if (k > claragenomics::cudamapper::Index::maximum_kmer_size())
+    /*if (k > claragenomics::cudamapper::Index::maximum_kmer_size())
     {
         std::cerr << "kmer of size " << k << " is not allowed, maximum k = " << claragenomics::cudamapper::Index::maximum_kmer_size() << std::endl;
         exit(1);
-    }
+    }*/
 
     // Check remaining argument count.
     if ((argc - optind) < 2)
@@ -263,7 +261,8 @@ void help(int32_t exit_code = 0)
      options:
         -k, --kmer-size
             length of kmer to use for minimizers [15] (Max=)"
-              << claragenomics::cudamapper::Index::maximum_kmer_size() << ")"
+              //<< claragenomics::cudamapper::Index::maximum_kmer_size()
+              << ")"
               << R"(
         -w, --window-size
             length of window to use for minimizers [15])"

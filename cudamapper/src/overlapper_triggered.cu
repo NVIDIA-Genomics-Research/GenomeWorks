@@ -14,7 +14,6 @@
 
 #include "claragenomics/cudamapper/overlapper.hpp"
 #include "cudamapper_utils.hpp"
-#include "matcher.hpp"
 #include "overlapper_triggered.hpp"
 #include <claragenomics/utils/cudautils.hpp>
 #include <fstream>
