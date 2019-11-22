@@ -22,12 +22,12 @@ namespace cudamapper
 /// \addtogroup cudamapper
 /// \{
 
-/// MatcherTwoIndices - base matcher
-class MatcherTwoIndices
+/// Matcher - base matcher
+class Matcher
 {
 public:
     /// \brief Virtual destructor
-    virtual ~MatcherTwoIndices() = default;
+    virtual ~Matcher() = default;
 
     /// \brief returns anchors
     /// \return anchors
@@ -37,8 +37,8 @@ public:
     /// \param query_index
     /// \param target_index
     /// \return matcher
-    static std::unique_ptr<MatcherTwoIndices> create_matcher(const Index& query_index,
-                                                             const Index& target_index);
+    static std::unique_ptr<Matcher> create_matcher(const Index& query_index,
+                                                   const Index& target_index);
 };
 
 /// \}

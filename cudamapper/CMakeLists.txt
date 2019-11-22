@@ -57,7 +57,7 @@ add_doxygen_source_dir(${CMAKE_CURRENT_SOURCE_DIR}/include)
 cuda_add_executable(cudamapper
         src/cudamapper.cpp
         src/main.cu
-        src/matcher_two_indices.cu
+        src/matcher.cu
         src/overlapper.cpp
 )
 

@@ -8,7 +8,7 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-#include "claragenomics/cudamapper/matcher_two_indices.hpp"
+#include <claragenomics/cudamapper/matcher.hpp>
 #include "matcher_gpu.cuh"
 
 namespace claragenomics
@@ -16,8 +16,8 @@ namespace claragenomics
 namespace cudamapper
 {
 
-std::unique_ptr<MatcherTwoIndices> MatcherTwoIndices::create_matcher(const Index& query_index,
-                                                                     const Index& target_index)
+std::unique_ptr<Matcher> Matcher::create_matcher(const Index& query_index,
+                                                 const Index& target_index)
 {
     return std::make_unique<MatcherGPU>(query_index, target_index);
 }

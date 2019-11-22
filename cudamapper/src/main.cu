@@ -23,7 +23,7 @@
 #include <claragenomics/utils/cudautils.hpp>
 
 #include <claragenomics/cudamapper/index.hpp>
-#include <claragenomics/cudamapper/matcher_two_indices.hpp>
+#include <claragenomics/cudamapper/matcher.hpp>
 #include <claragenomics/cudamapper/overlapper.hpp>
 #include "overlapper_triggered.hpp"
 
@@ -170,7 +170,7 @@ int main(int argc, char* argv[])
 
         std::unique_ptr<claragenomics::cudamapper::Index> query_index(nullptr);
         std::unique_ptr<claragenomics::cudamapper::Index> target_index(nullptr);
-        std::unique_ptr<claragenomics::cudamapper::MatcherTwoIndices> matcher(nullptr);
+        std::unique_ptr<claragenomics::cudamapper::Matcher> matcher(nullptr);
 
         {
             CGA_NVTX_RANGE(profiler, "generate_query_index");
@@ -212,8 +212,8 @@ int main(int argc, char* argv[])
             {
                 CGA_NVTX_RANGE(profiler, "generate_matcher");
                 auto start_time = std::chrono::high_resolution_clock::now();
-                matcher         = claragenomics::cudamapper::MatcherTwoIndices::create_matcher(*query_index,
-                                                                                       *target_index);
+                matcher         = claragenomics::cudamapper::Matcher::create_matcher(*query_index,
+                                                                             *target_index);
                 matcher_time += std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time);
                 std::cerr << "Matcher generation time: " << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time).count() << "ms" << std::endl;
             }
