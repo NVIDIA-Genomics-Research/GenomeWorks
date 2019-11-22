@@ -175,12 +175,10 @@ struct CreateOverlap
 
 void OverlapperTriggered::get_overlaps(std::vector<Overlap>& fused_overlaps,
                                        thrust::device_vector<Anchor>& d_anchors,
-                                       const Index& index)
+                                       const IndexTwoIndices& index_query,
+                                       const IndexTwoIndices& index_target)
 {
-
     CGA_NVTX_RANGE(profiler, "OverlapperTriggered::get_overlaps");
-    const auto& read_names           = index.read_id_to_read_name();
-    const auto& read_lengths         = index.read_id_to_read_length();
     const auto tail_length_for_chain = 3;
     auto n_anchors                   = d_anchors.size();
 
@@ -340,8 +338,8 @@ void OverlapperTriggered::get_overlaps(std::vector<Overlap>& fused_overlaps,
                       fused_overlaps.data(),
                       fused_overlaps.data() + n_fused_overlap,
                       fused_overlaps.data(), [&](Overlap& new_overlap) {
-                          std::string query_read_name  = read_names[new_overlap.query_read_id_];
-                          std::string target_read_name = read_names[new_overlap.target_read_id_];
+                          std::string query_read_name  = index_query.read_id_to_read_name(new_overlap.query_read_id_);
+                          std::string target_read_name = index_target.read_id_to_read_name(new_overlap.target_read_id_);
 
                           new_overlap.query_read_name_ = new char[query_read_name.length()];
                           strcpy(new_overlap.query_read_name_, query_read_name.c_str());
@@ -349,8 +347,9 @@ void OverlapperTriggered::get_overlaps(std::vector<Overlap>& fused_overlaps,
                           new_overlap.target_read_name_ = new char[target_read_name.length()];
                           strcpy(new_overlap.target_read_name_, target_read_name.c_str());
 
-                          new_overlap.query_length_  = read_lengths[new_overlap.query_read_id_];
-                          new_overlap.target_length_ = read_lengths[new_overlap.target_read_id_];
+                          new_overlap.query_length_  = index_query.read_id_to_read_length(new_overlap.query_read_id_);
+                          new_overlap.target_length_ = index_target.read_id_to_read_length(new_overlap.target_read_id_);
+
                           return new_overlap;
                       });
 }

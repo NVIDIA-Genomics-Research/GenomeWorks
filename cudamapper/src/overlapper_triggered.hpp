@@ -35,9 +35,10 @@ public:
     /// when a single anchor with a threshold below the value is encountered.
     /// \param overlaps Output vector into which generated overlaps will be placed
     /// \param anchors vector of anchors
-    /// \param index Index
+    /// \param index_query Index
+    /// \param index_target
     /// \return vector of Overlap objects
-    void get_overlaps(std::vector<Overlap>& overlaps, thrust::device_vector<Anchor>& anchors, const Index& index) override;
+    void get_overlaps(std::vector<Overlap>& overlaps, thrust::device_vector<Anchor>& anchors, const IndexTwoIndices& index_query, const IndexTwoIndices& index_target) override;
 };
 } // namespace cudamapper
 } // namespace claragenomics

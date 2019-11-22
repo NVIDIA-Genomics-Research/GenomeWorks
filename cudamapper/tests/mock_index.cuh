@@ -12,19 +12,30 @@
 
 #include "gmock/gmock.h"
 
-#include "../src/index_gpu.cuh"
+#include "../src/index_gpu_two_indices.cuh"
 #include "../src/minimizer.hpp"
+#include "cudamapper_file_location.hpp"
 
 namespace claragenomics
 {
 namespace cudamapper
 {
 
-class MockIndex : public IndexGPU<Minimizer>
+class MockIndex : public IndexGPUTwoIndices<Minimizer>
 {
 public:
-    MOCK_CONST_METHOD0(read_id_to_read_name, std::vector<std::string>&());
-    MOCK_CONST_METHOD0(read_id_to_read_length, std::vector<std::uint32_t>&());
+    MockIndex()
+        : IndexGPUTwoIndices(*(claragenomics::io::create_fasta_parser(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/gatt.fasta")),
+                             0,
+                             0,
+                             0,
+                             0,
+                             true)
+    {
+    }
+
+    MOCK_METHOD(const std::string&, read_id_to_read_name, (const read_id_t read_id), (const, override));
+    MOCK_METHOD(const std::uint32_t&, read_id_to_read_length, (const read_id_t read_id), (const, override));
 };
 
 } // namespace cudamapper
