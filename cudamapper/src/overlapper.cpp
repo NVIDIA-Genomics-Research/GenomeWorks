@@ -9,7 +9,7 @@
 */
 
 #include <algorithm>
-#include "claragenomics/cudamapper/overlapper.hpp"
+#include <claragenomics/cudamapper/overlapper.hpp>
 
 namespace claragenomics
 {

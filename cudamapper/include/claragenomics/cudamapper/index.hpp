@@ -28,11 +28,11 @@ namespace cudamapper
 /// \{
 
 /// Index - manages mapping of (k,w)-kmer-representation and all its occurences
-class IndexTwoIndices
+class Index
 {
 public:
     /// \brief Virtual destructor
-    virtual ~IndexTwoIndices() = default;
+    virtual ~Index() = default;
 
     /// \brief returns an array of representations of sketch elements
     /// \return an array of representations of sketch elements
@@ -72,6 +72,13 @@ public:
     /// \return number of reads in input data
     virtual std::uint64_t number_of_reads() const = 0;
 
+    /// \brief Return the maximum kmer length allowable
+    /// \return Return the maximum kmer length allowable
+    static uint64_t maximum_kmer_size()
+    {
+        return sizeof(representation_t) * 8 / 2;
+    }
+
     /// \brief generates a mapping of (k,w)-kmer-representation to all of its occurrences for one or more sequences
     /// \param parser parser for the whole input file (part that goes into this index is determined by first_read_id and past_the_last_read_id)
     /// \param first_read_id read_id of the first read to the included in this index
@@ -79,8 +86,8 @@ public:
     /// \param kmer_size k - the kmer length
     /// \param window_size w - the length of the sliding window used to find sketch elements  (i.e. the number of adjacent kmers in a window, adjacent = shifted by one basepair)
     /// \param hash_representations - if true, hash kmer representations
-    /// \return instance of IndexTwoIndices
-    static std::unique_ptr<IndexTwoIndices>
+    /// \return instance of Index
+    static std::unique_ptr<Index>
     create_index(const io::FastaParser& parser,
                  const read_id_t first_read_id,
                  const read_id_t past_the_last_read_id,

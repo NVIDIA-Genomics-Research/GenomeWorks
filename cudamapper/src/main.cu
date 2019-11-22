@@ -22,9 +22,9 @@
 #include <claragenomics/io/fasta_parser.hpp>
 #include <claragenomics/utils/cudautils.hpp>
 
-#include "claragenomics/cudamapper/index_two_indices.hpp"
-#include "claragenomics/cudamapper/matcher_two_indices.hpp"
-#include "claragenomics/cudamapper/overlapper.hpp"
+#include <claragenomics/cudamapper/index.hpp>
+#include <claragenomics/cudamapper/matcher.hpp>
+#include <claragenomics/cudamapper/overlapper.hpp>
 #include "overlapper_triggered.hpp"
 
 static struct option options[] = {
@@ -70,11 +70,11 @@ int main(int argc, char* argv[])
         }
     }
 
-    /*if (k > claragenomics::cudamapper::Index::maximum_kmer_size())
+    if (k > claragenomics::cudamapper::Index::maximum_kmer_size())
     {
         std::cerr << "kmer of size " << k << " is not allowed, maximum k = " << claragenomics::cudamapper::Index::maximum_kmer_size() << std::endl;
         exit(1);
-    }*/
+    }
 
     // Check remaining argument count.
     if ((argc - optind) < 2)
@@ -110,8 +110,8 @@ int main(int argc, char* argv[])
     // Function for adding new overlaps to writer
     auto add_overlaps_to_write_queue = [&overlaps_to_write, &overlaps_writer_mtx](claragenomics::cudamapper::Overlapper& overlapper,
                                                                                   thrust::device_vector<claragenomics::cudamapper::Anchor>& anchors,
-                                                                                  const claragenomics::cudamapper::IndexTwoIndices& index_query,
-                                                                                  const claragenomics::cudamapper::IndexTwoIndices& index_target) {
+                                                                                  const claragenomics::cudamapper::Index& index_query,
+                                                                                  const claragenomics::cudamapper::Index& index_target) {
         CGA_NVTX_RANGE(profiler, "add_overlaps_to_write_queue");
         overlaps_writer_mtx.lock();
         overlaps_to_write.push_back(std::vector<claragenomics::cudamapper::Overlap>());
@@ -155,36 +155,36 @@ int main(int argc, char* argv[])
     };
     std::future<void> overlap_result(std::async(std::launch::async, overlaps_writer_func));
 
-    auto overlapper = claragenomics::cudamapper::OverlapperTriggered();
+    claragenomics::cudamapper::OverlapperTriggered overlapper;
 
     // Track overall time
     std::chrono::milliseconds index_time      = std::chrono::duration_values<std::chrono::milliseconds>::zero();
     std::chrono::milliseconds matcher_time    = std::chrono::duration_values<std::chrono::milliseconds>::zero();
     std::chrono::milliseconds overlapper_time = std::chrono::duration_values<std::chrono::milliseconds>::zero();
 
-    for (size_t query_start_index = 0; query_start_index < queries; query_start_index += index_size)
+    for (std::int32_t query_start_index = 0; query_start_index < queries; query_start_index += index_size)
     { // outer loop over query
-        size_t query_end_index = std::min(query_start_index + index_size, static_cast<size_t>(queries));
+        std::int32_t query_end_index = std::min(query_start_index + index_size, static_cast<size_t>(queries));
 
         std::cerr << "Query range: " << query_start_index << " - " << query_end_index - 1 << std::endl;
 
-        std::unique_ptr<claragenomics::cudamapper::IndexTwoIndices> query_index(nullptr);
-        std::unique_ptr<claragenomics::cudamapper::IndexTwoIndices> target_index(nullptr);
-        std::unique_ptr<claragenomics::cudamapper::MatcherTwoIndices> matcher(nullptr);
+        std::unique_ptr<claragenomics::cudamapper::Index> query_index(nullptr);
+        std::unique_ptr<claragenomics::cudamapper::Index> target_index(nullptr);
+        std::unique_ptr<claragenomics::cudamapper::Matcher> matcher(nullptr);
 
         {
             CGA_NVTX_RANGE(profiler, "generate_query_index");
             auto start_time = std::chrono::high_resolution_clock::now();
-            query_index     = claragenomics::cudamapper::IndexTwoIndices::create_index(*query_parser,
-                                                                                   query_start_index,
-                                                                                   query_end_index,
-                                                                                   k,
-                                                                                   w);
+            query_index     = claragenomics::cudamapper::Index::create_index(*query_parser,
+                                                                         query_start_index,
+                                                                         query_end_index,
+                                                                         k,
+                                                                         w);
             index_time += std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time);
             std::cerr << "Query index generation time: " << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time).count() << "ms" << std::endl;
         }
 
-        size_t target_start_index = 0;
+        std::int32_t target_start_index = 0;
         // If all_to_all mode, then we can optimzie by starting the target sequences from the same index as
         // query because all indices before the current query index are guaranteed to have been processed in
         // a2a mapping.
@@ -194,26 +194,26 @@ int main(int argc, char* argv[])
         }
         for (; target_start_index < targets; target_start_index += target_index_size)
         {
-            size_t target_end_index = std::min(target_start_index + target_index_size, static_cast<size_t>(targets));
+            std::int32_t target_end_index = std::min(target_start_index + target_index_size, static_cast<size_t>(targets));
 
             std::cerr << "Target range: " << target_start_index << " - " << target_end_index - 1 << std::endl;
 
             {
                 CGA_NVTX_RANGE(profiler, "generate_target_index");
                 auto start_time = std::chrono::high_resolution_clock::now();
-                target_index    = claragenomics::cudamapper::IndexTwoIndices::create_index(*target_parser,
-                                                                                        target_start_index,
-                                                                                        target_end_index,
-                                                                                        k,
-                                                                                        w);
+                target_index    = claragenomics::cudamapper::Index::create_index(*target_parser,
+                                                                              target_start_index,
+                                                                              target_end_index,
+                                                                              k,
+                                                                              w);
                 index_time += std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time);
                 std::cerr << "Target index generation time: " << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time).count() << "ms" << std::endl;
             }
             {
                 CGA_NVTX_RANGE(profiler, "generate_matcher");
                 auto start_time = std::chrono::high_resolution_clock::now();
-                matcher         = claragenomics::cudamapper::MatcherTwoIndices::create_matcher(*query_index,
-                                                                                       *target_index);
+                matcher         = claragenomics::cudamapper::Matcher::create_matcher(*query_index,
+                                                                             *target_index);
                 matcher_time += std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time);
                 std::cerr << "Matcher generation time: " << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time).count() << "ms" << std::endl;
             }
@@ -261,8 +261,7 @@ void help(int32_t exit_code = 0)
      options:
         -k, --kmer-size
             length of kmer to use for minimizers [15] (Max=)"
-              //<< claragenomics::cudamapper::Index::maximum_kmer_size()
-              << ")"
+              << claragenomics::cudamapper::Index::maximum_kmer_size() << ")"
               << R"(
         -w, --window-size
             length of window to use for minimizers [15])"

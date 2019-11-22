@@ -12,7 +12,7 @@
 
 #include "gmock/gmock.h"
 
-#include "../src/index_gpu_two_indices.cuh"
+#include "../src/index_gpu.cuh"
 #include "../src/minimizer.hpp"
 #include "cudamapper_file_location.hpp"
 
@@ -21,16 +21,16 @@ namespace claragenomics
 namespace cudamapper
 {
 
-class MockIndex : public IndexGPUTwoIndices<Minimizer>
+class MockIndex : public IndexGPU<Minimizer>
 {
 public:
     MockIndex()
-        : IndexGPUTwoIndices(*(claragenomics::io::create_fasta_parser(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/gatt.fasta")),
-                             0,
-                             0,
-                             0,
-                             0,
-                             true)
+        : IndexGPU(*claragenomics::io::create_fasta_parser(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/gatt.fasta"),
+                   0,
+                   0,
+                   0,
+                   0,
+                   true)
     {
     }
 

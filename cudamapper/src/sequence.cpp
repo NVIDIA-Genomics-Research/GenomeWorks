@@ -8,7 +8,7 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-#include "cudamapper/sequence.hpp"
+#include <claragenomics/cudamapper/sequence.hpp>
 #include "bioparser_sequence.hpp"
 
 namespace claragenomics
