@@ -12,8 +12,8 @@
 
 #include <cstdint>
 #include <vector>
-#include "claragenomics/cudamapper/sketch_element.hpp"
-#include "claragenomics/cudamapper/types.hpp"
+#include <claragenomics/cudamapper/sketch_element.hpp>
+#include <claragenomics/cudamapper/types.hpp>
 
 #include <claragenomics/utils/device_buffer.cuh>
 
