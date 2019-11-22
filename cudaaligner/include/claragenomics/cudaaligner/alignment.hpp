@@ -34,6 +34,9 @@ typedef std::pair<std::string, std::string> FormattedAlignment;
 class Alignment
 {
 public:
+    /// \brief Virtual destructor
+    virtual ~Alignment() = default;
+
     /// \brief Returns query sequence
     virtual const std::string& get_query_sequence() const = 0;
 

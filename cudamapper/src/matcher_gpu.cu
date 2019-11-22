@@ -60,8 +60,8 @@ namespace claragenomics
 namespace cudamapper
 {
 
-MatcherGPU::MatcherGPU(const IndexTwoIndices& query_index,
-                       const IndexTwoIndices& target_index)
+MatcherGPU::MatcherGPU(const Index& query_index,
+                       const Index& target_index)
 {
 
     CGA_NVTX_RANGE(profile, "matcherGPU");
