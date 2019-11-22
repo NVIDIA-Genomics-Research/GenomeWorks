@@ -166,9 +166,9 @@ int main(int argc, char* argv[])
 
     for (size_t query_start_index = 0; query_start_index < queries; query_start_index += index_size)
     { // outer loop over query
-        size_t query_one_past_the_end_index = std::min(query_start_index + index_size, static_cast<size_t>(queries));
+        size_t query_end_index = std::min(query_start_index + index_size, static_cast<size_t>(queries));
 
-        std::cerr << "Query range: " << query_start_index << " - " << query_one_past_the_end_index - 1 << std::endl;
+        std::cerr << "Query range: " << query_start_index << " - " << query_end_index - 1 << std::endl;
 
         std::unique_ptr<claragenomics::cudamapper::IndexTwoIndices> query_index(nullptr);
         std::unique_ptr<claragenomics::cudamapper::IndexTwoIndices> target_index(nullptr);
@@ -179,7 +179,7 @@ int main(int argc, char* argv[])
             auto start_time = std::chrono::high_resolution_clock::now();
             query_index     = claragenomics::cudamapper::IndexTwoIndices::create_index(*query_parser,
                                                                                    query_start_index,
-                                                                                   query_one_past_the_end_index,
+                                                                                   query_end_index,
                                                                                    k,
                                                                                    w);
             index_time += std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time);
@@ -196,16 +196,16 @@ int main(int argc, char* argv[])
         }
         for (; target_start_index < targets; target_start_index += target_index_size)
         {
-            size_t target_one_past_the_end_index = std::min(target_start_index + target_index_size, static_cast<size_t>(targets));
+            size_t target_end_index = std::min(target_start_index + target_index_size, static_cast<size_t>(targets));
 
-            std::cerr << "Target range: " << target_start_index << " - " << target_one_past_the_end_index - 1 << std::endl;
+            std::cerr << "Target range: " << target_start_index << " - " << target_end_index - 1 << std::endl;
 
             {
                 CGA_NVTX_RANGE(profiler, "generate_target_index");
                 auto start_time = std::chrono::high_resolution_clock::now();
                 target_index    = claragenomics::cudamapper::IndexTwoIndices::create_index(*target_parser,
                                                                                         target_start_index,
-                                                                                        target_one_past_the_end_index,
+                                                                                        target_end_index,
                                                                                         k,
                                                                                         w);
                 index_time += std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time);
