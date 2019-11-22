@@ -13,7 +13,6 @@
 #include <vector>
 #include <thrust/device_vector.h>
 #include <claragenomics/cudamapper/matcher_two_indices.hpp>
-#include <claragenomics/cudamapper/index_two_indices.hpp>
 #include <claragenomics/cudamapper/types.hpp>
 
 namespace claragenomics
@@ -25,8 +24,8 @@ namespace cudamapper
 class MatcherGPU : public MatcherTwoIndices
 {
 public:
-    MatcherGPU(const IndexTwoIndices& query_index,
-               const IndexTwoIndices& target_index);
+    MatcherGPU(const Index& query_index,
+               const Index& target_index);
 
     thrust::device_vector<Anchor>& anchors() override;
 

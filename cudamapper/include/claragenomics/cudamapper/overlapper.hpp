@@ -11,7 +11,7 @@
 #pragma once
 
 #include <thrust/device_vector.h>
-#include "index_two_indices.hpp"
+#include "index.hpp"
 #include "types.hpp"
 
 namespace claragenomics
@@ -37,8 +37,8 @@ public:
     /// \param index_target
     virtual void get_overlaps(std::vector<Overlap>& overlaps,
                               thrust::device_vector<Anchor>& anchors,
-                              const IndexTwoIndices& index_query,
-                              const IndexTwoIndices& index_target) = 0;
+                              const Index& index_query,
+                              const Index& index_target) = 0;
 
     /// \brief prints overlaps to stdout in <a href="https://github.com/lh3/miniasm/blob/master/PAF.md">PAF format</a>
     static void print_paf(const std::vector<Overlap>& overlaps);

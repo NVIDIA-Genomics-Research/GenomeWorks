@@ -174,8 +174,8 @@ struct CreateOverlap
 
 void OverlapperTriggered::get_overlaps(std::vector<Overlap>& fused_overlaps,
                                        thrust::device_vector<Anchor>& d_anchors,
-                                       const IndexTwoIndices& index_query,
-                                       const IndexTwoIndices& index_target)
+                                       const Index& index_query,
+                                       const Index& index_target)
 {
     CGA_NVTX_RANGE(profiler, "OverlapperTriggered::get_overlaps");
     const auto tail_length_for_chain = 3;

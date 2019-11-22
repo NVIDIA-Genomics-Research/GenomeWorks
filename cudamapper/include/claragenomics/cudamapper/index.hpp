@@ -28,11 +28,11 @@ namespace cudamapper
 /// \{
 
 /// Index - manages mapping of (k,w)-kmer-representation and all its occurences
-class IndexTwoIndices
+class Index
 {
 public:
     /// \brief Virtual destructor
-    virtual ~IndexTwoIndices() = default;
+    virtual ~Index() = default;
 
     /// \brief returns an array of representations of sketch elements
     /// \return an array of representations of sketch elements
@@ -79,8 +79,8 @@ public:
     /// \param kmer_size k - the kmer length
     /// \param window_size w - the length of the sliding window used to find sketch elements  (i.e. the number of adjacent kmers in a window, adjacent = shifted by one basepair)
     /// \param hash_representations - if true, hash kmer representations
-    /// \return instance of IndexTwoIndices
-    static std::unique_ptr<IndexTwoIndices>
+    /// \return instance of Index
+    static std::unique_ptr<Index>
     create_index(const io::FastaParser& parser,
                  const read_id_t first_read_id,
                  const read_id_t past_the_last_read_id,

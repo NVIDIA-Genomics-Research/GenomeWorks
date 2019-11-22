@@ -16,8 +16,8 @@
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
 
-#include "claragenomics/cudamapper/index_two_indices.hpp"
-#include "claragenomics/cudamapper/types.hpp"
+#include <claragenomics/cudamapper/index.hpp>
+#include <claragenomics/cudamapper/types.hpp>
 #include <claragenomics/io/fasta_parser.hpp>
 #include <claragenomics/logging/logging.hpp>
 #include <claragenomics/utils/device_buffer.cuh>
@@ -42,7 +42,7 @@ namespace cudamapper
 ///
 /// \tparam SketchElementImpl any implementation of SketchElement
 template <typename SketchElementImpl>
-class IndexGPUTwoIndices : public IndexTwoIndices
+class IndexGPU : public Index
 {
 public:
     /// \brief Constructor
@@ -53,12 +53,12 @@ public:
     /// \param kmer_size k - the kmer length
     /// \param window_size w - the length of the sliding window used to find sketch elements (i.e. the number of adjacent k-mers in a window, adjacent = shifted by one basepair)
     /// \param hash_representations - if true, hash kmer representations
-    IndexGPUTwoIndices(const io::FastaParser& parser,
-                       const read_id_t first_read_id,
-                       const read_id_t past_the_last_read_id,
-                       const std::uint64_t kmer_size,
-                       const std::uint64_t window_size,
-                       const bool hash_representations = true);
+    IndexGPU(const io::FastaParser& parser,
+             const read_id_t first_read_id,
+             const read_id_t past_the_last_read_id,
+             const std::uint64_t kmer_size,
+             const std::uint64_t window_size,
+             const bool hash_representations = true);
 
     /// \brief returns an array of representations of sketch elements
     /// \return an array of representations of sketch elements
@@ -221,12 +221,12 @@ __global__ void copy_rest_to_separate_arrays(const ReadidPositionDirection* cons
 } // namespace details
 
 template <typename SketchElementImpl>
-IndexGPUTwoIndices<SketchElementImpl>::IndexGPUTwoIndices(const io::FastaParser& parser,
-                                                          const read_id_t first_read_id,
-                                                          const read_id_t past_the_last_read_id,
-                                                          const std::uint64_t kmer_size,
-                                                          const std::uint64_t window_size,
-                                                          const bool hash_representations)
+IndexGPU<SketchElementImpl>::IndexGPU(const io::FastaParser& parser,
+                                      const read_id_t first_read_id,
+                                      const read_id_t past_the_last_read_id,
+                                      const std::uint64_t kmer_size,
+                                      const std::uint64_t window_size,
+                                      const bool hash_representations)
     : first_read_id_(first_read_id)
     , kmer_size_(kmer_size)
     , window_size_(window_size)
@@ -239,64 +239,64 @@ IndexGPUTwoIndices<SketchElementImpl>::IndexGPUTwoIndices(const io::FastaParser&
 }
 
 template <typename SketchElementImpl>
-const thrust::device_vector<representation_t>& IndexGPUTwoIndices<SketchElementImpl>::representations() const
+const thrust::device_vector<representation_t>& IndexGPU<SketchElementImpl>::representations() const
 {
     return representations_d_;
 };
 
 template <typename SketchElementImpl>
-const thrust::device_vector<read_id_t>& IndexGPUTwoIndices<SketchElementImpl>::read_ids() const
+const thrust::device_vector<read_id_t>& IndexGPU<SketchElementImpl>::read_ids() const
 {
     return read_ids_d_;
 }
 
 template <typename SketchElementImpl>
-const thrust::device_vector<position_in_read_t>& IndexGPUTwoIndices<SketchElementImpl>::positions_in_reads() const
+const thrust::device_vector<position_in_read_t>& IndexGPU<SketchElementImpl>::positions_in_reads() const
 {
     return positions_in_reads_d_;
 }
 
 template <typename SketchElementImpl>
-const thrust::device_vector<typename SketchElementImpl::DirectionOfRepresentation>& IndexGPUTwoIndices<SketchElementImpl>::directions_of_reads() const
+const thrust::device_vector<typename SketchElementImpl::DirectionOfRepresentation>& IndexGPU<SketchElementImpl>::directions_of_reads() const
 {
     return directions_of_reads_d_;
 }
 
 template <typename SketchElementImpl>
-const thrust::device_vector<representation_t>& IndexGPUTwoIndices<SketchElementImpl>::unique_representations() const
+const thrust::device_vector<representation_t>& IndexGPU<SketchElementImpl>::unique_representations() const
 {
     return unique_representations_d_;
 }
 
 template <typename SketchElementImpl>
-const thrust::device_vector<std::uint32_t>& IndexGPUTwoIndices<SketchElementImpl>::first_occurrence_of_representations() const
+const thrust::device_vector<std::uint32_t>& IndexGPU<SketchElementImpl>::first_occurrence_of_representations() const
 {
     return first_occurrence_of_representations_d_;
 }
 
 template <typename SketchElementImpl>
-const std::string& IndexGPUTwoIndices<SketchElementImpl>::read_id_to_read_name(const read_id_t read_id) const
+const std::string& IndexGPU<SketchElementImpl>::read_id_to_read_name(const read_id_t read_id) const
 {
     return read_id_to_read_name_[read_id - first_read_id_];
 }
 
 template <typename SketchElementImpl>
-const std::uint32_t& IndexGPUTwoIndices<SketchElementImpl>::read_id_to_read_length(const read_id_t read_id) const
+const std::uint32_t& IndexGPU<SketchElementImpl>::read_id_to_read_length(const read_id_t read_id) const
 {
     return read_id_to_read_length_[read_id - first_read_id_];
 }
 
 template <typename SketchElementImpl>
-std::uint64_t IndexGPUTwoIndices<SketchElementImpl>::number_of_reads() const
+std::uint64_t IndexGPU<SketchElementImpl>::number_of_reads() const
 {
     return number_of_reads_;
 }
 
 template <typename SketchElementImpl>
-void IndexGPUTwoIndices<SketchElementImpl>::generate_index(const io::FastaParser& parser,
-                                                           const read_id_t first_read_id,
-                                                           const read_id_t past_the_last_read_id,
-                                                           const bool hash_representations)
+void IndexGPU<SketchElementImpl>::generate_index(const io::FastaParser& parser,
+                                                 const read_id_t first_read_id,
+                                                 const read_id_t past_the_last_read_id,
+                                                 const bool hash_representations)
 {
 
     // check if there are any reads to process

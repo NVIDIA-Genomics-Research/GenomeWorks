@@ -16,8 +16,8 @@ namespace claragenomics
 namespace cudamapper
 {
 
-std::unique_ptr<MatcherTwoIndices> MatcherTwoIndices::create_matcher(const IndexTwoIndices& query_index,
-                                                                     const IndexTwoIndices& target_index)
+std::unique_ptr<MatcherTwoIndices> MatcherTwoIndices::create_matcher(const Index& query_index,
+                                                                     const Index& target_index)
 {
     return std::make_unique<MatcherGPU>(query_index, target_index);
 }

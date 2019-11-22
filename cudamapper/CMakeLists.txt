@@ -28,13 +28,13 @@ target_include_directories(minimizer PUBLIC include)
 target_link_libraries(minimizer logging pthread utils)
 target_compile_options(minimizer PRIVATE -Werror)
 
-cuda_add_library(index_gpu_two_indices
-        src/index_two_indices.cu
-        src/index_gpu_two_indices.cu
+cuda_add_library(index_gpu
+        src/index.cu
+        src/index_gpu.cu
         src/minimizer.cu)
-target_include_directories(index_gpu_two_indices PUBLIC include)
-target_link_libraries(index_gpu_two_indices logging minimizer pthread utils cgaio)
-target_compile_options(index_gpu_two_indices PRIVATE -Werror)
+target_include_directories(index_gpu PUBLIC include)
+target_link_libraries(index_gpu logging minimizer pthread utils cgaio)
+target_compile_options(index_gpu PRIVATE -Werror)
 
 cuda_add_library(matcher_gpu
         src/matcher_gpu.cu)
@@ -69,7 +69,7 @@ target_include_directories(cudamapper
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 )
 
-target_link_libraries(cudamapper utils index_gpu_two_indices matcher_gpu logging overlapper_triggerred cudamapper_utils)
+target_link_libraries(cudamapper utils index_gpu matcher_gpu logging overlapper_triggerred cudamapper_utils)
 
 # Add tests folder
 add_subdirectory(tests)

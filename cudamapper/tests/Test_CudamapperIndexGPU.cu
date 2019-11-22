@@ -14,7 +14,7 @@
 #include <thrust/host_vector.h>
 
 #include "cudamapper_file_location.hpp"
-#include "../src/index_gpu_two_indices.cuh"
+#include "../src/index_gpu.cuh"
 #include "../src/minimizer.hpp"
 
 #include <claragenomics/utils/mathutils.hpp>
@@ -68,7 +68,7 @@ void test_find_first_occurrences_of_representations_kernel(const thrust::host_ve
     }
 }
 
-TEST(TestCudamapperIndexGPUTwoIndices, test_find_first_occurrences_of_representations_kernel_small_example)
+TEST(TestCudamapperIndexGPU, test_find_first_occurrences_of_representations_kernel_small_example)
 {
     thrust::host_vector<std::uint64_t> representation_index_mask_h;
     thrust::host_vector<representation_t> input_representations_h;
@@ -129,7 +129,7 @@ TEST(TestCudamapperIndexGPUTwoIndices, test_find_first_occurrences_of_representa
                                                           number_of_threads);
 }
 
-TEST(TestCudamapperIndexGPUTwoIndices, test_find_first_occurrences_of_representations_kernel_large_example)
+TEST(TestCudamapperIndexGPU, test_find_first_occurrences_of_representations_kernel_large_example)
 {
     const std::uint64_t total_sketch_elements                    = 10000000;
     const std::uint32_t sketch_elements_with_same_representation = 1000;
@@ -187,7 +187,7 @@ void test_find_first_occurrences_of_representations(const thrust::host_vector<re
     EXPECT_EQ(starting_index_of_each_representation_h.back(), expected_starting_index_of_each_representation_h.back()) << "index: " << expected_starting_index_of_each_representation_h.size() - 1;
 }
 
-TEST(TestCudamapperIndexGPUTwoIndices, test_find_first_occurrences_of_representations_small_example)
+TEST(TestCudamapperIndexGPU, test_find_first_occurrences_of_representations_small_example)
 {
     /// 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20
     /// 0  0  0  0 12 12 12 12 12 12 23 23 23 32 32 32 32 32 46 46 46
@@ -237,7 +237,7 @@ TEST(TestCudamapperIndexGPUTwoIndices, test_find_first_occurrences_of_representa
                                                    expected_unique_representations_h);
 }
 
-TEST(TestCudamapperIndexGPUTwoIndices, test_find_first_occurrences_of_representations_large_example)
+TEST(TestCudamapperIndexGPU, test_find_first_occurrences_of_representations_large_example)
 {
     const std::uint64_t total_sketch_elements                    = 10000000;
     const std::uint32_t sketch_elements_with_same_representation = 1000;
@@ -286,7 +286,7 @@ void test_create_new_value_mask(const thrust::host_vector<representation_t>& rep
     }
 }
 
-TEST(TestCudamapperIndexGPUTwoIndices, test_create_new_value_mask_small_example)
+TEST(TestCudamapperIndexGPU, test_create_new_value_mask_small_example)
 {
     thrust::host_vector<representation_t> representations_h;
     thrust::host_vector<std::uint32_t> expected_new_value_mask_h;
@@ -332,7 +332,7 @@ TEST(TestCudamapperIndexGPUTwoIndices, test_create_new_value_mask_small_example)
                                number_of_threads);
 }
 
-TEST(TestCudamapperIndexGPUTwoIndices, test_create_new_value_mask_small_data_large_example)
+TEST(TestCudamapperIndexGPU, test_create_new_value_mask_small_data_large_example)
 {
     const std::uint64_t total_sketch_elements                    = 10000000;
     const std::uint32_t sketch_elements_with_same_representation = 1000;
@@ -393,7 +393,7 @@ void test_function_copy_rest_to_separate_arrays(const thrust::host_vector<Readid
     }
 }
 
-TEST(TestCudamapperIndexGPUTwoIndices, test_function_copy_rest_to_separate_arrays)
+TEST(TestCudamapperIndexGPU, test_function_copy_rest_to_separate_arrays)
 {
     thrust::host_vector<Minimizer::ReadidPositionDirection> rest_h;
     thrust::host_vector<read_id_t> expected_read_ids_h;
@@ -509,12 +509,12 @@ void test_function(const std::string& filename,
                    const std::uint64_t expected_number_of_reads)
 {
     std::unique_ptr<io::FastaParser> parser = io::create_fasta_parser(filename);
-    IndexGPUTwoIndices<Minimizer> index(*parser,
-                                        first_read_id,
-                                        past_the_last_read_id,
-                                        kmer_size,
-                                        window_size,
-                                        false);
+    IndexGPU<Minimizer> index(*parser,
+                              first_read_id,
+                              past_the_last_read_id,
+                              kmer_size,
+                              window_size,
+                              false);
 
     ASSERT_EQ(index.number_of_reads(), expected_number_of_reads);
     if (0 == expected_number_of_reads)
@@ -569,7 +569,7 @@ void test_function(const std::string& filename,
     EXPECT_EQ(expected_first_occurrence_of_representations.back(), expected_representations.size());
 }
 
-TEST(TestCudamapperIndexGPUTwoIndices, GATT_4_1)
+TEST(TestCudamapperIndexGPU, GATT_4_1)
 {
     // >read_0
     // GATT
@@ -619,7 +619,7 @@ TEST(TestCudamapperIndexGPUTwoIndices, GATT_4_1)
                   1);
 }
 
-TEST(TestCudamapperIndexGPUTwoIndices, GATT_2_3)
+TEST(TestCudamapperIndexGPU, GATT_2_3)
 {
     // >read_0
     // GATT
@@ -702,7 +702,7 @@ TEST(TestCudamapperIndexGPUTwoIndices, GATT_2_3)
                   1);
 }
 
-TEST(TestCudamapperIndexGPUTwoIndices, CCCATACC_2_8)
+TEST(TestCudamapperIndexGPU, CCCATACC_2_8)
 {
     // *** Read is shorter than one full window, the result should be empty ***
 
@@ -743,7 +743,7 @@ TEST(TestCudamapperIndexGPUTwoIndices, CCCATACC_2_8)
 }
 
 // TODO: Cover this case as well
-//TEST(TestCudamapperIndexGPUTwoIndices, CATCAAG_AAGCTA_3_5)
+//TEST(TestCudamapperIndexGPU, CATCAAG_AAGCTA_3_5)
 //{
 //    // *** One Read is shorter than one full window, the other is not ***
 //
@@ -828,7 +828,7 @@ TEST(TestCudamapperIndexGPUTwoIndices, CCCATACC_2_8)
 //                  1); // <- only one read goes into index, the other is too short
 //}
 
-TEST(TestCudamapperIndexGPUTwoIndices, CCCATACC_3_5)
+TEST(TestCudamapperIndexGPU, CCCATACC_3_5)
 {
     // >read_0
     // CCCATACC
@@ -933,7 +933,7 @@ TEST(TestCudamapperIndexGPUTwoIndices, CCCATACC_3_5)
                   1);
 }
 
-TEST(TestCudamapperIndexGPUTwoIndices, CATCAAG_AAGCTA_3_2)
+TEST(TestCudamapperIndexGPU, CATCAAG_AAGCTA_3_2)
 {
     // >read_0
     // CATCAAG
@@ -1068,7 +1068,7 @@ TEST(TestCudamapperIndexGPUTwoIndices, CATCAAG_AAGCTA_3_2)
                   2);
 }
 
-TEST(TestCudamapperIndexGPUTwoIndices, AAAACTGAA_GCCAAAG_2_3)
+TEST(TestCudamapperIndexGPU, AAAACTGAA_GCCAAAG_2_3)
 {
     // >read_0
     // AAAACTGAA
@@ -1235,7 +1235,7 @@ TEST(TestCudamapperIndexGPUTwoIndices, AAAACTGAA_GCCAAAG_2_3)
                   2);
 }
 
-TEST(TestCudamapperIndexGPUTwoIndices, AAAACTGAA_GCCAAAG_2_3_only_second_read_in_index)
+TEST(TestCudamapperIndexGPU, AAAACTGAA_GCCAAAG_2_3_only_second_read_in_index)
 {
     // >read_0
     // AAAACTGAA

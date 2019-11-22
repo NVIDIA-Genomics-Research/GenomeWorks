@@ -8,7 +8,7 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-#include "index_gpu_two_indices.cuh"
+#include "index_gpu.cuh"
 
 namespace claragenomics
 {

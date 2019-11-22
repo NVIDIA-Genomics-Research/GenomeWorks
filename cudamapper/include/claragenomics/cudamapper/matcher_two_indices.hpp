@@ -12,7 +12,7 @@
 
 #include <memory>
 #include <thrust/device_vector.h>
-#include <claragenomics/cudamapper/index_two_indices.hpp>
+#include <claragenomics/cudamapper/index.hpp>
 
 namespace claragenomics
 {
@@ -37,8 +37,8 @@ public:
     /// \param query_index
     /// \param target_index
     /// \return matcher
-    static std::unique_ptr<MatcherTwoIndices> create_matcher(const IndexTwoIndices& query_index,
-                                                             const IndexTwoIndices& target_index);
+    static std::unique_ptr<MatcherTwoIndices> create_matcher(const Index& query_index,
+                                                             const Index& target_index);
 };
 
 /// \}
