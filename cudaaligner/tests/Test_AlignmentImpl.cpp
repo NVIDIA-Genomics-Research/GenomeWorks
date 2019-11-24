@@ -160,12 +160,9 @@ TEST_P(TestAlignmentImpl, AlignmentState)
 TEST_P(TestAlignmentImpl, AlignmentFormatting)
 {
     FormattedAlignment formatted_alignment = alignment_->format_alignment();
-    std::string query                      = formatted_alignment.first;
-    std::string pairing                    = formatted_alignment.pairing;
-    std::string target                     = formatted_alignment.second;
-    ASSERT_EQ(param_.formatted_alignment.first, query);
-    ASSERT_EQ(param_.formatted_alignment.pairing, pairing);
-    ASSERT_EQ(param_.formatted_alignment.second, target);
+    ASSERT_EQ(param_.formatted_alignment.query, formatted_alignment.query);
+    ASSERT_EQ(param_.formatted_alignment.pairing, formatted_alignment.pairing);
+    ASSERT_EQ(param_.formatted_alignment.target, formatted_alignment.target);
 }
 
 TEST_P(TestAlignmentImpl, CigarFormatting)

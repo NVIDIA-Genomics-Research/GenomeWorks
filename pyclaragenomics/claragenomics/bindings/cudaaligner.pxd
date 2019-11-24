@@ -48,9 +48,9 @@ cdef extern from "claragenomics/cudaaligner/cudaaligner.hpp" namespace "claragen
 # Declare structs and APIs from alignment.hpp
 cdef extern from "claragenomics/cudaaligner/alignment.hpp" namespace "claragenomics::cudaaligner":
     ctypedef struct  FormattedAlignment:
-        string first
+        string query
         string pairing
-        string second
+        string target
 
     cdef cppclass Alignment:
         string get_query_sequence() except +

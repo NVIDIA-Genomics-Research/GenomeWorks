@@ -231,9 +231,9 @@ cdef class CudaAlignerBatch:
 
             # Get formatted alignment
             formatted_alignment = deref(res[i]).format_alignment()
-            format_alignment = [formatted_alignment.first.decode('utf-8'), \
+            format_alignment = [formatted_alignment.query.decode('utf-8'), \
                                 formatted_alignment.pairing.decode('utf-8'), \
-                                formatted_alignment.second.decode('utf-8')]
+                                formatted_alignment.target.decode('utf-8')]
 
             # Get other string outputs
             query = deref(res[i]).get_query_sequence().decode('utf-8')

@@ -69,35 +69,36 @@ std::string AlignmentImpl::convert_to_cigar() const
     return cigar;
 }
 
-FormattedAlignment AlignmentImpl::format_alignment() const
+FormattedAlignment AlignmentImpl::format_alignment(int32_t maximal_line_length) const
 {
     int64_t t_pos = 0;
     int64_t q_pos = 0;
     FormattedAlignment ret_formatted_alignment;
+    ret_formatted_alignment.linebreak_after = (maximal_line_length < 0) ? 0 : maximal_line_length;
 
     for (auto const& x : alignment_)
     {
         switch (x)
         {
         case AlignmentState::match:
-            ret_formatted_alignment.second += target_[t_pos++];
-            ret_formatted_alignment.first += query_[q_pos++];
-            ret_formatted_alignment.pairing += "|";
+            ret_formatted_alignment.target += target_[t_pos++];
+            ret_formatted_alignment.query += query_[q_pos++];
+            ret_formatted_alignment.pairing += '|';
             break;
         case AlignmentState::mismatch:
-            ret_formatted_alignment.second += target_[t_pos++];
-            ret_formatted_alignment.first += query_[q_pos++];
-            ret_formatted_alignment.pairing += "x";
+            ret_formatted_alignment.target += target_[t_pos++];
+            ret_formatted_alignment.query += query_[q_pos++];
+            ret_formatted_alignment.pairing += 'x';
             break;
         case AlignmentState::deletion:
-            ret_formatted_alignment.second += "-";
-            ret_formatted_alignment.first += query_[q_pos++];
-            ret_formatted_alignment.pairing += " ";
+            ret_formatted_alignment.target += '-';
+            ret_formatted_alignment.query += query_[q_pos++];
+            ret_formatted_alignment.pairing += ' ';
             break;
         case AlignmentState::insertion:
-            ret_formatted_alignment.second += target_[t_pos++];
-            ret_formatted_alignment.first += "-";
-            ret_formatted_alignment.pairing += " ";
+            ret_formatted_alignment.target += target_[t_pos++];
+            ret_formatted_alignment.query += '-';
+            ret_formatted_alignment.pairing += ' ';
             break;
         default:
             throw std::runtime_error("Unknown alignment state");
