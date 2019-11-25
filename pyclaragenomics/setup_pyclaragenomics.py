@@ -14,7 +14,8 @@ import argparse
 import os.path
 import os
 import subprocess
-
+import shutil
+import glob
 
 def get_relative_path(sub_folder_name):
     return os.path.join(
@@ -23,16 +24,34 @@ def get_relative_path(sub_folder_name):
     )
 
 
+def copy_all_files_in_directory(src, dest, file_ext="*.so"):
+    files_to_copy = glob.glob(os.path.join(src, file_ext))
+    if not files_to_copy:
+        raise RuntimeError("No {} files under {}".format(src, file_ext))
+    os.makedirs(os.path.dirname(dest), exist_ok=True)
+    try:
+        for file in files_to_copy:
+            shutil.copy(file, dest)
+            print("{} was copied into {}".format(file, dest))
+    except (shutil.Error, PermissionError) as err:
+        print('Could not copy {}. Error: {}'.format(file, err))
+        raise err
+
+
 def parse_arguments():
     parser = argparse.ArgumentParser(description='build & install Clara Genomics Analysis SDK.')
     parser.add_argument('--build_output_folder',
                         required=False,
                         default=get_relative_path("cga_build"),
                         help="Choose an output folder for building")
+    parser.add_argument('--create_wheel_only',
+                        required=False,
+                        action='store_true',
+                        help="Create ")
     parser.add_argument('--develop',
                         required=False,
                         action='store_true',
-                        help="CInstall using pip editble mode")
+                        help="Install using pip editble mode")
     return parser.parse_args()
 
 
@@ -82,14 +101,25 @@ class CMakeWrapper:
         self.run_build_cmd()
 
 
-def setup_python_binding(is_develop_mode, pycga_dir, cga_install_dir):
-    subprocess.check_call(['pip', 'install'] + (['-e'] if is_develop_mode else []) + ["."],
+def setup_python_binding(is_develop_mode, wheel_output_folder, pycga_dir, cga_install_dir):
+    if wheel_output_folder:
+        setup_command = ['python', 'setup.py', 'bdist_wheel', '-d', wheel_output_folder]
+        completion_message = \
+            "A wheel file was create for pyclaragenomics under {}".format(wheel_output_folder)
+    else:
+        setup_command = ['pip', 'install'] + (['-e'] if is_develop_mode else []) + ["."]
+        completion_message = \
+            "pyclaragenomics was successfully setup in {} mode!".format(
+                "development" if args.develop else "installation")
+
+    subprocess.check_call(setup_command,
                           env={
                               **os.environ,
                               'PYCGA_DIR': pycga_dir,
                               'CGA_INSTALL_DIR': cga_install_dir
                           },
                           cwd=pycga_dir)
+    print(completion_message)
 
 
 if __name__ == "__main__":
@@ -104,9 +134,13 @@ if __name__ == "__main__":
                               cga_install_dir=cga_installation_directory,
                               cmake_extra_args="-Dcga_build_shared=ON")
     cmake_proj.build()
+    # Copyies shared libraries into clargenomics package
+    copy_all_files_in_directory(
+        os.path.join(cga_installation_directory, "lib"),
+        os.path.join(current_dir, "claragenomics/shared_libs/"),
+    )
     # Setup pyclaragenomics
     setup_python_binding(is_develop_mode=args.develop,
+                         wheel_output_folder=cga_build_folder if args.create_wheel_only else None,
                          pycga_dir=current_dir,
                          cga_install_dir=cga_installation_directory)
-    print("pyclaragenomics was successfully setup in {} mode!"
-          .format("development" if args.develop else "installation"))
