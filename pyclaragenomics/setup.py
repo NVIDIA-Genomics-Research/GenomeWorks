@@ -9,10 +9,10 @@
 # distribution of this software and related documentation without an express
 # license agreement from NVIDIA CORPORATION is strictly prohibited.
 #
-
-import os
 import glob
+import os
 from setuptools import setup, find_packages, Extension
+
 from Cython.Build import cythonize
 
 
@@ -34,9 +34,11 @@ def get_installation_requirments(file_path):
 try:
     pycga_dir = os.environ['PYCGA_DIR']
     cga_install_dir = os.environ['CGA_INSTALL_DIR']
+    cga_runtime_lib_dir = os.environ['CGA_RUNTIME_LIB_DIR']
 except KeyError as e:
     raise EnvironmentError(
-        'PYCGA_DIR CGA_INSTALL_DIR environment variables must be set').with_traceback(e.__traceback__)
+        'PYCGA_DIR CGA_INSTALL_DIR CGA_RUNTIME_LIB_DIR \
+        environment variables must be set').with_traceback(e.__traceback__)
 
 # Classifiers for PyPI
 pycga_classifiers = [
@@ -62,7 +64,7 @@ extensions = [
             get_verified_path(os.path.join(cga_install_dir, "include")),
         ],
         library_dirs=["/usr/local/cuda/lib64", get_verified_path(os.path.join(cga_install_dir, "lib"))],
-        runtime_library_dirs=["/usr/local/cuda/lib64", "$ORIGIN/../shared_libs/"],
+        runtime_library_dirs=["/usr/local/cuda/lib64", cga_runtime_lib_dir],
         libraries=["cudapoa", "cudaaligner", "cudart"],
         language="c++",
         extra_compile_args=["-std=c++14"],
@@ -70,7 +72,7 @@ extensions = [
 ]
 
 setup(name='pyclaragenomics',
-      version='0.3.0',
+      version='0.4.0',
       description='NVIDIA genomics python libraries and utiliites',
       author='NVIDIA Corporation',
       url="https://github.com/clara-genomics/ClaraGenomicsAnalysis",

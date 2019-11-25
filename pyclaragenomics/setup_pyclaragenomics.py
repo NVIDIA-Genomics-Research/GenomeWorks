@@ -103,20 +103,28 @@ class CMakeWrapper:
 
 def setup_python_binding(is_develop_mode, wheel_output_folder, pycga_dir, cga_install_dir):
     if wheel_output_folder:
+        # Copies shared libraries into clargenomics package
+        copy_all_files_in_directory(
+            os.path.join(cga_install_dir, "lib"),
+            os.path.join(pycga_dir, "claragenomics/shared_libs/"),
+        )
         setup_command = ['python', 'setup.py', 'bdist_wheel', '-d', wheel_output_folder]
         completion_message = \
             "A wheel file was create for pyclaragenomics under {}".format(wheel_output_folder)
+        cga_runtime_lib_dir = os.path.join('$ORIGIN', os.pardir, 'shared_libs')
     else:
         setup_command = ['pip', 'install'] + (['-e'] if is_develop_mode else []) + ["."]
         completion_message = \
             "pyclaragenomics was successfully setup in {} mode!".format(
                 "development" if args.develop else "installation")
+        cga_runtime_lib_dir = os.path.join(cga_install_dir, "lib")
 
     subprocess.check_call(setup_command,
                           env={
                               **os.environ,
                               'PYCGA_DIR': pycga_dir,
-                              'CGA_INSTALL_DIR': cga_install_dir
+                              'CGA_INSTALL_DIR': cga_install_dir,
+                              'CGA_RUNTIME_LIB_DIR': cga_runtime_lib_dir
                           },
                           cwd=pycga_dir)
     print(completion_message)
@@ -134,11 +142,6 @@ if __name__ == "__main__":
                               cga_install_dir=cga_installation_directory,
                               cmake_extra_args="-Dcga_build_shared=ON")
     cmake_proj.build()
-    # Copyies shared libraries into clargenomics package
-    copy_all_files_in_directory(
-        os.path.join(cga_installation_directory, "lib"),
-        os.path.join(current_dir, "claragenomics/shared_libs/"),
-    )
     # Setup pyclaragenomics
     setup_python_binding(is_develop_mode=args.develop,
                          wheel_output_folder=cga_build_folder if args.create_wheel_only else None,
