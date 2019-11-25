@@ -17,6 +17,7 @@ import subprocess
 import shutil
 import glob
 
+
 def get_relative_path(sub_folder_name):
     return os.path.join(
         os.path.dirname(os.path.realpath(__file__)),
