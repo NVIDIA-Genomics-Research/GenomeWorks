@@ -21,6 +21,7 @@
 #include <claragenomics/logging/logging.hpp>
 #include <claragenomics/io/fasta_parser.hpp>
 #include <claragenomics/utils/cudautils.hpp>
+#include <claragenomics/utils/ThreadPool.hpp>
 
 #include <claragenomics/cudamapper/index.hpp>
 #include <claragenomics/cudamapper/matcher.hpp>
@@ -162,9 +163,46 @@ int main(int argc, char* argv[])
     std::chrono::milliseconds matcher_time    = std::chrono::duration_values<std::chrono::milliseconds>::zero();
     std::chrono::milliseconds overlapper_time = std::chrono::duration_values<std::chrono::milliseconds>::zero();
 
-    for (std::int32_t query_start_index = 0; query_start_index < queries; query_start_index += index_size)
-    { // outer loop over query
+
+    struct query_target_range {
+        std::pair<std::int32_t, int32_t> query_range;
+        std::vector<std::pair<std::int32_t, int32_t>> target_ranges;
+    };
+
+    //First generate all the ranges independently, then loop over them.
+    std::vector<query_target_range> query_target_ranges;
+
+    for (std::int32_t query_start_index = 0; query_start_index < queries; query_start_index += index_size) {
+
+
         std::int32_t query_end_index = std::min(query_start_index + index_size, static_cast<size_t>(queries));
+        std::cerr << "Query range: " << query_start_index << " - " << query_end_index - 1 << std::endl;
+
+        query_target_range q;
+        q.query_range = std::make_pair(query_start_index, query_end_index);
+
+        std::int32_t target_start_index = 0;
+        // If all_to_all mode, then we can optimzie by starting the target sequences from the same index as
+        // query because all indices before the current query index are guaranteed to have been processed in
+        // a2a mapping.
+        if (all_to_all) {
+            target_start_index = query_start_index;
+        }
+
+        for (; target_start_index < targets; target_start_index += target_index_size) {
+            std::int32_t target_end_index = std::min(target_start_index + target_index_size,
+                                                     static_cast<size_t>(targets));
+            std::cerr << "Target range: " << target_start_index << " - " << target_end_index - 1 << std::endl;
+
+            q.target_ranges.push_back(std::make_pair(target_start_index, target_end_index));
+         }
+
+        query_target_ranges.push_back(q);
+    }
+
+    auto compute_overlaps = [&](query_target_range query_target_range){
+        auto query_start_index = query_target_range.query_range.first;
+        auto query_end_index = query_target_range.query_range.second;
 
         std::cerr << "Query range: " << query_start_index << " - " << query_end_index - 1 << std::endl;
 
@@ -176,25 +214,18 @@ int main(int argc, char* argv[])
             CGA_NVTX_RANGE(profiler, "generate_query_index");
             auto start_time = std::chrono::high_resolution_clock::now();
             query_index     = claragenomics::cudamapper::Index::create_index(*query_parser,
-                                                                         query_start_index,
-                                                                         query_end_index,
-                                                                         k,
-                                                                         w);
+                                                                             query_start_index,
+                                                                             query_end_index,
+                                                                             k,
+                                                                             w);
             index_time += std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time);
             std::cerr << "Query index generation time: " << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time).count() << "ms" << std::endl;
         }
 
-        std::int32_t target_start_index = 0;
-        // If all_to_all mode, then we can optimzie by starting the target sequences from the same index as
-        // query because all indices before the current query index are guaranteed to have been processed in
-        // a2a mapping.
-        if (all_to_all)
-        {
-            target_start_index = query_start_index;
-        }
-        for (; target_start_index < targets; target_start_index += target_index_size)
-        {
-            std::int32_t target_end_index = std::min(target_start_index + target_index_size, static_cast<size_t>(targets));
+        for (auto target_range: query_target_range.target_ranges) {
+
+            auto target_start_index = target_range.first;
+            auto target_end_index = target_range.second;
 
             std::cerr << "Target range: " << target_start_index << " - " << target_end_index - 1 << std::endl;
 
@@ -202,10 +233,10 @@ int main(int argc, char* argv[])
                 CGA_NVTX_RANGE(profiler, "generate_target_index");
                 auto start_time = std::chrono::high_resolution_clock::now();
                 target_index    = claragenomics::cudamapper::Index::create_index(*target_parser,
-                                                                              target_start_index,
-                                                                              target_end_index,
-                                                                              k,
-                                                                              w);
+                                                                                 target_start_index,
+                                                                                 target_end_index,
+                                                                                 k,
+                                                                                 w);
                 index_time += std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time);
                 std::cerr << "Target index generation time: " << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time).count() << "ms" << std::endl;
             }
@@ -213,7 +244,7 @@ int main(int argc, char* argv[])
                 CGA_NVTX_RANGE(profiler, "generate_matcher");
                 auto start_time = std::chrono::high_resolution_clock::now();
                 matcher         = claragenomics::cudamapper::Matcher::create_matcher(*query_index,
-                                                                             *target_index);
+                                                                                     *target_index);
                 matcher_time += std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time);
                 std::cerr << "Matcher generation time: " << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time).count() << "ms" << std::endl;
             }
@@ -224,7 +255,26 @@ int main(int argc, char* argv[])
                 overlapper_time += std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time);
                 std::cerr << "Overlapper time: " << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time).count() << "ms" << std::endl;
             }
+
         }
+        return 0;
+    };
+
+    // create thread pool with 4 worker threads
+
+    ThreadPool pool(1);
+
+    // New Main loop
+
+    std::vector<std::future<int>> futures;
+
+    for (auto query_target_range: query_target_ranges){
+        // enqueue and store future
+        futures.push_back(pool.enqueue(compute_overlaps, query_target_range));
+    }
+
+    for (auto &f: futures){
+        std::cerr << f.get() <<std::endl;
     }
 
     // Insert empty overlap vector to denote end of processing.
