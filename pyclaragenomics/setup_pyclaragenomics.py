@@ -18,13 +18,6 @@ import shutil
 import glob
 
 
-def get_relative_path(sub_folder_name):
-    return os.path.join(
-        os.path.dirname(os.path.realpath(__file__)),
-        sub_folder_name
-    )
-
-
 def copy_all_files_in_directory(src, dest, file_ext="*.so"):
     files_to_copy = glob.glob(os.path.join(src, file_ext))
     if not files_to_copy:
@@ -43,7 +36,7 @@ def parse_arguments():
     parser = argparse.ArgumentParser(description='build & install Clara Genomics Analysis SDK.')
     parser.add_argument('--build_output_folder',
                         required=False,
-                        default=get_relative_path("cga_build"),
+                        default="cga_build",
                         help="Choose an output folder for building")
     parser.add_argument('--create_wheel_only',
                         required=False,
@@ -109,7 +102,7 @@ def setup_python_binding(is_develop_mode, wheel_output_folder, pycga_dir, cga_in
             os.path.join(cga_install_dir, "lib"),
             os.path.join(pycga_dir, "claragenomics/shared_libs/"),
         )
-        setup_command = ['python', 'setup.py', 'bdist_wheel', '-d', wheel_output_folder]
+        setup_command = ['python', 'setup.py', 'bdist_wheel', '-d', os.path.realpath(wheel_output_folder)]
         completion_message = \
             "A wheel file was create for pyclaragenomics under {}".format(wheel_output_folder)
         cga_runtime_lib_dir = os.path.join('$ORIGIN', os.pardir, 'shared_libs')
@@ -124,7 +117,7 @@ def setup_python_binding(is_develop_mode, wheel_output_folder, pycga_dir, cga_in
                           env={
                               **os.environ,
                               'PYCGA_DIR': pycga_dir,
-                              'CGA_INSTALL_DIR': cga_install_dir,
+                              'CGA_INSTALL_DIR': os.path.realpath(cga_install_dir),
                               'CGA_RUNTIME_LIB_DIR': cga_runtime_lib_dir
                           },
                           cwd=pycga_dir)
@@ -134,17 +127,16 @@ def setup_python_binding(is_develop_mode, wheel_output_folder, pycga_dir, cga_in
 if __name__ == "__main__":
 
     args = parse_arguments()
-    cga_build_folder = os.path.realpath(args.build_output_folder)
     current_dir = os.path.dirname(os.path.realpath(__file__))
-    cga_installation_directory = os.path.join(cga_build_folder, "install")
+    cga_installation_directory = os.path.join(args.build_output_folder, "install")
     # Build & install Clara Genomics Analysis SDK
     cmake_proj = CMakeWrapper(cmake_root_dir=os.path.dirname(current_dir),
-                              cmake_build_path=cga_build_folder,
+                              cmake_build_path=args.build_output_folder,
                               cga_install_dir=cga_installation_directory,
                               cmake_extra_args="-Dcga_build_shared=ON")
     cmake_proj.build()
     # Setup pyclaragenomics
     setup_python_binding(is_develop_mode=args.develop,
-                         wheel_output_folder=cga_build_folder if args.create_wheel_only else None,
+                         wheel_output_folder=args.build_output_folder if args.create_wheel_only else None,
                          pycga_dir=current_dir,
                          cga_install_dir=cga_installation_directory)
