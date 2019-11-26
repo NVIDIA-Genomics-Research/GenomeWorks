@@ -11,11 +11,10 @@
 #
 
 import argparse
-import os.path
-import os
-import subprocess
-import shutil
 import glob
+import os
+import shutil
+import subprocess
 
 
 def copy_all_files_in_directory(src, dest, file_ext="*.so"):
