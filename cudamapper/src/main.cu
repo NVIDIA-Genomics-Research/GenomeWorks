@@ -45,8 +45,9 @@ int main(int argc, char* argv[])
     uint32_t k               = 15;
     uint32_t w               = 15;
     size_t index_size        = 10000;
+    size_t num_threads       = 1;
     size_t target_index_size = 10000;
-    std::string optstring    = "t:i:k:w:h";
+    std::string optstring    = "t:i:k:w:h:r:";
     uint32_t argument;
     while ((argument = getopt_long(argc, argv, optstring.c_str(), options, nullptr)) != -1)
     {
@@ -60,6 +61,9 @@ int main(int argc, char* argv[])
             break;
         case 'i':
             index_size = atoi(optarg);
+            break;
+        case 'r':
+            num_threads = atoi(optarg);
             break;
         case 't':
             target_index_size = atoi(optarg);
@@ -176,7 +180,7 @@ int main(int argc, char* argv[])
 
 
         std::int32_t query_end_index = std::min(query_start_index + index_size, static_cast<size_t>(queries));
-        std::cerr << "Query range: " << query_start_index << " - " << query_end_index - 1 << std::endl;
+        //std::cerr << "Query range: " << query_start_index << " - " << query_end_index - 1 << std::endl;
 
         query_target_range q;
         q.query_range = std::make_pair(query_start_index, query_end_index);
@@ -192,7 +196,7 @@ int main(int argc, char* argv[])
         for (; target_start_index < targets; target_start_index += target_index_size) {
             std::int32_t target_end_index = std::min(target_start_index + target_index_size,
                                                      static_cast<size_t>(targets));
-            std::cerr << "Target range: " << target_start_index << " - " << target_end_index - 1 << std::endl;
+            //std::cerr << "Target range: " << target_start_index << " - " << target_end_index - 1 << std::endl;
 
             q.target_ranges.push_back(std::make_pair(target_start_index, target_end_index));
          }
@@ -204,7 +208,7 @@ int main(int argc, char* argv[])
         auto query_start_index = query_target_range.query_range.first;
         auto query_end_index = query_target_range.query_range.second;
 
-        std::cerr << "Query range: " << query_start_index << " - " << query_end_index - 1 << std::endl;
+        std::cerr << "THREAD LAUNCHED: Query range: (" << query_start_index << " - " << query_end_index - 1 << ")" << std::endl;
 
         std::unique_ptr<claragenomics::cudamapper::Index> query_index(nullptr);
         std::unique_ptr<claragenomics::cudamapper::Index> target_index(nullptr);
@@ -260,9 +264,8 @@ int main(int argc, char* argv[])
         return 0;
     };
 
-    // create thread pool with 4 worker threads
-
-    ThreadPool pool(1);
+    // create thread pool
+    ThreadPool pool(num_threads);
 
     // New Main loop
 

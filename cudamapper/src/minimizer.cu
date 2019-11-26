@@ -932,6 +932,7 @@ Minimizer::GeneratedSketchElements Minimizer::generate_sketch_elements(const std
                                                                                                     read_id_to_windows_section_d.data(),
                                                                                                     read_id_to_minimizers_written_d.data(),
                                                                                                     hash_representations);
+    //CGA_CU_CHECK_ERR(cudaStreamSynchronize(0));
     CGA_CU_CHECK_ERR(cudaDeviceSynchronize());
 
     // *** central minimizers ***
@@ -966,6 +967,7 @@ Minimizer::GeneratedSketchElements Minimizer::generate_sketch_elements(const std
                                                                                                   read_id_to_windows_section_d.data(),
                                                                                                   read_id_to_minimizers_written_d.data(),
                                                                                                   hash_representations);
+    //CGA_CU_CHECK_ERR(cudaStreamSynchronize(0));
     CGA_CU_CHECK_ERR(cudaDeviceSynchronize());
 
     // *** back end minimizers ***
@@ -993,7 +995,9 @@ Minimizer::GeneratedSketchElements Minimizer::generate_sketch_elements(const std
                                                                                                    read_id_to_windows_section_d.data(),
                                                                                                    read_id_to_minimizers_written_d.data(),
                                                                                                    hash_representations);
+    //CGA_CU_CHECK_ERR(cudaStreamSynchronize(0));
     CGA_CU_CHECK_ERR(cudaDeviceSynchronize());
+
 
     std::vector<std::uint32_t> read_id_to_minimizers_written_h(number_of_reads_to_add);
 
@@ -1040,7 +1044,9 @@ Minimizer::GeneratedSketchElements Minimizer::generate_sketch_elements(const std
                                                          rest_compressed_d.data(),
                                                          read_id_to_compressed_minimizers_d.data(),
                                                          read_id_of_first_read);
+    //CGA_CU_CHECK_ERR(cudaStreamSynchronize(0));
     CGA_CU_CHECK_ERR(cudaDeviceSynchronize());
+
 
     // free these arrays as they are not needed anymore
     CGA_LOG_INFO("Deallocating {} bytes from window_minimizers_representation_d", window_minimizers_representation_d.size() * sizeof(decltype(window_minimizers_representation_d)::value_type));
