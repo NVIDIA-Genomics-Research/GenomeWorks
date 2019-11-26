@@ -50,6 +50,33 @@ def test_cudapoa_reset_batch():
 
 
 @pytest.mark.gpu
+def test_cudapoa_graph():
+    device = cuda.cuda_get_device()
+    free, total = cuda.cuda_get_mem_info(device)
+    batch = CudaPoaBatch(10, 0.9 * free, device_id=device)
+    poa_1 = ["ACTGACTG", "ACTTACTG", "ACTCACTG"]
+    batch.add_poa_group(poa_1)
+    batch.generate_poa()
+    consensus, coverage, status = batch.get_consensus()
+
+    assert(batch.total_poas == 1)
+
+    # Expected graph
+    #           - -> G -> -
+    #           |         |
+    # A -> C -> T -> T -> A -> C -> T -> G
+    #           |         |
+    #           - -> C -> -
+
+    graphs, status = batch.get_graphs()
+    assert(len(graphs) == 1)
+
+    digraph = graphs[0]
+    assert(digraph.number_of_nodes() == 10)
+    assert(digraph.number_of_edges() == 11)
+
+
+@pytest.mark.gpu
 def test_cudapoa_complex_batch():
     random.seed(2)
     read_len = 500

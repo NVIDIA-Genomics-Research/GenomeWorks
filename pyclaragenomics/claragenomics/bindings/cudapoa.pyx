@@ -11,13 +11,16 @@
 # distutils: language = c++
 
 from cython.operator cimport dereference as deref
-from libcpp.vector cimport vector
-from libcpp.memory cimport unique_ptr
-from libcpp.string cimport string
 from libc.stdint cimport uint16_t
+from libcpp.memory cimport unique_ptr
+from libcpp.pair cimport pair
+from libcpp.string cimport string
+from libcpp.vector cimport vector
+import networkx as nx
 
-from claragenomics.bindings cimport cudapoa
 from claragenomics.bindings import cuda
+from claragenomics.bindings cimport cudapoa
+
 
 def status_to_str(status):
     """
@@ -225,6 +228,43 @@ cdef class CudaPoaBatch:
             raise RuntimeError("Output type not requested during batch initialization")
         decoded_consensus = [c.decode('utf-8') for c in consensus]
         return (decoded_consensus, coverage, status)
+
+    def get_graphs(self):
+        """
+        Get the POA graph for each POA group.
+
+        Returns:
+            A tuple where
+            - first element is a networkx graph for each POA group
+            - second element is status of MSA generation for each group
+        """
+        cdef vector[DirectedGraph] graphs
+        cdef vector[cudapoa.StatusType] status
+        cdef vector[pair[DirectedGraph.edge_t, DirectedGraph.edge_weight_t]] edges
+        cdef DirectedGraph* graph
+        cdef DirectedGraph.edge_t edge
+        cdef DirectedGraph.edge_weight_t weight
+
+        # Get the graphs from batch object.
+        deref(self.batch).get_graphs(graphs, status)
+
+        nx_digraphs = []
+        for g in range(graphs.size()):
+            graph = &graphs[g]
+            edges = deref(graph).get_edges()
+            nx_digraph = nx.DiGraph()
+            for e in range(edges.size()):
+                edge = edges[e].first
+                weight = edges[e].second
+                nx_digraph.add_edge(edge.first,
+                                    edge.second,
+                                    weight=weight)
+            attributes = {}
+            for n in nx_digraph.nodes:
+                attributes[n] = {'label' : deref(graph).get_node_label(n).decode('utf-8')}
+            nx.set_node_attributes(nx_digraph, attributes)
+            nx_digraphs.append(nx_digraph)
+        return (nx_digraphs, status)
 
     def reset(self):
         """
