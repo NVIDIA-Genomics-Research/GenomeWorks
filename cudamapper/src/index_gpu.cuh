@@ -53,7 +53,7 @@ public:
     /// \param kmer_size k - the kmer length
     /// \param window_size w - the length of the sliding window used to find sketch elements (i.e. the number of adjacent k-mers in a window, adjacent = shifted by one basepair)
     /// \param hash_representations - if true, hash kmer representations
-    IndexGPU(const io::FastaParser& parser,
+    IndexGPU(io::FastaParser& parser,
              const read_id_t first_read_id,
              const read_id_t past_the_last_read_id,
              const std::uint64_t kmer_size,
@@ -100,7 +100,7 @@ public:
 
 private:
     /// \brief generates the index
-    void generate_index(const io::FastaParser& query_parser,
+    void generate_index(io::FastaParser& query_parser,
                         const read_id_t first_read_id,
                         const read_id_t past_the_last_read_id,
                         const bool hash_representations);
@@ -221,7 +221,7 @@ __global__ void copy_rest_to_separate_arrays(const ReadidPositionDirection* cons
 } // namespace details
 
 template <typename SketchElementImpl>
-IndexGPU<SketchElementImpl>::IndexGPU(const io::FastaParser& parser,
+IndexGPU<SketchElementImpl>::IndexGPU(io::FastaParser& parser,
                                       const read_id_t first_read_id,
                                       const read_id_t past_the_last_read_id,
                                       const std::uint64_t kmer_size,
@@ -293,7 +293,7 @@ std::uint64_t IndexGPU<SketchElementImpl>::number_of_reads() const
 }
 
 template <typename SketchElementImpl>
-void IndexGPU<SketchElementImpl>::generate_index(const io::FastaParser& parser,
+void IndexGPU<SketchElementImpl>::generate_index(io::FastaParser& parser,
                                                  const read_id_t first_read_id,
                                                  const read_id_t past_the_last_read_id,
                                                  const bool hash_representations)

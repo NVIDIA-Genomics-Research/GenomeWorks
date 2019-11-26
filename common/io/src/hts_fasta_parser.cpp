@@ -12,7 +12,6 @@
 
 #include <string>
 #include <memory>
-#include <mutex>
 
 extern "C" {
 #include <htslib/faidx.h>
@@ -34,9 +33,6 @@ namespace claragenomics
 {
 namespace io
 {
-
-/// Mutex for protecting reading of fasta index.
-std::mutex index_mutex_;
 
 FastaParserHTS::FastaParserHTS(const std::string& fasta_file)
 {
@@ -64,7 +60,7 @@ int32_t FastaParserHTS::get_num_seqences() const
     return num_seqequences_;
 }
 
-FastaSequence FastaParserHTS::get_sequence_by_id(int32_t i) const
+FastaSequence FastaParserHTS::get_sequence_by_id(int32_t i)
 {
     std::string str_name = "";
     {
@@ -80,7 +76,7 @@ FastaSequence FastaParserHTS::get_sequence_by_id(int32_t i) const
     return get_sequence_by_name(str_name);
 }
 
-FastaSequence FastaParserHTS::get_sequence_by_name(const std::string& name) const
+FastaSequence FastaParserHTS::get_sequence_by_name(const std::string& name)
 {
 
     FastaSequence s{};
