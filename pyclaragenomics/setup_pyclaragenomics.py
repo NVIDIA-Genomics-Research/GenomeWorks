@@ -102,7 +102,7 @@ def setup_python_binding(is_develop_mode, wheel_output_folder, pycga_dir, cga_in
             os.path.join(cga_install_dir, "lib"),
             os.path.join(pycga_dir, "claragenomics/shared_libs/"),
         )
-        setup_command = ['python', 'setup.py', 'bdist_wheel', '-d', os.path.realpath(wheel_output_folder)]
+        setup_command = ['python', 'setup.py', 'bdist_wheel', '-d', wheel_output_folder]
         completion_message = \
             "A wheel file was create for pyclaragenomics under {}".format(wheel_output_folder)
         cga_runtime_lib_dir = os.path.join('$ORIGIN', os.pardir, 'shared_libs')
@@ -117,7 +117,7 @@ def setup_python_binding(is_develop_mode, wheel_output_folder, pycga_dir, cga_in
                           env={
                               **os.environ,
                               'PYCGA_DIR': pycga_dir,
-                              'CGA_INSTALL_DIR': os.path.realpath(cga_install_dir),
+                              'CGA_INSTALL_DIR': cga_install_dir,
                               'CGA_RUNTIME_LIB_DIR': cga_runtime_lib_dir
                           },
                           cwd=pycga_dir)
@@ -136,7 +136,9 @@ if __name__ == "__main__":
                               cmake_extra_args="-Dcga_build_shared=ON")
     cmake_proj.build()
     # Setup pyclaragenomics
-    setup_python_binding(is_develop_mode=args.develop,
-                         wheel_output_folder=args.build_output_folder if args.create_wheel_only else None,
-                         pycga_dir=current_dir,
-                         cga_install_dir=cga_installation_directory)
+    setup_python_binding(
+        is_develop_mode=args.develop,
+        wheel_output_folder=os.path.realpath(args.build_output_folder) if args.create_wheel_only else None,
+        pycga_dir=current_dir,
+        cga_install_dir=os.path.realpath(cga_installation_directory)
+    )
