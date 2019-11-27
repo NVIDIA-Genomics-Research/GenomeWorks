@@ -24,7 +24,7 @@ def parse_arguments():
     parser.add_argument('--create_wheel_only',
                         required=False,
                         action='store_true',
-                        help="Create ")
+                        help="Creates a python wheel package from pyclaragenomics (no installation)")
     parser.add_argument('--develop',
                         required=False,
                         action='store_true',
@@ -80,7 +80,11 @@ class CMakeWrapper:
 
 def setup_python_binding(is_develop_mode, wheel_output_folder, pycga_dir, cga_install_dir):
     if wheel_output_folder:
-        setup_command = ['python', 'setup.py', 'bdist_wheel', '-d', wheel_output_folder]
+        setup_command = [
+            'pip', 'wheel', '.',
+            '--global-option', 'sdist',
+            '--wheel-dir', wheel_output_folder, '--no-deps'
+        ]
         completion_message = \
             "A wheel file was create for pyclaragenomics under {}".format(wheel_output_folder)
     else:
@@ -112,7 +116,7 @@ if __name__ == "__main__":
     # Setup pyclaragenomics
     setup_python_binding(
         is_develop_mode=args.develop,
-        wheel_output_folder=os.path.realpath(args.build_output_folder) if args.create_wheel_only else None,
+        wheel_output_folder='pyclaragenomics_wheel/' if args.create_wheel_only else None,
         pycga_dir=current_dir,
         cga_install_dir=os.path.realpath(cga_installation_directory)
     )

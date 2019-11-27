@@ -65,18 +65,17 @@ copy_all_files_in_directory(
 
 # Classifiers for PyPI
 pycga_classifiers = [
-    'Development Status :: 5 - Production/Stable',
-    'Operating System :: POSIX :: Linux',
-    'Intended Audience :: Science/Research',
-    'Topic :: Scientific/Engineering :: Bio-Informatics',
-    'License :: OSI Approved :: Apache Software License',
-    'Natural Language :: English',
-    'Operating System :: POSIX :: Linux',
-    'Programming Language :: Python :: 3.6',
-    'Programming Language :: Python :: 3.7',
-    'Programming Language :: Python :: 3.8',
-    'Programming Language :: Python :: 3.9',
-],
+        "Development Status :: 5 - Production/Stable",
+        "Intended Audience :: Science/Research",
+        "Topic :: Scientific/Engineering :: Bio-Informatics",
+        "License :: OSI Approved :: Apache Software License",
+        "Natural Language :: English",
+        "Operating System :: POSIX :: Linux",
+        "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9"
+]
 
 extensions = [
     Extension(
@@ -101,7 +100,7 @@ setup(name='pyclaragenomics',
       url="https://github.com/clara-genomics/ClaraGenomicsAnalysis",
       include_package_data=True,
       data_files=[
-          ('claragenomics', glob.glob('claragenomics/shared_libs/*.so'))
+          ('cga_shared_objects', glob.glob('claragenomics/shared_libs/*.so'))
       ],
       install_requires=get_installation_requirments(
           get_verified_absolute_path(os.path.join(current_dir, 'requirements.txt'))
@@ -111,6 +110,7 @@ setup(name='pyclaragenomics',
       license='Apache License 2.0',
       long_description='Python libraries and utilities for manipulating genomics data',
       classifiers=pycga_classifiers,
+      platforms=['any'],
       ext_modules=cythonize(extensions, compiler_directives={'embedsignature': True}),
       scripts=[os.path.join('bin', 'genome_simulator'),
                os.path.join('bin', 'assembly_evaluator')],

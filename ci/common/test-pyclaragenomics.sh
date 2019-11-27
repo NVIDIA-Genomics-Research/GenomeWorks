@@ -36,5 +36,5 @@ cd $PYCLARAGENOMICS_DIR
 pip uninstall -y pyclaragenomics
 # Test wheel package creation
 python setup_pyclaragenomics.py --build_output_folder cga_build_wheel --create_wheel_only
-yes | pip install $PYCLARAGENOMICS_DIR/cga_build_wheel/pyclaragenomics-*.whl
+yes | pip install $PYCLARAGENOMICS_DIR/pyclaragenomics_wheel/pyclaragenomics-*.whl
 run_tests
