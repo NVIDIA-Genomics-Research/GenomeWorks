@@ -580,9 +580,6 @@ public:
             }
             __syncwarp();
             release_mutex();
-#if __CUDA_ARCH__ >= 700
-            asm("nanosleep.u32 100000;");
-#endif
         }
         __syncwarp();
         release_mutex();
@@ -605,9 +602,6 @@ private:
         {
             while (0 != atomicCAS(&(data_->mutex_), 0, 1))
             {
-#if __CUDA_ARCH__ >= 700
-                asm("nanosleep.u32 10000;");
-#endif
             };
         }
         __threadfence_block();
@@ -620,9 +614,6 @@ private:
             atomicOr(&(data_->mutex_), 0x0000'0002u); // reserve mutex
             while (2 != atomicCAS(&(data_->mutex_), 2, 1))
             {
-#if __CUDA_ARCH__ >= 700
-                asm("nanosleep.u32 1000;");
-#endif
                 atomicOr(&(data_->mutex_), 0x0000'0002u); // reserve mutex
             };
         }
