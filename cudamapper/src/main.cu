@@ -46,8 +46,9 @@ int main(int argc, char* argv[])
     uint32_t w               = 15;
     size_t index_size        = 10000;
     size_t num_threads       = 1;
+    size_t num_devices       = 1;
     size_t target_index_size = 10000;
-    std::string optstring    = "t:i:k:w:h:r:";
+    std::string optstring    = "t:i:k:w:h:r:d:";
     uint32_t argument;
     while ((argument = getopt_long(argc, argv, optstring.c_str(), options, nullptr)) != -1)
     {
@@ -64,6 +65,9 @@ int main(int argc, char* argv[])
             break;
         case 'r':
             num_threads = atoi(optarg);
+            break;
+        case 'd':
+            num_devices = atoi(optarg);
             break;
         case 't':
             target_index_size = atoi(optarg);
@@ -196,15 +200,14 @@ int main(int argc, char* argv[])
         for (; target_start_index < targets; target_start_index += target_index_size) {
             std::int32_t target_end_index = std::min(target_start_index + target_index_size,
                                                      static_cast<size_t>(targets));
-            //std::cerr << "Target range: " << target_start_index << " - " << target_end_index - 1 << std::endl;
-
             q.target_ranges.push_back(std::make_pair(target_start_index, target_end_index));
          }
 
         query_target_ranges.push_back(q);
     }
 
-    auto compute_overlaps = [&](query_target_range query_target_range){
+    auto compute_overlaps = [&](query_target_range query_target_range, int device_id){
+        cudaSetDevice(device_id);
         auto query_start_index = query_target_range.query_range.first;
         auto query_end_index = query_target_range.query_range.second;
 
@@ -261,7 +264,6 @@ int main(int argc, char* argv[])
             }
 
         }
-        return 0;
     };
 
     // create thread pool
@@ -269,15 +271,18 @@ int main(int argc, char* argv[])
 
     // New Main loop
 
-    std::vector<std::future<int>> futures;
+    std::vector<std::future<void>> futures;
 
-    for (auto query_target_range: query_target_ranges){
+    for (int i=0;i<query_target_ranges.size();i++){
         // enqueue and store future
-        futures.push_back(pool.enqueue(compute_overlaps, query_target_range));
+
+        auto query_target_range = query_target_ranges[i];
+        auto device_id = i % num_devices;
+        futures.push_back(pool.enqueue(compute_overlaps, query_target_range, device_id));
     }
 
     for (auto &f: futures){
-        std::cerr << f.get() <<std::endl;
+        f.wait();
     }
 
     // Insert empty overlap vector to denote end of processing.
