@@ -488,7 +488,7 @@ __device__ void hirschberg_myers_single_char_warp(int8_t* path, char query_char,
 template <typename T>
 struct parallel_warp_shared_stack_state
 {
-    uint32_t mutex_;
+    int32_t mutex_;
     int32_t active_warps_;
     T* buffer_begin_;
     T* cur_end_;
@@ -521,7 +521,7 @@ public:
 
     __device__ bool inline push(T const& t)
     {
-        lock_mutex_high_priority();
+        lock_mutex();
         bool success = false;
         __syncwarp();
 
@@ -592,7 +592,7 @@ private:
         __threadfence_block();
         if (threadIdx.x % warp_size == 0)
         {
-            atomicAnd(&(data_->mutex_), 0x0000'0002u);
+            atomicExch(&(data_->mutex_), 0);
         }
     };
 
@@ -602,19 +602,6 @@ private:
         {
             while (0 != atomicCAS(&(data_->mutex_), 0, 1))
             {
-            };
-        }
-        __threadfence_block();
-    }
-
-    __device__ inline void lock_mutex_high_priority() const
-    {
-        if (threadIdx.x % warp_size == 0)
-        {
-            atomicOr(&(data_->mutex_), 0x0000'0002u); // reserve mutex
-            while (2 != atomicCAS(&(data_->mutex_), 2, 1))
-            {
-                atomicOr(&(data_->mutex_), 0x0000'0002u); // reserve mutex
             };
         }
         __threadfence_block();
