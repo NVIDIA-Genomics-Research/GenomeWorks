@@ -215,7 +215,7 @@ __device__ WordType myers_generate_query_pattern_reverse(char x, char const* que
 
 __device__ void myers_preprocess(device_matrix_view<WordType>& query_pattern, char const* query, int32_t query_size)
 {
-    const int32_t n_words           = ceiling_divide(query_size, word_size);
+    const int32_t n_words = ceiling_divide(query_size, word_size);
     for (int32_t idx = threadIdx.x; idx < n_words; idx += warp_size)
     {
         // TODO query load is inefficient
@@ -492,7 +492,9 @@ class warp_shared_stack
 {
 public:
     __device__ warp_shared_stack(T* buffer_begin, T* buffer_end)
-        : buffer_begin_(buffer_begin), cur_end_(buffer_begin), buffer_end_(buffer_end)
+        : buffer_begin_(buffer_begin)
+        , cur_end_(buffer_begin)
+        , buffer_end_(buffer_end)
     {
         assert(buffer_begin_ < buffer_end_);
     }
