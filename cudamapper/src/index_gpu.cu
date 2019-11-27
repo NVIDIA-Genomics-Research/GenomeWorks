@@ -139,6 +139,27 @@ __global__ void find_number_of_representation_occurrences_kernel(const std::uint
         number_of_elements_with_representation_d[i] = starting_index_of_each_representation_d[i + 1] - starting_index_of_each_representation_d[i];
 }
 
+__global__ void mark_for_filtering_out_kernel(const std::int32_t filtering_treshold,
+                                              const std::size_t number_of_unique_representations_d,
+                                              std::uint32_t* const number_of_sketch_elements_with_representation_d,
+                                              std::uint32_t* const keep_representation_mask_d)
+{
+    const std::uint64_t i = blockIdx.x * blockDim.x + threadIdx.x;
+
+    if (i >= number_of_unique_representations_d) // no +1 beacuse we're not interested in the additional last element of number_of_sketch_elements_with_representation_d, it should remain 0
+        return;
+
+    if (number_of_sketch_elements_with_representation_d[i] >= filtering_treshold)
+    {
+        number_of_sketch_elements_with_representation_d[i] = 0;
+        keep_representation_mask_d[i]                      = 0;
+    }
+    else
+    {
+        keep_representation_mask_d[i] = 1;
+    }
+}
+
 } // namespace index_gpu
 } // namespace details
 

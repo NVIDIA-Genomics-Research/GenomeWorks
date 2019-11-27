@@ -235,6 +235,27 @@ __global__ void find_number_of_representation_occurrences_kernel(const std::uint
                                                                  const std::size_t number_of_elements,
                                                                  std::uint32_t* const number_of_sketch_elements_with_representation_d);
 
+/// \brief Marks representations which should be filtered out
+///
+/// Prepares the data for filtering out representations
+/// Marks the representations that are going to be removed as having 0 elements and makes a mask
+/// which specifies which representation should be kept and which not
+///
+/// 4 <- filtering threshold
+/// 1  3  5  6  7 <- unique_representations
+/// 2  2  4  6  3  0 <- number_of_sketch_elements_with_representation_d (before)
+/// 2  2  0  0  3  0 <- number_of_sketch_elements_with_representation_d (after)
+/// 1  1  0  0  1 <- keep_representation_mask
+///
+/// \param filtering_treshold any representation with this or more sketch elements should be filtered out
+/// \param number_of_unique_representations_d number of unique representations, i.e. size of number_of_sketch_elements_with_representation_d - 1
+/// \param number_of_sketch_elements_with_representation_d number of sketch elements for each representation plus an additional element at the end with value zero, on output elements corresponding to representations to be filtered out are set to 0
+/// \param keep_representation_mask_d on output has value 1 if corresponding representation is to be kept, 0 if it is to be filtered out
+__global__ void mark_for_filtering_out_kernel(const std::int32_t filtering_treshold,
+                                              const std::size_t number_of_unique_representations_d,
+                                              std::uint32_t* const number_of_sketch_elements_with_representation_d,
+                                              std::uint32_t* const keep_representation_mask_d);
+
 } // namespace index_gpu
 } // namespace details
 
