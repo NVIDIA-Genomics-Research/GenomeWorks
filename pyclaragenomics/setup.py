@@ -9,14 +9,16 @@
 # distribution of this software and related documentation without an express
 # license agreement from NVIDIA CORPORATION is strictly prohibited.
 #
+
 import glob
 import os
+import shutil
 from setuptools import setup, find_packages, Extension
 
 from Cython.Build import cythonize
 
 
-def get_verified_path(path):
+def get_verified_absolute_path(path):
     installed_path = os.path.abspath(path)
     if not os.path.exists(installed_path):
         raise RuntimeError("No valid path for requested component exists")
@@ -30,15 +32,33 @@ def get_installation_requirments(file_path):
     return requirements_file_content
 
 
+def copy_all_files_in_directory(src, dest, file_ext="*.so"):
+    files_to_copy = glob.glob(os.path.join(src, file_ext))
+    if not files_to_copy:
+        raise RuntimeError("No {} files under {}".format(src, file_ext))
+    os.makedirs(os.path.dirname(dest), exist_ok=True)
+    try:
+        for file in files_to_copy:
+            shutil.copy(file, dest)
+            print("{} was copied into {}".format(file, dest))
+    except (shutil.Error, PermissionError) as err:
+        print('Could not copy {}. Error: {}'.format(file, err))
+        raise err
+
+
 # Must be set before calling pip
 try:
     pycga_dir = os.environ['PYCGA_DIR']
     cga_install_dir = os.environ['CGA_INSTALL_DIR']
-    cga_runtime_lib_dir = os.environ['CGA_RUNTIME_LIB_DIR']
 except KeyError as e:
     raise EnvironmentError(
-        'PYCGA_DIR CGA_INSTALL_DIR CGA_RUNTIME_LIB_DIR \
-        environment variables must be set').with_traceback(e.__traceback__)
+        'PYCGA_DIR CGA_INSTALL_DIR environment variables must be set').with_traceback(e.__traceback__)
+
+# Copies shared libraries into clargenomics package
+copy_all_files_in_directory(
+    get_verified_absolute_path(os.path.join(cga_install_dir, "lib")),
+    os.path.join(pycga_dir, "claragenomics/shared_libs/"),
+)
 
 # Classifiers for PyPI
 pycga_classifiers = [
@@ -58,13 +78,13 @@ pycga_classifiers = [
 extensions = [
     Extension(
         "*",
-        sources=[os.path.join(pycga_dir, "claragenomics/**/*.pyx")],
+        sources=[os.path.join("claragenomics/**/*.pyx")],
         include_dirs=[
             "/usr/local/cuda/include",
-            get_verified_path(os.path.join(cga_install_dir, "include")),
+            get_verified_absolute_path(os.path.join(cga_install_dir, "include")),
         ],
-        library_dirs=["/usr/local/cuda/lib64", get_verified_path(os.path.join(cga_install_dir, "lib"))],
-        runtime_library_dirs=["/usr/local/cuda/lib64", cga_runtime_lib_dir],
+        library_dirs=["/usr/local/cuda/lib64", get_verified_absolute_path(os.path.join(cga_install_dir, "lib"))],
+        runtime_library_dirs=["/usr/local/cuda/lib64", os.path.join('$ORIGIN', os.pardir, 'shared_libs')],
         libraries=["cudapoa", "cudaaligner", "cudart"],
         language="c++",
         extra_compile_args=["-std=c++14"],
@@ -76,16 +96,19 @@ setup(name='pyclaragenomics',
       description='NVIDIA genomics python libraries and utiliites',
       author='NVIDIA Corporation',
       url="https://github.com/clara-genomics/ClaraGenomicsAnalysis",
-      package_data={
-          'claragenomics': glob.glob(os.path.join(pycga_dir, 'claragenomics/shared_libs/*.so'))
-      },
-      install_requires=get_installation_requirments(os.path.join(pycga_dir, 'requirements.txt')),
+      include_package_data=True,
+      data_files=[
+          ('claragenomics', glob.glob('claragenomics/shared_libs/*.so'))
+      ],
+      install_requires=get_installation_requirments(
+          get_verified_absolute_path(os.path.join(pycga_dir, 'requirements.txt'))
+      ),
       packages=find_packages(where=pycga_dir),
       python_requires='>=3.6',
       license='Apache License 2.0',
       long_description='Python libraries and utilities for manipulating genomics data',
       classifiers=pycga_classifiers,
       ext_modules=cythonize(extensions, compiler_directives={'embedsignature': True}),
-      scripts=[get_verified_path(os.path.join(pycga_dir, 'bin', 'genome_simulator')),
-               get_verified_path(os.path.join(pycga_dir, 'bin', 'assembly_evaluator'))],
+      scripts=[os.path.join('bin', 'genome_simulator'),
+               os.path.join('bin', 'assembly_evaluator')],
       )
