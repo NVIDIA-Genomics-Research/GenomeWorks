@@ -48,16 +48,19 @@ def copy_all_files_in_directory(src, dest, file_ext="*.so"):
 
 # Must be set before calling pip
 try:
-    pycga_dir = os.environ['PYCGA_DIR']
     cga_install_dir = os.environ['CGA_INSTALL_DIR']
 except KeyError as e:
     raise EnvironmentError(
-        'PYCGA_DIR CGA_INSTALL_DIR environment variables must be set').with_traceback(e.__traceback__)
+        'CGA_INSTALL_DIR environment variables must be set').with_traceback(e.__traceback__)
+
+# Get current dir (pyclaragenomics folder is copied into a temp directory created by pip)
+current_dir = os.path.dirname(os.path.realpath(__file__))
+
 
 # Copies shared libraries into clargenomics package
 copy_all_files_in_directory(
     get_verified_absolute_path(os.path.join(cga_install_dir, "lib")),
-    os.path.join(pycga_dir, "claragenomics/shared_libs/"),
+    os.path.join(current_dir, "claragenomics/shared_libs/"),
 )
 
 # Classifiers for PyPI
@@ -101,9 +104,9 @@ setup(name='pyclaragenomics',
           ('claragenomics', glob.glob('claragenomics/shared_libs/*.so'))
       ],
       install_requires=get_installation_requirments(
-          get_verified_absolute_path(os.path.join(pycga_dir, 'requirements.txt'))
+          get_verified_absolute_path(os.path.join(current_dir, 'requirements.txt'))
       ),
-      packages=find_packages(where=pycga_dir),
+      packages=find_packages(where=current_dir),
       python_requires='>=3.6',
       license='Apache License 2.0',
       long_description='Python libraries and utilities for manipulating genomics data',

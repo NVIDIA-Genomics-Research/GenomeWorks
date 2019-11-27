@@ -92,7 +92,6 @@ def setup_python_binding(is_develop_mode, wheel_output_folder, pycga_dir, cga_in
     subprocess.check_call(setup_command,
                           env={
                               **os.environ,
-                              'PYCGA_DIR': pycga_dir,
                               'CGA_INSTALL_DIR': cga_install_dir
                           },
                           cwd=pycga_dir)
