@@ -30,6 +30,16 @@ To test the installation execute:
 cd test/
 python -m pytest
 ```
+### Create a Wheel package
+
+Use the following command in order to package pyclaragenomics into a wheel. (without installing)
+```
+pip install -r requirements.txt
+python setup_pyclaragenomics.py --create_wheel_only
+```
+Compiled CPython 3.5 & 3.6 packages are available at:  
+- https://pypi.org/project/pyclaragenomics-cuda10-0/#description
+- https://pypi.org/project/pyclaragenomics-cuda10-1/#description
 
 ## Generating a simulated genome
 
