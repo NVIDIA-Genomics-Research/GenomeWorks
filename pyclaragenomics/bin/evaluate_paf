@@ -34,6 +34,16 @@ def match_overlaps(query_0, query_1, target_0, target_1, pos_tolerance):
         abs(target_0[0] - target_1[0]) < pos_tolerance and \
         abs(target_0[1] - target_1[1]) < pos_tolerance
 
+def generate_key(name_1, name_2):
+    """Given two read names, return key for indexing overlaps.
+
+    Args:
+        name_1 (str) : Name of first read
+        name_2 (str): Name of second read
+
+    Returns: a key of concatenated names.
+    """
+    return "{}_{}".format(name_1, name_2)
 
 def evaluate_paf(truth_paf_filepath, test_paf_filepath, pos_tolerance=400, skip_self_mappings=True):
     """Given a truth and test set PAF file, count number of in/correctly detected, and non-detected overlaps
@@ -55,7 +65,7 @@ def evaluate_paf(truth_paf_filepath, test_paf_filepath, pos_tolerance=400, skip_
                 (truth_overlap.query_sequence_name == truth_overlap.target_sequence_name):
             continue
 
-        key = truth_overlap.query_sequence_name + "_" + truth_overlap.target_sequence_name
+        key = generate_key(truth_overlap.query_sequence_name, truth_overlap.target_sequence_name)
 
         truth_overlaps[key].append(truth_overlap)
         num_true_overlaps += 1
@@ -76,8 +86,8 @@ def evaluate_paf(truth_paf_filepath, test_paf_filepath, pos_tolerance=400, skip_
         query_0 = (test_overlap.query_start, test_overlap.query_end)
         target_0 = (test_overlap.target_start, test_overlap.target_end)
 
-        key = test_overlap.query_sequence_name + "_" + test_overlap.target_sequence_name
-        key_reversed = test_overlap.target_sequence_name + "_" + test_overlap.query_sequence_name
+        key = generate_key(test_overlap.query_sequence_name, test_overlap.target_sequence_name)
+        key_reversed = generate_key(test_overlap.target_sequence_name, test_overlap.query_sequence_name)
 
         if (key in seen_test_overlap_keys) or (key_reversed in seen_test_overlap_keys):
             continue
