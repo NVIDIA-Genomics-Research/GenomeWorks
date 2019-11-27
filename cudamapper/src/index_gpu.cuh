@@ -136,11 +136,11 @@ namespace index_gpu
 ///
 /// For example:
 /// 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20
-/// 0  0  0  0 12 12 12 12 12 12 23 23 23 32 32 32 32 32 46 46 46
+/// 0  0  0  0 12 12 12 12 12 12 23 23 23 32 32 32 32 32 46 46 46   <- input_representations_d
 /// ^           ^                 ^        ^              ^       ^
 /// gives:
-/// 0 12 23 32 46
-/// 0  4 10 13 18 21
+/// 0 12 23 32 46    <- unique_representations_d
+/// 0  4 10 13 18 21 <- first_occurrence_index_d
 ///
 /// \param unique_representations_d empty on input, contains one value of each representation on the output
 /// \param first_occurrence_index_d empty on input, index of first occurrence of each representation and additional elemnt on the output
@@ -153,9 +153,9 @@ void find_first_occurrences_of_representations(thrust::device_vector<representat
 ///
 /// For example:
 /// 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20
-/// 0  0  0  0 12 12 12 12 12 12 23 23 23 32 32 32 32 32 46 46 46
+/// 0  0  0  0 12 12 12 12 12 12 23 23 23 32 32 32 32 32 46 46 46 <- representations_d
 /// gives:
-/// 1  0  0  0  1  0  0  0  0  0  1  0  0  1  0  0  0  0  1  0  0
+/// 1  0  0  0  1  0  0  0  0  0  1  0  0  1  0  0  0  0  1  0  0 <- new_value_mask_d
 ///
 /// \param representations_d
 /// \param number_of_elements
@@ -171,19 +171,19 @@ __global__ void create_new_value_mask(const representation_t* const representati
 ///
 /// For example:
 /// 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20
-/// 0  0  0  0 12 12 12 12 12 12 23 23 23 32 32 32 32 32 46 46 46
+/// 0  0  0  0 12 12 12 12 12 12 23 23 23 32 32 32 32 32 46 46 46 <- input_representatons_d
 /// 1  0  0  0  1  0  0  0  0  0  1  0  0  1  0  0  0  0  1  0  0
-/// 1  1  1  1  2  2  2  2  2  2  3  3  3  4  4  4  4  4  5  5  5
+/// 1  1  1  1  2  2  2  2  2  2  3  3  3  4  4  4  4  4  5  5  5 <- representation_index_mask_d
 /// ^           ^                 ^        ^              ^
 /// gives:
-/// 0 12 23 32 46
-/// 0  4 10 13 18
+/// 0 12 23 32 46 <- unique_representations_d
+/// 0  4 10 13 18 <- starting_index_of_each_representation_d
 ///
-/// \param representation_index_mask_d an array in which each element from input_representatons_d is mapped to an ordinal number of that representation (array "1  1  1  1  2  2  2  2  2  2  3  3  3  4  4  4  4  4  5  5  5" in the example)
-/// \param input_representatons_d all representations (array "0  0  0  0 12 12 12 12 12 12 23 23 23 32 32 32 32 32 46 46 46" in the example)
+/// \param representation_index_mask_d an array in which each element from input_representatons_d is mapped to an ordinal number of that representation
+/// \param input_representatons_d all representations
 /// \param number_of_input_elements number of elements in input_representatons_d and representation_index_mask_d
-/// \param starting_index_of_each_representation_d index with first occurrence of each representation (array "0 12 23 32 46" in the example)
-/// \param unique_representations_d representation that corresponds to each element in starting_index_of_each_representation_d (array "0  4 10 13 18" in the example)
+/// \param starting_index_of_each_representation_d index with first occurrence of each representation
+/// \param unique_representations_d representation that corresponds to each element in starting_index_of_each_representation_d
 __global__ void find_first_occurrences_of_representations_kernel(const std::uint64_t* const representation_index_mask_d,
                                                                  const representation_t* const input_representations_d,
                                                                  const std::size_t number_of_input_elements,
@@ -216,6 +216,24 @@ __global__ void copy_rest_to_separate_arrays(const ReadidPositionDirection* cons
     positions_in_reads_d[i]  = rest_d[i].position_in_read_;
     directions_of_reads_d[i] = DirectionOfRepresentation(rest_d[i].direction_);
 }
+
+/// \brief finds number of occurrences of each representation according to the starting position of that representations
+///
+/// For example:
+/// 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16
+/// 1  1  3  3  5  5  5  5  6  6  6  6  6  6  7  7  7 <-representations
+/// 1  3  5  6  7 <- unique_representations
+/// 0  2  4  8 14 17 <- starting_index_of_each_representation
+///
+/// gives:
+/// 2  2  4  6  3  0 <- number_of_sketch_elements_with_representation_d (last element set to zero)
+///
+/// \param starting_index_of_each_representation_d index with first occurrence of each representation, plus one more element with the total number of representations
+/// \param number_of_elements number of elements in array (unique representations + 1)
+/// \param number_of_sketch_elements_with_representation_d
+__global__ void find_number_of_representation_occurrences_kernel(const std::uint32_t* const starting_index_of_each_representation_d,
+                                                                 const std::size_t number_of_elements,
+                                                                 std::uint32_t* const number_of_sketch_elements_with_representation_d);
 
 } // namespace index_gpu
 } // namespace details

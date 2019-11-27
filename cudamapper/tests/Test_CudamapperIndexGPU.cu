@@ -18,6 +18,7 @@
 #include "../src/minimizer.hpp"
 
 #include <claragenomics/utils/mathutils.hpp>
+#include <claragenomics/utils/signed_integer_utils.hpp>
 
 namespace claragenomics
 {
@@ -488,6 +489,80 @@ TEST(TestCudamapperIndexGPU, test_function_copy_rest_to_separate_arrays)
                                                expected_positions_in_reads_h,
                                                expected_directions_of_reads_h,
                                                threads);
+}
+
+// ************ Test find_number_of_representation_occurrences_kernel **************
+
+void test_find_number_of_representation_occurrences_kernel(const thrust::host_vector<std::uint32_t>& starting_index_of_each_representation_h,
+                                                           const thrust::host_vector<std::uint32_t>& expected_number_of_sketch_elements_with_representation_h,
+                                                           const std::int32_t number_of_threads)
+{
+    ASSERT_EQ(starting_index_of_each_representation_h.size(), expected_number_of_sketch_elements_with_representation_h.size());
+
+    const thrust::device_vector<std::uint32_t> starting_index_of_each_representation_d(starting_index_of_each_representation_h);
+    thrust::device_vector<std::uint32_t> number_of_sketch_elements_with_representation_d(starting_index_of_each_representation_h.size());
+
+    const std::int32_t number_of_blocks = ceiling_divide<std::int64_t>(number_of_sketch_elements_with_representation_d.size(),
+                                                                       number_of_threads);
+
+    find_number_of_representation_occurrences_kernel<<<number_of_blocks, number_of_threads>>>(starting_index_of_each_representation_d.data().get(),
+                                                                                              starting_index_of_each_representation_d.size(),
+                                                                                              number_of_sketch_elements_with_representation_d.data().get());
+
+    thrust::host_vector<std::uint32_t> number_of_sketch_elements_with_representation_h(number_of_sketch_elements_with_representation_d);
+
+    ASSERT_EQ(expected_number_of_sketch_elements_with_representation_h.size(), number_of_sketch_elements_with_representation_h.size());
+    for (std::int32_t i = 0; i < get_size(expected_number_of_sketch_elements_with_representation_h); ++i)
+    {
+        EXPECT_EQ(expected_number_of_sketch_elements_with_representation_h[i], number_of_sketch_elements_with_representation_h[i]) << "index: " << i;
+    }
+}
+
+TEST(TestCudamapperIndexGPU, test_find_number_of_representation_occurrences_kernel_small_example)
+{
+    thrust::host_vector<std::uint32_t> starting_index_of_each_representation_h;
+    thrust::host_vector<std::uint32_t> expected_number_of_sketch_elements_with_representation_h;
+
+    starting_index_of_each_representation_h.push_back(0);
+    starting_index_of_each_representation_h.push_back(2);
+    expected_number_of_sketch_elements_with_representation_h.push_back(2);
+    starting_index_of_each_representation_h.push_back(4);
+    expected_number_of_sketch_elements_with_representation_h.push_back(2);
+    starting_index_of_each_representation_h.push_back(8);
+    expected_number_of_sketch_elements_with_representation_h.push_back(4);
+    starting_index_of_each_representation_h.push_back(14);
+    expected_number_of_sketch_elements_with_representation_h.push_back(6);
+    starting_index_of_each_representation_h.push_back(17);
+    expected_number_of_sketch_elements_with_representation_h.push_back(3);
+    expected_number_of_sketch_elements_with_representation_h.push_back(0);
+
+    const std::int32_t number_of_threads = 4;
+
+    test_find_number_of_representation_occurrences_kernel(starting_index_of_each_representation_h,
+                                                          expected_number_of_sketch_elements_with_representation_h,
+                                                          number_of_threads);
+}
+
+TEST(TestCudamapperIndexGPU, test_find_number_of_representation_occurrences_kernel_large_example)
+{
+    const std::uint64_t total_unique_representations = 10000000;
+
+    thrust::host_vector<std::uint32_t> starting_index_of_each_representation_h;
+    thrust::host_vector<std::uint32_t> expected_number_of_sketch_elements_with_representation_h;
+
+    starting_index_of_each_representation_h.push_back(0);
+    for (std::uint32_t i = 1; i < total_unique_representations; ++i)
+    {
+        starting_index_of_each_representation_h.push_back(starting_index_of_each_representation_h.back() + i / 1000);
+        expected_number_of_sketch_elements_with_representation_h.push_back(i / 1000);
+    }
+    expected_number_of_sketch_elements_with_representation_h.push_back(0);
+
+    const std::int32_t number_of_threads = 256;
+
+    test_find_number_of_representation_occurrences_kernel(starting_index_of_each_representation_h,
+                                                          expected_number_of_sketch_elements_with_representation_h,
+                                                          number_of_threads);
 }
 
 } // namespace index_gpu
