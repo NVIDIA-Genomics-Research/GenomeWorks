@@ -88,7 +88,7 @@ public:
     /// \param hash_representations - if true, hash kmer representations
     /// \return instance of Index
     static std::unique_ptr<Index>
-    create_index(const io::FastaParser& parser,
+    create_index(io::FastaParser& parser,
                  const read_id_t first_read_id,
                  const read_id_t past_the_last_read_id,
                  const std::uint64_t kmer_size,
