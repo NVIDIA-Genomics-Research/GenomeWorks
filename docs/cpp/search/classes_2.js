@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['entry_133',['Entry',['../structclaragenomics_1_1cudapoa_1_1Entry.html',1,'claragenomics::cudapoa']]]
+  ['directedgraph_159',['DirectedGraph',['../classclaragenomics_1_1DirectedGraph.html',1,'claragenomics']]]
 ];

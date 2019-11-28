@@ -1,6 +1,4 @@
 var searchData=
 [
-  ['maximum_5fkmer_5fsize_177',['maximum_kmer_size',['../classclaragenomics_1_1cudamapper_1_1Index.html#af9247d4b637615bf5912acc57b27b919',1,'claragenomics::cudamapper::Index']]],
-  ['maximum_5frepresentation_178',['maximum_representation',['../classclaragenomics_1_1cudamapper_1_1Index.html#a69fd1882260a7c55a45fe5e2a092b152',1,'claragenomics::cudamapper::Index']]],
-  ['minimum_5frepresentation_179',['minimum_representation',['../classclaragenomics_1_1cudamapper_1_1Index.html#ac5036778efd3c83f5bf048174a8ab824',1,'claragenomics::cudamapper::Index']]]
+  ['init_217',['Init',['../group__logging.html#ga1e6ecad63f4d5d90cc01578f653f6e94',1,'claragenomics::logging::Init()'],['../group__cudapoa.html#ga20324a870a7cad68e1b02dcc1d5b02a1',1,'claragenomics::cudapoa::Init()'],['../group__cudaaligner.html#ga1d5dd3c4f48d7a735cbf6d7b5937d41a',1,'claragenomics::cudaaligner::Init()']]]
 ];

@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['group_229',['Group',['../group__cudapoa.html#ga6b301a3a6ac7edccc403ec75e7497d32',1,'claragenomics::cudapoa']]]
+  ['formattedalignment_278',['FormattedAlignment',['../group__cudaaligner.html#ga228dcdd4bf0cf40c64786cce6b045c40',1,'claragenomics::cudaaligner']]]
 ];

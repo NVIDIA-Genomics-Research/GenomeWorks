@@ -22,7 +22,7 @@
  <tr style="height: 56px;">
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">ClaraGenomicsAnalysis
-   &#160;<span id="projectnumber">0.3.0</span>
+   &#160;<span id="projectnumber">0.4.0</span>
    </div>
   </td>
  </tr>
@@ -78,6 +78,9 @@ Classes</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classclaragenomics_1_1cudamapper_1_1Index.html">claragenomics::cudamapper::Index</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classclaragenomics_1_1cudamapper_1_1Index.html" title="Index - manages mapping of (k,w)-kmer-representation and all its occurences.">Index</a> - manages mapping of (k,w)-kmer-representation and all its occurences.  <a href="classclaragenomics_1_1cudamapper_1_1Index.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classclaragenomics_1_1cudamapper_1_1Matcher.html">claragenomics::cudamapper::Matcher</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classclaragenomics_1_1cudamapper_1_1Matcher.html" title="Matcher - base matcher.">Matcher</a> - base matcher.  <a href="classclaragenomics_1_1cudamapper_1_1Matcher.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classclaragenomics_1_1cudamapper_1_1Overlapper.html">claragenomics::cudamapper::Overlapper</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classclaragenomics_1_1cudamapper_1_1Sequence.html">claragenomics::cudamapper::Sequence</a></td></tr>
@@ -93,9 +96,9 @@ Functions</h2></td></tr>
 virtual&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__cudamapper.html#ga569c8855bdf9806d3747b26fc7e98975">claragenomics::cudamapper::Overlapper::~Overlapper</a> ()=default</td></tr>
 <tr class="memdesc:ga569c8855bdf9806d3747b26fc7e98975"><td class="mdescLeft">&#160;</td><td class="mdescRight">Virtual destructor for <a class="el" href="classclaragenomics_1_1cudamapper_1_1Overlapper.html">Overlapper</a>. <br /></td></tr>
 <tr class="separator:ga569c8855bdf9806d3747b26fc7e98975"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga5498f3d8b5eff6481c67fdf0a049c300"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__cudamapper.html#ga5498f3d8b5eff6481c67fdf0a049c300">claragenomics::cudamapper::Overlapper::get_overlaps</a> (std::vector&lt; <a class="el" href="structclaragenomics_1_1cudamapper_1_1Overlap.html">Overlap</a> &gt; &amp;overlaps, std::vector&lt; <a class="el" href="structclaragenomics_1_1cudamapper_1_1Anchor.html">Anchor</a> &gt; &amp;anchors, const <a class="el" href="classclaragenomics_1_1cudamapper_1_1Index.html">Index</a> &amp;index)=0</td></tr>
-<tr class="memdesc:ga5498f3d8b5eff6481c67fdf0a049c300"><td class="mdescLeft">&#160;</td><td class="mdescRight">returns overlaps for a set of reads  <a href="group__cudamapper.html#ga5498f3d8b5eff6481c67fdf0a049c300">More...</a><br /></td></tr>
-<tr class="separator:ga5498f3d8b5eff6481c67fdf0a049c300"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gab0e3be4a9442dfb2b7952fb473e591a3"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__cudamapper.html#gab0e3be4a9442dfb2b7952fb473e591a3">claragenomics::cudamapper::Overlapper::get_overlaps</a> (std::vector&lt; <a class="el" href="structclaragenomics_1_1cudamapper_1_1Overlap.html">Overlap</a> &gt; &amp;overlaps, thrust::device_vector&lt; <a class="el" href="structclaragenomics_1_1cudamapper_1_1Anchor.html">Anchor</a> &gt; &amp;anchors, const <a class="el" href="classclaragenomics_1_1cudamapper_1_1Index.html">Index</a> &amp;index_query, const <a class="el" href="classclaragenomics_1_1cudamapper_1_1Index.html">Index</a> &amp;index_target)=0</td></tr>
+<tr class="memdesc:gab0e3be4a9442dfb2b7952fb473e591a3"><td class="mdescLeft">&#160;</td><td class="mdescRight">returns overlaps for a set of reads  <a href="group__cudamapper.html#gab0e3be4a9442dfb2b7952fb473e591a3">More...</a><br /></td></tr>
+<tr class="separator:gab0e3be4a9442dfb2b7952fb473e591a3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga54fedd97206ad1691f7b9d9966d01371"><td class="memItemLeft" align="right" valign="top"><a id="ga54fedd97206ad1691f7b9d9966d01371"></a>
 static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__cudamapper.html#ga54fedd97206ad1691f7b9d9966d01371">claragenomics::cudamapper::Overlapper::print_paf</a> (const std::vector&lt; <a class="el" href="structclaragenomics_1_1cudamapper_1_1Overlap.html">Overlap</a> &gt; &amp;overlaps)</td></tr>
 <tr class="memdesc:ga54fedd97206ad1691f7b9d9966d01371"><td class="mdescLeft">&#160;</td><td class="mdescRight">prints overlaps to stdout in <a href="https://github.com/lh3/miniasm/blob/master/PAF.md">PAF format</a> <br /></td></tr>
@@ -166,8 +169,8 @@ static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" hre
 
 </div>
 </div>
-<a id="ga5498f3d8b5eff6481c67fdf0a049c300"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga5498f3d8b5eff6481c67fdf0a049c300">&#9670;&nbsp;</a></span>get_overlaps()</h2>
+<a id="gab0e3be4a9442dfb2b7952fb473e591a3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gab0e3be4a9442dfb2b7952fb473e591a3">&#9670;&nbsp;</a></span>get_overlaps()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -184,14 +187,20 @@ static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" hre
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">std::vector&lt; <a class="el" href="structclaragenomics_1_1cudamapper_1_1Anchor.html">Anchor</a> &gt; &amp;&#160;</td>
+          <td class="paramtype">thrust::device_vector&lt; <a class="el" href="structclaragenomics_1_1cudamapper_1_1Anchor.html">Anchor</a> &gt; &amp;&#160;</td>
           <td class="paramname"><em>anchors</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">const <a class="el" href="classclaragenomics_1_1cudamapper_1_1Index.html">Index</a> &amp;&#160;</td>
-          <td class="paramname"><em>index</em>&#160;</td>
+          <td class="paramname"><em>index_query</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="classclaragenomics_1_1cudamapper_1_1Index.html">Index</a> &amp;&#160;</td>
+          <td class="paramname"><em>index_target</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -211,7 +220,8 @@ static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" hre
   <table class="params">
     <tr><td class="paramname">overlaps</td><td>Output vector into which generated overlaps will be placed </td></tr>
     <tr><td class="paramname">anchors</td><td>vector of anchor objects. Does not need to be ordered </td></tr>
-    <tr><td class="paramname">index</td><td>representation index for reads </td></tr>
+    <tr><td class="paramname">index_query</td><td>representation index for reads </td></tr>
+    <tr><td class="paramname">index_target</td><td></td></tr>
   </table>
   </dd>
 </dl>
