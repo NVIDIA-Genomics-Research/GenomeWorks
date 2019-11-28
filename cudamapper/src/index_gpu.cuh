@@ -241,20 +241,48 @@ __global__ void find_number_of_representation_occurrences_kernel(const std::uint
 /// Marks the representations that are going to be removed as having 0 elements and makes a mask
 /// which specifies which representation should be kept and which not
 ///
-/// 4 <- filtering threshold
+/// 4 <- filtering_threshold
 /// 1  3  5  6  7 <- unique_representations
 /// 2  2  4  6  3  0 <- number_of_sketch_elements_with_representation_d (before)
 /// 2  2  0  0  3  0 <- number_of_sketch_elements_with_representation_d (after)
 /// 1  1  0  0  1 <- keep_representation_mask
 ///
-/// \param filtering_treshold any representation with this or more sketch elements should be filtered out
+/// \param filtering_threshold any representation with this or more sketch elements should be filtered out
 /// \param number_of_unique_representations_d number of unique representations, i.e. size of number_of_sketch_elements_with_representation_d - 1
 /// \param number_of_sketch_elements_with_representation_d number of sketch elements for each representation plus an additional element at the end with value zero, on output elements corresponding to representations to be filtered out are set to 0
 /// \param keep_representation_mask_d on output has value 1 if corresponding representation is to be kept, 0 if it is to be filtered out
-__global__ void mark_for_filtering_out_kernel(const std::int32_t filtering_treshold,
+__global__ void mark_for_filtering_out_kernel(const std::int32_t filtering_threshold,
                                               const std::size_t number_of_unique_representations_d,
                                               std::uint32_t* const number_of_sketch_elements_with_representation_d,
                                               std::uint32_t* const keep_representation_mask_d);
+
+/// \brief Compresses unique_data and number_of_sketch_elements_with_representation after determening which ones should be filtered out
+///
+/// For example:
+/// 4 <- filtering_threshold
+/// 1  3  5  6  7    <- unique_representations_before_compression_d
+/// 2  2  4  6  3  0 <- number_of_sketch_elements_with_representation_d (before filtering)
+/// 2  2  0  0  3  0 <- number_of_sketch_elements_with_representation_d (after filtering)
+/// 0  2  4  4  4  7 <- first_occurrence_of_representation_before_compression_d
+/// 1  1  0  0  1    <- keep_representation_mask_d
+/// 0  1  2  2  2  3 <- new_unique_representation_index_d (keep_representation_mask_d after exclusive sum)
+///
+/// after compression gives:
+/// 1 3 7   <- unique_representations_after_compression_d
+/// 0 2 4 7 <- first_occurrence_of_representation_after_compression_d
+///
+/// \param number_of_unique_representation_before_compression
+/// \param unique_representations_before_compression_d
+/// \param first_occurrence_of_representation_before_compression_d
+/// \param new_unique_representation_index_d
+/// \param unique_representations_after_compression_d
+/// \param first_occurrence_of_representation_after_compression_d
+__global__ void compress_unique_representations_after_filtering_kernel(const std::uint64_t number_of_unique_representation_before_compression,
+                                                                       const representation_t* const unique_representations_before_compression_d,
+                                                                       const std::uint32_t* const first_occurrence_of_representation_before_compression_d,
+                                                                       const std::uint32_t* const new_unique_representation_index_d,
+                                                                       representation_t* const unique_representations_after_compression_d,
+                                                                       std::uint32_t* const first_occurrence_of_representation_after_compression_d);
 
 } // namespace index_gpu
 } // namespace details

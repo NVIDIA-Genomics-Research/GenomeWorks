@@ -567,13 +567,13 @@ TEST(TestCudamapperIndexGPU, test_find_number_of_representation_occurrences_kern
 
 // ************ Test find_mark_for_filtering_out_kernel **************
 
-void test_mark_for_filtering_out_kernel(const std::int32_t filtering_treshold,
+void test_mark_for_filtering_out_kernel(const std::int32_t filtering_threshold,
                                         const thrust::host_vector<std::uint32_t>& input_number_of_sketch_elements_with_representation_h,
                                         const thrust::host_vector<std::uint32_t>& expected_output_number_of_sketch_elements_with_representation_h,
                                         const thrust::host_vector<std::uint32_t>& expected_keep_representation_mask_h,
                                         const std::int32_t number_of_threads)
 {
-    ASSERT_GE(filtering_treshold, 0);
+    ASSERT_GE(filtering_threshold, 0);
     ASSERT_EQ(input_number_of_sketch_elements_with_representation_h.size(), expected_output_number_of_sketch_elements_with_representation_h.size());
     ASSERT_EQ(input_number_of_sketch_elements_with_representation_h.size() - 1, expected_keep_representation_mask_h.size());
 
@@ -583,7 +583,7 @@ void test_mark_for_filtering_out_kernel(const std::int32_t filtering_treshold,
     const std::int32_t number_of_blocks = ceiling_divide<std::int64_t>(number_of_sketch_elements_with_representation_d.size(),
                                                                        number_of_threads);
 
-    mark_for_filtering_out_kernel<<<number_of_blocks, number_of_threads>>>(filtering_treshold,
+    mark_for_filtering_out_kernel<<<number_of_blocks, number_of_threads>>>(filtering_threshold,
                                                                            input_number_of_sketch_elements_with_representation_h.size(),
                                                                            number_of_sketch_elements_with_representation_d.data().get(),
                                                                            keep_representation_mask_d.data().get());
@@ -610,7 +610,7 @@ TEST(TestCudamapperIndexGPU, test_mark_for_filtering_out_kernel_small_example)
     thrust::host_vector<std::uint32_t> expected_output_number_of_sketch_elements_with_representation_h;
     thrust::host_vector<std::uint32_t> expected_keep_representation_mask_h;
 
-    const std::int32_t filtering_treshold = 4;
+    const std::int32_t filtering_threshold = 4;
 
     input_number_of_sketch_elements_with_representation_h.push_back(2);
     expected_output_number_of_sketch_elements_with_representation_h.push_back(2);
@@ -633,7 +633,7 @@ TEST(TestCudamapperIndexGPU, test_mark_for_filtering_out_kernel_small_example)
 
     const std::int32_t number_of_threads = 4;
 
-    test_mark_for_filtering_out_kernel(filtering_treshold,
+    test_mark_for_filtering_out_kernel(filtering_threshold,
                                        input_number_of_sketch_elements_with_representation_h,
                                        expected_output_number_of_sketch_elements_with_representation_h,
                                        expected_keep_representation_mask_h,
@@ -648,12 +648,12 @@ TEST(TestCudamapperIndexGPU, test_mark_for_filtering_out_kernel_large_example)
     thrust::host_vector<std::uint32_t> expected_output_number_of_sketch_elements_with_representation_h;
     thrust::host_vector<std::uint32_t> expected_keep_representation_mask_h;
 
-    const std::int32_t filtering_treshold = 150;
+    const std::int32_t filtering_threshold = 150;
 
     for (std::uint32_t i = 0; i < total_unique_representations; ++i)
     {
         input_number_of_sketch_elements_with_representation_h.push_back(total_unique_representations / 1000);
-        if (total_unique_representations / 1000 < filtering_treshold)
+        if (total_unique_representations / 1000 < filtering_threshold)
         {
             expected_output_number_of_sketch_elements_with_representation_h.push_back(total_unique_representations / 1000);
             expected_keep_representation_mask_h.push_back(1);
@@ -670,11 +670,188 @@ TEST(TestCudamapperIndexGPU, test_mark_for_filtering_out_kernel_large_example)
 
     const std::int32_t number_of_threads = 256;
 
-    test_mark_for_filtering_out_kernel(filtering_treshold,
+    test_mark_for_filtering_out_kernel(filtering_threshold,
                                        input_number_of_sketch_elements_with_representation_h,
                                        expected_output_number_of_sketch_elements_with_representation_h,
                                        expected_keep_representation_mask_h,
                                        number_of_threads);
+}
+
+// ************ Test compress_unique_representations_after_filtering_kernel **************
+
+void test_compress_unique_representations_after_filtering_kernel(const thrust::host_vector<representation_t>& unique_representations_before_compression_h,
+                                                                 const thrust::host_vector<std::uint32_t>& first_occurrence_of_representation_before_compression_h,
+                                                                 const thrust::host_vector<std::uint32_t>& new_unique_representation_index_h,
+                                                                 const thrust::host_vector<representation_t>& expected_unique_representations_after_compression_h,
+                                                                 const thrust::host_vector<std::uint32_t>& expected_first_occurrence_of_representation_after_compression_h,
+                                                                 const std::int32_t number_of_threads)
+{
+    ASSERT_EQ(unique_representations_before_compression_h.size(), first_occurrence_of_representation_before_compression_h.size() - 1);
+    ASSERT_EQ(first_occurrence_of_representation_before_compression_h.size(), new_unique_representation_index_h.size());
+    const std::uint32_t number_of_unique_representations_after_compression = new_unique_representation_index_h.back(); // last element of new_unique_representation_index_h is equal to the number of unique representation after filtering
+    ASSERT_EQ(number_of_unique_representations_after_compression, expected_unique_representations_after_compression_h.size());
+    ASSERT_EQ(expected_unique_representations_after_compression_h.size(), expected_first_occurrence_of_representation_after_compression_h.size() - 1);
+
+    const thrust::device_vector<representation_t> unique_representations_before_compression_d(unique_representations_before_compression_h);
+    const thrust::device_vector<std::uint32_t> first_occurrence_of_representation_before_compression_d(first_occurrence_of_representation_before_compression_h);
+    const thrust::device_vector<std::uint32_t> new_unique_representation_index_d(new_unique_representation_index_h);
+
+    thrust::device_vector<representation_t> unique_representations_after_compression_d(expected_unique_representations_after_compression_h.size());
+    thrust::device_vector<std::uint32_t> first_occurrence_of_representation_after_compression_d(expected_first_occurrence_of_representation_after_compression_h.size());
+
+    const std::int32_t number_of_blocks = ceiling_divide<std::int64_t>(unique_representations_before_compression_h.size() + 1,
+                                                                       number_of_threads);
+
+    compress_unique_representations_after_filtering_kernel<<<number_of_blocks, number_of_threads>>>(unique_representations_before_compression_d.size(),
+                                                                                                    unique_representations_before_compression_d.data().get(),
+                                                                                                    first_occurrence_of_representation_before_compression_d.data().get(),
+                                                                                                    new_unique_representation_index_d.data().get(),
+                                                                                                    unique_representations_after_compression_d.data().get(),
+                                                                                                    first_occurrence_of_representation_after_compression_d.data().get());
+
+    const thrust::host_vector<representation_t> unique_representations_after_compression_h(unique_representations_after_compression_d);
+    const thrust::host_vector<std::uint32_t> first_occurrence_of_representation_after_compression_h(first_occurrence_of_representation_after_compression_d);
+
+    ASSERT_EQ(unique_representations_after_compression_h.size(), first_occurrence_of_representation_after_compression_h.size() - 1);
+    for (std::int32_t i = 0; i < get_size(unique_representations_after_compression_h); ++i)
+    {
+        EXPECT_EQ(unique_representations_after_compression_h[i], expected_unique_representations_after_compression_h[i]) << "index: " << i;
+        EXPECT_EQ(first_occurrence_of_representation_after_compression_h[i], expected_first_occurrence_of_representation_after_compression_h[i]) << "index: " << i;
+    }
+    // first_occurrence_of_representation_after_compression_h has one more element
+    EXPECT_EQ(first_occurrence_of_representation_after_compression_h.back(), expected_first_occurrence_of_representation_after_compression_h.back());
+}
+
+TEST(TestCudamapperIndexGPU, test_compress_unique_representations_after_filtering_kernel_small_example)
+{
+    thrust::host_vector<representation_t> unique_representations_before_compression_h;
+    thrust::host_vector<std::uint32_t> first_occurrence_of_representation_before_compression_h;
+    thrust::host_vector<std::uint32_t> new_unique_representation_index_h;
+    thrust::host_vector<representation_t> expected_unique_representations_after_compression_h;
+    thrust::host_vector<std::uint32_t> expected_first_occurrence_of_representation_after_compression_h;
+
+    // 4 <- filtering_threshold
+    // 1  3  5  6  7    <- unique_representations_before_compression_h
+    // 2  2  4  6  3  0 <- number_of_sketch_elements_with_representation_d (before filtering)
+    // 2  2  0  0  3  0 <- number_of_sketch_elements_with_representation_h (after filtering)
+    // 0  2  4  4  4  7 <- first_occurrence_of_representation_before_compression_h
+    // 1  1  0  0  1    <- keep_representation_mask
+    // 0  1  2  2  2  3 <- new_unique_representation_index_h
+    //
+    // 1 3 7   <- unique_representations_after_compression_h
+    // 0 2 4 7 <- first_occurrence_of_representation_after_compression_h
+
+    unique_representations_before_compression_h.push_back(1);
+    unique_representations_before_compression_h.push_back(3);
+    unique_representations_before_compression_h.push_back(5);
+    unique_representations_before_compression_h.push_back(6);
+    unique_representations_before_compression_h.push_back(7);
+
+    first_occurrence_of_representation_before_compression_h.push_back(0);
+    first_occurrence_of_representation_before_compression_h.push_back(2);
+    first_occurrence_of_representation_before_compression_h.push_back(4);
+    first_occurrence_of_representation_before_compression_h.push_back(4);
+    first_occurrence_of_representation_before_compression_h.push_back(4);
+    first_occurrence_of_representation_before_compression_h.push_back(7);
+
+    new_unique_representation_index_h.push_back(0);
+    new_unique_representation_index_h.push_back(1);
+    new_unique_representation_index_h.push_back(2);
+    new_unique_representation_index_h.push_back(2);
+    new_unique_representation_index_h.push_back(2);
+    new_unique_representation_index_h.push_back(3);
+
+    expected_unique_representations_after_compression_h.push_back(1);
+    expected_unique_representations_after_compression_h.push_back(3);
+    expected_unique_representations_after_compression_h.push_back(7);
+
+    expected_first_occurrence_of_representation_after_compression_h.push_back(0);
+    expected_first_occurrence_of_representation_after_compression_h.push_back(2);
+    expected_first_occurrence_of_representation_after_compression_h.push_back(4);
+    expected_first_occurrence_of_representation_after_compression_h.push_back(7);
+
+    const std::int32_t number_of_threads = 4;
+
+    test_compress_unique_representations_after_filtering_kernel(unique_representations_before_compression_h,
+                                                                first_occurrence_of_representation_before_compression_h,
+                                                                new_unique_representation_index_h,
+                                                                expected_unique_representations_after_compression_h,
+                                                                expected_first_occurrence_of_representation_after_compression_h,
+                                                                number_of_threads);
+}
+
+TEST(TestCudamapperIndexGPU, test_compress_unique_representations_after_filtering_kernel_large_example)
+{
+    const std::uint64_t total_unique_representations = 10000000;
+
+    thrust::host_vector<representation_t> unique_representations_before_compression_h;
+    thrust::host_vector<std::uint32_t> first_occurrence_of_representation_before_compression_h;
+    thrust::host_vector<std::uint32_t> new_unique_representation_index_h;
+    thrust::host_vector<representation_t> expected_unique_representations_after_compression_h;
+    thrust::host_vector<std::uint32_t> expected_first_occurrence_of_representation_after_compression_h;
+
+    // 0  1  2  3  4  5  6  7  8  9 10 11    <- unique_representations_before_compression_h
+    // 0  5  5  0  5  5  0  5  5  0  5  5    <- numer_of_occurrences_after_filtering
+    // 0  0  5 10 10 15 20 20 25 30 30 35 40 <- first_occurrence_of_representation_before_compression_h
+    // 0  1  1  0  1  1  0  1  1  0  1  1    <- keep_representation_mask
+    // 0  0  1  2  2  3  4  4  5  6  6  7  8 <- new_unique_representation_index_h
+    // after compression
+    // 1  2  4  5  7  8 10 11    <- expected_unique_representations_after_compression_h
+    // 0  5 10 15 20 25 30 35 40 <- expected_first_occurrence_of_representation_after_compression_h
+
+    // 0  1  2  3  4  5  6  7  8  9 10 11    <- unique_representations_before_compression_h
+    // 0  0  5 10 10 15 20 20 25 30 30 35 40 <- first_occurrence_of_representation_before_compression_h
+    // 0  0  1  2  2  3  4  4  5  6  6  7  8 <- new_unique_representation_index_h
+    //    1  2     4  5     7  8    10 11    <- expected_unique_representations_after_compression_h
+    //    0  5    10 15    20 25    30 35 40 <- expected_first_occurrence_of_representation_after_compression_h
+
+    // 0th iteration
+    unique_representations_before_compression_h.push_back(0);
+    first_occurrence_of_representation_before_compression_h.push_back(0);
+    new_unique_representation_index_h.push_back(0);
+    // 1st iteration
+    unique_representations_before_compression_h.push_back(1);
+    first_occurrence_of_representation_before_compression_h.push_back(0);
+    new_unique_representation_index_h.push_back(0);
+    expected_unique_representations_after_compression_h.push_back(1);
+    expected_first_occurrence_of_representation_after_compression_h.push_back(0);
+    for (std::uint32_t i = 2; i < total_unique_representations; ++i)
+    {
+        unique_representations_before_compression_h.push_back(i);
+
+        if (i % 3 == 0)
+        {
+            first_occurrence_of_representation_before_compression_h.push_back(first_occurrence_of_representation_before_compression_h.back() + 5);
+            new_unique_representation_index_h.push_back(new_unique_representation_index_h.back() + 1);
+        }
+        if (i % 3 == 1)
+        {
+            first_occurrence_of_representation_before_compression_h.push_back(first_occurrence_of_representation_before_compression_h.back());
+            new_unique_representation_index_h.push_back(new_unique_representation_index_h.back());
+            expected_unique_representations_after_compression_h.push_back(expected_unique_representations_after_compression_h.back() + 2);
+            expected_first_occurrence_of_representation_after_compression_h.push_back(expected_first_occurrence_of_representation_after_compression_h.back() + 5);
+        }
+        if (i % 3 == 2)
+        {
+            first_occurrence_of_representation_before_compression_h.push_back(first_occurrence_of_representation_before_compression_h.back() + 5);
+            new_unique_representation_index_h.push_back(new_unique_representation_index_h.back() + 1);
+            expected_unique_representations_after_compression_h.push_back(expected_unique_representations_after_compression_h.back() + 1);
+            expected_first_occurrence_of_representation_after_compression_h.push_back(expected_first_occurrence_of_representation_after_compression_h.back() + 5);
+        }
+    }
+    /// 10000000 % 3 = 1
+    first_occurrence_of_representation_before_compression_h.push_back(first_occurrence_of_representation_before_compression_h.back());
+    new_unique_representation_index_h.push_back(new_unique_representation_index_h.back());
+    expected_first_occurrence_of_representation_after_compression_h.push_back(expected_first_occurrence_of_representation_after_compression_h.back() + 5);
+
+    const std::int32_t number_of_threads = 4;
+
+    test_compress_unique_representations_after_filtering_kernel(unique_representations_before_compression_h,
+                                                                first_occurrence_of_representation_before_compression_h,
+                                                                new_unique_representation_index_h,
+                                                                expected_unique_representations_after_compression_h,
+                                                                expected_first_occurrence_of_representation_after_compression_h,
+                                                                number_of_threads);
 }
 
 } // namespace index_gpu
