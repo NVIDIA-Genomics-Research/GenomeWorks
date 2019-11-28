@@ -28,10 +28,7 @@ void Overlapper::filter_overlaps(std::vector<Overlap>& filtered_overlaps, const 
 
 void Overlapper::print_paf(const std::vector<Overlap>& overlaps)
 {
-    std::vector<Overlap> filtered_overlaps;
-    filter_overlaps(filtered_overlaps, overlaps);
-
-    for (const auto& overlap : filtered_overlaps)
+    for (const auto& overlap : overlaps)
     {
         // Add basic overlap information.
         std::printf("%s\t%i\t%i\t%i\t%c\t%s\t%i\t%i\t%i\t%i\t%i\t%i",
