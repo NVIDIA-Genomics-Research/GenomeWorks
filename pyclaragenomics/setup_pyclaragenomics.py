@@ -11,7 +11,6 @@
 #
 
 import argparse
-import os.path
 import os
 import subprocess
 
@@ -22,10 +21,14 @@ def parse_arguments():
                         required=False,
                         default="cga_build",
                         help="Choose an output folder for building")
+    parser.add_argument('--create_wheel_only',
+                        required=False,
+                        action='store_true',
+                        help="Creates a python wheel package from pyclaragenomics (no installation)")
     parser.add_argument('--develop',
                         required=False,
                         action='store_true',
-                        help="CInstall using pip editble mode")
+                        help="Install using pip editble mode")
     return parser.parse_args()
 
 
@@ -75,14 +78,28 @@ class CMakeWrapper:
         self.run_build_cmd()
 
 
-def setup_python_binding(is_develop_mode, pycga_dir, cga_install_dir):
-    subprocess.check_call(['pip', 'install'] + (['-e'] if is_develop_mode else []) + ["."],
+def setup_python_binding(is_develop_mode, wheel_output_folder, pycga_dir, cga_install_dir):
+    if wheel_output_folder:
+        setup_command = [
+            'pip', 'wheel', '.',
+            '--global-option', 'sdist',
+            '--wheel-dir', wheel_output_folder, '--no-deps'
+        ]
+        completion_message = \
+            "A wheel file was create for pyclaragenomics under {}".format(wheel_output_folder)
+    else:
+        setup_command = ['pip', 'install'] + (['-e'] if is_develop_mode else []) + ["."]
+        completion_message = \
+            "pyclaragenomics was successfully setup in {} mode!".format(
+                "development" if args.develop else "installation")
+
+    subprocess.check_call(setup_command,
                           env={
                               **os.environ,
-                              'PYCGA_DIR': pycga_dir,
-                              'CGA_INSTALL_DIR': os.path.realpath(cga_install_dir)
+                              'CGA_INSTALL_DIR': cga_install_dir
                           },
                           cwd=pycga_dir)
+    print(completion_message)
 
 
 if __name__ == "__main__":
@@ -97,8 +114,9 @@ if __name__ == "__main__":
                               cmake_extra_args="-Dcga_build_shared=ON")
     cmake_proj.build()
     # Setup pyclaragenomics
-    setup_python_binding(is_develop_mode=args.develop,
-                         pycga_dir=current_dir,
-                         cga_install_dir=cga_installation_directory)
-    print("pyclaragenomics was successfully setup in {} mode!"
-          .format("development" if args.develop else "installation"))
+    setup_python_binding(
+        is_develop_mode=args.develop,
+        wheel_output_folder='pyclaragenomics_wheel/' if args.create_wheel_only else None,
+        pycga_dir=current_dir,
+        cga_install_dir=os.path.realpath(cga_installation_directory)
+    )
