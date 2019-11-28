@@ -22,7 +22,7 @@
  <tr style="height: 56px;">
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">ClaraGenomicsAnalysis
-   &#160;<span id="projectnumber">0.3.0</span>
+   &#160;<span id="projectnumber">0.4.0</span>
    </div>
   </td>
  </tr>
@@ -63,8 +63,20 @@ $(function() {
 
 <div class="contents">
 &#160;<ul>
+<li>adjacent_nodes_
+: <a class="el" href="classclaragenomics_1_1Graph.html#a8b53264154b5caed266385a007e33404">claragenomics::Graph</a>
+</li>
 <li>block_size_
 : <a class="el" href="structclaragenomics_1_1cudamapper_1_1ArrayBlock.html#a33ff27afee2ddb07e6fbdda0ff1de229">claragenomics::cudamapper::ArrayBlock</a>
+</li>
+<li>cigar_
+: <a class="el" href="structclaragenomics_1_1cudamapper_1_1Overlap.html#ad9b3ed3f91b4979afb6198cea2d77e54">claragenomics::cudamapper::Overlap</a>
+</li>
+<li>edges_
+: <a class="el" href="classclaragenomics_1_1Graph.html#a4089c636086324cae1f2a2bde56c8b33">claragenomics::Graph</a>
+</li>
+<li>empty_
+: <a class="el" href="classclaragenomics_1_1Graph.html#ada271fc17a3a6e86f5dcc78c4caa729c">claragenomics::Graph</a>
 </li>
 <li>first_element_
 : <a class="el" href="structclaragenomics_1_1cudamapper_1_1ArrayBlock.html#a3fca81e893b35e0648977b00f21b7e7e">claragenomics::cudamapper::ArrayBlock</a>
@@ -74,6 +86,9 @@ $(function() {
 </li>
 <li>name
 : <a class="el" href="structclaragenomics_1_1io_1_1FastaSequence.html#aea0664ca6e856203c4b954b519183bec">claragenomics::io::FastaSequence</a>
+</li>
+<li>node_labels_
+: <a class="el" href="classclaragenomics_1_1Graph.html#a5da2769d7e5bebd1d74c4899e3aad2c5">claragenomics::Graph</a>
 </li>
 <li>num_residues_
 : <a class="el" href="structclaragenomics_1_1cudamapper_1_1Overlap.html#ab3594748a49ae4472ca28a03b05ddb7d">claragenomics::cudamapper::Overlap</a>
@@ -95,7 +110,7 @@ $(function() {
 , <a class="el" href="structclaragenomics_1_1cudamapper_1_1Overlap.html#a3d98a09e4ccd8bda66cb09a72adaf1fc">claragenomics::cudamapper::Overlap</a>
 </li>
 <li>query_read_name_
-: <a class="el" href="structclaragenomics_1_1cudamapper_1_1Overlap.html#ac2baa8c82cbe1ff7475d7a8700a691df">claragenomics::cudamapper::Overlap</a>
+: <a class="el" href="structclaragenomics_1_1cudamapper_1_1Overlap.html#a7d37018aff3304bbe75b2d612b55c057">claragenomics::cudamapper::Overlap</a>
 </li>
 <li>query_start_position_in_read_
 : <a class="el" href="structclaragenomics_1_1cudamapper_1_1Overlap.html#aef98d06e839295136d197fee76feb95e">claragenomics::cudamapper::Overlap</a>
@@ -103,18 +118,9 @@ $(function() {
 <li>relative_strand
 : <a class="el" href="structclaragenomics_1_1cudamapper_1_1Overlap.html#a1c0b9bac9b2e15f70c60fcdae9728fd7">claragenomics::cudamapper::Overlap</a>
 </li>
-<li>representation_
-: <a class="el" href="structclaragenomics_1_1cudamapper_1_1Index_1_1RepresentationToSketchElements.html#a839754dc6ed7d150ae06abf377e39c62">claragenomics::cudamapper::Index::RepresentationToSketchElements</a>
-</li>
 <li>seq
 : <a class="el" href="structclaragenomics_1_1cudapoa_1_1Entry.html#a4ada5ced9af7930c95d7a49fb5ecdac4">claragenomics::cudapoa::Entry</a>
 , <a class="el" href="structclaragenomics_1_1io_1_1FastaSequence.html#a9ac5e894fc08745c47b326a7038aa488">claragenomics::io::FastaSequence</a>
-</li>
-<li>sketch_elements_for_representation_and_all_read_ids_
-: <a class="el" href="structclaragenomics_1_1cudamapper_1_1Index_1_1RepresentationToSketchElements.html#a604d5227c7fe6412e982fb31a1fee549">claragenomics::cudamapper::Index::RepresentationToSketchElements</a>
-</li>
-<li>sketch_elements_for_representation_and_read_id_
-: <a class="el" href="structclaragenomics_1_1cudamapper_1_1Index_1_1RepresentationToSketchElements.html#a84ff4998d9fec875845a20272d209b30">claragenomics::cudamapper::Index::RepresentationToSketchElements</a>
 </li>
 <li>target_end_position_in_read_
 : <a class="el" href="structclaragenomics_1_1cudamapper_1_1Overlap.html#ad4721b3555a83acb588c54dc369f7797">claragenomics::cudamapper::Overlap</a>
@@ -130,7 +136,7 @@ $(function() {
 , <a class="el" href="structclaragenomics_1_1cudamapper_1_1Overlap.html#a6d01fc190b1cba1c6b41cd89d672b032">claragenomics::cudamapper::Overlap</a>
 </li>
 <li>target_read_name_
-: <a class="el" href="structclaragenomics_1_1cudamapper_1_1Overlap.html#a8e75cd08ecddc434463ac2e9b748dd6c">claragenomics::cudamapper::Overlap</a>
+: <a class="el" href="structclaragenomics_1_1cudamapper_1_1Overlap.html#afcb7e39abf2761899ff1abb3c95b82ca">claragenomics::cudamapper::Overlap</a>
 </li>
 <li>target_start_position_in_read_
 : <a class="el" href="structclaragenomics_1_1cudamapper_1_1Overlap.html#a03cb25f83ca6344ad1b4108c1d910f0c">claragenomics::cudamapper::Overlap</a>
