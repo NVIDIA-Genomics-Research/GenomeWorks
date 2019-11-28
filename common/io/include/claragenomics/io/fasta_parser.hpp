@@ -62,4 +62,4 @@ public:
 std::unique_ptr<FastaParser> create_fasta_parser(const std::string& fasta_file);
 
 } // namespace io
-} // namespace claragenomicsi
+} // namespace claragenomics

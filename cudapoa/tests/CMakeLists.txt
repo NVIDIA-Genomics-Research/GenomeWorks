@@ -8,7 +8,7 @@
 # license agreement from NVIDIA CORPORATION is strictly prohibited.
 #
 
-project(cudapoatests)
+set(TARGET_NAME cudapoatests)
 
 set(SOURCES
     main.cpp
@@ -18,7 +18,8 @@ set(SOURCES
     Test_CudapoaNW.cpp
     Test_CudapoaGenerateConsensus.cpp
     Test_CudapoaBatchEnd2End.cpp
-    Test_CudapoaGenerateMSA2.cpp)
+    Test_CudapoaGenerateMSA2.cpp
+    Test_CudapoaSerializeGraph.cpp)
 
 get_property(cudapoa_data_include_dir GLOBAL PROPERTY cudapoa_data_include_dir)
 include_directories(${cudapoa_data_include_dir})
@@ -27,4 +28,4 @@ set(LIBS
     cudapoa
     spoa)
 
-cga_add_tests(${PROJECT_NAME} "${SOURCES}" "${LIBS}")
+cga_add_tests(${TARGET_NAME} "${SOURCES}" "${LIBS}")

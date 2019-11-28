@@ -19,6 +19,7 @@ from libc.stdint cimport int8_t, int16_t, uint16_t, int32_t
 from libcpp.vector cimport vector
 
 from claragenomics.bindings.cuda_runtime_api cimport _Stream
+from claragenomics.bindings.graph cimport DirectedGraph
 
 # This file declares public structs and API calls 
 # from the ClaraGenomicsAnalysis `cudapoa` module.
@@ -58,6 +59,7 @@ cdef extern from "claragenomics/cudapoa/batch.hpp" namespace "claragenomics::cud
         void generate_poa() except +
         StatusType get_msa(vector[vector[string]]&, vector[StatusType]&) except +
         StatusType get_consensus(vector[string]&, vector[vector[uint16_t]]&, vector[StatusType]&) except +
+        StatusType get_graphs(vector[DirectedGraph]&, vector[StatusType]&) except +
         int get_total_poas() except +
         int batch_id() except +
         void reset() except +

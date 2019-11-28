@@ -33,4 +33,10 @@ endif()
 
 if (NOT TARGET spoa)
     add_subdirectory(3rdparty/spoa EXCLUDE_FROM_ALL)
+# Don't show warnings when compiling the 3rd party library
+    target_compile_options(spoa PRIVATE -w)
 endif()
+
+set(CUB_DIR ${PROJECT_SOURCE_DIR}/3rdparty/cub CACHE STRING
+	  "Path to cub repo")
+

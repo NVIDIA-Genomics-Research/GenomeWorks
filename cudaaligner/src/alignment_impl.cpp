@@ -27,11 +27,6 @@ AlignmentImpl::AlignmentImpl(const char* query, int32_t query_length, const char
     // Initialize Alignment object.
 }
 
-AlignmentImpl::~AlignmentImpl()
-{
-    // Nothing to destroy right now.
-}
-
 char AlignmentImpl::alignment_state_to_cigar_state(AlignmentState s) const
 {
     // CIGAR string format from http://bioinformatics.cvr.ac.uk/blog/tag/cigar-string/

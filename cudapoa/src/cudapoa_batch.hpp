@@ -66,6 +66,9 @@ public:
     StatusType get_msa(std::vector<std::vector<std::string>>& msa,
                        std::vector<StatusType>& output_status);
 
+    void get_graphs(std::vector<DirectedGraph>& graphs,
+                    std::vector<StatusType>& output_status);
+
     // Return batch ID.
     int32_t batch_id() const;
 
@@ -132,6 +135,7 @@ protected:
 
     // Device buffer struct for graph details
     GraphDetails* graph_details_d_;
+    GraphDetails* graph_details_h_;
 
     // Static batch count used to generate batch IDs.
     static int32_t batches;

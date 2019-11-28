@@ -11,10 +11,23 @@
 #include "hts_fasta_parser.hpp"
 
 #include <string>
+#include <memory>
 
 extern "C" {
 #include <htslib/faidx.h>
 }
+
+namespace
+{
+struct free_deleter
+{
+    template <typename T>
+    void operator()(T* x)
+    {
+        std::free(x);
+    }
+};
+} // namespace
 
 namespace claragenomics
 {
@@ -32,6 +45,7 @@ FastaParserHTS::FastaParserHTS(const std::string& fasta_file)
     num_seqequences_ = faidx_nseq(fasta_index_);
     if (num_seqequences_ == 0)
     {
+        fai_destroy(fasta_index_);
         throw std::runtime_error("FASTA file has 0 sequences");
     }
 }
@@ -60,7 +74,7 @@ FastaSequence FastaParserHTS::get_sequence_by_id(int32_t i) const
 FastaSequence FastaParserHTS::get_sequence_by_name(const std::string& name) const
 {
     int32_t length;
-    char* seq = fai_fetch(fasta_index_, name.c_str(), &length);
+    std::unique_ptr<char, free_deleter> seq(fai_fetch(fasta_index_, name.c_str(), &length));
     if (length < 0)
     {
         throw std::runtime_error("Error in reading sequence information for seq ID " + name);
@@ -68,10 +82,7 @@ FastaSequence FastaParserHTS::get_sequence_by_name(const std::string& name) cons
 
     FastaSequence s{};
     s.name = std::string(name);
-    s.seq  = std::string(seq);
-
-    // Since htslib allocates space for the seq using malloc()
-    free(seq);
+    s.seq  = std::string(seq.get());
 
     return s;
 }

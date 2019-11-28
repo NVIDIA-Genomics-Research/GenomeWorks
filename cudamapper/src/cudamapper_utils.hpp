@@ -13,7 +13,7 @@
 #include <algorithm>
 #include <vector>
 
-#include "claragenomics/cudamapper/types.hpp"
+#include <claragenomics/cudamapper/types.hpp>
 
 namespace claragenomics
 {

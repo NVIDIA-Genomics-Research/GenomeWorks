@@ -37,6 +37,19 @@ A query fasta can be mapped to a reference as follows:
 To access more information about running cudamapper, run `cudamapper --help`.
 
 ## Clone Clara Genomics Analysis
+
+### Latest released version
+This will clone the repo to the `master` branch, which contains code for latest released version
+and hot-fixes.
+
+```
+git clone --recursive -b master git@github.com:clara-genomics/ClaraGenomicsAnalysis.git
+```
+
+### Latest development version
+This will clone the repo to the default branch, which is set to be the latest development branch.
+This branch is subject to change frequently as features and bug fixes are pushed.
+
 ```bash
 git clone --recursive git@github.com:clara-genomics/ClaraGenomicsAnalysis.git
 ```
@@ -111,14 +124,16 @@ e.g.
 A description of each of the benchmarks is present in a README under the module's benchmark folder.
 
 ## Enable Doc Generation
-To enable document generation for Clara Genomics Analysis, please install `Doxygen` on your system. Once
-`Doxygen` has been installed, run the following to build documents.
+To enable document generation for Clara Genomics Analysis, please install `Doxygen` on your system.
+Once`Doxygen` has been installed, run the following to build documents.
 
 ```bash
 make docs
 ```
 
 Docs are also generated as part of the default `all` target when `Doxygen` is available on the system.
+
+To disable documentation generation add `-Dcga_generate_docs=OFF` to the `cmake` command in the [build step](#build).
 
 ## Code Formatting
 
@@ -151,4 +166,25 @@ CI system for Clara Genomics Analysis run `flake8` to check the style.
 To run style check manually, simply run the following from the top level folder.
 ```
 flake8 pyclaragenomics/
+```
+
+## Running CI Tests Locally
+Please note, your git repository will be mounted to the container, any untracked files will be removed from it.
+Before executing the CI locally, stash or add them to the index.
+
+Requirements:
+1. docker (https://docs.docker.com/install/linux/docker-ce/ubuntu/)
+2. nvidia-docker (https://github.com/NVIDIA/nvidia-docker)
+3. nvidia-container-runtime (https://github.com/NVIDIA/nvidia-container-runtime)
+
+Run the following command to execute the CI build steps inside a container locally:
+```bash
+bash ci/local/build.sh -r <ClaraGenomicsAnalysis repo path>
+```
+ci/local/build.sh script was adapted from [rapidsai/cudf](https://github.com/rapidsai/cudf/tree/branch-0.11/ci/local)
+
+The default docker image is **clara-genomics-base:cuda10.0-ubuntu16.04-gcc5-py3.7**.
+Other images from [gpuci/clara-genomics-base](https://hub.docker.com/r/gpuci/clara-genomics-base/tags) repository can be used instead, by using -i argument
+```bash
+bash ci/local/build.sh -r <ClaraGenomicsAnalysis repo path> -i gpuci/clara-genomics-base:cuda10.0-ubuntu18.04-gcc7-py3.6
 ```

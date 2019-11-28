@@ -12,8 +12,8 @@
 
 #include <cstdint>
 #include <vector>
-#include "claragenomics/cudamapper/sketch_element.hpp"
-#include "claragenomics/cudamapper/types.hpp"
+#include <claragenomics/cudamapper/sketch_element.hpp>
+#include <claragenomics/cudamapper/types.hpp>
 
 #include <claragenomics/utils/device_buffer.cuh>
 
@@ -80,13 +80,15 @@ public:
     /// \param merged_basepairs_d basepairs of all reads, gouped by reads (device memory)
     /// \param read_id_to_basepairs_section_h for each read_id points to the section of merged_basepairs_d that belong to that read_id (host memory)
     /// \param read_id_to_basepairs_section_h for each read_id points to the section of merged_basepairs_d that belong to that read_id (device memory)
+    /// \param hash_minimizers if true, apply a hash function to the representations
     static GeneratedSketchElements generate_sketch_elements(const std::uint64_t number_of_reads_to_add,
                                                             const std::uint64_t minimizer_size,
                                                             const std::uint64_t window_size,
                                                             const std::uint64_t read_id_of_first_read,
                                                             const device_buffer<char>& merged_basepairs_d,
                                                             const std::vector<ArrayBlock>& read_id_to_basepairs_section_h,
-                                                            const device_buffer<ArrayBlock>& read_id_to_basepairs_section_d);
+                                                            const device_buffer<ArrayBlock>& read_id_to_basepairs_section_d,
+                                                            const bool hash_representations = true);
 
 private:
     representation_t representation_;

@@ -12,6 +12,8 @@
 
 #include <claragenomics/cudapoa/cudapoa.hpp>
 
+#include <claragenomics/utils/graph.hpp>
+
 #include <memory>
 #include <vector>
 #include <stdint.h>
@@ -83,6 +85,8 @@ public:
     ///                 base in each consensus string is returned
     /// \param output_status Reference to vector where the errors
     ///                 during kernel execution is captured
+    ///
+    /// \return Status indicating whether consensus generation is available for this batch.
     virtual StatusType get_consensus(std::vector<std::string>& consensus,
                                      std::vector<std::vector<uint16_t>>& coverage,
                                      std::vector<claragenomics::cudapoa::StatusType>& output_status) = 0;
@@ -93,8 +97,19 @@ public:
     ///                 poa is returned
     /// \param output_status Reference to vector where the errors
     ///                 during kernel execution is captured
+    ///
+    /// \return Status indicating whether MSA generation is available for this batch.
     virtual StatusType get_msa(std::vector<std::vector<std::string>>& msa,
                                std::vector<StatusType>& output_status) = 0;
+
+    /// \brief Get the graph representation for each POA.
+    ///
+    /// \param graphs Reference to a vector where directed graph of each poa
+    ///               is returned.
+    /// \param output_status Reference to vector where the errors
+    ///                 during kernel execution is captured
+    virtual void get_graphs(std::vector<DirectedGraph>& graphs,
+                            std::vector<StatusType>& output_status) = 0;
 
     /// \brief Return batch ID.
     ///

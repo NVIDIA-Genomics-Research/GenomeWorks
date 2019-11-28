@@ -186,9 +186,18 @@ __global__ void generateMSAKernel(uint8_t* nodes_d,
                                              sorted_poa,
                                              node_id_to_msa_pos,
                                              node_alignment_counts);
+
+        if (msa_length >= CUDAPOA_MAX_CONSENSUS_SIZE)
+        {
+            consensus[0] = CUDAPOA_KERNEL_ERROR_ENCOUNTERED;
+            consensus[1] = static_cast<uint8_t>(StatusType::exceeded_maximum_sequence_size);
+        }
     }
 
     __syncthreads();
+
+    if (consensus[0] == CUDAPOA_KERNEL_ERROR_ENCOUNTERED)
+        return;
 
     generateMSADevice(nodes,
                       num_sequences,

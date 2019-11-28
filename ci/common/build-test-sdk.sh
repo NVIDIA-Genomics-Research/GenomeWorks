@@ -60,10 +60,13 @@ if [ "$GPU_TEST" == '1' ]; then
   nvidia-smi
 
   logger "Running ClaraGenomicsAnalysis unit tests..."
-  LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CGA_LIB_DIR find ${LOCAL_BUILD_DIR}/install/tests -type f -exec {} \;
+  # Avoid using 'find' which reutrns 0 even if -exec command fails
+  for binary_test in "${LOCAL_BUILD_DIR}"/install/tests/*; do
+    LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CGA_LIB_DIR "${binary_test}";
+  done
 
   logger "Running ClaraGenomicsAnalysis benchmarks..."
-  LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CGA_LIB_DIR ${LOCAL_BUILD_DIR}/install/benchmarks/cudapoa/benchmark_cudapoa_singlebatch
-  LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CGA_LIB_DIR ${LOCAL_BUILD_DIR}/install/benchmarks/cudaaligner/benchmark_cudaaligner_singlebatch_singlealignment
+  LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CGA_LIB_DIR ${LOCAL_BUILD_DIR}/install/benchmarks/cudapoa/benchmark_cudapoa --benchmark_filter="BM_SingleBatchTest"
+  LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CGA_LIB_DIR ${LOCAL_BUILD_DIR}/install/benchmarks/cudaaligner/benchmark_cudaaligner --benchmark_filter="BM_SingleAlignment"
 fi
 

@@ -34,7 +34,8 @@ public:
 public:
     BasicNW(std::vector<uint8_t> nodes, std::vector<uint16_t> sorted_graph, Uint16Vec2D outgoing_edges,
             std::vector<uint8_t> read)
-        : graph_(nodes, sorted_graph, outgoing_edges), read_(read)
+        : graph_(nodes, sorted_graph, outgoing_edges)
+        , read_(read)
     {
         // do nothing
     }
