@@ -71,6 +71,7 @@ pycga_classifiers = [
         "License :: OSI Approved :: Apache Software License",
         "Natural Language :: English",
         "Operating System :: POSIX :: Linux",
+        "Programming Language :: Python :: 3.5",
         "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
@@ -87,14 +88,14 @@ extensions = [
         ],
         library_dirs=["/usr/local/cuda/lib64", get_verified_absolute_path(os.path.join(cga_install_dir, "lib"))],
         runtime_library_dirs=["/usr/local/cuda/lib64", os.path.join('$ORIGIN', os.pardir, 'shared_libs')],
-        libraries=["cudapoa", "cudaaligner", "cudart"],
+        libraries=["cudapoa", "cudaaligner", "cudart", "logging"],
         language="c++",
         extra_compile_args=["-std=c++14"],
     )
 ]
 
 setup(name='pyclaragenomics',
-      version='0.4.0',
+      version='0.4.3',
       description='NVIDIA genomics python libraries and utiliites',
       author='NVIDIA Corporation',
       url="https://github.com/clara-genomics/ClaraGenomicsAnalysis",
@@ -106,7 +107,7 @@ setup(name='pyclaragenomics',
           get_verified_absolute_path(os.path.join(current_dir, 'requirements.txt'))
       ),
       packages=find_packages(where=current_dir),
-      python_requires='>=3.6',
+      python_requires='>=3.5',
       license='Apache License 2.0',
       long_description='Python libraries and utilities for manipulating genomics data',
       classifiers=pycga_classifiers,
