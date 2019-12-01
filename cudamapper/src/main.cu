@@ -17,6 +17,7 @@
 #include <future>
 #include <thread>
 #include <atomic>
+#include <map>
 
 #include <claragenomics/logging/logging.hpp>
 #include <claragenomics/io/fasta_parser.hpp>
@@ -115,25 +116,6 @@ int main(int argc, char* argv[])
     // Data structure for holding overlaps to be written out
     std::mutex overlaps_writer_mtx;
 
-    // Function for adding new overlaps to writer
-    auto filter_and_print_overlaps = [&overlaps_writer_mtx](claragenomics::cudamapper::Overlapper& overlapper,
-                                                            thrust::device_vector<claragenomics::cudamapper::Anchor>& anchors,
-                                                            const claragenomics::cudamapper::Index& index_query,
-                                                            const claragenomics::cudamapper::Index& index_target) {
-        CGA_NVTX_RANGE(profiler, "print out overlaps");
-
-        std::vector<claragenomics::cudamapper::Overlap> overlaps_to_add;
-        overlapper.get_overlaps(overlaps_to_add, anchors, index_query, index_target);
-
-        std::vector<claragenomics::cudamapper::Overlap> filtered_overlaps;
-        claragenomics::cudamapper::Overlapper::filter_overlaps(filtered_overlaps, overlaps_to_add);
-
-        overlaps_writer_mtx.lock();
-        claragenomics::cudamapper::Overlapper::print_paf(filtered_overlaps);
-        overlaps_writer_mtx.unlock();
-
-    };
-
     // Track overall time
     std::chrono::milliseconds index_time      = std::chrono::duration_values<std::chrono::milliseconds>::zero();
     std::chrono::milliseconds matcher_time    = std::chrono::duration_values<std::chrono::milliseconds>::zero();
@@ -173,7 +155,38 @@ int main(int argc, char* argv[])
         query_target_ranges.push_back(q);
     }
 
+    // This is a per-thread cache, if it has the index it will return it, if not it will generate it, store and return it.
+    //int cache_size = 3;
+
+    std::vector<std::map<std::pair<uint64_t, uint64_t>, std::shared_ptr<std::unique_ptr<claragenomics::cudamapper::Index>>>>  indexCache(num_devices); //one cache per index
+
+    auto get_index = [&indexCache](claragenomics::io::FastaParser& parser,
+                        const claragenomics::cudamapper::read_id_t query_start_index,
+                        const claragenomics::cudamapper::read_id_t query_end_index,
+                        const std::uint64_t k,
+                        const std::uint64_t w,
+                        int device_id){
+
+        std::pair<uint64_t, uint64_t> key;
+        key.first = query_start_index;
+        key.second = query_end_index;
+
+        if (indexCache[device_id].count(key)) {
+            return indexCache[device_id][key];
+        } else {
+            indexCache[device_id][key] = std::make_shared<std::unique_ptr<claragenomics::cudamapper::Index>>(claragenomics::cudamapper::Index::create_index(parser,
+                                                                                                  query_start_index,
+                                                                                                  query_end_index,
+                                                                                                  k,
+                                                                                                  w));
+            return indexCache[device_id][key];
+        }
+    };
+
     auto compute_overlaps = [&](query_target_range query_target_range, int device_id){
+
+        std::vector<std::shared_ptr<std::future<void>>> print_pafs_futures;
+
         cudaSetDevice(device_id);
 
         auto query_start_index = query_target_range.query_range.first;
@@ -181,18 +194,15 @@ int main(int argc, char* argv[])
 
         std::cerr << "THREAD LAUNCHED: Query range: (" << query_start_index << " - " << query_end_index - 1 << ")" << std::endl;
 
-        std::unique_ptr<claragenomics::cudamapper::Index> query_index(nullptr);
-        std::unique_ptr<claragenomics::cudamapper::Index> target_index(nullptr);
+        std::shared_ptr<std::unique_ptr<claragenomics::cudamapper::Index>> query_index(nullptr);
+        std::shared_ptr<std::unique_ptr<claragenomics::cudamapper::Index>> target_index(nullptr);
         std::unique_ptr<claragenomics::cudamapper::Matcher> matcher(nullptr);
 
         {
             CGA_NVTX_RANGE(profiler, "generate_query_index");
             auto start_time = std::chrono::high_resolution_clock::now();
-            query_index     = claragenomics::cudamapper::Index::create_index(*query_parser,
-                                                                             query_start_index,
-                                                                             query_end_index,
-                                                                             k,
-                                                                             w);
+
+            query_index = get_index(*query_parser, query_start_index, query_end_index, k, w, device_id);
             index_time += std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time);
         }
 
@@ -205,18 +215,15 @@ int main(int argc, char* argv[])
             {
                 CGA_NVTX_RANGE(profiler, "generate_target_index");
                 auto start_time = std::chrono::high_resolution_clock::now();
-                target_index    = claragenomics::cudamapper::Index::create_index(*target_parser,
-                                                                                 target_start_index,
-                                                                                 target_end_index,
-                                                                                 k,
-                                                                                 w);
+                target_index     = get_index(*target_parser, target_start_index, target_end_index, k, w, device_id);
+
                 index_time += std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time);
             }
             {
                 CGA_NVTX_RANGE(profiler, "generate_matcher");
                 auto start_time = std::chrono::high_resolution_clock::now();
-                matcher         = claragenomics::cudamapper::Matcher::create_matcher(*query_index,
-                                                                                     *target_index);
+                matcher         = claragenomics::cudamapper::Matcher::create_matcher(**query_index,
+                                                                                     **target_index);
                 matcher_time += std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time);
             }
             {
@@ -224,29 +231,46 @@ int main(int argc, char* argv[])
                 claragenomics::cudamapper::OverlapperTriggered overlapper;
                 CGA_NVTX_RANGE(profiler, "generate_overlaps");
                 auto start_time = std::chrono::high_resolution_clock::now();
-                filter_and_print_overlaps(overlapper, matcher->anchors(), *query_index, *target_index);
-                overlapper_time += std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time);
+
+                // Get unfiltered overlaps
+                std::vector<claragenomics::cudamapper::Overlap> overlaps_to_add;
+                overlapper.get_overlaps(overlaps_to_add, matcher->anchors(), **query_index, **target_index);
+
+                std::shared_ptr<std::future<void>> f = std::make_shared<std::future<void>>(std::async(std::launch::async, [&overlaps_writer_mtx, overlaps_to_add](std::vector<claragenomics::cudamapper::Overlap> overlaps){
+                    std::vector<claragenomics::cudamapper::Overlap> filtered_overlaps;
+                    claragenomics::cudamapper::Overlapper::filter_overlaps(filtered_overlaps, overlaps_to_add);
+                    overlaps_writer_mtx.lock();
+                    claragenomics::cudamapper::Overlapper::print_paf(filtered_overlaps);
+                    overlaps_writer_mtx.unlock();
+                    }, overlaps_to_add));
+
+                print_pafs_futures.push_back(f);
 
             }
 
         }
+        return print_pafs_futures;
     };
 
-    // create thread pool
-    ThreadPool pool(num_threads);
+    // create thread pool to compute overlaps
+    ThreadPool overlap_pool(num_threads);
+    // Enqueue all the work in a thread pool, each thread returns a vector of futures for the threads it launches
 
-    // Enqueue all the work in a thread pool
-    std::vector<std::future<void>> futures;
+    std::vector<std::future<std::vector<std::shared_ptr<std::future<void>>>>> overlap_futures;
     for (int i=0;i<query_target_ranges.size();i++){
         // enqueue and store future
         auto query_target_range = query_target_ranges[i];
         auto device_id = i % num_devices;
-        futures.push_back(pool.enqueue(compute_overlaps, query_target_range, device_id));
+        overlap_futures.push_back(overlap_pool.enqueue(compute_overlaps, query_target_range, device_id));
     }
 
-    for (auto &f: futures){
-        f.wait();
+
+    for (auto &f: overlap_futures){
+        for (auto a: f.get()){
+            a->wait();
+        }
     }
+
 
     std::cerr << "\n\n"
               << std::endl;
