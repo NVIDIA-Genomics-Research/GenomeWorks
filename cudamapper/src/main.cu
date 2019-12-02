@@ -19,10 +19,11 @@
 #include <atomic>
 #include <map>
 
+#include "ThreadPool.h"
+
 #include <claragenomics/logging/logging.hpp>
 #include <claragenomics/io/fasta_parser.hpp>
 #include <claragenomics/utils/cudautils.hpp>
-#include <claragenomics/utils/ThreadPool.h>
 
 #include <claragenomics/cudamapper/index.hpp>
 #include <claragenomics/cudamapper/matcher.hpp>
