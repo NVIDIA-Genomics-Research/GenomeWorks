@@ -1087,7 +1087,7 @@ TEST(TestCudamapperIndexGPU, test_compress_data_arrays_after_filtering_kernel_la
     first_occurrence_of_representation_after_compression_h.push_back(current_first_occurrence_of_representation_after_compression);
     unique_representation_index_after_compression_h.push_back(current_unique_representation_index_after_compression);
 
-    const std::int32_t number_of_threads = 3; // intentionally going with such small block
+    const std::int32_t number_of_threads = 3; // intentionally going with such small blocks
 
     test_compress_data_arrays_after_filtering_kernel(number_of_sketch_elements_with_representation_before_compression_h,
                                                      first_occurrence_of_representation_before_filtering_h,
@@ -1275,6 +1275,147 @@ TEST(TestCudamapperIndexGPU, test_filter_out_most_common_representations_small_e
 
     const std::vector<std::uint32_t> expected_output_first_occurrence_of_representations_std({0, 2, 4, 7, 10});
     const thrust::host_vector<std::uint32_t> expected_output_first_occurrence_of_representations_h(std::begin(expected_output_first_occurrence_of_representations_std), std::end(expected_output_first_occurrence_of_representations_std));
+
+    test_filter_out_most_common_representations(filtering_parameter,
+                                                input_representations_h,
+                                                input_read_ids_h,
+                                                input_positions_in_reads_h,
+                                                input_directions_of_representations_h,
+                                                input_unique_representations_h,
+                                                input_first_occurrence_of_representations_h,
+                                                expected_output_representations_h,
+                                                expected_output_read_ids_h,
+                                                expected_output_positions_in_reads_h,
+                                                expected_output_directions_of_representations_h,
+                                                expected_output_unique_representations_h,
+                                                expected_output_first_occurrence_of_representations_h);
+}
+
+TEST(TestCudamapperIndexGPU, test_filter_out_most_common_representations_large_example)
+{
+    // Total sketch elements = 50'000'000
+    //
+    // Wanted filtering_threshold = 6
+    // 6 = (50'000'000 * filtering_parameter) / 1'000'000'000 <=> 6 = (5 * filtering_parameter) / 100 <=> 600 = 5 * filtering_parameter <=>
+    // filtering_parameter = 120
+    //
+    //  6 <- filtering_threshold
+    //  0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15|16 17 18 19 20 21 22 23 24 25 26
+    //  0  0  0  0  0  0  1  1  1  1  1  2  2  2  2  2| 3  3  3  3  3  3  4  4  4  4  4... <- representations_before_compression
+    //  0  1  2  3  4  5  1  2  3  4  5  2  3  4  5  6| 0  1  2  3  4  5  1  2  3  4  5... <- read_ids_before_compression
+    // 10 11 12 13 14 15 11 12 13 14 15 12 13 14 15 16|10 11 12 13 14 15 11 12 13 14 15... <- positions_in_reads_before_compression
+    //  F  R  F  R  F  R  F  R  F  R  F  R  F  R  F  R| F  R  F  R  F  R  F  R  F  R  F... <- directions_of_reads_before_compression
+    //  0  1  2| 3  4  5| 6  7  8| 9 10 11..    <- unique_representations_before_filtering
+    //  0  6 11|16 22 27|32 38 43|48 54 59... X <- first_occurrence_of_representation_before_filtering (with aditional element)
+    //
+    // after compression
+    //  0  1  2  3  4  5  6  7  8  9|10 11 12 13 14 15 16 17 18 19|20 21
+    //  1  1  1  1  1  2  2  2  2  2| 4  4  4  4  4  5  5  5  5  5| 7  7... <- expected_representations_after_compression
+    //  1  2  3  4  5  2  3  4  5  6| 1  2  3  4  5  2  3  4  5  6| 1  2... <- expected_read_ids_after_compression
+    // 11 12 13 14 15 12 13 14 15 16|11 12 13 14 15 12 13 14 15 16|11 12    <- expected_positions_in_reads_after_compression
+    //  F  R  F  R  F  R  F  R  F  R| F  R  F  R  F  R  F  R  F  R| F  R    <- expected_directions_of_reads_before_compression
+    //  1  2| 4  5| 7  8|...   <- expected_unique_representations_after_filtering
+    //  0  5|10 15|20 25|... X <- first_occurrence_of_representation_after_filtering (with aditional element)
+
+    const std::uint64_t total_sketch_elements = 50000000; // = 3125000 * 16
+    const std::uint32_t filtering_parameter   = 120;
+
+    thrust::host_vector<representation_t> input_representations_h;
+    thrust::host_vector<read_id_t> input_read_ids_h;
+    thrust::host_vector<position_in_read_t> input_positions_in_reads_h;
+    thrust::host_vector<SketchElement::DirectionOfRepresentation> input_directions_of_representations_h;
+    thrust::host_vector<representation_t> input_unique_representations_h;
+    thrust::host_vector<std::uint32_t> input_first_occurrence_of_representations_h;
+    thrust::host_vector<representation_t> expected_output_representations_h;
+    thrust::host_vector<read_id_t> expected_output_read_ids_h;
+    thrust::host_vector<position_in_read_t> expected_output_positions_in_reads_h;
+    thrust::host_vector<SketchElement::DirectionOfRepresentation> expected_output_directions_of_representations_h;
+    thrust::host_vector<representation_t> expected_output_unique_representations_h;
+    thrust::host_vector<std::uint32_t> expected_output_first_occurrence_of_representations_h;
+
+    representation_t current_representation                                   = 0;
+    std::uint32_t current_first_occurrence_of_representation_before_filtering = 0;
+    std::uint32_t current_first_occurrence_of_representation_after_filtering  = 0;
+
+    for (std::uint64_t i = 0; i < total_sketch_elements;) // add 16 elements per iteration
+    {
+        // first 6 elements
+        for (std::uint64_t j = 0; j < 6; ++j)
+        {
+            input_representations_h.push_back(current_representation);
+            input_read_ids_h.push_back(j);
+            input_positions_in_reads_h.push_back(j + 10);
+            if (0 == j / 2)
+                input_directions_of_representations_h.push_back(SketchElement::DirectionOfRepresentation::FORWARD);
+            else
+                input_directions_of_representations_h.push_back(SketchElement::DirectionOfRepresentation::REVERSE);
+        }
+        input_unique_representations_h.push_back(current_representation);
+        input_first_occurrence_of_representations_h.push_back(current_first_occurrence_of_representation_before_filtering);
+        current_first_occurrence_of_representation_before_filtering += 6;
+        ++current_representation;
+        i += 6;
+
+        // next 5 elements
+        for (std::uint64_t j = 0; j < 5; ++j)
+        {
+            input_representations_h.push_back(current_representation);
+            expected_output_representations_h.push_back(current_representation);
+            input_read_ids_h.push_back(j + 1);
+            expected_output_read_ids_h.push_back(j + 1);
+            input_positions_in_reads_h.push_back(j + 11);
+            expected_output_positions_in_reads_h.push_back(j + 11);
+            if (0 == j / 2)
+            {
+                input_directions_of_representations_h.push_back(SketchElement::DirectionOfRepresentation::REVERSE);
+                expected_output_directions_of_representations_h.push_back(SketchElement::DirectionOfRepresentation::REVERSE);
+            }
+            else
+            {
+                input_directions_of_representations_h.push_back(SketchElement::DirectionOfRepresentation::FORWARD);
+                expected_output_directions_of_representations_h.push_back(SketchElement::DirectionOfRepresentation::FORWARD);
+            }
+        }
+        input_unique_representations_h.push_back(current_representation);
+        expected_output_unique_representations_h.push_back(current_representation);
+        input_first_occurrence_of_representations_h.push_back(current_first_occurrence_of_representation_before_filtering);
+        expected_output_first_occurrence_of_representations_h.push_back(current_first_occurrence_of_representation_after_filtering);
+        current_first_occurrence_of_representation_before_filtering += 5;
+        current_first_occurrence_of_representation_after_filtering += 5;
+        ++current_representation;
+        i += 5;
+
+        // next 5 elements
+        for (std::uint64_t j = 0; j < 5; ++j)
+        {
+            input_representations_h.push_back(current_representation);
+            expected_output_representations_h.push_back(current_representation);
+            input_read_ids_h.push_back(j + 2);
+            expected_output_read_ids_h.push_back(j + 2);
+            input_positions_in_reads_h.push_back(j + 12);
+            expected_output_positions_in_reads_h.push_back(j + 12);
+            if (0 == j / 2)
+            {
+                input_directions_of_representations_h.push_back(SketchElement::DirectionOfRepresentation::FORWARD);
+                expected_output_directions_of_representations_h.push_back(SketchElement::DirectionOfRepresentation::FORWARD);
+            }
+            else
+            {
+                input_directions_of_representations_h.push_back(SketchElement::DirectionOfRepresentation::REVERSE);
+                expected_output_directions_of_representations_h.push_back(SketchElement::DirectionOfRepresentation::REVERSE);
+            }
+        }
+        input_unique_representations_h.push_back(current_representation);
+        expected_output_unique_representations_h.push_back(current_representation);
+        input_first_occurrence_of_representations_h.push_back(current_first_occurrence_of_representation_before_filtering);
+        expected_output_first_occurrence_of_representations_h.push_back(current_first_occurrence_of_representation_after_filtering);
+        current_first_occurrence_of_representation_before_filtering += 5;
+        current_first_occurrence_of_representation_after_filtering += 5;
+        ++current_representation;
+        i += 5;
+    }
+    input_first_occurrence_of_representations_h.push_back(current_first_occurrence_of_representation_before_filtering);
+    expected_output_first_occurrence_of_representations_h.push_back(current_first_occurrence_of_representation_after_filtering);
 
     test_filter_out_most_common_representations(filtering_parameter,
                                                 input_representations_h,

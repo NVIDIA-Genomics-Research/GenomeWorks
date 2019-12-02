@@ -344,8 +344,8 @@ __global__ void compress_data_arrays_after_filtering_kernel(const std::uint64_t 
     if (0 == sketch_elements_with_this_representation) // this representation was filtered out
         return;
 
-    const std::uint32_t first_occurrence_index_before_filtering = first_occurrence_of_representation_before_filtering_d[representation_index_before_compression];
-    const std::uint32_t first_occurrence_index_after_compression  = first_occurrence_of_representation_after_compression_d[unique_representation_index_after_compression_d[representation_index_before_compression]];
+    const std::uint32_t first_occurrence_index_before_filtering  = first_occurrence_of_representation_before_filtering_d[representation_index_before_compression];
+    const std::uint32_t first_occurrence_index_after_compression = first_occurrence_of_representation_after_compression_d[unique_representation_index_after_compression_d[representation_index_before_compression]];
 
     // now move all elements with that representation to the copressed array
     for (std::uint64_t i = threadIdx.x; i < sketch_elements_with_this_representation; i += blockDim.x)
@@ -413,7 +413,7 @@ void filter_out_most_common_representations(const std::uint32_t filtering_parame
     number_of_sketch_elements_with_each_representation_d.back() = 0; // H2D
 
     std::uint32_t number_of_threads = 128;
-    std::int32_t number_of_blocks = ceiling_divide<std::int64_t>(first_occurrence_of_representations_d.size(),
+    std::int32_t number_of_blocks   = ceiling_divide<std::int64_t>(first_occurrence_of_representations_d.size(),
                                                                  number_of_threads);
 
     find_number_of_representation_occurrences_kernel<<<number_of_blocks, number_of_threads>>>(first_occurrence_of_representations_d.data().get(),
@@ -468,10 +468,10 @@ void filter_out_most_common_representations(const std::uint32_t filtering_parame
     thrust::device_vector<std::uint32_t> first_occurrence_of_representations_after_compression_d(number_of_unique_representations_after_compression + 1);
 
     number_of_threads = 128;
-    number_of_blocks = ceiling_divide<std::int64_t>(first_occurrence_of_representations_d.size(),
+    number_of_blocks  = ceiling_divide<std::int64_t>(first_occurrence_of_representations_d.size(),
                                                     number_of_threads);
 
-    compress_unique_representations_after_filtering_kernel<<<number_of_threads, number_of_blocks>>>(unique_representations_d.size(),
+    compress_unique_representations_after_filtering_kernel<<<number_of_blocks, number_of_threads>>>(unique_representations_d.size(),
                                                                                                     unique_representations_d.data().get(),
                                                                                                     first_occurrence_of_representation_after_filtering_d.data().get(),
                                                                                                     unique_representation_index_after_filtering_d.data().get(),
@@ -496,7 +496,7 @@ void filter_out_most_common_representations(const std::uint32_t filtering_parame
     thrust::device_vector<DirectionOfRepresentation> directions_of_representations_after_compression_d(number_of_sketch_elements_after_compression);
 
     number_of_threads = 32;
-    number_of_blocks = unique_representations_d.size();
+    number_of_blocks  = unique_representations_d.size();
     compress_data_arrays_after_filtering_kernel<<<number_of_blocks, number_of_threads>>>(unique_representations_d.size(),
                                                                                          number_of_sketch_elements_with_each_representation_d.data().get(),
                                                                                          first_occurrence_of_representations_d.data().get(),
