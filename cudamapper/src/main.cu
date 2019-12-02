@@ -32,8 +32,10 @@
 static struct option options[] = {
     {"window-size", required_argument, 0, 'w'},
     {"kmer-size", required_argument, 0, 'k'},
+    {"num-devices", required_argument, 0, 'd'},
     {"index-size", required_argument, 0, 'i'},
     {"target-index-size", required_argument, 0, 't'},
+    {"max-cache-size", required_argument, 0, 'c'},
     {"help", no_argument, 0, 'h'},
 };
 
@@ -48,7 +50,8 @@ int main(int argc, char* argv[])
     size_t index_size        = 10000;
     size_t num_devices       = 1;
     size_t target_index_size = 10000;
-    std::string optstring    = "t:i:k:w:h:d:";
+    size_t max_cache_size       = 50;
+    std::string optstring    = "t:i:k:w:h:d:c:";
     uint32_t argument;
     while ((argument = getopt_long(argc, argv, optstring.c_str(), options, nullptr)) != -1)
     {
@@ -68,6 +71,9 @@ int main(int argc, char* argv[])
             break;
         case 't':
             target_index_size = atoi(optarg);
+            break;
+        case 'c':
+            max_cache_size = atoi(optarg);
             break;
         case 'h':
             help(0);
@@ -112,12 +118,6 @@ int main(int argc, char* argv[])
     // Data structure for holding overlaps to be written out
     std::mutex overlaps_writer_mtx;
 
-    // Track overall time
-    std::chrono::milliseconds index_time      = std::chrono::duration_values<std::chrono::milliseconds>::zero();
-    std::chrono::milliseconds matcher_time    = std::chrono::duration_values<std::chrono::milliseconds>::zero();
-    std::chrono::milliseconds overlapper_time = std::chrono::duration_values<std::chrono::milliseconds>::zero();
-
-
     struct query_target_range {
         std::pair<std::int32_t, int32_t> query_range;
         std::vector<std::pair<std::int32_t, int32_t>> target_ranges;
@@ -152,9 +152,9 @@ int main(int argc, char* argv[])
     }
 
     // This is a per-device cache, if it has the index it will return it, if not it will generate it, store and return it.
-    std::vector<std::map<std::pair<uint64_t, uint64_t>, std::shared_ptr<std::unique_ptr<claragenomics::cudamapper::Index>>>>  indexCache(num_devices);
+    std::vector<std::map<std::pair<uint64_t, uint64_t>, std::shared_ptr<std::unique_ptr<claragenomics::cudamapper::Index>>>>  index_cache(num_devices);
 
-    auto get_index = [&indexCache](claragenomics::io::FastaParser& parser,
+    auto get_index = [&index_cache, &max_cache_size](claragenomics::io::FastaParser& parser,
                         const claragenomics::cudamapper::read_id_t query_start_index,
                         const claragenomics::cudamapper::read_id_t query_end_index,
                         const std::uint64_t k,
@@ -165,16 +165,33 @@ int main(int argc, char* argv[])
         key.first = query_start_index;
         key.second = query_end_index;
 
-        if (indexCache[device_id].count(key)) {
-            return indexCache[device_id][key];
+        std::shared_ptr<std::unique_ptr<claragenomics::cudamapper::Index>> index;
+
+        if (index_cache[device_id].count(key)) {
+            index = index_cache[device_id][key];
         } else {
-            indexCache[device_id][key] = std::make_shared<std::unique_ptr<claragenomics::cudamapper::Index>>(claragenomics::cudamapper::Index::create_index(parser,
-                                                                                                  query_start_index,
-                                                                                                  query_end_index,
-                                                                                                  k,
-                                                                                                  w));
-            return indexCache[device_id][key];
+            index = std::make_shared<std::unique_ptr<claragenomics::cudamapper::Index>>(claragenomics::cudamapper::Index::create_index(parser,
+                                                                                         query_start_index,
+                                                                                         query_end_index,
+                                                                                         k,
+                                                                                         w));
+            if (index_cache[device_id].size() < max_cache_size){
+                    index_cache[device_id][key] = index;
+                }
         }
+        return index;
+    };
+
+    auto evict_index = [&index_cache](
+            const claragenomics::cudamapper::read_id_t query_start_index,
+            const claragenomics::cudamapper::read_id_t query_end_index,
+            int device_id){
+
+        std::pair<uint64_t, uint64_t> key;
+        key.first = query_start_index;
+        key.second = query_end_index;
+
+        index_cache[device_id].erase(key);
     };
 
     auto compute_overlaps = [&](query_target_range query_target_range, int device_id){
@@ -197,7 +214,6 @@ int main(int argc, char* argv[])
             auto start_time = std::chrono::high_resolution_clock::now();
 
             query_index = get_index(*query_parser, query_start_index, query_end_index, k, w, device_id);
-            index_time += std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time);
         }
 
         //Main loop
@@ -210,15 +226,12 @@ int main(int argc, char* argv[])
                 CGA_NVTX_RANGE(profiler, "generate_target_index");
                 auto start_time = std::chrono::high_resolution_clock::now();
                 target_index     = get_index(*target_parser, target_start_index, target_end_index, k, w, device_id);
-
-                index_time += std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time);
             }
             {
                 CGA_NVTX_RANGE(profiler, "generate_matcher");
                 auto start_time = std::chrono::high_resolution_clock::now();
                 matcher         = claragenomics::cudamapper::Matcher::create_matcher(**query_index,
                                                                                      **target_index);
-                matcher_time += std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time);
             }
             {
 
@@ -241,8 +254,9 @@ int main(int argc, char* argv[])
                 print_pafs_futures.push_back(f);
 
             }
-
         }
+        //Query will no longer be needed on device, remove it from the cache
+        evict_index(query_start_index, query_end_index, device_id);
         return print_pafs_futures;
     };
 
@@ -264,14 +278,7 @@ int main(int argc, char* argv[])
         }
     }
 
-
-    std::cerr << "\n\n"
-              << std::endl;
-    std::cerr << "Index execution time: " << index_time.count() << "ms" << std::endl;
-    std::cerr << "Matcher execution time: " << matcher_time.count() << "ms" << std::endl;
-    std::cerr << "Overlap detection execution time: " << overlapper_time.count() << "ms" << std::endl;
-
-    return 0;
+   return 0;
 }
 
 void help(int32_t exit_code = 0)
@@ -288,6 +295,12 @@ void help(int32_t exit_code = 0)
               << R"(
         -w, --window-size
             length of window to use for minimizers [15])"
+              << R"(
+        -d, --num-devices
+            number of GPUs to use [1])"
+              << R"(
+        -c, --max_cache_size
+            number of indices to keep in GPU memory [50])"
               << R"(
         -i, --index-size
             length of batch size used for query [10000])"
