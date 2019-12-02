@@ -130,9 +130,7 @@ int main(int argc, char** argv)
                 for (const auto& alignment : alignments)
                 {
                     FormattedAlignment formatted = alignment->format_alignment();
-                    std::cout << formatted.first << "\n"
-                              << formatted.second << "\n"
-                              << std::endl;
+                    std::cout << formatted;
                 }
             }
             // Reset batch to reuse memory for new alignments.
