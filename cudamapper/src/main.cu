@@ -46,10 +46,9 @@ int main(int argc, char* argv[])
     uint32_t k               = 15;
     uint32_t w               = 15;
     size_t index_size        = 10000;
-    size_t num_threads       = 1;
     size_t num_devices       = 1;
     size_t target_index_size = 10000;
-    std::string optstring    = "t:i:k:w:h:r:d:";
+    std::string optstring    = "t:i:k:w:h:d:";
     uint32_t argument;
     while ((argument = getopt_long(argc, argv, optstring.c_str(), options, nullptr)) != -1)
     {
@@ -63,9 +62,6 @@ int main(int argc, char* argv[])
             break;
         case 'i':
             index_size = atoi(optarg);
-            break;
-        case 'r':
-            num_threads = atoi(optarg);
             break;
         case 'd':
             num_devices = atoi(optarg);
@@ -155,10 +151,8 @@ int main(int argc, char* argv[])
         query_target_ranges.push_back(q);
     }
 
-    // This is a per-thread cache, if it has the index it will return it, if not it will generate it, store and return it.
-    //int cache_size = 3;
-
-    std::vector<std::map<std::pair<uint64_t, uint64_t>, std::shared_ptr<std::unique_ptr<claragenomics::cudamapper::Index>>>>  indexCache(num_devices); //one cache per index
+    // This is a per-device cache, if it has the index it will return it, if not it will generate it, store and return it.
+    std::vector<std::map<std::pair<uint64_t, uint64_t>, std::shared_ptr<std::unique_ptr<claragenomics::cudamapper::Index>>>>  indexCache(num_devices);
 
     auto get_index = [&indexCache](claragenomics::io::FastaParser& parser,
                         const claragenomics::cudamapper::read_id_t query_start_index,
@@ -192,7 +186,7 @@ int main(int argc, char* argv[])
         auto query_start_index = query_target_range.query_range.first;
         auto query_end_index = query_target_range.query_range.second;
 
-        std::cerr << "THREAD LAUNCHED: Query range: (" << query_start_index << " - " << query_end_index - 1 << ")" << std::endl;
+        std::cerr << "Procecssing query range: (" << query_start_index << " - " << query_end_index - 1 << ")" << std::endl;
 
         std::shared_ptr<std::unique_ptr<claragenomics::cudamapper::Index>> query_index(nullptr);
         std::shared_ptr<std::unique_ptr<claragenomics::cudamapper::Index>> target_index(nullptr);
@@ -252,10 +246,10 @@ int main(int argc, char* argv[])
         return print_pafs_futures;
     };
 
-    // create thread pool to compute overlaps
-    ThreadPool overlap_pool(num_threads);
-    // Enqueue all the work in a thread pool, each thread returns a vector of futures for the threads it launches
+    // create thread pool to compute overlaps. One worker thread per device.
+    ThreadPool overlap_pool(num_devices);
 
+    // Enqueue the query-target ranges which need to be computed, each thread returns a vector of futures for the threads it launches
     std::vector<std::future<std::vector<std::shared_ptr<std::future<void>>>>> overlap_futures;
     for (int i=0;i<query_target_ranges.size();i++){
         // enqueue and store future
@@ -263,7 +257,6 @@ int main(int argc, char* argv[])
         auto device_id = i % num_devices;
         overlap_futures.push_back(overlap_pool.enqueue(compute_overlaps, query_target_range, device_id));
     }
-
 
     for (auto &f: overlap_futures){
         for (auto a: f.get()){
