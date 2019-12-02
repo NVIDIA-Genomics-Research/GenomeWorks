@@ -80,8 +80,8 @@ public:
     /// \return an array where each representation is recorder only once, sorted by representation
     const thrust::device_vector<representation_t>& unique_representations() const override;
 
-    /// \brief returns first occurrence of corresponding representation from unique_representations() in data arrays
-    /// \return first occurrence of corresponding representation from unique_representations() in data arrays
+    /// \brief returns first occurrence of corresponding representation from unique_representations() in data arrays, plus one more element with the total number of sketch elements
+    /// \return first occurrence of corresponding representation from unique_representations() in data arrays, plus one more element with the total number of sketch elements
     const thrust::device_vector<std::uint32_t>& first_occurrence_of_representations() const override;
 
     /// \brief returns read name of read with the given read_id
@@ -149,21 +149,6 @@ void find_first_occurrences_of_representations(thrust::device_vector<representat
                                                thrust::device_vector<std::uint32_t>& first_occurrence_index_d,
                                                const thrust::device_vector<representation_t>& input_representations_d);
 
-/// \brief Writes 0 to the output array if the value to the left is the same as the current value, 1 otherwise. First element is always 1
-///
-/// For example:
-/// 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20
-/// 0  0  0  0 12 12 12 12 12 12 23 23 23 32 32 32 32 32 46 46 46 <- representations_d
-/// gives:
-/// 1  0  0  0  1  0  0  0  0  0  1  0  0  1  0  0  0  0  1  0  0 <- new_value_mask_d
-///
-/// \param representations_d
-/// \param number_of_elements
-/// \param new_value_mask_d generated array
-__global__ void create_new_value_mask(const representation_t* const representations_d,
-                                      const std::size_t number_of_elements,
-                                      std::uint32_t* const new_value_mask_d);
-
 /// \brief Helper kernel for find_first_occurrences_of_representations
 ///
 /// Creates two arrays: first one contains a list of unique representations and the second one the index
@@ -172,7 +157,6 @@ __global__ void create_new_value_mask(const representation_t* const representati
 /// For example:
 /// 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20
 /// 0  0  0  0 12 12 12 12 12 12 23 23 23 32 32 32 32 32 46 46 46 <- input_representatons_d
-/// 1  0  0  0  1  0  0  0  0  0  1  0  0  1  0  0  0  0  1  0  0
 /// 1  1  1  1  2  2  2  2  2  2  3  3  3  4  4  4  4  4  5  5  5 <- representation_index_mask_d
 /// ^           ^                 ^        ^              ^
 /// gives:
@@ -360,17 +344,180 @@ __global__ void compress_data_arrays_after_filtering_kernel(const std::uint64_t 
     if (0 == sketch_elements_with_this_representation) // this representation was filtered out
         return;
 
-    const std::uint32_t first_occurrence_index_before_compression = first_occurrence_of_representation_before_filtering_d[representation_index_before_compression];
+    const std::uint32_t first_occurrence_index_before_filtering = first_occurrence_of_representation_before_filtering_d[representation_index_before_compression];
     const std::uint32_t first_occurrence_index_after_compression  = first_occurrence_of_representation_after_compression_d[unique_representation_index_after_compression_d[representation_index_before_compression]];
 
     // now move all elements with that representation to the copressed array
     for (std::uint64_t i = threadIdx.x; i < sketch_elements_with_this_representation; i += blockDim.x)
     {
-        representations_after_compression_d[first_occurrence_index_after_compression + i]               = representations_before_compression_d[first_occurrence_index_before_compression + i];
-        read_ids_after_compression_d[first_occurrence_index_after_compression + i]                      = read_ids_before_compression_d[first_occurrence_index_before_compression + i];
-        positions_in_reads_after_compression_d[first_occurrence_index_after_compression + i]            = positions_in_reads_before_compression_d[first_occurrence_index_before_compression + i];
-        directions_of_representations_after_compression_d[first_occurrence_index_after_compression + i] = directions_of_representations_before_compression_d[first_occurrence_index_before_compression + i];
+        representations_after_compression_d[first_occurrence_index_after_compression + i]               = representations_before_compression_d[first_occurrence_index_before_filtering + i];
+        read_ids_after_compression_d[first_occurrence_index_after_compression + i]                      = read_ids_before_compression_d[first_occurrence_index_before_filtering + i];
+        positions_in_reads_after_compression_d[first_occurrence_index_after_compression + i]            = positions_in_reads_before_compression_d[first_occurrence_index_before_filtering + i];
+        directions_of_representations_after_compression_d[first_occurrence_index_after_compression + i] = directions_of_representations_before_compression_d[first_occurrence_index_before_filtering + i];
     }
+}
+
+/// \brief removes sketch elements with most common representations from the index
+///
+/// All sketch elements for which holds sketch_elementes_with_that_representation/total_sketch_element >= filtering_parameter/1'000'000'000 will get removed
+///
+/// For example this index initinally contains 20 sketch elements:
+/// 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19
+/// 1  1  3  3  5  5  5  5  6  6  6  6  6  6  7  7  7  8  8  8 <- representations (before filtering)
+/// 0  1  3  5  3  4  6  6  0  1  2  2  2  3  7  8  9  1  2  3 <- read_ids (before filtering)
+/// 0  0  1  1  4  5  8  9  3  6  7  8  9  5  4  7  3  7  8  9 <- positions_in_reads (before filtering)
+/// F  F  F  F  R  R  R  F  R  F  F  R  R  F  F  R  R  F  F  F <- directions_of_reads (before filtering)
+/// 1  3  5  6  7  8    <- unique_representations (before filtering)
+/// 0  2  4  8 14 17 20 <- first_occurrence_of_representations (before filtering)
+///
+/// For filtering_parameter = 200'000'000:
+/// sketch_elementes_with_that_representation/total_sketch_element >= filtering_parameter/1'000'000'000 <=>
+/// sketch_elementes_with_that_representation/20 >= 200'000'000/1'000'000'000 <=>
+/// sketch_elementes_with_that_representation/20 >= 1/5 <=>
+/// sketch_elementes_with_that_representation >= 20 * 1/5 <=>
+/// sketch_elementes_with_that_representation >= 4 <=>
+/// sketch element with representations with 4 or more sketch elements will be removed
+///
+/// In the example above that means that representations 5 and 6 will be removed and that the output would be:
+/// 0  1  2  3  4  5  6  7  8  9
+/// 1  1  3  3  7  7  7  8  8  8 <- representations (after filtering)
+/// 0  1  3  5  7  8  9  1  2  3 <- read_ids (after filtering)
+/// 0  0  1  1  4  7  3  7  8  9 <- positions_in_reads (after filtering)
+/// F  F  F  F  F  R  R  F  F  F <- directions_of_reads (after filtering)
+/// 1  3  7  8    <- unique_representations (after filtering)
+/// 0  2  4  7 10 <- first_occurrence_of_representations (after filtering)
+///
+/// \param filtering_parameter value between 0 and 1'000'000'000, as explained above
+/// \param representations_d original values on input, filtered on output
+/// \param read_ids_d original values on input, filtered on output
+/// \param positions_in_reads_d original values on input, filtered on output
+/// \param directions_of_representations_d original values on input, filtered on output
+/// \param unique_representation_d original values on input, filtered on output
+/// \param first_occurrence_of_representations_d original values on input, filtered on output
+///
+/// \tparam DirectionOfRepresentation any implementation of SketchElementImpl::SketchElementImpl::DirectionOfRepresentation
+template <typename DirectionOfRepresentation>
+void filter_out_most_common_representations(const std::uint32_t filtering_parameter,
+                                            thrust::device_vector<representation_t>& representations_d,
+                                            thrust::device_vector<read_id_t>& read_ids_d,
+                                            thrust::device_vector<position_in_read_t>& positions_in_reads_d,
+                                            thrust::device_vector<DirectionOfRepresentation>& directions_of_representations_d,
+                                            thrust::device_vector<representation_t>& unique_representations_d,
+                                            thrust::device_vector<std::uint32_t>& first_occurrence_of_representations_d)
+{
+    // *** find the number of sketch_elements for every representation ***
+    // 0  2  4  8 14 17 20 <- first_occurrence_of_representations_d (before filtering)
+    // 2  2  4  6  3  3  0 <- number_of_sketch_elements_with_each_representation_d (with additional 0 at the end)
+
+    thrust::device_vector<std::uint32_t> number_of_sketch_elements_with_each_representation_d(first_occurrence_of_representations_d.size());
+    number_of_sketch_elements_with_each_representation_d.back() = 0; // H2D
+
+    std::uint32_t number_of_threads = 128;
+    std::int32_t number_of_blocks = ceiling_divide<std::int64_t>(first_occurrence_of_representations_d.size(),
+                                                                 number_of_threads);
+
+    find_number_of_representation_occurrences_kernel<<<number_of_blocks, number_of_threads>>>(first_occurrence_of_representations_d.data().get(),
+                                                                                              first_occurrence_of_representations_d.size(),
+                                                                                              number_of_sketch_elements_with_each_representation_d.data().get());
+
+    // *** find filtering threshold ***
+    const std::size_t total_sketch_elements = representations_d.size();
+    const std::uint32_t filtering_threshold = static_cast<std::uint32_t>((static_cast<std::uint64_t>(total_sketch_elements) * filtering_parameter) / 1'000'000'000);
+
+    // *** mark representations for filtering out ***
+    // If representation is to be filtered out change its number of occurrences in number_of_sketch_elements_with_each_representation_d to 0
+    // Also create keep_representation_mask_d with value 1 for keeping the representation and 0 for filtering it out
+    // 2  2  4  6  3  3  0 <- number_of_sketch_elements_with_each_representation_d (before filtering)
+    // 2  2  0  0  3  3  0 <- number_of_sketch_elements_with_each_representation_d (after filtering)
+    // 1  1  0  0  1  1  0 <- keep_representation_mask_d
+    thrust::device_vector<std::uint32_t> keep_representation_mask_d(unique_representations_d.size() + 1); // additional element at the end
+
+    mark_for_filtering_out_kernel<<<number_of_blocks, number_of_threads>>>(filtering_threshold,
+                                                                           unique_representations_d.size(),
+                                                                           number_of_sketch_elements_with_each_representation_d.data().get(),
+                                                                           keep_representation_mask_d.data().get());
+
+    // *** perform exclusive sums to find the index and starting positions of each representation after filtering ***
+    // 2  2  0  0  3  3  0 <- number_of_sketch_elements_with_each_representation_d (after filtering)
+    // 0  2  4  4  4  7 10 <- first_occurrence_of_representation_after_filtering_d
+    thrust::device_vector<std::uint32_t> first_occurrence_of_representation_after_filtering_d(number_of_sketch_elements_with_each_representation_d.size());
+    thrust::exclusive_scan(thrust::device,
+                           std::begin(number_of_sketch_elements_with_each_representation_d),
+                           std::end(number_of_sketch_elements_with_each_representation_d),
+                           std::begin(first_occurrence_of_representation_after_filtering_d));
+
+    // 1  1  0  0  1  1  0 <- keep_representation_mask_d
+    // 0  1  2  2  2  3  4 <- unique_representation_index_after_filtering_d
+
+    thrust::device_vector<std::uint32_t> unique_representation_index_after_filtering_d(keep_representation_mask_d.size());
+    thrust::exclusive_scan(thrust::device,
+                           std::begin(keep_representation_mask_d),
+                           std::end(keep_representation_mask_d),
+                           std::begin(unique_representation_index_after_filtering_d));
+
+    // *** remove filtered out elements (compress) from unique_representations_d and first_occurrence_of_representations_d ***
+    // 1  3  5  6  7  8 <- unique_representations_d (original)
+    // 1  3  7  8       <- unique_representations_after_filtering_d
+    //
+    // 0  2  4  4  4  7 10 <- first_occurrence_of_representation_after_filtering_d
+    // 0  2  4  7 10       <- first_occurrence_of_representations_after_compression_d
+
+    const std::uint32_t number_of_unique_representations_after_compression = unique_representation_index_after_filtering_d.back(); // D2H
+
+    thrust::device_vector<representation_t> unique_representations_after_compression_d(number_of_unique_representations_after_compression);
+    thrust::device_vector<std::uint32_t> first_occurrence_of_representations_after_compression_d(number_of_unique_representations_after_compression + 1);
+
+    number_of_threads = 128;
+    number_of_blocks = ceiling_divide<std::int64_t>(first_occurrence_of_representations_d.size(),
+                                                    number_of_threads);
+
+    compress_unique_representations_after_filtering_kernel<<<number_of_threads, number_of_blocks>>>(unique_representations_d.size(),
+                                                                                                    unique_representations_d.data().get(),
+                                                                                                    first_occurrence_of_representation_after_filtering_d.data().get(),
+                                                                                                    unique_representation_index_after_filtering_d.data().get(),
+                                                                                                    unique_representations_after_compression_d.data().get(),
+                                                                                                    first_occurrence_of_representations_after_compression_d.data().get());
+
+    // *** remove filtered out elements (compress) from other data arrays ***
+
+    // 1  1  3  3  5  5  5  5  6  6  6  6  6  6  7  7  7  8  8  8 <- representations_d (before filtering)
+    // 0  1  3  5  3  4  6  6  0  1  2  2  2  3  7  8  9  1  2  3 <- read_ids_d (before filtering)
+    // 0  0  1  1  4  5  8  9  3  6  7  8  9  5  4  7  3  7  8  9 <- positions_in_reads_d (before filtering)
+    // F  F  F  F  R  R  R  F  R  F  F  R  R  F  F  R  R  F  F  F <- directions_of_reads_d (before filtering)
+    // 1  1  3  3  7  7  7  8  8  8 <- representations_after_filtering_d
+    // 0  1  3  5  7  8  9  1  2  3 <- read_ids_after_filtering_d
+    // 0  0  1  1  4  7  3  7  8  9 <- positions_in_reads_after_filtering_d
+    // F  F  F  F  F  R  R  F  F  F <- directions_of_reads_after_filtering_d
+
+    std::uint32_t number_of_sketch_elements_after_compression = first_occurrence_of_representations_after_compression_d.back(); // D2H
+    thrust::device_vector<representation_t> representations_after_compression_d(number_of_sketch_elements_after_compression);
+    thrust::device_vector<read_id_t> read_ids_after_compression_d(number_of_sketch_elements_after_compression);
+    thrust::device_vector<position_in_read_t> positions_in_reads_after_compression_d(number_of_sketch_elements_after_compression);
+    thrust::device_vector<DirectionOfRepresentation> directions_of_representations_after_compression_d(number_of_sketch_elements_after_compression);
+
+    number_of_threads = 32;
+    number_of_blocks = unique_representations_d.size();
+    compress_data_arrays_after_filtering_kernel<<<number_of_blocks, number_of_threads>>>(unique_representations_d.size(),
+                                                                                         number_of_sketch_elements_with_each_representation_d.data().get(),
+                                                                                         first_occurrence_of_representations_d.data().get(),
+                                                                                         first_occurrence_of_representations_after_compression_d.data().get(),
+                                                                                         unique_representation_index_after_filtering_d.data().get(),
+                                                                                         representations_d.data().get(),
+                                                                                         read_ids_d.data().get(),
+                                                                                         positions_in_reads_d.data().get(),
+                                                                                         directions_of_representations_d.data().get(),
+                                                                                         representations_after_compression_d.data().get(),
+                                                                                         read_ids_after_compression_d.data().get(),
+                                                                                         positions_in_reads_after_compression_d.data().get(),
+                                                                                         directions_of_representations_after_compression_d.data().get());
+
+    // *** swap vectors with the input arrays ***
+    std::swap(unique_representations_d, unique_representations_after_compression_d);
+    std::swap(first_occurrence_of_representations_d, first_occurrence_of_representations_after_compression_d);
+    std::swap(representations_d, representations_after_compression_d);
+    std::swap(read_ids_d, read_ids_after_compression_d);
+    std::swap(positions_in_reads_d, positions_in_reads_after_compression_d);
+    std::swap(directions_of_representations_d, directions_of_representations_after_compression_d);
 }
 
 } // namespace index_gpu

@@ -169,7 +169,7 @@ __device__ int32_t append_myers_backtrace(int8_t* path, device_matrix_view<WordT
     return pos;
 }
 
-inline __device__ void hirschberg_myers_fill_path_warp(int8_t* path, int32_t n, int8_t value)
+inline __device__ void hirschberg_myers_fill_path_warp(int8_t*& path, int32_t* path_length, int32_t n, int8_t value)
 {
     // TODO parallelize
     if (threadIdx.x == 0)
@@ -180,6 +180,7 @@ inline __device__ void hirschberg_myers_fill_path_warp(int8_t* path, int32_t n, 
             *path = value;
             ++path;
         }
+        *path_length += n;
     }
 }
 
@@ -215,9 +216,7 @@ __device__ WordType myers_generate_query_pattern_reverse(char x, char const* que
 __device__ void myers_preprocess(device_matrix_view<WordType>& query_pattern, char const* query, int32_t query_size)
 {
     const int32_t n_words = ceiling_divide(query_size, word_size);
-    int32_t idx           = threadIdx.y * blockDim.x + threadIdx.x;
-    const int32_t inc     = blockDim.x * blockDim.y;
-    while (idx < n_words)
+    for (int32_t idx = threadIdx.x; idx < n_words; idx += warp_size)
     {
         // TODO query load is inefficient
         query_pattern(idx, 0) = myers_generate_query_pattern('A', query, query_size, idx * word_size);
@@ -228,7 +227,6 @@ __device__ void myers_preprocess(device_matrix_view<WordType>& query_pattern, ch
         query_pattern(idx, 5) = myers_generate_query_pattern_reverse('C', query, query_size, idx * word_size);
         query_pattern(idx, 6) = myers_generate_query_pattern_reverse('T', query, query_size, idx * word_size);
         query_pattern(idx, 7) = myers_generate_query_pattern_reverse('G', query, query_size, idx * word_size);
-        idx += inc;
     }
 }
 
@@ -357,7 +355,8 @@ myers_compute_scores(
 }
 
 __device__ void hirschberg_myers_compute_path(
-    int8_t* path,
+    int8_t*& path,
+    int32_t* path_length,
     batched_device_matrices<WordType>::device_interface* pvi,
     batched_device_matrices<WordType>::device_interface* mvi,
     batched_device_matrices<int32_t>::device_interface* scorei,
@@ -371,14 +370,16 @@ __device__ void hirschberg_myers_compute_path(
 {
     assert(query_begin < query_end);
     const int32_t n_words             = ceiling_divide<int32_t>(query_end - query_begin, word_size);
-    device_matrix_view<int32_t> score = scorei->get_matrix_view(blockDim.y * alignment_idx + threadIdx.y, n_words, target_end - target_begin + 1);
-    device_matrix_view<WordType> pv   = pvi->get_matrix_view(blockDim.y * alignment_idx + threadIdx.y, n_words, target_end - target_begin + 1);
-    device_matrix_view<WordType> mv   = mvi->get_matrix_view(blockDim.y * alignment_idx + threadIdx.y, n_words, target_end - target_begin + 1);
+    device_matrix_view<int32_t> score = scorei->get_matrix_view(alignment_idx, n_words, target_end - target_begin + 1);
+    device_matrix_view<WordType> pv   = pvi->get_matrix_view(alignment_idx, n_words, target_end - target_begin + 1);
+    device_matrix_view<WordType> mv   = mvi->get_matrix_view(alignment_idx, n_words, target_end - target_begin + 1);
     myers_compute_scores(pv, mv, score, query_patterns, target_begin, target_end, query_begin, query_end, query_begin - query_begin_absolute, true, false);
     __syncwarp();
     if (threadIdx.x == 0)
     {
-        append_myers_backtrace(path, pv, mv, score, query_end - query_begin);
+        int32_t len = append_myers_backtrace(path, pv, mv, score, query_end - query_begin);
+        path += len;
+        *path_length += len;
     }
 }
 
@@ -400,13 +401,13 @@ __device__ const char* hirschberg_myers_compute_target_mid_warp(
     assert(query_mid < query_end);
     assert(target_begin < target_end);
 
-    device_matrix_view<int32_t> score = scorei->get_matrix_view(blockDim.y * alignment_idx + threadIdx.y, target_end - target_begin + 1, 2);
+    device_matrix_view<int32_t> score = scorei->get_matrix_view(alignment_idx, target_end - target_begin + 1, 2);
 
     if (query_begin < query_mid)
     {
         const int32_t n_words           = ceiling_divide<int32_t>(query_mid - query_begin, word_size);
-        device_matrix_view<WordType> pv = pvi->get_matrix_view(blockDim.y * alignment_idx + threadIdx.y, n_words, 1);
-        device_matrix_view<WordType> mv = mvi->get_matrix_view(blockDim.y * alignment_idx + threadIdx.y, n_words, 1);
+        device_matrix_view<WordType> pv = pvi->get_matrix_view(alignment_idx, n_words, 2);
+        device_matrix_view<WordType> mv = mvi->get_matrix_view(alignment_idx, n_words, 2);
         myers_compute_scores(pv, mv, score, query_patterns, target_begin, target_end, query_begin, query_mid, query_begin - query_begin_absolute, false, false);
     }
     else
@@ -421,8 +422,8 @@ __device__ const char* hirschberg_myers_compute_target_mid_warp(
 
     {
         const int32_t n_words           = ceiling_divide<int32_t>(query_end - query_mid, word_size);
-        device_matrix_view<WordType> pv = pvi->get_matrix_view(blockDim.y * alignment_idx + threadIdx.y, n_words, 1);
-        device_matrix_view<WordType> mv = mvi->get_matrix_view(blockDim.y * alignment_idx + threadIdx.y, n_words, 1);
+        device_matrix_view<WordType> pv = pvi->get_matrix_view(alignment_idx, n_words, 2);
+        device_matrix_view<WordType> mv = mvi->get_matrix_view(alignment_idx, n_words, 2);
         myers_compute_scores(pv, mv, score, query_patterns, target_begin, target_end, query_mid, query_end, query_end_absolute - query_end, false, true);
     }
 
@@ -453,7 +454,7 @@ __device__ const char* hirschberg_myers_compute_target_mid_warp(
     return target_begin + midpoint;
 }
 
-__device__ void hirschberg_myers_single_char_warp(int8_t* path, char query_char, char const* target_begin, char const* target_end)
+__device__ void hirschberg_myers_single_char_warp(int8_t*& path, int32_t* path_length, char query_char, char const* target_begin, char const* target_end)
 {
     // TODO parallelize
     if (threadIdx.x == 0)
@@ -482,157 +483,70 @@ __device__ void hirschberg_myers_single_char_warp(int8_t* path, char query_char,
             ++path;
             --t;
         }
+        *path_length += target_end - target_begin;
     }
 }
 
 template <typename T>
-struct parallel_warp_shared_stack_state
+class warp_shared_stack
 {
-    uint32_t mutex_;
-    int32_t active_warps_;
+public:
+    __device__ warp_shared_stack(T* buffer_begin, T* buffer_end)
+        : buffer_begin_(buffer_begin)
+        , cur_end_(buffer_begin)
+        , buffer_end_(buffer_end)
+    {
+        assert(buffer_begin_ < buffer_end_);
+    }
+
+    __device__ bool inline push(T const& t, unsigned warp_mask = 0xffff'ffff)
+    {
+        if (buffer_end_ - cur_end_ >= 1)
+        {
+            __syncwarp(warp_mask);
+            if (threadIdx.x == 0)
+            {
+                *cur_end_ = t;
+            }
+            __syncwarp(warp_mask);
+            ++cur_end_;
+            return true;
+        }
+        else
+        {
+            if (threadIdx.x == 0)
+            {
+                printf("ERROR: stack full!");
+            }
+            return false;
+        }
+    }
+
+    __device__ inline void pop()
+    {
+        assert(cur_end_ > buffer_begin_);
+        if (cur_end_ - 1 >= buffer_begin_)
+            --cur_end_;
+    }
+
+    __device__ inline T back() const
+    {
+        assert(cur_end_ - 1 >= buffer_begin_);
+        return *(cur_end_ - 1);
+    }
+
+    __device__ inline bool empty() const
+    {
+        return buffer_begin_ == cur_end_;
+    }
+
+private:
     T* buffer_begin_;
     T* cur_end_;
     T* buffer_end_;
 };
 
-template <typename T>
-class parallel_warp_shared_stack
-{
-public:
-    __device__ parallel_warp_shared_stack(parallel_warp_shared_stack_state<T>* data, T* buffer_begin, T* buffer_end)
-        : data_(data)
-    {
-        assert(buffer_begin < buffer_end);
-        if (threadIdx.x == 0 && threadIdx.y == 0 && threadIdx.z == 0)
-        {
-            data_->mutex_        = 0;
-            data_->active_warps_ = 0;
-            data_->buffer_begin_ = buffer_begin;
-            data_->cur_end_      = buffer_begin;
-            data_->buffer_end_   = buffer_end;
-        }
-        __syncthreads();
-        if (threadIdx.x % warp_size == 0)
-        {
-            atomicAdd(&data_->active_warps_, 1);
-        }
-        __syncthreads();
-    }
-
-    __device__ bool inline push(T const& t)
-    {
-        lock_mutex_high_priority();
-        bool success = false;
-        __syncwarp();
-
-        if (data_->buffer_end_ - data_->cur_end_ >= 1)
-        {
-            __syncwarp();
-            if (threadIdx.x % warp_size == 0)
-            {
-                *(data_->cur_end_) = t;
-                ++(data_->cur_end_);
-            }
-            success = true;
-        }
-        else
-        {
-            if (threadIdx.x % warp_size == 0)
-            {
-                printf("ERROR: stack full!");
-            }
-        }
-        __syncwarp();
-        release_mutex();
-        return success;
-    }
-
-    __device__ inline bool pop(T& element)
-    {
-        lock_mutex();
-        if (threadIdx.x % warp_size == 0)
-        {
-            assert(data_->active_warps_ > 0);
-            --(data_->active_warps_);
-        }
-        release_mutex();
-        bool result = true;
-        while (1)
-        {
-            lock_mutex();
-            __syncwarp();
-            if (data_->buffer_begin_ < data_->cur_end_)
-            {
-                element = *(data_->cur_end_ - 1);
-                __syncwarp();
-                if (threadIdx.x % warp_size == 0)
-                {
-                    --(data_->cur_end_);
-                    ++(data_->active_warps_);
-                }
-                break;
-            }
-            else if (data_->active_warps_ <= 0)
-            {
-                assert(data_->buffer_begin_ == data_->cur_end_);
-                result = false;
-                break;
-            }
-            __syncwarp();
-            release_mutex();
-#if __CUDA_ARCH__ >= 700
-            asm("nanosleep.u32 100000;");
-#endif
-        }
-        __syncwarp();
-        release_mutex();
-        return result;
-    }
-
-private:
-    __device__ inline void release_mutex()
-    {
-        __threadfence_block();
-        if (threadIdx.x % warp_size == 0)
-        {
-            atomicAnd(&(data_->mutex_), 0x0000'0002u);
-        }
-    };
-
-    __device__ inline void lock_mutex()
-    {
-        if (threadIdx.x % warp_size == 0)
-        {
-            while (0 != atomicCAS(&(data_->mutex_), 0, 1))
-            {
-#if __CUDA_ARCH__ >= 700
-                asm("nanosleep.u32 10000;");
-#endif
-            };
-        }
-        __threadfence_block();
-    }
-
-    __device__ inline void lock_mutex_high_priority() const
-    {
-        if (threadIdx.x % warp_size == 0)
-        {
-            atomicOr(&(data_->mutex_), 0x0000'0002u); // reserve mutex
-            while (2 != atomicCAS(&(data_->mutex_), 2, 1))
-            {
-#if __CUDA_ARCH__ >= 700
-                asm("nanosleep.u32 1000;");
-#endif
-                atomicOr(&(data_->mutex_), 0x0000'0002u); // reserve mutex
-            };
-        }
-        __threadfence_block();
-    }
-
-    parallel_warp_shared_stack_state<T>* const data_;
-};
-
-__device__ bool hirschberg_myers(
+__device__ void hirschberg_myers(
     query_target_range* stack_buffer_begin,
     query_target_range* stack_buffer_end,
     int8_t*& path,
@@ -653,33 +567,31 @@ __device__ bool hirschberg_myers(
     assert(query_begin_absolute <= query_end_absolute);
     assert(target_begin_absolute <= target_end_absolute);
 
-    __shared__ parallel_warp_shared_stack_state<query_target_range> stack_data;
-    parallel_warp_shared_stack<query_target_range> stack(&stack_data, stack_buffer_begin, stack_buffer_end);
-
-    if (threadIdx.y == 0)
-        stack.push({query_begin_absolute, query_end_absolute, target_begin_absolute, target_end_absolute});
+    warp_shared_stack<query_target_range> stack(stack_buffer_begin, stack_buffer_end);
+    stack.push({query_begin_absolute, query_end_absolute, target_begin_absolute, target_end_absolute});
 
     assert(pvi->get_max_elements_per_matrix() == mvi->get_max_elements_per_matrix());
     assert(scorei->get_max_elements_per_matrix() >= pvi->get_max_elements_per_matrix());
 
-    bool success = true;
-    query_target_range e;
-    while (success && stack.pop(e))
+    bool success   = true;
+    int32_t length = 0;
+    while (success && !stack.empty())
     {
+        query_target_range e = stack.back();
+        stack.pop();
         assert(e.query_begin <= e.query_end);
         assert(e.target_begin <= e.target_end);
-        int32_t path_pos = e.query_begin - query_begin_absolute + e.target_begin - target_begin_absolute;
         if (e.target_begin == e.target_end)
         {
-            hirschberg_myers_fill_path_warp(path + path_pos, e.query_end - e.query_begin, static_cast<int8_t>(AlignmentState::deletion));
+            hirschberg_myers_fill_path_warp(path, &length, e.query_end - e.query_begin, static_cast<int8_t>(AlignmentState::deletion));
         }
         else if (e.query_begin == e.query_end)
         {
-            hirschberg_myers_fill_path_warp(path + path_pos, e.target_end - e.target_begin, static_cast<int8_t>(AlignmentState::insertion));
+            hirschberg_myers_fill_path_warp(path, &length, e.target_end - e.target_begin, static_cast<int8_t>(AlignmentState::insertion));
         }
         else if (e.query_begin + 1 == e.query_end)
         {
-            hirschberg_myers_single_char_warp(path + path_pos, *e.query_begin, e.target_begin, e.target_end);
+            hirschberg_myers_single_char_warp(path, &length, *e.query_begin, e.target_begin, e.target_end);
         }
         else
         {
@@ -688,7 +600,7 @@ __device__ bool hirschberg_myers(
                 const int32_t n_words = ceiling_divide<int32_t>(e.query_end - e.query_begin, word_size);
                 if ((e.target_end - e.target_begin + 1) * n_words <= pvi->get_max_elements_per_matrix())
                 {
-                    hirschberg_myers_compute_path(path + path_pos, pvi, mvi, scorei, query_patterns, e.target_begin, e.target_end, e.query_begin, e.query_end, query_begin_absolute, alignment_idx);
+                    hirschberg_myers_compute_path(path, &length, pvi, mvi, scorei, query_patterns, e.target_begin, e.target_end, e.query_begin, e.query_end, query_begin_absolute, alignment_idx);
                     continue;
                 }
             }
@@ -699,36 +611,10 @@ __device__ bool hirschberg_myers(
             success                = success && stack.push({query_mid, e.query_end, target_mid, e.target_end});
         }
     }
-    __syncthreads();
-    return success;
-}
-
-__device__ void initialize_path(int8_t* path, int32_t max_path_length)
-{
-    int i = blockDim.x * threadIdx.y + threadIdx.x;
-    while (i < max_path_length)
-    {
-        path[i] = static_cast<int8_t>(-1);
-        i += blockDim.x * blockDim.y;
-    }
-}
-
-__device__ void compactify_path(int8_t* path, int32_t* path_length, int32_t max_path_length)
-{
-    if (threadIdx.x == 0 && threadIdx.y == 0)
-    {
-        int pos = 0;
-        for (int i = 0; i < max_path_length; ++i)
-        {
-            int8_t p = path[i];
-            if (p >= 0)
-            {
-                path[pos] = p;
-                ++pos;
-            }
-        }
-        *path_length = pos;
-    }
+    if (!success)
+        length = 0;
+    if (threadIdx.x == 0)
+        *path_length = length;
 }
 
 __global__ void hirschberg_myers_compute_alignment(
@@ -753,25 +639,15 @@ __global__ void hirschberg_myers_compute_alignment(
     if (alignment_idx >= n_alignments)
         return;
 
-    const char* const query_begin  = sequences_d + 2 * alignment_idx * max_sequence_length;
-    const char* const target_begin = sequences_d + (2 * alignment_idx + 1) * max_sequence_length;
-    const char* const query_end    = query_begin + sequence_lengths_d[2 * alignment_idx];
-    const char* const target_end   = target_begin + sequence_lengths_d[2 * alignment_idx + 1];
-    int8_t* path                   = paths_base + alignment_idx * max_path_length;
-    initialize_path(path, max_path_length);
+    const char* const query_begin               = sequences_d + 2 * alignment_idx * max_sequence_length;
+    const char* const target_begin              = sequences_d + (2 * alignment_idx + 1) * max_sequence_length;
+    const char* const query_end                 = query_begin + sequence_lengths_d[2 * alignment_idx];
+    const char* const target_end                = target_begin + sequence_lengths_d[2 * alignment_idx + 1];
+    int8_t* path                                = paths_base + alignment_idx * max_path_length;
     query_target_range* stack_buffer_begin      = stack_buffer_base + alignment_idx * stack_buffer_size_per_alignment;
     device_matrix_view<WordType> query_patterns = query_patternsi->get_matrix_view(alignment_idx, ceiling_divide<int32_t>(query_end - query_begin, word_size), 8);
     myers_preprocess(query_patterns, query_begin, query_end - query_begin);
-    bool success = hirschberg_myers(stack_buffer_begin, stack_buffer_begin + stack_buffer_size_per_alignment, path, path_lengths + alignment_idx, full_myers_threshold, pvi, mvi, scorei, query_patterns, target_begin, target_end, query_begin, query_end, alignment_idx);
-    if (success)
-    {
-        compactify_path(path, path_lengths + alignment_idx, max_path_length);
-    }
-    else
-    {
-        if (threadIdx.x == 0 && threadIdx.y == 0)
-            *(path_lengths + alignment_idx) = 0;
-    }
+    hirschberg_myers(stack_buffer_begin, stack_buffer_begin + stack_buffer_size_per_alignment, path, path_lengths + alignment_idx, full_myers_threshold, pvi, mvi, scorei, query_patterns, target_begin, target_end, query_begin, query_end, alignment_idx);
 }
 
 } // namespace hirschbergmyers
@@ -788,12 +664,11 @@ void hirschberg_myers_gpu(device_buffer<hirschbergmyers::query_target_range>& st
                           batched_device_matrices<int32_t>& score,
                           batched_device_matrices<hirschbergmyers::WordType>& query_patterns,
                           int32_t switch_to_myers_threshold,
-                          int32_t warps_per_alignment,
                           cudaStream_t stream)
 {
     using hirschbergmyers::warp_size;
 
-    const dim3 threads(warp_size, warps_per_alignment, 1);
+    const dim3 threads(warp_size, 1, 1);
     const dim3 blocks(1, 1, ceiling_divide<int32_t>(n_alignments, threads.z));
     hirschbergmyers::hirschberg_myers_compute_alignment<<<blocks, threads, 0, stream>>>(stack_buffer.data(), stack_buffer_size_per_alignment, switch_to_myers_threshold, paths_d, path_lengths_d, max_path_length, pv.get_device_interface(), mv.get_device_interface(), score.get_device_interface(), query_patterns.get_device_interface(), sequences_d, sequence_lengths_d, max_sequence_length, n_alignments);
 }

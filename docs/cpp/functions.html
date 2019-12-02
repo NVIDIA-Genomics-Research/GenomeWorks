@@ -22,7 +22,7 @@
  <tr style="height: 56px;">
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">ClaraGenomicsAnalysis
-   &#160;<span id="projectnumber">0.3.0</span>
+   &#160;<span id="projectnumber">0.4.0</span>
    </div>
   </td>
  </tr>
@@ -68,14 +68,24 @@ $(function() {
 <li>add_alignment()
 : <a class="el" href="classclaragenomics_1_1cudaaligner_1_1Aligner.html#adc32085da2b5681f0045d05c43a35f92">claragenomics::cudaaligner::Aligner</a>
 </li>
+<li>add_edge()
+: <a class="el" href="classclaragenomics_1_1DirectedGraph.html#a85c21aed5db9c7d81cb6003841410371">claragenomics::DirectedGraph</a>
+, <a class="el" href="classclaragenomics_1_1UndirectedGraph.html#a47c5ee6b9616ab24222526f4dcd1fb04">claragenomics::UndirectedGraph</a>
+</li>
 <li>add_poa_group()
 : <a class="el" href="classclaragenomics_1_1cudapoa_1_1Batch.html#a8f2f44e7b4d7f51d8ba68323841dcdf0">claragenomics::cudapoa::Batch</a>
+</li>
+<li>adjacent_nodes_
+: <a class="el" href="classclaragenomics_1_1Graph.html#a8b53264154b5caed266385a007e33404">claragenomics::Graph</a>
 </li>
 <li>align_all()
 : <a class="el" href="classclaragenomics_1_1cudaaligner_1_1Aligner.html#a8b3c20782b9eaa4c2219fb7ff51772db">claragenomics::cudaaligner::Aligner</a>
 </li>
 <li>Anchor()
 : <a class="el" href="structclaragenomics_1_1cudamapper_1_1Anchor.html#af4dc10f114030a8e3a53f3bad3cd20b2">claragenomics::cudamapper::Anchor</a>
+</li>
+<li>anchors()
+: <a class="el" href="classclaragenomics_1_1cudamapper_1_1Matcher.html#ac3de5ba06b0c7ef0329caf71ae98f2d2">claragenomics::cudamapper::Matcher</a>
 </li>
 </ul>
 
@@ -91,11 +101,17 @@ $(function() {
 
 
 <h3><a id="index_c"></a>- c -</h3><ul>
+<li>cigar_
+: <a class="el" href="structclaragenomics_1_1cudamapper_1_1Overlap.html#ad9b3ed3f91b4979afb6198cea2d77e54">claragenomics::cudamapper::Overlap</a>
+</li>
 <li>convert_to_cigar()
 : <a class="el" href="classclaragenomics_1_1cudaaligner_1_1Alignment.html#aeb4a583f6fbc643c93170797ca45a876">claragenomics::cudaaligner::Alignment</a>
 </li>
 <li>create_index()
-: <a class="el" href="classclaragenomics_1_1cudamapper_1_1Index.html#afc23f3e71c65dc9ed5a9e49cf26ba645">claragenomics::cudamapper::Index</a>
+: <a class="el" href="classclaragenomics_1_1cudamapper_1_1Index.html#a47c3cb89daa4076243dd5977acfb7ccf">claragenomics::cudamapper::Index</a>
+</li>
+<li>create_matcher()
+: <a class="el" href="classclaragenomics_1_1cudamapper_1_1Matcher.html#ae65a1507ddf1bf2aa046fc0eacfea752">claragenomics::cudamapper::Matcher</a>
 </li>
 <li>create_sequence()
 : <a class="el" href="classclaragenomics_1_1cudamapper_1_1Sequence.html#a3e4a8fe41b71b13362433360b20115ed">claragenomics::cudamapper::Sequence</a>
@@ -107,6 +123,9 @@ $(function() {
 <li>data()
 : <a class="el" href="classclaragenomics_1_1cudamapper_1_1Sequence.html#a45c1a69a18ea6f6fd7a45bad6862bbca">claragenomics::cudamapper::Sequence</a>
 </li>
+<li>directed_edge_exists()
+: <a class="el" href="classclaragenomics_1_1Graph.html#a1df5a4be1fc2f71130436e9f718e85ac">claragenomics::Graph</a>
+</li>
 <li>direction()
 : <a class="el" href="classclaragenomics_1_1cudamapper_1_1SketchElement.html#af4b53bc09f5816c3b81fef1c1abf3fc6">claragenomics::cudamapper::SketchElement</a>
 </li>
@@ -114,7 +133,26 @@ $(function() {
 : <a class="el" href="classclaragenomics_1_1cudamapper_1_1SketchElement.html#a83beb5c091c4b0bfec99c04b6bc8777a">claragenomics::cudamapper::SketchElement</a>
 </li>
 <li>directions_of_reads()
-: <a class="el" href="classclaragenomics_1_1cudamapper_1_1Index.html#a407a2466e8740a0f78a3ce876b87352b">claragenomics::cudamapper::Index</a>
+: <a class="el" href="classclaragenomics_1_1cudamapper_1_1Index.html#a5824f352fd89f69c9acc14430a3aa6cd">claragenomics::cudamapper::Index</a>
+</li>
+</ul>
+
+
+<h3><a id="index_e"></a>- e -</h3><ul>
+<li>edge_t
+: <a class="el" href="classclaragenomics_1_1Graph.html#a3892123fce03f805e54ce0076e6b68dc">claragenomics::Graph</a>
+</li>
+<li>edge_weight_t
+: <a class="el" href="classclaragenomics_1_1Graph.html#ad5388bf7676b6e35a6e62c034e2993b5">claragenomics::Graph</a>
+</li>
+<li>edges_
+: <a class="el" href="classclaragenomics_1_1Graph.html#a4089c636086324cae1f2a2bde56c8b33">claragenomics::Graph</a>
+</li>
+<li>edges_to_dot()
+: <a class="el" href="classclaragenomics_1_1Graph.html#a88dda0ee0cffa26a188a041593d2fcd5">claragenomics::Graph</a>
+</li>
+<li>empty_
+: <a class="el" href="classclaragenomics_1_1Graph.html#ada271fc17a3a6e86f5dcc78c4caa729c">claragenomics::Graph</a>
 </li>
 </ul>
 
@@ -126,6 +164,9 @@ $(function() {
 <li>first_element_
 : <a class="el" href="structclaragenomics_1_1cudamapper_1_1ArrayBlock.html#a3fca81e893b35e0648977b00f21b7e7e">claragenomics::cudamapper::ArrayBlock</a>
 </li>
+<li>first_occurrence_of_representations()
+: <a class="el" href="classclaragenomics_1_1cudamapper_1_1Index.html#af4f69a9003fedb9ca11665d5faa43bff">claragenomics::cudamapper::Index</a>
+</li>
 <li>format_alignment()
 : <a class="el" href="classclaragenomics_1_1cudaaligner_1_1Alignment.html#a4be4bb544d593f3fd7624628f2bda29c">claragenomics::cudaaligner::Alignment</a>
 </li>
@@ -135,6 +176,9 @@ $(function() {
 <h3><a id="index_g"></a>- g -</h3><ul>
 <li>generate_poa()
 : <a class="el" href="classclaragenomics_1_1cudapoa_1_1Batch.html#a7387b746531d4e8ac1e5806ac2824f09">claragenomics::cudapoa::Batch</a>
+</li>
+<li>get_adjacent_nodes()
+: <a class="el" href="classclaragenomics_1_1Graph.html#ab52b2707de415931f1990ee338b29eeb">claragenomics::Graph</a>
 </li>
 <li>get_alignment()
 : <a class="el" href="classclaragenomics_1_1cudaaligner_1_1Alignment.html#a5139f26517193e077000dcddfbc15f70">claragenomics::cudaaligner::Alignment</a>
@@ -148,14 +192,26 @@ $(function() {
 <li>get_consensus()
 : <a class="el" href="classclaragenomics_1_1cudapoa_1_1Batch.html#a3224d1595caa5950c34708f4b7d64fe0">claragenomics::cudapoa::Batch</a>
 </li>
+<li>get_edges()
+: <a class="el" href="classclaragenomics_1_1Graph.html#ac96335c01273c0dd74d2628e7bf38794">claragenomics::Graph</a>
+</li>
+<li>get_graphs()
+: <a class="el" href="classclaragenomics_1_1cudapoa_1_1Batch.html#a0949cca1e89a40d759b0ca371512bb16">claragenomics::cudapoa::Batch</a>
+</li>
 <li>get_msa()
 : <a class="el" href="classclaragenomics_1_1cudapoa_1_1Batch.html#ab39956c82d5d5a2d8df1b1695e15d9d2">claragenomics::cudapoa::Batch</a>
+</li>
+<li>get_node_ids()
+: <a class="el" href="classclaragenomics_1_1Graph.html#a1b51bca4b58c9922b375c983415ec0c8">claragenomics::Graph</a>
+</li>
+<li>get_node_label()
+: <a class="el" href="classclaragenomics_1_1Graph.html#a47bd2f14a355fbbd801846b0af305389">claragenomics::Graph</a>
 </li>
 <li>get_num_seqences()
 : <a class="el" href="classclaragenomics_1_1io_1_1FastaParser.html#a04f6deee5108374fa485487e06e759e5">claragenomics::io::FastaParser</a>
 </li>
 <li>get_overlaps()
-: <a class="el" href="group__cudamapper.html#ga5498f3d8b5eff6481c67fdf0a049c300">claragenomics::cudamapper::Overlapper</a>
+: <a class="el" href="group__cudamapper.html#gab0e3be4a9442dfb2b7952fb473e591a3">claragenomics::cudamapper::Overlapper</a>
 </li>
 <li>get_query_sequence()
 : <a class="el" href="classclaragenomics_1_1cudaaligner_1_1Alignment.html#ab29dceafccd3cb0a2e87023c5d48a780">claragenomics::cudaaligner::Alignment</a>
@@ -189,12 +245,6 @@ $(function() {
 <li>maximum_kmer_size()
 : <a class="el" href="classclaragenomics_1_1cudamapper_1_1Index.html#af9247d4b637615bf5912acc57b27b919">claragenomics::cudamapper::Index</a>
 </li>
-<li>maximum_representation()
-: <a class="el" href="classclaragenomics_1_1cudamapper_1_1Index.html#a69fd1882260a7c55a45fe5e2a092b152">claragenomics::cudamapper::Index</a>
-</li>
-<li>minimum_representation()
-: <a class="el" href="classclaragenomics_1_1cudamapper_1_1Index.html#ac5036778efd3c83f5bf048174a8ab824">claragenomics::cudamapper::Index</a>
-</li>
 </ul>
 
 
@@ -202,6 +252,15 @@ $(function() {
 <li>name()
 : <a class="el" href="classclaragenomics_1_1cudamapper_1_1Sequence.html#ab9663611f0d6c691e40228c5a08cf0e2">claragenomics::cudamapper::Sequence</a>
 , <a class="el" href="structclaragenomics_1_1io_1_1FastaSequence.html#aea0664ca6e856203c4b954b519183bec">claragenomics::io::FastaSequence</a>
+</li>
+<li>node_id_t
+: <a class="el" href="classclaragenomics_1_1Graph.html#a0f9734799fc19b94b0621c956ce5508d">claragenomics::Graph</a>
+</li>
+<li>node_labels_
+: <a class="el" href="classclaragenomics_1_1Graph.html#a5da2769d7e5bebd1d74c4899e3aad2c5">claragenomics::Graph</a>
+</li>
+<li>node_labels_to_dot()
+: <a class="el" href="classclaragenomics_1_1Graph.html#a95ef438f6035c2240bf277645ad27cb9">claragenomics::Graph</a>
 </li>
 <li>num_residues_
 : <a class="el" href="structclaragenomics_1_1cudamapper_1_1Overlap.html#ab3594748a49ae4472ca28a03b05ddb7d">claragenomics::cudamapper::Overlap</a>
@@ -213,6 +272,9 @@ $(function() {
 
 
 <h3><a id="index_o"></a>- o -</h3><ul>
+<li>operator()()
+: <a class="el" href="structclaragenomics_1_1PairHash.html#a46da7ce33ff4cf8a586a0c54b6be1e61">claragenomics::PairHash</a>
+</li>
 <li>overlap_complete
 : <a class="el" href="structclaragenomics_1_1cudamapper_1_1Overlap.html#a31d4f58b24a2e3fc57b5bca803827360">claragenomics::cudamapper::Overlap</a>
 </li>
@@ -224,7 +286,7 @@ $(function() {
 : <a class="el" href="classclaragenomics_1_1cudamapper_1_1SketchElement.html#a0ddea36eed82ea3a9d1fa7ace61051bc">claragenomics::cudamapper::SketchElement</a>
 </li>
 <li>positions_in_reads()
-: <a class="el" href="classclaragenomics_1_1cudamapper_1_1Index.html#a5c75f11d1683e4f863f14a4088a36306">claragenomics::cudamapper::Index</a>
+: <a class="el" href="classclaragenomics_1_1cudamapper_1_1Index.html#a66e5d024befc410221610f454eff7183">claragenomics::cudamapper::Index</a>
 </li>
 <li>print_paf()
 : <a class="el" href="group__cudamapper.html#ga54fedd97206ad1691f7b9d9966d01371">claragenomics::cudamapper::Overlapper</a>
@@ -247,7 +309,7 @@ $(function() {
 , <a class="el" href="structclaragenomics_1_1cudamapper_1_1Overlap.html#a3d98a09e4ccd8bda66cb09a72adaf1fc">claragenomics::cudamapper::Overlap</a>
 </li>
 <li>query_read_name_
-: <a class="el" href="structclaragenomics_1_1cudamapper_1_1Overlap.html#ac2baa8c82cbe1ff7475d7a8700a691df">claragenomics::cudamapper::Overlap</a>
+: <a class="el" href="structclaragenomics_1_1cudamapper_1_1Overlap.html#a7d37018aff3304bbe75b2d612b55c057">claragenomics::cudamapper::Overlap</a>
 </li>
 <li>query_start_position_in_read_
 : <a class="el" href="structclaragenomics_1_1cudamapper_1_1Overlap.html#aef98d06e839295136d197fee76feb95e">claragenomics::cudamapper::Overlap</a>
@@ -256,23 +318,17 @@ $(function() {
 
 
 <h3><a id="index_r"></a>- r -</h3><ul>
-<li>reached_end_of_input()
-: <a class="el" href="classclaragenomics_1_1cudamapper_1_1Index.html#a4e5b3cf1c41146635ce9d51bbdfe2277">claragenomics::cudamapper::Index</a>
-</li>
 <li>read_id()
 : <a class="el" href="classclaragenomics_1_1cudamapper_1_1SketchElement.html#af5f2e8fc8df725b336833930baf3cd39">claragenomics::cudamapper::SketchElement</a>
 </li>
-<li>read_id_and_representation_to_sketch_elements()
-: <a class="el" href="classclaragenomics_1_1cudamapper_1_1Index.html#af8ad540ff0a2a244a35ae846ec745c24">claragenomics::cudamapper::Index</a>
-</li>
 <li>read_id_to_read_length()
-: <a class="el" href="classclaragenomics_1_1cudamapper_1_1Index.html#af03421436f827e88316c74b0b3af200e">claragenomics::cudamapper::Index</a>
+: <a class="el" href="classclaragenomics_1_1cudamapper_1_1Index.html#a59186cdd6dbfd21baeb07e80bd4354d4">claragenomics::cudamapper::Index</a>
 </li>
 <li>read_id_to_read_name()
-: <a class="el" href="classclaragenomics_1_1cudamapper_1_1Index.html#aec3176ac2d5e425b25dec14f411cbfe0">claragenomics::cudamapper::Index</a>
+: <a class="el" href="classclaragenomics_1_1cudamapper_1_1Index.html#ac59d309eeb226592a96622fec2b307fd">claragenomics::cudamapper::Index</a>
 </li>
 <li>read_ids()
-: <a class="el" href="classclaragenomics_1_1cudamapper_1_1Index.html#aac33d8d2aa72bb227326a35f5b452de5">claragenomics::cudamapper::Index</a>
+: <a class="el" href="classclaragenomics_1_1cudamapper_1_1Index.html#a5cfe03b47850170ec64d61d2dbef0401">claragenomics::cudamapper::Index</a>
 </li>
 <li>relative_strand
 : <a class="el" href="structclaragenomics_1_1cudamapper_1_1Overlap.html#a1c0b9bac9b2e15f70c60fcdae9728fd7">claragenomics::cudamapper::Overlap</a>
@@ -280,8 +336,8 @@ $(function() {
 <li>representation()
 : <a class="el" href="classclaragenomics_1_1cudamapper_1_1SketchElement.html#abb3c8927594ba5f077c4443c229e0730">claragenomics::cudamapper::SketchElement</a>
 </li>
-<li>representation_
-: <a class="el" href="structclaragenomics_1_1cudamapper_1_1Index_1_1RepresentationToSketchElements.html#a839754dc6ed7d150ae06abf377e39c62">claragenomics::cudamapper::Index::RepresentationToSketchElements</a>
+<li>representations()
+: <a class="el" href="classclaragenomics_1_1cudamapper_1_1Index.html#a876d5e82f9fc36f481854f7d84e5fc80">claragenomics::cudamapper::Index</a>
 </li>
 <li>reset()
 : <a class="el" href="classclaragenomics_1_1cudaaligner_1_1Aligner.html#a9f7f056a269c32c909a9bfb7132ba439">claragenomics::cudaaligner::Aligner</a>
@@ -298,11 +354,12 @@ $(function() {
 : <a class="el" href="structclaragenomics_1_1cudapoa_1_1Entry.html#a4ada5ced9af7930c95d7a49fb5ecdac4">claragenomics::cudapoa::Entry</a>
 , <a class="el" href="structclaragenomics_1_1io_1_1FastaSequence.html#a9ac5e894fc08745c47b326a7038aa488">claragenomics::io::FastaSequence</a>
 </li>
-<li>sketch_elements_for_representation_and_all_read_ids_
-: <a class="el" href="structclaragenomics_1_1cudamapper_1_1Index_1_1RepresentationToSketchElements.html#a604d5227c7fe6412e982fb31a1fee549">claragenomics::cudamapper::Index::RepresentationToSketchElements</a>
+<li>serialize_to_dot()
+: <a class="el" href="classclaragenomics_1_1DirectedGraph.html#a7844605760f22a2a60e27c23178497b3">claragenomics::DirectedGraph</a>
+, <a class="el" href="classclaragenomics_1_1UndirectedGraph.html#a64b119c6ca6049b081ddde7db3c87e3f">claragenomics::UndirectedGraph</a>
 </li>
-<li>sketch_elements_for_representation_and_read_id_
-: <a class="el" href="structclaragenomics_1_1cudamapper_1_1Index_1_1RepresentationToSketchElements.html#a84ff4998d9fec875845a20272d209b30">claragenomics::cudamapper::Index::RepresentationToSketchElements</a>
+<li>set_node_label()
+: <a class="el" href="classclaragenomics_1_1Graph.html#a9861d50dbee863befed15eb8daacff3d">claragenomics::Graph</a>
 </li>
 <li>sync_alignments()
 : <a class="el" href="classclaragenomics_1_1cudaaligner_1_1Aligner.html#ac929b7ba836dfac74d8975f652563482">claragenomics::cudaaligner::Aligner</a>
@@ -325,10 +382,20 @@ $(function() {
 , <a class="el" href="structclaragenomics_1_1cudamapper_1_1Overlap.html#a6d01fc190b1cba1c6b41cd89d672b032">claragenomics::cudamapper::Overlap</a>
 </li>
 <li>target_read_name_
-: <a class="el" href="structclaragenomics_1_1cudamapper_1_1Overlap.html#a8e75cd08ecddc434463ac2e9b748dd6c">claragenomics::cudamapper::Overlap</a>
+: <a class="el" href="structclaragenomics_1_1cudamapper_1_1Overlap.html#afcb7e39abf2761899ff1abb3c95b82ca">claragenomics::cudamapper::Overlap</a>
 </li>
 <li>target_start_position_in_read_
 : <a class="el" href="structclaragenomics_1_1cudamapper_1_1Overlap.html#a03cb25f83ca6344ad1b4108c1d910f0c">claragenomics::cudamapper::Overlap</a>
+</li>
+</ul>
+
+
+<h3><a id="index_u"></a>- u -</h3><ul>
+<li>unique_representations()
+: <a class="el" href="classclaragenomics_1_1cudamapper_1_1Index.html#af44999c8852d5915d585c55a1a95c74a">claragenomics::cudamapper::Index</a>
+</li>
+<li>update_adject_nodes()
+: <a class="el" href="classclaragenomics_1_1Graph.html#a0043ec8f35f7491c06915c887d31ea77">claragenomics::Graph</a>
 </li>
 </ul>
 
@@ -344,6 +411,9 @@ $(function() {
 <li>~Aligner()
 : <a class="el" href="classclaragenomics_1_1cudaaligner_1_1Aligner.html#aaae329eae2ed3e364db643163755e987">claragenomics::cudaaligner::Aligner</a>
 </li>
+<li>~Alignment()
+: <a class="el" href="classclaragenomics_1_1cudaaligner_1_1Alignment.html#a6479df67f21d643782abfed873218ea8">claragenomics::cudaaligner::Alignment</a>
+</li>
 <li>~Batch()
 : <a class="el" href="classclaragenomics_1_1cudapoa_1_1Batch.html#ab70c94f0a2b161abd8fce03f487c2db1">claragenomics::cudapoa::Batch</a>
 </li>
@@ -352,6 +422,9 @@ $(function() {
 </li>
 <li>~Index()
 : <a class="el" href="classclaragenomics_1_1cudamapper_1_1Index.html#afcaccc9f9526d9c66280eca17ff3a4ac">claragenomics::cudamapper::Index</a>
+</li>
+<li>~Matcher()
+: <a class="el" href="classclaragenomics_1_1cudamapper_1_1Matcher.html#ac2f70fb6b1876d0fa81fd8c0189191ab">claragenomics::cudamapper::Matcher</a>
 </li>
 <li>~Overlapper()
 : <a class="el" href="group__cudamapper.html#ga569c8855bdf9806d3747b26fc7e98975">claragenomics::cudamapper::Overlapper</a>

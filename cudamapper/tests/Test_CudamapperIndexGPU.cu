@@ -263,99 +263,6 @@ TEST(TestCudamapperIndexGPU, test_find_first_occurrences_of_representations_larg
                                                    expected_unique_representations_h);
 }
 
-// ************ Test create_new_value_mask **************
-
-void test_create_new_value_mask(const thrust::host_vector<representation_t>& representations_h,
-                                const thrust::host_vector<std::uint32_t>& expected_new_value_mask_h,
-                                std::uint32_t number_of_threads)
-{
-    const thrust::device_vector<representation_t> representations_d(representations_h);
-    thrust::device_vector<std::uint32_t> new_value_mask_d(representations_h.size());
-
-    std::uint32_t number_of_blocks = (representations_h.size() - 1) / number_of_threads + 1;
-
-    create_new_value_mask<<<number_of_blocks, number_of_threads>>>(thrust::raw_pointer_cast(representations_d.data()),
-                                                                   representations_d.size(),
-                                                                   thrust::raw_pointer_cast(new_value_mask_d.data()));
-
-    const thrust::host_vector<std::uint32_t> new_value_mask_h(new_value_mask_d);
-
-    ASSERT_EQ(new_value_mask_h.size(), expected_new_value_mask_h.size());
-    for (std::size_t i = 0; i < expected_new_value_mask_h.size(); ++i)
-    {
-        EXPECT_EQ(new_value_mask_h[i], expected_new_value_mask_h[i]) << "index: " << i;
-    }
-}
-
-TEST(TestCudamapperIndexGPU, test_create_new_value_mask_small_example)
-{
-    thrust::host_vector<representation_t> representations_h;
-    thrust::host_vector<std::uint32_t> expected_new_value_mask_h;
-    representations_h.push_back(0);
-    expected_new_value_mask_h.push_back(1);
-    representations_h.push_back(0);
-    expected_new_value_mask_h.push_back(0);
-    representations_h.push_back(0);
-    expected_new_value_mask_h.push_back(0);
-    representations_h.push_back(0);
-    expected_new_value_mask_h.push_back(0);
-    representations_h.push_back(0);
-    expected_new_value_mask_h.push_back(0);
-    representations_h.push_back(3);
-    expected_new_value_mask_h.push_back(1);
-    representations_h.push_back(3);
-    expected_new_value_mask_h.push_back(0);
-    representations_h.push_back(3);
-    expected_new_value_mask_h.push_back(0);
-    representations_h.push_back(4);
-    expected_new_value_mask_h.push_back(1);
-    representations_h.push_back(5);
-    expected_new_value_mask_h.push_back(1);
-    representations_h.push_back(5);
-    expected_new_value_mask_h.push_back(0);
-    representations_h.push_back(8);
-    expected_new_value_mask_h.push_back(1);
-    representations_h.push_back(8);
-    expected_new_value_mask_h.push_back(0);
-    representations_h.push_back(8);
-    expected_new_value_mask_h.push_back(0);
-    representations_h.push_back(9);
-    expected_new_value_mask_h.push_back(1);
-    representations_h.push_back(9);
-    expected_new_value_mask_h.push_back(0);
-    representations_h.push_back(9);
-    expected_new_value_mask_h.push_back(0);
-
-    std::uint32_t number_of_threads = 3;
-
-    test_create_new_value_mask(representations_h,
-                               expected_new_value_mask_h,
-                               number_of_threads);
-}
-
-TEST(TestCudamapperIndexGPU, test_create_new_value_mask_small_data_large_example)
-{
-    const std::uint64_t total_sketch_elements                    = 10000000;
-    const std::uint32_t sketch_elements_with_same_representation = 1000;
-
-    thrust::host_vector<representation_t> representations_h;
-    thrust::host_vector<std::uint32_t> expected_new_value_mask_h;
-    for (std::size_t i = 0; i < total_sketch_elements; ++i)
-    {
-        representations_h.push_back(i / sketch_elements_with_same_representation);
-        if (i % sketch_elements_with_same_representation == 0)
-            expected_new_value_mask_h.push_back(1);
-        else
-            expected_new_value_mask_h.push_back(0);
-    }
-
-    std::uint32_t number_of_threads = 256;
-
-    test_create_new_value_mask(representations_h,
-                               expected_new_value_mask_h,
-                               number_of_threads);
-}
-
 // ************ Test copy_rest_to_separate_arrays **************
 
 template <typename ReadidPositionDirection, typename DirectionOfRepresentation>
@@ -565,7 +472,7 @@ TEST(TestCudamapperIndexGPU, test_find_number_of_representation_occurrences_kern
                                                           number_of_threads);
 }
 
-// ************ Test find_mark_for_filtering_out_kernel **************
+// ************ Test mark_for_filtering_out_kernel **************
 
 void test_mark_for_filtering_out_kernel(const std::int32_t filtering_threshold,
                                         const thrust::host_vector<std::uint32_t>& input_number_of_sketch_elements_with_representation_h,
@@ -1059,9 +966,9 @@ TEST(TestCudamapperIndexGPU, test_compress_data_arrays_after_filtering_kernel_la
     //  F  R  F  R  F  R  F  R  F  R  F  R  F  R  F  R| F  R  F  R  F  R  F  R  F  R  F... <- directions_of_reads_before_compression
     //
     //  0  1  2| 3  4  5| 6  7  8| 9 10 11..    <- unique_representations_before_compression
-    //  6  5  5| 6  5  5| 6  5  5| 6  5  5...   <- numer_of_occurrences_after_filtering
-    //  0  6 11|16 22 27|32 38 43|48 54 59... X <- first_occurrence_of_representation_before_compression (with aditional element)
-    //  0  5  5| 0  5  5| 0  5  5| 0  5  5... X <- numer_of_occurrences_after_filtering (with aditional element)
+    //  6  5  5| 6  5  5| 6  5  5| 6  5  5...   <- number_of_occurrences_before_filtering
+    //  0  6 11|16 22 27|32 38 43|48 54 59... X <- first_occurrence_of_representation_before_filtering (with aditional element)
+    //  0  5  5| 0  5  5| 0  5  5| 0  5  5... X <- number_of_occurrences_after_filtering (with aditional element)
     //  0  0  5|10 10 15|20 20 25|30 30 35... X <- first_occurrence_of_representation_before_compression (with aditional element)
     //  0  1  1| 0  1  1| 0  1  1| 0  1  1      <- keep_representation_mask
     //  0  0  1| 2  2  3| 4  4  5| 6  6  7... X <- unique_representation_index_after_compression (with aditional element)
@@ -1071,8 +978,8 @@ TEST(TestCudamapperIndexGPU, test_compress_data_arrays_after_filtering_kernel_la
     //  0  1  2  3  4  5  6  7  8  9|10 11 12 13 14 15 16 17 18 19|20 21
     //  1  1  1  1  1  2  2  2  2  2| 4  4  4  4  4  5  5  5  5  5| 7  7... <- expected_representations_after_compression
     //  1  2  3  4  5  2  3  4  5  6| 1  2  3  4  5  2  3  4  5  6| 1  2... <- expected_read_ids_after_compression
-    // 11 12 13 14 15 12 13 14 15 16|11 12 13 14 15 12 13 14 15 16|11 12 <- expected_positions_in_reads_after_compression
-    //  F  R  F  R  F  R  F  R  F  R| F  R  F  R  F  R  F  R  F  R| F  R <- expected_directions_of_reads_before_compression
+    // 11 12 13 14 15 12 13 14 15 16|11 12 13 14 15 12 13 14 15 16|11 12    <- expected_positions_in_reads_after_compression
+    //  F  R  F  R  F  R  F  R  F  R| F  R  F  R  F  R  F  R  F  R| F  R    <- expected_directions_of_reads_before_compression
     //
 
     thrust::host_vector<std::uint32_t> number_of_sketch_elements_with_representation_before_compression_h;
@@ -1195,6 +1102,193 @@ TEST(TestCudamapperIndexGPU, test_compress_data_arrays_after_filtering_kernel_la
                                                      expected_positions_in_reads_after_compression_h,
                                                      expected_directions_of_representations_after_compression_h,
                                                      number_of_threads);
+}
+
+// ************ Test filter_out_most_common_representations **************
+
+template <typename DirectionOfRepresentation>
+void test_filter_out_most_common_representations(const std::uint32_t filtering_parameter,
+                                                 const thrust::host_vector<representation_t>& input_representations_h,
+                                                 const thrust::host_vector<read_id_t>& input_read_ids_h,
+                                                 const thrust::host_vector<position_in_read_t>& input_positions_in_reads_h,
+                                                 const thrust::host_vector<DirectionOfRepresentation>& input_directions_of_representations_h,
+                                                 const thrust::host_vector<representation_t>& input_unique_representations_h,
+                                                 const thrust::host_vector<std::uint32_t>& input_first_occurrence_of_representations_h,
+                                                 const thrust::host_vector<representation_t>& expected_output_representations_h,
+                                                 const thrust::host_vector<read_id_t>& expected_output_read_ids_h,
+                                                 const thrust::host_vector<position_in_read_t>& expected_output_positions_in_reads_h,
+                                                 const thrust::host_vector<DirectionOfRepresentation>& expected_output_directions_of_representations_h,
+                                                 const thrust::host_vector<representation_t>& expected_output_unique_representations_h,
+                                                 const thrust::host_vector<std::uint32_t>& expected_output_first_occurrence_of_representations_h)
+{
+    ASSERT_GE(filtering_parameter, 0u);
+    ASSERT_LE(filtering_parameter, 1'000'000'000ull);
+    ASSERT_EQ(input_representations_h.size(), input_read_ids_h.size());
+    ASSERT_EQ(input_representations_h.size(), input_positions_in_reads_h.size());
+    ASSERT_EQ(input_representations_h.size(), input_directions_of_representations_h.size());
+    ASSERT_EQ(input_unique_representations_h.size(), input_first_occurrence_of_representations_h.size() - 1);
+    ASSERT_EQ(input_representations_h.size(), input_first_occurrence_of_representations_h.back());
+    ASSERT_EQ(expected_output_representations_h.size(), expected_output_read_ids_h.size());
+    ASSERT_EQ(expected_output_representations_h.size(), expected_output_positions_in_reads_h.size());
+    ASSERT_EQ(expected_output_representations_h.size(), expected_output_directions_of_representations_h.size());
+    ASSERT_EQ(expected_output_unique_representations_h.size(), expected_output_first_occurrence_of_representations_h.size() - 1);
+    ASSERT_EQ(expected_output_representations_h.size(), expected_output_first_occurrence_of_representations_h.back());
+
+    thrust::device_vector<representation_t> representations_d(input_representations_h);
+    thrust::device_vector<read_id_t> read_ids_d(input_read_ids_h);
+    thrust::device_vector<position_in_read_t> positions_in_reads_d(input_positions_in_reads_h);
+    thrust::device_vector<DirectionOfRepresentation> directions_of_representations_d(input_directions_of_representations_h);
+    thrust::device_vector<representation_t> unique_representations_d(input_unique_representations_h);
+    thrust::device_vector<std::uint32_t> first_occurrence_of_representations_d(input_first_occurrence_of_representations_h);
+
+    filter_out_most_common_representations(filtering_parameter,
+                                           representations_d,
+                                           read_ids_d,
+                                           positions_in_reads_d,
+                                           directions_of_representations_d,
+                                           unique_representations_d,
+                                           first_occurrence_of_representations_d);
+
+    thrust::host_vector<representation_t> output_representations_h(representations_d);
+    thrust::host_vector<read_id_t> output_read_ids_h(read_ids_d);
+    thrust::host_vector<position_in_read_t> output_positions_in_reads_h(positions_in_reads_d);
+    thrust::host_vector<DirectionOfRepresentation> output_directions_of_representations_h(directions_of_representations_d);
+    thrust::host_vector<representation_t> output_unique_representations_h(unique_representations_d);
+    thrust::host_vector<std::uint32_t> output_first_occurrence_of_representations_h(first_occurrence_of_representations_d);
+
+    ASSERT_EQ(expected_output_representations_h.size(), output_representations_h.size());
+    ASSERT_EQ(expected_output_representations_h.size(), output_read_ids_h.size());
+    ASSERT_EQ(expected_output_representations_h.size(), output_positions_in_reads_h.size());
+    ASSERT_EQ(expected_output_representations_h.size(), output_directions_of_representations_h.size());
+
+    for (std::int32_t i = 0; i < get_size(representations_d); ++i)
+    {
+        EXPECT_EQ(expected_output_representations_h[i], output_representations_h[i]) << "index: " << i;
+        EXPECT_EQ(expected_output_read_ids_h[i], output_read_ids_h[i]) << "index: " << i;
+        EXPECT_EQ(expected_output_positions_in_reads_h[i], output_positions_in_reads_h[i]) << "index: " << i;
+        EXPECT_EQ(expected_output_directions_of_representations_h[i], output_directions_of_representations_h[i]) << "index: " << i;
+    }
+
+    ASSERT_EQ(expected_output_unique_representations_h, output_unique_representations_h);
+    ASSERT_EQ(expected_output_first_occurrence_of_representations_h, output_first_occurrence_of_representations_h);
+    ASSERT_EQ(output_unique_representations_h.size(), output_first_occurrence_of_representations_h.size() - 1);
+    ASSERT_EQ(output_representations_h.size(), output_first_occurrence_of_representations_h.back());
+
+    for (std::int32_t i = 0; i < get_size(output_unique_representations_h); ++i)
+    {
+        EXPECT_EQ(expected_output_unique_representations_h[i], output_unique_representations_h[i]) << "index: " << i;
+        EXPECT_EQ(expected_output_first_occurrence_of_representations_h[i], output_first_occurrence_of_representations_h[i]) << "index: " << i;
+    }
+    ASSERT_EQ(expected_output_first_occurrence_of_representations_h.back(), output_first_occurrence_of_representations_h.back());
+}
+
+TEST(TestCudamapperIndexGPU, test_filter_out_most_common_representations_small_example)
+{
+    // For example this index initinally contains 20 sketch elements:
+    // 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19
+    // 1  1  3  3  5  5  5  5  6  6  6  6  6  6  7  7  7  8  8  8 <- representations (before filtering)
+    // 0  1  3  5  3  4  6  6  0  1  2  2  2  3  7  8  9  1  2  3 <- read_ids (before filtering)
+    // 0  0  1  1  4  5  8  9  3  6  7  8  9  5  4  7  3  7  8  9 <- positions_in_reads (before filtering)
+    // F  F  F  F  R  R  R  F  R  F  F  R  R  F  F  R  R  F  F  F <- directions_of_reads (before filtering)
+    // 1  3  5  6  7  8    <- unique_representations (before filtering)
+    // 0  2  4  8 14 17 20 <- first_occurrence_of_representations (before filtering)
+    //
+    // For filtering_parameter = 200'000'000:
+    // sketch_elementes_with_that_representation/total_sketch_element >= filtering_parameter/1'000'000'000 <=>
+    // sketch_elementes_with_that_representation/20 >= 200'000'000/1'000'000'000 <=>
+    // sketch_elementes_with_that_representation/20 >= 1/5 <=>
+    // sketch_elementes_with_that_representation >= 20 * 1/5 <=>
+    // sketch_elementes_with_that_representation >= 4 <=>
+    // sketch element with representations with 4 or more sketch elements will be removed
+    //
+    // In the example above that means that representations 5 and 6 will be removed and that the output would be:
+    // 0  1  2  3  4  5  6  7  8  9
+    // 1  1  3  3  7  7  7  8  8  8 <- representations (after filtering)
+    // 0  1  3  5  7  8  9  1  2  3 <- read_ids (after filtering)
+    // 0  0  1  1  4  7  3  7  8  9 <- positions_in_reads (after filtering)
+    // F  F  F  F  F  R  R  F  F  F <- directions_of_reads (after filtering)
+    // 1  3  7  8    <- unique_representations (after filtering)
+    // 0  2  4  7 10 <- first_occurrence_of_representations (after filtering)
+
+    const std::uint32_t filtering_parameter = 200'000'000;
+
+    const std::vector<representation_t> input_representations_std({1, 1, 3, 3, 5, 5, 5, 5, 6, 6, 6, 6, 6, 6, 7, 7, 7, 8, 8, 8});
+    const thrust::host_vector<representation_t> input_representations_h(std::begin(input_representations_std), std::end(input_representations_std));
+
+    const std::vector<read_id_t> input_read_ids_std({0, 1, 3, 5, 3, 4, 6, 6, 0, 1, 2, 2, 2, 3, 7, 8, 9, 1, 2, 3});
+    const thrust::host_vector<read_id_t> input_read_ids_h(std::begin(input_read_ids_std), std::end(input_read_ids_std));
+
+    const std::vector<position_in_read_t> input_positions_in_reads_std({0, 0, 1, 1, 4, 5, 8, 9, 3, 6, 7, 8, 9, 5, 4, 7, 3, 7, 8, 9});
+    const thrust::host_vector<position_in_read_t> input_positions_in_reads_h(std::begin(input_positions_in_reads_std), std::end(input_positions_in_reads_std));
+
+    const std::vector<SketchElement::DirectionOfRepresentation> input_directions_of_representations_std({SketchElement::DirectionOfRepresentation::FORWARD,
+                                                                                                         SketchElement::DirectionOfRepresentation::FORWARD,
+                                                                                                         SketchElement::DirectionOfRepresentation::FORWARD,
+                                                                                                         SketchElement::DirectionOfRepresentation::FORWARD,
+                                                                                                         SketchElement::DirectionOfRepresentation::REVERSE,
+                                                                                                         SketchElement::DirectionOfRepresentation::REVERSE,
+                                                                                                         SketchElement::DirectionOfRepresentation::REVERSE,
+                                                                                                         SketchElement::DirectionOfRepresentation::FORWARD,
+                                                                                                         SketchElement::DirectionOfRepresentation::REVERSE,
+                                                                                                         SketchElement::DirectionOfRepresentation::FORWARD,
+                                                                                                         SketchElement::DirectionOfRepresentation::FORWARD,
+                                                                                                         SketchElement::DirectionOfRepresentation::REVERSE,
+                                                                                                         SketchElement::DirectionOfRepresentation::REVERSE,
+                                                                                                         SketchElement::DirectionOfRepresentation::FORWARD,
+                                                                                                         SketchElement::DirectionOfRepresentation::FORWARD,
+                                                                                                         SketchElement::DirectionOfRepresentation::REVERSE,
+                                                                                                         SketchElement::DirectionOfRepresentation::REVERSE,
+                                                                                                         SketchElement::DirectionOfRepresentation::FORWARD,
+                                                                                                         SketchElement::DirectionOfRepresentation::FORWARD,
+                                                                                                         SketchElement::DirectionOfRepresentation::FORWARD});
+    const thrust::host_vector<SketchElement::DirectionOfRepresentation> input_directions_of_representations_h(std::begin(input_directions_of_representations_std), std::end(input_directions_of_representations_std));
+
+    const std::vector<representation_t> input_unique_representations_std({1, 3, 5, 6, 7, 8});
+    const thrust::host_vector<representation_t> input_unique_representations_h(std::begin(input_unique_representations_std), std::end(input_unique_representations_std));
+
+    const std::vector<std::uint32_t> input_first_occurrence_of_representations_std({0, 2, 4, 8, 14, 17, 20});
+    const thrust::host_vector<std::uint32_t> input_first_occurrence_of_representations_h(std::begin(input_first_occurrence_of_representations_std), std::end(input_first_occurrence_of_representations_std));
+
+    const std::vector<representation_t> expected_output_representations_std({1, 1, 3, 3, 7, 7, 7, 8, 8, 8});
+    const thrust::host_vector<representation_t> expected_output_representations_h(std::begin(expected_output_representations_std), std::end(expected_output_representations_std));
+
+    const std::vector<read_id_t> expected_output_read_ids_std({0, 1, 3, 5, 7, 8, 9, 1, 2, 3});
+    const thrust::host_vector<read_id_t> expected_output_read_ids_h(std::begin(expected_output_read_ids_std), std::end(expected_output_read_ids_std));
+
+    const std::vector<position_in_read_t> expected_output_positions_in_reads_std({0, 0, 1, 1, 4, 7, 3, 7, 8, 9});
+    const thrust::host_vector<position_in_read_t> expected_output_positions_in_reads_h(std::begin(expected_output_positions_in_reads_std), std::end(expected_output_positions_in_reads_std));
+
+    const std::vector<SketchElement::DirectionOfRepresentation> expected_output_directions_of_representations_std({SketchElement::DirectionOfRepresentation::FORWARD,
+                                                                                                                   SketchElement::DirectionOfRepresentation::FORWARD,
+                                                                                                                   SketchElement::DirectionOfRepresentation::FORWARD,
+                                                                                                                   SketchElement::DirectionOfRepresentation::FORWARD,
+                                                                                                                   SketchElement::DirectionOfRepresentation::FORWARD,
+                                                                                                                   SketchElement::DirectionOfRepresentation::REVERSE,
+                                                                                                                   SketchElement::DirectionOfRepresentation::REVERSE,
+                                                                                                                   SketchElement::DirectionOfRepresentation::FORWARD,
+                                                                                                                   SketchElement::DirectionOfRepresentation::FORWARD,
+                                                                                                                   SketchElement::DirectionOfRepresentation::FORWARD});
+    const thrust::host_vector<SketchElement::DirectionOfRepresentation> expected_output_directions_of_representations_h(std::begin(expected_output_directions_of_representations_std), std::end(expected_output_directions_of_representations_std));
+
+    const std::vector<representation_t> expected_output_unique_representations_std({1, 3, 7, 8});
+    const thrust::host_vector<representation_t> expected_output_unique_representations_h(std::begin(expected_output_unique_representations_std), std::end(expected_output_unique_representations_std));
+
+    const std::vector<std::uint32_t> expected_output_first_occurrence_of_representations_std({0, 2, 4, 7, 10});
+    const thrust::host_vector<std::uint32_t> expected_output_first_occurrence_of_representations_h(std::begin(expected_output_first_occurrence_of_representations_std), std::end(expected_output_first_occurrence_of_representations_std));
+
+    test_filter_out_most_common_representations(filtering_parameter,
+                                                input_representations_h,
+                                                input_read_ids_h,
+                                                input_positions_in_reads_h,
+                                                input_directions_of_representations_h,
+                                                input_unique_representations_h,
+                                                input_first_occurrence_of_representations_h,
+                                                expected_output_representations_h,
+                                                expected_output_read_ids_h,
+                                                expected_output_positions_in_reads_h,
+                                                expected_output_directions_of_representations_h,
+                                                expected_output_unique_representations_h,
+                                                expected_output_first_occurrence_of_representations_h);
 }
 
 } // namespace index_gpu
