@@ -1,4 +1,5 @@
 var searchData=
 [
-  ['formattedalignment_228',['FormattedAlignment',['../group__cudaaligner.html#ga228dcdd4bf0cf40c64786cce6b045c40',1,'claragenomics::cudaaligner']]]
+  ['edge_5ft_276',['edge_t',['../classclaragenomics_1_1Graph.html#a3892123fce03f805e54ce0076e6b68dc',1,'claragenomics::Graph']]],
+  ['edge_5fweight_5ft_277',['edge_weight_t',['../classclaragenomics_1_1Graph.html#ad5388bf7676b6e35a6e62c034e2993b5',1,'claragenomics::Graph']]]
 ];

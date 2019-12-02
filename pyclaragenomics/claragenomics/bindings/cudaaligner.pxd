@@ -13,7 +13,6 @@
 # cython: embedsignature = True
 # cython: language_level = 3
 
-from libcpp.pair cimport pair
 from libcpp.string cimport string
 from libcpp.vector cimport vector
 from libc.stdint cimport int32_t
@@ -48,7 +47,10 @@ cdef extern from "claragenomics/cudaaligner/cudaaligner.hpp" namespace "claragen
 
 # Declare structs and APIs from alignment.hpp
 cdef extern from "claragenomics/cudaaligner/alignment.hpp" namespace "claragenomics::cudaaligner":
-    ctypedef pair[string, string] FormattedAlignment
+    ctypedef struct  FormattedAlignment:
+        string query
+        string pairing
+        string target
 
     cdef cppclass Alignment:
         string get_query_sequence() except +

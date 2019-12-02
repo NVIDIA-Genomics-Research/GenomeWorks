@@ -149,21 +149,6 @@ void find_first_occurrences_of_representations(thrust::device_vector<representat
                                                thrust::device_vector<std::uint32_t>& first_occurrence_index_d,
                                                const thrust::device_vector<representation_t>& input_representations_d);
 
-/// \brief Writes 0 to the output array if the value to the left is the same as the current value, 1 otherwise. First element is always 1
-///
-/// For example:
-/// 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20
-/// 0  0  0  0 12 12 12 12 12 12 23 23 23 32 32 32 32 32 46 46 46
-/// gives:
-/// 1  0  0  0  1  0  0  0  0  0  1  0  0  1  0  0  0  0  1  0  0
-///
-/// \param representations_d
-/// \param number_of_elements
-/// \param new_value_mask_d generated array
-__global__ void create_new_value_mask(const representation_t* const representations_d,
-                                      const std::size_t number_of_elements,
-                                      std::uint32_t* const new_value_mask_d);
-
 /// \brief Helper kernel for find_first_occurrences_of_representations
 ///
 /// Creates two arrays: first one contains a list of unique representations and the second one the index
@@ -172,7 +157,6 @@ __global__ void create_new_value_mask(const representation_t* const representati
 /// For example:
 /// 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20
 /// 0  0  0  0 12 12 12 12 12 12 23 23 23 32 32 32 32 32 46 46 46
-/// 1  0  0  0  1  0  0  0  0  0  1  0  0  1  0  0  0  0  1  0  0
 /// 1  1  1  1  2  2  2  2  2  2  3  3  3  4  4  4  4  4  5  5  5
 /// ^           ^                 ^        ^              ^
 /// gives:

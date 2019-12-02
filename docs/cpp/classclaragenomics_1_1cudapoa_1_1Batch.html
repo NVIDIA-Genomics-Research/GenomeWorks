@@ -22,7 +22,7 @@
  <tr style="height: 56px;">
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">ClaraGenomicsAnalysis
-   &#160;<span id="projectnumber">0.3.0</span>
+   &#160;<span id="projectnumber">0.4.0</span>
    </div>
   </td>
  </tr>
@@ -98,6 +98,9 @@ virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" hr
 <tr class="memitem:ab39956c82d5d5a2d8df1b1695e15d9d2"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group__cudapoa.html#ga8ece5291074f6e07073b797d34ec24d0">StatusType</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classclaragenomics_1_1cudapoa_1_1Batch.html#ab39956c82d5d5a2d8df1b1695e15d9d2">get_msa</a> (std::vector&lt; std::vector&lt; std::string &gt;&gt; &amp;msa, std::vector&lt; <a class="el" href="group__cudapoa.html#ga8ece5291074f6e07073b797d34ec24d0">StatusType</a> &gt; &amp;output_status)=0</td></tr>
 <tr class="memdesc:ab39956c82d5d5a2d8df1b1695e15d9d2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the multiple sequence alignments for each POA.  <a href="classclaragenomics_1_1cudapoa_1_1Batch.html#ab39956c82d5d5a2d8df1b1695e15d9d2">More...</a><br /></td></tr>
 <tr class="separator:ab39956c82d5d5a2d8df1b1695e15d9d2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0949cca1e89a40d759b0ca371512bb16"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classclaragenomics_1_1cudapoa_1_1Batch.html#a0949cca1e89a40d759b0ca371512bb16">get_graphs</a> (std::vector&lt; <a class="el" href="classclaragenomics_1_1DirectedGraph.html">DirectedGraph</a> &gt; &amp;graphs, std::vector&lt; <a class="el" href="group__cudapoa.html#ga8ece5291074f6e07073b797d34ec24d0">StatusType</a> &gt; &amp;output_status)=0</td></tr>
+<tr class="memdesc:a0949cca1e89a40d759b0ca371512bb16"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the graph representation for each POA.  <a href="classclaragenomics_1_1cudapoa_1_1Batch.html#a0949cca1e89a40d759b0ca371512bb16">More...</a><br /></td></tr>
+<tr class="separator:a0949cca1e89a40d759b0ca371512bb16"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab807c4b01c2cddcdebb32952df13c0ec"><td class="memItemLeft" align="right" valign="top">virtual int32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classclaragenomics_1_1cudapoa_1_1Batch.html#ab807c4b01c2cddcdebb32952df13c0ec">batch_id</a> () const =0</td></tr>
 <tr class="memdesc:ab807c4b01c2cddcdebb32952df13c0ec"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return batch ID.  <a href="classclaragenomics_1_1cudapoa_1_1Batch.html#ab807c4b01c2cddcdebb32952df13c0ec">More...</a><br /></td></tr>
 <tr class="separator:ab807c4b01c2cddcdebb32952df13c0ec"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -228,6 +231,52 @@ virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" hr
   <table class="params">
     <tr><td class="paramname">consensus</td><td>Reference to vector where consensus strings will be returned </td></tr>
     <tr><td class="paramname">coverage</td><td>Reference to vector where coverage of each base in each consensus string is returned </td></tr>
+    <tr><td class="paramname">output_status</td><td>Reference to vector where the errors during kernel execution is captured</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>Status indicating whether consensus generation is available for this batch. </dd></dl>
+
+</div>
+</div>
+<a id="a0949cca1e89a40d759b0ca371512bb16"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0949cca1e89a40d759b0ca371512bb16">&#9670;&nbsp;</a></span>get_graphs()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual void claragenomics::cudapoa::Batch::get_graphs </td>
+          <td>(</td>
+          <td class="paramtype">std::vector&lt; <a class="el" href="classclaragenomics_1_1DirectedGraph.html">DirectedGraph</a> &gt; &amp;&#160;</td>
+          <td class="paramname"><em>graphs</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::vector&lt; <a class="el" href="group__cudapoa.html#ga8ece5291074f6e07073b797d34ec24d0">StatusType</a> &gt; &amp;&#160;</td>
+          <td class="paramname"><em>output_status</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Get the graph representation for each POA. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">graphs</td><td>Reference to a vector where directed graph of each poa is returned. </td></tr>
     <tr><td class="paramname">output_status</td><td>Reference to vector where the errors during kernel execution is captured </td></tr>
   </table>
   </dd>
@@ -273,10 +322,11 @@ virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" hr
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">msa</td><td>Reference to vector where msa strings of each poa is returned </td></tr>
-    <tr><td class="paramname">output_status</td><td>Reference to vector where the errors during kernel execution is captured </td></tr>
+    <tr><td class="paramname">output_status</td><td>Reference to vector where the errors during kernel execution is captured</td></tr>
   </table>
   </dd>
 </dl>
+<dl class="section return"><dt>Returns</dt><dd>Status indicating whether MSA generation is available for this batch. </dd></dl>
 
 </div>
 </div>

@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['block_5fsize_5f_204',['block_size_',['../structclaragenomics_1_1cudamapper_1_1ArrayBlock.html#a33ff27afee2ddb07e6fbdda0ff1de229',1,'claragenomics::cudamapper::ArrayBlock']]]
+  ['adjacent_5fnodes_5f_250',['adjacent_nodes_',['../classclaragenomics_1_1Graph.html#a8b53264154b5caed266385a007e33404',1,'claragenomics::Graph']]]
 ];

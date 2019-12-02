@@ -21,6 +21,7 @@ get_property(cga_library_type GLOBAL PROPERTY cga_library_type)
 cuda_add_library(cudaaligner ${cga_library_type}
     src/cudaaligner.cpp
     src/aligner.cpp
+    src/alignment.cpp
     src/alignment_impl.cpp
     src/aligner_global.cpp
     src/aligner_global_ukkonen.cpp
