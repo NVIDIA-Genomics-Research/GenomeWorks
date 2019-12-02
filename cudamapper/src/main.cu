@@ -50,7 +50,7 @@ int main(int argc, char* argv[])
     size_t index_size        = 10000;
     size_t num_devices       = 1;
     size_t target_index_size = 10000;
-    size_t max_cache_size       = 50;
+    size_t max_cache_size       = 100;
     std::string optstring    = "t:i:k:w:h:d:c:";
     uint32_t argument;
     while ((argument = getopt_long(argc, argv, optstring.c_str(), options, nullptr)) != -1)
@@ -300,7 +300,7 @@ void help(int32_t exit_code = 0)
             number of GPUs to use [1])"
               << R"(
         -c, --max_cache_size
-            number of indices to keep in GPU memory [50])"
+            number of indices to keep in GPU memory [100])"
               << R"(
         -i, --index-size
             length of batch size used for query [10000])"
