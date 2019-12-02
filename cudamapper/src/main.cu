@@ -51,7 +51,7 @@ int main(int argc, char* argv[])
     size_t index_size        = 10000;
     size_t num_devices       = 1;
     size_t target_index_size = 10000;
-    size_t max_cache_size       = 100;
+    size_t max_cache_size    = 100;
     std::string optstring    = "t:i:k:w:h:d:c:";
     uint32_t argument;
     while ((argument = getopt_long(argc, argv, optstring.c_str(), options, nullptr)) != -1)
@@ -119,7 +119,8 @@ int main(int argc, char* argv[])
     // Data structure for holding overlaps to be written out
     std::mutex overlaps_writer_mtx;
 
-    struct query_target_range {
+    struct query_target_range
+    {
         std::pair<std::int32_t, int32_t> query_range;
         std::vector<std::pair<std::int32_t, int32_t>> target_ranges;
     };
@@ -127,8 +128,8 @@ int main(int argc, char* argv[])
     //First generate all the ranges independently, then loop over them.
     std::vector<query_target_range> query_target_ranges;
 
-    for (std::int32_t query_start_index = 0; query_start_index < queries; query_start_index += index_size) {
-
+    for (std::int32_t query_start_index = 0; query_start_index < queries; query_start_index += index_size)
+    {
 
         std::int32_t query_end_index = std::min(query_start_index + index_size, static_cast<size_t>(queries));
 
@@ -139,70 +140,76 @@ int main(int argc, char* argv[])
         // If all_to_all mode, then we can optimzie by starting the target sequences from the same index as
         // query because all indices before the current query index are guaranteed to have been processed in
         // a2a mapping.
-        if (all_to_all) {
+        if (all_to_all)
+        {
             target_start_index = query_start_index;
         }
 
-        for (; target_start_index < targets; target_start_index += target_index_size) {
+        for (; target_start_index < targets; target_start_index += target_index_size)
+        {
             std::int32_t target_end_index = std::min(target_start_index + target_index_size,
                                                      static_cast<size_t>(targets));
             q.target_ranges.push_back(std::make_pair(target_start_index, target_end_index));
-         }
+        }
 
         query_target_ranges.push_back(q);
     }
 
     // This is a per-device cache, if it has the index it will return it, if not it will generate it, store and return it.
-    std::vector<std::map<std::pair<uint64_t, uint64_t>, std::shared_ptr<std::unique_ptr<claragenomics::cudamapper::Index>>>>  index_cache(num_devices);
+    std::vector<std::map<std::pair<uint64_t, uint64_t>, std::shared_ptr<std::unique_ptr<claragenomics::cudamapper::Index>>>> index_cache(num_devices);
 
     auto get_index = [&index_cache, &max_cache_size](claragenomics::io::FastaParser& parser,
-                        const claragenomics::cudamapper::read_id_t query_start_index,
-                        const claragenomics::cudamapper::read_id_t query_end_index,
-                        const std::uint64_t k,
-                        const std::uint64_t w,
-                        int device_id){
+                                                     const claragenomics::cudamapper::read_id_t query_start_index,
+                                                     const claragenomics::cudamapper::read_id_t query_end_index,
+                                                     const std::uint64_t k,
+                                                     const std::uint64_t w,
+                                                     int device_id) {
 
         std::pair<uint64_t, uint64_t> key;
-        key.first = query_start_index;
+        key.first  = query_start_index;
         key.second = query_end_index;
 
         std::shared_ptr<std::unique_ptr<claragenomics::cudamapper::Index>> index;
 
-        if (index_cache[device_id].count(key)) {
+        if (index_cache[device_id].count(key))
+        {
             index = index_cache[device_id][key];
-        } else {
+        }
+        else
+        {
             index = std::make_shared<std::unique_ptr<claragenomics::cudamapper::Index>>(claragenomics::cudamapper::Index::create_index(parser,
-                                                                                         query_start_index,
-                                                                                         query_end_index,
-                                                                                         k,
-                                                                                         w));
-            if (index_cache[device_id].size() < max_cache_size){
-                    index_cache[device_id][key] = index;
-                }
+                                                                                                                                       query_start_index,
+                                                                                                                                       query_end_index,
+                                                                                                                                       k,
+                                                                                                                                       w));
+            if (index_cache[device_id].size() < max_cache_size)
+            {
+                index_cache[device_id][key] = index;
+            }
         }
         return index;
     };
 
     auto evict_index = [&index_cache](
-            const claragenomics::cudamapper::read_id_t query_start_index,
-            const claragenomics::cudamapper::read_id_t query_end_index,
-            int device_id){
+                           const claragenomics::cudamapper::read_id_t query_start_index,
+                           const claragenomics::cudamapper::read_id_t query_end_index,
+                           int device_id) {
 
         std::pair<uint64_t, uint64_t> key;
-        key.first = query_start_index;
+        key.first  = query_start_index;
         key.second = query_end_index;
 
         index_cache[device_id].erase(key);
     };
 
-    auto compute_overlaps = [&](query_target_range query_target_range, int device_id){
+    auto compute_overlaps = [&](query_target_range query_target_range, int device_id) {
 
         std::vector<std::shared_ptr<std::future<void>>> print_pafs_futures;
 
         cudaSetDevice(device_id);
 
         auto query_start_index = query_target_range.query_range.first;
-        auto query_end_index = query_target_range.query_range.second;
+        auto query_end_index   = query_target_range.query_range.second;
 
         std::cerr << "Procecssing query range: (" << query_start_index << " - " << query_end_index - 1 << ")" << std::endl;
 
@@ -218,21 +225,22 @@ int main(int argc, char* argv[])
         }
 
         //Main loop
-        for (auto target_range: query_target_range.target_ranges) {
+        for (auto target_range : query_target_range.target_ranges)
+        {
 
             auto target_start_index = target_range.first;
-            auto target_end_index = target_range.second;
+            auto target_end_index   = target_range.second;
 
             {
                 CGA_NVTX_RANGE(profiler, "generate_target_index");
                 auto start_time = std::chrono::high_resolution_clock::now();
-                target_index     = get_index(*target_parser, target_start_index, target_end_index, k, w, device_id);
+                target_index    = get_index(*target_parser, target_start_index, target_end_index, k, w, device_id);
             }
             {
                 CGA_NVTX_RANGE(profiler, "generate_matcher");
                 auto start_time = std::chrono::high_resolution_clock::now();
                 matcher         = claragenomics::cudamapper::Matcher::create_matcher(**query_index,
-                                                                                     **target_index);
+                                                                             **target_index);
             }
             {
 
@@ -244,16 +252,16 @@ int main(int argc, char* argv[])
                 std::vector<claragenomics::cudamapper::Overlap> overlaps_to_add;
                 overlapper.get_overlaps(overlaps_to_add, matcher->anchors(), **query_index, **target_index);
 
-                std::shared_ptr<std::future<void>> f = std::make_shared<std::future<void>>(std::async(std::launch::async, [&overlaps_writer_mtx, overlaps_to_add](std::vector<claragenomics::cudamapper::Overlap> overlaps){
+                std::shared_ptr<std::future<void>> f = std::make_shared<std::future<void>>(std::async(std::launch::async, [&overlaps_writer_mtx, overlaps_to_add](std::vector<claragenomics::cudamapper::Overlap> overlaps) {
                     std::vector<claragenomics::cudamapper::Overlap> filtered_overlaps;
                     claragenomics::cudamapper::Overlapper::filter_overlaps(filtered_overlaps, overlaps_to_add);
                     overlaps_writer_mtx.lock();
                     claragenomics::cudamapper::Overlapper::print_paf(filtered_overlaps);
                     overlaps_writer_mtx.unlock();
-                    }, overlaps_to_add));
+                },
+                                                                                                      overlaps_to_add));
 
                 print_pafs_futures.push_back(f);
-
             }
         }
         //Query will no longer be needed on device, remove it from the cache
@@ -266,20 +274,23 @@ int main(int argc, char* argv[])
 
     // Enqueue the query-target ranges which need to be computed, each thread returns a vector of futures for the threads it launches
     std::vector<std::future<std::vector<std::shared_ptr<std::future<void>>>>> overlap_futures;
-    for (int i=0;i<query_target_ranges.size();i++){
+    for (int i = 0; i < query_target_ranges.size(); i++)
+    {
         // enqueue and store future
         auto query_target_range = query_target_ranges[i];
-        auto device_id = i % num_devices;
+        auto device_id          = i % num_devices;
         overlap_futures.push_back(overlap_pool.enqueue(compute_overlaps, query_target_range, device_id));
     }
 
-    for (auto &f: overlap_futures){
-        for (auto a: f.get()){
+    for (auto& f : overlap_futures)
+    {
+        for (auto a : f.get())
+        {
             a->wait();
         }
     }
 
-   return 0;
+    return 0;
 }
 
 void help(int32_t exit_code = 0)
