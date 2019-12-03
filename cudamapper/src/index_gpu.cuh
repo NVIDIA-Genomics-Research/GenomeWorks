@@ -18,6 +18,7 @@
 #include <thrust/host_vector.h>
 #include <thrust/replace.h>
 #include <thrust/transform.h>
+#include <thrust/transform_scan.h>
 
 #include <claragenomics/cudamapper/index.hpp>
 #include <claragenomics/cudamapper/types.hpp>
@@ -25,6 +26,7 @@
 #include <claragenomics/logging/logging.hpp>
 #include <claragenomics/utils/device_buffer.cuh>
 #include <claragenomics/utils/mathutils.hpp>
+#include <claragenomics/utils/signed_integer_utils.hpp>
 
 namespace claragenomics
 {
@@ -390,11 +392,8 @@ void filter_out_most_common_representations(const std::uint32_t filtering_parame
 
     // *** mark representations for filtering out ***
     // If representation is to be filtered out change its number of occurrences in number_of_sketch_elements_with_each_representation_d to 0
-    // Also create keep_representation_mask_d with value 1 for keeping the representation and 0 for filtering it out
     // 2  2  4  6  3  3  0 <- number_of_sketch_elements_with_each_representation_d (before filtering)
     // 2  2  0  0  3  3  0 <- number_of_sketch_elements_with_each_representation_d (after filtering)
-    // 1  1  0  0  1  1  0 <- keep_representation_mask_d
-    thrust::device_vector<std::uint32_t> keep_representation_mask_d(unique_representations_d.size() + 1); // additional element at the end
 
     thrust::replace_if(thrust::device,
                        std::begin(number_of_sketch_elements_with_each_representation_d),
@@ -404,16 +403,8 @@ void filter_out_most_common_representations(const std::uint32_t filtering_parame
                        },
                        0);
 
-    thrust::transform(thrust::device,
-                      std::begin(number_of_sketch_elements_with_each_representation_d),
-                      std::prev(std::end(number_of_sketch_elements_with_each_representation_d)), // last element of keep_representation_mask_d be 0, set it separately
-                      std::begin(keep_representation_mask_d),
-                      [] __device__(const std::uint32_t val) {
-                          return val > 0;
-                      });
-    keep_representation_mask_d.back() = 0; // H2D
-
-    // *** perform exclusive sums to find the index and starting positions of each representation after filtering ***
+    // *** perform exclusive sum to find the starting position of each representation after filtering ***
+    // If a representation is to be filtered out its value is the same to the value to its left
     // 2  2  0  0  3  3  0 <- number_of_sketch_elements_with_each_representation_d (after filtering)
     // 0  2  4  4  4  7 10 <- first_occurrence_of_representation_after_filtering_d
     thrust::device_vector<std::uint32_t> first_occurrence_of_representation_after_filtering_d(number_of_sketch_elements_with_each_representation_d.size());
@@ -422,14 +413,33 @@ void filter_out_most_common_representations(const std::uint32_t filtering_parame
                            std::end(number_of_sketch_elements_with_each_representation_d),
                            std::begin(first_occurrence_of_representation_after_filtering_d));
 
-    // 1  1  0  0  1  1  0 <- keep_representation_mask_d
+    // *** create unique_representation_index_after_filtering_d ***
+    // unique_representation_index_after_filtering_d contains the index of that representation after filtering if the representation is going to be kept
+    // or the value of its left neighbor if the representation is going to be filtered out.
+    // Additional element at the end contains the total number of unique representations after filtering
+    // 2  2  0  0  3  3  0 <- number_of_sketch_elements_with_each_representation_d (after filtering)
+    // 1  1  0  0  1  1  0 <- helper array with 1 if representation is going to be kept and 0 otherwise
     // 0  1  2  2  2  3  4 <- unique_representation_index_after_filtering_d
 
-    thrust::device_vector<std::uint32_t> unique_representation_index_after_filtering_d(keep_representation_mask_d.size());
-    thrust::exclusive_scan(thrust::device,
-                           std::begin(keep_representation_mask_d),
-                           std::end(keep_representation_mask_d),
-                           std::begin(unique_representation_index_after_filtering_d));
+    const std::int64_t number_of_unique_representations = get_size(unique_representations_d);
+    thrust::device_vector<std::uint32_t> unique_representation_index_after_filtering_d(number_of_unique_representations + 1);
+
+    {
+        // direct pointer needed as device_vector::operator[] is a host function and it would be called from device lambda
+        const std::uint32_t* const number_of_sketch_elements_with_each_representation_d_ptr = number_of_sketch_elements_with_each_representation_d.data().get();
+        thrust::transform_exclusive_scan(thrust::device,
+                                         thrust::make_counting_iterator(std::int64_t(0)),
+                                         thrust::make_counting_iterator(number_of_unique_representations + 1),
+                                         std::begin(unique_representation_index_after_filtering_d),
+                                         [number_of_sketch_elements_with_each_representation_d_ptr, number_of_unique_representations] __device__(const std::int64_t unique_representation_index) -> std::uint32_t {
+                                             if (unique_representation_index < number_of_unique_representations)
+                                                 return (0 == number_of_sketch_elements_with_each_representation_d_ptr[unique_representation_index] ? 0 : 1);
+                                             else // the additional element at the end
+                                                 return 0;
+                                         },
+                                         0,
+                                         thrust::plus<std::uint64_t>());
+    }
 
     // *** remove filtered out elements (compress) from unique_representations_d and first_occurrence_of_representations_d ***
     // 1  3  5  6  7  8 <- unique_representations_d (original)

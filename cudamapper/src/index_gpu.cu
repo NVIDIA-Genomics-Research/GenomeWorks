@@ -9,7 +9,6 @@
 */
 
 #include "index_gpu.cuh"
-#include <claragenomics/utils/signed_integer_utils.hpp>
 #include <thrust/transform_scan.h>
 
 namespace claragenomics
