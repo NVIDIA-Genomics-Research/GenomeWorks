@@ -100,27 +100,6 @@ __global__ void find_first_occurrences_of_representations_kernel(const std::uint
     }
 }
 
-__global__ void mark_for_filtering_out_kernel(const std::int32_t filtering_threshold,
-                                              const std::size_t number_of_unique_representations_d,
-                                              std::uint32_t* const number_of_sketch_elements_with_representation_d,
-                                              std::uint32_t* const keep_representation_mask_d)
-{
-    const std::uint64_t i = blockIdx.x * blockDim.x + threadIdx.x;
-
-    if (i >= number_of_unique_representations_d) // no +1 beacuse we're not interested in the additional last element of number_of_sketch_elements_with_representation_d, it should remain 0
-        return;
-
-    if (number_of_sketch_elements_with_representation_d[i] >= filtering_threshold)
-    {
-        number_of_sketch_elements_with_representation_d[i] = 0;
-        keep_representation_mask_d[i]                      = 0;
-    }
-    else
-    {
-        keep_representation_mask_d[i] = 1;
-    }
-}
-
 __global__ void compress_unique_representations_after_filtering_kernel(const std::uint64_t number_of_unique_representation_before_compression,
                                                                        const representation_t* const unique_representations_before_compression_d,
                                                                        const std::uint32_t* const first_occurrence_of_representation_before_compression_d,
