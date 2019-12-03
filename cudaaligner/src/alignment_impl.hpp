@@ -88,7 +88,7 @@ public:
     }
 
     /// \brief Print formatted alignment to stderr.
-    virtual FormattedAlignment format_alignment() const override;
+    virtual FormattedAlignment format_alignment(int32_t maximal_line_length = 80) const override;
 
 private:
     std::string query_;

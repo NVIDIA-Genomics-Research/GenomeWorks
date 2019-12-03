@@ -1,4 +1,5 @@
 var searchData=
 [
-  ['index_136',['Index',['../classclaragenomics_1_1cudamapper_1_1Index.html',1,'claragenomics::cudamapper']]]
+  ['fastaparser_161',['FastaParser',['../classclaragenomics_1_1io_1_1FastaParser.html',1,'claragenomics::io']]],
+  ['fastasequence_162',['FastaSequence',['../structclaragenomics_1_1io_1_1FastaSequence.html',1,'claragenomics::io']]]
 ];

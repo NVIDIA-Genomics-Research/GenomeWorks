@@ -22,7 +22,7 @@
  <tr style="height: 56px;">
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">ClaraGenomicsAnalysis
-   &#160;<span id="projectnumber">0.3.0</span>
+   &#160;<span id="projectnumber">0.4.0</span>
    </div>
   </td>
  </tr>
@@ -102,14 +102,14 @@ position_in_read_t&#160;</td><td class="memItemRight" valign="bottom"><a class="
 position_in_read_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structclaragenomics_1_1cudamapper_1_1Overlap.html#ad4721b3555a83acb588c54dc369f7797">target_end_position_in_read_</a></td></tr>
 <tr class="memdesc:ad4721b3555a83acb588c54dc369f7797"><td class="mdescLeft">&#160;</td><td class="mdescRight">end position in the target <br /></td></tr>
 <tr class="separator:ad4721b3555a83acb588c54dc369f7797"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac2baa8c82cbe1ff7475d7a8700a691df"><td class="memItemLeft" align="right" valign="top"><a id="ac2baa8c82cbe1ff7475d7a8700a691df"></a>
-std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structclaragenomics_1_1cudamapper_1_1Overlap.html#ac2baa8c82cbe1ff7475d7a8700a691df">query_read_name_</a></td></tr>
-<tr class="memdesc:ac2baa8c82cbe1ff7475d7a8700a691df"><td class="mdescLeft">&#160;</td><td class="mdescRight">query read name (e.g from FASTA) <br /></td></tr>
-<tr class="separator:ac2baa8c82cbe1ff7475d7a8700a691df"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8e75cd08ecddc434463ac2e9b748dd6c"><td class="memItemLeft" align="right" valign="top"><a id="a8e75cd08ecddc434463ac2e9b748dd6c"></a>
-std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structclaragenomics_1_1cudamapper_1_1Overlap.html#a8e75cd08ecddc434463ac2e9b748dd6c">target_read_name_</a></td></tr>
-<tr class="memdesc:a8e75cd08ecddc434463ac2e9b748dd6c"><td class="mdescLeft">&#160;</td><td class="mdescRight">target read name (e.g from FASTA) <br /></td></tr>
-<tr class="separator:a8e75cd08ecddc434463ac2e9b748dd6c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7d37018aff3304bbe75b2d612b55c057"><td class="memItemLeft" align="right" valign="top"><a id="a7d37018aff3304bbe75b2d612b55c057"></a>
+char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structclaragenomics_1_1cudamapper_1_1Overlap.html#a7d37018aff3304bbe75b2d612b55c057">query_read_name_</a> = 0</td></tr>
+<tr class="memdesc:a7d37018aff3304bbe75b2d612b55c057"><td class="mdescLeft">&#160;</td><td class="mdescRight">query read name (e.g from FASTA) <br /></td></tr>
+<tr class="separator:a7d37018aff3304bbe75b2d612b55c057"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afcb7e39abf2761899ff1abb3c95b82ca"><td class="memItemLeft" align="right" valign="top"><a id="afcb7e39abf2761899ff1abb3c95b82ca"></a>
+char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structclaragenomics_1_1cudamapper_1_1Overlap.html#afcb7e39abf2761899ff1abb3c95b82ca">target_read_name_</a> = 0</td></tr>
+<tr class="memdesc:afcb7e39abf2761899ff1abb3c95b82ca"><td class="mdescLeft">&#160;</td><td class="mdescRight">target read name (e.g from FASTA) <br /></td></tr>
+<tr class="separator:afcb7e39abf2761899ff1abb3c95b82ca"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1c0b9bac9b2e15f70c60fcdae9728fd7"><td class="memItemLeft" align="right" valign="top"><a id="a1c0b9bac9b2e15f70c60fcdae9728fd7"></a>
 RelativeStrand&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structclaragenomics_1_1cudamapper_1_1Overlap.html#a1c0b9bac9b2e15f70c60fcdae9728fd7">relative_strand</a></td></tr>
 <tr class="memdesc:a1c0b9bac9b2e15f70c60fcdae9728fd7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Relative strand: Forward ("+") or Reverse("-") <br /></td></tr>
@@ -130,6 +130,10 @@ std::uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" h
 bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structclaragenomics_1_1cudamapper_1_1Overlap.html#a31d4f58b24a2e3fc57b5bca803827360">overlap_complete</a> = false</td></tr>
 <tr class="memdesc:a31d4f58b24a2e3fc57b5bca803827360"><td class="mdescLeft">&#160;</td><td class="mdescRight">Whether the overlap is considered valid by the generating overlapper. <br /></td></tr>
 <tr class="separator:a31d4f58b24a2e3fc57b5bca803827360"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad9b3ed3f91b4979afb6198cea2d77e54"><td class="memItemLeft" align="right" valign="top"><a id="ad9b3ed3f91b4979afb6198cea2d77e54"></a>
+char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structclaragenomics_1_1cudamapper_1_1Overlap.html#ad9b3ed3f91b4979afb6198cea2d77e54">cigar_</a> = 0</td></tr>
+<tr class="memdesc:ad9b3ed3f91b4979afb6198cea2d77e54"><td class="mdescLeft">&#160;</td><td class="mdescRight">CIGAR string for alignment of mapped section. <br /></td></tr>
+<tr class="separator:ad9b3ed3f91b4979afb6198cea2d77e54"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p><a class="el" href="structclaragenomics_1_1cudamapper_1_1Overlap.html">Overlap</a> - represents one overlap between two substrings</p>

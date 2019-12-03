@@ -69,35 +69,43 @@ std::string AlignmentImpl::convert_to_cigar() const
     return cigar;
 }
 
-FormattedAlignment AlignmentImpl::format_alignment() const
+FormattedAlignment AlignmentImpl::format_alignment(int32_t maximal_line_length) const
 {
     int64_t t_pos = 0;
     int64_t q_pos = 0;
-    std::string t_str;
-    std::string q_str;
+    FormattedAlignment ret_formatted_alignment;
+    ret_formatted_alignment.linebreak_after = (maximal_line_length < 0) ? 0 : maximal_line_length;
+
     for (auto const& x : alignment_)
     {
         switch (x)
         {
         case AlignmentState::match:
+            ret_formatted_alignment.target += target_[t_pos++];
+            ret_formatted_alignment.query += query_[q_pos++];
+            ret_formatted_alignment.pairing += '|';
+            break;
         case AlignmentState::mismatch:
-            t_str += target_[t_pos++];
-            q_str += query_[q_pos++];
+            ret_formatted_alignment.target += target_[t_pos++];
+            ret_formatted_alignment.query += query_[q_pos++];
+            ret_formatted_alignment.pairing += 'x';
             break;
         case AlignmentState::deletion:
-            t_str += "-";
-            q_str += query_[q_pos++];
+            ret_formatted_alignment.target += '-';
+            ret_formatted_alignment.query += query_[q_pos++];
+            ret_formatted_alignment.pairing += ' ';
             break;
         case AlignmentState::insertion:
-            t_str += target_[t_pos++];
-            q_str += "-";
+            ret_formatted_alignment.target += target_[t_pos++];
+            ret_formatted_alignment.query += '-';
+            ret_formatted_alignment.pairing += ' ';
             break;
         default:
             throw std::runtime_error("Unknown alignment state");
         }
     }
 
-    return {q_str, t_str};
+    return ret_formatted_alignment;
 }
 } // namespace cudaaligner
 } // namespace claragenomics

@@ -22,7 +22,7 @@
  <tr style="height: 56px;">
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">ClaraGenomicsAnalysis
-   &#160;<span id="projectnumber">0.3.0</span>
+   &#160;<span id="projectnumber">0.4.0</span>
    </div>
   </td>
  </tr>
@@ -74,7 +74,7 @@ $(function() {
 <p>This is the complete list of members for <a class="el" href="classclaragenomics_1_1cudamapper_1_1Overlapper.html">claragenomics::cudamapper::Overlapper</a>, including all inherited members.</p>
 <table class="directory">
   <tr class="even"><td class="entry"><a class="el" href="group__cudamapper.html#ga3e5732f34489315ec8d1ef8b82ccea5c">filter_overlaps</a>(std::vector&lt; Overlap &gt; &amp;filtered_overlaps, const std::vector&lt; Overlap &gt; &amp;overlaps, size_t min_residues=5, size_t min_overlap_len=0)</td><td class="entry"><a class="el" href="classclaragenomics_1_1cudamapper_1_1Overlapper.html">claragenomics::cudamapper::Overlapper</a></td><td class="entry"><span class="mlabel">static</span></td></tr>
-  <tr><td class="entry"><a class="el" href="group__cudamapper.html#ga5498f3d8b5eff6481c67fdf0a049c300">get_overlaps</a>(std::vector&lt; Overlap &gt; &amp;overlaps, std::vector&lt; Anchor &gt; &amp;anchors, const Index &amp;index)=0</td><td class="entry"><a class="el" href="classclaragenomics_1_1cudamapper_1_1Overlapper.html">claragenomics::cudamapper::Overlapper</a></td><td class="entry"><span class="mlabel">pure virtual</span></td></tr>
+  <tr><td class="entry"><a class="el" href="group__cudamapper.html#gab0e3be4a9442dfb2b7952fb473e591a3">get_overlaps</a>(std::vector&lt; Overlap &gt; &amp;overlaps, thrust::device_vector&lt; Anchor &gt; &amp;anchors, const Index &amp;index_query, const Index &amp;index_target)=0</td><td class="entry"><a class="el" href="classclaragenomics_1_1cudamapper_1_1Overlapper.html">claragenomics::cudamapper::Overlapper</a></td><td class="entry"><span class="mlabel">pure virtual</span></td></tr>
   <tr class="even"><td class="entry"><a class="el" href="group__cudamapper.html#ga54fedd97206ad1691f7b9d9966d01371">print_paf</a>(const std::vector&lt; Overlap &gt; &amp;overlaps)</td><td class="entry"><a class="el" href="classclaragenomics_1_1cudamapper_1_1Overlapper.html">claragenomics::cudamapper::Overlapper</a></td><td class="entry"><span class="mlabel">static</span></td></tr>
   <tr><td class="entry"><a class="el" href="group__cudamapper.html#ga569c8855bdf9806d3747b26fc7e98975">~Overlapper</a>()=default</td><td class="entry"><a class="el" href="classclaragenomics_1_1cudamapper_1_1Overlapper.html">claragenomics::cudamapper::Overlapper</a></td><td class="entry"><span class="mlabel">virtual</span></td></tr>
 </table></div><!-- contents -->
