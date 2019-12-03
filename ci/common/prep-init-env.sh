@@ -19,8 +19,16 @@ logger "Check versions..."
 gcc --version
 g++ --version
 
+logger "Activate anaconda enviroment..."
+source /conda/etc/profile.d/conda.sh
+conda activate "${2}"
+conda info --envs
+
 # FIX Added to deal with Anancoda SSL verification issues during conda builds
 conda config --set ssl_verify False
+
+logger "Check Python version..."
+python --version
 
 # Conda add custom packages for ClaraGenomicsAnalysis CI
 logger "Conda install ClaraGenomicsAnalysis custom packages"
@@ -59,4 +67,3 @@ fi
 # Cleanup local git
 cd "$1"
 git clean -xdf
-

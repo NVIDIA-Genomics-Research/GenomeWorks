@@ -31,7 +31,7 @@ export HOME=$WORKSPACE
 
 cd ${WORKSPACE}
 
-source ci/common/prep-init-env.sh ${WORKSPACE}
+source ci/common/prep-init-env.sh "${WORKSPACE}" "${CONDA_ENV_NAME}"
 
 ################################################################################
 # SDK build/test

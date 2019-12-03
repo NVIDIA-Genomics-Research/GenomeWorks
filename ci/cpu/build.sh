@@ -32,7 +32,7 @@ export HOME=$WORKSPACE
 
 cd ${WORKSPACE}
 
-source ci/common/prep-init-env.sh ${WORKSPACE}
+source ci/common/prep-init-env.sh "${WORKSPACE}" "${CONDA_ENV_NAME}"
 
 CMAKE_COMMON_VARIABLES="-DCMAKE_BUILD_TYPE=Release"
 
