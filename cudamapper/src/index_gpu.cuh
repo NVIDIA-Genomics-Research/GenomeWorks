@@ -12,6 +12,7 @@
 
 #include <vector>
 
+#include <thrust/adjacent_difference.h>
 #include <thrust/copy.h>
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
@@ -200,24 +201,6 @@ __global__ void copy_rest_to_separate_arrays(const ReadidPositionDirection* cons
     positions_in_reads_d[i]  = rest_d[i].position_in_read_;
     directions_of_reads_d[i] = DirectionOfRepresentation(rest_d[i].direction_);
 }
-
-/// \brief finds number of occurrences of each representation according to the starting position of that representations
-///
-/// For example:
-/// 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16
-/// 1  1  3  3  5  5  5  5  6  6  6  6  6  6  7  7  7 <-representations
-/// 1  3  5  6  7 <- unique_representations
-/// 0  2  4  8 14 17 <- starting_index_of_each_representation
-///
-/// gives:
-/// 2  2  4  6  3  0 <- number_of_sketch_elements_with_representation_d (last element set to zero)
-///
-/// \param starting_index_of_each_representation_d index with first occurrence of each representation, plus one more element with the total number of representations
-/// \param number_of_elements number of elements in array (unique representations + 1)
-/// \param number_of_sketch_elements_with_representation_d
-__global__ void find_number_of_representation_occurrences_kernel(const std::uint32_t* const starting_index_of_each_representation_d,
-                                                                 const std::size_t number_of_elements,
-                                                                 std::uint32_t* const number_of_sketch_elements_with_representation_d);
 
 /// \brief Marks representations which should be filtered out
 ///
@@ -412,13 +395,13 @@ void filter_out_most_common_representations(const std::uint32_t filtering_parame
     thrust::device_vector<std::uint32_t> number_of_sketch_elements_with_each_representation_d(first_occurrence_of_representations_d.size());
     number_of_sketch_elements_with_each_representation_d.back() = 0; // H2D
 
-    std::uint32_t number_of_threads = 128;
-    std::int32_t number_of_blocks   = ceiling_divide<std::int64_t>(first_occurrence_of_representations_d.size(),
-                                                                 number_of_threads);
-
-    find_number_of_representation_occurrences_kernel<<<number_of_blocks, number_of_threads>>>(first_occurrence_of_representations_d.data().get(),
-                                                                                              first_occurrence_of_representations_d.size(),
-                                                                                              number_of_sketch_elements_with_each_representation_d.data().get());
+    // thrust::adjacent_difference saves a[i]-a[i-1] to a[i]. As first_occurrence_of_representations_d starts with 0
+    // we actually want to save a[i]-a[i-1] to a[i-j] and have the last (aditional) element of number_of_sketch_elements_with_each_representation_d set to 0
+    thrust::adjacent_difference(thrust::device,
+                                std::next(std::begin(first_occurrence_of_representations_d)),
+                                std::end(first_occurrence_of_representations_d),
+                                std::begin(number_of_sketch_elements_with_each_representation_d));
+    number_of_sketch_elements_with_each_representation_d.back() = 0; // H2D
 
     // *** find filtering threshold ***
     const std::size_t total_sketch_elements = representations_d.size();
@@ -431,6 +414,10 @@ void filter_out_most_common_representations(const std::uint32_t filtering_parame
     // 2  2  0  0  3  3  0 <- number_of_sketch_elements_with_each_representation_d (after filtering)
     // 1  1  0  0  1  1  0 <- keep_representation_mask_d
     thrust::device_vector<std::uint32_t> keep_representation_mask_d(unique_representations_d.size() + 1); // additional element at the end
+
+    std::uint32_t number_of_threads = 128;
+    std::int32_t number_of_blocks   = ceiling_divide<std::int64_t>(first_occurrence_of_representations_d.size(),
+                                                                 number_of_threads);
 
     mark_for_filtering_out_kernel<<<number_of_blocks, number_of_threads>>>(filtering_threshold,
                                                                            unique_representations_d.size(),

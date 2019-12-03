@@ -100,21 +100,6 @@ __global__ void find_first_occurrences_of_representations_kernel(const std::uint
     }
 }
 
-__global__ void find_number_of_representation_occurrences_kernel(const std::uint32_t* const starting_index_of_each_representation_d,
-                                                                 const std::size_t number_of_elements,
-                                                                 std::uint32_t* const number_of_elements_with_representation_d)
-{
-    const std::uint64_t i = blockIdx.x * blockDim.x + threadIdx.x;
-
-    if (i >= number_of_elements)
-        return;
-
-    if (i == number_of_elements - 1) // last element is set to 0
-        number_of_elements_with_representation_d[i] = 0;
-    else // number_of_elements = starting_index_of_next_representation - starting_index_of_this_representation
-        number_of_elements_with_representation_d[i] = starting_index_of_each_representation_d[i + 1] - starting_index_of_each_representation_d[i];
-}
-
 __global__ void mark_for_filtering_out_kernel(const std::int32_t filtering_threshold,
                                               const std::size_t number_of_unique_representations_d,
                                               std::uint32_t* const number_of_sketch_elements_with_representation_d,
