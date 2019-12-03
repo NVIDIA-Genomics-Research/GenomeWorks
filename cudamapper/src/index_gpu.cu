@@ -117,10 +117,13 @@ __global__ void compress_unique_representations_after_filtering_kernel(const std
     }
     else
     {
+        // TODO: load these two values into shared memory
         if (first_occurrence_of_representation_before_compression_d[i] != first_occurrence_of_representation_before_compression_d[i + 1]) // if it's the same that means that this representation has been filtered out
         {
-            unique_representations_after_compression_d[new_unique_representation_index_d[i]]             = unique_representations_before_compression_d[i];
-            first_occurrence_of_representation_after_compression_d[new_unique_representation_index_d[i]] = first_occurrence_of_representation_before_compression_d[i];
+            const std::uint32_t new_unique_representation_index = new_unique_representation_index_d[i];
+
+            unique_representations_after_compression_d[new_unique_representation_index]             = unique_representations_before_compression_d[i];
+            first_occurrence_of_representation_after_compression_d[new_unique_representation_index] = first_occurrence_of_representation_before_compression_d[i];
         }
     }
 }
