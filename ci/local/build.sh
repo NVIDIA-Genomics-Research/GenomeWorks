@@ -125,10 +125,27 @@ fi
 
 # Run the generated build script in a container
 sudo docker pull "${DOCKER_IMAGE}"
-sudo docker run --runtime=nvidia --rm -it -e NVIDIA_VISIBLE_DEVICES="${NVIDIA_VISIBLE_DEVICES}" \
-       -u "$(id -u)":"$(id -g)" \
-       -v "${REPO_PATH}":"${REPO_PATH_IN_CONTAINER}" \
-       -v "$PASSWD_FILE":/etc/passwd:ro \
-       -v "$GROUP_FILE":/etc/group:ro \
-       --cap-add=SYS_PTRACE \
-       "${DOCKER_IMAGE}" bash -c "${COMMAND}"
+
+
+# Compare Docker version to find Nvidia Container Toolkit support.
+# Please refer https://github.com/NVIDIA/nvidia-docker
+DOCKER_VERSION_WITH_GPU_SUPPORT="19.03.0"
+DOCKER_VERSION=$(docker version | grep -i version | head -1 | awk '{print $2'})
+
+if [ "$DOCKER_VERSION_WITH_GPU_SUPPORT" == "$(echo -e "$DOCKER_VERSION\n$DOCKER_VERSION_WITH_GPU_SUPPORT" | sort -V | head -1)" ]; then
+    sudo docker run --rm -it --gpus all\
+        -u "$(id -u)":"$(id -g)" \
+        -v "${REPO_PATH}":"${REPO_PATH_IN_CONTAINER}" \
+        -v "$PASSWD_FILE":/etc/passwd:ro \
+        -v "$GROUP_FILE":/etc/group:ro \
+        --cap-add=SYS_PTRACE \
+        "${DOCKER_IMAGE}" bash -c "${COMMAND}"
+else
+    sudo docker run --runtime=nvidia --rm -it -e NVIDIA_VISIBLE_DEVICES="${NVIDIA_VISIBLE_DEVICES}" \
+        -u "$(id -u)":"$(id -g)" \
+        -v "${REPO_PATH}":"${REPO_PATH_IN_CONTAINER}" \
+        -v "$PASSWD_FILE":/etc/passwd:ro \
+        -v "$GROUP_FILE":/etc/group:ro \
+        --cap-add=SYS_PTRACE \
+        "${DOCKER_IMAGE}" bash -c "${COMMAND}"
+fi
