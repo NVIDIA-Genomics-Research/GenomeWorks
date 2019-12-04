@@ -725,7 +725,7 @@ void IndexGPU<SketchElementImpl>::generate_index(const io::FastaParser& parser,
                                                                   first_occurrence_of_representations_d_,
                                                                   representations_d_);
 
-    if (filtering_parameter != 1.0)
+    if (filtering_parameter < 1.0)
     {
         details::index_gpu::filter_out_most_common_representations(filtering_parameter,
                                                                    representations_d_,
