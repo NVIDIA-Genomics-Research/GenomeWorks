@@ -921,7 +921,7 @@ TEST(TestCudamapperIndexGPU, test_compress_data_arrays_after_filtering_kernel_la
 // ************ Test filter_out_most_common_representations **************
 
 template <typename DirectionOfRepresentation>
-void test_filter_out_most_common_representations(const std::uint32_t filtering_parameter,
+void test_filter_out_most_common_representations(const double filtering_parameter,
                                                  const thrust::host_vector<representation_t>& input_representations_h,
                                                  const thrust::host_vector<read_id_t>& input_read_ids_h,
                                                  const thrust::host_vector<position_in_read_t>& input_positions_in_reads_h,
@@ -1007,11 +1007,10 @@ TEST(TestCudamapperIndexGPU, test_filter_out_most_common_representations_small_e
     // 1  3  5  6  7  8    <- unique_representations (before filtering)
     // 0  2  4  8 14 17 20 <- first_occurrence_of_representations (before filtering)
     //
-    // For filtering_parameter = 200'000'000:
-    // sketch_elementes_with_that_representation/total_sketch_element >= filtering_parameter/1'000'000'000 <=>
-    // sketch_elementes_with_that_representation/20 >= 200'000'000/1'000'000'000 <=>
-    // sketch_elementes_with_that_representation/20 >= 1/5 <=>
-    // sketch_elementes_with_that_representation >= 20 * 1/5 <=>
+    // For filtering_parameter = 0.2:
+    // sketch_elementes_with_that_representation/total_sketch_element >= filtering_parameter
+    // sketch_elementes_with_that_representation/20 >= 0.2 <=>
+    // sketch_elementes_with_that_representation >= 20 * 0.2 <=>
     // sketch_elementes_with_that_representation >= 4 <=>
     // sketch element with representations with 4 or more sketch elements will be removed
     //
@@ -1024,7 +1023,7 @@ TEST(TestCudamapperIndexGPU, test_filter_out_most_common_representations_small_e
     // 1  3  7  8    <- unique_representations (after filtering)
     // 0  2  4  7 10 <- first_occurrence_of_representations (after filtering)
 
-    const std::uint32_t filtering_parameter = 200'000'000;
+    const double filtering_parameter = 0.2;
 
     const std::vector<representation_t> input_representations_std({1, 1, 3, 3, 5, 5, 5, 5, 6, 6, 6, 6, 6, 6, 7, 7, 7, 8, 8, 8});
     const thrust::host_vector<representation_t> input_representations_h(std::begin(input_representations_std), std::end(input_representations_std));
@@ -1110,8 +1109,8 @@ TEST(TestCudamapperIndexGPU, test_filter_out_most_common_representations_large_e
     // Total sketch elements = 50'000'000
     //
     // Wanted filtering_threshold = 6
-    // 6 = (50'000'000 * filtering_parameter) / 1'000'000'000 <=> 6 = (5 * filtering_parameter) / 100 <=> 600 = 5 * filtering_parameter <=>
-    // filtering_parameter = 120
+    // 6 = 50'000'000 * filtering_parameter <=> filtering_parameter = 6 / 50'000'000 * <=>
+    // filtering_parameter = 0.00000012
     //
     //  6 <- filtering_threshold
     //  0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15|16 17 18 19 20 21 22 23 24 25 26
@@ -1132,7 +1131,7 @@ TEST(TestCudamapperIndexGPU, test_filter_out_most_common_representations_large_e
     //  0  5|10 15|20 25|... X <- first_occurrence_of_representation_after_filtering (with aditional element)
 
     const std::uint64_t total_sketch_elements = 50000000; // = 3125000 * 16
-    const std::uint32_t filtering_parameter   = 120;
+    const double filtering_parameter          = 0.00000012;
 
     thrust::host_vector<representation_t> input_representations_h;
     thrust::host_vector<read_id_t> input_read_ids_h;

@@ -58,12 +58,14 @@ public:
     /// \param kmer_size k - the kmer length
     /// \param window_size w - the length of the sliding window used to find sketch elements (i.e. the number of adjacent k-mers in a window, adjacent = shifted by one basepair)
     /// \param hash_representations - if true, hash kmer representations
+    /// \param filtering_parameter - filter out all representations for which number_of_sketch_elements_with_that_representation/total_skech_elements >= filtering_parameter, filtering_parameter == 1.0 disables filtering
     IndexGPU(const io::FastaParser& parser,
              const read_id_t first_read_id,
              const read_id_t past_the_last_read_id,
              const std::uint64_t kmer_size,
              const std::uint64_t window_size,
-             const bool hash_representations = true);
+             const bool hash_representations  = true,
+             const double filtering_parameter = 1.0);
 
     /// \brief returns an array of representations of sketch elements
     /// \return an array of representations of sketch elements
@@ -108,7 +110,8 @@ private:
     void generate_index(const io::FastaParser& query_parser,
                         const read_id_t first_read_id,
                         const read_id_t past_the_last_read_id,
-                        const bool hash_representations);
+                        const bool hash_representations,
+                        const double filtering_parameter);
 
     thrust::device_vector<representation_t> representations_d_;
     thrust::device_vector<read_id_t> read_ids_d_;
@@ -325,7 +328,7 @@ __global__ void compress_data_arrays_after_filtering_kernel(const std::uint64_t 
 
 /// \brief removes sketch elements with most common representations from the index
 ///
-/// All sketch elements for which holds sketch_elementes_with_that_representation/total_sketch_element >= filtering_parameter/1'000'000'000 will get removed
+/// All sketch elements for which holds sketch_elementes_with_that_representation/total_sketch_element >= filtering_parameter will get removed
 ///
 /// For example this index initinally contains 20 sketch elements:
 /// 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19
@@ -336,11 +339,10 @@ __global__ void compress_data_arrays_after_filtering_kernel(const std::uint64_t 
 /// 1  3  5  6  7  8    <- unique_representations (before filtering)
 /// 0  2  4  8 14 17 20 <- first_occurrence_of_representations (before filtering)
 ///
-/// For filtering_parameter = 200'000'000:
-/// sketch_elementes_with_that_representation/total_sketch_element >= filtering_parameter/1'000'000'000 <=>
-/// sketch_elementes_with_that_representation/20 >= 200'000'000/1'000'000'000 <=>
-/// sketch_elementes_with_that_representation/20 >= 1/5 <=>
-/// sketch_elementes_with_that_representation >= 20 * 1/5 <=>
+/// For filtering_parameter = 0.2:
+/// sketch_elementes_with_that_representation/total_sketch_element >= 0.2 <=>
+/// sketch_elementes_with_that_representation/20 >= 0.2 <=>
+/// sketch_elementes_with_that_representation >= 20 * 0.2 <=>
 /// sketch_elementes_with_that_representation >= 4 <=>
 /// sketch element with representations with 4 or more sketch elements will be removed
 ///
@@ -363,7 +365,7 @@ __global__ void compress_data_arrays_after_filtering_kernel(const std::uint64_t 
 ///
 /// \tparam DirectionOfRepresentation any implementation of SketchElementImpl::SketchElementImpl::DirectionOfRepresentation
 template <typename DirectionOfRepresentation>
-void filter_out_most_common_representations(const std::uint32_t filtering_parameter,
+void filter_out_most_common_representations(const double filtering_parameter,
                                             thrust::device_vector<representation_t>& representations_d,
                                             thrust::device_vector<read_id_t>& read_ids_d,
                                             thrust::device_vector<position_in_read_t>& positions_in_reads_d,
@@ -388,7 +390,8 @@ void filter_out_most_common_representations(const std::uint32_t filtering_parame
 
     // *** find filtering threshold ***
     const std::size_t total_sketch_elements = representations_d.size();
-    const std::uint32_t filtering_threshold = static_cast<std::uint32_t>((static_cast<std::uint64_t>(total_sketch_elements) * filtering_parameter) / 1'000'000'000);
+    // + 0.001 is a hacky workaround for problems which may arise when multiplying doubles and then casting into int
+    const std::uint64_t filtering_threshold = static_cast<std::uint64_t>(total_sketch_elements * filtering_parameter + 0.001);
 
     // *** mark representations for filtering out ***
     // If representation is to be filtered out change its number of occurrences in number_of_sketch_elements_with_each_representation_d to 0
@@ -515,7 +518,8 @@ IndexGPU<SketchElementImpl>::IndexGPU(const io::FastaParser& parser,
                                       const read_id_t past_the_last_read_id,
                                       const std::uint64_t kmer_size,
                                       const std::uint64_t window_size,
-                                      const bool hash_representations)
+                                      const bool hash_representations,
+                                      const double filtering_parameter)
     : first_read_id_(first_read_id)
     , kmer_size_(kmer_size)
     , window_size_(window_size)
@@ -524,7 +528,8 @@ IndexGPU<SketchElementImpl>::IndexGPU(const io::FastaParser& parser,
     generate_index(parser,
                    first_read_id_,
                    past_the_last_read_id,
-                   hash_representations);
+                   hash_representations,
+                   filtering_parameter);
 }
 
 template <typename SketchElementImpl>
@@ -585,7 +590,8 @@ template <typename SketchElementImpl>
 void IndexGPU<SketchElementImpl>::generate_index(const io::FastaParser& parser,
                                                  const read_id_t first_read_id,
                                                  const read_id_t past_the_last_read_id,
-                                                 const bool hash_representations)
+                                                 const bool hash_representations,
+                                                 const double filtering_parameter)
 {
 
     // check if there are any reads to process
@@ -718,6 +724,17 @@ void IndexGPU<SketchElementImpl>::generate_index(const io::FastaParser& parser,
     details::index_gpu::find_first_occurrences_of_representations(unique_representations_d_,
                                                                   first_occurrence_of_representations_d_,
                                                                   representations_d_);
+
+    if (filtering_parameter != 1.0)
+    {
+        details::index_gpu::filter_out_most_common_representations(filtering_parameter,
+                                                                   representations_d_,
+                                                                   read_ids_d_,
+                                                                   positions_in_reads_d_,
+                                                                   directions_of_reads_d_,
+                                                                   unique_representations_d_,
+                                                                   first_occurrence_of_representations_d_);
+    }
 }
 
 } // namespace cudamapper
