@@ -65,9 +65,6 @@ MatcherGPU::MatcherGPU(const Index& query_index,
 {
 
     CGA_NVTX_RANGE(profile, "matcherGPU");
-    if (query_index.number_of_reads() == 0 || target_index.number_of_reads() == 0)
-        return;
-
     if (query_index.unique_representations().size() == 0 || target_index.unique_representations().size() == 0)
         return;
 
