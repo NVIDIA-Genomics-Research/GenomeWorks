@@ -133,14 +133,14 @@ DOCKER_VERSION_WITH_GPU_SUPPORT="19.03.0"
 DOCKER_VERSION=$(docker version | grep -i version | head -1 | awk '{print $2'})
 
 PARAM_RUNTIME="--runtime=nvidia"
-PARAM_ALL_GPU="-e NVIDIA_VISIBLE_DEVICES=${NVIDIA_VISIBLE_DEVICES}"
+PARAM_GPUS="-e NVIDIA_VISIBLE_DEVICES=${NVIDIA_VISIBLE_DEVICES}"
 
 if [ "$DOCKER_VERSION_WITH_GPU_SUPPORT" == "$(echo -e "$DOCKER_VERSION\n$DOCKER_VERSION_WITH_GPU_SUPPORT" | sort -V | head -1)" ]; then
     PARAM_RUNTIME=""
-    PARAM_ALL_GPU="--gpus ${NVIDIA_VISIBLE_DEVICES}"
+    PARAM_GPUS="--gpus ${NVIDIA_VISIBLE_DEVICES}"
 fi
 
-sudo docker run $PARAM_RUNTIME --rm -it $PARAM_ALL_GPU \
+sudo docker run $PARAM_RUNTIME --rm -it $PARAM_GPUS \
     -u "$(id -u)":"$(id -g)" \
     -v "${REPO_PATH}":"${REPO_PATH_IN_CONTAINER}" \
     -v "$PASSWD_FILE":/etc/passwd:ro \
