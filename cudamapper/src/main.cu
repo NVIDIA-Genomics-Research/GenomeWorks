@@ -156,7 +156,7 @@ int main(int argc, char* argv[])
     }
 
     // This is a per-device cache, if it has the index it will return it, if not it will generate it, store and return it.
-    std::vector<std::map<std::pair<uint64_t, uint64_t>, std::shared_ptr<std::unique_ptr<claragenomics::cudamapper::Index>>>> index_cache(num_devices);
+    std::vector<std::map<std::pair<uint64_t, uint64_t>, std::shared_ptr<claragenomics::cudamapper::Index>>> index_cache(num_devices);
 
     auto get_index = [&index_cache, &max_cache_size](claragenomics::io::FastaParser& parser,
                                                      const claragenomics::cudamapper::read_id_t query_start_index,
@@ -169,7 +169,7 @@ int main(int argc, char* argv[])
         key.first  = query_start_index;
         key.second = query_end_index;
 
-        std::shared_ptr<std::unique_ptr<claragenomics::cudamapper::Index>> index;
+        std::shared_ptr<claragenomics::cudamapper::Index> index;
 
         if (index_cache[device_id].count(key))
         {
@@ -177,11 +177,8 @@ int main(int argc, char* argv[])
         }
         else
         {
-            index = std::make_shared<std::unique_ptr<claragenomics::cudamapper::Index>>(claragenomics::cudamapper::Index::create_index(parser,
-                                                                                                                                       query_start_index,
-                                                                                                                                       query_end_index,
-                                                                                                                                       k,
-                                                                                                                                       w));
+            index = std::move(claragenomics::cudamapper::Index::create_index(parser, query_start_index, query_end_index, k, w));
+
             if (index_cache[device_id].size() < max_cache_size)
             {
                 index_cache[device_id][key] = index;
@@ -213,8 +210,8 @@ int main(int argc, char* argv[])
 
         std::cerr << "Procecssing query range: (" << query_start_index << " - " << query_end_index - 1 << ")" << std::endl;
 
-        std::shared_ptr<std::unique_ptr<claragenomics::cudamapper::Index>> query_index(nullptr);
-        std::shared_ptr<std::unique_ptr<claragenomics::cudamapper::Index>> target_index(nullptr);
+        std::shared_ptr<claragenomics::cudamapper::Index> query_index(nullptr);
+        std::shared_ptr<claragenomics::cudamapper::Index> target_index(nullptr);
         std::unique_ptr<claragenomics::cudamapper::Matcher> matcher(nullptr);
 
         {
@@ -239,8 +236,8 @@ int main(int argc, char* argv[])
             {
                 CGA_NVTX_RANGE(profiler, "generate_matcher");
                 auto start_time = std::chrono::high_resolution_clock::now();
-                matcher         = claragenomics::cudamapper::Matcher::create_matcher(**query_index,
-                                                                             **target_index);
+                matcher         = claragenomics::cudamapper::Matcher::create_matcher(*query_index,
+                                                                                     *target_index);
             }
             {
 
@@ -250,7 +247,7 @@ int main(int argc, char* argv[])
 
                 // Get unfiltered overlaps
                 std::vector<claragenomics::cudamapper::Overlap> overlaps_to_add;
-                overlapper.get_overlaps(overlaps_to_add, matcher->anchors(), **query_index, **target_index);
+                overlapper.get_overlaps(overlaps_to_add, matcher->anchors(), *query_index, *target_index);
 
                 std::shared_ptr<std::future<void>> f = std::make_shared<std::future<void>>(std::async(std::launch::async, [&overlaps_writer_mtx, overlaps_to_add](std::vector<claragenomics::cudamapper::Overlap> overlaps) {
                     std::vector<claragenomics::cudamapper::Overlap> filtered_overlaps;
