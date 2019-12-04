@@ -1261,7 +1261,8 @@ void test_function(const std::string& filename,
                    const std::vector<std::uint32_t>& expected_first_occurrence_of_representations,
                    const std::vector<std::string>& expected_read_id_to_read_name,
                    const std::vector<std::uint32_t>& expected_read_id_to_read_length,
-                   const std::uint64_t expected_number_of_reads)
+                   const std::uint64_t expected_number_of_reads,
+                   const double filtering_parameter = 1.0)
 {
     std::unique_ptr<io::FastaParser> parser = io::create_fasta_parser(filename);
     IndexGPU<Minimizer> index(*parser,
@@ -1269,7 +1270,8 @@ void test_function(const std::string& filename,
                               past_the_last_read_id,
                               kmer_size,
                               window_size,
-                              false);
+                              false,
+                              filtering_parameter);
 
     ASSERT_EQ(index.number_of_reads(), expected_number_of_reads);
     if (0 == expected_number_of_reads)
@@ -2101,6 +2103,154 @@ TEST(TestCudamapperIndexGPU, AAAACTGAA_GCCAAAG_2_3_only_second_read_in_index)
                   expected_read_id_to_read_name,
                   expected_read_id_to_read_length,
                   1);
+}
+
+TEST(TestCudamapperIndexGPU, AAAACTGAA_GCCAAAG_2_3_filtering)
+{
+    // >read_0
+    // AAAACTGAA
+    // >read_1
+    // GCCAAAG
+
+    // ** AAAACTGAA **
+
+    // kmer representation: forward, reverse
+    // AA: <00> 33
+    // AA: <00> 33
+    // AA: <00> 33
+    // AC: <01> 23
+    // CT:  13 <02>
+    // TG:  32 <10>
+    // GA: <20> 31
+    // AA: <00> 33
+
+    // front end minimizers: representation, position_in_read, direction, read_id
+    // AA : 00 0 F 0
+    // AAA: 00 1 F 0
+
+    // central minimizers
+    // AAAA: 00 2 F 0
+    // AAAC: 00 2 F 0
+    // AACT: 00 2 F 0
+    // ACTG: 01 3 F 0
+    // CTGA: 02 4 R 0
+    // TGAA: 00 7 F 0
+
+    // back end minimizers
+    // GAA: 00 7 F 0
+    // AA : 00 7 F 0
+
+    // All minimizers: AA(0f), AA(1f), AA(2f), AC(3f), AG(4r), AA (7f)
+
+    // ** GCCAAAG **
+
+    // kmer representation: forward, reverse
+    // GC: <21> 21
+    // CC: <11> 22
+    // CA: <10> 32
+    // AA: <00> 33
+    // AA: <00> 33
+    // AG: <03> 21
+
+    // front end minimizers: representation, position_in_read, direction, read_id
+    // GC : 21 0 F 0
+    // GCC: 11 1 F 0
+
+    // central minimizers
+    // GCCA: 10 2 F 0
+    // CCAA: 00 3 F 0
+    // CAAA: 00 4 F 0
+    // AAAG: 00 4 F 0
+
+    // back end minimizers
+    // AAG: 00 4 F 0
+    // AG : 03 5 F 0
+
+    // All minimizers: GC(0f), CC(1f), CA(2f), AA(3f), AA(4f), AG(5f)
+
+    // (2r1) means position 2, reverse direction, read 1
+    // (1,2) means array block start at element 1 and has 2 elements
+
+    //              0        1        2        3        4        5        6        7        8        9        10       11
+    // data arrays: AA(0f0), AA(1f0), AA(2f0), AA(7f0), AA(3f1), AA(4f1), AC(3f0), AG(4r0), AG(5f1), CA(2f1), CC(1f1), GC(0f1)
+
+    // Total sketch elements: 12
+    // Sketch elements per representation: AA = 6, AC = 1, AG = 2, CA = 1, CC = 1, GC = 1
+    // filtering_parameter = 0.5 <=> filtering_threshold = 12 * 0.5 = 6
+    // data arrays after filtering: AC(3f0), AG(4r0), AG(5f1), CA(2f1), CC(1f1), GC(0f1)
+
+    const std::string filename         = std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/aaaactgaa_gccaaag.fasta";
+    const std::uint64_t minimizer_size = 2;
+    const std::uint64_t window_size    = 3;
+    const double filtering_parameter   = 0.5;
+
+    std::vector<std::string> expected_read_id_to_read_name;
+    expected_read_id_to_read_name.push_back("read_0");
+    expected_read_id_to_read_name.push_back("read_1");
+
+    std::vector<std::uint32_t> expected_read_id_to_read_length;
+    expected_read_id_to_read_length.push_back(9);
+    expected_read_id_to_read_length.push_back(7);
+
+    std::vector<representation_t> expected_representations;
+    std::vector<position_in_read_t> expected_positions_in_reads;
+    std::vector<read_id_t> expected_read_ids;
+    std::vector<SketchElement::DirectionOfRepresentation> expected_directions_of_reads;
+    std::vector<representation_t> expected_unique_representations;
+    std::vector<std::uint32_t> expected_first_occurrence_of_representations;
+
+    expected_representations.push_back(0b0001); // AC(3f0)
+    expected_positions_in_reads.push_back(3);
+    expected_read_ids.push_back(0);
+    expected_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::FORWARD);
+    expected_unique_representations.push_back(0b0001);
+    expected_first_occurrence_of_representations.push_back(0);
+    expected_representations.push_back(0b0010); // AG(4r0)
+    expected_positions_in_reads.push_back(4);
+    expected_read_ids.push_back(0);
+    expected_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::REVERSE);
+    expected_unique_representations.push_back(0b0010);
+    expected_first_occurrence_of_representations.push_back(1);
+    expected_representations.push_back(0b0010); // AG(5f1)
+    expected_positions_in_reads.push_back(5);
+    expected_read_ids.push_back(1);
+    expected_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::FORWARD);
+    expected_representations.push_back(0b0100); // CA(2f1)
+    expected_positions_in_reads.push_back(2);
+    expected_read_ids.push_back(1);
+    expected_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::FORWARD);
+    expected_unique_representations.push_back(0b0100);
+    expected_first_occurrence_of_representations.push_back(3);
+    expected_representations.push_back(0b0101); // CC(1f1)
+    expected_positions_in_reads.push_back(1);
+    expected_read_ids.push_back(1);
+    expected_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::FORWARD);
+    expected_unique_representations.push_back(0b0101);
+    expected_first_occurrence_of_representations.push_back(4);
+    expected_representations.push_back(0b1001); // GC(0f1)
+    expected_positions_in_reads.push_back(0);
+    expected_read_ids.push_back(1);
+    expected_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::FORWARD);
+    expected_unique_representations.push_back(0b1001);
+    expected_first_occurrence_of_representations.push_back(5);
+
+    expected_first_occurrence_of_representations.push_back(6);
+
+    test_function(filename,
+                  0,
+                  2,
+                  minimizer_size,
+                  window_size,
+                  expected_representations,
+                  expected_positions_in_reads,
+                  expected_read_ids,
+                  expected_directions_of_reads,
+                  expected_unique_representations,
+                  expected_first_occurrence_of_representations,
+                  expected_read_id_to_read_name,
+                  expected_read_id_to_read_length,
+                  2,
+                  filtering_parameter);
 }
 
 } // namespace cudamapper
