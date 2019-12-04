@@ -68,6 +68,9 @@ MatcherGPU::MatcherGPU(const Index& query_index,
     if (query_index.number_of_reads() == 0 || target_index.number_of_reads() == 0)
         return;
 
+    if (query_index.unique_representations().size() == 0 || target_index.unique_representations().size() == 0)
+        return;
+
     // We need to compute a set of anchors between the query and the target.
     // An anchor is a combination of a query (read_id, position) and
     // target {read_id, position} with the same representation.
