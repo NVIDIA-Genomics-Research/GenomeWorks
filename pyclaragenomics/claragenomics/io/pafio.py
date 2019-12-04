@@ -1,117 +1,187 @@
-#
-# Copyright (c) 2019, NVIDIA CORPORATION.  All rights reserved.
-#
-# NVIDIA CORPORATION and its licensors retain all intellectual property
-# and proprietary rights in and to this software, related documentation
-# and any modifications thereto.  Any use, reproduction, disclosure or
-# distribution of this software and related documentation without an express
-# license agreement from NVIDIA CORPORATION is strictly prohibited.
-#
-
 """
 Functions for PAF I/O
 """
-
-import collections
-
-Overlap = collections.namedtuple("Overlap", ["query_sequence_name",
-                                             "query_sequence_length",
-                                             "query_start",
-                                             "query_end",
-                                             "relative_strand",
-                                             "target_sequence_name",
-                                             "target_sequence_length",
-                                             "target_start",
-                                             "target_end",
-                                             "num_residue_matches",
-                                             "alignment_block_length",
-                                             "mapping_quality"])
+from collections import namedtuple
 
 
-def read_paf(filepath):
-    """ Read a PAF file
+SAM_TYPES = {"i": int, "A": str, "f": float, "Z": str}
+REV_TYPES = {
+    "tp": "A",
+    "cm": "i",
+    "s1": "i",
+    "s2": "i",
+    "NM": "i",
+    "MD": "Z",
+    "AS": "i",
+    "ms": "i",
+    "nn": "i",
+    "ts": "A",
+    "cg": "Z",
+    "cs": "Z",
+    "dv": "f",
+    "de": "f",
+    "rl": "i",
+}
 
-    Args:
-      filepath (str): Path to read PAF file from.
 
-    Returns:
-        list of Overlap objects. Overlap is a named tuple with the following fields:
+def _parse_tags(tags):
+    """Convert a list of SAM style tags, from a PAF file, to a dict
 
-        * query_sequence_name
-        * query_sequence_length
-        * query_start
-        * query_end
-        * relative_strand
-        * target_sequence_name
-        * target_sequence_length
-        * target_start
-        * target_end
-        * num_residue_matches
-        * alignment_block_length
-        * mapping_quality
+    https://samtools.github.io/hts-specs/SAMv1.pdf section 1.5
+
+    Parameters
+    ----------
+    tags : list
+        A list of SAM style tags
+
+    Returns
+    -------
+    dict
+        Returns dict of SAM style tags
     """
-    overlaps = []
-    with open(filepath) as f:
-        for paf_entry in f.readlines():
-            paf_entry = paf_entry.replace('\n', '')
-            paf_entry = paf_entry.split('\t')
-            paf_entry_sanitised = [int(x) if x.isdigit() else x for x in paf_entry]
-            paf_entry_sanitised[0] = str(paf_entry_sanitised[0])
-            paf_entry_sanitised[5] = str(paf_entry_sanitised[5])
-            overlaps.append(Overlap(*paf_entry_sanitised[:12]))
-    return overlaps
+    return {
+        tag: _conv_type(val, SAM_TYPES.get(type_))
+        for tag, type_, val in (x.split(":") for x in tags)
+    }
 
 
-def write_paf(overlaps, filepath):
-    """Writes a PAF file for sequences.
+def _conv_type(s, func):
+    """Generic converter, to change strings to other types
 
-    Args:
-      filepath (str): Path to write PAF file too.
-      overlaps: a list of overlaps, named tuple objects with the following fields:
+    Parameters
+    ----------
+    s : str
+        A string that represents another type
+    func : function
+        Function to apply to s, should take a single parameter
 
-        * query_sequence_name
-        * query_sequence_length
-        * query_start
-        * query_end
-        * relative_strand
-        * target_sequence_name
-        * target_sequence_length
-        * target_start
-        * target_end
-        * num_residue_matches
-        * alignment_block_length
-        * mapping_quality
-
-    The [PAF format](https://github.com/lh3/miniasm/blob/master/PAF.md) is defined as follows:
-
-    Col Type    Description
-    1	string	Query sequence name
-    2	int	Query sequence length
-    3	int	Query start (0-based; BED-like; closed)
-    4	int	Query end (0-based; BED-like; open)
-    5	char	Relative strand: "+" or "-"
-    6	string	Target sequence name
-    7	int	Target sequence length
-    8	int	Target start on original strand (0-based)
-    9	int	Target end on original strand (0-based)
-    10	int	Number of residue matches
-    11	int	Alignment block length
-    12	int	Mapping quality (0-255; 255 for missing)
+    Returns
+    -------
+    The type of func, otherwise str
     """
-    with open(filepath, 'w') as f:
-        for overlap in overlaps:
-            paf_string = "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n".format(
-                overlap.query_sequence_name,
-                overlap.query_sequence_length,
-                overlap.query_start,
-                overlap.query_end,
-                overlap.relative_strand,
-                overlap.target_sequence_name,
-                overlap.target_sequence_length,
-                overlap.target_start,
-                overlap.target_end,
-                overlap.num_residue_matches,
-                overlap.alignment_block_length,
-                overlap.mapping_quality
-            )
-            f.write(paf_string)
+    if func is not None:
+        try:
+            return func(s)
+        except ValueError:
+            return s
+    return s
+
+
+def _tags_to_str(tags):
+    """Convert dict of SAM style tags to a string
+
+    Parameters
+    ----------
+    tags : dict
+        Dictionary of SAM style tags, keys should match those given in minimap2
+        docs: https://lh3.github.io/minimap2/minimap2.html
+
+    Returns
+    -------
+    str
+        Tab separated string of tags in format tag:type:value
+    """
+    return "\t".join("{}:{}:{}".format(k, REV_TYPES.get(k), v) for k, v in tags.items())
+
+
+def _record_to_str(rec):
+    """Covert PAF namedtuple to string for output
+
+    Parameters
+    ----------
+    rec : namedtuple
+        PAF entry namedtuple, generated by read_paf
+
+    Returns
+    -------
+    str
+        Tab separated string of PAF fields
+    """
+    return "\t".join([str(x) for x in rec[:-1]]) + "\t" + _tags_to_str(rec[-1]) + "\n"
+
+
+def _paf_generator(file_like, fields=None):
+    """Generator that returns namedtuples from a PAF file
+
+    Parameters
+    ----------
+    file_like : file-like object
+        Object with a read() method, such as a sys.stdin, file handler or io.StringIO.
+    fields : list
+        List of field names to use for records, must have 13 entries.
+
+    Yields
+    ------
+    namedtuple
+        Correctly formatted PAF record and a dict of extra tags
+
+    Raises
+    ------
+    ValueError
+    """
+    if len(fields) != 13:
+        raise ValueError("{} fields provided, expected 13".format(len(fields)))
+    PAF = namedtuple("PAF", fields)
+    for rec in file_like:
+        rec = rec.strip()
+        if not rec:
+            continue
+        rec = rec.split("\t")
+        yield PAF(*(int(x) if x.isdigit() else x for x in rec[:12]), _parse_tags(rec[12:]))
+
+
+def read_paf(filepath, fields=None):
+    """Read a minimap2 PAF file as a list
+
+    Parameters
+    ----------
+    filepath : str
+        Path to read PAF file from
+    fields : list
+        List of field names to use for records, must have 13 entries. Default:
+        ["query_name", "query_length", "query_start", "query_end", "strand",
+        "target_name", "target_length", "target_start", "target_end",
+        "residue_matches", "alignment_block_length", "mapping_quality", "tags"]
+
+    Returns
+    -------
+    list
+    """
+    if fields is None:
+        fields = [
+            "query_name",
+            "query_length",
+            "query_start",
+            "query_end",
+            "strand",
+            "target_name",
+            "target_length",
+            "target_start",
+            "target_end",
+            "residue_matches",
+            "alignment_block_length",
+            "mapping_quality",
+            "tags",
+        ]
+
+    with open(filepath, "r") as fh:
+        return list(_paf_generator(fh, fields=fields))
+
+
+def write_paf(records, filepath):
+    """Write a PAF file
+
+    Parameters
+    ----------
+    records : iterable
+        List of PAF named tuples from read_paf
+    filepath : str
+        Path to write PAF file to
+
+    Returns
+    -------
+    None
+    """
+    with open(filepath, "w") as fh:
+        for rec in records:
+            fh.write(_record_to_str(rec))
