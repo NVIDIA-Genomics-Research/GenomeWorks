@@ -164,7 +164,6 @@ int main(int argc, char* argv[])
                                                      const std::uint64_t k,
                                                      const std::uint64_t w,
                                                      int device_id) {
-
         std::pair<uint64_t, uint64_t> key;
         key.first  = query_start_index;
         key.second = query_end_index;
@@ -191,7 +190,6 @@ int main(int argc, char* argv[])
                            const claragenomics::cudamapper::read_id_t query_start_index,
                            const claragenomics::cudamapper::read_id_t query_end_index,
                            int device_id) {
-
         std::pair<uint64_t, uint64_t> key;
         key.first  = query_start_index;
         key.second = query_end_index;
@@ -200,7 +198,6 @@ int main(int argc, char* argv[])
     };
 
     auto compute_overlaps = [&](query_target_range query_target_range, int device_id) {
-
         std::vector<std::shared_ptr<std::future<void>>> print_pafs_futures;
 
         cudaSetDevice(device_id);
@@ -237,7 +234,7 @@ int main(int argc, char* argv[])
                 CGA_NVTX_RANGE(profiler, "generate_matcher");
                 auto start_time = std::chrono::high_resolution_clock::now();
                 matcher         = claragenomics::cudamapper::Matcher::create_matcher(*query_index,
-                                                                                     *target_index);
+                                                                             *target_index);
             }
             {
 
