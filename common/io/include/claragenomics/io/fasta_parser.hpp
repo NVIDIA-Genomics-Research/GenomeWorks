@@ -44,14 +44,14 @@ public:
     ///           an error is thrown.
     ///
     /// \return A FastaSequence object describing the entry.
-    virtual FastaSequence get_sequence_by_id(int32_t id) = 0;
+    virtual FastaSequence get_sequence_by_id(int32_t id) const = 0;
 
     /// \brief Fetch an entry from the FASTA file by name.
     /// \param name Name of the sequence in FASTA file. If there is no entry
     ///             by that name, an error is thrown.
     ///
     /// \return A FastaSequence object describing the entry.
-    virtual FastaSequence get_sequence_by_name(const std::string& name) = 0;
+    virtual FastaSequence get_sequence_by_name(const std::string& name) const = 0;
 };
 
 /// \brief A builder function that returns a FASA parser object.

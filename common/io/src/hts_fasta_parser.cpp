@@ -60,7 +60,7 @@ int32_t FastaParserHTS::get_num_seqences() const
     return num_seqequences_;
 }
 
-FastaSequence FastaParserHTS::get_sequence_by_id(int32_t i)
+FastaSequence FastaParserHTS::get_sequence_by_id(int32_t i) const
 {
     std::string str_name = "";
     {
@@ -76,7 +76,7 @@ FastaSequence FastaParserHTS::get_sequence_by_id(int32_t i)
     return get_sequence_by_name(str_name);
 }
 
-FastaSequence FastaParserHTS::get_sequence_by_name(const std::string& name)
+FastaSequence FastaParserHTS::get_sequence_by_name(const std::string& name) const
 {
 
     FastaSequence s{};
