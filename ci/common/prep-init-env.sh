@@ -30,22 +30,20 @@ conda config --set ssl_verify False
 logger "Check Python version..."
 python --version
 
-# Conda add custom packages for ClaraGenomicsAnalysis CI
-logger "Conda install ClaraGenomicsAnalysis custom packages"
-conda install \
-    -c conda-forge \
-    -c sarcasm \
-    -c bioconda \
-    doxygen \
-    clang-format \
-    ninja \
-    minimap2 \
-    miniasm \
-    racon \
-    cmake \
-    htslib
 
-# Update LD_LIBRARY_PATH
+# Conda add custom packages for ClaraGenomicsAnalysis CI
+# Split setup into several steps to prevent the 15 minutes no
+# output to stdout timeout limit in CI jobs when solving environment
+logger "Conda install ClaraGenomicsAnalysis custom packages - clang-format"
+conda install --override-channels -c sarcasm clang-format
+
+logger "Conda install ClaraGenomicsAnalysis custom packages - doxygen ninja cmake"
+conda install --override-channels -c conda-forge doxygen ninja cmake
+
+logger "Conda install ClaraGenomicsAnalysis custom packages - minimap2 miniasm racon htslib"
+conda install --override-channels -c bioconda minimap2 miniasm racon htslib
+
+logger "Update LD_LIBRARY_PATH"
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
 
 # Show currentl installed paths
