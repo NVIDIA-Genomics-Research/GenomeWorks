@@ -46,13 +46,13 @@ int main(int argc, char* argv[])
 {
     claragenomics::logging::Init();
 
-    uint32_t k               = 15;
-    uint32_t w               = 15;
+    uint32_t k                     = 15;
+    uint32_t w                     = 15;
     std::int32_t index_size        = 10000;
     std::int32_t num_devices       = 1;
     std::int32_t target_index_size = 10000;
     std::int32_t max_cache_size    = 100;
-    std::string optstring    = "t:i:k:w:h:d:c:";
+    std::string optstring          = "t:i:k:w:h:d:c:";
     uint32_t argument;
     while ((argument = getopt_long(argc, argv, optstring.c_str(), options, nullptr)) != -1)
     {
@@ -119,7 +119,6 @@ int main(int argc, char* argv[])
     // Data structure for holding overlaps to be written out
     std::mutex overlaps_writer_mtx;
     std::mutex index_cache_mtx;
-
 
     struct query_target_range
     {
@@ -268,15 +267,17 @@ int main(int argc, char* argv[])
                 std::vector<claragenomics::cudamapper::Overlap> overlaps_to_add;
                 overlapper.get_overlaps(overlaps_to_add, matcher->anchors(), *query_index, *target_index);
 
-                std::shared_ptr<std::future<void>> f = std::make_shared<std::future<void>>(std::async(std::launch::async, [&overlaps_writer_mtx, overlaps_to_add](std::vector<claragenomics::cudamapper::Overlap> overlaps) {
-                    std::vector<claragenomics::cudamapper::Overlap> filtered_overlaps;
-                    claragenomics::cudamapper::Overlapper::filter_overlaps(filtered_overlaps, overlaps_to_add);
-                    overlaps_writer_mtx.lock();
-                    claragenomics::cudamapper::Overlapper::print_paf(filtered_overlaps);
-                    overlaps_writer_mtx.unlock();
-                    }, overlaps_to_add));
+                std::shared_ptr<std::future<void>> write_and_filter_overlaps_future = std::make_shared<std::future<void>>(std::async(std::launch::async,
+                                                                                                                                     [&overlaps_writer_mtx, overlaps_to_add](std::vector<claragenomics::cudamapper::Overlap> overlaps) {
+                                                                                                                                         std::vector<claragenomics::cudamapper::Overlap> filtered_overlaps;
+                                                                                                                                         claragenomics::cudamapper::Overlapper::filter_overlaps(filtered_overlaps, overlaps_to_add);
+                                                                                                                                         overlaps_writer_mtx.lock();
+                                                                                                                                         claragenomics::cudamapper::Overlapper::print_paf(filtered_overlaps);
+                                                                                                                                         overlaps_writer_mtx.unlock();
+                                                                                                                                     },
+                                                                                                                                     overlaps_to_add));
 
-                print_pafs_futures.push_back(f);
+                print_pafs_futures.push_back(write_and_filter_overlaps_future);
             }
         }
 
@@ -284,7 +285,6 @@ int main(int argc, char* argv[])
         evict_index(query_start_index, query_end_index, device_id);
         return print_pafs_futures;
     };
-
 
     // The application (File parsing, index generation, overlap generation etc) is all launched from here.
     // The main application works as follows:
