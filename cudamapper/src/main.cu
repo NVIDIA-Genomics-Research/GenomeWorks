@@ -163,7 +163,8 @@ int main(int argc, char* argv[])
                                                      const claragenomics::cudamapper::read_id_t end_index,
                                                      const std::uint64_t k,
                                                      const std::uint64_t w,
-                                                     const int device_id) {
+                                                     const int device_id,
+                                                     const bool all_to_all) {
         std::pair<uint64_t, uint64_t> key;
         key.first  = start_index;
         key.second = end_index;
@@ -178,7 +179,7 @@ int main(int argc, char* argv[])
         {
             index = std::move(claragenomics::cudamapper::Index::create_index(parser, start_index, end_index, k, w));
 
-            if (index_cache[device_id].size() < max_cache_size)
+            if (index_cache[device_id].size() < max_cache_size && all_to_all)
             {
                 index_cache[device_id][key] = index;
             }
@@ -215,7 +216,7 @@ int main(int argc, char* argv[])
             CGA_NVTX_RANGE(profiler, "generate_query_index");
             auto start_time = std::chrono::high_resolution_clock::now();
 
-            query_index = get_index(*query_parser, query_start_index, query_end_index, k, w, device_id);
+            query_index = get_index(*query_parser, query_start_index, query_end_index, k, w, device_id, all_to_all);
         }
 
         //Main loop
@@ -228,7 +229,7 @@ int main(int argc, char* argv[])
             {
                 CGA_NVTX_RANGE(profiler, "generate_target_index");
                 auto start_time = std::chrono::high_resolution_clock::now();
-                target_index    = get_index(*target_parser, target_start_index, target_end_index, k, w, device_id);
+                target_index    = get_index(*target_parser, target_start_index, target_end_index, k, w, device_id, all_to_all);
             }
             {
                 CGA_NVTX_RANGE(profiler, "generate_matcher");
