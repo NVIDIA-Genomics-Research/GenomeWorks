@@ -118,6 +118,8 @@ int main(int argc, char* argv[])
 
     // Data structure for holding overlaps to be written out
     std::mutex overlaps_writer_mtx;
+    std::mutex index_cache_mtx;
+
 
     struct query_target_range
     {
@@ -158,13 +160,14 @@ int main(int argc, char* argv[])
     // This is a per-device cache, if it has the index it will return it, if not it will generate it, store and return it.
     std::vector<std::map<std::pair<uint64_t, uint64_t>, std::shared_ptr<claragenomics::cudamapper::Index>>> index_cache(num_devices);
 
-    auto get_index = [&index_cache, max_cache_size](claragenomics::io::FastaParser& parser,
-                                                     const claragenomics::cudamapper::read_id_t start_index,
-                                                     const claragenomics::cudamapper::read_id_t end_index,
-                                                     const std::uint64_t k,
-                                                     const std::uint64_t w,
-                                                     const int device_id,
-                                                     const bool all_to_all) {
+    auto get_index = [&index_cache, &index_cache_mtx, max_cache_size](claragenomics::io::FastaParser& parser,
+                                                                      const claragenomics::cudamapper::read_id_t start_index,
+                                                                      const claragenomics::cudamapper::read_id_t end_index,
+                                                                      const std::uint64_t k,
+                                                                      const std::uint64_t w,
+                                                                      const int device_id,
+                                                                      const bool all_to_all) {
+        CGA_NVTX_RANGE(profiler, "get index");
         std::pair<uint64_t, uint64_t> key;
         key.first  = start_index;
         key.second = end_index;
@@ -180,9 +183,13 @@ int main(int argc, char* argv[])
             index = std::move(claragenomics::cudamapper::Index::create_index(parser, start_index, end_index, k, w));
 
             // If in all-to-all mode, put this query in the cache for later use.
+            // Cache eviction is handled later on by the calling thread
+            // using the evict_index function.
             if (index_cache[device_id].size() < max_cache_size && all_to_all)
             {
+                index_cache_mtx.lock();
                 index_cache[device_id][key] = index;
+                index_cache_mtx.unlock();
             }
         }
         return index;
@@ -200,18 +207,19 @@ int main(int argc, char* argv[])
     // Round 2
     // Query: [1000-1999] - Use cache entry (from previous use when now query was a target)
     // Etc..
-    auto evict_index = [&index_cache](
-                           const claragenomics::cudamapper::read_id_t query_start_index,
-                           const claragenomics::cudamapper::read_id_t query_end_index,
-                           const int device_id) {
+    auto evict_index = [&index_cache, &index_cache_mtx](const claragenomics::cudamapper::read_id_t query_start_index,
+                                                        const claragenomics::cudamapper::read_id_t query_end_index,
+                                                        const int device_id) {
         std::pair<uint64_t, uint64_t> key;
         key.first  = query_start_index;
         key.second = query_end_index;
 
+        index_cache_mtx.lock();
         index_cache[device_id].erase(key);
+        index_cache_mtx.unlock();
     };
 
-    auto compute_overlaps = [&](query_target_range query_target_range, int device_id) {
+    auto compute_overlaps = [&](const query_target_range query_target_range, const int device_id) {
         std::vector<std::shared_ptr<std::future<void>>> print_pafs_futures;
 
         cudaSetDevice(device_id);
@@ -233,7 +241,7 @@ int main(int argc, char* argv[])
         }
 
         //Main loop
-        for (auto target_range : query_target_range.target_ranges)
+        for (const auto target_range : query_target_range.target_ranges)
         {
 
             auto target_start_index = target_range.first;
@@ -284,7 +292,7 @@ int main(int argc, char* argv[])
     std::vector<std::future<std::vector<std::shared_ptr<std::future<void>>>>> overlap_futures;
     for (int i = 0; i < query_target_ranges.size(); i++)
     {
-        // enqueue and store future
+        // assign chunk pairs (Query, target) to device
         auto query_target_range = query_target_ranges[i];
         auto device_id          = i % num_devices;
         overlap_futures.push_back(overlap_pool.enqueue(compute_overlaps, query_target_range, device_id));
