@@ -48,10 +48,10 @@ int main(int argc, char* argv[])
 
     uint32_t k               = 15;
     uint32_t w               = 15;
-    size_t index_size        = 10000;
-    size_t num_devices       = 1;
-    size_t target_index_size = 10000;
-    size_t max_cache_size    = 100;
+    std::int32_t index_size        = 10000;
+    std::int32_t num_devices       = 1;
+    std::int32_t target_index_size = 10000;
+    std::int32_t max_cache_size    = 100;
     std::string optstring    = "t:i:k:w:h:d:c:";
     uint32_t argument;
     while ((argument = getopt_long(argc, argv, optstring.c_str(), options, nullptr)) != -1)
@@ -131,7 +131,7 @@ int main(int argc, char* argv[])
     for (std::int32_t query_start_index = 0; query_start_index < queries; query_start_index += index_size)
     {
 
-        std::int32_t query_end_index = std::min(query_start_index + index_size, static_cast<size_t>(queries));
+        std::int32_t query_end_index = std::min(query_start_index + index_size, queries);
 
         query_target_range q;
         q.query_range = std::make_pair(query_start_index, query_end_index);
@@ -148,7 +148,7 @@ int main(int argc, char* argv[])
         for (; target_start_index < targets; target_start_index += target_index_size)
         {
             std::int32_t target_end_index = std::min(target_start_index + target_index_size,
-                                                     static_cast<size_t>(targets));
+                                                     targets);
             q.target_ranges.push_back(std::make_pair(target_start_index, target_end_index));
         }
 
