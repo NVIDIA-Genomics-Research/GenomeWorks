@@ -285,10 +285,17 @@ int main(int argc, char* argv[])
         return print_pafs_futures;
     };
 
-    // create thread pool to compute overlaps. One worker thread per device.
+
+    // The application (File parsing, index generation, overlap generation etc) is all launched from here.
+    // The main application works as follows:
+    // 1. Generate a thread pool with one worker thread per device (GPU).
+    // 2. For each worker, assign a query-target-range, this is list of query reads and a *list of lists of target reads* to match against.
+    // 3. Each worker returns a vector of futures (since overlap writing is dispatched to an async thread on host). All futures are waited for before the main application exits.
+
+    // 1. create thread pool to compute overlaps. One worker thread per device.
     ThreadPool overlap_pool(num_devices);
 
-    // Enqueue the query-target ranges which need to be computed, each thread returns a vector of futures for the threads it launches
+    // 2. Enqueue the query-target ranges which need to be computed, each thread returns a vector of futures for the threads it launches
     std::vector<std::future<std::vector<std::shared_ptr<std::future<void>>>>> overlap_futures;
     for (int i = 0; i < query_target_ranges.size(); i++)
     {
@@ -298,11 +305,12 @@ int main(int argc, char* argv[])
         overlap_futures.push_back(overlap_pool.enqueue(compute_overlaps, query_target_range, device_id));
     }
 
-    for (auto& f : overlap_futures)
+    // 3. Wait for all futures.
+    for (auto& overlap_future : overlap_futures)
     {
-        for (auto a : f.get())
+        for (auto query_target_pair_overlaps : overlap_future.get())
         {
-            a->wait();
+            query_target_pair_overlaps->wait();
         }
     }
 
