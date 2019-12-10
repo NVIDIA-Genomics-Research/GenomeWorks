@@ -14,14 +14,7 @@
 ######################################
 set -e
 
-# Logger function for build status output
-function logger() {
-  echo -e "\n>>>> $@\n"
-}
-
-################################################################################
-# Init
-################################################################################
+START_TIME=$(date +%s)
 
 export PATH=/conda/bin:/usr/local/cuda/bin:$PATH
 PARALLEL_LEVEL=4
@@ -29,9 +22,16 @@ PARALLEL_LEVEL=4
 # Set home to the job's workspace
 export HOME=$WORKSPACE
 
-cd ${WORKSPACE}
+cd "${WORKSPACE}"
 
-source ci/common/prep-init-env.sh ${WORKSPACE}
+################################################################################
+# Init
+################################################################################
+
+source ci/common/logger.sh
+
+logger "Calling prep-init-env..."
+source ci/common/prep-init-env.sh "${WORKSPACE}" "${CONDA_ENV_NAME}"
 
 ################################################################################
 # SDK build/test
@@ -39,16 +39,22 @@ source ci/common/prep-init-env.sh ${WORKSPACE}
 
 logger "Build SDK in Release mode..."
 CMAKE_COMMON_VARIABLES="-DCMAKE_BUILD_TYPE=Release"
-source ci/common/build-test-sdk.sh ${WORKSPACE} ${CMAKE_COMMON_VARIABLES} ${PARALLEL_LEVEL} ${TEST_ON_GPU}
+source ci/common/build-test-sdk.sh "${WORKSPACE}" ${CMAKE_COMMON_VARIABLES} ${PARALLEL_LEVEL} ${TEST_ON_GPU}
 
-cd ${WORKSPACE}
-rm -rf ${WORKSPACE}/build
+cd "${WORKSPACE}"
+rm -rf "${WORKSPACE}"/build
 
 logger "Build SDK in Debug mode..."
 CMAKE_COMMON_VARIABLES="-DCMAKE_BUILD_TYPE=Debug"
-source ci/common/build-test-sdk.sh ${WORKSPACE} ${CMAKE_COMMON_VARIABLES} ${PARALLEL_LEVEL} ${TEST_ON_GPU}
+source ci/common/build-test-sdk.sh "${WORKSPACE}" ${CMAKE_COMMON_VARIABLES} ${PARALLEL_LEVEL} ${TEST_ON_GPU}
 
-cd ${WORKSPACE}
-source ci/common/test-pyclaragenomics.sh $WORKSPACE/pyclaragenomics
+rm -rf "${WORKSPACE}"/build
 
-rm -rf ${WORKSPACE}/build
+################################################################################
+# Pyclaragenomics tests
+################################################################################
+logger "Build Pyclaragenomics..."
+cd "${WORKSPACE}"
+source ci/common/test-pyclaragenomics.sh "${WORKSPACE}"/pyclaragenomics
+
+logger "Done..."
