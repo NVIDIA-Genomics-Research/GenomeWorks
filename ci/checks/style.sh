@@ -40,7 +40,7 @@ logger "Run Copyright header check..."
 
 # Run style check
 logger "Run Python formatting check..."
-python -m pip install -r ./pyclaragenomics/requirements.txt
+python -m pip install flake8
 flake8 pyclaragenomics/
 
 logger "Run C++ formatting check..."
