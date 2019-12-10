@@ -158,15 +158,15 @@ int main(int argc, char* argv[])
     // This is a per-device cache, if it has the index it will return it, if not it will generate it, store and return it.
     std::vector<std::map<std::pair<uint64_t, uint64_t>, std::shared_ptr<claragenomics::cudamapper::Index>>> index_cache(num_devices);
 
-    auto get_index = [&index_cache, &max_cache_size](claragenomics::io::FastaParser& parser,
-                                                     const claragenomics::cudamapper::read_id_t query_start_index,
-                                                     const claragenomics::cudamapper::read_id_t query_end_index,
+    auto get_index = [&index_cache, max_cache_size](claragenomics::io::FastaParser& parser,
+                                                     const claragenomics::cudamapper::read_id_t start_index,
+                                                     const claragenomics::cudamapper::read_id_t end_index,
                                                      const std::uint64_t k,
                                                      const std::uint64_t w,
-                                                     int device_id) {
+                                                     const int device_id) {
         std::pair<uint64_t, uint64_t> key;
-        key.first  = query_start_index;
-        key.second = query_end_index;
+        key.first  = start_index;
+        key.second = end_index;
 
         std::shared_ptr<claragenomics::cudamapper::Index> index;
 
@@ -176,7 +176,7 @@ int main(int argc, char* argv[])
         }
         else
         {
-            index = std::move(claragenomics::cudamapper::Index::create_index(parser, query_start_index, query_end_index, k, w));
+            index = std::move(claragenomics::cudamapper::Index::create_index(parser, start_index, end_index, k, w));
 
             if (index_cache[device_id].size() < max_cache_size)
             {
@@ -252,12 +252,12 @@ int main(int argc, char* argv[])
                     overlaps_writer_mtx.lock();
                     claragenomics::cudamapper::Overlapper::print_paf(filtered_overlaps);
                     overlaps_writer_mtx.unlock();
-                },
-                                                                                                      overlaps_to_add));
+                    }, overlaps_to_add));
 
                 print_pafs_futures.push_back(f);
             }
         }
+
         //Query will no longer be needed on device, remove it from the cache
         evict_index(query_start_index, query_end_index, device_id);
         return print_pafs_futures;
