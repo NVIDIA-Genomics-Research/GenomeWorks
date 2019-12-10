@@ -179,6 +179,7 @@ int main(int argc, char* argv[])
         {
             index = std::move(claragenomics::cudamapper::Index::create_index(parser, start_index, end_index, k, w));
 
+            // If in all-to-all mode, put this query in the cache for later use.
             if (index_cache[device_id].size() < max_cache_size && all_to_all)
             {
                 index_cache[device_id][key] = index;
@@ -187,10 +188,22 @@ int main(int argc, char* argv[])
         return index;
     };
 
+    // When performing all-to-all mapping, indices are instantitated as start-end-ranges in the reads.
+    // As such, once a query index has been used it will not be needed again. For example, parsing ranges
+    // [0-999], [1000-1999], [2000-2999], the caching/eviction would be as follows:
+    //
+    // Round 1
+    // Query: [0-999] - Enter cache
+    // Target: [1000-1999] - Enter cache
+    // Target: [1999 - 2999] - Enter cache
+    // Evict [0-999]
+    // Round 2
+    // Query: [1000-1999] - Use cache entry (from previous use when now query was a target)
+    // Etc..
     auto evict_index = [&index_cache](
                            const claragenomics::cudamapper::read_id_t query_start_index,
                            const claragenomics::cudamapper::read_id_t query_end_index,
-                           int device_id) {
+                           const int device_id) {
         std::pair<uint64_t, uint64_t> key;
         key.first  = query_start_index;
         key.second = query_end_index;
