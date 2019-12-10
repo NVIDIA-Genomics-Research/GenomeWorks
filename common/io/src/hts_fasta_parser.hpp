@@ -31,13 +31,13 @@ public:
 
     int32_t get_num_seqences() const override;
 
-    FastaSequence get_sequence_by_id(int32_t i) override;
+    FastaSequence get_sequence_by_id(int32_t i) const override;
 
-    FastaSequence get_sequence_by_name(const std::string&) override;
+    FastaSequence get_sequence_by_name(const std::string&) const override;
 
 private:
     faidx_t* fasta_index_;
-    std::mutex index_mutex_;
+    mutable std::mutex index_mutex_;
     int32_t num_seqequences_;
 };
 
