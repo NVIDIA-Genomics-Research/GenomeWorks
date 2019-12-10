@@ -165,7 +165,7 @@ int main(int argc, char* argv[])
                                                                       const std::uint64_t k,
                                                                       const std::uint64_t w,
                                                                       const int device_id,
-                                                                      const bool all_to_all) {
+                                                                      const bool allow_cache_index) {
         CGA_NVTX_RANGE(profiler, "get index");
         std::pair<uint64_t, uint64_t> key;
         key.first  = start_index;
@@ -184,7 +184,7 @@ int main(int argc, char* argv[])
             // If in all-to-all mode, put this query in the cache for later use.
             // Cache eviction is handled later on by the calling thread
             // using the evict_index function.
-            if (index_cache[device_id].size() < max_cache_size && all_to_all)
+            if (index_cache[device_id].size() < max_cache_size && allow_cache_index)
             {
                 index_cache_mtx.lock();
                 index_cache[device_id][key] = index;
@@ -249,7 +249,7 @@ int main(int argc, char* argv[])
             {
                 CGA_NVTX_RANGE(profiler, "generate_target_index");
                 auto start_time = std::chrono::high_resolution_clock::now();
-                target_index    = get_index(*target_parser, target_start_index, target_end_index, k, w, device_id, all_to_all);
+                target_index    = get_index(*target_parser, target_start_index, target_end_index, k, w, device_id, true);
             }
             {
                 CGA_NVTX_RANGE(profiler, "generate_matcher");
@@ -281,8 +281,12 @@ int main(int argc, char* argv[])
             }
         }
 
-        //Query will no longer be needed on device, remove it from the cache
-        evict_index(query_start_index, query_end_index, device_id);
+        // If all-to-all mapping query will no longer be needed on device, remove it from the cache
+        if (all_to_all)
+        {
+            evict_index(query_start_index, query_end_index, device_id);
+        }
+
         return print_pafs_futures;
     };
 
