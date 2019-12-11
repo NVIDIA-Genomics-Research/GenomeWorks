@@ -697,6 +697,8 @@ void IndexGPU<SketchElementImpl>::generate_index(const io::FastaParser& parser,
 
     // copy the data to member functions (depending on the interface desing these copies might not be needed)
     representations_d_.resize(representations_d.size());
+    if (representations_d_.capacity() > representations_d_.size())
+        representations_d_.shrink_to_fit();
     thrust::copy(thrust::device,
                  representations_d.data(),
                  representations_d.data() + representations_d.size(),
@@ -704,8 +706,14 @@ void IndexGPU<SketchElementImpl>::generate_index(const io::FastaParser& parser,
     representations_d.free();
 
     read_ids_d_.resize(representations_d_.size());
+    if (read_ids_d_.capacity() > read_ids_d_.size())
+        read_ids_d_.shrink_to_fit();
     positions_in_reads_d_.resize(representations_d_.size());
+    if (positions_in_reads_d_.capacity() > positions_in_reads_d_.size())
+        positions_in_reads_d_.shrink_to_fit();
     directions_of_reads_d_.resize(representations_d_.size());
+    if (directions_of_reads_d_.capacity() > directions_of_reads_d_.size())
+        directions_of_reads_d_.shrink_to_fit();
 
     const std::uint32_t threads = 256;
     const std::uint32_t blocks  = ceiling_divide<int64_t>(representations_d_.size(), threads);

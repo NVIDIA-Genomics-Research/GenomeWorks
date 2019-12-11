@@ -55,7 +55,11 @@ void find_first_occurrences_of_representations(thrust::device_vector<representat
     const std::uint64_t number_of_unique_representations = representation_index_mask_d.back(); // D2H copy
 
     first_occurrence_index_d.resize(number_of_unique_representations + 1); // <- +1 for the additional element
+    if (first_occurrence_index_d.capacity() > first_occurrence_index_d.size())
+        first_occurrence_index_d.shrink_to_fit();
     unique_representations_d.resize(number_of_unique_representations);
+    if (unique_representations_d.capacity() > unique_representations_d.size())
+        unique_representations_d.shrink_to_fit();
 
     find_first_occurrences_of_representations_kernel<<<number_of_blocks, number_of_threads>>>(representation_index_mask_d.data().get(),
                                                                                               input_representations_d.data().get(),
