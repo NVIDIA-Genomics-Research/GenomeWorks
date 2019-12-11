@@ -256,11 +256,11 @@ int main(int argc, char* argv[])
 
             {
                 CGA_NVTX_RANGE(profiler, "generate_target_index");
-                target_index    = get_index(*target_parser, target_start_index, target_end_index, k, w, device_id, true);
+                target_index = get_index(*target_parser, target_start_index, target_end_index, k, w, device_id, true);
             }
             {
                 CGA_NVTX_RANGE(profiler, "generate_matcher");
-                matcher         = claragenomics::cudamapper::Matcher::create_matcher(*query_index,
+                matcher = claragenomics::cudamapper::Matcher::create_matcher(*query_index,
                                                                              *target_index);
             }
             {
