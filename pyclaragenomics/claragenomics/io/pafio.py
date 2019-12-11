@@ -130,9 +130,6 @@ def _paf_generator(file_like):
     Yields:
         namedtuple: Correctly formatted PAF record and a dict of extra tags.
 
-    Raises:
-        ValueError: If param `fields` does not have 13 entries.
-
     """
     for rec in file_like:
         rec = rec.strip()
@@ -144,7 +141,7 @@ def _paf_generator(file_like):
         )
 
 
-def read_paf(filepath, fields=None):
+def read_paf(filepath):
     """Read a minimap2 PAF file into a list
 
     Args:
@@ -155,7 +152,7 @@ def read_paf(filepath, fields=None):
 
     """
     with open(filepath, "r") as fh:
-        return list(_paf_generator(fh, fields=fields))
+        return list(_paf_generator(fh))
 
 
 def write_paf(records, filepath):
