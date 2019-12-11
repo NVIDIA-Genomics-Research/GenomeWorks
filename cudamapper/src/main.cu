@@ -47,12 +47,13 @@ int main(int argc, char* argv[])
 {
     claragenomics::logging::Init();
 
-    uint32_t k                     = 15;
-    uint32_t w                     = 15;
-    std::int32_t index_size        = 10000;
-    std::int32_t target_index_size = 10000;
-    std::int32_t num_devices       = 1;
-    double filtering_parameter     = 1.0;
+    uint32_t k                     = 15;    // k
+    uint32_t w                     = 15;    // w
+    std::int32_t num_devices       = 1;     // d
+    std::int32_t max_cache_size    = 100;   // c
+    std::int32_t index_size        = 10000; // i
+    std::int32_t target_index_size = 10000; // t
+    double filtering_parameter     = 1.0;   // F
     std::string optstring          = "k:w:d:c:i:t:F:h:";
     uint32_t argument;
     while ((argument = getopt_long(argc, argv, optstring.c_str(), options, nullptr)) != -1)
