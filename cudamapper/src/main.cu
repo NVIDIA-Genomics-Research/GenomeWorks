@@ -234,7 +234,6 @@ int main(int argc, char* argv[])
 
         {
             CGA_NVTX_RANGE(profiler, "generate_query_index");
-            auto start_time = std::chrono::high_resolution_clock::now();
 
             query_index = get_index(*query_parser, query_start_index, query_end_index, k, w, device_id, all_to_all);
         }
@@ -248,12 +247,10 @@ int main(int argc, char* argv[])
 
             {
                 CGA_NVTX_RANGE(profiler, "generate_target_index");
-                auto start_time = std::chrono::high_resolution_clock::now();
                 target_index    = get_index(*target_parser, target_start_index, target_end_index, k, w, device_id, true);
             }
             {
                 CGA_NVTX_RANGE(profiler, "generate_matcher");
-                auto start_time = std::chrono::high_resolution_clock::now();
                 matcher         = claragenomics::cudamapper::Matcher::create_matcher(*query_index,
                                                                              *target_index);
             }
@@ -261,7 +258,6 @@ int main(int argc, char* argv[])
 
                 claragenomics::cudamapper::OverlapperTriggered overlapper;
                 CGA_NVTX_RANGE(profiler, "generate_overlaps");
-                auto start_time = std::chrono::high_resolution_clock::now();
 
                 // Get unfiltered overlaps
                 std::vector<claragenomics::cudamapper::Overlap> overlaps_to_add;
