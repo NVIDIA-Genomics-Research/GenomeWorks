@@ -86,6 +86,7 @@ public:
     /// \param kmer_size k - the kmer length
     /// \param window_size w - the length of the sliding window used to find sketch elements  (i.e. the number of adjacent kmers in a window, adjacent = shifted by one basepair)
     /// \param hash_representations - if true, hash kmer representations
+    /// \param filtering_parameter - filter out all representations for which number_of_sketch_elements_with_that_representation/total_skech_elements >= filtering_parameter, filtering_parameter == 1.0 disables filtering
     /// \return instance of Index
     static std::unique_ptr<Index>
     create_index(const io::FastaParser& parser,
@@ -93,7 +94,8 @@ public:
                  const read_id_t past_the_last_read_id,
                  const std::uint64_t kmer_size,
                  const std::uint64_t window_size,
-                 const bool hash_representations = true);
+                 const bool hash_representations  = true,
+                 const double filtering_parameter = 1.0);
 };
 
 /// \}
