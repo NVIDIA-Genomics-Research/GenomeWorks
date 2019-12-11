@@ -13,6 +13,27 @@ Functions for PAF I/O
 from collections import namedtuple
 
 
+__all__ = ["read_paf", "write_paf", "Overlap"]
+
+
+FIELDS = [
+    "query_sequence_name",
+    "query_sequence_length",
+    "query_start",
+    "query_end",
+    "relative_strand",
+    "target_sequence_name",
+    "target_sequence_length",
+    "target_start",
+    "target_end",
+    "num_residue_matches",
+    "alignment_block_length",
+    "mapping_quality",
+    "tags"
+]
+
+Overlap = namedtuple("Overlap", FIELDS)
+
 SAM_TYPES = {"i": int, "A": str, "f": float, "Z": str}
 REV_TYPES = {
     "tp": "A",
@@ -99,14 +120,12 @@ def _record_to_str(rec):
     return "\t".join([str(x) for x in rec[:-1]]) + "\t" + _tags_to_str(rec[-1]) + "\n"
 
 
-def _paf_generator(file_like, fields=None):
+def _paf_generator(file_like):
     """Generator that yields namedtuples from a PAF file
 
     Args:
         file_like (file-like object): Generally an object with a read() method
             such as sys.stdin, a file handler from open() or io.StringIO.
-        fields (list): List of field names to use for records, must have 13
-            entries.
 
     Yields:
         namedtuple: Correctly formatted PAF record and a dict of extra tags.
@@ -115,15 +134,14 @@ def _paf_generator(file_like, fields=None):
         ValueError: If param `fields` does not have 13 entries.
 
     """
-    if len(fields) != 13:
-        raise ValueError("{} fields provided, expected 13".format(len(fields)))
-    PAF = namedtuple("PAF", fields)
     for rec in file_like:
         rec = rec.strip()
         if not rec:
             continue
         rec = rec.split("\t")
-        yield PAF(*(int(x) if x.isdigit() else x for x in rec[:12]), _parse_tags(rec[12:]))
+        yield Overlap(
+            *(int(x) if x.isdigit() else x for x in rec[:12]), _parse_tags(rec[12:])
+        )
 
 
 def read_paf(filepath, fields=None):
@@ -131,33 +149,11 @@ def read_paf(filepath, fields=None):
 
     Args:
         filepath (str): Path to read PAF file from
-        fields (list): List of fields to use for records, must have 13 entries.
-            Default: ["query_name", "query_length", "query_start", "query_end",
-                      "strand", "target_name", "target_length", "target_start",
-                      "target_end", "residue_matches", "alignment_block_length",
-                      "mapping_quality", "tags"]
 
     Returns:
         list: List of namedtuples
 
     """
-    if fields is None:
-        fields = [
-            "query_name",
-            "query_length",
-            "query_start",
-            "query_end",
-            "strand",
-            "target_name",
-            "target_length",
-            "target_start",
-            "target_end",
-            "residue_matches",
-            "alignment_block_length",
-            "mapping_quality",
-            "tags",
-        ]
-
     with open(filepath, "r") as fh:
         return list(_paf_generator(fh, fields=fields))
 
