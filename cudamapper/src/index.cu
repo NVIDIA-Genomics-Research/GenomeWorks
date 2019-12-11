@@ -23,7 +23,8 @@ std::unique_ptr<Index> Index::create_index(const io::FastaParser& parser,
                                            const read_id_t past_the_last_read_id,
                                            const std::uint64_t kmer_size,
                                            const std::uint64_t window_size,
-                                           const bool hash_representations)
+                                           const bool hash_representations,
+                                           const double filtering_parameter)
 {
     CGA_NVTX_RANGE(profiler, "create_index");
     return std::make_unique<IndexGPU<Minimizer>>(parser,
@@ -31,7 +32,8 @@ std::unique_ptr<Index> Index::create_index(const io::FastaParser& parser,
                                                  past_the_last_read_id,
                                                  kmer_size,
                                                  window_size,
-                                                 hash_representations);
+                                                 hash_representations,
+                                                 filtering_parameter);
 }
 
 } // namespace cudamapper
