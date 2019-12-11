@@ -14,38 +14,40 @@
 ######################################
 set -e
 
-# Logger function for build status output
-function logger() {
-  echo -e "\n>>>> $@\n"
-}
+START_TIME=$(date +%s)
 
-################################################################################
-# Init
-################################################################################
-
-export TEST_PYCLARAGENOMICSANALYSIS=1
 export PATH=/conda/bin:/usr/local/cuda/bin:$PATH
 PARALLEL_LEVEL=4
 
 # Set home to the job's workspace
 export HOME=$WORKSPACE
 
-cd ${WORKSPACE}
+cd "${WORKSPACE}"
 
-source ci/common/prep-init-env.sh ${WORKSPACE}
+################################################################################
+# Init
+################################################################################
 
-CMAKE_COMMON_VARIABLES="-DCMAKE_BUILD_TYPE=Release"
+source ci/common/logger.sh
+
+logger "Calling prep-init-env..."
+source ci/common/prep-init-env.sh "${WORKSPACE}" "${CONDA_ENV_NAME}"
 
 ################################################################################
 # SDK build/test
 ################################################################################
 
 logger "Build SDK..."
-source ci/common/build-test-sdk.sh ${WORKSPACE} ${CMAKE_COMMON_VARIABLES} ${PARALLEL_LEVEL} 0
+CMAKE_COMMON_VARIABLES="-DCMAKE_BUILD_TYPE=Release"
+source ci/common/build-test-sdk.sh "${WORKSPACE}" ${CMAKE_COMMON_VARIABLES} ${PARALLEL_LEVEL} 0
+
+rm -rf "${WORKSPACE}"/build
 
 ################################################################################
 # Pyclaragenomics tests
 ################################################################################
+logger "Build Pyclaragenomics..."
+cd "${WORKSPACE}"
+source ci/common/test-pyclaragenomics.sh "${WORKSPACE}"/pyclaragenomics
 
-cd ${WORKSPACE}
-source ci/common/test-pyclaragenomics.sh $WORKSPACE/pyclaragenomics
+logger "Done..."

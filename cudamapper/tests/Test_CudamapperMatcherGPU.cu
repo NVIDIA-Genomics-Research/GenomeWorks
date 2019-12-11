@@ -338,5 +338,33 @@ TEST(TestCudamapperMatcherGPU, OneReadOneMinimizer)
     ASSERT_EQ(get_size(anchors), 1);
 }
 
+TEST(TestCudamapperMatcherGPU, AtLeastOneIndexEmpty)
+{
+    std::unique_ptr<io::FastaParser> parser = io::create_fasta_parser(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/gatt.fasta");
+    std::unique_ptr<Index> index_full       = Index::create_index(*parser, 0, parser->get_num_seqences(), 4, 1);
+    std::unique_ptr<Index> index_empty      = Index::create_index(*parser, 0, parser->get_num_seqences(), 5, 1); // kmer longer than read
+
+    {
+        MatcherGPU matcher(*index_full, *index_empty);
+        const thrust::host_vector<Anchor> anchors(matcher.anchors());
+        EXPECT_EQ(get_size(anchors), 0);
+    }
+    {
+        MatcherGPU matcher(*index_empty, *index_full);
+        const thrust::host_vector<Anchor> anchors(matcher.anchors());
+        EXPECT_EQ(get_size(anchors), 0);
+    }
+    {
+        MatcherGPU matcher(*index_empty, *index_empty);
+        const thrust::host_vector<Anchor> anchors(matcher.anchors());
+        EXPECT_EQ(get_size(anchors), 0);
+    }
+    {
+        MatcherGPU matcher(*index_full, *index_full);
+        const thrust::host_vector<Anchor> anchors(matcher.anchors());
+        EXPECT_EQ(get_size(anchors), 1);
+    }
+}
+
 } // namespace cudamapper
 } // namespace claragenomics

@@ -9,7 +9,6 @@
 */
 
 #include "index_gpu.cuh"
-#include <claragenomics/utils/signed_integer_utils.hpp>
 #include <thrust/transform_scan.h>
 
 namespace claragenomics
@@ -99,6 +98,36 @@ __global__ void find_first_occurrences_of_representations_kernel(const std::uint
         }
     }
 }
+
+__global__ void compress_unique_representations_after_filtering_kernel(const std::uint64_t number_of_unique_representation_before_compression,
+                                                                       const representation_t* const unique_representations_before_compression_d,
+                                                                       const std::uint32_t* const first_occurrence_of_representation_before_compression_d,
+                                                                       const std::uint32_t* const new_unique_representation_index_d,
+                                                                       representation_t* const unique_representations_after_compression_d,
+                                                                       std::uint32_t* const first_occurrence_of_representation_after_compression_d)
+{
+    const std::uint64_t i = blockIdx.x * blockDim.x + threadIdx.x;
+
+    if (i >= number_of_unique_representation_before_compression + 1) // +1 for the additional element in first_occurrence_of_representation
+        return;
+
+    if (i == number_of_unique_representation_before_compression) // additional element in first_occurrence_of_representation
+    {
+        first_occurrence_of_representation_after_compression_d[new_unique_representation_index_d[i]] = first_occurrence_of_representation_before_compression_d[i];
+    }
+    else
+    {
+        // TODO: load these two values into shared memory
+        if (first_occurrence_of_representation_before_compression_d[i] != first_occurrence_of_representation_before_compression_d[i + 1]) // if it's the same that means that this representation has been filtered out
+        {
+            const std::uint32_t new_unique_representation_index = new_unique_representation_index_d[i];
+
+            unique_representations_after_compression_d[new_unique_representation_index]             = unique_representations_before_compression_d[i];
+            first_occurrence_of_representation_after_compression_d[new_unique_representation_index] = first_occurrence_of_representation_before_compression_d[i];
+        }
+    }
+}
+
 } // namespace index_gpu
 } // namespace details
 

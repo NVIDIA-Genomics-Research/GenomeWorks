@@ -32,6 +32,7 @@ static struct option options[] = {
     {"kmer-size", required_argument, 0, 'k'},
     {"index-size", required_argument, 0, 'i'},
     {"target-index-size", required_argument, 0, 't'},
+    {"filtering-parameter", required_argument, 0, 'F'},
     {"help", no_argument, 0, 'h'},
 };
 
@@ -41,11 +42,12 @@ int main(int argc, char* argv[])
 {
     claragenomics::logging::Init();
 
-    uint32_t k               = 15;
-    uint32_t w               = 15;
-    size_t index_size        = 10000;
-    size_t target_index_size = 10000;
-    std::string optstring    = "t:i:k:w:h";
+    uint32_t k                 = 15;
+    uint32_t w                 = 15;
+    size_t index_size          = 10000;
+    size_t target_index_size   = 10000;
+    double filtering_parameter = 1.0;
+    std::string optstring      = "t:i:k:w:h:F:";
     uint32_t argument;
     while ((argument = getopt_long(argc, argv, optstring.c_str(), options, nullptr)) != -1)
     {
@@ -63,6 +65,9 @@ int main(int argc, char* argv[])
         case 't':
             target_index_size = atoi(optarg);
             break;
+        case 'F':
+            filtering_parameter = atof(optarg);
+            break;
         case 'h':
             help(0);
         default:
@@ -73,6 +78,12 @@ int main(int argc, char* argv[])
     if (k > claragenomics::cudamapper::Index::maximum_kmer_size())
     {
         std::cerr << "kmer of size " << k << " is not allowed, maximum k = " << claragenomics::cudamapper::Index::maximum_kmer_size() << std::endl;
+        exit(1);
+    }
+
+    if (filtering_parameter > 1.0 || filtering_parameter < 0.0)
+    {
+        std::cerr << "-F / --filtering-parameter must be in range [0.0, 1.0]" << std::endl;
         exit(1);
     }
 
@@ -179,7 +190,9 @@ int main(int argc, char* argv[])
                                                                          query_start_index,
                                                                          query_end_index,
                                                                          k,
-                                                                         w);
+                                                                         w,
+                                                                         true,
+                                                                         filtering_parameter);
             index_time += std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time);
             std::cerr << "Query index generation time: " << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time).count() << "ms" << std::endl;
         }
@@ -205,7 +218,9 @@ int main(int argc, char* argv[])
                                                                               target_start_index,
                                                                               target_end_index,
                                                                               k,
-                                                                              w);
+                                                                              w,
+                                                                              true,
+                                                                              filtering_parameter);
                 index_time += std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time);
                 std::cerr << "Target index generation time: " << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time).count() << "ms" << std::endl;
             }
@@ -271,6 +286,9 @@ void help(int32_t exit_code = 0)
               << R"(
         -t --target-index-size
             length of batch sized used for target [10000])"
+              << R"(
+        -F --filtering-parameter
+            filter all representations for which sketch_elements_with_that_representation/total_sketch_elements >= filtering_parameter), filtering disabled if filtering_parameter == 1.0 [1'000'000'001] (Min = 0.0, Max = 1.0))"
               << std::endl;
 
     exit(exit_code);
