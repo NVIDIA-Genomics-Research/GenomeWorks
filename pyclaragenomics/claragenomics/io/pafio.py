@@ -1,3 +1,12 @@
+#
+# Copyright (c) 2019, NVIDIA CORPORATION.  All rights reserved.
+#
+# NVIDIA CORPORATION and its licensors retain all intellectual property
+# and proprietary rights in and to this software, related documentation
+# and any modifications thereto.  Any use, reproduction, disclosure or
+# distribution of this software and related documentation without an express
+# license agreement from NVIDIA CORPORATION is strictly prohibited.
+#
 """
 Functions for PAF I/O
 """
@@ -72,7 +81,7 @@ def _tags_to_str(tags):
     Returns:
     str:
         Tab separated string of tags in format 'tag:type:value'
-        
+
     """
     return "\t".join("{}:{}:{}".format(k, REV_TYPES.get(k), v) for k, v in tags.items())
 
