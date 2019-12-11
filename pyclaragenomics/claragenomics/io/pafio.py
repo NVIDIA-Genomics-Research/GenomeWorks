@@ -29,7 +29,7 @@ FIELDS = [
     "num_residue_matches",
     "alignment_block_length",
     "mapping_quality",
-    "tags"
+    "tags",
 ]
 
 Overlap = namedtuple("Overlap", FIELDS)
