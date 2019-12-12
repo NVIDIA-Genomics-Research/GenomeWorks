@@ -8,6 +8,7 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
+#include <algorithm>
 #include <chrono>
 #include <getopt.h>
 #include <iostream>
