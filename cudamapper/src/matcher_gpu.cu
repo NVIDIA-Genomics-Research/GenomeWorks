@@ -65,7 +65,7 @@ MatcherGPU::MatcherGPU(const Index& query_index,
 {
 
     CGA_NVTX_RANGE(profile, "matcherGPU");
-    if (query_index.number_of_reads() == 0 || target_index.number_of_reads() == 0)
+    if (query_index.unique_representations().size() == 0 || target_index.unique_representations().size() == 0)
         return;
 
     // We need to compute a set of anchors between the query and the target.
