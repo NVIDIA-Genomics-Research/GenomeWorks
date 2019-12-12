@@ -89,7 +89,8 @@ def generate_overlaps(seqs, gzip_compressed=True):
                                         target_end=target_end,
                                         num_residue_matches=1,
                                         alignment_block_length=-1,
-                                        mapping_quality=255)
+                                        mapping_quality=255,
+                                        tags={})
                 overlaps.append(overlap)
     return(overlaps)
 
