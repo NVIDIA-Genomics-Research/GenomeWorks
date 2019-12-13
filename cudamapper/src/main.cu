@@ -309,8 +309,9 @@ int main(int argc, char* argv[])
                     //Need to perform this check again for thread-safety
                     if (range_idx < query_target_ranges.size())
                     {
+                        auto overlap_future = compute_overlaps(query_target_ranges[range_idx], device_id);
                         std::lock_guard<std::mutex> lck (overlap_futures_mtx);
-                        overlap_futures.push_back(compute_overlaps(query_target_ranges[range_idx], device_id));
+                        overlap_futures.push_back(overlap_future);
                     }
                 }
             }));
