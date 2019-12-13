@@ -270,7 +270,7 @@ int main(int argc, char* argv[])
                                                                                                                                      [&overlaps_writer_mtx, overlaps_to_add](std::vector<claragenomics::cudamapper::Overlap> overlaps) {
                                                                                                                                          std::vector<claragenomics::cudamapper::Overlap> filtered_overlaps;
                                                                                                                                          claragenomics::cudamapper::Overlapper::filter_overlaps(filtered_overlaps, overlaps_to_add);
-                                                                                                                                         std::lock_guard<std::mutex> lck (overlaps_writer_mtx);
+                                                                                                                                         std::lock_guard<std::mutex> lck(overlaps_writer_mtx);
                                                                                                                                          claragenomics::cudamapper::Overlapper::print_paf(filtered_overlaps);
                                                                                                                                      },
                                                                                                                                      overlaps_to_add));
@@ -310,7 +310,7 @@ int main(int argc, char* argv[])
                     if (range_idx < query_target_ranges.size())
                     {
                         auto overlap_future = compute_overlaps(query_target_ranges[range_idx], device_id);
-                        std::lock_guard<std::mutex> lck (overlap_futures_mtx);
+                        std::lock_guard<std::mutex> lck(overlap_futures_mtx);
                         overlap_futures.push_back(overlap_future);
                     }
                 }
