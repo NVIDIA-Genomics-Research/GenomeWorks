@@ -10,7 +10,6 @@
 
 Cython==0.29.12
 flake8==3.7.8
-matplotlib==3.0.3
 networkx==2.4
 numpy==1.16.3
 pytest==4.4.1

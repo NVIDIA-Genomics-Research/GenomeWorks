@@ -932,7 +932,7 @@ Minimizer::GeneratedSketchElements Minimizer::generate_sketch_elements(const std
                                                                                                     read_id_to_windows_section_d.data(),
                                                                                                     read_id_to_minimizers_written_d.data(),
                                                                                                     hash_representations);
-    CGA_CU_CHECK_ERR(cudaDeviceSynchronize());
+    CGA_CU_CHECK_ERR(cudaStreamSynchronize(0));
 
     // *** central minimizers ***
     const std::uint32_t basepairs_per_thread    = 8;  // arbitrary, tradeoff between the number of thread blocks that can be scheduled simultaneously and the number of basepairs which have to be loaded multiple times beacuse only basepairs_per_thread*num_of_threads-(window_size_ + minimizer_size_ - 1) + 1 can be processed at once, i.e. window_size+minimizer_size-2 basepairs have to be loaded again
@@ -940,7 +940,7 @@ Minimizer::GeneratedSketchElements Minimizer::generate_sketch_elements(const std
     const std::uint32_t basepairs_in_loop_step  = num_of_threads * basepairs_per_thread;
     const std::uint32_t minimizers_in_loop_step = basepairs_in_loop_step - minimizer_size + 1;
     const std::uint32_t windows_in_loop_step    = minimizers_in_loop_step - window_size + 1;
-    //const std::uint32_t windows_in_loop_step = num_of_threads*basepairs_per_thread - (window_size + minimizer_size - 1) + 1;
+
     shared_memory_for_kernel = 0;
     shared_memory_for_kernel += (basepairs_in_loop_step + 7) / 8; // forward basepairs (char)
     shared_memory_for_kernel += (basepairs_in_loop_step + 7) / 8; // reverse basepairs (char)
@@ -966,7 +966,7 @@ Minimizer::GeneratedSketchElements Minimizer::generate_sketch_elements(const std
                                                                                                   read_id_to_windows_section_d.data(),
                                                                                                   read_id_to_minimizers_written_d.data(),
                                                                                                   hash_representations);
-    CGA_CU_CHECK_ERR(cudaDeviceSynchronize());
+    CGA_CU_CHECK_ERR(cudaStreamSynchronize(0));
 
     // *** back end minimizers ***
     num_of_threads = 64;
@@ -993,7 +993,7 @@ Minimizer::GeneratedSketchElements Minimizer::generate_sketch_elements(const std
                                                                                                    read_id_to_windows_section_d.data(),
                                                                                                    read_id_to_minimizers_written_d.data(),
                                                                                                    hash_representations);
-    CGA_CU_CHECK_ERR(cudaDeviceSynchronize());
+    CGA_CU_CHECK_ERR(cudaStreamSynchronize(0));
 
     std::vector<std::uint32_t> read_id_to_minimizers_written_h(number_of_reads_to_add);
 
@@ -1040,7 +1040,7 @@ Minimizer::GeneratedSketchElements Minimizer::generate_sketch_elements(const std
                                                          rest_compressed_d.data(),
                                                          read_id_to_compressed_minimizers_d.data(),
                                                          read_id_of_first_read);
-    CGA_CU_CHECK_ERR(cudaDeviceSynchronize());
+    CGA_CU_CHECK_ERR(cudaStreamSynchronize(0));
 
     // free these arrays as they are not needed anymore
     CGA_LOG_INFO("Deallocating {} bytes from window_minimizers_representation_d", window_minimizers_representation_d.size() * sizeof(decltype(window_minimizers_representation_d)::value_type));

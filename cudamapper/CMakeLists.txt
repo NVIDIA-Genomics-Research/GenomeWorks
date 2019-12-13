@@ -64,6 +64,8 @@ cuda_add_executable(cudamapper
 target_compile_options(cudamapper PRIVATE -Werror)
 
 target_include_directories(cudamapper
+    PRIVATE
+        ${THREADPOOL_DIR}
     PUBLIC 
         $<INSTALL_INTERFACE:include>    
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>

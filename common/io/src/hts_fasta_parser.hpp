@@ -12,6 +12,7 @@
 #include "claragenomics/io/fasta_parser.hpp"
 
 #include <string>
+#include <mutex>
 
 extern "C" {
 #include <htslib/faidx.h>
@@ -28,14 +29,15 @@ public:
     FastaParserHTS(const std::string& fasta_file);
     ~FastaParserHTS();
 
-    int32_t get_num_seqences() const;
+    int32_t get_num_seqences() const override;
 
-    FastaSequence get_sequence_by_id(int32_t i) const;
+    FastaSequence get_sequence_by_id(int32_t i) const override;
 
-    FastaSequence get_sequence_by_name(const std::string&) const;
+    FastaSequence get_sequence_by_name(const std::string&) const override;
 
 private:
     faidx_t* fasta_index_;
+    mutable std::mutex index_mutex_;
     int32_t num_seqequences_;
 };
 

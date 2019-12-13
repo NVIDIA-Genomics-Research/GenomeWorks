@@ -62,27 +62,35 @@ int32_t FastaParserHTS::get_num_seqences() const
 
 FastaSequence FastaParserHTS::get_sequence_by_id(int32_t i) const
 {
-    const char* name = faidx_iseq(fasta_index_, i);
-    if (name == NULL)
+    std::string str_name = "";
     {
-        throw std::runtime_error("No sequence found for ID " + std::to_string(i));
+        std::lock_guard<std::mutex> lock(index_mutex_);
+        const char* name = faidx_iseq(fasta_index_, i);
+        if (name == NULL)
+        {
+            throw std::runtime_error("No sequence found for ID " + std::to_string(i));
+        }
+        str_name = std::string(name);
     }
 
-    return get_sequence_by_name(std::string(name));
+    return get_sequence_by_name(str_name);
 }
 
 FastaSequence FastaParserHTS::get_sequence_by_name(const std::string& name) const
 {
-    int32_t length;
-    std::unique_ptr<char, free_deleter> seq(fai_fetch(fasta_index_, name.c_str(), &length));
-    if (length < 0)
-    {
-        throw std::runtime_error("Error in reading sequence information for seq ID " + name);
-    }
 
     FastaSequence s{};
-    s.name = std::string(name);
-    s.seq  = std::string(seq.get());
+    {
+        std::lock_guard<std::mutex> lock(index_mutex_);
+        int32_t length;
+        std::unique_ptr<char, free_deleter> seq(fai_fetch(fasta_index_, name.c_str(), &length));
+        if (length < 0)
+        {
+            throw std::runtime_error("Error in reading sequence information for seq ID " + name);
+        }
+        s.name = std::string(name);
+        s.seq  = std::string(seq.get());
+    }
 
     return s;
 }

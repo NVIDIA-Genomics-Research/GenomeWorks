@@ -11,11 +11,12 @@
 #include <cub/cub.cuh>
 #include <thrust/device_vector.h>
 #include <thrust/sort.h>
+#include <fstream>
+#include <cstdlib>
 
 #include <claragenomics/utils/cudautils.hpp>
 #include "cudamapper_utils.hpp"
 #include "overlapper_triggered.hpp"
-#include <fstream>
 
 namespace claragenomics
 {
@@ -30,9 +31,9 @@ __host__ __device__ bool operator==(const Anchor& lhs,
     // Very simple scoring function to quantify quality of overlaps.
     // TODO change to a more sophisticated scoring method
     auto score = 1;
-    if ((rhs.query_position_in_read_ - lhs.query_position_in_read_) < 350)
-        score = 2;
 
+    if ((rhs.query_position_in_read_ - lhs.query_position_in_read_) < 350 and abs(int(rhs.target_position_in_read_) - int(lhs.target_position_in_read_)) < 350)
+        score = 2;
     return ((lhs.query_read_id_ == rhs.query_read_id_) &&
             (lhs.target_read_id_ == rhs.target_read_id_) &&
             score > score_threshold);
