@@ -270,9 +270,8 @@ int main(int argc, char* argv[])
                                                                                                                                      [&overlaps_writer_mtx, overlaps_to_add](std::vector<claragenomics::cudamapper::Overlap> overlaps) {
                                                                                                                                          std::vector<claragenomics::cudamapper::Overlap> filtered_overlaps;
                                                                                                                                          claragenomics::cudamapper::Overlapper::filter_overlaps(filtered_overlaps, overlaps_to_add);
-                                                                                                                                         overlaps_writer_mtx.lock();
+                                                                                                                                         std::lock_guard<std::mutex> lck (overlaps_writer_mtx);
                                                                                                                                          claragenomics::cudamapper::Overlapper::print_paf(filtered_overlaps);
-                                                                                                                                         overlaps_writer_mtx.unlock();
                                                                                                                                      },
                                                                                                                                      overlaps_to_add));
 
@@ -297,6 +296,7 @@ int main(int argc, char* argv[])
     std::vector<std::thread> workers;
     std::atomic<int> ranges_idx(0);
     std::vector<std::vector<std::shared_ptr<std::future<void>>>> overlap_futures;
+    std::mutex overlap_futures_mtx;
 
     // Launch worker threads
     for (int device_id = 0; device_id < num_devices; device_id++)
@@ -309,6 +309,7 @@ int main(int argc, char* argv[])
                     //Need to perform this check again for thread-safety
                     if (range_idx < query_target_ranges.size())
                     {
+                        std::lock_guard<std::mutex> lck (overlap_futures_mtx);
                         overlap_futures.push_back(compute_overlaps(query_target_ranges[range_idx], device_id));
                     }
                 }
