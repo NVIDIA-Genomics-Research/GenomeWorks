@@ -37,6 +37,7 @@ static struct option options[] = {
     {"index-size", required_argument, 0, 'i'},
     {"target-index-size", required_argument, 0, 't'},
     {"filtering-parameter", required_argument, 0, 'F'},
+    {"output-dir", required_argument, 0, 'o'},
     {"help", no_argument, 0, 'h'},
 };
 
@@ -53,7 +54,9 @@ int main(int argc, char* argv[])
     std::int32_t index_size        = 10000; // i
     std::int32_t target_index_size = 10000; // t
     double filtering_parameter     = 1.0;   // F
-    std::string optstring          = "k:w:d:c:i:t:F:h:";
+    std::string output_dir;
+    std::string optstring          = "k:w:d:c:i:t:F:o:h:";
+
     uint32_t argument;
     while ((argument = getopt_long(argc, argv, optstring.c_str(), options, nullptr)) != -1)
     {
@@ -79,6 +82,9 @@ int main(int argc, char* argv[])
             break;
         case 'F':
             filtering_parameter = atof(optarg);
+            break;
+        case 'o':
+            output_dir = optarg;
             break;
         case 'h':
             help(0);
@@ -117,10 +123,10 @@ int main(int argc, char* argv[])
         std::cerr << "NOTE - Since query and target files are same, activating all_to_all mode. Query index size used for both files." << std::endl;
     }
 
-    std::unique_ptr<claragenomics::io::FastaParser> query_parser = claragenomics::io::create_fasta_parser(query_filepath);
+    std::unique_ptr<claragenomics::io::FastaParser> query_parser = claragenomics::io::create_fasta_parser(query_filepath, output_dir);
     int32_t queries                                              = query_parser->get_num_seqences();
 
-    std::unique_ptr<claragenomics::io::FastaParser> target_parser = claragenomics::io::create_fasta_parser(target_filepath);
+    std::unique_ptr<claragenomics::io::FastaParser> target_parser = claragenomics::io::create_fasta_parser(target_filepath, output_dir);
     int32_t targets                                               = target_parser->get_num_seqences();
 
     std::cerr << "Query " << query_filepath << " index " << queries << std::endl;
@@ -363,6 +369,9 @@ void help(int32_t exit_code = 0)
               << R"(
         -F --filtering-parameter
             filter all representations for which sketch_elements_with_that_representation/total_sketch_elements >= filtering_parameter), filtering disabled if filtering_parameter == 1.0 [1'000'000'001] (Min = 0.0, Max = 1.0))"
+               << R"(
+        -o --output-dir
+            directory for creating all intermedate files)"
               << std::endl;
 
     exit(exit_code);

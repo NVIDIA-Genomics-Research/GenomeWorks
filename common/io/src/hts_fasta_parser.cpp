@@ -12,6 +12,7 @@
 
 #include <string>
 #include <memory>
+#include <claragenomics/utils/filesystem.hpp>
 
 extern "C" {
 #include <htslib/faidx.h>
@@ -34,9 +35,29 @@ namespace claragenomics
 namespace io
 {
 
-FastaParserHTS::FastaParserHTS(const std::string& fasta_file)
+FastaParserHTS::FastaParserHTS(const std::string& fasta_file,
+        const std::string& output_dir)
 {
-    fasta_index_ = fai_load3(fasta_file.c_str(), NULL, NULL, FAI_CREATE);
+    std::string fai_file = fasta_file + ".fai";
+    std::string gzi_file = fasta_file + ".gzi";
+    if (output_dir.length() != 0)
+    {
+        // resolve idx and gzi file path
+        if (!claragenomics::filesystem::dirExists(output_dir)) {
+            throw std::runtime_error("Output dir " + output_dir +
+                    " not found or not a directory!");
+        }
+
+        std::string file_name =
+            claragenomics::filesystem::resolveFileName(fasta_file);
+        fai_file = output_dir + "/" + file_name + ".fai";
+        gzi_file = output_dir + "/" + file_name + ".gzi";
+    }
+
+    fasta_index_ = fai_load3(
+            fasta_file.c_str(), fai_file.c_str(), gzi_file.c_str(),
+            FAI_CREATE);
+
     if (fasta_index_ == NULL)
     {
         throw std::runtime_error("Could not load fasta index!");

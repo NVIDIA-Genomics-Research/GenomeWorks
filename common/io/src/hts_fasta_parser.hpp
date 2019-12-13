@@ -26,7 +26,7 @@ namespace io
 class FastaParserHTS : public FastaParser
 {
 public:
-    FastaParserHTS(const std::string& fasta_file);
+    FastaParserHTS(const std::string& fasta_file, const std::string& tmp_dir);
     ~FastaParserHTS();
 
     int32_t get_num_seqences() const override;
