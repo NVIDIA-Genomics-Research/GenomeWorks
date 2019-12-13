@@ -25,12 +25,12 @@ bool dirExists(const std::string path)
     struct stat info;
 
     int response = stat(path.c_str(), &info);
-    if( response != 0 )
+    if (response != 0)
     {
         return false;
     }
 
-    return ( info.st_mode & S_IFDIR ) ? true : false;
+    return (info.st_mode & S_IFDIR) ? true : false;
 }
 
 
