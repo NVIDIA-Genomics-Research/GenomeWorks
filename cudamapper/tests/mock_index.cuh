@@ -25,7 +25,8 @@ class MockIndex : public IndexGPU<Minimizer>
 {
 public:
     MockIndex()
-        : IndexGPU(*claragenomics::io::create_fasta_parser(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/gatt.fasta"),
+        : IndexGPU(*claragenomics::io::create_fasta_parser(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/gatt.fasta",
+                                                           std::string(CUDAMAPPER_BENCHMARK_DATA_DIR)),
                    0,
                    0,
                    0,

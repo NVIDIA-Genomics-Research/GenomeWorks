@@ -36,16 +36,17 @@ namespace io
 {
 
 FastaParserHTS::FastaParserHTS(const std::string& fasta_file,
-        const std::string& output_dir)
+                               const std::string& output_dir)
 {
     std::string fai_file = fasta_file + ".fai";
     std::string gzi_file = fasta_file + ".gzi";
     if (output_dir.length() != 0)
     {
         // resolve idx and gzi file path
-        if (!claragenomics::filesystem::dirExists(output_dir)) {
+        if (!claragenomics::filesystem::dirExists(output_dir))
+        {
             throw std::runtime_error("Output dir " + output_dir +
-                    " not found or not a directory!");
+                                     " not found or not a directory!");
         }
 
         std::string file_name =
@@ -55,8 +56,8 @@ FastaParserHTS::FastaParserHTS(const std::string& fasta_file,
     }
 
     fasta_index_ = fai_load3(
-            fasta_file.c_str(), fai_file.c_str(), gzi_file.c_str(),
-            FAI_CREATE);
+        fasta_file.c_str(), fai_file.c_str(), gzi_file.c_str(),
+        FAI_CREATE);
 
     if (fasta_index_ == NULL)
     {

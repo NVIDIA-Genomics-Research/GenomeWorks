@@ -329,9 +329,10 @@ TEST(TestCudamapperMatcherGPU, test_generate_anchors_small_example)
 
 TEST(TestCudamapperMatcherGPU, OneReadOneMinimizer)
 {
-    std::unique_ptr<io::FastaParser> parser = io::create_fasta_parser(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/gatt.fasta");
-    std::unique_ptr<Index> query_index      = Index::create_index(*parser, 0, parser->get_num_seqences(), 4, 1);
-    std::unique_ptr<Index> target_index     = Index::create_index(*parser, 0, parser->get_num_seqences(), 4, 1);
+    std::unique_ptr<io::FastaParser> parser =
+        io::create_fasta_parser(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/gatt.fasta", "");
+    std::unique_ptr<Index> query_index  = Index::create_index(*parser, 0, parser->get_num_seqences(), 4, 1);
+    std::unique_ptr<Index> target_index = Index::create_index(*parser, 0, parser->get_num_seqences(), 4, 1);
     MatcherGPU matcher(*query_index, *target_index);
 
     const thrust::host_vector<Anchor> anchors(matcher.anchors());
@@ -340,9 +341,10 @@ TEST(TestCudamapperMatcherGPU, OneReadOneMinimizer)
 
 TEST(TestCudamapperMatcherGPU, AtLeastOneIndexEmpty)
 {
-    std::unique_ptr<io::FastaParser> parser = io::create_fasta_parser(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/gatt.fasta");
-    std::unique_ptr<Index> index_full       = Index::create_index(*parser, 0, parser->get_num_seqences(), 4, 1);
-    std::unique_ptr<Index> index_empty      = Index::create_index(*parser, 0, parser->get_num_seqences(), 5, 1); // kmer longer than read
+    std::unique_ptr<io::FastaParser> parser =
+        io::create_fasta_parser(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/gatt.fasta", "");
+    std::unique_ptr<Index> index_full  = Index::create_index(*parser, 0, parser->get_num_seqences(), 4, 1);
+    std::unique_ptr<Index> index_empty = Index::create_index(*parser, 0, parser->get_num_seqences(), 5, 1); // kmer longer than read
 
     {
         MatcherGPU matcher(*index_full, *index_empty);

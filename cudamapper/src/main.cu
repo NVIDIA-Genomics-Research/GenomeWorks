@@ -55,7 +55,7 @@ int main(int argc, char* argv[])
     std::int32_t target_index_size = 10000; // t
     double filtering_parameter     = 1.0;   // F
     std::string output_dir;
-    std::string optstring          = "k:w:d:c:i:t:F:o:h:";
+    std::string optstring = "k:w:d:c:i:t:F:o:h:";
 
     uint32_t argument;
     while ((argument = getopt_long(argc, argv, optstring.c_str(), options, nullptr)) != -1)
@@ -369,7 +369,7 @@ void help(int32_t exit_code = 0)
               << R"(
         -F --filtering-parameter
             filter all representations for which sketch_elements_with_that_representation/total_sketch_elements >= filtering_parameter), filtering disabled if filtering_parameter == 1.0 [1'000'000'001] (Min = 0.0, Max = 1.0))"
-               << R"(
+              << R"(
         -o --output-dir
             directory for creating all intermedate files)"
               << std::endl;

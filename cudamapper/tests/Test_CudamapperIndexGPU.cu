@@ -1264,7 +1264,7 @@ void test_function(const std::string& filename,
                    const std::uint64_t expected_number_of_reads,
                    const double filtering_parameter = 1.0)
 {
-    std::unique_ptr<io::FastaParser> parser = io::create_fasta_parser(filename);
+    std::unique_ptr<io::FastaParser> parser = io::create_fasta_parser(filename, "");
     IndexGPU<Minimizer> index(*parser,
                               first_read_id,
                               past_the_last_read_id,

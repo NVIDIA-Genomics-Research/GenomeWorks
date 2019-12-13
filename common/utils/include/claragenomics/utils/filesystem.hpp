@@ -33,7 +33,6 @@ bool dirExists(const std::string path)
     return (info.st_mode & S_IFDIR) ? true : false;
 }
 
-
 std::string resolveFileName(const std::string file_path)
 {
     size_t found;
