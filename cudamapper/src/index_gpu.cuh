@@ -602,7 +602,7 @@ void IndexGPU<SketchElementImpl>::generate_index(const io::FastaParser& parser,
         return;
     }
 
-    number_of_reads_ = past_the_last_read_id - first_read_id;
+    number_of_reads_ = 0;
 
     std::uint64_t total_basepairs = 0;
     std::vector<ArrayBlock> read_id_to_basepairs_section_h;
@@ -620,14 +620,16 @@ void IndexGPU<SketchElementImpl>::generate_index(const io::FastaParser& parser,
             total_basepairs += read_basepairs.length();
             read_id_to_read_name_.push_back(read_name);
             read_id_to_read_length_.push_back(read_basepairs.length());
+            number_of_reads_++;
         }
         else
         {
-            // TODO: Implement this skipping in a correct manner
             CGA_LOG_INFO("Skipping read {}. It has {} basepairs, one window covers {} basepairs",
                          read_name,
                          read_basepairs.length(),
                          window_size_ + kmer_size_ - 1);
+            // Remove the most recent sequence from the reads vector as it isn't part of the index.
+            fasta_reads.pop_back();
         }
     }
 
