@@ -146,8 +146,8 @@ int main(int argc, char* argv[])
         std::vector<std::pair<std::int32_t, int32_t>> target_ranges;
     };
 
-    auto query_chunks = query_parser->get_read_chunks(100000000);
-    auto target_chunks = target_parser->get_read_chunks(100000000);
+    auto query_chunks = query_parser->get_read_chunks(index_size * 1000000);
+    auto target_chunks = target_parser->get_read_chunks(target_index_size * 1000000);
 
     //First generate all the ranges independently, then loop over them.
     std::vector<query_target_range> query_target_ranges;
@@ -261,7 +261,7 @@ int main(int argc, char* argv[])
         auto query_start_index = query_target_range.query_range.first;
         auto query_end_index   = query_target_range.query_range.second;
 
-        std::cerr << "Procecssing query range: (" << query_start_index << " - " << query_end_index - 1 << ")" << std::endl;
+        std::cerr << "Procecssing query range: (" << query_start_index << " - " << query_end_index << ")" << std::endl;
 
         std::shared_ptr<claragenomics::cudamapper::Index> query_index(nullptr);
         std::shared_ptr<claragenomics::cudamapper::Index> target_index(nullptr);
