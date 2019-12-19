@@ -33,12 +33,18 @@ public:
 
     FastaSequence get_sequence_by_id(int32_t i) const override;
 
-    FastaSequence get_sequence_by_name(const std::string&) const override;
-
 private:
     faidx_t* fasta_index_;
     mutable std::mutex index_mutex_;
     int32_t num_seqequences_;
+
+protected:
+    /// \brief Fetch an entry from the FASTA file by name.
+    /// \param name Name of the sequence in FASTA file. If there is no entry
+    ///             by that name, an error is thrown.
+    ///
+    /// \return A FastaSequence object describing the entry.
+    FastaSequence get_sequence_by_name(const std::string& name) const;
 };
 
 } // namespace io

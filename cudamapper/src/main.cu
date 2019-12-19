@@ -117,10 +117,13 @@ int main(int argc, char* argv[])
         std::cerr << "NOTE - Since query and target files are same, activating all_to_all mode. Query index size used for both files." << std::endl;
     }
 
-    std::unique_ptr<claragenomics::io::FastaParser> query_parser = claragenomics::io::create_fasta_parser(query_filepath);
+
+    auto parsers = claragenomics::io::create_kseq_fasta_parser(query_filepath);
+
+    std::unique_ptr<claragenomics::io::FastaParser> query_parser = claragenomics::io::create_kseq_fasta_parser(query_filepath);
     int32_t queries                                              = query_parser->get_num_seqences();
 
-    std::unique_ptr<claragenomics::io::FastaParser> target_parser = claragenomics::io::create_fasta_parser(target_filepath);
+    std::unique_ptr<claragenomics::io::FastaParser> target_parser = claragenomics::io::create_kseq_fasta_parser(target_filepath);
     int32_t targets                                               = target_parser->get_num_seqences();
 
     std::cerr << "Query " << query_filepath << " index " << queries << std::endl;

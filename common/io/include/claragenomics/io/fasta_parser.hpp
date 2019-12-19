@@ -11,6 +11,7 @@
 
 #include <string>
 #include <memory>
+#include <vector>
 
 namespace claragenomics
 {
@@ -46,12 +47,6 @@ public:
     /// \return A FastaSequence object describing the entry.
     virtual FastaSequence get_sequence_by_id(int32_t id) const = 0;
 
-    /// \brief Fetch an entry from the FASTA file by name.
-    /// \param name Name of the sequence in FASTA file. If there is no entry
-    ///             by that name, an error is thrown.
-    ///
-    /// \return A FastaSequence object describing the entry.
-    virtual FastaSequence get_sequence_by_name(const std::string& name) const = 0;
 };
 
 /// \brief A builder function that returns a FASA parser object.
@@ -60,6 +55,9 @@ public:
 ///
 /// \return A unique pointer to a constructed parser object.
 std::unique_ptr<FastaParser> create_fasta_parser(const std::string& fasta_file);
+
+
+std::unique_ptr<FastaParser> create_kseq_fasta_parser(const std::string &fasta_file); //TODO needs to return a unique ptr
 
 } // namespace io
 } // namespace claragenomics

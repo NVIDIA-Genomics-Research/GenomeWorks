@@ -7,30 +7,32 @@
 * distribution of this software and related documentation without an express
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
-
-#include "hts_fasta_parser.hpp"
-#include "kseqpp_fasta_parser.hpp"
-
+#pragma once
 
 #include "claragenomics/io/fasta_parser.hpp"
 
-#include <memory>
+#include <string>
 #include <vector>
 
 namespace claragenomics
 {
-namespace io
-{
+    namespace io
+    {
 
-std::unique_ptr<FastaParser> create_fasta_parser(const std::string& fasta_file)
-{
-    return std::make_unique<FastaParserHTS>(fasta_file);
-}
+        class FastaParserKseqpp : public FastaParser
+        {
+        public:
+            FastaParserKseqpp(const std::string &fasta_file);
+            ~FastaParserKseqpp();
 
-std::unique_ptr<FastaParser> create_kseq_fasta_parser(const std::string &fasta_file) //TODO needs to return a unique ptr
-{
-    return std::make_unique<FastaParserKseqpp>(FastaParserKseqpp(fasta_file));
-}
+            int32_t get_num_seqences() const override;
 
-} // namespace io
+            FastaSequence get_sequence_by_id(int32_t i) const override;
+
+        private:
+            std::vector<FastaSequence> reads_;
+            int32_t num_seqequences_;
+        };
+
+    } // namespace io
 } // namespace claragenomics
