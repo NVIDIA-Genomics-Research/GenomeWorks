@@ -27,7 +27,7 @@ std::unique_ptr<FastaParser> create_fasta_parser(const std::string& fasta_file)
     return std::make_unique<FastaParserHTS>(fasta_file);
 }
 
-std::unique_ptr<FastaParser> create_kseq_fasta_parser(const std::string &fasta_file) //TODO needs to return a unique ptr
+std::shared_ptr<FastaParser> create_kseq_fasta_parser(const std::string &fasta_file) //TODO needs to return a unique ptr
 {
     return std::make_unique<FastaParserKseqpp>(FastaParserKseqpp(fasta_file));
 }

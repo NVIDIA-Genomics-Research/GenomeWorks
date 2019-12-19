@@ -47,6 +47,8 @@ public:
     /// \return A FastaSequence object describing the entry.
     virtual FastaSequence get_sequence_by_id(int32_t id) const = 0;
 
+    virtual std::vector<std::pair<int,int>> get_read_chunks(int max_chunk_size = 1000000) const = 0;
+
 };
 
 /// \brief A builder function that returns a FASA parser object.
@@ -57,7 +59,7 @@ public:
 std::unique_ptr<FastaParser> create_fasta_parser(const std::string& fasta_file);
 
 
-std::unique_ptr<FastaParser> create_kseq_fasta_parser(const std::string &fasta_file); //TODO needs to return a unique ptr
+std::shared_ptr<FastaParser> create_kseq_fasta_parser(const std::string &fasta_file); //TODO needs to return a unique ptr
 
 } // namespace io
 } // namespace claragenomics

@@ -65,5 +65,30 @@ namespace claragenomics
             return reads_[i];
         }
 
+        std::vector<std::pair<int,int>> FastaParserKseqpp::get_read_chunks(int max_chunk_size=1000000) const{
+            std::vector<std::pair<int,int>> chunks;
+
+            std::pair<int,int> chunk;
+
+            chunk.first = 0;
+            int num_bases = 0;
+            for (int read_idx = 0; read_idx<reads_.size(); read_idx++){
+                if (reads_[read_idx].seq.size() + num_bases > max_chunk_size)
+                {
+                    chunk.second = read_idx - 1;
+                    chunks.push_back(chunk);
+                    chunk.first = read_idx;
+                    num_bases = reads_[read_idx].seq.size();
+                } else {
+                    num_bases += reads_[read_idx].seq.size();
+                }
+            }
+
+            chunk.second = reads_.size() - 1;
+
+            chunks.push_back(chunk);
+            return chunks;
+        }
+
    } // namespace io
 } // namespace claragenomics

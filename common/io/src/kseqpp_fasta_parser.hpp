@@ -29,9 +29,12 @@ namespace claragenomics
 
             FastaSequence get_sequence_by_id(int32_t i) const override;
 
+            std::vector<std::pair<int,int>> get_read_chunks(int max_chunk_size) const override ;
+
         private:
             std::vector<FastaSequence> reads_;
-            int32_t num_seqequences_;
+            //int32_t num_seqequences_;
+            std::vector<std::pair<int,int>> read_chunks_;
         };
 
     } // namespace io

@@ -28,6 +28,7 @@
 #include <claragenomics/cudamapper/matcher.hpp>
 #include <claragenomics/cudamapper/overlapper.hpp>
 #include "overlapper_triggered.hpp"
+#include "../../common/io/src/kseqpp_fasta_parser.hpp"
 
 static struct option options[] = {
     {"kmer-size", required_argument, 0, 'k'},
@@ -120,10 +121,17 @@ int main(int argc, char* argv[])
 
     auto parsers = claragenomics::io::create_kseq_fasta_parser(query_filepath);
 
-    std::unique_ptr<claragenomics::io::FastaParser> query_parser = claragenomics::io::create_kseq_fasta_parser(query_filepath);
+    std::shared_ptr<claragenomics::io::FastaParser> query_parser = claragenomics::io::create_kseq_fasta_parser(query_filepath);
     int32_t queries                                              = query_parser->get_num_seqences();
 
-    std::unique_ptr<claragenomics::io::FastaParser> target_parser = claragenomics::io::create_kseq_fasta_parser(target_filepath);
+    std::shared_ptr<claragenomics::io::FastaParser> target_parser;
+    if (all_to_all){
+        target_parser = query_parser;
+    } else {
+
+    }
+    target_parser = claragenomics::io::create_kseq_fasta_parser(target_filepath);
+
     int32_t targets                                               = target_parser->get_num_seqences();
 
     std::cerr << "Query " << query_filepath << " index " << queries << std::endl;
@@ -138,10 +146,30 @@ int main(int argc, char* argv[])
         std::vector<std::pair<std::int32_t, int32_t>> target_ranges;
     };
 
+    auto query_chunks = query_parser->get_read_chunks(100000000);
+    auto target_chunks = target_parser->get_read_chunks(100000000);
+
     //First generate all the ranges independently, then loop over them.
     std::vector<query_target_range> query_target_ranges;
 
-    for (std::int32_t query_start_index = 0; query_start_index < queries; query_start_index += index_size)
+
+    // TODO: here goes filling out the query_target_ranges vector but using chunks
+
+    int target_idx = 0;
+    for (auto query_chunk: query_chunks){
+        query_target_range range;
+        range.query_range = query_chunk;
+        for (int t = target_idx; t<target_chunks.size(); t++){
+            range.target_ranges.push_back(target_chunks[t]);
+        }
+        query_target_ranges.push_back(range);
+        if(all_to_all){
+            target_idx++;
+        }
+    }
+
+
+/*    for (std::int32_t query_start_index = 0; query_start_index < queries; query_start_index += index_size)
     {
 
         std::int32_t query_end_index = std::min(query_start_index + index_size, queries);
@@ -166,7 +194,7 @@ int main(int argc, char* argv[])
         }
 
         query_target_ranges.push_back(q);
-    }
+    }*/
 
     // This is a per-device cache, if it has the index it will return it, if not it will generate it, store and return it.
     std::vector<std::map<std::pair<uint64_t, uint64_t>, std::shared_ptr<claragenomics::cudamapper::Index>>> index_cache(num_devices);

@@ -33,6 +33,8 @@ public:
 
     FastaSequence get_sequence_by_id(int32_t i) const override;
 
+    std::vector<std::pair<int,int>> get_read_chunks(int max_chunk_size) const override ;
+
 private:
     faidx_t* fasta_index_;
     mutable std::mutex index_mutex_;
@@ -44,7 +46,7 @@ protected:
     ///             by that name, an error is thrown.
     ///
     /// \return A FastaSequence object describing the entry.
-    FastaSequence get_sequence_by_name(const std::string& name) const;
+    FastaSequence get_sequence_by_name(const std::string& name) const; //TODO push this back to the public API
 };
 
 } // namespace io
