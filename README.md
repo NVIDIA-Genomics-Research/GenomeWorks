@@ -58,7 +58,7 @@ git clone --recursive git@github.com:clara-genomics/ClaraGenomicsAnalysis.git
 Minimum requirements -
 
 1. Ubuntu 16.04 or Ubuntu 18.04
-2. CUDA 9.0+
+2. CUDA 9.0+ (official instructions for installing CUDA are available [here](https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html))
 3. gcc/g++ 5.4.0+
 4. Python 3.6.7+
 5. htslib 1.9+
