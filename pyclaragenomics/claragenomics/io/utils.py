@@ -7,15 +7,11 @@
 # distribution of this software and related documentation without an express
 # license agreement from NVIDIA CORPORATION is strictly prohibited.
 #
-
-"""
-Utility functions for I/O of custom files.
-"""
+"""Utility functions for I/O of custom files."""
 
 
 def read_poa_group_file(file_path, num_windows=0):
-    """
-    Parses data file containing POA groups.
+    """Parses data file containing POA groups.
 
     Args:
         file_path : Path to POA group file.
