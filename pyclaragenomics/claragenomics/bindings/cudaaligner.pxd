@@ -40,8 +40,8 @@ cdef extern from "claragenomics/cudaaligner/cudaaligner.hpp" namespace "claragen
     cdef enum AlignmentState:
         match = 0
         mismatch
-        insertion # Absent in query, present in target
-        deletion # Present in query, absent in target
+        insertion  # Absent in query, present in target
+        deletion   # Present in query, absent in target
 
     cdef StatusType Init()
 

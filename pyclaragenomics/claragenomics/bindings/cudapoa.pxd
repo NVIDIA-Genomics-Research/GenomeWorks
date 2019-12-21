@@ -21,7 +21,7 @@ from libcpp.vector cimport vector
 from claragenomics.bindings.cuda_runtime_api cimport _Stream
 from claragenomics.bindings.graph cimport DirectedGraph
 
-# This file declares public structs and API calls 
+# This file declares public structs and API calls
 # from the ClaraGenomicsAnalysis `cudapoa` module.
 
 # Declare structs and APIs from cudapoa.hpp.

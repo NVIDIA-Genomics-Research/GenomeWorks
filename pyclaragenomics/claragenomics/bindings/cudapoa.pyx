@@ -51,6 +51,7 @@ def status_to_str(status):
     else:
         raise RuntimeError("Unknown error status : " + status)
 
+
 cdef class CudaPoaBatch:
     """
     Python API for CUDA-accelerated partial order alignment algorithm.
@@ -103,15 +104,15 @@ cdef class CudaPoaBatch:
             raise RuntimeError("Unknown output_type provided. Must be consensus/msa.")
 
         self.batch = cudapoa.create_batch(
-                max_sequences_per_poa,
-                device_id,
-                temp_stream,
-                gpu_mem,
-                output_mask,
-                gap_score,
-                mismatch_score,
-                match_score,
-                cuda_banded_alignment)
+            max_sequences_per_poa,
+            device_id,
+            temp_stream,
+            gpu_mem,
+            output_mask,
+            gap_score,
+            mismatch_score,
+            match_score,
+            cuda_banded_alignment)
 
     def __init__(
             self,
@@ -153,7 +154,7 @@ cdef class CudaPoaBatch:
         cdef cudapoa.Group poa_group
         cdef cudapoa.Entry entry
         cdef vector[cudapoa.StatusType] seq_status
-        byte_list = [] # To store byte array of POA sequences
+        byte_list = []  # To store byte array of POA sequences
         for seq in poa:
             byte_list.append(seq.encode('utf-8'))
             c_string = byte_list[-1]
@@ -261,7 +262,7 @@ cdef class CudaPoaBatch:
                                     weight=weight)
             attributes = {}
             for n in nx_digraph.nodes:
-                attributes[n] = {'label' : deref(graph).get_node_label(n).decode('utf-8')}
+                attributes[n] = {'label': deref(graph).get_node_label(n).decode('utf-8')}
             nx.set_node_attributes(nx_digraph, attributes)
             nx_digraphs.append(nx_digraph)
         return (nx_digraphs, status)
