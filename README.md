@@ -166,6 +166,7 @@ CI system for Clara Genomics Analysis run `flake8` to check the style.
 To run style check manually, simply run the following from the top level folder.
 ```
 flake8 pyclaragenomics/
+flake8 pyclaragenomics/ --config pyclaragenomics/.flake8.cython  # for Cython style check
 ```
 
 ## Running CI Tests Locally

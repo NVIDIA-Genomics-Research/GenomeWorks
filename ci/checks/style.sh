@@ -38,10 +38,13 @@ source ci/common/prep-init-env.sh ${WORKSPACE}
 logger "Run Copyright header check..."
 ./ci/checks/check_copyright.py
 
+python -m pip install flake8
 # Run style check
 logger "Run Python formatting check..."
-python -m pip install flake8
 flake8 pyclaragenomics/
+# Run Cython style check
+logger "Run Cython formatting check..."
+flake8 pyclaragenomics/ --config pyclaragenomics/.flake8.cython
 
 logger "Run C++ formatting check..."
 mkdir --parents ${WORKSPACE}/build
