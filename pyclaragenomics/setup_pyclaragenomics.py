@@ -9,6 +9,13 @@
 # distribution of this software and related documentation without an express
 # license agreement from NVIDIA CORPORATION is strictly prohibited.
 #
+"""pyclaragenomics setup script.
+
+A script to build and install pyclaragenomics from source. More information
+about usage can be found by running
+    python setp_pyclaragenomics.py -h
+
+"""
 
 import argparse
 import os
@@ -16,6 +23,7 @@ import subprocess
 
 
 def parse_arguments():
+    """Parse command line arguments."""
     parser = argparse.ArgumentParser(description='build & install Clara Genomics Analysis SDK.')
     parser.add_argument('--build_output_folder',
                         required=False,
@@ -34,14 +42,12 @@ def parse_arguments():
 
 class CMakeWrapper:
     """Class to encapsulate building a CMake project."""
-
     def __init__(self,
                  cmake_root_dir,
                  cmake_build_path="cmake_build",
                  cga_install_dir="cmake_build/install",
                  cmake_extra_args=""):
-        """
-        Class constructor.
+        """Class constructor.
 
         Args:
             cmake_root_dir : Root directory of CMake project
@@ -55,7 +61,8 @@ class CMakeWrapper:
         self.cmake_extra_args = cmake_extra_args
         self.cuda_toolkit_root_dir = os.environ.get("CUDA_TOOLKIT_ROOT_DIR")
 
-    def run_cmake_cmd(self):
+    def _run_cmake_cmd(self):
+        """Build and call CMake command."""
         cmake_args = ['-DCMAKE_INSTALL_PREFIX=' + self.cga_install_dir,
                       '-DCMAKE_BUILD_TYPE=' + 'Release',
                       '-DCMAKE_INSTALL_RPATH=' + os.path.join(self.cga_install_dir, "lib")]
@@ -69,16 +76,26 @@ class CMakeWrapper:
 
         subprocess.check_call(['cmake', self.cmake_root_dir] + cmake_args, cwd=self.build_path)
 
-    def run_build_cmd(self):
+    def _run_build_cmd(self):
+        """Build and run make command."""
         build_args = ['--', '-j16', 'install']
         subprocess.check_call(['cmake', '--build', '.'] + build_args, cwd=self.build_path)
 
     def build(self):
-        self.run_cmake_cmd()
-        self.run_build_cmd()
+        """Run full CMake build pipeline."""
+        self._run_cmake_cmd()
+        self._run_build_cmd()
 
 
 def setup_python_binding(is_develop_mode, wheel_output_folder, pycga_dir, cga_install_dir):
+    """Setup python bindings and claragenomics modules for pyclaragenomics.
+
+    Args:
+        is_develop_mode : Develop or install mode for installation
+        wheel_output_folder : Output directory for pyclaragenomics wheel file
+        pycga_dir : Root pyclaragenomics directory
+        cga_install_dir : Directory with ClaraGenomicsAnalysis SDK installation
+    """
     if wheel_output_folder:
         setup_command = [
             'pip', 'wheel', '.',

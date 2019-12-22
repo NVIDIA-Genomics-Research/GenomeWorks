@@ -40,8 +40,9 @@ logger "Run Copyright header check..."
 
 # Run style check
 logger "Run Python formatting check..."
-python -m pip install flake8
+python -m pip install -r ./ci/checks/python-style-requirements.txt
 flake8 pyclaragenomics/
+pydocstyle --convention=google pyclaragenomics/
 
 logger "Run C++ formatting check..."
 mkdir --parents ${WORKSPACE}/build

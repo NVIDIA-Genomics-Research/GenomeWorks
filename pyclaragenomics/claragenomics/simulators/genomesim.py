@@ -8,7 +8,7 @@
 # license agreement from NVIDIA CORPORATION is strictly prohibited.
 #
 
-"""Classes to simulate genomes"""
+"""Classes to simulate genomes."""
 import abc
 import functools
 import multiprocessing
@@ -21,20 +21,22 @@ from claragenomics.simulators import NUCLEOTIDES
 
 
 class GenomeSimulator(abc.ABC):
-    """Base class for genome simulators"""
+    """Base class for genome simulators."""
     @abc.abstractmethod
     def build_reference(self):
+        """Abstract method for reference generation."""
         pass
 
 
 class PoissonGenomeSimulator(GenomeSimulator):
-    """Simulates genome with poisson process"""
+    """Simulates genome with poisson process."""
 
     def __init__(self):
+        """Init method."""
         pass
 
     def build_reference(self, reference_length):
-        """Simulates genome with poisson process
+        """Simulates genome with poisson process.
 
         Args:
           reference_length: The desired genome length
@@ -48,13 +50,15 @@ class PoissonGenomeSimulator(GenomeSimulator):
 
 
 class MarkovGenomeSimulator(GenomeSimulator):
-    """Simulates genome with a Markovian process"""
+    """Simulates genome with a Markovian process."""
 
     def __init__(self):
+        """Init method."""
         pass
 
     def _build_reference_section_worker(self, section_idx_and_length, transitions):
-        """Simulates section of genome with a Markovian process
+        """Simulates section of genome with a Markovian process.
+
         Args:
           section_idx_and_length (int, int):  tuple consisting of section id and section length
           transitions: dict of dict with all transition probabilities
@@ -80,7 +84,8 @@ class MarkovGenomeSimulator(GenomeSimulator):
         return "".join(ref_bases)
 
     def build_reference(self, reference_length, transitions, num_threads=None):
-        """Simulates genome with a Markovian process
+        """Simulates genome with a Markovian process.
+
         Args:
           reference_length (int): The desired genome length
           transitions: dict of dict with all transition probabilities
@@ -91,7 +96,6 @@ class MarkovGenomeSimulator(GenomeSimulator):
           String corresponding to reference genome. Each character is a
           nucleotide radnomly selected from a uniform, flat distribution.
         """
-
         num_cpus = multiprocessing.cpu_count()
 
         if num_threads is None:

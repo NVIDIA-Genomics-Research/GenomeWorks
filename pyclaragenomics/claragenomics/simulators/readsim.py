@@ -8,7 +8,7 @@
 # license agreement from NVIDIA CORPORATION is strictly prohibited.
 #
 
-"""Classes to simulate reads from a known reference, mimicking sequencing errors"""
+"""Classes to simulate reads from a known reference, mimicking sequencing errors."""
 import abc
 import gzip
 import random
@@ -21,8 +21,7 @@ from ..io import pafio
 
 
 def generate_overlaps(seqs, gzip_compressed=True):
-    """
-    Return a list of overlaps
+    """Return a list of overlaps.
 
     Args:
       seqs: list of Seq objects (4-tuple (read_id, sequence, reference_start, reference_end)
@@ -96,19 +95,22 @@ def generate_overlaps(seqs, gzip_compressed=True):
 
 
 class ReadSimulator:
+    """Base class for read simulator."""
     @abc.abstractmethod
     def generate_read(self, reference, median_length, error_rate):
+        """Abstract method for read generation."""
         pass
 
 
 class NoisyReadSimulator(ReadSimulator):
-    """Simulate sequencing errors in reads"""
+    """Simulate sequencing errors in reads."""
 
     def __init__(self):
+        """Init method."""
         pass
 
     def _add_snv_errors(self, read, error_rate):
-        """Randomly introduce SNV errors
+        """Randomly introduce SNV errors.
 
         Args:
           read (str): The nucleotide string
@@ -128,7 +130,7 @@ class NoisyReadSimulator(ReadSimulator):
         return "".join(noisy_bases)
 
     def _add_deletion_errors(self, read, error_rate):
-        """Randomly introduce SNV errors
+        """Randomly introduce SNV errors.
 
         Args:
           read (str): The nucleotide string
@@ -144,7 +146,7 @@ class NoisyReadSimulator(ReadSimulator):
         return "".join(noisy_bases)
 
     def _add_insertion_errors(self, read, error_rate):
-        """Randomly introduce SNV errors
+        """Randomly introduce SNV errors.
 
         Args:
           read (str): The nucleotide string
@@ -164,7 +166,7 @@ class NoisyReadSimulator(ReadSimulator):
         return "".join(noisy_bases)
 
     def _add_homopolymer_clipping(self, read, homopolymer_survival_length, clip_rate):
-        """Randomly reduce homopolymer length
+        """Randomly reduce homopolymer length.
 
         Args:
           read (str): The nucleotide string
@@ -198,7 +200,7 @@ class NoisyReadSimulator(ReadSimulator):
                       deletion_error_rate=1.25e-2,
                       homopolymer_survival_length=4,
                       homopolymer_clip_rate=0.5):
-        """Generate reads
+        """Generate reads.
 
         Args:
           reference (str): The reference nucleotides from which the read is generated
@@ -207,11 +209,10 @@ class NoisyReadSimulator(ReadSimulator):
           insertion_error_rate (int): the ratio of bases which will be reference insertions in the read
           deletion_error_rate (int): the ratio of bases from the reference which will be deleted
           homopolymer_survival_length: Homopolymers with this length will not be clipped
-          homopolyumer_clip_rate: bases above this length in a homopolymer will be removed with this probability
+          homopolymer_clip_rate: bases above this length in a homopolymer will be removed with this probability
 
         Returns: A read randomly generated from the reference, with noise applied
         """
-
         reference_length = len(reference)
         pos = random.randint(0, reference_length - 1)
 
