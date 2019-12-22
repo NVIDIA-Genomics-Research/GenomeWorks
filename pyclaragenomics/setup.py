@@ -9,6 +9,7 @@
 # distribution of this software and related documentation without an express
 # license agreement from NVIDIA CORPORATION is strictly prohibited.
 #
+"""Python setuptools setup."""
 
 import glob
 import os
@@ -19,6 +20,14 @@ from Cython.Build import cythonize
 
 
 def get_verified_absolute_path(path):
+    """Verify and return absolute path of argument.
+
+    Args:
+        path : Relative/absolute path
+
+    Returns:
+        Absolute path
+    """
     installed_path = os.path.abspath(path)
     if not os.path.exists(installed_path):
         raise RuntimeError("No valid path for requested component exists")
@@ -26,6 +35,14 @@ def get_verified_absolute_path(path):
 
 
 def get_installation_requirments(file_path):
+    """Parse pip requirements file.
+
+    Args:
+        file_path : path to pip requirements file
+
+    Returns:
+        list of requirement strings
+    """
     with open(file_path, 'r') as file:
         requirements_file_content = \
             [line.strip() for line in file if line.strip() and not line.lstrip().startswith('#')]
@@ -33,6 +50,13 @@ def get_installation_requirments(file_path):
 
 
 def copy_all_files_in_directory(src, dest, file_ext="*.so"):
+    """Copy files with given extension from source to destination directories.
+
+    Args:
+        src : source directory
+        dest : destination directory
+        file_ext : a regular expression string capturing relevant files
+    """
     files_to_copy = glob.glob(os.path.join(src, file_ext))
     if not files_to_copy:
         raise RuntimeError("No {} files under {}".format(src, file_ext))

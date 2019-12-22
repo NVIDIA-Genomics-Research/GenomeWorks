@@ -8,7 +8,7 @@
 # license agreement from NVIDIA CORPORATION is strictly prohibited.
 #
 
-"""Classes for tool wrappers"""
+"""Classes for tool wrappers."""
 import logging
 import os
 import shutil
@@ -16,7 +16,7 @@ import subprocess
 
 
 class RaconWrapper:
-    """Wrapper class for Racon with GPU support"""
+    """Wrapper class for Racon with GPU support."""
 
     def __init__(self, tool_path=None, gpu=False):
         """Inits RaconWrapper with tool directory and GPU flag.
@@ -66,7 +66,7 @@ class RaconWrapper:
 
 
 class Minimap2Wrapper:
-    """Wrapper class for minimap2 tool"""
+    """Wrapper class for minimap2 tool."""
 
     def __init__(self, tool_path=None):
         """Inits Minimap2Wrapper with tool directory.
@@ -89,7 +89,6 @@ class Minimap2Wrapper:
             args (string): Parameters for different data types, e.g. -x ava-one
             extra_args (string): Extra settings e.g. number of threads
         """
-
         logging.info("Generate overlaps")
         if os.path.isfile(overlaps_filepath):
             logging.info("Overwriting existing file.")
@@ -106,7 +105,7 @@ class Minimap2Wrapper:
 
 
 class MiniasmWrapper:
-    """Wrapper class for miniasm tool"""
+    """Wrapper class for miniasm tool."""
 
     def __init__(self, tool_path=None):
         """Inits MiniasmWrapper with tool directory.
@@ -138,9 +137,10 @@ class MiniasmWrapper:
 
 
 class QuastWrapper:
-    """Wrapper class for Quast"""
+    """Wrapper class for Quast."""
 
     def __init__(self):
+        """Inits QuastWrapper."""
         pass
 
     def assess(self, assembly_filepath, reference_filepath, output_dir):

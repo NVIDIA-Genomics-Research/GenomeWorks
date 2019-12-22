@@ -7,6 +7,7 @@
 # distribution of this software and related documentation without an express
 # license agreement from NVIDIA CORPORATION is strictly prohibited.
 #
+"""CUDAPOA binding module."""
 
 # distutils: language = c++
 
@@ -23,9 +24,7 @@ from claragenomics.bindings cimport cudapoa
 
 
 def status_to_str(status):
-    """
-    Convert status to their string representations.
-    """
+    """Convert status to their string representations."""
     if status == success:
         return "success"
     elif status == exceeded_maximum_poas:
@@ -53,9 +52,7 @@ def status_to_str(status):
 
 
 cdef class CudaPoaBatch:
-    """
-    Python API for CUDA-accelerated partial order alignment algorithm.
-    """
+    """Python API for CUDA-accelerated partial order alignment algorithm."""
     cdef unique_ptr[cudapoa.Batch] batch
 
     def __cinit__(
@@ -71,8 +68,7 @@ cdef class CudaPoaBatch:
             cuda_banded_alignment=False,
             *args,
             **kwargs):
-        """
-        Construct a CUDAPOA Batch object to run CUDA-accelerated
+        """Construct a CUDAPOA Batch object to run CUDA-accelerated
         partial order alignment across all windows in the batch.
 
         Args:
@@ -127,15 +123,13 @@ cdef class CudaPoaBatch:
             cuda_banded_alignment=False,
             *args,
             **kwargs):
-        """
-        Dummy implementation of __init__ function to allow
+        """Dummy implementation of __init__ function to allow
         for Python subclassing.
         """
         pass
 
     def add_poa_group(self, poa):
-        """
-        Set the POA groups to run alignment on.
+        """Set the POA groups to run alignment on.
 
         Args:
             poas : List of POA groups. Each group is a list of
@@ -169,8 +163,7 @@ cdef class CudaPoaBatch:
 
     @property
     def total_poas(self):
-        """
-        Get total number of POA groups added to batch.
+        """Get total number of POA groups added to batch.
 
         Returns:
             Number of POA groups added to batch.
@@ -179,8 +172,7 @@ cdef class CudaPoaBatch:
 
     @property
     def batch_id(self):
-        """
-        Get the batch ID of the cudapoa Batch object.
+        """Get the batch ID of the cudapoa Batch object.
 
         Returns:
             Batch ID.
@@ -188,15 +180,13 @@ cdef class CudaPoaBatch:
         return deref(self.batch).batch_id()
 
     def generate_poa(self):
-        """
-        Run asynchronous partial order alignment on all POA groups
+        """Run asynchronous partial order alignment on all POA groups
         in batch.
         """
         deref(self.batch).generate_poa()
 
     def get_msa(self):
-        """
-        Get the multi-sequence alignment for each POA group.
+        """Get the multi-sequence alignment for each POA group.
 
         Returns:
             A tuple where
@@ -212,8 +202,7 @@ cdef class CudaPoaBatch:
         return (msa, status)
 
     def get_consensus(self):
-        """
-        Get the consensus for each POA group.
+        """Get the consensus for each POA group.
 
         Returns:
             A tuple where
@@ -231,8 +220,7 @@ cdef class CudaPoaBatch:
         return (decoded_consensus, coverage, status)
 
     def get_graphs(self):
-        """
-        Get the POA graph for each POA group.
+        """Get the POA graph for each POA group.
 
         Returns:
             A tuple where
@@ -268,8 +256,7 @@ cdef class CudaPoaBatch:
         return (nx_digraphs, status)
 
     def reset(self):
-        """
-        Reset the batch object. Involves deleting all windows previously
+        """Reset the batch object. Involves deleting all windows previously
         assigned to batch object.
         """
         deref(self.batch).reset()
