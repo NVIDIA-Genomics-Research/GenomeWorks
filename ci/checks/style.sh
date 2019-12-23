@@ -38,11 +38,9 @@ source ci/common/prep-init-env.sh ${WORKSPACE}
 logger "Run Copyright header check..."
 ./ci/checks/check_copyright.py
 
-# Run style check
-logger "Run Python formatting check..."
+logger "Run Python/Cython formatting check..."
 python -m pip install -r ./ci/checks/python-style-requirements.txt
-flake8 pyclaragenomics/
-pydocstyle --convention=google pyclaragenomics/
+source pyclaragenomics/style_check
 
 logger "Run C++ formatting check..."
 mkdir --parents ${WORKSPACE}/build

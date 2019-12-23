@@ -20,6 +20,7 @@ from libc.stdint cimport uint16_t
 from claragenomics.bindings cimport cudaaligner
 from claragenomics.bindings import cuda
 
+
 def status_to_str(status):
     """Convert status to their string representations.
     """
@@ -38,17 +39,18 @@ def status_to_str(status):
     else:
         raise RuntimeError("Unknown error status : " + status)
 
+
 class CudaAlignment:
-    """Class encompassing an Alignment between two sequences."
+    """Class encompassing an Alignment between two sequences.
     """
     def __init__(self,
-            query,
-            target,
-            cigar,
-            alignment_type,
-            status,
-            alignment,
-            format_alignment):
+                 query,
+                 target,
+                 cigar,
+                 alignment_type,
+                 status,
+                 alignment,
+                 format_alignment):
         """Construct an alignment object based on alignment information between two
         sequences.
 
@@ -109,6 +111,7 @@ class CudaAlignment:
         """
         return "{}\n{}\n{}\n".format(self.format_alignment[0], self.format_alignment[1], self.format_alignment[2])
 
+
 cdef class CudaAlignerBatch:
     """Python API for CUDA-accelerated sequence to sequence alignment.
     """
@@ -152,12 +155,12 @@ cdef class CudaAlignerBatch:
             raise RuntimeError("Unknown alignment_type provided. Must be global.")
 
         self.aligner = cudaaligner.create_aligner(
-                max_query_length,
-                max_target_length,
-                max_alignments,
-                alignment_type_enum,
-                temp_stream,
-                device_id)
+            max_query_length,
+            max_target_length,
+            max_alignments,
+            alignment_type_enum,
+            temp_stream,
+            device_id)
 
     def __init__(
             self,
@@ -220,8 +223,8 @@ cdef class CudaAlignerBatch:
 
             # Get formatted alignment
             formatted_alignment = deref(res[i]).format_alignment()
-            format_alignment = [formatted_alignment.query.decode('utf-8'), \
-                                formatted_alignment.pairing.decode('utf-8'), \
+            format_alignment = [formatted_alignment.query.decode('utf-8'),
+                                formatted_alignment.pairing.decode('utf-8'),
                                 formatted_alignment.target.decode('utf-8')]
 
             # Get other string outputs

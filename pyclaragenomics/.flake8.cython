@@ -1,0 +1,23 @@
+#
+# Copyright (c) 2019, NVIDIA CORPORATION.  All rights reserved.
+#
+# NVIDIA CORPORATION and its licensors retain all intellectual property
+# and proprietary rights in and to this software, related documentation
+# and any modifications thereto.  Any use, reproduction, disclosure or
+# distribution of this software and related documentation without an express
+# license agreement from NVIDIA CORPORATION is strictly prohibited.
+#
+
+[flake8]
+filename = *.pyx, *.pxd
+ignore = E999, E225, E226, E227, W503, W504, E211
+max-line-length=120
+
+# Rules ignored:
+# E999: invalid syntax (works for Python, not Cython)
+# E211: whitespace before '(' (used in multi-line imports)
+# E225: Missing whitespace around operators (breaks cython casting syntax like <int>)
+# E226: Missing whitespace around arithmetic operators (breaks cython pointer syntax like int*)
+# E227: Missing whitespace around bitwise or shift operator (Can also break casting syntax)
+# W503: line break before binary operator (breaks lines that start with a pointer)
+# W504: line break after binary operator (breaks lines that end with a pointer)

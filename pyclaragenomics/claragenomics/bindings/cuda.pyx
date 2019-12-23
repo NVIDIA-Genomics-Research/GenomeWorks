@@ -11,6 +11,7 @@
 
 cimport claragenomics.bindings.cuda_runtime_api as cuda_runtime
 
+
 class CudaRuntimeError(Exception):
     """Wrapper class for CUDA error handling."""
     def __init__(self, error):
@@ -19,6 +20,7 @@ class CudaRuntimeError(Exception):
         cdef bytes err_str = cuda_runtime.cudaGetErrorString(e)
         err_msg = "{} : {}".format(err_name.decode(), err_str.decode())
         super().__init__(err_msg)
+
 
 cdef class CudaStream:
     """Class to abstract the usage of CUDA streams which enable
@@ -70,6 +72,7 @@ cdef class CudaStream:
         """
         return self.stream
 
+
 def cuda_get_device_count():
     """Get total number of CUDA-capable devices available.
 
@@ -82,12 +85,14 @@ def cuda_get_device_count():
         raise CudaRuntimeError(e)
     return device_count
 
+
 def cuda_set_device(device_id):
     """Set current CUDA context to a specific device.
     """
     cdef cuda_runtime._Error e = cuda_runtime.cudaSetDevice(device_id)
     if (e != 0):
         raise CudaRuntimeError(e)
+
 
 def cuda_get_device():
     """Get the device for the current CUDA context.
@@ -100,6 +105,7 @@ def cuda_get_device():
     if (e != 0):
         raise CudaRuntimeError(e)
     return device_id
+
 
 def cuda_get_mem_info(device_id):
     """Get memory information for a specific CUDA-capable device.

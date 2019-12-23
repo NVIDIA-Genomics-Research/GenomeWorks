@@ -13,7 +13,7 @@
 # cython: embedsignature = True
 # cython: language_level = 3
 
-# Declare core CUDA structs and API calls which 
+# Declare core CUDA structs and API calls which
 # can be used to interface with the CUDA runtime API.
 
 # Declare cudaStream_t and cudaError_t without specifying particular
