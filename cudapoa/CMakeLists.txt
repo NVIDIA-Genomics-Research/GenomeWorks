@@ -26,8 +26,13 @@ cuda_add_library(cudapoa ${cga_library_type}
     )
 
 target_link_libraries(cudapoa utils logging)
+target_compile_options(cudapoa PRIVATE -Werror -Wall -Wextra)
 
-target_compile_options(cudapoa PRIVATE -Werror -Wall -Wextra -march=native)
+option(optimize_for_native "Build with march=native" ON)
+if (optimize_for_native)
+    target_compile_options(cudapoa PRIVATE -march=native)
+    # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native")
+endif()
 
 if(cga_enable_cudapoa_nw_print)
     target_compile_definitions(cudapoa PUBLIC NW_VERBOSE_PRINT)
@@ -37,9 +42,9 @@ if(spoa_accurate)
     target_compile_definitions(cudapoa PUBLIC SPOA_ACCURATE)
 endif()
 
-target_include_directories(cudapoa 
-    PUBLIC 
-        $<INSTALL_INTERFACE:include>    
+target_include_directories(cudapoa
+    PUBLIC
+        $<INSTALL_INTERFACE:include>
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 )
 
