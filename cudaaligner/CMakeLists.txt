@@ -40,11 +40,14 @@ target_include_directories(cudaaligner_internal INTERFACE
 
 target_link_libraries(cudaaligner utils logging)
 
-target_compile_options(cudaaligner PRIVATE -Werror -Wall -Wextra -march=native)
+target_compile_options(cudaaligner PRIVATE -Werror -Wall -Wextra)
+if (cga_optimize_for_native_cpu)
+    target_compile_options(cudapoa PRIVATE -march=native)
+endif()
 
-target_include_directories(cudaaligner 
-    PUBLIC 
-        $<INSTALL_INTERFACE:include>    
+target_include_directories(cudaaligner
+    PUBLIC
+        $<INSTALL_INTERFACE:include>
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 )
 
