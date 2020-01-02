@@ -31,7 +31,6 @@ target_compile_options(cudapoa PRIVATE -Werror -Wall -Wextra)
 option(optimize_for_native "Build with march=native" ON)
 if (optimize_for_native)
     target_compile_options(cudapoa PRIVATE -march=native)
-    # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native")
 endif()
 
 if(cga_enable_cudapoa_nw_print)
