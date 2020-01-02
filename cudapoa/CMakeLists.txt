@@ -26,9 +26,8 @@ cuda_add_library(cudapoa ${cga_library_type}
     )
 
 target_link_libraries(cudapoa utils logging)
-target_compile_options(cudapoa PRIVATE -Werror -Wall -Wextra)
 
-option(optimize_for_native "Build with march=native" ON)
+target_compile_options(cudapoa PRIVATE -Werror -Wall -Wextra)
 if (optimize_for_native)
     target_compile_options(cudapoa PRIVATE -march=native)
 endif()
