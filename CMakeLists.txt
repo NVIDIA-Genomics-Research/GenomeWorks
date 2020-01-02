@@ -18,7 +18,7 @@ option(cga_enable_tests "Build ClaraGenomicsAnalysis unit tests" OFF)
 option(cga_enable_benchmarks "Build ClaraGenomicsAnalysis benchmarks" OFF)
 option(cga_build_shared "Build ClaraGenomicsAnalysis libraries as shared objects" OFF)
 option(cga_device_synchronize_kernels "Run cudaDeviceSynchronize() in CGA_CU_CHECK_ERR calls" OFF)
-option(optimize_for_native "Build with march=native" ON)
+option(cga_optimize_for_native_cpu "Build with march=native" ON)
 # The spoa_accurate option runs a different (and slower) version of
 # the topological sort in cudapoa which exactly matches the output
 # of the topological sort implementation in the SPOA library. This is
