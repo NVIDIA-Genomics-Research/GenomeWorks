@@ -46,6 +46,13 @@ source pyclaragenomics/style_check
 logger "Run Python documentation generation..."
 mkdir -p pyclaragenomics/docs; cd pyclaragenomics/docs
 sphinx-quickstart -p "Clara Genomics Analysis SDK" -v "x.y.z" -a "NVIDIA Corportation" -q --ext-autodoc --sep
+##### Update sphinx conf.py with path for modules
+echo "import os" >> temp.py
+echo "import sys" >> temp.py
+echo "sys.path.insert(0, os.path.abspath('../..'))" >> temp.py
+cat source/conf.py >> temp.py
+mv temp.py source/conf.py
+#####
 sphinx-apidoc -f -o source/ ../claragenomics/ ../claragenomics/bindings/*cpython*
 make html
 
