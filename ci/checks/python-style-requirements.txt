@@ -10,3 +10,4 @@
 
 flake8==3.7.8
 pydocstyle==5.0.1
+sphinx==2.3.1
