@@ -27,6 +27,14 @@ typename std::make_signed<typename Container::size_type>::type get_size(Containe
     return static_cast<signed_type>(c.size());
 }
 
+template <class Integer, class Container>
+Integer get_size(Container const& c)
+{
+    using signed_type = Integer;
+    assert(c.size() <= static_cast<typename Container::size_type>(std::numeric_limits<signed_type>::max()));
+    return static_cast<signed_type>(c.size());
+}
+
 template <class T>
 T throw_on_negative(T x, const char* message)
 {
