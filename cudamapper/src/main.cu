@@ -23,6 +23,7 @@
 #include <claragenomics/logging/logging.hpp>
 #include <claragenomics/io/fasta_parser.hpp>
 #include <claragenomics/utils/cudautils.hpp>
+#include <claragenomics/utils/signed_integer_utils.hpp>
 
 #include <claragenomics/cudamapper/index.hpp>
 #include <claragenomics/cudamapper/matcher.hpp>
@@ -44,6 +45,7 @@ void help(int32_t exit_code);
 
 int main(int argc, char* argv[])
 {
+    using claragenomics::get_size;
     claragenomics::logging::Init();
 
     uint32_t k                     = 15;    // k
@@ -54,7 +56,7 @@ int main(int argc, char* argv[])
     std::int32_t target_index_size = 10000; // t
     double filtering_parameter     = 1.0;   // F
     std::string optstring          = "k:w:d:c:i:t:F:h:";
-    uint32_t argument;
+    int32_t argument               = 0;
     while ((argument = getopt_long(argc, argv, optstring.c_str(), options, nullptr)) != -1)
     {
         switch (argument)
@@ -193,7 +195,7 @@ int main(int argc, char* argv[])
             // If in all-to-all mode, put this query in the cache for later use.
             // Cache eviction is handled later on by the calling thread
             // using the evict_index function.
-            if (index_cache[device_id].size() < max_cache_size && allow_cache_index)
+            if (get_size<int32_t>(index_cache[device_id]) < max_cache_size && allow_cache_index)
             {
                 index_cache[device_id][key] = index;
             }
@@ -303,11 +305,11 @@ int main(int argc, char* argv[])
     {
         workers.push_back(std::thread(
             [&, device_id]() {
-                while (ranges_idx < query_target_ranges.size())
+                while (ranges_idx < get_size<int>(query_target_ranges))
                 {
                     int range_idx = ranges_idx.fetch_add(1);
                     //Need to perform this check again for thread-safety
-                    if (range_idx < query_target_ranges.size())
+                    if (range_idx < get_size<int>(query_target_ranges))
                     {
                         auto overlap_future = compute_overlaps(query_target_ranges[range_idx], device_id);
                         std::lock_guard<std::mutex> lck(overlap_futures_mtx);
