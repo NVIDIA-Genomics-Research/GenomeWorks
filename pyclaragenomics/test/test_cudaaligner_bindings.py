@@ -10,10 +10,10 @@
 
 import pytest
 
-from claragenomics.bindings.cudaaligner import CudaAlignerBatch
-import claragenomics.bindings.cuda as cuda
-from claragenomics.simulators.genomesim import PoissonGenomeSimulator
-from claragenomics.simulators.readsim import NoisyReadSimulator
+from claragenomics.pycga.bindings.cudaaligner import CudaAlignerBatch
+import claragenomics.pycga.bindings.cuda as cuda
+from claragenomics.pycga.simulators.genomesim import PoissonGenomeSimulator
+from claragenomics.pycga.simulators.readsim import NoisyReadSimulator
 
 
 @pytest.mark.gpu

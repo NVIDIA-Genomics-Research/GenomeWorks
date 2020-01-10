@@ -19,8 +19,8 @@ from libcpp.string cimport string
 from libcpp.vector cimport vector
 import networkx as nx
 
-from claragenomics.bindings import cuda
-from claragenomics.bindings cimport cudapoa
+from pycga.bindings import cuda
+from pycga.bindings cimport cudapoa
 
 
 def status_to_str(status):

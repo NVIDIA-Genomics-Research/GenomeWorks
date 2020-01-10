@@ -14,7 +14,7 @@
 import glob
 import os
 import shutil
-from setuptools import setup, find_packages, Extension
+from setuptools import setup, find_packages, Extension, find_namespace_packages
 
 from Cython.Build import cythonize
 
@@ -84,7 +84,7 @@ current_dir = os.path.dirname(os.path.realpath(__file__))
 # Copies shared libraries into clargenomics package
 copy_all_files_in_directory(
     get_verified_absolute_path(os.path.join(cga_install_dir, "lib")),
-    os.path.join(current_dir, "claragenomics/shared_libs/"),
+    os.path.join(current_dir, "claragenomics", "pycga", "shared_libs/"),
 )
 
 # Classifiers for PyPI
@@ -125,12 +125,12 @@ setup(name='pyclaragenomics',
       url="https://github.com/clara-genomics/ClaraGenomicsAnalysis",
       include_package_data=True,
       data_files=[
-          ('cga_shared_objects', glob.glob('claragenomics/shared_libs/*.so'))
+          ('cga_shared_objects', glob.glob('claragenomics/pycga/shared_libs/*.so'))
       ],
       install_requires=get_installation_requirments(
           get_verified_absolute_path(os.path.join(current_dir, 'requirements.txt'))
       ),
-      packages=find_packages(where=current_dir),
+      packages=find_namespace_packages(where=current_dir, include=['claragenomics.*']),
       python_requires='>=3.5',
       license='Apache License 2.0',
       long_description='Python libraries and utilities for manipulating genomics data',

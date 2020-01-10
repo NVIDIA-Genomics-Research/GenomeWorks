@@ -18,7 +18,7 @@ from libcpp.vector cimport vector
 from libc.stdint cimport int32_t
 from libcpp.memory cimport unique_ptr, shared_ptr
 
-from claragenomics.bindings.cuda_runtime_api cimport _Stream
+from pycga.bindings.cuda_runtime_api cimport _Stream
 
 # This file declared public structs and API calls
 # from the ClaraGenomicsAnalysis `cudaaligner` module.

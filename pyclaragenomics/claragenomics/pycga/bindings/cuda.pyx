@@ -9,7 +9,7 @@
 #
 """Bindings for CUDA."""
 
-cimport claragenomics.bindings.cuda_runtime_api as cuda_runtime
+cimport pycga.bindings.cuda_runtime_api as cuda_runtime
 
 
 class CudaRuntimeError(Exception):

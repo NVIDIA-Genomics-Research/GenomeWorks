@@ -17,8 +17,8 @@ from libcpp.memory cimport unique_ptr
 from libcpp.string cimport string
 from libc.stdint cimport uint16_t
 
-from claragenomics.bindings cimport cudaaligner
-from claragenomics.bindings import cuda
+from pycga.bindings cimport cudaaligner
+from pycga.bindings import cuda
 
 
 def status_to_str(status):
