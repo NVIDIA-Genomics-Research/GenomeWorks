@@ -9,7 +9,6 @@
 #
 
 project(cgaio)
-include_directories(/home/mike/dev/kseqpp/src)
 
 get_property(cga_library_type GLOBAL PROPERTY cga_library_type)
 add_library(${PROJECT_NAME} ${cga_library_type}
@@ -22,6 +21,8 @@ target_link_libraries(${PROJECT_NAME} PUBLIC z)
 add_doxygen_source_dir(${CMAKE_CURRENT_SOURCE_DIR}/include/claragenomics/io)
 
 target_include_directories(${PROJECT_NAME}
+    PRIVATE
+        ${KSEQPP_DIR}
     PUBLIC 
         $<INSTALL_INTERFACE:include>    
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
