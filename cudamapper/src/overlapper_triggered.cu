@@ -32,7 +32,7 @@ __host__ __device__ bool operator==(const Anchor& lhs,
     // TODO change to a more sophisticated scoring method
     auto score = 1;
 
-    if ((rhs.query_position_in_read_ - lhs.query_position_in_read_) < 350 and abs(int(rhs.target_position_in_read_) - int(lhs.target_position_in_read_)) < 350)
+    if ((rhs.query_position_in_read_ - lhs.query_position_in_read_) < 500 and abs(int(rhs.target_position_in_read_) - int(lhs.target_position_in_read_)) < 500)
         score = 2;
     return ((lhs.query_read_id_ == rhs.query_read_id_) &&
             (lhs.target_read_id_ == rhs.target_read_id_) &&
@@ -71,6 +71,7 @@ __host__ __device__ bool operator==(const cuOverlapKey& key0,
 {
     const Anchor* a = key0.anchor;
     const Anchor* b = key1.anchor;
+    return false;
     return (a->target_read_id_ == b->target_read_id_) &&
            (a->query_read_id_ == b->query_read_id_);
 }
@@ -178,7 +179,7 @@ void OverlapperTriggered::get_overlaps(std::vector<Overlap>& fused_overlaps,
                                        const Index& index_target)
 {
     CGA_NVTX_RANGE(profiler, "OverlapperTriggered::get_overlaps");
-    const auto tail_length_for_chain = 3;
+    const auto tail_length_for_chain = 50;
     auto n_anchors                   = d_anchors.size();
 
     // comparison operator - lambda used to compare Anchors in sort
