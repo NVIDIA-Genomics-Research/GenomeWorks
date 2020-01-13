@@ -71,11 +71,13 @@ def copy_all_files_in_directory(src, dest, file_ext="*.so"):
 
 
 # Must be set before calling pip
-try:
-    cga_install_dir = os.environ['CGA_INSTALL_DIR']
-except KeyError as e:
-    raise EnvironmentError(
-        'CGA_INSTALL_DIR environment variables must be set').with_traceback(e.__traceback__)
+for envvar in ['CGA_INSTALL_DIR', 'CGA_VERSION']:
+    if envvar not in os.environ.keys():
+        raise EnvironmentError(
+            '{} environment variables must be set'.format(envvar))
+
+cga_install_dir = os.environ['CGA_INSTALL_DIR']
+cga_version = os.environ['CGA_VERSION']
 
 # Get current dir (pyclaragenomics folder is copied into a temp directory created by pip)
 current_dir = os.path.dirname(os.path.realpath(__file__))
@@ -119,7 +121,7 @@ extensions = [
 ]
 
 setup(name='pyclaragenomics',
-      version='0.5.0',
+      version=cga_version,
       description='NVIDIA genomics python libraries and utiliites',
       author='NVIDIA Corporation',
       url="https://github.com/clara-genomics/ClaraGenomicsAnalysis",
