@@ -14,7 +14,7 @@
 import glob
 import os
 import shutil
-from setuptools import setup, find_packages, Extension, find_namespace_packages
+from setuptools import setup, Extension, find_namespace_packages
 
 from Cython.Build import cythonize
 
