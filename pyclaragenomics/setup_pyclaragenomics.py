@@ -96,6 +96,10 @@ def setup_python_binding(is_develop_mode, wheel_output_folder, pycga_dir, cga_in
         pycga_dir : Root pyclaragenomics directory
         cga_install_dir : Directory with ClaraGenomicsAnalysis SDK installation
     """
+    # Get CGA version
+    with open(os.path.join(os.path.dirname(pycga_dir), 'VERSION'), 'r') as f:
+        version_str = f.read().replace('\n', '')
+
     if wheel_output_folder:
         setup_command = [
             'pip', 'wheel', '.',
@@ -113,7 +117,8 @@ def setup_python_binding(is_develop_mode, wheel_output_folder, pycga_dir, cga_in
     subprocess.check_call(setup_command,
                           env={
                               **os.environ,
-                              'CGA_INSTALL_DIR': cga_install_dir
+                              'CGA_INSTALL_DIR': cga_install_dir,
+                              'CGA_VERSION': version_str
                           },
                           cwd=pycga_dir)
     print(completion_message)
