@@ -14,7 +14,7 @@
 import argparse
 from collections import defaultdict
 
-from claragenomics.io import pafio
+from claragenomics.pycga.io import pafio
 
 
 def match_overlaps(query_0, query_1, target_0, target_1, pos_tolerance):
