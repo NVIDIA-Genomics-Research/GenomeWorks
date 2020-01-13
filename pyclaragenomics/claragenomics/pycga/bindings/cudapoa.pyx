@@ -7,45 +7,52 @@
 # distribution of this software and related documentation without an express
 # license agreement from NVIDIA CORPORATION is strictly prohibited.
 #
+
+# cython: profile=False
+# distutils: language = c++
+# cython: embedsignature = True
+# cython: language_level = 3
+
 """CUDAPOA binding module."""
 
-# distutils: language = c++
-
 from cython.operator cimport dereference as deref
-from libc.stdint cimport uint16_t
+from libc.stdint cimport uint16_t, int8_t
 from libcpp.memory cimport unique_ptr
 from libcpp.pair cimport pair
 from libcpp.string cimport string
 from libcpp.vector cimport vector
 import networkx as nx
 
-from pycga.bindings import cuda
+from pycga.bindings.cuda_runtime_api cimport _Stream
+from pycga.bindings.graph cimport DirectedGraph
 from pycga.bindings cimport cudapoa
+
+from claragenomics.pycga.bindings import cuda
 
 
 def status_to_str(status):
     """Convert status to their string representations."""
-    if status == success:
+    if status == cudapoa.success:
         return "success"
-    elif status == exceeded_maximum_poas:
+    elif status == cudapoa.exceeded_maximum_poas:
         return "exceeded_maximum_poas"
-    elif status == exceeded_maximum_sequence_size:
+    elif status == cudapoa.exceeded_maximum_sequence_size:
         return "exceeded_maximum_sequence_size"
-    elif status == exceeded_maximum_sequences_per_poa:
+    elif status == cudapoa.exceeded_maximum_sequences_per_poa:
         return "exceeded_maximum_sequences_per_poa"
-    elif status == exceeded_batch_size:
+    elif status == cudapoa.exceeded_batch_size:
         return "exceeded_batch_size"
-    elif status == node_count_exceeded_maximum_graph_size:
+    elif status == cudapoa.node_count_exceeded_maximum_graph_size:
         return "node_count_exceeded_maximum_graph_size"
-    elif status == edge_count_exceeded_maximum_graph_size:
+    elif status == cudapoa.edge_count_exceeded_maximum_graph_size:
         return "edge_count_exceeded_maximum_graph_size"
-    elif status == seq_len_exceeded_maximum_nodes_per_window:
+    elif status == cudapoa.seq_len_exceeded_maximum_nodes_per_window:
         return "seq_len_exceeded_maximum_nodes_per_window"
-    elif status == loop_count_exceeded_upper_bound:
+    elif status == cudapoa.loop_count_exceeded_upper_bound:
         return "loop_count_exceeded_upper_bound"
-    elif status == output_type_unavailable:
+    elif status == cudapoa.output_type_unavailable:
         return "output_type_unavailable"
-    elif status == generic_error:
+    elif status == cudapoa.generic_error:
         return "generic_error"
     else:
         raise RuntimeError("Unknown error status : " + status)
@@ -93,9 +100,9 @@ cdef class CudaPoaBatch:
 
         cdef int8_t output_mask
         if (output_type == "consensus"):
-            output_mask = consensus
+            output_mask = cudapoa.consensus
         elif (output_type == "msa"):
-            output_mask = msa
+            output_mask = cudapoa.msa
         else:
             raise RuntimeError("Unknown output_type provided. Must be consensus/msa.")
 
@@ -116,7 +123,7 @@ cdef class CudaPoaBatch:
             gpu_mem,
             device_id=0,
             stream=None,
-            output_mask=consensus,
+            output_mask=cudapoa.consensus,
             gap_score=-8,
             mismatch_score=-6,
             match_score=8,
@@ -157,7 +164,7 @@ cdef class CudaPoaBatch:
             entry.length = len(seq)
             poa_group.push_back(entry)
         status = deref(self.batch).add_poa_group(seq_status, poa_group)
-        if status != success and status != exceeded_maximum_poas:
+        if status != cudapoa.success and status != cudapoa.exceeded_maximum_poas:
             raise RuntimeError("Could not add POA group: Error code " + status_to_str(status))
         return (status, seq_status)
 
@@ -197,7 +204,7 @@ cdef class CudaPoaBatch:
         cdef vector[vector[string]] msa
         cdef vector[cudapoa.StatusType] status
         error = deref(self.batch).get_msa(msa, status)
-        if error == output_type_unavailable:
+        if error == cudapoa.output_type_unavailable:
             raise RuntimeError("Output type not requested during batch initialization")
         return (msa, status)
 
@@ -214,7 +221,7 @@ cdef class CudaPoaBatch:
         cdef vector[vector[uint16_t]] coverage
         cdef vector[cudapoa.StatusType] status
         error = deref(self.batch).get_consensus(consensus, coverage, status)
-        if error == output_type_unavailable:
+        if error == cudapoa.output_type_unavailable:
             raise RuntimeError("Output type not requested during batch initialization")
         decoded_consensus = [c.decode('utf-8') for c in consensus]
         return (decoded_consensus, coverage, status)

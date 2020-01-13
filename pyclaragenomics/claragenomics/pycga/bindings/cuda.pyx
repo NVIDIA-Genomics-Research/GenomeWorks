@@ -7,6 +7,12 @@
 # distribution of this software and related documentation without an express
 # license agreement from NVIDIA CORPORATION is strictly prohibited.
 #
+
+# cython: profile=False
+# distutils: language = c++
+# cython: embedsignature = True
+# cython: language_level = 3
+
 """Bindings for CUDA."""
 
 cimport pycga.bindings.cuda_runtime_api as cuda_runtime

@@ -104,15 +104,40 @@ pycga_classifiers = [
 
 extensions = [
     Extension(
-        "*",
-        sources=[os.path.join("claragenomics/**/*.pyx")],
+        "claragenomics.pycga.bindings.cuda",
+        sources=[os.path.join("claragenomics/**/cuda.pyx")],
+        include_dirs=[
+            "/usr/local/cuda/include",
+        ],
+        library_dirs=["/usr/local/cuda/lib64"],
+        runtime_library_dirs=["/usr/local/cuda/lib64"],
+        libraries=["cudart"],
+        language="c++",
+        extra_compile_args=["-std=c++14"],
+    ),
+    Extension(
+        "claragenomics.pycga.bindings.cudapoa",
+        sources=[os.path.join("claragenomics/**/cudapoa.pyx")],
         include_dirs=[
             "/usr/local/cuda/include",
             get_verified_absolute_path(os.path.join(cga_install_dir, "include")),
         ],
         library_dirs=["/usr/local/cuda/lib64", get_verified_absolute_path(os.path.join(cga_install_dir, "lib"))],
         runtime_library_dirs=["/usr/local/cuda/lib64", os.path.join('$ORIGIN', os.pardir, 'shared_libs')],
-        libraries=["cudapoa", "cudaaligner", "cudart", "logging"],
+        libraries=["cudapoa", "cudart", "logging"],
+        language="c++",
+        extra_compile_args=["-std=c++14"],
+    ),
+    Extension(
+        "claragenomics.pycga.bindings.cudaaligner",
+        sources=[os.path.join("claragenomics/**/cudaaligner.pyx")],
+        include_dirs=[
+            "/usr/local/cuda/include",
+            get_verified_absolute_path(os.path.join(cga_install_dir, "include")),
+        ],
+        library_dirs=["/usr/local/cuda/lib64", get_verified_absolute_path(os.path.join(cga_install_dir, "lib"))],
+        runtime_library_dirs=["/usr/local/cuda/lib64", os.path.join('$ORIGIN', os.pardir, 'shared_libs')],
+        libraries=["cudaaligner", "cudart", "logging"],
         language="c++",
         extra_compile_args=["-std=c++14"],
     )

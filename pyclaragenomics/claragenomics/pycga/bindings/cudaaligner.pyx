@@ -7,34 +7,40 @@
 # distribution of this software and related documentation without an express
 # license agreement from NVIDIA CORPORATION is strictly prohibited.
 #
-"""Bindings for CUDAALIGNER."""
 
+# cython: profile=False
 # distutils: language = c++
+# cython: embedsignature = True
+# cython: language_level = 3
+
+"""Bindings for CUDAALIGNER."""
 
 from cython.operator cimport dereference as deref
 from libcpp.vector cimport vector
-from libcpp.memory cimport unique_ptr
+from libcpp.memory cimport unique_ptr, shared_ptr
 from libcpp.string cimport string
 from libc.stdint cimport uint16_t
 
+from pycga.bindings.cuda_runtime_api cimport _Stream
 from pycga.bindings cimport cudaaligner
-from pycga.bindings import cuda
+
+from claragenomics.pycga.bindings import cuda
 
 
 def status_to_str(status):
     """Convert status to their string representations.
     """
-    if status == success:
+    if status == cudaaligner.success:
         return "success"
-    elif status == uninitialized:
+    elif status == cudaaligner.uninitialized:
         return "uninitialized"
-    elif status == exceeded_max_alignments:
+    elif status == cudaaligner.exceeded_max_alignments:
         return "exceeded_max_alignments"
-    elif status == exceeded_max_length:
+    elif status == cudaaligner.exceeded_max_length:
         return "exceeded_max_length"
-    elif status == exceeded_max_alignment_difference:
+    elif status == cudaaligner.exceeded_max_alignment_difference:
         return "exceeded_max_alignment_difference"
-    elif status == generic_error:
+    elif status == cudaaligner.generic_error:
         return "generic_error"
     else:
         raise RuntimeError("Unknown error status : " + status)
@@ -80,7 +86,7 @@ class CudaAlignment:
 
         Returns: Alignment type string
         """
-        if t == global_alignment:
+        if t == cudaaligner.global_alignment:
             return "global"
         else:
             raise RuntimeError("Unknown alignment type encountered: " + t)
@@ -95,13 +101,13 @@ class CudaAlignment:
         Returns:
             Alignment state string
         """
-        if s == match:
+        if s == cudaaligner.match:
             return 'm'
-        elif s == mismatch:
+        elif s == cudaaligner.mismatch:
             return 'mm'
-        elif s == insertion:
+        elif s == cudaaligner.insertion:
             return 'i'
-        elif s == deletion:
+        elif s == cudaaligner.deletion:
             return 'd'
         else:
             raise RuntimeError("Unknown alignment state encountered: " + s)
@@ -150,7 +156,7 @@ cdef class CudaAlignerBatch:
 
         cdef cudaaligner.AlignmentType alignment_type_enum
         if (alignment_type == "global"):
-            alignment_type_enum = global_alignment
+            alignment_type_enum = cudaaligner.global_alignment
         else:
             raise RuntimeError("Unknown alignment_type provided. Must be global.")
 
@@ -208,8 +214,8 @@ cdef class CudaAlignerBatch:
         # Declare cdef types
         cdef vector[shared_ptr[cudaaligner.Alignment]] res = deref(self.aligner).get_alignments()
         cdef size_t num_alignments = res.size()
-        cdef vector[AlignmentState] alignment_state
-        cdef FormattedAlignment formatted_alignment
+        cdef vector[cudaaligner.AlignmentState] alignment_state
+        cdef cudaaligner.FormattedAlignment formatted_alignment
 
         # First sync all the alignments since the align call is asynchronous.
         deref(self.aligner).sync_alignments()
