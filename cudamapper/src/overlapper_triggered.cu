@@ -71,9 +71,22 @@ __host__ __device__ bool operator==(const cuOverlapKey& key0,
 {
     const Anchor* a = key0.anchor;
     const Anchor* b = key1.anchor;
+
+    //printf("Comparing (%i, %i), (%i, %i)\n", key0.anchor->query_read_id_ , key1.anchor->query_read_id_, key0.anchor->target_read_id_ , key1.anchor->target_read_id_);
+
     return false;
-    return (a->target_read_id_ == b->target_read_id_) &&
-           (a->query_read_id_ == b->query_read_id_);
+    //nofuse
+    return (a->target_read_id_ == b->target_read_id_) && (a->query_read_id_ == b->query_read_id_) && (a->query_position_in_read_ == b->query_position_in_read_) && (a->target_position_in_read_ == b->target_position_in_read_);
+
+    int distance_difference = (a->query_position_in_read_ - b->query_position_in_read_) -
+            (a->target_position_in_read_ - b->target_position_in_read_);
+
+    //bool equal = (a->target_read_id_ == b->target_read_id_) &&
+    //             (a->query_read_id_ == b->query_read_id_);// &&
+     //            //distance_difference < 300;
+
+    //return equal;
+
 }
 
 struct cuOverlapArgs
@@ -179,7 +192,7 @@ void OverlapperTriggered::get_overlaps(std::vector<Overlap>& fused_overlaps,
                                        const Index& index_target)
 {
     CGA_NVTX_RANGE(profiler, "OverlapperTriggered::get_overlaps");
-    const auto tail_length_for_chain = 50;
+    const auto tail_length_for_chain = 10;
     auto n_anchors                   = d_anchors.size();
 
     // comparison operator - lambda used to compare Anchors in sort
@@ -196,7 +209,7 @@ void OverlapperTriggered::get_overlaps(std::vector<Overlap>& fused_overlaps,
                 (i.target_position_in_read_ < j.target_position_in_read_));
     };
 
-    // sort on device
+    // sort on device, sort by query ID
     // TODO : currently thrust::sort requires O(2N) auxiliary storage, implement the same functionality using O(N) auxiliary storage
     thrust::sort(thrust::device, d_anchors.begin(), d_anchors.end(), comp);
 
@@ -216,6 +229,7 @@ void OverlapperTriggered::get_overlaps(std::vector<Overlap>& fused_overlaps,
     // total number of chains found
     thrust::device_vector<int32_t> d_nchains(1);
 
+    //The equality of two anchors has been overriden, such that they are equal (members of the same chain) if their QID,TID are equal and they fall within a fixed distance of one another
     void* d_temp_storage      = nullptr;
     size_t temp_storage_bytes = 0;
     // calculate storage requirement for run length encoding
@@ -235,7 +249,7 @@ void OverlapperTriggered::get_overlaps(std::vector<Overlap>& fused_overlaps,
     // <<<<<<<<<<
 
     // memcpy D2H
-    auto n_chains = d_nchains[0];
+    auto n_chains = d_nchains[0]; //We now know the number of chains we are working with.
 
     // use prefix sum to calculate the starting index position of all the chains
     // >>>>>>>>>>>>
@@ -262,6 +276,8 @@ void OverlapperTriggered::get_overlaps(std::vector<Overlap>& fused_overlaps,
     // calculate overlaps where overlap is a chain with length > tail_length_for_chain
     // >>>>>>>>>>>>
 
+    // MV - at this point, chains have been computed
+
     // d_overlaps[j] contains index to d_chain_length/d_chain_start where
     // d_chain_length[d_overlaps[j]] and d_chain_start[d_overlaps[j]] corresponds
     // to length and index to starting anchor of the chain-d_overlaps[j] (also referred as overlap j)
@@ -274,6 +290,7 @@ void OverlapperTriggered::get_overlaps(std::vector<Overlap>& fused_overlaps,
                             return (len >= tail_length_for_chain);
                         });
 
+    // MV - at this point, unfused overlaps have been computed (filtered chains)
     auto n_overlaps = indices_end - d_overlaps.data();
     // <<<<<<<<<<<<<
 
@@ -303,34 +320,54 @@ void OverlapperTriggered::get_overlaps(std::vector<Overlap>& fused_overlaps,
 
     d_temp_storage     = nullptr;
     temp_storage_bytes = 0;
-    cub::DeviceReduce::ReduceByKey(d_temp_storage, temp_storage_bytes, d_keys_in,
-                                   d_fusedoverlap_keys.data(), d_values_in,
-                                   d_fusedoverlaps_args.data(), d_nfused_overlaps.data(),
-                                   reduction_op, n_overlaps);
+    cub::DeviceReduce::ReduceByKey(d_temp_storage,
+                                   temp_storage_bytes,
+                                   d_keys_in,
+                                   d_fusedoverlap_keys.data(),
+                                   d_values_in,
+                                   d_fusedoverlaps_args.data(),
+                                   d_nfused_overlaps.data(),
+                                   reduction_op,
+                                   n_overlaps);
 
     // allocate temporary storage
     d_temp_buf.resize(temp_storage_bytes);
     d_temp_storage = d_temp_buf.data().get();
 
-    cub::DeviceReduce::ReduceByKey(d_temp_storage, temp_storage_bytes, d_keys_in,
-                                   d_fusedoverlap_keys.data(), d_values_in,
-                                   d_fusedoverlaps_args.data(), d_nfused_overlaps.data(),
-                                   reduction_op, n_overlaps);
+    cub::DeviceReduce::ReduceByKey(d_temp_storage,
+                                   temp_storage_bytes,
+                                   d_keys_in,
+                                   d_fusedoverlap_keys.data(), //Write out the unique keys here
+                                   d_values_in,
+                                   d_fusedoverlaps_args.data(), //Write out the values here
+                                   d_nfused_overlaps.data(),
+                                   reduction_op,
+                                   n_overlaps);
 
     // memcpyD2H
     auto n_fused_overlap = d_nfused_overlaps[0];
 
+    if(n_fused_overlap != n_overlaps){
+        std::cerr<<"n_fused = " << n_fused_overlap << " n_overlap = " << n_overlaps << "\n";
+    }
+
     // construct overlap from the overlap args
     CreateOverlap fuse_op(d_anchors.data().get());
-    thrust::device_vector<Overlap> d_fused_overlaps(n_fused_overlap);
+    thrust::device_vector<Overlap> d_fused_overlaps(n_fused_overlap); //Overlaps written here
+
     thrust::transform(d_fusedoverlaps_args.data(),
                       d_fusedoverlaps_args.data() + n_fused_overlap,
                       d_fused_overlaps.data(), fuse_op);
 
+    thrust::transform(d_fusedoverlaps_args.data(),
+                      d_fusedoverlaps_args.data() + n_fused_overlap,
+                      d_fused_overlaps.data(), fuse_op);
     // memcpyD2H - move fused overlaps to host
     fused_overlaps.resize(n_fused_overlap);
+
     thrust::copy(d_fused_overlaps.begin(), d_fused_overlaps.end(),
                  fused_overlaps.begin());
+
     // <<<<<<<<<<<<
 
     // parallel update the overlaps to include the corresponding read names [parallel on host]
