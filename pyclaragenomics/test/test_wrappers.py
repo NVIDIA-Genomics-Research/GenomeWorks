@@ -13,8 +13,8 @@ import os
 import pytest
 import tempfile
 
-from claragenomics.pycga.wrappers import wrappers
-from claragenomics.pycga.utilities import utilities
+from claragenomics.wrappers import wrappers
+from claragenomics.utilities import utilities
 
 # ground-truth files
 current_dir = os.path.dirname(os.path.realpath(__file__))

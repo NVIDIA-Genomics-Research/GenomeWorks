@@ -12,8 +12,8 @@
 
 import argparse
 
-from claragenomics.pycga.bindings import cudaaligner
-from claragenomics.pycga.simulators.genomesim import PoissonGenomeSimulator
+from claragenomics.bindings import cudaaligner
+from claragenomics.simulators.genomesim import PoissonGenomeSimulator
 
 """
 Sample program for using CUDA Aligner Python API for pairwise alignment.

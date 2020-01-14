@@ -15,7 +15,7 @@
 
 """Bindings for CUDA."""
 
-cimport pycga.bindings.cuda_runtime_api as cuda_runtime
+cimport bindings.cuda_runtime_api as cuda_runtime
 
 
 class CudaRuntimeError(Exception):

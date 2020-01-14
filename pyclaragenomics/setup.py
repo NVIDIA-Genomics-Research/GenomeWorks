@@ -86,7 +86,7 @@ current_dir = os.path.dirname(os.path.realpath(__file__))
 # Copies shared libraries into clargenomics package
 copy_all_files_in_directory(
     get_verified_absolute_path(os.path.join(cga_install_dir, "lib")),
-    os.path.join(current_dir, "claragenomics", "pycga", "shared_libs/"),
+    os.path.join(current_dir, "claragenomics", "shared_libs/"),
 )
 
 # Classifiers for PyPI
@@ -106,7 +106,7 @@ pycga_classifiers = [
 
 extensions = [
     Extension(
-        "claragenomics.pycga.bindings.cuda",
+        "claragenomics.bindings.cuda",
         sources=[os.path.join("claragenomics/**/cuda.pyx")],
         include_dirs=[
             "/usr/local/cuda/include",
@@ -118,7 +118,7 @@ extensions = [
         extra_compile_args=["-std=c++14"],
     ),
     Extension(
-        "claragenomics.pycga.bindings.cudapoa",
+        "claragenomics.bindings.cudapoa",
         sources=[os.path.join("claragenomics/**/cudapoa.pyx")],
         include_dirs=[
             "/usr/local/cuda/include",
@@ -131,7 +131,7 @@ extensions = [
         extra_compile_args=["-std=c++14"],
     ),
     Extension(
-        "claragenomics.pycga.bindings.cudaaligner",
+        "claragenomics.bindings.cudaaligner",
         sources=[os.path.join("claragenomics/**/cudaaligner.pyx")],
         include_dirs=[
             "/usr/local/cuda/include",
@@ -152,7 +152,7 @@ setup(name='pyclaragenomics',
       url="https://github.com/clara-genomics/ClaraGenomicsAnalysis",
       include_package_data=True,
       data_files=[
-          ('cga_shared_objects', glob.glob('claragenomics/pycga/shared_libs/*.so'))
+          ('cga_shared_objects', glob.glob('claragenomics/shared_libs/*.so'))
       ],
       install_requires=get_installation_requirments(
           get_verified_absolute_path(os.path.join(current_dir, 'requirements.txt'))

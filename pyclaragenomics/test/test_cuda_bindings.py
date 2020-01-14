@@ -11,7 +11,7 @@
 import pytest
 
 
-from claragenomics.pycga.bindings import cuda
+from claragenomics.bindings import cuda
 
 
 @pytest.mark.gpu

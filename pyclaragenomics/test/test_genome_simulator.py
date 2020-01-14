@@ -10,8 +10,8 @@
 
 import pytest
 
-from claragenomics.pycga.simulators import genomesim
-from claragenomics.pycga import simulators
+from claragenomics.simulators import genomesim
+from claragenomics import simulators
 
 
 genome_lengths_data = [

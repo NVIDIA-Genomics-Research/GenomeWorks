@@ -10,7 +10,7 @@
 
 import pytest
 
-from claragenomics.pycga.simulators import readsim
+from claragenomics.simulators import readsim
 
 test_reads = [
     ((("read_0",

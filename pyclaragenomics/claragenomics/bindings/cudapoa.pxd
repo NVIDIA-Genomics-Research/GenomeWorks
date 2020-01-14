@@ -18,8 +18,8 @@ from libcpp.string cimport string
 from libc.stdint cimport int8_t, int16_t, uint16_t, int32_t
 from libcpp.vector cimport vector
 
-from pycga.bindings.cuda_runtime_api cimport _Stream
-from pycga.bindings.graph cimport DirectedGraph
+from bindings.cuda_runtime_api cimport _Stream
+from bindings.graph cimport DirectedGraph
 
 # This file declares public structs and API calls
 # from the ClaraGenomicsAnalysis `cudapoa` module.

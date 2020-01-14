@@ -23,11 +23,11 @@ from libcpp.string cimport string
 from libcpp.vector cimport vector
 import networkx as nx
 
-from pycga.bindings.cuda_runtime_api cimport _Stream
-from pycga.bindings.graph cimport DirectedGraph
-from pycga.bindings cimport cudapoa
+from bindings.cuda_runtime_api cimport _Stream
+from bindings.graph cimport DirectedGraph
+from bindings cimport cudapoa
 
-from claragenomics.pycga.bindings import cuda
+from claragenomics.bindings import cuda
 
 
 def status_to_str(status):
