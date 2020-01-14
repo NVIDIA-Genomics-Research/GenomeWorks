@@ -32,7 +32,7 @@ __host__ __device__ bool operator==(const Anchor& lhs,
     // TODO change to a more sophisticated scoring method
     auto score = 1;
 
-    if ((rhs.query_position_in_read_ - lhs.query_position_in_read_) < 500 and abs(int(rhs.target_position_in_read_) - int(lhs.target_position_in_read_)) < 500)
+    if ((rhs.query_position_in_read_ - lhs.query_position_in_read_) < 150 and abs(int(rhs.target_position_in_read_) - int(lhs.target_position_in_read_)) < 150)
         score = 2;
     return ((lhs.query_read_id_ == rhs.query_read_id_) &&
             (lhs.target_read_id_ == rhs.target_read_id_) &&
@@ -74,18 +74,18 @@ __host__ __device__ bool operator==(const cuOverlapKey& key0,
 
     //printf("Comparing (%i, %i), (%i, %i)\n", key0.anchor->query_read_id_ , key1.anchor->query_read_id_, key0.anchor->target_read_id_ , key1.anchor->target_read_id_);
 
-    return false;
+    //return false;
     //nofuse
-    return (a->target_read_id_ == b->target_read_id_) && (a->query_read_id_ == b->query_read_id_) && (a->query_position_in_read_ == b->query_position_in_read_) && (a->target_position_in_read_ == b->target_position_in_read_);
+    //return (a->target_read_id_ == b->target_read_id_) && (a->query_read_id_ == b->query_read_id_) && (a->query_position_in_read_ == b->query_position_in_read_) && (a->target_position_in_read_ == b->target_position_in_read_);
 
-    int distance_difference = (a->query_position_in_read_ - b->query_position_in_read_) -
-            (a->target_position_in_read_ - b->target_position_in_read_);
+    int distance_difference = abs(abs(int(a->query_position_in_read_) - int(b->query_position_in_read_)) -
+                              abs(int(a->target_position_in_read_) - int(b->target_position_in_read_)));
 
-    //bool equal = (a->target_read_id_ == b->target_read_id_) &&
-    //             (a->query_read_id_ == b->query_read_id_);// &&
-     //            //distance_difference < 300;
+    bool equal = (a->target_read_id_ == b->target_read_id_) &&
+                 (a->query_read_id_ == b->query_read_id_) &&
+                  distance_difference < 300;
 
-    //return equal;
+    return equal;
 
 }
 
@@ -192,7 +192,7 @@ void OverlapperTriggered::get_overlaps(std::vector<Overlap>& fused_overlaps,
                                        const Index& index_target)
 {
     CGA_NVTX_RANGE(profiler, "OverlapperTriggered::get_overlaps");
-    const auto tail_length_for_chain = 10;
+    const auto tail_length_for_chain = 5;
     auto n_anchors                   = d_anchors.size();
 
     // comparison operator - lambda used to compare Anchors in sort

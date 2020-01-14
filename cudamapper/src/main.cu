@@ -303,7 +303,7 @@ int main(int argc, char* argv[])
                 std::shared_ptr<std::future<void>> write_and_filter_overlaps_future = std::make_shared<std::future<void>>(std::async(std::launch::async,
                                                                                                                                      [&overlaps_writer_mtx, overlaps_to_add](std::vector<claragenomics::cudamapper::Overlap> overlaps) {
                                                                                                                                          std::vector<claragenomics::cudamapper::Overlap> filtered_overlaps;
-                                                                                                                                         claragenomics::cudamapper::Overlapper::filter_overlaps(filtered_overlaps, overlaps_to_add, 150);
+                                                                                                                                         claragenomics::cudamapper::Overlapper::filter_overlaps(filtered_overlaps, overlaps_to_add, 50);
                                                                                                                                          std::lock_guard<std::mutex> lck(overlaps_writer_mtx);
                                                                                                                                          claragenomics::cudamapper::Overlapper::print_paf(filtered_overlaps);
                                                                                                                                      },
