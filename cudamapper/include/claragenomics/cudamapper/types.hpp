@@ -89,9 +89,9 @@ typedef struct Overlap
     /// end position in the target
     position_in_read_t target_end_position_in_read_;
     /// query read name (e.g from FASTA)
-    char* query_read_name_ = 0;
+    char * query_read_name_ = 0;
     /// target read name (e.g from FASTA)
-    char* target_read_name_ = 0;
+    char * target_read_name_ = 0;
     /// Relative strand: Forward ("+") or Reverse("-")
     RelativeStrand relative_strand;
     /// Number of residues (e.g anchors) between the two reads
@@ -104,6 +104,25 @@ typedef struct Overlap
     bool overlap_complete = false;
     /// CIGAR string for alignment of mapped section.
     char* cigar_ = 0;
+
+
+/*#ifdef __CUDACC__
+#else
+    ~Overlap(){
+        if (target_read_name_ !=0) {
+            delete[] target_read_name_;
+            target_read_name_ = nullptr;
+        }
+        if (query_read_name_ !=0) {
+            delete[] query_read_name_;
+            query_read_name_ = nullptr;
+        }
+    }
+#endif*/
+
+
+
+
 } Overlap;
 
 } // namespace cudamapper

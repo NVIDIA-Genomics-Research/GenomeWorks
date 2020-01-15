@@ -298,18 +298,28 @@ int main(int argc, char* argv[])
 
                 // Get unfiltered overlaps
                 std::vector<claragenomics::cudamapper::Overlap> overlaps_to_add;
-                overlapper.get_overlaps(overlaps_to_add, matcher->anchors(), *query_index, *target_index);
+
+
+                auto anchors = matcher->anchors();
+                overlapper.get_overlaps(overlaps_to_add, anchors, *query_index, *target_index);
 
                 std::shared_ptr<std::future<void>> write_and_filter_overlaps_future = std::make_shared<std::future<void>>(std::async(std::launch::async,
                                                                                                                                      [&overlaps_writer_mtx, overlaps_to_add](std::vector<claragenomics::cudamapper::Overlap> overlaps) {
                                                                                                                                          std::vector<claragenomics::cudamapper::Overlap> filtered_overlaps;
-                                                                                                                                         claragenomics::cudamapper::Overlapper::filter_overlaps(filtered_overlaps, overlaps_to_add, 50);
+                                                                                                                                         claragenomics::cudamapper::Overlapper::filter_overlaps(filtered_overlaps, overlaps, 50);
                                                                                                                                          std::lock_guard<std::mutex> lck(overlaps_writer_mtx);
                                                                                                                                          claragenomics::cudamapper::Overlapper::print_paf(filtered_overlaps);
-                                                                                                                                     },
+
+                                                                                                                                         for (auto o: overlaps){
+                                                                                                                                             delete[] o.target_read_name_;
+                                                                                                                                             delete[] o.query_read_name_;
+                                                                                                                                             delete[] o.cigar_;
+                                                                                                                                         }
+                                                                                                                                         },
                                                                                                                                      overlaps_to_add));
 
-                print_pafs_futures.push_back(write_and_filter_overlaps_future);
+               print_pafs_futures.push_back(write_and_filter_overlaps_future);
+
             }
         }
 
@@ -335,6 +345,8 @@ int main(int argc, char* argv[])
     // Launch worker threads
     for (int device_id = 0; device_id < num_devices; device_id++)
     {
+        std::cerr<<"Launching worker thread"<<std::endl;
+        //Worker thread consumes query-target ranges off a queue
         workers.push_back(std::thread(
             [&, device_id]() {
                 while (ranges_idx < query_target_ranges.size())
@@ -357,12 +369,16 @@ int main(int argc, char* argv[])
     });
 
     // Wait for all futures (for overlap writing) to return
-    for (auto& overlap_future : overlap_futures)
+    for (int i=0;i<overlap_futures.size();i++)
     {
-        for (auto future : overlap_future)
+        auto &overlap_future = overlap_futures[overlap_futures.size() - i -1];
+
+        for (auto &future : overlap_future)
         {
-            future->wait();
+            future->get();
         }
+
+        overlap_futures.pop_back();
     }
 
     return 0;

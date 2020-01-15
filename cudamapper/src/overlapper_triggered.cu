@@ -362,8 +362,10 @@ void OverlapperTriggered::get_overlaps(std::vector<Overlap>& fused_overlaps,
     thrust::transform(d_fusedoverlaps_args.data(),
                       d_fusedoverlaps_args.data() + n_fused_overlap,
                       d_fused_overlaps.data(), fuse_op);
+
     // memcpyD2H - move fused overlaps to host
     fused_overlaps.resize(n_fused_overlap);
+
 
     thrust::copy(d_fused_overlaps.begin(), d_fused_overlaps.end(),
                  fused_overlaps.begin());
@@ -371,6 +373,7 @@ void OverlapperTriggered::get_overlaps(std::vector<Overlap>& fused_overlaps,
     // <<<<<<<<<<<<
 
     // parallel update the overlaps to include the corresponding read names [parallel on host]
+/*
     thrust::transform(thrust::host,
                       fused_overlaps.data(),
                       fused_overlaps.data() + n_fused_overlap,
@@ -389,6 +392,26 @@ void OverlapperTriggered::get_overlaps(std::vector<Overlap>& fused_overlaps,
 
                           return new_overlap;
                       });
+*/
+
+        for (auto &o: fused_overlaps){
+            std::string query_read_name = index_query.read_id_to_read_name(o.query_read_id_);
+            std::string target_read_name = index_target.read_id_to_read_name(o.target_read_id_);
+
+            o.query_read_name_ = new char[query_read_name.length()];
+            strcpy(o.query_read_name_, query_read_name.c_str());
+
+            o.target_read_name_ = new char[target_read_name.length()];
+            strcpy(o.target_read_name_, target_read_name.c_str());
+
+
+            o.query_length_  = index_query.read_id_to_read_length(o.query_read_id_);
+            o.target_length_ = index_target.read_id_to_read_length(o.target_read_id_);
+
+        }
+
+
+
 }
 } // namespace cudamapper
 } // namespace claragenomics
