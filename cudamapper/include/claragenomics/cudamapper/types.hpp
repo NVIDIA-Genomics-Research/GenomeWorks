@@ -12,7 +12,8 @@
 
 #include <cstdint>
 #include <string>
-
+#include <cstdlib>
+#include <iostream>
 namespace claragenomics
 {
 
@@ -106,21 +107,18 @@ typedef struct Overlap
     char* cigar_ = 0;
 
 
-/*#ifdef __CUDACC__
-#else
-    ~Overlap(){
+    void clear()
+    {
         if (target_read_name_ !=0) {
             delete[] target_read_name_;
-            target_read_name_ = nullptr;
         }
         if (query_read_name_ !=0) {
             delete[] query_read_name_;
-            query_read_name_ = nullptr;
+        }
+        if (cigar_ !=0) {
+            delete[] cigar_;
         }
     }
-#endif*/
-
-
 
 
 } Overlap;

@@ -199,6 +199,8 @@ int main(int argc, char* argv[])
     // This is a per-device cache, if it has the index it will return it, if not it will generate it, store and return it.
     std::vector<std::map<std::pair<uint64_t, uint64_t>, std::shared_ptr<claragenomics::cudamapper::Index>>> index_cache(num_devices);
 
+    std::atomic<int> num_overlap_chunks(0);
+
     auto get_index = [&index_cache, max_cache_size](claragenomics::io::FastaParser& parser,
                                                     const claragenomics::cudamapper::read_id_t start_index,
                                                     const claragenomics::cudamapper::read_id_t end_index,
@@ -299,27 +301,26 @@ int main(int argc, char* argv[])
                 // Get unfiltered overlaps
                 std::vector<claragenomics::cudamapper::Overlap> overlaps_to_add;
 
-
                 auto anchors = matcher->anchors();
                 overlapper.get_overlaps(overlaps_to_add, anchors, *query_index, *target_index);
 
-                std::shared_ptr<std::future<void>> write_and_filter_overlaps_future = std::make_shared<std::future<void>>(std::async(std::launch::async,
-                                                                                                                                     [&overlaps_writer_mtx, overlaps_to_add](std::vector<claragenomics::cudamapper::Overlap> overlaps) {
-                                                                                                                                         std::vector<claragenomics::cudamapper::Overlap> filtered_overlaps;
-                                                                                                                                         claragenomics::cudamapper::Overlapper::filter_overlaps(filtered_overlaps, overlaps, 50);
-                                                                                                                                         std::lock_guard<std::mutex> lck(overlaps_writer_mtx);
-                                                                                                                                         claragenomics::cudamapper::Overlapper::print_paf(filtered_overlaps);
+                num_overlap_chunks += 1;
+                std::async(std::launch::async,
+                         [&overlaps_writer_mtx, &overlaps_to_add, &num_overlap_chunks](std::vector<claragenomics::cudamapper::Overlap> overlaps) {
+                             std::vector<claragenomics::cudamapper::Overlap> filtered_overlaps;
+                             claragenomics::cudamapper::Overlapper::filter_overlaps(filtered_overlaps, overlaps, 50);
+                             std::lock_guard<std::mutex> lck(overlaps_writer_mtx);
+                             claragenomics::cudamapper::Overlapper::print_paf(filtered_overlaps);
 
-                                                                                                                                         for (auto o: overlaps){
-                                                                                                                                             delete[] o.target_read_name_;
-                                                                                                                                             delete[] o.query_read_name_;
-                                                                                                                                             delete[] o.cigar_;
-                                                                                                                                         }
-                                                                                                                                         },
-                                                                                                                                     overlaps_to_add));
+                             //clear data
+                             for (auto o: overlaps){
+                                 o.clear();
+                             }
 
-               print_pafs_futures.push_back(write_and_filter_overlaps_future);
+                             //
+                             num_overlap_chunks--;
 
+                             }, overlaps_to_add);
             }
         }
 
@@ -339,8 +340,6 @@ int main(int argc, char* argv[])
     // 3. Each worker pushes vector of futures (since overlap writing is dispatched to an async thread on host). All futures are waited for before the main application exits.
     std::vector<std::thread> workers;
     std::atomic<int> ranges_idx(0);
-    std::vector<std::vector<std::shared_ptr<std::future<void>>>> overlap_futures;
-    std::mutex overlap_futures_mtx;
 
     // Launch worker threads
     for (int device_id = 0; device_id < num_devices; device_id++)
@@ -355,9 +354,7 @@ int main(int argc, char* argv[])
                     //Need to perform this check again for thread-safety
                     if (range_idx < query_target_ranges.size())
                     {
-                        auto overlap_future = compute_overlaps(query_target_ranges[range_idx], device_id);
-                        std::lock_guard<std::mutex> lck(overlap_futures_mtx);
-                        overlap_futures.push_back(overlap_future);
+                        compute_overlaps(query_target_ranges[range_idx], device_id);
                     }
                 }
             }));
@@ -368,17 +365,9 @@ int main(int argc, char* argv[])
         t.join();
     });
 
-    // Wait for all futures (for overlap writing) to return
-    for (int i=0;i<overlap_futures.size();i++)
-    {
-        auto &overlap_future = overlap_futures[overlap_futures.size() - i -1];
-
-        for (auto &future : overlap_future)
-        {
-            future->get();
-        }
-
-        overlap_futures.pop_back();
+    // Wait for all futures (for overlap filtering and writing) to return
+    while(num_overlap_chunks !=0){
+        std::this_thread::sleep_for(std::chrono::milliseconds(200));
     }
 
     return 0;
