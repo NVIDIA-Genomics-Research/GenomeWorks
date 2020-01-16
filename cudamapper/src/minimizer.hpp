@@ -15,7 +15,7 @@
 #include <claragenomics/cudamapper/sketch_element.hpp>
 #include <claragenomics/cudamapper/types.hpp>
 
-#include <claragenomics/utils/device_buffer.cuh>
+#include <claragenomics/utils/device_buffer.hpp>
 
 namespace claragenomics
 {

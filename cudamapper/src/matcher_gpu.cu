@@ -63,7 +63,6 @@ namespace cudamapper
 MatcherGPU::MatcherGPU(const Index& query_index,
                        const Index& target_index)
 {
-
     CGA_NVTX_RANGE(profile, "matcherGPU");
     if (query_index.unique_representations().size() == 0 || target_index.unique_representations().size() == 0)
         return;
@@ -79,8 +78,8 @@ MatcherGPU::MatcherGPU(const Index& query_index,
     // The array index of the following data structures will correspond to the array index of the
     // unique representation in the query index.
 
-    thrust::device_vector<std::int64_t> found_target_indices_d(query_index.unique_representations().size());
-    thrust::device_vector<std::int64_t> anchor_starting_indices_d(query_index.unique_representations().size());
+    device_buffer<std::int64_t> found_target_indices_d(query_index.unique_representations().size());
+    device_buffer<std::int64_t> anchor_starting_indices_d(query_index.unique_representations().size());
 
     // First we search for each unique representation of the query index, the array index
     // of the same representation in the array of unique representations of target index
@@ -92,7 +91,9 @@ MatcherGPU::MatcherGPU(const Index& query_index,
     // The last element will be the total number of anchors.
     details::matcher_gpu::compute_anchor_starting_indices(anchor_starting_indices_d, query_index.first_occurrence_of_representations(), found_target_indices_d, target_index.first_occurrence_of_representations());
 
-    const int64_t n_anchors = anchor_starting_indices_d.back(); // D->H transfer
+    int64_t n_anchors = 0;
+    cudautils::copy(&n_anchors, anchor_starting_indices_d.end() - 1, 1); // D->H transfer
+    //const int64_t n_anchors = anchor_starting_indices_d.back(); // D->H transfer
 
     anchors_d_.resize(n_anchors);
 
@@ -109,7 +110,7 @@ MatcherGPU::MatcherGPU(const Index& query_index,
                                            target_index.positions_in_reads());
 }
 
-thrust::device_vector<Anchor>& MatcherGPU::anchors()
+device_buffer<Anchor>& MatcherGPU::anchors()
 {
     return anchors_d_;
 }
@@ -121,32 +122,33 @@ namespace matcher_gpu
 {
 
 void find_query_target_matches(
-    thrust::device_vector<std::int64_t>& found_target_indices_d,
-    const thrust::device_vector<representation_t>& query_representations_d,
-    const thrust::device_vector<representation_t>& target_representations_d)
+    device_buffer<std::int64_t>& found_target_indices_d,
+    const device_buffer<representation_t>& query_representations_d,
+    const device_buffer<representation_t>& target_representations_d)
 {
     assert(found_target_indices_d.size() == query_representations_d.size());
 
     const int32_t n_threads = 256;
     const int32_t n_blocks  = ceiling_divide<int64_t>(query_representations_d.size(), n_threads);
 
-    find_query_target_matches_kernel<<<n_blocks, n_threads>>>(found_target_indices_d.data().get(), query_representations_d.data().get(), get_size(query_representations_d), target_representations_d.data().get(), get_size(target_representations_d));
+    find_query_target_matches_kernel<<<n_blocks, n_threads>>>(found_target_indices_d.data(), query_representations_d.data(), get_size(query_representations_d), target_representations_d.data(), get_size(target_representations_d));
 }
 
 void compute_anchor_starting_indices(
-    thrust::device_vector<std::int64_t>& anchor_starting_indices_d,
-    const thrust::device_vector<std::uint32_t>& query_starting_index_of_each_representation_d,
-    const thrust::device_vector<std::int64_t>& found_target_indices_d,
-    const thrust::device_vector<std::uint32_t>& target_starting_index_of_each_representation_d)
+    device_buffer<std::int64_t>& anchor_starting_indices_d,
+    const device_buffer<std::uint32_t>& query_starting_index_of_each_representation_d,
+    const device_buffer<std::int64_t>& found_target_indices_d,
+    const device_buffer<std::uint32_t>& target_starting_index_of_each_representation_d)
 {
     assert(query_starting_index_of_each_representation_d.size() == found_target_indices_d.size() + 1);
     assert(anchor_starting_indices_d.size() == found_target_indices_d.size());
 
-    const std::uint32_t* const query_starting_indices  = query_starting_index_of_each_representation_d.data().get();
-    const std::uint32_t* const target_starting_indices = target_starting_index_of_each_representation_d.data().get();
-    const std::int64_t* const found_target_indices     = found_target_indices_d.data().get();
+    const std::uint32_t* const query_starting_indices  = query_starting_index_of_each_representation_d.data();
+    const std::uint32_t* const target_starting_indices = target_starting_index_of_each_representation_d.data();
+    const std::int64_t* const found_target_indices     = found_target_indices_d.data();
 
     thrust::transform_inclusive_scan(
+        thrust::device,
         thrust::make_counting_iterator(std::int64_t(0)),
         thrust::make_counting_iterator(get_size(anchor_starting_indices_d)),
         anchor_starting_indices_d.begin(),
@@ -183,15 +185,15 @@ __global__ void find_query_target_matches_kernel(
 }
 
 void generate_anchors(
-    thrust::device_vector<Anchor>& anchors,
-    const thrust::device_vector<std::int64_t>& anchor_starting_indices_d,
-    const thrust::device_vector<std::uint32_t>& query_starting_index_of_each_representation_d,
-    const thrust::device_vector<std::int64_t>& found_target_indices_d,
-    const thrust::device_vector<std::uint32_t>& target_starting_index_of_each_representation_d,
-    const thrust::device_vector<read_id_t>& query_read_ids,
-    const thrust::device_vector<position_in_read_t>& query_positions_in_read,
-    const thrust::device_vector<read_id_t>& target_read_ids,
-    const thrust::device_vector<position_in_read_t>& target_positions_in_read)
+    device_buffer<Anchor>& anchors,
+    const device_buffer<std::int64_t>& anchor_starting_indices_d,
+    const device_buffer<std::uint32_t>& query_starting_index_of_each_representation_d,
+    const device_buffer<std::int64_t>& found_target_indices_d,
+    const device_buffer<std::uint32_t>& target_starting_index_of_each_representation_d,
+    const device_buffer<read_id_t>& query_read_ids,
+    const device_buffer<position_in_read_t>& query_positions_in_read,
+    const device_buffer<read_id_t>& target_read_ids,
+    const device_buffer<position_in_read_t>& target_positions_in_read)
 {
     assert(anchor_starting_indices_d.size() + 1 == query_starting_index_of_each_representation_d.size());
     assert(found_target_indices_d.size() + 1 == query_starting_index_of_each_representation_d.size());
@@ -201,17 +203,17 @@ void generate_anchors(
     const int32_t n_threads = 256;
     const int32_t n_blocks  = ceiling_divide<int64_t>(get_size(anchors), n_threads);
     generate_anchors_kernel<<<n_blocks, n_threads>>>(
-        anchors.data().get(),
+        anchors.data(),
         get_size(anchors),
-        anchor_starting_indices_d.data().get(),
-        query_starting_index_of_each_representation_d.data().get(),
-        found_target_indices_d.data().get(),
+        anchor_starting_indices_d.data(),
+        query_starting_index_of_each_representation_d.data(),
+        found_target_indices_d.data(),
         get_size(found_target_indices_d),
-        target_starting_index_of_each_representation_d.data().get(),
-        query_read_ids.data().get(),
-        query_positions_in_read.data().get(),
-        target_read_ids.data().get(),
-        target_positions_in_read.data().get());
+        target_starting_index_of_each_representation_d.data(),
+        query_read_ids.data(),
+        query_positions_in_read.data(),
+        target_read_ids.data(),
+        target_positions_in_read.data());
 }
 
 __global__ void generate_anchors_kernel(

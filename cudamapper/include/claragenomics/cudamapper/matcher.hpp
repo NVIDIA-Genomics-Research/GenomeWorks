@@ -13,6 +13,7 @@
 #include <memory>
 #include <thrust/device_vector.h>
 #include <claragenomics/cudamapper/index.hpp>
+#include <claragenomics/utils/device_buffer.hpp>
 
 namespace claragenomics
 {
@@ -31,7 +32,7 @@ public:
 
     /// \brief returns anchors
     /// \return anchors
-    virtual thrust::device_vector<Anchor>& anchors() = 0;
+    virtual device_buffer<Anchor>& anchors() = 0;
 
     /// \brief Creates a Matcher object
     /// \param query_index

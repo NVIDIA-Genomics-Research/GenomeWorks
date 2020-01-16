@@ -14,6 +14,7 @@
 
 #include <claragenomics/cudamapper/types.hpp>
 #include <claragenomics/cudamapper/overlapper.hpp>
+#include <claragenomics/utils/device_buffer.hpp>
 
 namespace claragenomics
 {
@@ -37,7 +38,14 @@ public:
     /// \param index_query Index
     /// \param index_target
     /// \return vector of Overlap objects
-    void get_overlaps(std::vector<Overlap>& overlaps, thrust::device_vector<Anchor>& anchors, const Index& index_query, const Index& index_target) override;
+    void get_overlaps(std::vector<Overlap>& overlaps, device_buffer<Anchor>& anchors, const Index& index_query, const Index& index_target) override;
+
+    OverlapperTriggered(std::shared_ptr<deviceAllocator>);
+    ~OverlapperTriggered();
+
+private:
+    std::shared_ptr<deviceAllocator> _allocator;
+    cudaStream_t stream;
 };
 } // namespace cudamapper
 } // namespace claragenomics

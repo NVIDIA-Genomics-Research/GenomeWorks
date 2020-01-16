@@ -17,7 +17,7 @@
 #include <claragenomics/cudamapper/types.hpp>
 #include <claragenomics/io/fasta_parser.hpp>
 
-#include <thrust/device_vector.h>
+#include <claragenomics/utils/device_buffer.hpp>
 
 namespace claragenomics
 {
@@ -36,19 +36,19 @@ public:
 
     /// \brief returns an array of representations of sketch elements
     /// \return an array of representations of sketch elements
-    virtual const thrust::device_vector<representation_t>& representations() const = 0;
+    virtual const device_buffer<representation_t>& representations() const = 0;
 
     /// \brief returns an array of reads ids for sketch elements
     /// \return an array of reads ids for sketch elements
-    virtual const thrust::device_vector<read_id_t>& read_ids() const = 0;
+    virtual const device_buffer<read_id_t>& read_ids() const = 0;
 
     /// \brief returns an array of starting positions of sketch elements in their reads
     /// \return an array of starting positions of sketch elements in their reads
-    virtual const thrust::device_vector<position_in_read_t>& positions_in_reads() const = 0;
+    virtual const device_buffer<position_in_read_t>& positions_in_reads() const = 0;
 
     /// \brief returns an array of directions in which sketch elements were read
     /// \return an array of directions in which sketch elements were read
-    virtual const thrust::device_vector<SketchElement::DirectionOfRepresentation>& directions_of_reads() const = 0;
+    virtual const device_buffer<SketchElement::DirectionOfRepresentation>& directions_of_reads() const = 0;
 
     /// \brief returns read name of read with the given read_id
     /// \param read_id
@@ -57,11 +57,11 @@ public:
 
     /// \brief returns an array where each representation is recorder only once, sorted by representation
     /// \return an array where each representation is recorder only once, sorted by representation
-    virtual const thrust::device_vector<representation_t>& unique_representations() const = 0;
+    virtual const device_buffer<representation_t>& unique_representations() const = 0;
 
     /// \brief returns first occurrence of corresponding representation from unique_representations() in data arrays
     /// \return first occurrence of corresponding representation from unique_representations() in data arrays
-    virtual const thrust::device_vector<std::uint32_t>& first_occurrence_of_representations() const = 0;
+    virtual const device_buffer<std::uint32_t>& first_occurrence_of_representations() const = 0;
 
     /// \brief returns read length for the read with the gived read_id
     /// \param read_id
