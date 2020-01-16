@@ -89,6 +89,18 @@ __host__ __device__ __forceinline__
     return (value + boundary) & ~(boundary - 1);
 }
 
+template <typename Type>
+void copy(Type* dst, const Type* src, size_t len, cudaStream_t stream)
+{
+    CGA_CU_CHECK_ERR(cudaMemcpyAsync(dst, src, len * sizeof(Type), cudaMemcpyDefault, stream));
+}
+
+template <typename Type>
+void copy(Type* dst, const Type* src, size_t len)
+{
+    CGA_CU_CHECK_ERR(cudaMemcpy(dst, src, len * sizeof(Type), cudaMemcpyDefault));
+}
+
 #ifdef CGA_PROFILING
 /// \ingroup cudautils
 /// \def CGA_NVTX_RANGE
