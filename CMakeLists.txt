@@ -13,6 +13,9 @@ set(CGA_PROJECT_NAME ClaraGenomicsAnalysis)
 set(CGA_VERSION 0.5.0)
 project(${CGA_PROJECT_NAME})
 
+#Add OpenMP
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp")
+
 # Process options.
 option(cga_enable_tests "Build ClaraGenomicsAnalysis unit tests" OFF)
 option(cga_enable_benchmarks "Build ClaraGenomicsAnalysis benchmarks" OFF)

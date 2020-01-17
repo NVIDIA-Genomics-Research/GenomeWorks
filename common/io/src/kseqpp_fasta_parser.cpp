@@ -10,8 +10,10 @@
 
 #include "kseqpp_fasta_parser.hpp"
 
-#include <string>
+#include <algorithm>
 #include <memory>
+#include <string>
+
 
 #include <iostream>
 #include "seqio.h" //TODO add this to 3rdparty
@@ -42,13 +44,14 @@ namespace claragenomics
         {
             klibpp::KSeq record;
             klibpp::SeqStreamIn iss(fasta_file.data());
-            std::vector<FastaSequence> seqs; //temp vector
+            std::vector<FastaSequence> seqs;
             int total_len = 0;
             while (iss >> record) {
                 FastaSequence seq = {record.name, record.seq};
                 total_len += record.seq.size();
                 reads_.push_back(seq);
             }
+            std::random_shuffle(reads_.begin(), reads_.end());
         }
 
         FastaParserKseqpp::~FastaParserKseqpp()

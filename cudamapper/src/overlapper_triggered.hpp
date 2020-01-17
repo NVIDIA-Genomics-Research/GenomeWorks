@@ -12,6 +12,8 @@
 
 #include <vector>
 
+#include <thrust/system/cuda/experimental/pinned_allocator.h>
+
 #include <claragenomics/cudamapper/types.hpp>
 #include <claragenomics/cudamapper/overlapper.hpp>
 
@@ -37,7 +39,7 @@ public:
     /// \param index_query Index
     /// \param index_target
     /// \return vector of Overlap objects
-    void get_overlaps(std::vector<Overlap>& overlaps, thrust::device_vector<Anchor>& anchors, const Index& index_query, const Index& index_target) override;
+    void get_overlaps(std::vector<claragenomics::cudamapper::Overlap, thrust::system::cuda::experimental::pinned_allocator<claragenomics::cudamapper::Overlap>>& overlaps, thrust::device_vector<Anchor>& anchors, const Index& index_query, const Index& index_target) override;
 };
 } // namespace cudamapper
 } // namespace claragenomics

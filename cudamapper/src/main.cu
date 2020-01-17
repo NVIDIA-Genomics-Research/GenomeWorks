@@ -20,6 +20,8 @@
 #include <atomic>
 #include <map>
 
+#include <thrust/system/cuda/experimental/pinned_allocator.h>
+
 #include <claragenomics/logging/logging.hpp>
 #include <claragenomics/io/fasta_parser.hpp>
 #include <claragenomics/utils/cudautils.hpp>
@@ -282,8 +284,6 @@ int main(int argc, char* argv[])
 
             auto target_start_index = target_range.first;
             auto target_end_index   = target_range.second;
-            std::cerr << "Processing target range: (" << target_start_index << " - " << target_end_index << ")" << std::endl;
-
             {
                 CGA_NVTX_RANGE(profiler, "generate_target_index");
                 target_index = get_index(*target_parser, target_start_index, target_end_index, k, w, device_id, true, filtering_parameter);
@@ -299,15 +299,14 @@ int main(int argc, char* argv[])
                 CGA_NVTX_RANGE(profiler, "generate_overlaps");
 
                 // Get unfiltered overlaps
-                std::vector<claragenomics::cudamapper::Overlap> overlaps_to_add;
+                std::vector<claragenomics::cudamapper::Overlap, thrust::system::cuda::experimental::pinned_allocator<claragenomics::cudamapper::Overlap>> overlaps_to_add;
 
-                auto anchors = matcher->anchors();
-                overlapper.get_overlaps(overlaps_to_add, anchors, *query_index, *target_index);
+                overlapper.get_overlaps(overlaps_to_add, matcher->anchors(), *query_index, *target_index);
 
                 num_overlap_chunks += 1;
                 std::async(std::launch::async,
-                         [&overlaps_writer_mtx, &overlaps_to_add, &num_overlap_chunks](std::vector<claragenomics::cudamapper::Overlap> overlaps) {
-                             std::vector<claragenomics::cudamapper::Overlap> filtered_overlaps;
+                         [&overlaps_writer_mtx, &overlaps_to_add, &num_overlap_chunks](std::vector<claragenomics::cudamapper::Overlap, thrust::system::cuda::experimental::pinned_allocator<claragenomics::cudamapper::Overlap>> overlaps) {
+                             std::vector<claragenomics::cudamapper::Overlap, thrust::system::cuda::experimental::pinned_allocator<claragenomics::cudamapper::Overlap>> filtered_overlaps;
                              claragenomics::cudamapper::Overlapper::filter_overlaps(filtered_overlaps, overlaps, 50);
                              std::lock_guard<std::mutex> lck(overlaps_writer_mtx);
                              claragenomics::cudamapper::Overlapper::print_paf(filtered_overlaps);
@@ -344,20 +343,18 @@ int main(int argc, char* argv[])
     // Launch worker threads
     for (int device_id = 0; device_id < num_devices; device_id++)
     {
-        std::cerr<<"Launching worker thread"<<std::endl;
+        std::cerr << "Launching worker thread" << std::endl;
         //Worker thread consumes query-target ranges off a queue
         workers.push_back(std::thread(
-            [&, device_id]() {
-                while (ranges_idx < query_target_ranges.size())
-                {
-                    int range_idx = ranges_idx.fetch_add(1);
-                    //Need to perform this check again for thread-safety
-                    if (range_idx < query_target_ranges.size())
-                    {
-                        compute_overlaps(query_target_ranges[range_idx], device_id);
+                [&, device_id]() {
+                    while (ranges_idx < query_target_ranges.size()) {
+                        int range_idx = ranges_idx.fetch_add(1);
+                        //Need to perform this check again for thread-safety
+                        if (range_idx < query_target_ranges.size()) {
+                            compute_overlaps(query_target_ranges[range_idx], device_id);
+                        }
                     }
-                }
-            }));
+                }));
     }
 
     // Wait for all per-device threads to terminate

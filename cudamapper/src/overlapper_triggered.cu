@@ -11,8 +11,10 @@
 #include <cub/cub.cuh>
 #include <thrust/device_vector.h>
 #include <thrust/sort.h>
+#include <thrust/system/cuda/experimental/pinned_allocator.h>
 #include <fstream>
 #include <cstdlib>
+#include <omp.h>
 
 #include <claragenomics/utils/cudautils.hpp>
 #include "cudamapper_utils.hpp"
@@ -186,13 +188,13 @@ struct CreateOverlap
     };
 };
 
-void OverlapperTriggered::get_overlaps(std::vector<Overlap>& fused_overlaps,
+void OverlapperTriggered::get_overlaps(std::vector<claragenomics::cudamapper::Overlap, thrust::system::cuda::experimental::pinned_allocator<claragenomics::cudamapper::Overlap>>& fused_overlaps,
                                        thrust::device_vector<Anchor>& d_anchors,
                                        const Index& index_query,
                                        const Index& index_target)
 {
-    CGA_NVTX_RANGE(profiler, "OverlapperTriggered::get_overlaps");
-    const auto tail_length_for_chain = 5;
+    CGA_NVTX_RANGE(profiler, "OverlapperTriggered::get_overlaps:sort");
+    const auto tail_length_for_chain = 3;
     auto n_anchors                   = d_anchors.size();
 
     // comparison operator - lambda used to compare Anchors in sort
@@ -253,7 +255,6 @@ void OverlapperTriggered::get_overlaps(std::vector<Overlap>& fused_overlaps,
 
     // use prefix sum to calculate the starting index position of all the chains
     // >>>>>>>>>>>>
-
     // for a chain i, d_chain_start[i] contains the index of starting anchor from d_anchors array
     thrust::device_vector<int32_t> d_chain_start(n_chains);
 
@@ -347,10 +348,6 @@ void OverlapperTriggered::get_overlaps(std::vector<Overlap>& fused_overlaps,
     // memcpyD2H
     auto n_fused_overlap = d_nfused_overlaps[0];
 
-    if(n_fused_overlap != n_overlaps){
-        std::cerr<<"n_fused = " << n_fused_overlap << " n_overlap = " << n_overlaps << "\n";
-    }
-
     // construct overlap from the overlap args
     CreateOverlap fuse_op(d_anchors.data().get());
     thrust::device_vector<Overlap> d_fused_overlaps(n_fused_overlap); //Overlaps written here
@@ -373,28 +370,12 @@ void OverlapperTriggered::get_overlaps(std::vector<Overlap>& fused_overlaps,
     // <<<<<<<<<<<<
 
     // parallel update the overlaps to include the corresponding read names [parallel on host]
-/*
-    thrust::transform(thrust::host,
-                      fused_overlaps.data(),
-                      fused_overlaps.data() + n_fused_overlap,
-                      fused_overlaps.data(), [&](Overlap& new_overlap) {
-                          std::string query_read_name  = index_query.read_id_to_read_name(new_overlap.query_read_id_);
-                          std::string target_read_name = index_target.read_id_to_read_name(new_overlap.target_read_id_);
 
-                          new_overlap.query_read_name_ = new char[query_read_name.length()];
-                          strcpy(new_overlap.query_read_name_, query_read_name.c_str());
-
-                          new_overlap.target_read_name_ = new char[target_read_name.length()];
-                          strcpy(new_overlap.target_read_name_, target_read_name.c_str());
-
-                          new_overlap.query_length_  = index_query.read_id_to_read_length(new_overlap.query_read_id_);
-                          new_overlap.target_length_ = index_target.read_id_to_read_length(new_overlap.target_read_id_);
-
-                          return new_overlap;
-                      });
-*/
-
-        for (auto &o: fused_overlaps){
+#pragma omp parallel num_threads(16)
+    {
+        #pragma omp for
+        for (int i=0; i< fused_overlaps.size(); i++){
+            auto& o = fused_overlaps[i];
             std::string query_read_name = index_query.read_id_to_read_name(o.query_read_id_);
             std::string target_read_name = index_target.read_id_to_read_name(o.target_read_id_);
 
@@ -404,11 +385,10 @@ void OverlapperTriggered::get_overlaps(std::vector<Overlap>& fused_overlaps,
             o.target_read_name_ = new char[target_read_name.length()];
             strcpy(o.target_read_name_, target_read_name.c_str());
 
-
-            o.query_length_  = index_query.read_id_to_read_length(o.query_read_id_);
+            o.query_length_ = index_query.read_id_to_read_length(o.query_read_id_);
             o.target_length_ = index_target.read_id_to_read_length(o.target_read_id_);
-
         }
+    }
 
 
 
