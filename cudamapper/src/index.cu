@@ -18,7 +18,8 @@ namespace claragenomics
 namespace cudamapper
 {
 
-std::unique_ptr<Index> Index::create_index(const io::FastaParser& parser,
+std::unique_ptr<Index> Index::create_index(std::shared_ptr<deviceAllocator> allocator,
+                                           const io::FastaParser& parser,
                                            const read_id_t first_read_id,
                                            const read_id_t past_the_last_read_id,
                                            const std::uint64_t kmer_size,
@@ -27,7 +28,8 @@ std::unique_ptr<Index> Index::create_index(const io::FastaParser& parser,
                                            const double filtering_parameter)
 {
     CGA_NVTX_RANGE(profiler, "create_index");
-    return std::make_unique<IndexGPU<Minimizer>>(parser,
+    return std::make_unique<IndexGPU<Minimizer>>(allocator,
+                                                 parser,
                                                  first_read_id,
                                                  past_the_last_read_id,
                                                  kmer_size,

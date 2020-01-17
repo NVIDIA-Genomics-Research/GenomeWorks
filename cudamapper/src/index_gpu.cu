@@ -19,7 +19,8 @@ namespace details
 {
 namespace index_gpu
 {
-void find_first_occurrences_of_representations(device_buffer<representation_t>& unique_representations_d,
+void find_first_occurrences_of_representations(std::shared_ptr<deviceAllocator> allocator,
+                                               device_buffer<representation_t>& unique_representations_d,
                                                device_buffer<std::uint32_t>& first_occurrence_index_d,
                                                const device_buffer<representation_t>& input_representations_d)
 {
@@ -36,7 +37,7 @@ void find_first_occurrences_of_representations(device_buffer<representation_t>& 
     // gives
     // 1  1  1  1  2  2  2  2  2  2  3  3  3  4  4  4  4  4  5  5  5
     // meaning all elements with the same representation have the same value and those values are sorted in increasing order starting from 1
-    device_buffer<std::uint64_t> representation_index_mask_d(input_representations_d.size());
+    device_buffer<std::uint64_t> representation_index_mask_d(input_representations_d.size(), allocator);
     {
         const std::int64_t number_of_representations               = get_size(input_representations_d);
         const representation_t* const input_representations_d_data = input_representations_d.data();

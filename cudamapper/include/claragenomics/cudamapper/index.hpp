@@ -93,7 +93,8 @@ public:
     /// \param filtering_parameter - filter out all representations for which number_of_sketch_elements_with_that_representation/total_skech_elements >= filtering_parameter, filtering_parameter == 1.0 disables filtering
     /// \return instance of Index
     static std::unique_ptr<Index>
-    create_index(const io::FastaParser& parser,
+    create_index(std::shared_ptr<deviceAllocator> allocator,
+                 const io::FastaParser& parser,
                  const read_id_t first_read_id,
                  const read_id_t past_the_last_read_id,
                  const std::uint64_t kmer_size,
