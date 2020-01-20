@@ -1261,7 +1261,7 @@ void test_function(const std::string& filename,
                    const std::vector<std::uint32_t>& expected_first_occurrence_of_representations,
                    const std::vector<std::string>& expected_read_id_to_read_name,
                    const std::vector<std::uint32_t>& expected_read_id_to_read_length,
-                   const std::uint64_t expected_number_of_reads,
+                   const read_id_t expected_number_of_reads,
                    const double filtering_parameter = 1.0)
 {
     std::unique_ptr<io::FastaParser> parser = io::create_fasta_parser(filename);

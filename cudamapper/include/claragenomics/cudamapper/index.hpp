@@ -70,7 +70,7 @@ public:
 
     /// \brief returns number of reads in input data
     /// \return number of reads in input data
-    virtual std::uint64_t number_of_reads() const = 0;
+    virtual read_id_t number_of_reads() const = 0;
 
     /// \brief Return the maximum kmer length allowable
     /// \return Return the maximum kmer length allowable

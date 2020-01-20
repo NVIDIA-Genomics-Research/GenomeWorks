@@ -103,7 +103,7 @@ public:
 
     /// \brief returns number of reads in input data
     /// \return number of reads in input data
-    std::uint64_t number_of_reads() const override;
+    read_id_t number_of_reads() const override;
 
 private:
     /// \brief generates the index
@@ -129,7 +129,7 @@ private:
     const std::uint64_t kmer_size_ = 0;
     // the number of adjacent k-mers in a window, adjacent = shifted by one basepair
     const std::uint64_t window_size_ = 0;
-    std::uint64_t number_of_reads_   = 0;
+    read_id_t number_of_reads_   = 0;
 };
 
 namespace details
@@ -581,7 +581,7 @@ const std::uint32_t& IndexGPU<SketchElementImpl>::read_id_to_read_length(const r
 }
 
 template <typename SketchElementImpl>
-std::uint64_t IndexGPU<SketchElementImpl>::number_of_reads() const
+read_id_t IndexGPU<SketchElementImpl>::number_of_reads() const
 {
     return number_of_reads_;
 }

@@ -76,7 +76,7 @@ void test_function(const std::uint64_t number_of_reads_to_add,
 
 TEST(TestCudamappperMinimizer, GATT_4_1)
 {
-    const std::uint64_t number_of_reads_to_add = 1;
+    const read_id_t number_of_reads_to_add = 1;
     const std::uint64_t minimizer_size         = 4;
     const std::uint64_t window_size            = 1;
     const std::uint64_t read_id_of_first_read  = 0;
@@ -137,7 +137,7 @@ TEST(TestCudamappperMinimizer, GATT_2_3)
     // back end minimizers
     // TT: 00 2 R 0
 
-    const std::uint64_t number_of_reads_to_add = 1;
+    const read_id_t number_of_reads_to_add = 1;
     const std::uint64_t minimizer_size         = 2;
     const std::uint64_t window_size            = 3;
     const std::uint64_t read_id_of_first_read  = 0;
@@ -219,7 +219,7 @@ TEST(TestCudamappperMinimizer, CCCATACC_2_7)
     // ACC    : 01 5 F 0
     // CC     : 11 6 F 0
 
-    const std::uint64_t number_of_reads_to_add = 1;
+    const read_id_t number_of_reads_to_add = 1;
     const std::uint64_t minimizer_size         = 2;
     const std::uint64_t window_size            = 7;
     const std::uint64_t read_id_of_first_read  = 0;
@@ -322,7 +322,7 @@ TEST(TestCudamappperMinimizer, CATCAAG_AAGCTA_3_2)
 
     // all minimizers: (032,0,R,0), (031,1,F,0), (100,3,F,0), (002,4,F,0), (002,0,F,1), (021,2,R,1), (130,3,F,1)
 
-    const std::uint64_t number_of_reads_to_add = 2;
+    const read_id_t number_of_reads_to_add = 2;
     const std::uint64_t minimizer_size         = 3;
     const std::uint64_t window_size            = 2;
     const std::uint64_t read_id_of_first_read  = 0;
@@ -433,7 +433,7 @@ TEST(TestCudamappperMinimizer, CATCAAG_AAGCTA_3_2_read_id_offset_5)
 
     // all minimizers: (032,0,R,0), (031,1,F,0), (100,3,F,0), (002,4,F,0), (002,0,F,1), (021,2,R,1), (130,3,F,1)
 
-    const std::uint64_t number_of_reads_to_add = 2;
+    const read_id_t number_of_reads_to_add = 2;
     const std::uint64_t minimizer_size         = 3;
     const std::uint64_t window_size            = 2;
     const std::uint64_t read_id_of_first_read  = 5;
