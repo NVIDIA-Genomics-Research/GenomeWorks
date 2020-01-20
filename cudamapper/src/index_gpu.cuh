@@ -10,6 +10,7 @@
 
 #pragma once
 
+#include <algorithm>
 #include <vector>
 
 #include <thrust/adjacent_difference.h>
@@ -105,6 +106,10 @@ public:
     /// \return number of reads in input data
     read_id_t number_of_reads() const override;
 
+    /// \brief returns length of the longest read in this index
+    /// \return length of the longest read in this index
+    position_in_read_t number_of_basepairs_in_longest_read() const override;
+
 private:
     /// \brief generates the index
     void generate_index(const io::FastaParser& query_parser,
@@ -128,8 +133,9 @@ private:
     // number of basepairs in a k-mer
     const std::uint64_t kmer_size_ = 0;
     // the number of adjacent k-mers in a window, adjacent = shifted by one basepair
-    const std::uint64_t window_size_ = 0;
-    read_id_t number_of_reads_   = 0;
+    const std::uint64_t window_size_                        = 0;
+    read_id_t number_of_reads_                              = 0;
+    position_in_read_t number_of_basepairs_in_longest_read_ = 0;
 };
 
 namespace details
@@ -524,6 +530,7 @@ IndexGPU<SketchElementImpl>::IndexGPU(const io::FastaParser& parser,
     , kmer_size_(kmer_size)
     , window_size_(window_size)
     , number_of_reads_(0)
+    , number_of_basepairs_in_longest_read_(0)
 {
     generate_index(parser,
                    first_read_id_,
@@ -587,6 +594,12 @@ read_id_t IndexGPU<SketchElementImpl>::number_of_reads() const
 }
 
 template <typename SketchElementImpl>
+position_in_read_t IndexGPU<SketchElementImpl>::number_of_basepairs_in_longest_read() const
+{
+    return number_of_basepairs_in_longest_read_;
+}
+
+template <typename SketchElementImpl>
 void IndexGPU<SketchElementImpl>::generate_index(const io::FastaParser& parser,
                                                  const read_id_t first_read_id,
                                                  const read_id_t past_the_last_read_id,
@@ -608,6 +621,8 @@ void IndexGPU<SketchElementImpl>::generate_index(const io::FastaParser& parser,
     std::vector<ArrayBlock> read_id_to_basepairs_section_h;
     std::vector<io::FastaSequence> fasta_reads;
 
+    number_of_basepairs_in_longest_read_ = 0;
+
     // deterine the number of basepairs in each read and assign read_id to each read
     for (read_id_t read_id = first_read_id; read_id < past_the_last_read_id; ++read_id)
     {
@@ -616,10 +631,12 @@ void IndexGPU<SketchElementImpl>::generate_index(const io::FastaParser& parser,
         const std::string& read_name      = fasta_reads.back().name;
         if (read_basepairs.length() >= window_size_ + kmer_size_ - 1)
         {
+            // TODO: make sure that no read is longer than what fits into position_in_read_t
             read_id_to_basepairs_section_h.emplace_back(ArrayBlock{total_basepairs, static_cast<std::uint32_t>(read_basepairs.length())});
             total_basepairs += read_basepairs.length();
             read_id_to_read_name_.push_back(read_name);
             read_id_to_read_length_.push_back(read_basepairs.length());
+            number_of_basepairs_in_longest_read_ = std::max(number_of_basepairs_in_longest_read_, static_cast<position_in_read_t>(read_basepairs.length()));
         }
         else
         {
@@ -636,7 +653,8 @@ void IndexGPU<SketchElementImpl>::generate_index(const io::FastaParser& parser,
         CGA_LOG_INFO("Index for reads {} to past {} is empty",
                      first_read_id,
                      past_the_last_read_id);
-        number_of_reads_ = 0;
+        number_of_reads_                     = 0;
+        number_of_basepairs_in_longest_read_ = 0;
         return;
     }
 
