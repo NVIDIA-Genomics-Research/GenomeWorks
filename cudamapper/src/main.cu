@@ -279,8 +279,7 @@ int main(int argc, char* argv[])
 
                 //Increment counter which tracks number of overlap chunks to be filtered and printed
                 num_overlap_chunks_to_print++;
-                std::async(std::launch::async,
-                         [&overlaps_writer_mtx, &overlaps_to_add, &num_overlap_chunks_to_print](std::vector<claragenomics::cudamapper::Overlap, thrust::system::cuda::experimental::pinned_allocator<claragenomics::cudamapper::Overlap>> overlaps) {
+                auto print_overlaps = [&overlaps_writer_mtx, &num_overlap_chunks_to_print](std::vector<claragenomics::cudamapper::Overlap, thrust::system::cuda::experimental::pinned_allocator<claragenomics::cudamapper::Overlap>> overlaps) {
                              std::vector<claragenomics::cudamapper::Overlap, thrust::system::cuda::experimental::pinned_allocator<claragenomics::cudamapper::Overlap>> filtered_overlaps;
                              claragenomics::cudamapper::Overlapper::filter_overlaps(filtered_overlaps, overlaps, 50);
                              std::lock_guard<std::mutex> lck(overlaps_writer_mtx);
@@ -290,11 +289,12 @@ int main(int argc, char* argv[])
                              for (auto o: overlaps){
                                  o.clear();
                              }
-
                              //Decrement counter which tracks number of overlap chunks to be filtered and printed
                              num_overlap_chunks_to_print--;
+                             };
 
-                             }, overlaps_to_add);
+                std::thread t (print_overlaps, overlaps_to_add);
+                t.detach();
             }
         }
 
