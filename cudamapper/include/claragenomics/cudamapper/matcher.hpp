@@ -38,7 +38,8 @@ public:
     /// \param query_index
     /// \param target_index
     /// \return matcher
-    static std::unique_ptr<Matcher> create_matcher(const Index& query_index,
+    static std::unique_ptr<Matcher> create_matcher(std::shared_ptr<deviceAllocator> allocator,
+						   const Index& query_index,
                                                    const Index& target_index);
 };
 

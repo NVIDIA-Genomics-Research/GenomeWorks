@@ -60,9 +60,10 @@ namespace claragenomics
 namespace cudamapper
 {
 
-MatcherGPU::MatcherGPU(const Index& query_index,
+MatcherGPU::MatcherGPU(std::shared_ptr<deviceAllocator> allocator,
+		       const Index& query_index,
                        const Index& target_index)
-{
+    :anchors_d_(allocator){
     CGA_NVTX_RANGE(profile, "matcherGPU");
     if (query_index.unique_representations().size() == 0 || target_index.unique_representations().size() == 0)
         return;
@@ -78,8 +79,8 @@ MatcherGPU::MatcherGPU(const Index& query_index,
     // The array index of the following data structures will correspond to the array index of the
     // unique representation in the query index.
 
-    device_buffer<std::int64_t> found_target_indices_d(query_index.unique_representations().size());
-    device_buffer<std::int64_t> anchor_starting_indices_d(query_index.unique_representations().size());
+    device_buffer<std::int64_t> found_target_indices_d(query_index.unique_representations().size(), allocator);
+    device_buffer<std::int64_t> anchor_starting_indices_d(query_index.unique_representations().size(), allocator);
 
     // First we search for each unique representation of the query index, the array index
     // of the same representation in the array of unique representations of target index
@@ -90,7 +91,7 @@ MatcherGPU::MatcherGPU(const Index& query_index,
     // and store the resulting starting index in an anchors array if all anchors are stored in a flat array.
     // The last element will be the total number of anchors.
     details::matcher_gpu::compute_anchor_starting_indices(anchor_starting_indices_d, query_index.first_occurrence_of_representations(), found_target_indices_d, target_index.first_occurrence_of_representations());
-
+    
     int64_t n_anchors = 0;
     cudautils::copy(&n_anchors, anchor_starting_indices_d.end() - 1, 1); // D->H transfer
     //const int64_t n_anchors = anchor_starting_indices_d.back(); // D->H transfer
@@ -199,7 +200,6 @@ void generate_anchors(
     assert(found_target_indices_d.size() + 1 == query_starting_index_of_each_representation_d.size());
     assert(query_read_ids.size() == query_positions_in_read.size());
     assert(target_read_ids.size() == target_positions_in_read.size());
-
     const int32_t n_threads = 256;
     const int32_t n_blocks  = ceiling_divide<int64_t>(get_size(anchors), n_threads);
     generate_anchors_kernel<<<n_blocks, n_threads>>>(
