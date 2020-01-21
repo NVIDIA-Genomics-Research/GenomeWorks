@@ -14,7 +14,7 @@
 import glob
 import os
 import shutil
-from setuptools import setup, find_packages, Extension
+from setuptools import setup, Extension, find_namespace_packages
 
 from Cython.Build import cythonize
 
@@ -86,7 +86,7 @@ current_dir = os.path.dirname(os.path.realpath(__file__))
 # Copies shared libraries into clargenomics package
 copy_all_files_in_directory(
     get_verified_absolute_path(os.path.join(cga_install_dir, "lib")),
-    os.path.join(current_dir, "claragenomics/shared_libs/"),
+    os.path.join(current_dir, "claragenomics", "shared_libs/"),
 )
 
 # Classifiers for PyPI
@@ -106,15 +106,40 @@ pycga_classifiers = [
 
 extensions = [
     Extension(
-        "*",
-        sources=[os.path.join("claragenomics/**/*.pyx")],
+        "claragenomics.bindings.cuda",
+        sources=[os.path.join("claragenomics/**/cuda.pyx")],
+        include_dirs=[
+            "/usr/local/cuda/include",
+        ],
+        library_dirs=["/usr/local/cuda/lib64"],
+        runtime_library_dirs=["/usr/local/cuda/lib64"],
+        libraries=["cudart"],
+        language="c++",
+        extra_compile_args=["-std=c++14"],
+    ),
+    Extension(
+        "claragenomics.bindings.cudapoa",
+        sources=[os.path.join("claragenomics/**/cudapoa.pyx")],
         include_dirs=[
             "/usr/local/cuda/include",
             get_verified_absolute_path(os.path.join(cga_install_dir, "include")),
         ],
         library_dirs=["/usr/local/cuda/lib64", get_verified_absolute_path(os.path.join(cga_install_dir, "lib"))],
         runtime_library_dirs=["/usr/local/cuda/lib64", os.path.join('$ORIGIN', os.pardir, 'shared_libs')],
-        libraries=["cudapoa", "cudaaligner", "cudart", "logging"],
+        libraries=["cudapoa", "cudart", "logging"],
+        language="c++",
+        extra_compile_args=["-std=c++14"],
+    ),
+    Extension(
+        "claragenomics.bindings.cudaaligner",
+        sources=[os.path.join("claragenomics/**/cudaaligner.pyx")],
+        include_dirs=[
+            "/usr/local/cuda/include",
+            get_verified_absolute_path(os.path.join(cga_install_dir, "include")),
+        ],
+        library_dirs=["/usr/local/cuda/lib64", get_verified_absolute_path(os.path.join(cga_install_dir, "lib"))],
+        runtime_library_dirs=["/usr/local/cuda/lib64", os.path.join('$ORIGIN', os.pardir, 'shared_libs')],
+        libraries=["cudaaligner", "cudart", "logging"],
         language="c++",
         extra_compile_args=["-std=c++14"],
     )
@@ -132,7 +157,7 @@ setup(name='pyclaragenomics',
       install_requires=get_installation_requirments(
           get_verified_absolute_path(os.path.join(current_dir, 'requirements.txt'))
       ),
-      packages=find_packages(where=current_dir),
+      packages=find_namespace_packages(where=current_dir, include=['claragenomics.*']),
       python_requires='>=3.5',
       license='Apache License 2.0',
       long_description='Python libraries and utilities for manipulating genomics data',
