@@ -31,7 +31,6 @@
 #include <claragenomics/cudamapper/matcher.hpp>
 #include <claragenomics/cudamapper/overlapper.hpp>
 #include "overlapper_triggered.hpp"
-#include "../../common/io/src/kseqpp_fasta_parser.hpp"
 
 static struct option options[] = {
     {"kmer-size", required_argument, 0, 'k'},

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, NVIDIA CORPORATION.  All rights reserved.
+ * Copyright (c) 2020, NVIDIA CORPORATION.  All rights reserved.
  *
  * NVIDIA CORPORATION and its licensors retain all intellectual property
  * and proprietary rights in and to this software, related documentation
@@ -31,7 +31,6 @@ __host__ __device__ bool operator==(const Anchor& lhs,
     auto score_threshold = 1;
 
     // Very simple scoring function to quantify quality of overlaps.
-    // TODO change to a more sophisticated scoring method
     auto score = 1;
 
     if ((rhs.query_position_in_read_ - lhs.query_position_in_read_) < 150 and abs(int(rhs.target_position_in_read_) - int(lhs.target_position_in_read_)) < 150)
@@ -73,12 +72,6 @@ __host__ __device__ bool operator==(const cuOverlapKey& key0,
 {
     const Anchor* a = key0.anchor;
     const Anchor* b = key1.anchor;
-
-    //printf("Comparing (%i, %i), (%i, %i)\n", key0.anchor->query_read_id_ , key1.anchor->query_read_id_, key0.anchor->target_read_id_ , key1.anchor->target_read_id_);
-
-    //return false;
-    //nofuse
-    //return (a->target_read_id_ == b->target_read_id_) && (a->query_read_id_ == b->query_read_id_) && (a->query_position_in_read_ == b->query_position_in_read_) && (a->target_position_in_read_ == b->target_position_in_read_);
 
     int distance_difference = abs(abs(int(a->query_position_in_read_) - int(b->query_position_in_read_)) -
                               abs(int(a->target_position_in_read_) - int(b->target_position_in_read_)));
@@ -277,8 +270,6 @@ void OverlapperTriggered::get_overlaps(std::vector<claragenomics::cudamapper::Ov
     // calculate overlaps where overlap is a chain with length > tail_length_for_chain
     // >>>>>>>>>>>>
 
-    // MV - at this point, chains have been computed
-
     // d_overlaps[j] contains index to d_chain_length/d_chain_start where
     // d_chain_length[d_overlaps[j]] and d_chain_start[d_overlaps[j]] corresponds
     // to length and index to starting anchor of the chain-d_overlaps[j] (also referred as overlap j)
@@ -291,7 +282,6 @@ void OverlapperTriggered::get_overlaps(std::vector<claragenomics::cudamapper::Ov
                             return (len >= tail_length_for_chain);
                         });
 
-    // MV - at this point, unfused overlaps have been computed (filtered chains)
     auto n_overlaps = indices_end - d_overlaps.data();
     // <<<<<<<<<<<<<
 
@@ -389,8 +379,6 @@ void OverlapperTriggered::get_overlaps(std::vector<claragenomics::cudamapper::Ov
             o.target_length_ = index_target.read_id_to_read_length(o.target_read_id_);
         }
     }
-
-
 
 }
 } // namespace cudamapper
