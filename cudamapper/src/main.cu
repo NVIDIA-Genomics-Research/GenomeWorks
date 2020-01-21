@@ -54,8 +54,8 @@ int main(int argc, char* argv[])
     uint32_t w                     = 15;    // w
     std::int32_t num_devices       = 1;     // d
     std::int32_t max_cache_size    = 100;   // c
-    std::int32_t index_size        = 10000; // i
-    std::int32_t target_index_size = 10000; // t
+    std::int32_t index_size        = 30; // i
+    std::int32_t target_index_size = 30; // t
     double filtering_parameter     = 1.0;   // F
     std::string optstring          = "k:w:d:c:i:t:F:h:";
     int32_t argument               = 0;
@@ -373,10 +373,10 @@ void help(int32_t exit_code = 0)
             number of indices to keep in GPU memory [100])"
               << R"(
         -i, --index-size
-            length of batch size used for query [10000])"
+            length of batch size used for query in MB [30])"
               << R"(
         -t --target-index-size
-            length of batch sized used for target [10000])"
+            length of batch sized used for target in MB [30])"
               << R"(
         -F --filtering-parameter
             filter all representations for which sketch_elements_with_that_representation/total_sketch_elements >= filtering_parameter), filtering disabled if filtering_parameter == 1.0 [1'000'000'001] (Min = 0.0, Max = 1.0))"

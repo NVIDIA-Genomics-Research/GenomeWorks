@@ -95,11 +95,33 @@ FastaSequence FastaParserHTS::get_sequence_by_name(const std::string& name) cons
     return s;
 }
 
-//TODO implement
 std::vector<std::pair<int, int>> FastaParserHTS::get_read_chunks(int max_chunk_size) const
 {
-    std::vector<std::pair<int, int>> foo;
-    return foo;
+    std::vector<std::pair<int, int>> chunks;
+
+    std::pair<int, int> chunk;
+
+    chunk.first   = 0;
+    int num_bases = 0;
+    for (int read_idx = 0; read_idx < num_seqequences_; read_idx++)
+    {
+        if (get_sequence_by_id(read_idx).seq.size() + num_bases > max_chunk_size)
+        {
+            chunk.second = read_idx - 1;
+            chunks.push_back(chunk);
+            chunk.first = read_idx;
+            num_bases   = get_sequence_by_id(read_idx).seq.size();
+        }
+        else
+        {
+            num_bases += get_sequence_by_id(read_idx).seq.size();
+        }
+    }
+
+    chunk.second = num_seqequences_ - 1;
+
+    chunks.push_back(chunk);
+    return chunks;
 }
 
 } // namespace io

@@ -47,6 +47,8 @@ public:
     /// \return A FastaSequence object describing the entry.
     virtual FastaSequence get_sequence_by_id(int32_t id) const = 0;
 
+    /// \brief returns a list of pairs of read_id values where each range has at most max_chunk_size characters
+    /// if a single sequence exceeds max_chunk_size it will be placed in its own chunk.
     virtual std::vector<std::pair<int, int>> get_read_chunks(int max_chunk_size = 1000000) const = 0;
 };
 
