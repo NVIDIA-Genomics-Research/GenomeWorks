@@ -11,7 +11,6 @@
 #include "hts_fasta_parser.hpp"
 #include "kseqpp_fasta_parser.hpp"
 
-
 #include "claragenomics/io/fasta_parser.hpp"
 
 #include <memory>
@@ -27,7 +26,7 @@ std::unique_ptr<FastaParser> create_fasta_parser(const std::string& fasta_file)
     return std::make_unique<FastaParserHTS>(fasta_file);
 }
 
-std::shared_ptr<FastaParser> create_kseq_fasta_parser(const std::string &fasta_file) //TODO needs to return a unique ptr
+std::shared_ptr<FastaParser> create_kseq_fasta_parser(const std::string& fasta_file)
 {
     return std::make_unique<FastaParserKseqpp>(FastaParserKseqpp(fasta_file));
 }

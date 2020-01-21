@@ -96,12 +96,11 @@ FastaSequence FastaParserHTS::get_sequence_by_name(const std::string& name) cons
 }
 
 //TODO implement
-std::vector<std::pair<int,int>> FastaParserHTS::get_read_chunks(int max_chunk_size) const
+std::vector<std::pair<int, int>> FastaParserHTS::get_read_chunks(int max_chunk_size) const
 {
-    std::vector<std::pair<int,int>> foo;
+    std::vector<std::pair<int, int>> foo;
     return foo;
 }
-
 
 } // namespace io
 } // namespace claragenomics

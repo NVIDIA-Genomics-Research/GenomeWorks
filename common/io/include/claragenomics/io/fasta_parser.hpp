@@ -47,8 +47,7 @@ public:
     /// \return A FastaSequence object describing the entry.
     virtual FastaSequence get_sequence_by_id(int32_t id) const = 0;
 
-    virtual std::vector<std::pair<int,int>> get_read_chunks(int max_chunk_size = 1000000) const = 0;
-
+    virtual std::vector<std::pair<int, int>> get_read_chunks(int max_chunk_size = 1000000) const = 0;
 };
 
 /// \brief A builder function that returns a FASTA parser object which uses HTSLIB.
@@ -63,7 +62,7 @@ std::unique_ptr<FastaParser> create_fasta_parser(const std::string& fasta_file);
 /// \param fasta_file Path to FASTA(.gz) file. If .gz, it must be zipped with bgzip.
 ///
 /// \return A unique pointer to a constructed parser object.
-std::shared_ptr<FastaParser> create_kseq_fasta_parser(const std::string &fasta_file);
+std::shared_ptr<FastaParser> create_kseq_fasta_parser(const std::string& fasta_file);
 
 } // namespace io
 } // namespace claragenomics

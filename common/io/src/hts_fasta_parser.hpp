@@ -33,7 +33,7 @@ public:
 
     FastaSequence get_sequence_by_id(int32_t i) const override;
 
-    std::vector<std::pair<int,int>> get_read_chunks(int max_chunk_size) const override ;
+    std::vector<std::pair<int, int>> get_read_chunks(int max_chunk_size) const override;
 
 private:
     faidx_t* fasta_index_;

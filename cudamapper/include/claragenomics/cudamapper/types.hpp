@@ -90,9 +90,9 @@ typedef struct Overlap
     /// end position in the target
     position_in_read_t target_end_position_in_read_;
     /// query read name (e.g from FASTA)
-    char * query_read_name_ = 0;
+    char* query_read_name_ = 0;
     /// target read name (e.g from FASTA)
-    char * target_read_name_ = 0;
+    char* target_read_name_ = 0;
     /// Relative strand: Forward ("+") or Reverse("-")
     RelativeStrand relative_strand;
     /// Number of residues (e.g anchors) between the two reads
@@ -106,20 +106,21 @@ typedef struct Overlap
     /// CIGAR string for alignment of mapped section.
     char* cigar_ = 0;
 
-
     void clear()
     {
-        if (target_read_name_ !=0) {
+        if (target_read_name_ != 0)
+        {
             delete[] target_read_name_;
         }
-        if (query_read_name_ !=0) {
+        if (query_read_name_ != 0)
+        {
             delete[] query_read_name_;
         }
-        if (cigar_ !=0) {
+        if (cigar_ != 0)
+        {
             delete[] cigar_;
         }
     }
-
 
 } Overlap;
 

@@ -74,14 +74,13 @@ __host__ __device__ bool operator==(const cuOverlapKey& key0,
     const Anchor* b = key1.anchor;
 
     int distance_difference = abs(abs(int(a->query_position_in_read_) - int(b->query_position_in_read_)) -
-                              abs(int(a->target_position_in_read_) - int(b->target_position_in_read_)));
+                                  abs(int(a->target_position_in_read_) - int(b->target_position_in_read_)));
 
     bool equal = (a->target_read_id_ == b->target_read_id_) &&
                  (a->query_read_id_ == b->query_read_id_) &&
-                  distance_difference < 300;
+                 distance_difference < 300;
 
     return equal;
-
 }
 
 struct cuOverlapArgs
@@ -353,7 +352,6 @@ void OverlapperTriggered::get_overlaps(std::vector<claragenomics::cudamapper::Ov
     // memcpyD2H - move fused overlaps to host
     fused_overlaps.resize(n_fused_overlap);
 
-
     thrust::copy(d_fused_overlaps.begin(), d_fused_overlaps.end(),
                  fused_overlaps.begin());
 
@@ -363,10 +361,11 @@ void OverlapperTriggered::get_overlaps(std::vector<claragenomics::cudamapper::Ov
 
 #pragma omp parallel num_threads(16)
     {
-        #pragma omp for
-        for (int i=0; i< fused_overlaps.size(); i++){
-            auto& o = fused_overlaps[i];
-            std::string query_read_name = index_query.read_id_to_read_name(o.query_read_id_);
+#pragma omp for
+        for (int i = 0; i < fused_overlaps.size(); i++)
+        {
+            auto& o                      = fused_overlaps[i];
+            std::string query_read_name  = index_query.read_id_to_read_name(o.query_read_id_);
             std::string target_read_name = index_target.read_id_to_read_name(o.target_read_id_);
 
             o.query_read_name_ = new char[query_read_name.length()];
@@ -375,11 +374,10 @@ void OverlapperTriggered::get_overlaps(std::vector<claragenomics::cudamapper::Ov
             o.target_read_name_ = new char[target_read_name.length()];
             strcpy(o.target_read_name_, target_read_name.c_str());
 
-            o.query_length_ = index_query.read_id_to_read_length(o.query_read_id_);
+            o.query_length_  = index_query.read_id_to_read_length(o.query_read_id_);
             o.target_length_ = index_target.read_id_to_read_length(o.target_read_id_);
         }
     }
-
 }
 } // namespace cudamapper
 } // namespace claragenomics
