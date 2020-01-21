@@ -16,26 +16,26 @@
 
 namespace claragenomics
 {
-    namespace io
-    {
+namespace io
+{
 
-        class FastaParserKseqpp : public FastaParser
-        {
-        public:
-            FastaParserKseqpp(const std::string &fasta_file);
+class FastaParserKseqpp : public FastaParser
+{
+public:
+    FastaParserKseqpp(const std::string& fasta_file);
 
-            ~FastaParserKseqpp();
+    ~FastaParserKseqpp();
 
-            int32_t get_num_seqences() const override;
+    int32_t get_num_seqences() const override;
 
-            FastaSequence get_sequence_by_id(int32_t i) const override;
+    FastaSequence get_sequence_by_id(int32_t i) const override;
 
-            std::vector<std::pair<int,int>> get_read_chunks(int max_chunk_size) const override ;
+    std::vector<std::pair<int, int>> get_read_chunks(int max_chunk_size) const override;
 
-        private:
-            std::vector<FastaSequence> reads_;
-            std::vector<std::pair<int,int>> read_chunks_;
-        };
+private:
+    std::vector<FastaSequence> reads_;
+    std::vector<std::pair<int, int>> read_chunks_;
+};
 
-    } // namespace io
+} // namespace io
 } // namespace claragenomics

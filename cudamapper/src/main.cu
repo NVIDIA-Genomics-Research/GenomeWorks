@@ -121,21 +121,22 @@ int main(int argc, char* argv[])
         std::cerr << "NOTE - Since query and target files are same, activating all_to_all mode. Query index size used for both files." << std::endl;
     }
 
-
     auto parsers = claragenomics::io::create_kseq_fasta_parser(query_filepath);
 
     std::shared_ptr<claragenomics::io::FastaParser> query_parser = claragenomics::io::create_kseq_fasta_parser(query_filepath);
     int32_t queries                                              = query_parser->get_num_seqences();
 
     std::shared_ptr<claragenomics::io::FastaParser> target_parser;
-    if (all_to_all){
+    if (all_to_all)
+    {
         target_parser = query_parser;
-    } else {
-
+    }
+    else
+    {
     }
     target_parser = claragenomics::io::create_kseq_fasta_parser(target_filepath);
 
-    int32_t targets                                               = target_parser->get_num_seqences();
+    int32_t targets = target_parser->get_num_seqences();
 
     std::cerr << "Query " << query_filepath << " index " << queries << std::endl;
     std::cerr << "Target " << target_filepath << " index " << targets << std::endl;
@@ -149,28 +150,29 @@ int main(int argc, char* argv[])
         std::vector<std::pair<std::int32_t, int32_t>> target_ranges;
     };
 
-    auto query_chunks = query_parser->get_read_chunks(index_size * 1000000);
+    auto query_chunks  = query_parser->get_read_chunks(index_size * 1000000);
     auto target_chunks = target_parser->get_read_chunks(target_index_size * 1000000);
 
     //First generate all the ranges independently, then loop over them.
     std::vector<query_target_range> query_target_ranges;
 
-
     // TODO: here goes filling out the query_target_ranges vector but using chunks
 
     int target_idx = 0;
-    for (auto query_chunk: query_chunks){
+    for (auto query_chunk : query_chunks)
+    {
         query_target_range range;
         range.query_range = query_chunk;
-        for (int t = target_idx; t<target_chunks.size(); t++){
+        for (int t = target_idx; t < target_chunks.size(); t++)
+        {
             range.target_ranges.push_back(target_chunks[t]);
         }
         query_target_ranges.push_back(range);
-        if(all_to_all){
+        if (all_to_all)
+        {
             target_idx++;
         }
     }
-
 
     // This is a per-device cache, if it has the index it will return it, if not it will generate it, store and return it.
     std::vector<std::map<std::pair<uint64_t, uint64_t>, std::shared_ptr<claragenomics::cudamapper::Index>>> index_cache(num_devices);
@@ -280,20 +282,21 @@ int main(int argc, char* argv[])
                 //Increment counter which tracks number of overlap chunks to be filtered and printed
                 num_overlap_chunks_to_print++;
                 auto print_overlaps = [&overlaps_writer_mtx, &num_overlap_chunks_to_print](std::vector<claragenomics::cudamapper::Overlap, thrust::system::cuda::experimental::pinned_allocator<claragenomics::cudamapper::Overlap>> overlaps) {
-                             std::vector<claragenomics::cudamapper::Overlap, thrust::system::cuda::experimental::pinned_allocator<claragenomics::cudamapper::Overlap>> filtered_overlaps;
-                             claragenomics::cudamapper::Overlapper::filter_overlaps(filtered_overlaps, overlaps, 50);
-                             std::lock_guard<std::mutex> lck(overlaps_writer_mtx);
-                             claragenomics::cudamapper::Overlapper::print_paf(filtered_overlaps);
+                    std::vector<claragenomics::cudamapper::Overlap, thrust::system::cuda::experimental::pinned_allocator<claragenomics::cudamapper::Overlap>> filtered_overlaps;
+                    claragenomics::cudamapper::Overlapper::filter_overlaps(filtered_overlaps, overlaps, 50);
+                    std::lock_guard<std::mutex> lck(overlaps_writer_mtx);
+                    claragenomics::cudamapper::Overlapper::print_paf(filtered_overlaps);
 
-                             //clear data
-                             for (auto o: overlaps){
-                                 o.clear();
-                             }
-                             //Decrement counter which tracks number of overlap chunks to be filtered and printed
-                             num_overlap_chunks_to_print--;
-                             };
+                    //clear data
+                    for (auto o : overlaps)
+                    {
+                        o.clear();
+                    }
+                    //Decrement counter which tracks number of overlap chunks to be filtered and printed
+                    num_overlap_chunks_to_print--;
+                };
 
-                std::thread t (print_overlaps, overlaps_to_add);
+                std::thread t(print_overlaps, overlaps_to_add);
                 t.detach();
             }
         }
@@ -321,15 +324,17 @@ int main(int argc, char* argv[])
         std::cerr << "Launching worker thread" << std::endl;
         //Worker thread consumes query-target ranges off a queue
         workers.push_back(std::thread(
-                [&, device_id](){
-                    while (ranges_idx < get_size<int>(query_target_ranges)) {
-                        int range_idx = ranges_idx.fetch_add(1);
-                        //Need to perform this check again for thread-safety
-                        if (range_idx < get_size<int>(query_target_ranges)) {
-                            compute_overlaps(query_target_ranges[range_idx], device_id);
-                        }
+            [&, device_id]() {
+                while (ranges_idx < get_size<int>(query_target_ranges))
+                {
+                    int range_idx = ranges_idx.fetch_add(1);
+                    //Need to perform this check again for thread-safety
+                    if (range_idx < get_size<int>(query_target_ranges))
+                    {
+                        compute_overlaps(query_target_ranges[range_idx], device_id);
                     }
-                }));
+                }
+            }));
     }
 
     // Wait for all per-device threads to terminate
@@ -338,7 +343,8 @@ int main(int argc, char* argv[])
     });
 
     // Wait for all futures (for overlap filtering and writing) to return
-    while(num_overlap_chunks_to_print !=0){
+    while (num_overlap_chunks_to_print != 0)
+    {
         std::this_thread::sleep_for(std::chrono::milliseconds(200));
     }
 
