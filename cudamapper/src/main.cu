@@ -25,6 +25,7 @@
 #include <claragenomics/logging/logging.hpp>
 #include <claragenomics/io/fasta_parser.hpp>
 #include <claragenomics/utils/cudautils.hpp>
+#include <claragenomics/utils/signed_integer_utils.hpp>
 
 #include <claragenomics/cudamapper/index.hpp>
 #include <claragenomics/cudamapper/matcher.hpp>
@@ -47,6 +48,7 @@ void help(int32_t exit_code);
 
 int main(int argc, char* argv[])
 {
+    using claragenomics::get_size;
     claragenomics::logging::Init();
 
     uint32_t k                     = 15;    // k
@@ -57,7 +59,7 @@ int main(int argc, char* argv[])
     std::int32_t target_index_size = 10000; // t
     double filtering_parameter     = 1.0;   // F
     std::string optstring          = "k:w:d:c:i:t:F:h:";
-    uint32_t argument;
+    int32_t argument               = 0;
     while ((argument = getopt_long(argc, argv, optstring.c_str(), options, nullptr)) != -1)
     {
         switch (argument)
@@ -174,7 +176,8 @@ int main(int argc, char* argv[])
     // This is a per-device cache, if it has the index it will return it, if not it will generate it, store and return it.
     std::vector<std::map<std::pair<uint64_t, uint64_t>, std::shared_ptr<claragenomics::cudamapper::Index>>> index_cache(num_devices);
 
-    std::atomic<int> num_overlap_chunks(0);
+    // The number of overlap chunks which are to be computed
+    std::atomic<int> num_overlap_chunks_to_print(0);
 
     auto get_index = [&index_cache, max_cache_size](claragenomics::io::FastaParser& parser,
                                                     const claragenomics::cudamapper::read_id_t start_index,
@@ -202,7 +205,7 @@ int main(int argc, char* argv[])
             // If in all-to-all mode, put this query in the cache for later use.
             // Cache eviction is handled later on by the calling thread
             // using the evict_index function.
-            if (index_cache[device_id].size() < max_cache_size && allow_cache_index)
+            if (get_size<int32_t>(index_cache[device_id]) < max_cache_size && allow_cache_index)
             {
                 index_cache[device_id][key] = index;
             }
@@ -275,9 +278,10 @@ int main(int argc, char* argv[])
 
                 overlapper.get_overlaps(overlaps_to_add, matcher->anchors(), *query_index, *target_index);
 
-                num_overlap_chunks += 1;
+                //Increment counter which tracks number of overlap chunks to be filtered and printed
+                num_overlap_chunks_to_print++;
                 std::async(std::launch::async,
-                         [&overlaps_writer_mtx, &overlaps_to_add, &num_overlap_chunks](std::vector<claragenomics::cudamapper::Overlap, thrust::system::cuda::experimental::pinned_allocator<claragenomics::cudamapper::Overlap>> overlaps) {
+                         [&overlaps_writer_mtx, &overlaps_to_add, &num_overlap_chunks_to_print](std::vector<claragenomics::cudamapper::Overlap, thrust::system::cuda::experimental::pinned_allocator<claragenomics::cudamapper::Overlap>> overlaps) {
                              std::vector<claragenomics::cudamapper::Overlap, thrust::system::cuda::experimental::pinned_allocator<claragenomics::cudamapper::Overlap>> filtered_overlaps;
                              claragenomics::cudamapper::Overlapper::filter_overlaps(filtered_overlaps, overlaps, 50);
                              std::lock_guard<std::mutex> lck(overlaps_writer_mtx);
@@ -288,8 +292,8 @@ int main(int argc, char* argv[])
                                  o.clear();
                              }
 
-                             //
-                             num_overlap_chunks--;
+                             //Decrement counter which tracks number of overlap chunks to be filtered and printed
+                             num_overlap_chunks_to_print--;
 
                              }, overlaps_to_add);
             }
@@ -318,11 +322,11 @@ int main(int argc, char* argv[])
         std::cerr << "Launching worker thread" << std::endl;
         //Worker thread consumes query-target ranges off a queue
         workers.push_back(std::thread(
-                [&, device_id]() {
-                    while (ranges_idx < query_target_ranges.size()) {
+                [&, device_id](){
+                    while (ranges_idx < get_size<int>(query_target_ranges)) {
                         int range_idx = ranges_idx.fetch_add(1);
                         //Need to perform this check again for thread-safety
-                        if (range_idx < query_target_ranges.size()) {
+                        if (range_idx < get_size<int>(query_target_ranges)) {
                             compute_overlaps(query_target_ranges[range_idx], device_id);
                         }
                     }
@@ -335,7 +339,7 @@ int main(int argc, char* argv[])
     });
 
     // Wait for all futures (for overlap filtering and writing) to return
-    while(num_overlap_chunks !=0){
+    while(num_overlap_chunks_to_print !=0){
         std::this_thread::sleep_for(std::chrono::milliseconds(200));
     }
 

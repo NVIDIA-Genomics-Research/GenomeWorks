@@ -38,17 +38,28 @@ source ci/common/prep-init-env.sh ${WORKSPACE}
 logger "Run Copyright header check..."
 ./ci/checks/check_copyright.py
 
-# Run style check
-logger "Run Python formatting check..."
-python -m pip install flake8
-flake8 pyclaragenomics/
+# Python
+logger "Run Python/Cython formatting check..."
+python -m pip install -r ./ci/checks/python-style-requirements.txt
+source pyclaragenomics/style_check
 
+logger "Run Python documentation generation..."
+mkdir -p pyclaragenomics/docs; cd pyclaragenomics/docs
+sphinx-quickstart -p "Clara Genomics Analysis SDK" -v "x.y.z" -a "NVIDIA Corportation" -q --ext-autodoc --sep
+##### Update sphinx conf.py with path for modules
+sed -i '1s@^@import sys \n@' source/conf.py
+sed -i '2s@^@sys.path.insert\(0, "'$PWD'/.."\) \n@' source/conf.py
+#####
+sphinx-apidoc -f -o source/ ../claragenomics/ ../claragenomics/bindings/*cpython*
+make html
+
+# C++
 logger "Run C++ formatting check..."
 mkdir --parents ${WORKSPACE}/build
 cd ${WORKSPACE}/build
 
-# Initialize CMake
 cmake .. -DCMAKE_BUILD_TYPE=Release -Dcga_enable_tests=ON -Dcga_enable_benchmarks=ON
-
-# Run format check
 make check-format
+
+logger "Run C++ documentation generation..."
+make docs

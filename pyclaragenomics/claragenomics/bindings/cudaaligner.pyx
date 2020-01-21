@@ -7,6 +7,7 @@
 # distribution of this software and related documentation without an express
 # license agreement from NVIDIA CORPORATION is strictly prohibited.
 #
+"""Bindings for CUDAALIGNER."""
 
 # distutils: language = c++
 
@@ -19,9 +20,9 @@ from libc.stdint cimport uint16_t
 from claragenomics.bindings cimport cudaaligner
 from claragenomics.bindings import cuda
 
+
 def status_to_str(status):
-    """
-    Convert status to their string representations.
+    """Convert status to their string representations.
     """
     if status == success:
         return "success"
@@ -38,20 +39,19 @@ def status_to_str(status):
     else:
         raise RuntimeError("Unknown error status : " + status)
 
+
 class CudaAlignment:
-    """
-    Class encompassing an Alignment between two sequences."
+    """Class encompassing an Alignment between two sequences.
     """
     def __init__(self,
-            query,
-            target,
-            cigar,
-            alignment_type,
-            status,
-            alignment,
-            format_alignment):
-        """
-        Construct an alignment object based on alignment information between two
+                 query,
+                 target,
+                 cigar,
+                 alignment_type,
+                 status,
+                 alignment,
+                 format_alignment):
+        """Construct an alignment object based on alignment information between two
         sequences.
 
         Args:
@@ -73,8 +73,7 @@ class CudaAlignment:
 
     @staticmethod
     def _alignment_type_str(t):
-        """
-        Convert alignment type enum to string.
+        """Convert alignment type enum to string.
 
         Args:
             t - alignment type
@@ -88,8 +87,7 @@ class CudaAlignment:
 
     @staticmethod
     def _alignment_state_enum_str(s):
-        """
-        Convert alignment state enum to string.
+        """Convert alignment state enum to string.
 
         Args:
             s - alignment state
@@ -109,14 +107,13 @@ class CudaAlignment:
             raise RuntimeError("Unknown alignment state encountered: " + s)
 
     def __str__(self):
-        """
-        Print formatted alignment.
+        """Print formatted alignment.
         """
         return "{}\n{}\n{}\n".format(self.format_alignment[0], self.format_alignment[1], self.format_alignment[2])
 
+
 cdef class CudaAlignerBatch:
-    """
-    Python API for CUDA-accelerated sequence to sequence alignment.
+    """Python API for CUDA-accelerated sequence to sequence alignment.
     """
     cdef unique_ptr[cudaaligner.Aligner] aligner
 
@@ -130,8 +127,7 @@ cdef class CudaAlignerBatch:
             device_id=0,
             *args,
             **kwargs):
-        """
-        Construct a CudaAligner object to run CUDA-accelerated sequence
+        """Construct a CudaAligner object to run CUDA-accelerated sequence
         to sequence alignment across all pairs in a batch.
 
         Args:
@@ -159,12 +155,12 @@ cdef class CudaAlignerBatch:
             raise RuntimeError("Unknown alignment_type provided. Must be global.")
 
         self.aligner = cudaaligner.create_aligner(
-                max_query_length,
-                max_target_length,
-                max_alignments,
-                alignment_type_enum,
-                temp_stream,
-                device_id)
+            max_query_length,
+            max_target_length,
+            max_alignments,
+            alignment_type_enum,
+            temp_stream,
+            device_id)
 
     def __init__(
             self,
@@ -176,15 +172,13 @@ cdef class CudaAlignerBatch:
             device_id=0,
             *args,
             **kwargs):
-        """
-        Dummy implementation of __init__ function to allow
+        """Dummy implementation of __init__ function to allow
         for Python subclassing.
         """
         pass
 
     def add_alignment(self, query, target):
-        """
-        Add new pair of sequences to the batch for alignment.
+        """Add new pair of sequences to the batch for alignment.
         The characters in the string must be from the set [ACGT] for
         correct alignment results.
 
@@ -200,14 +194,12 @@ cdef class CudaAlignerBatch:
         return status
 
     def align_all(self):
-        """
-        Initiate CUDA-accelerated alignment on the batch.
+        """Initiate CUDA-accelerated alignment on the batch.
         """
         deref(self.aligner).align_all()
 
     def get_alignments(self):
-        """
-        Retrieve the results of all alignments in the batch.
+        """Retrieve the results of all alignments in the batch.
 
         Returns:
         A list of CudaAlignment objects, each of which holds details of the alignment in the same
@@ -231,8 +223,8 @@ cdef class CudaAlignerBatch:
 
             # Get formatted alignment
             formatted_alignment = deref(res[i]).format_alignment()
-            format_alignment = [formatted_alignment.query.decode('utf-8'), \
-                                formatted_alignment.pairing.decode('utf-8'), \
+            format_alignment = [formatted_alignment.query.decode('utf-8'),
+                                formatted_alignment.pairing.decode('utf-8'),
                                 formatted_alignment.target.decode('utf-8')]
 
             # Get other string outputs
@@ -254,8 +246,7 @@ cdef class CudaAlignerBatch:
         return alignments
 
     def reset(self):
-        """
-        Reset the contents of the batch so the same GPU memory can be used to
+        """Reset the contents of the batch so the same GPU memory can be used to
         align a new set of sequences.
         """
         deref(self.aligner).reset()

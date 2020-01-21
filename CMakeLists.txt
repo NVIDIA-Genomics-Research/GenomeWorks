@@ -10,7 +10,8 @@
 
 cmake_minimum_required(VERSION 3.10.2)
 set(CGA_PROJECT_NAME ClaraGenomicsAnalysis)
-set(CGA_VERSION 0.5.0)
+file(READ "${CMAKE_CURRENT_SOURCE_DIR}/VERSION" CGA_VERSION)
+string(STRIP ${CGA_VERSION} CGA_VERSION)
 project(${CGA_PROJECT_NAME})
 
 #Add OpenMP
@@ -21,6 +22,7 @@ option(cga_enable_tests "Build ClaraGenomicsAnalysis unit tests" OFF)
 option(cga_enable_benchmarks "Build ClaraGenomicsAnalysis benchmarks" OFF)
 option(cga_build_shared "Build ClaraGenomicsAnalysis libraries as shared objects" OFF)
 option(cga_device_synchronize_kernels "Run cudaDeviceSynchronize() in CGA_CU_CHECK_ERR calls" OFF)
+option(cga_optimize_for_native_cpu "Build with march=native" ON)
 # The spoa_accurate option runs a different (and slower) version of
 # the topological sort in cudapoa which exactly matches the output
 # of the topological sort implementation in the SPOA library. This is

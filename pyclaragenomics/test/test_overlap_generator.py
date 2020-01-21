@@ -60,6 +60,7 @@ test_reads = [
 ]
 
 
+@pytest.mark.cpu
 @pytest.mark.parametrize("reads, expected_overlaps", test_reads)
 def test_generates_overlaps(reads, expected_overlaps):
     """ Test that the number of overlaps detected is correct"""

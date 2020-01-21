@@ -1,3 +1,4 @@
+#!/bin/bash
 #
 # Copyright (c) 2019, NVIDIA CORPORATION.  All rights reserved.
 #
@@ -7,4 +8,11 @@
 # distribution of this software and related documentation without an express
 # license agreement from NVIDIA CORPORATION is strictly prohibited.
 #
-"""Init file for bindings folder."""
+
+PYCGA_DIR=$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")
+echo "Run Python formatting check..."
+flake8 "$PYCGA_DIR"
+echo "Run Cython formatting check..."
+flake8 "$PYCGA_DIR" --config "$PYCGA_DIR"/.flake8.cython
+echo "Run Python docstring conventions check..."
+pydocstyle --convention=google "$PYCGA_DIR"
