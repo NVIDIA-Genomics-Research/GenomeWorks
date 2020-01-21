@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2019, NVIDIA CORPORATION.  All rights reserved.
+* Copyright (c) 2020, NVIDIA CORPORATION.  All rights reserved.
 *
 * NVIDIA CORPORATION and its licensors retain all intellectual property
 * and proprietary rights in and to this software, related documentation
@@ -171,33 +171,6 @@ int main(int argc, char* argv[])
     }
 
 
-/*    for (std::int32_t query_start_index = 0; query_start_index < queries; query_start_index += index_size)
-    {
-
-        std::int32_t query_end_index = std::min(query_start_index + index_size, queries);
-
-        query_target_range q;
-        q.query_range = std::make_pair(query_start_index, query_end_index);
-
-        std::int32_t target_start_index = 0;
-        // If all_to_all mode, then we can optimzie by starting the target sequences from the same index as
-        // query because all indices before the current query index are guaranteed to have been processed in
-        // a2a mapping.
-        if (all_to_all)
-        {
-            target_start_index = query_start_index;
-        }
-
-        for (; target_start_index < targets; target_start_index += target_index_size)
-        {
-            std::int32_t target_end_index = std::min(target_start_index + target_index_size,
-                                                     targets);
-            q.target_ranges.push_back(std::make_pair(target_start_index, target_end_index));
-        }
-
-        query_target_ranges.push_back(q);
-    }*/
-
     // This is a per-device cache, if it has the index it will return it, if not it will generate it, store and return it.
     std::vector<std::map<std::pair<uint64_t, uint64_t>, std::shared_ptr<claragenomics::cudamapper::Index>>> index_cache(num_devices);
 
@@ -224,7 +197,6 @@ int main(int argc, char* argv[])
         }
         else
         {
-            //std::cerr<< "Using filtering aram of" << filtering_parameter << std::endl;
             index = std::move(claragenomics::cudamapper::Index::create_index(parser, start_index, end_index, k, w, true, filtering_parameter));
 
             // If in all-to-all mode, put this query in the cache for later use.
