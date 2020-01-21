@@ -46,7 +46,7 @@ protected:
     ///             by that name, an error is thrown.
     ///
     /// \return A FastaSequence object describing the entry.
-    FastaSequence get_sequence_by_name(const std::string& name) const; //TODO push this back to the public API
+    FastaSequence get_sequence_by_name(const std::string& name) const;
 };
 
 } // namespace io

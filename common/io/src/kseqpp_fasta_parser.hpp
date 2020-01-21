@@ -23,6 +23,7 @@ namespace claragenomics
         {
         public:
             FastaParserKseqpp(const std::string &fasta_file);
+
             ~FastaParserKseqpp();
 
             int32_t get_num_seqences() const override;
@@ -33,7 +34,6 @@ namespace claragenomics
 
         private:
             std::vector<FastaSequence> reads_;
-            //int32_t num_seqequences_;
             std::vector<std::pair<int,int>> read_chunks_;
         };
 
