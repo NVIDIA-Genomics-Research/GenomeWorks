@@ -293,7 +293,8 @@ TEST(TestCudamapperOverlapperTriggerred, FourAnchorsNoOverlap)
     anchors.push_back(anchor3);
     anchors.push_back(anchor4);
 
-    std::vector<Overlap, thrust::system::cuda::experimental::pinned_allocator<claragenomics::cudamapper::Overlap>> overlaps;    overlapper.get_overlaps(overlaps, anchors, test_index, test_index);
+    std::vector<Overlap, thrust::system::cuda::experimental::pinned_allocator<claragenomics::cudamapper::Overlap>> overlaps;
+    overlapper.get_overlaps(overlaps, anchors, test_index, test_index);
     ASSERT_EQ(overlaps.size(), 0u);
 }
 
@@ -346,7 +347,8 @@ TEST(TestCudamapperOverlapperTriggerred, FourColinearAnchorsOneOverlap)
     anchors.push_back(anchor3);
     anchors.push_back(anchor4);
 
-    std::vector<Overlap, thrust::system::cuda::experimental::pinned_allocator<claragenomics::cudamapper::Overlap>> overlaps;    overlapper.get_overlaps(overlaps, anchors, test_index, test_index);
+    std::vector<Overlap, thrust::system::cuda::experimental::pinned_allocator<claragenomics::cudamapper::Overlap>> overlaps;
+    overlapper.get_overlaps(overlaps, anchors, test_index, test_index);
     ASSERT_EQ(overlaps.size(), 0u);
 }
 
@@ -399,7 +401,8 @@ TEST(TestCudamapperOverlapperTriggerred, FourAnchorsLastNotInOverlap)
     anchors.push_back(anchor3);
     anchors.push_back(anchor4);
 
-    std::vector<Overlap, thrust::system::cuda::experimental::pinned_allocator<claragenomics::cudamapper::Overlap>> overlaps;    overlapper.get_overlaps(overlaps, anchors, test_index, test_index);
+    std::vector<Overlap, thrust::system::cuda::experimental::pinned_allocator<claragenomics::cudamapper::Overlap>> overlaps;
+    overlapper.get_overlaps(overlaps, anchors, test_index, test_index);
     ASSERT_EQ(overlaps.size(), 1u);
     ASSERT_EQ(overlaps[0].query_read_id_, 1u);
     ASSERT_EQ(overlaps[0].target_read_id_, 2u);
@@ -472,7 +475,8 @@ TEST(TestCudamapperOverlapperTriggerred, ShuffledAnchors)
     //Shuffle the anchors 100 times and check that the generated overlaps are always the same.
     for (size_t i = 0; i < 100; i++)
     {
-        std::vector<Overlap, thrust::system::cuda::experimental::pinned_allocator<claragenomics::cudamapper::Overlap>> overlaps;        overlapper.get_overlaps(overlaps, anchors, test_index, test_index);
+        std::vector<Overlap, thrust::system::cuda::experimental::pinned_allocator<claragenomics::cudamapper::Overlap>> overlaps;
+        overlapper.get_overlaps(overlaps, anchors, test_index, test_index);
         std::shuffle(std::begin(overlaps), std::end(overlaps), rng);
         ASSERT_EQ(overlaps.size(), 1u);
         ASSERT_EQ(overlaps[0].query_read_id_, 1u);
@@ -533,7 +537,8 @@ TEST(TestCudamapperOverlapperTriggerred, ReverseStrand)
     anchors.push_back(anchor3);
     anchors.push_back(anchor4);
 
-    std::vector<Overlap, thrust::system::cuda::experimental::pinned_allocator<claragenomics::cudamapper::Overlap>> overlaps;    overlapper.get_overlaps(overlaps, anchors, test_index, test_index);
+    std::vector<Overlap, thrust::system::cuda::experimental::pinned_allocator<claragenomics::cudamapper::Overlap>> overlaps;
+    overlapper.get_overlaps(overlaps, anchors, test_index, test_index);
     ASSERT_EQ(overlaps.size(), 1u);
     ASSERT_GT(overlaps[0].target_end_position_in_read_, overlaps[0].target_start_position_in_read_);
     ASSERT_EQ(overlaps[0].relative_strand, RelativeStrand::Reverse);
