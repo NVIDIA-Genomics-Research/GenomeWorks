@@ -57,7 +57,7 @@ public:
 /// \param fasta_file Path to FASTA(.gz) file. If .gz, it must be zipped with bgzip.
 ///
 /// \return A unique pointer to a constructed parser object.
-std::unique_ptr<FastaParser> create_fasta_parser(const std::string& fasta_file);
+std::unique_ptr<FastaParser> create_hts_fasta_parser(const std::string &fasta_file);
 
 /// \brief A builder function that returns a FASTA parser object which uses KSEQPP.
 ///
