@@ -1261,7 +1261,8 @@ void test_function(const std::string& filename,
                    const std::vector<std::uint32_t>& expected_first_occurrence_of_representations,
                    const std::vector<std::string>& expected_read_id_to_read_name,
                    const std::vector<std::uint32_t>& expected_read_id_to_read_length,
-                   const std::uint64_t expected_number_of_reads,
+                   const read_id_t expected_number_of_reads,
+                   const position_in_read_t expected_number_of_basepairs_in_longest_read,
                    const double filtering_parameter = 1.0)
 {
     std::unique_ptr<io::FastaParser> parser = io::create_fasta_parser(filename);
@@ -1278,6 +1279,8 @@ void test_function(const std::string& filename,
     {
         return;
     }
+
+    ASSERT_EQ(expected_number_of_basepairs_in_longest_read, index.number_of_basepairs_in_longest_read());
 
     ASSERT_EQ(expected_number_of_reads, expected_read_id_to_read_name.size());
     ASSERT_EQ(expected_number_of_reads, expected_read_id_to_read_length.size());
@@ -1360,6 +1363,9 @@ TEST(TestCudamapperIndexGPU, GATT_4_1)
 
     expected_first_occurrence_of_representations.push_back(1);
 
+    const read_id_t expected_number_of_reads                              = 1;
+    const position_in_read_t expected_number_of_basepairs_in_longest_read = 4;
+
     test_function(filename,
                   0,
                   1,
@@ -1373,7 +1379,8 @@ TEST(TestCudamapperIndexGPU, GATT_4_1)
                   expected_first_occurrence_of_representations,
                   expected_read_id_to_read_name,
                   expected_read_id_to_read_length,
-                  1);
+                  expected_number_of_reads,
+                  expected_number_of_basepairs_in_longest_read);
 }
 
 TEST(TestCudamapperIndexGPU, GATT_2_3)
@@ -1443,6 +1450,9 @@ TEST(TestCudamapperIndexGPU, GATT_2_3)
 
     expected_first_occurrence_of_representations.push_back(3);
 
+    const read_id_t expected_number_of_reads                              = 1;
+    const position_in_read_t expected_number_of_basepairs_in_longest_read = 4;
+
     test_function(filename,
                   0,
                   1,
@@ -1456,7 +1466,8 @@ TEST(TestCudamapperIndexGPU, GATT_2_3)
                   expected_first_occurrence_of_representations,
                   expected_read_id_to_read_name,
                   expected_read_id_to_read_length,
-                  1);
+                  expected_number_of_reads,
+                  expected_number_of_basepairs_in_longest_read);
 }
 
 TEST(TestCudamapperIndexGPU, CCCATACC_2_8)
@@ -1483,6 +1494,9 @@ TEST(TestCudamapperIndexGPU, CCCATACC_2_8)
     std::vector<representation_t> expected_unique_representations;
     std::vector<std::uint32_t> expected_first_occurrence_of_representations;
 
+    const read_id_t expected_number_of_reads                              = 0;
+    const position_in_read_t expected_number_of_basepairs_in_longest_read = 0;
+
     test_function(filename,
                   0,
                   1,
@@ -1496,7 +1510,8 @@ TEST(TestCudamapperIndexGPU, CCCATACC_2_8)
                   expected_first_occurrence_of_representations,
                   expected_read_id_to_read_name,
                   expected_read_id_to_read_length,
-                  0);
+                  expected_number_of_reads,
+                  expected_number_of_basepairs_in_longest_read);
 }
 
 // TODO: Cover this case as well
@@ -1571,6 +1586,9 @@ TEST(TestCudamapperIndexGPU, CCCATACC_2_8)
 //    expected_read_ids.push_back(0);
 //    expected_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::REVERSE);
 //
+//    const read_id_t expected_number_of_reads                              = 1;
+//    const position_in_read_t expected_number_of_basepairs_in_longest_read = 7;
+//
 //    test_function(filename,
 //                  0,
 //                  2,
@@ -1582,7 +1600,8 @@ TEST(TestCudamapperIndexGPU, CCCATACC_2_8)
 //                  expected_directions_of_reads,
 //                  expected_read_id_to_read_name,
 //                  expected_read_id_to_read_length,
-//                  1); // <- only one read goes into index, the other is too short
+//                  expected_number_of_reads,
+//                  expected_number_of_basepairs_in_longest_read); // <- only one read goes into index, the other is too short
 //}
 
 TEST(TestCudamapperIndexGPU, CCCATACC_3_5)
@@ -1674,6 +1693,9 @@ TEST(TestCudamapperIndexGPU, CCCATACC_3_5)
 
     expected_first_occurrence_of_representations.push_back(5);
 
+    const read_id_t expected_number_of_reads                              = 1;
+    const position_in_read_t expected_number_of_basepairs_in_longest_read = 8;
+
     test_function(filename,
                   0,
                   1,
@@ -1687,7 +1709,8 @@ TEST(TestCudamapperIndexGPU, CCCATACC_3_5)
                   expected_first_occurrence_of_representations,
                   expected_read_id_to_read_name,
                   expected_read_id_to_read_length,
-                  1);
+                  expected_number_of_reads,
+                  expected_number_of_basepairs_in_longest_read);
 }
 
 TEST(TestCudamapperIndexGPU, CATCAAG_AAGCTA_3_2)
@@ -1809,6 +1832,9 @@ TEST(TestCudamapperIndexGPU, CATCAAG_AAGCTA_3_2)
 
     expected_first_occurrence_of_representations.push_back(7);
 
+    const read_id_t expected_number_of_reads                              = 2;
+    const position_in_read_t expected_number_of_basepairs_in_longest_read = 7;
+
     test_function(filename,
                   0,
                   2,
@@ -1822,7 +1848,8 @@ TEST(TestCudamapperIndexGPU, CATCAAG_AAGCTA_3_2)
                   expected_first_occurrence_of_representations,
                   expected_read_id_to_read_name,
                   expected_read_id_to_read_length,
-                  2);
+                  expected_number_of_reads,
+                  expected_number_of_basepairs_in_longest_read);
 }
 
 TEST(TestCudamapperIndexGPU, AAAACTGAA_GCCAAAG_2_3)
@@ -1976,6 +2003,9 @@ TEST(TestCudamapperIndexGPU, AAAACTGAA_GCCAAAG_2_3)
 
     expected_first_occurrence_of_representations.push_back(12);
 
+    const read_id_t expected_number_of_reads                              = 2;
+    const position_in_read_t expected_number_of_basepairs_in_longest_read = 9;
+
     test_function(filename,
                   0,
                   2,
@@ -1989,7 +2019,8 @@ TEST(TestCudamapperIndexGPU, AAAACTGAA_GCCAAAG_2_3)
                   expected_first_occurrence_of_representations,
                   expected_read_id_to_read_name,
                   expected_read_id_to_read_length,
-                  2);
+                  expected_number_of_reads,
+                  expected_number_of_basepairs_in_longest_read);
 }
 
 TEST(TestCudamapperIndexGPU, AAAACTGAA_GCCAAAG_2_3_only_second_read_in_index)
@@ -2089,6 +2120,9 @@ TEST(TestCudamapperIndexGPU, AAAACTGAA_GCCAAAG_2_3_only_second_read_in_index)
 
     expected_first_occurrence_of_representations.push_back(6);
 
+    const read_id_t expected_number_of_reads                              = 1;
+    const position_in_read_t expected_number_of_basepairs_in_longest_read = 7;
+
     test_function(filename,
                   1, // <- only take second read
                   2,
@@ -2102,7 +2136,8 @@ TEST(TestCudamapperIndexGPU, AAAACTGAA_GCCAAAG_2_3_only_second_read_in_index)
                   expected_first_occurrence_of_representations,
                   expected_read_id_to_read_name,
                   expected_read_id_to_read_length,
-                  1);
+                  expected_number_of_reads,
+                  expected_number_of_basepairs_in_longest_read);
 }
 
 TEST(TestCudamapperIndexGPU, AAAACTGAA_GCCAAAG_2_3_filtering)
@@ -2236,6 +2271,9 @@ TEST(TestCudamapperIndexGPU, AAAACTGAA_GCCAAAG_2_3_filtering)
 
     expected_first_occurrence_of_representations.push_back(6);
 
+    const read_id_t expected_number_of_reads                              = 2;
+    const position_in_read_t expected_number_of_basepairs_in_longest_read = 9;
+
     test_function(filename,
                   0,
                   2,
@@ -2249,7 +2287,8 @@ TEST(TestCudamapperIndexGPU, AAAACTGAA_GCCAAAG_2_3_filtering)
                   expected_first_occurrence_of_representations,
                   expected_read_id_to_read_name,
                   expected_read_id_to_read_length,
-                  2,
+                  expected_number_of_reads,
+                  expected_number_of_basepairs_in_longest_read,
                   filtering_parameter);
 }
 
