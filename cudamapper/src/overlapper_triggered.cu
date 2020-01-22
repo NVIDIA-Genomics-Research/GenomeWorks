@@ -11,7 +11,6 @@
 #include <cub/cub.cuh>
 #include <thrust/device_vector.h>
 #include <thrust/sort.h>
-#include <thrust/system/cuda/experimental/pinned_allocator.h>
 #include <fstream>
 #include <cstdlib>
 #include <omp.h>
@@ -180,12 +179,12 @@ struct CreateOverlap
     };
 };
 
-void OverlapperTriggered::get_overlaps(std::vector<claragenomics::cudamapper::Overlap, thrust::system::cuda::experimental::pinned_allocator<claragenomics::cudamapper::Overlap>>& fused_overlaps,
-                                       thrust::device_vector<Anchor>& d_anchors,
-                                       const Index& index_query,
-                                       const Index& index_target)
+void OverlapperTriggered::get_overlaps(std::vector<Overlap> &fused_overlaps,
+                                       thrust::device_vector<Anchor> &d_anchors,
+                                       const Index &index_query,
+                                       const Index &index_target)
 {
-    CGA_NVTX_RANGE(profiler, "OverlapperTriggered::get_overlaps:sort");
+    CGA_NVTX_RANGE(profiler, "OverlapperTriggered::get_overlaps");
     const auto tail_length_for_chain = 3;
     auto n_anchors                   = d_anchors.size();
 

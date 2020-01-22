@@ -12,8 +12,6 @@
 
 #include <vector>
 
-#include <thrust/system/cuda/experimental/pinned_allocator.h>
-
 #include <claragenomics/cudamapper/types.hpp>
 #include <claragenomics/cudamapper/overlapper.hpp>
 
@@ -34,12 +32,13 @@ public:
     /// Uses a dynamic programming approach where an overlap is "triggered" when a run of
     /// Anchors (e.g 3) with a score above a threshold is encountered and untriggerred
     /// when a single anchor with a threshold below the value is encountered.
-    /// \param overlaps Output vector into which generated overlaps will be placed
-    /// \param anchors vector of anchors
+    /// \param fused_overlaps Output vector into which generated overlaps will be placed
+    /// \param d_anchors vector of anchors
     /// \param index_query Index
     /// \param index_target
     /// \return vector of Overlap objects
-    void get_overlaps(std::vector<claragenomics::cudamapper::Overlap, thrust::system::cuda::experimental::pinned_allocator<claragenomics::cudamapper::Overlap>>& overlaps, thrust::device_vector<Anchor>& anchors, const Index& index_query, const Index& index_target) override;
+    void get_overlaps(std::vector<Overlap> &fused_overlaps, thrust::device_vector<Anchor> &d_anchors,
+                      const Index &index_query, const Index &index_target) override;
 };
 } // namespace cudamapper
 } // namespace claragenomics

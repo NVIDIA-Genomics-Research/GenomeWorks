@@ -10,14 +10,15 @@
 
 #include <algorithm>
 #include <claragenomics/cudamapper/overlapper.hpp>
-#include <thrust/system/cuda/experimental/pinned_allocator.h>
 
 namespace claragenomics
 {
 namespace cudamapper
 {
 
-void Overlapper::filter_overlaps(std::vector<claragenomics::cudamapper::Overlap, thrust::system::cuda::experimental::pinned_allocator<claragenomics::cudamapper::Overlap>>& filtered_overlaps, const std::vector<claragenomics::cudamapper::Overlap, thrust::system::cuda::experimental::pinned_allocator<claragenomics::cudamapper::Overlap>>& overlaps, size_t min_residues, size_t min_overlap_len)
+void Overlapper::filter_overlaps(std::vector<Overlap> &filtered_overlaps,
+                                 const std::vector<Overlap> &overlaps,
+                                 size_t min_residues, size_t min_overlap_len)
 {
     auto valid_overlap = [&min_residues, &min_overlap_len](Overlap overlap) { return (
                                                                                   (overlap.num_residues_ >= min_residues) &&
@@ -32,7 +33,7 @@ void Overlapper::filter_overlaps(std::vector<claragenomics::cudamapper::Overlap,
                  valid_overlap);
 }
 
-void Overlapper::print_paf(const std::vector<claragenomics::cudamapper::Overlap, thrust::system::cuda::experimental::pinned_allocator<claragenomics::cudamapper::Overlap>>& overlaps)
+void Overlapper::print_paf(const std::vector<Overlap> &overlaps)
 {
     for (const auto& overlap : overlaps)
     {
