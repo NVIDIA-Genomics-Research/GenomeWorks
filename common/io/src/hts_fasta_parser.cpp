@@ -105,16 +105,17 @@ std::vector<std::pair<int, int>> FastaParserHTS::get_read_chunks(int max_chunk_s
     int num_bases = 0;
     for (int read_idx = 0; read_idx < num_seqequences_; read_idx++)
     {
-        if (get_sequence_by_id(read_idx).seq.size() + num_bases > max_chunk_size)
+        auto seq = get_sequence_by_id(read_idx).seq;
+        if (seq.size() + num_bases > max_chunk_size)
         {
             chunk.second = read_idx - 1;
             chunks.push_back(chunk);
             chunk.first = read_idx;
-            num_bases   = get_sequence_by_id(read_idx).seq.size();
+            num_bases   = seq.size();
         }
         else
         {
-            num_bases += get_sequence_by_id(read_idx).seq.size();
+            num_bases += seq.size();
         }
     }
 

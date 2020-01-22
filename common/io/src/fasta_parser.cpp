@@ -14,7 +14,6 @@
 #include "claragenomics/io/fasta_parser.hpp"
 
 #include <memory>
-#include <vector>
 
 namespace claragenomics
 {
