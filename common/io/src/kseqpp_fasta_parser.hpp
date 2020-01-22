@@ -22,7 +22,7 @@ namespace io
 class FastaParserKseqpp : public FastaParser
 {
 public:
-    FastaParserKseqpp(const std::string& fasta_file);
+    FastaParserKseqpp(const std::string &fasta_file);
 
     ~FastaParserKseqpp();
 

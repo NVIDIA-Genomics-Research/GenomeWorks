@@ -202,7 +202,7 @@ void OverlapperTriggered::get_overlaps(std::vector<Overlap>& fused_overlaps,
                 (i.target_position_in_read_ < j.target_position_in_read_));
     };
 
-    // sort on device, sort by query ID
+    // sort on device
     // TODO : currently thrust::sort requires O(2N) auxiliary storage, implement the same functionality using O(N) auxiliary storage
     thrust::sort(thrust::device, d_anchors.begin(), d_anchors.end(), comp);
 
