@@ -12,7 +12,10 @@ set(TARGET_NAME cgautilstests)
 
 set(SOURCES
     main.cpp
+    Test_UtilsCudasort.cu
     TestGraph.cpp)
+
+include_directories(${CUB_DIR})
 
 set(LIBS
     utils)
