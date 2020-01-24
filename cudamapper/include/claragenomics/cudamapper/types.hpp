@@ -106,6 +106,7 @@ typedef struct Overlap
     /// CIGAR string for alignment of mapped section.
     char* cigar_ = 0;
 
+
     //TODO add a destructor and copy constructor to remove need for this function
     /// \brief Free memory associated with Overlap.
     /// Since query_read_name_, target_read_name_ and cigar_ are char * types,

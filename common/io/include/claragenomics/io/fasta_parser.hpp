@@ -64,7 +64,7 @@ std::unique_ptr<FastaParser> create_hts_fasta_parser(const std::string &fasta_fi
 /// \param fasta_file Path to FASTA(.gz) file. If .gz, it must be zipped with bgzip.
 ///
 /// \return A unique pointer to a constructed parser object.
-std::shared_ptr<FastaParser> create_kseq_fasta_parser(const std::string& fasta_file);
+    std::unique_ptr<FastaParser> create_kseq_fasta_parser(const std::string &fasta_file);
 
 } // namespace io
 } // namespace claragenomics

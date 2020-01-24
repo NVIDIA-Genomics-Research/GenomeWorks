@@ -119,8 +119,6 @@ int main(int argc, char* argv[])
         std::cerr << "NOTE - Since query and target files are same, activating all_to_all mode. Query index size used for both files." << std::endl;
     }
 
-    auto parsers = claragenomics::io::create_kseq_fasta_parser(query_filepath);
-
     std::shared_ptr<claragenomics::io::FastaParser> query_parser = claragenomics::io::create_kseq_fasta_parser(query_filepath);
     int32_t queries                                              = query_parser->get_num_seqences();
 
@@ -131,8 +129,8 @@ int main(int argc, char* argv[])
     }
     else
     {
+        target_parser = claragenomics::io::create_kseq_fasta_parser(target_filepath);
     }
-    target_parser = claragenomics::io::create_kseq_fasta_parser(target_filepath);
 
     int32_t targets = target_parser->get_num_seqences();
 
@@ -148,16 +146,15 @@ int main(int argc, char* argv[])
         std::vector<std::pair<std::int32_t, int32_t>> target_ranges;
     };
 
+    ///Factor of 1000000 to make max cache size in MiB
     auto query_chunks  = query_parser->get_read_chunks(index_size * 1000000);
     auto target_chunks = target_parser->get_read_chunks(target_index_size * 1000000);
 
     //First generate all the ranges independently, then loop over them.
     std::vector<query_target_range> query_target_ranges;
 
-    // TODO: here goes filling out the query_target_ranges vector but using chunks
-
     int target_idx = 0;
-    for (auto query_chunk : query_chunks)
+    for (auto const& query_chunk : query_chunks)
     {
         query_target_range range;
         range.query_range = query_chunk;
@@ -234,8 +231,6 @@ int main(int argc, char* argv[])
     };
 
     auto compute_overlaps = [&](const query_target_range query_target_range, const int device_id) {
-        std::vector<std::shared_ptr<std::future<void>>> print_pafs_futures;
-
         cudaSetDevice(device_id);
 
         auto query_start_index = query_target_range.query_range.first;
@@ -304,8 +299,6 @@ int main(int argc, char* argv[])
         {
             evict_index(query_start_index, query_end_index, device_id);
         }
-
-        return print_pafs_futures;
     };
 
     // The application (File parsing, index generation, overlap generation etc) is all launched from here.

@@ -17,11 +17,6 @@
 
 #include <iostream>
 #include "seqio.h" //TODO add this to 3rdparty
-#include <zlib.h>
-
-extern "C" {
-#include <htslib/faidx.h>
-}
 
 namespace
 {
@@ -50,16 +45,12 @@ FastaParserKseqpp::FastaParserKseqpp(const std::string &fasta_file)
     {
         FastaSequence seq = {record.name, record.seq};
         total_len += record.seq.size();
-        reads_.push_back(seq);
+        reads_.emplace_back(seq);
     }
 
     //For many applications, such as cudamapper, performance is better if reads are shuffled.
     std::mt19937 g(0); // seed for deterministic behaviour
     std::shuffle(reads_.begin(), reads_.end(), g);
-}
-
-FastaParserKseqpp::~FastaParserKseqpp()
-{
 }
 
 int32_t FastaParserKseqpp::get_num_seqences() const

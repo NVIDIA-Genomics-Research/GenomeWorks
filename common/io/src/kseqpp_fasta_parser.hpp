@@ -24,8 +24,6 @@ class FastaParserKseqpp : public FastaParser
 public:
     FastaParserKseqpp(const std::string &fasta_file);
 
-    ~FastaParserKseqpp();
-
     int32_t get_num_seqences() const override;
 
     FastaSequence get_sequence_by_id(int32_t i) const override;
@@ -33,6 +31,9 @@ public:
     std::vector<std::pair<int, int>> get_read_chunks(int max_chunk_size) const override;
 
 private:
+    /// All the reads from the FASTA file are stored in host RAM
+    /// given a sufficiently-large FASTA file, there may not be enough host RAM
+    /// on the system
     std::vector<FastaSequence> reads_;
     std::vector<std::pair<int, int>> read_chunks_;
 };
