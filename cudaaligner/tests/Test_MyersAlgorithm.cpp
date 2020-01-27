@@ -55,8 +55,8 @@ TEST_P(TestMyersScoreMatrix, TestCases)
     }
 }
 
-INSTANTIATE_TEST_SUITE_P(TestMyersAlgorithm, TestMyersEditDistance, ::testing::ValuesIn(create_myers_test_cases()));
-INSTANTIATE_TEST_SUITE_P(TestMyersAlgorithm, TestMyersScoreMatrix, ::testing::ValuesIn(create_myers_test_cases()));
+INSTANTIATE_TEST_SUITE_P(TestMyersAlgorithm, TestMyersEditDistance, ::testing::ValuesIn(create_cudaaligner_test_cases()));
+INSTANTIATE_TEST_SUITE_P(TestMyersAlgorithm, TestMyersScoreMatrix, ::testing::ValuesIn(create_cudaaligner_test_cases()));
 
 } // namespace cudaaligner
 } // namespace claragenomics

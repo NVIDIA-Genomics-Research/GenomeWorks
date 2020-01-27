@@ -23,6 +23,6 @@ struct TestCaseData
     int32_t edit_distance;
 };
 
-std::vector<TestCaseData> create_myers_test_cases();
+std::vector<TestCaseData> create_cudaaligner_test_cases();
 
 } // namespace claragenomics

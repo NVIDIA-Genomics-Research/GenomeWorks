@@ -36,7 +36,7 @@ claragenomics::TestCaseData generate_random_test_case(std::minstd_rand& rng)
 
 namespace claragenomics
 {
-std::vector<TestCaseData> create_myers_test_cases()
+std::vector<TestCaseData> create_cudaaligner_test_cases()
 {
     std::vector<TestCaseData> tests;
 
