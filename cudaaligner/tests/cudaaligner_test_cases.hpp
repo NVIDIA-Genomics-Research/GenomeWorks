@@ -20,7 +20,6 @@ struct TestCaseData
 {
     std::string target;
     std::string query;
-    int32_t edit_distance;
 };
 
 std::vector<TestCaseData> create_cudaaligner_test_cases();

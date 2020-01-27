@@ -28,8 +28,10 @@ TEST_P(TestMyersEditDistance, TestCases)
 {
     TestCaseData t = GetParam();
 
-    int32_t d = myers_compute_edit_distance(t.target, t.query);
-    ASSERT_EQ(d, t.edit_distance);
+    int32_t d         = myers_compute_edit_distance(t.target, t.query);
+    matrix<int32_t> r = needleman_wunsch_build_score_matrix_naive(t.target, t.query);
+    int32_t reference = r(r.num_rows() - 1, r.num_cols() - 1);
+    ASSERT_EQ(d, reference);
 }
 
 class TestMyersScoreMatrix : public ::testing::TestWithParam<TestCaseData>
