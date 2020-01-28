@@ -41,7 +41,7 @@ std::vector<int8_t> ukkonen_backtrace(matrix<int> const& scores, int n, int m, i
 
 matrix<int> ukkonen_build_score_matrix(std::string const& target, std::string const& query, int p);
 
-matrix<int> ukkonen_build_score_matrix_old(std::string const& target, std::string const& query, int t);
+matrix<int> ukkonen_build_score_matrix_naive(std::string const& target, std::string const& query, int t);
 
 std::vector<int8_t> ukkonen_cpu(std::string const& target, std::string const& query, int const p);
 

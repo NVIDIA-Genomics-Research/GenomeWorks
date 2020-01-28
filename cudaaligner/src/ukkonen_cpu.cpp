@@ -10,6 +10,7 @@
 
 #include "ukkonen_cpu.hpp"
 #include <claragenomics/utils/mathutils.hpp>
+#include <claragenomics/utils/signed_integer_utils.hpp>
 #include <limits>
 #include <cassert>
 #include <algorithm>
@@ -22,6 +23,20 @@ namespace cudaaligner
 
 namespace
 {
+
+inline int clamp_add(int i, int j)
+{
+    assert(i >= 0);
+    assert(j >= 0);
+    if (std::numeric_limits<int>::max() - i < j)
+    {
+        return std::numeric_limits<int>::max();
+    }
+    else
+    {
+        return i + j;
+    }
+}
 
 void ukkonen_build_score_matrix_odd(matrix<int>& scores, char const* target, int n, char const* query, int m, int p, int l, int kdmax)
 {
@@ -177,41 +192,46 @@ matrix<int> ukkonen_build_score_matrix(std::string const& target, std::string co
     return scores;
 }
 
-matrix<int> ukkonen_build_score_matrix_old(std::string const& target, std::string const& query, int t)
+matrix<int> ukkonen_build_score_matrix_naive(std::string const& target, std::string const& query, int t)
 {
-    assert(target.size() >= query.size());
-    int const n = target.size() + 1;
-    int const m = query.size() + 1;
+    int const n = get_size<int>(target) + 1;
+    int const m = get_size<int>(query) + 1;
 
-    int const p = (t - (n - m)) / 2;
+    int const p = (t - abs(n - m)) / 2;
 
-    matrix<int> scores(m, n, 999);
+    matrix<int> scores(m, n, std::numeric_limits<int>::max());
     scores(0, 0) = 0;
     for (int i = 0; i < m; ++i)
         scores(i, 0) = i;
     for (int j = 0; j < n; ++j)
         scores(0, j) = j;
 
-    // Transform to diagonal coordinates
-    // (i,j) -> (k=j-i, l=(j+i)/2)
-    // where
-    // -p <= k <= (n-m)+p
-    // abs(k)/2 <= l < (k <= 0 ? m+k : min(m,n-k)
-    // shift by p: kd = k + p
-    int const kdmax = (n - m) + 2 * p;
-    for (int kd = 0; kd <= kdmax; ++kd)
+    if (m < n)
     {
-        int const lmin = abs(kd - p) / 2;
-        int const lmax = kd <= p ? 2 * (m + kd - p) + lmin : (std::min(m, n - kd + p) + lmin);
-        for (int l = lmin; l < lmax; ++l)
+        for (int i = 1; i < m; ++i)
         {
-            int const kfloor = (kd + p) / 2 - p; // = (k+2*p) - p; to round to -infty for -p <= k <= (n-m)+p
-            int const i      = l - kfloor;
-            int const j      = l + kd - p - kfloor;
-            scores(i, j)     = min3(
-                scores(i - 1, j) + 1,
-                scores(i, j - 1) + 1,
-                scores(i - 1, j - 1) + (query[i - 1] == target[j - 1] ? 0 : 1));
+            for (int j = 1; j < n; ++j)
+            {
+                if (-p <= j - i && j - i <= n - m + p)
+                    scores(i, j) = min3(
+                        clamp_add(scores(i - 1, j), 1),
+                        clamp_add(scores(i, j - 1), 1),
+                        clamp_add(scores(i - 1, j - 1), (query[i - 1] == target[j - 1] ? 0 : 1)));
+            }
+        }
+    }
+    else
+    {
+        for (int i = 1; i < m; ++i)
+        {
+            for (int j = 1; j < n; ++j)
+            {
+                if (-p - (m - n) <= j - i && j - i <= p)
+                    scores(i, j) = min3(
+                        clamp_add(scores(i - 1, j), 1),
+                        clamp_add(scores(i, j - 1), 1),
+                        clamp_add(scores(i - 1, j - 1), (query[i - 1] == target[j - 1] ? 0 : 1)));
+            }
         }
     }
     return scores;
