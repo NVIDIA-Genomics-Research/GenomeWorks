@@ -24,7 +24,7 @@ endif()
 
 cuda_add_library(minimizer
         src/minimizer.cu)
-target_include_directories(minimizer PUBLIC include)
+target_include_directories(minimizer PUBLIC include ${CUB_DIR})
 target_link_libraries(minimizer logging pthread utils)
 target_compile_options(minimizer PRIVATE -Werror)
 
@@ -32,13 +32,13 @@ cuda_add_library(index_gpu
         src/index.cu
         src/index_gpu.cu
         src/minimizer.cu)
-target_include_directories(index_gpu PUBLIC include)
+target_include_directories(index_gpu PUBLIC include ${CUB_DIR})
 target_link_libraries(index_gpu logging minimizer pthread utils cgaio)
 target_compile_options(index_gpu PRIVATE -Werror)
 
 cuda_add_library(matcher_gpu
         src/matcher_gpu.cu)
-target_include_directories(matcher_gpu PUBLIC include)
+target_include_directories(matcher_gpu PUBLIC include ${CUB_DIR})
 target_link_libraries(matcher_gpu logging utils cgaio)
 target_compile_options(matcher_gpu PRIVATE -Werror)
 
@@ -54,12 +54,17 @@ target_compile_options(overlapper_triggerred PRIVATE -Werror)
 
 add_doxygen_source_dir(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
+
 cuda_add_executable(cudamapper
         src/cudamapper.cpp
         src/main.cu
         src/matcher.cu
         src/overlapper.cpp
 )
+
+if(cga_enable_allocator)
+    target_compile_definitions(cudamapper PUBLIC CGA_ENABLE_ALLOCATOR)
+endif()
 
 target_compile_options(cudamapper PRIVATE -Werror)
 
