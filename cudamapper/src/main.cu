@@ -18,7 +18,6 @@
 #include <future>
 #include <thread>
 #include <atomic>
-#include <map>
 
 #include <claragenomics/logging/logging.hpp>
 #include <claragenomics/io/fasta_parser.hpp>
@@ -225,7 +224,11 @@ int main(int argc, char* argv[])
         index_cache[device_id].erase(key);
     };
 
-    std::shared_ptr<claragenomics::deviceAllocator> allocator(new claragenomics::defaultDeviceAllocator());
+#ifdef CGA_ENABLE_ALLOCATOR
+    std::shared_ptr<claragenomics::deviceAllocator> allocator(new claragenomics::cachingDeviceAllocator());
+#else
+    std::shared_ptr<claragenomics::deviceAllocator> allocator(new claragenomics::deviceAllocator());
+#endif
 
     auto compute_overlaps = [&](const query_target_range query_target_range, const int device_id) {
         std::vector<std::shared_ptr<std::future<void>>> print_pafs_futures;

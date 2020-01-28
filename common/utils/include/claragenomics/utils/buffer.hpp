@@ -1,52 +1,9 @@
 #pragma once
 #include <claragenomics/utils/cudautils.hpp>
+#include <claragenomics/utils/allocator.hpp>
 
 namespace claragenomics
 {
-
-/** Default cudaMalloc/cudaFree based device allocator */
-class deviceAllocator
-{
-public:
-    virtual void* allocate(std::size_t n, cudaStream_t)
-    {
-        void* ptr = 0;
-        CGA_CU_CHECK_ERR(cudaMalloc(&ptr, n));
-        return ptr;
-    }
-    virtual void deallocate(void* p, std::size_t, cudaStream_t)
-    {
-        cudaError_t status = cudaFree(p);
-        if (cudaSuccess != status)
-        {
-            // deallocate should not throw execeptions which is why CGA_CU_CHECK_ERR is not used.
-        }
-    }
-
-    virtual ~deviceAllocator() {}
-};
-
-/** Default cudaHostMalloc/cudaFreeHost based host allocator */
-class hostAllocator
-{
-public:
-    virtual void* allocate(std::size_t n, cudaStream_t)
-    {
-        void* ptr = 0;
-        CGA_CU_CHECK_ERR(cudaMallocHost(&ptr, n));
-        return ptr;
-    }
-    virtual void deallocate(void* p, std::size_t, cudaStream_t)
-    {
-        cudaError_t status = cudaFreeHost(p);
-        if (cudaSuccess != status)
-        {
-            // deallocate should not throw execeptions which is why CGA_CU_CHECK_ERR is not used.
-        }
-    }
-
-    virtual ~hostAllocator() {}
-};
 
 template <typename T, typename Allocator>
 class buffer
@@ -56,8 +13,6 @@ public:
     using size_type      = std::size_t;
     using iterator       = value_type*;
     using const_iterator = const value_type*;
-
-    //buffer() = delete;
 
     buffer(const buffer& other) = delete;
 
