@@ -20,8 +20,16 @@ gcc --version
 g++ --version
 
 logger "Activate anaconda enviroment..."
-source /conda/etc/profile.d/conda.sh
-conda activate "${2}"
+CONDA_NEW_ACTIVATION_CMD_VERSION="4.4"
+CONDA_VERSION=$(conda --version | awk '{print $2}')
+if [ "$CONDA_NEW_ACTIVATION_CMD_VERSION" == "$(echo -e "$CONDA_VERSION\n$CONDA_NEW_ACTIVATION_CMD_VERSION" | sort -V | head -1)" ]; then
+  logger "Version is higer than ${CONDA_NEW_ACTIVATION_CMD_VERSION}, using conda activate"
+  source /conda/etc/profile.d/conda.sh
+  conda activate "${2}"
+else
+  logger "Version is lower than ${CONDA_NEW_ACTIVATION_CMD_VERSION}, using source activate"
+  source activate "${2}"
+fi
 conda info --envs
 
 # FIX Added to deal with Anancoda SSL verification issues during conda builds
