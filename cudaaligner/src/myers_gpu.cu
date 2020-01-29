@@ -210,27 +210,31 @@ __global__ void myers_convert_to_full_score_matrix_kernel(batched_device_matrice
                                                           batched_device_matrices<WordType>::device_interface* mvi,
                                                           batched_device_matrices<int32_t>::device_interface* scorei,
                                                           int32_t const* sequence_lengths_d,
-                                                          int32_t i)
+                                                          int32_t alignment)
 {
-    CGA_CONSTEXPR int32_t word_size       = sizeof(WordType) * CHAR_BIT;
-    const int32_t query_size              = sequence_lengths_d[2 * i];
-    const int32_t target_size             = sequence_lengths_d[2 * i + 1];
-    const int32_t n_words                 = (query_size + word_size - 1) / word_size;
-    device_matrix_view<WordType> pv       = pvi->get_matrix_view(0, n_words, target_size + 1);
-    device_matrix_view<WordType> mv       = mvi->get_matrix_view(0, n_words, target_size + 1);
-    device_matrix_view<int32_t> score     = scorei->get_matrix_view(0, n_words, target_size + 1);
-    device_matrix_view<int32_t> fullscore = fullscorei->get_matrix_view(0, query_size + 1, target_size + 1);
+    CGA_CONSTEXPR int32_t word_size = sizeof(WordType) * CHAR_BIT;
+    const int32_t query_size        = sequence_lengths_d[2 * alignment];
+    const int32_t target_size       = sequence_lengths_d[2 * alignment + 1];
+    const int32_t n_words           = (query_size + word_size - 1) / word_size;
 
     assert(query_size > 0);
-    const WordType last_entry_mask = query_size % word_size != 0 ? (WordType(1) << (query_size % word_size)) - 1 : ~WordType(0);
 
-    for (int32_t j = 0; j < target_size + 1; ++j)
+    int32_t i = blockIdx.x * blockDim.x + threadIdx.x;
+    int32_t j = blockIdx.y * blockDim.y + threadIdx.y;
+
+    if (j < target_size + 1 && i < query_size + 1)
     {
-        fullscore(0, j) = j;
-        for (int32_t i = 1; i < query_size + 1; ++i) // should be query_size + 1
-        {
-            fullscore(i, j) = get_myers_score(i, j, pv, mv, score, last_entry_mask);
-        }
+        const WordType last_entry_mask        = query_size % word_size != 0 ? (WordType(1) << (query_size % word_size)) - 1 : ~WordType(0);
+        device_matrix_view<WordType> pv       = pvi->get_matrix_view(0, n_words, target_size + 1);
+        device_matrix_view<WordType> mv       = mvi->get_matrix_view(0, n_words, target_size + 1);
+        device_matrix_view<int32_t> score     = scorei->get_matrix_view(0, n_words, target_size + 1);
+        device_matrix_view<int32_t> fullscore = fullscorei->get_matrix_view(0, query_size + 1, target_size + 1);
+        int32_t myscore                       = 0;
+        if (i == 0)
+            myscore = j;
+        else
+            myscore = get_myers_score(i, j, pv, mv, score, last_entry_mask);
+        fullscore(i, j) = myscore;
     }
 }
 
@@ -396,7 +400,13 @@ matrix<int32_t> myers_get_full_score_matrix(std::string const& target, std::stri
     CGA_CU_CHECK_ERR(cudaMemcpyAsync(sequence_lengths_d.data(), lengths.data(), sizeof(int32_t) * 2, cudaMemcpyHostToDevice, stream));
 
     myers::myers_compute_score_matrix_kernel<<<1, warp_size, 0, stream>>>(pv.get_device_interface(), mv.get_device_interface(), score.get_device_interface(), query_patterns.get_device_interface(), sequences_d.data(), sequence_lengths_d.data(), max_sequence_length, 1);
-    myers::myers_convert_to_full_score_matrix_kernel<<<1, 1, 0, stream>>>(fullscore.get_device_interface(), pv.get_device_interface(), mv.get_device_interface(), score.get_device_interface(), sequence_lengths_d.data(), 0);
+    {
+        dim3 n_threads = {32, 4, 1};
+        dim3 n_blocks  = {1, 1, 1};
+        n_blocks.x     = ceiling_divide<int32_t>(get_size<int32_t>(query) + 1, n_threads.x);
+        n_blocks.y     = ceiling_divide<int32_t>(get_size<int32_t>(target) + 1, n_threads.y);
+        myers::myers_convert_to_full_score_matrix_kernel<<<n_blocks, n_threads, 0, stream>>>(fullscore.get_device_interface(), pv.get_device_interface(), mv.get_device_interface(), score.get_device_interface(), sequence_lengths_d.data(), 0);
+    }
 
     matrix<int32_t> fullscore_host = fullscore.get_matrix(0, get_size(query) + 1, get_size(target) + 1, stream);
     CGA_CU_CHECK_ERR(cudaStreamSynchronize(stream));
