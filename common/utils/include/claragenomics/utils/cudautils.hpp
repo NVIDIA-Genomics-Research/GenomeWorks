@@ -90,15 +90,30 @@ __host__ __device__ __forceinline__
 }
 
 template <typename Type>
-void copy(Type* dst, const Type* src, size_t len, cudaStream_t stream)
+Type get_value_from_device(const Type* d_ptr, cudaStream_t stream = 0)
 {
-    CGA_CU_CHECK_ERR(cudaMemcpyAsync(dst, src, len * sizeof(Type), cudaMemcpyDefault, stream));
+    Type val;
+    CGA_CU_CHECK_ERR(cudaMemcpyAsync(&val, d_ptr, sizeof(Type), cudaMemcpyDeviceToHost, stream));
+    CGA_CU_CHECK_ERR(cudaStreamSynchronize(stream));
+    return val;
 }
 
 template <typename Type>
-void copy(Type* dst, const Type* src, size_t len)
+void set_device_value_async(const Type* dst, const Type* src, cudaStream_t stream)
 {
-    CGA_CU_CHECK_ERR(cudaMemcpy(dst, src, len * sizeof(Type), cudaMemcpyDefault));
+    CGA_CU_CHECK_ERR(cudaMemcpyAsync(dst, src, sizeof(Type), cudaMemcpyDefault, stream));
+}
+
+template <typename Type>
+void set_device_value(Type* dst, const Type* src)
+{
+    CGA_CU_CHECK_ERR(cudaMemcpy(dst, src, sizeof(Type), cudaMemcpyDefault));
+}
+
+template <typename Type>
+void device_copy_n(const Type* src, size_t n, Type* dst, cudaStream_t stream)
+{
+    CGA_CU_CHECK_ERR(cudaMemcpyAsync(dst, src, n * sizeof(Type), cudaMemcpyDefault, stream));
 }
 
 #ifdef CGA_PROFILING

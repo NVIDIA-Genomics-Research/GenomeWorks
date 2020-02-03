@@ -15,6 +15,6 @@ namespace claragenomics
 {
 
 template <typename T>
-using host_buffer = buffer<T, hostAllocator>;
+using host_buffer = buffer<T, HostAllocator>;
 
 } // namespace claragenomics

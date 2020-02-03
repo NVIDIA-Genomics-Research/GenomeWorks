@@ -14,17 +14,41 @@
 namespace claragenomics
 {
 
-/** Default cudaMalloc/cudaFree based device allocator */
-class deviceAllocator
+/**
+ * @brief Interface for a asynchronous device allocator.
+ */
+class DeviceAllocator
 {
 public:
-    virtual void* allocate(std::size_t n, cudaStream_t)
+    virtual void* allocate(std::size_t n, cudaStream_t stream) = 0;
+
+    virtual void deallocate(void* p, std::size_t, cudaStream_t stream) = 0;
+};
+
+/**
+ * @brief Interface for a asynchronous host allocator.
+ */
+class HostAllocator
+{
+public:
+    virtual void* allocate(std::size_t n, cudaStream_t stream) = 0;
+
+    virtual void deallocate(void* p, std::size_t, cudaStream_t strean) = 0;
+};
+
+/**
+ * @brief Default cudaMalloc/cudaFree based device allocator 
+ */
+class CudaMallocAllocator : public DeviceAllocator
+{
+public:
+    void* allocate(std::size_t n, cudaStream_t) override
     {
         void* ptr = 0;
         CGA_CU_CHECK_ERR(cudaMalloc(&ptr, n));
         return ptr;
     }
-    virtual void deallocate(void* p, std::size_t, cudaStream_t)
+    void deallocate(void* p, std::size_t, cudaStream_t) override
     {
         cudaError_t status = cudaFree(p);
         if (cudaSuccess != status)
@@ -32,48 +56,27 @@ public:
             // deallocate should not throw execeptions which is why CGA_CU_CHECK_ERR is not used.
         }
     }
-
-    virtual ~deviceAllocator() {}
 };
 
-/** Default cudaHostMalloc/cudaFreeHost based host allocator */
-class hostAllocator
+/**
+ * @brief A simple caching allocator for device memory allocations.
+ */
+class CachingDeviceAllocator : public DeviceAllocator
 {
 public:
-    virtual void* allocate(std::size_t n, cudaStream_t)
-    {
-        void* ptr = 0;
-        CGA_CU_CHECK_ERR(cudaMallocHost(&ptr, n));
-        return ptr;
-    }
-    virtual void deallocate(void* p, std::size_t, cudaStream_t)
-    {
-        cudaError_t status = cudaFreeHost(p);
-        if (cudaSuccess != status)
-        {
-            // deallocate should not throw execeptions which is why CGA_CU_CHECK_ERR is not used.
-        }
-    }
-
-    virtual ~hostAllocator() {}
-};
-
-class cachingDeviceAllocator : public deviceAllocator
-{
-public:
-    cachingDeviceAllocator()
-        : _allocator(8, 3, cub::CachingDeviceAllocator::INVALID_BIN, cub::CachingDeviceAllocator::INVALID_SIZE, false, false)
+    CachingDeviceAllocator(size_t max_cached_bytes = 1e9)
+        : _allocator(2, 10, cub::CachingDeviceAllocator::INVALID_BIN, max_cached_bytes, false, false)
     {
     }
 
-    virtual void* allocate(std::size_t n, cudaStream_t stream)
+    void* allocate(std::size_t n, cudaStream_t stream) override
     {
         void* ptr = 0;
         _allocator.DeviceAllocate(&ptr, n, stream);
         return ptr;
     }
 
-    virtual void deallocate(void* p, std::size_t, cudaStream_t)
+    void deallocate(void* p, std::size_t, cudaStream_t) override
     {
         // deallocate should not throw execeptions which is why CGA_CU_CHECK_ERR is not used.
         _allocator.DeviceFree(p);

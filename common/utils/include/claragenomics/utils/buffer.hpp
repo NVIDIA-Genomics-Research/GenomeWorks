@@ -20,7 +20,7 @@ class buffer
 {
 public:
     using value_type     = T;
-    using size_type      = std::size_t;
+    using size_type      = std::ptrdiff_t;
     using iterator       = value_type*;
     using const_iterator = const value_type*;
 
@@ -28,15 +28,16 @@ public:
 
     buffer& operator=(const buffer& other) = delete;
 
-    buffer(size_type n                          = 0,
-           std::shared_ptr<Allocator> allocator = std::make_shared<Allocator>(),
-           cudaStream_t stream                  = 0)
+    explicit buffer(size_type n                          = 0,
+                    std::shared_ptr<Allocator> allocator = std::make_shared<Allocator>(),
+                    cudaStream_t stream                  = 0)
         : _size(n)
         , _capacity(n)
         , _data(nullptr)
         , _stream(stream)
         , _allocator(allocator)
     {
+        assert(_size >= 0);
         if (_capacity > 0)
         {
             _data = static_cast<value_type*>(
@@ -59,6 +60,17 @@ public:
         , _stream(std::exchange(r._stream, cudaStream_t(0)))
         , _allocator(std::exchange(r._allocator, std::shared_ptr<Allocator>(nullptr)))
     {
+    }
+
+    // move assignment operator
+    buffer& operator=(buffer&& r)
+    {
+        _size      = std::exchange(r._size, 0);
+        _capacity  = std::exchange(r._size, 0);
+        _data      = std::exchange(r._data, nullptr);
+        _stream    = std::exchange(r._stream, cudaStream_t(0));
+        _allocator = std::exchange(r._allocator, std::shared_ptr<Allocator>(nullptr));
+        return *this;
     }
 
     ~buffer()
@@ -85,8 +97,9 @@ public:
 
     const_iterator end() const { return _data + _size; }
 
-    void reserve(const size_type new_capacity, cudaStream_t stream = 0)
+    void reserve(const size_type new_capacity, cudaStream_t stream)
     {
+        assert(new_capacity >= 0);
         set_stream(stream);
         if (new_capacity > _capacity)
         {
@@ -104,6 +117,10 @@ public:
             _data     = new_data;
             _capacity = new_capacity;
         }
+    }
+    void reserve(const size_type new_capacity)
+    {
+        reserve(new_capacity, _stream);
     }
 
     void resize(const size_type new_size, cudaStream_t stream = 0)
@@ -174,5 +191,12 @@ private:
         }
     }
 };
+
+template <typename T, typename Allocator>
+void swap(buffer<T, Allocator>& a,
+          buffer<T, Allocator>& b)
+{
+    a.swap(b);
+}
 
 } // namespace claragenomics

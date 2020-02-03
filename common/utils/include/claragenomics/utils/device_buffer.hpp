@@ -15,13 +15,6 @@ namespace claragenomics
 {
 
 template <typename T>
-using device_buffer = buffer<T, deviceAllocator>;
-
-template <typename T, typename Allocator>
-void swap(buffer<T, Allocator>& a,
-          buffer<T, Allocator>& b)
-{
-    a.swap(b);
-}
+using device_buffer = buffer<T, DeviceAllocator>;
 
 } // namespace claragenomics
