@@ -22,6 +22,8 @@
 #include <thrust/sequence.h>
 #include <thrust/swap.h>
 
+#include <claragenomics/utils/mathutils.hpp>
+
 namespace claragenomics
 {
 namespace cudautils
@@ -39,6 +41,8 @@ namespace details
 /// \param unsorted_values_d input
 /// \param sorted_values_d output
 /// \param number_of_elements number of elements to sort
+/// \param begin_bit index of least significant bit to sort by (for example to sort numbers up to 253 = 0b1111'1101 this value should be 0)
+/// \param end_bit index of past the most significant bit to sort by (for example to sort numbers up to 253 = 0b1111'1101 this value should be 8)
 /// \tparam KeyT
 /// \tparam ValueT
 template <typename KeyT,
@@ -48,7 +52,9 @@ void perform_radix_sort(thrust::device_vector<std::uint8_t> temp_storage_vect_d,
                         KeyT* sorted_keys_d,
                         const ValueT* unsorted_values_d,
                         ValueT* sorted_values_d,
-                        int number_of_elements)
+                        int number_of_elements,
+                        std::uint32_t begin_bit,
+                        std::uint32_t end_bit)
 {
     // calculate necessary temp storage size
     void* temp_storage_d      = nullptr;
@@ -59,7 +65,9 @@ void perform_radix_sort(thrust::device_vector<std::uint8_t> temp_storage_vect_d,
                                     sorted_keys_d,
                                     unsorted_values_d,
                                     sorted_values_d,
-                                    number_of_elements);
+                                    number_of_elements,
+                                    begin_bit,
+                                    end_bit);
 
     // allocate temp storage
     if (temp_storage_bytes > temp_storage_vect_d.size())
@@ -76,7 +84,9 @@ void perform_radix_sort(thrust::device_vector<std::uint8_t> temp_storage_vect_d,
                                     sorted_keys_d,
                                     unsorted_values_d,
                                     sorted_values_d,
-                                    number_of_elements);
+                                    number_of_elements,
+                                    begin_bit,
+                                    end_bit);
 }
 
 } // namespace details
@@ -102,6 +112,8 @@ void perform_radix_sort(thrust::device_vector<std::uint8_t> temp_storage_vect_d,
 /// \param more_significant_keys sorted on output
 /// \param less_significant_keys sorted on output
 /// \param values sorted on output
+/// \param max_value_of_more_significant_key optional, defaults to max value for MoreSignificantKeyT
+/// \param max_value_of_less_significant_key optional, defaults to max value for LessSignificantKeyT
 /// \tparam MoreSignificantKeyT
 /// \tparam LessSignificantKeyT
 /// \tparam ValueT
@@ -110,7 +122,9 @@ template <typename MoreSignificantKeyT,
           typename ValueT>
 void sort_by_two_keys(thrust::device_vector<MoreSignificantKeyT>& more_significant_keys,
                       thrust::device_vector<LessSignificantKeyT>& less_significant_keys,
-                      thrust::device_vector<ValueT>& values)
+                      thrust::device_vector<ValueT>& values,
+                      const MoreSignificantKeyT max_value_of_more_significant_key = std::numeric_limits<MoreSignificantKeyT>::max(),
+                      const LessSignificantKeyT max_value_of_less_significant_key = std::numeric_limits<LessSignificantKeyT>::max())
 {
     // Radix sort is done in-place, meaning sorting by less significant and then more significant keys yields the wanted result
     //
@@ -146,7 +160,9 @@ void sort_by_two_keys(thrust::device_vector<MoreSignificantKeyT>& more_significa
                                 less_significant_key_sorted.data().get(),
                                 move_to_index.data().get(),
                                 move_to_index_sorted.data().get(),
-                                number_of_elements);
+                                number_of_elements,
+                                0,
+                                int_floor_log2(max_value_of_less_significant_key) + 1); // function asks for the index of past-the-last most significant bit
 
     // swap sorted and unsorted arrays
     thrust::swap(less_significant_keys, less_significant_key_sorted);
@@ -177,7 +193,9 @@ void sort_by_two_keys(thrust::device_vector<MoreSignificantKeyT>& more_significa
                                 more_significant_keys_after_sort.data().get(),
                                 move_to_index.data().get(),
                                 move_to_index_sorted.data().get(),
-                                number_of_elements);
+                                number_of_elements,
+                                0,
+                                int_floor_log2(max_value_of_more_significant_key) + 1);
 
     thrust::swap(move_to_index, move_to_index_sorted);
 

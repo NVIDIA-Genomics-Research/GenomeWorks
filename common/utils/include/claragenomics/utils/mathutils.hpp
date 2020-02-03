@@ -15,6 +15,7 @@
 #include <cuda_runtime_api.h>
 #ifndef __CUDA_ARCH__
 #include <algorithm>
+#include <stdexcept>
 #endif
 
 namespace claragenomics
@@ -37,6 +38,56 @@ __host__ __device__ inline T const& min3(T const& t1, T const& t2, T const& t3)
 #else
     return std::min(t1, std::min(t2, t3));
 #endif
+}
+
+/// @brief Calculates floor of log2() of the given integer number
+///
+/// int_floor_log2(1) = 0
+/// int_floor_log2(2) = 1
+/// int_floor_log2(3) = 1
+/// int_floor_log2(4) = 2
+/// int_floor_log2(5) = 2
+/// int_floor_log2(8) = 3
+/// int_floor_log2(11) = 3
+/// int_floor_log2(16) = 4
+/// int_floor_log2(31) = 4
+/// int_floor_log2(32) = 5
+///
+/// @param val
+/// @tparam T type of val
+template <typename T>
+std::int32_t int_floor_log2(T val)
+{
+    if (val <= 0)
+    {
+        throw std::invalid_argument("mathutils: only logarithms of positive numbers are defined");
+    }
+
+    std::int32_t power = 0;
+    // keep dividing by 2 until value is 1
+    //
+    // for 11 = 0b1011 -> int_floor_log2(11) = 3
+    // value  power
+    // 0b1011 0
+    // 0b0101 1
+    // 0b0010 2
+    // 0b0001 3 <- this is returned
+    //
+    // for 16 = 0b10000 -> int_floor_log2 = 4
+    // value   power
+    // 0b10000 0
+    // 0b01000 1
+    // 0b00100 2
+    // 0b00010 3
+    // 0b00001 4 <- this is returned
+    while (val != 1)
+    {
+        // divide by two, i.e. move by one log value
+        val >>= 1;
+        ++power;
+    }
+
+    return power;
 }
 
 } // namespace claragenomics
