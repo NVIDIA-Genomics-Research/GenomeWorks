@@ -40,11 +40,11 @@ public:
     /// \return vector of Overlap objects
     void get_overlaps(std::vector<Overlap>& overlaps, device_buffer<Anchor>& anchors, const Index& index_query, const Index& index_target) override;
 
-    OverlapperTriggered(std::shared_ptr<deviceAllocator>);
+    OverlapperTriggered(std::shared_ptr<DeviceAllocator>);
     ~OverlapperTriggered();
 
 private:
-    std::shared_ptr<deviceAllocator> _allocator;
+    std::shared_ptr<DeviceAllocator> _allocator;
     cudaStream_t stream;
 };
 } // namespace cudamapper

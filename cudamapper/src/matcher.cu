@@ -16,8 +16,8 @@ namespace claragenomics
 namespace cudamapper
 {
 
-std::unique_ptr<Matcher> Matcher::create_matcher(std::shared_ptr<deviceAllocator> allocator,
-						 const Index& query_index,
+std::unique_ptr<Matcher> Matcher::create_matcher(std::shared_ptr<DeviceAllocator> allocator,
+                                                 const Index& query_index,
                                                  const Index& target_index)
 {
     return std::make_unique<MatcherGPU>(allocator, query_index, target_index);

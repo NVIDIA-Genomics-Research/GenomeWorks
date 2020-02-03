@@ -60,7 +60,7 @@ public:
     /// \param window_size w - the length of the sliding window used to find sketch elements (i.e. the number of adjacent k-mers in a window, adjacent = shifted by one basepair)
     /// \param hash_representations - if true, hash kmer representations
     /// \param filtering_parameter - filter out all representations for which number_of_sketch_elements_with_that_representation/total_skech_elements >= filtering_parameter, filtering_parameter == 1.0 disables filtering
-    IndexGPU(std::shared_ptr<deviceAllocator> allocator,
+    IndexGPU(std::shared_ptr<DeviceAllocator> allocator,
              const io::FastaParser& parser,
              const read_id_t first_read_id,
              const read_id_t past_the_last_read_id,
@@ -138,7 +138,7 @@ private:
     read_id_t number_of_reads_                              = 0;
     position_in_read_t number_of_basepairs_in_longest_read_ = 0;
 
-    std::shared_ptr<deviceAllocator> _allocator;
+    std::shared_ptr<DeviceAllocator> _allocator;
 };
 
 namespace details
@@ -162,7 +162,7 @@ namespace index_gpu
 /// \param unique_representations_d empty on input, contains one value of each representation on the output
 /// \param first_occurrence_index_d empty on input, index of first occurrence of each representation and additional elemnt on the output
 /// \param input_representations_d an array of representaton where representations with the same value stand next to each other
-void find_first_occurrences_of_representations(std::shared_ptr<deviceAllocator> allocator, device_buffer<representation_t>& unique_representations_d,
+void find_first_occurrences_of_representations(std::shared_ptr<DeviceAllocator> allocator, device_buffer<representation_t>& unique_representations_d,
                                                device_buffer<std::uint32_t>& first_occurrence_index_d,
                                                const device_buffer<representation_t>& input_representations_d);
 
@@ -374,7 +374,7 @@ __global__ void compress_data_arrays_after_filtering_kernel(const std::uint64_t 
 ///
 /// \tparam DirectionOfRepresentation any implementation of SketchElementImpl::SketchElementImpl::DirectionOfRepresentation
 template <typename DirectionOfRepresentation>
-void filter_out_most_common_representations(std::shared_ptr<deviceAllocator> allocator,
+void filter_out_most_common_representations(std::shared_ptr<DeviceAllocator> allocator,
                                             const double filtering_parameter,
                                             device_buffer<representation_t>& representations_d,
                                             device_buffer<read_id_t>& read_ids_d,
@@ -389,8 +389,7 @@ void filter_out_most_common_representations(std::shared_ptr<deviceAllocator> all
 
     std::uint32_t zero = 0;
     device_buffer<std::uint32_t> number_of_sketch_elements_with_each_representation_d(first_occurrence_of_representations_d.size(), allocator);
-    cudautils::copy(number_of_sketch_elements_with_each_representation_d.end() - 1, &zero, 1); // H2D
-    //number_of_sketch_elements_with_each_representation_d.back() = 0; // H2D
+    cudautils::set_device_value(number_of_sketch_elements_with_each_representation_d.end() - 1, &zero); // H2D
 
     // thrust::adjacent_difference saves a[i]-a[i-1] to a[i]. As first_occurrence_of_representations_d starts with 0
     // we actually want to save a[i]-a[i-1] to a[i-j] and have the last (aditional) element of number_of_sketch_elements_with_each_representation_d set to 0
@@ -398,8 +397,7 @@ void filter_out_most_common_representations(std::shared_ptr<deviceAllocator> all
                                 std::next(std::begin(first_occurrence_of_representations_d)),
                                 std::end(first_occurrence_of_representations_d),
                                 std::begin(number_of_sketch_elements_with_each_representation_d));
-    cudautils::copy(number_of_sketch_elements_with_each_representation_d.end() - 1, &zero, 1); // H2D
-    //number_of_sketch_elements_with_each_representation_d.back() = 0; // H2D
+    cudautils::set_device_value(number_of_sketch_elements_with_each_representation_d.end() - 1, &zero); // H2D
 
     // *** find filtering threshold ***
     const std::size_t total_sketch_elements = representations_d.size();
@@ -466,9 +464,7 @@ void filter_out_most_common_representations(std::shared_ptr<deviceAllocator> all
     // 0  2  4  4  4  7 10 <- first_occurrence_of_representation_after_filtering_d
     // 0  2  4  7 10       <- first_occurrence_of_representations_after_compression_d
 
-    //const std::uint32_t number_of_unique_representations_after_compression = unique_representation_index_after_filtering_d.back(); // D2H
-    std::uint32_t number_of_unique_representations_after_compression = 0;
-    cudautils::copy(&number_of_unique_representations_after_compression, unique_representation_index_after_filtering_d.end() - 1, 1); // D2H
+    const std::uint32_t number_of_unique_representations_after_compression = cudautils::get_value_from_device(unique_representation_index_after_filtering_d.end() - 1); //D2H
 
     device_buffer<representation_t> unique_representations_after_compression_d(number_of_unique_representations_after_compression, allocator);
     device_buffer<std::uint32_t> first_occurrence_of_representations_after_compression_d(number_of_unique_representations_after_compression + 1, allocator);
@@ -495,9 +491,7 @@ void filter_out_most_common_representations(std::shared_ptr<deviceAllocator> all
     // 0  0  1  1  4  7  3  7  8  9 <- positions_in_reads_after_filtering_d
     // F  F  F  F  F  R  R  F  F  F <- directions_of_reads_after_filtering_d
 
-    //std::uint32_t number_of_sketch_elements_after_compression = first_occurrence_of_representations_after_compression_d.back(); // D2H
-    std::uint32_t number_of_sketch_elements_after_compression = 0;
-    cudautils::copy(&number_of_sketch_elements_after_compression, first_occurrence_of_representations_after_compression_d.end() - 1, 1); // D2H
+    std::uint32_t number_of_sketch_elements_after_compression = cudautils::get_value_from_device(first_occurrence_of_representations_after_compression_d.end() - 1); // D2H
 
     device_buffer<representation_t> representations_after_compression_d(number_of_sketch_elements_after_compression, allocator);
     device_buffer<read_id_t> read_ids_after_compression_d(number_of_sketch_elements_after_compression, allocator);
@@ -533,7 +527,7 @@ void filter_out_most_common_representations(std::shared_ptr<deviceAllocator> all
 } // namespace details
 
 template <typename SketchElementImpl>
-IndexGPU<SketchElementImpl>::IndexGPU(std::shared_ptr<deviceAllocator> allocator,
+IndexGPU<SketchElementImpl>::IndexGPU(std::shared_ptr<DeviceAllocator> allocator,
                                       const io::FastaParser& parser,
                                       const read_id_t first_read_id,
                                       const read_id_t past_the_last_read_id,

@@ -172,7 +172,7 @@ struct CreateOverlap
     };
 };
 
-OverlapperTriggered::OverlapperTriggered(std::shared_ptr<deviceAllocator> allocator)
+OverlapperTriggered::OverlapperTriggered(std::shared_ptr<DeviceAllocator> allocator)
     : _allocator(allocator)
 {
     CGA_CU_CHECK_ERR(cudaStreamCreate(&stream));
@@ -247,8 +247,7 @@ void OverlapperTriggered::get_overlaps(std::vector<Overlap>& fused_overlaps,
     // <<<<<<<<<<
 
     // memcpy D2H
-    auto n_chains = 0;
-    cudautils::copy(&n_chains, d_nchains.data(), 1, stream);
+    auto n_chains = cudautils::get_value_from_device(d_nchains.data(), stream);
     CGA_CU_CHECK_ERR(cudaStreamSynchronize(stream));
 
     // use prefix sum to calculate the starting index position of all the chains
@@ -333,8 +332,7 @@ void OverlapperTriggered::get_overlaps(std::vector<Overlap>& fused_overlaps,
                                    reduction_op, n_overlaps, stream);
 
     // memcpyD2H
-    auto n_fused_overlap = 0;
-    cudautils::copy(&n_fused_overlap, d_nfused_overlaps.data(), 1, stream);
+    auto n_fused_overlap = cudautils::get_value_from_device(d_nfused_overlaps.data(), stream);
     CGA_CU_CHECK_ERR(cudaStreamSynchronize(stream));
 
     // construct overlap from the overlap args
@@ -346,7 +344,7 @@ void OverlapperTriggered::get_overlaps(std::vector<Overlap>& fused_overlaps,
 
     // memcpyD2H - move fused overlaps to host
     fused_overlaps.resize(n_fused_overlap);
-    cudautils::copy(fused_overlaps.data(), d_fused_overlaps.data(), n_fused_overlap, stream);
+    cudautils::device_copy_n(d_fused_overlaps.data(), n_fused_overlap, fused_overlaps.data(), stream);
     CGA_CU_CHECK_ERR(cudaStreamSynchronize(stream));
 
     // <<<<<<<<<<<<

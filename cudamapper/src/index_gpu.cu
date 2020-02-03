@@ -19,7 +19,7 @@ namespace details
 {
 namespace index_gpu
 {
-void find_first_occurrences_of_representations(std::shared_ptr<deviceAllocator> allocator,
+void find_first_occurrences_of_representations(std::shared_ptr<DeviceAllocator> allocator,
                                                device_buffer<representation_t>& unique_representations_d,
                                                device_buffer<std::uint32_t>& first_occurrence_index_d,
                                                const device_buffer<representation_t>& input_representations_d)
@@ -54,9 +54,7 @@ void find_first_occurrences_of_representations(std::shared_ptr<deviceAllocator> 
             thrust::plus<std::uint64_t>());
     }
 
-    //const std::uint64_t number_of_unique_representations = representation_index_mask_d.back(); // D2H copy
-    std::uint64_t number_of_unique_representations = 0;
-    cudautils::copy(&number_of_unique_representations, representation_index_mask_d.end() - 1, 1); // D2H copy
+    const std::uint64_t number_of_unique_representations = cudautils::get_value_from_device(representation_index_mask_d.end() - 1); // D2H copy
 
     first_occurrence_index_d.resize(number_of_unique_representations + 1); // <- +1 for the additional element
     //if (first_occurrence_index_d.capacity() > first_occurrence_index_d.size())
@@ -73,8 +71,7 @@ void find_first_occurrences_of_representations(std::shared_ptr<deviceAllocator> 
     // last element is the total number of elements in representations array
 
     std::uint32_t input_representations_size = input_representations_d.size();
-    cudautils::copy(first_occurrence_index_d.end() - 1, &input_representations_size, 1); // H2D copy
-    //first_occurrence_index_d.back() = input_representations_d.size(); // H2D copy
+    cudautils::set_device_value(first_occurrence_index_d.end() - 1, &input_representations_size); // H2D copy
 }
 
 __global__ void find_first_occurrences_of_representations_kernel(const std::uint64_t* const representation_index_mask_d,

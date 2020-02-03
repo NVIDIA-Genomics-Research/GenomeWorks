@@ -60,10 +60,11 @@ namespace claragenomics
 namespace cudamapper
 {
 
-MatcherGPU::MatcherGPU(std::shared_ptr<deviceAllocator> allocator,
-		       const Index& query_index,
+MatcherGPU::MatcherGPU(std::shared_ptr<DeviceAllocator> allocator,
+                       const Index& query_index,
                        const Index& target_index)
-    :anchors_d_(allocator){
+    : anchors_d_(allocator)
+{
     CGA_NVTX_RANGE(profile, "matcherGPU");
     if (query_index.unique_representations().size() == 0 || target_index.unique_representations().size() == 0)
         return;
@@ -91,10 +92,8 @@ MatcherGPU::MatcherGPU(std::shared_ptr<deviceAllocator> allocator,
     // and store the resulting starting index in an anchors array if all anchors are stored in a flat array.
     // The last element will be the total number of anchors.
     details::matcher_gpu::compute_anchor_starting_indices(anchor_starting_indices_d, query_index.first_occurrence_of_representations(), found_target_indices_d, target_index.first_occurrence_of_representations());
-    
-    int64_t n_anchors = 0;
-    cudautils::copy(&n_anchors, anchor_starting_indices_d.end() - 1, 1); // D->H transfer
-    //const int64_t n_anchors = anchor_starting_indices_d.back(); // D->H transfer
+
+    const int64_t n_anchors = cudautils::get_value_from_device(anchor_starting_indices_d.end() - 1); // D->H transfer
 
     anchors_d_.resize(n_anchors);
 
