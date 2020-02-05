@@ -150,6 +150,7 @@ struct CreateOverlap
         new_overlap.query_start_position_in_read_ =
             overlap_start_anchor.query_position_in_read_;
         new_overlap.overlap_complete = true;
+        new_overlap.cigar_           = 0;
 
         // If the target start position is greater than the target end position
         // We can safely assume that the query and target are template and
