@@ -22,8 +22,6 @@
 
 namespace claragenomics
 {
-namespace cudautils
-{
 
 template <typename MoreSignificantKeyT,
           typename LessSignificantKeyT,
@@ -37,11 +35,11 @@ void test_function(thrust::device_vector<MoreSignificantKeyT>& more_significant_
     ASSERT_EQ(input_values.size(), more_significant_keys.size());
     ASSERT_EQ(input_values.size(), less_significant_keys.size());
 
-    sort_by_two_keys(more_significant_keys,
-                     less_significant_keys,
-                     input_values,
-                     max_value_of_more_significant_key,
-                     max_value_of_less_significant_key);
+    cudautils::sort_by_two_keys(more_significant_keys,
+                                less_significant_keys,
+                                input_values,
+                                max_value_of_more_significant_key,
+                                max_value_of_less_significant_key);
 
     thrust::host_vector<ValueT> sorted_values_h(input_values);
 
@@ -224,5 +222,4 @@ TEST(TestUtilsCudasort, long_deterministic_shuffle_test)
                   max_value_of_less_significant_key);
 }
 
-} //namespace cudautils
 } //namespace claragenomics
