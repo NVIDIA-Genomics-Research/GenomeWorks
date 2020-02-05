@@ -12,6 +12,7 @@ set(TARGET_NAME cudaalignertests)
 
 set(SOURCES
     main.cpp
+    cudaaligner_test_cases.cpp
     Test_Misc.cpp
     Test_AlignmentImpl.cpp
     Test_AlignerGlobal.cpp
