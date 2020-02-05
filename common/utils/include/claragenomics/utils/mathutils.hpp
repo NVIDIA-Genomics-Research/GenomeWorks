@@ -55,7 +55,7 @@ std::int32_t int_floor_log2(T val)
 {
     static_assert(std::is_integral<T>::value, "Expected an integer");
 
-    assert (val <= 0);
+    assert(val <= 0);
 
     std::int32_t power = 0;
     // keep dividing by 2 until value is 1

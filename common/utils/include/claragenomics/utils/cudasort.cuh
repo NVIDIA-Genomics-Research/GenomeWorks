@@ -47,7 +47,7 @@ namespace details
 /// \tparam ValueT
 template <typename KeyT,
           typename ValueT>
-void perform_radix_sort(thrust::device_vector<std::uint8_t> temp_storage_vect_d,
+void perform_radix_sort(thrust::device_vector<char>& temp_storage_vect_d,
                         const KeyT* unsorted_keys_d,
                         KeyT* sorted_keys_d,
                         const ValueT* unsorted_values_d,
@@ -112,8 +112,8 @@ void perform_radix_sort(thrust::device_vector<std::uint8_t> temp_storage_vect_d,
 /// \param more_significant_keys sorted on output
 /// \param less_significant_keys sorted on output
 /// \param values sorted on output
-/// \param max_value_of_more_significant_key optional, defaults to max value for MoreSignificantKeyT
-/// \param max_value_of_less_significant_key optional, defaults to max value for LessSignificantKeyT
+/// \param max_value_of_more_significant_key optional, defaults to max value for MoreSignificantKeyT (specifying it might lead to better performance)
+/// \param max_value_of_less_significant_key optional, defaults to max value for LessSignificantKeyT (specifying it might lead to better performance)
 /// \tparam MoreSignificantKeyT
 /// \tparam LessSignificantKeyT
 /// \tparam ValueT
@@ -153,7 +153,7 @@ void sort_by_two_keys(thrust::device_vector<MoreSignificantKeyT>& more_significa
     thrust::device_vector<LessSignificantKeyT> less_significant_key_sorted(number_of_elements);
     thrust::device_vector<move_to_index_t> move_to_index_sorted(number_of_elements);
 
-    thrust::device_vector<std::uint8_t> temp_storage_vect;
+    thrust::device_vector<char> temp_storage_vect;
 
     details::perform_radix_sort(temp_storage_vect,
                                 less_significant_keys.data().get(),
@@ -186,9 +186,7 @@ void sort_by_two_keys(thrust::device_vector<MoreSignificantKeyT>& more_significa
 
     // *** sort by more significant key ***
 
-    thrust::device_vector<std::uint8_t> temp_storage_vect_2;
-
-    details::perform_radix_sort(temp_storage_vect_2,
+    details::perform_radix_sort(temp_storage_vect,
                                 more_significant_keys.data().get(),
                                 more_significant_keys_after_sort.data().get(),
                                 move_to_index.data().get(),
