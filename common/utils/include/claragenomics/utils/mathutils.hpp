@@ -45,13 +45,8 @@ __host__ __device__ inline T const& min3(T const& t1, T const& t2, T const& t3)
 /// int_floor_log2(1) = 0
 /// int_floor_log2(2) = 1
 /// int_floor_log2(3) = 1
-/// int_floor_log2(4) = 2
-/// int_floor_log2(5) = 2
 /// int_floor_log2(8) = 3
 /// int_floor_log2(11) = 3
-/// int_floor_log2(16) = 4
-/// int_floor_log2(31) = 4
-/// int_floor_log2(32) = 5
 ///
 /// @param val
 /// @tparam T type of val
@@ -65,21 +60,6 @@ std::int32_t int_floor_log2(T val)
 
     std::int32_t power = 0;
     // keep dividing by 2 until value is 1
-    //
-    // for 11 = 0b1011 -> int_floor_log2(11) = 3
-    // value  power
-    // 0b1011 0
-    // 0b0101 1
-    // 0b0010 2
-    // 0b0001 3 <- this is returned
-    //
-    // for 16 = 0b10000 -> int_floor_log2 = 4
-    // value   power
-    // 0b10000 0
-    // 0b01000 1
-    // 0b00100 2
-    // 0b00010 3
-    // 0b00001 4 <- this is returned
     while (val != 1)
     {
         // divide by two, i.e. move by one log value
