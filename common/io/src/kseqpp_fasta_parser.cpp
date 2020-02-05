@@ -18,18 +18,6 @@
 #include <iostream>
 #include "seqio.h" //TODO add this to 3rdparty
 
-namespace
-{
-struct free_deleter
-{
-    template <typename T>
-    void operator()(T* x)
-    {
-        std::free(x);
-    }
-};
-} // namespace
-
 namespace claragenomics
 {
 namespace io
