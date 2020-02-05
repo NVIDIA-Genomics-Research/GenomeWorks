@@ -10,6 +10,7 @@
 
 #pragma once
 #include <claragenomics/utils/buffer.hpp>
+#include <claragenomics/utils/allocator.hpp>
 
 namespace claragenomics
 {

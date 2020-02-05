@@ -10,7 +10,6 @@
 
 #pragma once
 #include <claragenomics/utils/cudautils.hpp>
-#include <claragenomics/utils/allocator.hpp>
 
 namespace claragenomics
 {
@@ -46,8 +45,7 @@ public:
         }
     }
 
-    // Should this be removed and force it to use allocator for a common interface?
-    buffer(std::shared_ptr<Allocator> allocator, cudaStream_t stream = 0)
+    explicit buffer(std::shared_ptr<Allocator> allocator, cudaStream_t stream = 0)
         : buffer(0, allocator, stream)
     {
     }
@@ -123,10 +121,15 @@ public:
         reserve(new_capacity, _stream);
     }
 
-    void resize(const size_type new_size, cudaStream_t stream = 0)
+    void resize(const size_type new_size, cudaStream_t stream)
     {
         reserve(new_size, stream);
         _size = new_size;
+    }
+
+    void resize(const size_type new_size)
+    {
+        resize(new_size, _stream);
     }
 
     void swap(buffer& v)
@@ -138,7 +141,7 @@ public:
         std::swap(_allocator, v._allocator);
     }
 
-    void shrink_to_fit(cudaStream_t stream = 0)
+    void shrink_to_fit(cudaStream_t stream)
     {
         set_stream(stream);
         if (_capacity > _size)
@@ -158,8 +161,12 @@ public:
             _capacity = _size;
         }
     }
+    void shrink_to_fit()
+    {
+        shrink_to_fit(_stream);
+    }
 
-    void free(cudaStream_t stream = 0)
+    void free(cudaStream_t stream)
     {
         set_stream(stream);
         if (nullptr != _data)
@@ -169,6 +176,10 @@ public:
         _data     = nullptr;
         _capacity = 0;
         _size     = 0;
+    }
+    void free()
+    {
+        free(_stream);
     }
 
 private:
