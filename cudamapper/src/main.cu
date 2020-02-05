@@ -196,6 +196,7 @@ int main(int argc, char* argv[])
         }
         else
         {
+            //create an index, with hashed representations (minimizers)
             index = std::move(claragenomics::cudamapper::Index::create_index(parser, start_index, end_index, k, w, true, filtering_parameter));
 
             // If in all-to-all mode, put this query in the cache for later use.
