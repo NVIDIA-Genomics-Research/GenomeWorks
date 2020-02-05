@@ -310,7 +310,10 @@ int main(int argc, char* argv[])
     std::vector<std::thread> workers;
     std::atomic<int> ranges_idx(0);
 
-    // Launch worker threads
+    // Launch worker threads to enable multi-GPU.
+    // One worker thread is responsible for one GPU so the number
+    // of worker threads launched is equal to the number of devices specified
+    // by the user
     for (int device_id = 0; device_id < num_devices; device_id++)
     {
         std::cerr << "Launching worker thread" << std::endl;
@@ -323,6 +326,10 @@ int main(int argc, char* argv[])
                     //Need to perform this check again for thread-safety
                     if (range_idx < get_size<int>(query_target_ranges))
                     {
+                        //compute overlaps takes a range of read_ids and a device ID and uses
+                        //that device to compute the overlaps. It prints overlaps to stdout.
+                        //since multiple worker threads are running stdout is guarded
+                        //by a mutex (`std::mutex overlaps_writer_mtx`)
                         compute_overlaps(query_target_ranges[range_idx], device_id);
                     }
                 }
