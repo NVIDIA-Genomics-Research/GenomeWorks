@@ -18,7 +18,7 @@
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
 
-#include "../include/claragenomics/utils/cudasort.cuh"
+#include <claragenomics/utils/cudasort.cuh>
 
 namespace claragenomics
 {
@@ -193,10 +193,9 @@ TEST(TestUtilsCudasort, short_64_64_64_test)
 
 TEST(TestUtilsCudasort, long_deterministic_shuffle_test)
 {
-    std::size_t number_of_elements = 10'000'000;
+    std::int64_t number_of_elements = 10'000'000;
 
-    std::random_device rd;
-    std::mt19937 g(rd());
+    std::mt19937 g(10);
 
     // fill the arrays with values 0..number_of_elements and shuffle them
     thrust::host_vector<std::uint32_t> more_significant_keys_h(number_of_elements);
