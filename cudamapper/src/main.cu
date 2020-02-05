@@ -33,7 +33,8 @@ static struct option options[] = {
     {"kmer-size", required_argument, 0, 'k'},
     {"window-size", required_argument, 0, 'w'},
     {"num-devices", required_argument, 0, 'd'},
-    {"max-cache-size", required_argument, 0, 'c'},
+    {"max-index-cache-size", required_argument, 0, 'c'},
+    {"max-cached-memory", required_argument, 0, 'm'},
     {"index-size", required_argument, 0, 'i'},
     {"target-index-size", required_argument, 0, 't'},
     {"filtering-parameter", required_argument, 0, 'F'},
@@ -47,15 +48,16 @@ int main(int argc, char* argv[])
     using claragenomics::get_size;
     claragenomics::logging::Init();
 
-    uint32_t k                     = 15;    // k
-    uint32_t w                     = 15;    // w
-    std::int32_t num_devices       = 1;     // d
-    std::int32_t max_cache_size    = 100;   // c
-    std::int32_t index_size        = 10000; // i
-    std::int32_t target_index_size = 10000; // t
-    double filtering_parameter     = 1.0;   // F
-    std::string optstring          = "k:w:d:c:i:t:F:h:";
-    int32_t argument               = 0;
+    uint32_t k                        = 15;    // k
+    uint32_t w                        = 15;    // w
+    std::int32_t num_devices          = 1;     // d
+    std::int32_t max_index_cache_size = 100;   // c
+    std::int32_t max_cached_memory    = 1;     // m
+    std::int32_t index_size           = 10000; // i
+    std::int32_t target_index_size    = 10000; // t
+    double filtering_parameter        = 1.0;   // F
+    std::string optstring             = "k:w:d:c:m:i:t:F:h:";
+    int32_t argument                  = 0;
     while ((argument = getopt_long(argc, argv, optstring.c_str(), options, nullptr)) != -1)
     {
         switch (argument)
@@ -70,7 +72,10 @@ int main(int argc, char* argv[])
             num_devices = atoi(optarg);
             break;
         case 'c':
-            max_cache_size = atoi(optarg);
+            max_index_cache_size = atoi(optarg);
+            break;
+        case 'm':
+            max_cached_memory = atoi(optarg);
             break;
         case 'i':
             index_size = atoi(optarg);
@@ -97,6 +102,12 @@ int main(int argc, char* argv[])
     if (filtering_parameter > 1.0 || filtering_parameter < 0.0)
     {
         std::cerr << "-F / --filtering-parameter must be in range [0.0, 1.0]" << std::endl;
+        exit(1);
+    }
+
+    if (max_cached_memory <= 0)
+    {
+        std::cerr << "-m / --max-cached-memory must be non-zero" << std::endl;
         exit(1);
     }
 
@@ -169,14 +180,14 @@ int main(int argc, char* argv[])
     // This is a per-device cache, if it has the index it will return it, if not it will generate it, store and return it.
     std::vector<std::map<std::pair<uint64_t, uint64_t>, std::shared_ptr<claragenomics::cudamapper::Index>>> index_cache(num_devices);
 
-    auto get_index = [&index_cache, max_cache_size](std::shared_ptr<claragenomics::DeviceAllocator> allocator,
-                                                    claragenomics::io::FastaParser& parser,
-                                                    const claragenomics::cudamapper::read_id_t start_index,
-                                                    const claragenomics::cudamapper::read_id_t end_index,
-                                                    const std::uint64_t k,
-                                                    const std::uint64_t w,
-                                                    const int device_id,
-                                                    const bool allow_cache_index) {
+    auto get_index = [&index_cache, max_index_cache_size](std::shared_ptr<claragenomics::DeviceAllocator> allocator,
+                                                          claragenomics::io::FastaParser& parser,
+                                                          const claragenomics::cudamapper::read_id_t start_index,
+                                                          const claragenomics::cudamapper::read_id_t end_index,
+                                                          const std::uint64_t k,
+                                                          const std::uint64_t w,
+                                                          const int device_id,
+                                                          const bool allow_cache_index) {
         CGA_NVTX_RANGE(profiler, "get index");
         std::pair<uint64_t, uint64_t> key;
         key.first  = start_index;
@@ -195,7 +206,7 @@ int main(int argc, char* argv[])
             // If in all-to-all mode, put this query in the cache for later use.
             // Cache eviction is handled later on by the calling thread
             // using the evict_index function.
-            if (get_size<int32_t>(index_cache[device_id]) < max_cache_size && allow_cache_index)
+            if (get_size<int32_t>(index_cache[device_id]) < max_index_cache_size && allow_cache_index)
             {
                 index_cache[device_id][key] = index;
             }
@@ -225,7 +236,8 @@ int main(int argc, char* argv[])
     };
 
 #ifdef CGA_ENABLE_ALLOCATOR
-    std::shared_ptr<claragenomics::DeviceAllocator> allocator(new claragenomics::CachingDeviceAllocator());
+    auto max_cached_bytes = max_cached_memory * 1e9; // max_cached_memory is in GB
+    std::shared_ptr<claragenomics::DeviceAllocator> allocator(new claragenomics::CachingDeviceAllocator(max_cached_bytes));
 #else
     std::shared_ptr<claragenomics::DeviceAllocator> allocator(new claragenomics::CudaMallocAllocator());
 #endif
@@ -238,7 +250,7 @@ int main(int argc, char* argv[])
         auto query_start_index = query_target_range.query_range.first;
         auto query_end_index   = query_target_range.query_range.second;
 
-        std::cerr << "Procecssing query range: (" << query_start_index << " - " << query_end_index - 1 << ")" << std::endl;
+        std::cerr << "Processing query range: (" << query_start_index << " - " << query_end_index - 1 << ")" << std::endl;
 
         std::shared_ptr<claragenomics::cudamapper::Index> query_index(nullptr);
         std::shared_ptr<claragenomics::cudamapper::Index> target_index(nullptr);
@@ -255,7 +267,6 @@ int main(int argc, char* argv[])
 
             auto target_start_index = target_range.first;
             auto target_end_index   = target_range.second;
-
             {
                 CGA_NVTX_RANGE(profiler, "generate_target_index");
                 target_index = get_index(allocator, *target_parser, target_start_index, target_end_index, k, w, device_id, true);
@@ -361,8 +372,11 @@ void help(int32_t exit_code = 0)
         -d, --num-devices
             number of GPUs to use [1])"
               << R"(
-        -c, --max_cache_size
+        -c, --max-index-cache-size
             number of indices to keep in GPU memory [100])"
+              << R"(
+        -m, --max-cached-memory
+            maximum aggregate cached memory per device in GB [1])"
               << R"(
         -i, --index-size
             length of batch size used for query [10000])"
