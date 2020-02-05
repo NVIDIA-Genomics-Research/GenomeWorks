@@ -53,10 +53,9 @@ __host__ __device__ inline T const& min3(T const& t1, T const& t2, T const& t3)
 template <typename T>
 std::int32_t int_floor_log2(T val)
 {
-    if (val <= 0)
-    {
-        throw std::invalid_argument("mathutils: only logarithms of positive numbers are defined");
-    }
+    static_assert(std::is_integral<T>::value, "Expected an integer");
+
+    assert (val <= 0);
 
     std::int32_t power = 0;
     // keep dividing by 2 until value is 1
