@@ -28,8 +28,6 @@ namespace claragenomics
 {
 namespace cudautils
 {
-namespace cudasort
-{
 namespace details
 {
 
@@ -209,6 +207,5 @@ void sort_by_two_keys(thrust::device_vector<MoreSignificantKeyT>& more_significa
     thrust::swap(values, values_after_sort);
 }
 
-} // namespace cudasort
 } // namespace cudautils
 } // namespace claragenomics

@@ -24,10 +24,6 @@ namespace claragenomics
 {
 namespace cudautils
 {
-namespace cudasort
-{
-namespace tests
-{
 
 template <typename MoreSignificantKeyT,
           typename LessSignificantKeyT,
@@ -228,7 +224,5 @@ TEST(TestUtilsCudasort, long_deterministic_shuffle_test)
                   max_value_of_less_significant_key);
 }
 
-} //namespace tests
-} //namespace cudasort
 } //namespace cudautils
 } //namespace claragenomics
