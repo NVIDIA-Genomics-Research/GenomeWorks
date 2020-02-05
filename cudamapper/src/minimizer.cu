@@ -857,7 +857,7 @@ __global__ void compress_minimizers(const representation_t* const window_minimiz
     }
 }
 
-Minimizer::GeneratedSketchElements Minimizer::generate_sketch_elements(const std::uint64_t number_of_reads_to_add,
+Minimizer::GeneratedSketchElements Minimizer::generate_sketch_elements(const read_id_t number_of_reads_to_add,
                                                                        const std::uint64_t minimizer_size,
                                                                        const std::uint64_t window_size,
                                                                        const std::uint64_t read_id_of_first_read,
