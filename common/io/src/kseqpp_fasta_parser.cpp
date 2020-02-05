@@ -63,7 +63,7 @@ std::vector<std::pair<int, int>> FastaParserKseqpp::get_read_chunks(int max_chun
     {
         if (reads_[read_idx].seq.size() + num_bases > max_chunk_size)
         {
-            chunk.second = read_idx - 1;
+            chunk.second = read_idx;
             chunks.push_back(chunk);
             chunk.first = read_idx;
             num_bases   = reads_[read_idx].seq.size();
@@ -74,7 +74,7 @@ std::vector<std::pair<int, int>> FastaParserKseqpp::get_read_chunks(int max_chun
         }
     }
 
-    chunk.second = reads_.size() - 1;
+    chunk.second = reads_.size();
 
     chunks.push_back(chunk);
     return chunks;

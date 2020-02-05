@@ -235,7 +235,7 @@ int main(int argc, char* argv[])
         cudaSetDevice(device_id);
 
         auto query_start_index = query_target_range.query_range.first;
-        auto query_end_index   = query_target_range.query_range.second;
+        auto query_end_index   = query_target_range.query_range.second - 1;
 
         std::cerr << "Processing query range: (" << query_start_index << " - " << query_end_index << ")" << std::endl;
 
@@ -253,7 +253,7 @@ int main(int argc, char* argv[])
         {
 
             auto target_start_index = target_range.first;
-            auto target_end_index   = target_range.second;
+            auto target_end_index   = target_range.second -1;
             {
                 CGA_NVTX_RANGE(profiler, "generate_target_index");
                 target_index = get_index(*target_parser, target_start_index, target_end_index, k, w, device_id, true, filtering_parameter);
