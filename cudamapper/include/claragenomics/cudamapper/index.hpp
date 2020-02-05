@@ -72,6 +72,14 @@ public:
     /// \return number of reads in input data
     virtual read_id_t number_of_reads() const = 0;
 
+    /// \brief returns smallest read_id in index
+    /// \return smallest read_id in index (0 if empty index)
+    virtual read_id_t smallest_read_id() const = 0;
+
+    /// \brief returns largest read_id in index
+    /// \return largest read_id in index (0 if empty index)
+    virtual read_id_t largest_read_id() const = 0;
+
     /// \brief returns length of the longest read in this index
     /// \return length of the longest read in this index
     virtual position_in_read_t number_of_basepairs_in_longest_read() const = 0;

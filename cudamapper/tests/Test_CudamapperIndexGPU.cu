@@ -1251,6 +1251,8 @@ TEST(TestCudamapperIndexGPU, test_filter_out_most_common_representations_large_e
 void test_function(const std::string& filename,
                    const read_id_t first_read_id,
                    const read_id_t past_the_last_read_id,
+                   const read_id_t expected_smallest_read_id,
+                   const read_id_t expected_largest_read_id,
                    const std::uint64_t kmer_size,
                    const std::uint64_t window_size,
                    const std::vector<representation_t>& expected_representations,
@@ -1279,6 +1281,9 @@ void test_function(const std::string& filename,
     {
         return;
     }
+
+    ASSERT_EQ(index.smallest_read_id(), expected_smallest_read_id);
+    ASSERT_EQ(index.largest_read_id(), expected_largest_read_id);
 
     ASSERT_EQ(expected_number_of_basepairs_in_longest_read, index.number_of_basepairs_in_longest_read());
 
@@ -1364,11 +1369,15 @@ TEST(TestCudamapperIndexGPU, GATT_4_1)
     expected_first_occurrence_of_representations.push_back(1);
 
     const read_id_t expected_number_of_reads                              = 1;
+    const read_id_t expected_smallest_read_id                             = 0;
+    const read_id_t expected_largest_read_id                              = 0;
     const position_in_read_t expected_number_of_basepairs_in_longest_read = 4;
 
     test_function(filename,
                   0,
                   1,
+                  expected_smallest_read_id,
+                  expected_largest_read_id,
                   minimizer_size,
                   window_size,
                   expected_representations,
@@ -1451,11 +1460,15 @@ TEST(TestCudamapperIndexGPU, GATT_2_3)
     expected_first_occurrence_of_representations.push_back(3);
 
     const read_id_t expected_number_of_reads                              = 1;
+    const read_id_t expected_smallest_read_id                             = 0;
+    const read_id_t expected_largest_read_id                              = 0;
     const position_in_read_t expected_number_of_basepairs_in_longest_read = 4;
 
     test_function(filename,
                   0,
                   1,
+                  expected_smallest_read_id,
+                  expected_largest_read_id,
                   minimizer_size,
                   window_size,
                   expected_representations,
@@ -1495,11 +1508,15 @@ TEST(TestCudamapperIndexGPU, CCCATACC_2_8)
     std::vector<std::uint32_t> expected_first_occurrence_of_representations;
 
     const read_id_t expected_number_of_reads                              = 0;
+    const read_id_t expected_smallest_read_id                             = 0;
+    const read_id_t expected_largest_read_id                              = 0;
     const position_in_read_t expected_number_of_basepairs_in_longest_read = 0;
 
     test_function(filename,
                   0,
                   1,
+                  expected_smallest_read_id,
+                  expected_largest_read_id,
                   minimizer_size,
                   window_size,
                   expected_representations,
@@ -1694,11 +1711,15 @@ TEST(TestCudamapperIndexGPU, CCCATACC_3_5)
     expected_first_occurrence_of_representations.push_back(5);
 
     const read_id_t expected_number_of_reads                              = 1;
+    const read_id_t expected_smallest_read_id                             = 0;
+    const read_id_t expected_largest_read_id                              = 0;
     const position_in_read_t expected_number_of_basepairs_in_longest_read = 8;
 
     test_function(filename,
                   0,
                   1,
+                  expected_smallest_read_id,
+                  expected_largest_read_id,
                   minimizer_size,
                   window_size,
                   expected_representations,
@@ -1833,11 +1854,15 @@ TEST(TestCudamapperIndexGPU, CATCAAG_AAGCTA_3_2)
     expected_first_occurrence_of_representations.push_back(7);
 
     const read_id_t expected_number_of_reads                              = 2;
+    const read_id_t expected_smallest_read_id                             = 0;
+    const read_id_t expected_largest_read_id                              = 1;
     const position_in_read_t expected_number_of_basepairs_in_longest_read = 7;
 
     test_function(filename,
                   0,
                   2,
+                  expected_smallest_read_id,
+                  expected_largest_read_id,
                   minimizer_size,
                   window_size,
                   expected_representations,
@@ -2004,11 +2029,15 @@ TEST(TestCudamapperIndexGPU, AAAACTGAA_GCCAAAG_2_3)
     expected_first_occurrence_of_representations.push_back(12);
 
     const read_id_t expected_number_of_reads                              = 2;
+    const read_id_t expected_smallest_read_id                             = 0;
+    const read_id_t expected_largest_read_id                              = 1;
     const position_in_read_t expected_number_of_basepairs_in_longest_read = 9;
 
     test_function(filename,
                   0,
                   2,
+                  expected_smallest_read_id,
+                  expected_largest_read_id,
                   minimizer_size,
                   window_size,
                   expected_representations,
@@ -2121,11 +2150,15 @@ TEST(TestCudamapperIndexGPU, AAAACTGAA_GCCAAAG_2_3_only_second_read_in_index)
     expected_first_occurrence_of_representations.push_back(6);
 
     const read_id_t expected_number_of_reads                              = 1;
+    const read_id_t expected_smallest_read_id                             = 1; // <- index is instructed to ignore first (0th) read
+    const read_id_t expected_largest_read_id                              = 1;
     const position_in_read_t expected_number_of_basepairs_in_longest_read = 7;
 
     test_function(filename,
                   1, // <- only take second read
                   2,
+                  expected_smallest_read_id,
+                  expected_largest_read_id,
                   minimizer_size,
                   window_size,
                   expected_representations,
@@ -2272,11 +2305,15 @@ TEST(TestCudamapperIndexGPU, AAAACTGAA_GCCAAAG_2_3_filtering)
     expected_first_occurrence_of_representations.push_back(6);
 
     const read_id_t expected_number_of_reads                              = 2;
+    const read_id_t expected_smallest_read_id                             = 0;
+    const read_id_t expected_largest_read_id                              = 1;
     const position_in_read_t expected_number_of_basepairs_in_longest_read = 9;
 
     test_function(filename,
                   0,
                   2,
+                  expected_smallest_read_id,
+                  expected_largest_read_id,
                   minimizer_size,
                   window_size,
                   expected_representations,
