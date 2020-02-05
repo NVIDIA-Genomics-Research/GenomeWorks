@@ -23,7 +23,7 @@ namespace claragenomics
 namespace io
 {
 
-FastaParserKseqpp::FastaParserKseqpp(const std::string &fasta_file)
+FastaParserKseqpp::FastaParserKseqpp(const std::string& fasta_file)
 {
     klibpp::KSeq record;
     klibpp::SeqStreamIn iss(fasta_file.data());

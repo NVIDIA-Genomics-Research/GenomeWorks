@@ -253,7 +253,7 @@ int main(int argc, char* argv[])
         {
 
             auto target_start_index = target_range.first;
-            auto target_end_index   = target_range.second -1;
+            auto target_end_index   = target_range.second - 1;
             {
                 CGA_NVTX_RANGE(profiler, "generate_target_index");
                 target_index = get_index(*target_parser, target_start_index, target_end_index, k, w, device_id, true, filtering_parameter);

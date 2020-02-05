@@ -20,12 +20,12 @@ namespace claragenomics
 namespace io
 {
 
-std::unique_ptr<FastaParser> create_hts_fasta_parser(const std::string &fasta_file)
+std::unique_ptr<FastaParser> create_hts_fasta_parser(const std::string& fasta_file)
 {
     return std::make_unique<FastaParserHTS>(fasta_file);
 }
 
-std::unique_ptr<FastaParser> create_kseq_fasta_parser(const std::string &fasta_file)
+std::unique_ptr<FastaParser> create_kseq_fasta_parser(const std::string& fasta_file)
 {
     return std::make_unique<FastaParserKseqpp>(FastaParserKseqpp(fasta_file));
 }
