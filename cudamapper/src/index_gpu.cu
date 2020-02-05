@@ -57,10 +57,8 @@ void find_first_occurrences_of_representations(std::shared_ptr<DeviceAllocator> 
     const std::uint64_t number_of_unique_representations = cudautils::get_value_from_device(representation_index_mask_d.end() - 1); // D2H copy
 
     first_occurrence_index_d.resize(number_of_unique_representations + 1); // <- +1 for the additional element
-    //if (first_occurrence_index_d.capacity() > first_occurrence_index_d.size())
     first_occurrence_index_d.shrink_to_fit();
     unique_representations_d.resize(number_of_unique_representations);
-    //if (unique_representations_d.capacity() > unique_representations_d.size())
     unique_representations_d.shrink_to_fit();
 
     find_first_occurrences_of_representations_kernel<<<number_of_blocks, number_of_threads>>>(representation_index_mask_d.data(),
@@ -71,7 +69,7 @@ void find_first_occurrences_of_representations(std::shared_ptr<DeviceAllocator> 
     // last element is the total number of elements in representations array
 
     std::uint32_t input_representations_size = input_representations_d.size();
-    cudautils::set_device_value(first_occurrence_index_d.end() - 1, &input_representations_size); // H2D copy
+    cudautils::set_device_value(first_occurrence_index_d.end() - 1, input_representations_size); // H2D copy
 }
 
 __global__ void find_first_occurrences_of_representations_kernel(const std::uint64_t* const representation_index_mask_d,

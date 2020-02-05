@@ -54,7 +54,6 @@ target_compile_options(overlapper_triggerred PRIVATE -Werror)
 
 add_doxygen_source_dir(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
-
 cuda_add_executable(cudamapper
         src/cudamapper.cpp
         src/main.cu

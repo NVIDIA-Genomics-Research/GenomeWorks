@@ -105,9 +105,9 @@ void set_device_value_async(Type* dst, const Type* src, cudaStream_t stream)
 }
 
 template <typename Type>
-void set_device_value(Type* dst, const Type* src)
+void set_device_value(Type* dst, const Type& src)
 {
-    CGA_CU_CHECK_ERR(cudaMemcpy(dst, src, sizeof(Type), cudaMemcpyDefault));
+    CGA_CU_CHECK_ERR(cudaMemcpy(dst, &src, sizeof(Type), cudaMemcpyDefault));
 }
 
 template <typename Type>

@@ -138,7 +138,7 @@ private:
     read_id_t number_of_reads_                              = 0;
     position_in_read_t number_of_basepairs_in_longest_read_ = 0;
 
-    std::shared_ptr<DeviceAllocator> _allocator;
+    std::shared_ptr<DeviceAllocator> allocator_;
 };
 
 namespace details
@@ -387,9 +387,9 @@ void filter_out_most_common_representations(std::shared_ptr<DeviceAllocator> all
     // 0  2  4  8 14 17 20 <- first_occurrence_of_representations_d (before filtering)
     // 2  2  4  6  3  3  0 <- number_of_sketch_elements_with_each_representation_d (with additional 0 at the end)
 
-    std::uint32_t zero = 0;
+    const std::uint32_t zero = 0;
     device_buffer<std::uint32_t> number_of_sketch_elements_with_each_representation_d(first_occurrence_of_representations_d.size(), allocator);
-    cudautils::set_device_value(number_of_sketch_elements_with_each_representation_d.end() - 1, &zero); // H2D
+    cudautils::set_device_value(number_of_sketch_elements_with_each_representation_d.end() - 1, zero); // H2D
 
     // thrust::adjacent_difference saves a[i]-a[i-1] to a[i]. As first_occurrence_of_representations_d starts with 0
     // we actually want to save a[i]-a[i-1] to a[i-j] and have the last (aditional) element of number_of_sketch_elements_with_each_representation_d set to 0
@@ -397,7 +397,7 @@ void filter_out_most_common_representations(std::shared_ptr<DeviceAllocator> all
                                 std::next(std::begin(first_occurrence_of_representations_d)),
                                 std::end(first_occurrence_of_representations_d),
                                 std::begin(number_of_sketch_elements_with_each_representation_d));
-    cudautils::set_device_value(number_of_sketch_elements_with_each_representation_d.end() - 1, &zero); // H2D
+    cudautils::set_device_value(number_of_sketch_elements_with_each_representation_d.end() - 1, zero); // H2D
 
     // *** find filtering threshold ***
     const std::size_t total_sketch_elements = representations_d.size();
@@ -540,7 +540,7 @@ IndexGPU<SketchElementImpl>::IndexGPU(std::shared_ptr<DeviceAllocator> allocator
     , window_size_(window_size)
     , number_of_reads_(0)
     , number_of_basepairs_in_longest_read_(0)
-    , _allocator(allocator)
+    , allocator_(allocator)
     , representations_d_(allocator)
     , read_ids_d_(allocator)
     , positions_in_reads_d_(allocator)
@@ -690,7 +690,7 @@ void IndexGPU<SketchElementImpl>::generate_index(const io::FastaParser& parser,
 
     // move basepairs to the device
     CGA_LOG_INFO("Allocating {} bytes for read_id_to_basepairs_section_d", read_id_to_basepairs_section_h.size() * sizeof(decltype(read_id_to_basepairs_section_h)::value_type));
-    device_buffer<decltype(read_id_to_basepairs_section_h)::value_type> read_id_to_basepairs_section_d(read_id_to_basepairs_section_h.size(), _allocator);
+    device_buffer<decltype(read_id_to_basepairs_section_h)::value_type> read_id_to_basepairs_section_d(read_id_to_basepairs_section_h.size(), allocator_);
 
     CGA_CU_CHECK_ERR(cudaMemcpy(read_id_to_basepairs_section_d.data(),
                                 read_id_to_basepairs_section_h.data(),
@@ -698,7 +698,7 @@ void IndexGPU<SketchElementImpl>::generate_index(const io::FastaParser& parser,
                                 cudaMemcpyHostToDevice));
 
     CGA_LOG_INFO("Allocating {} bytes for merged_basepairs_d", merged_basepairs_h.size() * sizeof(decltype(merged_basepairs_h)::value_type));
-    device_buffer<decltype(merged_basepairs_h)::value_type> merged_basepairs_d(merged_basepairs_h.size(), _allocator);
+    device_buffer<decltype(merged_basepairs_h)::value_type> merged_basepairs_d(merged_basepairs_h.size(), allocator_);
     CGA_CU_CHECK_ERR(cudaMemcpy(merged_basepairs_d.data(),
                                 merged_basepairs_h.data(),
                                 merged_basepairs_h.size() * sizeof(decltype(merged_basepairs_h)::value_type),
@@ -707,7 +707,8 @@ void IndexGPU<SketchElementImpl>::generate_index(const io::FastaParser& parser,
     merged_basepairs_h.shrink_to_fit();
 
     // sketch elements get generated here
-    auto sketch_elements                                                      = SketchElementImpl::generate_sketch_elements(_allocator, number_of_reads_,
+    auto sketch_elements = SketchElementImpl::generate_sketch_elements(allocator_,
+                                                                       number_of_reads_,
                                                                        kmer_size_,
                                                                        window_size_,
                                                                        first_read_id,
@@ -715,6 +716,7 @@ void IndexGPU<SketchElementImpl>::generate_index(const io::FastaParser& parser,
                                                                        read_id_to_basepairs_section_h,
                                                                        read_id_to_basepairs_section_d,
                                                                        hash_representations);
+
     device_buffer<representation_t> representations_d                         = std::move(sketch_elements.representations_d);
     device_buffer<typename SketchElementImpl::ReadidPositionDirection> rest_d = std::move(sketch_elements.rest_d);
 
@@ -732,7 +734,6 @@ void IndexGPU<SketchElementImpl>::generate_index(const io::FastaParser& parser,
 
     // copy the data to member functions (depending on the interface desing these copies might not be needed)
     representations_d_.resize(representations_d.size());
-    //if (representations_d_.capacity() > representations_d_.size())
     representations_d_.shrink_to_fit();
     thrust::copy(thrust::device,
                  representations_d.data(),
@@ -741,13 +742,10 @@ void IndexGPU<SketchElementImpl>::generate_index(const io::FastaParser& parser,
     representations_d.free();
 
     read_ids_d_.resize(representations_d_.size());
-    //if (read_ids_d_.capacity() > read_ids_d_.size())
     read_ids_d_.shrink_to_fit();
     positions_in_reads_d_.resize(representations_d_.size());
-    //if (positions_in_reads_d_.capacity() > positions_in_reads_d_.size())
     positions_in_reads_d_.shrink_to_fit();
     directions_of_reads_d_.resize(representations_d_.size());
-    //if (directions_of_reads_d_.capacity() > directions_of_reads_d_.size())
     directions_of_reads_d_.shrink_to_fit();
 
     const std::uint32_t threads = 256;
@@ -760,14 +758,14 @@ void IndexGPU<SketchElementImpl>::generate_index(const io::FastaParser& parser,
                                                                           representations_d_.size());
 
     // now generate the index elements
-    details::index_gpu::find_first_occurrences_of_representations(_allocator,
+    details::index_gpu::find_first_occurrences_of_representations(allocator_,
                                                                   unique_representations_d_,
                                                                   first_occurrence_of_representations_d_,
                                                                   representations_d_);
 
     if (filtering_parameter < 1.0)
     {
-        details::index_gpu::filter_out_most_common_representations(_allocator,
+        details::index_gpu::filter_out_most_common_representations(allocator_,
                                                                    filtering_parameter,
                                                                    representations_d_,
                                                                    read_ids_d_,

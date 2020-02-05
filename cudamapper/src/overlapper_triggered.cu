@@ -248,7 +248,6 @@ void OverlapperTriggered::get_overlaps(std::vector<Overlap>& fused_overlaps,
 
     // memcpy D2H
     auto n_chains = cudautils::get_value_from_device(d_nchains.data(), stream);
-    CGA_CU_CHECK_ERR(cudaStreamSynchronize(stream));
 
     // use prefix sum to calculate the starting index position of all the chains
     // >>>>>>>>>>>>
@@ -333,7 +332,6 @@ void OverlapperTriggered::get_overlaps(std::vector<Overlap>& fused_overlaps,
 
     // memcpyD2H
     auto n_fused_overlap = cudautils::get_value_from_device(d_nfused_overlaps.data(), stream);
-    CGA_CU_CHECK_ERR(cudaStreamSynchronize(stream));
 
     // construct overlap from the overlap args
     CreateOverlap fuse_op(d_anchors.data());
