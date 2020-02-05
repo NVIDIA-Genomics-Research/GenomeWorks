@@ -49,6 +49,9 @@ public:
 
     /// \brief returns a list of pairs of read_id values where each range has at most max_chunk_size characters
     /// if a single sequence exceeds max_chunk_size it will be placed in its own chunk.
+    ///
+    /// \param max_chunk_size the maximum size (in MB) of a chunk (range of indices)
+    /// \return  a pair of integers with the first and last read indices of the chunk
     virtual std::vector<std::pair<int, int>> get_read_chunks(int max_chunk_size = 1000000) const = 0;
 };
 
