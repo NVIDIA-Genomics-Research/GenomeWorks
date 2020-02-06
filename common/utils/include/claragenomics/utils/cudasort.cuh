@@ -70,6 +70,10 @@ void perform_radix_sort(thrust::device_vector<char>& temp_storage_vect_d,
     // allocate temp storage
     if (temp_storage_bytes > temp_storage_vect_d.size())
     {
+        // If directly calling resize new memory will be allocated before old is freed (beacause the data has to be copied from old to new memory)
+        // For very large arrays this can lead to OOM, so manually deallocating old before allocating new memory
+        temp_storage_vect_d.clear();
+        temp_storage_vect_d.shrink_to_fit();
         temp_storage_vect_d.resize(temp_storage_bytes);
     }
     temp_storage_d     = static_cast<void*>(temp_storage_vect_d.data().get());
@@ -133,6 +137,7 @@ void sort_by_two_keys(thrust::device_vector<MoreSignificantKeyT>& more_significa
 
     // CUB accepts the number of elements as int, check if array is longer than that
     // (this limitation can be avoided by some CUB trickery, but no need to do it here)
+
     if (values.size() > std::numeric_limits<int>::max())
     {
         throw std::length_error("cudasort: array too long to be sorted");
@@ -194,6 +199,10 @@ void sort_by_two_keys(thrust::device_vector<MoreSignificantKeyT>& more_significa
                                 int_floor_log2(max_value_of_more_significant_key) + 1);
 
     thrust::swap(move_to_index, move_to_index_sorted);
+
+    // deallocate helper array
+    move_to_index_sorted.clear();
+    move_to_index_sorted.shrink_to_fit();
 
     // *** move the values to their final position ***
     thrust::device_vector<ValueT> values_after_sort(number_of_elements);
