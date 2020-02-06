@@ -114,6 +114,10 @@ void compute_anchor_starting_indices(
 /// The anchor_starting_indices can be computed by compute_anchor_starting_indices and the size of the
 /// anchors array must match the last element of anchor_starting_indices.
 ///
+/// It also generates compound_key_read_ids and compound_key_positions_in_reads whose each element
+/// corresponds the achor with the same id. Compound keys are defined as query_x * max_target_x + target_x.
+/// For read_id local read_id is used, where local_read_id = real_read_id - smallest_read_id
+///
 /// For example:
 ///   (see also compute_anchor_starting_indices() )
 ///   anchor_starting_indices:
@@ -145,8 +149,18 @@ void compute_anchor_starting_indices(
 ///     23: (10,100,69,99), (10,100,70,110), ..., (10,100,72,132), (11,110,69,99), ..., ..., (12,120,72,132) --  12 elements in total
 ///     46: (18,180,78,198), ..., ..., (20,200,80,220) -- 9 elements in total
 ///
+///   compound_key_read_ids:
+///     12: (4-0)*22+(64-60), (4-0)*22+(64-60), ..., (4-0)*22+(66-60), (5-0)*22+(63-60), (5-0)*22+(64-60), ..., (5-0)*22+(66-60), ..., ..., (9-0)*22+(66-60)
+///     23: (10-0)*22+(69-60), (10-0)*22+(70-60), ..., (10-0)*22+(72-60), (11-0)*22+(69-60), ..., ..., (12-0)*22+(72-60)
+///     46: (18-0)*22+(78-60), ..., ..., (20-0)*22+(80-60)
+///   compound_key_positions_in_reads:
+///     12: 40*232+33, 40*232+44, ..., 40*232+66, 50*232+33, ..., 50*232+66, ..., ..., 90*232+66
+///     23: 100*232+99, 100*232+110, ..., 100*232+132, 110*232+99, ..., 120*232+132
+///     46: 180*232+198, ..., ..., 200*232+220
 ///
 /// \param anchors the array to be filled with anchors, the size of this array has to be equal to the last element of anchor_starting_indices
+/// \param compound_key_read_ids compound keys on output, does not have to be allocated on input
+/// \param compound_key_positions_in_reads compound keys on output, does not have to be allocated on input
 /// \param anchor_starting_indices_d the array of starting indices of the set of anchors for each unique representation of the query index (representations with no match in target will have the same starting index as the last matching representation)
 /// \param query_starting_index_of_each_representation_d the starting index of a representation in query_read_ids and query_positions_in_read
 /// \param found_target_indices_d the found matches in the array of unique target representation for each unique representation of query index
@@ -155,8 +169,14 @@ void compute_anchor_starting_indices(
 /// \param query_positions_in_read the array of positions of the (read id, position)-pairs in query index
 /// \param target_read_ids the array of read ids of the (read id, position)-pairs in target index
 /// \param target_positions_in_read the array of positions of the (read id, position)-pairs in target index
+/// \param smallest_query_read_id smallest read_id in query index
+/// \param smallest_target_read_id smallest read_id in target index
+/// \param number_of_target_reads number of read_ids in taget index
+/// \param max_basepairs_in_target_reads number of basepairs in longest read in target index
 void generate_anchors(
     thrust::device_vector<Anchor>& anchors,
+    thrust::device_vector<std::uint64_t>& compound_key_read_ids,
+    thrust::device_vector<std::uint64_t>& compound_key_positions_in_reads,
     const thrust::device_vector<std::int64_t>& anchor_starting_indices_d,
     const thrust::device_vector<std::uint32_t>& query_starting_index_of_each_representation_d,
     const thrust::device_vector<std::int64_t>& found_target_indices_d,
@@ -164,7 +184,11 @@ void generate_anchors(
     const thrust::device_vector<read_id_t>& query_read_ids,
     const thrust::device_vector<position_in_read_t>& query_positions_in_read,
     const thrust::device_vector<read_id_t>& target_read_ids,
-    const thrust::device_vector<position_in_read_t>& target_positions_in_read);
+    const thrust::device_vector<position_in_read_t>& target_positions_in_read,
+    const read_id_t smallest_query_read_id,
+    const read_id_t smallest_target_read_id,
+    const read_id_t number_of_target_reads,
+    const position_in_read_t max_basepairs_in_target_reads);
 
 /// \brief Performs a binary search on target_representations_d for each element of query_representations_d and stores the found index (or -1 iff not found) in found_target_indices.
 ///
@@ -197,7 +221,9 @@ __global__ void find_query_target_matches_kernel(
 ///
 /// see generate_anchors()
 ///
-/// \param anchors the array to be filled with anchors, the size of this array has to be equal to the last element of anchor_starting_indices
+/// \param anchors_d the array to be filled with anchors, the size of this array has to be equal to the last element of anchor_starting_indices
+/// \param compound_key_read_ids_d the array to be filled with compund keys, the size of this array has to be equal to the last element of anchor_starting_indices
+/// \param compound_key_positions_in_reads_d the array to be filled with compund keys, the size of this array has to be equal to the last element of anchor_starting_indices
 /// \param n_anchors the size of the anchors array
 /// \param anchor_starting_indices_d the array of starting indices of the set of anchors for each unique representation of the query index (representations with no match in target will have the same starting index as the last matching representation)
 /// \param query_starting_index_of_each_representation_d the starting index of a representation in query_read_ids and query_positions_in_read
@@ -208,8 +234,14 @@ __global__ void find_query_target_matches_kernel(
 /// \param query_positions_in_read the array of positions of the (read id, position)-pairs in query index
 /// \param target_read_ids the array of read ids of the (read id, position)-pairs in target index
 /// \param target_positions_in_read the array of positions of the (read id, position)-pairs in target index
+/// \param smallest_query_read_id smallest read_id in query index
+/// \param smallest_target_read_id smallest read_id in target index
+/// \param number_of_target_reads number of read_ids in taget index
+/// \param max_basepairs_in_target_reads number of basepairs in longest read in target index
 __global__ void generate_anchors_kernel(
     Anchor* const anchors_d,
+    std::uint64_t* const compound_key_read_ids_d,
+    std::uint64_t* const compound_key_positions_in_reads_d,
     const int64_t n_anchors,
     const int64_t* const anchor_starting_index_d,
     const std::uint32_t* const query_starting_index_of_each_representation_d,
@@ -219,7 +251,11 @@ __global__ void generate_anchors_kernel(
     const read_id_t* const query_read_ids,
     const position_in_read_t* const query_positions_in_read,
     const read_id_t* const target_read_ids,
-    const position_in_read_t* const target_positions_in_read);
+    const position_in_read_t* const target_positions_in_read,
+    const read_id_t smallest_query_read_id,
+    const read_id_t smallest_target_read_id,
+    const read_id_t number_of_target_reads,
+    const position_in_read_t max_basepairs_in_target_reads);
 } // namespace matcher_gpu
 
 } // namespace details
