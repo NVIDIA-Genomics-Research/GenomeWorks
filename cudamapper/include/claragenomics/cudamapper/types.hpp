@@ -79,21 +79,21 @@ typedef struct Overlap
     /// end position in the target
     position_in_read_t target_end_position_in_read_;
     /// query read name (e.g from FASTA)
-    char* query_read_name_;
+    char* query_read_name_ = 0;
     /// target read name (e.g from FASTA)
-    char* target_read_name_;
+    char* target_read_name_ = 0;
     /// Relative strand: Forward ("+") or Reverse("-")
     RelativeStrand relative_strand;
     /// Number of residues (e.g anchors) between the two reads
-    std::uint32_t num_residues_;
+    std::uint32_t num_residues_ = 0;
     /// Length of query sequence
-    std::uint32_t query_length_;
+    std::uint32_t query_length_ = 0;
     /// Length of target sequence
-    std::uint32_t target_length_;
+    std::uint32_t target_length_ = 0;
     /// Whether the overlap is considered valid by the generating overlapper
-    bool overlap_complete;
+    bool overlap_complete = false;
     /// CIGAR string for alignment of mapped section.
-    char* cigar_;
+    char* cigar_ = 0;
 } Overlap;
 
 } // namespace cudamapper

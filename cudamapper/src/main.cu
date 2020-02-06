@@ -107,7 +107,7 @@ int main(int argc, char* argv[])
 
     if (max_cached_memory <= 0)
     {
-        std::cerr << "-m / --max-cached-memory must be non-zero" << std::endl;
+        std::cerr << "-m / --max-cached-memory must be larger than zero" << std::endl;
         exit(1);
     }
 
