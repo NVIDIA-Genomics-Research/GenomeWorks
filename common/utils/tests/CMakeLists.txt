@@ -10,6 +10,8 @@
 
 set(TARGET_NAME cgautilstests)
 
+set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -lineinfo -Xcompiler -Wall,-Wno-pedantic -std=c++14")
+
 set(SOURCES
     main.cpp
     Test_UtilsCudasort.cu
