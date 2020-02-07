@@ -24,7 +24,8 @@ namespace cudamapper
 
 TEST(TestCudamapperOverlapperTriggerred, FuseTwoOverlaps)
 {
-    OverlapperTriggered overlapper;
+    std::shared_ptr<DeviceAllocator> allocator(new CudaMallocAllocator());
+    OverlapperTriggered overlapper(allocator);
 
     std::vector<Overlap> unfused_overlaps;
 
@@ -54,7 +55,8 @@ TEST(TestCudamapperOverlapperTriggerred, FuseTwoOverlaps)
 
 TEST(TestCudamapperOverlapperTriggerred, DoNotuseTwoOverlaps)
 {
-    OverlapperTriggered overlapper;
+    std::shared_ptr<DeviceAllocator> allocator(new CudaMallocAllocator());
+    OverlapperTriggered overlapper(allocator);
 
     std::vector<Overlap> unfused_overlaps;
 
@@ -84,7 +86,8 @@ TEST(TestCudamapperOverlapperTriggerred, DoNotuseTwoOverlaps)
 
 TEST(TestCudamapperOverlapperTriggerred, OneOverlap)
 {
-    OverlapperTriggered overlapper;
+    std::shared_ptr<DeviceAllocator> allocator(new CudaMallocAllocator());
+    OverlapperTriggered overlapper(allocator);
 
     std::vector<Overlap> unfused_overlaps;
 
@@ -105,7 +108,8 @@ TEST(TestCudamapperOverlapperTriggerred, OneOverlap)
 
 TEST(TestCudamapperOverlapperTriggerred, NoOverlaps)
 {
-    OverlapperTriggered overlapper;
+    std::shared_ptr<DeviceAllocator> allocator(new CudaMallocAllocator());
+    OverlapperTriggered overlapper(allocator);
 
     std::vector<Overlap> unfused_overlaps;
 
@@ -117,7 +121,8 @@ TEST(TestCudamapperOverlapperTriggerred, NoOverlaps)
 
 TEST(TestCudamapperOverlapperTriggerred, Fusee3Overlapsto2)
 {
-    OverlapperTriggered overlapper;
+    std::shared_ptr<DeviceAllocator> allocator(new CudaMallocAllocator());
+    OverlapperTriggered overlapper(allocator);
 
     std::vector<Overlap> unfused_overlaps;
 
@@ -157,12 +162,13 @@ TEST(TestCudamapperOverlapperTriggerred, Fusee3Overlapsto2)
 
 TEST(TestCudamapperOverlapperTriggerred, OneAchorNoOverlaps)
 {
-    OverlapperTriggered overlapper;
+    std::shared_ptr<DeviceAllocator> allocator(new CudaMallocAllocator());
+    OverlapperTriggered overlapper(allocator);
 
     std::vector<Overlap> unfused_overlaps;
-    thrust::device_vector<Anchor> anchors;
+    std::vector<Anchor> anchors;
 
-    MockIndex test_index;
+    MockIndex test_index(allocator);
     std::vector<std::string> testv;
     testv.push_back("READ0");
     testv.push_back("READ1");
@@ -176,22 +182,25 @@ TEST(TestCudamapperOverlapperTriggerred, OneAchorNoOverlaps)
     }
 
     Anchor anchor1;
-
     anchors.push_back(anchor1);
 
+    device_buffer<Anchor> anchors_d(anchors.size(), allocator);
+    cudautils::device_copy_n(anchors.data(), anchors.size(), anchors_d.data()); //H2D
+
     std::vector<Overlap> overlaps;
-    overlapper.get_overlaps(overlaps, anchors, test_index, test_index);
+    overlapper.get_overlaps(overlaps, anchors_d, test_index, test_index);
     ASSERT_EQ(overlaps.size(), 0u);
 }
 
 TEST(TestCudamapperOverlapperTriggerred, FourAnchorsOneOverlap)
 {
-    OverlapperTriggered overlapper;
+    std::shared_ptr<DeviceAllocator> allocator(new CudaMallocAllocator());
+    OverlapperTriggered overlapper(allocator);
 
     std::vector<Overlap> unfused_overlaps;
-    thrust::device_vector<Anchor> anchors;
+    std::vector<Anchor> anchors;
 
-    MockIndex test_index;
+    MockIndex test_index(allocator);
     std::vector<std::string> testv;
     testv.push_back("READ0");
     testv.push_back("READ1");
@@ -233,8 +242,11 @@ TEST(TestCudamapperOverlapperTriggerred, FourAnchorsOneOverlap)
     anchors.push_back(anchor3);
     anchors.push_back(anchor4);
 
+    device_buffer<Anchor> anchors_d(anchors.size(), allocator);
+    cudautils::device_copy_n(anchors.data(), anchors.size(), anchors_d.data()); //H2D
+
     std::vector<Overlap> overlaps;
-    overlapper.get_overlaps(overlaps, anchors, test_index, test_index);
+    overlapper.get_overlaps(overlaps, anchors_d, test_index, test_index);
     ASSERT_EQ(overlaps.size(), 1u);
     ASSERT_EQ(overlaps[0].query_read_id_, 1u);
     ASSERT_EQ(overlaps[0].target_read_id_, 2u);
@@ -246,12 +258,13 @@ TEST(TestCudamapperOverlapperTriggerred, FourAnchorsOneOverlap)
 
 TEST(TestCudamapperOverlapperTriggerred, FourAnchorsNoOverlap)
 {
-    OverlapperTriggered overlapper;
+    std::shared_ptr<DeviceAllocator> allocator(new CudaMallocAllocator());
+    OverlapperTriggered overlapper(allocator);
 
     std::vector<Overlap> unfused_overlaps;
-    thrust::device_vector<Anchor> anchors;
+    std::vector<Anchor> anchors;
 
-    MockIndex test_index;
+    MockIndex test_index(allocator);
     std::vector<std::string> testv;
     testv.push_back("READ0");
     testv.push_back("READ1");
@@ -293,19 +306,23 @@ TEST(TestCudamapperOverlapperTriggerred, FourAnchorsNoOverlap)
     anchors.push_back(anchor3);
     anchors.push_back(anchor4);
 
+    device_buffer<Anchor> anchors_d(anchors.size(), allocator);
+    cudautils::device_copy_n(anchors.data(), anchors.size(), anchors_d.data()); //H2D
+
     std::vector<Overlap> overlaps;
-    overlapper.get_overlaps(overlaps, anchors, test_index, test_index);
+    overlapper.get_overlaps(overlaps, anchors_d, test_index, test_index);
     ASSERT_EQ(overlaps.size(), 0u);
 }
 
 TEST(TestCudamapperOverlapperTriggerred, FourColinearAnchorsOneOverlap)
 {
-    OverlapperTriggered overlapper;
+    std::shared_ptr<DeviceAllocator> allocator(new CudaMallocAllocator());
+    OverlapperTriggered overlapper(allocator);
 
     std::vector<Overlap> unfused_overlaps;
-    thrust::device_vector<Anchor> anchors;
+    std::vector<Anchor> anchors;
 
-    MockIndex test_index;
+    MockIndex test_index(allocator);
     std::vector<std::string> testv;
     testv.push_back("READ0");
     testv.push_back("READ1");
@@ -347,19 +364,23 @@ TEST(TestCudamapperOverlapperTriggerred, FourColinearAnchorsOneOverlap)
     anchors.push_back(anchor3);
     anchors.push_back(anchor4);
 
+    device_buffer<Anchor> anchors_d(anchors.size(), allocator);
+    cudautils::device_copy_n(anchors.data(), anchors.size(), anchors_d.data()); //H2D
+
     std::vector<Overlap> overlaps;
-    overlapper.get_overlaps(overlaps, anchors, test_index, test_index);
+    overlapper.get_overlaps(overlaps, anchors_d, test_index, test_index);
     ASSERT_EQ(overlaps.size(), 0u);
 }
 
 TEST(TestCudamapperOverlapperTriggerred, FourAnchorsLastNotInOverlap)
 {
-    OverlapperTriggered overlapper;
+    std::shared_ptr<DeviceAllocator> allocator(new CudaMallocAllocator());
+    OverlapperTriggered overlapper(allocator);
 
     std::vector<Overlap> unfused_overlaps;
-    thrust::device_vector<Anchor> anchors;
+    std::vector<Anchor> anchors;
 
-    MockIndex test_index;
+    MockIndex test_index(allocator);
     std::vector<std::string> testv;
     testv.push_back("READ0");
     testv.push_back("READ1");
@@ -401,8 +422,11 @@ TEST(TestCudamapperOverlapperTriggerred, FourAnchorsLastNotInOverlap)
     anchors.push_back(anchor3);
     anchors.push_back(anchor4);
 
+    device_buffer<Anchor> anchors_d(anchors.size(), allocator);
+    cudautils::device_copy_n(anchors.data(), anchors.size(), anchors_d.data()); //H2D
+
     std::vector<Overlap> overlaps;
-    overlapper.get_overlaps(overlaps, anchors, test_index, test_index);
+    overlapper.get_overlaps(overlaps, anchors_d, test_index, test_index);
     ASSERT_EQ(overlaps.size(), 1u);
     ASSERT_EQ(overlaps[0].query_read_id_, 1u);
     ASSERT_EQ(overlaps[0].target_read_id_, 2u);
@@ -414,12 +438,13 @@ TEST(TestCudamapperOverlapperTriggerred, FourAnchorsLastNotInOverlap)
 
 TEST(TestCudamapperOverlapperTriggerred, ShuffledAnchors)
 {
-    OverlapperTriggered overlapper;
+    std::shared_ptr<DeviceAllocator> allocator(new CudaMallocAllocator());
+    OverlapperTriggered overlapper(allocator);
 
     std::vector<Overlap> unfused_overlaps;
-    thrust::device_vector<Anchor> anchors;
+    std::vector<Anchor> anchors;
 
-    MockIndex test_index;
+    MockIndex test_index(allocator);
     std::vector<std::string> testv;
     testv.push_back("READ0");
     testv.push_back("READ1");
@@ -470,13 +495,16 @@ TEST(TestCudamapperOverlapperTriggerred, ShuffledAnchors)
     anchors.push_back(anchor4);
     anchors.push_back(anchor5);
 
+    device_buffer<Anchor> anchors_d(anchors.size(), allocator);
+    cudautils::device_copy_n(anchors.data(), anchors.size(), anchors_d.data()); //H2D
+
     auto rng = std::default_random_engine{};
     rng.seed(2);
     //Shuffle the anchors 100 times and check that the generated overlaps are always the same.
     for (size_t i = 0; i < 100; i++)
     {
         std::vector<Overlap> overlaps;
-        overlapper.get_overlaps(overlaps, anchors, test_index, test_index);
+        overlapper.get_overlaps(overlaps, anchors_d, test_index, test_index);
         std::shuffle(std::begin(overlaps), std::end(overlaps), rng);
         ASSERT_EQ(overlaps.size(), 1u);
         ASSERT_EQ(overlaps[0].query_read_id_, 1u);
@@ -490,12 +518,13 @@ TEST(TestCudamapperOverlapperTriggerred, ShuffledAnchors)
 
 TEST(TestCudamapperOverlapperTriggerred, ReverseStrand)
 {
-    OverlapperTriggered overlapper;
+    std::shared_ptr<DeviceAllocator> allocator(new CudaMallocAllocator());
+    OverlapperTriggered overlapper(allocator);
 
     std::vector<Overlap> unfused_overlaps;
-    thrust::device_vector<Anchor> anchors;
+    std::vector<Anchor> anchors;
 
-    MockIndex test_index;
+    MockIndex test_index(allocator);
     std::vector<std::string> testv;
     testv.push_back("READ0");
     testv.push_back("READ1");
@@ -537,8 +566,11 @@ TEST(TestCudamapperOverlapperTriggerred, ReverseStrand)
     anchors.push_back(anchor3);
     anchors.push_back(anchor4);
 
+    device_buffer<Anchor> anchors_d(anchors.size(), allocator);
+    cudautils::device_copy_n(anchors.data(), anchors.size(), anchors_d.data()); //H2D
+
     std::vector<Overlap> overlaps;
-    overlapper.get_overlaps(overlaps, anchors, test_index, test_index);
+    overlapper.get_overlaps(overlaps, anchors_d, test_index, test_index);
     ASSERT_EQ(overlaps.size(), 1u);
     ASSERT_GT(overlaps[0].target_end_position_in_read_, overlaps[0].target_start_position_in_read_);
     ASSERT_EQ(overlaps[0].relative_strand, RelativeStrand::Reverse);

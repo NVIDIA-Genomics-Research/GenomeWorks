@@ -12,6 +12,9 @@
 
 #include "gmock/gmock.h"
 
+//#include <memory>
+#include <claragenomics/utils/cudautils.hpp>
+#include <claragenomics/utils/allocator.hpp>
 #include "../src/index_gpu.cuh"
 #include "../src/minimizer.hpp"
 #include "cudamapper_file_location.hpp"
@@ -24,8 +27,9 @@ namespace cudamapper
 class MockIndex : public IndexGPU<Minimizer>
 {
 public:
-    MockIndex()
-        : IndexGPU(*claragenomics::io::create_fasta_parser(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/gatt.fasta"),
+    MockIndex(std::shared_ptr<DeviceAllocator> allocator)
+        : IndexGPU(allocator,
+		   *claragenomics::io::create_fasta_parser(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/gatt.fasta"),
                    0,
                    0,
                    0,
