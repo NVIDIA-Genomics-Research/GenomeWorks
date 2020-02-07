@@ -17,6 +17,8 @@
 
 #include <claragenomics/cudamapper/matcher.hpp>
 #include <claragenomics/cudamapper/types.hpp>
+#include <claragenomics/utils/cudasort.cuh>
+#include <claragenomics/utils/cudautils.hpp>
 #include <claragenomics/utils/mathutils.hpp>
 #include <claragenomics/utils/signed_integer_utils.hpp>
 
@@ -288,18 +290,9 @@ __global__ void generate_anchors_kernel(
 ///     23: (10,100,69,99), (10,100,70,110), ..., (10,100,72,132), (11,110,69,99), ..., ..., (12,120,72,132) --  12 elements in total
 ///     46: (18,180,78,198), ..., ..., (20,200,80,220) -- 9 elements in total
 ///
-///   compound_key_read_ids:
-///     12: (4-0)*22+(64-60), (4-0)*22+(64-60), ..., (4-0)*22+(66-60), (5-0)*22+(63-60), (5-0)*22+(64-60), ..., (5-0)*22+(66-60), ..., ..., (9-0)*22+(66-60)
-///     23: (10-0)*22+(69-60), (10-0)*22+(70-60), ..., (10-0)*22+(72-60), (11-0)*22+(69-60), ..., ..., (12-0)*22+(72-60)
-///     46: (18-0)*22+(78-60), ..., ..., (20-0)*22+(80-60)
-///   compound_key_positions_in_reads:
-///     12: 40*232+33, 40*232+44, ..., 40*232+66, 50*232+33, ..., 50*232+66, ..., ..., 90*232+66
-///     23: 100*232+99, 100*232+110, ..., 100*232+132, 110*232+99, ..., 120*232+132
-///     46: 180*232+198, ..., ..., 200*232+220
+///    Anchors are sorted in the following order: query_read_id -> target_read_id -> query_position_in_read -> target_position_in_read
 ///
 /// \param anchors the array to be filled with anchors, the size of this array has to be equal to the last element of anchor_starting_indices
-/// \param compound_key_read_ids compound keys on output, does not have to be allocated on input
-/// \param compound_key_positions_in_reads compound keys on output, does not have to be allocated on input
 /// \param anchor_starting_indices_d the array of starting indices of the set of anchors for each unique representation of the query index (representations with no match in target will have the same starting index as the last matching representation)
 /// \param query_starting_index_of_each_representation_d the starting index of a representation in query_read_ids and query_positions_in_read
 /// \param found_target_indices_d the found matches in the array of unique target representation for each unique representation of query index
@@ -317,8 +310,6 @@ __global__ void generate_anchors_kernel(
 template <typename ReadsKeyT, typename PositionsKeyT>
 void generate_anchors(
     thrust::device_vector<Anchor>& anchors,
-    thrust::device_vector<ReadsKeyT>& compound_key_read_ids,
-    thrust::device_vector<PositionsKeyT>& compound_key_positions_in_reads,
     const thrust::device_vector<std::int64_t>& anchor_starting_indices_d,
     const thrust::device_vector<std::uint32_t>& query_starting_index_of_each_representation_d,
     const thrust::device_vector<std::int64_t>& found_target_indices_d,
@@ -340,29 +331,40 @@ void generate_anchors(
     assert(query_read_ids.size() == query_positions_in_read.size());
     assert(target_read_ids.size() == target_positions_in_read.size());
 
-    compound_key_read_ids.resize(anchors.size());
-    compound_key_positions_in_reads.resize(anchors.size());
+    thrust::device_vector<ReadsKeyT> compound_key_read_ids(anchors.size());
+    thrust::device_vector<PositionsKeyT> compound_key_positions_in_reads(anchors.size());
 
-    const int32_t n_threads = 256;
-    const int32_t n_blocks  = ceiling_divide<int64_t>(get_size(anchors), n_threads);
-    generate_anchors_kernel<<<n_blocks, n_threads>>>(
-        anchors.data().get(),
-        compound_key_read_ids.data().get(),
-        compound_key_positions_in_reads.data().get(),
-        get_size(anchors),
-        anchor_starting_indices_d.data().get(),
-        query_starting_index_of_each_representation_d.data().get(),
-        found_target_indices_d.data().get(),
-        get_size(found_target_indices_d),
-        target_starting_index_of_each_representation_d.data().get(),
-        query_read_ids.data().get(),
-        query_positions_in_read.data().get(),
-        target_read_ids.data().get(),
-        target_positions_in_read.data().get(),
-        smallest_query_read_id,
-        smallest_target_read_id,
-        number_of_target_reads,
-        max_basepairs_in_target_reads);
+    {
+        CGA_NVTX_RANGE(profile, "matcherGPU::generate_anchors_kernel");
+        const int32_t n_threads = 256;
+        const int32_t n_blocks  = ceiling_divide<int64_t>(get_size(anchors), n_threads);
+        generate_anchors_kernel<<<n_blocks, n_threads>>>(
+            anchors.data().get(),
+            compound_key_read_ids.data().get(),
+            compound_key_positions_in_reads.data().get(),
+            get_size(anchors),
+            anchor_starting_indices_d.data().get(),
+            query_starting_index_of_each_representation_d.data().get(),
+            found_target_indices_d.data().get(),
+            get_size(found_target_indices_d),
+            target_starting_index_of_each_representation_d.data().get(),
+            query_read_ids.data().get(),
+            query_positions_in_read.data().get(),
+            target_read_ids.data().get(),
+            target_positions_in_read.data().get(),
+            smallest_query_read_id,
+            smallest_target_read_id,
+            number_of_target_reads,
+            max_basepairs_in_target_reads);
+    }
+
+    {
+        CGA_NVTX_RANGE(profile, "matcherGPU::sort_anchors");
+        // sort anchors by query_read_id -> target_read_id -> query_position_in_read -> target_position_in_read
+        cudautils::sort_by_two_keys(compound_key_read_ids,
+                                    compound_key_positions_in_reads,
+                                    anchors);
+    }
 }
 
 /// \brief Performs a binary search on target_representations_d for each element of query_representations_d and stores the found index (or -1 iff not found) in found_target_indices.

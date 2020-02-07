@@ -38,7 +38,7 @@ target_compile_options(index_gpu PRIVATE -Werror)
 
 cuda_add_library(matcher_gpu
         src/matcher_gpu.cu)
-target_include_directories(matcher_gpu PUBLIC include)
+target_include_directories(matcher_gpu PUBLIC include ${CUB_DIR})
 target_link_libraries(matcher_gpu logging utils cgaio)
 target_compile_options(matcher_gpu PRIVATE -Werror)
 

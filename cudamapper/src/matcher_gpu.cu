@@ -15,8 +15,6 @@
 #include <thrust/execution_policy.h>
 #include <cassert>
 
-#include <claragenomics/utils/cudautils.hpp>
-
 namespace claragenomics
 {
 
@@ -59,26 +57,21 @@ MatcherGPU::MatcherGPU(const Index& query_index,
 
     anchors_d_.resize(n_anchors);
 
-    thrust::device_vector<std::uint64_t> compound_key_read_ids_d;
-    thrust::device_vector<std::uint64_t> compound_key_positions_in_reads_d;
-
     // Generate the anchors
     // by computing the all-to-all combinations of the matching representations in query and target
-    details::matcher_gpu::generate_anchors(anchors_d_,
-                                           compound_key_read_ids_d,
-                                           compound_key_positions_in_reads_d,
-                                           anchor_starting_indices_d,
-                                           query_index.first_occurrence_of_representations(),
-                                           found_target_indices_d,
-                                           target_index.first_occurrence_of_representations(),
-                                           query_index.read_ids(),
-                                           query_index.positions_in_reads(),
-                                           target_index.read_ids(),
-                                           target_index.positions_in_reads(),
-                                           query_index.smallest_read_id(),
-                                           target_index.smallest_read_id(),
-                                           target_index.number_of_reads(),
-                                           target_index.number_of_basepairs_in_longest_read());
+    details::matcher_gpu::generate_anchors<std::uint64_t, std::uint64_t>(anchors_d_,
+                                                                         anchor_starting_indices_d,
+                                                                         query_index.first_occurrence_of_representations(),
+                                                                         found_target_indices_d,
+                                                                         target_index.first_occurrence_of_representations(),
+                                                                         query_index.read_ids(),
+                                                                         query_index.positions_in_reads(),
+                                                                         target_index.read_ids(),
+                                                                         target_index.positions_in_reads(),
+                                                                         query_index.smallest_read_id(),
+                                                                         target_index.smallest_read_id(),
+                                                                         target_index.number_of_reads(),
+                                                                         target_index.number_of_basepairs_in_longest_read());
 }
 
 thrust::device_vector<Anchor>& MatcherGPU::anchors()

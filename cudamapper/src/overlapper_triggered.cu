@@ -10,7 +10,6 @@
 
 #include <cub/cub.cuh>
 #include <thrust/device_vector.h>
-#include <thrust/sort.h>
 #include <fstream>
 #include <cstdlib>
 
@@ -180,24 +179,6 @@ void OverlapperTriggered::get_overlaps(std::vector<Overlap>& fused_overlaps,
     CGA_NVTX_RANGE(profiler, "OverlapperTriggered::get_overlaps");
     const auto tail_length_for_chain = 3;
     auto n_anchors                   = d_anchors.size();
-
-    // comparison operator - lambda used to compare Anchors in sort
-    auto comp = [] __host__ __device__(const Anchor& i, const Anchor& j) -> bool {
-        return (i.query_read_id_ < j.query_read_id_) ||
-               ((i.query_read_id_ == j.query_read_id_) &&
-                (i.target_read_id_ < j.target_read_id_)) ||
-               ((i.query_read_id_ == j.query_read_id_) &&
-                (i.target_read_id_ == j.target_read_id_) &&
-                (i.query_position_in_read_ < j.query_position_in_read_)) ||
-               ((i.query_read_id_ == j.query_read_id_) &&
-                (i.target_read_id_ == j.target_read_id_) &&
-                (i.query_position_in_read_ == j.query_position_in_read_) &&
-                (i.target_position_in_read_ < j.target_position_in_read_));
-    };
-
-    // sort on device
-    // TODO : currently thrust::sort requires O(2N) auxiliary storage, implement the same functionality using O(N) auxiliary storage
-    thrust::sort(thrust::device, d_anchors.begin(), d_anchors.end(), comp);
 
     // temporary workspace buffer on device
     thrust::device_vector<char> d_temp_buf;

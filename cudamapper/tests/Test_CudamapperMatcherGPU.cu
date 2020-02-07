@@ -12,8 +12,10 @@
 
 #include "cudamapper_file_location.hpp"
 
-#include <thrust/host_vector.h>
+#include <algorithm>
+
 #include <thrust/device_vector.h>
+#include <thrust/host_vector.h>
 
 #include <claragenomics/utils/cudautils.hpp>
 #include <claragenomics/utils/signed_integer_utils.hpp>
@@ -71,6 +73,7 @@ TEST(TestCudamapperMatcherGPU, test_find_query_target_matches_small_example)
 
     test_find_query_target_matches(query_representations_h, target_representations_h, expected_found_target_indices_h);
 }
+
 TEST(TestCudamapperMatcherGPU, test_query_target_matches_large_example)
 {
     const std::int64_t total_query_representations = 1000000;
@@ -192,8 +195,6 @@ TEST(TestCudamapperMatcherGPU, test_compute_number_of_anchors_large_example)
 template <typename ReadsKeyT, typename PositionsKeyT>
 void test_generate_anchors(
     const thrust::host_vector<Anchor>& expected_anchors_h,
-    const thrust::host_vector<ReadsKeyT>& expected_compound_key_read_ids_h,
-    const thrust::host_vector<PositionsKeyT>& expected_compound_key_positions_in_reads_h,
     const thrust::host_vector<std::int64_t>& anchor_starting_indices_h,
     const thrust::host_vector<std::uint32_t>& query_starting_index_of_each_representation_h,
     const thrust::host_vector<std::int64_t>& found_target_indices_h,
@@ -207,9 +208,6 @@ void test_generate_anchors(
     const read_id_t number_of_target_reads,
     const position_in_read_t max_basepairs_in_target_reads)
 {
-    ASSERT_EQ(expected_compound_key_read_ids_h.size(), expected_anchors_h.size());
-    ASSERT_EQ(expected_compound_key_positions_in_reads_h.size(), expected_anchors_h.size());
-
     const thrust::device_vector<std::int64_t> anchor_starting_indices_d(anchor_starting_indices_h);
     const thrust::device_vector<std::uint32_t> query_starting_index_of_each_representation_d(query_starting_index_of_each_representation_h);
     const thrust::device_vector<std::int64_t> found_target_indices_d(found_target_indices_h);
@@ -220,31 +218,23 @@ void test_generate_anchors(
     const thrust::device_vector<position_in_read_t> target_positions_in_read_d(target_positions_in_read_h);
 
     thrust::device_vector<Anchor> anchors_d(anchor_starting_indices_h.back());
-    thrust::device_vector<ReadsKeyT> compound_key_read_ids_d;
-    thrust::device_vector<PositionsKeyT> compound_key_positions_in_reads_d;
 
-    details::matcher_gpu::generate_anchors(anchors_d,
-                                           compound_key_read_ids_d,
-                                           compound_key_positions_in_reads_d,
-                                           anchor_starting_indices_d,
-                                           query_starting_index_of_each_representation_d,
-                                           found_target_indices_d,
-                                           target_starting_index_of_each_representation_d,
-                                           query_read_ids_d,
-                                           query_positions_in_read_d,
-                                           target_read_ids_d,
-                                           target_positions_in_read_d,
-                                           smallest_query_read_id,
-                                           smallest_target_read_id,
-                                           number_of_target_reads,
-                                           max_basepairs_in_target_reads);
+    details::matcher_gpu::generate_anchors<ReadsKeyT, PositionsKeyT>(anchors_d,
+                                                                     anchor_starting_indices_d,
+                                                                     query_starting_index_of_each_representation_d,
+                                                                     found_target_indices_d,
+                                                                     target_starting_index_of_each_representation_d,
+                                                                     query_read_ids_d,
+                                                                     query_positions_in_read_d,
+                                                                     target_read_ids_d,
+                                                                     target_positions_in_read_d,
+                                                                     smallest_query_read_id,
+                                                                     smallest_target_read_id,
+                                                                     number_of_target_reads,
+                                                                     max_basepairs_in_target_reads);
 
     thrust::host_vector<Anchor> anchors_h(anchors_d);
-    thrust::host_vector<ReadsKeyT> compound_key_read_ids_h(compound_key_read_ids_d);
-    thrust::host_vector<PositionsKeyT> compound_key_positions_in_reads_h(compound_key_positions_in_reads_d);
     ASSERT_EQ(anchors_h.size(), expected_anchors_h.size());
-    ASSERT_EQ(compound_key_read_ids_d.size(), expected_compound_key_read_ids_h.size());
-    ASSERT_EQ(compound_key_positions_in_reads_d.size(), expected_compound_key_positions_in_reads_h.size());
 
     for (int64_t i = 0; i < get_size(anchors_h); ++i)
     {
@@ -252,12 +242,10 @@ void test_generate_anchors(
         EXPECT_EQ(anchors_h[i].query_position_in_read_, expected_anchors_h[i].query_position_in_read_) << " index: " << i;
         EXPECT_EQ(anchors_h[i].target_read_id_, expected_anchors_h[i].target_read_id_) << " index: " << i;
         EXPECT_EQ(anchors_h[i].target_position_in_read_, expected_anchors_h[i].target_position_in_read_) << " index: " << i;
-        EXPECT_EQ(compound_key_read_ids_h[i], expected_compound_key_read_ids_h[i]) << "index: " << i;
-        EXPECT_EQ(compound_key_positions_in_reads_h[i], expected_compound_key_positions_in_reads_h[i]) << "index: " << i;
     }
 }
 
-TEST(TestCudamapperMatcherGPU, test_generate_anchors_small_example)
+TEST(TestCudamapperMatcherGPU, test_generate_anchors_small_example_32_bit_positions)
 {
     thrust::host_vector<representation_t> query_starting_index_of_each_representation_h;
     query_starting_index_of_each_representation_h.push_back(0);  // query_section_0, 4 elements
@@ -292,9 +280,6 @@ TEST(TestCudamapperMatcherGPU, test_generate_anchors_small_example)
     anchor_starting_indices_h.push_back(36); // no pair for query_section_3
     anchor_starting_indices_h.push_back(45); // 9 anchors = 3 * 3
 
-    using ReadsKeyT     = std::uint32_t; // arbitrary type
-    using PositionsKeyT = std::uint64_t; // arbitrary type
-
     const read_id_t smallest_query_read_id                 = 500;
     const read_id_t smallest_target_read_id                = 10000;
     const read_id_t number_of_target_reads                 = 2000;
@@ -321,51 +306,270 @@ TEST(TestCudamapperMatcherGPU, test_generate_anchors_small_example)
     }
 
     thrust::host_vector<Anchor> expected_anchors(anchor_starting_indices_h.back());
-    thrust::host_vector<ReadsKeyT> expected_compound_key_read_ids(expected_anchors.size());
-    thrust::host_vector<PositionsKeyT> expected_compound_key_positions_in_reads(expected_anchors.size());
     for (int32_t i = 0; i < 6; ++i)
         for (int32_t j = 0; j < 4; ++j)
         {
             Anchor a;
-            a.query_read_id_                                    = smallest_query_read_id + 4 + i;
-            a.query_position_in_read_                           = 10 * (4 + i);
-            a.target_read_id_                                   = smallest_target_read_id + 100 * (j + 3);
-            a.target_position_in_read_                          = 1000 * (j + 3);
-            expected_anchors[i * 4 + j]                         = a;
-            expected_compound_key_read_ids[i * 4 + j]           = (a.query_read_id_ - smallest_query_read_id) * static_cast<ReadsKeyT>(number_of_target_reads) + (a.target_read_id_ - smallest_target_read_id);
-            expected_compound_key_positions_in_reads[i * 4 + j] = a.query_position_in_read_ * static_cast<PositionsKeyT>(max_basepairs_in_target_reads) + a.target_position_in_read_;
+            a.query_read_id_            = smallest_query_read_id + 4 + i;
+            a.query_position_in_read_   = 10 * (4 + i);
+            a.target_read_id_           = smallest_target_read_id + 100 * (j + 3);
+            a.target_position_in_read_  = 1000 * (j + 3);
+            expected_anchors[i * 4 + j] = a;
         }
 
     for (int32_t i = 0; i < 3; ++i)
         for (int32_t j = 0; j < 4; ++j)
         {
             Anchor a;
-            a.query_read_id_                                         = smallest_query_read_id + 10 + i;
-            a.query_position_in_read_                                = 10 * (10 + i);
-            a.target_read_id_                                        = smallest_target_read_id + 100 * (j + 9);
-            a.target_position_in_read_                               = 1000 * (j + 9);
-            expected_anchors[i * 4 + j + 24]                         = a;
-            expected_compound_key_read_ids[i * 4 + j + 24]           = (a.query_read_id_ - smallest_query_read_id) * static_cast<ReadsKeyT>(number_of_target_reads) + (a.target_read_id_ - smallest_target_read_id);
-            expected_compound_key_positions_in_reads[i * 4 + j + 24] = a.query_position_in_read_ * static_cast<PositionsKeyT>(max_basepairs_in_target_reads) + a.target_position_in_read_;
+            a.query_read_id_                 = smallest_query_read_id + 10 + i;
+            a.query_position_in_read_        = 10 * (10 + i);
+            a.target_read_id_                = smallest_target_read_id + 100 * (j + 9);
+            a.target_position_in_read_       = 1000 * (j + 9);
+            expected_anchors[i * 4 + j + 24] = a;
         }
 
     for (int32_t i = 0; i < 3; ++i)
         for (int32_t j = 0; j < 3; ++j)
         {
             Anchor a;
-            a.query_read_id_                                         = smallest_query_read_id + 18 + i;
-            a.query_position_in_read_                                = 10 * (18 + i);
-            a.target_read_id_                                        = smallest_target_read_id + 100 * (j + 18);
-            a.target_position_in_read_                               = 1000 * (j + 18);
-            expected_anchors[i * 3 + j + 36]                         = a;
-            expected_compound_key_read_ids[i * 3 + j + 36]           = (a.query_read_id_ - smallest_query_read_id) * static_cast<ReadsKeyT>(number_of_target_reads) + (a.target_read_id_ - smallest_target_read_id);
-            expected_compound_key_positions_in_reads[i * 3 + j + 36] = a.query_position_in_read_ * static_cast<PositionsKeyT>(max_basepairs_in_target_reads) + a.target_position_in_read_;
+            a.query_read_id_                 = smallest_query_read_id + 18 + i;
+            a.query_position_in_read_        = 10 * (18 + i);
+            a.target_read_id_                = smallest_target_read_id + 100 * (j + 18);
+            a.target_position_in_read_       = 1000 * (j + 18);
+            expected_anchors[i * 3 + j + 36] = a;
         }
 
-    test_generate_anchors(
+    std::sort(std::begin(expected_anchors),
+              std::end(expected_anchors),
+              [](const Anchor& i, const Anchor& j) -> bool {
+                  return (i.query_read_id_ < j.query_read_id_) ||
+                         ((i.query_read_id_ == j.query_read_id_) &&
+                          (i.target_read_id_ < j.target_read_id_)) ||
+                         ((i.query_read_id_ == j.query_read_id_) &&
+                          (i.target_read_id_ == j.target_read_id_) &&
+                          (i.query_position_in_read_ < j.query_position_in_read_)) ||
+                         ((i.query_read_id_ == j.query_read_id_) &&
+                          (i.target_read_id_ == j.target_read_id_) &&
+                          (i.query_position_in_read_ == j.query_position_in_read_) &&
+                          (i.target_position_in_read_ < j.target_position_in_read_));
+              });
+
+    using ReadsKeyT     = std::uint32_t;
+    using PositionsKeyT = std::uint32_t;
+
+    test_generate_anchors<ReadsKeyT, PositionsKeyT>(
         expected_anchors,
-        expected_compound_key_read_ids,
-        expected_compound_key_positions_in_reads,
+        anchor_starting_indices_h,
+        query_starting_index_of_each_representation_h,
+        found_target_indices_h,
+        target_starting_index_of_each_representation_h,
+        query_read_ids_h,
+        query_positions_in_read_h,
+        target_read_ids_h,
+        target_positions_in_read_h,
+        smallest_query_read_id,
+        smallest_target_read_id,
+        number_of_target_reads,
+        max_basepairs_in_target_reads);
+}
+
+TEST(TestCudamapperMatcherGPU, test_generate_anchors_small_example_64_bit_positions)
+{
+    thrust::host_vector<representation_t> query_starting_index_of_each_representation_h;
+    query_starting_index_of_each_representation_h.push_back(0);  // query_section_0, 4 elements
+    query_starting_index_of_each_representation_h.push_back(4);  // query_section_1, 6 elements, paired with target_section_1
+    query_starting_index_of_each_representation_h.push_back(10); // query_section_2, 3 elements, paired with target_section_3
+    query_starting_index_of_each_representation_h.push_back(13); // query_section_3, 5 elements
+    query_starting_index_of_each_representation_h.push_back(18); // query_section_4, 3 elements, paired with target_section_6
+    query_starting_index_of_each_representation_h.push_back(21); // past_the_last
+
+    thrust::host_vector<representation_t> target_starting_index_of_each_representation_h;
+    target_starting_index_of_each_representation_h.push_back(0);  // target_section_0, 3 elements
+    target_starting_index_of_each_representation_h.push_back(3);  // target_section_1, 4 elements, paired with query_section_1
+    target_starting_index_of_each_representation_h.push_back(7);  // target_section_2, 2 elements
+    target_starting_index_of_each_representation_h.push_back(9);  // target_section_3, 4 elements, paired with query_section_2
+    target_starting_index_of_each_representation_h.push_back(13); // target_section_4, 3 elements
+    target_starting_index_of_each_representation_h.push_back(16); // target_section_5, 2 elements
+    target_starting_index_of_each_representation_h.push_back(18); // target_section_6, 3 elements, paired with query_section_4
+    target_starting_index_of_each_representation_h.push_back(21); // past_the_last
+
+    // pairing of representation is deifned here
+    thrust::host_vector<int64_t> found_target_indices_h;
+    found_target_indices_h.push_back(-1);
+    found_target_indices_h.push_back(1);
+    found_target_indices_h.push_back(3);
+    found_target_indices_h.push_back(-1);
+    found_target_indices_h.push_back(6);
+
+    thrust::host_vector<int64_t> anchor_starting_indices_h;
+    anchor_starting_indices_h.push_back(0);  // no pair for query_section_0
+    anchor_starting_indices_h.push_back(24); // 24 anchors = 6 * 4
+    anchor_starting_indices_h.push_back(36); // 12 anchors = 3 * 4
+    anchor_starting_indices_h.push_back(36); // no pair for query_section_3
+    anchor_starting_indices_h.push_back(45); // 9 anchors = 3 * 3
+
+    thrust::host_vector<read_id_t> query_read_ids_h;
+    query_read_ids_h.push_back(5000); // query_section_0
+    query_read_ids_h.push_back(6000);
+    query_read_ids_h.push_back(7000);
+    query_read_ids_h.push_back(8000);
+    query_read_ids_h.push_back(2000); // query_section_1
+    query_read_ids_h.push_back(3000);
+    query_read_ids_h.push_back(4000);
+    query_read_ids_h.push_back(4000);
+    query_read_ids_h.push_back(5000);
+    query_read_ids_h.push_back(5000);
+    query_read_ids_h.push_back(1000); // query_section_2
+    query_read_ids_h.push_back(2000);
+    query_read_ids_h.push_back(8000);
+    query_read_ids_h.push_back(4000); // query_section_3
+    query_read_ids_h.push_back(5000);
+    query_read_ids_h.push_back(5000);
+    query_read_ids_h.push_back(5000);
+    query_read_ids_h.push_back(5000);
+    query_read_ids_h.push_back(4000); // query_section_4
+    query_read_ids_h.push_back(6000);
+    query_read_ids_h.push_back(7000);
+    thrust::host_vector<position_in_read_t> query_positions_in_read_h;
+    query_positions_in_read_h.push_back(100700); // query_section_0
+    query_positions_in_read_h.push_back(100800);
+    query_positions_in_read_h.push_back(100200);
+    query_positions_in_read_h.push_back(100400);
+    query_positions_in_read_h.push_back(100500); // query_section_1
+    query_positions_in_read_h.push_back(100400);
+    query_positions_in_read_h.push_back(100100);
+    query_positions_in_read_h.push_back(100300);
+    query_positions_in_read_h.push_back(100800);
+    query_positions_in_read_h.push_back(100900);
+    query_positions_in_read_h.push_back(100100); // query_section_2
+    query_positions_in_read_h.push_back(100200);
+    query_positions_in_read_h.push_back(100400);
+    query_positions_in_read_h.push_back(100500); // query_section_3
+    query_positions_in_read_h.push_back(100600);
+    query_positions_in_read_h.push_back(100700);
+    query_positions_in_read_h.push_back(100800);
+    query_positions_in_read_h.push_back(100900);
+    query_positions_in_read_h.push_back(100200); // query_section_4
+    query_positions_in_read_h.push_back(100400);
+    query_positions_in_read_h.push_back(100800);
+
+    thrust::host_vector<read_id_t> target_read_ids_h;
+    target_read_ids_h.push_back(7006); // target_section_0
+    target_read_ids_h.push_back(7008);
+    target_read_ids_h.push_back(7009);
+    target_read_ids_h.push_back(7001); // target_section_1
+    target_read_ids_h.push_back(7001);
+    target_read_ids_h.push_back(7005);
+    target_read_ids_h.push_back(7006);
+    target_read_ids_h.push_back(7008); // target_section_2
+    target_read_ids_h.push_back(7009);
+    target_read_ids_h.push_back(7004); // target_section_3
+    target_read_ids_h.push_back(7004);
+    target_read_ids_h.push_back(7004);
+    target_read_ids_h.push_back(7005);
+    target_read_ids_h.push_back(7002); // target_section_4
+    target_read_ids_h.push_back(7002);
+    target_read_ids_h.push_back(7008);
+    target_read_ids_h.push_back(7005); // target_section_5
+    target_read_ids_h.push_back(7006);
+    target_read_ids_h.push_back(7006); // target_section_6
+    target_read_ids_h.push_back(7006);
+    target_read_ids_h.push_back(7006);
+    thrust::host_vector<position_in_read_t> target_positions_in_read_h;
+    target_positions_in_read_h.push_back(2540000080); // target_section_0
+    target_positions_in_read_h.push_back(2540000090);
+    target_positions_in_read_h.push_back(2540000040);
+    target_positions_in_read_h.push_back(2540000020); // target_section_1
+    target_positions_in_read_h.push_back(2540000040);
+    target_positions_in_read_h.push_back(2540000050);
+    target_positions_in_read_h.push_back(2540000040);
+    target_positions_in_read_h.push_back(2540000030); // target_section_2
+    target_positions_in_read_h.push_back(2540000020);
+    target_positions_in_read_h.push_back(2540000020); // target_section_3
+    target_positions_in_read_h.push_back(2540000080);
+    target_positions_in_read_h.push_back(2540000060);
+    target_positions_in_read_h.push_back(2540000070);
+    target_positions_in_read_h.push_back(2540000080); // target_section_4
+    target_positions_in_read_h.push_back(2540000040);
+    target_positions_in_read_h.push_back(2540000010);
+    target_positions_in_read_h.push_back(2540000020); // target_section_5
+    target_positions_in_read_h.push_back(2540000050);
+    target_positions_in_read_h.push_back(2540000040); // target_section_6
+    target_positions_in_read_h.push_back(2540000050);
+    target_positions_in_read_h.push_back(2540000080);
+
+    const read_id_t smallest_query_read_id                 = 1000;
+    const read_id_t smallest_target_read_id                = 7001;
+    const read_id_t number_of_target_reads                 = 7009;
+    const position_in_read_t max_basepairs_in_target_reads = 2540000090;
+
+    // generate anchors
+
+    thrust::host_vector<Anchor> expected_anchors;
+
+    // query_section_1 * target_section_1
+    for (std::uint32_t query_idx = query_starting_index_of_each_representation_h[1]; query_idx < query_starting_index_of_each_representation_h[2]; ++query_idx)
+    {
+        for (std::uint32_t target_idx = target_starting_index_of_each_representation_h[1]; target_idx < target_starting_index_of_each_representation_h[2]; ++target_idx)
+        {
+            Anchor a;
+            a.query_read_id_           = query_read_ids_h[query_idx];
+            a.query_position_in_read_  = query_positions_in_read_h[query_idx];
+            a.target_read_id_          = target_read_ids_h[target_idx];
+            a.target_position_in_read_ = target_positions_in_read_h[target_idx];
+            expected_anchors.push_back(a);
+        }
+    }
+
+    // query_section_2 * target_section_3
+    for (std::uint32_t query_idx = query_starting_index_of_each_representation_h[2]; query_idx < query_starting_index_of_each_representation_h[3]; ++query_idx)
+    {
+        for (std::uint32_t target_idx = target_starting_index_of_each_representation_h[3]; target_idx < target_starting_index_of_each_representation_h[4]; ++target_idx)
+        {
+            Anchor a;
+            a.query_read_id_           = query_read_ids_h[query_idx];
+            a.query_position_in_read_  = query_positions_in_read_h[query_idx];
+            a.target_read_id_          = target_read_ids_h[target_idx];
+            a.target_position_in_read_ = target_positions_in_read_h[target_idx];
+            expected_anchors.push_back(a);
+        }
+    }
+
+    // query_section_4 * target_section_6
+    for (std::uint32_t query_idx = query_starting_index_of_each_representation_h[4]; query_idx < query_starting_index_of_each_representation_h[5]; ++query_idx)
+    {
+        for (std::uint32_t target_idx = target_starting_index_of_each_representation_h[6]; target_idx < target_starting_index_of_each_representation_h[7]; ++target_idx)
+        {
+            Anchor a;
+            a.query_read_id_           = query_read_ids_h[query_idx];
+            a.query_position_in_read_  = query_positions_in_read_h[query_idx];
+            a.target_read_id_          = target_read_ids_h[target_idx];
+            a.target_position_in_read_ = target_positions_in_read_h[target_idx];
+            expected_anchors.push_back(a);
+        }
+    }
+
+    // sort anchors
+    std::sort(std::begin(expected_anchors),
+              std::end(expected_anchors),
+              [](const Anchor& i, const Anchor& j) -> bool {
+                  return (i.query_read_id_ < j.query_read_id_) ||
+                         ((i.query_read_id_ == j.query_read_id_) &&
+                          (i.target_read_id_ < j.target_read_id_)) ||
+                         ((i.query_read_id_ == j.query_read_id_) &&
+                          (i.target_read_id_ == j.target_read_id_) &&
+                          (i.query_position_in_read_ < j.query_position_in_read_)) ||
+                         ((i.query_read_id_ == j.query_read_id_) &&
+                          (i.target_read_id_ == j.target_read_id_) &&
+                          (i.query_position_in_read_ == j.query_position_in_read_) &&
+                          (i.target_position_in_read_ < j.target_position_in_read_));
+              });
+
+    using ReadsKeyT     = std::uint32_t;
+    using PositionsKeyT = std::uint64_t;
+
+    test_generate_anchors<ReadsKeyT, PositionsKeyT>(
+        expected_anchors,
         anchor_starting_indices_h,
         query_starting_index_of_each_representation_h,
         found_target_indices_h,
