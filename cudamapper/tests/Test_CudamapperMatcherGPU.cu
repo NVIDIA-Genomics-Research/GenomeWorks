@@ -189,10 +189,11 @@ TEST(TestCudamapperMatcherGPU, test_compute_number_of_anchors_large_example)
                                    expected_anchor_starting_indices_h);
 }
 
+template <typename ReadsKeyT, typename PositionsKeyT>
 void test_generate_anchors(
     const thrust::host_vector<Anchor>& expected_anchors_h,
-    const thrust::host_vector<std::uint64_t>& expected_compound_key_read_ids_h,
-    const thrust::host_vector<std::uint64_t>& expected_compound_key_positions_in_reads_h,
+    const thrust::host_vector<ReadsKeyT>& expected_compound_key_read_ids_h,
+    const thrust::host_vector<PositionsKeyT>& expected_compound_key_positions_in_reads_h,
     const thrust::host_vector<std::int64_t>& anchor_starting_indices_h,
     const thrust::host_vector<std::uint32_t>& query_starting_index_of_each_representation_h,
     const thrust::host_vector<std::int64_t>& found_target_indices_h,
@@ -219,8 +220,8 @@ void test_generate_anchors(
     const thrust::device_vector<position_in_read_t> target_positions_in_read_d(target_positions_in_read_h);
 
     thrust::device_vector<Anchor> anchors_d(anchor_starting_indices_h.back());
-    thrust::device_vector<std::uint64_t> compound_key_read_ids_d;
-    thrust::device_vector<std::uint64_t> compound_key_positions_in_reads_d;
+    thrust::device_vector<ReadsKeyT> compound_key_read_ids_d;
+    thrust::device_vector<PositionsKeyT> compound_key_positions_in_reads_d;
 
     details::matcher_gpu::generate_anchors(anchors_d,
                                            compound_key_read_ids_d,
@@ -239,8 +240,8 @@ void test_generate_anchors(
                                            max_basepairs_in_target_reads);
 
     thrust::host_vector<Anchor> anchors_h(anchors_d);
-    thrust::host_vector<std::uint64_t> compound_key_read_ids_h(compound_key_read_ids_d);
-    thrust::host_vector<std::uint64_t> compound_key_positions_in_reads_h(compound_key_positions_in_reads_d);
+    thrust::host_vector<ReadsKeyT> compound_key_read_ids_h(compound_key_read_ids_d);
+    thrust::host_vector<PositionsKeyT> compound_key_positions_in_reads_h(compound_key_positions_in_reads_d);
     ASSERT_EQ(anchors_h.size(), expected_anchors_h.size());
     ASSERT_EQ(compound_key_read_ids_d.size(), expected_compound_key_read_ids_h.size());
     ASSERT_EQ(compound_key_positions_in_reads_d.size(), expected_compound_key_positions_in_reads_h.size());
@@ -291,6 +292,9 @@ TEST(TestCudamapperMatcherGPU, test_generate_anchors_small_example)
     anchor_starting_indices_h.push_back(36); // no pair for query_section_3
     anchor_starting_indices_h.push_back(45); // 9 anchors = 3 * 3
 
+    using ReadsKeyT     = std::uint32_t; // arbitrary type
+    using PositionsKeyT = std::uint64_t; // arbitrary type
+
     const read_id_t smallest_query_read_id                 = 500;
     const read_id_t smallest_target_read_id                = 10000;
     const read_id_t number_of_target_reads                 = 2000;
@@ -317,8 +321,8 @@ TEST(TestCudamapperMatcherGPU, test_generate_anchors_small_example)
     }
 
     thrust::host_vector<Anchor> expected_anchors(anchor_starting_indices_h.back());
-    thrust::host_vector<std::uint64_t> expected_compound_key_read_ids(expected_anchors.size());
-    thrust::host_vector<std::uint64_t> expected_compound_key_positions_in_reads(expected_anchors.size());
+    thrust::host_vector<ReadsKeyT> expected_compound_key_read_ids(expected_anchors.size());
+    thrust::host_vector<PositionsKeyT> expected_compound_key_positions_in_reads(expected_anchors.size());
     for (int32_t i = 0; i < 6; ++i)
         for (int32_t j = 0; j < 4; ++j)
         {
@@ -328,8 +332,8 @@ TEST(TestCudamapperMatcherGPU, test_generate_anchors_small_example)
             a.target_read_id_                                   = smallest_target_read_id + 100 * (j + 3);
             a.target_position_in_read_                          = 1000 * (j + 3);
             expected_anchors[i * 4 + j]                         = a;
-            expected_compound_key_read_ids[i * 4 + j]           = (a.query_read_id_ - smallest_query_read_id) * static_cast<std::uint64_t>(number_of_target_reads) + (a.target_read_id_ - smallest_target_read_id);
-            expected_compound_key_positions_in_reads[i * 4 + j] = a.query_position_in_read_ * static_cast<std::uint64_t>(max_basepairs_in_target_reads) + a.target_position_in_read_;
+            expected_compound_key_read_ids[i * 4 + j]           = (a.query_read_id_ - smallest_query_read_id) * static_cast<ReadsKeyT>(number_of_target_reads) + (a.target_read_id_ - smallest_target_read_id);
+            expected_compound_key_positions_in_reads[i * 4 + j] = a.query_position_in_read_ * static_cast<PositionsKeyT>(max_basepairs_in_target_reads) + a.target_position_in_read_;
         }
 
     for (int32_t i = 0; i < 3; ++i)
@@ -341,8 +345,8 @@ TEST(TestCudamapperMatcherGPU, test_generate_anchors_small_example)
             a.target_read_id_                                        = smallest_target_read_id + 100 * (j + 9);
             a.target_position_in_read_                               = 1000 * (j + 9);
             expected_anchors[i * 4 + j + 24]                         = a;
-            expected_compound_key_read_ids[i * 4 + j + 24]           = (a.query_read_id_ - smallest_query_read_id) * static_cast<std::uint64_t>(number_of_target_reads) + (a.target_read_id_ - smallest_target_read_id);
-            expected_compound_key_positions_in_reads[i * 4 + j + 24] = a.query_position_in_read_ * static_cast<std::uint64_t>(max_basepairs_in_target_reads) + a.target_position_in_read_;
+            expected_compound_key_read_ids[i * 4 + j + 24]           = (a.query_read_id_ - smallest_query_read_id) * static_cast<ReadsKeyT>(number_of_target_reads) + (a.target_read_id_ - smallest_target_read_id);
+            expected_compound_key_positions_in_reads[i * 4 + j + 24] = a.query_position_in_read_ * static_cast<PositionsKeyT>(max_basepairs_in_target_reads) + a.target_position_in_read_;
         }
 
     for (int32_t i = 0; i < 3; ++i)
@@ -354,8 +358,8 @@ TEST(TestCudamapperMatcherGPU, test_generate_anchors_small_example)
             a.target_read_id_                                        = smallest_target_read_id + 100 * (j + 18);
             a.target_position_in_read_                               = 1000 * (j + 18);
             expected_anchors[i * 3 + j + 36]                         = a;
-            expected_compound_key_read_ids[i * 3 + j + 36]           = (a.query_read_id_ - smallest_query_read_id) * static_cast<std::uint64_t>(number_of_target_reads) + (a.target_read_id_ - smallest_target_read_id);
-            expected_compound_key_positions_in_reads[i * 3 + j + 36] = a.query_position_in_read_ * static_cast<std::uint64_t>(max_basepairs_in_target_reads) + a.target_position_in_read_;
+            expected_compound_key_read_ids[i * 3 + j + 36]           = (a.query_read_id_ - smallest_query_read_id) * static_cast<ReadsKeyT>(number_of_target_reads) + (a.target_read_id_ - smallest_target_read_id);
+            expected_compound_key_positions_in_reads[i * 3 + j + 36] = a.query_position_in_read_ * static_cast<PositionsKeyT>(max_basepairs_in_target_reads) + a.target_position_in_read_;
         }
 
     test_generate_anchors(
