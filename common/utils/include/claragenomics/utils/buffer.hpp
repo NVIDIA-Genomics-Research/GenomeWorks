@@ -36,7 +36,7 @@ public:
         , _stream(stream)
         , _allocator(allocator)
     {
-        static_assert(std::is_trivial<value_type>::value, "buffer only supports trivial types and classes.");
+        static_assert(std::is_trivially_copyable<value_type>::value, "buffer only supports trivially copyable types and classes, because destructors will not be called.");
         assert(_size >= 0);
         if (_capacity > 0)
         {
@@ -49,7 +49,7 @@ public:
     explicit buffer(std::shared_ptr<Allocator> allocator, cudaStream_t stream = 0)
         : buffer(0, allocator, stream)
     {
-        static_assert(std::is_trivial<value_type>::value, "buffer only supports trivial types and classes.");
+        static_assert(std::is_trivially_copyable<value_type>::value, "buffer only supports trivially copyable types and classes, because destructors will not be called.");
     }
 
     // move constructor
