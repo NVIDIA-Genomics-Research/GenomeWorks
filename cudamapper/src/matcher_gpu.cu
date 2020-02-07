@@ -10,10 +10,12 @@
 
 #include "matcher_gpu.cuh"
 
+#include <cassert>
+#include <numeric>
+
 #include <thrust/scan.h>
 #include <thrust/transform_scan.h>
 #include <thrust/execution_policy.h>
-#include <cassert>
 
 namespace claragenomics
 {
@@ -153,36 +155,151 @@ void generate_anchors(
     std::uint64_t max_reads_compound_key     = number_of_query_reads * static_cast<std::uint64_t>(number_of_target_reads) + number_of_target_reads;
     std::uint64_t max_positions_compound_key = max_basepairs_in_query_reads * static_cast<std::uint64_t>(max_basepairs_in_target_reads) + max_basepairs_in_target_reads;
 
-    using ReadsKeyT     = std::uint64_t;
-    using PositionsKeyT = std::uint64_t;
+    // TODO: This solution with four separate calls depending on max key sizes ir rather messy.
+    //       Look for a solution similar to std::conditional, but which can be done at runtime.
+    //       Alternatively pack repreted calls into a tempatized function.
 
-    thrust::device_vector<ReadsKeyT> compound_key_read_ids;
-    thrust::device_vector<PositionsKeyT> compound_key_positions_in_reads;
+    bool reads_compound_key_32_bit     = max_reads_compound_key <= std::numeric_limits<std::uint32_t>::max();
+    bool positions_compound_key_32_bit = max_positions_compound_key <= std::numeric_limits<std::uint32_t>::max();
 
-    details::matcher_gpu::generate_partially_sorted_anchors<ReadsKeyT, PositionsKeyT>(anchors,
-                                                                                      compound_key_read_ids,
-                                                                                      compound_key_positions_in_reads,
-                                                                                      anchor_starting_indices_d,
-                                                                                      query_starting_index_of_each_representation_d,
-                                                                                      found_target_indices_d,
-                                                                                      target_starting_index_of_each_representation_d,
-                                                                                      query_read_ids,
-                                                                                      query_positions_in_read,
-                                                                                      target_read_ids,
-                                                                                      target_positions_in_read,
-                                                                                      smallest_query_read_id,
-                                                                                      smallest_target_read_id,
-                                                                                      number_of_target_reads,
-                                                                                      max_basepairs_in_target_reads);
-
+    if (reads_compound_key_32_bit)
     {
-        CGA_NVTX_RANGE(profile, "matcherGPU::sort_anchors");
-        // sort anchors by query_read_id -> target_read_id -> query_position_in_read -> target_position_in_read
-        cudautils::sort_by_two_keys(compound_key_read_ids,
-                                    compound_key_positions_in_reads,
-                                    anchors,
-                                    static_cast<ReadsKeyT>(max_reads_compound_key),
-                                    static_cast<PositionsKeyT>(max_positions_compound_key));
+        using ReadsKeyT = std::uint32_t;
+        if (positions_compound_key_32_bit)
+        {
+            using PositionsKeyT = std::uint32_t;
+
+            thrust::device_vector<ReadsKeyT> compound_key_read_ids;
+            thrust::device_vector<PositionsKeyT> compound_key_positions_in_reads;
+
+            details::matcher_gpu::generate_partially_sorted_anchors<ReadsKeyT, PositionsKeyT>(anchors,
+                                                                                              compound_key_read_ids,
+                                                                                              compound_key_positions_in_reads,
+                                                                                              anchor_starting_indices_d,
+                                                                                              query_starting_index_of_each_representation_d,
+                                                                                              found_target_indices_d,
+                                                                                              target_starting_index_of_each_representation_d,
+                                                                                              query_read_ids,
+                                                                                              query_positions_in_read,
+                                                                                              target_read_ids,
+                                                                                              target_positions_in_read,
+                                                                                              smallest_query_read_id,
+                                                                                              smallest_target_read_id,
+                                                                                              number_of_target_reads,
+                                                                                              max_basepairs_in_target_reads);
+
+            {
+                CGA_NVTX_RANGE(profile, "matcherGPU::sort_anchors");
+                // sort anchors by query_read_id -> target_read_id -> query_position_in_read -> target_position_in_read
+                cudautils::sort_by_two_keys(compound_key_read_ids,
+                                            compound_key_positions_in_reads,
+                                            anchors,
+                                            static_cast<ReadsKeyT>(max_reads_compound_key),
+                                            static_cast<PositionsKeyT>(max_positions_compound_key));
+            }
+        }
+        else
+        {
+            using PositionsKeyT = std::uint64_t;
+
+            thrust::device_vector<ReadsKeyT> compound_key_read_ids;
+            thrust::device_vector<PositionsKeyT> compound_key_positions_in_reads;
+
+            details::matcher_gpu::generate_partially_sorted_anchors<ReadsKeyT, PositionsKeyT>(anchors,
+                                                                                              compound_key_read_ids,
+                                                                                              compound_key_positions_in_reads,
+                                                                                              anchor_starting_indices_d,
+                                                                                              query_starting_index_of_each_representation_d,
+                                                                                              found_target_indices_d,
+                                                                                              target_starting_index_of_each_representation_d,
+                                                                                              query_read_ids,
+                                                                                              query_positions_in_read,
+                                                                                              target_read_ids,
+                                                                                              target_positions_in_read,
+                                                                                              smallest_query_read_id,
+                                                                                              smallest_target_read_id,
+                                                                                              number_of_target_reads,
+                                                                                              max_basepairs_in_target_reads);
+
+            {
+                CGA_NVTX_RANGE(profile, "matcherGPU::sort_anchors");
+                // sort anchors by query_read_id -> target_read_id -> query_position_in_read -> target_position_in_read
+                cudautils::sort_by_two_keys(compound_key_read_ids,
+                                            compound_key_positions_in_reads,
+                                            anchors,
+                                            static_cast<ReadsKeyT>(max_reads_compound_key),
+                                            static_cast<PositionsKeyT>(max_positions_compound_key));
+            }
+        }
+    }
+    else
+    {
+        using ReadsKeyT = std::uint64_t;
+        if (positions_compound_key_32_bit)
+        {
+            using PositionsKeyT = std::uint32_t;
+            thrust::device_vector<ReadsKeyT> compound_key_read_ids;
+            thrust::device_vector<PositionsKeyT> compound_key_positions_in_reads;
+
+            details::matcher_gpu::generate_partially_sorted_anchors<ReadsKeyT, PositionsKeyT>(anchors,
+                                                                                              compound_key_read_ids,
+                                                                                              compound_key_positions_in_reads,
+                                                                                              anchor_starting_indices_d,
+                                                                                              query_starting_index_of_each_representation_d,
+                                                                                              found_target_indices_d,
+                                                                                              target_starting_index_of_each_representation_d,
+                                                                                              query_read_ids,
+                                                                                              query_positions_in_read,
+                                                                                              target_read_ids,
+                                                                                              target_positions_in_read,
+                                                                                              smallest_query_read_id,
+                                                                                              smallest_target_read_id,
+                                                                                              number_of_target_reads,
+                                                                                              max_basepairs_in_target_reads);
+
+            {
+                CGA_NVTX_RANGE(profile, "matcherGPU::sort_anchors");
+                // sort anchors by query_read_id -> target_read_id -> query_position_in_read -> target_position_in_read
+                cudautils::sort_by_two_keys(compound_key_read_ids,
+                                            compound_key_positions_in_reads,
+                                            anchors,
+                                            static_cast<ReadsKeyT>(max_reads_compound_key),
+                                            static_cast<PositionsKeyT>(max_positions_compound_key));
+            }
+        }
+        else
+        {
+            using PositionsKeyT = std::uint64_t;
+
+            thrust::device_vector<ReadsKeyT> compound_key_read_ids;
+            thrust::device_vector<PositionsKeyT> compound_key_positions_in_reads;
+
+            details::matcher_gpu::generate_partially_sorted_anchors<ReadsKeyT, PositionsKeyT>(anchors,
+                                                                                              compound_key_read_ids,
+                                                                                              compound_key_positions_in_reads,
+                                                                                              anchor_starting_indices_d,
+                                                                                              query_starting_index_of_each_representation_d,
+                                                                                              found_target_indices_d,
+                                                                                              target_starting_index_of_each_representation_d,
+                                                                                              query_read_ids,
+                                                                                              query_positions_in_read,
+                                                                                              target_read_ids,
+                                                                                              target_positions_in_read,
+                                                                                              smallest_query_read_id,
+                                                                                              smallest_target_read_id,
+                                                                                              number_of_target_reads,
+                                                                                              max_basepairs_in_target_reads);
+
+            {
+                CGA_NVTX_RANGE(profile, "matcherGPU::sort_anchors");
+                // sort anchors by query_read_id -> target_read_id -> query_position_in_read -> target_position_in_read
+                cudautils::sort_by_two_keys(compound_key_read_ids,
+                                            compound_key_positions_in_reads,
+                                            anchors,
+                                            static_cast<ReadsKeyT>(max_reads_compound_key),
+                                            static_cast<PositionsKeyT>(max_positions_compound_key));
+            }
+        }
     }
 }
 
