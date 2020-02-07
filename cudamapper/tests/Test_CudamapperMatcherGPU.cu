@@ -204,7 +204,9 @@ void test_generate_anchors(
     const thrust::host_vector<position_in_read_t>& target_positions_in_read_h,
     const read_id_t smallest_query_read_id,
     const read_id_t smallest_target_read_id,
+    const read_id_t number_of_query_reads,
     const read_id_t number_of_target_reads,
+    const position_in_read_t max_basepairs_in_query_reads,
     const position_in_read_t max_basepairs_in_target_reads)
 {
     const thrust::device_vector<std::int64_t> anchor_starting_indices_d(anchor_starting_indices_h);
@@ -229,7 +231,9 @@ void test_generate_anchors(
                                            target_positions_in_read_d,
                                            smallest_query_read_id,
                                            smallest_target_read_id,
+                                           number_of_query_reads,
                                            number_of_target_reads,
+                                           max_basepairs_in_query_reads,
                                            max_basepairs_in_target_reads);
 
     thrust::host_vector<Anchor> anchors_h(anchors_d);
@@ -281,7 +285,9 @@ TEST(TestCudamapperMatcherGPU, test_generate_anchors_small_example_32_bit_positi
 
     const read_id_t smallest_query_read_id                 = 500;
     const read_id_t smallest_target_read_id                = 10000;
+    const read_id_t number_of_query_reads                  = 20;
     const read_id_t number_of_target_reads                 = 2000;
+    const position_in_read_t max_basepairs_in_query_reads  = 200;
     const position_in_read_t max_basepairs_in_target_reads = 20000;
 
     // query read_ids range from smallest_query_read_id to smallest_query_read_id + 20
@@ -365,7 +371,9 @@ TEST(TestCudamapperMatcherGPU, test_generate_anchors_small_example_32_bit_positi
         target_positions_in_read_h,
         smallest_query_read_id,
         smallest_target_read_id,
+        number_of_query_reads,
         number_of_target_reads,
+        max_basepairs_in_query_reads,
         max_basepairs_in_target_reads);
 }
 
@@ -496,7 +504,9 @@ TEST(TestCudamapperMatcherGPU, test_generate_anchors_small_example_64_bit_positi
 
     const read_id_t smallest_query_read_id                 = 1000;
     const read_id_t smallest_target_read_id                = 7001;
-    const read_id_t number_of_target_reads                 = 7009;
+    const read_id_t number_of_query_reads                  = 8000 - 1000;
+    const read_id_t number_of_target_reads                 = 7009 - 7001;
+    const position_in_read_t max_basepairs_in_query_reads  = 100900;
     const position_in_read_t max_basepairs_in_target_reads = 2540000090;
 
     // generate anchors
@@ -573,7 +583,9 @@ TEST(TestCudamapperMatcherGPU, test_generate_anchors_small_example_64_bit_positi
         target_positions_in_read_h,
         smallest_query_read_id,
         smallest_target_read_id,
+        number_of_query_reads,
         number_of_target_reads,
+        max_basepairs_in_query_reads,
         max_basepairs_in_target_reads);
 }
 

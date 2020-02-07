@@ -70,7 +70,9 @@ MatcherGPU::MatcherGPU(const Index& query_index,
                                            target_index.positions_in_reads(),
                                            query_index.smallest_read_id(),
                                            target_index.smallest_read_id(),
+                                           query_index.number_of_reads(),
                                            target_index.number_of_reads(),
+                                           query_index.number_of_basepairs_in_longest_read(),
                                            target_index.number_of_basepairs_in_longest_read());
 }
 
@@ -138,13 +140,18 @@ void generate_anchors(
     const thrust::device_vector<position_in_read_t>& target_positions_in_read,
     const read_id_t smallest_query_read_id,
     const read_id_t smallest_target_read_id,
+    const read_id_t number_of_query_reads,
     const read_id_t number_of_target_reads,
+    const position_in_read_t max_basepairs_in_query_reads,
     const position_in_read_t max_basepairs_in_target_reads)
 {
     assert(anchor_starting_indices_d.size() + 1 == query_starting_index_of_each_representation_d.size());
     assert(found_target_indices_d.size() + 1 == query_starting_index_of_each_representation_d.size());
     assert(query_read_ids.size() == query_positions_in_read.size());
     assert(target_read_ids.size() == target_positions_in_read.size());
+
+    std::uint64_t max_reads_compound_key     = number_of_query_reads * static_cast<std::uint64_t>(number_of_target_reads) + number_of_target_reads;
+    std::uint64_t max_positions_compound_key = max_basepairs_in_query_reads * static_cast<std::uint64_t>(max_basepairs_in_target_reads) + max_basepairs_in_target_reads;
 
     using ReadsKeyT     = std::uint64_t;
     using PositionsKeyT = std::uint64_t;
@@ -173,7 +180,9 @@ void generate_anchors(
         // sort anchors by query_read_id -> target_read_id -> query_position_in_read -> target_position_in_read
         cudautils::sort_by_two_keys(compound_key_read_ids,
                                     compound_key_positions_in_reads,
-                                    anchors);
+                                    anchors,
+                                    static_cast<ReadsKeyT>(max_reads_compound_key),
+                                    static_cast<PositionsKeyT>(max_positions_compound_key));
     }
 }
 

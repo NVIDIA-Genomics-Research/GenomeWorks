@@ -380,7 +380,9 @@ void generate_partially_sorted_anchors(
 /// \param target_positions_in_read the array of positions of the (read id, position)-pairs in target index
 /// \param smallest_query_read_id smallest read_id in query index
 /// \param smallest_target_read_id smallest read_id in target index
+/// \param number_of_query_reads number of read_ids in query index
 /// \param number_of_target_reads number of read_ids in taget index
+/// \param max_basepairs_in_query_reads number of basepairs in longest read in query index
 /// \param max_basepairs_in_target_reads number of basepairs in longest read in target index
 void generate_anchors(
     thrust::device_vector<Anchor>& anchors,
@@ -394,7 +396,9 @@ void generate_anchors(
     const thrust::device_vector<position_in_read_t>& target_positions_in_read,
     const read_id_t smallest_query_read_id,
     const read_id_t smallest_target_read_id,
+    const read_id_t number_of_query_reads,
     const read_id_t number_of_target_reads,
+    const position_in_read_t max_basepairs_in_query_reads,
     const position_in_read_t max_basepairs_in_target_reads);
 
 /// \brief Performs a binary search on target_representations_d for each element of query_representations_d and stores the found index (or -1 iff not found) in found_target_indices.
