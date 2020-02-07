@@ -247,6 +247,83 @@ __global__ void generate_anchors_kernel(
     compound_key_read_ids_d[anchor_idx]           = (a.query_read_id_ - smallest_query_read_id) * static_cast<ReadsKeyT>(number_of_target_reads) + (a.target_read_id_ - smallest_target_read_id);
     compound_key_positions_in_reads_d[anchor_idx] = a.query_position_in_read_ * static_cast<PositionsKeyT>(max_basepairs_in_target_reads) + a.target_position_in_read_;
 }
+/// \brief Generates anchors sorted by representation -> query_read_id -> query_position_in_read -> target_read_id -> target_position in read
+///
+/// Essentially does the same as generate_anchors(), but without the final sort which gives the final ordering
+/// of query_read_id -> target_read_id -> query_position_in_read -> target_position_in_read
+///
+/// See generate_anchors() for more details
+///
+/// \param anchors the array to be filled with anchors, the size of this array has to be equal to the last element of anchor_starting_indices
+/// \param compound_key_read_ids compound keys on output, does not have to be allocated on input
+/// \param compound_key_positions_in_reads compound keys on output, does not have to be allocated on input
+/// \param anchor_starting_indices_d the array of starting indices of the set of anchors for each unique representation of the query index (representations with no match in target will have the same starting index as the last matching representation)
+/// \param query_starting_index_of_each_representation_d the starting index of a representation in query_read_ids and query_positions_in_read
+/// \param found_target_indices_d the found matches in the array of unique target representation for each unique representation of query index
+/// \param target_starting_index_of_each_representation_d the starting index of a representation in target_read_ids and target_positions_in_read
+/// \param query_read_ids the array of read ids of the (read id, position)-pairs in query index
+/// \param query_positions_in_read the array of positions of the (read id, position)-pairs in query index
+/// \param target_read_ids the array of read ids of the (read id, position)-pairs in target index
+/// \param target_positions_in_read the array of positions of the (read id, position)-pairs in target index
+/// \param smallest_query_read_id smallest read_id in query index
+/// \param smallest_target_read_id smallest read_id in target index
+/// \param number_of_target_reads number of read_ids in taget index
+/// \param max_basepairs_in_target_reads number of basepairs in longest read in target index
+/// \tparam ReadsKeyT type of compound_key_read_ids, has to be integral
+/// \tparam PositionsKeyT type of compound_key_positions_in_reads, has to be integral
+template <typename ReadsKeyT, typename PositionsKeyT>
+void generate_partially_sorted_anchors(
+    thrust::device_vector<Anchor>& anchors,
+    thrust::device_vector<ReadsKeyT>& compound_key_read_ids,
+    thrust::device_vector<PositionsKeyT>& compound_key_positions_in_reads,
+    const thrust::device_vector<std::int64_t>& anchor_starting_indices_d,
+    const thrust::device_vector<std::uint32_t>& query_starting_index_of_each_representation_d,
+    const thrust::device_vector<std::int64_t>& found_target_indices_d,
+    const thrust::device_vector<std::uint32_t>& target_starting_index_of_each_representation_d,
+    const thrust::device_vector<read_id_t>& query_read_ids,
+    const thrust::device_vector<position_in_read_t>& query_positions_in_read,
+    const thrust::device_vector<read_id_t>& target_read_ids,
+    const thrust::device_vector<position_in_read_t>& target_positions_in_read,
+    const read_id_t smallest_query_read_id,
+    const read_id_t smallest_target_read_id,
+    const read_id_t number_of_target_reads,
+    const position_in_read_t max_basepairs_in_target_reads)
+{
+    static_assert(std::is_integral<ReadsKeyT>::value, "ReadsKeyT has to be integral");
+    static_assert(std::is_integral<PositionsKeyT>::value, "PositionsKeyT has to be integral");
+
+    assert(anchor_starting_indices_d.size() + 1 == query_starting_index_of_each_representation_d.size());
+    assert(found_target_indices_d.size() + 1 == query_starting_index_of_each_representation_d.size());
+    assert(query_read_ids.size() == query_positions_in_read.size());
+    assert(target_read_ids.size() == target_positions_in_read.size());
+
+    compound_key_read_ids.resize(anchors.size());
+    compound_key_positions_in_reads.resize(anchors.size());
+
+    {
+        CGA_NVTX_RANGE(profile, "matcherGPU::generate_anchors_kernel");
+        const int32_t n_threads = 256;
+        const int32_t n_blocks  = ceiling_divide<int64_t>(get_size(anchors), n_threads);
+        generate_anchors_kernel<<<n_blocks, n_threads>>>(
+            anchors.data().get(),
+            compound_key_read_ids.data().get(),
+            compound_key_positions_in_reads.data().get(),
+            get_size(anchors),
+            anchor_starting_indices_d.data().get(),
+            query_starting_index_of_each_representation_d.data().get(),
+            found_target_indices_d.data().get(),
+            get_size(found_target_indices_d),
+            target_starting_index_of_each_representation_d.data().get(),
+            query_read_ids.data().get(),
+            query_positions_in_read.data().get(),
+            target_read_ids.data().get(),
+            target_positions_in_read.data().get(),
+            smallest_query_read_id,
+            smallest_target_read_id,
+            number_of_target_reads,
+            max_basepairs_in_target_reads);
+    }
+}
 
 /// \brief Generates an array of anchors from matches of representations of the query and target index
 ///
@@ -305,9 +382,6 @@ __global__ void generate_anchors_kernel(
 /// \param smallest_target_read_id smallest read_id in target index
 /// \param number_of_target_reads number of read_ids in taget index
 /// \param max_basepairs_in_target_reads number of basepairs in longest read in target index
-/// \tparam ReadsKeyT type of compound_key_read_ids, has to be integral
-/// \tparam PositionsKeyT type of compound_key_positions_in_reads, has to be integral
-template <typename ReadsKeyT, typename PositionsKeyT>
 void generate_anchors(
     thrust::device_vector<Anchor>& anchors,
     const thrust::device_vector<std::int64_t>& anchor_starting_indices_d,
@@ -321,51 +395,7 @@ void generate_anchors(
     const read_id_t smallest_query_read_id,
     const read_id_t smallest_target_read_id,
     const read_id_t number_of_target_reads,
-    const position_in_read_t max_basepairs_in_target_reads)
-{
-    static_assert(std::is_integral<ReadsKeyT>::value, "ReadsKeyT has to be integral");
-    static_assert(std::is_integral<PositionsKeyT>::value, "PositionsKeyT has to be integral");
-
-    assert(anchor_starting_indices_d.size() + 1 == query_starting_index_of_each_representation_d.size());
-    assert(found_target_indices_d.size() + 1 == query_starting_index_of_each_representation_d.size());
-    assert(query_read_ids.size() == query_positions_in_read.size());
-    assert(target_read_ids.size() == target_positions_in_read.size());
-
-    thrust::device_vector<ReadsKeyT> compound_key_read_ids(anchors.size());
-    thrust::device_vector<PositionsKeyT> compound_key_positions_in_reads(anchors.size());
-
-    {
-        CGA_NVTX_RANGE(profile, "matcherGPU::generate_anchors_kernel");
-        const int32_t n_threads = 256;
-        const int32_t n_blocks  = ceiling_divide<int64_t>(get_size(anchors), n_threads);
-        generate_anchors_kernel<<<n_blocks, n_threads>>>(
-            anchors.data().get(),
-            compound_key_read_ids.data().get(),
-            compound_key_positions_in_reads.data().get(),
-            get_size(anchors),
-            anchor_starting_indices_d.data().get(),
-            query_starting_index_of_each_representation_d.data().get(),
-            found_target_indices_d.data().get(),
-            get_size(found_target_indices_d),
-            target_starting_index_of_each_representation_d.data().get(),
-            query_read_ids.data().get(),
-            query_positions_in_read.data().get(),
-            target_read_ids.data().get(),
-            target_positions_in_read.data().get(),
-            smallest_query_read_id,
-            smallest_target_read_id,
-            number_of_target_reads,
-            max_basepairs_in_target_reads);
-    }
-
-    {
-        CGA_NVTX_RANGE(profile, "matcherGPU::sort_anchors");
-        // sort anchors by query_read_id -> target_read_id -> query_position_in_read -> target_position_in_read
-        cudautils::sort_by_two_keys(compound_key_read_ids,
-                                    compound_key_positions_in_reads,
-                                    anchors);
-    }
-}
+    const position_in_read_t max_basepairs_in_target_reads);
 
 /// \brief Performs a binary search on target_representations_d for each element of query_representations_d and stores the found index (or -1 iff not found) in found_target_indices.
 ///

@@ -192,7 +192,6 @@ TEST(TestCudamapperMatcherGPU, test_compute_number_of_anchors_large_example)
                                    expected_anchor_starting_indices_h);
 }
 
-template <typename ReadsKeyT, typename PositionsKeyT>
 void test_generate_anchors(
     const thrust::host_vector<Anchor>& expected_anchors_h,
     const thrust::host_vector<std::int64_t>& anchor_starting_indices_h,
@@ -219,19 +218,19 @@ void test_generate_anchors(
 
     thrust::device_vector<Anchor> anchors_d(anchor_starting_indices_h.back());
 
-    details::matcher_gpu::generate_anchors<ReadsKeyT, PositionsKeyT>(anchors_d,
-                                                                     anchor_starting_indices_d,
-                                                                     query_starting_index_of_each_representation_d,
-                                                                     found_target_indices_d,
-                                                                     target_starting_index_of_each_representation_d,
-                                                                     query_read_ids_d,
-                                                                     query_positions_in_read_d,
-                                                                     target_read_ids_d,
-                                                                     target_positions_in_read_d,
-                                                                     smallest_query_read_id,
-                                                                     smallest_target_read_id,
-                                                                     number_of_target_reads,
-                                                                     max_basepairs_in_target_reads);
+    details::matcher_gpu::generate_anchors(anchors_d,
+                                           anchor_starting_indices_d,
+                                           query_starting_index_of_each_representation_d,
+                                           found_target_indices_d,
+                                           target_starting_index_of_each_representation_d,
+                                           query_read_ids_d,
+                                           query_positions_in_read_d,
+                                           target_read_ids_d,
+                                           target_positions_in_read_d,
+                                           smallest_query_read_id,
+                                           smallest_target_read_id,
+                                           number_of_target_reads,
+                                           max_basepairs_in_target_reads);
 
     thrust::host_vector<Anchor> anchors_h(anchors_d);
     ASSERT_EQ(anchors_h.size(), expected_anchors_h.size());
@@ -354,10 +353,7 @@ TEST(TestCudamapperMatcherGPU, test_generate_anchors_small_example_32_bit_positi
                           (i.target_position_in_read_ < j.target_position_in_read_));
               });
 
-    using ReadsKeyT     = std::uint32_t;
-    using PositionsKeyT = std::uint32_t;
-
-    test_generate_anchors<ReadsKeyT, PositionsKeyT>(
+    test_generate_anchors(
         expected_anchors,
         anchor_starting_indices_h,
         query_starting_index_of_each_representation_h,
@@ -565,10 +561,7 @@ TEST(TestCudamapperMatcherGPU, test_generate_anchors_small_example_64_bit_positi
                           (i.target_position_in_read_ < j.target_position_in_read_));
               });
 
-    using ReadsKeyT     = std::uint32_t;
-    using PositionsKeyT = std::uint64_t;
-
-    test_generate_anchors<ReadsKeyT, PositionsKeyT>(
+    test_generate_anchors(
         expected_anchors,
         anchor_starting_indices_h,
         query_starting_index_of_each_representation_h,

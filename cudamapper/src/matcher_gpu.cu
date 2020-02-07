@@ -59,19 +59,19 @@ MatcherGPU::MatcherGPU(const Index& query_index,
 
     // Generate the anchors
     // by computing the all-to-all combinations of the matching representations in query and target
-    details::matcher_gpu::generate_anchors<std::uint64_t, std::uint64_t>(anchors_d_,
-                                                                         anchor_starting_indices_d,
-                                                                         query_index.first_occurrence_of_representations(),
-                                                                         found_target_indices_d,
-                                                                         target_index.first_occurrence_of_representations(),
-                                                                         query_index.read_ids(),
-                                                                         query_index.positions_in_reads(),
-                                                                         target_index.read_ids(),
-                                                                         target_index.positions_in_reads(),
-                                                                         query_index.smallest_read_id(),
-                                                                         target_index.smallest_read_id(),
-                                                                         target_index.number_of_reads(),
-                                                                         target_index.number_of_basepairs_in_longest_read());
+    details::matcher_gpu::generate_anchors(anchors_d_,
+                                           anchor_starting_indices_d,
+                                           query_index.first_occurrence_of_representations(),
+                                           found_target_indices_d,
+                                           target_index.first_occurrence_of_representations(),
+                                           query_index.read_ids(),
+                                           query_index.positions_in_reads(),
+                                           target_index.read_ids(),
+                                           target_index.positions_in_reads(),
+                                           query_index.smallest_read_id(),
+                                           target_index.smallest_read_id(),
+                                           target_index.number_of_reads(),
+                                           target_index.number_of_basepairs_in_longest_read());
 }
 
 thrust::device_vector<Anchor>& MatcherGPU::anchors()
@@ -124,6 +124,57 @@ void compute_anchor_starting_indices(
             return n_queries_with_representation * n_targets_with_representation;
         },
         thrust::plus<std::int64_t>());
+}
+
+void generate_anchors(
+    thrust::device_vector<Anchor>& anchors,
+    const thrust::device_vector<std::int64_t>& anchor_starting_indices_d,
+    const thrust::device_vector<std::uint32_t>& query_starting_index_of_each_representation_d,
+    const thrust::device_vector<std::int64_t>& found_target_indices_d,
+    const thrust::device_vector<std::uint32_t>& target_starting_index_of_each_representation_d,
+    const thrust::device_vector<read_id_t>& query_read_ids,
+    const thrust::device_vector<position_in_read_t>& query_positions_in_read,
+    const thrust::device_vector<read_id_t>& target_read_ids,
+    const thrust::device_vector<position_in_read_t>& target_positions_in_read,
+    const read_id_t smallest_query_read_id,
+    const read_id_t smallest_target_read_id,
+    const read_id_t number_of_target_reads,
+    const position_in_read_t max_basepairs_in_target_reads)
+{
+    assert(anchor_starting_indices_d.size() + 1 == query_starting_index_of_each_representation_d.size());
+    assert(found_target_indices_d.size() + 1 == query_starting_index_of_each_representation_d.size());
+    assert(query_read_ids.size() == query_positions_in_read.size());
+    assert(target_read_ids.size() == target_positions_in_read.size());
+
+    using ReadsKeyT     = std::uint64_t;
+    using PositionsKeyT = std::uint64_t;
+
+    thrust::device_vector<ReadsKeyT> compound_key_read_ids;
+    thrust::device_vector<PositionsKeyT> compound_key_positions_in_reads;
+
+    details::matcher_gpu::generate_partially_sorted_anchors<ReadsKeyT, PositionsKeyT>(anchors,
+                                                                                      compound_key_read_ids,
+                                                                                      compound_key_positions_in_reads,
+                                                                                      anchor_starting_indices_d,
+                                                                                      query_starting_index_of_each_representation_d,
+                                                                                      found_target_indices_d,
+                                                                                      target_starting_index_of_each_representation_d,
+                                                                                      query_read_ids,
+                                                                                      query_positions_in_read,
+                                                                                      target_read_ids,
+                                                                                      target_positions_in_read,
+                                                                                      smallest_query_read_id,
+                                                                                      smallest_target_read_id,
+                                                                                      number_of_target_reads,
+                                                                                      max_basepairs_in_target_reads);
+
+    {
+        CGA_NVTX_RANGE(profile, "matcherGPU::sort_anchors");
+        // sort anchors by query_read_id -> target_read_id -> query_position_in_read -> target_position_in_read
+        cudautils::sort_by_two_keys(compound_key_read_ids,
+                                    compound_key_positions_in_reads,
+                                    anchors);
+    }
 }
 
 __global__ void find_query_target_matches_kernel(
