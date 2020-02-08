@@ -26,7 +26,7 @@ void test_function(const std::uint64_t number_of_reads_to_add,
                    const std::vector<Minimizer::ReadidPositionDirection>& expected_rest_h,
                    const bool hash_minimizers)
 {
-    std::shared_ptr<DeviceAllocator> allocator(new CudaMallocAllocator());
+    std::shared_ptr<DeviceAllocator> allocator = std::make_shared<CudaMallocAllocator>();
     device_buffer<char> merged_basepairs_d(merged_basepairs_h.size(), allocator);
     CGA_CU_CHECK_ERR(cudaMemcpy(merged_basepairs_d.data(),
                                 merged_basepairs_h.data(),

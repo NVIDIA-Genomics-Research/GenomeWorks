@@ -29,7 +29,7 @@ void test_find_query_target_matches(const thrust::host_vector<representation_t>&
                                     const thrust::host_vector<representation_t>& target_representations_h,
                                     const thrust::host_vector<std::int64_t>& expected_found_target_indices_h)
 {
-    std::shared_ptr<DeviceAllocator> allocator(new CudaMallocAllocator());
+    std::shared_ptr<DeviceAllocator> allocator = std::make_shared<CudaMallocAllocator>();
     device_buffer<representation_t> query_representations_d(query_representations_h.size(), allocator);
     cudautils::device_copy_n(query_representations_h.data(), query_representations_h.size(), query_representations_d.data()); // H2D
     device_buffer<representation_t> target_representations_d(target_representations_h.size(), allocator);
@@ -110,7 +110,7 @@ void test_compute_number_of_anchors(const thrust::host_vector<std::uint32_t>& qu
                                     const thrust::host_vector<std::uint32_t>& target_starting_index_of_each_representation_h,
                                     const thrust::host_vector<std::int64_t>& expected_anchor_starting_indices_h)
 {
-    std::shared_ptr<DeviceAllocator> allocator(new CudaMallocAllocator());
+    std::shared_ptr<DeviceAllocator> allocator = std::make_shared<CudaMallocAllocator>();
     device_buffer<std::uint32_t> query_starting_index_of_each_representation_d(query_starting_index_of_each_representation_h.size(), allocator);
     cudautils::device_copy_n(query_starting_index_of_each_representation_h.data(), query_starting_index_of_each_representation_h.size(), query_starting_index_of_each_representation_d.data()); //H2D
     device_buffer<std::uint32_t> target_starting_index_of_each_representation_d(target_starting_index_of_each_representation_h.size(), allocator);
@@ -209,7 +209,7 @@ void test_generate_anchors(
     const thrust::host_vector<read_id_t>& target_read_ids_h,
     const thrust::host_vector<position_in_read_t>& target_positions_in_read_h)
 {
-    std::shared_ptr<DeviceAllocator> allocator(new CudaMallocAllocator());
+    std::shared_ptr<DeviceAllocator> allocator = std::make_shared<CudaMallocAllocator>();
     device_buffer<std::int64_t> anchor_starting_indices_d(anchor_starting_indices_h.size(), allocator);
     cudautils::device_copy_n(anchor_starting_indices_h.data(), anchor_starting_indices_h.size(), anchor_starting_indices_d.data()); // H2D
     device_buffer<std::uint32_t> query_starting_index_of_each_representation_d(query_starting_index_of_each_representation_h.size(), allocator);
@@ -347,10 +347,10 @@ TEST(TestCudamapperMatcherGPU, test_generate_anchors_small_example)
 
 TEST(TestCudamapperMatcherGPU, OneReadOneMinimizer)
 {
-    std::shared_ptr<DeviceAllocator> allocator(new CudaMallocAllocator());
-    std::unique_ptr<io::FastaParser> parser = io::create_fasta_parser(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/gatt.fasta");
-    std::unique_ptr<Index> query_index      = Index::create_index(allocator, *parser, 0, parser->get_num_seqences(), 4, 1);
-    std::unique_ptr<Index> target_index     = Index::create_index(allocator, *parser, 0, parser->get_num_seqences(), 4, 1);
+    std::shared_ptr<DeviceAllocator> allocator = std::make_shared<CudaMallocAllocator>();
+    std::unique_ptr<io::FastaParser> parser    = io::create_fasta_parser(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/gatt.fasta");
+    std::unique_ptr<Index> query_index         = Index::create_index(allocator, *parser, 0, parser->get_num_seqences(), 4, 1);
+    std::unique_ptr<Index> target_index        = Index::create_index(allocator, *parser, 0, parser->get_num_seqences(), 4, 1);
     MatcherGPU matcher(allocator, *query_index, *target_index);
 
     thrust::host_vector<Anchor> anchors(matcher.anchors().size());
@@ -360,10 +360,10 @@ TEST(TestCudamapperMatcherGPU, OneReadOneMinimizer)
 
 TEST(TestCudamapperMatcherGPU, AtLeastOneIndexEmpty)
 {
-    std::shared_ptr<DeviceAllocator> allocator(new CudaMallocAllocator());
-    std::unique_ptr<io::FastaParser> parser = io::create_fasta_parser(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/gatt.fasta");
-    std::unique_ptr<Index> index_full       = Index::create_index(allocator, *parser, 0, parser->get_num_seqences(), 4, 1);
-    std::unique_ptr<Index> index_empty      = Index::create_index(allocator, *parser, 0, parser->get_num_seqences(), 5, 1); // kmer longer than read
+    std::shared_ptr<DeviceAllocator> allocator = std::make_shared<CudaMallocAllocator>();
+    std::unique_ptr<io::FastaParser> parser    = io::create_fasta_parser(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/gatt.fasta");
+    std::unique_ptr<Index> index_full          = Index::create_index(allocator, *parser, 0, parser->get_num_seqences(), 4, 1);
+    std::unique_ptr<Index> index_empty         = Index::create_index(allocator, *parser, 0, parser->get_num_seqences(), 5, 1); // kmer longer than read
 
     {
         MatcherGPU matcher(allocator, *index_full, *index_empty);
