@@ -84,6 +84,7 @@ public:
     }
 
     /// \brief generates a mapping of (k,w)-kmer-representation to all of its occurrences for one or more sequences
+    /// \param allocator The device memory allocator to use for temporary buffer allocations
     /// \param parser parser for the whole input file (part that goes into this index is determined by first_read_id and past_the_last_read_id)
     /// \param first_read_id read_id of the first read to the included in this index
     /// \param past_the_last_read_id read_id+1 of the last read to be included in this index

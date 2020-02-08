@@ -35,6 +35,7 @@ public:
     virtual device_buffer<Anchor>& anchors() = 0;
 
     /// \brief Creates a Matcher object
+    /// \param allocator The device memory allocator to use for buffer allocations
     /// \param query_index
     /// \param target_index
     /// \return matcher

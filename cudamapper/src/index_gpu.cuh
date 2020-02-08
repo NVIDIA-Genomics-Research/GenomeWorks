@@ -515,12 +515,12 @@ void filter_out_most_common_representations(std::shared_ptr<DeviceAllocator> all
                                                                                          directions_of_representations_after_compression_d.data());
 
     // *** swap vectors with the input arrays ***
-    std::swap(unique_representations_d, unique_representations_after_compression_d);
-    std::swap(first_occurrence_of_representations_d, first_occurrence_of_representations_after_compression_d);
-    std::swap(representations_d, representations_after_compression_d);
-    std::swap(read_ids_d, read_ids_after_compression_d);
-    std::swap(positions_in_reads_d, positions_in_reads_after_compression_d);
-    std::swap(directions_of_representations_d, directions_of_representations_after_compression_d);
+    swap(unique_representations_d, unique_representations_after_compression_d);
+    swap(first_occurrence_of_representations_d, first_occurrence_of_representations_after_compression_d);
+    swap(representations_d, representations_after_compression_d);
+    swap(read_ids_d, read_ids_after_compression_d);
+    swap(positions_in_reads_d, positions_in_reads_after_compression_d);
+    swap(directions_of_representations_d, directions_of_representations_after_compression_d);
 }
 
 } // namespace index_gpu
