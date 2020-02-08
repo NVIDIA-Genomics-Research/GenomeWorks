@@ -20,9 +20,19 @@ namespace claragenomics
 class DeviceAllocator
 {
 public:
+    /// @brief Asynchronously allocates device memory.
+    ////       An implementation of this need to return a allocation of n bytes properly aligned
+    ///        on the configured device.
+    /// @param n      number of bytes to allocate
+    /// @param stream CUDA stream to be associated with this method.
+    /// @returns a pointer to a n byte properly aligned device buffer on the configured device.
     virtual void* allocate(std::size_t n, cudaStream_t stream) = 0;
 
-    virtual void deallocate(void* p, std::size_t, cudaStream_t stream) = 0;
+    /// @brief Asynchronously deallocates device memory.
+    /// @param p      pointer to the buffer to deallocate
+    /// @param n      size of the buffer to deallocate in bytes
+    /// @param stream CUDA stream to be associated with this method.
+    virtual void deallocate(void* p, std::size_t n, cudaStream_t stream) = 0;
 };
 
 /**
@@ -31,9 +41,19 @@ public:
 class HostAllocator
 {
 public:
+    /// @brief Asynchronously allocates host memory.
+    ////       An implementation of this need to return a allocation of n bytes properly aligned
+    ///        on the host.
+    /// @param n       number of bytes to allocate
+    /// @param stream  CUDA stream to be associated with this method.
+    /// @returns a pointer to a n byte properly aligned host buffer.
     virtual void* allocate(std::size_t n, cudaStream_t stream) = 0;
 
-    virtual void deallocate(void* p, std::size_t, cudaStream_t strean) = 0;
+    /// @brief Asynchronously deallocates host memory.
+    /// @param p      pointer to the buffer to deallocate
+    /// @param n      size of the buffer to deallocate in bytes
+    /// @param stream CUDA stream to be associated with this method.
+    virtual void deallocate(void* p, std::size_t n, cudaStream_t stream) = 0;
 };
 
 /**
@@ -64,6 +84,8 @@ public:
 class CachingDeviceAllocator : public DeviceAllocator
 {
 public:
+    /// @brief This constructor intializes and constructs cub's CachingDeviceAllocator
+    /// @param max_cached_bytes Maximum aggregate cached bytes per device (default is 1GB)
     CachingDeviceAllocator(size_t max_cached_bytes = 1e9)
         : _allocator(2, 10, cub::CachingDeviceAllocator::INVALID_BIN, max_cached_bytes, false, false)
     {
