@@ -220,21 +220,21 @@ void test_generate_anchors(
 
     thrust::device_vector<Anchor> anchors_d(anchor_starting_indices_h.back());
 
-    details::matcher_gpu::generate_anchors(anchors_d,
-                                           anchor_starting_indices_d,
-                                           query_starting_index_of_each_representation_d,
-                                           found_target_indices_d,
-                                           target_starting_index_of_each_representation_d,
-                                           query_read_ids_d,
-                                           query_positions_in_read_d,
-                                           target_read_ids_d,
-                                           target_positions_in_read_d,
-                                           smallest_query_read_id,
-                                           smallest_target_read_id,
-                                           number_of_query_reads,
-                                           number_of_target_reads,
-                                           max_basepairs_in_query_reads,
-                                           max_basepairs_in_target_reads);
+    details::matcher_gpu::generate_anchors_dispatcher(anchors_d,
+                                                      anchor_starting_indices_d,
+                                                      query_starting_index_of_each_representation_d,
+                                                      found_target_indices_d,
+                                                      target_starting_index_of_each_representation_d,
+                                                      query_read_ids_d,
+                                                      query_positions_in_read_d,
+                                                      target_read_ids_d,
+                                                      target_positions_in_read_d,
+                                                      smallest_query_read_id,
+                                                      smallest_target_read_id,
+                                                      number_of_query_reads,
+                                                      number_of_target_reads,
+                                                      max_basepairs_in_query_reads,
+                                                      max_basepairs_in_target_reads);
 
     thrust::host_vector<Anchor> anchors_h(anchors_d);
     ASSERT_EQ(anchors_h.size(), expected_anchors_h.size());
