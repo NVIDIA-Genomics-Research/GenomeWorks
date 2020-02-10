@@ -14,8 +14,7 @@
 #include <vector>
 #include <claragenomics/cudamapper/sketch_element.hpp>
 #include <claragenomics/cudamapper/types.hpp>
-
-#include <claragenomics/utils/device_buffer.cuh>
+#include <claragenomics/utils/device_buffer.hpp>
 
 namespace claragenomics
 {
@@ -81,7 +80,7 @@ public:
     /// \param read_id_to_basepairs_section_h for each read_id points to the section of merged_basepairs_d that belong to that read_id (host memory)
     /// \param read_id_to_basepairs_section_h for each read_id points to the section of merged_basepairs_d that belong to that read_id (device memory)
     /// \param hash_minimizers if true, apply a hash function to the representations
-    static GeneratedSketchElements generate_sketch_elements(const read_id_t number_of_reads_to_add,
+    static GeneratedSketchElements generate_sketch_elements(std::shared_ptr<DeviceAllocator> allocator, const std::uint64_t number_of_reads_to_add,
                                                             const std::uint64_t minimizer_size,
                                                             const std::uint64_t window_size,
                                                             const std::uint64_t read_id_of_first_read,
