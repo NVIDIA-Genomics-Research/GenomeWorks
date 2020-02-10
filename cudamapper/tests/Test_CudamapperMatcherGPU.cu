@@ -11,6 +11,7 @@
 #include "gtest/gtest.h"
 
 #include "cudamapper_file_location.hpp"
+#include "mock_index.cuh"
 
 #include <algorithm>
 
@@ -209,32 +210,38 @@ void test_generate_anchors(
     const position_in_read_t max_basepairs_in_query_reads,
     const position_in_read_t max_basepairs_in_target_reads)
 {
-    const thrust::device_vector<std::int64_t> anchor_starting_indices_d(anchor_starting_indices_h);
-    const thrust::device_vector<std::uint32_t> query_starting_index_of_each_representation_d(query_starting_index_of_each_representation_h);
-    const thrust::device_vector<std::int64_t> found_target_indices_d(found_target_indices_h);
-    const thrust::device_vector<std::uint32_t> target_starting_index_of_each_representation_d(target_starting_index_of_each_representation_h);
-    const thrust::device_vector<read_id_t> query_read_ids_d(query_read_ids_h);
-    const thrust::device_vector<position_in_read_t> query_positions_in_read_d(query_positions_in_read_h);
-    const thrust::device_vector<read_id_t> target_read_ids_d(target_read_ids_h);
-    const thrust::device_vector<position_in_read_t> target_positions_in_read_d(target_positions_in_read_h);
+    thrust::device_vector<std::int64_t> anchor_starting_indices_d(anchor_starting_indices_h);
+    thrust::device_vector<std::uint32_t> query_starting_index_of_each_representation_d(query_starting_index_of_each_representation_h);
+    thrust::device_vector<std::int64_t> found_target_indices_d(found_target_indices_h);
+    thrust::device_vector<std::uint32_t> target_starting_index_of_each_representation_d(target_starting_index_of_each_representation_h);
+    thrust::device_vector<read_id_t> query_read_ids_d(query_read_ids_h);
+    thrust::device_vector<position_in_read_t> query_positions_in_read_d(query_positions_in_read_h);
+    thrust::device_vector<read_id_t> target_read_ids_d(target_read_ids_h);
+    thrust::device_vector<position_in_read_t> target_positions_in_read_d(target_positions_in_read_h);
 
     thrust::device_vector<Anchor> anchors_d(anchor_starting_indices_h.back());
 
+    MockIndex query_index;
+    EXPECT_CALL(query_index, first_occurrence_of_representations).WillRepeatedly(testing::ReturnRef(query_starting_index_of_each_representation_d));
+    EXPECT_CALL(query_index, read_ids).WillRepeatedly(testing::ReturnRef(query_read_ids_d));
+    EXPECT_CALL(query_index, positions_in_reads).WillRepeatedly(testing::ReturnRef(query_positions_in_read_d));
+    EXPECT_CALL(query_index, smallest_read_id).WillRepeatedly(testing::Return(smallest_query_read_id));
+    EXPECT_CALL(query_index, number_of_reads).WillRepeatedly(testing::Return(number_of_query_reads));
+    EXPECT_CALL(query_index, number_of_basepairs_in_longest_read).WillRepeatedly(testing::Return(max_basepairs_in_query_reads));
+
+    MockIndex target_index;
+    EXPECT_CALL(target_index, first_occurrence_of_representations).WillRepeatedly(testing::ReturnRef(target_starting_index_of_each_representation_d));
+    EXPECT_CALL(target_index, read_ids).WillRepeatedly(testing::ReturnRef(target_read_ids_d));
+    EXPECT_CALL(target_index, positions_in_reads).WillRepeatedly(testing::ReturnRef(target_positions_in_read_d));
+    EXPECT_CALL(target_index, smallest_read_id).WillRepeatedly(testing::Return(smallest_target_read_id));
+    EXPECT_CALL(target_index, number_of_reads).WillRepeatedly(testing::Return(number_of_target_reads));
+    EXPECT_CALL(target_index, number_of_basepairs_in_longest_read).WillRepeatedly(testing::Return(max_basepairs_in_target_reads));
+
     details::matcher_gpu::generate_anchors_dispatcher(anchors_d,
                                                       anchor_starting_indices_d,
-                                                      query_starting_index_of_each_representation_d,
                                                       found_target_indices_d,
-                                                      target_starting_index_of_each_representation_d,
-                                                      query_read_ids_d,
-                                                      query_positions_in_read_d,
-                                                      target_read_ids_d,
-                                                      target_positions_in_read_d,
-                                                      smallest_query_read_id,
-                                                      smallest_target_read_id,
-                                                      number_of_query_reads,
-                                                      number_of_target_reads,
-                                                      max_basepairs_in_query_reads,
-                                                      max_basepairs_in_target_reads);
+                                                      query_index,
+                                                      target_index);
 
     thrust::host_vector<Anchor> anchors_h(anchors_d);
     ASSERT_EQ(anchors_h.size(), expected_anchors_h.size());
