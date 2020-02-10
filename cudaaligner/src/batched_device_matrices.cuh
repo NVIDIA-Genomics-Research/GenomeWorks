@@ -25,7 +25,7 @@ namespace cudaaligner
 
 __device__ inline bool error(int32_t x, int32_t y)
 {
-    printf("assert: x=%d, y=%d\n", x, y);
+    printf("assert: lhs=%d, rhs=%d\n", x, y);
     return false;
 }
 

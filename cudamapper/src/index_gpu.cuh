@@ -107,6 +107,14 @@ public:
     /// \return number of reads in input data
     read_id_t number_of_reads() const override;
 
+    /// \brief returns smallest read_id in index
+    /// \return smallest read_id in index (0 if empty index)
+    read_id_t smallest_read_id() const override;
+
+    /// \brief returns largest read_id in index
+    /// \return largest read_id in index (0 if empty index)
+    read_id_t largest_read_id() const override;
+
     /// \brief returns length of the longest read in this index
     /// \return length of the longest read in this index
     position_in_read_t number_of_basepairs_in_longest_read() const override;
@@ -607,6 +615,18 @@ template <typename SketchElementImpl>
 read_id_t IndexGPU<SketchElementImpl>::number_of_reads() const
 {
     return number_of_reads_;
+}
+
+template <typename SketchElementImpl>
+read_id_t IndexGPU<SketchElementImpl>::smallest_read_id() const
+{
+    return number_of_reads_ > 0 ? first_read_id_ : 0;
+}
+
+template <typename SketchElementImpl>
+read_id_t IndexGPU<SketchElementImpl>::largest_read_id() const
+{
+    return number_of_reads_ > 0 ? first_read_id_ + number_of_reads_ - 1 : 0;
 }
 
 template <typename SketchElementImpl>
