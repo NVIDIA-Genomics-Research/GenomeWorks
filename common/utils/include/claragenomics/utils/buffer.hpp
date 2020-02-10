@@ -9,6 +9,7 @@
  */
 #pragma once
 
+#include <memory>
 #include <claragenomics/utils/cudautils.hpp>
 
 namespace claragenomics
