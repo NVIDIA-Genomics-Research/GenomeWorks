@@ -857,7 +857,7 @@ __global__ void compress_minimizers(const representation_t* const window_minimiz
     }
 }
 
-Minimizer::GeneratedSketchElements Minimizer::generate_sketch_elements(const read_id_t number_of_reads_to_add,
+Minimizer::GeneratedSketchElements Minimizer::generate_sketch_elements(std::shared_ptr<DeviceAllocator> allocator, const std::uint64_t number_of_reads_to_add,
                                                                        const std::uint64_t minimizer_size,
                                                                        const std::uint64_t window_size,
                                                                        const std::uint64_t read_id_of_first_read,
@@ -880,20 +880,20 @@ Minimizer::GeneratedSketchElements Minimizer::generate_sketch_elements(const rea
     }
 
     CGA_LOG_INFO("Allocating {} bytes for read_id_to_windows_section_d", read_id_to_windows_section_h.size() * sizeof(decltype(read_id_to_windows_section_h)::value_type));
-    device_buffer<decltype(read_id_to_windows_section_h)::value_type> read_id_to_windows_section_d(read_id_to_windows_section_h.size());
+    device_buffer<decltype(read_id_to_windows_section_h)::value_type> read_id_to_windows_section_d(read_id_to_windows_section_h.size(), allocator);
     CGA_CU_CHECK_ERR(cudaMemcpy(read_id_to_windows_section_d.data(),
                                 read_id_to_windows_section_h.data(),
                                 read_id_to_windows_section_h.size() * sizeof(decltype(read_id_to_windows_section_h)::value_type),
                                 cudaMemcpyHostToDevice));
 
     CGA_LOG_INFO("Allocating {} bytes for window_minimizers_representation_d", total_windows * sizeof(representation_t));
-    device_buffer<representation_t> window_minimizers_representation_d(total_windows);
+    device_buffer<representation_t> window_minimizers_representation_d(total_windows, allocator);
     CGA_LOG_INFO("Allocating {} bytes for window_minimizers_direction_d", total_windows * sizeof(char));
-    device_buffer<char> window_minimizers_direction_d(total_windows);
+    device_buffer<char> window_minimizers_direction_d(total_windows, allocator);
     CGA_LOG_INFO("Allocating {} bytes for window_minimizers_position_in_read_d", total_windows * sizeof(position_in_read_t));
-    device_buffer<position_in_read_t> window_minimizers_position_in_read_d(total_windows);
+    device_buffer<position_in_read_t> window_minimizers_position_in_read_d(total_windows, allocator);
     CGA_LOG_INFO("Allocating {} bytes for read_id_to_minimizers_written_d", number_of_reads_to_add * sizeof(std::uint32_t));
-    device_buffer<std::uint32_t> read_id_to_minimizers_written_d(number_of_reads_to_add);
+    device_buffer<std::uint32_t> read_id_to_minimizers_written_d(number_of_reads_to_add, allocator);
     // initially there are no minimizers written to the output arrays
     CGA_CU_CHECK_ERR(cudaMemset(read_id_to_minimizers_written_d.data(), 0, number_of_reads_to_add * sizeof(std::uint32_t)));
 
@@ -1019,17 +1019,17 @@ Minimizer::GeneratedSketchElements Minimizer::generate_sketch_elements(const rea
     }
 
     CGA_LOG_INFO("Allocating {} bytes for read_id_to_compressed_minimizers_d", read_id_to_compressed_minimizers_h.size() * sizeof(decltype(read_id_to_compressed_minimizers_h)::value_type));
-    device_buffer<decltype(read_id_to_compressed_minimizers_h)::value_type> read_id_to_compressed_minimizers_d(read_id_to_compressed_minimizers_h.size());
+    device_buffer<decltype(read_id_to_compressed_minimizers_h)::value_type> read_id_to_compressed_minimizers_d(read_id_to_compressed_minimizers_h.size(), allocator);
     CGA_CU_CHECK_ERR(cudaMemcpy(read_id_to_compressed_minimizers_d.data(),
                                 read_id_to_compressed_minimizers_h.data(),
                                 read_id_to_compressed_minimizers_h.size() * sizeof(decltype(read_id_to_compressed_minimizers_h)::value_type),
                                 cudaMemcpyHostToDevice));
 
     CGA_LOG_INFO("Allocating {} bytes for representations_compressed_d", total_minimizers * sizeof(representation_t));
-    device_buffer<representation_t> representations_compressed_d(total_minimizers);
+    device_buffer<representation_t> representations_compressed_d(total_minimizers, allocator);
     // rest = position_in_read, direction and read_id
     CGA_LOG_INFO("Allocating {} bytes for rest_compressed_d", total_minimizers * sizeof(ReadidPositionDirection));
-    device_buffer<ReadidPositionDirection> rest_compressed_d(total_minimizers);
+    device_buffer<ReadidPositionDirection> rest_compressed_d(total_minimizers, allocator);
 
     CGA_LOG_INFO("Launching compress_minimizers with {} bytes of shared memory", 0);
     compress_minimizers<<<number_of_reads_to_add, 128>>>(window_minimizers_representation_d.data(),

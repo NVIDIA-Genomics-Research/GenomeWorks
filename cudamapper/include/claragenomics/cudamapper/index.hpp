@@ -17,7 +17,7 @@
 #include <claragenomics/cudamapper/types.hpp>
 #include <claragenomics/io/fasta_parser.hpp>
 
-#include <thrust/device_vector.h>
+#include <claragenomics/utils/device_buffer.hpp>
 
 namespace claragenomics
 {
@@ -36,19 +36,19 @@ public:
 
     /// \brief returns an array of representations of sketch elements
     /// \return an array of representations of sketch elements
-    virtual const thrust::device_vector<representation_t>& representations() const = 0;
+    virtual const device_buffer<representation_t>& representations() const = 0;
 
     /// \brief returns an array of reads ids for sketch elements
     /// \return an array of reads ids for sketch elements
-    virtual const thrust::device_vector<read_id_t>& read_ids() const = 0;
+    virtual const device_buffer<read_id_t>& read_ids() const = 0;
 
     /// \brief returns an array of starting positions of sketch elements in their reads
     /// \return an array of starting positions of sketch elements in their reads
-    virtual const thrust::device_vector<position_in_read_t>& positions_in_reads() const = 0;
+    virtual const device_buffer<position_in_read_t>& positions_in_reads() const = 0;
 
     /// \brief returns an array of directions in which sketch elements were read
     /// \return an array of directions in which sketch elements were read
-    virtual const thrust::device_vector<SketchElement::DirectionOfRepresentation>& directions_of_reads() const = 0;
+    virtual const device_buffer<SketchElement::DirectionOfRepresentation>& directions_of_reads() const = 0;
 
     /// \brief returns read name of read with the given read_id
     /// \param read_id
@@ -57,11 +57,11 @@ public:
 
     /// \brief returns an array where each representation is recorder only once, sorted by representation
     /// \return an array where each representation is recorder only once, sorted by representation
-    virtual const thrust::device_vector<representation_t>& unique_representations() const = 0;
+    virtual const device_buffer<representation_t>& unique_representations() const = 0;
 
     /// \brief returns first occurrence of corresponding representation from unique_representations() in data arrays
     /// \return first occurrence of corresponding representation from unique_representations() in data arrays
-    virtual const thrust::device_vector<std::uint32_t>& first_occurrence_of_representations() const = 0;
+    virtual const device_buffer<std::uint32_t>& first_occurrence_of_representations() const = 0;
 
     /// \brief returns read length for the read with the gived read_id
     /// \param read_id
@@ -92,6 +92,7 @@ public:
     }
 
     /// \brief generates a mapping of (k,w)-kmer-representation to all of its occurrences for one or more sequences
+    /// \param allocator The device memory allocator to use for temporary buffer allocations
     /// \param parser parser for the whole input file (part that goes into this index is determined by first_read_id and past_the_last_read_id)
     /// \param first_read_id read_id of the first read to the included in this index
     /// \param past_the_last_read_id read_id+1 of the last read to be included in this index
@@ -101,7 +102,8 @@ public:
     /// \param filtering_parameter - filter out all representations for which number_of_sketch_elements_with_that_representation/total_skech_elements >= filtering_parameter, filtering_parameter == 1.0 disables filtering
     /// \return instance of Index
     static std::unique_ptr<Index>
-    create_index(const io::FastaParser& parser,
+    create_index(std::shared_ptr<DeviceAllocator> allocator,
+                 const io::FastaParser& parser,
                  const read_id_t first_read_id,
                  const read_id_t past_the_last_read_id,
                  const std::uint64_t kmer_size,

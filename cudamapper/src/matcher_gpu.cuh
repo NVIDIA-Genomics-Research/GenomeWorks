@@ -10,15 +10,13 @@
 
 #pragma once
 
-#include <type_traits>
 #include <vector>
-
-#include <thrust/device_vector.h>
 
 #include <claragenomics/cudamapper/matcher.hpp>
 #include <claragenomics/cudamapper/types.hpp>
 #include <claragenomics/utils/cudasort.cuh>
 #include <claragenomics/utils/cudautils.hpp>
+#include <claragenomics/utils/device_buffer.hpp>
 #include <claragenomics/utils/mathutils.hpp>
 #include <claragenomics/utils/signed_integer_utils.hpp>
 
@@ -66,13 +64,14 @@ namespace cudamapper
 class MatcherGPU : public Matcher
 {
 public:
-    MatcherGPU(const Index& query_index,
+    MatcherGPU(std::shared_ptr<DeviceAllocator> allocator,
+               const Index& query_index,
                const Index& target_index);
 
-    thrust::device_vector<Anchor>& anchors() override;
+    device_buffer<Anchor>& anchors() override;
 
 private:
-    thrust::device_vector<Anchor> anchors_d_;
+    device_buffer<Anchor> anchors_d_;
 };
 
 namespace details
@@ -107,9 +106,9 @@ namespace matcher_gpu
 /// \param query_representations_d An array of query representations
 /// \param target_representations_d An sorted array of target representations
 void find_query_target_matches(
-    thrust::device_vector<std::int64_t>& found_target_indices_d,
-    const thrust::device_vector<representation_t>& query_representations_d,
-    const thrust::device_vector<representation_t>& target_representations_d);
+    device_buffer<std::int64_t>& found_target_indices_d,
+    const device_buffer<representation_t>& query_representations_d,
+    const device_buffer<representation_t>& target_representations_d);
 
 /// \brief Computes the starting indices for an array of anchors based on the matches in query and target arrays.
 ///
@@ -144,10 +143,10 @@ void find_query_target_matches(
 /// \param found_target_indices_d
 /// \param target_starting_index_of_each_representation_d
 void compute_anchor_starting_indices(
-    thrust::device_vector<std::int64_t>& anchor_starting_indices_d,
-    const thrust::device_vector<std::uint32_t>& query_starting_index_of_each_representation_d,
-    const thrust::device_vector<std::int64_t>& found_target_indices_d,
-    const thrust::device_vector<std::uint32_t>& target_starting_index_of_each_representation_d);
+    device_buffer<std::int64_t>& anchor_starting_indices_d,
+    const device_buffer<std::uint32_t>& query_starting_index_of_each_representation_d,
+    const device_buffer<std::int64_t>& found_target_indices_d,
+    const device_buffer<std::uint32_t>& target_starting_index_of_each_representation_d);
 
 /// \brief Generates an array of anchors from matches of representations of the query and target index
 ///
@@ -262,9 +261,9 @@ __global__ void generate_anchors_kernel(
 /// \tparam PositionsKeyT type of compound_key_positions_in_reads, has to be integral
 template <typename ReadsKeyT, typename PositionsKeyT>
 void generate_anchors(
-    thrust::device_vector<Anchor>& anchors,
-    const thrust::device_vector<std::int64_t>& anchor_starting_indices_d,
-    const thrust::device_vector<std::int64_t>& found_target_indices_d,
+    device_buffer<Anchor>& anchors,
+    const device_buffer<std::int64_t>& anchor_starting_indices_d,
+    const device_buffer<std::int64_t>& found_target_indices_d,
     const Index& query_index,
     const Index& target_index,
     const std::uint64_t max_reads_compound_key,
@@ -273,40 +272,44 @@ void generate_anchors(
     static_assert(std::is_integral<ReadsKeyT>::value, "ReadsKeyT has to be integral");
     static_assert(std::is_integral<PositionsKeyT>::value, "PositionsKeyT has to be integral");
 
-    const thrust::device_vector<std::uint32_t>& query_starting_index_of_each_representation_d = query_index.first_occurrence_of_representations();
-    const thrust::device_vector<read_id_t>& query_read_ids                                    = query_index.read_ids();
-    const thrust::device_vector<position_in_read_t>& query_positions_in_read                  = query_index.positions_in_reads();
+    const device_buffer<std::uint32_t>& query_starting_index_of_each_representation_d = query_index.first_occurrence_of_representations();
+    const device_buffer<read_id_t>& query_read_ids                                    = query_index.read_ids();
+    const device_buffer<position_in_read_t>& query_positions_in_read                  = query_index.positions_in_reads();
 
-    const thrust::device_vector<std::uint32_t>& target_starting_index_of_each_representation_d = target_index.first_occurrence_of_representations();
-    const thrust::device_vector<read_id_t>& target_read_ids                                    = target_index.read_ids();
-    const thrust::device_vector<position_in_read_t>& target_positions_in_read                  = target_index.positions_in_reads();
+    const device_buffer<std::uint32_t>& target_starting_index_of_each_representation_d = target_index.first_occurrence_of_representations();
+    const device_buffer<read_id_t>& target_read_ids                                    = target_index.read_ids();
+    const device_buffer<position_in_read_t>& target_positions_in_read                  = target_index.positions_in_reads();
 
     assert(anchor_starting_indices_d.size() + 1 == query_starting_index_of_each_representation_d.size());
     assert(found_target_indices_d.size() + 1 == query_starting_index_of_each_representation_d.size());
     assert(query_read_ids.size() == query_positions_in_read.size());
     assert(target_read_ids.size() == target_positions_in_read.size());
 
-    thrust::device_vector<ReadsKeyT> compound_key_read_ids(anchors.size());
-    thrust::device_vector<PositionsKeyT> compound_key_positions_in_reads(anchors.size());
+    // TODO: Using CudaMallocAllocator for now. Switch to using the allocator used by input arrays
+    //       once device_buffer::get_allocator() is added
+    std::shared_ptr<DeviceAllocator> allocator = std::make_shared<CudaMallocAllocator>();
+
+    device_buffer<ReadsKeyT> compound_key_read_ids(anchors.size(), allocator);
+    device_buffer<PositionsKeyT> compound_key_positions_in_reads(anchors.size(), allocator);
 
     {
         CGA_NVTX_RANGE(profile, "matcherGPU::generate_anchors_kernel");
         const int32_t n_threads = 256;
         const int32_t n_blocks  = ceiling_divide<int64_t>(get_size(anchors), n_threads);
         generate_anchors_kernel<<<n_blocks, n_threads>>>(
-            anchors.data().get(),
-            compound_key_read_ids.data().get(),
-            compound_key_positions_in_reads.data().get(),
+            anchors.data(),
+            compound_key_read_ids.data(),
+            compound_key_positions_in_reads.data(),
             get_size(anchors),
-            anchor_starting_indices_d.data().get(),
-            query_starting_index_of_each_representation_d.data().get(),
-            found_target_indices_d.data().get(),
+            anchor_starting_indices_d.data(),
+            query_starting_index_of_each_representation_d.data(),
+            found_target_indices_d.data(),
             get_size(found_target_indices_d),
-            target_starting_index_of_each_representation_d.data().get(),
-            query_read_ids.data().get(),
-            query_positions_in_read.data().get(),
-            target_read_ids.data().get(),
-            target_positions_in_read.data().get(),
+            target_starting_index_of_each_representation_d.data(),
+            query_read_ids.data(),
+            query_positions_in_read.data(),
+            target_read_ids.data(),
+            target_positions_in_read.data(),
             query_index.smallest_read_id(),
             target_index.smallest_read_id(),
             target_index.number_of_reads(),
@@ -376,9 +379,9 @@ void generate_anchors(
 /// \param query_index
 /// \param target_index
 void generate_anchors_dispatcher(
-    thrust::device_vector<Anchor>& anchors,
-    const thrust::device_vector<std::int64_t>& anchor_starting_indices_d,
-    const thrust::device_vector<std::int64_t>& found_target_indices_d,
+    device_buffer<Anchor>& anchors,
+    const device_buffer<std::int64_t>& anchor_starting_indices_d,
+    const device_buffer<std::int64_t>& found_target_indices_d,
     const Index& query_index,
     const Index& target_index);
 
