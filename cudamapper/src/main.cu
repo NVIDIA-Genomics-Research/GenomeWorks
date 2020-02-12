@@ -38,6 +38,7 @@ static struct option options[] = {
     {"index-size", required_argument, 0, 'i'},
     {"target-index-size", required_argument, 0, 't'},
     {"filtering-parameter", required_argument, 0, 'F'},
+    {"align-overlaps", no_argument, 0, 'a'},
     {"help", no_argument, 0, 'h'},
 };
 
@@ -55,7 +56,8 @@ int main(int argc, char* argv[])
     std::int32_t index_size        = 30;  // i
     std::int32_t target_index_size = 30;  // t
     double filtering_parameter     = 1.0; // F
-    std::string optstring          = "k:w:d:c:i:t:F:h:";
+    std::string optstring          = "k:w:d:c:i:t:F:ha";
+    bool align_overlaps            = false;
     int32_t argument               = 0;
     while ((argument = getopt_long(argc, argv, optstring.c_str(), options, nullptr)) != -1)
     {
@@ -81,6 +83,9 @@ int main(int argc, char* argv[])
             break;
         case 'F':
             filtering_parameter = atof(optarg);
+            break;
+        case 'a':
+            align_overlaps = true;
             break;
         case 'h':
             help(0);
@@ -273,25 +278,58 @@ int main(int argc, char* argv[])
 
                 overlapper.get_overlaps(overlaps_to_add, matcher->anchors(), *query_index, *target_index);
 
-                //Increment counter which tracks number of overlap chunks to be filtered and printed
                 num_overlap_chunks_to_print++;
-                auto print_overlaps = [&overlaps_writer_mtx, &num_overlap_chunks_to_print](std::vector<claragenomics::cudamapper::Overlap> overlaps) {
+                if (align_overlaps)
+                {
                     std::vector<claragenomics::cudamapper::Overlap> filtered_overlaps;
-                    claragenomics::cudamapper::Overlapper::filter_overlaps(filtered_overlaps, overlaps, 50);
-                    std::lock_guard<std::mutex> lck(overlaps_writer_mtx);
-                    claragenomics::cudamapper::Overlapper::print_paf(filtered_overlaps);
-
-                    //clear data
-                    for (auto o : overlaps)
+                    claragenomics::cudamapper::Overlapper::filter_overlaps(filtered_overlaps, overlaps_to_add);
+                    std::vector<std::string> cigar(filtered_overlaps.size());
                     {
-                        o.clear();
+                        CGA_NVTX_RANGE(profiler, "align_overlaps");
+                        claragenomics::cudamapper::Overlapper::Overlapper::align_overlaps(filtered_overlaps, *query_parser, *target_parser, cigar);
                     }
-                    //Decrement counter which tracks number of overlap chunks to be filtered and printed
-                    num_overlap_chunks_to_print--;
-                };
 
-                std::thread t(print_overlaps, overlaps_to_add);
-                t.detach();
+                    //Increment counter which tracks number of overlap chunks to be filtered and printed
+                    auto print_overlaps = [&overlaps_writer_mtx, &num_overlap_chunks_to_print, cigar](std::vector<claragenomics::cudamapper::Overlap> overlaps) {
+                        std::lock_guard<std::mutex> lck(overlaps_writer_mtx);
+                        const auto& t = overlaps;
+                        //claragenomics::cudamapper::Overlapper::print_paf(overlaps, cigar);
+                        claragenomics::cudamapper::Overlapper::print_paf(t, cigar);
+
+                        //clear data
+                        for (auto o : overlaps)
+                        {
+                            o.clear();
+                        }
+                        //Decrement counter which tracks number of overlap chunks to be filtered and printed
+                        num_overlap_chunks_to_print--;
+                    };
+
+                    std::thread t(print_overlaps, filtered_overlaps);
+                    t.detach();
+                }
+                else {
+                    //Increment counter which tracks number of overlap chunks to be filtered and printed
+                    auto print_overlaps = [&overlaps_writer_mtx, &num_overlap_chunks_to_print](std::vector<claragenomics::cudamapper::Overlap> overlaps) {
+                        std::lock_guard<std::mutex> lck(overlaps_writer_mtx);
+                        std::vector<claragenomics::cudamapper::Overlap> filtered_overlaps;
+                        claragenomics::cudamapper::Overlapper::filter_overlaps(filtered_overlaps, overlaps);
+                        std::vector<std::string> cigar;
+
+                        claragenomics::cudamapper::Overlapper::print_paf(filtered_overlaps, cigar);
+
+                        //clear data
+                        for (auto o : overlaps)
+                        {
+                            o.clear();
+                        }
+                        //Decrement counter which tracks number of overlap chunks to be filtered and printed
+                        num_overlap_chunks_to_print--;
+                    };
+
+                    std::thread t(print_overlaps, overlaps_to_add);
+                    t.detach();
+                }
             }
         }
 

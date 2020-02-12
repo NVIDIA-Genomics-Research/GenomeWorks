@@ -49,7 +49,7 @@ target_include_directories(cudamapper_utils PUBLIC include)
 cuda_add_library(overlapper_triggerred
         src/overlapper_triggered.cu)
 target_include_directories(overlapper_triggerred PUBLIC include ${CUB_DIR})
-target_link_libraries(overlapper_triggerred logging utils cgaio)
+target_link_libraries(overlapper_triggerred logging utils cgaio cudaaligner)
 target_compile_options(overlapper_triggerred PRIVATE -Werror)
 
 add_doxygen_source_dir(${CMAKE_CURRENT_SOURCE_DIR}/include)

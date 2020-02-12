@@ -41,17 +41,17 @@ public:
                               const Index& index_target) = 0;
 
     /// \brief prints overlaps to stdout in <a href="https://github.com/lh3/miniasm/blob/master/PAF.md">PAF format</a>
-    static void print_paf(const std::vector<Overlap>& overlaps);
+    static void print_paf(const std::vector<Overlap>& overlaps, const std::vector<std::string>& cigar);
 
     /// \brief removes overlaps which are unlikely to be true overlaps
     /// \param filtered_overlaps Output vector in which to place filtered overlaps
     /// \param overlaps vector of Overlap objects to be filtered
     /// \param min_residues smallest number of residues (anchors) for an overlap to be accepted
     /// \param min_overlap_len the smallest overlap distance which is accepted
-    static void filter_overlaps(std::vector<Overlap>& filtered_overlaps,
-                                const std::vector<Overlap>& overlaps,
-                                size_t min_residues    = 20,
+    static void filter_overlaps(std::vector<Overlap>& filtered_overlaps, const std::vector<Overlap>& overlaps, size_t min_residues = 20,
                                 size_t min_overlap_len = 50);
+
+    static void align_overlaps(std::vector<Overlap>& overlaps, const claragenomics::io::FastaParser& query_parser, const claragenomics::io::FastaParser& target_parser, std::vector<std::string>& cigar);
 };
 //}
 } // namespace cudamapper
