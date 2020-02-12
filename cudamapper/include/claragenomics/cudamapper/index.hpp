@@ -117,3 +117,72 @@ public:
 } // namespace cudamapper
 
 } // namespace claragenomics
+
+
+
+namespace claragenomics
+{
+namespace cudamapper
+{
+/// IndexCache - Creates and maintains a copy of computed IndexGPU elements on the host
+///
+///
+class IndexCache
+{
+public:
+/// \brief Constructor
+/// \brief cache the computed index to host
+/// \param index - pointer to computed index parameters (vectors of sketch elements) on GPU
+/// \return - pointer to claragenomics::cudamapper::IndexCache
+    explicit IndexCache(const Index& index,
+                        const read_id_t first_read_id_in,
+                        const std::uint64_t kmer_size_in,
+                        const std::uint64_t window_size_in);
+
+    /// \brief copy cached index vectors from the host and create an object of Index on GPU
+    /// \return a pointer to claragenomics::cudamapper::Index
+    std::unique_ptr<Index> copy_index_to_device();
+
+
+    const std::vector<representation_t>& representations() const;
+
+    const std::vector<read_id_t>& read_ids() const;
+
+    const std::vector<position_in_read_t>& positions_in_reads() const;
+
+    const std::vector<SketchElement::DirectionOfRepresentation>& directions_of_reads() const;
+
+    const std::vector<representation_t>& unique_representations() const;
+
+    const std::vector<std::uint32_t>& first_occurrence_of_representations() const;
+
+    const std::vector<std::string>& read_id_to_read_name() const;
+
+    const std::vector<std::uint32_t>& read_id_to_read_length() const;
+
+private:
+
+    std::vector<representation_t> representations_;
+    std::vector<read_id_t> read_ids_;
+    std::vector<position_in_read_t> positions_in_reads_;
+    std::vector<SketchElement::DirectionOfRepresentation> directions_of_reads_;
+
+    std::vector<representation_t> unique_representations_;
+    std::vector<std::uint32_t> first_occurrence_of_representations_;
+
+    std::vector<std::string> read_id_to_read_name_;
+    std::vector<std::uint32_t> read_id_to_read_length_;
+
+public:
+
+    const read_id_t first_read_id = 0;
+    // number of basepairs in a k-mer
+    const std::uint64_t kmer_size = 0;
+    // the number of adjacent k-mers in a window, adjacent = shifted by one basepair
+    const std::uint64_t window_size = 0;
+
+};
+
+
+} // namespace cudamapper
+} // namespace claragenomics
