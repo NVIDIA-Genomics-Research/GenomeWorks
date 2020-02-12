@@ -72,6 +72,16 @@ public:
     /// \return number of reads in input data
     virtual read_id_t number_of_reads() const = 0;
 
+    /// ToDo this is to allow IndexCache to access to read_id_to_read_name_, may need to change if overloading is not desired
+    /// \brief returns look up table array mapping read id to read name
+    /// \return the array mapping read id to read name
+    virtual const std::vector<std::string>& read_id_to_read_name() const = 0;
+
+    /// ToDo this is to allow IndexCache to access to read_id_to_read_length_, may need to change if overloading is not desired
+    /// \brief returns an array used for mapping read id to the length of the read
+    /// \return the array used for mapping read ids to their lengths
+    virtual const std::vector<std::uint32_t>& read_id_to_read_length() const = 0;
+
     /// \brief returns smallest read_id in index
     /// \return smallest read_id in index (0 if empty index)
     virtual read_id_t smallest_read_id() const = 0;
@@ -143,21 +153,36 @@ public:
     /// \return a pointer to claragenomics::cudamapper::Index
     std::unique_ptr<Index> copy_index_to_device();
 
-
+    /// \brief returns an array of representations of sketch elements (stored on host)
+    /// \return an array of representations of sketch elements
     const std::vector<representation_t>& representations() const;
 
+    /// \brief returns an array of reads ids for sketch elements (stored on host)
+    /// \return an array of reads ids for sketch elements
     const std::vector<read_id_t>& read_ids() const;
 
+    /// \brief returns an array of starting positions of sketch elements in their reads (stored on host)
+    /// \return an array of starting positions of sketch elements in their reads
     const std::vector<position_in_read_t>& positions_in_reads() const;
 
+    /// \brief returns an array of directions in which sketch elements were read (stored on host)
+    /// \return an array of directions in which sketch elements were read
     const std::vector<SketchElement::DirectionOfRepresentation>& directions_of_reads() const;
 
+    /// \brief returns an array where each representation is recorded only once, sorted by representation (stored on host)
+    /// \return an array where each representation is recorded only once, sorted by representation
     const std::vector<representation_t>& unique_representations() const;
 
+    /// \brief returns first occurrence of corresponding representation from unique_representations(), plus one more element with the total number of sketch elements (stored on host)
+    /// \return first occurrence of corresponding representation from unique_representations(), plus one more element with the total number of sketch elements
     const std::vector<std::uint32_t>& first_occurrence_of_representations() const;
 
+    /// \brief returns look up table array mapping read id to read name
+    /// \return the array mapping read id to read name
     const std::vector<std::string>& read_id_to_read_name() const;
 
+    /// \brief returns an array used for mapping read id to the length of the read
+    /// \return the array used for mapping read ids to their lengths
     const std::vector<std::uint32_t>& read_id_to_read_length() const;
 
 private:

@@ -103,6 +103,14 @@ public:
     /// \return read length for the read with the gived read_id
     const std::uint32_t& read_id_to_read_length(const read_id_t read_id) const override;
 
+    /// ToDo this is to allow IndexCache access to read_id_to_read_name_ and read_id_to_read_length_, may need to be changed if overloading is not desired
+    /// \brief returns look up table array mapping read id to read name
+    /// \return the array mapping read id to read name
+    const std::vector<std::string>& read_id_to_read_name() const override;
+    /// \brief returns an array used for mapping read id to the length of the read
+    /// \return the array used for mapping read ids to their lengths
+    const std::vector<std::uint32_t>& read_id_to_read_length() const override;
+
     /// \brief returns number of reads in input data
     /// \return number of reads in input data
     read_id_t number_of_reads() const override;
@@ -609,6 +617,18 @@ template <typename SketchElementImpl>
 const std::uint32_t& IndexGPU<SketchElementImpl>::read_id_to_read_length(const read_id_t read_id) const
 {
     return read_id_to_read_length_[read_id - first_read_id_];
+}
+
+template <typename SketchElementImpl>
+const std::vector<std::string>& IndexGPU<SketchElementImpl>::read_id_to_read_name() const
+{
+    return read_id_to_read_name_;
+}
+
+template <typename SketchElementImpl>
+const std::vector<std::uint32_t>& IndexGPU<SketchElementImpl>::read_id_to_read_length() const
+{
+    return read_id_to_read_length_;
 }
 
 template <typename SketchElementImpl>
