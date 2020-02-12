@@ -30,6 +30,7 @@ option(cga_optimize_for_native_cpu "Build with march=native" ON)
 option(spoa_accurate "Run cudapoa code in mode that matches spoa" OFF)
 option(cga_enable_cudapoa_nw_print "Enable verbose prints within cudapoa NW kernel" OFF)
 option(cga_profiling "Compile a binary for profiling with NVTX markers." OFF)
+option(cga_enable_allocator "Enable caching allocator." ON)
 option(cga_generate_docs "Generate Doxygen documentation" ON)
 
 # Must be included before others for options value validation

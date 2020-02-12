@@ -36,7 +36,7 @@ public:
     /// \param index_query representation index for reads
     /// \param index_target
     virtual void get_overlaps(std::vector<Overlap>& overlaps,
-                              thrust::device_vector<Anchor>& anchors,
+                              device_buffer<Anchor>& anchors,
                               const Index& index_query,
                               const Index& index_target) = 0;
 

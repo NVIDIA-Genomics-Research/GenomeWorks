@@ -11,7 +11,7 @@
 #pragma once
 
 #include <vector>
-#include <thrust/device_vector.h>
+#include <claragenomics/utils/device_buffer.hpp>
 #include <claragenomics/cudamapper/matcher.hpp>
 #include <claragenomics/cudamapper/types.hpp>
 
@@ -24,13 +24,14 @@ namespace cudamapper
 class MatcherGPU : public Matcher
 {
 public:
-    MatcherGPU(const Index& query_index,
+    MatcherGPU(std::shared_ptr<DeviceAllocator> allocator,
+               const Index& query_index,
                const Index& target_index);
 
-    thrust::device_vector<Anchor>& anchors() override;
+    device_buffer<Anchor>& anchors() override;
 
 private:
-    thrust::device_vector<Anchor> anchors_d_;
+    device_buffer<Anchor> anchors_d_;
 };
 
 namespace details
@@ -65,9 +66,9 @@ namespace matcher_gpu
 /// \param query_representations_d An array of query representations
 /// \param target_representations_d An sorted array of target representations
 void find_query_target_matches(
-    thrust::device_vector<std::int64_t>& found_target_indices_d,
-    const thrust::device_vector<representation_t>& query_representations_d,
-    const thrust::device_vector<representation_t>& target_representations_d);
+    device_buffer<std::int64_t>& found_target_indices_d,
+    const device_buffer<representation_t>& query_representations_d,
+    const device_buffer<representation_t>& target_representations_d);
 
 /// \brief Computes the starting indices for an array of anchors based on the matches in query and target arrays.
 ///
@@ -102,10 +103,10 @@ void find_query_target_matches(
 /// \param found_target_indices_d
 /// \param target_starting_index_of_each_representation_d
 void compute_anchor_starting_indices(
-    thrust::device_vector<std::int64_t>& anchor_starting_indices_d,
-    const thrust::device_vector<std::uint32_t>& query_starting_index_of_each_representation_d,
-    const thrust::device_vector<std::int64_t>& found_target_indices_d,
-    const thrust::device_vector<std::uint32_t>& target_starting_index_of_each_representation_d);
+    device_buffer<std::int64_t>& anchor_starting_indices_d,
+    const device_buffer<std::uint32_t>& query_starting_index_of_each_representation_d,
+    const device_buffer<std::int64_t>& found_target_indices_d,
+    const device_buffer<std::uint32_t>& target_starting_index_of_each_representation_d);
 
 /// \brief Generates an array of anchors from matches of representations of the query and target index
 ///
@@ -156,15 +157,15 @@ void compute_anchor_starting_indices(
 /// \param target_read_ids the array of read ids of the (read id, position)-pairs in target index
 /// \param target_positions_in_read the array of positions of the (read id, position)-pairs in target index
 void generate_anchors(
-    thrust::device_vector<Anchor>& anchors,
-    const thrust::device_vector<std::int64_t>& anchor_starting_indices_d,
-    const thrust::device_vector<std::uint32_t>& query_starting_index_of_each_representation_d,
-    const thrust::device_vector<std::int64_t>& found_target_indices_d,
-    const thrust::device_vector<std::uint32_t>& target_starting_index_of_each_representation_d,
-    const thrust::device_vector<read_id_t>& query_read_ids,
-    const thrust::device_vector<position_in_read_t>& query_positions_in_read,
-    const thrust::device_vector<read_id_t>& target_read_ids,
-    const thrust::device_vector<position_in_read_t>& target_positions_in_read);
+    device_buffer<Anchor>& anchors,
+    const device_buffer<std::int64_t>& anchor_starting_indices_d,
+    const device_buffer<std::uint32_t>& query_starting_index_of_each_representation_d,
+    const device_buffer<std::int64_t>& found_target_indices_d,
+    const device_buffer<std::uint32_t>& target_starting_index_of_each_representation_d,
+    const device_buffer<read_id_t>& query_read_ids,
+    const device_buffer<position_in_read_t>& query_positions_in_read,
+    const device_buffer<read_id_t>& target_read_ids,
+    const device_buffer<position_in_read_t>& target_positions_in_read);
 
 /// \brief Performs a binary search on target_representations_d for each element of query_representations_d and stores the found index (or -1 iff not found) in found_target_indices.
 ///
