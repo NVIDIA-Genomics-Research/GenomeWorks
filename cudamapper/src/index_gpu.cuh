@@ -594,40 +594,38 @@ IndexGPU<SketchElementImpl>::IndexGPU(std::shared_ptr<DeviceAllocator> allocator
         , unique_representations_d_(allocator)
         , first_occurrence_of_representations_d_(allocator)
 {
-    //representations_d_ = host_cache.representations();
+    //H2D- representations_d_ = host_cache.representations();
     representations_d_.resize(host_cache.representations().size());
     representations_d_.shrink_to_fit();
-    thrust::copy(host_cache.representations().begin(), host_cache.representations().end(), representations_d_.data());
+    cudautils::device_copy_n(host_cache.representations().data(), host_cache.representations().size(), representations_d_.data());
 
-    //cudautils::device_copy_n(&host_cache.representations().front(), host_cache.representations().size(), representations_d_.data());
-
-    //read_ids_d_ = host_cache.read_ids();
+    //H2D- read_ids_d_ = host_cache.read_ids();
     read_ids_d_.resize(host_cache.read_ids().size());
     read_ids_d_.shrink_to_fit();
-    thrust::copy(host_cache.read_ids().begin(), host_cache.read_ids().end(), read_ids_d_.data());
+    cudautils::device_copy_n(host_cache.read_ids().data(), host_cache.read_ids().size(), read_ids_d_.data());
 
-    //positions_in_reads_d_ = host_cache.positions_in_reads();
+    //H2D- positions_in_reads_d_ = host_cache.positions_in_reads();
     positions_in_reads_d_.resize(host_cache.positions_in_reads().size());
     positions_in_reads_d_.shrink_to_fit();
-    thrust::copy(host_cache.positions_in_reads().begin(), host_cache.positions_in_reads().end(), positions_in_reads_d_.data());
+    cudautils::device_copy_n(host_cache.positions_in_reads().data(), host_cache.positions_in_reads().size(), positions_in_reads_d_.data());
 
-    //directions_of_reads_d_ = host_cache.directions_of_reads();
+    //H2D- directions_of_reads_d_ = host_cache.directions_of_reads();
     directions_of_reads_d_.resize(host_cache.directions_of_reads().size());
     directions_of_reads_d_.shrink_to_fit();
-    thrust::copy(host_cache.directions_of_reads().begin(), host_cache.directions_of_reads().end(), directions_of_reads_d_.data());
+    cudautils::device_copy_n(host_cache.directions_of_reads().data(), host_cache.directions_of_reads().size(), directions_of_reads_d_.data());
 
-    //unique_representations_d_ = host_cache.unique_representations();
+    //H2D- unique_representations_d_ = host_cache.unique_representations();
     unique_representations_d_.resize(host_cache.unique_representations().size());
     unique_representations_d_.shrink_to_fit();
-    thrust::copy(host_cache.unique_representations().begin(), host_cache.unique_representations().end(), unique_representations_d_.data());
+    cudautils::device_copy_n(host_cache.unique_representations().data(), host_cache.unique_representations().size(), unique_representations_d_.data());
 
-    //first_occurrence_of_representations_d_ = host_cache.first_occurrence_of_representations();
+    //H2D- first_occurrence_of_representations_d_ = host_cache.first_occurrence_of_representations();
     first_occurrence_of_representations_d_.resize(host_cache.first_occurrence_of_representations().size());
     first_occurrence_of_representations_d_.shrink_to_fit();
-    thrust::copy(host_cache.first_occurrence_of_representations().begin(), host_cache.first_occurrence_of_representations().end(), first_occurrence_of_representations_d_.data());
+    cudautils::device_copy_n(host_cache.first_occurrence_of_representations().data(), host_cache.first_occurrence_of_representations().size(), first_occurrence_of_representations_d_.data());
 
-    read_id_to_read_name_ = host_cache.read_id_to_read_name();
-    read_id_to_read_length_ = host_cache.read_id_to_read_length();
+    read_id_to_read_name_ = host_cache.read_id_to_read_name();      //H2H
+    read_id_to_read_length_ = host_cache.read_id_to_read_length();  //H2H
 }
 
 template <typename SketchElementImpl>

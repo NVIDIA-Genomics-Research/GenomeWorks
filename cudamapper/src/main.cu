@@ -33,7 +33,8 @@ static struct option options[] = {
     {"kmer-size", required_argument, 0, 'k'},
     {"window-size", required_argument, 0, 'w'},
     {"num-devices", required_argument, 0, 'd'},
-    {"max-index-cache-size", required_argument, 0, 'c'},
+    {"max-index-device-cache", required_argument, 0, 'c'},
+    {"max-index-host-cache", required_argument, 0, 'C'},
     {"max-cached-memory", required_argument, 0, 'm'},
     {"index-size", required_argument, 0, 'i'},
     {"target-index-size", required_argument, 0, 't'},
@@ -48,16 +49,17 @@ int main(int argc, char* argv[])
     using claragenomics::get_size;
     claragenomics::logging::Init();
 
-    uint32_t k                        = 15;    // k
-    uint32_t w                        = 15;    // w
-    std::int32_t num_devices          = 1;     // d
-    std::int32_t max_index_cache_size = 100;   // c
-    std::int32_t max_cached_memory    = 1;     // m
-    std::int32_t index_size           = 10000; // i
-    std::int32_t target_index_size    = 10000; // t
-    double filtering_parameter        = 1.0;   // F
-    std::string optstring             = "k:w:d:c:m:i:t:F:h:";
-    int32_t argument                  = 0;
+    uint32_t k                                  = 15;    // k
+    uint32_t w                                  = 15;    // w
+    std::int32_t num_devices                    = 1;     // d
+    std::int32_t max_index_cache_size_on_device = 100;   // c
+    std::int32_t max_index_cache_size_on_host   = 1000;  // C
+    std::int32_t max_cached_memory              = 1;     // m
+    std::int32_t index_size                     = 10000; // i
+    std::int32_t target_index_size              = 10000; // t
+    double filtering_parameter                  = 1.0;   // F
+    std::string optstring                       = "k:w:d:c:C:m:i:t:F:h:";
+    int32_t argument                            = 0;
     while ((argument = getopt_long(argc, argv, optstring.c_str(), options, nullptr)) != -1)
     {
         switch (argument)
@@ -72,7 +74,10 @@ int main(int argc, char* argv[])
             num_devices = atoi(optarg);
             break;
         case 'c':
-            max_index_cache_size = atoi(optarg);
+            max_index_cache_size_on_device = atoi(optarg);
+            break;
+        case 'C':
+            max_index_cache_size_on_host = atoi(optarg);
             break;
         case 'm':
             max_cached_memory = atoi(optarg);
@@ -177,17 +182,21 @@ int main(int argc, char* argv[])
         query_target_ranges.push_back(q);
     }
 
+    // This is host cache, if it has the index it will copy it to device, if not it will generate on device and add it to cache
+    std::map<std::pair<uint64_t, uint64_t>, std::shared_ptr<claragenomics::cudamapper::IndexCache>> host_cache;
+
     // This is a per-device cache, if it has the index it will return it, if not it will generate it, store and return it.
     std::vector<std::map<std::pair<uint64_t, uint64_t>, std::shared_ptr<claragenomics::cudamapper::Index>>> index_cache(num_devices);
 
-    auto get_index = [&index_cache, max_index_cache_size](std::shared_ptr<claragenomics::DeviceAllocator> allocator,
-                                                          claragenomics::io::FastaParser& parser,
-                                                          const claragenomics::cudamapper::read_id_t start_index,
-                                                          const claragenomics::cudamapper::read_id_t end_index,
-                                                          const std::uint64_t k,
-                                                          const std::uint64_t w,
-                                                          const int device_id,
-                                                          const bool allow_cache_index) {
+    auto get_index = [&index_cache, &host_cache, max_index_cache_size_on_device, max_index_cache_size_on_host]
+                                                    (std::shared_ptr<claragenomics::DeviceAllocator> allocator,
+                                                     claragenomics::io::FastaParser& parser,
+                                                     const claragenomics::cudamapper::read_id_t start_index,
+                                                     const claragenomics::cudamapper::read_id_t end_index,
+                                                     const std::uint64_t k,
+                                                     const std::uint64_t w,
+                                                     const int device_id,
+                                                     const bool allow_cache_index) {
         CGA_NVTX_RANGE(profiler, "get index");
         std::pair<uint64_t, uint64_t> key;
         key.first  = start_index;
@@ -195,9 +204,14 @@ int main(int argc, char* argv[])
 
         std::shared_ptr<claragenomics::cudamapper::Index> index;
 
+        // first check if it's available on device, if not check host cache
         if (index_cache[device_id].count(key))
         {
             index = index_cache[device_id][key];
+        }
+        else if (host_cache.count(key))
+        {
+            index = host_cache[key]->copy_index_to_device(allocator);
         }
         else
         {
@@ -206,10 +220,17 @@ int main(int argc, char* argv[])
             // If in all-to-all mode, put this query in the cache for later use.
             // Cache eviction is handled later on by the calling thread
             // using the evict_index function.
-            if (get_size<int32_t>(index_cache[device_id]) < max_index_cache_size && allow_cache_index)
+            if (get_size<int32_t>(index_cache[device_id]) < max_index_cache_size_on_device && allow_cache_index)
             {
                 index_cache[device_id][key] = index;
             }
+
+            // update host cache
+            if (get_size<int32_t>(host_cache) < max_index_cache_size_on_host && allow_cache_index)
+            {
+                host_cache[key] = std::move(std::make_unique<claragenomics::cudamapper::IndexCache>(claragenomics::cudamapper::IndexCache(*index, start_index, k, w)));
+            }
+
         }
         return index;
     };
@@ -372,8 +393,11 @@ void help(int32_t exit_code = 0)
         -d, --num-devices
             number of GPUs to use [1])"
               << R"(
-        -c, --max-index-cache-size
+        -c, --max-index-device-cache
             number of indices to keep in GPU memory [100])"
+              << R"(
+        -C, --max-index-host-cache
+            number of indices to keep in host memory [1000])"
               << R"(
         -m, --max-cached-memory
             maximum aggregate cached memory per device in GB [1])"

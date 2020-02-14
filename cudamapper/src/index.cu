@@ -59,50 +59,56 @@ namespace cudamapper
         CGA_NVTX_RANGE(profiler, "cache_index");
         {
             auto const & src = index.representations();
-            representations_.resize(src.size());
-            thrust::copy(src.begin(), src.end(), representations_.begin());
+            auto const sz = src.size();
+            representations_.resize(sz);
+            cudautils::device_copy_n(src.data(), sz, representations_.data());
         }
 
         {
             auto const &src = index.read_ids();
+            auto const sz = src.size();
             read_ids_.resize(src.size());
-            thrust::copy(src.begin(), src.end(), read_ids_.begin());
+            cudautils::device_copy_n(src.data(), sz, read_ids_.data());
         }
 
         {
             auto const & src = index.positions_in_reads();
-            positions_in_reads_.resize(src.size());
-            thrust::copy(src.begin(), src.end(), positions_in_reads_.begin());
+            auto const sz = src.size();
+            positions_in_reads_.resize(sz);
+            cudautils::device_copy_n(src.data(), sz, positions_in_reads_.data());
         }
 
         {
             auto const & src = index.directions_of_reads();
-            directions_of_reads_.resize(src.size());
-            thrust::copy(src.begin(), src.end(), directions_of_reads_.begin());
+            auto const sz = src.size();
+            directions_of_reads_.resize(sz);
+            cudautils::device_copy_n(src.data(), sz, directions_of_reads_.data());
         }
 
         {
             auto const & src = index.unique_representations();
-            unique_representations_.resize(src.size());
-            thrust::copy(src.begin(), src.end(), unique_representations_.begin());
+            auto const sz = src.size();
+            unique_representations_.resize(sz);
+            cudautils::device_copy_n(src.data(), sz, unique_representations_.data());
         }
 
         {
             auto const & src = index.first_occurrence_of_representations();
-            first_occurrence_of_representations_.resize(src.size());
-            thrust::copy(src.begin(), src.end(), first_occurrence_of_representations_.begin());
+            auto const sz = src.size();
+            first_occurrence_of_representations_.resize(sz);
+            cudautils::device_copy_n(src.data(), sz, first_occurrence_of_representations_.data());
         }
 
         {
             auto const & src = index.read_id_to_read_name();
             read_id_to_read_name_.resize(src.size());
-            thrust::copy(src.begin(), src.end(), read_id_to_read_name_.begin());
+            thrust::copy(src.begin(), src.end(), read_id_to_read_name_.begin());    //H2H, may replace with shared_ptr
         }
 
         {
             auto const & src = index.read_id_to_read_length();
             read_id_to_read_length_.resize(src.size());
-            thrust::copy(src.begin(), src.end(), read_id_to_read_length_.begin());
+            thrust::copy(src.begin(), src.end(), read_id_to_read_length_.begin());  //H2H, may replace with shared_ptr
         }
     }
 
