@@ -69,6 +69,13 @@ public:
              const bool hash_representations  = true,
              const double filtering_parameter = 1.0);
 
+    /// \brief Constructor
+    ///
+    /// \param allocator is pointer to asynchronous device allocator
+    /// \param host_cache is a copy of index for a set of reads which has been previously computed and stored on the host.
+    IndexGPU(std::shared_ptr<DeviceAllocator> allocator,
+             const IndexCache& host_cache);
+
     /// \brief returns an array of representations of sketch elements
     /// \return an array of representations of sketch elements
     const device_buffer<representation_t>& representations() const override;
@@ -569,6 +576,58 @@ IndexGPU<SketchElementImpl>::IndexGPU(std::shared_ptr<DeviceAllocator> allocator
                    past_the_last_read_id,
                    hash_representations,
                    filtering_parameter);
+}
+
+template <typename SketchElementImpl>
+IndexGPU<SketchElementImpl>::IndexGPU(std::shared_ptr<DeviceAllocator> allocator,
+                                      const IndexCache& host_cache)
+        : first_read_id_(host_cache.first_read_id)
+        , kmer_size_(host_cache.kmer_size)
+        , window_size_(host_cache.window_size)
+        , number_of_reads_(0)
+        , number_of_basepairs_in_longest_read_(0)
+        , allocator_(allocator)
+        , representations_d_(allocator)
+        , read_ids_d_(allocator)
+        , positions_in_reads_d_(allocator)
+        , directions_of_reads_d_(allocator)
+        , unique_representations_d_(allocator)
+        , first_occurrence_of_representations_d_(allocator)
+{
+    //representations_d_ = host_cache.representations();
+    representations_d_.resize(host_cache.representations().size());
+    representations_d_.shrink_to_fit();
+    thrust::copy(host_cache.representations().begin(), host_cache.representations().end(), representations_d_.data());
+
+    //cudautils::device_copy_n(&host_cache.representations().front(), host_cache.representations().size(), representations_d_.data());
+
+    //read_ids_d_ = host_cache.read_ids();
+    read_ids_d_.resize(host_cache.read_ids().size());
+    read_ids_d_.shrink_to_fit();
+    thrust::copy(host_cache.read_ids().begin(), host_cache.read_ids().end(), read_ids_d_.data());
+
+    //positions_in_reads_d_ = host_cache.positions_in_reads();
+    positions_in_reads_d_.resize(host_cache.positions_in_reads().size());
+    positions_in_reads_d_.shrink_to_fit();
+    thrust::copy(host_cache.positions_in_reads().begin(), host_cache.positions_in_reads().end(), positions_in_reads_d_.data());
+
+    //directions_of_reads_d_ = host_cache.directions_of_reads();
+    directions_of_reads_d_.resize(host_cache.directions_of_reads().size());
+    directions_of_reads_d_.shrink_to_fit();
+    thrust::copy(host_cache.directions_of_reads().begin(), host_cache.directions_of_reads().end(), directions_of_reads_d_.data());
+
+    //unique_representations_d_ = host_cache.unique_representations();
+    unique_representations_d_.resize(host_cache.unique_representations().size());
+    unique_representations_d_.shrink_to_fit();
+    thrust::copy(host_cache.unique_representations().begin(), host_cache.unique_representations().end(), unique_representations_d_.data());
+
+    //first_occurrence_of_representations_d_ = host_cache.first_occurrence_of_representations();
+    first_occurrence_of_representations_d_.resize(host_cache.first_occurrence_of_representations().size());
+    first_occurrence_of_representations_d_.shrink_to_fit();
+    thrust::copy(host_cache.first_occurrence_of_representations().begin(), host_cache.first_occurrence_of_representations().end(), first_occurrence_of_representations_d_.data());
+
+    read_id_to_read_name_ = host_cache.read_id_to_read_name();
+    read_id_to_read_length_ = host_cache.read_id_to_read_length();
 }
 
 template <typename SketchElementImpl>

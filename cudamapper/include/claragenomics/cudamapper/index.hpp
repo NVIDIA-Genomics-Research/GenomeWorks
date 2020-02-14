@@ -150,8 +150,9 @@ public:
                         const std::uint64_t window_size_in);
 
     /// \brief copy cached index vectors from the host and create an object of Index on GPU
+    /// \param allocator pointer to asynchronous device allocator
     /// \return a pointer to claragenomics::cudamapper::Index
-    std::unique_ptr<Index> copy_index_to_device();
+    std::unique_ptr<Index> copy_index_to_device(std::shared_ptr<claragenomics::DeviceAllocator> allocator);
 
     /// \brief returns an array of representations of sketch elements (stored on host)
     /// \return an array of representations of sketch elements
