@@ -41,7 +41,7 @@ void Overlapper::align_overlaps(std::vector<Overlap>& overlaps, const claragenom
 {
     int32_t max_query_size  = 0;
     int32_t max_target_size = 0;
-    for (overlap : overlaps)
+    for (const auto& overlap : overlaps)
     {
         int32_t query_overlap_size  = overlap.query_end_position_in_read_ - overlap.query_start_position_in_read_;
         int32_t target_overlap_size = overlap.target_end_position_in_read_ - overlap.target_start_position_in_read_;
@@ -55,13 +55,13 @@ void Overlapper::align_overlaps(std::vector<Overlap>& overlaps, const claragenom
     std::cerr << "Overlaps to align - " << overlaps.size() << std::endl;
 
     const float space_per_base = 0.000000027f; // Heuristic estimation of space per base in MB during CUDA alignment
-    float space_per_alignment     = space_per_base * max_query_size * max_target_size;
+    float space_per_alignment  = space_per_base * max_query_size * max_target_size;
     size_t free, total;
     CGA_CU_CHECK_ERR(cudaMemGetInfo(&free, &total));
     free                   = free / (1024 * 1024);
     int32_t max_alignments = (free * 90 / 100) / space_per_alignment;
-    int32_t streams               = 4;
-    int32_t batch_size = max_alignments / streams;
+    int32_t streams        = 4;
+    int32_t batch_size     = max_alignments / streams;
 
     std::mutex overlap_idx_mtx;
     std::vector<std::future<void>> align_futures;

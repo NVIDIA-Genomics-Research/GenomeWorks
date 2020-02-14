@@ -51,7 +51,13 @@ public:
     static void filter_overlaps(std::vector<Overlap>& filtered_overlaps, const std::vector<Overlap>& overlaps, size_t min_residues = 20,
                                 size_t min_overlap_len = 50);
 
-    static void align_overlaps(std::vector<Overlap>& overlaps, const claragenomics::io::FastaParser& query_parser, const claragenomics::io::FastaParser& target_parser, std::vector<std::string>& cigar);
+    /// \brief performs gloval alignment between overlapped regions of reads
+    /// \param overlaps List of overlaps to align
+    /// \param query_parser Parser for query reads
+    /// \param target_parser Parser for target reads
+    /// \param cigar Output vector to store CIGAR string for alignments
+    static void align_overlaps(std::vector<Overlap>& overlaps, const claragenomics::io::FastaParser& query_parser,
+                               const claragenomics::io::FastaParser& target_parser, std::vector<std::string>& cigar);
 };
 //}
 } // namespace cudamapper

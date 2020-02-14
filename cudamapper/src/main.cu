@@ -308,7 +308,8 @@ int main(int argc, char* argv[])
                     std::thread t(print_overlaps, filtered_overlaps);
                     t.detach();
                 }
-                else {
+                else
+                {
                     //Increment counter which tracks number of overlap chunks to be filtered and printed
                     auto print_overlaps = [&overlaps_writer_mtx, &num_overlap_chunks_to_print](std::vector<claragenomics::cudamapper::Overlap> overlaps) {
                         std::lock_guard<std::mutex> lck(overlaps_writer_mtx);
