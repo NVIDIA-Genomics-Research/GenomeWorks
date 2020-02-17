@@ -15,10 +15,11 @@
 #include <random>
 #include <vector>
 
-#include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
 
 #include <claragenomics/utils/cudasort.cuh>
+#include <claragenomics/utils/device_buffer.hpp>
+#include <claragenomics/utils/signed_integer_utils.hpp>
 
 namespace claragenomics
 {
@@ -26,14 +27,14 @@ namespace claragenomics
 template <typename MoreSignificantKeyT,
           typename LessSignificantKeyT,
           typename ValueT>
-void test_function(thrust::device_vector<MoreSignificantKeyT>& more_significant_keys,
-                   thrust::device_vector<LessSignificantKeyT>& less_significant_keys,
-                   thrust::device_vector<ValueT>& input_values,
+void test_function(device_buffer<MoreSignificantKeyT>& more_significant_keys,
+                   device_buffer<LessSignificantKeyT>& less_significant_keys,
+                   device_buffer<ValueT>& input_values,
                    const MoreSignificantKeyT max_value_of_more_significant_key,
                    const LessSignificantKeyT max_value_of_less_significant_key)
 {
-    ASSERT_EQ(input_values.size(), more_significant_keys.size());
-    ASSERT_EQ(input_values.size(), less_significant_keys.size());
+    ASSERT_EQ(get_size(input_values), get_size(more_significant_keys));
+    ASSERT_EQ(get_size(input_values), get_size(less_significant_keys));
 
     cudautils::sort_by_two_keys(more_significant_keys,
                                 less_significant_keys,
@@ -41,11 +42,12 @@ void test_function(thrust::device_vector<MoreSignificantKeyT>& more_significant_
                                 max_value_of_more_significant_key,
                                 max_value_of_less_significant_key);
 
-    thrust::host_vector<ValueT> sorted_values_h(input_values);
+    thrust::host_vector<ValueT> sorted_values_h(input_values.size());
+    cudautils::device_copy_n(input_values.data(), input_values.size(), sorted_values_h.data()); // D2H
 
-    ASSERT_EQ(sorted_values_h.size(), input_values.size());
+    ASSERT_EQ(get_size(sorted_values_h), get_size(input_values));
     // sort is done by two keys and not values, but tests cases are intentionally made so the values are sorted as well
-    for (std::size_t i = 1; i < input_values.size(); ++i)
+    for (typename device_buffer<ValueT>::size_type i = 1; i < input_values.size(); ++i)
     {
         EXPECT_LE(sorted_values_h[i - 1], sorted_values_h[i]) << "index: " << i << std::endl;
     }
@@ -80,12 +82,13 @@ void short_test_template_larger_more_significant_key()
     const LessSignificantKeyT max_value_of_less_significant_key = *std::max_element(std::begin(less_significant_keys_vec),
                                                                                     std::end(less_significant_keys_vec));
 
-    thrust::device_vector<MoreSignificantKeyT> more_significant_keys(std::begin(more_significant_keys_vec),
-                                                                     std::end(more_significant_keys_vec));
-    thrust::device_vector<LessSignificantKeyT> less_significant_keys(std::begin(less_significant_keys_vec),
-                                                                     std::end(less_significant_keys_vec));
-    thrust::device_vector<ValueT> input_values(std::begin(input_values_vec),
-                                               std::end(input_values_vec));
+    std::shared_ptr<DeviceAllocator> allocator = std::make_shared<CudaMallocAllocator>();
+    device_buffer<MoreSignificantKeyT> more_significant_keys(more_significant_keys_vec.size(), allocator);
+    cudautils::device_copy_n(more_significant_keys_vec.data(), more_significant_keys_vec.size(), more_significant_keys.data()); //H2D
+    device_buffer<LessSignificantKeyT> less_significant_keys(less_significant_keys_vec.size(), allocator);
+    cudautils::device_copy_n(less_significant_keys_vec.data(), less_significant_keys_vec.size(), less_significant_keys.data()); //H2D
+    device_buffer<ValueT> input_values(input_values_vec.size(), allocator);
+    cudautils::device_copy_n(input_values_vec.data(), input_values_vec.size(), input_values.data()); //H2D
 
     test_function(more_significant_keys,
                   less_significant_keys,
@@ -123,12 +126,13 @@ void short_test_template_larger_less_significant_key()
     const LessSignificantKeyT max_value_of_less_significant_key = *std::max_element(std::begin(less_significant_keys_vec),
                                                                                     std::end(less_significant_keys_vec));
 
-    thrust::device_vector<MoreSignificantKeyT> more_significant_keys(std::begin(more_significant_keys_vec),
-                                                                     std::end(more_significant_keys_vec));
-    thrust::device_vector<LessSignificantKeyT> less_significant_keys(std::begin(less_significant_keys_vec),
-                                                                     std::end(less_significant_keys_vec));
-    thrust::device_vector<ValueT> input_values(std::begin(input_values_vec),
-                                               std::end(input_values_vec));
+    std::shared_ptr<DeviceAllocator> allocator = std::make_shared<CudaMallocAllocator>();
+    device_buffer<MoreSignificantKeyT> more_significant_keys(more_significant_keys_vec.size(), allocator);
+    cudautils::device_copy_n(more_significant_keys_vec.data(), more_significant_keys_vec.size(), more_significant_keys.data()); //H2D
+    device_buffer<LessSignificantKeyT> less_significant_keys(less_significant_keys_vec.size(), allocator);
+    cudautils::device_copy_n(less_significant_keys_vec.data(), less_significant_keys_vec.size(), less_significant_keys.data()); //H2D
+    device_buffer<ValueT> input_values(input_values_vec.size(), allocator);
+    cudautils::device_copy_n(input_values_vec.data(), input_values_vec.size(), input_values.data()); //H2D
 
     test_function(more_significant_keys,
                   less_significant_keys,
@@ -191,16 +195,20 @@ TEST(TestUtilsCudasort, long_deterministic_shuffle_test)
 
     std::mt19937 g(10);
 
+    std::shared_ptr<DeviceAllocator> allocator = std::make_shared<CudaMallocAllocator>();
+
     // fill the arrays with values 0..number_of_elements and shuffle them
     thrust::host_vector<std::uint32_t> more_significant_keys_h(number_of_elements);
     std::iota(std::begin(more_significant_keys_h), std::end(more_significant_keys_h), 0);
     std::shuffle(std::begin(more_significant_keys_h), std::end(more_significant_keys_h), g);
-    thrust::device_vector<std::uint32_t> more_significant_keys_d(more_significant_keys_h);
+    device_buffer<std::uint32_t> more_significant_keys_d(more_significant_keys_h.size(), allocator);
+    cudautils::device_copy_n(more_significant_keys_h.data(), more_significant_keys_h.size(), more_significant_keys_d.data()); //H2D
 
     thrust::host_vector<std::uint32_t> less_significant_keys_h(number_of_elements);
     std::iota(std::begin(less_significant_keys_h), std::end(less_significant_keys_h), 0);
     std::shuffle(std::begin(less_significant_keys_h), std::end(less_significant_keys_h), g);
-    thrust::device_vector<std::uint32_t> less_significant_keys_d(less_significant_keys_h);
+    device_buffer<std::uint32_t> less_significant_keys_d(less_significant_keys_h.size(), allocator);
+    cudautils::device_copy_n(less_significant_keys_h.data(), less_significant_keys_h.size(), less_significant_keys_d.data()); //H2D
 
     thrust::host_vector<std::uint64_t> input_values_h(number_of_elements);
     std::transform(std::begin(more_significant_keys_h),
@@ -210,7 +218,9 @@ TEST(TestUtilsCudasort, long_deterministic_shuffle_test)
                    [number_of_elements](const std::uint32_t more_significant_key, const std::uint32_t less_significant_key) {
                        return number_of_elements * more_significant_key + less_significant_key;
                    });
-    thrust::device_vector<std::uint64_t> input_values_d(input_values_h);
+
+    device_buffer<std::uint64_t> input_values_d(input_values_h.size(), allocator);
+    cudautils::device_copy_n(input_values_h.data(), input_values_h.size(), input_values_d.data()); //H2D
 
     const std::uint32_t max_value_of_more_significant_key = number_of_elements - 1;
     const std::uint32_t max_value_of_less_significant_key = number_of_elements - 1;

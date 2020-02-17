@@ -34,8 +34,8 @@ public:
     /// Anchors (e.g 3) with a score above a threshold is encountered and untriggerred
     /// when a single anchor with a threshold below the value is encountered.
     /// \param overlaps Output vector into which generated overlaps will be placed
-    /// \param anchors vector of anchors
-    /// \param index_query Index
+    /// \param anchors vector of anchors sorted by query_read_id -> target_read_id -> query_position_in_read -> target_position_in_read
+    /// \param index_query
     /// \param index_target
     /// \return vector of Overlap objects
     void get_overlaps(std::vector<Overlap>& overlaps, device_buffer<Anchor>& anchors, const Index& index_query, const Index& index_target) override;
