@@ -196,7 +196,8 @@ int main(int argc, char* argv[])
                                                      const std::uint64_t k,
                                                      const std::uint64_t w,
                                                      const int device_id,
-                                                     const bool allow_cache_index) {
+                                                     const bool allow_cache_index,
+                                                     const double filtering_parameter) {
         CGA_NVTX_RANGE(profiler, "get index");
         std::pair<uint64_t, uint64_t> key;
         key.first  = start_index;
@@ -215,7 +216,7 @@ int main(int argc, char* argv[])
         }
         else
         {
-            index = std::move(claragenomics::cudamapper::Index::create_index(allocator, parser, start_index, end_index, k, w));
+            index = std::move(claragenomics::cudamapper::Index::create_index(allocator, parser, start_index, end_index, k, w, true, filtering_parameter));
 
             // If in all-to-all mode, put this query in the cache for later use.
             // Cache eviction is handled later on by the calling thread
@@ -279,7 +280,7 @@ int main(int argc, char* argv[])
 
         {
             CGA_NVTX_RANGE(profiler, "generate_query_index");
-            query_index = get_index(allocator, *query_parser, query_start_index, query_end_index, k, w, device_id, all_to_all);
+            query_index = get_index(allocator, *query_parser, query_start_index, query_end_index, k, w, device_id, all_to_all, filtering_parameter);
         }
 
         //Main loop
@@ -290,7 +291,7 @@ int main(int argc, char* argv[])
             auto target_end_index   = target_range.second;
             {
                 CGA_NVTX_RANGE(profiler, "generate_target_index");
-                target_index = get_index(allocator, *target_parser, target_start_index, target_end_index, k, w, device_id, true);
+                target_index = get_index(allocator, *target_parser, target_start_index, target_end_index, k, w, device_id, true, filtering_parameter);
             }
             {
                 CGA_NVTX_RANGE(profiler, "generate_matcher");
