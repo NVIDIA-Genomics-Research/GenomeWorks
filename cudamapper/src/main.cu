@@ -182,13 +182,13 @@ int main(int argc, char* argv[])
         query_target_ranges.push_back(q);
     }
 
-    // This is host cache, if it has the index it will copy it to device, if not it will generate on device and add it to cache
-    std::map<std::pair<uint64_t, uint64_t>, std::shared_ptr<claragenomics::cudamapper::IndexCache>> host_cache;
+    // This is host cache, if it has the index it will copy it to device, if not it will generate on device and add it to host cache
+    std::map<std::pair<uint64_t, uint64_t>, std::shared_ptr<claragenomics::cudamapper::IndexCache>> host_index_cache;
 
     // This is a per-device cache, if it has the index it will return it, if not it will generate it, store and return it.
-    std::vector<std::map<std::pair<uint64_t, uint64_t>, std::shared_ptr<claragenomics::cudamapper::Index>>> index_cache(num_devices);
+    std::vector<std::map<std::pair<uint64_t, uint64_t>, std::shared_ptr<claragenomics::cudamapper::Index>>> device_index_cache(num_devices);
 
-    auto get_index = [&index_cache, &host_cache, max_index_cache_size_on_device, max_index_cache_size_on_host]
+    auto get_index = [&device_index_cache, &host_index_cache, max_index_cache_size_on_device, max_index_cache_size_on_host]
                                                     (std::shared_ptr<claragenomics::DeviceAllocator> allocator,
                                                      claragenomics::io::FastaParser& parser,
                                                      const claragenomics::cudamapper::read_id_t start_index,
@@ -205,14 +205,14 @@ int main(int argc, char* argv[])
 
         std::shared_ptr<claragenomics::cudamapper::Index> index;
 
-        // first check if it's available on device, if not check host cache
-        if (index_cache[device_id].count(key))
+        // first check if it's available on device, if not then check the host cache
+        if (device_index_cache[device_id].count(key))
         {
-            index = index_cache[device_id][key];
+            index = device_index_cache[device_id][key];
         }
-        else if (host_cache.count(key))
+        else if (host_index_cache.count(key))
         {
-            index = host_cache[key]->copy_index_to_device(allocator);
+            index = host_index_cache[key]->copy_index_to_device(allocator);
         }
         else
         {
@@ -221,15 +221,16 @@ int main(int argc, char* argv[])
             // If in all-to-all mode, put this query in the cache for later use.
             // Cache eviction is handled later on by the calling thread
             // using the evict_index function.
-            if (get_size<int32_t>(index_cache[device_id]) < max_index_cache_size_on_device && allow_cache_index)
+            if (get_size<int32_t>(device_index_cache[device_id]) < max_index_cache_size_on_device && allow_cache_index)
             {
-                index_cache[device_id][key] = index;
+                device_index_cache[device_id][key] = index;
             }
 
             // update host cache
-            if (get_size<int32_t>(host_cache) < max_index_cache_size_on_host && allow_cache_index)
+            // ToDo: make it thread-safe when there are multiple GPUs
+            if (get_size<int32_t>(host_index_cache) < max_index_cache_size_on_host && allow_cache_index)
             {
-                host_cache[key] = std::move(std::make_unique<claragenomics::cudamapper::IndexCache>(claragenomics::cudamapper::IndexCache(*index, start_index, k, w)));
+                host_index_cache[key] = std::move(std::make_unique<claragenomics::cudamapper::IndexCache>(claragenomics::cudamapper::IndexCache(*index, start_index, k, w)));
             }
 
         }
@@ -248,13 +249,16 @@ int main(int argc, char* argv[])
     // Round 2
     // Query: [1000-1999] - Use cache entry (from previous use when now query was a target)
     // Etc..
-    auto evict_index = [&index_cache](const claragenomics::cudamapper::read_id_t query_start_index,
-                                      const claragenomics::cudamapper::read_id_t query_end_index,
-                                      const int device_id) {
+    auto evict_index = [&device_index_cache, &host_index_cache](const claragenomics::cudamapper::read_id_t query_start_index,
+                                                   const claragenomics::cudamapper::read_id_t query_end_index,
+                                                   const int device_id,
+                                                   const int num_devices) {
         std::pair<uint64_t, uint64_t> key;
         key.first  = query_start_index;
         key.second = query_end_index;
-        index_cache[device_id].erase(key);
+        device_index_cache[device_id].erase(key);
+        // ToDo: freeing host memory is limited to 1 GPU, need to change to work with multiple GPUs
+        if(num_devices==1) host_index_cache.erase(key);
     };
 
 #ifdef CGA_ENABLE_ALLOCATOR
@@ -324,7 +328,7 @@ int main(int argc, char* argv[])
         // If all-to-all mapping query will no longer be needed on device, remove it from the cache
         if (all_to_all)
         {
-            evict_index(query_start_index, query_end_index, device_id);
+            evict_index(query_start_index, query_end_index, device_id, num_devices);
         }
 
         return print_pafs_futures;
