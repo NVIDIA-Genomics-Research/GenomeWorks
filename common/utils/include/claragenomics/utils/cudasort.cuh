@@ -203,8 +203,7 @@ void sort_by_two_keys(device_buffer<MoreSignificantKeyT>& more_significant_keys,
     swap(move_to_index, move_to_index_sorted);
 
     // deallocate helper array
-    move_to_index_sorted.clear();
-    move_to_index_sorted.shrink_to_fit();
+    move_to_index_sorted.free();
 
     // *** move the values to their final position ***
     device_buffer<ValueT> values_after_sort(number_of_elements, allocator);
