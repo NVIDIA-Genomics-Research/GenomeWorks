@@ -271,15 +271,13 @@ int main(int argc, char* argv[])
                 // Get unfiltered overlaps
                 std::vector<claragenomics::cudamapper::Overlap> overlaps_to_add;
 
-                overlapper.get_overlaps(overlaps_to_add, matcher->anchors(), *query_index, *target_index);
+                overlapper.get_overlaps(overlaps_to_add, matcher->anchors(), *query_index, *target_index, 50);
 
                 //Increment counter which tracks number of overlap chunks to be filtered and printed
                 num_overlap_chunks_to_print++;
                 auto print_overlaps = [&overlaps_writer_mtx, &num_overlap_chunks_to_print](std::vector<claragenomics::cudamapper::Overlap> overlaps) {
-                    std::vector<claragenomics::cudamapper::Overlap> filtered_overlaps;
-                    claragenomics::cudamapper::Overlapper::filter_overlaps(filtered_overlaps, overlaps, 50);
                     std::lock_guard<std::mutex> lck(overlaps_writer_mtx);
-                    claragenomics::cudamapper::Overlapper::print_paf(filtered_overlaps);
+                    claragenomics::cudamapper::Overlapper::print_paf(overlaps);
 
                     //clear data
                     for (auto o : overlaps)

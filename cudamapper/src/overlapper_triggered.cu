@@ -128,6 +128,28 @@ struct FuseOverlapOp
     }
 };
 
+struct FilterOverlapOp
+{
+    size_t min_residues;
+    size_t min_overlap_len;
+
+    __host__ __device__ __forceinline__ FilterOverlapOp(size_t min_residues, size_t min_overlap_len)
+        : min_residues(min_residues)
+        , min_overlap_len(min_overlap_len)
+    {
+    }
+
+    __host__ __device__ __forceinline__ bool operator()(const Overlap& overlap) const
+    {
+        return ((overlap.num_residues_ >= min_residues) &&
+                ((overlap.query_end_position_in_read_ - overlap.query_start_position_in_read_) > min_overlap_len) &&
+                !( // Reject overlaps where the query and target sections are exactly the same, otherwise miniasm has trouble.
+                    overlap.query_read_id_ == overlap.target_read_id_ &&
+                    overlap.query_start_position_in_read_ == overlap.target_start_position_in_read_ &&
+                    overlap.query_end_position_in_read_ == overlap.target_end_position_in_read_));
+    }
+};
+
 struct CreateOverlap
 {
     const Anchor* d_anchors;
@@ -182,7 +204,9 @@ struct CreateOverlap
 void OverlapperTriggered::get_overlaps(std::vector<Overlap>& fused_overlaps,
                                        thrust::device_vector<Anchor>& d_anchors,
                                        const Index& index_query,
-                                       const Index& index_target)
+                                       const Index& index_target,
+                                       size_t min_residues,
+                                       size_t min_overlap_len)
 {
     CGA_NVTX_RANGE(profiler, "OverlapperTriggered::get_overlaps");
     const auto tail_length_for_chain = 3;
@@ -348,16 +372,23 @@ void OverlapperTriggered::get_overlaps(std::vector<Overlap>& fused_overlaps,
                       d_fusedoverlaps_args.data() + n_fused_overlap,
                       d_fused_overlaps.data(), fuse_op);
 
-    // memcpyD2H - move fused overlaps to host
-    fused_overlaps.resize(n_fused_overlap);
+    thrust::device_vector<Overlap> d_filtered_overlaps(n_fused_overlap);
 
-    thrust::copy(d_fused_overlaps.begin(), d_fused_overlaps.end(),
+    FilterOverlapOp filterOp(min_residues, min_overlap_len);
+    auto filtered_overlaps_end =
+        thrust::copy_if(d_fused_overlaps.data(), d_fused_overlaps.data() + n_fused_overlap,
+                        d_filtered_overlaps.data(),
+                        filterOp);
+
+    auto n_filtered_overlaps = filtered_overlaps_end - d_filtered_overlaps.data();
+
+    // memcpyD2H - move fused and filtered overlaps to host
+    fused_overlaps.resize(n_filtered_overlaps);
+
+    thrust::copy(d_filtered_overlaps.begin(), d_filtered_overlaps.begin() + n_filtered_overlaps,
                  fused_overlaps.begin());
 
-    // <<<<<<<<<<<<
-
     // parallel update the overlaps to include the corresponding read names [parallel on host]
-
 #pragma omp parallel for
     for (int i = 0; i < fused_overlaps.size(); i++)
     {

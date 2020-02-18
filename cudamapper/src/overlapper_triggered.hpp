@@ -36,9 +36,12 @@ public:
     /// \param d_anchors vector of anchors
     /// \param index_query Index
     /// \param index_target
+    /// \param min_residues smallest number of residues (anchors) for an overlap to be accepted
+    /// \param min_overlap_len the smallest overlap distance which is accepted
     /// \return vector of Overlap objects
     void get_overlaps(std::vector<Overlap>& fused_overlaps, thrust::device_vector<Anchor>& d_anchors,
-                      const Index& index_query, const Index& index_target) override;
+                      const Index& index_query, const Index& index_target,
+                      size_t min_residues = 20, size_t min_overlap_len = 50) override;
 };
 } // namespace cudamapper
 } // namespace claragenomics

@@ -16,23 +16,6 @@ namespace claragenomics
 namespace cudamapper
 {
 
-void Overlapper::filter_overlaps(std::vector<Overlap>& filtered_overlaps,
-                                 const std::vector<Overlap>& overlaps,
-                                 size_t min_residues, size_t min_overlap_len)
-{
-    auto valid_overlap = [&min_residues, &min_overlap_len](Overlap overlap) { return (
-                                                                                  (overlap.num_residues_ >= min_residues) &&
-                                                                                  ((overlap.query_end_position_in_read_ - overlap.query_start_position_in_read_) > min_overlap_len) &&
-                                                                                  !( // Reject overlaps where the query and target sections are exactly the same, otherwise miniasm has trouble.
-                                                                                      (std::string(overlap.query_read_name_) == std::string(overlap.target_read_name_)) &&
-                                                                                      overlap.query_start_position_in_read_ == overlap.target_start_position_in_read_ &&
-                                                                                      overlap.query_end_position_in_read_ == overlap.target_end_position_in_read_)); };
-
-    std::copy_if(overlaps.begin(), overlaps.end(),
-                 std::back_inserter(filtered_overlaps),
-                 valid_overlap);
-}
-
 void Overlapper::print_paf(const std::vector<Overlap>& overlaps)
 {
     for (const auto& overlap : overlaps)

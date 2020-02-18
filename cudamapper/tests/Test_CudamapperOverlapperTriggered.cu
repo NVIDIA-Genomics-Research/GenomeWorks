@@ -180,7 +180,7 @@ TEST(TestCudamapperOverlapperTriggerred, OneAchorNoOverlaps)
     anchors.push_back(anchor1);
 
     std::vector<Overlap> overlaps;
-    overlapper.get_overlaps(overlaps, anchors, test_index, test_index);
+    overlapper.get_overlaps(overlaps, anchors, test_index, test_index, 0, 0);
     ASSERT_EQ(overlaps.size(), 0u);
 }
 
@@ -234,7 +234,7 @@ TEST(TestCudamapperOverlapperTriggerred, FourAnchorsOneOverlap)
     anchors.push_back(anchor4);
 
     std::vector<Overlap> overlaps;
-    overlapper.get_overlaps(overlaps, anchors, test_index, test_index);
+    overlapper.get_overlaps(overlaps, anchors, test_index, test_index, 0, 0);
     ASSERT_EQ(overlaps.size(), 1u);
     ASSERT_EQ(overlaps[0].query_read_id_, 1u);
     ASSERT_EQ(overlaps[0].target_read_id_, 2u);
@@ -294,7 +294,7 @@ TEST(TestCudamapperOverlapperTriggerred, FourAnchorsNoOverlap)
     anchors.push_back(anchor4);
 
     std::vector<Overlap> overlaps;
-    overlapper.get_overlaps(overlaps, anchors, test_index, test_index);
+    overlapper.get_overlaps(overlaps, anchors, test_index, test_index, 0, 0);
     ASSERT_EQ(overlaps.size(), 0u);
 }
 
@@ -348,7 +348,7 @@ TEST(TestCudamapperOverlapperTriggerred, FourColinearAnchorsOneOverlap)
     anchors.push_back(anchor4);
 
     std::vector<Overlap> overlaps;
-    overlapper.get_overlaps(overlaps, anchors, test_index, test_index);
+    overlapper.get_overlaps(overlaps, anchors, test_index, test_index, 0, 0);
     ASSERT_EQ(overlaps.size(), 0u);
 }
 
@@ -402,7 +402,7 @@ TEST(TestCudamapperOverlapperTriggerred, FourAnchorsLastNotInOverlap)
     anchors.push_back(anchor4);
 
     std::vector<Overlap> overlaps;
-    overlapper.get_overlaps(overlaps, anchors, test_index, test_index);
+    overlapper.get_overlaps(overlaps, anchors, test_index, test_index, 0, 0);
     ASSERT_EQ(overlaps.size(), 1u);
     ASSERT_EQ(overlaps[0].query_read_id_, 1u);
     ASSERT_EQ(overlaps[0].target_read_id_, 2u);
@@ -476,7 +476,7 @@ TEST(TestCudamapperOverlapperTriggerred, ShuffledAnchors)
     for (size_t i = 0; i < 100; i++)
     {
         std::vector<Overlap> overlaps;
-        overlapper.get_overlaps(overlaps, anchors, test_index, test_index);
+        overlapper.get_overlaps(overlaps, anchors, test_index, test_index, 0, 0);
         std::shuffle(std::begin(overlaps), std::end(overlaps), rng);
         ASSERT_EQ(overlaps.size(), 1u);
         ASSERT_EQ(overlaps[0].query_read_id_, 1u);
@@ -538,7 +538,7 @@ TEST(TestCudamapperOverlapperTriggerred, ReverseStrand)
     anchors.push_back(anchor4);
 
     std::vector<Overlap> overlaps;
-    overlapper.get_overlaps(overlaps, anchors, test_index, test_index);
+    overlapper.get_overlaps(overlaps, anchors, test_index, test_index, 0, 0);
     ASSERT_EQ(overlaps.size(), 1u);
     ASSERT_GT(overlaps[0].target_end_position_in_read_, overlaps[0].target_start_position_in_read_);
     ASSERT_EQ(overlaps[0].relative_strand, RelativeStrand::Reverse);
