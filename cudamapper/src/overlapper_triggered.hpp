@@ -34,7 +34,7 @@ public:
     /// Anchors (e.g 3) with a score above a threshold is encountered and untriggerred
     /// when a single anchor with a threshold below the value is encountered.
     /// \param overlaps Output vector into which generated overlaps will be placed
-    /// \param anchors vector of anchors sorted by query_read_id -> target_read_id -> query_position_in_read -> target_position_in_read
+    /// \param anchors vector of anchors sorted by query_read_id -> target_read_id -> query_position_in_read -> target_position_in_read (meaning sorted by query_read_id, then within a group of anchors with the same value of query_read_id sorted by target_read_id and so on)
     /// \param index_query
     /// \param index_target
     /// \return vector of Overlap objects

@@ -32,8 +32,8 @@ public:
 
     /// \brief returns overlaps for a set of reads
     /// \param overlaps Output vector into which generated overlaps will be placed
-    /// \param anchors vector of anchor objects. Does not need to be ordered
-    /// \param index_query representation index for reads
+    /// \param anchors vector of anchors sorted by query_read_id -> target_read_id -> query_position_in_read -> target_position_in_read (meaning sorted by query_read_id, then within a group of anchors with the same value of query_read_id sorted by target_read_id and so on)
+    /// \param index_query
     /// \param index_target
     virtual void get_overlaps(std::vector<Overlap>& overlaps,
                               device_buffer<Anchor>& anchors,
