@@ -22,6 +22,43 @@
 #include <claragenomics/utils/mathutils.hpp>
 #include <claragenomics/utils/signed_integer_utils.hpp>
 
+namespace
+{
+
+template <typename RandomAccessIterator, typename ValueType>
+__device__ RandomAccessIterator lower_bound(RandomAccessIterator lower_bound, RandomAccessIterator upper_bound, ValueType query)
+{
+    assert(upper_bound >= lower_bound);
+    while (upper_bound > lower_bound)
+    {
+        RandomAccessIterator mid = lower_bound + (upper_bound - lower_bound) / 2;
+        const auto mid_value     = *mid;
+        if (mid_value < query)
+            lower_bound = mid + 1;
+        else
+            upper_bound = mid;
+    }
+    return lower_bound;
+}
+
+template <typename RandomAccessIterator, typename ValueType>
+__device__ RandomAccessIterator upper_bound(RandomAccessIterator lower_bound, RandomAccessIterator upper_bound, ValueType query)
+{
+    assert(upper_bound >= lower_bound);
+    while (upper_bound > lower_bound)
+    {
+        RandomAccessIterator mid = lower_bound + (upper_bound - lower_bound) / 2;
+        const auto mid_value     = *mid;
+        if (mid_value <= query)
+            lower_bound = mid + 1;
+        else
+            upper_bound = mid;
+    }
+    return lower_bound;
+}
+
+} // namespace
+
 namespace claragenomics
 {
 
@@ -84,38 +121,6 @@ namespace details
 
 namespace matcher_gpu
 {
-
-template <typename RandomAccessIterator, typename ValueType>
-__device__ RandomAccessIterator lower_bound(RandomAccessIterator lower_bound, RandomAccessIterator upper_bound, ValueType query)
-{
-    assert(upper_bound >= lower_bound);
-    while (upper_bound > lower_bound)
-    {
-        RandomAccessIterator mid = lower_bound + (upper_bound - lower_bound) / 2;
-        const auto mid_value     = *mid;
-        if (mid_value < query)
-            lower_bound = mid + 1;
-        else
-            upper_bound = mid;
-    }
-    return lower_bound;
-}
-
-template <typename RandomAccessIterator, typename ValueType>
-__device__ RandomAccessIterator upper_bound(RandomAccessIterator lower_bound, RandomAccessIterator upper_bound, ValueType query)
-{
-    assert(upper_bound >= lower_bound);
-    while (upper_bound > lower_bound)
-    {
-        RandomAccessIterator mid = lower_bound + (upper_bound - lower_bound) / 2;
-        const auto mid_value     = *mid;
-        if (mid_value <= query)
-            lower_bound = mid + 1;
-        else
-            upper_bound = mid;
-    }
-    return lower_bound;
-}
 
 void find_query_target_matches(
     device_buffer<std::int64_t>& found_target_indices_d,
