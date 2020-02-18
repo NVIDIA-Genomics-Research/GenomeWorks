@@ -110,6 +110,9 @@ namespace cudamapper
             read_id_to_read_length_.resize(src.size());
             thrust::copy(src.begin(), src.end(), read_id_to_read_length_.begin());  //H2H, may replace with shared_ptr
         }
+
+        number_of_reads_ = index.number_of_reads();
+        number_of_basepairs_in_longest_read_ = index.number_of_basepairs_in_longest_read();
     }
 
     std::unique_ptr<Index> IndexCache::copy_index_to_device(std::shared_ptr<claragenomics::DeviceAllocator> allocator)
@@ -157,6 +160,15 @@ namespace cudamapper
         return read_id_to_read_length_;
     }
 
+    read_id_t IndexCache::number_of_reads() const
+    {
+        return number_of_reads_;
+    }
+
+    position_in_read_t IndexCache::number_of_basepairs_in_longest_read() const
+    {
+        return number_of_basepairs_in_longest_read_;
+    }
 
 } // namespace cudamapper
 } // namespace claragenomics

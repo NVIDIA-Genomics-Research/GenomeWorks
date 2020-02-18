@@ -186,6 +186,14 @@ public:
     /// \return the array used for mapping read ids to their lengths
     const std::vector<std::uint32_t>& read_id_to_read_length() const;
 
+    /// \brief returns number of reads in input data
+    /// \return number of reads in input data
+    read_id_t number_of_reads() const;
+
+    /// \brief returns length of the longest read in this index
+    /// \return length of the longest read in this index
+    position_in_read_t number_of_basepairs_in_longest_read() const;
+
 private:
 
     std::vector<representation_t> representations_;
@@ -198,6 +206,9 @@ private:
 
     std::vector<std::string> read_id_to_read_name_;
     std::vector<std::uint32_t> read_id_to_read_length_;
+
+    read_id_t number_of_reads_;
+    position_in_read_t number_of_basepairs_in_longest_read_;
 
 public:
 

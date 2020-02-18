@@ -584,8 +584,6 @@ IndexGPU<SketchElementImpl>::IndexGPU(std::shared_ptr<DeviceAllocator> allocator
         : first_read_id_(host_cache.first_read_id)
         , kmer_size_(host_cache.kmer_size)
         , window_size_(host_cache.window_size)
-        , number_of_reads_(0)
-        , number_of_basepairs_in_longest_read_(0)
         , allocator_(allocator)
         , representations_d_(allocator)
         , read_ids_d_(allocator)
@@ -594,6 +592,9 @@ IndexGPU<SketchElementImpl>::IndexGPU(std::shared_ptr<DeviceAllocator> allocator
         , unique_representations_d_(allocator)
         , first_occurrence_of_representations_d_(allocator)
 {
+    number_of_reads_ = host_cache.number_of_reads();    //H2D
+    number_of_basepairs_in_longest_read_ = host_cache.number_of_basepairs_in_longest_read(); //H2D
+
     //H2D- representations_d_ = host_cache.representations();
     representations_d_.resize(host_cache.representations().size());
     representations_d_.shrink_to_fit();
