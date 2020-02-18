@@ -22,43 +22,6 @@
 #include <claragenomics/utils/mathutils.hpp>
 #include <claragenomics/utils/signed_integer_utils.hpp>
 
-namespace
-{
-
-template <typename RandomAccessIterator, typename ValueType>
-__device__ RandomAccessIterator lower_bound(RandomAccessIterator lower_bound, RandomAccessIterator upper_bound, ValueType query)
-{
-    assert(upper_bound >= lower_bound);
-    while (upper_bound > lower_bound)
-    {
-        RandomAccessIterator mid = lower_bound + (upper_bound - lower_bound) / 2;
-        const auto mid_value     = *mid;
-        if (mid_value < query)
-            lower_bound = mid + 1;
-        else
-            upper_bound = mid;
-    }
-    return lower_bound;
-}
-
-template <typename RandomAccessIterator, typename ValueType>
-__device__ RandomAccessIterator upper_bound(RandomAccessIterator lower_bound, RandomAccessIterator upper_bound, ValueType query)
-{
-    assert(upper_bound >= lower_bound);
-    while (upper_bound > lower_bound)
-    {
-        RandomAccessIterator mid = lower_bound + (upper_bound - lower_bound) / 2;
-        const auto mid_value     = *mid;
-        if (mid_value <= query)
-            lower_bound = mid + 1;
-        else
-            upper_bound = mid;
-    }
-    return lower_bound;
-}
-
-} // namespace
-
 namespace claragenomics
 {
 
@@ -122,46 +85,39 @@ namespace details
 namespace matcher_gpu
 {
 
-void find_query_target_matches(
-    device_buffer<std::int64_t>& found_target_indices_d,
-    const device_buffer<representation_t>& query_representations_d,
-    const device_buffer<representation_t>& target_representations_d)
+namespace
 {
-    assert(found_target_indices_d.size() == query_representations_d.size());
 
-    const int32_t n_threads = 256;
-    const int32_t n_blocks  = ceiling_divide<int64_t>(query_representations_d.size(), n_threads);
-
-    find_query_target_matches_kernel<<<n_blocks, n_threads>>>(found_target_indices_d.data(), query_representations_d.data(), get_size(query_representations_d), target_representations_d.data(), get_size(target_representations_d));
+template <typename RandomAccessIterator, typename ValueType>
+__device__ RandomAccessIterator lower_bound(RandomAccessIterator lower_bound, RandomAccessIterator upper_bound, ValueType query)
+{
+    assert(upper_bound >= lower_bound);
+    while (upper_bound > lower_bound)
+    {
+        RandomAccessIterator mid = lower_bound + (upper_bound - lower_bound) / 2;
+        const auto mid_value     = *mid;
+        if (mid_value < query)
+            lower_bound = mid + 1;
+        else
+            upper_bound = mid;
+    }
+    return lower_bound;
 }
 
-void compute_anchor_starting_indices(
-    device_buffer<std::int64_t>& anchor_starting_indices_d,
-    const device_buffer<std::uint32_t>& query_starting_index_of_each_representation_d,
-    const device_buffer<std::int64_t>& found_target_indices_d,
-    const device_buffer<std::uint32_t>& target_starting_index_of_each_representation_d)
+template <typename RandomAccessIterator, typename ValueType>
+__device__ RandomAccessIterator upper_bound(RandomAccessIterator lower_bound, RandomAccessIterator upper_bound, ValueType query)
 {
-    assert(query_starting_index_of_each_representation_d.size() == found_target_indices_d.size() + 1);
-    assert(anchor_starting_indices_d.size() == found_target_indices_d.size());
-
-    const std::uint32_t* const query_starting_indices  = query_starting_index_of_each_representation_d.data();
-    const std::uint32_t* const target_starting_indices = target_starting_index_of_each_representation_d.data();
-    const std::int64_t* const found_target_indices     = found_target_indices_d.data();
-
-    thrust::transform_inclusive_scan(
-        thrust::device,
-        thrust::make_counting_iterator(std::int64_t(0)),
-        thrust::make_counting_iterator(get_size(anchor_starting_indices_d)),
-        anchor_starting_indices_d.begin(),
-        [query_starting_indices, target_starting_indices, found_target_indices] __device__(std::uint32_t query_index) -> std::int64_t {
-            std::int32_t n_queries_with_representation = query_starting_indices[query_index + 1] - query_starting_indices[query_index];
-            std::int64_t target_index                  = found_target_indices[query_index];
-            std::int32_t n_targets_with_representation = 0;
-            if (target_index >= 0)
-                n_targets_with_representation = target_starting_indices[target_index + 1] - target_starting_indices[target_index];
-            return n_queries_with_representation * n_targets_with_representation;
-        },
-        thrust::plus<std::int64_t>());
+    assert(upper_bound >= lower_bound);
+    while (upper_bound > lower_bound)
+    {
+        RandomAccessIterator mid = lower_bound + (upper_bound - lower_bound) / 2;
+        const auto mid_value     = *mid;
+        if (mid_value <= query)
+            lower_bound = mid + 1;
+        else
+            upper_bound = mid;
+    }
+    return lower_bound;
 }
 
 /// \brief Generates an array of anchors from matches of representations of the query and target index
@@ -192,11 +148,11 @@ __global__ void generate_anchors_kernel(
     Anchor* const anchors_d,
     ReadsKeyT* const compound_key_read_ids_d,
     PositionsKeyT* const compound_key_positions_in_reads_d,
-    const int64_t n_anchors,
-    const int64_t* const anchor_starting_index_d,
+    const std::int64_t n_anchors,
+    const std::int64_t* const anchor_starting_index_d,
     const std::uint32_t* const query_starting_index_of_each_representation_d,
     const std::int64_t* const found_target_indices_d,
-    const int32_t n_query_representations,
+    const std::int32_t n_query_representations,
     const std::uint32_t* const target_starting_index_of_each_representation_d,
     const read_id_t* const query_read_ids,
     const position_in_read_t* const query_positions_in_read,
@@ -244,7 +200,7 @@ __global__ void generate_anchors_kernel(
     assert(query_idx < query_starting_index_of_each_representation_d[representation_idx + 1]);
 
     // Generate and store the anchor
-    Anchor a;
+    claragenomics::cudamapper::Anchor a;
     a.query_read_id_           = query_read_ids[query_idx];
     a.target_read_id_          = target_read_ids[target_idx];
     a.query_position_in_read_  = query_positions_in_read[query_idx];
@@ -294,8 +250,8 @@ void generate_anchors(
     const device_buffer<position_in_read_t>& query_positions_in_read                  = query_index.positions_in_reads();
 
     const device_buffer<std::uint32_t>& target_starting_index_of_each_representation_d = target_index.first_occurrence_of_representations();
-    const device_buffer<read_id_t>& target_read_ids                                    = target_index.read_ids();
-    const device_buffer<position_in_read_t>& target_positions_in_read                  = target_index.positions_in_reads();
+    const device_buffer<cudamapper::read_id_t>& target_read_ids                        = target_index.read_ids();
+    const device_buffer<cudamapper::position_in_read_t>& target_positions_in_read      = target_index.positions_in_reads();
 
     assert(anchor_starting_indices_d.size() + 1 == query_starting_index_of_each_representation_d.size());
     assert(found_target_indices_d.size() + 1 == query_starting_index_of_each_representation_d.size());
@@ -312,7 +268,7 @@ void generate_anchors(
     {
         CGA_NVTX_RANGE(profile, "matcherGPU::generate_anchors_kernel");
         const int32_t n_threads = 256;
-        const int32_t n_blocks  = ceiling_divide<int64_t>(get_size(anchors), n_threads);
+        const int32_t n_blocks  = claragenomics::ceiling_divide<int64_t>(get_size(anchors), n_threads);
         generate_anchors_kernel<<<n_blocks, n_threads>>>(
             anchors.data(),
             compound_key_read_ids.data(),
@@ -344,6 +300,50 @@ void generate_anchors(
     }
 }
 
+} // namespace
+
+void find_query_target_matches(
+    device_buffer<std::int64_t>& found_target_indices_d,
+    const device_buffer<representation_t>& query_representations_d,
+    const device_buffer<representation_t>& target_representations_d)
+{
+    assert(found_target_indices_d.size() == query_representations_d.size());
+
+    const int32_t n_threads = 256;
+    const int32_t n_blocks  = ceiling_divide<int64_t>(query_representations_d.size(), n_threads);
+
+    find_query_target_matches_kernel<<<n_blocks, n_threads>>>(found_target_indices_d.data(), query_representations_d.data(), get_size(query_representations_d), target_representations_d.data(), get_size(target_representations_d));
+}
+
+void compute_anchor_starting_indices(
+    device_buffer<std::int64_t>& anchor_starting_indices_d,
+    const device_buffer<std::uint32_t>& query_starting_index_of_each_representation_d,
+    const device_buffer<std::int64_t>& found_target_indices_d,
+    const device_buffer<std::uint32_t>& target_starting_index_of_each_representation_d)
+{
+    assert(query_starting_index_of_each_representation_d.size() == found_target_indices_d.size() + 1);
+    assert(anchor_starting_indices_d.size() == found_target_indices_d.size());
+
+    const std::uint32_t* const query_starting_indices  = query_starting_index_of_each_representation_d.data();
+    const std::uint32_t* const target_starting_indices = target_starting_index_of_each_representation_d.data();
+    const std::int64_t* const found_target_indices     = found_target_indices_d.data();
+
+    thrust::transform_inclusive_scan(
+        thrust::device,
+        thrust::make_counting_iterator(std::int64_t(0)),
+        thrust::make_counting_iterator(get_size(anchor_starting_indices_d)),
+        anchor_starting_indices_d.begin(),
+        [query_starting_indices, target_starting_indices, found_target_indices] __device__(std::uint32_t query_index) -> std::int64_t {
+            std::int32_t n_queries_with_representation = query_starting_indices[query_index + 1] - query_starting_indices[query_index];
+            std::int64_t target_index                  = found_target_indices[query_index];
+            std::int32_t n_targets_with_representation = 0;
+            if (target_index >= 0)
+                n_targets_with_representation = target_starting_indices[target_index + 1] - target_starting_indices[target_index];
+            return n_queries_with_representation * n_targets_with_representation;
+        },
+        thrust::plus<std::int64_t>());
+}
+
 void generate_anchors_dispatcher(
     device_buffer<Anchor>& anchors,
     const device_buffer<std::int64_t>& anchor_starting_indices_d,
@@ -372,25 +372,25 @@ void generate_anchors_dispatcher(
         {
             using PositionsKeyT = std::uint32_t;
 
-            details::matcher_gpu::generate_anchors<ReadsKeyT, PositionsKeyT>(anchors,
-                                                                             anchor_starting_indices_d,
-                                                                             found_target_indices_d,
-                                                                             query_index,
-                                                                             target_index,
-                                                                             max_reads_compound_key,
-                                                                             max_positions_compound_key);
+            generate_anchors<ReadsKeyT, PositionsKeyT>(anchors,
+                                                       anchor_starting_indices_d,
+                                                       found_target_indices_d,
+                                                       query_index,
+                                                       target_index,
+                                                       max_reads_compound_key,
+                                                       max_positions_compound_key);
         }
         else
         {
             using PositionsKeyT = std::uint64_t;
 
-            details::matcher_gpu::generate_anchors<ReadsKeyT, PositionsKeyT>(anchors,
-                                                                             anchor_starting_indices_d,
-                                                                             found_target_indices_d,
-                                                                             query_index,
-                                                                             target_index,
-                                                                             max_reads_compound_key,
-                                                                             max_positions_compound_key);
+            generate_anchors<ReadsKeyT, PositionsKeyT>(anchors,
+                                                       anchor_starting_indices_d,
+                                                       found_target_indices_d,
+                                                       query_index,
+                                                       target_index,
+                                                       max_reads_compound_key,
+                                                       max_positions_compound_key);
         }
     }
     else
@@ -400,25 +400,25 @@ void generate_anchors_dispatcher(
         {
             using PositionsKeyT = std::uint32_t;
 
-            details::matcher_gpu::generate_anchors<ReadsKeyT, PositionsKeyT>(anchors,
-                                                                             anchor_starting_indices_d,
-                                                                             found_target_indices_d,
-                                                                             query_index,
-                                                                             target_index,
-                                                                             max_reads_compound_key,
-                                                                             max_positions_compound_key);
+            generate_anchors<ReadsKeyT, PositionsKeyT>(anchors,
+                                                       anchor_starting_indices_d,
+                                                       found_target_indices_d,
+                                                       query_index,
+                                                       target_index,
+                                                       max_reads_compound_key,
+                                                       max_positions_compound_key);
         }
         else
         {
             using PositionsKeyT = std::uint64_t;
 
-            details::matcher_gpu::generate_anchors<ReadsKeyT, PositionsKeyT>(anchors,
-                                                                             anchor_starting_indices_d,
-                                                                             found_target_indices_d,
-                                                                             query_index,
-                                                                             target_index,
-                                                                             max_reads_compound_key,
-                                                                             max_positions_compound_key);
+            generate_anchors<ReadsKeyT, PositionsKeyT>(anchors,
+                                                       anchor_starting_indices_d,
+                                                       found_target_indices_d,
+                                                       query_index,
+                                                       target_index,
+                                                       max_reads_compound_key,
+                                                       max_positions_compound_key);
         }
     }
 }
