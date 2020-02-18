@@ -9,13 +9,19 @@
  */
 
 #include <cub/cub.cuh>
-#include <thrust/device_vector.h>
+
 #include <fstream>
 #include <cstdlib>
 
 #include <claragenomics/utils/cudautils.hpp>
+
 #include "cudamapper_utils.hpp"
 #include "overlapper_triggered.hpp"
+
+#ifndef NDEBUG // only needed to check if input is sorted in assert
+#include <algorithm>
+#include <thrust/host_vector.h>
+#endif
 
 namespace claragenomics
 {
@@ -191,6 +197,31 @@ void OverlapperTriggered::get_overlaps(std::vector<Overlap>& fused_overlaps,
     CGA_NVTX_RANGE(profiler, "OverlapperTriggered::get_overlaps");
     const auto tail_length_for_chain = 3;
     auto n_anchors                   = d_anchors.size();
+
+#ifndef NDEBUG
+    // check if anchors are sorted properly
+
+    // TODO: Copying data to host and doing the check there as using thrust::is_sorted
+    //       leads to a compilaiton error. It is probably a bug in device_buffer implementation
+
+    thrust::host_vector<Anchor> h_anchors(d_anchors.size());
+    cudautils::device_copy_n(d_anchors.data(), d_anchors.size(), h_anchors.data()); // D2H
+
+    auto comp_anchors = [](const Anchor& i, const Anchor& j) { return (i.query_read_id_ < j.query_read_id_) ||
+                                                                      ((i.query_read_id_ == j.query_read_id_) &&
+                                                                       (i.target_read_id_ < j.target_read_id_)) ||
+                                                                      ((i.query_read_id_ == j.query_read_id_) &&
+                                                                       (i.target_read_id_ == j.target_read_id_) &&
+                                                                       (i.query_position_in_read_ < j.query_position_in_read_)) ||
+                                                                      ((i.query_read_id_ == j.query_read_id_) &&
+                                                                       (i.target_read_id_ == j.target_read_id_) &&
+                                                                       (i.query_position_in_read_ == j.query_position_in_read_) &&
+                                                                       (i.target_position_in_read_ < j.target_position_in_read_)); };
+
+    assert(std::is_sorted(std::begin(h_anchors),
+                          std::end(h_anchors),
+                          comp_anchors));
+#endif
 
     // temporary workspace buffer on device
     device_buffer<char> d_temp_buf(_allocator, stream);
