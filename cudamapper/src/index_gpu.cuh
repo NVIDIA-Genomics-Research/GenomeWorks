@@ -737,8 +737,11 @@ void IndexGPU<SketchElementImpl>::generate_index(const io::FastaParser& parser,
                                                                        read_id_to_basepairs_section_d,
                                                                        hash_representations);
 
-    device_buffer<representation_t> generated_representations_d                         = std::move(sketch_elements.representations_d);
-    device_buffer<typename SketchElementImpl::ReadidPositionDirection> generated_rest_d = std::move(sketch_elements.rest_d);
+    representations_d_                                                        = std::move(sketch_elements.representations_d);
+    device_buffer<typename SketchElementImpl::ReadidPositionDirection> rest_d = std::move(sketch_elements.rest_d);
+    // TODO: ^^^^ The reason for having the rest of values packed together is to be able to sort them all at once (a few lines below)
+    //       Consider implementing a move-to-index function for that sort. That way this interface would be more verbose and there
+    //       would be no need for copy_rest_to_separate_arrays()
 
     CGA_LOG_INFO("Deallocating {} bytes from read_id_to_basepairs_section_d", read_id_to_basepairs_section_d.size() * sizeof(decltype(read_id_to_basepairs_section_d)::value_type));
     read_id_to_basepairs_section_d.free();
@@ -747,19 +750,11 @@ void IndexGPU<SketchElementImpl>::generate_index(const io::FastaParser& parser,
 
     // *** sort sketch elements by representation ***
     // As this is a stable sort and the data was initailly grouper by read_id this means that the sketch elements within each representations are sorted by read_id
+    // TODO: consider using a CUB radix sort based function here
     thrust::stable_sort_by_key(thrust::device,
-                               std::begin(generated_representations_d),
-                               std::end(generated_representations_d),
-                               std::begin(generated_rest_d));
-
-    // copy the data to member functions (depending on the interface desing these copies might not be needed)
-    representations_d_.resize(generated_representations_d.size());
-    representations_d_.shrink_to_fit();
-    thrust::copy(thrust::device,
-                 std::begin(generated_representations_d),
-                 std::end(generated_representations_d),
-                 std::begin(representations_d_));
-    generated_representations_d.free();
+                               std::begin(representations_d_),
+                               std::end(representations_d_),
+                               std::begin(rest_d));
 
     read_ids_d_.resize(representations_d_.size());
     read_ids_d_.shrink_to_fit();
@@ -771,7 +766,7 @@ void IndexGPU<SketchElementImpl>::generate_index(const io::FastaParser& parser,
     const std::uint32_t threads = 256;
     const std::uint32_t blocks  = ceiling_divide<int64_t>(representations_d_.size(), threads);
 
-    details::index_gpu::copy_rest_to_separate_arrays<<<blocks, threads>>>(generated_rest_d.data(),
+    details::index_gpu::copy_rest_to_separate_arrays<<<blocks, threads>>>(rest_d.data(),
                                                                           read_ids_d_.data(),
                                                                           positions_in_reads_d_.data(),
                                                                           directions_of_reads_d_.data(),
