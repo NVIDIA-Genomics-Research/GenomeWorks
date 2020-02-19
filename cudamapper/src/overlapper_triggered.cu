@@ -380,7 +380,7 @@ void OverlapperTriggered::get_overlaps(std::vector<Overlap>& fused_overlaps,
     // parallel update the overlaps to include the corresponding read names [parallel on host]
 
 #pragma omp parallel for
-    for (int i = 0; i < fused_overlaps.size(); i++)
+    for (size_t i = 0; i < fused_overlaps.size(); i++)
     {
         auto& o                      = fused_overlaps[i];
         std::string query_read_name  = index_query.read_id_to_read_name(o.query_read_id_);

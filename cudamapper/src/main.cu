@@ -150,7 +150,7 @@ int main(int argc, char* argv[])
     // Data structure for holding overlaps to be written out
     std::mutex overlaps_writer_mtx;
 
-    struct query_target_range
+    struct QueryTargetRange
     {
         std::pair<std::int32_t, int32_t> query_range;
         std::vector<std::pair<std::int32_t, int32_t>> target_ranges;
@@ -161,18 +161,21 @@ int main(int argc, char* argv[])
     auto target_chunks = target_parser->get_read_chunks(target_index_size * 1000000);
 
     //First generate all the ranges independently, then loop over them.
-    std::vector<query_target_range> query_target_ranges;
+    std::vector<QueryTargetRange> query_target_ranges;
 
     int target_idx = 0;
     for (auto const& query_chunk : query_chunks)
     {
-        query_target_range range;
+        QueryTargetRange range;
         range.query_range = query_chunk;
         for (size_t t = target_idx; t < target_chunks.size(); t++)
         {
             range.target_ranges.push_back(target_chunks[t]);
         }
         query_target_ranges.push_back(range);
+        // in all-to-all, for query chunk 0, we go through target chunks [target_idx = 0 , n = target_chunks.size())
+        // for query chunk 1, we only need target chunks [target_idx = 1 , n), and in general for query_chunk i, we need target chunks [target_idx = i , n)
+        // therefore as we're looping through query chunks, in all-to-all, will increment target_idx
         if (all_to_all)
         {
             target_idx++;
@@ -249,11 +252,11 @@ int main(int argc, char* argv[])
     std::shared_ptr<claragenomics::DeviceAllocator> allocator(new claragenomics::CudaMallocAllocator());
 #endif
 
-    auto compute_overlaps = [&](const query_target_range query_target_range, const int device_id) {
+    auto compute_overlaps = [&](const QueryTargetRange query_target_range, const int device_id) {
         cudaSetDevice(device_id);
 
         auto query_start_index = query_target_range.query_range.first;
-        auto query_end_index   = query_target_range.query_range.second - 1;
+        auto query_end_index   = query_target_range.query_range.second;
 
         std::cerr << "Processing query range: (" << query_start_index << " - " << query_end_index - 1 << ")" << std::endl;
 
@@ -292,7 +295,7 @@ int main(int argc, char* argv[])
 
                 //Increment counter which tracks number of overlap chunks to be filtered and printed
                 num_overlap_chunks_to_print++;
-                auto print_overlaps = [&overlaps_writer_mtx, &num_overlap_chunks_to_print](std::vector<claragenomics::cudamapper::Overlap> overlaps) {
+                auto filter_and_print_overlaps = [&overlaps_writer_mtx, &num_overlap_chunks_to_print](std::vector<claragenomics::cudamapper::Overlap> overlaps) {
                     std::vector<claragenomics::cudamapper::Overlap> filtered_overlaps;
                     claragenomics::cudamapper::Overlapper::filter_overlaps(filtered_overlaps, overlaps, 50);
                     std::lock_guard<std::mutex> lck(overlaps_writer_mtx);
@@ -307,7 +310,7 @@ int main(int argc, char* argv[])
                     num_overlap_chunks_to_print--;
                 };
 
-                std::thread t(print_overlaps, overlaps_to_add);
+                std::thread t(filter_and_print_overlaps, overlaps_to_add);
                 t.detach();
             }
             // reseting the matcher releases the anchor device array back to memory pool
