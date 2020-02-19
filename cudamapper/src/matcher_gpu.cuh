@@ -10,10 +10,9 @@
 
 #pragma once
 
-#include <vector>
-#include <thrust/device_vector.h>
 #include <claragenomics/cudamapper/matcher.hpp>
 #include <claragenomics/cudamapper/types.hpp>
+#include <claragenomics/utils/device_buffer.hpp>
 
 namespace claragenomics
 {
@@ -24,13 +23,14 @@ namespace cudamapper
 class MatcherGPU : public Matcher
 {
 public:
-    MatcherGPU(const Index& query_index,
+    MatcherGPU(std::shared_ptr<DeviceAllocator> allocator,
+               const Index& query_index,
                const Index& target_index);
 
-    thrust::device_vector<Anchor>& anchors() override;
+    device_buffer<Anchor>& anchors() override;
 
 private:
-    thrust::device_vector<Anchor> anchors_d_;
+    device_buffer<Anchor> anchors_d_;
 };
 
 namespace details
@@ -65,9 +65,9 @@ namespace matcher_gpu
 /// \param query_representations_d An array of query representations
 /// \param target_representations_d An sorted array of target representations
 void find_query_target_matches(
-    thrust::device_vector<std::int64_t>& found_target_indices_d,
-    const thrust::device_vector<representation_t>& query_representations_d,
-    const thrust::device_vector<representation_t>& target_representations_d);
+    device_buffer<std::int64_t>& found_target_indices_d,
+    const device_buffer<representation_t>& query_representations_d,
+    const device_buffer<representation_t>& target_representations_d);
 
 /// \brief Computes the starting indices for an array of anchors based on the matches in query and target arrays.
 ///
@@ -102,10 +102,10 @@ void find_query_target_matches(
 /// \param found_target_indices_d
 /// \param target_starting_index_of_each_representation_d
 void compute_anchor_starting_indices(
-    thrust::device_vector<std::int64_t>& anchor_starting_indices_d,
-    const thrust::device_vector<std::uint32_t>& query_starting_index_of_each_representation_d,
-    const thrust::device_vector<std::int64_t>& found_target_indices_d,
-    const thrust::device_vector<std::uint32_t>& target_starting_index_of_each_representation_d);
+    device_buffer<std::int64_t>& anchor_starting_indices_d,
+    const device_buffer<std::uint32_t>& query_starting_index_of_each_representation_d,
+    const device_buffer<std::int64_t>& found_target_indices_d,
+    const device_buffer<std::uint32_t>& target_starting_index_of_each_representation_d);
 
 /// \brief Generates an array of anchors from matches of representations of the query and target index
 ///
@@ -113,6 +113,10 @@ void compute_anchor_starting_indices(
 /// anchor_starting_indices for each unique representation of the query index.
 /// The anchor_starting_indices can be computed by compute_anchor_starting_indices and the size of the
 /// anchors array must match the last element of anchor_starting_indices.
+///
+/// It also generates compound_key_read_ids and compound_key_positions_in_reads whose each element
+/// corresponds the achor with the same id. Compound keys are defined as query_x * max_target_x + target_x.
+/// For read_id local read_id is used, where local_read_id = real_read_id - smallest_read_id
 ///
 /// For example:
 ///   (see also compute_anchor_starting_indices() )
@@ -145,26 +149,21 @@ void compute_anchor_starting_indices(
 ///     23: (10,100,69,99), (10,100,70,110), ..., (10,100,72,132), (11,110,69,99), ..., ..., (12,120,72,132) --  12 elements in total
 ///     46: (18,180,78,198), ..., ..., (20,200,80,220) -- 9 elements in total
 ///
+///    Anchors are sorted in the following order: query_read_id -> target_read_id -> query_position_in_read -> target_position_in_read
+///
+///    This function essentially determines necessary size of compound key and passes everything to generate_anchors()
 ///
 /// \param anchors the array to be filled with anchors, the size of this array has to be equal to the last element of anchor_starting_indices
 /// \param anchor_starting_indices_d the array of starting indices of the set of anchors for each unique representation of the query index (representations with no match in target will have the same starting index as the last matching representation)
-/// \param query_starting_index_of_each_representation_d the starting index of a representation in query_read_ids and query_positions_in_read
 /// \param found_target_indices_d the found matches in the array of unique target representation for each unique representation of query index
-/// \param target_starting_index_of_each_representation_d the starting index of a representation in target_read_ids and target_positions_in_read
-/// \param query_read_ids the array of read ids of the (read id, position)-pairs in query index
-/// \param query_positions_in_read the array of positions of the (read id, position)-pairs in query index
-/// \param target_read_ids the array of read ids of the (read id, position)-pairs in target index
-/// \param target_positions_in_read the array of positions of the (read id, position)-pairs in target index
-void generate_anchors(
-    thrust::device_vector<Anchor>& anchors,
-    const thrust::device_vector<std::int64_t>& anchor_starting_indices_d,
-    const thrust::device_vector<std::uint32_t>& query_starting_index_of_each_representation_d,
-    const thrust::device_vector<std::int64_t>& found_target_indices_d,
-    const thrust::device_vector<std::uint32_t>& target_starting_index_of_each_representation_d,
-    const thrust::device_vector<read_id_t>& query_read_ids,
-    const thrust::device_vector<position_in_read_t>& query_positions_in_read,
-    const thrust::device_vector<read_id_t>& target_read_ids,
-    const thrust::device_vector<position_in_read_t>& target_positions_in_read);
+/// \param query_index
+/// \param target_index
+void generate_anchors_dispatcher(
+    device_buffer<Anchor>& anchors,
+    const device_buffer<std::int64_t>& anchor_starting_indices_d,
+    const device_buffer<std::int64_t>& found_target_indices_d,
+    const Index& query_index,
+    const Index& target_index);
 
 /// \brief Performs a binary search on target_representations_d for each element of query_representations_d and stores the found index (or -1 iff not found) in found_target_indices.
 ///
@@ -192,34 +191,6 @@ __global__ void find_query_target_matches_kernel(
     const int64_t n_query_representations,
     const representation_t* const target_representations_d,
     const int64_t n_target_representations);
-
-/// \brief Generates an array of anchors from matches of representations of the query and target index
-///
-/// see generate_anchors()
-///
-/// \param anchors the array to be filled with anchors, the size of this array has to be equal to the last element of anchor_starting_indices
-/// \param n_anchors the size of the anchors array
-/// \param anchor_starting_indices_d the array of starting indices of the set of anchors for each unique representation of the query index (representations with no match in target will have the same starting index as the last matching representation)
-/// \param query_starting_index_of_each_representation_d the starting index of a representation in query_read_ids and query_positions_in_read
-/// \param found_target_indices_d the found matches in the array of unique target representation for each unique representation of query index
-/// \param target_starting_index_of_each_representation_d the starting index of a representation in target_read_ids and target_positions_in_read
-/// \param n_query_representations the size of the query_starting_index_of_each_representation_d and found_target_indices_d arrays, ie. the number of unique representations in the query index
-/// \param query_read_ids the array of read ids of the (read id, position)-pairs in query index
-/// \param query_positions_in_read the array of positions of the (read id, position)-pairs in query index
-/// \param target_read_ids the array of read ids of the (read id, position)-pairs in target index
-/// \param target_positions_in_read the array of positions of the (read id, position)-pairs in target index
-__global__ void generate_anchors_kernel(
-    Anchor* const anchors_d,
-    const int64_t n_anchors,
-    const int64_t* const anchor_starting_index_d,
-    const std::uint32_t* const query_starting_index_of_each_representation_d,
-    const std::int64_t* const found_target_indices_d,
-    const int32_t n_query_representations,
-    const std::uint32_t* const target_starting_index_of_each_representation_d,
-    const read_id_t* const query_read_ids,
-    const position_in_read_t* const query_positions_in_read,
-    const read_id_t* const target_read_ids,
-    const position_in_read_t* const target_positions_in_read);
 } // namespace matcher_gpu
 
 } // namespace details

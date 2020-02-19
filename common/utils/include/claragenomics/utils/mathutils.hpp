@@ -11,6 +11,7 @@
 #pragma once
 
 #include <cassert>
+#include <cstdint>
 #include <type_traits>
 #include <cuda_runtime_api.h>
 #ifndef __CUDA_ARCH__
@@ -37,6 +38,35 @@ __host__ __device__ inline T const& min3(T const& t1, T const& t2, T const& t3)
 #else
     return std::min(t1, std::min(t2, t3));
 #endif
+}
+
+/// @brief Calculates floor of log2() of the given integer number
+///
+/// int_floor_log2(1) = 0
+/// int_floor_log2(2) = 1
+/// int_floor_log2(3) = 1
+/// int_floor_log2(8) = 3
+/// int_floor_log2(11) = 3
+///
+/// @param val
+/// @tparam T type of val
+template <typename T>
+std::int32_t int_floor_log2(T val)
+{
+    static_assert(std::is_integral<T>::value, "Expected an integer");
+
+    assert(val > 0);
+
+    std::int32_t power = 0;
+    // keep dividing by 2 until value is 1
+    while (val != 1)
+    {
+        // divide by two, i.e. move by one log value
+        val >>= 1;
+        ++power;
+    }
+
+    return power;
 }
 
 } // namespace claragenomics
