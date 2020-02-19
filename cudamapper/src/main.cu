@@ -41,7 +41,7 @@ static struct option options[] = {
     {"help", no_argument, 0, 'h'},
 };
 
-void help(int32_t exit_code);
+void help(int32_t exit_code); //
 
 int main(int argc, char* argv[])
 {
