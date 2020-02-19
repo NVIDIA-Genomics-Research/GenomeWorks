@@ -165,16 +165,22 @@ void test_find_first_occurrences_of_representations(const thrust::host_vector<re
                                                     const thrust::host_vector<std::uint32_t>& expected_starting_index_of_each_representation_h,
                                                     const thrust::host_vector<representation_t>& expected_unique_representations_h)
 {
-    const thrust::device_vector<representation_t> representations_d(representations_h);
+    std::shared_ptr<DeviceAllocator> allocator = std::make_shared<CudaMallocAllocator>();
+    device_buffer<representation_t> representations_d(representations_h.size(), allocator);
+    cudautils::device_copy_n(representations_h.data(), representations_h.size(), representations_d.data()); // H2D
 
-    thrust::device_vector<std::uint32_t> starting_index_of_each_representation_d;
-    thrust::device_vector<representation_t> unique_representations_d;
-    find_first_occurrences_of_representations(unique_representations_d,
+    device_buffer<std::uint32_t> starting_index_of_each_representation_d(allocator);
+    device_buffer<representation_t> unique_representations_d(allocator);
+
+    find_first_occurrences_of_representations(allocator,
+                                              unique_representations_d,
                                               starting_index_of_each_representation_d,
                                               representations_d);
 
-    const thrust::host_vector<std::uint32_t> starting_index_of_each_representation_h(starting_index_of_each_representation_d);
-    const thrust::host_vector<representation_t> unique_representations_h(unique_representations_d);
+    thrust::host_vector<std::uint32_t> starting_index_of_each_representation_h(starting_index_of_each_representation_d.size());
+    cudautils::device_copy_n(starting_index_of_each_representation_d.data(), starting_index_of_each_representation_d.size(), starting_index_of_each_representation_h.data()); // D2H
+    thrust::host_vector<representation_t> unique_representations_h(unique_representations_d.size());
+    cudautils::device_copy_n(unique_representations_d.data(), unique_representations_d.size(), unique_representations_h.data()); //D2H
 
     ASSERT_EQ(starting_index_of_each_representation_h.size(), expected_starting_index_of_each_representation_h.size());
     ASSERT_EQ(unique_representations_h.size(), expected_unique_representations_h.size());
@@ -948,14 +954,23 @@ void test_filter_out_most_common_representations(const double filtering_paramete
     ASSERT_EQ(expected_output_unique_representations_h.size(), expected_output_first_occurrence_of_representations_h.size() - 1);
     ASSERT_EQ(expected_output_representations_h.size(), expected_output_first_occurrence_of_representations_h.back());
 
-    thrust::device_vector<representation_t> representations_d(input_representations_h);
-    thrust::device_vector<read_id_t> read_ids_d(input_read_ids_h);
-    thrust::device_vector<position_in_read_t> positions_in_reads_d(input_positions_in_reads_h);
-    thrust::device_vector<DirectionOfRepresentation> directions_of_representations_d(input_directions_of_representations_h);
-    thrust::device_vector<representation_t> unique_representations_d(input_unique_representations_h);
-    thrust::device_vector<std::uint32_t> first_occurrence_of_representations_d(input_first_occurrence_of_representations_h);
+    std::shared_ptr<DeviceAllocator> allocator = std::make_shared<CudaMallocAllocator>();
 
-    filter_out_most_common_representations(filtering_parameter,
+    device_buffer<representation_t> representations_d(input_representations_h.size(), allocator);
+    cudautils::device_copy_n(input_representations_h.data(), input_representations_h.size(), representations_d.data()); // H2D
+    device_buffer<read_id_t> read_ids_d(input_read_ids_h.size(), allocator);
+    cudautils::device_copy_n(input_read_ids_h.data(), input_read_ids_h.size(), read_ids_d.data()); // H2D
+    device_buffer<position_in_read_t> positions_in_reads_d(input_positions_in_reads_h.size(), allocator);
+    cudautils::device_copy_n(input_positions_in_reads_h.data(), input_positions_in_reads_h.size(), positions_in_reads_d.data()); // H2D
+    device_buffer<DirectionOfRepresentation> directions_of_representations_d(input_directions_of_representations_h.size(), allocator);
+    cudautils::device_copy_n(input_directions_of_representations_h.data(), input_directions_of_representations_h.size(), directions_of_representations_d.data()); // H2D
+    device_buffer<representation_t> unique_representations_d(input_unique_representations_h.size(), allocator);
+    cudautils::device_copy_n(input_unique_representations_h.data(), input_unique_representations_h.size(), unique_representations_d.data()); // H2D
+    device_buffer<std::uint32_t> first_occurrence_of_representations_d(input_first_occurrence_of_representations_h.size(), allocator);
+    cudautils::device_copy_n(input_first_occurrence_of_representations_h.data(), input_first_occurrence_of_representations_h.size(), first_occurrence_of_representations_d.data()); // H2D
+
+    filter_out_most_common_representations(allocator,
+                                           filtering_parameter,
                                            representations_d,
                                            read_ids_d,
                                            positions_in_reads_d,
@@ -963,12 +978,18 @@ void test_filter_out_most_common_representations(const double filtering_paramete
                                            unique_representations_d,
                                            first_occurrence_of_representations_d);
 
-    thrust::host_vector<representation_t> output_representations_h(representations_d);
-    thrust::host_vector<read_id_t> output_read_ids_h(read_ids_d);
-    thrust::host_vector<position_in_read_t> output_positions_in_reads_h(positions_in_reads_d);
-    thrust::host_vector<DirectionOfRepresentation> output_directions_of_representations_h(directions_of_representations_d);
-    thrust::host_vector<representation_t> output_unique_representations_h(unique_representations_d);
-    thrust::host_vector<std::uint32_t> output_first_occurrence_of_representations_h(first_occurrence_of_representations_d);
+    thrust::host_vector<representation_t> output_representations_h(representations_d.size());
+    cudautils::device_copy_n(representations_d.data(), representations_d.size(), output_representations_h.data()); //D2H
+    thrust::host_vector<read_id_t> output_read_ids_h(read_ids_d.size());
+    cudautils::device_copy_n(read_ids_d.data(), read_ids_d.size(), output_read_ids_h.data()); //D2H
+    thrust::host_vector<position_in_read_t> output_positions_in_reads_h(positions_in_reads_d.size());
+    cudautils::device_copy_n(positions_in_reads_d.data(), positions_in_reads_d.size(), output_positions_in_reads_h.data()); //D2H
+    thrust::host_vector<DirectionOfRepresentation> output_directions_of_representations_h(directions_of_representations_d.size());
+    cudautils::device_copy_n(directions_of_representations_d.data(), directions_of_representations_d.size(), output_directions_of_representations_h.data()); // D2H
+    thrust::host_vector<representation_t> output_unique_representations_h(unique_representations_d.size());
+    cudautils::device_copy_n(unique_representations_d.data(), unique_representations_d.size(), output_unique_representations_h.data()); // D2H
+    thrust::host_vector<std::uint32_t> output_first_occurrence_of_representations_h(first_occurrence_of_representations_d.size());
+    cudautils::device_copy_n(first_occurrence_of_representations_d.data(), first_occurrence_of_representations_d.size(), output_first_occurrence_of_representations_h.data()); // D2H
 
     ASSERT_EQ(expected_output_representations_h.size(), output_representations_h.size());
     ASSERT_EQ(expected_output_representations_h.size(), output_read_ids_h.size());
@@ -1251,6 +1272,8 @@ TEST(TestCudamapperIndexGPU, test_filter_out_most_common_representations_large_e
 void test_function(const std::string& filename,
                    const read_id_t first_read_id,
                    const read_id_t past_the_last_read_id,
+                   const read_id_t expected_smallest_read_id,
+                   const read_id_t expected_largest_read_id,
                    const std::uint64_t kmer_size,
                    const std::uint64_t window_size,
                    const std::vector<representation_t>& expected_representations,
@@ -1265,8 +1288,10 @@ void test_function(const std::string& filename,
                    const position_in_read_t expected_number_of_basepairs_in_longest_read,
                    const double filtering_parameter = 1.0)
 {
-    std::unique_ptr<io::FastaParser> parser = io::create_kseq_fasta_parser(filename);
-    IndexGPU<Minimizer> index(*parser,
+    std::unique_ptr<io::FastaParser> parser    = io::create_kseq_fasta_parser(filename);
+    std::shared_ptr<DeviceAllocator> allocator = std::make_shared<CudaMallocAllocator>();
+    IndexGPU<Minimizer> index(allocator,
+                              *parser,
                               first_read_id,
                               past_the_last_read_id,
                               kmer_size,
@@ -1280,6 +1305,9 @@ void test_function(const std::string& filename,
         return;
     }
 
+    ASSERT_EQ(index.smallest_read_id(), expected_smallest_read_id);
+    ASSERT_EQ(index.largest_read_id(), expected_largest_read_id);
+
     ASSERT_EQ(expected_number_of_basepairs_in_longest_read, index.number_of_basepairs_in_longest_read());
 
     ASSERT_EQ(expected_number_of_reads, expected_read_id_to_read_name.size());
@@ -1291,14 +1319,18 @@ void test_function(const std::string& filename,
     }
 
     // check arrays
-    const thrust::device_vector<representation_t>& representations_d                             = index.representations();
-    const thrust::device_vector<position_in_read_t>& positions_in_reads_d                        = index.positions_in_reads();
-    const thrust::device_vector<read_id_t>& read_ids_d                                           = index.read_ids();
-    const thrust::device_vector<SketchElement::DirectionOfRepresentation>& directions_of_reads_d = index.directions_of_reads();
-    const thrust::host_vector<representation_t>& representations_h(representations_d);
-    const thrust::host_vector<position_in_read_t>& positions_in_reads_h(positions_in_reads_d);
-    const thrust::host_vector<read_id_t>& read_ids_h(read_ids_d);
-    const thrust::host_vector<SketchElement::DirectionOfRepresentation>& directions_of_reads_h(directions_of_reads_d);
+    const device_buffer<representation_t>& representations_d                             = index.representations();
+    const device_buffer<position_in_read_t>& positions_in_reads_d                        = index.positions_in_reads();
+    const device_buffer<read_id_t>& read_ids_d                                           = index.read_ids();
+    const device_buffer<SketchElement::DirectionOfRepresentation>& directions_of_reads_d = index.directions_of_reads();
+    thrust::host_vector<representation_t> representations_h(representations_d.size());
+    cudautils::device_copy_n(representations_d.data(), representations_d.size(), representations_h.data()); // D2H
+    thrust::host_vector<position_in_read_t> positions_in_reads_h(positions_in_reads_d.size());
+    cudautils::device_copy_n(positions_in_reads_d.data(), positions_in_reads_d.size(), positions_in_reads_h.data()); // D2H
+    thrust::host_vector<read_id_t> read_ids_h(read_ids_d.size());
+    cudautils::device_copy_n(read_ids_d.data(), read_ids_d.size(), read_ids_h.data()); // D2H
+    thrust::host_vector<SketchElement::DirectionOfRepresentation> directions_of_reads_h(directions_of_reads_d.size());
+    cudautils::device_copy_n(directions_of_reads_d.data(), directions_of_reads_d.size(), directions_of_reads_h.data()); // D2H
     ASSERT_EQ(representations_h.size(), expected_representations.size());
     ASSERT_EQ(positions_in_reads_h.size(), expected_positions_in_reads.size());
     ASSERT_EQ(read_ids_h.size(), expected_read_ids.size());
@@ -1314,10 +1346,12 @@ void test_function(const std::string& filename,
         EXPECT_EQ(directions_of_reads_h[i], expected_directions_of_reads[i]) << "i: " << i;
     }
 
-    const thrust::device_vector<representation_t> unique_representations_d           = index.unique_representations();
-    const thrust::device_vector<std::uint32_t> first_occurrence_of_representations_d = index.first_occurrence_of_representations();
-    const thrust::host_vector<representation_t> unique_representations_h(unique_representations_d);
-    const thrust::host_vector<representation_t> first_occurrence_of_representations_h(first_occurrence_of_representations_d);
+    const device_buffer<representation_t>& unique_representations_d           = index.unique_representations();
+    const device_buffer<std::uint32_t>& first_occurrence_of_representations_d = index.first_occurrence_of_representations();
+    thrust::host_vector<representation_t> unique_representations_h(unique_representations_d.size());
+    cudautils::device_copy_n(unique_representations_d.data(), unique_representations_d.size(), unique_representations_h.data()); // D2H
+    thrust::host_vector<std::uint32_t> first_occurrence_of_representations_h(first_occurrence_of_representations_d.size());
+    cudautils::device_copy_n(first_occurrence_of_representations_d.data(), first_occurrence_of_representations_d.size(), first_occurrence_of_representations_h.data()); // D2H
     ASSERT_EQ(expected_unique_representations.size() + 1, expected_first_occurrence_of_representations.size());
     ASSERT_EQ(unique_representations_h.size(), expected_unique_representations.size());
     ASSERT_EQ(first_occurrence_of_representations_h.size(), expected_first_occurrence_of_representations.size());
@@ -1364,11 +1398,15 @@ TEST(TestCudamapperIndexGPU, GATT_4_1)
     expected_first_occurrence_of_representations.push_back(1);
 
     const read_id_t expected_number_of_reads                              = 1;
+    const read_id_t expected_smallest_read_id                             = 0;
+    const read_id_t expected_largest_read_id                              = 0;
     const position_in_read_t expected_number_of_basepairs_in_longest_read = 4;
 
     test_function(filename,
                   0,
                   1,
+                  expected_smallest_read_id,
+                  expected_largest_read_id,
                   minimizer_size,
                   window_size,
                   expected_representations,
@@ -1451,11 +1489,15 @@ TEST(TestCudamapperIndexGPU, GATT_2_3)
     expected_first_occurrence_of_representations.push_back(3);
 
     const read_id_t expected_number_of_reads                              = 1;
+    const read_id_t expected_smallest_read_id                             = 0;
+    const read_id_t expected_largest_read_id                              = 0;
     const position_in_read_t expected_number_of_basepairs_in_longest_read = 4;
 
     test_function(filename,
                   0,
                   1,
+                  expected_smallest_read_id,
+                  expected_largest_read_id,
                   minimizer_size,
                   window_size,
                   expected_representations,
@@ -1495,11 +1537,15 @@ TEST(TestCudamapperIndexGPU, CCCATACC_2_8)
     std::vector<std::uint32_t> expected_first_occurrence_of_representations;
 
     const read_id_t expected_number_of_reads                              = 0;
+    const read_id_t expected_smallest_read_id                             = 0;
+    const read_id_t expected_largest_read_id                              = 0;
     const position_in_read_t expected_number_of_basepairs_in_longest_read = 0;
 
     test_function(filename,
                   0,
                   1,
+                  expected_smallest_read_id,
+                  expected_largest_read_id,
                   minimizer_size,
                   window_size,
                   expected_representations,
@@ -1694,11 +1740,15 @@ TEST(TestCudamapperIndexGPU, CCCATACC_3_5)
     expected_first_occurrence_of_representations.push_back(5);
 
     const read_id_t expected_number_of_reads                              = 1;
+    const read_id_t expected_smallest_read_id                             = 0;
+    const read_id_t expected_largest_read_id                              = 0;
     const position_in_read_t expected_number_of_basepairs_in_longest_read = 8;
 
     test_function(filename,
                   0,
                   1,
+                  expected_smallest_read_id,
+                  expected_largest_read_id,
                   minimizer_size,
                   window_size,
                   expected_representations,
@@ -1833,11 +1883,15 @@ TEST(TestCudamapperIndexGPU, CATCAAG_AAGCTA_3_2)
     expected_first_occurrence_of_representations.push_back(7);
 
     const read_id_t expected_number_of_reads                              = 2;
+    const read_id_t expected_smallest_read_id                             = 0;
+    const read_id_t expected_largest_read_id                              = 1;
     const position_in_read_t expected_number_of_basepairs_in_longest_read = 7;
 
     test_function(filename,
                   0,
                   2,
+                  expected_smallest_read_id,
+                  expected_largest_read_id,
                   minimizer_size,
                   window_size,
                   expected_representations,
@@ -2004,11 +2058,15 @@ TEST(TestCudamapperIndexGPU, AAAACTGAA_GCCAAAG_2_3)
     expected_first_occurrence_of_representations.push_back(12);
 
     const read_id_t expected_number_of_reads                              = 2;
+    const read_id_t expected_smallest_read_id                             = 0;
+    const read_id_t expected_largest_read_id                              = 1;
     const position_in_read_t expected_number_of_basepairs_in_longest_read = 9;
 
     test_function(filename,
                   0,
                   2,
+                  expected_smallest_read_id,
+                  expected_largest_read_id,
                   minimizer_size,
                   window_size,
                   expected_representations,
@@ -2121,11 +2179,15 @@ TEST(TestCudamapperIndexGPU, AAAACTGAA_GCCAAAG_2_3_only_second_read_in_index)
     expected_first_occurrence_of_representations.push_back(6);
 
     const read_id_t expected_number_of_reads                              = 1;
+    const read_id_t expected_smallest_read_id                             = 1; // <- index is instructed to ignore first (0th) read
+    const read_id_t expected_largest_read_id                              = 1;
     const position_in_read_t expected_number_of_basepairs_in_longest_read = 7;
 
     test_function(filename,
                   1, // <- only take second read
                   2,
+                  expected_smallest_read_id,
+                  expected_largest_read_id,
                   minimizer_size,
                   window_size,
                   expected_representations,
@@ -2272,11 +2334,15 @@ TEST(TestCudamapperIndexGPU, AAAACTGAA_GCCAAAG_2_3_filtering)
     expected_first_occurrence_of_representations.push_back(6);
 
     const read_id_t expected_number_of_reads                              = 2;
+    const read_id_t expected_smallest_read_id                             = 0;
+    const read_id_t expected_largest_read_id                              = 1;
     const position_in_read_t expected_number_of_basepairs_in_longest_read = 9;
 
     test_function(filename,
                   0,
                   2,
+                  expected_smallest_read_id,
+                  expected_largest_read_id,
                   minimizer_size,
                   window_size,
                   expected_representations,

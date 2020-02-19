@@ -89,6 +89,44 @@ __host__ __device__ __forceinline__
     return (value + boundary) & ~(boundary - 1);
 }
 
+/// Copy and return value from a device memory location with implicit synchronization
+template <typename Type>
+Type get_value_from_device(const Type* d_ptr, cudaStream_t stream = 0)
+{
+    Type val;
+    CGA_CU_CHECK_ERR(cudaMemcpyAsync(&val, d_ptr, sizeof(Type), cudaMemcpyDeviceToHost, stream));
+    CGA_CU_CHECK_ERR(cudaStreamSynchronize(stream));
+    return val;
+}
+
+/// Copies value from 'src' address to 'dst' address asynchronously.
+template <typename Type>
+void set_device_value_async(Type* dst, const Type* src, cudaStream_t stream)
+{
+    CGA_CU_CHECK_ERR(cudaMemcpyAsync(dst, src, sizeof(Type), cudaMemcpyDefault, stream));
+}
+
+/// Copies the value 'src' to 'dst' address.
+template <typename Type>
+void set_device_value(Type* dst, const Type& src)
+{
+    CGA_CU_CHECK_ERR(cudaMemcpy(dst, &src, sizeof(Type), cudaMemcpyDefault));
+}
+
+/// Copies elements from the range [src, src + n) to the range [dst, dst + n) asynchronously.
+template <typename Type>
+void device_copy_n(const Type* src, size_t n, Type* dst, cudaStream_t stream)
+{
+    CGA_CU_CHECK_ERR(cudaMemcpyAsync(dst, src, n * sizeof(Type), cudaMemcpyDefault, stream));
+}
+
+/// Copies elements from the range [src, src + n) to the range [dst, dst + n).
+template <typename Type>
+void device_copy_n(const Type* src, size_t n, Type* dst)
+{
+    CGA_CU_CHECK_ERR(cudaMemcpy(dst, src, n * sizeof(Type), cudaMemcpyDefault));
+}
+
 #ifdef CGA_PROFILING
 /// \ingroup cudautils
 /// \def CGA_NVTX_RANGE
