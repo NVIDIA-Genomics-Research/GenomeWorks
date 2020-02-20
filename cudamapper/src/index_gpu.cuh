@@ -110,13 +110,12 @@ public:
     /// \return read length for the read with the gived read_id
     const std::uint32_t& read_id_to_read_length(const read_id_t read_id) const override;
 
-    /// ToDo this is to allow IndexCache access to read_id_to_read_name_ and read_id_to_read_length_, may need to be changed if overloading is not desired
     /// \brief returns look up table array mapping read id to read name
     /// \return the array mapping read id to read name
-    const std::vector<std::string>& read_id_to_read_name() const override;
+    const std::vector<std::string>& read_id_to_read_names() const override;
     /// \brief returns an array used for mapping read id to the length of the read
     /// \return the array used for mapping read ids to their lengths
-    const std::vector<std::uint32_t>& read_id_to_read_length() const override;
+    const std::vector<std::uint32_t>& read_id_to_read_lengths() const override;
 
     /// \brief returns number of reads in input data
     /// \return number of reads in input data
@@ -581,9 +580,9 @@ IndexGPU<SketchElementImpl>::IndexGPU(std::shared_ptr<DeviceAllocator> allocator
 template <typename SketchElementImpl>
 IndexGPU<SketchElementImpl>::IndexGPU(std::shared_ptr<DeviceAllocator> allocator,
                                       const IndexCache& host_cache)
-    : first_read_id_(host_cache.first_read_id)
-    , kmer_size_(host_cache.kmer_size)
-    , window_size_(host_cache.window_size)
+    : first_read_id_(host_cache.first_read_id())
+    , kmer_size_(host_cache.kmer_size())
+    , window_size_(host_cache.window_size())
     , allocator_(allocator)
     , representations_d_(allocator)
     , read_ids_d_(allocator)
@@ -625,8 +624,8 @@ IndexGPU<SketchElementImpl>::IndexGPU(std::shared_ptr<DeviceAllocator> allocator
     first_occurrence_of_representations_d_.shrink_to_fit();
     cudautils::device_copy_n(host_cache.first_occurrence_of_representations().data(), host_cache.first_occurrence_of_representations().size(), first_occurrence_of_representations_d_.data());
 
-    read_id_to_read_name_   = host_cache.read_id_to_read_name();   //H2H
-    read_id_to_read_length_ = host_cache.read_id_to_read_length(); //H2H
+    read_id_to_read_name_   = host_cache.read_id_to_read_names();   //H2H
+    read_id_to_read_length_ = host_cache.read_id_to_read_lengths(); //H2H
 }
 
 template <typename SketchElementImpl>
@@ -678,13 +677,13 @@ const std::uint32_t& IndexGPU<SketchElementImpl>::read_id_to_read_length(const r
 }
 
 template <typename SketchElementImpl>
-const std::vector<std::string>& IndexGPU<SketchElementImpl>::read_id_to_read_name() const
+const std::vector<std::string>& IndexGPU<SketchElementImpl>::read_id_to_read_names() const
 {
     return read_id_to_read_name_;
 }
 
 template <typename SketchElementImpl>
-const std::vector<std::uint32_t>& IndexGPU<SketchElementImpl>::read_id_to_read_length() const
+const std::vector<std::uint32_t>& IndexGPU<SketchElementImpl>::read_id_to_read_lengths() const
 {
     return read_id_to_read_length_;
 }

@@ -72,15 +72,13 @@ public:
     /// \return number of reads in input data
     virtual read_id_t number_of_reads() const = 0;
 
-    /// ToDo this is to allow IndexCache to access to read_id_to_read_name_, may need to change if overloading is not desired
     /// \brief returns look up table array mapping read id to read name
     /// \return the array mapping read id to read name
-    virtual const std::vector<std::string>& read_id_to_read_name() const = 0;
+    virtual const std::vector<std::string>& read_id_to_read_names() const = 0;
 
-    /// ToDo this is to allow IndexCache to access to read_id_to_read_length_, may need to change if overloading is not desired
     /// \brief returns an array used for mapping read id to the length of the read
     /// \return the array used for mapping read ids to their lengths
-    virtual const std::vector<std::uint32_t>& read_id_to_read_length() const = 0;
+    virtual const std::vector<std::uint32_t>& read_id_to_read_lengths() const = 0;
 
     /// \brief returns smallest read_id in index
     /// \return smallest read_id in index (0 if empty index)
@@ -141,11 +139,14 @@ public:
     /// \brief Constructor
     /// \brief cache the computed index to host
     /// \param index - pointer to computed index parameters (vectors of sketch elements) on GPU
+    /// \param first_read_id - representing smallest read_id in index
+    /// \param kmer_size - number of basepairs in a k-mer
+    /// \param window_size the number of adjacent k-mers in a window, adjacent = shifted by one basepair
     /// \return - pointer to claragenomics::cudamapper::IndexCache
     explicit IndexCache(const Index& index,
-                        const read_id_t first_read_id_in,
-                        const std::uint64_t kmer_size_in,
-                        const std::uint64_t window_size_in);
+                        const read_id_t first_read_id,
+                        const std::uint64_t kmer_size,
+                        const std::uint64_t window_size);
 
     /// \brief copy cached index vectors from the host and create an object of Index on GPU
     /// \param allocator pointer to asynchronous device allocator
@@ -178,11 +179,11 @@ public:
 
     /// \brief returns look up table array mapping read id to read name
     /// \return the array mapping read id to read name
-    const std::vector<std::string>& read_id_to_read_name() const;
+    const std::vector<std::string>& read_id_to_read_names() const;
 
     /// \brief returns an array used for mapping read id to the length of the read
     /// \return the array used for mapping read ids to their lengths
-    const std::vector<std::uint32_t>& read_id_to_read_length() const;
+    const std::vector<std::uint32_t>& read_id_to_read_lengths() const;
 
     /// \brief returns number of reads in input data
     /// \return number of reads in input data
@@ -191,6 +192,18 @@ public:
     /// \brief returns length of the longest read in this index
     /// \return length of the longest read in this index
     position_in_read_t number_of_basepairs_in_longest_read() const;
+
+    /// \brief returns stored value in first_read_id_ representing smallest read_id in index
+    /// \return first_read_id_
+    read_id_t first_read_id() const;
+
+    /// \brief returns k-mer size
+    /// \return kmer_size_
+    std::uint64_t kmer_size() const;
+
+    /// \brief returns window size
+    /// \return window_size_
+    std::uint64_t window_size() const;
 
 private:
     std::vector<representation_t> representations_;
@@ -207,12 +220,9 @@ private:
     read_id_t number_of_reads_;
     position_in_read_t number_of_basepairs_in_longest_read_;
 
-public:
-    const read_id_t first_read_id = 0;
-    // number of basepairs in a k-mer
-    const std::uint64_t kmer_size = 0;
-    // the number of adjacent k-mers in a window, adjacent = shifted by one basepair
-    const std::uint64_t window_size = 0;
+    const read_id_t first_read_id_   = 0;
+    const std::uint64_t kmer_size_   = 0;
+    const std::uint64_t window_size_ = 0;
 };
 
 } // namespace cudamapper

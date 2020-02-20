@@ -47,12 +47,12 @@ namespace cudamapper
 {
 
 IndexCache::IndexCache(const Index& index,
-                       const read_id_t first_read_id_in,
-                       const std::uint64_t kmer_size_in,
-                       const std::uint64_t window_size_in)
-    : first_read_id(first_read_id_in)
-    , kmer_size(kmer_size_in)
-    , window_size(window_size_in)
+                       const read_id_t first_read_id,
+                       const std::uint64_t kmer_size,
+                       const std::uint64_t window_size)
+    : first_read_id_(first_read_id)
+    , kmer_size_(kmer_size)
+    , window_size_(window_size)
 {
     CGA_NVTX_RANGE(profiler, "cache_index");
     {
@@ -98,13 +98,13 @@ IndexCache::IndexCache(const Index& index,
     }
 
     {
-        auto const& src = index.read_id_to_read_name();
+        auto const& src = index.read_id_to_read_names();
         read_id_to_read_name_.resize(src.size());
         thrust::copy(src.begin(), src.end(), read_id_to_read_name_.begin()); //H2H, may replace with shared_ptr
     }
 
     {
-        auto const& src = index.read_id_to_read_length();
+        auto const& src = index.read_id_to_read_lengths();
         read_id_to_read_length_.resize(src.size());
         thrust::copy(src.begin(), src.end(), read_id_to_read_length_.begin()); //H2H, may replace with shared_ptr
     }
@@ -148,12 +148,12 @@ const std::vector<std::uint32_t>& IndexCache::first_occurrence_of_representation
     return first_occurrence_of_representations_;
 }
 
-const std::vector<std::string>& IndexCache::read_id_to_read_name() const
+const std::vector<std::string>& IndexCache::read_id_to_read_names() const
 {
     return read_id_to_read_name_;
 }
 
-const std::vector<std::uint32_t>& IndexCache::read_id_to_read_length() const
+const std::vector<std::uint32_t>& IndexCache::read_id_to_read_lengths() const
 {
     return read_id_to_read_length_;
 }
@@ -166,6 +166,21 @@ read_id_t IndexCache::number_of_reads() const
 position_in_read_t IndexCache::number_of_basepairs_in_longest_read() const
 {
     return number_of_basepairs_in_longest_read_;
+}
+
+read_id_t IndexCache::first_read_id() const
+{
+    return first_read_id_;
+}
+
+std::uint64_t IndexCache::kmer_size() const
+{
+    return kmer_size_;
+}
+
+std::uint64_t IndexCache::window_size() const
+{
+    return window_size_;
 }
 
 } // namespace cudamapper
