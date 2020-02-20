@@ -145,9 +145,8 @@ void sort_by_two_keys(device_buffer<MoreSignificantKeyT>& more_significant_keys,
 
     const auto number_of_elements = values.size();
 
-    // TODO: Using CudaMallocAllocator for now. Switch to using the allocator used by input arrays
-    //       once device_buffer::get_allocator() is added
-    std::shared_ptr<DeviceAllocator> allocator = std::make_shared<CudaMallocAllocator>();
+    // TODO: Using a separate allocator for helper arrays. Switch to using the same allocator as input arrays
+    DefaultDeviceAllocator allocator;
 
     device_buffer<move_to_index_t> move_to_index(number_of_elements, allocator);
     // Fill array with values 0..number_of_elements-1
