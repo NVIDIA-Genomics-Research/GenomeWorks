@@ -225,6 +225,7 @@ void OverlapperTriggered::get_overlaps(std::vector<Overlap>& fused_overlaps,
                                                                        (i.query_position_in_read_ == j.query_position_in_read_) &&
                                                                        (i.target_position_in_read_ < j.target_position_in_read_)); };
 
+
     assert(std::is_sorted(std::begin(h_anchors),
                           std::end(h_anchors),
                           comp_anchors));
