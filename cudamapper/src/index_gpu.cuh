@@ -581,18 +581,18 @@ IndexGPU<SketchElementImpl>::IndexGPU(std::shared_ptr<DeviceAllocator> allocator
 template <typename SketchElementImpl>
 IndexGPU<SketchElementImpl>::IndexGPU(std::shared_ptr<DeviceAllocator> allocator,
                                       const IndexCache& host_cache)
-        : first_read_id_(host_cache.first_read_id)
-        , kmer_size_(host_cache.kmer_size)
-        , window_size_(host_cache.window_size)
-        , allocator_(allocator)
-        , representations_d_(allocator)
-        , read_ids_d_(allocator)
-        , positions_in_reads_d_(allocator)
-        , directions_of_reads_d_(allocator)
-        , unique_representations_d_(allocator)
-        , first_occurrence_of_representations_d_(allocator)
+    : first_read_id_(host_cache.first_read_id)
+    , kmer_size_(host_cache.kmer_size)
+    , window_size_(host_cache.window_size)
+    , allocator_(allocator)
+    , representations_d_(allocator)
+    , read_ids_d_(allocator)
+    , positions_in_reads_d_(allocator)
+    , directions_of_reads_d_(allocator)
+    , unique_representations_d_(allocator)
+    , first_occurrence_of_representations_d_(allocator)
 {
-    number_of_reads_ = host_cache.number_of_reads();    //H2D
+    number_of_reads_                     = host_cache.number_of_reads();                     //H2D
     number_of_basepairs_in_longest_read_ = host_cache.number_of_basepairs_in_longest_read(); //H2D
 
     //H2D- representations_d_ = host_cache.representations();
@@ -625,8 +625,8 @@ IndexGPU<SketchElementImpl>::IndexGPU(std::shared_ptr<DeviceAllocator> allocator
     first_occurrence_of_representations_d_.shrink_to_fit();
     cudautils::device_copy_n(host_cache.first_occurrence_of_representations().data(), host_cache.first_occurrence_of_representations().size(), first_occurrence_of_representations_d_.data());
 
-    read_id_to_read_name_ = host_cache.read_id_to_read_name();      //H2H
-    read_id_to_read_length_ = host_cache.read_id_to_read_length();  //H2H
+    read_id_to_read_name_   = host_cache.read_id_to_read_name();   //H2H
+    read_id_to_read_length_ = host_cache.read_id_to_read_length(); //H2H
 }
 
 template <typename SketchElementImpl>

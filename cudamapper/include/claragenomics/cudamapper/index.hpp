@@ -128,8 +128,6 @@ public:
 
 } // namespace claragenomics
 
-
-
 namespace claragenomics
 {
 namespace cudamapper
@@ -140,10 +138,10 @@ namespace cudamapper
 class IndexCache
 {
 public:
-/// \brief Constructor
-/// \brief cache the computed index to host
-/// \param index - pointer to computed index parameters (vectors of sketch elements) on GPU
-/// \return - pointer to claragenomics::cudamapper::IndexCache
+    /// \brief Constructor
+    /// \brief cache the computed index to host
+    /// \param index - pointer to computed index parameters (vectors of sketch elements) on GPU
+    /// \return - pointer to claragenomics::cudamapper::IndexCache
     explicit IndexCache(const Index& index,
                         const read_id_t first_read_id_in,
                         const std::uint64_t kmer_size_in,
@@ -195,7 +193,6 @@ public:
     position_in_read_t number_of_basepairs_in_longest_read() const;
 
 private:
-
     std::vector<representation_t> representations_;
     std::vector<read_id_t> read_ids_;
     std::vector<position_in_read_t> positions_in_reads_;
@@ -211,15 +208,12 @@ private:
     position_in_read_t number_of_basepairs_in_longest_read_;
 
 public:
-
     const read_id_t first_read_id = 0;
     // number of basepairs in a k-mer
     const std::uint64_t kmer_size = 0;
     // the number of adjacent k-mers in a window, adjacent = shifted by one basepair
     const std::uint64_t window_size = 0;
-
 };
-
 
 } // namespace cudamapper
 } // namespace claragenomics
