@@ -258,9 +258,8 @@ void generate_anchors(
     assert(query_read_ids.size() == query_positions_in_read.size());
     assert(target_read_ids.size() == target_positions_in_read.size());
 
-    // TODO: Using CudaMallocAllocator for now. Switch to using the allocator used by input arrays
-    //       once device_buffer::get_allocator() is added
-    DefaultDeviceAllocator allocator;
+    // use anchors' allocator
+    DefaultDeviceAllocator allocator = anchors.get_allocator();
 
     device_buffer<ReadsKeyT> compound_key_read_ids(anchors.size(), allocator);
     device_buffer<PositionsKeyT> compound_key_positions_in_reads(anchors.size(), allocator);
