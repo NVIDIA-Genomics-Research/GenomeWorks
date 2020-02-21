@@ -10,9 +10,10 @@
 
 #pragma once
 
-#include <thrust/device_vector.h>
-#include "index.hpp"
-#include "types.hpp"
+#include <claragenomics/cudamapper/index.hpp>
+#include <claragenomics/cudamapper/types.hpp>
+
+#include <thrust/execution_policy.h>
 
 namespace claragenomics
 {

@@ -15,7 +15,6 @@
 
 #include <thrust/adjacent_difference.h>
 #include <thrust/copy.h>
-#include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
 #include <thrust/replace.h>
 #include <thrust/transform.h>

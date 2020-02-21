@@ -11,7 +11,6 @@
 #pragma once
 
 #include <memory>
-#include <thrust/device_vector.h>
 #include <claragenomics/cudamapper/index.hpp>
 #include <claragenomics/utils/device_buffer.hpp>
 
