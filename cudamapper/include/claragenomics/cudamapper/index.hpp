@@ -74,11 +74,11 @@ public:
 
     /// \brief returns look up table array mapping read id to read name
     /// \return the array mapping read id to read name
-    virtual const std::vector<std::string>& read_id_to_read_names() const = 0;
+    virtual const std::vector<std::string>& read_ids_to_read_names() const = 0;
 
     /// \brief returns an array used for mapping read id to the length of the read
     /// \return the array used for mapping read ids to their lengths
-    virtual const std::vector<std::uint32_t>& read_id_to_read_lengths() const = 0;
+    virtual const std::vector<std::uint32_t>& read_ids_to_read_lengths() const = 0;
 
     /// \brief returns smallest read_id in index
     /// \return smallest read_id in index (0 if empty index)
@@ -125,6 +125,8 @@ public:
 } // namespace cudamapper
 
 } // namespace claragenomics
+
+
 
 namespace claragenomics
 {
