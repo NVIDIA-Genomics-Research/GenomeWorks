@@ -22,9 +22,9 @@ HostCache::HostCache(const Index& index,
                      const read_id_t first_read_id,
                      const std::uint64_t kmer_size,
                      const std::uint64_t window_size)
-        : first_read_id_(first_read_id)
-        , kmer_size_(kmer_size)
-        , window_size_(window_size)
+    : first_read_id_(first_read_id)
+    , kmer_size_(kmer_size)
+    , window_size_(window_size)
 {
     CGA_NVTX_RANGE(profiler, "cache_index");
 
@@ -47,7 +47,7 @@ HostCache::HostCache(const Index& index,
     cudautils::device_copy_n(index.first_occurrence_of_representations().data(), index.first_occurrence_of_representations().size(), first_occurrence_of_representations_.data());
 
     read_id_to_read_name_.resize(index.read_ids_to_read_names().size());
-    thrust::copy(index.read_ids_to_read_names().begin(), index.read_ids_to_read_names().end(), read_id_to_read_name_.begin());       //H2H, may replace with shared_ptr
+    thrust::copy(index.read_ids_to_read_names().begin(), index.read_ids_to_read_names().end(), read_id_to_read_name_.begin()); //H2H, may replace with shared_ptr
 
     read_id_to_read_length_.resize(index.read_ids_to_read_lengths().size());
     thrust::copy(index.read_ids_to_read_lengths().begin(), index.read_ids_to_read_lengths().end(), read_id_to_read_length_.begin()); //H2H, may replace with shared_ptr

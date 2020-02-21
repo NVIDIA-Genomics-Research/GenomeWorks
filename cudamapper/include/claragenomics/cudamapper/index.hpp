@@ -199,4 +199,3 @@ public:
 } // namespace cudamapper
 
 } // namespace claragenomics
-

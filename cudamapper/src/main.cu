@@ -48,17 +48,18 @@ int main(int argc, char* argv[])
     using claragenomics::get_size;
     claragenomics::logging::Init();
 
-    uint32_t k                                  = 15;    // k
-    uint32_t w                                  = 15;    // w
-    std::int32_t num_devices                    = 1;     // d
-    std::int32_t max_index_cache_size_on_device = 100;   // c
-    std::int32_t max_index_cache_size_on_host   = 1000;  // C
-    std::int32_t max_cached_memory              = 1;     // m
-    std::int32_t index_size                     = 10000; // i
-    std::int32_t target_index_size              = 10000; // t
-    double filtering_parameter                  = 1.0;   // F
-    std::string optstring                       = "k:w:d:c:C:m:i:t:F:h:";
-    int32_t argument                            = 0;
+    uint32_t k                                  = 15;  // k
+    uint32_t w                                  = 15;  // w
+    std::int32_t num_devices                    = 1;   // d
+    std::int32_t max_index_cache_size_on_device = 100; // c
+    // ToDo: come up with a good heuristic to choose C and c
+    std::int32_t max_index_cache_size_on_host = 0;     // C
+    std::int32_t max_cached_memory            = 1;     // m
+    std::int32_t index_size                   = 10000; // i
+    std::int32_t target_index_size            = 10000; // t
+    double filtering_parameter                = 1.0;   // F
+    std::string optstring                     = "k:w:d:c:C:m:i:t:F:h:";
+    int32_t argument                          = 0;
     while ((argument = getopt_long(argc, argv, optstring.c_str(), options, nullptr)) != -1)
     {
         switch (argument)
@@ -188,14 +189,14 @@ int main(int argc, char* argv[])
     std::vector<std::map<std::pair<uint64_t, uint64_t>, std::shared_ptr<claragenomics::cudamapper::Index>>> device_index_cache(num_devices);
 
     auto get_index = [&device_index_cache, &host_index_cache, max_index_cache_size_on_device, max_index_cache_size_on_host](std::shared_ptr<claragenomics::DeviceAllocator> allocator,
-                      claragenomics::io::FastaParser& parser,
-                      const claragenomics::cudamapper::read_id_t start_index,
-                      const claragenomics::cudamapper::read_id_t end_index,
-                      const std::uint64_t k,
-                      const std::uint64_t w,
-                      const int device_id,
-                      const bool allow_cache_index,
-                      const double filtering_parameter) {
+                                                                                                                            claragenomics::io::FastaParser& parser,
+                                                                                                                            const claragenomics::cudamapper::read_id_t start_index,
+                                                                                                                            const claragenomics::cudamapper::read_id_t end_index,
+                                                                                                                            const std::uint64_t k,
+                                                                                                                            const std::uint64_t w,
+                                                                                                                            const int device_id,
+                                                                                                                            const bool allow_cache_index,
+                                                                                                                            const double filtering_parameter) {
         CGA_NVTX_RANGE(profiler, "get index");
         std::pair<uint64_t, uint64_t> key;
         key.first  = start_index;
@@ -224,9 +225,8 @@ int main(int argc, char* argv[])
                 device_index_cache[device_id][key] = index;
             }
 
-            // update host cache
-            // ToDo: make it thread-safe when there are multiple GPUs
-            if (get_size<int32_t>(host_index_cache) < max_index_cache_size_on_host && allow_cache_index)
+            // update host cache, only done by device 0 to avoid any race conditions in updating the host cache
+            if (get_size<int32_t>(host_index_cache) < max_index_cache_size_on_host && allow_cache_index && device_id == 0)
             {
                 host_index_cache[key] = std::move(claragenomics::cudamapper::IndexCache::create_cache(*index, start_index, k, w));
             }
@@ -254,7 +254,8 @@ int main(int argc, char* argv[])
         key.first  = query_start_index;
         key.second = query_end_index;
         device_index_cache[device_id].erase(key);
-        // ToDo: freeing host memory is limited to 1 GPU, need to change to work with multiple GPUs
+        // host memory can be freed by removing (key) when working with 1 GPU
+        // in multiple GPUs we keep (key), as it may be accessed by other GPUs depending on access pattern
         if (num_devices == 1)
             host_index_cache.erase(key);
     };
