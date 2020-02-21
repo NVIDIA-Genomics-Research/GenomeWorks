@@ -112,10 +112,10 @@ public:
 
     /// \brief returns look up table array mapping read id to read name
     /// \return the array mapping read id to read name
-    const std::vector<std::string>& read_id_to_read_names() const override;
+    const std::vector<std::string>& read_ids_to_read_names() const override;
     /// \brief returns an array used for mapping read id to the length of the read
     /// \return the array used for mapping read ids to their lengths
-    const std::vector<std::uint32_t>& read_id_to_read_lengths() const override;
+    const std::vector<std::uint32_t>& read_ids_to_read_lengths() const override;
 
     /// \brief returns number of reads in input data
     /// \return number of reads in input data
@@ -591,8 +591,8 @@ IndexGPU<SketchElementImpl>::IndexGPU(std::shared_ptr<DeviceAllocator> allocator
     , unique_representations_d_(allocator)
     , first_occurrence_of_representations_d_(allocator)
 {
-    number_of_reads_                     = host_cache.number_of_reads();                     //H2D
-    number_of_basepairs_in_longest_read_ = host_cache.number_of_basepairs_in_longest_read(); //H2D
+    number_of_reads_                     = host_cache.number_of_reads();
+    number_of_basepairs_in_longest_read_ = host_cache.number_of_basepairs_in_longest_read();
 
     //H2D- representations_d_ = host_cache.representations();
     representations_d_.resize(host_cache.representations().size());
@@ -677,13 +677,13 @@ const std::uint32_t& IndexGPU<SketchElementImpl>::read_id_to_read_length(const r
 }
 
 template <typename SketchElementImpl>
-const std::vector<std::string>& IndexGPU<SketchElementImpl>::read_id_to_read_names() const
+const std::vector<std::string>& IndexGPU<SketchElementImpl>::read_ids_to_read_names() const
 {
     return read_id_to_read_name_;
 }
 
 template <typename SketchElementImpl>
-const std::vector<std::uint32_t>& IndexGPU<SketchElementImpl>::read_id_to_read_lengths() const
+const std::vector<std::uint32_t>& IndexGPU<SketchElementImpl>::read_ids_to_read_lengths() const
 {
     return read_id_to_read_length_;
 }

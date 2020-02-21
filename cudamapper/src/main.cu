@@ -189,14 +189,14 @@ int main(int argc, char* argv[])
     std::vector<std::map<std::pair<uint64_t, uint64_t>, std::shared_ptr<claragenomics::cudamapper::Index>>> device_index_cache(num_devices);
 
     auto get_index = [&device_index_cache, &host_index_cache, max_index_cache_size_on_device, max_index_cache_size_on_host](std::shared_ptr<claragenomics::DeviceAllocator> allocator,
-                                                                                                                            claragenomics::io::FastaParser& parser,
-                                                                                                                            const claragenomics::cudamapper::read_id_t start_index,
-                                                                                                                            const claragenomics::cudamapper::read_id_t end_index,
-                                                                                                                            const std::uint64_t k,
-                                                                                                                            const std::uint64_t w,
-                                                                                                                            const int device_id,
-                                                                                                                            const bool allow_cache_index,
-                                                                                                                            const double filtering_parameter) {
+                      claragenomics::io::FastaParser& parser,
+                      const claragenomics::cudamapper::read_id_t start_index,
+                      const claragenomics::cudamapper::read_id_t end_index,
+                      const std::uint64_t k,
+                      const std::uint64_t w,
+                      const int device_id,
+                      const bool allow_cache_index,
+                      const double filtering_parameter) {
         CGA_NVTX_RANGE(profiler, "get index");
         std::pair<uint64_t, uint64_t> key;
         key.first  = start_index;
