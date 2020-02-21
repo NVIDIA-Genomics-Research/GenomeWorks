@@ -19,7 +19,6 @@
 #include <thrust/execution_policy.h>
 #include <thrust/gather.h>
 #include <thrust/sequence.h>
-#include <thrust/swap.h>
 
 #include <claragenomics/utils/device_buffer.hpp>
 #include <claragenomics/utils/mathutils.hpp>
@@ -150,7 +149,7 @@ void sort_by_two_keys(device_buffer<MoreSignificantKeyT>& more_significant_keys,
 
     device_buffer<move_to_index_t> move_to_index(number_of_elements, allocator);
     // Fill array with values 0..number_of_elements-1
-    thrust::sequence(thrust::device,
+    thrust::sequence(thrust::cuda::par(allocator),
                      std::begin(move_to_index),
                      std::end(move_to_index));
 
@@ -180,7 +179,7 @@ void sort_by_two_keys(device_buffer<MoreSignificantKeyT>& more_significant_keys,
     // *** move more significant keys to their position after less significant keys sort ***
     device_buffer<MoreSignificantKeyT> more_significant_keys_after_sort(number_of_elements, allocator);
 
-    thrust::gather(thrust::device,
+    thrust::gather(thrust::cuda::par(allocator),
                    std::begin(move_to_index),
                    std::end(move_to_index),
                    std::begin(more_significant_keys),
@@ -207,7 +206,7 @@ void sort_by_two_keys(device_buffer<MoreSignificantKeyT>& more_significant_keys,
     // *** move the values to their final position ***
     device_buffer<ValueT> values_after_sort(number_of_elements, allocator);
 
-    thrust::gather(thrust::device,
+    thrust::gather(thrust::cuda::par(allocator),
                    std::begin(move_to_index),
                    std::end(move_to_index),
                    std::begin(values),
