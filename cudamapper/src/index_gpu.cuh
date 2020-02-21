@@ -405,7 +405,7 @@ void filter_out_most_common_representations(DefaultDeviceAllocator allocator,
 
     // thrust::adjacent_difference saves a[i]-a[i-1] to a[i]. As first_occurrence_of_representations_d starts with 0
     // we actually want to save a[i]-a[i-1] to a[i-j] and have the last (aditional) element of number_of_sketch_elements_with_each_representation_d set to 0
-    thrust::adjacent_difference(thrust::device,
+    thrust::adjacent_difference(thrust::cuda::par(allocator),
                                 std::next(std::begin(first_occurrence_of_representations_d)),
                                 std::end(first_occurrence_of_representations_d),
                                 std::begin(number_of_sketch_elements_with_each_representation_d));
@@ -422,7 +422,7 @@ void filter_out_most_common_representations(DefaultDeviceAllocator allocator,
     // 2  2  0  0  3  3  0 <- number_of_sketch_elements_with_each_representation_d (after filtering)
 
     thrust::replace_if(
-        thrust::device,
+        thrust::cuda::par(allocator),
         std::begin(number_of_sketch_elements_with_each_representation_d),
         std::prev(std::end(number_of_sketch_elements_with_each_representation_d)), // don't process the last element, it should remain 0
         [filtering_threshold] __device__(const std::uint32_t val) {
@@ -435,7 +435,7 @@ void filter_out_most_common_representations(DefaultDeviceAllocator allocator,
     // 2  2  0  0  3  3  0 <- number_of_sketch_elements_with_each_representation_d (after filtering)
     // 0  2  4  4  4  7 10 <- first_occurrence_of_representation_after_filtering_d
     device_buffer<std::uint32_t> first_occurrence_of_representation_after_filtering_d(number_of_sketch_elements_with_each_representation_d.size(), allocator);
-    thrust::exclusive_scan(thrust::device,
+    thrust::exclusive_scan(thrust::cuda::par(allocator),
                            std::begin(number_of_sketch_elements_with_each_representation_d),
                            std::end(number_of_sketch_elements_with_each_representation_d),
                            std::begin(first_occurrence_of_representation_after_filtering_d));
@@ -455,7 +455,7 @@ void filter_out_most_common_representations(DefaultDeviceAllocator allocator,
         // direct pointer needed as device_vector::operator[] is a host function and it would be called from device lambda
         const std::uint32_t* const number_of_sketch_elements_with_each_representation_d_ptr = number_of_sketch_elements_with_each_representation_d.data();
         thrust::transform_exclusive_scan(
-            thrust::device,
+            thrust::cuda::par(allocator),
             thrust::make_counting_iterator(std::int64_t(0)),
             thrust::make_counting_iterator(number_of_unique_representations + 1),
             std::begin(unique_representation_index_after_filtering_d),
@@ -755,7 +755,7 @@ void IndexGPU<SketchElementImpl>::generate_index(const io::FastaParser& parser,
     // *** sort sketch elements by representation ***
     // As this is a stable sort and the data was initailly grouper by read_id this means that the sketch elements within each representations are sorted by read_id
     // TODO: consider using a CUB radix sort based function here
-    thrust::stable_sort_by_key(thrust::device,
+    thrust::stable_sort_by_key(thrust::cuda::par(allocator_),
                                std::begin(generated_representations_d),
                                std::end(generated_representations_d),
                                std::begin(generated_rest_d));

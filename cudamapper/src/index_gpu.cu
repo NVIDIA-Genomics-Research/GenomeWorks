@@ -42,7 +42,7 @@ void find_first_occurrences_of_representations(DefaultDeviceAllocator allocator,
         const std::int64_t number_of_representations               = get_size(input_representations_d);
         const representation_t* const input_representations_d_data = input_representations_d.data();
         thrust::transform_inclusive_scan(
-            thrust::device,
+            thrust::cuda::par(allocator),
             thrust::make_counting_iterator(std::int64_t(0)),
             thrust::make_counting_iterator(number_of_representations),
             representation_index_mask_d.begin(),

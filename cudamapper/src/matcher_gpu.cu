@@ -13,7 +13,6 @@
 #include <cassert>
 #include <numeric>
 
-#include <thrust/scan.h>
 #include <thrust/transform_scan.h>
 #include <thrust/execution_policy.h>
 
@@ -328,7 +327,7 @@ void compute_anchor_starting_indices(
     const std::int64_t* const found_target_indices     = found_target_indices_d.data();
 
     thrust::transform_inclusive_scan(
-        thrust::device,
+        thrust::cuda::par(anchor_starting_indices_d.get_allocator()),
         thrust::make_counting_iterator(std::int64_t(0)),
         thrust::make_counting_iterator(get_size(anchor_starting_indices_d)),
         anchor_starting_indices_d.begin(),
