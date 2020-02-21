@@ -180,7 +180,7 @@ int main(int argc, char* argv[])
     // This is a per-device cache, if it has the index it will return it, if not it will generate it, store and return it.
     std::vector<std::map<std::pair<uint64_t, uint64_t>, std::shared_ptr<claragenomics::cudamapper::Index>>> index_cache(num_devices);
 
-    auto get_index = [&index_cache, max_index_cache_size](std::shared_ptr<claragenomics::DeviceAllocator> allocator,
+    auto get_index = [&index_cache, max_index_cache_size](claragenomics::DefaultDeviceAllocator allocator,
                                                           claragenomics::io::FastaParser& parser,
                                                           const claragenomics::cudamapper::read_id_t start_index,
                                                           const claragenomics::cudamapper::read_id_t end_index,
@@ -236,10 +236,12 @@ int main(int argc, char* argv[])
     };
 
 #ifdef CGA_ENABLE_ALLOCATOR
+    // uses CachingDeviceAllocator
     auto max_cached_bytes = max_cached_memory * 1e9; // max_cached_memory is in GB
-    std::shared_ptr<claragenomics::DeviceAllocator> allocator(new claragenomics::CachingDeviceAllocator(max_cached_bytes));
+    claragenomics::DefaultDeviceAllocator allocator(max_cached_bytes);
 #else
-    std::shared_ptr<claragenomics::DeviceAllocator> allocator(new claragenomics::CudaMallocAllocator());
+    // uses CudaMallocAllocator
+    claragenomics::DefaultDeviceAllocator allocator;
 #endif
 
     auto compute_overlaps = [&](const query_target_range query_target_range, const int device_id) {

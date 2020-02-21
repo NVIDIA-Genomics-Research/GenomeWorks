@@ -28,7 +28,7 @@ namespace claragenomics
 namespace cudamapper
 {
 
-MatcherGPU::MatcherGPU(std::shared_ptr<DeviceAllocator> allocator,
+MatcherGPU::MatcherGPU(DefaultDeviceAllocator allocator,
                        const Index& query_index,
                        const Index& target_index)
     : anchors_d_(allocator)
@@ -260,7 +260,7 @@ void generate_anchors(
 
     // TODO: Using CudaMallocAllocator for now. Switch to using the allocator used by input arrays
     //       once device_buffer::get_allocator() is added
-    std::shared_ptr<DeviceAllocator> allocator = std::make_shared<CudaMallocAllocator>();
+    DefaultDeviceAllocator allocator;
 
     device_buffer<ReadsKeyT> compound_key_read_ids(anchors.size(), allocator);
     device_buffer<PositionsKeyT> compound_key_positions_in_reads(anchors.size(), allocator);

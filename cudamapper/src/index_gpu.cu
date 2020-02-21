@@ -19,7 +19,7 @@ namespace details
 {
 namespace index_gpu
 {
-void find_first_occurrences_of_representations(std::shared_ptr<DeviceAllocator> allocator,
+void find_first_occurrences_of_representations(DefaultDeviceAllocator allocator,
                                                device_buffer<representation_t>& unique_representations_d,
                                                device_buffer<std::uint32_t>& first_occurrence_index_d,
                                                const device_buffer<representation_t>& input_representations_d)

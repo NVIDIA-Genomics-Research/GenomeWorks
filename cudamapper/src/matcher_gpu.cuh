@@ -23,7 +23,7 @@ namespace cudamapper
 class MatcherGPU : public Matcher
 {
 public:
-    MatcherGPU(std::shared_ptr<DeviceAllocator> allocator,
+    MatcherGPU(DefaultDeviceAllocator allocator,
                const Index& query_index,
                const Index& target_index);
 

@@ -178,7 +178,7 @@ struct CreateOverlap
     };
 };
 
-OverlapperTriggered::OverlapperTriggered(std::shared_ptr<DeviceAllocator> allocator)
+OverlapperTriggered::OverlapperTriggered(DefaultDeviceAllocator allocator)
     : _allocator(allocator)
 {
     CGA_CU_CHECK_ERR(cudaStreamCreate(&stream));

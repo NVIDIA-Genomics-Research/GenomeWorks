@@ -29,6 +29,10 @@
 #include <claragenomics/utils/mathutils.hpp>
 #include <claragenomics/utils/signed_integer_utils.hpp>
 
+////////////////
+#include <iostream>
+////////////////
+
 namespace claragenomics
 {
 namespace cudamapper
@@ -60,7 +64,7 @@ public:
     /// \param window_size w - the length of the sliding window used to find sketch elements (i.e. the number of adjacent k-mers in a window, adjacent = shifted by one basepair)
     /// \param hash_representations - if true, hash kmer representations
     /// \param filtering_parameter - filter out all representations for which number_of_sketch_elements_with_that_representation/total_skech_elements >= filtering_parameter, filtering_parameter == 1.0 disables filtering
-    IndexGPU(std::shared_ptr<DeviceAllocator> allocator,
+    IndexGPU(DefaultDeviceAllocator allocator,
              const io::FastaParser& parser,
              const read_id_t first_read_id,
              const read_id_t past_the_last_read_id,
@@ -146,7 +150,7 @@ private:
     read_id_t number_of_reads_                              = 0;
     position_in_read_t number_of_basepairs_in_longest_read_ = 0;
 
-    std::shared_ptr<DeviceAllocator> allocator_;
+    DefaultDeviceAllocator allocator_;
 };
 
 namespace details
@@ -170,7 +174,7 @@ namespace index_gpu
 /// \param unique_representations_d empty on input, contains one value of each representation on the output
 /// \param first_occurrence_index_d empty on input, index of first occurrence of each representation and additional elemnt on the output
 /// \param input_representations_d an array of representaton where representations with the same value stand next to each other
-void find_first_occurrences_of_representations(std::shared_ptr<DeviceAllocator> allocator, device_buffer<representation_t>& unique_representations_d,
+void find_first_occurrences_of_representations(DefaultDeviceAllocator allocator, device_buffer<representation_t>& unique_representations_d,
                                                device_buffer<std::uint32_t>& first_occurrence_index_d,
                                                const device_buffer<representation_t>& input_representations_d);
 
@@ -382,7 +386,7 @@ __global__ void compress_data_arrays_after_filtering_kernel(const std::uint64_t 
 ///
 /// \tparam DirectionOfRepresentation any implementation of SketchElementImpl::SketchElementImpl::DirectionOfRepresentation
 template <typename DirectionOfRepresentation>
-void filter_out_most_common_representations(std::shared_ptr<DeviceAllocator> allocator,
+void filter_out_most_common_representations(DefaultDeviceAllocator allocator,
                                             const double filtering_parameter,
                                             device_buffer<representation_t>& representations_d,
                                             device_buffer<read_id_t>& read_ids_d,
@@ -535,7 +539,7 @@ void filter_out_most_common_representations(std::shared_ptr<DeviceAllocator> all
 } // namespace details
 
 template <typename SketchElementImpl>
-IndexGPU<SketchElementImpl>::IndexGPU(std::shared_ptr<DeviceAllocator> allocator,
+IndexGPU<SketchElementImpl>::IndexGPU(DefaultDeviceAllocator allocator,
                                       const io::FastaParser& parser,
                                       const read_id_t first_read_id,
                                       const read_id_t past_the_last_read_id,
