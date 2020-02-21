@@ -28,6 +28,7 @@
 #include <claragenomics/cudamapper/matcher.hpp>
 #include <claragenomics/cudamapper/overlapper.hpp>
 #include "overlapper_triggered.hpp"
+#include "host_cache.cuh"
 
 static struct option options[] = {
     {"kmer-size", required_argument, 0, 'k'},
@@ -183,7 +184,7 @@ int main(int argc, char* argv[])
     }
 
     // This is host cache, if it has the index it will copy it to device, if not it will generate on device and add it to host cache
-    std::map<std::pair<uint64_t, uint64_t>, std::shared_ptr<claragenomics::cudamapper::IndexCache>> host_index_cache;
+    std::map<std::pair<uint64_t, uint64_t>, std::shared_ptr<claragenomics::cudamapper::HostCache>> host_index_cache;
 
     // This is a per-device cache, if it has the index it will return it, if not it will generate it, store and return it.
     std::vector<std::map<std::pair<uint64_t, uint64_t>, std::shared_ptr<claragenomics::cudamapper::Index>>> device_index_cache(num_devices);
@@ -229,7 +230,7 @@ int main(int argc, char* argv[])
             // ToDo: make it thread-safe when there are multiple GPUs
             if (get_size<int32_t>(host_index_cache) < max_index_cache_size_on_host && allow_cache_index)
             {
-                host_index_cache[key] = std::move(std::make_unique<claragenomics::cudamapper::IndexCache>(claragenomics::cudamapper::IndexCache(*index, start_index, k, w)));
+                host_index_cache[key] = std::move(std::make_unique<claragenomics::cudamapper::HostCache>(claragenomics::cudamapper::HostCache(*index, start_index, k, w)));
             }
         }
         return index;

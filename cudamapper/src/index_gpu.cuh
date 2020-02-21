@@ -29,6 +29,8 @@
 #include <claragenomics/utils/mathutils.hpp>
 #include <claragenomics/utils/signed_integer_utils.hpp>
 
+#include "host_cache.cuh"
+
 namespace claragenomics
 {
 namespace cudamapper
@@ -74,7 +76,7 @@ public:
     /// \param allocator is pointer to asynchronous device allocator
     /// \param host_cache is a copy of index for a set of reads which has been previously computed and stored on the host.
     IndexGPU(std::shared_ptr<DeviceAllocator> allocator,
-             const IndexCache& host_cache);
+             const HostCache& host_cache);
 
     /// \brief returns an array of representations of sketch elements
     /// \return an array of representations of sketch elements
@@ -579,7 +581,7 @@ IndexGPU<SketchElementImpl>::IndexGPU(std::shared_ptr<DeviceAllocator> allocator
 
 template <typename SketchElementImpl>
 IndexGPU<SketchElementImpl>::IndexGPU(std::shared_ptr<DeviceAllocator> allocator,
-                                      const IndexCache& host_cache)
+                                      const HostCache& host_cache)
     : first_read_id_(host_cache.first_read_id())
     , kmer_size_(host_cache.kmer_size())
     , window_size_(host_cache.window_size())
