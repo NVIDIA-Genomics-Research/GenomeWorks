@@ -119,8 +119,8 @@ public:
                  const double filtering_parameter = 1.0);
 };
 
-/// IndexCache - Creates and maintains a copy of computed IndexGPU elements on the host
-///
+/// IndexCache - Creates and maintains a copy of computed IndexGPU elements on the host, then allows to retrieve target
+/// indices from host instead of recomputing them again
 ///
 class IndexCache
 {
@@ -190,10 +190,10 @@ public:
     /// \param window_size the number of adjacent k-mers in a window, adjacent = shifted by one basepair
     /// \return - an instance of IndexCache
     static std::unique_ptr<IndexCache>
-    create_index_cache(const Index& index,
-                       const read_id_t first_read_id,
-                       const std::uint64_t kmer_size,
-                       const std::uint64_t window_size);
+    create_cache(const Index& index,
+                 const read_id_t first_read_id,
+                 const std::uint64_t kmer_size,
+                 const std::uint64_t window_size);
 };
 
 } // namespace cudamapper
