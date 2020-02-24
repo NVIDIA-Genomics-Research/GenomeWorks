@@ -48,16 +48,16 @@ int main(int argc, char* argv[])
     using claragenomics::get_size;
     claragenomics::logging::Init();
 
-    uint32_t k                        = 15;  // k
-    uint32_t w                        = 15;  // w
-    std::int32_t num_devices          = 1;   // d
+    uint32_t k                                  = 15;  // k
+    uint32_t w                                  = 15;  // w
+    std::int32_t num_devices                    = 1;   // d
     std::int32_t max_index_cache_size_on_device = 100; // c
     // ToDo: come up with a good heuristic to choose C and c
-    std::int32_t max_index_cache_size_on_host = 0;     // C
-    std::int32_t max_cached_memory    = 1;   // m
-    std::int32_t index_size           = 30;  // i
-    std::int32_t target_index_size    = 30;  // t
-    double filtering_parameter        = 1.0; // F
+    std::int32_t max_index_cache_size_on_host = 0;   // C
+    std::int32_t max_cached_memory            = 1;   // m
+    std::int32_t index_size                   = 30;  // i
+    std::int32_t target_index_size            = 30;  // t
+    double filtering_parameter                = 1.0; // F
     std::string optstring                     = "k:w:d:c:C:m:i:t:F:h:";
     int32_t argument                          = 0;
     while ((argument = getopt_long(argc, argv, optstring.c_str(), options, nullptr)) != -1)
@@ -203,8 +203,8 @@ int main(int argc, char* argv[])
                                                                                                                             const std::uint64_t k,
                                                                                                                             const std::uint64_t w,
                                                                                                                             const int device_id,
-                                                          const bool allow_cache_index,
-                                                          const double filtering_parameter) {
+                                                                                                                            const bool allow_cache_index,
+                                                                                                                            const double filtering_parameter) {
         CGA_NVTX_RANGE(profiler, "get index");
         std::pair<uint64_t, uint64_t> key;
         key.first  = start_index;
@@ -276,7 +276,7 @@ int main(int argc, char* argv[])
     std::shared_ptr<claragenomics::DeviceAllocator> allocator(new claragenomics::CudaMallocAllocator());
 #endif
 
-    auto compute_overlaps = [&](const QueryTargetsRange &query_target_range, const int device_id) {
+    auto compute_overlaps = [&](const QueryTargetsRange& query_target_range, const int device_id) {
         cudaSetDevice(device_id);
 
         auto query_start_index = query_target_range.query_range.first;
