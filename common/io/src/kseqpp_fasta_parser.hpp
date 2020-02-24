@@ -12,22 +12,17 @@
 #include "claragenomics/io/fasta_parser.hpp"
 
 #include <string>
-#include <mutex>
-
-extern "C" {
-#include <htslib/faidx.h>
-}
+#include <vector>
 
 namespace claragenomics
 {
 namespace io
 {
 
-class FastaParserHTS : public FastaParser
+class FastaParserKseqpp : public FastaParser
 {
 public:
-    FastaParserHTS(const std::string& fasta_file);
-    ~FastaParserHTS();
+    FastaParserKseqpp(const std::string& fasta_file);
 
     int32_t get_num_seqences() const override;
 
@@ -36,17 +31,11 @@ public:
     std::vector<std::pair<int, int>> get_read_chunks(int max_chunk_size) const override;
 
 private:
-    faidx_t* fasta_index_;
-    mutable std::mutex index_mutex_;
-    int32_t num_seqequences_;
-
-protected:
-    /// \brief Fetch an entry from the FASTA file by name.
-    /// \param name Name of the sequence in FASTA file. If there is no entry
-    ///             by that name, an error is thrown.
-    ///
-    /// \return A FastaSequence object describing the entry.
-    FastaSequence get_sequence_by_name(const std::string& name) const;
+    /// All the reads from the FASTA file are stored in host RAM
+    /// given a sufficiently-large FASTA file, there may not be enough host RAM
+    /// on the system
+    std::vector<FastaSequence> reads_;
+    std::vector<std::pair<int, int>> read_chunks_;
 };
 
 } // namespace io
