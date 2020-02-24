@@ -326,8 +326,10 @@ void compute_anchor_starting_indices(
     const std::uint32_t* const target_starting_indices = target_starting_index_of_each_representation_d.data();
     const std::int64_t* const found_target_indices     = found_target_indices_d.data();
 
+    DefaultDeviceAllocator allocator = anchor_starting_indices_d.get_allocator();
+
     thrust::transform_inclusive_scan(
-        thrust::cuda::par(anchor_starting_indices_d.get_allocator()),
+        thrust::cuda::par(allocator),
         thrust::make_counting_iterator(std::int64_t(0)),
         thrust::make_counting_iterator(get_size(anchor_starting_indices_d)),
         anchor_starting_indices_d.begin(),
