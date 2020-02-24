@@ -95,5 +95,35 @@ FastaSequence FastaParserHTS::get_sequence_by_name(const std::string& name) cons
     return s;
 }
 
+std::vector<std::pair<int, int>> FastaParserHTS::get_read_chunks(int max_chunk_size) const
+{
+    std::vector<std::pair<int, int>> chunks;
+
+    std::pair<int, int> chunk;
+
+    chunk.first   = 0;
+    int num_bases = 0;
+    for (int read_idx = 0; read_idx < num_seqequences_; read_idx++)
+    {
+        auto seq = get_sequence_by_id(read_idx).seq;
+        if (seq.size() + num_bases > max_chunk_size)
+        {
+            chunk.second = read_idx;
+            chunks.push_back(chunk);
+            chunk.first = read_idx;
+            num_bases   = seq.size();
+        }
+        else
+        {
+            num_bases += seq.size();
+        }
+    }
+
+    chunk.second = num_seqequences_;
+
+    chunks.push_back(chunk);
+    return chunks;
+}
+
 } // namespace io
 } // namespace claragenomics
