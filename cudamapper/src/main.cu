@@ -183,7 +183,7 @@ int main(int argc, char* argv[])
     }
 
     // This is host cache, if it has the index it will copy it to device, if not it will generate on device and add it to host cache
-    std::map<std::pair<uint64_t, uint64_t>, std::shared_ptr<claragenomics::cudamapper::IndexCache>> host_index_cache;
+    std::map<std::pair<uint64_t, uint64_t>, std::shared_ptr<claragenomics::cudamapper::IndexHostCopy>> host_index_cache;
 
     // This is a per-device cache, if it has the index it will return it, if not it will generate it, store and return it.
     std::vector<std::map<std::pair<uint64_t, uint64_t>, std::shared_ptr<claragenomics::cudamapper::Index>>> device_index_cache(num_devices);
@@ -228,7 +228,7 @@ int main(int argc, char* argv[])
             // update host cache, only done by device 0 to avoid any race conditions in updating the host cache
             if (get_size<int32_t>(host_index_cache) < max_index_cache_size_on_host && allow_cache_index && device_id == 0)
             {
-                host_index_cache[key] = std::move(claragenomics::cudamapper::IndexCache::create_cache(*index, start_index, k, w));
+                host_index_cache[key] = std::move(claragenomics::cudamapper::IndexHostCopy::create_cache(*index, start_index, k, w));
             }
         }
         return index;

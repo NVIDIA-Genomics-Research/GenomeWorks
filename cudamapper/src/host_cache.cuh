@@ -16,10 +16,10 @@ namespace claragenomics
 {
 namespace cudamapper
 {
-/// IndexCache - Creates and maintains a copy of computed IndexGPU elements on the host
+/// HostCache - Creates and maintains a copy of computed IndexGPU elements on the host
 ///
 ///
-class HostCache : public IndexCache
+class HostCache : public IndexHostCopy
 {
 public:
     /// \brief Constructor

@@ -119,10 +119,10 @@ public:
                  const double filtering_parameter = 1.0);
 };
 
-/// IndexCache - Creates and maintains a copy of computed IndexGPU elements on the host, then allows to retrieve target
+/// IndexHostCopy - Creates and maintains a copy of computed IndexGPU elements on the host, then allows to retrieve target
 /// indices from host instead of recomputing them again
 ///
-class IndexCache
+class IndexHostCopy
 {
 public:
     /// \brief copy cached index vectors from the host and create an object of Index on GPU
@@ -188,8 +188,8 @@ public:
     /// \param first_read_id - representing smallest read_id in index
     /// \param kmer_size - number of basepairs in a k-mer
     /// \param window_size the number of adjacent k-mers in a window, adjacent = shifted by one basepair
-    /// \return - an instance of IndexCache
-    static std::unique_ptr<IndexCache>
+    /// \return - an instance of IndexHostCopy
+    static std::unique_ptr<IndexHostCopy>
     create_cache(const Index& index,
                  const read_id_t first_read_id,
                  const std::uint64_t kmer_size,
