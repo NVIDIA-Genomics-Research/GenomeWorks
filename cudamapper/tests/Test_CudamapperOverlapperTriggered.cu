@@ -188,7 +188,7 @@ TEST(TestCudamapperOverlapperTriggerred, OneAchorNoOverlaps)
     cudautils::device_copy_n(anchors.data(), anchors.size(), anchors_d.data()); //H2D
 
     std::vector<Overlap> overlaps;
-    overlapper.get_overlaps(overlaps, anchors_d, test_index, test_index);
+    overlapper.get_overlaps(overlaps, anchors_d);
     ASSERT_EQ(overlaps.size(), 0u);
 }
 
@@ -246,7 +246,7 @@ TEST(TestCudamapperOverlapperTriggerred, FourAnchorsOneOverlap)
     cudautils::device_copy_n(anchors.data(), anchors.size(), anchors_d.data()); //H2D
 
     std::vector<Overlap> overlaps;
-    overlapper.get_overlaps(overlaps, anchors_d, test_index, test_index);
+    overlapper.get_overlaps(overlaps, anchors_d);
     ASSERT_EQ(overlaps.size(), 1u);
     ASSERT_EQ(overlaps[0].query_read_id_, 1u);
     ASSERT_EQ(overlaps[0].target_read_id_, 2u);
@@ -310,7 +310,7 @@ TEST(TestCudamapperOverlapperTriggerred, FourAnchorsNoOverlap)
     cudautils::device_copy_n(anchors.data(), anchors.size(), anchors_d.data()); //H2D
 
     std::vector<Overlap> overlaps;
-    overlapper.get_overlaps(overlaps, anchors_d, test_index, test_index);
+    overlapper.get_overlaps(overlaps, anchors_d);
     ASSERT_EQ(overlaps.size(), 0u);
 }
 
@@ -368,7 +368,7 @@ TEST(TestCudamapperOverlapperTriggerred, FourColinearAnchorsOneOverlap)
     cudautils::device_copy_n(anchors.data(), anchors.size(), anchors_d.data()); //H2D
 
     std::vector<Overlap> overlaps;
-    overlapper.get_overlaps(overlaps, anchors_d, test_index, test_index);
+    overlapper.get_overlaps(overlaps, anchors_d);
     ASSERT_EQ(overlaps.size(), 0u);
 }
 
@@ -426,7 +426,7 @@ TEST(TestCudamapperOverlapperTriggerred, FourAnchorsLastNotInOverlap)
     cudautils::device_copy_n(anchors.data(), anchors.size(), anchors_d.data()); //H2D
 
     std::vector<Overlap> overlaps;
-    overlapper.get_overlaps(overlaps, anchors_d, test_index, test_index);
+    overlapper.get_overlaps(overlaps, anchors_d);
     ASSERT_EQ(overlaps.size(), 1u);
     ASSERT_EQ(overlaps[0].query_read_id_, 1u);
     ASSERT_EQ(overlaps[0].target_read_id_, 2u);
@@ -490,7 +490,7 @@ TEST(TestCudamapperOverlapperTriggerred, ReverseStrand)
     cudautils::device_copy_n(anchors.data(), anchors.size(), anchors_d.data()); //H2D
 
     std::vector<Overlap> overlaps;
-    overlapper.get_overlaps(overlaps, anchors_d, test_index, test_index);
+    overlapper.get_overlaps(overlaps, anchors_d);
     ASSERT_EQ(overlaps.size(), 1u);
     ASSERT_GT(overlaps[0].target_end_position_in_read_, overlaps[0].target_start_position_in_read_);
     ASSERT_EQ(overlaps[0].relative_strand, RelativeStrand::Reverse);
