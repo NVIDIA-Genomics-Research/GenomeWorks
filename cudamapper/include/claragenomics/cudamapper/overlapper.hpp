@@ -52,6 +52,14 @@ public:
                                 const std::vector<Overlap>& overlaps,
                                 size_t min_residues    = 20,
                                 size_t min_overlap_len = 50);
+
+    /// \brief updates read names for vector of overlaps output from get_overlaps
+    /// \param overlaps input vector of overlaps generated in get_overlaps
+    /// \param index_query
+    /// \param index_target
+    static void update_read_names(std::vector<Overlap>& overlaps,
+                                  const Index& index_query,
+                                  const Index& index_target);
 };
 //}
 } // namespace cudamapper
