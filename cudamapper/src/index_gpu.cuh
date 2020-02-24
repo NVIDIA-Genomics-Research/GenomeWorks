@@ -29,6 +29,8 @@
 #include <claragenomics/utils/mathutils.hpp>
 #include <claragenomics/utils/signed_integer_utils.hpp>
 
+#include "host_cache.cuh"
+
 namespace claragenomics
 {
 namespace cudamapper
@@ -69,6 +71,13 @@ public:
              const bool hash_representations  = true,
              const double filtering_parameter = 1.0);
 
+    /// \brief Constructor
+    ///
+    /// \param allocator is pointer to asynchronous device allocator
+    /// \param host_cache is a copy of index for a set of reads which has been previously computed and stored on the host.
+    IndexGPU(std::shared_ptr<DeviceAllocator> allocator,
+             const HostCache& host_cache);
+
     /// \brief returns an array of representations of sketch elements
     /// \return an array of representations of sketch elements
     const device_buffer<representation_t>& representations() const override;
@@ -102,6 +111,13 @@ public:
     /// \param read_id
     /// \return read length for the read with the gived read_id
     const std::uint32_t& read_id_to_read_length(const read_id_t read_id) const override;
+
+    /// \brief returns look up table array mapping read id to read name
+    /// \return the array mapping read id to read name
+    const std::vector<std::string>& read_ids_to_read_names() const override;
+    /// \brief returns an array used for mapping read id to the length of the read
+    /// \return the array used for mapping read ids to their lengths
+    const std::vector<std::uint32_t>& read_ids_to_read_lengths() const override;
 
     /// \brief returns number of reads in input data
     /// \return number of reads in input data
@@ -564,6 +580,57 @@ IndexGPU<SketchElementImpl>::IndexGPU(std::shared_ptr<DeviceAllocator> allocator
 }
 
 template <typename SketchElementImpl>
+IndexGPU<SketchElementImpl>::IndexGPU(std::shared_ptr<DeviceAllocator> allocator,
+                                      const HostCache& host_cache)
+    : first_read_id_(host_cache.first_read_id())
+    , kmer_size_(host_cache.kmer_size())
+    , window_size_(host_cache.window_size())
+    , allocator_(allocator)
+    , representations_d_(allocator)
+    , read_ids_d_(allocator)
+    , positions_in_reads_d_(allocator)
+    , directions_of_reads_d_(allocator)
+    , unique_representations_d_(allocator)
+    , first_occurrence_of_representations_d_(allocator)
+{
+    number_of_reads_                     = host_cache.number_of_reads();
+    number_of_basepairs_in_longest_read_ = host_cache.number_of_basepairs_in_longest_read();
+
+    //H2D- representations_d_ = host_cache.representations();
+    representations_d_.resize(host_cache.representations().size());
+    representations_d_.shrink_to_fit();
+    cudautils::device_copy_n(host_cache.representations().data(), host_cache.representations().size(), representations_d_.data());
+
+    //H2D- read_ids_d_ = host_cache.read_ids();
+    read_ids_d_.resize(host_cache.read_ids().size());
+    read_ids_d_.shrink_to_fit();
+    cudautils::device_copy_n(host_cache.read_ids().data(), host_cache.read_ids().size(), read_ids_d_.data());
+
+    //H2D- positions_in_reads_d_ = host_cache.positions_in_reads();
+    positions_in_reads_d_.resize(host_cache.positions_in_reads().size());
+    positions_in_reads_d_.shrink_to_fit();
+    cudautils::device_copy_n(host_cache.positions_in_reads().data(), host_cache.positions_in_reads().size(), positions_in_reads_d_.data());
+
+    //H2D- directions_of_reads_d_ = host_cache.directions_of_reads();
+    directions_of_reads_d_.resize(host_cache.directions_of_reads().size());
+    directions_of_reads_d_.shrink_to_fit();
+    cudautils::device_copy_n(host_cache.directions_of_reads().data(), host_cache.directions_of_reads().size(), directions_of_reads_d_.data());
+
+    //H2D- unique_representations_d_ = host_cache.unique_representations();
+    unique_representations_d_.resize(host_cache.unique_representations().size());
+    unique_representations_d_.shrink_to_fit();
+    cudautils::device_copy_n(host_cache.unique_representations().data(), host_cache.unique_representations().size(), unique_representations_d_.data());
+
+    //H2D- first_occurrence_of_representations_d_ = host_cache.first_occurrence_of_representations();
+    first_occurrence_of_representations_d_.resize(host_cache.first_occurrence_of_representations().size());
+    first_occurrence_of_representations_d_.shrink_to_fit();
+    cudautils::device_copy_n(host_cache.first_occurrence_of_representations().data(), host_cache.first_occurrence_of_representations().size(), first_occurrence_of_representations_d_.data());
+
+    read_id_to_read_name_   = host_cache.read_id_to_read_names();   //H2H
+    read_id_to_read_length_ = host_cache.read_id_to_read_lengths(); //H2H
+}
+
+template <typename SketchElementImpl>
 const device_buffer<representation_t>& IndexGPU<SketchElementImpl>::representations() const
 {
     return representations_d_;
@@ -609,6 +676,18 @@ template <typename SketchElementImpl>
 const std::uint32_t& IndexGPU<SketchElementImpl>::read_id_to_read_length(const read_id_t read_id) const
 {
     return read_id_to_read_length_[read_id - first_read_id_];
+}
+
+template <typename SketchElementImpl>
+const std::vector<std::string>& IndexGPU<SketchElementImpl>::read_ids_to_read_names() const
+{
+    return read_id_to_read_name_;
+}
+
+template <typename SketchElementImpl>
+const std::vector<std::uint32_t>& IndexGPU<SketchElementImpl>::read_ids_to_read_lengths() const
+{
+    return read_id_to_read_length_;
 }
 
 template <typename SketchElementImpl>
