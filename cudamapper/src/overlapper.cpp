@@ -23,7 +23,7 @@ void Overlapper::filter_overlaps(std::vector<Overlap>& filtered_overlaps, const 
                                                                                   (overlap.num_residues_ >= min_residues) &&
                                                                                   ((overlap.query_end_position_in_read_ - overlap.query_start_position_in_read_) > min_overlap_len) &&
                                                                                   !( // Reject overlaps where the query and target sections are exactly the same, otherwise miniasm has trouble.
-                                                                                      (std::string(overlap.query_read_name_) == std::string(overlap.target_read_name_)) &&
+                                                                                      overlap.query_read_id_ == overlap.target_read_id_ &&
                                                                                       overlap.query_start_position_in_read_ == overlap.target_start_position_in_read_ &&
                                                                                       overlap.query_end_position_in_read_ == overlap.target_end_position_in_read_)); };
 
@@ -32,14 +32,14 @@ void Overlapper::filter_overlaps(std::vector<Overlap>& filtered_overlaps, const 
                  valid_overlap);
 }
 
-void Overlapper::update_read_names(std::vector<Overlap>& fused_overlaps,
+void Overlapper::update_read_names(std::vector<Overlap>& overlaps,
                                    const Index& index_query,
                                    const Index& index_target)
 {
 #pragma omp parallel for
-    for (size_t i = 0; i < fused_overlaps.size(); i++)
+    for (size_t i = 0; i < overlaps.size(); i++)
     {
-        auto& o                      = fused_overlaps[i];
+        auto& o                      = overlaps[i];
         std::string query_read_name  = index_query.read_id_to_read_name(o.query_read_id_);
         std::string target_read_name = index_target.read_id_to_read_name(o.target_read_id_);
 

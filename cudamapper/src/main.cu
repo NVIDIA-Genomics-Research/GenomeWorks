@@ -321,12 +321,11 @@ int main(int argc, char* argv[])
                 num_overlap_chunks_to_print++;
                 auto filter_and_print_overlaps = [&overlaps_writer_mtx, &num_overlap_chunks_to_print](std::shared_ptr<std::vector<claragenomics::cudamapper::Overlap>> overlaps,
                                                                                                       std::shared_ptr<claragenomics::cudamapper::Index> query_index,
-                                                                                                      std::shared_ptr<claragenomics::cudamapper::Index> target_index)
-                {
-                    // parallel update the overlaps to include the corresponding read names [parallel on host]
-                    claragenomics::cudamapper::Overlapper::update_read_names(*overlaps, *query_index, *target_index);
+                                                                                                      std::shared_ptr<claragenomics::cudamapper::Index> target_index) {
                     std::vector<claragenomics::cudamapper::Overlap> filtered_overlaps;
                     claragenomics::cudamapper::Overlapper::filter_overlaps(filtered_overlaps, *overlaps, 50);
+                    // parallel update of the query/target read names for filtered overlaps [parallel on host]
+                    claragenomics::cudamapper::Overlapper::update_read_names(filtered_overlaps, *query_index, *target_index);
                     std::lock_guard<std::mutex> lck(overlaps_writer_mtx);
                     claragenomics::cudamapper::Overlapper::print_paf(filtered_overlaps);
 

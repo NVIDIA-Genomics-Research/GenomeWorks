@@ -196,7 +196,7 @@ OverlapperTriggered::~OverlapperTriggered()
     CGA_CU_CHECK_ERR(cudaStreamDestroy(stream));
 }
 
-void OverlapperTriggered::get_overlaps(std::vector<Overlap> &fused_overlaps, device_buffer <Anchor> &d_anchors)
+void OverlapperTriggered::get_overlaps(std::vector<Overlap>& fused_overlaps, device_buffer<Anchor>& d_anchors)
 {
     CGA_NVTX_RANGE(profiler, "OverlapperTriggered::get_overlaps");
     const auto tail_length_for_chain = 3;
@@ -372,7 +372,6 @@ void OverlapperTriggered::get_overlaps(std::vector<Overlap> &fused_overlaps, dev
     fused_overlaps.resize(n_fused_overlap);
     cudautils::device_copy_n(d_fused_overlaps.data(), n_fused_overlap, fused_overlaps.data(), stream);
     CGA_CU_CHECK_ERR(cudaStreamSynchronize(stream));
-
 }
 
 } // namespace cudamapper
