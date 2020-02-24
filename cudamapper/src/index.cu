@@ -38,5 +38,14 @@ std::unique_ptr<Index> Index::create_index(std::shared_ptr<DeviceAllocator> allo
                                                  filtering_parameter);
 }
 
+std::unique_ptr<IndexHostCopy> IndexHostCopy::create_cache(const Index& index,
+                                                           const read_id_t first_read_id,
+                                                           const std::uint64_t kmer_size,
+                                                           const std::uint64_t window_size)
+{
+    CGA_NVTX_RANGE(profiler, "cache_D2H");
+    return std::make_unique<HostCache>(index, first_read_id, kmer_size, window_size);
+}
+
 } // namespace cudamapper
 } // namespace claragenomics
