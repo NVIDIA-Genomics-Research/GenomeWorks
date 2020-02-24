@@ -32,13 +32,13 @@ public:
 
     /// \brief returns overlaps for a set of reads
     /// \param overlaps Output vector into which generated overlaps will be placed
-    /// \param anchors vector of anchor objects. Does not need to be ordered
-    /// \param index_query representation index for reads
+    /// \param anchors vector of anchors sorted by query_read_id -> target_read_id -> query_position_in_read -> target_position_in_read (meaning sorted by query_read_id, then within a group of anchors with the same value of query_read_id sorted by target_read_id and so on)
+    /// \param index_query
     /// \param index_target
     /// \param min_residues smallest number of residues (anchors) for an overlap to be accepted
     /// \param min_overlap_len the smallest overlap distance which is accepted
     virtual void get_overlaps(std::vector<Overlap>& overlaps,
-                              thrust::device_vector<Anchor>& anchors,
+                              device_buffer<Anchor>& anchors,
                               const Index& index_query,
                               const Index& index_target,
                               size_t min_residues,

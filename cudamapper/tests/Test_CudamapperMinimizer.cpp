@@ -26,19 +26,21 @@ void test_function(const std::uint64_t number_of_reads_to_add,
                    const std::vector<Minimizer::ReadidPositionDirection>& expected_rest_h,
                    const bool hash_minimizers)
 {
-    device_buffer<char> merged_basepairs_d(merged_basepairs_h.size());
+    std::shared_ptr<DeviceAllocator> allocator = std::make_shared<CudaMallocAllocator>();
+    device_buffer<char> merged_basepairs_d(merged_basepairs_h.size(), allocator);
     CGA_CU_CHECK_ERR(cudaMemcpy(merged_basepairs_d.data(),
                                 merged_basepairs_h.data(),
                                 merged_basepairs_h.size() * sizeof(char),
                                 cudaMemcpyHostToDevice));
 
-    device_buffer<ArrayBlock> read_id_to_basepairs_section_d(read_id_to_basepairs_section_h.size());
+    device_buffer<ArrayBlock> read_id_to_basepairs_section_d(read_id_to_basepairs_section_h.size(), allocator);
     CGA_CU_CHECK_ERR(cudaMemcpy(read_id_to_basepairs_section_d.data(),
                                 read_id_to_basepairs_section_h.data(),
                                 read_id_to_basepairs_section_h.size() * sizeof(ArrayBlock),
                                 cudaMemcpyHostToDevice));
 
-    auto sketch_elements = Minimizer::generate_sketch_elements(number_of_reads_to_add,
+    auto sketch_elements = Minimizer::generate_sketch_elements(allocator,
+                                                               number_of_reads_to_add,
                                                                minimizer_size,
                                                                window_size,
                                                                read_id_of_first_read,
