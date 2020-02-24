@@ -135,9 +135,10 @@ public:
     using pointer = T*;
 
     /// @brief This constructor intializes and constructs cub's CachingDeviceAllocator
+    /// Smallest cached bin is 2^10 bytes, largest is 2^28 bytes. All allocation requests larger than 2^28 bytes are not fit in a bin and are not cached
     /// @param max_cached_bytes Maximum aggregate cached bytes per device (default is 1GB)
     CachingDeviceAllocator(size_t max_cached_bytes = 1e9)
-        : cub_allocator_(std::make_shared<cub::CachingDeviceAllocator>(2, 10, cub::CachingDeviceAllocator::INVALID_BIN, max_cached_bytes, false, false))
+        : cub_allocator_(std::make_shared<cub::CachingDeviceAllocator>(2, 10, 28, max_cached_bytes, false, false))
     {
     }
 
@@ -220,7 +221,7 @@ public:
     /// @brief destructor
     virtual ~CachingDeviceAllocator()
     {
-        // TODO: Clean cub_allocator_ properly if necessary
+        // no need to explicitly clear memory as long as cub::CachingDeviceAllocator allocator is called with skip_cleanup = false
     }
 
     /// @brief asynchronously allocates a device array with enough space for n elements of value_type
