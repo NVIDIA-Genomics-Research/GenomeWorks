@@ -12,6 +12,7 @@
 
 #include <fstream>
 #include <cstdlib>
+#include <omp.h>
 
 #include <claragenomics/utils/cudautils.hpp>
 
@@ -34,10 +35,9 @@ __host__ __device__ bool operator==(const Anchor& lhs,
     auto score_threshold = 1;
 
     // Very simple scoring function to quantify quality of overlaps.
-    // TODO change to a more sophisticated scoring method
     auto score = 1;
 
-    if ((rhs.query_position_in_read_ - lhs.query_position_in_read_) < 350 and abs(int(rhs.target_position_in_read_) - int(lhs.target_position_in_read_)) < 350)
+    if ((rhs.query_position_in_read_ - lhs.query_position_in_read_) < 150 and abs(int(rhs.target_position_in_read_) - int(lhs.target_position_in_read_)) < 150)
         score = 2;
     return ((lhs.query_read_id_ == rhs.query_read_id_) &&
             (lhs.target_read_id_ == rhs.target_read_id_) &&
@@ -76,8 +76,15 @@ __host__ __device__ bool operator==(const cuOverlapKey& key0,
 {
     const Anchor* a = key0.anchor;
     const Anchor* b = key1.anchor;
-    return (a->target_read_id_ == b->target_read_id_) &&
-           (a->query_read_id_ == b->query_read_id_);
+
+    int distance_difference = abs(abs(int(a->query_position_in_read_) - int(b->query_position_in_read_)) -
+                                  abs(int(a->target_position_in_read_) - int(b->target_position_in_read_)));
+
+    bool equal = (a->target_read_id_ == b->target_read_id_) &&
+                 (a->query_read_id_ == b->query_read_id_) &&
+                 distance_difference < 300;
+
+    return equal;
 }
 
 struct cuOverlapArgs
@@ -239,6 +246,7 @@ void OverlapperTriggered::get_overlaps(std::vector<Overlap>& fused_overlaps,
     // total number of chains found
     device_buffer<int32_t> d_nchains(1, _allocator, stream);
 
+    //The equality of two anchors has been overriden, such that they are equal (members of the same chain) if their QID,TID are equal and they fall within a fixed distance of one another
     void* d_temp_storage      = nullptr;
     size_t temp_storage_bytes = 0;
     // calculate storage requirement for run length encoding
@@ -258,11 +266,10 @@ void OverlapperTriggered::get_overlaps(std::vector<Overlap>& fused_overlaps,
     // <<<<<<<<<<
 
     // memcpy D2H
-    auto n_chains = cudautils::get_value_from_device(d_nchains.data(), stream);
+    auto n_chains = cudautils::get_value_from_device(d_nchains.data(), stream); //We now know the number of chains we are working with.
 
     // use prefix sum to calculate the starting index position of all the chains
     // >>>>>>>>>>>>
-
     // for a chain i, d_chain_start[i] contains the index of starting anchor from d_anchors array
     device_buffer<int32_t> d_chain_start(n_chains, _allocator, stream);
 
@@ -329,26 +336,37 @@ void OverlapperTriggered::get_overlaps(std::vector<Overlap>& fused_overlaps,
 
     d_temp_storage     = nullptr;
     temp_storage_bytes = 0;
-    cub::DeviceReduce::ReduceByKey(d_temp_storage, temp_storage_bytes, d_keys_in,
+    cub::DeviceReduce::ReduceByKey(d_temp_storage,
+                                   temp_storage_bytes,
+                                   d_keys_in,
                                    d_fusedoverlap_keys.data(), d_values_in,
                                    d_fusedoverlaps_args.data(), d_nfused_overlaps.data(),
-                                   reduction_op, n_overlaps, stream);
+                                   reduction_op,
+                                   n_overlaps,
+                                   stream);
 
     // allocate temporary storage
     d_temp_buf.resize(temp_storage_bytes, stream);
     d_temp_storage = d_temp_buf.data();
 
-    cub::DeviceReduce::ReduceByKey(d_temp_storage, temp_storage_bytes, d_keys_in,
-                                   d_fusedoverlap_keys.data(), d_values_in,
-                                   d_fusedoverlaps_args.data(), d_nfused_overlaps.data(),
-                                   reduction_op, n_overlaps, stream);
+    cub::DeviceReduce::ReduceByKey(d_temp_storage,
+                                   temp_storage_bytes,
+                                   d_keys_in,
+                                   d_fusedoverlap_keys.data(), //Write out the unique keys here
+                                   d_values_in,
+                                   d_fusedoverlaps_args.data(), //Write out the values here
+                                   d_nfused_overlaps.data(),
+                                   reduction_op,
+                                   n_overlaps,
+                                   stream);
 
     // memcpyD2H
     auto n_fused_overlap = cudautils::get_value_from_device(d_nfused_overlaps.data(), stream);
 
     // construct overlap from the overlap args
     CreateOverlap fuse_op(d_anchors.data());
-    device_buffer<Overlap> d_fused_overlaps(n_fused_overlap, _allocator, stream);
+    device_buffer<Overlap> d_fused_overlaps(n_fused_overlap, _allocator, stream); //Overlaps written here
+
     thrust::transform(thrust_exec_policy, d_fusedoverlaps_args.data(),
                       d_fusedoverlaps_args.data() + n_fused_overlap,
                       d_fused_overlaps.data(), fuse_op);
@@ -360,24 +378,24 @@ void OverlapperTriggered::get_overlaps(std::vector<Overlap>& fused_overlaps,
 
     // <<<<<<<<<<<<
     // parallel update the overlaps to include the corresponding read names [parallel on host]
-    thrust::transform(thrust::host,
-                      fused_overlaps.data(),
-                      fused_overlaps.data() + n_fused_overlap,
-                      fused_overlaps.data(), [&](Overlap& new_overlap) {
-                          std::string query_read_name  = index_query.read_id_to_read_name(new_overlap.query_read_id_);
-                          std::string target_read_name = index_target.read_id_to_read_name(new_overlap.target_read_id_);
 
-                          new_overlap.query_read_name_ = new char[query_read_name.length()];
-                          strcpy(new_overlap.query_read_name_, query_read_name.c_str());
+#pragma omp parallel for
+    for (size_t i = 0; i < fused_overlaps.size(); i++)
+    {
+        auto& o                      = fused_overlaps[i];
+        std::string query_read_name  = index_query.read_id_to_read_name(o.query_read_id_);
+        std::string target_read_name = index_target.read_id_to_read_name(o.target_read_id_);
 
-                          new_overlap.target_read_name_ = new char[target_read_name.length()];
-                          strcpy(new_overlap.target_read_name_, target_read_name.c_str());
+        o.query_read_name_ = new char[query_read_name.length()];
+        strcpy(o.query_read_name_, query_read_name.c_str());
 
-                          new_overlap.query_length_  = index_query.read_id_to_read_length(new_overlap.query_read_id_);
-                          new_overlap.target_length_ = index_target.read_id_to_read_length(new_overlap.target_read_id_);
+        o.target_read_name_ = new char[target_read_name.length()];
+        strcpy(o.target_read_name_, target_read_name.c_str());
 
-                          return new_overlap;
-                      });
+        o.query_length_  = index_query.read_id_to_read_length(o.query_read_id_);
+        o.target_length_ = index_target.read_id_to_read_length(o.target_read_id_);
+    }
 }
+
 } // namespace cudamapper
 } // namespace claragenomics

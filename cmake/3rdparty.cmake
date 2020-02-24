@@ -38,7 +38,7 @@ if (NOT TARGET spoa)
 endif()
 
 set(CUB_DIR ${PROJECT_SOURCE_DIR}/3rdparty/cub CACHE STRING
-	  "Path to cub repo")
+    "Path to cub repo")
 
-set(THREADPOOL_DIR ${PROJECT_SOURCE_DIR}/3rdparty/ThreadPool CACHE STRING
-      "Path to Threadpool repo")
+set(KSEQPP_DIR ${PROJECT_SOURCE_DIR}/3rdparty/kseqpp/src CACHE STRING
+    "Path to kseqpp repo")

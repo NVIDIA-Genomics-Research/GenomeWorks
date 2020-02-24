@@ -12,7 +12,6 @@
 
 #include <cstdint>
 #include <string>
-
 namespace claragenomics
 {
 
@@ -79,9 +78,9 @@ typedef struct Overlap
     /// end position in the target
     position_in_read_t target_end_position_in_read_;
     /// query read name (e.g from FASTA)
-    char* query_read_name_ = 0;
+    char* query_read_name_ = nullptr;
     /// target read name (e.g from FASTA)
-    char* target_read_name_ = 0;
+    char* target_read_name_ = nullptr;
     /// Relative strand: Forward ("+") or Reverse("-")
     RelativeStrand relative_strand;
     /// Number of residues (e.g anchors) between the two reads
@@ -93,7 +92,24 @@ typedef struct Overlap
     /// Whether the overlap is considered valid by the generating overlapper
     bool overlap_complete = false;
     /// CIGAR string for alignment of mapped section.
-    char* cigar_ = 0;
+    char* cigar_ = nullptr;
+
+    //TODO add a destructor and copy constructor to remove need for this function
+    /// \brief Free memory associated with Overlap.
+    /// Since query_read_name_, target_read_name_ and cigar_ are char * types,
+    /// they are not freed when Overlap is deleted.
+    void clear()
+    {
+        delete[] target_read_name_;
+        target_read_name_ = nullptr;
+
+        delete[] query_read_name_;
+        query_read_name_ = nullptr;
+
+        delete[] cigar_;
+        cigar_ = nullptr;
+    }
+
 } Overlap;
 
 } // namespace cudamapper

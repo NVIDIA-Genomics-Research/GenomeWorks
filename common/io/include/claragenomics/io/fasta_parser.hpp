@@ -11,6 +11,7 @@
 
 #include <string>
 #include <memory>
+#include <vector>
 
 namespace claragenomics
 {
@@ -46,20 +47,27 @@ public:
     /// \return A FastaSequence object describing the entry.
     virtual FastaSequence get_sequence_by_id(int32_t id) const = 0;
 
-    /// \brief Fetch an entry from the FASTA file by name.
-    /// \param name Name of the sequence in FASTA file. If there is no entry
-    ///             by that name, an error is thrown.
+    /// \brief returns a list of pairs of read_id values where each range has at most max_chunk_size characters
+    /// if a single sequence exceeds max_chunk_size it will be placed in its own chunk.
     ///
-    /// \return A FastaSequence object describing the entry.
-    virtual FastaSequence get_sequence_by_name(const std::string& name) const = 0;
+    /// \param max_chunk_size the maximum size (in MB) of a chunk (range of indices)
+    /// \return  a pair of integers with the first and past-the-last read indices of the chunk
+    virtual std::vector<std::pair<int, int>> get_read_chunks(int max_chunk_size = 1000000) const = 0;
 };
 
-/// \brief A builder function that returns a FASA parser object.
+/// \brief A builder function that returns a FASTA parser object which uses HTSLIB.
 ///
 /// \param fasta_file Path to FASTA(.gz) file. If .gz, it must be zipped with bgzip.
 ///
 /// \return A unique pointer to a constructed parser object.
-std::unique_ptr<FastaParser> create_fasta_parser(const std::string& fasta_file);
+std::unique_ptr<FastaParser> create_hts_fasta_parser(const std::string& fasta_file);
+
+/// \brief A builder function that returns a FASTA parser object which uses KSEQPP.
+///
+/// \param fasta_file Path to FASTA(.gz) file. If .gz, it must be zipped with bgzip.
+///
+/// \return A unique pointer to a constructed parser object.
+std::unique_ptr<FastaParser> create_kseq_fasta_parser(const std::string& fasta_file);
 
 } // namespace io
 } // namespace claragenomics

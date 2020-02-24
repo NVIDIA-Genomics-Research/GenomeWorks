@@ -1288,7 +1288,7 @@ void test_function(const std::string& filename,
                    const position_in_read_t expected_number_of_basepairs_in_longest_read,
                    const double filtering_parameter = 1.0)
 {
-    std::unique_ptr<io::FastaParser> parser    = io::create_fasta_parser(filename);
+    std::unique_ptr<io::FastaParser> parser    = io::create_kseq_fasta_parser(filename);
     std::shared_ptr<DeviceAllocator> allocator = std::make_shared<CudaMallocAllocator>();
     IndexGPU<Minimizer> index(allocator,
                               *parser,
