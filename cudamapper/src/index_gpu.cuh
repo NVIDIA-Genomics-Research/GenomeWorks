@@ -28,10 +28,6 @@
 #include <claragenomics/utils/mathutils.hpp>
 #include <claragenomics/utils/signed_integer_utils.hpp>
 
-////////////////
-#include <iostream>
-////////////////
-
 namespace claragenomics
 {
 namespace cudamapper

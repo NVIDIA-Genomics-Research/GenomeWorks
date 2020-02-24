@@ -33,11 +33,11 @@ public:
     using pointer = T*;
 
     /// @brief default constructor
-    CudaMallocAllocator(){};
+    CudaMallocAllocator() = default;
 
     /// @brief copy constructor
     /// @param rhs input allocator
-    CudaMallocAllocator(const CudaMallocAllocator& rhs) {}
+    CudaMallocAllocator(const CudaMallocAllocator& rhs) = default;
 
     /// @brief copy constructor from an allocator with another value_type
     /// Internal state of allocator does not acutally depend on value_type so this is possible
@@ -51,7 +51,7 @@ public:
     /// @brief copy assignment operator
     /// @param rhs input allocator
     /// @return reference to this object
-    CudaMallocAllocator& operator=(const CudaMallocAllocator& rhs) { return *this; }
+    CudaMallocAllocator& operator=(const CudaMallocAllocator& rhs) = default;
 
     /// @brief copy assignement operator from an allocator with another value_type
     /// Internal state of allocator does not acutally depend on value_type so this is possible
@@ -66,7 +66,7 @@ public:
 
     /// @brief move constructor
     /// @param rhs input allocator
-    CudaMallocAllocator(CudaMallocAllocator&& rhs) {}
+    CudaMallocAllocator(CudaMallocAllocator&& rhs) = default;
 
     /// @brief move constructor from an allocator with another value_type
     /// Internal state of allocator does not acutally depend on value_type so this is possible
@@ -80,7 +80,7 @@ public:
     /// @brief move assignment operator
     /// @param rhs input allocator
     /// @return reference to this object
-    CudaMallocAllocator& operator=(CudaMallocAllocator&& rhs) { return *this; }
+    CudaMallocAllocator& operator=(CudaMallocAllocator&& rhs) = default;
 
     /// @brief move assignement operator from an allocator with another value_type
     /// Internal state of allocator does not acutally depend on value_type so this is possible
@@ -94,7 +94,7 @@ public:
     }
 
     /// @brief destructor
-    virtual ~CudaMallocAllocator() {}
+    ~CudaMallocAllocator() = default;
 
     /// @brief asynchronously allocates a device array with enough space for n elements of value_type
     /// @param n number of elements to allocate the array for
@@ -144,10 +144,7 @@ public:
 
     /// @brief copy constructor
     /// @param rhs input allocator
-    CachingDeviceAllocator(const CachingDeviceAllocator& rhs)
-        : cub_allocator_(rhs.cub_allocator_)
-    {
-    }
+    CachingDeviceAllocator(const CachingDeviceAllocator& rhs) = default;
 
     /// @brief copy constructor from an allocator with another value_type
     /// Internal state of allocator does not acutally depend on value_type so this is possible
@@ -162,11 +159,7 @@ public:
     /// @brief copy assignment operator
     /// @param rhs input allocator
     /// @return reference to this object
-    CachingDeviceAllocator& operator=(const CachingDeviceAllocator& rhs)
-    {
-        cub_allocator_ = rhs.cub_allocator_;
-        return *this;
-    }
+    CachingDeviceAllocator& operator=(const CachingDeviceAllocator& rhs) = default;
 
     /// @brief copy assignement operator from an allocator with another value_type
     /// Internal state of allocator does not acutally depend on value_type so this is possible
@@ -182,10 +175,7 @@ public:
 
     /// @brief move constructor
     /// @param rhs input allocator
-    CachingDeviceAllocator(CachingDeviceAllocator&& rhs)
-        : cub_allocator_(rhs.cub_allocator_)
-    {
-    }
+    CachingDeviceAllocator(CachingDeviceAllocator&& rhs) = default;
 
     /// @brief move constructor from an allocator with another value_type
     /// Internal state of allocator does not acutally depend on value_type so this is possible
@@ -200,11 +190,7 @@ public:
     /// @brief move assignment operator
     /// @param rhs input allocator
     /// @return reference to this object
-    CachingDeviceAllocator& operator=(CachingDeviceAllocator&& rhs)
-    {
-        cub_allocator_ = rhs.cub_allocator_;
-        return *this;
-    }
+    CachingDeviceAllocator& operator=(CachingDeviceAllocator&& rhs) = default;
 
     /// @brief move assignement operator from an allocator with another value_type
     /// Internal state of allocator does not acutally depend on value_type so this is possible
@@ -219,10 +205,8 @@ public:
     }
 
     /// @brief destructor
-    virtual ~CachingDeviceAllocator()
-    {
-        // no need to explicitly clear memory as long as cub::CachingDeviceAllocator allocator is called with skip_cleanup = false
-    }
+    ~CachingDeviceAllocator() = default;
+    // ^^^ no need to explicitly clear memory as long as cub::CachingDeviceAllocator allocator is called with skip_cleanup = false
 
     /// @brief asynchronously allocates a device array with enough space for n elements of value_type
     /// @param n number of elements to allocate the array for
