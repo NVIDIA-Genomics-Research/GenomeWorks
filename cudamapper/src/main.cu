@@ -417,7 +417,7 @@ void help(int32_t exit_code = 0)
             number of indices to keep in GPU memory [100])"
               << R"(
         -C, --max-index-host-cache
-            number of indices to keep in host memory [1000])"
+            number of indices to keep in host memory [0])"
               << R"(
         -m, --max-cached-memory
             maximum aggregate cached memory per device in GB [1])"
