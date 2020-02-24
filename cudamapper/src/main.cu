@@ -315,11 +315,16 @@ int main(int argc, char* argv[])
                 // Get unfiltered overlaps
                 auto overlaps_to_add = std::make_shared<std::vector<claragenomics::cudamapper::Overlap>>();
 
-                overlapper.get_overlaps(*overlaps_to_add, matcher->anchors(), *query_index, *target_index);
+                overlapper.get_overlaps(*overlaps_to_add, matcher->anchors());
 
                 //Increment counter which tracks number of overlap chunks to be filtered and printed
                 num_overlap_chunks_to_print++;
-                auto filter_and_print_overlaps = [&overlaps_writer_mtx, &num_overlap_chunks_to_print](std::shared_ptr<std::vector<claragenomics::cudamapper::Overlap>> overlaps) {
+                auto filter_and_print_overlaps = [&overlaps_writer_mtx, &num_overlap_chunks_to_print](std::shared_ptr<std::vector<claragenomics::cudamapper::Overlap>> overlaps,
+                                                                                                      std::shared_ptr<claragenomics::cudamapper::Index> query_index,
+                                                                                                      std::shared_ptr<claragenomics::cudamapper::Index> target_index)
+                {
+                    // parallel update the overlaps to include the corresponding read names [parallel on host]
+                    claragenomics::cudamapper::Overlapper::update_read_names(*overlaps, *query_index, *target_index);
                     std::vector<claragenomics::cudamapper::Overlap> filtered_overlaps;
                     claragenomics::cudamapper::Overlapper::filter_overlaps(filtered_overlaps, *overlaps, 50);
                     std::lock_guard<std::mutex> lck(overlaps_writer_mtx);
@@ -334,7 +339,7 @@ int main(int argc, char* argv[])
                     num_overlap_chunks_to_print--;
                 };
 
-                std::thread t(filter_and_print_overlaps, overlaps_to_add);
+                std::thread t(filter_and_print_overlaps, overlaps_to_add, query_index, target_index);
                 t.detach();
             }
             // reseting the matcher releases the anchor device array back to memory pool

@@ -32,13 +32,9 @@ public:
 
     /// \brief returns overlaps for a set of reads
     /// \param overlaps Output vector into which generated overlaps will be placed
-    /// \param anchors vector of anchors sorted by query_read_id -> target_read_id -> query_position_in_read -> target_position_in_read (meaning sorted by query_read_id, then within a group of anchors with the same value of query_read_id sorted by target_read_id and so on)
-    /// \param index_query
-    /// \param index_target
-    virtual void get_overlaps(std::vector<Overlap>& overlaps,
-                              device_buffer<Anchor>& anchors,
-                              const Index& index_query,
-                              const Index& index_target) = 0;
+    /// \param anchors vector of anchors sorted by query_read_id -> target_read_id -> query_position_in_read -> target_position_in_read
+    /// (meaning sorted by query_read_id, then within a group of anchors with the same value of query_read_id sorted by target_read_id and so on)
+    virtual void get_overlaps(std::vector<Overlap> &overlaps, device_buffer <Anchor> &anchors) = 0;
 
     /// \brief prints overlaps to stdout in <a href="https://github.com/lh3/miniasm/blob/master/PAF.md">PAF format</a>
     static void print_paf(const std::vector<Overlap>& overlaps);
