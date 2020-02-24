@@ -66,19 +66,21 @@ public:
 
     /// @brief move constructor
     /// @param rhs input allocator
-    CudaMallocAllocator(CudaMallocAllocator&& rhs){};
+    CudaMallocAllocator(CudaMallocAllocator&& rhs) {}
 
     /// @brief move constructor from an allocator with another value_type
     /// Internal state of allocator does not acutally depend on value_type so this is possible
     /// @param rhs input allocator
     /// @tparam U Type of rhs::value_type
     template <typename U>
-    CudaMallocAllocator(CudaMallocAllocator<U>&& rhs){};
+    CudaMallocAllocator(CudaMallocAllocator<U>&& rhs)
+    {
+    }
 
     /// @brief move assignment operator
     /// @param rhs input allocator
     /// @return reference to this object
-    CudaMallocAllocator& operator=(CudaMallocAllocator&& rhs) { return *this; };
+    CudaMallocAllocator& operator=(CudaMallocAllocator&& rhs) { return *this; }
 
     /// @brief move assignement operator from an allocator with another value_type
     /// Internal state of allocator does not acutally depend on value_type so this is possible
@@ -89,10 +91,10 @@ public:
     CudaMallocAllocator& operator=(CudaMallocAllocator<U>&& rhs)
     {
         return *this;
-    };
+    }
 
     /// @brief destructor
-    virtual ~CudaMallocAllocator(){};
+    virtual ~CudaMallocAllocator() {}
 
     /// @brief asynchronously allocates a device array with enough space for n elements of value_type
     /// @param n number of elements to allocate the array for
