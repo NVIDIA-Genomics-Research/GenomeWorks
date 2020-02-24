@@ -41,7 +41,7 @@ static struct option options[] = {
     {"help", no_argument, 0, 'h'},
 };
 
-void help(int32_t exit_code); //
+void help(int32_t exit_code);
 
 int main(int argc, char* argv[])
 {
@@ -150,7 +150,7 @@ int main(int argc, char* argv[])
     // Data structure for holding overlaps to be written out
     std::mutex overlaps_writer_mtx;
 
-    struct QueryTargetRange
+    struct QueryTargetsRange
     {
         std::pair<std::int32_t, int32_t> query_range;
         std::vector<std::pair<std::int32_t, int32_t>> target_ranges;
@@ -161,12 +161,12 @@ int main(int argc, char* argv[])
     auto target_chunks = target_parser->get_read_chunks(target_index_size * 1000000);
 
     //First generate all the ranges independently, then loop over them.
-    std::vector<QueryTargetRange> query_target_ranges;
+    std::vector<QueryTargetsRange> query_target_ranges;
 
     int target_idx = 0;
     for (auto const& query_chunk : query_chunks)
     {
-        QueryTargetRange range;
+        QueryTargetsRange range;
         range.query_range = query_chunk;
         for (size_t t = target_idx; t < target_chunks.size(); t++)
         {
@@ -252,7 +252,7 @@ int main(int argc, char* argv[])
     std::shared_ptr<claragenomics::DeviceAllocator> allocator(new claragenomics::CudaMallocAllocator());
 #endif
 
-    auto compute_overlaps = [&](const QueryTargetRange query_target_range, const int device_id) {
+    auto compute_overlaps = [&](const QueryTargetsRange &query_target_range, const int device_id) {
         cudaSetDevice(device_id);
 
         auto query_start_index = query_target_range.query_range.first;
@@ -338,7 +338,6 @@ int main(int argc, char* argv[])
     // by the user
     for (int device_id = 0; device_id < num_devices; device_id++)
     {
-        std::cerr << "Launching worker thread" << std::endl;
         //Worker thread consumes query-target ranges off a queue
         workers.push_back(std::thread(
             [&, device_id]() {

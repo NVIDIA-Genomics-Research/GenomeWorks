@@ -12,8 +12,6 @@
 
 #include <cstdint>
 #include <string>
-#include <cstdlib>
-#include <iostream>
 namespace claragenomics
 {
 
