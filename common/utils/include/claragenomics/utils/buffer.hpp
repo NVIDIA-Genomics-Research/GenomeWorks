@@ -203,13 +203,14 @@ public:
     /// @brief This method swaps the contents of two buffers.
     /// @param a One buffer.
     /// @param b The other buffer.
-    friend void swap(buffer& a, buffer& b)
+    friend void swap(buffer& a, buffer& b) noexcept
     {
-        std::swap(a._data, b._data);
-        std::swap(a._size, b._size);
-        std::swap(a._capacity, b._capacity);
-        std::swap(a._stream, b._stream);
-        std::swap(a._allocator, b._allocator);
+        using std::swap;
+        swap(a._data, b._data);
+        swap(a._size, b._size);
+        swap(a._capacity, b._capacity);
+        swap(a._stream, b._stream);
+        swap(a._allocator, b._allocator);
     }
 
     /// @brief This method shrinks the capacity of this buffer to exactly fit its elements.
