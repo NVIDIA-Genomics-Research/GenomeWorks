@@ -334,7 +334,7 @@ int main(int argc, char* argv[])
                     num_overlap_chunks_to_print--;
                 };
 
-                std::thread t(filter_and_print_overlaps, overlaps_to_add);
+                std::thread t(filter_and_print_overlaps, std::move(overlaps_to_add));
                 t.detach();
             }
             // reseting the matcher releases the anchor device array back to memory pool
