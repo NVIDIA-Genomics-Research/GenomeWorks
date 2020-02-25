@@ -39,14 +39,14 @@ void Overlapper::update_read_names(std::vector<Overlap>& overlaps,
 #pragma omp parallel for
     for (size_t i = 0; i < overlaps.size(); i++)
     {
-        auto& o                      = overlaps[i];
-        std::string query_read_name  = index_query.read_id_to_read_name(o.query_read_id_);
-        std::string target_read_name = index_target.read_id_to_read_name(o.target_read_id_);
+        auto& o                             = overlaps[i];
+        const std::string& query_read_name  = index_query.read_id_to_read_name(o.query_read_id_);
+        const std::string& target_read_name = index_target.read_id_to_read_name(o.target_read_id_);
 
-        o.query_read_name_ = new char[query_read_name.length()];
+        o.query_read_name_ = new char[query_read_name.length() + 1];
         strcpy(o.query_read_name_, query_read_name.c_str());
 
-        o.target_read_name_ = new char[target_read_name.length()];
+        o.target_read_name_ = new char[target_read_name.length() + 1];
         strcpy(o.target_read_name_, target_read_name.c_str());
 
         o.query_length_  = index_query.read_id_to_read_length(o.query_read_id_);
