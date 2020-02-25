@@ -196,7 +196,7 @@ int main(int argc, char* argv[])
     // The number of overlap chunks which are to be computed
     std::atomic<int> num_overlap_chunks_to_print(0);
 
-    auto get_index = [&device_index_cache, &host_index_cache, max_index_cache_size_on_device, max_index_cache_size_on_host](std::shared_ptr<claragenomics::DeviceAllocator> allocator,
+    auto get_index = [&device_index_cache, &host_index_cache, max_index_cache_size_on_device, max_index_cache_size_on_host](claragenomics::DefaultDeviceAllocator allocator,
                                                                                                                             claragenomics::io::FastaParser& parser,
                                                                                                                             const claragenomics::cudamapper::read_id_t start_index,
                                                                                                                             const claragenomics::cudamapper::read_id_t end_index,
@@ -270,10 +270,12 @@ int main(int argc, char* argv[])
     };
 
 #ifdef CGA_ENABLE_ALLOCATOR
+    // uses CachingDeviceAllocator
     auto max_cached_bytes = max_cached_memory * 1e9; // max_cached_memory is in GB
-    std::shared_ptr<claragenomics::DeviceAllocator> allocator(new claragenomics::CachingDeviceAllocator(max_cached_bytes));
+    claragenomics::DefaultDeviceAllocator allocator(max_cached_bytes);
 #else
-    std::shared_ptr<claragenomics::DeviceAllocator> allocator(new claragenomics::CudaMallocAllocator());
+    // uses CudaMallocAllocator
+    claragenomics::DefaultDeviceAllocator allocator;
 #endif
 
     auto compute_overlaps = [&](const QueryTargetsRange& query_target_range, const int device_id) {

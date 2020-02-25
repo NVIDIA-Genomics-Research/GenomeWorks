@@ -63,7 +63,11 @@ cuda_add_executable(cudamapper
 )
 
 if(cga_enable_allocator)
-    target_compile_definitions(cudamapper PUBLIC CGA_ENABLE_ALLOCATOR)
+    target_compile_definitions(cudamapper            PUBLIC CGA_ENABLE_ALLOCATOR)
+    target_compile_definitions(minimizer             PUBLIC CGA_ENABLE_ALLOCATOR)
+    target_compile_definitions(index_gpu             PUBLIC CGA_ENABLE_ALLOCATOR)
+    target_compile_definitions(matcher_gpu           PUBLIC CGA_ENABLE_ALLOCATOR)
+    target_compile_definitions(overlapper_triggerred PUBLIC CGA_ENABLE_ALLOCATOR)
 endif()
 
 target_compile_options(cudamapper PRIVATE -Werror)

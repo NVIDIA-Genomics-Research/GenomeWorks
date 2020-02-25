@@ -13,7 +13,6 @@
 #include <cassert>
 #include <numeric>
 
-#include <thrust/scan.h>
 #include <thrust/transform_scan.h>
 #include <thrust/execution_policy.h>
 
@@ -28,7 +27,7 @@ namespace claragenomics
 namespace cudamapper
 {
 
-MatcherGPU::MatcherGPU(std::shared_ptr<DeviceAllocator> allocator,
+MatcherGPU::MatcherGPU(DefaultDeviceAllocator allocator,
                        const Index& query_index,
                        const Index& target_index)
     : anchors_d_(allocator)
@@ -258,9 +257,8 @@ void generate_anchors(
     assert(query_read_ids.size() == query_positions_in_read.size());
     assert(target_read_ids.size() == target_positions_in_read.size());
 
-    // TODO: Using CudaMallocAllocator for now. Switch to using the allocator used by input arrays
-    //       once device_buffer::get_allocator() is added
-    std::shared_ptr<DeviceAllocator> allocator = std::make_shared<CudaMallocAllocator>();
+    // use anchors' allocator
+    DefaultDeviceAllocator allocator = anchors.get_allocator();
 
     device_buffer<ReadsKeyT> compound_key_read_ids(anchors.size(), allocator);
     device_buffer<PositionsKeyT> compound_key_positions_in_reads(anchors.size(), allocator);
@@ -328,8 +326,10 @@ void compute_anchor_starting_indices(
     const std::uint32_t* const target_starting_indices = target_starting_index_of_each_representation_d.data();
     const std::int64_t* const found_target_indices     = found_target_indices_d.data();
 
+    DefaultDeviceAllocator allocator = anchor_starting_indices_d.get_allocator();
+
     thrust::transform_inclusive_scan(
-        thrust::device,
+        thrust::cuda::par(allocator),
         thrust::make_counting_iterator(std::int64_t(0)),
         thrust::make_counting_iterator(get_size(anchor_starting_indices_d)),
         anchor_starting_indices_d.begin(),

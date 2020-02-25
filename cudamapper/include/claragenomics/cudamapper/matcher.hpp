@@ -11,7 +11,6 @@
 #pragma once
 
 #include <memory>
-#include <thrust/device_vector.h>
 #include <claragenomics/cudamapper/index.hpp>
 #include <claragenomics/utils/device_buffer.hpp>
 
@@ -39,7 +38,7 @@ public:
     /// \param query_index
     /// \param target_index
     /// \return matcher
-    static std::unique_ptr<Matcher> create_matcher(std::shared_ptr<DeviceAllocator> allocator,
+    static std::unique_ptr<Matcher> create_matcher(DefaultDeviceAllocator allocator,
                                                    const Index& query_index,
                                                    const Index& target_index);
 };

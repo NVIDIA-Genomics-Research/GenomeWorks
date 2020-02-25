@@ -38,11 +38,11 @@ public:
     /// \return vector of Overlap objects
     void get_overlaps(std::vector<Overlap>& fused_overlaps, device_buffer<Anchor>& d_anchors) override;
 
-    explicit OverlapperTriggered(std::shared_ptr<DeviceAllocator>);
+    explicit OverlapperTriggered(DefaultDeviceAllocator);
     ~OverlapperTriggered();
 
 private:
-    std::shared_ptr<DeviceAllocator> _allocator;
+    DefaultDeviceAllocator _allocator;
     cudaStream_t stream;
 };
 } // namespace cudamapper
