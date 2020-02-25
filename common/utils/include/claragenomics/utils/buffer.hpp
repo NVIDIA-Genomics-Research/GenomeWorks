@@ -15,7 +15,7 @@
 namespace claragenomics
 {
 
-/// @brief Container for a single object of type `T` in host or device memory.
+/// @brief Container for an array of elements of type `T` in host or device memory.
 ///        `T` must be trivially copyable.
 /// @tparam T The object's type
 /// @tparam Allocator The allocator's type
@@ -35,6 +35,9 @@ public:
     /// a const pointer type to iterate/refer the \p buffer elements.
     using const_iterator = const value_type*;
 
+    /// allocator type.
+    using allocator_type = Allocator;
+
     buffer(const buffer& other) = delete;
 
     buffer& operator=(const buffer& other) = delete;
@@ -43,9 +46,11 @@ public:
     /// @param n The number of elements to initially create.
     /// @param allocator The allocator to use by this buffer.
     /// @param stream The CUDA stream to be associated with this allocation. Default is stream 0.
-    explicit buffer(size_type n                          = 0,
-                    std::shared_ptr<Allocator> allocator = std::make_shared<Allocator>(),
-                    cudaStream_t stream                  = 0)
+    /// @tparam AllocatorIn Type of input allocator. If AllocatorIn::value_type is different than T AllocatorIn will be converted to Allocator<T> if possible, compilation will fail otherwise
+    template <typename AllocatorIn = Allocator>
+    explicit buffer(size_type n           = 0,
+                    AllocatorIn allocator = AllocatorIn(),
+                    cudaStream_t stream   = 0)
         : _size(n)
         , _capacity(n)
         , _data(nullptr)
@@ -56,8 +61,7 @@ public:
         assert(_size >= 0);
         if (_capacity > 0)
         {
-            _data = static_cast<value_type*>(
-                _allocator->allocate(_capacity * sizeof(value_type), _stream));
+            _data = _allocator.allocate(_capacity, _stream);
             CGA_CU_CHECK_ERR(cudaStreamSynchronize(_stream));
         }
     }
@@ -65,32 +69,37 @@ public:
     /// @brief This constructor creates an empty \p buffer.
     /// @param allocator The allocator to use by this buffer.
     /// @param stream The CUDA stream to be associated with this allocation. Default is stream 0.
-    explicit buffer(std::shared_ptr<Allocator> allocator, cudaStream_t stream = 0)
+    /// @tparam AllocatorIn Type of input allocator. If AllocatorIn::value_type is different than T AllocatorIn will be converted to Allocator<T> if possible, compilation will fail otherwise
+    template <typename AllocatorIn>
+    explicit buffer(AllocatorIn allocator, cudaStream_t stream = 0)
         : buffer(0, allocator, stream)
     {
         static_assert(std::is_trivially_copyable<value_type>::value, "buffer only supports trivially copyable types and classes, because destructors will not be called.");
     }
 
     /// @brief Move constructor moves from another \p buffer.
-    /// @param r The bufer to move.
-    buffer(buffer&& r)
-        : _size(std::exchange(r._size, 0))
-        , _capacity(std::exchange(r._size, 0))
-        , _data(std::exchange(r._data, nullptr))
-        , _stream(std::exchange(r._stream, cudaStream_t(0)))
-        , _allocator(std::exchange(r._allocator, std::shared_ptr<Allocator>(nullptr)))
+    /// Buffer to move from (rhs) is left in an empty state (size = capacity = 0), with the original stream and allocator.
+    /// @param rhs The bufer to move.
+    buffer(buffer&& rhs)
+        : _size(std::exchange(rhs._size, 0))
+        , _capacity(std::exchange(rhs._capacity, 0))
+        , _data(std::exchange(rhs._data, nullptr))
+        , _stream(rhs._stream)
+        , _allocator(rhs._allocator)
     {
     }
 
     /// @brief Move assign operator moves from another \p buffer.
-    /// @param r The buffer to move.
-    buffer& operator=(buffer&& r)
+    /// Buffer to move from (rhs) is left in an empty state (size = capacity = 0), with the original stream and allocator.
+    /// @param rhs The buffer to move.
+    /// @return refrence to this buffer.
+    buffer& operator=(buffer&& rhs)
     {
-        _size      = std::exchange(r._size, 0);
-        _capacity  = std::exchange(r._size, 0);
-        _data      = std::exchange(r._data, nullptr);
-        _stream    = std::exchange(r._stream, cudaStream_t(0));
-        _allocator = std::exchange(r._allocator, std::shared_ptr<Allocator>(nullptr));
+        _size      = std::exchange(rhs._size, 0);
+        _capacity  = std::exchange(rhs._capacity, 0);
+        _data      = std::exchange(rhs._data, nullptr);
+        _stream    = rhs._stream;
+        _allocator = rhs._allocator;
         return *this;
     }
 
@@ -99,7 +108,7 @@ public:
     {
         if (nullptr != _data)
         {
-            _allocator->deallocate(_data, _capacity * sizeof(value_type), _stream);
+            _allocator.deallocate(_data, _capacity, _stream);
         }
     }
 
@@ -113,6 +122,9 @@ public:
 
     /// @brief This method returns the number of elements in this buffer.
     size_type size() const { return _size; }
+
+    /// @brief This method returns the largest number of elements that can be stored in this buffer before a reallocation is needed.
+    size_type capacity() const { return _capacity; }
 
     /// @brief This method resizes this buffer to 0.
     void clear() { _size = 0; }
@@ -131,6 +143,10 @@ public:
     /// @return begin() + size().
     const_iterator end() const { return _data + _size; }
 
+    /// @brief This method returns the allocator used to allocate memory for this buffer.
+    /// @return allocator.
+    allocator_type get_allocator() const { return _allocator; }
+
     /// @brief This method reserves memory for the specified number of elements.
     ///        If new_capacity is less than or equal to _capacity, this call has no effect.
     ///        Otherwise, this method is a request for allocation of additional memory. If
@@ -144,8 +160,7 @@ public:
         set_stream(stream);
         if (new_capacity > _capacity)
         {
-            value_type* new_data = static_cast<value_type*>(
-                _allocator->allocate(new_capacity * sizeof(value_type), _stream));
+            value_type* new_data = _allocator.allocate(new_capacity, _stream);
             if (_size > 0)
             {
                 CGA_CU_CHECK_ERR(cudaMemcpyAsync(new_data, _data, _size * sizeof(value_type),
@@ -153,7 +168,7 @@ public:
             }
             if (nullptr != _data)
             {
-                _allocator->deallocate(_data, _capacity * sizeof(value_type), _stream);
+                _allocator.deallocate(_data, _capacity, _stream);
             }
             _data     = new_data;
             _capacity = new_capacity;
@@ -185,15 +200,17 @@ public:
         resize(new_size, _stream);
     }
 
-    /// @brief This method swaps the contents of this buffer with another buffer.
-    /// @param v The buffer with which to swap.
-    void swap(buffer& v)
+    /// @brief This method swaps the contents of two buffers.
+    /// @param a One buffer.
+    /// @param b The other buffer.
+    friend void swap(buffer& a, buffer& b) noexcept
     {
-        std::swap(_data, v._data);
-        std::swap(_size, v._size);
-        std::swap(_capacity, v._capacity);
-        std::swap(_stream, v._stream);
-        std::swap(_allocator, v._allocator);
+        using std::swap;
+        swap(a._data, b._data);
+        swap(a._size, b._size);
+        swap(a._capacity, b._capacity);
+        swap(a._stream, b._stream);
+        swap(a._allocator, b._allocator);
     }
 
     /// @brief This method shrinks the capacity of this buffer to exactly fit its elements.
@@ -203,8 +220,7 @@ public:
         set_stream(stream);
         if (_capacity > _size)
         {
-            value_type* new_data = static_cast<value_type*>(
-                _allocator->allocate(_size * sizeof(value_type), _stream));
+            value_type* new_data = _allocator.allocate(_size, _stream);
             if (_size > 0)
             {
                 CGA_CU_CHECK_ERR(cudaMemcpyAsync(new_data, _data, _size * sizeof(value_type),
@@ -212,7 +228,7 @@ public:
             }
             if (nullptr != _data)
             {
-                _allocator->deallocate(_data, _capacity * sizeof(value_type), _stream);
+                _allocator.deallocate(_data, _capacity, _stream);
             }
             _data     = new_data;
             _capacity = _size;
@@ -233,7 +249,7 @@ public:
         set_stream(stream);
         if (nullptr != _data)
         {
-            _allocator->deallocate(_data, _capacity * sizeof(value_type), _stream);
+            _allocator.deallocate(_data, _capacity, _stream);
         }
         _data     = nullptr;
         _capacity = 0;
@@ -252,7 +268,7 @@ private:
     size_type _size;
     size_type _capacity;
     cudaStream_t _stream;
-    std::shared_ptr<Allocator> _allocator;
+    Allocator _allocator;
 
     void set_stream(cudaStream_t stream)
     {
@@ -267,13 +283,5 @@ private:
         }
     }
 };
-
-/// @brief This method swaps the contents of buffer a with b.
-template <typename T, typename Allocator>
-void swap(buffer<T, Allocator>& a,
-          buffer<T, Allocator>& b)
-{
-    a.swap(b);
-}
 
 } // namespace claragenomics

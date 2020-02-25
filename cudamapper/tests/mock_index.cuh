@@ -26,7 +26,7 @@ namespace cudamapper
 class MockIndex : public IndexGPU<Minimizer>
 {
 public:
-    MockIndex(std::shared_ptr<DeviceAllocator> allocator)
+    MockIndex(DefaultDeviceAllocator allocator)
         : IndexGPU(allocator,
                    *claragenomics::io::create_kseq_fasta_parser(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/gatt.fasta"),
                    0,

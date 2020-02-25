@@ -185,7 +185,7 @@ struct CreateOverlap
     };
 };
 
-OverlapperTriggered::OverlapperTriggered(std::shared_ptr<DeviceAllocator> allocator)
+OverlapperTriggered::OverlapperTriggered(DefaultDeviceAllocator allocator)
     : _allocator(allocator)
 {
     CGA_CU_CHECK_ERR(cudaStreamCreate(&stream));
@@ -292,7 +292,7 @@ void OverlapperTriggered::get_overlaps(std::vector<Overlap>& fused_overlaps,
     // calculate overlaps where overlap is a chain with length > tail_length_for_chain
     // >>>>>>>>>>>>
 
-    auto thrust_exec_policy = thrust::cuda::par.on(stream);
+    auto thrust_exec_policy = thrust::cuda::par(_allocator).on(stream);
 
     // d_overlaps[j] contains index to d_chain_length/d_chain_start where
     // d_chain_length[d_overlaps[j]] and d_chain_start[d_overlaps[j]] corresponds

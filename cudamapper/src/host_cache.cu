@@ -56,7 +56,7 @@ HostCache::HostCache(const Index& index,
     number_of_basepairs_in_longest_read_ = index.number_of_basepairs_in_longest_read();
 }
 
-std::unique_ptr<Index> HostCache::copy_index_to_device(std::shared_ptr<claragenomics::DeviceAllocator> allocator)
+std::unique_ptr<Index> HostCache::copy_index_to_device(DefaultDeviceAllocator allocator)
 {
     return std::make_unique<IndexGPU<Minimizer>>(allocator, *this);
 }
