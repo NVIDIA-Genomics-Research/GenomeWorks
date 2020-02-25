@@ -38,6 +38,7 @@ static struct option options[] = {
     {"index-size", required_argument, 0, 'i'},
     {"target-index-size", required_argument, 0, 't'},
     {"filtering-parameter", required_argument, 0, 'F'},
+    {"benchmark-mode", required_argument, 0, 'b'},
     {"help", no_argument, 0, 'h'},
 };
 
@@ -58,7 +59,8 @@ int main(int argc, char* argv[])
     std::int32_t index_size                   = 30;  // i
     std::int32_t target_index_size            = 30;  // t
     double filtering_parameter                = 1.0; // F
-    std::string optstring                     = "k:w:d:c:C:m:i:t:F:h:";
+    std::int32_t benchmark_iterations         = 0;   // b
+    std::string optstring                     = "k:w:d:c:C:m:i:t:F:b:h:";
     int32_t argument                          = 0;
     while ((argument = getopt_long(argc, argv, optstring.c_str(), options, nullptr)) != -1)
     {
@@ -90,6 +92,9 @@ int main(int argc, char* argv[])
             break;
         case 'F':
             filtering_parameter = atof(optarg);
+            break;
+        case 'b':
+            benchmark_iterations = atoi(optarg);
             break;
         case 'h':
             help(0);
@@ -373,6 +378,11 @@ int main(int argc, char* argv[])
             [&, device_id]() {
                 while (ranges_idx < get_size<int>(query_target_ranges))
                 {
+                    // if benchmark-mode is activated by entering a positive integer for -b,
+                    // limit iterations to benchmark_iterations
+                    if (benchmark_iterations > 0 && ranges_idx >= benchmark_iterations)
+                        break;
+
                     int range_idx = ranges_idx.fetch_add(1);
                     //Need to perform this check again for thread-safety
                     if (range_idx < get_size<int>(query_target_ranges))
@@ -433,6 +443,9 @@ void help(int32_t exit_code = 0)
               << R"(
         -t --target-index-size
             length of batch sized used for target in MB [30])"
+              << R"(
+        -b, --benchmark-iterations
+            number of query index batches used in benchmarking [0])"
               << R"(
         -F --filtering-parameter
             filter all representations for which sketch_elements_with_that_representation/total_sketch_elements >= filtering_parameter), filtering disabled if filtering_parameter == 1.0 [1'000'000'001] (Min = 0.0, Max = 1.0))"
