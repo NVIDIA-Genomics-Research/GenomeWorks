@@ -399,7 +399,8 @@ void OverlapperTriggered::get_overlaps(std::vector<Overlap>& fused_overlaps,
 
     FilterOverlapOp filterOp(min_residues, min_overlap_len);
     auto filtered_overlaps_end =
-        thrust::copy_if(d_fused_overlaps.data(), d_fused_overlaps.data() + n_fused_overlap,
+        thrust::copy_if(thrust_exec_policy,
+                        d_fused_overlaps.data(), d_fused_overlaps.data() + n_fused_overlap,
                         d_filtered_overlaps.data(),
                         filterOp);
 
