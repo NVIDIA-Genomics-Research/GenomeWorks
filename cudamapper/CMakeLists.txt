@@ -48,7 +48,8 @@ add_library(cudamapper_utils
 target_include_directories(cudamapper_utils PUBLIC include)
 
 cuda_add_library(overlapper_triggerred
-        src/overlapper_triggered.cu)
+        src/overlapper_triggered.cu
+        src/overlapper.cpp)
 target_include_directories(overlapper_triggerred PUBLIC include ${CUB_DIR})
 target_link_libraries(overlapper_triggerred logging utils cgaio)
 target_compile_options(overlapper_triggerred PRIVATE -Werror)

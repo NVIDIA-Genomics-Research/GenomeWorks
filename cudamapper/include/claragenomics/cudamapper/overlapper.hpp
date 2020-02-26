@@ -32,14 +32,9 @@ public:
     virtual ~Overlapper() = default;
 
     /// \brief returns overlaps for a set of reads
-    /// \param overlaps Output vector into which generated overlaps will be placed
-    /// \param anchors vector of anchors sorted by query_read_id -> target_read_id -> query_position_in_read -> target_position_in_read (meaning sorted by query_read_id, then within a group of anchors with the same value of query_read_id sorted by target_read_id and so on)
-    /// \param index_query
-    /// \param index_target
-    virtual void get_overlaps(std::vector<Overlap>& overlaps,
-                              device_buffer<Anchor>& anchors,
-                              const Index& index_query,
-                              const Index& index_target) = 0;
+    /// \param fused_overlaps Output vector into which generated overlaps will be placed
+    /// \param d_anchors vector of anchors sorted by query_read_id -> target_read_id -> query_position_in_read -> target_position_in_read (meaning sorted by query_read_id, then within a group of anchors with the same value of query_read_id sorted by target_read_id and so on)
+    virtual void get_overlaps(std::vector<Overlap>& fused_overlaps, device_buffer<Anchor>& d_anchors) = 0;
 
     /// \brief prints overlaps to stdout in <a href="https://github.com/lh3/miniasm/blob/master/PAF.md">PAF format</a>
     static void print_paf(const std::vector<Overlap>& overlaps);
@@ -53,6 +48,14 @@ public:
                                 const std::vector<Overlap>& overlaps,
                                 size_t min_residues    = 20,
                                 size_t min_overlap_len = 50);
+
+    /// \brief updates read names for vector of overlaps output from get_overlaps
+    /// \param overlaps input vector of overlaps generated in get_overlaps
+    /// \param index_query
+    /// \param index_target
+    static void update_read_names(std::vector<Overlap>& overlaps,
+                                  const Index& index_query,
+                                  const Index& index_target);
 };
 //}
 } // namespace cudamapper
