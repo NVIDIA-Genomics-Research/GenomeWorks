@@ -121,6 +121,12 @@ int main(int argc, char* argv[])
         exit(1);
     }
 
+    if (benchmark_iterations < 0)
+    {
+        std::cerr << "-b / --benchmark_iterations must be equal to or larger than zero" << std::endl;
+        exit(1);
+    }
+
     // Check remaining argument count.
     if ((argc - optind) < 2)
     {
@@ -200,6 +206,9 @@ int main(int argc, char* argv[])
 
     // The number of overlap chunks which are to be computed
     std::atomic<int> num_overlap_chunks_to_print(0);
+
+    // benchmark data per device
+    std::vector<claragenomics::cudamapper::BenchMarkData> benchmark_log(num_devices);
 
     auto get_index = [&device_index_cache, &host_index_cache, max_index_cache_size_on_device, max_index_cache_size_on_host](claragenomics::DefaultDeviceAllocator allocator,
                                                                                                                             claragenomics::io::FastaParser& parser,
@@ -378,12 +387,13 @@ int main(int argc, char* argv[])
             [&, device_id]() {
                 while (ranges_idx < get_size<int>(query_target_ranges))
                 {
+                    int range_idx = ranges_idx.fetch_add(1);
+
                     // if benchmark-mode is activated by entering a positive integer for -b,
                     // limit iterations to benchmark_iterations
-                    if (benchmark_iterations > 0 && ranges_idx >= benchmark_iterations)
+                    if (benchmark_iterations > 0 && range_idx > benchmark_iterations)
                         break;
 
-                    int range_idx = ranges_idx.fetch_add(1);
                     //Need to perform this check again for thread-safety
                     if (range_idx < get_size<int>(query_target_ranges))
                     {

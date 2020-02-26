@@ -112,6 +112,26 @@ typedef struct Overlap
 
 } Overlap;
 
+/// Data structure for storing benchmark data
+///
+/// contains vectors keep record of time and memory per benchmark iterations
+/// a benchmark iteration refers to processing one batch of query indices
+struct BenchMarkData
+{
+    /// time (msecs) spent to complete indexer for each benchmark iteration
+    std::vector<double> indexer_time;
+    /// time (msecs) spent to complete matcher for each benchmark iteration
+    std::vector<double> matcher_time;
+    /// time (msecs) spent to complete overlapper for each benchmark iteration
+    std::vector<double> overlapper_time;
+    /// total time (msecs) spent to complete each benchmark iteration
+    std::vector<double> total_time;
+    /// keep track of max device memory (GB) per benchmark iteration
+    std::vector<double> device_mem;
+    /// keep track of max host memory per (GB) benchmark iteration
+    std::vector<double> host_mem;
+};
+
 } // namespace cudamapper
 
 } // namespace claragenomics
