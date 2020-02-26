@@ -208,17 +208,22 @@ int main(int argc, char* argv[])
     std::atomic<int> num_overlap_chunks_to_print(0);
 
     // benchmark data per device
-    std::vector<claragenomics::cudamapper::BenchMarkData> benchmark_log(num_devices);
+    std::vector<claragenomics::cudamapper::BenchMarkData> benchmark_log;
+    if (benchmark_iterations > 0)
+    {
+        benchmark_log.resize(num_devices);
+    }
 
-    auto get_index = [&device_index_cache, &host_index_cache, max_index_cache_size_on_device, max_index_cache_size_on_host](claragenomics::DefaultDeviceAllocator allocator,
-                                                                                                                            claragenomics::io::FastaParser& parser,
-                                                                                                                            const claragenomics::cudamapper::read_id_t start_index,
-                                                                                                                            const claragenomics::cudamapper::read_id_t end_index,
-                                                                                                                            const std::uint64_t k,
-                                                                                                                            const std::uint64_t w,
-                                                                                                                            const int device_id,
-                                                                                                                            const bool allow_cache_index,
-                                                                                                                            const double filtering_parameter) {
+    auto get_index = [&device_index_cache, &host_index_cache, max_index_cache_size_on_device,
+                      max_index_cache_size_on_host, &benchmark_log](claragenomics::DefaultDeviceAllocator allocator,
+                                                                    claragenomics::io::FastaParser& parser,
+                                                                    const claragenomics::cudamapper::read_id_t start_index,
+                                                                    const claragenomics::cudamapper::read_id_t end_index,
+                                                                    const std::uint64_t k,
+                                                                    const std::uint64_t w,
+                                                                    const int device_id,
+                                                                    const bool allow_cache_index,
+                                                                    const double filtering_parameter) {
         CGA_NVTX_RANGE(profiler, "get index");
         std::pair<uint64_t, uint64_t> key;
         key.first  = start_index;
@@ -306,7 +311,17 @@ int main(int argc, char* argv[])
 
         {
             CGA_NVTX_RANGE(profiler, "generate_query_index");
+            if(!benchmark_log.empty())
+            {
+                benchmark_log[device_id].start_timer();
+            }
+
             query_index = get_index(allocator, *query_parser, query_start_index, query_end_index, k, w, device_id, all_to_all, filtering_parameter);
+
+            if(!benchmark_log.empty())
+            {
+                benchmark_log[device_id].stop_timer_and_gather_data('i');
+            }
         }
 
         //Main loop
@@ -317,11 +332,27 @@ int main(int argc, char* argv[])
             auto target_end_index   = target_range.second;
             {
                 CGA_NVTX_RANGE(profiler, "generate_target_index");
+                if(!benchmark_log.empty())
+                {
+                    benchmark_log[device_id].start_timer();
+                }
                 target_index = get_index(allocator, *target_parser, target_start_index, target_end_index, k, w, device_id, true, filtering_parameter);
+                if(!benchmark_log.empty())
+                {
+                    benchmark_log[device_id].stop_timer_and_gather_data('i');
+                }
             }
             {
                 CGA_NVTX_RANGE(profiler, "generate_matcher");
+                if(!benchmark_log.empty())
+                {
+                    benchmark_log[device_id].start_timer();
+                }
                 matcher = claragenomics::cudamapper::Matcher::create_matcher(allocator, *query_index, *target_index);
+                if(!benchmark_log.empty())
+                {
+                    benchmark_log[device_id].stop_timer_and_gather_data('m');
+                }
             }
             {
 
@@ -331,7 +362,17 @@ int main(int argc, char* argv[])
                 // Get unfiltered overlaps
                 auto overlaps_to_add = std::make_shared<std::vector<claragenomics::cudamapper::Overlap>>();
 
+                if(!benchmark_log.empty())
+                {
+                    benchmark_log[device_id].start_timer();
+                }
+
                 overlapper.get_overlaps(*overlaps_to_add, matcher->anchors());
+
+                if(!benchmark_log.empty())
+                {
+                    benchmark_log[device_id].stop_timer_and_gather_data('o');
+                }
 
                 //Increment counter which tracks number of overlap chunks to be filtered and printed
                 num_overlap_chunks_to_print++;

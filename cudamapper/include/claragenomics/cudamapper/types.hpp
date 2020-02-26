@@ -12,6 +12,9 @@
 
 #include <cstdint>
 #include <string>
+#include <sys/resource.h>
+#include <assert.h>
+
 namespace claragenomics
 {
 
@@ -119,17 +122,69 @@ typedef struct Overlap
 struct BenchMarkData
 {
     /// time (msecs) spent to complete indexer for each benchmark iteration
-    std::vector<double> indexer_time;
+    std::vector<float> indexer_time;
     /// time (msecs) spent to complete matcher for each benchmark iteration
-    std::vector<double> matcher_time;
+    std::vector<float> matcher_time;
     /// time (msecs) spent to complete overlapper for each benchmark iteration
-    std::vector<double> overlapper_time;
-    /// total time (msecs) spent to complete each benchmark iteration
-    std::vector<double> total_time;
+    std::vector<float> overlapper_time;
+
     /// keep track of max device memory (GB) per benchmark iteration
     std::vector<double> device_mem;
     /// keep track of max host memory per (GB) benchmark iteration
     std::vector<double> host_mem;
+
+private:
+    /// time stamps to keep track of the elapsed time in msec
+    rusage start_;
+    rusage stop_;
+    /// a debug flag to ensure start_timer is called before any stop_timer usage
+    bool timer_initilized_ = false;
+    /// accumulative compute time per benchmark iteration for indexer
+    float index_time_ = 0.f;
+    /// accumulative compute time per benchmark iteration for matcher
+    float match_time_ = 0.f;
+    /// accumulative compute time per benchmark iteration for overlapper
+    float overlap_time_ = 0.f;
+    /// max used RAM in (GB)
+    float host_mem_ = 0.f;
+    /// max used memory on GPU (GB)
+    float device_mem_ = 0.f;
+
+public:
+    void start_timer()
+    {
+        getrusage(RUSAGE_SELF, &start_);
+        timer_initilized_ = true;
+    }
+
+    // will update elapsed time between start_timing and stop_timing interval in msec
+    void stop_timer_and_gather_data(char x)
+    {
+        // start_timer was not used before calling stop_timer
+        assert(timer_initilized_ == true);
+        getrusage(RUSAGE_SELF, &stop_);
+        timer_initilized_ = false;
+        float sec = stop_.ru_utime.tv_sec - start_.ru_utime.tv_sec;
+        float usec = stop_.ru_utime.tv_usec - start_.ru_utime.tv_usec;
+        float elapsed_time = (sec * 1000) + (usec / 1000);
+
+        host_mem_ = std::max(host_mem_, (float)(stop_.ru_maxrss)/1000000.f);
+
+        switch (x)
+        {
+            case 'i':
+                index_time_ += elapsed_time;
+                break;
+            case 'm':
+                match_time_ += elapsed_time;
+                break;
+            case 'o':
+                overlap_time_ += elapsed_time;
+                break;
+            default:
+                assert(false);
+        }
+    }
 };
 
 } // namespace cudamapper
