@@ -208,11 +208,9 @@ int main(int argc, char* argv[])
     std::atomic<int> num_overlap_chunks_to_print(0);
 
     // benchmark data per device
-    std::vector<claragenomics::cudamapper::BenchMarkData> benchmark_log;
-    if (benchmark_iterations > 0)
-    {
-        benchmark_log.resize(num_devices);
-    }
+    std::vector<claragenomics::cudamapper::BenchMarkData> benchmark_log(num_devices);
+    // flag indicating benchmark mode is enabled
+    const bool benchmark_mode = benchmark_iterations > 0;
 
     auto get_index = [&device_index_cache, &host_index_cache, max_index_cache_size_on_device,
                       max_index_cache_size_on_host, &benchmark_log](claragenomics::DefaultDeviceAllocator allocator,
@@ -311,17 +309,9 @@ int main(int argc, char* argv[])
 
         {
             CGA_NVTX_RANGE(profiler, "generate_query_index");
-            if(!benchmark_log.empty())
-            {
-                benchmark_log[device_id].start_timer();
-            }
-
+            benchmark_log[device_id].start_timer(benchmark_mode);
             query_index = get_index(allocator, *query_parser, query_start_index, query_end_index, k, w, device_id, all_to_all, filtering_parameter);
-
-            if(!benchmark_log.empty())
-            {
-                benchmark_log[device_id].stop_timer_and_gather_data('i');
-            }
+            benchmark_log[device_id].stop_timer_and_gather_data('i', benchmark_mode);
         }
 
         //Main loop
@@ -332,27 +322,15 @@ int main(int argc, char* argv[])
             auto target_end_index   = target_range.second;
             {
                 CGA_NVTX_RANGE(profiler, "generate_target_index");
-                if(!benchmark_log.empty())
-                {
-                    benchmark_log[device_id].start_timer();
-                }
+                benchmark_log[device_id].start_timer(benchmark_mode);
                 target_index = get_index(allocator, *target_parser, target_start_index, target_end_index, k, w, device_id, true, filtering_parameter);
-                if(!benchmark_log.empty())
-                {
-                    benchmark_log[device_id].stop_timer_and_gather_data('i');
-                }
+                benchmark_log[device_id].stop_timer_and_gather_data('i', benchmark_mode);
             }
             {
                 CGA_NVTX_RANGE(profiler, "generate_matcher");
-                if(!benchmark_log.empty())
-                {
-                    benchmark_log[device_id].start_timer();
-                }
+                benchmark_log[device_id].start_timer(benchmark_mode);
                 matcher = claragenomics::cudamapper::Matcher::create_matcher(allocator, *query_index, *target_index);
-                if(!benchmark_log.empty())
-                {
-                    benchmark_log[device_id].stop_timer_and_gather_data('m');
-                }
+                benchmark_log[device_id].stop_timer_and_gather_data('m', benchmark_mode);
             }
             {
 
@@ -362,17 +340,9 @@ int main(int argc, char* argv[])
                 // Get unfiltered overlaps
                 auto overlaps_to_add = std::make_shared<std::vector<claragenomics::cudamapper::Overlap>>();
 
-                if(!benchmark_log.empty())
-                {
-                    benchmark_log[device_id].start_timer();
-                }
-
+                benchmark_log[device_id].start_timer(benchmark_mode);
                 overlapper.get_overlaps(*overlaps_to_add, matcher->anchors());
-
-                if(!benchmark_log.empty())
-                {
-                    benchmark_log[device_id].stop_timer_and_gather_data('o');
-                }
+                benchmark_log[device_id].stop_timer_and_gather_data('o', benchmark_mode);
 
                 //Increment counter which tracks number of overlap chunks to be filtered and printed
                 num_overlap_chunks_to_print++;
@@ -407,6 +377,8 @@ int main(int argc, char* argv[])
         {
             evict_index(query_start_index, query_end_index, device_id, num_devices);
         }
+
+        benchmark_log[device_id].update_iteration_data(benchmark_mode);
     };
 
     // The application (File parsing, index generation, overlap generation etc) is all launched from here.
@@ -433,7 +405,9 @@ int main(int argc, char* argv[])
                     // if benchmark-mode is activated by entering a positive integer for -b,
                     // limit iterations to benchmark_iterations
                     if (benchmark_iterations > 0 && range_idx > benchmark_iterations)
+                    {
                         break;
+                    }
 
                     //Need to perform this check again for thread-safety
                     if (range_idx < get_size<int>(query_target_ranges))
@@ -444,6 +418,10 @@ int main(int argc, char* argv[])
                         //by a mutex (`std::mutex overlaps_writer_mtx`)
                         compute_overlaps(query_target_ranges[range_idx], device_id);
                     }
+                }
+                if (benchmark_iterations > 0)
+                {
+                    benchmark_log[device_id].display();
                 }
             }));
     }

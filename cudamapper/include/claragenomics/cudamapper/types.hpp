@@ -12,7 +12,13 @@
 
 #include <cstdint>
 #include <string>
+// the following headers are for BenchMarkData
 #include <sys/resource.h>
+#include <cuda_runtime_api.h>
+#include <iostream>
+#include <algorithm>
+#include <iomanip>
+#include <cmath>
 #include <assert.h>
 
 namespace claragenomics
@@ -129,9 +135,9 @@ struct BenchMarkData
     std::vector<float> overlapper_time;
 
     /// keep track of max device memory (GB) per benchmark iteration
-    std::vector<double> device_mem;
+    std::vector<float> device_mem;
     /// keep track of max host memory per (GB) benchmark iteration
-    std::vector<double> host_mem;
+    std::vector<float> host_mem;
 
 private:
     /// time stamps to keep track of the elapsed time in msec
@@ -145,45 +151,115 @@ private:
     float match_time_ = 0.f;
     /// accumulative compute time per benchmark iteration for overlapper
     float overlap_time_ = 0.f;
-    /// max used RAM in (GB)
-    float host_mem_ = 0.f;
     /// max used memory on GPU (GB)
     float device_mem_ = 0.f;
+    /// max used RAM in (GB)
+    float host_mem_ = 0.f;
 
 public:
-    void start_timer()
+    void start_timer(const bool enabled)
     {
+        if (!enabled)
+        {
+            return;
+        }
         getrusage(RUSAGE_SELF, &start_);
         timer_initilized_ = true;
     }
 
     // will update elapsed time between start_timing and stop_timing interval in msec
-    void stop_timer_and_gather_data(char x)
+    void stop_timer_and_gather_data(char x, const bool enabled)
     {
+        if (!enabled)
+        {
+            return;
+        }
         // start_timer was not used before calling stop_timer
         assert(timer_initilized_ == true);
         getrusage(RUSAGE_SELF, &stop_);
-        timer_initilized_ = false;
-        float sec = stop_.ru_utime.tv_sec - start_.ru_utime.tv_sec;
-        float usec = stop_.ru_utime.tv_usec - start_.ru_utime.tv_usec;
+        timer_initilized_  = false;
+        float sec          = stop_.ru_utime.tv_sec - start_.ru_utime.tv_sec;
+        float usec         = stop_.ru_utime.tv_usec - start_.ru_utime.tv_usec;
         float elapsed_time = (sec * 1000) + (usec / 1000);
-
-        host_mem_ = std::max(host_mem_, (float)(stop_.ru_maxrss)/1000000.f);
 
         switch (x)
         {
-            case 'i':
-                index_time_ += elapsed_time;
-                break;
-            case 'm':
-                match_time_ += elapsed_time;
-                break;
-            case 'o':
-                overlap_time_ += elapsed_time;
-                break;
-            default:
-                assert(false);
+        case 'i':
+            index_time_ += elapsed_time;
+            break;
+        case 'm':
+            match_time_ += elapsed_time;
+            break;
+        case 'o':
+            overlap_time_ += elapsed_time;
+            break;
+        default:
+            assert(false);
         }
+
+        // update memory info
+        host_mem_ = std::max(host_mem_, (float)(stop_.ru_maxrss) / 1000000.f);
+        size_t free_mem_d, total_mem_d;
+        cudaMemGetInfo(&free_mem_d, &total_mem_d);
+        device_mem_ = std::max(device_mem_, (float)(total_mem_d - free_mem_d) / 1000000000.f);
+    }
+
+    // store benchmark iteration data in corresponding vectors and reset local variables
+    void update_iteration_data(const bool enabled)
+    {
+        if (!enabled)
+        {
+            return;
+        }
+        indexer_time.push_back(index_time_);
+        matcher_time.push_back(match_time_);
+        overlapper_time.push_back(overlap_time_);
+        device_mem.push_back(device_mem_);
+        host_mem.push_back(host_mem_);
+        // reset per iteration data
+        index_time_   = 0.f;
+        match_time_   = 0.f;
+        overlap_time_ = 0.f;
+        device_mem_   = 0.f;
+        host_mem_     = 0.f;
+    }
+
+    // display a summary of benchmark
+    void display()
+    {
+        size_t num_itr = indexer_time.size();
+        std::cerr << "==============================================================================\n";
+        std::cerr << "benchmark summary\n";
+        std::cerr << "number of benchmark iterations : " << num_itr << std::endl;
+        std::cerr << "maximum used device memory (GB): " << std::fixed << std::setprecision(2) << *std::max_element(device_mem.begin(), device_mem.end()) << std::endl;
+        std::cerr << "maximum used host memory (GB)  : " << std::fixed << std::setprecision(2) << *std::max_element(host_mem.begin(), host_mem.end()) << std::endl;
+        for (size_t i = 0; i < num_itr; i++)
+        {
+            std::cerr << "______________________________________________________________________________\n";
+            float total_time = indexer_time[i] + matcher_time[i] + overlapper_time[i];
+            int n_i          = (int)std::ceil(indexer_time[i] * 50.f / total_time);
+            int n_m          = (int)std::ceil(matcher_time[i] * 50.f / total_time);
+            int n_o          = (int)std::ceil(overlapper_time[i] * 50.f / total_time);
+            std::cerr << "iteration " << i << std::endl;
+            std::cerr << "indexer (msec)    " << std::left << std::setw(8) << std::setfill(' ') << std::fixed << std::setprecision(1) << indexer_time[i] << " ";
+            for (int j = 0; j < n_i; j++)
+            {
+                std::cerr << ".";
+            }
+            std::cerr << "\nmatcher (msec)    " << std::left << std::setw(8) << std::setfill(' ') << std::fixed << std::setprecision(1) << matcher_time[i] << " ";
+            for (int j = 0; j < n_m; j++)
+            {
+                std::cerr << ".";
+            }
+            std::cerr << "\noverlapper (msec) " << std::left << std::setw(8) << std::setfill(' ') << std::fixed << std::setprecision(1) << overlapper_time[i] << " ";
+            for (int j = 0; j < n_o; j++)
+            {
+                std::cerr << ".";
+            }
+            std::cerr << "\nhost mem. (GB)    " << std::fixed << std::setprecision(2) << host_mem[i];
+            std::cerr << "\ndevice mem. (GB)  " << std::fixed << std::setprecision(2) << device_mem[i] << std::endl;
+        }
+        std::cerr << "==============================================================================\n";
     }
 };
 
