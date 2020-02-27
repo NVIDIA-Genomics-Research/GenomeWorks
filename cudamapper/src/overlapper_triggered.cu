@@ -404,7 +404,7 @@ void OverlapperTriggered::get_overlaps(std::vector<Overlap>& fused_overlaps,
                         d_filtered_overlaps.data(),
                         filterOp);
 
-    auto n_filtered_overlaps = (filtered_overlaps_end - d_filtered_overlaps.data()) / sizeof(Overlap);
+    auto n_filtered_overlaps = filtered_overlaps_end - d_filtered_overlaps.data();
 
     // memcpyD2H - move fused and filtered overlaps to host
     fused_overlaps.resize(n_filtered_overlaps);
