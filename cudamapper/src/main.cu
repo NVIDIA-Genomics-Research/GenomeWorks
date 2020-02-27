@@ -196,7 +196,7 @@ int main(int argc, char* argv[])
     // The number of overlap chunks which are to be computed
     std::atomic<int> num_overlap_chunks_to_print(0);
 
-    auto get_index = [&device_index_cache, &host_index_cache, max_index_cache_size_on_device, max_index_cache_size_on_host](std::shared_ptr<claragenomics::DeviceAllocator> allocator,
+    auto get_index = [&device_index_cache, &host_index_cache, max_index_cache_size_on_device, max_index_cache_size_on_host](claragenomics::DefaultDeviceAllocator allocator,
                                                                                                                             claragenomics::io::FastaParser& parser,
                                                                                                                             const claragenomics::cudamapper::read_id_t start_index,
                                                                                                                             const claragenomics::cudamapper::read_id_t end_index,
@@ -270,10 +270,12 @@ int main(int argc, char* argv[])
     };
 
 #ifdef CGA_ENABLE_ALLOCATOR
+    // uses CachingDeviceAllocator
     auto max_cached_bytes = max_cached_memory * 1e9; // max_cached_memory is in GB
-    std::shared_ptr<claragenomics::DeviceAllocator> allocator(new claragenomics::CachingDeviceAllocator(max_cached_bytes));
+    claragenomics::DefaultDeviceAllocator allocator(max_cached_bytes);
 #else
-    std::shared_ptr<claragenomics::DeviceAllocator> allocator(new claragenomics::CudaMallocAllocator());
+    // uses CudaMallocAllocator
+    claragenomics::DefaultDeviceAllocator allocator;
 #endif
 
     auto compute_overlaps = [&](const QueryTargetsRange& query_target_range, const int device_id) {
@@ -313,18 +315,22 @@ int main(int argc, char* argv[])
                 CGA_NVTX_RANGE(profiler, "generate_overlaps");
 
                 // Get unfiltered overlaps
-                std::vector<claragenomics::cudamapper::Overlap> overlaps_to_add;
+                auto overlaps_to_add = std::make_shared<std::vector<claragenomics::cudamapper::Overlap>>();
 
-                overlapper.get_overlaps(overlaps_to_add, matcher->anchors(), *query_index, *target_index, 50);
+                overlapper.get_overlaps(*overlaps_to_add, matcher->anchors(), 50);
 
                 //Increment counter which tracks number of overlap chunks to be filtered and printed
                 num_overlap_chunks_to_print++;
-                auto print_overlaps = [&overlaps_writer_mtx, &num_overlap_chunks_to_print](std::vector<claragenomics::cudamapper::Overlap> overlaps) {
+                auto print_overlaps = [&overlaps_writer_mtx, &num_overlap_chunks_to_print](std::shared_ptr<std::vector<claragenomics::cudamapper::Overlap>> filtered_overlaps,
+                                                                                           std::shared_ptr<claragenomics::cudamapper::Index> query_index,
+                                                                                           std::shared_ptr<claragenomics::cudamapper::Index> target_index) {
+                    // parallel update of the query/target read names for filtered overlaps [parallel on host]
+                    claragenomics::cudamapper::Overlapper::update_read_names(*filtered_overlaps, *query_index, *target_index);
                     std::lock_guard<std::mutex> lck(overlaps_writer_mtx);
-                    claragenomics::cudamapper::Overlapper::print_paf(overlaps);
+                    claragenomics::cudamapper::Overlapper::print_paf(*filtered_overlaps);
 
                     //clear data
-                    for (auto o : overlaps)
+                    for (auto o : *filtered_overlaps)
                     {
                         o.clear();
                     }
@@ -332,7 +338,7 @@ int main(int argc, char* argv[])
                     num_overlap_chunks_to_print--;
                 };
 
-                std::thread t(print_overlaps, overlaps_to_add);
+                std::thread t(print_overlaps, overlaps_to_add, query_index, target_index);
                 t.detach();
             }
             // reseting the matcher releases the anchor device array back to memory pool

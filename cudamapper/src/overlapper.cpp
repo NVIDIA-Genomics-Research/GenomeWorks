@@ -16,6 +16,28 @@ namespace claragenomics
 namespace cudamapper
 {
 
+void Overlapper::update_read_names(std::vector<Overlap>& overlaps,
+                                   const Index& index_query,
+                                   const Index& index_target)
+{
+#pragma omp parallel for
+    for (size_t i = 0; i < overlaps.size(); i++)
+    {
+        auto& o                             = overlaps[i];
+        const std::string& query_read_name  = index_query.read_id_to_read_name(o.query_read_id_);
+        const std::string& target_read_name = index_target.read_id_to_read_name(o.target_read_id_);
+
+        o.query_read_name_ = new char[query_read_name.length() + 1];
+        strcpy(o.query_read_name_, query_read_name.c_str());
+
+        o.target_read_name_ = new char[target_read_name.length() + 1];
+        strcpy(o.target_read_name_, target_read_name.c_str());
+
+        o.query_length_  = index_query.read_id_to_read_length(o.query_read_id_);
+        o.target_length_ = index_target.read_id_to_read_length(o.target_read_id_);
+    }
+}
+
 void Overlapper::print_paf(const std::vector<Overlap>& overlaps)
 {
     for (const auto& overlap : overlaps)

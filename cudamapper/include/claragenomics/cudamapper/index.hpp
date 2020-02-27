@@ -109,7 +109,7 @@ public:
     /// \param filtering_parameter - filter out all representations for which number_of_sketch_elements_with_that_representation/total_skech_elements >= filtering_parameter, filtering_parameter == 1.0 disables filtering
     /// \return instance of Index
     static std::unique_ptr<Index>
-    create_index(std::shared_ptr<DeviceAllocator> allocator,
+    create_index(DefaultDeviceAllocator allocator,
                  const io::FastaParser& parser,
                  const read_id_t first_read_id,
                  const read_id_t past_the_last_read_id,
@@ -128,7 +128,7 @@ public:
     /// \brief copy cached index vectors from the host and create an object of Index on GPU
     /// \param allocator asynchronous device allocator used for temporary buffer allocations
     /// \return a pointer to claragenomics::cudamapper::Index
-    virtual std::unique_ptr<Index> copy_index_to_device(std::shared_ptr<claragenomics::DeviceAllocator> allocator) = 0;
+    virtual std::unique_ptr<Index> copy_index_to_device(DefaultDeviceAllocator allocator) = 0;
 
     /// \brief returns an array of representations of sketch elements (stored on host)
     /// \return an array of representations of sketch elements

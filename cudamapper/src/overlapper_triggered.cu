@@ -207,7 +207,7 @@ struct CreateOverlap
     };
 };
 
-OverlapperTriggered::OverlapperTriggered(std::shared_ptr<DeviceAllocator> allocator)
+OverlapperTriggered::OverlapperTriggered(DefaultDeviceAllocator allocator)
     : _allocator(allocator)
 {
     CGA_CU_CHECK_ERR(cudaStreamCreate(&stream));
@@ -218,10 +218,7 @@ OverlapperTriggered::~OverlapperTriggered()
     CGA_CU_CHECK_ERR(cudaStreamDestroy(stream));
 }
 
-void OverlapperTriggered::get_overlaps(std::vector<Overlap>& fused_overlaps,
-                                       device_buffer<Anchor>& d_anchors,
-                                       const Index& index_query,
-                                       const Index& index_target,
+void OverlapperTriggered::get_overlaps(std::vector<Overlap>& fused_overlaps, device_buffer<Anchor>& d_anchors,
                                        size_t min_residues,
                                        size_t min_overlap_len)
 {
@@ -316,7 +313,7 @@ void OverlapperTriggered::get_overlaps(std::vector<Overlap>& fused_overlaps,
     // calculate overlaps where overlap is a chain with length > tail_length_for_chain
     // >>>>>>>>>>>>
 
-    auto thrust_exec_policy = thrust::cuda::par.on(stream);
+    auto thrust_exec_policy = thrust::cuda::par(_allocator).on(stream);
 
     // d_overlaps[j] contains index to d_chain_length/d_chain_start where
     // d_chain_length[d_overlaps[j]] and d_chain_start[d_overlaps[j]] corresponds
@@ -410,24 +407,6 @@ void OverlapperTriggered::get_overlaps(std::vector<Overlap>& fused_overlaps,
     fused_overlaps.resize(n_filtered_overlaps);
     cudautils::device_copy_n(d_filtered_overlaps.data(), n_filtered_overlaps, fused_overlaps.data(), stream);
     CGA_CU_CHECK_ERR(cudaStreamSynchronize(stream));
-
-    // parallel update the overlaps to include the corresponding read names [parallel on host]
-#pragma omp parallel for
-    for (size_t i = 0; i < fused_overlaps.size(); i++)
-    {
-        auto& o                      = fused_overlaps[i];
-        std::string query_read_name  = index_query.read_id_to_read_name(o.query_read_id_);
-        std::string target_read_name = index_target.read_id_to_read_name(o.target_read_id_);
-
-        o.query_read_name_ = new char[query_read_name.length()];
-        strcpy(o.query_read_name_, query_read_name.c_str());
-
-        o.target_read_name_ = new char[target_read_name.length()];
-        strcpy(o.target_read_name_, target_read_name.c_str());
-
-        o.query_length_  = index_query.read_id_to_read_length(o.query_read_id_);
-        o.target_length_ = index_target.read_id_to_read_length(o.target_read_id_);
-    }
 }
 
 } // namespace cudamapper
