@@ -211,6 +211,14 @@ int main(int argc, char* argv[])
     std::vector<claragenomics::cudamapper::BenchmarkData> benchmark_log(num_devices);
     // flag indicating benchmark mode is enabled
     const bool benchmark_mode = benchmark_iterations > 0;
+    if (benchmark_mode)
+    {
+        for (auto& bg : benchmark_log)
+        {
+            bg.set_benchmark_args(k, w, num_devices, max_index_cache_size_on_device, max_index_cache_size_on_host,
+                                  max_cached_memory, index_size, target_index_size, filtering_parameter);
+        }
+    }
 
     auto get_index = [&device_index_cache, &host_index_cache, max_index_cache_size_on_device,
                       max_index_cache_size_on_host, &benchmark_log](claragenomics::DefaultDeviceAllocator allocator,
