@@ -208,7 +208,7 @@ int main(int argc, char* argv[])
     std::atomic<int> num_overlap_chunks_to_print(0);
 
     // benchmark data per device
-    std::vector<claragenomics::cudamapper::BenchMarkData> benchmark_log(num_devices);
+    std::vector<claragenomics::cudamapper::BenchmarkData> benchmark_log(num_devices);
     // flag indicating benchmark mode is enabled
     const bool benchmark_mode = benchmark_iterations > 0;
 
@@ -378,7 +378,7 @@ int main(int argc, char* argv[])
             evict_index(query_start_index, query_end_index, device_id, num_devices);
         }
 
-        benchmark_log[device_id].update_iteration_data(benchmark_mode);
+        benchmark_log[device_id].update_iteration_data(benchmark_mode, query_end_index - query_start_index);
     };
 
     // The application (File parsing, index generation, overlap generation etc) is all launched from here.
@@ -404,7 +404,7 @@ int main(int argc, char* argv[])
 
                     // if benchmark-mode is activated by entering a positive integer for -b,
                     // limit iterations to benchmark_iterations
-                    if (benchmark_iterations > 0 && range_idx > benchmark_iterations)
+                    if (benchmark_iterations > 0 && (range_idx + 1) > benchmark_iterations)
                     {
                         break;
                     }

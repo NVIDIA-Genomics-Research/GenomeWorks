@@ -12,8 +12,9 @@
 
 #include <cstdint>
 #include <string>
-// the following headers are for BenchMarkData
+// the following headers are for BenchmarkData
 #include <sys/resource.h>
+#include <chrono>
 #include <cuda_runtime_api.h>
 #include <iostream>
 #include <algorithm>
@@ -125,13 +126,13 @@ typedef struct Overlap
 ///
 /// contains vectors keep record of time and memory per benchmark iterations
 /// a benchmark iteration refers to processing one batch of query indices
-struct BenchMarkData
+struct BenchmarkData
 {
-    /// time (msecs) spent to complete indexer for each benchmark iteration
+    /// wall-clock time (secs) spent to complete indexer for each benchmark iteration
     std::vector<float> indexer_time;
-    /// time (msecs) spent to complete matcher for each benchmark iteration
+    /// wall-clock time (secs) spent to complete matcher for each benchmark iteration
     std::vector<float> matcher_time;
-    /// time (msecs) spent to complete overlapper for each benchmark iteration
+    /// wall-clock time (secs) spent to complete overlapper for each benchmark iteration
     std::vector<float> overlapper_time;
 
     /// keep track of max device memory (GB) per benchmark iteration
@@ -139,10 +140,19 @@ struct BenchMarkData
     /// keep track of max host memory per (GB) benchmark iteration
     std::vector<float> host_mem;
 
+    /// size of query index batch per benchmark iteration
+    std::vector<std::int32_t> index_size;
+
+    // if set to false, timing measurements will be user-cpu-time
+    bool wall_clock_time = true;
+
 private:
-    /// time stamps to keep track of the elapsed time in msec
+    /// resource usage stamps to keep track of cpu time in sec
     rusage start_;
     rusage stop_;
+    /// time stamps to measure runtime
+    std::chrono::time_point<std::chrono::system_clock> start_wall_clock_;
+    std::chrono::time_point<std::chrono::system_clock> stop_wall_clock_;
     /// a debug flag to ensure start_timer is called before any stop_timer usage
     bool timer_initilized_ = false;
     /// accumulative compute time per benchmark iteration for indexer
@@ -163,11 +173,19 @@ public:
         {
             return;
         }
-        getrusage(RUSAGE_SELF, &start_);
+
+        if (wall_clock_time)
+        {
+            start_wall_clock_ = std::chrono::system_clock::now();
+        }
+        else
+        {
+            getrusage(RUSAGE_SELF, &start_);
+        }
         timer_initilized_ = true;
     }
 
-    // will update elapsed time between start_timing and stop_timing interval in msec
+    // will update elapsed time between start_timing and stop_timing interval in sec
     void stop_timer_and_gather_data(char x, const bool enabled)
     {
         if (!enabled)
@@ -177,21 +195,33 @@ public:
         // start_timer was not used before calling stop_timer
         assert(timer_initilized_ == true);
         getrusage(RUSAGE_SELF, &stop_);
-        timer_initilized_  = false;
-        float sec          = stop_.ru_utime.tv_sec - start_.ru_utime.tv_sec;
-        float usec         = stop_.ru_utime.tv_usec - start_.ru_utime.tv_usec;
-        float elapsed_time = (sec * 1000) + (usec / 1000);
+        timer_initilized_ = false;
+
+        float spent_time;
+        if (wall_clock_time)
+        {
+            stop_wall_clock_ = std::chrono::system_clock::now();
+            auto diff        = stop_wall_clock_ - start_wall_clock_;
+            auto msec        = std::chrono::duration_cast<std::chrono::milliseconds>(diff).count();
+            spent_time       = (float)msec / 1000;
+        }
+        else
+        {
+            float sec  = stop_.ru_utime.tv_sec - start_.ru_utime.tv_sec;
+            float usec = stop_.ru_utime.tv_usec - start_.ru_utime.tv_usec;
+            spent_time = sec + (usec / 1000000);
+        }
 
         switch (x)
         {
         case 'i':
-            index_time_ += elapsed_time;
+            index_time_ += spent_time;
             break;
         case 'm':
-            match_time_ += elapsed_time;
+            match_time_ += spent_time;
             break;
         case 'o':
-            overlap_time_ += elapsed_time;
+            overlap_time_ += spent_time;
             break;
         default:
             assert(false);
@@ -205,7 +235,7 @@ public:
     }
 
     // store benchmark iteration data in corresponding vectors and reset local variables
-    void update_iteration_data(const bool enabled)
+    void update_iteration_data(const bool enabled, const std::int32_t idx_sz)
     {
         if (!enabled)
         {
@@ -216,6 +246,7 @@ public:
         overlapper_time.push_back(overlap_time_);
         device_mem.push_back(device_mem_);
         host_mem.push_back(host_mem_);
+        index_size.push_back(idx_sz);
         // reset per iteration data
         index_time_   = 0.f;
         match_time_   = 0.f;
@@ -229,36 +260,39 @@ public:
     {
         size_t num_itr = indexer_time.size();
         std::cerr << "==============================================================================\n";
-        std::cerr << "benchmark summary\n";
-        std::cerr << "number of benchmark iterations : " << num_itr << std::endl;
-        std::cerr << "maximum used device memory (GB): " << std::fixed << std::setprecision(2) << *std::max_element(device_mem.begin(), device_mem.end()) << std::endl;
-        std::cerr << "maximum used host memory (GB)  : " << std::fixed << std::setprecision(2) << *std::max_element(host_mem.begin(), host_mem.end()) << std::endl;
         for (size_t i = 0; i < num_itr; i++)
         {
-            std::cerr << "______________________________________________________________________________\n";
             float total_time = indexer_time[i] + matcher_time[i] + overlapper_time[i];
             int n_i          = (int)std::ceil(indexer_time[i] * 50.f / total_time);
             int n_m          = (int)std::ceil(matcher_time[i] * 50.f / total_time);
             int n_o          = (int)std::ceil(overlapper_time[i] * 50.f / total_time);
             std::cerr << "iteration " << i << std::endl;
-            std::cerr << "indexer (msec)    " << std::left << std::setw(8) << std::setfill(' ') << std::fixed << std::setprecision(1) << indexer_time[i] << " ";
+            std::cerr << "indexer (sec)    " << std::left << std::setw(8) << std::setfill(' ') << std::fixed << std::setprecision(2) << indexer_time[i] << " ";
             for (int j = 0; j < n_i; j++)
             {
                 std::cerr << ".";
             }
-            std::cerr << "\nmatcher (msec)    " << std::left << std::setw(8) << std::setfill(' ') << std::fixed << std::setprecision(1) << matcher_time[i] << " ";
+            std::cerr << "\nmatcher (sec)    " << std::left << std::setw(8) << std::setfill(' ') << std::fixed << std::setprecision(2) << matcher_time[i] << " ";
             for (int j = 0; j < n_m; j++)
             {
                 std::cerr << ".";
             }
-            std::cerr << "\noverlapper (msec) " << std::left << std::setw(8) << std::setfill(' ') << std::fixed << std::setprecision(1) << overlapper_time[i] << " ";
+            std::cerr << "\noverlapper (sec) " << std::left << std::setw(8) << std::setfill(' ') << std::fixed << std::setprecision(2) << overlapper_time[i] << " ";
             for (int j = 0; j < n_o; j++)
             {
                 std::cerr << ".";
             }
             std::cerr << "\nhost mem. (GB)    " << std::fixed << std::setprecision(2) << host_mem[i];
-            std::cerr << "\ndevice mem. (GB)  " << std::fixed << std::setprecision(2) << device_mem[i] << std::endl;
+            std::cerr << "\ndevice mem. (GB)  " << std::fixed << std::setprecision(2) << device_mem[i];
+            float perf = index_size[i] > 0 ? total_time / index_size[i] : -1;
+            std::cerr << "\nperformance " << std::left << std::setw(5) << std::setfill(' ') << perf << " secs per 1k reads\n";
+            std::cerr << "______________________________________________________________________________\n";
         }
+
+        std::cerr << "benchmark summary:\n";
+        std::cerr << "number of benchmark iterations : " << num_itr << std::endl;
+        std::cerr << "maximum used device memory (GB): " << std::fixed << std::setprecision(2) << *std::max_element(device_mem.begin(), device_mem.end()) << std::endl;
+        std::cerr << "maximum used host memory (GB)  : " << std::fixed << std::setprecision(2) << *std::max_element(host_mem.begin(), host_mem.end()) << std::endl;
         std::cerr << "==============================================================================\n";
     }
 };
