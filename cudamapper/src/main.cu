@@ -332,7 +332,7 @@ int main(int argc, char* argv[])
                     claragenomics::cudamapper::Overlapper::print_paf(filtered_overlaps);
 
                     //clear data
-                    for (auto o : *overlaps)
+                    for (auto o : filtered_overlaps)
                     {
                         o.clear();
                     }
