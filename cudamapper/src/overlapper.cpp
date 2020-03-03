@@ -64,16 +64,15 @@ void Overlapper::align_overlaps(std::vector<Overlap>& overlaps,
             max_target_size = target_overlap_size;
     }
 
-    std::cerr << "Aligning " << overlaps.size() << " overlaps..." << std::endl;
-
     // Heuristically calculate max alignments possible with available memory based on
     // empirical measurements of memory needed for alignment per base.
-    const float space_per_base = 0.03f; // Estimation of space per base in B
-    float space_per_alignment  = space_per_base * max_query_size * max_target_size;
+    const float memory_per_base = 0.03f; // Estimation of space per base in bytes for alignment
+    float memory_per_alignment  = memory_per_base * max_query_size * max_target_size;
     size_t free, total;
     CGA_CU_CHECK_ERR(cudaMemGetInfo(&free, &total));
-    const int32_t max_alignments = (free * 90 / 100) / space_per_alignment; // Using 90% of available memory
-    int32_t batch_size           = max_alignments / num_batches;
+    const size_t max_alignments = (free * 85 / 100) / memory_per_alignment; // Using 85% of available memory
+    int32_t batch_size          = std::min(get_size<int32_t>(overlaps), static_cast<int32_t>(max_alignments)) / num_batches;
+    std::cerr << "Aligning " << overlaps.size() << " overlaps (" << max_query_size << "x" << max_target_size << ") with batch size " << batch_size << std::endl;
 
     int32_t overlap_idx = 0;
     std::mutex overlap_idx_mtx;
@@ -107,7 +106,7 @@ void Overlapper::align_overlaps(std::vector<Overlap>& overlaps,
                     else
                     {
                         idx_start   = overlap_idx;
-                        idx_end     = std::min(idx_start + batch_size, static_cast<int32_t>(overlaps.size()));
+                        idx_end     = std::min(idx_start + batch_size, get_size<int32_t>(overlaps));
                         overlap_idx = idx_end;
                     }
                 }
@@ -143,6 +142,7 @@ void Overlapper::align_overlaps(std::vector<Overlap>& overlaps,
                 }
                 // Reset batch to reuse memory for new alignments.
                 batch->reset();
+                //std::cerr << "aligned " << idx_start << " " << idx_end << std::endl;
             }
             CGA_CU_CHECK_ERR(cudaStreamDestroy(stream));
         }));
