@@ -28,16 +28,16 @@ namespace cudaaligner
 
 static void BM_SingleAlignment(benchmark::State& state)
 {
-    int32_t genome_size = state.range(0);
+    const int32_t genome_size = state.range(0);
 
     // Generate random sequences
     std::minstd_rand rng(1);
     std::string genome_1 = claragenomics::genomeutils::generate_random_genome(genome_size, rng);
-    std::string genome_2 = claragenomics::genomeutils::generate_random_genome(genome_size, rng);
+    std::string genome_2 = claragenomics::genomeutils::generate_random_sequence(genome_1, rng, genome_size / 30, genome_size / 30, genome_size / 30); // 3*x/30 = 10% difference
 
     // Create aligner object
-    std::unique_ptr<Aligner> aligner = create_aligner(genome_size,
-                                                      genome_size,
+    std::unique_ptr<Aligner> aligner = create_aligner(get_size(genome_1),
+                                                      get_size(genome_2),
                                                       1,
                                                       AlignmentType::global_alignment,
                                                       0,
@@ -79,8 +79,8 @@ template <typename AlignerT>
 static void BM_SingleBatchAlignment(benchmark::State& state)
 {
     CudaStream stream;
-    int32_t alignments_per_batch = state.range(0);
-    int32_t genome_size          = state.range(1);
+    const int32_t alignments_per_batch = state.range(0);
+    const int32_t genome_size          = state.range(1);
 
     std::unique_ptr<Aligner> aligner;
     // Create aligner object
@@ -99,7 +99,11 @@ static void BM_SingleBatchAlignment(benchmark::State& state)
         {
             // TODO: generate genomes with indels as well
             std::string genome_1 = claragenomics::genomeutils::generate_random_genome(genome_size, rng);
-            std::string genome_2 = claragenomics::genomeutils::generate_random_genome(genome_size, rng);
+            std::string genome_2 = claragenomics::genomeutils::generate_random_sequence(genome_1, rng, genome_size / 30, genome_size / 30, genome_size / 30); // 3*x/30 = 10% difference
+            if (get_size(genome_2) > genome_size)
+            {
+                genome_2.resize(genome_size);
+            }
 
             aligner->add_alignment(genome_1.c_str(), genome_1.length(),
                                    genome_2.c_str(), genome_2.length());
