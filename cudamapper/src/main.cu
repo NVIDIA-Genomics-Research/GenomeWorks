@@ -233,10 +233,9 @@ int main(int argc, char* argv[])
             {
                 device_index_cache[device_id][key] = index;
             }
-
-            // update host cache, only done by device 0 to avoid any race conditions in updating the host cache
-            if (get_size<int32_t>(host_index_cache) < max_index_cache_size_on_host && allow_cache_index && device_id == 0)
+            else if (get_size<int32_t>(host_index_cache) < max_index_cache_size_on_host && allow_cache_index && device_id == 0)
             {
+                // if not cached on device, update host cache; only done on device 0 to avoid any race conditions in updating the host cache
                 host_index_cache[key] = std::move(claragenomics::cudamapper::IndexHostCopy::create_cache(*index, start_index, k, w));
             }
         }
