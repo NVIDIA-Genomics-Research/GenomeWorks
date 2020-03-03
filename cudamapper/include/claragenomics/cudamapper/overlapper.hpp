@@ -10,9 +10,10 @@
 
 #pragma once
 
-#include <thrust/device_vector.h>
-#include "index.hpp"
-#include "types.hpp"
+#include <claragenomics/cudamapper/index.hpp>
+#include <claragenomics/cudamapper/types.hpp>
+
+#include <thrust/execution_policy.h>
 
 namespace claragenomics
 {
@@ -31,14 +32,14 @@ public:
     virtual ~Overlapper() = default;
 
     /// \brief returns overlaps for a set of reads
-    /// \param overlaps Output vector into which generated overlaps will be placed
-    /// \param anchors vector of anchor objects. Does not need to be ordered
-    /// \param index_query representation index for reads
-    /// \param index_target
-    virtual void get_overlaps(std::vector<Overlap>& overlaps,
-                              thrust::device_vector<Anchor>& anchors,
-                              const Index& index_query,
-                              const Index& index_target) = 0;
+    /// \param fused_overlaps Output vector into which generated overlaps will be placed
+    /// \param d_anchors vector of anchors sorted by query_read_id -> target_read_id -> query_position_in_read -> target_position_in_read (meaning sorted by query_read_id, then within a group of anchors with the same value of query_read_id sorted by target_read_id and so on)
+    /// \param min_residues smallest number of residues (anchors) for an overlap to be accepted
+    /// \param min_overlap_len the smallest overlap distance which is accepted
+    virtual void get_overlaps(std::vector<Overlap>& fused_overlaps,
+                              device_buffer<Anchor>& d_anchors,
+                              size_t min_residues,
+                              size_t min_overlap_len) = 0;
 
     /// \brief prints overlaps to stdout in <a href="https://github.com/lh3/miniasm/blob/master/PAF.md">PAF format</a>
     static void print_paf(const std::vector<Overlap>& overlaps, const std::vector<std::string>& cigar);
@@ -55,9 +56,18 @@ public:
     /// \param overlaps List of overlaps to align
     /// \param query_parser Parser for query reads
     /// \param target_parser Parser for target reads
+    /// \param num_batches Number of parallel batches to use for alignment
     /// \param cigar Output vector to store CIGAR string for alignments
     static void align_overlaps(std::vector<Overlap>& overlaps, const claragenomics::io::FastaParser& query_parser,
-                               const claragenomics::io::FastaParser& target_parser, std::vector<std::string>& cigar);
+                               const claragenomics::io::FastaParser& target_parser, int32_t num_batches,
+                               std::vector<std::string>& cigar);
+    /// \brief updates read names for vector of overlaps output from get_overlaps
+    /// \param overlaps input vector of overlaps generated in get_overlaps
+    /// \param index_query
+    /// \param index_target
+    static void update_read_names(std::vector<Overlap>& overlaps,
+                                  const Index& index_query,
+                                  const Index& index_target);
 };
 //}
 } // namespace cudamapper

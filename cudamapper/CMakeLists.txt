@@ -24,21 +24,22 @@ endif()
 
 cuda_add_library(minimizer
         src/minimizer.cu)
-target_include_directories(minimizer PUBLIC include)
+target_include_directories(minimizer PUBLIC include ${CUB_DIR})
 target_link_libraries(minimizer logging pthread utils)
 target_compile_options(minimizer PRIVATE -Werror)
 
 cuda_add_library(index_gpu
         src/index.cu
         src/index_gpu.cu
+        src/host_cache.cu
         src/minimizer.cu)
-target_include_directories(index_gpu PUBLIC include)
+target_include_directories(index_gpu PUBLIC include ${CUB_DIR})
 target_link_libraries(index_gpu logging minimizer pthread utils cgaio)
 target_compile_options(index_gpu PRIVATE -Werror)
 
 cuda_add_library(matcher_gpu
         src/matcher_gpu.cu)
-target_include_directories(matcher_gpu PUBLIC include)
+target_include_directories(matcher_gpu PUBLIC include ${CUB_DIR})
 target_link_libraries(matcher_gpu logging utils cgaio)
 target_compile_options(matcher_gpu PRIVATE -Werror)
 
@@ -47,7 +48,8 @@ add_library(cudamapper_utils
 target_include_directories(cudamapper_utils PUBLIC include)
 
 cuda_add_library(overlapper_triggerred
-        src/overlapper_triggered.cu)
+        src/overlapper_triggered.cu
+        src/overlapper.cpp)
 target_include_directories(overlapper_triggerred PUBLIC include ${CUB_DIR})
 target_link_libraries(overlapper_triggerred logging utils cgaio cudaaligner)
 target_compile_options(overlapper_triggerred PRIVATE -Werror)
@@ -60,6 +62,14 @@ cuda_add_executable(cudamapper
         src/matcher.cu
         src/overlapper.cpp
 )
+
+if(cga_enable_allocator)
+    target_compile_definitions(cudamapper            PUBLIC CGA_ENABLE_ALLOCATOR)
+    target_compile_definitions(minimizer             PUBLIC CGA_ENABLE_ALLOCATOR)
+    target_compile_definitions(index_gpu             PUBLIC CGA_ENABLE_ALLOCATOR)
+    target_compile_definitions(matcher_gpu           PUBLIC CGA_ENABLE_ALLOCATOR)
+    target_compile_definitions(overlapper_triggerred PUBLIC CGA_ENABLE_ALLOCATOR)
+endif()
 
 target_compile_options(cudamapper PRIVATE -Werror)
 

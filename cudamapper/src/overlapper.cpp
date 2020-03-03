@@ -14,6 +14,7 @@
 #include <claragenomics/cudaaligner/aligner.hpp>
 #include <claragenomics/cudaaligner/alignment.hpp>
 #include <claragenomics/utils/cudautils.hpp>
+#include <claragenomics/utils/signed_integer_utils.hpp>
 #include <mutex>
 #include <future>
 
@@ -22,23 +23,35 @@ namespace claragenomics
 namespace cudamapper
 {
 
-void Overlapper::filter_overlaps(std::vector<Overlap>& filtered_overlaps, const std::vector<Overlap>& overlaps, size_t min_residues, size_t min_overlap_len)
+void Overlapper::update_read_names(std::vector<Overlap>& overlaps,
+                                   const Index& index_query,
+                                   const Index& index_target)
 {
-    auto valid_overlap = [&min_residues, &min_overlap_len](Overlap overlap) { return (
-                                                                                  (overlap.num_residues_ >= min_residues) &&
-                                                                                  ((overlap.query_end_position_in_read_ - overlap.query_start_position_in_read_) > min_overlap_len) &&
-                                                                                  !( // Reject overlaps where the query and target sections are exactly the same, otherwise miniasm has trouble.
-                                                                                      (std::string(overlap.query_read_name_) == std::string(overlap.target_read_name_)) &&
-                                                                                      overlap.query_start_position_in_read_ == overlap.target_start_position_in_read_ &&
-                                                                                      overlap.query_end_position_in_read_ == overlap.target_end_position_in_read_)); };
+#pragma omp parallel for
+    for (size_t i = 0; i < overlaps.size(); i++)
+    {
+        auto& o                             = overlaps[i];
+        const std::string& query_read_name  = index_query.read_id_to_read_name(o.query_read_id_);
+        const std::string& target_read_name = index_target.read_id_to_read_name(o.target_read_id_);
 
-    std::copy_if(overlaps.begin(), overlaps.end(),
-                 std::back_inserter(filtered_overlaps),
-                 valid_overlap);
+        o.query_read_name_ = new char[query_read_name.length() + 1];
+        strcpy(o.query_read_name_, query_read_name.c_str());
+
+        o.target_read_name_ = new char[target_read_name.length() + 1];
+        strcpy(o.target_read_name_, target_read_name.c_str());
+
+        o.query_length_  = index_query.read_id_to_read_length(o.query_read_id_);
+        o.target_length_ = index_target.read_id_to_read_length(o.target_read_id_);
+    }
 }
 
-void Overlapper::align_overlaps(std::vector<Overlap>& overlaps, const claragenomics::io::FastaParser& query_parser, const claragenomics::io::FastaParser& target_parser, std::vector<std::string>& cigar)
+void Overlapper::align_overlaps(std::vector<Overlap>& overlaps,
+                                const claragenomics::io::FastaParser& query_parser,
+                                const claragenomics::io::FastaParser& target_parser,
+                                int32_t num_batches,
+                                std::vector<std::string>& cigar)
 {
+    // Calculate max target/query size in overlaps
     int32_t max_query_size  = 0;
     int32_t max_target_size = 0;
     for (const auto& overlap : overlaps)
@@ -51,21 +64,22 @@ void Overlapper::align_overlaps(std::vector<Overlap>& overlaps, const claragenom
             max_target_size = target_overlap_size;
     }
 
-    int32_t overlap_idx = 0;
-    std::cerr << "Overlaps to align - " << overlaps.size() << std::endl;
+    std::cerr << "Aligning " << overlaps.size() << " overlaps..." << std::endl;
 
-    const float space_per_base = 0.000000027f; // Heuristic estimation of space per base in MB during CUDA alignment
+    // Heuristically calculate max alignments possible with available memory based on
+    // empirical measurements of memory needed for alignment per base.
+    const float space_per_base = 0.03f; // Estimation of space per base in B
     float space_per_alignment  = space_per_base * max_query_size * max_target_size;
     size_t free, total;
     CGA_CU_CHECK_ERR(cudaMemGetInfo(&free, &total));
-    free                   = free / (1024 * 1024);
-    int32_t max_alignments = (free * 90 / 100) / space_per_alignment;
-    int32_t streams        = 4;
-    int32_t batch_size     = max_alignments / streams;
+    const int32_t max_alignments = (free * 90 / 100) / space_per_alignment; // Using 90% of available memory
+    int32_t batch_size           = max_alignments / num_batches;
 
+    int32_t overlap_idx = 0;
     std::mutex overlap_idx_mtx;
+
     std::vector<std::future<void>> align_futures;
-    for (int32_t t = 0; t < streams; t++)
+    for (int32_t t = 0; t < num_batches; t++)
     {
         align_futures.push_back(std::async(std::launch::async, [&overlap_idx_mtx, &overlaps, &query_parser, &target_parser, &overlap_idx, max_query_size, max_target_size, &cigar, batch_size]() {
             int32_t device_id;
@@ -119,11 +133,12 @@ void Overlapper::align_overlaps(std::vector<Overlap>& overlaps, const claragenom
                 const std::vector<std::shared_ptr<claragenomics::cudaaligner::Alignment>>& alignments = batch->get_alignments();
                 {
                     CGA_NVTX_RANGE(profiler, "copy_alignments");
-                    int32_t counter = 0;
-                    for (const auto& alignment : alignments)
+                    //int32_t counter = 0;
+                    for (int32_t i = 0; i < get_size<int32_t>(alignments); i++)
+                    //for (const auto& alignment : alignments)
                     {
-                        cigar[idx_start + counter] = alignment->convert_to_cigar();
-                        counter++;
+                        cigar[idx_start + i] = alignments[i]->convert_to_cigar();
+                        //counter++;
                     }
                 }
                 // Reset batch to reuse memory for new alignments.
