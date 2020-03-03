@@ -133,6 +133,28 @@ struct FuseOverlapOp
     }
 };
 
+struct FilterOverlapOp
+{
+    size_t min_residues;
+    size_t min_overlap_len;
+
+    __host__ __device__ __forceinline__ FilterOverlapOp(size_t min_residues, size_t min_overlap_len)
+        : min_residues(min_residues)
+        , min_overlap_len(min_overlap_len)
+    {
+    }
+
+    __host__ __device__ __forceinline__ bool operator()(const Overlap& overlap) const
+    {
+        return ((overlap.num_residues_ >= min_residues) &&
+                ((overlap.query_end_position_in_read_ - overlap.query_start_position_in_read_) > min_overlap_len) &&
+                !( // Reject overlaps where the query and target sections are exactly the same, otherwise miniasm has trouble.
+                    overlap.query_read_id_ == overlap.target_read_id_ &&
+                    overlap.query_start_position_in_read_ == overlap.target_start_position_in_read_ &&
+                    overlap.query_end_position_in_read_ == overlap.target_end_position_in_read_));
+    }
+};
+
 struct CreateOverlap
 {
     const Anchor* d_anchors;
@@ -196,7 +218,9 @@ OverlapperTriggered::~OverlapperTriggered()
     CGA_CU_CHECK_ERR(cudaStreamDestroy(stream));
 }
 
-void OverlapperTriggered::get_overlaps(std::vector<Overlap>& fused_overlaps, device_buffer<Anchor>& d_anchors)
+void OverlapperTriggered::get_overlaps(std::vector<Overlap>& fused_overlaps, device_buffer<Anchor>& d_anchors,
+                                       size_t min_residues,
+                                       size_t min_overlap_len)
 {
     CGA_NVTX_RANGE(profiler, "OverlapperTriggered::get_overlaps");
     const auto tail_length_for_chain = 3;
@@ -368,9 +392,20 @@ void OverlapperTriggered::get_overlaps(std::vector<Overlap>& fused_overlaps, dev
                       d_fusedoverlaps_args.data() + n_fused_overlap,
                       d_fused_overlaps.data(), fuse_op);
 
-    // memcpyD2H - move fused overlaps to host
-    fused_overlaps.resize(n_fused_overlap);
-    cudautils::device_copy_n(d_fused_overlaps.data(), n_fused_overlap, fused_overlaps.data(), stream);
+    device_buffer<Overlap> d_filtered_overlaps(n_fused_overlap, _allocator, stream);
+
+    FilterOverlapOp filterOp(min_residues, min_overlap_len);
+    auto filtered_overlaps_end =
+        thrust::copy_if(thrust_exec_policy,
+                        d_fused_overlaps.data(), d_fused_overlaps.data() + n_fused_overlap,
+                        d_filtered_overlaps.data(),
+                        filterOp);
+
+    auto n_filtered_overlaps = filtered_overlaps_end - d_filtered_overlaps.data();
+
+    // memcpyD2H - move fused and filtered overlaps to host
+    fused_overlaps.resize(n_filtered_overlaps);
+    cudautils::device_copy_n(d_filtered_overlaps.data(), n_filtered_overlaps, fused_overlaps.data(), stream);
     CGA_CU_CHECK_ERR(cudaStreamSynchronize(stream));
 }
 

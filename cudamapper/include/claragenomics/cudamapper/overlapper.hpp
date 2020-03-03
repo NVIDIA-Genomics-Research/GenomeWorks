@@ -34,7 +34,12 @@ public:
     /// \brief returns overlaps for a set of reads
     /// \param fused_overlaps Output vector into which generated overlaps will be placed
     /// \param d_anchors vector of anchors sorted by query_read_id -> target_read_id -> query_position_in_read -> target_position_in_read (meaning sorted by query_read_id, then within a group of anchors with the same value of query_read_id sorted by target_read_id and so on)
-    virtual void get_overlaps(std::vector<Overlap>& fused_overlaps, device_buffer<Anchor>& d_anchors) = 0;
+    /// \param min_residues smallest number of residues (anchors) for an overlap to be accepted
+    /// \param min_overlap_len the smallest overlap distance which is accepted
+    virtual void get_overlaps(std::vector<Overlap>& fused_overlaps,
+                              device_buffer<Anchor>& d_anchors,
+                              size_t min_residues,
+                              size_t min_overlap_len) = 0;
 
     /// \brief prints overlaps to stdout in <a href="https://github.com/lh3/miniasm/blob/master/PAF.md">PAF format</a>
     static void print_paf(const std::vector<Overlap>& overlaps);
