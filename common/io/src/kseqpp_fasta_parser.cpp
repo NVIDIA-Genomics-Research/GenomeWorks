@@ -31,9 +31,10 @@ FastaParserKseqpp::FastaParserKseqpp(const std::string& fasta_file, int min_sequ
     int total_len = 0;
     while (iss >> record)
     {
-        FastaSequence seq = {record.name, record.seq};
+        FastaSequence seq    = {record.name, record.seq};
         auto sequence_length = record.seq.size();
-        if (sequence_length >= min_sequencece_length) {
+        if (sequence_length >= min_sequencece_length)
+        {
             total_len += sequence_length;
             reads_.emplace_back(seq);
         }

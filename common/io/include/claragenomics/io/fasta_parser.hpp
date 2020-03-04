@@ -61,7 +61,7 @@ public:
 /// \param min_sequence_length Minimum length a sequence needs to be to be parsed. Shorter sequences are ignored.
 ///
 /// \return A unique pointer to a constructed parser object.
-std::unique_ptr<FastaParser> create_kseq_fasta_parser(const std::string& fasta_file, int min_sequence_length=100);
+std::unique_ptr<FastaParser> create_kseq_fasta_parser(const std::string& fasta_file, int min_sequence_length = 100);
 
 } // namespace io
 } // namespace claragenomics
