@@ -278,8 +278,6 @@ int main(int argc, char* argv[])
 #endif
 
     auto compute_overlaps = [&](const QueryTargetsRange& query_target_range, const int device_id) {
-        cudaSetDevice(device_id);
-
         auto query_start_index = query_target_range.query_range.first;
         auto query_end_index   = query_target_range.query_range.second;
 
@@ -368,6 +366,7 @@ int main(int argc, char* argv[])
         //Worker thread consumes query-target ranges off a queue
         workers.push_back(std::thread(
             [&, device_id]() {
+                cudaSetDevice(device_id);
                 while (ranges_idx < get_size<int>(query_target_ranges))
                 {
                     int range_idx = ranges_idx.fetch_add(1);
