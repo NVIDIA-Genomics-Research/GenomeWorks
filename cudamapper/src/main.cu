@@ -320,7 +320,12 @@ int main(int argc, char* argv[])
                 num_overlap_chunks_to_print++;
                 auto print_overlaps = [&overlaps_writer_mtx, &num_overlap_chunks_to_print](std::shared_ptr<std::vector<claragenomics::cudamapper::Overlap>> filtered_overlaps,
                                                                                            std::shared_ptr<claragenomics::cudamapper::Index> query_index,
-                                                                                           std::shared_ptr<claragenomics::cudamapper::Index> target_index) {
+                                                                                           std::shared_ptr<claragenomics::cudamapper::Index> target_index,
+                                                                                           const int device_id) {
+                    // This lambda is expected to run in a separate thread so set current device in order to avoid problems
+                    // with deallocating indices with different current device then the one on which they were created
+                    cudaSetDevice(device_id);
+
                     // parallel update of the query/target read names for filtered overlaps [parallel on host]
                     claragenomics::cudamapper::Overlapper::update_read_names(*filtered_overlaps, *query_index, *target_index);
                     std::lock_guard<std::mutex> lck(overlaps_writer_mtx);
@@ -335,7 +340,7 @@ int main(int argc, char* argv[])
                     num_overlap_chunks_to_print--;
                 };
 
-                std::thread t(print_overlaps, overlaps_to_add, query_index, target_index);
+                std::thread t(print_overlaps, overlaps_to_add, query_index, target_index, device_id);
                 t.detach();
             }
             // reseting the matcher releases the anchor device array back to memory pool
