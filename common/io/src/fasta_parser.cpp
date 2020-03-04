@@ -8,7 +8,6 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-#include "hts_fasta_parser.hpp"
 #include "kseqpp_fasta_parser.hpp"
 
 #include "claragenomics/io/fasta_parser.hpp"
@@ -19,11 +18,6 @@ namespace claragenomics
 {
 namespace io
 {
-
-std::unique_ptr<FastaParser> create_hts_fasta_parser(const std::string& fasta_file)
-{
-    return std::make_unique<FastaParserHTS>(fasta_file);
-}
 
 std::unique_ptr<FastaParser> create_kseq_fasta_parser(const std::string& fasta_file)
 {

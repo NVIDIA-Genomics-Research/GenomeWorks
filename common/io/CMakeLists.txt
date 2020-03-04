@@ -13,7 +13,6 @@ project(cgaio)
 get_property(cga_library_type GLOBAL PROPERTY cga_library_type)
 add_library(${PROJECT_NAME} ${cga_library_type}
         src/fasta_parser.cpp
-        src/hts_fasta_parser.cpp
         src/kseqpp_fasta_parser.cpp)
 target_link_libraries(${PROJECT_NAME} PUBLIC hts)
 target_link_libraries(${PROJECT_NAME} PUBLIC z)
