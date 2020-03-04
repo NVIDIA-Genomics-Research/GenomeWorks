@@ -139,7 +139,7 @@ int main(int argc, char* argv[])
         std::cerr << "NOTE - Since query and target files are same, activating all_to_all mode. Query index size used for both files." << std::endl;
     }
 
-    std::shared_ptr<claragenomics::io::FastaParser> query_parser = claragenomics::io::create_kseq_fasta_parser(query_filepath);
+    std::shared_ptr<claragenomics::io::FastaParser> query_parser = claragenomics::io::create_kseq_fasta_parser(query_filepath, k + w - 1);
     int32_t queries                                              = query_parser->get_num_seqences();
 
     std::shared_ptr<claragenomics::io::FastaParser> target_parser;
@@ -149,7 +149,7 @@ int main(int argc, char* argv[])
     }
     else
     {
-        target_parser = claragenomics::io::create_kseq_fasta_parser(target_filepath);
+        target_parser = claragenomics::io::create_kseq_fasta_parser(target_filepath, k + w - 1);
     }
 
     int32_t targets = target_parser->get_num_seqences();
@@ -238,10 +238,9 @@ int main(int argc, char* argv[])
             {
                 device_index_cache[device_id][key] = index;
             }
-
-            // update host cache, only done by device 0 to avoid any race conditions in updating the host cache
-            if (get_size<int32_t>(host_index_cache) < max_index_cache_size_on_host && allow_cache_index && device_id == 0)
+            else if (get_size<int32_t>(host_index_cache) < max_index_cache_size_on_host && allow_cache_index && device_id == 0)
             {
+                // if not cached on device, update host cache; only done on device 0 to avoid any race conditions in updating the host cache
                 host_index_cache[key] = std::move(claragenomics::cudamapper::IndexHostCopy::create_cache(*index, start_index, k, w));
             }
         }
