@@ -256,8 +256,8 @@ TEST(TestCudamapperOverlapperTriggerred, FourAnchorsOneOverlap)
     ASSERT_EQ(overlaps[0].target_end_position_in_read_, 1300u);
 
     overlapper.update_read_names(overlaps, test_index, test_index);
-    ASSERT_EQ(strcmp(overlaps[0].query_read_name_, testv[1].c_str()), 0u);
-    ASSERT_EQ(strcmp(overlaps[0].target_read_name_, testv[2].c_str()), 0u);
+    ASSERT_STREQ(overlaps[0].query_read_name_, testv[1].c_str());
+    ASSERT_STREQ(overlaps[0].target_read_name_, testv[2].c_str());
 }
 
 TEST(TestCudamapperOverlapperTriggerred, FourAnchorsNoOverlap)
@@ -440,8 +440,8 @@ TEST(TestCudamapperOverlapperTriggerred, FourAnchorsLastNotInOverlap)
     ASSERT_EQ(overlaps[0].target_end_position_in_read_, 1200u);
 
     overlapper.update_read_names(overlaps, test_index, test_index);
-    ASSERT_EQ(strcmp(overlaps[0].query_read_name_, testv[1].c_str()), 0u);
-    ASSERT_EQ(strcmp(overlaps[0].target_read_name_, testv[2].c_str()), 0u);
+    ASSERT_STREQ(overlaps[0].query_read_name_, testv[1].c_str());
+    ASSERT_STREQ(overlaps[0].target_read_name_, testv[2].c_str());
 }
 
 TEST(TestCudamapperOverlapperTriggerred, ReverseStrand)
@@ -505,8 +505,8 @@ TEST(TestCudamapperOverlapperTriggerred, ReverseStrand)
     ASSERT_EQ(char(overlaps[0].relative_strand), '-');
 
     overlapper.update_read_names(overlaps, test_index, test_index);
-    ASSERT_EQ(strcmp(overlaps[0].query_read_name_, testv[1].c_str()), 0u);
-    ASSERT_EQ(strcmp(overlaps[0].target_read_name_, testv[2].c_str()), 0u);
+    ASSERT_STREQ(overlaps[0].query_read_name_, testv[1].c_str());
+    ASSERT_STREQ(overlaps[0].target_read_name_, testv[2].c_str());
 }
 
 } // namespace cudamapper
