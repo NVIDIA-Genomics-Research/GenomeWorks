@@ -21,7 +21,7 @@ namespace io
 
 std::unique_ptr<FastaParser> create_kseq_fasta_parser(const std::string& fasta_file, int min_sequence_length)
 {
-    return std::make_unique<FastaParserKseqpp>(FastaParserKseqpp(fasta_file, min_sequence_length));
+    return std::make_unique<FastaParserKseqpp>(fasta_file, min_sequence_length);
 }
 
 } // namespace io
