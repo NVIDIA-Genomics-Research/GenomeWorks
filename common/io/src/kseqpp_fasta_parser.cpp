@@ -36,7 +36,7 @@ FastaParserKseqpp::FastaParserKseqpp(const std::string& fasta_file, int min_sequ
         if (sequence_length >= min_sequencece_length)
         {
             total_len += sequence_length;
-            reads_.emplace_back(seq);
+            reads_.push_back(std::move(seq));
         }
     }
 
