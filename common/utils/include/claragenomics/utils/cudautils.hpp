@@ -37,7 +37,7 @@
 
 /// \ingroup cudautils
 /// \def CGA_CU_ABORT_ON_ERR
-/// \brief Log on CUDA error in enclosed expression
+/// \brief Log on CUDA error in enclosed expression and termine in release mode, fail assertion in debug mode
 #define CGA_CU_ABORT_ON_ERR(ans)                                         \
     {                                                                    \
         claragenomics::cudautils::gpu_assert((ans), __FILE__, __LINE__); \
