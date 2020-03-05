@@ -284,8 +284,6 @@ int main(int argc, char* argv[])
 #endif
 
     auto compute_overlaps = [&](const QueryTargetsRange& query_target_range, const int device_id) {
-        cudaSetDevice(device_id);
-
         auto query_start_index = query_target_range.query_range.first;
         auto query_end_index   = query_target_range.query_range.second;
 
@@ -338,7 +336,12 @@ int main(int argc, char* argv[])
                 auto print_overlaps = [&overlaps_writer_mtx, &num_overlap_chunks_to_print](std::shared_ptr<std::vector<claragenomics::cudamapper::Overlap>> filtered_overlaps,
                                                                                            std::shared_ptr<claragenomics::cudamapper::Index> query_index,
                                                                                            std::shared_ptr<claragenomics::cudamapper::Index> target_index,
-                                                                                           const std::vector<std::string>& cigar) {
+                                                                                           const std::vector<std::string>& cigar,
+                                                                                           const int device_id) {
+                    // This lambda is expected to run in a separate thread so set current device in order to avoid problems
+                    // with deallocating indices with different current device then the one on which they were created
+                    cudaSetDevice(device_id);
+
                     // parallel update of the query/target read names for filtered overlaps [parallel on host]
                     claragenomics::cudamapper::Overlapper::update_read_names(*filtered_overlaps, *query_index, *target_index);
                     std::lock_guard<std::mutex> lck(overlaps_writer_mtx);
@@ -353,7 +356,7 @@ int main(int argc, char* argv[])
                     num_overlap_chunks_to_print--;
                 };
 
-                std::thread t(print_overlaps, overlaps_to_add, query_index, target_index, cigar);
+                std::thread t(print_overlaps, overlaps_to_add, query_index, target_index, cigar, device_id);
                 t.detach();
             }
 
@@ -385,6 +388,7 @@ int main(int argc, char* argv[])
         //Worker thread consumes query-target ranges off a queue
         workers.push_back(std::thread(
             [&, device_id]() {
+                cudaSetDevice(device_id);
                 while (ranges_idx < get_size<int>(query_target_ranges))
                 {
                     int range_idx = ranges_idx.fetch_add(1);

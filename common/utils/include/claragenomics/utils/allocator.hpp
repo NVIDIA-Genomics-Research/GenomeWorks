@@ -215,7 +215,7 @@ public:
     pointer allocate(std::size_t n, cudaStream_t stream = 0)
     {
         void* ptr = 0;
-        cub_allocator_->DeviceAllocate(&ptr, n * sizeof(T), stream);
+        CGA_CU_CHECK_ERR(cub_allocator_->DeviceAllocate(&ptr, n * sizeof(T), stream));
         return static_cast<pointer>(ptr);
     }
 
@@ -225,8 +225,7 @@ public:
     /// @param stream CUDA stream to be associated with this method.
     void deallocate(pointer p, std::size_t n, cudaStream_t stream = 0)
     {
-        // deallocate should not throw execeptions which is why CGA_CU_CHECK_ERR is not used.
-        cub_allocator_->DeviceFree(p);
+        CGA_CU_ABORT_ON_ERR(cub_allocator_->DeviceFree(p));
     }
 
     /// @brief returns a shared pointer to internally used cub::CachingDeviceAllocator
