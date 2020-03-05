@@ -137,7 +137,6 @@ void Overlapper::align_overlaps(std::vector<Overlap>& overlaps,
             }
             // Reset batch to reuse memory for new alignments.
             batch->reset();
-            //std::cerr << "aligned " << idx_start << " " << idx_end << std::endl;
         }
         CGA_CU_CHECK_ERR(cudaStreamDestroy(stream));
     };
