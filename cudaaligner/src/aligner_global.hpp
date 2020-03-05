@@ -35,7 +35,7 @@ public:
 
     virtual StatusType sync_alignments() override;
 
-    virtual StatusType add_alignment(const char* query, int32_t query_length, const char* target, int32_t target_length) override;
+    virtual StatusType add_alignment(const char* query, int32_t query_length, const char* target, int32_t target_length, bool reverse_complement_target) override;
 
     virtual const std::vector<std::shared_ptr<Alignment>>& get_alignments() const override
     {

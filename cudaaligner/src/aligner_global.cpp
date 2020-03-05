@@ -14,6 +14,7 @@
 #include <claragenomics/utils/signed_integer_utils.hpp>
 #include <claragenomics/utils/cudautils.hpp>
 #include <claragenomics/utils/mathutils.hpp>
+#include <claragenomics/utils/genomeutils.hpp>
 #include <claragenomics/logging/logging.hpp>
 
 #include <cstring>
@@ -60,7 +61,7 @@ AlignerGlobal::AlignerGlobal(int32_t max_query_length, int32_t max_target_length
     device_memset_async(result_lengths_d_, 0, stream);
 }
 
-StatusType AlignerGlobal::add_alignment(const char* query, int32_t query_length, const char* target, int32_t target_length)
+StatusType AlignerGlobal::add_alignment(const char* query, int32_t query_length, const char* target, int32_t target_length, bool reverse_complement_target)
 {
     if (query_length < 0 || target_length < 0)
     {
@@ -91,9 +92,16 @@ StatusType AlignerGlobal::add_alignment(const char* query, int32_t query_length,
     memcpy(&sequences_h_[(2 * num_alignments) * max_alignment_length],
            query,
            sizeof(char) * query_length);
-    memcpy(&sequences_h_[(2 * num_alignments + 1) * max_alignment_length],
-           target,
-           sizeof(char) * target_length);
+    if (reverse_complement_target)
+    {
+        genomeutils::reverse_complement(target, target_length, &sequences_h_[(2 * num_alignments + 1) * max_alignment_length]);
+    }
+    else
+    {
+        memcpy(&sequences_h_[(2 * num_alignments + 1) * max_alignment_length],
+               target,
+               sizeof(char) * target_length);
+    }
 
     sequence_lengths_h_[2 * num_alignments]     = query_length;
     sequence_lengths_h_[2 * num_alignments + 1] = target_length;
