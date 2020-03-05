@@ -95,6 +95,7 @@ int main(int argc, char* argv[])
             break;
         case 'a':
             alignment_batches = atoi(optarg);
+            claragenomics::throw_on_negative(alignment_batches, "Number of alignment batches should be non-negative");
             break;
         case 'h':
             help(0);
@@ -327,7 +328,7 @@ int main(int argc, char* argv[])
                 // Align overlaps
                 if (alignment_batches > 0)
                 {
-                    cigar.resize((*overlaps_to_add).size());
+                    cigar.resize(overlaps_to_add->size());
                     CGA_NVTX_RANGE(profiler, "align_overlaps");
                     claragenomics::cudamapper::Overlapper::Overlapper::align_overlaps(*overlaps_to_add, *query_parser, *target_parser, alignment_batches, cigar);
                 }

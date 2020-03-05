@@ -70,7 +70,7 @@ void Overlapper::align_overlaps(std::vector<Overlap>& overlaps,
     float memory_per_alignment  = memory_per_base * max_query_size * max_target_size;
     size_t free, total;
     CGA_CU_CHECK_ERR(cudaMemGetInfo(&free, &total));
-    const size_t max_alignments = (free * 85 / 100) / memory_per_alignment; // Using 85% of available memory
+    const size_t max_alignments = (static_cast<float>(free) * 85 / 100) / memory_per_alignment; // Using 85% of available memory
     int32_t batch_size          = std::min(get_size<int32_t>(overlaps), static_cast<int32_t>(max_alignments)) / num_batches;
     std::cerr << "Aligning " << overlaps.size() << " overlaps (" << max_query_size << "x" << max_target_size << ") with batch size " << batch_size << std::endl;
 
@@ -95,11 +95,11 @@ void Overlapper::align_overlaps(std::vector<Overlap>& overlaps,
                     device_id);
             while (true)
             {
-                int32_t idx_start, idx_end = 0;
+                int32_t idx_start = 0, idx_end = 0;
                 // Get the range of overlaps for this batch
                 {
                     std::lock_guard<std::mutex> lck(overlap_idx_mtx);
-                    if (overlap_idx == overlaps.size())
+                    if (overlap_idx == get_size<int32_t>(overlaps))
                     {
                         break;
                     }
@@ -112,13 +112,13 @@ void Overlapper::align_overlaps(std::vector<Overlap>& overlaps,
                 }
                 for (int32_t idx = idx_start; idx < idx_end; idx++)
                 {
-                    Overlap& overlap                              = overlaps[idx];
+                    const Overlap& overlap                        = overlaps[idx];
                     const claragenomics::io::FastaSequence query  = query_parser.get_sequence_by_id(overlap.query_read_id_);
                     const claragenomics::io::FastaSequence target = target_parser.get_sequence_by_id(overlap.target_read_id_);
                     const char* query_start                       = &query.seq[overlap.query_start_position_in_read_];
-                    int32_t query_length                          = overlap.query_end_position_in_read_ - overlap.query_start_position_in_read_;
+                    const int32_t query_length                    = overlap.query_end_position_in_read_ - overlap.query_start_position_in_read_;
                     const char* target_start                      = &target.seq[overlap.target_start_position_in_read_];
-                    int32_t target_length                         = overlap.target_end_position_in_read_ - overlap.target_start_position_in_read_;
+                    const int32_t target_length                   = overlap.target_end_position_in_read_ - overlap.target_start_position_in_read_;
                     claragenomics::cudaaligner::StatusType status = batch->add_alignment(query_start, query_length, target_start, target_length);
                     if (status != claragenomics::cudaaligner::success)
                     {
@@ -132,12 +132,9 @@ void Overlapper::align_overlaps(std::vector<Overlap>& overlaps,
                 const std::vector<std::shared_ptr<claragenomics::cudaaligner::Alignment>>& alignments = batch->get_alignments();
                 {
                     CGA_NVTX_RANGE(profiler, "copy_alignments");
-                    //int32_t counter = 0;
                     for (int32_t i = 0; i < get_size<int32_t>(alignments); i++)
-                    //for (const auto& alignment : alignments)
                     {
                         cigar[idx_start + i] = alignments[i]->convert_to_cigar();
-                        //counter++;
                     }
                 }
                 // Reset batch to reuse memory for new alignments.
