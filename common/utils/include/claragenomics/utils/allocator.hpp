@@ -215,7 +215,7 @@ public:
     pointer allocate(std::size_t n, cudaStream_t stream = 0)
     {
         void* ptr = 0;
-        CGA_CU_ABORT_ON_ERR(cub_allocator_->DeviceAllocate(&ptr, n * sizeof(T), stream));
+        CGA_CU_CHECK_ERR(cub_allocator_->DeviceAllocate(&ptr, n * sizeof(T), stream));
         return static_cast<pointer>(ptr);
     }
 
