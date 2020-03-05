@@ -32,14 +32,13 @@
     {                                                                    \
         claragenomics::cudautils::gpu_assert((ans), __FILE__, __LINE__); \
     }
-/// \}
 // ^^^^ CGA_CU_CHECK_ERR currently has the same implementation as CGA_CU_ABORT_ON_ERR.
 //      The idea is that in the future CGA_CU_CHECK_ERR could have a "softer" error reporting (= not calling std::abort)
 
 /// \ingroup cudautils
 /// \def CGA_CU_ABORT_ON_ERR
 /// \brief Log on CUDA error in enclosed expression
-#define CGA_CU_ABORT_ON_ERR(ans)                                            \
+#define CGA_CU_ABORT_ON_ERR(ans)                                         \
     {                                                                    \
         claragenomics::cudautils::gpu_assert((ans), __FILE__, __LINE__); \
     }
