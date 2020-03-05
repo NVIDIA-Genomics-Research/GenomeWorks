@@ -258,13 +258,22 @@ private:
     std::shared_ptr<MemoryResource> memory_resource_;
 };
 
-//#ifdef CGA_ENABLE_ALLOCATOR
-/// Default device allocator do be used if CGA_ENABLE_ALLOCATOR is set
-//using DefaultDeviceAllocator = CachingDeviceAllocator<char, cub::CachingDeviceAllocator>;
+#ifdef CGA_ENABLE_CACHING_ALLOCATOR
+
+#ifdef CGA_ENABLE_PREALLOCATING_ALLOCATOR
 using DefaultDeviceAllocator = CachingDeviceAllocator<char, DevicePreallocatedAllocator>;
-//#else
-/// Default device allocator do be used if CGA_ENABLE_ALLOCATOR is not set
-//using DefaultDeviceAllocator = CudaMallocAllocator<char>;
-//#endif
+#else
+using DefaultDeviceAllocator = CachingDeviceAllocator<char, cub::CachingDeviceAllocator>;
+#endif
+
+#else
+
+#ifdef CGA_ENABLE_PREALLOCATING_ALLOCATOR
+static_assert(false, "Preallocating allocator can only be used together with caching allocator");
+#else
+using DefaultDeviceAllocator = CudaMallocAllocator<char>;
+#endif
+
+#endif
 
 } // namespace claragenomics

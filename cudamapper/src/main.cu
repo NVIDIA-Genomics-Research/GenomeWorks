@@ -268,7 +268,7 @@ int main(int argc, char* argv[])
             host_index_cache.erase(key);
     };
 
-#ifdef CGA_ENABLE_ALLOCATOR
+#ifdef CGA_ENABLE_CACHING_ALLOCATOR
     // uses CachingDeviceAllocator
     auto max_cached_bytes = max_cached_memory * 1e9; // max_cached_memory is in GB
     claragenomics::DefaultDeviceAllocator allocator(max_cached_bytes);
