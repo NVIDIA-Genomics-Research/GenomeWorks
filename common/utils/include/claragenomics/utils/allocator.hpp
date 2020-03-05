@@ -11,17 +11,17 @@
 #pragma once
 
 #include <memory>
+#include <type_traits>
 
 #include <cub/util_allocator.cuh>
+#include <claragenomics/utils/device_preallocated_allocator.cuh>
 
 #include <claragenomics/utils/cudautils.hpp>
 
 namespace claragenomics
 {
 
-/**
- * @brief Allocator that allocates device memory using cudaMalloc/cudaFree
- */
+/// @brief Allocator that allocates device memory using cudaMalloc/cudaFree
 template <typename T>
 class CudaMallocAllocator
 {
@@ -121,10 +121,10 @@ public:
     }
 };
 
-/**
- * @brief A simple caching allocator for device memory allocations
- */
-template <typename T>
+/// @brief A simple caching allocator for device memory allocations
+/// @tparam T
+/// @tparam MemoryResource resource that does actual allocation, e.g. cub::CachingDeviceAllocator or cudautils::DevicePreallocatedAllocator
+template <typename T, typename MemoryResource>
 class CachingDeviceAllocator
 {
 public:
@@ -134,11 +134,10 @@ public:
     /// pointer to elements of allocated array
     using pointer = T*;
 
-    /// @brief This constructor intializes and constructs cub's CachingDeviceAllocator
-    /// Smallest cached bin is 2^10 bytes, largest is 2^28 bytes. All allocation requests larger than 2^28 bytes are not fit in a bin and are not cached
-    /// @param max_cached_bytes Maximum aggregate cached bytes per device (default is 1GB)
-    CachingDeviceAllocator(size_t max_cached_bytes = 1e9)
-        : cub_allocator_(std::make_shared<cub::CachingDeviceAllocator>(2, 10, 28, max_cached_bytes, false, false))
+    /// @brief Constructor
+    /// @param max_cached_bytes max bytes used by memory resource (default is 1GiB)
+    CachingDeviceAllocator(size_t max_cached_bytes = 1024*1024*1024)
+        : memory_resource_(generate_memory_resource(max_cached_bytes))
     {
     }
 
@@ -151,8 +150,8 @@ public:
     /// @param rhs input allocator
     /// @tparam U Type of rhs::value_type
     template <typename U>
-    CachingDeviceAllocator(const CachingDeviceAllocator<U>& rhs)
-        : cub_allocator_(rhs.cub_allocator())
+    CachingDeviceAllocator(const CachingDeviceAllocator<U, MemoryResource>& rhs)
+        : memory_resource_(rhs.memory_resource())
     {
     }
 
@@ -167,9 +166,9 @@ public:
     /// @tparam U Type of rhs::value_type
     /// @return reference to this object
     template <typename U>
-    CachingDeviceAllocator& operator=(const CachingDeviceAllocator<U>& rhs)
+    CachingDeviceAllocator& operator=(const CachingDeviceAllocator<U, MemoryResource>& rhs)
     {
-        cub_allocator_ = rhs.cub_allocator();
+        memory_resource_ = rhs.memory_resource();
         return *this;
     }
 
@@ -182,8 +181,8 @@ public:
     /// @param rhs input allocator
     /// @tparam U Type of rhs::value_type
     template <typename U>
-    CachingDeviceAllocator(CachingDeviceAllocator<U>&& rhs)
-        : cub_allocator_(rhs.cub_allocator())
+    CachingDeviceAllocator(CachingDeviceAllocator<U, MemoryResource>&& rhs)
+        : memory_resource_(rhs.memory_resource())
     {
     }
 
@@ -198,15 +197,14 @@ public:
     /// @tparam U Type of rhs::value_type
     /// @return reference to this object
     template <typename U>
-    CachingDeviceAllocator& operator=(CachingDeviceAllocator<U>&& rhs)
+    CachingDeviceAllocator& operator=(CachingDeviceAllocator<U, MemoryResource>&& rhs)
     {
-        cub_allocator_ = rhs.cub_allocator();
+        memory_resource_ = rhs.memory_resource();
         return *this;
     }
 
     /// @brief destructor
     ~CachingDeviceAllocator() = default;
-    // ^^^ no need to explicitly clear memory as long as cub::CachingDeviceAllocator allocator is called with skip_cleanup = false
 
     /// @brief asynchronously allocates a device array with enough space for n elements of value_type
     /// @param n number of elements to allocate the array for
@@ -215,7 +213,7 @@ public:
     pointer allocate(std::size_t n, cudaStream_t stream = 0)
     {
         void* ptr = 0;
-        CGA_CU_CHECK_ERR(cub_allocator_->DeviceAllocate(&ptr, n * sizeof(T), stream));
+        CGA_CU_CHECK_ERR(memory_resource_->DeviceAllocate(&ptr, n * sizeof(T), stream));
         return static_cast<pointer>(ptr);
     }
 
@@ -225,23 +223,48 @@ public:
     /// @param stream CUDA stream to be associated with this method.
     void deallocate(pointer p, std::size_t n, cudaStream_t stream = 0)
     {
-        CGA_CU_ABORT_ON_ERR(cub_allocator_->DeviceFree(p));
+        // deallocate should not throw execeptions which is why CGA_CU_CHECK_ERR is not used.
+        CGA_CU_ABORT_ON_ERR(memory_resource_->DeviceFree(p));
     }
 
-    /// @brief returns a shared pointer to internally used cub::CachingDeviceAllocator
-    /// @return a shared pointer to internally used cub::CachingDeviceAllocator
-    std::shared_ptr<cub::CachingDeviceAllocator> cub_allocator() const { return cub_allocator_; }
+    /// @brief returns a shared pointer to memory_resource
+    /// @return a shared pointer to memory_resource
+    std::shared_ptr<MemoryResource> memory_resource() const { return memory_resource_; }
 
 private:
-    std::shared_ptr<cub::CachingDeviceAllocator> cub_allocator_;
+    /// @brief Special constructor for cub::CachingDeviceAllocator
+    /// @param max_cached_bytes
+    /// @tparam is_cub_allocator true
+    /// @return memory resource
+    template <bool is_cub_allocator = std::is_same<MemoryResource, cub::CachingDeviceAllocator>::value>
+    std::enable_if_t<is_cub_allocator, std::shared_ptr<MemoryResource>>
+    generate_memory_resource(size_t max_cached_bytes)
+    {
+        /// Smallest cached bin is 2^10 bytes, largest is 2^28 bytes. All allocation requests larger than 2^28 bytes are not fit in a bin and are not cached
+        return std::make_shared<cub::CachingDeviceAllocator>(2, 10, 28, max_cached_bytes, false, false);
+    }
+
+    /// @brief Constructor for all other memory resources
+    /// @param max_cached_bytes
+    /// @tparam is_cub_allocator false
+    /// @return memory resource
+    template <bool is_cub_allocator = std::is_same<MemoryResource, cub::CachingDeviceAllocator>::value>
+    std::enable_if_t<!is_cub_allocator, std::shared_ptr<MemoryResource>>
+    generate_memory_resource(size_t max_cached_bytes)
+    {
+        return std::make_shared<MemoryResource>(max_cached_bytes);
+    }
+
+    std::shared_ptr<MemoryResource> memory_resource_;
 };
 
-#ifdef CGA_ENABLE_ALLOCATOR
+//#ifdef CGA_ENABLE_ALLOCATOR
 /// Default device allocator do be used if CGA_ENABLE_ALLOCATOR is set
-using DefaultDeviceAllocator = CachingDeviceAllocator<char>;
-#else
+//using DefaultDeviceAllocator = CachingDeviceAllocator<char, cub::CachingDeviceAllocator>;
+using DefaultDeviceAllocator = CachingDeviceAllocator<char, DevicePreallocatedAllocator>;
+//#else
 /// Default device allocator do be used if CGA_ENABLE_ALLOCATOR is not set
-using DefaultDeviceAllocator = CudaMallocAllocator<char>;
-#endif
+//using DefaultDeviceAllocator = CudaMallocAllocator<char>;
+//#endif
 
 } // namespace claragenomics

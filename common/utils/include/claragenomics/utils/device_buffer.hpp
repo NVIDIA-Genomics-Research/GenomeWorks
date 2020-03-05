@@ -16,10 +16,11 @@ namespace claragenomics
 {
 
 template <typename T>
-#ifdef CGA_ENABLE_ALLOCATOR
-using device_buffer = buffer<T, CachingDeviceAllocator<T>>;
-#else
-using device_buffer = buffer<T, CudaMallocAllocator<T>>;
-#endif
+//#ifdef CGA_ENABLE_ALLOCATOR
+//using device_buffer = buffer<T, CachingDeviceAllocator<T, cub::CachingDeviceAllocator>>;
+using device_buffer = buffer<T, CachingDeviceAllocator<T, DevicePreallocatedAllocator>>;
+//#else
+//using device_buffer = buffer<T, CudaMallocAllocator<T>>;
+//#endif
 
 } // namespace claragenomics
