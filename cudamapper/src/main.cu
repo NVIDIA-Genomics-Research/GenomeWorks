@@ -270,7 +270,7 @@ int main(int argc, char* argv[])
 
 #ifdef CGA_ENABLE_CACHING_ALLOCATOR
     // uses CachingDeviceAllocator
-    auto max_cached_bytes = max_cached_memory * 1e9; // max_cached_memory is in GB
+    std::size_t max_cached_bytes = max_cached_memory * 1024ull * 1024ull * 1024ull; // max_cached_memory is in GiB
     claragenomics::DefaultDeviceAllocator allocator(max_cached_bytes);
 #else
     // uses CudaMallocAllocator
@@ -427,7 +427,7 @@ void help(int32_t exit_code = 0)
             number of indices to keep in host memory [0])"
               << R"(
         -m, --max-cached-memory
-            maximum aggregate cached memory per device in GB [1])"
+            maximum aggregate cached memory per device in GiB [1])"
               << R"(
         -i, --index-size
             length of batch size used for query in MB [30])"

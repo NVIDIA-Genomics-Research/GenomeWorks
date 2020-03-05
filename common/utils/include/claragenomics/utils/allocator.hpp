@@ -136,7 +136,7 @@ public:
 
     /// @brief Constructor
     /// @param max_cached_bytes max bytes used by memory resource (default is 1GiB)
-    CachingDeviceAllocator(size_t max_cached_bytes = 1024*1024*1024)
+    CachingDeviceAllocator(size_t max_cached_bytes = 1024 * 1024 * 1024)
         : memory_resource_(generate_memory_resource(max_cached_bytes))
     {
     }
