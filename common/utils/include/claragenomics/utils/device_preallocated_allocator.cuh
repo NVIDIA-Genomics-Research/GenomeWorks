@@ -10,6 +10,7 @@
 
 #pragma once
 
+#include <algorithm>
 #include <list>
 #include <memory>
 #include <mutex>
@@ -143,45 +144,46 @@ private:
         }
         assert((bytes_needed & 0xFF) == 0);
 
-        // ** look for first free block of this size
-        auto free_blocks_iter = std::begin(free_blocks_);
-        // as long as there is more free blocks loop over them until one of right size is found
-        while (free_blocks_iter != std::end(free_blocks_) && (*free_blocks_iter).size < bytes_needed)
-        {
-            std::advance(free_blocks_iter, 1);
-        }
+        // ** look for first free block that can fit requested size
+        auto block_to_get_memory_from_iter = std::find_if(std::begin(free_blocks_),
+                                                          std::end(free_blocks_),
+                                                          [bytes_needed](const MemoryBlock& memory_block) {
+                                                              return memory_block.size >= bytes_needed;
+                                                          });
 
-        if (free_blocks_iter == std::end(free_blocks_))
+        if (block_to_get_memory_from_iter == std::end(free_blocks_))
         {
             return cudaErrorMemoryAllocation;
         }
 
-        MemoryBlock new_memory_block{(*free_blocks_iter).begin,
+        MemoryBlock new_memory_block{(*block_to_get_memory_from_iter).begin,
                                      bytes_needed,
                                      associated_stream};
 
         // ** reduce the size of the block the memory is going to be taken from
-        if ((*free_blocks_iter).size == bytes_needed)
+        if ((*block_to_get_memory_from_iter).size == bytes_needed)
         {
             // this memory block is completely used, remove it
-            free_blocks_.erase(free_blocks_iter);
+            free_blocks_.erase(block_to_get_memory_from_iter);
         }
         else
         {
             // there will still be some memory left, update free block size
-            (*free_blocks_iter).begin += new_memory_block.size;
-            (*free_blocks_iter).size -= new_memory_block.size;
+            (*block_to_get_memory_from_iter).begin += new_memory_block.size;
+            (*block_to_get_memory_from_iter).size -= new_memory_block.size;
         }
 
         // ** add new used memory block to the list of used blocks
-        auto used_blocks_iter = std::begin(used_blocks_);
+
         // look for the block right after the block that is to be added
-        while (used_blocks_iter != std::end(used_blocks_) && (*used_blocks_iter).begin < new_memory_block.begin)
-        {
-            std::advance(used_blocks_iter, 1);
-        }
+        auto insert_used_block_before_iter = std::find_if(std::begin(used_blocks_),
+                                                          std::end(used_blocks_),
+                                                          [&new_memory_block](const MemoryBlock& memory_block) {
+                                                              return memory_block.begin > new_memory_block.begin;
+                                                          });
+
         // insert new block in the array
-        used_blocks_.insert(used_blocks_iter, new_memory_block);
+        used_blocks_.insert(insert_used_block_before_iter, new_memory_block);
 
         // set pointer to new location
         *ptr = static_cast<void*>(buffer_ptr_.get() + new_memory_block.begin);
@@ -199,31 +201,32 @@ private:
         assert(block_start < buffer_size_);
 
         // ** look for pointer's memory block
-        auto used_blocks_iter = std::begin(used_blocks_);
-        while (used_blocks_iter != std::end(used_blocks_) && (*used_blocks_iter).begin != block_start)
-        {
-            std::advance(used_blocks_iter, 1);
-        }
-        assert(used_blocks_iter != std::end(used_blocks_));
+        auto block_to_be_freed_iter = std::find_if(std::begin(used_blocks_),
+                                                   std::end(used_blocks_),
+                                                   [block_start](const MemoryBlock& memory_block) {
+                                                       return memory_block.begin == block_start;
+                                                   });
+        assert(block_to_be_freed_iter != std::end(used_blocks_));
 
         // ** wait for all work on associated_stream to finish before freeing up this memory block
-        CGA_CU_CHECK_ERR(cudaStreamSynchronize((*used_blocks_iter).associated_stream));
+        CGA_CU_CHECK_ERR(cudaStreamSynchronize((*block_to_be_freed_iter).associated_stream));
 
         // ** remove memory block from the list of used memory blocks
-        const size_t number_of_bytes = (*used_blocks_iter).size;
-        used_blocks_.erase(used_blocks_iter);
+        const size_t number_of_bytes = (*block_to_be_freed_iter).size;
+        used_blocks_.erase(block_to_be_freed_iter);
 
         // ** add the block back the list of free blocks (and merge with any neighbouring free blocks)
-        auto free_blocks_iter = std::begin(free_blocks_);
+
         // look for block immediately after the block that is to being freed
-        while (free_blocks_iter != std::end(free_blocks_) && (*free_blocks_iter).begin < block_start)
-        {
-            std::advance(free_blocks_iter, 1);
-        }
+        auto insert_free_block_before_iter = std::find_if(std::begin(free_blocks_),
+                                                          std::end(free_blocks_),
+                                                          [block_start](const MemoryBlock& memory_block) {
+                                                              return memory_block.begin > block_start;
+                                                          });
 
         // * find the left neighbor and remove it if it is going to be be merged
         MemoryBlock block_to_the_left;
-        if (std::begin(free_blocks_) == free_blocks_iter)
+        if (std::begin(free_blocks_) == insert_free_block_before_iter)
         {
             // no left neighbor, create a virtual empty neighbor
             block_to_the_left.begin = block_start;
@@ -231,12 +234,12 @@ private:
         }
         else
         {
-            block_to_the_left = *std::prev(free_blocks_iter);
+            block_to_the_left = *std::prev(insert_free_block_before_iter);
             assert(block_to_the_left.begin + block_to_the_left.size <= block_start);
             if (block_to_the_left.begin + block_to_the_left.size == block_start)
             {
                 // neighbor is "touching" this block and will be merged, remove it
-                free_blocks_.erase(std::prev(free_blocks_iter));
+                free_blocks_.erase(std::prev(insert_free_block_before_iter));
             }
             else
             {
@@ -248,7 +251,7 @@ private:
 
         // * find the right neighbor and remove if it is going to be be merged
         MemoryBlock block_to_the_right;
-        if (std::end(free_blocks_) == free_blocks_iter)
+        if (std::end(free_blocks_) == insert_free_block_before_iter)
         {
             // no neighbor to the right, create a virtual empty neighbor
             block_to_the_right.begin = block_start + number_of_bytes;
@@ -256,14 +259,14 @@ private:
         }
         else
         {
-            block_to_the_right = *free_blocks_iter;
+            block_to_the_right = *insert_free_block_before_iter;
             assert(block_start + number_of_bytes <= block_to_the_right.begin);
             if (block_start + number_of_bytes == block_to_the_right.begin)
             {
                 // neighbor is "touching" this block and will be merged, remove it
-                auto iter_past_right_neighbor = std::next(free_blocks_iter);
-                free_blocks_.erase(free_blocks_iter);
-                free_blocks_iter = iter_past_right_neighbor;
+                auto iter_past_right_neighbor = std::next(insert_free_block_before_iter);
+                free_blocks_.erase(insert_free_block_before_iter);
+                insert_free_block_before_iter = iter_past_right_neighbor;
             }
             else
             {
@@ -282,7 +285,7 @@ private:
         // should not be merged, number of elements in left and right neighbor otherwise
         new_memory_block.size = block_to_the_left.size + number_of_bytes + block_to_the_right.size;
 
-        free_blocks_.insert(free_blocks_iter, new_memory_block);
+        free_blocks_.insert(insert_free_block_before_iter, new_memory_block);
 
         return cudaSuccess;
     }
