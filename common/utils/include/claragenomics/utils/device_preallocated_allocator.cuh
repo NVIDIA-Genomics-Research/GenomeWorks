@@ -19,9 +19,9 @@
 namespace claragenomics
 {
 
-/// @brief Allocator that preallocates one big buffer of device memory and assigns sections of it to allocaiton requests
+/// @brief Allocator that preallocates one big buffer of device memory and assigns sections of it to allocation requests
 /// Allocator allocates one big buffer of device memory during constructor and keeps it until destruction.
-/// For every allocation request it linearly scans the preallocated memory and assigns first buffer of it that is bit enough.
+/// For every allocation request it linearly scans the preallocated memory and assigns first buffer of it that is big enough.
 ///
 /// For example imagine 100000 bytes buffer has been preallocated and that sections between (10000, 19999), (30000, 39999)
 /// and (60000, 79999) bytes have already been assigned:
@@ -221,7 +221,7 @@ private:
             std::advance(free_blocks_iter, 1);
         }
 
-        // * find the left neighbor and remove it if it is goint to be be merged
+        // * find the left neighbor and remove it if it is going to be be merged
         MemoryBlock block_to_the_left;
         if (std::begin(free_blocks_) == free_blocks_iter)
         {
@@ -246,7 +246,7 @@ private:
             }
         }
 
-        // * find the left neighbor and remove if it is going to be be merged
+        // * find the right neighbor and remove if it is going to be be merged
         MemoryBlock block_to_the_right;
         if (std::end(free_blocks_) == free_blocks_iter)
         {
