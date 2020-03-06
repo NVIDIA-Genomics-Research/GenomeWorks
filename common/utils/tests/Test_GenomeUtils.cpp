@@ -8,7 +8,7 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-#include <memory>
+#include <vector>
 #include <claragenomics/utils/genomeutils.hpp>
 
 #include "gtest/gtest.h"
@@ -22,10 +22,10 @@ namespace genomeutils
 TEST(GenomeUtilsTest, ReverseComplement)
 {
     std::string genome("ATCGAACGTATG");
-    std::unique_ptr<char[]> complement(new char[genome.length() + 1]);
-    complement.get()[genome.length()] = '\0';
-    reverse_complement(genome.c_str(), genome.length(), complement.get());
-    ASSERT_STREQ(complement.get(), "CATACGTTCGAT");
+    std::vector<char> complement(genome.size() + 1);
+    complement[genome.length()] = '\0';
+    reverse_complement(genome.c_str(), genome.length(), complement.data());
+    ASSERT_STREQ(complement.data(), "CATACGTTCGAT");
 }
 
 } // genomeutils
