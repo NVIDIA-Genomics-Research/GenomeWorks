@@ -84,7 +84,7 @@ public:
     }
 
     /// @brief deallocates memory (returns its part of buffer to the list of free parts)
-    /// This function blocks until all work on associated_stream_ is done
+    /// This function blocks until all work on associated_stream is done
     /// @param ptr
     /// @return error status
     cudaError_t DeviceFree(void* ptr)
@@ -98,11 +98,11 @@ private:
     struct MemoryBlock
     {
         // byte in buffer at which this block starts
-        size_t begin_;
+        size_t begin;
         // number of bytes in this block
-        size_t size_;
+        size_t size;
         // this block will get freed only once all work on this stream has finished
-        cudaStream_t associated_stream_;
+        cudaStream_t associated_stream;
     };
 
     /// @brief allocates the underlying buffer
@@ -146,7 +146,7 @@ private:
         // ** look for first free block of this size
         auto free_blocks_iter = std::begin(free_blocks_);
         // as long as there is more free blocks loop over them until one of right size is found
-        while (free_blocks_iter != std::end(free_blocks_) && (*free_blocks_iter).size_ < bytes_needed)
+        while (free_blocks_iter != std::end(free_blocks_) && (*free_blocks_iter).size < bytes_needed)
         {
             std::advance(free_blocks_iter, 1);
         }
@@ -156,12 +156,12 @@ private:
             return cudaErrorMemoryAllocation;
         }
 
-        MemoryBlock new_memory_block{(*free_blocks_iter).begin_,
+        MemoryBlock new_memory_block{(*free_blocks_iter).begin,
                                      bytes_needed,
                                      associated_stream};
 
         // ** reduce the size of the block the memory is going to be taken from
-        if ((*free_blocks_iter).size_ == bytes_needed)
+        if ((*free_blocks_iter).size == bytes_needed)
         {
             // this memory block is completely used, remove it
             free_blocks_.erase(free_blocks_iter);
@@ -169,14 +169,14 @@ private:
         else
         {
             // there will still be some memory left, update free block size
-            (*free_blocks_iter).begin_ += new_memory_block.size_;
-            (*free_blocks_iter).size_ -= new_memory_block.size_;
+            (*free_blocks_iter).begin += new_memory_block.size;
+            (*free_blocks_iter).size -= new_memory_block.size;
         }
 
         // ** add new used memory block to the list of used blocks
         auto used_blocks_iter = std::begin(used_blocks_);
         // look for the block right after the block that is to be added
-        while (used_blocks_iter != std::end(used_blocks_) && (*used_blocks_iter).begin_ < new_memory_block.begin_)
+        while (used_blocks_iter != std::end(used_blocks_) && (*used_blocks_iter).begin < new_memory_block.begin)
         {
             std::advance(used_blocks_iter, 1);
         }
@@ -184,12 +184,12 @@ private:
         used_blocks_.insert(used_blocks_iter, new_memory_block);
 
         // set pointer to new location
-        *ptr = static_cast<void*>(buffer_ptr_.get() + new_memory_block.begin_);
+        *ptr = static_cast<void*>(buffer_ptr_.get() + new_memory_block.begin);
         return cudaSuccess;
     }
 
     /// @brief returns the block starting at pointer
-    /// This function blocks until all work on associated_stream_ is done
+    /// This function blocks until all work on associated_stream is done
     /// @param pointer pointer at the begining of the block to be freed
     /// @return error status
     cudaError_t free_block(void* pointer)
@@ -200,23 +200,23 @@ private:
 
         // ** look for pointer's memory block
         auto used_blocks_iter = std::begin(used_blocks_);
-        while (used_blocks_iter != std::end(used_blocks_) && (*used_blocks_iter).begin_ != block_start)
+        while (used_blocks_iter != std::end(used_blocks_) && (*used_blocks_iter).begin != block_start)
         {
             std::advance(used_blocks_iter, 1);
         }
         assert(used_blocks_iter != std::end(used_blocks_));
 
-        // ** wait for all work on associated_stream_ to finish before freeing up this memory block
-        CGA_CU_CHECK_ERR(cudaStreamSynchronize((*used_blocks_iter).associated_stream_));
+        // ** wait for all work on associated_stream to finish before freeing up this memory block
+        CGA_CU_CHECK_ERR(cudaStreamSynchronize((*used_blocks_iter).associated_stream));
 
         // ** remove memory block from the list of used memory blocks
-        const size_t number_of_bytes = (*used_blocks_iter).size_;
+        const size_t number_of_bytes = (*used_blocks_iter).size;
         used_blocks_.erase(used_blocks_iter);
 
         // ** add the block back the list of free blocks (and merge with any neighbouring free blocks)
         auto free_blocks_iter = std::begin(free_blocks_);
         // look for block immediately after the block that is to being freed
-        while (free_blocks_iter != std::end(free_blocks_) && (*free_blocks_iter).begin_ < block_start)
+        while (free_blocks_iter != std::end(free_blocks_) && (*free_blocks_iter).begin < block_start)
         {
             std::advance(free_blocks_iter, 1);
         }
@@ -226,14 +226,14 @@ private:
         if (std::begin(free_blocks_) == free_blocks_iter)
         {
             // no left neighbor, create a virtual empty neighbor
-            block_to_the_left.begin_ = block_start;
-            block_to_the_left.size_  = 0;
+            block_to_the_left.begin = block_start;
+            block_to_the_left.size  = 0;
         }
         else
         {
             block_to_the_left = *std::prev(free_blocks_iter);
-            assert(block_to_the_left.begin_ + block_to_the_left.size_ <= block_start);
-            if (block_to_the_left.begin_ + block_to_the_left.size_ == block_start)
+            assert(block_to_the_left.begin + block_to_the_left.size <= block_start);
+            if (block_to_the_left.begin + block_to_the_left.size == block_start)
             {
                 // neighbor is "touching" this block and will be merged, remove it
                 free_blocks_.erase(std::prev(free_blocks_iter));
@@ -241,8 +241,8 @@ private:
             else
             {
                 // neighbor won't be merged, create a virtual empty neighbor
-                block_to_the_left.begin_ = block_start;
-                block_to_the_left.size_  = 0;
+                block_to_the_left.begin = block_start;
+                block_to_the_left.size  = 0;
             }
         }
 
@@ -251,14 +251,14 @@ private:
         if (std::end(free_blocks_) == free_blocks_iter)
         {
             // no neighbor to the right, create a virtual empty neighbor
-            block_to_the_right.begin_ = block_start + number_of_bytes;
-            block_to_the_right.size_  = 0;
+            block_to_the_right.begin = block_start + number_of_bytes;
+            block_to_the_right.size  = 0;
         }
         else
         {
             block_to_the_right = *free_blocks_iter;
-            assert(block_start + number_of_bytes <= block_to_the_right.begin_);
-            if (block_start + number_of_bytes == block_to_the_right.begin_)
+            assert(block_start + number_of_bytes <= block_to_the_right.begin);
+            if (block_start + number_of_bytes == block_to_the_right.begin)
             {
                 // neighbor is "touching" this block and will be merged, remove it
                 auto iter_past_right_neighbor = std::next(free_blocks_iter);
@@ -268,19 +268,19 @@ private:
             else
             {
                 // neighbor won't be merged, create a virtual empty neighbor
-                block_to_the_right.begin_ = block_start + number_of_bytes;
-                block_to_the_right.size_  = 0;
+                block_to_the_right.begin = block_start + number_of_bytes;
+                block_to_the_right.size  = 0;
             }
         }
 
         // create the new free memory block
         MemoryBlock new_memory_block;
-        // block_to_the_left.begin_ corresponds to begin_ of the newly freed block if the left
-        // neighbor should not be merged, begin_ of the actual left neighbor otherwise
-        new_memory_block.begin_ = block_to_the_left.begin_;
-        // block_to_the_left.size_ and block_to_the_right.size_ have value 0 if left and right neighbors
+        // block_to_the_left.begin corresponds to begin of the newly freed block if the left
+        // neighbor should not be merged, begin of the actual left neighbor otherwise
+        new_memory_block.begin = block_to_the_left.begin;
+        // block_to_the_left.size and block_to_the_right.size have value 0 if left and right neighbors
         // should not be merged, number of elements in left and right neighbor otherwise
-        new_memory_block.size_ = block_to_the_left.size_ + number_of_bytes + block_to_the_right.size_;
+        new_memory_block.size = block_to_the_left.size + number_of_bytes + block_to_the_right.size;
 
         free_blocks_.insert(free_blocks_iter, new_memory_block);
 
