@@ -38,7 +38,7 @@ static struct option options[] = {
     {"index-size", required_argument, 0, 'i'},
     {"target-index-size", required_argument, 0, 't'},
     {"filtering-parameter", required_argument, 0, 'F'},
-    {"alignment-batches", required_argument, 0, 'a'},
+    {"alignment-engines", required_argument, 0, 'a'},
     {"help", no_argument, 0, 'h'},
 };
 
@@ -59,7 +59,7 @@ int main(int argc, char* argv[])
     std::int32_t index_size                   = 30;  // i
     std::int32_t target_index_size            = 30;  // t
     double filtering_parameter                = 1.0; // F
-    std::int32_t alignment_batches            = 0;   // a
+    std::int32_t alignment_engines            = 0;   // a
     std::string optstring                     = "k:w:d:c:C:m:i:t:F:h:a:";
     int32_t argument                          = 0;
     while ((argument = getopt_long(argc, argv, optstring.c_str(), options, nullptr)) != -1)
@@ -94,8 +94,8 @@ int main(int argc, char* argv[])
             filtering_parameter = atof(optarg);
             break;
         case 'a':
-            alignment_batches = atoi(optarg);
-            claragenomics::throw_on_negative(alignment_batches, "Number of alignment batches should be non-negative");
+            alignment_engines = atoi(optarg);
+            claragenomics::throw_on_negative(alignment_engines, "Number of alignment engines should be non-negative");
             break;
         case 'h':
             help(0);
@@ -324,11 +324,11 @@ int main(int argc, char* argv[])
 
                 std::vector<std::string> cigar;
                 // Align overlaps
-                if (alignment_batches > 0)
+                if (alignment_engines > 0)
                 {
                     cigar.resize(overlaps_to_add->size());
                     CGA_NVTX_RANGE(profiler, "align_overlaps");
-                    claragenomics::cudamapper::Overlapper::Overlapper::align_overlaps(*overlaps_to_add, *query_parser, *target_parser, alignment_batches, cigar);
+                    claragenomics::cudamapper::Overlapper::Overlapper::align_overlaps(*overlaps_to_add, *query_parser, *target_parser, alignment_engines, cigar);
                 }
 
                 //Increment counter which tracks number of overlap chunks to be filtered and printed
@@ -455,8 +455,8 @@ void help(int32_t exit_code = 0)
         -F, --filtering-parameter
             filter all representations for which sketch_elements_with_that_representation/total_sketch_elements >= filtering_parameter), filtering disabled if filtering_parameter == 1.0 [1'000'000'001] (Min = 0.0, Max = 1.0))"
               << R"(
-        -a, --alignment_batches
-            Number of batches to use for generating CIGAR strings for overlap alignments. Default value 0 = no alignment to be performed.)"
+        -a, --alignment-engines
+            Number of alignment engines to use (per device) for generating CIGAR strings for overlap alignments. Default value 0 = no alignment to be performed. Typically 2-4 engines per device gives best perf.)"
               << std::endl;
 
     exit(exit_code);

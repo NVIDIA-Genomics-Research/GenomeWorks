@@ -122,7 +122,7 @@ void run_alignment_batch(std::mutex& overlap_idx_mtx,
 void Overlapper::align_overlaps(std::vector<Overlap>& overlaps,
                                 const claragenomics::io::FastaParser& query_parser,
                                 const claragenomics::io::FastaParser& target_parser,
-                                int32_t num_batches,
+                                int32_t num_alignment_engines,
                                 std::vector<std::string>& cigar)
 {
     // Calculate max target/query size in overlaps
@@ -145,15 +145,16 @@ void Overlapper::align_overlaps(std::vector<Overlap>& overlaps,
     size_t free, total;
     CGA_CU_CHECK_ERR(cudaMemGetInfo(&free, &total));
     const size_t max_alignments = (static_cast<float>(free) * 85 / 100) / memory_per_alignment; // Using 85% of available memory
-    int32_t batch_size          = std::min(get_size<int32_t>(overlaps), static_cast<int32_t>(max_alignments)) / num_batches;
+    int32_t batch_size          = std::min(get_size<int32_t>(overlaps), static_cast<int32_t>(max_alignments)) / num_alignment_engines;
     std::cerr << "Aligning " << overlaps.size() << " overlaps (" << max_query_size << "x" << max_target_size << ") with batch size " << batch_size << std::endl;
 
     int32_t overlap_idx = 0;
     std::mutex overlap_idx_mtx;
 
-    // Launch alignment function in separate threads
+    // Launch multiple alignment engines in separate threads to overlap D2H and H2D copies
+    // with compute from concurrent engines.
     std::vector<std::future<void>> align_futures;
-    for (int32_t t = 0; t < num_batches; t++)
+    for (int32_t t = 0; t < num_alignment_engines; t++)
     {
         align_futures.push_back(std::async(std::launch::async,
                                            &run_alignment_batch,
