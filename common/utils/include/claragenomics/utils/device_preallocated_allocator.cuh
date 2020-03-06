@@ -115,12 +115,7 @@ private:
         CGA_CU_CHECK_ERR(cudaMalloc(&ptr, buffer_size_));
         auto ret_val = std::unique_ptr<char, void (*)(char*)>(static_cast<char*>(ptr),
                                                               [](char* ptr) {
-                                                                  cudaError_t status = cudaFree(ptr);
-                                                                  if (cudaSuccess != status)
-                                                                  {
-                                                                      // TODO: Use CGA_CU_ABORT_ON_ERR
-                                                                      // destructor should not throw execeptions which is why CGA_CU_CHECK_ERR is not used.
-                                                                  }
+                                                                  CGA_CU_ABORT_ON_ERR(cudaFree(ptr));
                                                               });
         return ret_val;
     }

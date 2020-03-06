@@ -113,11 +113,7 @@ public:
     /// @param stream CUDA stream to be associated with this method.
     void deallocate(pointer p, std::size_t n, cudaStream_t stream = 0)
     {
-        cudaError_t status = cudaFree(p);
-        if (cudaSuccess != status)
-        {
-            // deallocate should not throw execeptions which is why CGA_CU_CHECK_ERR is not used.
-        }
+        CGA_CU_ABORT_ON_ERR(cudaFree(p));
     }
 };
 
