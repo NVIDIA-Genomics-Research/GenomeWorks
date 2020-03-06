@@ -66,11 +66,8 @@ public:
     DevicePreallocatedAllocator(DevicePreallocatedAllocator&&) = delete;
     DevicePreallocatedAllocator operator=(DevicePreallocatedAllocator&&) = delete;
 
-    /// @brief destructor
-    ~DevicePreallocatedAllocator()
-    {
-        // buffer_'s destructor deallocates device memory
-    }
+    ~DevicePreallocatedAllocator() = default;
+    // ^^^^ buffer_'s destructor deallocates device memory
 
     /// @brief allocates memory (assigns part of the buffer)
     /// Memory allocation is aligned by 256 bytes
