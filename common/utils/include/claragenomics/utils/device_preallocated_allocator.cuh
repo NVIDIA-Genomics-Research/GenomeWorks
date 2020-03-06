@@ -107,9 +107,10 @@ private:
 
     /// @brief allocates the underlying buffer
     /// @param buffer_size
+    /// @return allocated shared_ptr
     std::unique_ptr<char, void (*)(char*)> create_buffer(size_t buffer_size)
     {
-        // This is a separate function in order to ablle to use in constructor's initialization list
+        // shared_ptr creation packed in a function so it can be used in constructor's initilaization list
         void* ptr = nullptr;
         CGA_CU_CHECK_ERR(cudaMalloc(&ptr, buffer_size_));
         auto ret_val = std::unique_ptr<char, void (*)(char*)>(static_cast<char*>(ptr),
