@@ -61,7 +61,7 @@ AlignerGlobal::AlignerGlobal(int32_t max_query_length, int32_t max_target_length
     device_memset_async(result_lengths_d_, 0, stream);
 }
 
-StatusType AlignerGlobal::add_alignment(const char* query, int32_t query_length, const char* target, int32_t target_length, bool reverse_complement_target)
+StatusType AlignerGlobal::add_alignment(const char* query, int32_t query_length, const char* target, int32_t target_length, bool reverse_complement_query, bool reverse_complement_target)
 {
     if (query_length < 0 || target_length < 0)
     {
@@ -89,9 +89,17 @@ StatusType AlignerGlobal::add_alignment(const char* query, int32_t query_length,
         return StatusType::exceeded_max_length;
     }
 
-    memcpy(&sequences_h_[(2 * num_alignments) * max_alignment_length],
-           query,
-           sizeof(char) * query_length);
+    if (reverse_complement_query)
+    {
+        genomeutils::reverse_complement(query, query_length, &sequences_h_[(2 * num_alignments) * max_alignment_length]);
+    }
+    else
+    {
+        memcpy(&sequences_h_[(2 * num_alignments) * max_alignment_length],
+               query,
+               sizeof(char) * query_length);
+    }
+
     if (reverse_complement_target)
     {
         genomeutils::reverse_complement(target, target_length, &sequences_h_[(2 * num_alignments + 1) * max_alignment_length]);
@@ -106,9 +114,9 @@ StatusType AlignerGlobal::add_alignment(const char* query, int32_t query_length,
     sequence_lengths_h_[2 * num_alignments]     = query_length;
     sequence_lengths_h_[2 * num_alignments + 1] = target_length;
 
-    std::shared_ptr<AlignmentImpl> alignment = std::make_shared<AlignmentImpl>(query,
+    std::shared_ptr<AlignmentImpl> alignment = std::make_shared<AlignmentImpl>(&sequences_h_[(2 * num_alignments) * max_alignment_length],
                                                                                query_length,
-                                                                               target,
+                                                                               &sequences_h_[(2 * num_alignments + 1) * max_alignment_length],
                                                                                target_length);
     alignment->set_alignment_type(AlignmentType::global_alignment);
     alignments_.push_back(alignment);

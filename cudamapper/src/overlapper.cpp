@@ -117,7 +117,8 @@ void Overlapper::align_overlaps(std::vector<Overlap>& overlaps,
                 const int32_t query_length                    = overlap.query_end_position_in_read_ - overlap.query_start_position_in_read_;
                 const char* target_start                      = &target.seq[overlap.target_start_position_in_read_];
                 const int32_t target_length                   = overlap.target_end_position_in_read_ - overlap.target_start_position_in_read_;
-                claragenomics::cudaaligner::StatusType status = batch->add_alignment(query_start, query_length, target_start, target_length, overlap.relative_strand == RelativeStrand::Reverse);
+                claragenomics::cudaaligner::StatusType status = batch->add_alignment(query_start, query_length, target_start, target_length,
+                                                                                     false, overlap.relative_strand == RelativeStrand::Reverse);
                 if (status != claragenomics::cudaaligner::success)
                 {
                     throw std::runtime_error("Experienced error type " + std::to_string(status));

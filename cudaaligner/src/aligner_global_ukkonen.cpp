@@ -38,7 +38,7 @@ AlignerGlobalUkkonen::~AlignerGlobalUkkonen()
     // Keep empty destructor to keep batched_device_matrices type incomplete in the .hpp file.
 }
 
-StatusType AlignerGlobalUkkonen::add_alignment(const char* query, int32_t query_length, const char* target, int32_t target_length, bool reverse_complement_target)
+StatusType AlignerGlobalUkkonen::add_alignment(const char* query, int32_t query_length, const char* target, int32_t target_length, bool reverse_complement_query, bool reverse_complement_target)
 {
     int32_t const allocated_max_length_difference = this->get_max_target_length() * max_target_query_length_difference;
     if (std::abs(query_length - target_length) > allocated_max_length_difference)
@@ -47,7 +47,7 @@ StatusType AlignerGlobalUkkonen::add_alignment(const char* query, int32_t query_
         return StatusType::exceeded_max_alignment_difference;
     }
 
-    return BaseType::add_alignment(query, query_length, target, target_length, reverse_complement_target);
+    return BaseType::add_alignment(query, query_length, target, target_length, reverse_complement_query, reverse_complement_target);
 }
 
 void AlignerGlobalUkkonen::run_alignment(int8_t* results_d, int32_t* result_lengths_d, int32_t max_result_length,
