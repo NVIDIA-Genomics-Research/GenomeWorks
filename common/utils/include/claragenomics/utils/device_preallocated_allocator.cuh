@@ -297,9 +297,9 @@ private:
     /// (de)allocation mutex
     mutable std::mutex memory_operation_mutex_;
 
-    /// list of free block, sorted
+    /// list of free block, sorted by memory block beginning location
     std::list<MemoryBlock> free_blocks_;
-    /// list of block in use, sorted
+    /// list of block in use, sorted by memory block beginning location
     std::list<MemoryBlock> used_blocks_;
 };
 
