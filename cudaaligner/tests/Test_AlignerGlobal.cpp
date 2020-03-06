@@ -57,23 +57,23 @@ struct AlignerTestData
 TEST(TestCudaAligner, TestAlignmentAddition)
 {
     std::unique_ptr<AlignerGlobal> aligner = std::make_unique<AlignerGlobalUkkonen>(10, 10, 5, nullptr, 0);
-    ASSERT_EQ(StatusType::success, aligner->add_alignment("ATCG", 4, "TACG", 4));
-    ASSERT_EQ(StatusType::success, aligner->add_alignment("ATCG", 4, "TACG", 4));
-    ASSERT_EQ(StatusType::success, aligner->add_alignment("ATCG", 4, "TACG", 4));
+    ASSERT_EQ(StatusType::success, aligner->add_alignment("ATCG", 4, "TACG", 4, false, false));
+    ASSERT_EQ(StatusType::success, aligner->add_alignment("ATCG", 4, "TACG", 4, false, false));
+    ASSERT_EQ(StatusType::success, aligner->add_alignment("ATCG", 4, "TACG", 4, false, false));
 
     ASSERT_EQ(3, aligner->num_alignments());
 
-    ASSERT_EQ(StatusType::exceeded_max_length, aligner->add_alignment("ATCGATTACGC", 11, "TACGTACGGA", 10));
-    ASSERT_EQ(StatusType::exceeded_max_length, aligner->add_alignment("ATCGATTACG", 10, "ATACGTAGCGA", 11));
+    ASSERT_EQ(StatusType::exceeded_max_length, aligner->add_alignment("ATCGATTACGC", 11, "TACGTACGGA", 10, false, false));
+    ASSERT_EQ(StatusType::exceeded_max_length, aligner->add_alignment("ATCGATTACG", 10, "ATACGTAGCGA", 11, false, false));
 
     ASSERT_EQ(3, aligner->num_alignments());
 
-    ASSERT_EQ(StatusType::success, aligner->add_alignment("ATCG", 4, "TACG", 4));
-    ASSERT_EQ(StatusType::success, aligner->add_alignment("ATCG", 4, "TACG", 4));
+    ASSERT_EQ(StatusType::success, aligner->add_alignment("ATCG", 4, "TACG", 4, false, false));
+    ASSERT_EQ(StatusType::success, aligner->add_alignment("ATCG", 4, "TACG", 4, false, false));
 
     ASSERT_EQ(5, aligner->num_alignments());
 
-    ASSERT_EQ(StatusType::exceeded_max_alignments, aligner->add_alignment("ATCG", 4, "TACG", 4));
+    ASSERT_EQ(StatusType::exceeded_max_alignments, aligner->add_alignment("ATCG", 4, "TACG", 4, false, false));
 
     ASSERT_EQ(5, aligner->num_alignments());
 }

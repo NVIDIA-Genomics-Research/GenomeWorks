@@ -38,6 +38,7 @@ static struct option options[] = {
     {"index-size", required_argument, 0, 'i'},
     {"target-index-size", required_argument, 0, 't'},
     {"filtering-parameter", required_argument, 0, 'F'},
+    {"alignment-engines", required_argument, 0, 'a'},
     {"help", no_argument, 0, 'h'},
 };
 
@@ -58,7 +59,8 @@ int main(int argc, char* argv[])
     std::int32_t index_size                   = 30;  // i
     std::int32_t target_index_size            = 30;  // t
     double filtering_parameter                = 1.0; // F
-    std::string optstring                     = "k:w:d:c:C:m:i:t:F:h:";
+    std::int32_t alignment_engines            = 0;   // a
+    std::string optstring                     = "k:w:d:c:C:m:i:t:F:h:a:";
     int32_t argument                          = 0;
     while ((argument = getopt_long(argc, argv, optstring.c_str(), options, nullptr)) != -1)
     {
@@ -90,6 +92,10 @@ int main(int argc, char* argv[])
             break;
         case 'F':
             filtering_parameter = atof(optarg);
+            break;
+        case 'a':
+            alignment_engines = atoi(optarg);
+            claragenomics::throw_on_negative(alignment_engines, "Number of alignment engines should be non-negative");
             break;
         case 'h':
             help(0);
@@ -316,11 +322,21 @@ int main(int argc, char* argv[])
 
                 overlapper.get_overlaps(*overlaps_to_add, matcher->anchors(), 50);
 
+                std::vector<std::string> cigar;
+                // Align overlaps
+                if (alignment_engines > 0)
+                {
+                    cigar.resize(overlaps_to_add->size());
+                    CGA_NVTX_RANGE(profiler, "align_overlaps");
+                    claragenomics::cudamapper::Overlapper::Overlapper::align_overlaps(*overlaps_to_add, *query_parser, *target_parser, alignment_engines, cigar);
+                }
+
                 //Increment counter which tracks number of overlap chunks to be filtered and printed
                 num_overlap_chunks_to_print++;
                 auto print_overlaps = [&overlaps_writer_mtx, &num_overlap_chunks_to_print](std::shared_ptr<std::vector<claragenomics::cudamapper::Overlap>> filtered_overlaps,
                                                                                            std::shared_ptr<claragenomics::cudamapper::Index> query_index,
                                                                                            std::shared_ptr<claragenomics::cudamapper::Index> target_index,
+                                                                                           const std::vector<std::string>& cigar,
                                                                                            const int device_id) {
                     // This lambda is expected to run in a separate thread so set current device in order to avoid problems
                     // with deallocating indices with different current device then the one on which they were created
@@ -329,7 +345,7 @@ int main(int argc, char* argv[])
                     // parallel update of the query/target read names for filtered overlaps [parallel on host]
                     claragenomics::cudamapper::Overlapper::update_read_names(*filtered_overlaps, *query_index, *target_index);
                     std::lock_guard<std::mutex> lck(overlaps_writer_mtx);
-                    claragenomics::cudamapper::Overlapper::print_paf(*filtered_overlaps);
+                    claragenomics::cudamapper::Overlapper::print_paf(*filtered_overlaps, cigar);
 
                     //clear data
                     for (auto o : *filtered_overlaps)
@@ -340,9 +356,10 @@ int main(int argc, char* argv[])
                     num_overlap_chunks_to_print--;
                 };
 
-                std::thread t(print_overlaps, overlaps_to_add, query_index, target_index, device_id);
+                std::thread t(print_overlaps, overlaps_to_add, query_index, target_index, cigar, device_id);
                 t.detach();
             }
+
             // reseting the matcher releases the anchor device array back to memory pool
             matcher.reset();
         }
@@ -432,11 +449,14 @@ void help(int32_t exit_code = 0)
         -i, --index-size
             length of batch size used for query in MB [30])"
               << R"(
-        -t --target-index-size
+        -t, --target-index-size
             length of batch sized used for target in MB [30])"
               << R"(
-        -F --filtering-parameter
+        -F, --filtering-parameter
             filter all representations for which sketch_elements_with_that_representation/total_sketch_elements >= filtering_parameter), filtering disabled if filtering_parameter == 1.0 [1'000'000'001] (Min = 0.0, Max = 1.0))"
+              << R"(
+        -a, --alignment-engines
+            Number of alignment engines to use (per device) for generating CIGAR strings for overlap alignments. Default value 0 = no alignment to be performed. Typically 2-4 engines per device gives best perf.)"
               << std::endl;
 
     exit(exit_code);

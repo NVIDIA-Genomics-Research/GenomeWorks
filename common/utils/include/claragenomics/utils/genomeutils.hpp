@@ -103,6 +103,21 @@ inline std::vector<std::string> generate_random_sequences(std::string const& bac
     return sequences;
 }
 
+inline void reverse_complement(const char* src, const int32_t length, char* dest)
+{
+    for (int32_t pos = 0; pos < length; pos++)
+    {
+        switch (char nucleotide = src[length - 1 - pos])
+        {
+        case 'A': dest[pos] = 'T'; break;
+        case 'T': dest[pos] = 'A'; break;
+        case 'C': dest[pos] = 'G'; break;
+        case 'G': dest[pos] = 'C'; break;
+        default: dest[pos] = nucleotide;
+        }
+    }
+}
+
 } // namespace genomeutils
 
 } // namespace claragenomics
