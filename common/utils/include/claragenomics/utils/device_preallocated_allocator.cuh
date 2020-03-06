@@ -148,7 +148,7 @@ private:
             // bytes needed not divisible by 256, increase it to the next value divisible by 256
             bytes_needed = bytes_needed + (0x100 - bytes_needed & 0xFF);
         }
-        assert(bytes_needed & 0xFF == 0);
+        assert((bytes_needed & 0xFF) == 0);
 
         // ** look for first free block of this size
         auto free_blocks_iter = std::begin(free_blocks_);
