@@ -156,12 +156,12 @@ private:
             return cudaErrorMemoryAllocation;
         }
 
-        MemoryBlock new_memory_block{(*block_to_get_memory_from_iter).begin,
+        MemoryBlock new_memory_block{block_to_get_memory_from_iter->begin,
                                      bytes_needed,
                                      associated_stream};
 
         // ** reduce the size of the block the memory is going to be taken from
-        if ((*block_to_get_memory_from_iter).size == bytes_needed)
+        if (block_to_get_memory_from_iter->size == bytes_needed)
         {
             // this memory block is completely used, remove it
             free_blocks_.erase(block_to_get_memory_from_iter);
@@ -169,8 +169,8 @@ private:
         else
         {
             // there will still be some memory left, update free block size
-            (*block_to_get_memory_from_iter).begin += new_memory_block.size;
-            (*block_to_get_memory_from_iter).size -= new_memory_block.size;
+            block_to_get_memory_from_iter->begin += new_memory_block.size;
+            block_to_get_memory_from_iter->size -= new_memory_block.size;
         }
 
         // ** add new used memory block to the list of used blocks
@@ -209,10 +209,10 @@ private:
         assert(block_to_be_freed_iter != std::end(used_blocks_));
 
         // ** wait for all work on associated_stream to finish before freeing up this memory block
-        CGA_CU_CHECK_ERR(cudaStreamSynchronize((*block_to_be_freed_iter).associated_stream));
+        CGA_CU_CHECK_ERR(cudaStreamSynchronize(block_to_be_freed_iter->associated_stream));
 
         // ** remove memory block from the list of used memory blocks
-        const size_t number_of_bytes = (*block_to_be_freed_iter).size;
+        const size_t number_of_bytes = block_to_be_freed_iter->size;
         used_blocks_.erase(block_to_be_freed_iter);
 
         // ** add the block back the list of free blocks (and merge with any neighbouring free blocks)
