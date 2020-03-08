@@ -345,7 +345,7 @@ int main(int argc, char* argv[])
             }
             {
 
-                claragenomics::cudamapper::OverlapperTriggered overlapper(allocator);
+                claragenomics::cudamapper::OverlapperTriggered overlapper(allocator, cuda_stream);
                 CGA_NVTX_RANGE(profiler, "generate_overlaps");
 
                 // Get unfiltered overlaps
