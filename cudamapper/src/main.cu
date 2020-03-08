@@ -434,16 +434,23 @@ int main(int argc, char* argv[])
     }
 
     // Wait for all per-device threads to terminate
-    for (std::size_t device_id = 0; device_id < workers.size(); ++device_id)
+    for (auto& worker_thread : workers)
     {
-        workers[device_id].join();
-        cudaStreamDestroy(cuda_streams[device_id]);
+        worker_thread.join();
     }
 
     // Wait for all futures (for overlap writing) to return
     while (num_overlap_chunks_to_print != 0)
     {
         std::this_thread::sleep_for(std::chrono::milliseconds(200));
+    }
+
+    // streams can only be destroyed once all writer threads have finished as they hold references
+    // to indices which have device arrays associated with streams
+    for (cudaStream_t cuda_stream : cuda_streams)
+    {
+        CGA_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
+        CGA_CU_CHECK_ERR(cudaStreamDestroy(cuda_stream));
     }
 
     return 0;
