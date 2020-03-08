@@ -11,6 +11,8 @@
 #include "gtest/gtest.h"
 #include "../src/minimizer.hpp"
 
+#include <claragenomics/utils/cudautils.hpp>
+
 namespace claragenomics
 {
 namespace cudamapper
@@ -27,17 +29,21 @@ void test_function(const std::uint64_t number_of_reads_to_add,
                    const bool hash_minimizers)
 {
     DefaultDeviceAllocator allocator;
-    device_buffer<char> merged_basepairs_d(merged_basepairs_h.size(), allocator);
-    CGA_CU_CHECK_ERR(cudaMemcpy(merged_basepairs_d.data(),
-                                merged_basepairs_h.data(),
-                                merged_basepairs_h.size() * sizeof(char),
-                                cudaMemcpyHostToDevice));
 
-    device_buffer<ArrayBlock> read_id_to_basepairs_section_d(read_id_to_basepairs_section_h.size(), allocator);
-    CGA_CU_CHECK_ERR(cudaMemcpy(read_id_to_basepairs_section_d.data(),
-                                read_id_to_basepairs_section_h.data(),
-                                read_id_to_basepairs_section_h.size() * sizeof(ArrayBlock),
-                                cudaMemcpyHostToDevice));
+    cudaStream_t cuda_stream;
+    CGA_CU_CHECK_ERR(cudaStreamCreate(&cuda_stream));
+
+    device_buffer<char> merged_basepairs_d(merged_basepairs_h.size(), allocator, cuda_stream);
+    cudautils::device_copy_n(merged_basepairs_h.data(),
+                             merged_basepairs_h.size(),
+                             merged_basepairs_d.data(),
+                             cuda_stream);
+
+    device_buffer<ArrayBlock> read_id_to_basepairs_section_d(read_id_to_basepairs_section_h.size(), allocator, cuda_stream);
+    cudautils::device_copy_n(read_id_to_basepairs_section_h.data(),
+                             read_id_to_basepairs_section_h.size(),
+                             read_id_to_basepairs_section_d.data(),
+                             cuda_stream);
 
     auto sketch_elements = Minimizer::generate_sketch_elements(allocator,
                                                                number_of_reads_to_add,
@@ -47,21 +53,21 @@ void test_function(const std::uint64_t number_of_reads_to_add,
                                                                merged_basepairs_d,
                                                                read_id_to_basepairs_section_h,
                                                                read_id_to_basepairs_section_d,
-                                                               hash_minimizers);
+                                                               hash_minimizers,
+                                                               cuda_stream);
 
     device_buffer<representation_t> representations_d = std::move(sketch_elements.representations_d);
     std::vector<representation_t> representations_h(representations_d.size());
-    CGA_CU_CHECK_ERR(cudaMemcpy(representations_h.data(),
-                                representations_d.data(),
-                                representations_d.size() * sizeof(representation_t),
-                                cudaMemcpyDeviceToHost));
-
+    cudautils::device_copy_n(representations_d.data(),
+                             representations_d.size(),
+                             representations_h.data(),
+                             cuda_stream);
     device_buffer<Minimizer::ReadidPositionDirection> rest_d = std::move(sketch_elements.rest_d);
     std::vector<Minimizer::ReadidPositionDirection> rest_h(rest_d.size());
-    CGA_CU_CHECK_ERR(cudaMemcpy(rest_h.data(),
-                                rest_d.data(),
-                                rest_d.size() * sizeof(Minimizer::ReadidPositionDirection),
-                                cudaMemcpyDeviceToHost));
+    cudautils::device_copy_n(rest_d.data(),
+                             rest_d.size(),
+                             rest_h.data(), cuda_stream);
+    CGA_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
 
     ASSERT_EQ(expected_representations_h.size(), expected_rest_h.size());
     ASSERT_EQ(expected_representations_h.size(), representations_h.size());
@@ -74,6 +80,14 @@ void test_function(const std::uint64_t number_of_reads_to_add,
         EXPECT_EQ(expected_rest_h[i].position_in_read_, rest_h[i].position_in_read_) << "index: " << i;
         EXPECT_EQ(expected_rest_h[i].direction_, rest_h[i].direction_) << "index: " << i;
     }
+
+    merged_basepairs_d.free();
+    read_id_to_basepairs_section_d.free();
+    representations_d.free();
+    rest_d.free();
+
+    CGA_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
+    CGA_CU_CHECK_ERR(cudaStreamDestroy(cuda_stream));
 }
 
 TEST(TestCudamappperMinimizer, GATT_4_1)
