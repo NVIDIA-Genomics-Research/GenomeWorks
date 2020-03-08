@@ -204,7 +204,8 @@ int main(int argc, char* argv[])
                                                                                                                             const std::uint64_t w,
                                                                                                                             const int device_id,
                                                                                                                             const bool allow_cache_index,
-                                                                                                                            const double filtering_parameter) {
+                                                                                                                            const double filtering_parameter,
+                                                                                                                            const cudaStream_t cuda_stream) {
         CGA_NVTX_RANGE(profiler, "get index");
         std::pair<uint64_t, uint64_t> key;
         key.first  = start_index;
@@ -219,12 +220,21 @@ int main(int argc, char* argv[])
         }
         else if (host_index_cache.count(key))
         {
-            index = host_index_cache[key]->copy_index_to_device(allocator);
+            index = host_index_cache[key]->copy_index_to_device(allocator,
+                                                                cuda_stream);
         }
         else
         {
             //create an index, with hashed representations (minimizers)
-            index = std::move(claragenomics::cudamapper::Index::create_index(allocator, parser, start_index, end_index, k, w, true, filtering_parameter));
+            index = std::move(claragenomics::cudamapper::Index::create_index(allocator,
+                                                                             parser,
+                                                                             start_index,
+                                                                             end_index,
+                                                                             k,
+                                                                             w,
+                                                                             true, // hash_representations
+                                                                             filtering_parameter,
+                                                                             cuda_stream));
 
             // If in all-to-all mode, put this query in the cache for later use.
             // Cache eviction is handled later on by the calling thread
@@ -236,7 +246,11 @@ int main(int argc, char* argv[])
             else if (get_size<int32_t>(host_index_cache) < max_index_cache_size_on_host && allow_cache_index && device_id == 0)
             {
                 // if not cached on device, update host cache; only done on device 0 to avoid any race conditions in updating the host cache
-                host_index_cache[key] = std::move(claragenomics::cudamapper::IndexHostCopy::create_cache(*index, start_index, k, w));
+                host_index_cache[key] = std::move(claragenomics::cudamapper::IndexHostCopy::create_cache(*index,
+                                                                                                         start_index,
+                                                                                                         k,
+                                                                                                         w,
+                                                                                                         cuda_stream));
             }
         }
         return index;
@@ -277,7 +291,9 @@ int main(int argc, char* argv[])
     claragenomics::DefaultDeviceAllocator allocator;
 #endif
 
-    auto compute_overlaps = [&](const QueryTargetsRange& query_target_range, const int device_id) {
+    auto compute_overlaps = [&](const QueryTargetsRange& query_target_range,
+                                const int device_id,
+                                const cudaStream_t cuda_stream) {
         auto query_start_index = query_target_range.query_range.first;
         auto query_end_index   = query_target_range.query_range.second;
 
@@ -289,7 +305,16 @@ int main(int argc, char* argv[])
 
         {
             CGA_NVTX_RANGE(profiler, "generate_query_index");
-            query_index = get_index(allocator, *query_parser, query_start_index, query_end_index, k, w, device_id, all_to_all, filtering_parameter);
+            query_index = get_index(allocator,
+                                    *query_parser,
+                                    query_start_index,
+                                    query_end_index,
+                                    k,
+                                    w,
+                                    device_id,
+                                    all_to_all,
+                                    filtering_parameter,
+                                    cuda_stream);
         }
 
         //Main loop
@@ -300,7 +325,16 @@ int main(int argc, char* argv[])
             auto target_end_index   = target_range.second;
             {
                 CGA_NVTX_RANGE(profiler, "generate_target_index");
-                target_index = get_index(allocator, *target_parser, target_start_index, target_end_index, k, w, device_id, true, filtering_parameter);
+                target_index = get_index(allocator,
+                                         *target_parser,
+                                         target_start_index,
+                                         target_end_index,
+                                         k,
+                                         w,
+                                         device_id,
+                                         true,
+                                         filtering_parameter,
+                                         cuda_stream);
             }
             {
                 CGA_NVTX_RANGE(profiler, "generate_matcher");
@@ -362,12 +396,18 @@ int main(int argc, char* argv[])
     std::vector<std::thread> workers;
     std::atomic<int> ranges_idx(0);
 
+    // Each worker thread gets its own CUDA stream to work on. Currently there is only one worker thread per GPU,
+    // but it is still necessary assign streams to each of then explicitly. --default-stream per-thread could
+    // cause problems beacuse there are subthreads for worker threads
+    std::vector<cudaStream_t> cuda_streams(num_devices);
+
     // Launch worker threads to enable multi-GPU.
     // One worker thread is responsible for one GPU so the number
     // of worker threads launched is equal to the number of devices specified
     // by the user
-    for (int device_id = 0; device_id < num_devices; device_id++)
+    for (int device_id = 0; device_id < num_devices; ++device_id)
     {
+        CGA_CU_CHECK_ERR(cudaStreamCreate(&cuda_streams[device_id]));
         //Worker thread consumes query-target ranges off a queue
         workers.push_back(std::thread(
             [&, device_id]() {
@@ -382,18 +422,22 @@ int main(int argc, char* argv[])
                         //that device to compute the overlaps. It prints overlaps to stdout.
                         //since multiple worker threads are running stdout is guarded
                         //by a mutex (`std::mutex overlaps_writer_mtx`)
-                        compute_overlaps(query_target_ranges[range_idx], device_id);
+                        compute_overlaps(query_target_ranges[range_idx],
+                                         device_id,
+                                         cuda_streams[device_id]);
                     }
                 }
             }));
     }
 
     // Wait for all per-device threads to terminate
-    std::for_each(workers.begin(), workers.end(), [](std::thread& t) {
-        t.join();
-    });
+    for (std::size_t device_id = 0; device_id < workers.size(); ++device_id)
+    {
+        workers[device_id].join();
+        cudaStreamDestroy(cuda_streams[device_id]);
+    }
 
-    // Wait for all futures (for overlap filtering and writing) to return
+    // Wait for all futures (for overlap writing) to return
     while (num_overlap_chunks_to_print != 0)
     {
         std::this_thread::sleep_for(std::chrono::milliseconds(200));

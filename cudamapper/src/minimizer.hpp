@@ -80,6 +80,7 @@ public:
     /// \param read_id_to_basepairs_section_h for each read_id points to the section of merged_basepairs_d that belong to that read_id (host memory)
     /// \param read_id_to_basepairs_section_h for each read_id points to the section of merged_basepairs_d that belong to that read_id (device memory)
     /// \param hash_minimizers if true, apply a hash function to the representations
+    /// \param cuda_stream CUDA stream on which the work is to be done
     static GeneratedSketchElements generate_sketch_elements(DefaultDeviceAllocator allocator,
                                                             const std::uint64_t number_of_reads_to_add,
                                                             const std::uint64_t minimizer_size,
@@ -88,7 +89,8 @@ public:
                                                             const device_buffer<char>& merged_basepairs_d,
                                                             const std::vector<ArrayBlock>& read_id_to_basepairs_section_h,
                                                             const device_buffer<ArrayBlock>& read_id_to_basepairs_section_d,
-                                                            const bool hash_representations = true);
+                                                            const bool hash_representations = true,
+                                                            const cudaStream_t cuda_stream  = 0);
 
 private:
     representation_t representation_;

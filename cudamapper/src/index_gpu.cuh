@@ -52,7 +52,7 @@ template <typename SketchElementImpl>
 class IndexGPU : public Index
 {
 public:
-    /// \brief Constructor
+    /// \brief Constructor whcih constucts a new index
     ///
     /// \param parser parser for the whole input file (part that goes into this index is determined by first_read_id and past_the_last_read_id)
     /// \param first_read_id read_id of the first read to the included in this index
@@ -61,6 +61,7 @@ public:
     /// \param window_size w - the length of the sliding window used to find sketch elements (i.e. the number of adjacent k-mers in a window, adjacent = shifted by one basepair)
     /// \param hash_representations - if true, hash kmer representations
     /// \param filtering_parameter - filter out all representations for which number_of_sketch_elements_with_that_representation/total_skech_elements >= filtering_parameter, filtering_parameter == 1.0 disables filtering
+    /// \param cuda_stream CUDA stream on which the work is to be done. Device arrays are also associated with this stream and will not be freed at least until all work issued on this stream before calling their destructor is done
     IndexGPU(DefaultDeviceAllocator allocator,
              const io::FastaParser& parser,
              const read_id_t first_read_id,
@@ -68,14 +69,17 @@ public:
              const std::uint64_t kmer_size,
              const std::uint64_t window_size,
              const bool hash_representations  = true,
-             const double filtering_parameter = 1.0);
+             const double filtering_parameter = 1.0,
+             const cudaStream_t cuda_stream   = 0);
 
-    /// \brief Constructor
+    /// \brief Constructor which copies the index from host copy
     ///
     /// \param allocator is pointer to asynchronous device allocator
     /// \param host_cache is a copy of index for a set of reads which has been previously computed and stored on the host.
+    /// \param cuda_stream CUDA stream on which the work is to be done. Device arrays are also associated with this stream and will not be freed at least until all work issued on this stream before calling their destructor is done
     IndexGPU(DefaultDeviceAllocator allocator,
-             const HostCache& host_cache);
+             const HostCache& host_cache,
+             const cudaStream_t cuda_stream = 0);
 
     /// \brief returns an array of representations of sketch elements
     /// \return an array of representations of sketch elements
@@ -161,6 +165,9 @@ private:
     read_id_t number_of_reads_                              = 0;
     position_in_read_t number_of_basepairs_in_longest_read_ = 0;
 
+    // CUDA stream on which the work is to be done and device arrays are to be associated with
+    cudaStream_t cuda_stream_;
+
     DefaultDeviceAllocator allocator_;
 };
 
@@ -185,9 +192,11 @@ namespace index_gpu
 /// \param unique_representations_d empty on input, contains one value of each representation on the output
 /// \param first_occurrence_index_d empty on input, index of first occurrence of each representation and additional elemnt on the output
 /// \param input_representations_d an array of representaton where representations with the same value stand next to each other
+/// \param cuda_stream CUDA stream on which the work is to be done
 void find_first_occurrences_of_representations(DefaultDeviceAllocator allocator, device_buffer<representation_t>& unique_representations_d,
                                                device_buffer<std::uint32_t>& first_occurrence_index_d,
-                                               const device_buffer<representation_t>& input_representations_d);
+                                               const device_buffer<representation_t>& input_representations_d,
+                                               const cudaStream_t cuda_stream = 0);
 
 /// \brief Helper kernel for find_first_occurrences_of_representations
 ///
@@ -309,7 +318,6 @@ __global__ void compress_unique_representations_after_filtering_kernel(const std
 /// \param read_ids_after_compression_d
 /// \param positions_in_reads_after_compression_d
 /// \param directions_of_representations_after_compression_d
-///
 /// \tparam DirectionOfRepresentation any implementation of SketchElementImpl::SketchElementImpl::DirectionOfRepresentation
 template <typename DirectionOfRepresentation>
 __global__ void compress_data_arrays_after_filtering_kernel(const std::uint64_t number_of_unique_representations,
@@ -394,7 +402,7 @@ __global__ void compress_data_arrays_after_filtering_kernel(const std::uint64_t 
 /// \param directions_of_representations_d original values on input, filtered on output
 /// \param unique_representation_d original values on input, filtered on output
 /// \param first_occurrence_of_representations_d original values on input, filtered on output
-///
+/// \param cuda_stream CUDA stream on which the work is to be done
 /// \tparam DirectionOfRepresentation any implementation of SketchElementImpl::SketchElementImpl::DirectionOfRepresentation
 template <typename DirectionOfRepresentation>
 void filter_out_most_common_representations(DefaultDeviceAllocator allocator,
@@ -404,23 +412,24 @@ void filter_out_most_common_representations(DefaultDeviceAllocator allocator,
                                             device_buffer<position_in_read_t>& positions_in_reads_d,
                                             device_buffer<DirectionOfRepresentation>& directions_of_representations_d,
                                             device_buffer<representation_t>& unique_representations_d,
-                                            device_buffer<std::uint32_t>& first_occurrence_of_representations_d)
+                                            device_buffer<std::uint32_t>& first_occurrence_of_representations_d,
+                                            const cudaStream_t cuda_stream = 0)
 {
     // *** find the number of sketch_elements for every representation ***
     // 0  2  4  8 14 17 20 <- first_occurrence_of_representations_d (before filtering)
     // 2  2  4  6  3  3  0 <- number_of_sketch_elements_with_each_representation_d (with additional 0 at the end)
 
     const std::uint32_t zero = 0;
-    device_buffer<std::uint32_t> number_of_sketch_elements_with_each_representation_d(first_occurrence_of_representations_d.size(), allocator);
-    cudautils::set_device_value(number_of_sketch_elements_with_each_representation_d.end() - 1, zero); // H2D
+    device_buffer<std::uint32_t> number_of_sketch_elements_with_each_representation_d(first_occurrence_of_representations_d.size(), allocator, cuda_stream);
+    cudautils::set_device_value_async(number_of_sketch_elements_with_each_representation_d.end() - 1, &zero, cuda_stream); // H2D
 
     // thrust::adjacent_difference saves a[i]-a[i-1] to a[i]. As first_occurrence_of_representations_d starts with 0
     // we actually want to save a[i]-a[i-1] to a[i-j] and have the last (aditional) element of number_of_sketch_elements_with_each_representation_d set to 0
-    thrust::adjacent_difference(thrust::cuda::par(allocator),
+    thrust::adjacent_difference(thrust::cuda::par(allocator).on(cuda_stream),
                                 std::next(std::begin(first_occurrence_of_representations_d)),
                                 std::end(first_occurrence_of_representations_d),
                                 std::begin(number_of_sketch_elements_with_each_representation_d));
-    cudautils::set_device_value(number_of_sketch_elements_with_each_representation_d.end() - 1, zero); // H2D
+    cudautils::set_device_value_async(number_of_sketch_elements_with_each_representation_d.end() - 1, &zero, cuda_stream); // H2D
 
     // *** find filtering threshold ***
     const std::size_t total_sketch_elements = representations_d.size();
@@ -433,7 +442,7 @@ void filter_out_most_common_representations(DefaultDeviceAllocator allocator,
     // 2  2  0  0  3  3  0 <- number_of_sketch_elements_with_each_representation_d (after filtering)
 
     thrust::replace_if(
-        thrust::cuda::par(allocator),
+        thrust::cuda::par(allocator).on(cuda_stream),
         std::begin(number_of_sketch_elements_with_each_representation_d),
         std::prev(std::end(number_of_sketch_elements_with_each_representation_d)), // don't process the last element, it should remain 0
         [filtering_threshold] __device__(const std::uint32_t val) {
@@ -445,8 +454,8 @@ void filter_out_most_common_representations(DefaultDeviceAllocator allocator,
     // If a representation is to be filtered out its value is the same to the value to its left
     // 2  2  0  0  3  3  0 <- number_of_sketch_elements_with_each_representation_d (after filtering)
     // 0  2  4  4  4  7 10 <- first_occurrence_of_representation_after_filtering_d
-    device_buffer<std::uint32_t> first_occurrence_of_representation_after_filtering_d(number_of_sketch_elements_with_each_representation_d.size(), allocator);
-    thrust::exclusive_scan(thrust::cuda::par(allocator),
+    device_buffer<std::uint32_t> first_occurrence_of_representation_after_filtering_d(number_of_sketch_elements_with_each_representation_d.size(), allocator, cuda_stream);
+    thrust::exclusive_scan(thrust::cuda::par(allocator).on(cuda_stream),
                            std::begin(number_of_sketch_elements_with_each_representation_d),
                            std::end(number_of_sketch_elements_with_each_representation_d),
                            std::begin(first_occurrence_of_representation_after_filtering_d));
@@ -460,13 +469,13 @@ void filter_out_most_common_representations(DefaultDeviceAllocator allocator,
     // 0  1  2  2  2  3  4 <- unique_representation_index_after_filtering_d
 
     const std::int64_t number_of_unique_representations = get_size(unique_representations_d);
-    device_buffer<std::uint32_t> unique_representation_index_after_filtering_d(number_of_unique_representations + 1, allocator);
+    device_buffer<std::uint32_t> unique_representation_index_after_filtering_d(number_of_unique_representations + 1, allocator, cuda_stream);
 
     {
         // direct pointer needed as device_vector::operator[] is a host function and it would be called from device lambda
         const std::uint32_t* const number_of_sketch_elements_with_each_representation_d_ptr = number_of_sketch_elements_with_each_representation_d.data();
         thrust::transform_exclusive_scan(
-            thrust::cuda::par(allocator),
+            thrust::cuda::par(allocator).on(cuda_stream),
             thrust::make_counting_iterator(std::int64_t(0)),
             thrust::make_counting_iterator(number_of_unique_representations + 1),
             std::begin(unique_representation_index_after_filtering_d),
@@ -487,21 +496,21 @@ void filter_out_most_common_representations(DefaultDeviceAllocator allocator,
     // 0  2  4  4  4  7 10 <- first_occurrence_of_representation_after_filtering_d
     // 0  2  4  7 10       <- first_occurrence_of_representations_after_compression_d
 
-    const std::uint32_t number_of_unique_representations_after_compression = cudautils::get_value_from_device(unique_representation_index_after_filtering_d.end() - 1); //D2H
+    const std::uint32_t number_of_unique_representations_after_compression = cudautils::get_value_from_device(unique_representation_index_after_filtering_d.end() - 1, cuda_stream); //D2H
 
-    device_buffer<representation_t> unique_representations_after_compression_d(number_of_unique_representations_after_compression, allocator);
-    device_buffer<std::uint32_t> first_occurrence_of_representations_after_compression_d(number_of_unique_representations_after_compression + 1, allocator);
+    device_buffer<representation_t> unique_representations_after_compression_d(number_of_unique_representations_after_compression, allocator, cuda_stream);
+    device_buffer<std::uint32_t> first_occurrence_of_representations_after_compression_d(number_of_unique_representations_after_compression + 1, allocator, cuda_stream);
 
     std::int32_t number_of_threads = 128;
     std::int32_t number_of_blocks  = ceiling_divide<std::int64_t>(first_occurrence_of_representations_d.size(),
                                                                  number_of_threads);
 
-    compress_unique_representations_after_filtering_kernel<<<number_of_blocks, number_of_threads>>>(unique_representations_d.size(),
-                                                                                                    unique_representations_d.data(),
-                                                                                                    first_occurrence_of_representation_after_filtering_d.data(),
-                                                                                                    unique_representation_index_after_filtering_d.data(),
-                                                                                                    unique_representations_after_compression_d.data(),
-                                                                                                    first_occurrence_of_representations_after_compression_d.data());
+    compress_unique_representations_after_filtering_kernel<<<number_of_blocks, number_of_threads, 0, cuda_stream>>>(unique_representations_d.size(),
+                                                                                                                    unique_representations_d.data(),
+                                                                                                                    first_occurrence_of_representation_after_filtering_d.data(),
+                                                                                                                    unique_representation_index_after_filtering_d.data(),
+                                                                                                                    unique_representations_after_compression_d.data(),
+                                                                                                                    first_occurrence_of_representations_after_compression_d.data());
 
     // *** remove filtered out elements (compress) from other data arrays ***
 
@@ -514,28 +523,28 @@ void filter_out_most_common_representations(DefaultDeviceAllocator allocator,
     // 0  0  1  1  4  7  3  7  8  9 <- positions_in_reads_after_filtering_d
     // F  F  F  F  F  R  R  F  F  F <- directions_of_reads_after_filtering_d
 
-    std::uint32_t number_of_sketch_elements_after_compression = cudautils::get_value_from_device(first_occurrence_of_representations_after_compression_d.end() - 1); // D2H
+    std::uint32_t number_of_sketch_elements_after_compression = cudautils::get_value_from_device(first_occurrence_of_representations_after_compression_d.end() - 1, cuda_stream); // D2H
 
-    device_buffer<representation_t> representations_after_compression_d(number_of_sketch_elements_after_compression, allocator);
-    device_buffer<read_id_t> read_ids_after_compression_d(number_of_sketch_elements_after_compression, allocator);
-    device_buffer<position_in_read_t> positions_in_reads_after_compression_d(number_of_sketch_elements_after_compression, allocator);
-    device_buffer<DirectionOfRepresentation> directions_of_representations_after_compression_d(number_of_sketch_elements_after_compression, allocator);
+    device_buffer<representation_t> representations_after_compression_d(number_of_sketch_elements_after_compression, allocator, cuda_stream);
+    device_buffer<read_id_t> read_ids_after_compression_d(number_of_sketch_elements_after_compression, allocator, cuda_stream);
+    device_buffer<position_in_read_t> positions_in_reads_after_compression_d(number_of_sketch_elements_after_compression, allocator, cuda_stream);
+    device_buffer<DirectionOfRepresentation> directions_of_representations_after_compression_d(number_of_sketch_elements_after_compression, allocator, cuda_stream);
 
     number_of_threads = 32;
     number_of_blocks  = unique_representations_d.size();
-    compress_data_arrays_after_filtering_kernel<<<number_of_blocks, number_of_threads>>>(unique_representations_d.size(),
-                                                                                         number_of_sketch_elements_with_each_representation_d.data(),
-                                                                                         first_occurrence_of_representations_d.data(),
-                                                                                         first_occurrence_of_representations_after_compression_d.data(),
-                                                                                         unique_representation_index_after_filtering_d.data(),
-                                                                                         representations_d.data(),
-                                                                                         read_ids_d.data(),
-                                                                                         positions_in_reads_d.data(),
-                                                                                         directions_of_representations_d.data(),
-                                                                                         representations_after_compression_d.data(),
-                                                                                         read_ids_after_compression_d.data(),
-                                                                                         positions_in_reads_after_compression_d.data(),
-                                                                                         directions_of_representations_after_compression_d.data());
+    compress_data_arrays_after_filtering_kernel<<<number_of_blocks, number_of_threads, 0, cuda_stream>>>(unique_representations_d.size(),
+                                                                                                         number_of_sketch_elements_with_each_representation_d.data(),
+                                                                                                         first_occurrence_of_representations_d.data(),
+                                                                                                         first_occurrence_of_representations_after_compression_d.data(),
+                                                                                                         unique_representation_index_after_filtering_d.data(),
+                                                                                                         representations_d.data(),
+                                                                                                         read_ids_d.data(),
+                                                                                                         positions_in_reads_d.data(),
+                                                                                                         directions_of_representations_d.data(),
+                                                                                                         representations_after_compression_d.data(),
+                                                                                                         read_ids_after_compression_d.data(),
+                                                                                                         positions_in_reads_after_compression_d.data(),
+                                                                                                         directions_of_representations_after_compression_d.data());
 
     // *** swap vectors with the input arrays ***
     swap(unique_representations_d, unique_representations_after_compression_d);
@@ -557,7 +566,8 @@ IndexGPU<SketchElementImpl>::IndexGPU(DefaultDeviceAllocator allocator,
                                       const std::uint64_t kmer_size,
                                       const std::uint64_t window_size,
                                       const bool hash_representations,
-                                      const double filtering_parameter)
+                                      const double filtering_parameter,
+                                      const cudaStream_t cuda_stream)
     : first_read_id_(first_read_id)
     , kmer_size_(kmer_size)
     , window_size_(window_size)
@@ -570,17 +580,23 @@ IndexGPU<SketchElementImpl>::IndexGPU(DefaultDeviceAllocator allocator,
     , directions_of_reads_d_(allocator)
     , unique_representations_d_(allocator)
     , first_occurrence_of_representations_d_(allocator)
+    , cuda_stream_(cuda_stream)
 {
     generate_index(parser,
                    first_read_id_,
                    past_the_last_read_id,
                    hash_representations,
                    filtering_parameter);
+
+    // This is not completely necessary, but if removed one has to make sure that the next step
+    // uses the same stream or that sync is done in caller
+    CGA_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream_));
 }
 
 template <typename SketchElementImpl>
 IndexGPU<SketchElementImpl>::IndexGPU(DefaultDeviceAllocator allocator,
-                                      const HostCache& host_cache)
+                                      const HostCache& host_cache,
+                                      const cudaStream_t cuda_stream)
     : first_read_id_(host_cache.first_read_id())
     , kmer_size_(host_cache.kmer_size())
     , window_size_(host_cache.window_size())
@@ -591,6 +607,7 @@ IndexGPU<SketchElementImpl>::IndexGPU(DefaultDeviceAllocator allocator,
     , directions_of_reads_d_(allocator)
     , unique_representations_d_(allocator)
     , first_occurrence_of_representations_d_(allocator)
+    , cuda_stream_(cuda_stream)
 {
     number_of_reads_                     = host_cache.number_of_reads();
     number_of_basepairs_in_longest_read_ = host_cache.number_of_basepairs_in_longest_read();
@@ -598,35 +615,39 @@ IndexGPU<SketchElementImpl>::IndexGPU(DefaultDeviceAllocator allocator,
     //H2D- representations_d_ = host_cache.representations();
     representations_d_.resize(host_cache.representations().size());
     representations_d_.shrink_to_fit();
-    cudautils::device_copy_n(host_cache.representations().data(), host_cache.representations().size(), representations_d_.data());
+    cudautils::device_copy_n(host_cache.representations().data(), host_cache.representations().size(), representations_d_.data(), cuda_stream);
 
     //H2D- read_ids_d_ = host_cache.read_ids();
     read_ids_d_.resize(host_cache.read_ids().size());
     read_ids_d_.shrink_to_fit();
-    cudautils::device_copy_n(host_cache.read_ids().data(), host_cache.read_ids().size(), read_ids_d_.data());
+    cudautils::device_copy_n(host_cache.read_ids().data(), host_cache.read_ids().size(), read_ids_d_.data(), cuda_stream);
 
     //H2D- positions_in_reads_d_ = host_cache.positions_in_reads();
     positions_in_reads_d_.resize(host_cache.positions_in_reads().size());
     positions_in_reads_d_.shrink_to_fit();
-    cudautils::device_copy_n(host_cache.positions_in_reads().data(), host_cache.positions_in_reads().size(), positions_in_reads_d_.data());
+    cudautils::device_copy_n(host_cache.positions_in_reads().data(), host_cache.positions_in_reads().size(), positions_in_reads_d_.data(), cuda_stream);
 
     //H2D- directions_of_reads_d_ = host_cache.directions_of_reads();
     directions_of_reads_d_.resize(host_cache.directions_of_reads().size());
     directions_of_reads_d_.shrink_to_fit();
-    cudautils::device_copy_n(host_cache.directions_of_reads().data(), host_cache.directions_of_reads().size(), directions_of_reads_d_.data());
+    cudautils::device_copy_n(host_cache.directions_of_reads().data(), host_cache.directions_of_reads().size(), directions_of_reads_d_.data(), cuda_stream);
 
     //H2D- unique_representations_d_ = host_cache.unique_representations();
     unique_representations_d_.resize(host_cache.unique_representations().size());
     unique_representations_d_.shrink_to_fit();
-    cudautils::device_copy_n(host_cache.unique_representations().data(), host_cache.unique_representations().size(), unique_representations_d_.data());
+    cudautils::device_copy_n(host_cache.unique_representations().data(), host_cache.unique_representations().size(), unique_representations_d_.data(), cuda_stream);
 
     //H2D- first_occurrence_of_representations_d_ = host_cache.first_occurrence_of_representations();
     first_occurrence_of_representations_d_.resize(host_cache.first_occurrence_of_representations().size());
     first_occurrence_of_representations_d_.shrink_to_fit();
-    cudautils::device_copy_n(host_cache.first_occurrence_of_representations().data(), host_cache.first_occurrence_of_representations().size(), first_occurrence_of_representations_d_.data());
+    cudautils::device_copy_n(host_cache.first_occurrence_of_representations().data(), host_cache.first_occurrence_of_representations().size(), first_occurrence_of_representations_d_.data(), cuda_stream);
 
     read_id_to_read_name_   = host_cache.read_id_to_read_names();   //H2H
     read_id_to_read_length_ = host_cache.read_id_to_read_lengths(); //H2H
+
+    // This is not completely necessary, but if removed one has to make sure that the next step
+    // uses the same stream or that sync is done in caller
+    CGA_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream_));
 }
 
 template <typename SketchElementImpl>
@@ -788,19 +809,18 @@ void IndexGPU<SketchElementImpl>::generate_index(const io::FastaParser& parser,
 
     // move basepairs to the device
     CGA_LOG_INFO("Allocating {} bytes for read_id_to_basepairs_section_d", read_id_to_basepairs_section_h.size() * sizeof(decltype(read_id_to_basepairs_section_h)::value_type));
-    device_buffer<decltype(read_id_to_basepairs_section_h)::value_type> read_id_to_basepairs_section_d(read_id_to_basepairs_section_h.size(), allocator_);
-
-    CGA_CU_CHECK_ERR(cudaMemcpy(read_id_to_basepairs_section_d.data(),
-                                read_id_to_basepairs_section_h.data(),
-                                read_id_to_basepairs_section_h.size() * sizeof(decltype(read_id_to_basepairs_section_h)::value_type),
-                                cudaMemcpyHostToDevice));
+    device_buffer<decltype(read_id_to_basepairs_section_h)::value_type> read_id_to_basepairs_section_d(read_id_to_basepairs_section_h.size(), allocator_, cuda_stream_);
+    cudautils::device_copy_n(read_id_to_basepairs_section_h.data(),
+                             read_id_to_basepairs_section_h.size(),
+                             read_id_to_basepairs_section_d.data(),
+                             cuda_stream_); // H2D
 
     CGA_LOG_INFO("Allocating {} bytes for merged_basepairs_d", merged_basepairs_h.size() * sizeof(decltype(merged_basepairs_h)::value_type));
-    device_buffer<decltype(merged_basepairs_h)::value_type> merged_basepairs_d(merged_basepairs_h.size(), allocator_);
-    CGA_CU_CHECK_ERR(cudaMemcpy(merged_basepairs_d.data(),
-                                merged_basepairs_h.data(),
-                                merged_basepairs_h.size() * sizeof(decltype(merged_basepairs_h)::value_type),
-                                cudaMemcpyHostToDevice));
+    device_buffer<decltype(merged_basepairs_h)::value_type> merged_basepairs_d(merged_basepairs_h.size(), allocator_, cuda_stream_);
+    cudautils::device_copy_n(merged_basepairs_h.data(),
+                             merged_basepairs_h.size(),
+                             merged_basepairs_d.data(),
+                             cuda_stream_); // H2D
     merged_basepairs_h.clear();
     merged_basepairs_h.shrink_to_fit();
 
@@ -813,7 +833,8 @@ void IndexGPU<SketchElementImpl>::generate_index(const io::FastaParser& parser,
                                                                        merged_basepairs_d,
                                                                        read_id_to_basepairs_section_h,
                                                                        read_id_to_basepairs_section_d,
-                                                                       hash_representations);
+                                                                       hash_representations,
+                                                                       cuda_stream_);
 
     device_buffer<representation_t> generated_representations_d                         = std::move(sketch_elements.representations_d);
     device_buffer<typename SketchElementImpl::ReadidPositionDirection> generated_rest_d = std::move(sketch_elements.rest_d);
@@ -829,7 +850,7 @@ void IndexGPU<SketchElementImpl>::generate_index(const io::FastaParser& parser,
     // *** sort sketch elements by representation ***
     // As this is a stable sort and the data was initailly grouper by read_id this means that the sketch elements within each representations are sorted by read_id
     // TODO: consider using a CUB radix sort based function here
-    thrust::stable_sort_by_key(thrust::cuda::par(allocator_),
+    thrust::stable_sort_by_key(thrust::cuda::par(allocator_).on(cuda_stream_),
                                std::begin(generated_representations_d),
                                std::end(generated_representations_d),
                                std::begin(generated_rest_d));
@@ -846,17 +867,18 @@ void IndexGPU<SketchElementImpl>::generate_index(const io::FastaParser& parser,
     const std::uint32_t threads = 256;
     const std::uint32_t blocks  = ceiling_divide<int64_t>(representations_d_.size(), threads);
 
-    details::index_gpu::copy_rest_to_separate_arrays<<<blocks, threads>>>(generated_rest_d.data(),
-                                                                          read_ids_d_.data(),
-                                                                          positions_in_reads_d_.data(),
-                                                                          directions_of_reads_d_.data(),
-                                                                          representations_d_.size());
+    details::index_gpu::copy_rest_to_separate_arrays<<<blocks, threads, 0, cuda_stream_>>>(generated_rest_d.data(),
+                                                                                           read_ids_d_.data(),
+                                                                                           positions_in_reads_d_.data(),
+                                                                                           directions_of_reads_d_.data(),
+                                                                                           representations_d_.size());
 
     // now generate the index elements
     details::index_gpu::find_first_occurrences_of_representations(allocator_,
                                                                   unique_representations_d_,
                                                                   first_occurrence_of_representations_d_,
-                                                                  representations_d_);
+                                                                  representations_d_,
+                                                                  cuda_stream_);
 
     if (filtering_parameter < 1.0)
     {
@@ -867,7 +889,8 @@ void IndexGPU<SketchElementImpl>::generate_index(const io::FastaParser& parser,
                                                                    positions_in_reads_d_,
                                                                    directions_of_reads_d_,
                                                                    unique_representations_d_,
-                                                                   first_occurrence_of_representations_d_);
+                                                                   first_occurrence_of_representations_d_,
+                                                                   cuda_stream_);
     }
 }
 

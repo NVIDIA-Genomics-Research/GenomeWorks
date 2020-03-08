@@ -25,7 +25,8 @@ std::unique_ptr<Index> Index::create_index(DefaultDeviceAllocator allocator,
                                            const std::uint64_t kmer_size,
                                            const std::uint64_t window_size,
                                            const bool hash_representations,
-                                           const double filtering_parameter)
+                                           const double filtering_parameter,
+                                           const cudaStream_t cuda_stream)
 {
     CGA_NVTX_RANGE(profiler, "create_index");
     return std::make_unique<IndexGPU<Minimizer>>(allocator,
@@ -35,16 +36,22 @@ std::unique_ptr<Index> Index::create_index(DefaultDeviceAllocator allocator,
                                                  kmer_size,
                                                  window_size,
                                                  hash_representations,
-                                                 filtering_parameter);
+                                                 filtering_parameter,
+                                                 cuda_stream);
 }
 
 std::unique_ptr<IndexHostCopy> IndexHostCopy::create_cache(const Index& index,
                                                            const read_id_t first_read_id,
                                                            const std::uint64_t kmer_size,
-                                                           const std::uint64_t window_size)
+                                                           const std::uint64_t window_size,
+                                                           const cudaStream_t cuda_stream)
 {
     CGA_NVTX_RANGE(profiler, "cache_D2H");
-    return std::make_unique<HostCache>(index, first_read_id, kmer_size, window_size);
+    return std::make_unique<HostCache>(index,
+                                       first_read_id,
+                                       kmer_size,
+                                       window_size,
+                                       cuda_stream);
 }
 
 } // namespace cudamapper
