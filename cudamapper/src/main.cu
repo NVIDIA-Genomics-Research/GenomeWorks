@@ -338,7 +338,10 @@ int main(int argc, char* argv[])
             }
             {
                 CGA_NVTX_RANGE(profiler, "generate_matcher");
-                matcher = claragenomics::cudamapper::Matcher::create_matcher(allocator, *query_index, *target_index);
+                matcher = claragenomics::cudamapper::Matcher::create_matcher(allocator,
+                                                                             *query_index,
+                                                                             *target_index,
+                                                                             cuda_stream);
             }
             {
 

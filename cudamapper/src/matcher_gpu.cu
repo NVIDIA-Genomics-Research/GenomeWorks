@@ -29,7 +29,8 @@ namespace cudamapper
 
 MatcherGPU::MatcherGPU(DefaultDeviceAllocator allocator,
                        const Index& query_index,
-                       const Index& target_index)
+                       const Index& target_index,
+                       const cudaStream_t cuda_stream)
     : anchors_d_(allocator)
 {
     CGA_NVTX_RANGE(profile, "matcherGPU");
@@ -47,20 +48,28 @@ MatcherGPU::MatcherGPU(DefaultDeviceAllocator allocator,
     // The array index of the following data structures will correspond to the array index of the
     // unique representation in the query index.
 
-    device_buffer<std::int64_t> found_target_indices_d(query_index.unique_representations().size(), allocator);
-    device_buffer<std::int64_t> anchor_starting_indices_d(query_index.unique_representations().size(), allocator);
+    device_buffer<std::int64_t> found_target_indices_d(query_index.unique_representations().size(), allocator, cuda_stream);
+    device_buffer<std::int64_t> anchor_starting_indices_d(query_index.unique_representations().size(), allocator, cuda_stream);
 
     // First we search for each unique representation of the query index, the array index
     // of the same representation in the array of unique representations of target index
     // (or -1 if representation is not found).
-    details::matcher_gpu::find_query_target_matches(found_target_indices_d, query_index.unique_representations(), target_index.unique_representations());
+    details::matcher_gpu::find_query_target_matches(found_target_indices_d,
+                                                    query_index.unique_representations(),
+                                                    target_index.unique_representations(),
+                                                    cuda_stream);
 
     // For each unique representation of the query index compute the number of corrsponding anchors
     // and store the resulting starting index in an anchors array if all anchors are stored in a flat array.
     // The last element will be the total number of anchors.
-    details::matcher_gpu::compute_anchor_starting_indices(anchor_starting_indices_d, query_index.first_occurrence_of_representations(), found_target_indices_d, target_index.first_occurrence_of_representations());
+    details::matcher_gpu::compute_anchor_starting_indices(anchor_starting_indices_d,
+                                                          query_index.first_occurrence_of_representations(),
+                                                          found_target_indices_d,
+                                                          target_index.first_occurrence_of_representations(),
+                                                          cuda_stream);
 
-    const int64_t n_anchors = cudautils::get_value_from_device(anchor_starting_indices_d.end() - 1); // D->H transfer
+    const int64_t n_anchors = cudautils::get_value_from_device(anchor_starting_indices_d.end() - 1,
+                                                               cuda_stream); // D2H transfer
 
     anchors_d_.resize(n_anchors);
 
@@ -70,7 +79,12 @@ MatcherGPU::MatcherGPU(DefaultDeviceAllocator allocator,
                                                       anchor_starting_indices_d,
                                                       found_target_indices_d,
                                                       query_index,
-                                                      target_index);
+                                                      target_index,
+                                                      cuda_stream);
+
+    // This is not completely necessary, but if removed one has to make sure that the next step
+    // uses the same stream or that sync is done in caller
+    CGA_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
 }
 
 device_buffer<Anchor>& MatcherGPU::anchors()
@@ -229,6 +243,7 @@ __global__ void generate_anchors_kernel(
 /// \param target_index
 /// \param max_reads_compound_key largest possible read_id compound key
 /// \param max_positions_compound_key largest possible position_in_read compund key
+/// \param cuda_stream CUDA stream on which the work is to be done
 /// \tparam ReadsKeyT type of compound_key_read_ids, has to be integral
 /// \tparam PositionsKeyT type of compound_key_positions_in_reads, has to be integral
 template <typename ReadsKeyT, typename PositionsKeyT>
@@ -239,7 +254,8 @@ void generate_anchors(
     const Index& query_index,
     const Index& target_index,
     const std::uint64_t max_reads_compound_key,
-    const std::uint64_t max_positions_compound_key)
+    const std::uint64_t max_positions_compound_key,
+    const cudaStream_t cuda_stream)
 {
     static_assert(std::is_integral<ReadsKeyT>::value, "ReadsKeyT has to be integral");
     static_assert(std::is_integral<PositionsKeyT>::value, "PositionsKeyT has to be integral");
@@ -260,14 +276,14 @@ void generate_anchors(
     // use anchors' allocator
     DefaultDeviceAllocator allocator = anchors.get_allocator();
 
-    device_buffer<ReadsKeyT> compound_key_read_ids(anchors.size(), allocator);
-    device_buffer<PositionsKeyT> compound_key_positions_in_reads(anchors.size(), allocator);
+    device_buffer<ReadsKeyT> compound_key_read_ids(anchors.size(), allocator, cuda_stream);
+    device_buffer<PositionsKeyT> compound_key_positions_in_reads(anchors.size(), allocator, cuda_stream);
 
     {
         CGA_NVTX_RANGE(profile, "matcherGPU::generate_anchors_kernel");
         const int32_t n_threads = 256;
         const int32_t n_blocks  = claragenomics::ceiling_divide<int64_t>(get_size(anchors), n_threads);
-        generate_anchors_kernel<<<n_blocks, n_threads>>>(
+        generate_anchors_kernel<<<n_blocks, n_threads, 0, cuda_stream>>>(
             anchors.data(),
             compound_key_read_ids.data(),
             compound_key_positions_in_reads.data(),
@@ -294,7 +310,8 @@ void generate_anchors(
                                     compound_key_positions_in_reads,
                                     anchors,
                                     static_cast<ReadsKeyT>(max_reads_compound_key),
-                                    static_cast<PositionsKeyT>(max_positions_compound_key));
+                                    static_cast<PositionsKeyT>(max_positions_compound_key),
+                                    cuda_stream);
     }
 }
 
@@ -303,21 +320,27 @@ void generate_anchors(
 void find_query_target_matches(
     device_buffer<std::int64_t>& found_target_indices_d,
     const device_buffer<representation_t>& query_representations_d,
-    const device_buffer<representation_t>& target_representations_d)
+    const device_buffer<representation_t>& target_representations_d,
+    const cudaStream_t cuda_stream)
 {
     assert(found_target_indices_d.size() == query_representations_d.size());
 
     const int32_t n_threads = 256;
     const int32_t n_blocks  = ceiling_divide<int64_t>(query_representations_d.size(), n_threads);
 
-    find_query_target_matches_kernel<<<n_blocks, n_threads>>>(found_target_indices_d.data(), query_representations_d.data(), get_size(query_representations_d), target_representations_d.data(), get_size(target_representations_d));
+    find_query_target_matches_kernel<<<n_blocks, n_threads, 0, cuda_stream>>>(found_target_indices_d.data(),
+                                                                              query_representations_d.data(),
+                                                                              get_size(query_representations_d),
+                                                                              target_representations_d.data(),
+                                                                              get_size(target_representations_d));
 }
 
 void compute_anchor_starting_indices(
     device_buffer<std::int64_t>& anchor_starting_indices_d,
     const device_buffer<std::uint32_t>& query_starting_index_of_each_representation_d,
     const device_buffer<std::int64_t>& found_target_indices_d,
-    const device_buffer<std::uint32_t>& target_starting_index_of_each_representation_d)
+    const device_buffer<std::uint32_t>& target_starting_index_of_each_representation_d,
+    const cudaStream_t cuda_stream)
 {
     assert(query_starting_index_of_each_representation_d.size() == found_target_indices_d.size() + 1);
     assert(anchor_starting_indices_d.size() == found_target_indices_d.size());
@@ -329,7 +352,7 @@ void compute_anchor_starting_indices(
     DefaultDeviceAllocator allocator = anchor_starting_indices_d.get_allocator();
 
     thrust::transform_inclusive_scan(
-        thrust::cuda::par(allocator),
+        thrust::cuda::par(allocator).on(cuda_stream),
         thrust::make_counting_iterator(std::int64_t(0)),
         thrust::make_counting_iterator(get_size(anchor_starting_indices_d)),
         anchor_starting_indices_d.begin(),
@@ -349,7 +372,8 @@ void generate_anchors_dispatcher(
     const device_buffer<std::int64_t>& anchor_starting_indices_d,
     const device_buffer<std::int64_t>& found_target_indices_d,
     const Index& query_index,
-    const Index& target_index)
+    const Index& target_index,
+    const cudaStream_t cuda_stream)
 {
     const read_id_t number_of_query_reads                  = query_index.number_of_reads();
     const read_id_t number_of_target_reads                 = target_index.number_of_reads();
@@ -378,7 +402,8 @@ void generate_anchors_dispatcher(
                                                        query_index,
                                                        target_index,
                                                        max_reads_compound_key,
-                                                       max_positions_compound_key);
+                                                       max_positions_compound_key,
+                                                       cuda_stream);
         }
         else
         {
@@ -390,7 +415,8 @@ void generate_anchors_dispatcher(
                                                        query_index,
                                                        target_index,
                                                        max_reads_compound_key,
-                                                       max_positions_compound_key);
+                                                       max_positions_compound_key,
+                                                       cuda_stream);
         }
     }
     else
@@ -406,7 +432,8 @@ void generate_anchors_dispatcher(
                                                        query_index,
                                                        target_index,
                                                        max_reads_compound_key,
-                                                       max_positions_compound_key);
+                                                       max_positions_compound_key,
+                                                       cuda_stream);
         }
         else
         {
@@ -418,7 +445,8 @@ void generate_anchors_dispatcher(
                                                        query_index,
                                                        target_index,
                                                        max_reads_compound_key,
-                                                       max_positions_compound_key);
+                                                       max_positions_compound_key,
+                                                       cuda_stream);
         }
     }
 }
