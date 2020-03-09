@@ -131,8 +131,8 @@ public:
     using pointer = T*;
 
     /// @brief Constructor
-    /// @param max_cached_bytes max bytes used by memory resource (default is 1GiB)
-    CachingDeviceAllocator(size_t max_cached_bytes = 1024 * 1024 * 1024)
+    /// @param max_cached_bytes max bytes used by memory resource (default is 2GiB)
+    CachingDeviceAllocator(size_t max_cached_bytes = 2ull * 1024 * 1024 * 1024)
         : memory_resource_(generate_memory_resource(max_cached_bytes))
     {
     }

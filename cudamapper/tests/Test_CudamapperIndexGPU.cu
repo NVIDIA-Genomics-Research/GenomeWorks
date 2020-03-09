@@ -954,7 +954,7 @@ void test_filter_out_most_common_representations(const double filtering_paramete
     ASSERT_EQ(expected_output_unique_representations_h.size(), expected_output_first_occurrence_of_representations_h.size() - 1);
     ASSERT_EQ(expected_output_representations_h.size(), expected_output_first_occurrence_of_representations_h.back());
 
-    DefaultDeviceAllocator allocator(2ull * 1024 * 1024 * 1024);
+    DefaultDeviceAllocator allocator;
 
     device_buffer<representation_t> representations_d(input_representations_h.size(), allocator);
     cudautils::device_copy_n(input_representations_h.data(), input_representations_h.size(), representations_d.data()); // H2D
