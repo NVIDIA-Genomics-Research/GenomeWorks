@@ -216,7 +216,7 @@ private:
         assert(block_to_be_freed_iter != std::end(used_blocks_));
 
         // ** wait for all work on associated_stream to finish before freeing up this memory block
-        CGA_CU_CHECK_ERR(cudaStreamSynchronize(block_to_be_freed_iter->associated_stream));
+        CGA_CU_ABORT_ON_ERR(cudaStreamSynchronize(block_to_be_freed_iter->associated_stream));
 
         // ** remove memory block from the list of used memory blocks
         const size_t number_of_bytes = block_to_be_freed_iter->size;
