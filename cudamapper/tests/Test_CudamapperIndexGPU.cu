@@ -1414,7 +1414,7 @@ void test_function(const std::string& filename,
             EXPECT_EQ(positions_in_reads_h[i], expected_positions_in_reads[i]) << "i: " << i;
             EXPECT_EQ(read_ids_h[i], expected_read_ids[i]) << "i: " << i;
             EXPECT_EQ(directions_of_reads_h[i], expected_directions_of_reads[i]) << "i: " << i;
-    }
+        }
 
         const device_buffer<representation_t>& unique_representations_d           = index.unique_representations();
         const device_buffer<std::uint32_t>& first_occurrence_of_representations_d = index.first_occurrence_of_representations();
