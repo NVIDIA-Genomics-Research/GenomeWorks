@@ -265,7 +265,7 @@ using DefaultDeviceAllocator = CachingDeviceAllocator<char, cub::CachingDeviceAl
 #else
 
 #ifdef CGA_ENABLE_PREALLOCATING_ALLOCATOR
-static_assert(false, "Preallocating allocator can only be used together with caching allocator");
+#error "Preallocating allocator can only be used together with caching allocator"
 #else
 using DefaultDeviceAllocator = CudaMallocAllocator<char>;
 #endif
