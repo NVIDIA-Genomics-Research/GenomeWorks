@@ -90,8 +90,15 @@ public:
     /// @return error status
     cudaError_t DeviceFree(void* ptr)
     {
-        std::lock_guard<std::mutex> mutex_lock_guard(memory_operation_mutex_);
-        return free_block(ptr);
+        cudaError_t status = cudaSuccess;
+
+        if (nullptr != ptr)
+        {
+            std::lock_guard<std::mutex> mutex_lock_guard(memory_operation_mutex_);
+            status = free_block(ptr);
+        }
+
+        return status;
     }
 
 private:
