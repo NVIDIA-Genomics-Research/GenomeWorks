@@ -148,10 +148,7 @@ struct FilterOverlapOp
     {
         return ((overlap.num_residues_ >= min_residues) &&
                 ((overlap.query_end_position_in_read_ - overlap.query_start_position_in_read_) > min_overlap_len) &&
-                !( // Reject overlaps where the query and target sections are exactly the same, otherwise miniasm has trouble.
-                    overlap.query_read_id_ == overlap.target_read_id_ &&
-                    overlap.query_start_position_in_read_ == overlap.target_start_position_in_read_ &&
-                    overlap.query_end_position_in_read_ == overlap.target_end_position_in_read_));
+                (overlap.query_read_id_ != overlap.target_read_id_));
     }
 };
 
@@ -184,7 +181,6 @@ struct CreateOverlap
         new_overlap.query_start_position_in_read_ =
             overlap_start_anchor.query_position_in_read_;
         new_overlap.overlap_complete = true;
-        new_overlap.cigar_           = 0;
 
         // If the target start position is greater than the target end position
         // We can safely assume that the query and target are template and
