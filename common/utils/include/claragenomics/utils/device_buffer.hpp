@@ -9,6 +9,7 @@
  */
 
 #pragma once
+
 #include <claragenomics/utils/buffer.hpp>
 #include <claragenomics/utils/allocator.hpp>
 
@@ -16,10 +17,22 @@ namespace claragenomics
 {
 
 template <typename T>
-#ifdef CGA_ENABLE_ALLOCATOR
-using device_buffer = buffer<T, CachingDeviceAllocator<T>>;
+#ifdef CGA_ENABLE_CACHING_ALLOCATOR
+
+#ifdef CGA_ENABLE_PREALLOCATING_ALLOCATOR
+using device_buffer = buffer<T, CachingDeviceAllocator<T, DevicePreallocatedAllocator>>;
+#else
+using device_buffer = buffer<T, CachingDeviceAllocator<T, cub::CachingDeviceAllocator>>;
+#endif
+
+#else
+
+#ifdef CGA_ENABLE_PREALLOCATING_ALLOCATOR
+#error "Preallocating allocator can only be used together with caching allocator"
 #else
 using device_buffer = buffer<T, CudaMallocAllocator<T>>;
+#endif
+
 #endif
 
 } // namespace claragenomics

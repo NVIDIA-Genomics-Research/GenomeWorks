@@ -38,10 +38,12 @@ static struct option options[] = {
     {"index-size", required_argument, 0, 'i'},
     {"target-index-size", required_argument, 0, 't'},
     {"filtering-parameter", required_argument, 0, 'F'},
+    {"alignment-engines", required_argument, 0, 'a'},
     {"help", no_argument, 0, 'h'},
 };
 
 void help(int32_t exit_code);
+std::size_t find_largest_contiguous_device_memory_section();
 
 int main(int argc, char* argv[])
 {
@@ -54,11 +56,12 @@ int main(int argc, char* argv[])
     std::int32_t max_index_cache_size_on_device = 100; // c
     // ToDo: come up with a good heuristic to choose C and c
     std::int32_t max_index_cache_size_on_host = 0;   // C
-    std::int32_t max_cached_memory            = 1;   // m
+    std::int32_t max_cached_memory            = 0;   // m
     std::int32_t index_size                   = 30;  // i
     std::int32_t target_index_size            = 30;  // t
     double filtering_parameter                = 1.0; // F
-    std::string optstring                     = "k:w:d:c:C:m:i:t:F:h:";
+    std::int32_t alignment_engines            = 0;   // a
+    std::string optstring                     = "k:w:d:c:C:m:i:t:F:h:a:";
     int32_t argument                          = 0;
     while ((argument = getopt_long(argc, argv, optstring.c_str(), options, nullptr)) != -1)
     {
@@ -80,6 +83,10 @@ int main(int argc, char* argv[])
             max_index_cache_size_on_host = atoi(optarg);
             break;
         case 'm':
+#ifndef CGA_ENABLE_CACHING_ALLOCATOR
+            std::cerr << "ERROR: Argument -m / --max-cached-memory cannot be used without caching allocator" << std::endl;
+            exit(1);
+#endif
             max_cached_memory = atoi(optarg);
             break;
         case 'i':
@@ -90,6 +97,10 @@ int main(int argc, char* argv[])
             break;
         case 'F':
             filtering_parameter = atof(optarg);
+            break;
+        case 'a':
+            alignment_engines = atoi(optarg);
+            claragenomics::throw_on_negative(alignment_engines, "Number of alignment engines should be non-negative");
             break;
         case 'h':
             help(0);
@@ -110,9 +121,9 @@ int main(int argc, char* argv[])
         exit(1);
     }
 
-    if (max_cached_memory <= 0)
+    if (max_cached_memory < 0)
     {
-        std::cerr << "-m / --max-cached-memory must be larger than zero" << std::endl;
+        std::cerr << "-m / --max-cached-memory must not be negative" << std::endl;
         exit(1);
     }
 
@@ -282,9 +293,26 @@ int main(int argc, char* argv[])
             host_index_cache.erase(key);
     };
 
-#ifdef CGA_ENABLE_ALLOCATOR
+#ifdef CGA_ENABLE_CACHING_ALLOCATOR
     // uses CachingDeviceAllocator
-    auto max_cached_bytes = max_cached_memory * 1e9; // max_cached_memory is in GB
+    std::size_t max_cached_bytes = 0;
+    if (max_cached_memory == 0)
+    {
+        std::cerr << "Programmatically looking for max cached memory" << std::endl;
+        max_cached_bytes = find_largest_contiguous_device_memory_section();
+        if (max_cached_bytes == 0)
+        {
+            std::cerr << "No memory available for caching" << std::endl;
+            exit(1);
+        }
+    }
+    else
+    {
+        max_cached_bytes = max_cached_memory * 1024ull * 1024ull * 1024ull; // max_cached_memory is in GiB
+    }
+
+    std::cerr << "Using device memory cache of " << max_cached_bytes << " bytes" << std::endl;
+
     claragenomics::DefaultDeviceAllocator allocator(max_cached_bytes);
 #else
     // uses CudaMallocAllocator
@@ -353,11 +381,21 @@ int main(int argc, char* argv[])
 
                 overlapper.get_overlaps(*overlaps_to_add, matcher->anchors(), 50);
 
+                std::vector<std::string> cigar;
+                // Align overlaps
+                if (alignment_engines > 0)
+                {
+                    cigar.resize(overlaps_to_add->size());
+                    CGA_NVTX_RANGE(profiler, "align_overlaps");
+                    claragenomics::cudamapper::Overlapper::Overlapper::align_overlaps(*overlaps_to_add, *query_parser, *target_parser, alignment_engines, cigar);
+                }
+
                 //Increment counter which tracks number of overlap chunks to be filtered and printed
                 num_overlap_chunks_to_print++;
                 auto print_overlaps = [&overlaps_writer_mtx, &num_overlap_chunks_to_print](std::shared_ptr<std::vector<claragenomics::cudamapper::Overlap>> filtered_overlaps,
                                                                                            std::shared_ptr<claragenomics::cudamapper::Index> query_index,
                                                                                            std::shared_ptr<claragenomics::cudamapper::Index> target_index,
+                                                                                           const std::vector<std::string>& cigar,
                                                                                            const int device_id) {
                     // This lambda is expected to run in a separate thread so set current device in order to avoid problems
                     // with deallocating indices with different current device then the one on which they were created
@@ -366,7 +404,7 @@ int main(int argc, char* argv[])
                     // parallel update of the query/target read names for filtered overlaps [parallel on host]
                     claragenomics::cudamapper::Overlapper::update_read_names(*filtered_overlaps, *query_index, *target_index);
                     std::lock_guard<std::mutex> lck(overlaps_writer_mtx);
-                    claragenomics::cudamapper::Overlapper::print_paf(*filtered_overlaps);
+                    claragenomics::cudamapper::Overlapper::print_paf(*filtered_overlaps, cigar);
 
                     //clear data
                     for (auto o : *filtered_overlaps)
@@ -377,9 +415,10 @@ int main(int argc, char* argv[])
                     num_overlap_chunks_to_print--;
                 };
 
-                std::thread t(print_overlaps, overlaps_to_add, query_index, target_index, device_id);
+                std::thread t(print_overlaps, overlaps_to_add, query_index, target_index, cigar, device_id);
                 t.detach();
             }
+
             // reseting the matcher releases the anchor device array back to memory pool
             matcher.reset();
         }
@@ -481,17 +520,68 @@ void help(int32_t exit_code = 0)
             number of indices to keep in host memory [0])"
               << R"(
         -m, --max-cached-memory
-            maximum aggregate cached memory per device in GB [1])"
+            maximum aggregate cached memory per device in GiB, if 0 program tries to allocate as much memory as possible [0])"
               << R"(
         -i, --index-size
             length of batch size used for query in MB [30])"
               << R"(
-        -t --target-index-size
+        -t, --target-index-size
             length of batch sized used for target in MB [30])"
               << R"(
-        -F --filtering-parameter
+        -F, --filtering-parameter
             filter all representations for which sketch_elements_with_that_representation/total_sketch_elements >= filtering_parameter), filtering disabled if filtering_parameter == 1.0 [1'000'000'001] (Min = 0.0, Max = 1.0))"
+              << R"(
+        -a, --alignment-engines
+            Number of alignment engines to use (per device) for generating CIGAR strings for overlap alignments. Default value 0 = no alignment to be performed. Typically 2-4 engines per device gives best perf.)"
               << std::endl;
 
     exit(exit_code);
+}
+
+/// @brief finds largest section of contiguous memory on device
+/// @return number of bytes
+std::size_t find_largest_contiguous_device_memory_section()
+{
+    // find the largest block of contiguous memory
+    size_t free;
+    size_t total;
+    cudaMemGetInfo(&free, &total);
+    const size_t memory_decrement = free / 100;              // decrease requested memory one by one percent
+    size_t size_to_try            = free - memory_decrement; // do not go for all memory
+    while (true)
+    {
+        void* dummy_ptr    = nullptr;
+        cudaError_t status = cudaMalloc(&dummy_ptr, size_to_try);
+        // if it was able to allocate memory free the memory and return the size
+        if (status == cudaSuccess)
+        {
+            cudaFree(dummy_ptr);
+            return size_to_try;
+        }
+
+        if (status == cudaErrorMemoryAllocation)
+        {
+            // if it was not possible to allocate the memory because there was not enough of it
+            // try allocating less memory in next iteration
+            if (size_to_try > memory_decrement)
+            {
+                size_to_try -= memory_decrement;
+            }
+            else
+            { // a very small amount of memory left, report an error
+                CGA_CU_CHECK_ERR(cudaErrorMemoryAllocation);
+                return 0;
+            }
+        }
+        else
+        {
+            // if cudaMalloc failed because of error other than cudaErrorMemoryAllocation process the error
+            CGA_CU_CHECK_ERR(status);
+        }
+    }
+
+    // this point should actually never be reached (loop either finds memory or causes an error)
+    assert(false);
+    CGA_CU_CHECK_ERR(cudaErrorMemoryAllocation);
+    return 0;
 }
