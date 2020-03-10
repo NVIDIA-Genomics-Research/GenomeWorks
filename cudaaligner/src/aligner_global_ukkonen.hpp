@@ -27,7 +27,7 @@ class AlignerGlobalUkkonen : public AlignerGlobal
 public:
     AlignerGlobalUkkonen(int32_t max_query_length, int32_t max_target_length, int32_t max_alignments, cudaStream_t stream, int32_t device_id);
     virtual ~AlignerGlobalUkkonen();
-    StatusType add_alignment(const char* query, int32_t query_length, const char* target, int32_t target_length) override;
+    StatusType add_alignment(const char* query, int32_t query_length, const char* target, int32_t target_length, bool reverse_complement_query, bool reverse_complement_target) override;
 
 private:
     using BaseType = AlignerGlobal;

@@ -15,7 +15,8 @@ set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -lineinfo -Xcompiler -Wall,-Wno-pedantic
 set(SOURCES
     main.cpp
     Test_UtilsCudasort.cu
-    TestGraph.cpp)
+    TestGraph.cpp
+    Test_GenomeUtils.cpp)
 
 include_directories(${CUB_DIR})
 

@@ -91,12 +91,10 @@ typedef struct Overlap
     std::uint32_t target_length_ = 0;
     /// Whether the overlap is considered valid by the generating overlapper
     bool overlap_complete = false;
-    /// CIGAR string for alignment of mapped section.
-    char* cigar_ = nullptr;
 
     //TODO add a destructor and copy constructor to remove need for this function
     /// \brief Free memory associated with Overlap.
-    /// Since query_read_name_, target_read_name_ and cigar_ are char * types,
+    /// Since query_read_name_ and target_read_name_ are char * types,
     /// they are not freed when Overlap is deleted.
     void clear()
     {
@@ -105,9 +103,6 @@ typedef struct Overlap
 
         delete[] query_read_name_;
         query_read_name_ = nullptr;
-
-        delete[] cigar_;
-        cigar_ = nullptr;
     }
 
 } Overlap;

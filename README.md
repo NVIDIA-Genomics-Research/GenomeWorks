@@ -19,7 +19,7 @@ The `cudaaligner` package provides GPU-accelerated global alignment.
 
 ### cudamapper
 
-**Note** cudamapper is still in pre-alpha stage and should be considered experimental.
+**Note** cudamapper is still under heavy development and should be considered experimental.
 
 The `cudamapper` package provides minimizer-based GPU-accelerated approximate mapping. `cudamapper` outputs mappings in
 the PAF format and is currently optimised for all-vs-all long read (ONT, Pacific Biosciences) sequences.
@@ -61,7 +61,6 @@ Minimum requirements -
 2. CUDA 9.0+ (official instructions for installing CUDA are available [here](https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html))
 3. gcc/g++ 5.4.0+
 4. Python 3.6.7+
-5. htslib 1.9+
 
 ## Clara Genomics Analysis Setup
 

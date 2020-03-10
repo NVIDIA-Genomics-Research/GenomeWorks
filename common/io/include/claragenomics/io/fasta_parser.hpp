@@ -55,19 +55,13 @@ public:
     virtual std::vector<std::pair<int, int>> get_read_chunks(int max_chunk_size = 1000000) const = 0;
 };
 
-/// \brief A builder function that returns a FASTA parser object which uses HTSLIB.
-///
-/// \param fasta_file Path to FASTA(.gz) file. If .gz, it must be zipped with bgzip.
-///
-/// \return A unique pointer to a constructed parser object.
-std::unique_ptr<FastaParser> create_hts_fasta_parser(const std::string& fasta_file);
-
 /// \brief A builder function that returns a FASTA parser object which uses KSEQPP.
 ///
 /// \param fasta_file Path to FASTA(.gz) file. If .gz, it must be zipped with bgzip.
+/// \param min_sequence_length Minimum length a sequence needs to be to be parsed. Shorter sequences are ignored.
 ///
 /// \return A unique pointer to a constructed parser object.
-std::unique_ptr<FastaParser> create_kseq_fasta_parser(const std::string& fasta_file);
+std::unique_ptr<FastaParser> create_kseq_fasta_parser(const std::string& fasta_file, int min_sequence_length = 0);
 
 } // namespace io
 } // namespace claragenomics

@@ -58,7 +58,10 @@ public:
     /// \param query_length  Query string length
     /// \param target Target string
     /// \param target_length Target string length
-    virtual StatusType add_alignment(const char* query, int32_t query_length, const char* target, int32_t target_length) = 0;
+    /// \param reverse_complement_query Reverse complement the query string
+    /// \param reverse_complement_target Reverse complement the target string
+    virtual StatusType add_alignment(const char* query, int32_t query_length, const char* target, int32_t target_length,
+                                     bool reverse_complement_query = false, bool reverse_complement_target = false) = 0;
 
     /// \brief Return the computed alignments.
     ///
