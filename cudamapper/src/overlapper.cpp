@@ -192,7 +192,8 @@ void Overlapper::print_paf(const std::vector<Overlap>& overlaps, const std::vect
                     overlap.target_start_position_in_read_,
                     overlap.target_end_position_in_read_,
                     overlap.num_residues_,
-                    0,
+                    std::max(std::abs(int(overlap.target_start_position_in_read_) - int(overlap.target_end_position_in_read_)),
+                            abs(int(overlap.query_start_position_in_read_) - int(overlap.query_end_position_in_read_))),
                     255);
         // If CIGAR string is generated, output in PAF.
         if (cigar.size() != 0)

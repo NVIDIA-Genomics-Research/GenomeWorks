@@ -137,18 +137,31 @@ struct FilterOverlapOp
 {
     size_t min_residues;
     size_t min_overlap_len;
+    size_t min_bases_per_residue;
+    float min_overlap_fraction;
 
-    __host__ __device__ __forceinline__ FilterOverlapOp(size_t min_residues, size_t min_overlap_len)
+    __host__ __device__ __forceinline__ FilterOverlapOp(size_t min_residues, size_t min_overlap_len,
+            size_t min_bases_per_residue, float min_overlap_fraction)
         : min_residues(min_residues)
         , min_overlap_len(min_overlap_len)
+        , min_bases_per_residue(min_bases_per_residue)
+        , min_overlap_fraction(min_overlap_fraction)
     {
     }
 
     __host__ __device__ __forceinline__ bool operator()(const Overlap& overlap) const
     {
+
+        auto target_overlap_length = abs(int(overlap.target_end_position_in_read_) - int(overlap.target_start_position_in_read_));
+        auto query_overlap_length = abs(int(overlap.query_end_position_in_read_) - int(overlap.query_start_position_in_read_));
+        auto overlap_length = max(target_overlap_length, query_overlap_length);
+
         return ((overlap.num_residues_ >= min_residues) &&
+                ((overlap_length / overlap.num_residues_) < min_bases_per_residue) &&
                 ((overlap.query_end_position_in_read_ - overlap.query_start_position_in_read_) > min_overlap_len) &&
-                (overlap.query_read_id_ != overlap.target_read_id_));
+                (overlap.query_read_id_ != overlap.target_read_id_) &&
+                ((float(target_overlap_length) / float(overlap_length)) > min_overlap_fraction) &&
+                ((float(query_overlap_length) / float(overlap_length)) > min_overlap_fraction));
     }
 };
 
@@ -216,7 +229,9 @@ OverlapperTriggered::~OverlapperTriggered()
 
 void OverlapperTriggered::get_overlaps(std::vector<Overlap>& fused_overlaps, device_buffer<Anchor>& d_anchors,
                                        size_t min_residues,
-                                       size_t min_overlap_len)
+                                       size_t min_overlap_len,
+                                       size_t min_bases_per_residue,
+                                       float min_overlap_fraction)
 {
     CGA_NVTX_RANGE(profiler, "OverlapperTriggered::get_overlaps");
     const auto tail_length_for_chain = 3;
@@ -390,7 +405,7 @@ void OverlapperTriggered::get_overlaps(std::vector<Overlap>& fused_overlaps, dev
 
     device_buffer<Overlap> d_filtered_overlaps(n_fused_overlap, _allocator, stream);
 
-    FilterOverlapOp filterOp(min_residues, min_overlap_len);
+    FilterOverlapOp filterOp(min_residues, min_overlap_len, min_bases_per_residue, min_overlap_fraction);
     auto filtered_overlaps_end =
         thrust::copy_if(thrust_exec_policy,
                         d_fused_overlaps.data(), d_fused_overlaps.data() + n_fused_overlap,

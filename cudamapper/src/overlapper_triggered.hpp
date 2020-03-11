@@ -39,9 +39,14 @@ public:
     /// \param d_anchors vector of anchors sorted by query_read_id -> target_read_id -> query_position_in_read -> target_position_in_read (meaning sorted by query_read_id, then within a group of anchors with the same value of query_read_id sorted by target_read_id and so on)
     /// \param min_residues smallest number of residues (anchors) for an overlap to be accepted
     /// \param min_overlap_len the smallest overlap distance which is accepted
+    /// \param min_bases_per_residue the minimum number of nucleotides per residue (e.g minimizer) in an overlap
+    /// \param min_overlap_fraction the minimum ratio between the shortest and longest of the target and query components of an overlap. e.g if Query range is (150,1000) and target range is (1000,2000) then overlap fraction is 0.85
     /// \return vector of Overlap objects
     void get_overlaps(std::vector<Overlap>& fused_overlaps, device_buffer<Anchor>& d_anchors,
-                      size_t min_residues = 20, size_t min_overlap_len = 50) override;
+                      size_t min_residues = 20,
+                      size_t min_overlap_len = 50,
+                      size_t min_bases_per_residue = 50,
+                      float min_overlap_fraction = 0.9) override;
 
     explicit OverlapperTriggered(DefaultDeviceAllocator);
     ~OverlapperTriggered();

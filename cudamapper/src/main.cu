@@ -39,6 +39,10 @@ static struct option options[] = {
     {"target-index-size", required_argument, 0, 't'},
     {"filtering-parameter", required_argument, 0, 'F'},
     {"alignment-engines", required_argument, 0, 'a'},
+    {"min-residues", required_argument, 0, 'r'},
+    {"min-overlap-length", required_argument, 0, 'l'},
+    {"min-bases-per-residue", required_argument, 0, 'b'},
+    {"min-overlap-fraction", required_argument, 0, 'z'},
     {"help", no_argument, 0, 'h'},
 };
 
@@ -61,8 +65,12 @@ int main(int argc, char* argv[])
     std::int32_t target_index_size            = 30;  // t
     double filtering_parameter                = 1.0; // F
     std::int32_t alignment_engines            = 0;   // a
-    std::string optstring                     = "k:w:d:c:C:m:i:t:F:h:a:";
+    std::string optstring                     = "k:w:d:c:C:m:i:t:F:h:a:z:l:b:z:";
     int32_t argument                          = 0;
+    std::int32_t min_residues                 = 20;
+    std::int32_t min_overlap_len              = 200;
+    std::int32_t min_bases_per_residue        = 50;
+    float min_overlap_fraction                = 0.85;
     while ((argument = getopt_long(argc, argv, optstring.c_str(), options, nullptr)) != -1)
     {
         switch (argument)
@@ -102,6 +110,19 @@ int main(int argc, char* argv[])
             alignment_engines = atoi(optarg);
             claragenomics::throw_on_negative(alignment_engines, "Number of alignment engines should be non-negative");
             break;
+        case 'r':
+            min_residues = atoi(optarg);
+            break;
+        case 'l':
+            min_overlap_len = atoi(optarg);
+            break;
+        case 'b':
+            min_bases_per_residue = atoi(optarg);
+            break;
+        case 'z':
+            min_overlap_fraction = atof(optarg);
+            break;
+
         case 'h':
             help(0);
         default:
@@ -342,7 +363,7 @@ int main(int argc, char* argv[])
                 // Get unfiltered overlaps
                 auto overlaps_to_add = std::make_shared<std::vector<claragenomics::cudamapper::Overlap>>();
 
-                overlapper.get_overlaps(*overlaps_to_add, matcher->anchors(), 50);
+                overlapper.get_overlaps(*overlaps_to_add, matcher->anchors(), min_residues, min_overlap_len, min_bases_per_residue, min_overlap_fraction);
 
                 std::vector<std::string> cigar;
                 // Align overlaps
