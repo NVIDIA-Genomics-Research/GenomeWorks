@@ -24,9 +24,6 @@ namespace cudamapper
 
 TEST(TestCudamapperOverlapperTriggerred, FuseTwoOverlaps)
 {
-    DefaultDeviceAllocator allocator;
-    OverlapperTriggered overlapper(allocator);
-
     std::vector<Overlap> unfused_overlaps;
 
     Overlap overlap1;
@@ -55,9 +52,6 @@ TEST(TestCudamapperOverlapperTriggerred, FuseTwoOverlaps)
 
 TEST(TestCudamapperOverlapperTriggerred, DoNotuseTwoOverlaps)
 {
-    DefaultDeviceAllocator allocator;
-    OverlapperTriggered overlapper(allocator);
-
     std::vector<Overlap> unfused_overlaps;
 
     Overlap overlap1;
@@ -86,9 +80,6 @@ TEST(TestCudamapperOverlapperTriggerred, DoNotuseTwoOverlaps)
 
 TEST(TestCudamapperOverlapperTriggerred, OneOverlap)
 {
-    DefaultDeviceAllocator allocator;
-    OverlapperTriggered overlapper(allocator);
-
     std::vector<Overlap> unfused_overlaps;
 
     Overlap overlap1;
@@ -108,9 +99,6 @@ TEST(TestCudamapperOverlapperTriggerred, OneOverlap)
 
 TEST(TestCudamapperOverlapperTriggerred, NoOverlaps)
 {
-    DefaultDeviceAllocator allocator;
-    OverlapperTriggered overlapper(allocator);
-
     std::vector<Overlap> unfused_overlaps;
 
     std::vector<Overlap> fused_overlaps;
@@ -121,9 +109,6 @@ TEST(TestCudamapperOverlapperTriggerred, NoOverlaps)
 
 TEST(TestCudamapperOverlapperTriggerred, Fusee3Overlapsto2)
 {
-    DefaultDeviceAllocator allocator;
-    OverlapperTriggered overlapper(allocator);
-
     std::vector<Overlap> unfused_overlaps;
 
     Overlap overlap1;
@@ -163,7 +148,9 @@ TEST(TestCudamapperOverlapperTriggerred, Fusee3Overlapsto2)
 TEST(TestCudamapperOverlapperTriggerred, OneAchorNoOverlaps)
 {
     DefaultDeviceAllocator allocator;
-    OverlapperTriggered overlapper(allocator);
+    cudaStream_t cuda_stream;
+    CGA_CU_CHECK_ERR(cudaStreamCreate(&cuda_stream));
+    OverlapperTriggered overlapper(allocator, cuda_stream);
 
     std::vector<Overlap> unfused_overlaps;
     std::vector<Anchor> anchors;
@@ -184,18 +171,25 @@ TEST(TestCudamapperOverlapperTriggerred, OneAchorNoOverlaps)
     Anchor anchor1;
     anchors.push_back(anchor1);
 
-    device_buffer<Anchor> anchors_d(anchors.size(), allocator);
-    cudautils::device_copy_n(anchors.data(), anchors.size(), anchors_d.data()); //H2D
+    device_buffer<Anchor> anchors_d(anchors.size(), allocator, cuda_stream);
+    cudautils::device_copy_n(anchors.data(), anchors.size(), anchors_d.data(), cuda_stream); //H2D
 
     std::vector<Overlap> overlaps;
     overlapper.get_overlaps(overlaps, anchors_d, 0, 0);
+    CGA_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
     ASSERT_EQ(overlaps.size(), 0u);
+
+    anchors_d.free();
+    CGA_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
+    CGA_CU_CHECK_ERR(cudaStreamDestroy(cuda_stream));
 }
 
 TEST(TestCudamapperOverlapperTriggerred, FourAnchorsOneOverlap)
 {
     DefaultDeviceAllocator allocator;
-    OverlapperTriggered overlapper(allocator);
+    cudaStream_t cuda_stream;
+    CGA_CU_CHECK_ERR(cudaStreamCreate(&cuda_stream));
+    OverlapperTriggered overlapper(allocator, cuda_stream);
 
     std::vector<Overlap> unfused_overlaps;
     std::vector<Anchor> anchors;
@@ -242,11 +236,12 @@ TEST(TestCudamapperOverlapperTriggerred, FourAnchorsOneOverlap)
     anchors.push_back(anchor3);
     anchors.push_back(anchor4);
 
-    device_buffer<Anchor> anchors_d(anchors.size(), allocator);
-    cudautils::device_copy_n(anchors.data(), anchors.size(), anchors_d.data()); //H2D
+    device_buffer<Anchor> anchors_d(anchors.size(), allocator, cuda_stream);
+    cudautils::device_copy_n(anchors.data(), anchors.size(), anchors_d.data(), cuda_stream); //H2D
 
     std::vector<Overlap> overlaps;
     overlapper.get_overlaps(overlaps, anchors_d, 0, 0);
+    CGA_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
     ASSERT_EQ(overlaps.size(), 1u);
     ASSERT_EQ(overlaps[0].query_read_id_, 1u);
     ASSERT_EQ(overlaps[0].target_read_id_, 2u);
@@ -258,12 +253,18 @@ TEST(TestCudamapperOverlapperTriggerred, FourAnchorsOneOverlap)
     overlapper.update_read_names(overlaps, test_index, test_index);
     ASSERT_STREQ(overlaps[0].query_read_name_, testv[1].c_str());
     ASSERT_STREQ(overlaps[0].target_read_name_, testv[2].c_str());
+
+    anchors_d.free();
+    CGA_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
+    CGA_CU_CHECK_ERR(cudaStreamDestroy(cuda_stream));
 }
 
 TEST(TestCudamapperOverlapperTriggerred, FourAnchorsNoOverlap)
 {
     DefaultDeviceAllocator allocator;
-    OverlapperTriggered overlapper(allocator);
+    cudaStream_t cuda_stream;
+    CGA_CU_CHECK_ERR(cudaStreamCreate(&cuda_stream));
+    OverlapperTriggered overlapper(allocator, cuda_stream);
 
     std::vector<Overlap> unfused_overlaps;
     std::vector<Anchor> anchors;
@@ -310,17 +311,24 @@ TEST(TestCudamapperOverlapperTriggerred, FourAnchorsNoOverlap)
     anchors.push_back(anchor3);
     anchors.push_back(anchor4);
 
-    device_buffer<Anchor> anchors_d(anchors.size(), allocator);
-    cudautils::device_copy_n(anchors.data(), anchors.size(), anchors_d.data()); //H2D
+    device_buffer<Anchor> anchors_d(anchors.size(), allocator, cuda_stream);
+    cudautils::device_copy_n(anchors.data(), anchors.size(), anchors_d.data(), cuda_stream); //H2D
 
     std::vector<Overlap> overlaps;
     overlapper.get_overlaps(overlaps, anchors_d, 0, 0);
+    CGA_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
     ASSERT_EQ(overlaps.size(), 0u);
+
+    anchors_d.free();
+    CGA_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
+    CGA_CU_CHECK_ERR(cudaStreamDestroy(cuda_stream));
 }
 
 TEST(TestCudamapperOverlapperTriggerred, FourColinearAnchorsOneOverlap)
 {
     DefaultDeviceAllocator allocator;
+    cudaStream_t cuda_stream;
+    CGA_CU_CHECK_ERR(cudaStreamCreate(&cuda_stream));
     OverlapperTriggered overlapper(allocator);
 
     std::vector<Overlap> unfused_overlaps;
@@ -368,17 +376,24 @@ TEST(TestCudamapperOverlapperTriggerred, FourColinearAnchorsOneOverlap)
     anchors.push_back(anchor3);
     anchors.push_back(anchor4);
 
-    device_buffer<Anchor> anchors_d(anchors.size(), allocator);
-    cudautils::device_copy_n(anchors.data(), anchors.size(), anchors_d.data()); //H2D
+    device_buffer<Anchor> anchors_d(anchors.size(), allocator, cuda_stream);
+    cudautils::device_copy_n(anchors.data(), anchors.size(), anchors_d.data(), cuda_stream); //H2D
 
     std::vector<Overlap> overlaps;
     overlapper.get_overlaps(overlaps, anchors_d, 0, 0);
+    CGA_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
     ASSERT_EQ(overlaps.size(), 0u);
+
+    anchors_d.free();
+    CGA_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
+    CGA_CU_CHECK_ERR(cudaStreamDestroy(cuda_stream));
 }
 
 TEST(TestCudamapperOverlapperTriggerred, FourAnchorsLastNotInOverlap)
 {
     DefaultDeviceAllocator allocator;
+    cudaStream_t cuda_stream;
+    CGA_CU_CHECK_ERR(cudaStreamCreate(&cuda_stream));
     OverlapperTriggered overlapper(allocator);
 
     std::vector<Overlap> unfused_overlaps;
@@ -426,11 +441,12 @@ TEST(TestCudamapperOverlapperTriggerred, FourAnchorsLastNotInOverlap)
     anchors.push_back(anchor3);
     anchors.push_back(anchor4);
 
-    device_buffer<Anchor> anchors_d(anchors.size(), allocator);
-    cudautils::device_copy_n(anchors.data(), anchors.size(), anchors_d.data()); //H2D
+    device_buffer<Anchor> anchors_d(anchors.size(), allocator, cuda_stream);
+    cudautils::device_copy_n(anchors.data(), anchors.size(), anchors_d.data(), cuda_stream); //H2D
 
     std::vector<Overlap> overlaps;
     overlapper.get_overlaps(overlaps, anchors_d, 0, 0);
+    CGA_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
     ASSERT_EQ(overlaps.size(), 1u);
     ASSERT_EQ(overlaps[0].query_read_id_, 1u);
     ASSERT_EQ(overlaps[0].target_read_id_, 2u);
@@ -442,11 +458,17 @@ TEST(TestCudamapperOverlapperTriggerred, FourAnchorsLastNotInOverlap)
     overlapper.update_read_names(overlaps, test_index, test_index);
     ASSERT_STREQ(overlaps[0].query_read_name_, testv[1].c_str());
     ASSERT_STREQ(overlaps[0].target_read_name_, testv[2].c_str());
+
+    anchors_d.free();
+    CGA_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
+    CGA_CU_CHECK_ERR(cudaStreamDestroy(cuda_stream));
 }
 
 TEST(TestCudamapperOverlapperTriggerred, ReverseStrand)
 {
     DefaultDeviceAllocator allocator;
+    cudaStream_t cuda_stream;
+    CGA_CU_CHECK_ERR(cudaStreamCreate(&cuda_stream));
     OverlapperTriggered overlapper(allocator);
 
     std::vector<Overlap> unfused_overlaps;
@@ -494,11 +516,12 @@ TEST(TestCudamapperOverlapperTriggerred, ReverseStrand)
     anchors.push_back(anchor3);
     anchors.push_back(anchor4);
 
-    device_buffer<Anchor> anchors_d(anchors.size(), allocator);
-    cudautils::device_copy_n(anchors.data(), anchors.size(), anchors_d.data()); //H2D
+    device_buffer<Anchor> anchors_d(anchors.size(), allocator, cuda_stream);
+    cudautils::device_copy_n(anchors.data(), anchors.size(), anchors_d.data(), cuda_stream); //H2D
 
     std::vector<Overlap> overlaps;
     overlapper.get_overlaps(overlaps, anchors_d, 0, 0);
+    CGA_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
     ASSERT_EQ(overlaps.size(), 1u);
     ASSERT_GT(overlaps[0].target_end_position_in_read_, overlaps[0].target_start_position_in_read_);
     ASSERT_EQ(overlaps[0].relative_strand, RelativeStrand::Reverse);
@@ -507,6 +530,10 @@ TEST(TestCudamapperOverlapperTriggerred, ReverseStrand)
     overlapper.update_read_names(overlaps, test_index, test_index);
     ASSERT_STREQ(overlaps[0].query_read_name_, testv[1].c_str());
     ASSERT_STREQ(overlaps[0].target_read_name_, testv[2].c_str());
+
+    anchors_d.free();
+    CGA_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
+    CGA_CU_CHECK_ERR(cudaStreamDestroy(cuda_stream));
 }
 
 } // namespace cudamapper

@@ -117,7 +117,7 @@ void run_alignment_batch(std::mutex& overlap_idx_mtx,
     }
     CGA_CU_CHECK_ERR(cudaStreamDestroy(stream));
 }
-}
+} // namespace
 
 void Overlapper::align_overlaps(std::vector<Overlap>& overlaps,
                                 const claragenomics::io::FastaParser& query_parser,

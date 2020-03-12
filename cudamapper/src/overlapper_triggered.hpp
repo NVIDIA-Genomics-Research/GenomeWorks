@@ -43,12 +43,12 @@ public:
     void get_overlaps(std::vector<Overlap>& fused_overlaps, device_buffer<Anchor>& d_anchors,
                       size_t min_residues = 20, size_t min_overlap_len = 50) override;
 
-    explicit OverlapperTriggered(DefaultDeviceAllocator);
-    ~OverlapperTriggered();
+    explicit OverlapperTriggered(DefaultDeviceAllocator,
+                                 const cudaStream_t cuda_stream = 0);
 
 private:
     DefaultDeviceAllocator _allocator;
-    cudaStream_t stream;
+    cudaStream_t _cuda_stream;
 };
 } // namespace cudamapper
 } // namespace claragenomics

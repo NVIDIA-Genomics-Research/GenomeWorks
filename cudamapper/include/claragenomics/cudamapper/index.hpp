@@ -105,8 +105,9 @@ public:
     /// \param past_the_last_read_id read_id+1 of the last read to be included in this index
     /// \param kmer_size k - the kmer length
     /// \param window_size w - the length of the sliding window used to find sketch elements  (i.e. the number of adjacent kmers in a window, adjacent = shifted by one basepair)
-    /// \param hash_representations - if true, hash kmer representations
-    /// \param filtering_parameter - filter out all representations for which number_of_sketch_elements_with_that_representation/total_skech_elements >= filtering_parameter, filtering_parameter == 1.0 disables filtering
+    /// \param hash_representations if true, hash kmer representations
+    /// \param filtering_parameter filter out all representations for which number_of_sketch_elements_with_that_representation/total_skech_elements >= filtering_parameter, filtering_parameter == 1.0 disables filtering
+    /// \param cuda_stream CUDA stream on which the work is to be done. Device arrays are also associated with this stream and will not be freed at least until all work issued on this stream before calling their destructor is done
     /// \return instance of Index
     static std::unique_ptr<Index>
     create_index(DefaultDeviceAllocator allocator,
@@ -116,7 +117,8 @@ public:
                  const std::uint64_t kmer_size,
                  const std::uint64_t window_size,
                  const bool hash_representations  = true,
-                 const double filtering_parameter = 1.0);
+                 const double filtering_parameter = 1.0,
+                 const cudaStream_t cuda_stream   = 0);
 };
 
 /// IndexHostCopy - Creates and maintains a copy of computed IndexGPU elements on the host, then allows to retrieve target
@@ -127,8 +129,10 @@ class IndexHostCopy
 public:
     /// \brief copy cached index vectors from the host and create an object of Index on GPU
     /// \param allocator asynchronous device allocator used for temporary buffer allocations
+    /// \param cuda_stream H2D copy is done on this stream. Device arrays are also associated with this stream and will not be freed at least until all work issued on this stream before calling their destructor is done
     /// \return a pointer to claragenomics::cudamapper::Index
-    virtual std::unique_ptr<Index> copy_index_to_device(DefaultDeviceAllocator allocator) = 0;
+    virtual std::unique_ptr<Index> copy_index_to_device(DefaultDeviceAllocator allocator,
+                                                        const cudaStream_t cuda_stream = 0) = 0;
 
     /// \brief returns an array of representations of sketch elements (stored on host)
     /// \return an array of representations of sketch elements
@@ -188,12 +192,13 @@ public:
     /// \param first_read_id - representing smallest read_id in index
     /// \param kmer_size - number of basepairs in a k-mer
     /// \param window_size the number of adjacent k-mers in a window, adjacent = shifted by one basepair
+    /// \param cuda_stream D2H copy is done on this stream
     /// \return - an instance of IndexHostCopy
-    static std::unique_ptr<IndexHostCopy>
-    create_cache(const Index& index,
-                 const read_id_t first_read_id,
-                 const std::uint64_t kmer_size,
-                 const std::uint64_t window_size);
+    static std::unique_ptr<IndexHostCopy> create_cache(const Index& index,
+                                                       const read_id_t first_read_id,
+                                                       const std::uint64_t kmer_size,
+                                                       const std::uint64_t window_size,
+                                                       const cudaStream_t cuda_stream = 0);
 };
 
 } // namespace cudamapper
