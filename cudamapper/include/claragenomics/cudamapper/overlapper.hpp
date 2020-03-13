@@ -74,6 +74,8 @@ public:
     static void update_read_names(std::vector<Overlap>& overlaps,
                                   const Index& index_query,
                                   const Index& index_target);
+
+    static void post_process_overlaps(std::vector<Overlap> &overlaps);
 };
 //}
 } // namespace cudamapper

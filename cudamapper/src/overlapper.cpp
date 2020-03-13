@@ -191,7 +191,7 @@ void Overlapper::print_paf(const std::vector<Overlap>& overlaps, const std::vect
                     overlap.target_length_,
                     overlap.target_start_position_in_read_,
                     overlap.target_end_position_in_read_,
-                    overlap.num_residues_,
+                    overlap.num_residues_ * 15, // TODO insert this in the correct location.
                     std::max(std::abs(int(overlap.target_start_position_in_read_) - int(overlap.target_end_position_in_read_)),
                             abs(int(overlap.query_start_position_in_read_) - int(overlap.query_end_position_in_read_))),
                     255);
@@ -205,5 +205,86 @@ void Overlapper::print_paf(const std::vector<Overlap>& overlaps, const std::vect
         idx++;
     }
 }
+
+    void Overlapper::post_process_overlaps(std::vector<Overlap> &overlaps) {
+
+    auto overlaps_mergable = [](Overlap o1, Overlap o2) -> bool{
+        bool relative_strands_forward = (o2.relative_strand == RelativeStrand::Forward) && (o1.relative_strand == RelativeStrand::Forward);
+        bool relative_strands_reverse = (o2.relative_strand == RelativeStrand::Reverse) && (o1.relative_strand == RelativeStrand::Reverse);
+
+        bool ids_match = (o1.query_read_id_ == o2.query_read_id_) && (o1.target_read_id_ == o2.target_read_id_);
+
+        int query_gap = (o2.query_start_position_in_read_ - o1.query_end_position_in_read_);
+        int target_gap;
+
+        if (relative_strands_reverse) {
+            target_gap = (o2.target_end_position_in_read_ - o1.target_start_position_in_read_);
+        } else {
+            target_gap = (o2.target_start_position_in_read_ - o1.target_end_position_in_read_);
+        }
+
+        auto gap_ratio = float(std::min(query_gap, target_gap)) / float(std::max(query_gap, target_gap));
+        bool gap_ratio_ok = (gap_ratio > 0.8) || ((query_gap < 500) && (target_gap < 500));
+        return ids_match && (relative_strands_forward || relative_strands_reverse) && gap_ratio_ok;
+    };
+
+    int num_overlaps = overlaps.size();
+    bool in_fuse = false;
+    int fused_target_start;
+    int fused_query_start;
+    int fused_target_end;
+    int fused_query_end;
+
+    int num_residues = 0;
+    for (int i=1;i<num_overlaps;i++){
+        auto prev_overlap = overlaps[i-1];
+        auto current_overlap = overlaps[i];
+        //Check if previous overlap can be merged into the current one
+
+        if (overlaps_mergable(prev_overlap, current_overlap)){
+            if(!in_fuse){ // Entering a new fuse
+                num_residues = prev_overlap.num_residues_ + current_overlap.num_residues_;
+                in_fuse = true;
+                if (current_overlap.relative_strand == RelativeStrand::Forward){
+                    fused_query_start = prev_overlap.query_start_position_in_read_;
+                    fused_target_start = prev_overlap.target_start_position_in_read_;
+                    fused_query_end = current_overlap.query_end_position_in_read_;
+                    fused_target_end = current_overlap.target_end_position_in_read_;
+                } else {
+                    //std::cerr<<"Creating a fusion with a reverse pair\n";
+                    fused_query_start = prev_overlap.query_start_position_in_read_;
+                    fused_target_start = current_overlap.target_start_position_in_read_;
+                    fused_query_end = current_overlap.query_end_position_in_read_;
+                    fused_target_end = prev_overlap.target_end_position_in_read_;
+                }
+            }else{
+                num_residues += current_overlap.num_residues_;
+                if (current_overlap.relative_strand == RelativeStrand::Forward) {
+                    fused_query_end = current_overlap.query_end_position_in_read_;
+                    fused_target_end = current_overlap.target_end_position_in_read_;
+                } else{
+                    fused_query_end = current_overlap.query_end_position_in_read_;
+                    fused_target_start = current_overlap.target_start_position_in_read_;
+                }
+            }
+
+        } else {
+
+            if (in_fuse){ //Terminate the previous overlap fusion
+                in_fuse = false;
+                Overlap fused_overlap = prev_overlap;
+                fused_overlap.query_start_position_in_read_ = fused_query_start;
+                fused_overlap.target_start_position_in_read_ = fused_target_start;
+                fused_overlap.query_end_position_in_read_ = fused_query_end;
+                fused_overlap.target_end_position_in_read_ = fused_target_end;
+                fused_overlap.num_residues_ = num_residues;
+                overlaps.push_back(fused_overlap);
+                num_residues = 0;
+            }
+        }
+    }
+
+
+    }
 } // namespace cudamapper
 } // namespace claragenomics
