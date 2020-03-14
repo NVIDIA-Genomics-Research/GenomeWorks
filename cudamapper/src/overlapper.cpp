@@ -218,7 +218,7 @@ void Overlapper::print_paf(const std::vector<Overlap>& overlaps, const std::vect
         int target_gap;
 
         if (relative_strands_reverse) {
-            target_gap = (o2.target_end_position_in_read_ - o1.target_start_position_in_read_);
+            target_gap = (o1.target_start_position_in_read_ - o2.target_end_position_in_read_);
         } else {
             target_gap = (o2.target_start_position_in_read_ - o1.target_end_position_in_read_);
         }
