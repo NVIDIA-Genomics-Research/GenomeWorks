@@ -17,6 +17,7 @@
 #include <future>
 #include <thread>
 #include <atomic>
+#include <fstream>
 
 #include <claragenomics/logging/logging.hpp>
 #include <claragenomics/io/fasta_parser.hpp>
@@ -135,8 +136,21 @@ int main(int argc, char* argv[])
     }
 
     std::string query_filepath  = std::string(argv[optind++]);
-    std::string target_filepath = std::string(argv[optind++]);
+    std::ifstream query_file(query_filepath);
+    if (query_file.fail())
+    {
+    	std::cerr << "Failed to access file: "+ query_filepath << std::endl;
+    	exit(1);
+    }
 
+    std::string target_filepath = std::string(argv[optind++]);
+    std::ifstream target_file(target_filepath);
+    if (target_file.fail())
+    {
+    	std::cerr << "Failed to access file: "+ target_filepath << std::endl;
+    	exit(1);
+    }
+    
     bool all_to_all = false;
     if (query_filepath == target_filepath)
     {
@@ -162,7 +176,12 @@ int main(int argc, char* argv[])
 
     std::cerr << "Query " << query_filepath << " index " << queries << std::endl;
     std::cerr << "Target " << target_filepath << " index " << targets << std::endl;
-
+    if ((queries == 0)||(targets==0))
+    {
+        std::cerr << "Query or target index can not be zero." << std::endl; 
+        exit(1);
+    }
+    
     // Data structure for holding overlaps to be written out
     std::mutex overlaps_writer_mtx;
 
