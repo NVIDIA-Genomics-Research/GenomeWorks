@@ -173,6 +173,8 @@ int main(int argc, char** argv)
 
     // Loop over all the POA groups, add them to the batch and process them.
     int32_t window_count = 0;
+    // to avoid potential infinite loop
+    int32_t error_count = 0;
     for (int32_t i = 0; i < get_size(windows);)
     {
         const std::vector<std::string>& window = windows[i];
@@ -220,6 +222,9 @@ int main(int argc, char** argv)
         if (status != StatusType::exceeded_maximum_poas && status != StatusType::success)
         {
             std::cerr << "Could not add POA group to batch. Error code " << status << std::endl;
+            error_count++;
+            if(error_count > get_size(windows))
+                break;
         }
     }
 

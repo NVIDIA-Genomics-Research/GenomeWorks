@@ -111,7 +111,7 @@ CudapoaBatch::CudapoaBatch(int32_t max_sequences_per_poa,
 
 CudapoaBatch::~CudapoaBatch()
 {
-    std::string msg = "Destroyed buffers on device ";
+    std::string msg = " Destroyed buffers on device ";
     print_batch_debug_message(msg);
 }
 

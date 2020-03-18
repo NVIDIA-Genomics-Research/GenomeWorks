@@ -20,7 +20,7 @@
 #include <string>
 #include <vector>
 
-// Maximum vnumber of edges per node.
+// Maximum number of edges per node.
 #define CUDAPOA_MAX_NODE_EDGES 50
 
 // Maximum number of nodes aligned to each other.
