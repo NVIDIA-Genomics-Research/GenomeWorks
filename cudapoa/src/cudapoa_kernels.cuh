@@ -69,6 +69,30 @@ namespace cudapoa
 {
 
 /**
+ * @brief A struct to hold max size limits for processing in POA
+ */
+typedef struct UpperLimits
+{
+    uint32_t max_sequence_size                 = 1024;
+    uint32_t max_concensus_size                = 1024;
+    uint32_t max_nodes_per_window              = 3072;
+    uint32_t max_nodes_per_window_banded       = 4096;
+    uint32_t max_matrix_graph_dimension        = max_nodes_per_window + 4;
+    uint32_t max_matrix_graph_dimension_banded = max_nodes_per_window_banded + 4;
+
+    // set upper limit parameters based on max_sequence_size
+    void setLimits(const uint32_t max_seq_sz)
+    {
+        max_sequence_size                 = max_seq_sz;
+        max_concensus_size                = max_sequence_size;
+        max_nodes_per_window              = 3 * max_sequence_size;
+        max_nodes_per_window_banded       = 4 * max_sequence_size;
+        max_matrix_graph_dimension        = max_nodes_per_window + 4;
+        max_matrix_graph_dimension_banded = max_nodes_per_window_banded + 4;
+    }
+} UpperLimits;
+
+/**
  * @brief A struct to hold information about the sequences
  *        inside a window.
  */

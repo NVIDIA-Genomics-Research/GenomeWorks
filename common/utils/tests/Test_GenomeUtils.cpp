@@ -28,6 +28,6 @@ TEST(GenomeUtilsTest, ReverseComplement)
     ASSERT_STREQ(complement.data(), "CATACGTTCGAT");
 }
 
-} // genomeutils
+} // namespace genomeutils
 
 } // namespace claragenomics

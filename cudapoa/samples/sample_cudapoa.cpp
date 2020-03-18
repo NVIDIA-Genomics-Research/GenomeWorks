@@ -223,7 +223,7 @@ int main(int argc, char** argv)
         {
             std::cerr << "Could not add POA group to batch. Error code " << status << std::endl;
             error_count++;
-            if(error_count > get_size(windows))
+            if (error_count > get_size(windows))
                 break;
         }
     }
