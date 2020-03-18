@@ -166,6 +166,9 @@ protected:
 
     // Maximum POAs to process in batch.
     int32_t max_poas_ = 0;
+
+    // Upper limits for data size
+    UpperLimits max_limits_;
 };
 
 /// \}
