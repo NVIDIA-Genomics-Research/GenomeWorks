@@ -47,24 +47,27 @@ typedef std::vector<Entry> Group;
 /// A structure to hold  upper limits for data size processed in POA batches
 struct UpperLimits
 {
-    // Maximum number of elements in a sequence
+    /// Maximum number of elements in a sequence
     uint32_t max_sequence_size = 1024;
-    // Maximum size of final consensus
+    /// Maximum size of final consensus
     uint32_t max_concensus_size = 1024;
-    // Maximum number of nodes in a graph, 1 graph per window
-    uint32_t max_nodes_per_window        = 3072;
+    /// Maximum number of nodes in a graph, 1 graph per window
+    uint32_t max_nodes_per_window = 3072;
+    /// Maximum number of nodes in a graph, 1 graph per window in banded mode
     uint32_t max_nodes_per_window_banded = 4096;
-    // Maximum vertical dimension of scoring matrix, which stores graph
-    // Adding 4 elements more to ensure a 4byte boundary alignment for any allocated buffer
-    uint32_t max_matrix_graph_dimension        = max_nodes_per_window + 4;
+    /// Maximum vertical dimension of scoring matrix, which stores graph
+    /// Adding 4 elements more to ensure a 4byte boundary alignment for any allocated buffer
+    uint32_t max_matrix_graph_dimension = max_nodes_per_window + 4;
+    /// Maximum vertical dimension of scoring matrix, which stores graph
+    /// Adding 4 elements more to ensure a 4byte boundary alignment for any allocated buffer
     uint32_t max_matrix_graph_dimension_banded = max_nodes_per_window_banded + 4;
-    // Maximum horizontal dimension of scoring matrix, which stores sequences
-    // Adding 4 elements more to ensure a 4byte boundary alignment for any allocated buffer
+    /// Maximum horizontal dimension of scoring matrix, which stores sequences
+    /// Adding 4 elements more to ensure a 4byte boundary alignment for any allocated buffer
     uint32_t max_matrix_sequence_dimension = max_sequence_size + 4;
     /// ToDO add banded alignment score matrix dimension parameters (maybe?)
     //uint32_t max_matrix_sequence_dimension_banded;
 
-    // set upper limit parameters based on max_sequence_size
+    /// set upper limit parameters based on max_sequence_size
     void setLimits(const uint32_t max_seq_sz)
     {
         max_sequence_size           = max_seq_sz;

@@ -178,6 +178,9 @@ std::string testGenerateConsensus(const BasicGenerateConsensus& obj)
     uint8_t* consensus;
     uint16_t* coverage;
 
+    //default data size limits
+    UpperLimits max_limits;
+
     //allocate unified memory so they can be accessed by both host and device.
     CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&nodes, max_limits.max_nodes_per_window * sizeof(uint8_t)));
     CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&node_count, sizeof(uint16_t)));

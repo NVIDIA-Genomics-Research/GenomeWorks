@@ -30,9 +30,9 @@ public:
     void initialize(int32_t max_sequences_per_poa,
                     size_t mem_per_batch,
                     int32_t device_id,
-                    cudaStream_t stream = 0,
-                    int8_t output_mask  = OutputType::consensus,
                     UpperLimits max_limits,
+                    cudaStream_t stream    = 0,
+                    int8_t output_mask     = OutputType::consensus,
                     int16_t gap_score      = -8,
                     int16_t mismatch_score = -6,
                     int16_t match_score    = 8,
@@ -67,7 +67,7 @@ TEST_F(TestCudapoaBatch, InitializeTest)
 {
     const int32_t device_id = 0;
     size_t free             = get_free_device_mem(device_id);
-    initialize(5, 0.9 * free, device_id);
+    initialize(5, 0.9 * free, device_id, UpperLimits());
     EXPECT_EQ(cudapoa_batch->batch_id(), 0);
     EXPECT_EQ(cudapoa_batch->get_total_poas(), 0);
 }
@@ -75,14 +75,14 @@ TEST_F(TestCudapoaBatch, InitializeTest)
 TEST_F(TestCudapoaBatch, InitializeZeroMemTest)
 {
     const int32_t device_id = 0;
-    EXPECT_THROW(initialize(5, 0, device_id), std::runtime_error);
+    EXPECT_THROW(initialize(5, 0, device_id, UpperLimits()), std::runtime_error);
 }
 
 TEST_F(TestCudapoaBatch, AddPOATest)
 {
     const int32_t device_id = 0;
     size_t free             = get_free_device_mem(device_id);
-    initialize(5, 0.9 * free, device_id);
+    initialize(5, 0.9 * free, device_id, UpperLimits());
     Group poa_group;
     poa_group.push_back(Entry{});
     std::vector<StatusType> status;
@@ -98,7 +98,7 @@ TEST_F(TestCudapoaBatch, MaxSeqPerPOATest)
     const int32_t device_id             = 0;
     const int32_t max_sequences_per_poa = 10;
     size_t free                         = get_free_device_mem(device_id);
-    initialize(max_sequences_per_poa, 0.9 * free, device_id);
+    initialize(max_sequences_per_poa, 0.9 * free, device_id, UpperLimits());
     Group poa_group;
     std::vector<StatusType> status;
 
@@ -122,7 +122,7 @@ TEST_F(TestCudapoaBatch, MaxSeqSizeTest)
 {
     const int32_t device_id = 0;
     size_t free             = get_free_device_mem(device_id);
-    initialize(10, 0.9 * free, device_id);
+    initialize(10, 0.9 * free, device_id, UpperLimits());
     Group poa_group;
     std::vector<StatusType> status;
     Entry e{};
@@ -153,7 +153,7 @@ TEST_F(TestCudapoaBatch, GeneratePoaTest)
 {
     const int32_t device_id = 0;
     size_t free             = get_free_device_mem(device_id);
-    initialize(10, 0.9 * free, device_id);
+    initialize(10, 0.9 * free, device_id, UpperLimits());
     Group poa_group;
     std::vector<StatusType> status;
     Entry e{};
