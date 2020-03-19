@@ -29,17 +29,8 @@
 #define CUDAPOA_MAX_NODES_PER_WINDOW 3072
 #define CUDAPOA_MAX_NODES_PER_WINDOW_BANDED 4096
 
-// Maximum number of elements in a sequence.
-#define CUDAPOA_MAX_SEQUENCE_SIZE 1024
-
 // Maximum size of final consensus
 #define CUDAPOA_MAX_CONSENSUS_SIZE 1024
-
-// Maximum vertical dimension of scoring matrix, which stores graph.
-// Adding 4 elements more to ensure a 4byte boundary alignment for
-// any allocated buffer.
-#define CUDAPOA_MAX_MATRIX_GRAPH_DIMENSION (CUDAPOA_MAX_NODES_PER_WINDOW + 4)
-#define CUDAPOA_MAX_MATRIX_GRAPH_DIMENSION_BANDED (CUDAPOA_MAX_NODES_PER_WINDOW_BANDED + 4)
 
 // Dimensions for Banded alignment score matrix
 #define WARP_SIZE 32

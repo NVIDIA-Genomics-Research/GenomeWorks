@@ -92,7 +92,12 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
                                   uint32_t max_sequences_per_poa,
                                   uint16_t* sequence_begin_nodes_ids_d,
                                   uint16_t* outgoing_edges_coverage_d,
-                                  uint16_t* outgoing_edges_coverage_count_d)
+                                  uint16_t* outgoing_edges_coverage_count_d,
+                                  uint32_t max_limit_nodes_per_window,
+                                  uint32_t max_limit_nodes_per_window_banded,
+                                  uint32_t max_limit_matrix_graph_dimension,
+                                  uint32_t max_limit_matrix_graph_dimension_banded,
+                                  uint32_t max_limit_consensus_size)
 {
     // shared error indicator within a warp
     bool warp_error = false;
@@ -107,8 +112,8 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
 
     // These are not being changed to int32_t to make use of larger range
     // without having to use 2 registers which would be needed for 64bit
-    uint32_t max_nodes_per_window = cuda_banded_alignment ? CUDAPOA_MAX_NODES_PER_WINDOW_BANDED : CUDAPOA_MAX_NODES_PER_WINDOW;
-    uint32_t max_graph_dimension  = cuda_banded_alignment ? CUDAPOA_MAX_MATRIX_GRAPH_DIMENSION_BANDED : CUDAPOA_MAX_MATRIX_GRAPH_DIMENSION;
+    uint32_t max_nodes_per_window = cuda_banded_alignment ? max_limit_nodes_per_window_banded : max_limit_nodes_per_window;
+    uint32_t max_graph_dimension  = cuda_banded_alignment ? max_limit_matrix_graph_dimension_banded : max_limit_matrix_graph_dimension;
 
     // Find the buffer offsets for each thread within the global memory buffers.
     uint8_t* nodes                        = &nodes_d[max_nodes_per_window * window_idx];
@@ -149,7 +154,7 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
     uint8_t* sequence      = &sequences_d[window_details_d[window_idx].seq_starts];
     int8_t* base_weights   = &base_weights_d[window_details_d[window_idx].seq_starts];
 
-    uint8_t* consensus = &consensus_d[window_idx * CUDAPOA_MAX_CONSENSUS_SIZE];
+    uint8_t* consensus = &consensus_d[window_idx * max_limit_consensus_size];
 
     uint16_t* sequence_begin_nodes_ids      = nullptr;
     uint16_t* outgoing_edges_coverage       = nullptr;
@@ -213,7 +218,7 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
 
         if (lane_idx == 0)
         {
-            if (sequence_lengths[0] >= CUDAPOA_MAX_NODES_PER_WINDOW)
+            if (sequence_lengths[0] >= max_nodes_per_window)
             {
                 consensus[0] = CUDAPOA_KERNEL_ERROR_ENCOUNTERED;
                 consensus[1] = static_cast<uint8_t>(StatusType::node_count_exceeded_maximum_graph_size);
@@ -446,7 +451,12 @@ void generatePOA(claragenomics::cudapoa::OutputDetails* output_details_d,
                                                                                  max_sequences_per_poa,
                                                                                  sequence_begin_nodes_ids,
                                                                                  outgoing_edges_coverage,
-                                                                                 outgoing_edges_coverage_count);
+                                                                                 outgoing_edges_coverage_count,
+                                                                                 max_limits.max_nodes_per_window,
+                                                                                 max_limits.max_nodes_per_window_banded,
+                                                                                 max_limits.max_matrix_graph_dimension,
+                                                                                 max_limits.max_matrix_graph_dimension_banded,
+                                                                                 max_limits.max_concensus_size);
             CGA_CU_CHECK_ERR(cudaPeekAtLastError());
 
             generateConsensusKernel<true>
@@ -504,7 +514,12 @@ void generatePOA(claragenomics::cudapoa::OutputDetails* output_details_d,
                                                                                  max_sequences_per_poa,
                                                                                  sequence_begin_nodes_ids,
                                                                                  outgoing_edges_coverage,
-                                                                                 outgoing_edges_coverage_count);
+                                                                                 outgoing_edges_coverage_count,
+                                                                                 max_limits.max_nodes_per_window,
+                                                                                 max_limits.max_nodes_per_window_banded,
+                                                                                 max_limits.max_matrix_graph_dimension,
+                                                                                 max_limits.max_matrix_graph_dimension_banded,
+                                                                                 max_limits.max_concensus_size);
             CGA_CU_CHECK_ERR(cudaPeekAtLastError());
 
             generateMSAKernel<true>
@@ -568,7 +583,12 @@ void generatePOA(claragenomics::cudapoa::OutputDetails* output_details_d,
                                                                     max_sequences_per_poa,
                                                                     sequence_begin_nodes_ids,
                                                                     outgoing_edges_coverage,
-                                                                    outgoing_edges_coverage_count);
+                                                                    outgoing_edges_coverage_count,
+                                                                    max_limits.max_nodes_per_window,
+                                                                    max_limits.max_nodes_per_window_banded,
+                                                                    max_limits.max_matrix_graph_dimension,
+                                                                    max_limits.max_matrix_graph_dimension_banded,
+                                                                    max_limits.max_concensus_size);
             CGA_CU_CHECK_ERR(cudaPeekAtLastError());
 
             generateConsensusKernel<false>
@@ -626,7 +646,12 @@ void generatePOA(claragenomics::cudapoa::OutputDetails* output_details_d,
                                                                     max_sequences_per_poa,
                                                                     sequence_begin_nodes_ids,
                                                                     outgoing_edges_coverage,
-                                                                    outgoing_edges_coverage_count);
+                                                                    outgoing_edges_coverage_count,
+                                                                    max_limits.max_nodes_per_window,
+                                                                    max_limits.max_nodes_per_window_banded,
+                                                                    max_limits.max_matrix_graph_dimension,
+                                                                    max_limits.max_matrix_graph_dimension_banded,
+                                                                    max_limits.max_concensus_size);
             CGA_CU_CHECK_ERR(cudaPeekAtLastError());
 
             generateMSAKernel<false>

@@ -123,7 +123,7 @@ TEST_F(MSATest, CudapoaMSA)
 TEST_F(MSATest, CudapoaMSAFailure)
 {
     std::minstd_rand rng(1);
-    int num_sequences    = 10;
+    int num_sequences = 10;
     UpperLimits max_limits;
 
     std::string backbone = claragenomics::genomeutils::generate_random_genome(max_limits.max_concensus_size - 1, rng);
