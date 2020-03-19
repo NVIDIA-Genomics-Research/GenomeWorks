@@ -43,7 +43,10 @@ public:
         cudaMemGetInfo(&free, &total);
         size_t mem_per_batch = 0.9 * free;
 
-        batch_ = create_batch(200, 0, stream, mem_per_batch, OutputType::consensus, -8, -6, 8, false);
+        /// ToDo define max limits properly, currently using default sizes, equivalent to old hard-codd macros
+        UpperLimits max_limits;
+
+        batch_ = create_batch(200, 0, stream, mem_per_batch, OutputType::consensus, max_limits, -8, -6, 8, false);
     }
 
     ~SingleBatch()

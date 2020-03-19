@@ -32,16 +32,19 @@ public:
                     int32_t device_id,
                     cudaStream_t stream    = 0,
                     int8_t output_mask     = OutputType::consensus,
+                    UpperLimits max_limits,
                     int16_t gap_score      = -8,
                     int16_t mismatch_score = -6,
                     int16_t match_score    = 8,
                     bool banded_alignment  = false)
     {
+        max_limits.setLimits(1024);
         cudapoa_batch = claragenomics::cudapoa::create_batch(max_sequences_per_poa,
                                                              device_id,
                                                              stream,
                                                              mem_per_batch,
                                                              output_mask,
+                                                             max_limits,
                                                              gap_score,
                                                              mismatch_score,
                                                              match_score,

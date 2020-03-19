@@ -67,10 +67,11 @@ struct UpperLimits
     // set upper limit parameters based on max_sequence_size
     void setLimits(const uint32_t max_seq_sz)
     {
-        max_sequence_size                 = max_seq_sz;
-        max_concensus_size                = max_sequence_size;
-        max_nodes_per_window              = 3 * max_sequence_size;
-        max_nodes_per_window_banded       = 4 * max_sequence_size;
+        max_sequence_size           = max_seq_sz;
+        max_concensus_size          = max_sequence_size;
+        max_nodes_per_window        = 3 * max_sequence_size;
+        max_nodes_per_window_banded = 4 * max_sequence_size;
+        // Adding 4 elements more to ensure a 4byte boundary alignment for any allocated buffer
         max_matrix_graph_dimension        = max_nodes_per_window + 4;
         max_matrix_graph_dimension_banded = max_nodes_per_window_banded + 4;
         max_matrix_sequence_dimension     = max_sequence_size + 4;
@@ -171,6 +172,7 @@ std::unique_ptr<Batch> create_batch(int32_t max_sequences_per_poa,
                                     cudaStream_t stream,
                                     size_t max_mem,
                                     int8_t output_mask,
+                                    UpperLimits max_limits,
                                     int16_t gap_score,
                                     int16_t mismatch_score,
                                     int16_t match_score,

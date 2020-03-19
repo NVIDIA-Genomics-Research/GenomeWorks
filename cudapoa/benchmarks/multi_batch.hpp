@@ -37,6 +37,9 @@ public:
 
         assert(get_size(windows_) > 0);
 
+        /// ToDo define max limits properly, currently using default sizes, equivalent to old hard-codd macros
+        UpperLimits max_limits;
+
         size_t total = 0, free = 0;
         cudaSetDevice(0);
         cudaMemGetInfo(&free, &total);
@@ -48,6 +51,7 @@ public:
             batches_.emplace_back(create_batch(200,
                                                0, stream, mem_per_batch,
                                                OutputType::consensus,
+                                               max_limits,
                                                -8, -6, 8, false));
         }
     }

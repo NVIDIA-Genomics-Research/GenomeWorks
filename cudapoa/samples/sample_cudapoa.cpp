@@ -46,12 +46,16 @@ std::unique_ptr<Batch> initialize_batch(bool msa)
     size_t mem_per_batch                      = 0.9 * free; // Using 90% of GPU available memory for CUDAPOA batch.
     const int32_t mismatch_score = -6, gap_score = -8, match_score = 8;
     bool banded_alignment = false;
+    // Define upper limits for sequence size, graph size ....
+    UpperLimits max_limits;
+    max_limits.setLimits(1024);
 
     std::unique_ptr<Batch> batch = create_batch(max_sequences_per_poa_group,
                                                 device_id,
                                                 stream,
                                                 mem_per_batch,
                                                 msa ? OutputType::msa : OutputType::consensus,
+                                                max_limits,
                                                 gap_score,
                                                 mismatch_score,
                                                 match_score,

@@ -72,6 +72,7 @@ CudapoaBatch::CudapoaBatch(int32_t max_sequences_per_poa,
                            cudaStream_t stream,
                            size_t max_mem,
                            int8_t output_mask,
+                           UpperLimits max_limits,
                            int16_t gap_score,
                            int16_t mismatch_score,
                            int16_t match_score,
@@ -80,6 +81,7 @@ CudapoaBatch::CudapoaBatch(int32_t max_sequences_per_poa,
     , device_id_(throw_on_negative(device_id, "Device ID has to be non-negative"))
     , stream_(stream)
     , output_mask_(output_mask)
+    , max_limits_(max_limits)
     , gap_score_(gap_score)
     , mismatch_score_(mismatch_score)
     , match_score_(match_score)
@@ -88,6 +90,7 @@ CudapoaBatch::CudapoaBatch(int32_t max_sequences_per_poa,
                                   throw_on_negative(max_mem, "Maximum memory per batch has to be non-negative"),
                                   max_sequences_per_poa,
                                   output_mask,
+                                  max_limits_,
                                   cuda_banded_alignment))
     , max_poas_(batch_block_->get_max_poas())
 {
