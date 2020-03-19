@@ -62,7 +62,7 @@ __device__ void generateMSADevice(uint8_t* nodes,
     uint16_t filled_until = 0;
     while (true)
     {
-        uint16_t msa_pos                                                       = node_id_to_msa_pos[node_id];
+        uint16_t msa_pos                                                     = node_id_to_msa_pos[node_id];
         multiple_sequence_alignments[s * max_limit_consensus_size + msa_pos] = nodes[node_id];
 
         // fill the gap in current alignment with '-'
@@ -184,7 +184,8 @@ __global__ void generateMSAKernel(uint8_t* nodes_d,
                                        node_marks,
                                        check_aligned_nodes,
                                        nodes_to_visit,
-                                       cuda_banded_alignment);
+                                       cuda_banded_alignment,
+                                       (uint16_t)max_nodes_per_window);
 
         msa_length = getNodeIDToMSAPosDevice(sequence_lengths[0],
                                              sorted_poa,

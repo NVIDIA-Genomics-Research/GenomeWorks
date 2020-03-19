@@ -25,10 +25,6 @@
 // Maximum number of nodes aligned to each other.
 #define CUDAPOA_MAX_NODE_ALIGNMENTS 50
 
-// Maximum number of nodes in a graph, 1 graph per window.
-#define CUDAPOA_MAX_NODES_PER_WINDOW 3072
-#define CUDAPOA_MAX_NODES_PER_WINDOW_BANDED 4096
-
 // Dimensions for Banded alignment score matrix
 #define WARP_SIZE 32
 #define CELLS_PER_THREAD 4
@@ -259,7 +255,8 @@ void addAlignment(uint8_t* nodes,
                   uint16_t* outgoing_edges_coverage,
                   uint16_t* outgoing_edges_coverage_count,
                   uint16_t s,
-                  uint32_t max_sequences_per_poa);
+                  uint32_t max_sequences_per_poa,
+                  uint32_t max_limit_nodes_per_window);
 
 // Host function that calls the kernel
 void runNW(uint8_t* nodes,

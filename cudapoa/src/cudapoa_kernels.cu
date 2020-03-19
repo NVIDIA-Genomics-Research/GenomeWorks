@@ -307,7 +307,8 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
                                                           outgoing_edges_coverage,
                                                           outgoing_edges_coverage_count,
                                                           s,
-                                                          max_sequences_per_poa);
+                                                          max_sequences_per_poa,
+                                                          max_nodes_per_window);
 
             if (error_code != 0)
             {
@@ -331,7 +332,8 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
                                                node_marks,
                                                check_aligned_nodes,
                                                nodes_to_visit,
-                                               cuda_banded_alignment);
+                                               cuda_banded_alignment,
+                                               (uint16_t)max_nodes_per_window);
 #else
                 // Faster top sort
                 topologicalSortDeviceUtil(sorted_poa,

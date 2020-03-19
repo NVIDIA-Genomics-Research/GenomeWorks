@@ -302,7 +302,8 @@ BasicGraph testAddAlignment(const BasicAlignment& obj)
                  outgoing_edges_coverage,
                  outgoing_edges_coverage_count,
                  s,
-                 max_sequences_per_poa);
+                 max_sequences_per_poa,
+                 max_limits.max_nodes_per_window);
 
     CGA_CU_CHECK_ERR(cudaDeviceSynchronize());
 

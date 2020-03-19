@@ -46,6 +46,7 @@ namespace cudapoa
  * @param[in] outgoing_edges_coverage_count   Device buffer with coverage count of each edge in graph
  * @param[in] s                               Current sequence id
  * @param[in] max_sequences_per_poa           Maximum sequences allowed in a graph
+ * @param[in] max_limit_nodes_per_window      Upper limit of number of nodes per window
  *
  * @return Status code for any errors encountered.
  */
@@ -71,7 +72,8 @@ __device__
                         uint16_t* outgoing_edges_coverage,
                         uint16_t* outgoing_edges_coverage_count,
                         uint16_t s,
-                        uint32_t max_sequences_per_poa)
+                        uint32_t max_sequences_per_poa,
+                        uint32_t max_limit_nodes_per_window)
 {
     //printf("Running addition for alignment %d\n", alignment_length);
     int16_t head_node_id = -1;
@@ -104,7 +106,7 @@ __device__
                 // No alignment node found in graph.
                 // Create new node.
                 curr_node_id = node_count++;
-                if (node_count >= CUDAPOA_MAX_NODES_PER_WINDOW)
+                if (node_count >= max_limit_nodes_per_window)
                 {
                     return static_cast<uint8_t>(StatusType::node_count_exceeded_maximum_graph_size);
                 }
@@ -160,7 +162,7 @@ __device__
                         // node to the others.
                         new_node     = true;
                         curr_node_id = node_count++;
-                        if (node_count >= CUDAPOA_MAX_NODES_PER_WINDOW)
+                        if (node_count >= max_limit_nodes_per_window)
                         {
                             return static_cast<uint8_t>(StatusType::node_count_exceeded_maximum_graph_size);
                         }
@@ -289,7 +291,8 @@ __global__ void addAlignmentKernel(uint8_t* nodes,
                                    uint16_t* outgoing_edges_coverage,
                                    uint16_t* outgoing_edges_coverage_count,
                                    uint16_t s,
-                                   uint32_t max_sequences_per_poa)
+                                   uint32_t max_sequences_per_poa,
+                                   uint32_t max_limit_nodes_per_window)
 {
     // all pointers will be allocated in unified memory visible to both host and device
     uint16_t new_node_count;
@@ -310,7 +313,8 @@ __global__ void addAlignmentKernel(uint8_t* nodes,
                                              outgoing_edges_coverage,
                                              outgoing_edges_coverage_count,
                                              s,
-                                             max_sequences_per_poa);
+                                             max_sequences_per_poa,
+                                             max_limit_nodes_per_window);
     *node_count        = new_node_count;
 }
 
@@ -332,7 +336,8 @@ void addAlignment(uint8_t* nodes,
                   uint16_t* outgoing_edges_coverage,
                   uint16_t* outgoing_edges_coverage_count,
                   uint16_t s,
-                  uint32_t max_sequences_per_poa)
+                  uint32_t max_sequences_per_poa,
+                  uint32_t max_limit_nodes_per_window)
 {
     addAlignmentKernel<<<1, 1>>>(nodes,
                                  node_count,
@@ -351,7 +356,8 @@ void addAlignment(uint8_t* nodes,
                                  outgoing_edges_coverage,
                                  outgoing_edges_coverage_count,
                                  s,
-                                 max_sequences_per_poa);
+                                 max_sequences_per_poa,
+                                 max_limit_nodes_per_window);
     CGA_CU_CHECK_ERR(cudaPeekAtLastError());
 }
 
