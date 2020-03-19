@@ -197,26 +197,28 @@ NWAnswer testNW(const BasicNW& obj)
     int16_t mismatch_score;
     int16_t match_score;
     uint16_t* aligned_nodes; //local; to store num of nodes aligned (length of alignment_graph and alignment_read)
+    UpperLimits max_limits;
+    max_limits.setLimits(1024);
 
     //allocate unified memory so they can be accessed by both host and device.
-    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&nodes, CUDAPOA_MAX_NODES_PER_WINDOW * sizeof(uint8_t)));
-    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&graph, CUDAPOA_MAX_NODES_PER_WINDOW * sizeof(uint16_t)));
-    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&node_id_to_pos, CUDAPOA_MAX_NODES_PER_WINDOW * sizeof(uint16_t)));
-    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&incoming_edges, CUDAPOA_MAX_NODES_PER_WINDOW * CUDAPOA_MAX_NODE_EDGES * sizeof(uint16_t)));
-    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&incoming_edge_count, CUDAPOA_MAX_NODES_PER_WINDOW * sizeof(uint16_t)));
-    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&outgoing_edges, CUDAPOA_MAX_NODES_PER_WINDOW * CUDAPOA_MAX_NODE_EDGES * sizeof(uint16_t)));
-    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&outgoing_edge_count, CUDAPOA_MAX_NODES_PER_WINDOW * sizeof(uint16_t)));
-    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&scores, CUDAPOA_MAX_MATRIX_GRAPH_DIMENSION * CUDAPOA_MAX_MATRIX_SEQUENCE_DIMENSION * sizeof(int16_t)));
-    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&alignment_graph, CUDAPOA_MAX_MATRIX_GRAPH_DIMENSION * sizeof(int16_t)));
-    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&read, CUDAPOA_MAX_SEQUENCE_SIZE * sizeof(uint8_t)));
-    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&alignment_read, CUDAPOA_MAX_MATRIX_GRAPH_DIMENSION * sizeof(int16_t)));
+    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&nodes, max_limits.max_nodes_per_window * sizeof(uint8_t)));
+    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&graph, max_limits.max_nodes_per_window * sizeof(uint16_t)));
+    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&node_id_to_pos, max_limits.max_nodes_per_window * sizeof(uint16_t)));
+    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&incoming_edges, max_limits.max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES * sizeof(uint16_t)));
+    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&incoming_edge_count, max_limits.max_nodes_per_window * sizeof(uint16_t)));
+    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&outgoing_edges, max_limits.max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES * sizeof(uint16_t)));
+    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&outgoing_edge_count, max_limits.max_nodes_per_window * sizeof(uint16_t)));
+    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&scores, max_limits.max_matrix_graph_dimension * max_limits.max_matrix_sequence_dimension * sizeof(int16_t)));
+    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&alignment_graph, max_limits.max_matrix_graph_dimension * sizeof(int16_t)));
+    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&read, max_limits.max_sequence_size * sizeof(uint8_t)));
+    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&alignment_read, max_limits.max_matrix_graph_dimension * sizeof(int16_t)));
     CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&aligned_nodes, sizeof(uint16_t)));
 
     //initialize all 'count' buffers
-    memset((void**)incoming_edge_count, 0, CUDAPOA_MAX_NODES_PER_WINDOW * sizeof(uint16_t));
-    memset((void**)outgoing_edge_count, 0, CUDAPOA_MAX_NODES_PER_WINDOW * sizeof(uint16_t));
-    memset((void**)node_id_to_pos, 0, CUDAPOA_MAX_NODES_PER_WINDOW * sizeof(uint16_t));
-    memset((void**)scores, 0, CUDAPOA_MAX_MATRIX_GRAPH_DIMENSION * CUDAPOA_MAX_MATRIX_SEQUENCE_DIMENSION * sizeof(int16_t));
+    memset((void**)incoming_edge_count, 0, max_limits.max_nodes_per_window * sizeof(uint16_t));
+    memset((void**)outgoing_edge_count, 0, max_limits.max_nodes_per_window * sizeof(uint16_t));
+    memset((void**)node_id_to_pos, 0, max_limits.max_nodes_per_window * sizeof(uint16_t));
+    memset((void**)scores, 0, max_limits.max_matrix_graph_dimension * max_limits.max_matrix_sequence_dimension * sizeof(int16_t));
 
     //calculate edge counts on host
     obj.get_graph_buffers(incoming_edges, incoming_edge_count,

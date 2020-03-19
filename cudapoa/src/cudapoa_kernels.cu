@@ -19,6 +19,7 @@
 #include "cudapoa_generate_msa.cu"
 
 #include <claragenomics/utils/cudautils.hpp>
+#include <claragenomics/cudapoa/batch.hpp>
 
 namespace claragenomics
 {
@@ -30,35 +31,34 @@ namespace cudapoa
  * @brief The main kernel that runs the partial order alignment
  *        algorithm.
  *
- * @param[out] consensus_d                Device buffer for generated consensus
- * @param[in] sequences_d                 Device buffer with sequences for all windows
- * @param[in] base_weights_d              Device buffer with base weights for all windows
- * @param[in] sequence_lengths_d          Device buffer sequence lengths
- * @param[in] window_details_d            Device buffer with structs 
- *                                        encapsulating sequence details per window
- * @param[in] total_window                Total number of windows to process
- * @param[in] scores                      Device scratch space that scores alignment matrix score
- * @param[in] alignment_graph_d           Device scratch space for backtrace alignment of graph
- * @param[in] alignment_read_d            Device scratch space for backtrace alignment of sequence
- * @param[in] nodes                       Device scratch space for storing unique nodes in graph
- * @param[in] incoming_edges              Device scratch space for storing incoming edges per node
- * @param[in] incoming_edges_count        Device scratch space for storing number of incoming edges per node
- * @param[in] outgoing_edges              Device scratch space for storing outgoing edges per node
- * @param[in] outgoing_edges_count        Device scratch space for storing number of outgoing edges per node
- * @param[in] incoming_edge_w             Device scratch space for storing weight of incoming edges
- * @param[in] outgoing_edge_w             Device scratch space for storing weight of outgoing edges
- * @param[in] sorted_poa                  Device scratch space for storing sorted graph
- * @param[in] node_id_to_pos              Device scratch space for mapping node ID to position in graph
- * @graph[in] node_alignments             Device scratch space for storing alignment nodes per node in graph
- * @param[in] node_alignment_count        Device scratch space for storing number of aligned nodes
- * @param[in] sorted_poa_local_edge_count Device scratch space for maintaining edge counts during topological sort
- * @param[in] node_marks_d_               Device scratch space for storing node marks when running spoa accurate top sort
- * @param[in] check_aligned_nodes_d_      Device scratch space for storing check for aligned nodes
- * @param[in] nodes_to_visit_d_           device scratch space for storing stack of nodes to be visited in topsort
- * @param[in] node_coverage_counts_d_     device scratch space for storing coverage of each node in graph.
- * @param[in] gap_score                   Score for inserting gap into alignment
- * @param[in] mismatch_score              Score for finding a mismatch in alignment
- * @param[in] match_score                 Score for finding a match in alignment
+ * @param[out] consensus_d                  Device buffer for generated consensus
+ * @param[in] sequences_d                   Device buffer with sequences for all windows
+ * @param[in] base_weights_d                Device buffer with base weights for all windows
+ * @param[in] sequence_lengths_d            Device buffer sequence lengths
+ * @param[in] window_details_d              Device buffer with structs encapsulating sequence details per window
+ * @param[in] total_windows                 Total number of windows to process
+ * @param[in] scores_d                      Device scratch space that scores alignment matrix score
+ * @param[in] alignment_graph_d             Device scratch space for backtrace alignment of graph
+ * @param[in] alignment_read_d              Device scratch space for backtrace alignment of sequence
+ * @param[in] nodes_d                       Device scratch space for storing unique nodes in graph
+ * @param[in] incoming_edges_d              Device scratch space for storing incoming edges per node
+ * @param[in] incoming_edges_count_d        Device scratch space for storing number of incoming edges per node
+ * @param[in] outgoing_edges_d              Device scratch space for storing outgoing edges per node
+ * @param[in] outgoing_edges_count_d        Device scratch space for storing number of outgoing edges per node
+ * @param[in] incoming_edge_w_d             Device scratch space for storing weight of incoming edges
+ * @param[in] outgoing_edge_w_d             Device scratch space for storing weight of outgoing edges
+ * @param[in] sorted_poa_d                  Device scratch space for storing sorted graph
+ * @param[in] node_id_to_pos_d              Device scratch space for mapping node ID to position in graph
+ * @graph[in] node_alignments_d             Device scratch space for storing alignment nodes per node in graph
+ * @param[in] node_alignment_count_d        Device scratch space for storing number of aligned nodes
+ * @param[in] sorted_poa_local_edge_count_d Device scratch space for maintaining edge counts during topological sort
+ * @param[in] node_marks_d_                 Device scratch space for storing node marks when running spoa accurate top sort
+ * @param[in] check_aligned_nodes_d_        Device scratch space for storing check for aligned nodes
+ * @param[in] nodes_to_visit_d_             Device scratch space for storing stack of nodes to be visited in topsort
+ * @param[in] node_coverage_counts_d_       Device scratch space for storing coverage of each node in graph.
+ * @param[in] gap_score                     Score for inserting gap into alignment
+ * @param[in] mismatch_score                Score for finding a mismatch in alignment
+ * @param[in] match_score                   Score for finding a match in alignment
  */
 template <int32_t TPB = 64, bool cuda_banded_alignment = false, bool msa = false>
 __global__ void generatePOAKernel(uint8_t* consensus_d,
@@ -362,7 +362,8 @@ void generatePOA(claragenomics::cudapoa::OutputDetails* output_details_d,
                  int16_t match_score,
                  bool cuda_banded_alignment,
                  uint32_t max_sequences_per_poa,
-                 int8_t output_mask)
+                 int8_t output_mask,
+                 const UpperLimits& max_limits)
 {
     // unpack output details
     uint8_t* consensus_d                  = output_details_d->consensus;

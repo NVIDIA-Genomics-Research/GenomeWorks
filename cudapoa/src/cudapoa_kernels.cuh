@@ -17,8 +17,7 @@
 #include <stdint.h>
 #include <cuda_runtime_api.h>
 #include <stdio.h>
-#include <string>
-#include <vector>
+#include <claragenomics/cudapoa/batch.hpp>
 
 // Maximum number of edges per node.
 #define CUDAPOA_MAX_NODE_EDGES 50
@@ -247,7 +246,8 @@ void generatePOA(claragenomics::cudapoa::OutputDetails* output_details_d,
                  int16_t match_score,
                  bool banded_alignment,
                  uint32_t max_sequences_per_poa,
-                 int8_t output_mask);
+                 int8_t output_mask,
+                 const UpperLimits& max_limits);
 
 // host function that calls runTopSortKernel
 void runTopSort(uint16_t* sorted_poa,

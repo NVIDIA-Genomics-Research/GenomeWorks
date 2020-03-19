@@ -179,7 +179,7 @@ std::string testGenerateConsensus(const BasicGenerateConsensus& obj)
     uint16_t* coverage;
 
     //allocate unified memory so they can be accessed by both host and device.
-    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&nodes, CUDAPOA_MAX_NODES_PER_WINDOW * sizeof(uint8_t)));
+    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&nodes, max_limits.max_nodes_per_window * sizeof(uint8_t)));
     CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&node_count, sizeof(uint16_t)));
     CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&graph, CUDAPOA_MAX_NODES_PER_WINDOW * sizeof(uint16_t)));
     CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&node_id_to_pos, CUDAPOA_MAX_NODES_PER_WINDOW * sizeof(uint16_t)));

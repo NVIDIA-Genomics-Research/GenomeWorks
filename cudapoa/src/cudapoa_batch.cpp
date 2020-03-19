@@ -166,7 +166,8 @@ void CudapoaBatch::generate_poa()
                                         match_score_,
                                         banded_alignment_,
                                         max_sequences_per_poa_,
-                                        output_mask_);
+                                        output_mask_,
+                                        max_limits_);
 
     msg = " Launched kernel on device ";
     print_batch_debug_message(msg);
@@ -474,7 +475,7 @@ StatusType CudapoaBatch::add_poa()
 
 StatusType CudapoaBatch::add_seq_to_poa(const char* seq, const int8_t* weights, int32_t seq_len)
 {
-    if (seq_len >= CUDAPOA_MAX_SEQUENCE_SIZE)
+    if (seq_len >= (int32_t)max_limits_.max_sequence_size)
     {
         return StatusType::exceeded_maximum_sequence_size;
     }

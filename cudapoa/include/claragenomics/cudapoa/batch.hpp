@@ -161,6 +161,7 @@ public:
 /// \param stream CUDA stream to use on GPU
 /// \param max_mem Maximum GPU memory to use for this batch.
 /// \param output_mask Which outputs to produce from POA (msa, consensus)
+/// \param max_limits Defines upper limits for size of input data, i.e. sequence length and other related parameters
 /// \param gap_score Score to be assigned to a gap
 /// \param mismatch_score Score to be assigned to a mismatch
 /// \param match_score Score to be assigned for a match
