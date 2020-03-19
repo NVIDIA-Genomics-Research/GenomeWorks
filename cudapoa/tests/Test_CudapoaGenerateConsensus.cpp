@@ -230,7 +230,8 @@ std::string testGenerateConsensus(const BasicGenerateConsensus& obj)
                               coverage,
                               node_coverage_counts,
                               node_alignments,
-                              node_alignment_count);
+                              node_alignment_count,
+                              max_limits.max_concensus_size);
 
     CGA_CU_CHECK_ERR(cudaDeviceSynchronize());
 

@@ -477,7 +477,10 @@ void generatePOA(claragenomics::cudapoa::OutputDetails* output_details_d,
                                                                                        node_alignment_count,
                                                                                        consensus_scores,
                                                                                        consensus_predecessors,
-                                                                                       node_coverage_counts);
+                                                                                       node_coverage_counts,
+                                                                                       max_limits.max_nodes_per_window,
+                                                                                       max_limits.max_nodes_per_window_banded,
+                                                                                       max_limits.max_concensus_size);
             CGA_CU_CHECK_ERR(cudaPeekAtLastError());
         }
         if (output_mask & OutputType::msa)
@@ -543,7 +546,10 @@ void generatePOA(claragenomics::cudapoa::OutputDetails* output_details_d,
                                                                       node_id_to_pos,
                                                                       node_marks,
                                                                       check_aligned_nodes,
-                                                                      nodes_to_visit);
+                                                                      nodes_to_visit,
+                                                                      max_limits.max_nodes_per_window,
+                                                                      max_limits.max_nodes_per_window_banded,
+                                                                      max_limits.max_concensus_size);
             CGA_CU_CHECK_ERR(cudaPeekAtLastError());
         }
     }
@@ -609,7 +615,10 @@ void generatePOA(claragenomics::cudapoa::OutputDetails* output_details_d,
                                                                                        node_alignment_count,
                                                                                        consensus_scores,
                                                                                        consensus_predecessors,
-                                                                                       node_coverage_counts);
+                                                                                       node_coverage_counts,
+                                                                                       max_limits.max_nodes_per_window,
+                                                                                       max_limits.max_nodes_per_window_banded,
+                                                                                       max_limits.max_concensus_size);
             CGA_CU_CHECK_ERR(cudaPeekAtLastError());
         }
         if (output_mask & OutputType::msa)
@@ -675,7 +684,10 @@ void generatePOA(claragenomics::cudapoa::OutputDetails* output_details_d,
                                                                       node_id_to_pos,
                                                                       node_marks,
                                                                       check_aligned_nodes,
-                                                                      nodes_to_visit);
+                                                                      nodes_to_visit,
+                                                                      max_limits.max_nodes_per_window,
+                                                                      max_limits.max_nodes_per_window_banded,
+                                                                      max_limits.max_concensus_size);
             CGA_CU_CHECK_ERR(cudaPeekAtLastError());
         }
     }

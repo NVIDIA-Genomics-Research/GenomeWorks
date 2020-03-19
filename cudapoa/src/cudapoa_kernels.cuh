@@ -29,9 +29,6 @@
 #define CUDAPOA_MAX_NODES_PER_WINDOW 3072
 #define CUDAPOA_MAX_NODES_PER_WINDOW_BANDED 4096
 
-// Maximum size of final consensus
-#define CUDAPOA_MAX_CONSENSUS_SIZE 1024
-
 // Dimensions for Banded alignment score matrix
 #define WARP_SIZE 32
 #define CELLS_PER_THREAD 4
@@ -299,7 +296,8 @@ void generateConsensusTestHost(uint8_t* nodes,
                                uint16_t* coverage,
                                uint16_t* node_coverage_counts,
                                uint16_t* node_alignments,
-                               uint16_t* node_alignment_count);
+                               uint16_t* node_alignment_count,
+                               uint32_t max_limit_consensus_size);
 } // namespace cudapoa
 
 } // namespace claragenomics
