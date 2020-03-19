@@ -41,11 +41,6 @@
 #define CUDAPOA_MAX_MATRIX_GRAPH_DIMENSION (CUDAPOA_MAX_NODES_PER_WINDOW + 4)
 #define CUDAPOA_MAX_MATRIX_GRAPH_DIMENSION_BANDED (CUDAPOA_MAX_NODES_PER_WINDOW_BANDED + 4)
 
-// Maximum horizontal dimension of scoring matrix, which stores sequences.
-// Adding 4 elements more to ensure a 4byte boundary alignment for
-// any allocated buffer.
-#define CUDAPOA_MAX_MATRIX_SEQUENCE_DIMENSION (CUDAPOA_MAX_SEQUENCE_SIZE + 4)
-
 // Dimensions for Banded alignment score matrix
 #define WARP_SIZE 32
 #define CELLS_PER_THREAD 4

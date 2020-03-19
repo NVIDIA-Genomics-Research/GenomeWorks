@@ -184,27 +184,27 @@ std::string testGenerateConsensus(const BasicGenerateConsensus& obj)
     //allocate unified memory so they can be accessed by both host and device.
     CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&nodes, max_limits.max_nodes_per_window * sizeof(uint8_t)));
     CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&node_count, sizeof(uint16_t)));
-    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&graph, CUDAPOA_MAX_NODES_PER_WINDOW * sizeof(uint16_t)));
-    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&node_id_to_pos, CUDAPOA_MAX_NODES_PER_WINDOW * sizeof(uint16_t)));
-    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&incoming_edges, CUDAPOA_MAX_NODES_PER_WINDOW * CUDAPOA_MAX_NODE_EDGES * sizeof(uint16_t)));
-    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&incoming_edge_count, CUDAPOA_MAX_NODES_PER_WINDOW * sizeof(uint16_t)));
-    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&outgoing_edges, CUDAPOA_MAX_NODES_PER_WINDOW * CUDAPOA_MAX_NODE_EDGES * sizeof(uint16_t)));
-    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&outgoing_edge_count, CUDAPOA_MAX_NODES_PER_WINDOW * sizeof(uint16_t)));
-    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&incoming_edge_w, CUDAPOA_MAX_NODES_PER_WINDOW * CUDAPOA_MAX_NODE_EDGES * sizeof(uint16_t)));
-    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&node_coverage_counts, CUDAPOA_MAX_NODES_PER_WINDOW * sizeof(uint16_t)));
-    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&node_alignments, CUDAPOA_MAX_NODES_PER_WINDOW * CUDAPOA_MAX_NODE_ALIGNMENTS * sizeof(uint16_t)));
-    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&node_alignment_count, CUDAPOA_MAX_NODES_PER_WINDOW * sizeof(uint16_t)));
+    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&graph, max_limits.max_nodes_per_window * sizeof(uint16_t)));
+    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&node_id_to_pos, max_limits.max_nodes_per_window * sizeof(uint16_t)));
+    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&incoming_edges, max_limits.max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES * sizeof(uint16_t)));
+    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&incoming_edge_count, max_limits.max_nodes_per_window * sizeof(uint16_t)));
+    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&outgoing_edges, max_limits.max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES * sizeof(uint16_t)));
+    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&outgoing_edge_count, max_limits.max_nodes_per_window * sizeof(uint16_t)));
+    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&incoming_edge_w, max_limits.max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES * sizeof(uint16_t)));
+    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&node_coverage_counts, max_limits.max_nodes_per_window * sizeof(uint16_t)));
+    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&node_alignments, max_limits.max_nodes_per_window * CUDAPOA_MAX_NODE_ALIGNMENTS * sizeof(uint16_t)));
+    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&node_alignment_count, max_limits.max_nodes_per_window * sizeof(uint16_t)));
 
-    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&predecessors, CUDAPOA_MAX_NODES_PER_WINDOW * sizeof(int16_t)));
-    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&scores, CUDAPOA_MAX_NODES_PER_WINDOW * sizeof(int32_t)));
-    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&consensus, CUDAPOA_MAX_CONSENSUS_SIZE * sizeof(uint8_t)));
-    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&coverage, CUDAPOA_MAX_CONSENSUS_SIZE * sizeof(uint16_t)));
+    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&predecessors, max_limits.max_nodes_per_window * sizeof(int16_t)));
+    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&scores, max_limits.max_nodes_per_window * sizeof(int32_t)));
+    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&consensus, max_limits.max_concensus_size * sizeof(uint8_t)));
+    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&coverage, max_limits.max_concensus_size * sizeof(uint16_t)));
 
     //initialize all 'count' buffers
-    memset((void**)incoming_edge_count, 0, CUDAPOA_MAX_NODES_PER_WINDOW * sizeof(uint16_t));
-    memset((void**)outgoing_edge_count, 0, CUDAPOA_MAX_NODES_PER_WINDOW * sizeof(uint16_t));
-    memset((void**)node_coverage_counts, 0, CUDAPOA_MAX_NODES_PER_WINDOW * sizeof(uint16_t));
-    memset((void**)node_alignment_count, 0, CUDAPOA_MAX_NODES_PER_WINDOW * sizeof(uint16_t));
+    memset((void**)incoming_edge_count, 0, max_limits.max_nodes_per_window * sizeof(uint16_t));
+    memset((void**)outgoing_edge_count, 0, max_limits.max_nodes_per_window * sizeof(uint16_t));
+    memset((void**)node_coverage_counts, 0, max_limits.max_nodes_per_window * sizeof(uint16_t));
+    memset((void**)node_alignment_count, 0, max_limits.max_nodes_per_window * sizeof(uint16_t));
 
     //calculate edge counts on host
     obj.get_graph_buffers(nodes, node_count,
