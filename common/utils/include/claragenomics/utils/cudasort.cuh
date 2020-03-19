@@ -20,6 +20,7 @@
 #include <thrust/gather.h>
 #include <thrust/sequence.h>
 
+#include <claragenomics/utils/cudautils.hpp>
 #include <claragenomics/utils/device_buffer.hpp>
 #include <claragenomics/utils/mathutils.hpp>
 
@@ -40,6 +41,7 @@ namespace details
 /// \param number_of_elements number of elements to sort
 /// \param begin_bit index of least significant bit to sort by (for example to sort numbers up to 253 = 0b1111'1101 this value should be 0)
 /// \param end_bit index of past the most significant bit to sort by (for example to sort numbers up to 253 = 0b1111'1101 this value should be 8)
+/// \param cuda_stream CUDA stream on which the work is to be done
 /// \tparam KeyT
 /// \tparam ValueT
 template <typename KeyT,
@@ -51,7 +53,8 @@ void perform_radix_sort(device_buffer<char>& temp_storage_vect_d,
                         ValueT* sorted_values_d,
                         int number_of_elements,
                         std::uint32_t begin_bit,
-                        std::uint32_t end_bit)
+                        std::uint32_t end_bit,
+                        const cudaStream_t cuda_stream = 0)
 {
     // calculate necessary temp storage size
     void* temp_storage_d      = nullptr;
@@ -64,7 +67,8 @@ void perform_radix_sort(device_buffer<char>& temp_storage_vect_d,
                                     sorted_values_d,
                                     number_of_elements,
                                     begin_bit,
-                                    end_bit);
+                                    end_bit,
+                                    cuda_stream);
 
     // allocate temp storage
     if (temp_storage_bytes > static_cast<size_t>(temp_storage_vect_d.size()))
@@ -86,7 +90,8 @@ void perform_radix_sort(device_buffer<char>& temp_storage_vect_d,
                                     sorted_values_d,
                                     number_of_elements,
                                     begin_bit,
-                                    end_bit);
+                                    end_bit,
+                                    cuda_stream);
 }
 
 } // namespace details
@@ -114,6 +119,7 @@ void perform_radix_sort(device_buffer<char>& temp_storage_vect_d,
 /// \param values sorted on output
 /// \param max_value_of_more_significant_key optional, defaults to max value for MoreSignificantKeyT (specifying it might lead to better performance)
 /// \param max_value_of_less_significant_key optional, defaults to max value for LessSignificantKeyT (specifying it might lead to better performance)
+/// \param cuda_stream optional, CUDA stream on which the work is to be done
 /// \tparam MoreSignificantKeyT
 /// \tparam LessSignificantKeyT
 /// \tparam ValueT
@@ -124,8 +130,11 @@ void sort_by_two_keys(device_buffer<MoreSignificantKeyT>& more_significant_keys,
                       device_buffer<LessSignificantKeyT>& less_significant_keys,
                       device_buffer<ValueT>& values,
                       const MoreSignificantKeyT max_value_of_more_significant_key = std::numeric_limits<MoreSignificantKeyT>::max(),
-                      const LessSignificantKeyT max_value_of_less_significant_key = std::numeric_limits<LessSignificantKeyT>::max())
+                      const LessSignificantKeyT max_value_of_less_significant_key = std::numeric_limits<LessSignificantKeyT>::max(),
+                      const cudaStream_t cuda_stream                              = 0)
 {
+    CGA_NVTX_RANGE(profiler, "sort_by_two_keys");
+
     // Radix sort is done in-place, meaning sorting by less significant and then more significant keys yields the wanted result
     //
     // CUB's radix sort devides the key into chunks of a few bits (5-6?), sorts those bits and then moves to next (more significant) bits.
@@ -147,15 +156,15 @@ void sort_by_two_keys(device_buffer<MoreSignificantKeyT>& more_significant_keys,
     // using values' allocator
     DefaultDeviceAllocator allocator = values.get_allocator();
 
-    device_buffer<move_to_index_t> move_to_index(number_of_elements, allocator);
+    device_buffer<move_to_index_t> move_to_index(number_of_elements, allocator, cuda_stream);
     // Fill array with values 0..number_of_elements-1
-    thrust::sequence(thrust::cuda::par(allocator),
+    thrust::sequence(thrust::cuda::par(allocator).on(cuda_stream),
                      std::begin(move_to_index),
                      std::end(move_to_index));
 
     // *** sort by less significant key first ***
-    device_buffer<LessSignificantKeyT> less_significant_key_sorted(number_of_elements, allocator);
-    device_buffer<move_to_index_t> move_to_index_sorted(number_of_elements, allocator);
+    device_buffer<LessSignificantKeyT> less_significant_key_sorted(number_of_elements, allocator, cuda_stream);
+    device_buffer<move_to_index_t> move_to_index_sorted(number_of_elements, allocator, cuda_stream);
 
     device_buffer<char> temp_storage_vect(0, allocator);
 
@@ -166,7 +175,8 @@ void sort_by_two_keys(device_buffer<MoreSignificantKeyT>& more_significant_keys,
                                 move_to_index_sorted.data(),
                                 number_of_elements,
                                 0,
-                                int_floor_log2(max_value_of_less_significant_key) + 1); // function asks for the index of past-the-last most significant bit
+                                int_floor_log2(max_value_of_less_significant_key) + 1, // function asks for the index of past-the-last most significant bit
+                                cuda_stream);
 
     // swap sorted and unsorted arrays
     swap(less_significant_keys, less_significant_key_sorted);
@@ -177,9 +187,9 @@ void sort_by_two_keys(device_buffer<MoreSignificantKeyT>& more_significant_keys,
     less_significant_key_sorted.free();
 
     // *** move more significant keys to their position after less significant keys sort ***
-    device_buffer<MoreSignificantKeyT> more_significant_keys_after_sort(number_of_elements, allocator);
+    device_buffer<MoreSignificantKeyT> more_significant_keys_after_sort(number_of_elements, allocator, cuda_stream);
 
-    thrust::gather(thrust::cuda::par(allocator),
+    thrust::gather(thrust::cuda::par(allocator).on(cuda_stream),
                    std::begin(move_to_index),
                    std::end(move_to_index),
                    std::begin(more_significant_keys),
@@ -196,7 +206,8 @@ void sort_by_two_keys(device_buffer<MoreSignificantKeyT>& more_significant_keys,
                                 move_to_index_sorted.data(),
                                 number_of_elements,
                                 0,
-                                int_floor_log2(max_value_of_more_significant_key) + 1);
+                                int_floor_log2(max_value_of_more_significant_key) + 1,
+                                cuda_stream);
 
     swap(move_to_index, move_to_index_sorted);
 
@@ -204,9 +215,9 @@ void sort_by_two_keys(device_buffer<MoreSignificantKeyT>& more_significant_keys,
     move_to_index_sorted.free();
 
     // *** move the values to their final position ***
-    device_buffer<ValueT> values_after_sort(number_of_elements, allocator);
+    device_buffer<ValueT> values_after_sort(number_of_elements, allocator, cuda_stream);
 
-    thrust::gather(thrust::cuda::par(allocator),
+    thrust::gather(thrust::cuda::par(allocator).on(cuda_stream),
                    std::begin(move_to_index),
                    std::end(move_to_index),
                    std::begin(values),

@@ -25,7 +25,8 @@ class MatcherGPU : public Matcher
 public:
     MatcherGPU(DefaultDeviceAllocator allocator,
                const Index& query_index,
-               const Index& target_index);
+               const Index& target_index,
+               const cudaStream_t cuda_stream = 0);
 
     device_buffer<Anchor>& anchors() override;
 
@@ -64,10 +65,12 @@ namespace matcher_gpu
 /// \param found_target_indices_d The array which will filled with the resulting target indices. This array has to be of same size as query_representations_d.
 /// \param query_representations_d An array of query representations
 /// \param target_representations_d An sorted array of target representations
+/// \param cuda_stream CUDA stream on which the work is to be done
 void find_query_target_matches(
     device_buffer<std::int64_t>& found_target_indices_d,
     const device_buffer<representation_t>& query_representations_d,
-    const device_buffer<representation_t>& target_representations_d);
+    const device_buffer<representation_t>& target_representations_d,
+    const cudaStream_t cuda_stream = 0);
 
 /// \brief Computes the starting indices for an array of anchors based on the matches in query and target arrays.
 ///
@@ -101,11 +104,13 @@ void find_query_target_matches(
 /// \param query_starting_index_of_each_representation_d
 /// \param found_target_indices_d
 /// \param target_starting_index_of_each_representation_d
+/// \param cuda_stream CUDA stream on which the work is to be done
 void compute_anchor_starting_indices(
     device_buffer<std::int64_t>& anchor_starting_indices_d,
     const device_buffer<std::uint32_t>& query_starting_index_of_each_representation_d,
     const device_buffer<std::int64_t>& found_target_indices_d,
-    const device_buffer<std::uint32_t>& target_starting_index_of_each_representation_d);
+    const device_buffer<std::uint32_t>& target_starting_index_of_each_representation_d,
+    const cudaStream_t cuda_stream = 0);
 
 /// \brief Generates an array of anchors from matches of representations of the query and target index
 ///
@@ -158,12 +163,14 @@ void compute_anchor_starting_indices(
 /// \param found_target_indices_d the found matches in the array of unique target representation for each unique representation of query index
 /// \param query_index
 /// \param target_index
+/// \param cuda_stream CUDA stream on which the work is to be done
 void generate_anchors_dispatcher(
     device_buffer<Anchor>& anchors,
     const device_buffer<std::int64_t>& anchor_starting_indices_d,
     const device_buffer<std::int64_t>& found_target_indices_d,
     const Index& query_index,
-    const Index& target_index);
+    const Index& target_index,
+    const cudaStream_t cuda_stream = 0);
 
 /// \brief Performs a binary search on target_representations_d for each element of query_representations_d and stores the found index (or -1 iff not found) in found_target_indices.
 ///
