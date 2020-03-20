@@ -21,11 +21,13 @@
 #include <string>
 #include <stdexcept>
 #include <unistd.h>
+#include <random>
+#include <claragenomics/utils/genomeutils.hpp>
 
 using namespace claragenomics;
 using namespace claragenomics::cudapoa;
 
-std::unique_ptr<Batch> initialize_batch(bool msa)
+std::unique_ptr<Batch> initialize_batch(bool msa, UpperLimits max_limits)
 {
     // Get device information.
     int32_t device_count = 0;
@@ -46,9 +48,6 @@ std::unique_ptr<Batch> initialize_batch(bool msa)
     size_t mem_per_batch                      = 0.9 * free; // Using 90% of GPU available memory for CUDAPOA batch.
     const int32_t mismatch_score = -6, gap_score = -8, match_score = 8;
     bool banded_alignment = false;
-    // Define upper limits for sequence size, graph size ....
-    UpperLimits max_limits;
-    max_limits.setLimits(1024);
 
     std::unique_ptr<Batch> batch = create_batch(max_sequences_per_poa_group,
                                                 device_id,
@@ -129,6 +128,76 @@ void process_batch(Batch* batch, bool msa, bool print)
     }
 }
 
+void sample_long_reads()
+{
+    constexpr uint32_t random_seed = 5827349;
+    std::minstd_rand rng(random_seed);
+    std::vector<std::string> long_reads(2);
+    const int32_t read_length   = 10000;
+    int32_t max_sequence_length = read_length + 1;
+    std::vector<std::pair<int, int>> variation_ranges;
+    variation_ranges.push_back(std::pair<int, int>(3, 5));
+    variation_ranges.push_back(std::pair<int, int>(300, 500));
+    variation_ranges.push_back(std::pair<int, int>(1000, 1300));
+    variation_ranges.push_back(std::pair<int, int>(2000, 2200));
+    variation_ranges.push_back(std::pair<int, int>(3000, 3500));
+    variation_ranges.push_back(std::pair<int, int>(4000, 4200));
+
+    long_reads[0] = claragenomics::genomeutils::generate_random_genome(read_length, rng);
+
+    for (size_t i = 1; i < long_reads.size(); i++)
+    {
+        long_reads[i]       = claragenomics::genomeutils::generate_random_sequence_within_range(long_reads[0], rng, variation_ranges, get_size(long_reads[0]), get_size(long_reads[0]), get_size(long_reads[0]));
+        max_sequence_length = max_sequence_length > get_size(long_reads[i]) ? max_sequence_length : get_size(long_reads[i]);
+    }
+
+    bool msa   = false;
+    bool print = false;
+
+    // Define upper limits for sequence size, graph size ....
+    UpperLimits max_limits;
+    max_limits.setLimits(max_sequence_length);
+
+    // Initialize batch.
+    std::unique_ptr<Batch> batch = initialize_batch(msa, max_limits);
+
+    Group poa_group;
+    // Create a new entry for each sequence and add to the group.
+    for (const auto& read : long_reads)
+    {
+        Entry poa_entry{};
+        poa_entry.seq     = read.c_str();
+        poa_entry.length  = read.length();
+        poa_entry.weights = nullptr;
+        poa_group.push_back(poa_entry);
+    }
+
+    std::vector<StatusType> read_status;
+    StatusType status = batch->add_poa_group(read_status, poa_group);
+
+    if (status == StatusType::success)
+    {
+        // Check if all reads in POA group were added successfully.
+        for (const auto& s : read_status)
+        {
+            if (s == StatusType::exceeded_maximum_sequence_size)
+            {
+                std::cerr << "Dropping sequence because sequence exceeded maximum size" << std::endl;
+            }
+        }
+    }
+
+    if (status != StatusType::exceeded_maximum_poas && status != StatusType::success)
+    {
+        std::cerr << "Could not add POA group to batch. Error code " << status << std::endl;
+    }
+    else
+    {
+        // Now process batch.
+        process_batch(batch.get(), msa, print);
+    }
+}
+
 int main(int argc, char** argv)
 {
     // Process options
@@ -164,6 +233,8 @@ int main(int argc, char** argv)
         std::exit(0);
     }
 
+    sample_long_reads();
+
     // Load input data. Each POA group is represented as a vector of strings. The sample
     // data has many such POA groups to process, hence the data is loaded into a vector
     // of vector of strings.
@@ -172,8 +243,12 @@ int main(int argc, char** argv)
     parse_window_data_file(windows, input_data, 1000); // Generate windows.
     assert(get_size(windows) > 0);
 
+    // Define upper limits for sequence size, graph size ....
+    UpperLimits max_limits;
+    max_limits.setLimits(1024);
+
     // Initialize batch.
-    std::unique_ptr<Batch> batch = initialize_batch(msa);
+    std::unique_ptr<Batch> batch = initialize_batch(msa, max_limits);
 
     // Loop over all the POA groups, add them to the batch and process them.
     int32_t window_count = 0;
