@@ -132,27 +132,28 @@ void sample_long_reads()
 {
     constexpr uint32_t random_seed = 5827349;
     std::minstd_rand rng(random_seed);
-    std::vector<std::string> long_reads(2);
-    const int32_t read_length   = 10000;
-    int32_t max_sequence_length = read_length + 1;
+
+    const int16_t number_of_reads = 2;
+    const int32_t read_length     = 1000;
+    int32_t max_sequence_length   = read_length + 1;
+    bool msa                      = true;
+    bool print                    = false;
+
     std::vector<std::pair<int, int>> variation_ranges;
-    variation_ranges.push_back(std::pair<int, int>(3, 5));
-    variation_ranges.push_back(std::pair<int, int>(300, 500));
-    variation_ranges.push_back(std::pair<int, int>(1000, 1300));
-    variation_ranges.push_back(std::pair<int, int>(2000, 2200));
-    variation_ranges.push_back(std::pair<int, int>(3000, 3500));
-    variation_ranges.push_back(std::pair<int, int>(4000, 4200));
+    //variation_ranges.push_back(std::pair<int, int>(3, 5));
+    //variation_ranges.push_back(std::pair<int, int>(300, 500));
+    //variation_ranges.push_back(std::pair<int, int>(1000, 1300));
+    //variation_ranges.push_back(std::pair<int, int>(2000, 2200));
+    //variation_ranges.push_back(std::pair<int, int>(3000, 3500));
+    //variation_ranges.push_back(std::pair<int, int>(4000, 4200));
 
+    std::vector<std::string> long_reads(number_of_reads);
     long_reads[0] = claragenomics::genomeutils::generate_random_genome(read_length, rng);
-
     for (size_t i = 1; i < long_reads.size(); i++)
     {
         long_reads[i]       = claragenomics::genomeutils::generate_random_sequence_within_range(long_reads[0], rng, variation_ranges, get_size(long_reads[0]), get_size(long_reads[0]), get_size(long_reads[0]));
-        max_sequence_length = max_sequence_length > get_size(long_reads[i]) ? max_sequence_length : get_size(long_reads[i]);
+        max_sequence_length = max_sequence_length > get_size(long_reads[i]) ? max_sequence_length : get_size(long_reads[i]) + 1;
     }
-
-    bool msa   = false;
-    bool print = false;
 
     // Define upper limits for sequence size, graph size ....
     UpperLimits max_limits;
@@ -196,22 +197,45 @@ void sample_long_reads()
         // Now process batch.
         process_batch(batch.get(), msa, print);
     }
+
+    std::vector<DirectedGraph> graph;
+    std::vector<StatusType> graph_status;
+
+    batch->get_graphs(graph, graph_status);
+
+    for (const auto& s : graph_status)
+    {
+        if (s != StatusType::success)
+        {
+            std::cerr << "Failed to process long-read batch. Error code " << s << std::endl;
+        }
+        else
+        {
+            std::cerr << "Processed long-read batch successfully." << std::endl;
+        }
+    }
+
+    //std::string graph_dot = graph.front().serialize_to_dot();
 }
 
 int main(int argc, char** argv)
 {
     // Process options
-    int c      = 0;
-    bool msa   = false;
-    bool help  = false;
-    bool print = false;
+    int c          = 0;
+    bool msa       = false;
+    bool long_read = false;
+    bool help      = false;
+    bool print     = false;
 
-    while ((c = getopt(argc, argv, "mhp")) != -1)
+    while ((c = getopt(argc, argv, "mlhp")) != -1)
     {
         switch (c)
         {
         case 'm':
             msa = true;
+            break;
+        case 'l':
+            long_read = true;
             break;
         case 'p':
             print = true;
@@ -228,12 +252,17 @@ int main(int argc, char** argv)
         std::cout << "Usage:" << std::endl;
         std::cout << "./sample_cudapoa [-m] [-h]" << std::endl;
         std::cout << "-m : Generate MSA (if not provided, generates consensus by default)" << std::endl;
+        std::cout << "-l : Perform long-read sample (if not provided, will run window-based sample by default)" << std::endl;
         std::cout << "-p : Print the MSA or consensus output to stdout" << std::endl;
         std::cout << "-h : Print help message" << std::endl;
         std::exit(0);
     }
 
-    sample_long_reads();
+    if (long_read)
+    {
+        sample_long_reads();
+        return 0;
+    }
 
     // Load input data. Each POA group is represented as a vector of strings. The sample
     // data has many such POA groups to process, hence the data is loaded into a vector
