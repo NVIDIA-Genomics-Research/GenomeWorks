@@ -821,6 +821,7 @@ void IndexGPU<SketchElementImpl>::generate_index(const io::FastaParser& parser,
                              merged_basepairs_h.size(),
                              merged_basepairs_d.data(),
                              cuda_stream_); // H2D
+    cudaStreamSynchronize(cuda_stream_);
     merged_basepairs_h.clear();
     merged_basepairs_h.shrink_to_fit();
 

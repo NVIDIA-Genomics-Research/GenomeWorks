@@ -51,9 +51,9 @@ public:
     explicit buffer(size_type n           = 0,
                     AllocatorIn allocator = AllocatorIn(),
                     cudaStream_t stream   = 0)
-        : _size(n)
+        : _data(nullptr)
+        , _size(n)
         , _capacity(n)
-        , _data(nullptr)
         , _stream(stream)
         , _allocator(allocator)
     {
@@ -81,9 +81,9 @@ public:
     /// Buffer to move from (rhs) is left in an empty state (size = capacity = 0), with the original stream and allocator.
     /// @param rhs The bufer to move.
     buffer(buffer&& rhs)
-        : _size(std::exchange(rhs._size, 0))
+        : _data(std::exchange(rhs._data, nullptr))
+        , _size(std::exchange(rhs._size, 0))
         , _capacity(std::exchange(rhs._capacity, 0))
-        , _data(std::exchange(rhs._data, nullptr))
         , _stream(rhs._stream)
         , _allocator(rhs._allocator)
     {
@@ -95,9 +95,9 @@ public:
     /// @return refrence to this buffer.
     buffer& operator=(buffer&& rhs)
     {
+        _data      = std::exchange(rhs._data, nullptr);
         _size      = std::exchange(rhs._size, 0);
         _capacity  = std::exchange(rhs._capacity, 0);
-        _data      = std::exchange(rhs._data, nullptr);
         _stream    = rhs._stream;
         _allocator = rhs._allocator;
         return *this;
