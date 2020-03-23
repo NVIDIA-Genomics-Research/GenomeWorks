@@ -128,7 +128,7 @@ void process_batch(Batch* batch, bool msa, bool print)
     }
 }
 
-void sample_long_reads()
+void sample_long_reads(bool msa, bool print)
 {
     constexpr uint32_t random_seed = 5827349;
     std::minstd_rand rng(random_seed);
@@ -136,8 +136,6 @@ void sample_long_reads()
     const int16_t number_of_reads = 2;
     const int32_t read_length     = 1000;
     int32_t max_sequence_length   = read_length + 1;
-    bool msa                      = true;
-    bool print                    = false;
 
     std::vector<std::pair<int, int>> variation_ranges;
     //variation_ranges.push_back(std::pair<int, int>(3, 5));
@@ -260,7 +258,7 @@ int main(int argc, char** argv)
 
     if (long_read)
     {
-        sample_long_reads();
+        sample_long_reads(msa, print);
         return 0;
     }
 
