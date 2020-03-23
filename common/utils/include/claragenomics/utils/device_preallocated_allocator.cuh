@@ -147,7 +147,7 @@ private:
         if ((bytes_needed & 0xFF) != 0)
         {
             // bytes needed not divisible by 256, increase it to the next value divisible by 256
-            bytes_needed = bytes_needed + (0x100 - bytes_needed & 0xFF);
+            bytes_needed = bytes_needed + (0x100 - (bytes_needed & 0xFF));
         }
         assert((bytes_needed & 0xFF) == 0);
 
