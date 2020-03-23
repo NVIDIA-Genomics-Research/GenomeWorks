@@ -199,6 +199,41 @@ ApplicationParameteres read_input(int argc, char* argv[])
     return parameters;
 }
 
+/// @brief adds read names to overlaps and writes them to output
+/// This function is expected to be executed async to matcher + overlapper
+/// @param overlaps_writer_mtx locked while writing the output
+/// @param num_overlap_chunks_to_print increased before the function is called, decreased right before the function finishes // TODO: improve this design
+/// @param filtered_overlaps overlaps to be written out, on input without read names, on output cleared
+/// @param query_index needed for read names // TODO: consider only passing vector of names, not whole indices
+/// @param target_index needed for read names // TODO: consider only passing vector of names, not whole indices
+/// @param cigar
+/// @param device_id id of device on which query and target indices were created
+void writer_thread_function(std::mutex& overlaps_writer_mtx,
+                            std::atomic<int>& num_overlap_chunks_to_print,
+                            std::shared_ptr<std::vector<claragenomics::cudamapper::Overlap>> filtered_overlaps,
+                            std::shared_ptr<claragenomics::cudamapper::Index> query_index,
+                            std::shared_ptr<claragenomics::cudamapper::Index> target_index,
+                            const std::vector<std::string> cigar,
+                            const int device_id)
+{
+    // This function is expected to run in a separate thread so set current device in order to avoid problems
+    // with deallocating indices with different current device than the one on which they were created
+    cudaSetDevice(device_id);
+
+    // parallel update of the query/target read names for filtered overlaps [parallel on host]
+    claragenomics::cudamapper::Overlapper::update_read_names(*filtered_overlaps, *query_index, *target_index);
+    std::lock_guard<std::mutex> lck(overlaps_writer_mtx);
+    claragenomics::cudamapper::Overlapper::print_paf(*filtered_overlaps, cigar);
+
+    //clear data
+    for (auto o : *filtered_overlaps)
+    {
+        o.clear();
+    }
+    //Decrement counter which tracks number of overlap chunks to be filtered and printed
+    num_overlap_chunks_to_print--;
+};
+
 /// @brief finds largest section of contiguous memory on device
 /// @return number of bytes
 std::size_t find_largest_contiguous_device_memory_section()
@@ -499,30 +534,15 @@ int main(int argc, char* argv[])
 
                 //Increment counter which tracks number of overlap chunks to be filtered and printed
                 num_overlap_chunks_to_print++;
-                auto print_overlaps = [&overlaps_writer_mtx, &num_overlap_chunks_to_print](std::shared_ptr<std::vector<claragenomics::cudamapper::Overlap>> filtered_overlaps,
-                                                                                           std::shared_ptr<claragenomics::cudamapper::Index> query_index,
-                                                                                           std::shared_ptr<claragenomics::cudamapper::Index> target_index,
-                                                                                           const std::vector<std::string>& cigar,
-                                                                                           const int device_id) {
-                    // This lambda is expected to run in a separate thread so set current device in order to avoid problems
-                    // with deallocating indices with different current device then the one on which they were created
-                    cudaSetDevice(device_id);
 
-                    // parallel update of the query/target read names for filtered overlaps [parallel on host]
-                    claragenomics::cudamapper::Overlapper::update_read_names(*filtered_overlaps, *query_index, *target_index);
-                    std::lock_guard<std::mutex> lck(overlaps_writer_mtx);
-                    claragenomics::cudamapper::Overlapper::print_paf(*filtered_overlaps, cigar);
-
-                    //clear data
-                    for (auto o : *filtered_overlaps)
-                    {
-                        o.clear();
-                    }
-                    //Decrement counter which tracks number of overlap chunks to be filtered and printed
-                    num_overlap_chunks_to_print--;
-                };
-
-                std::thread t(print_overlaps, overlaps_to_add, query_index, target_index, cigar, device_id);
+                std::thread t(writer_thread_function,
+                              std::ref(overlaps_writer_mtx),
+                              std::ref(num_overlap_chunks_to_print),
+                              overlaps_to_add,
+                              query_index,
+                              target_index,
+                              std::move(cigar),
+                              device_id);
                 t.detach();
             }
 
