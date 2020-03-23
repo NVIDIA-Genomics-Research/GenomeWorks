@@ -124,6 +124,7 @@ std::size_t find_largest_contiguous_device_memory_section()
         {
             // if cudaMalloc failed because of error other than cudaErrorMemoryAllocation process the error
             CGA_CU_CHECK_ERR(status);
+            return 0;
         }
     }
 
