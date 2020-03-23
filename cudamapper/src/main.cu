@@ -314,7 +314,7 @@ int main(int argc, char* argv[])
         std::vector<std::pair<std::int32_t, int32_t>> target_ranges;
     };
 
-    ///Factor of 1000000 to make max cache size in MiB
+    ///Factor of 1000000 to make max cache size in MB
     auto query_chunks  = query_parser->get_read_chunks(parameters.index_size * 1000000);
     auto target_chunks = target_parser->get_read_chunks(parameters.target_index_size * 1000000);
 
