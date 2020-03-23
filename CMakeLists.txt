@@ -33,6 +33,7 @@ option(cga_profiling "Compile a binary for profiling with NVTX markers." OFF)
 option(cga_enable_caching_allocator "Enable caching allocator." ON)
 option(cga_enable_preallocating_caching_allocator "Enable preallocating caching allocator." ON)
 option(cga_generate_docs "Generate Doxygen documentation" ON)
+option(cga_cuda_gen_all_arch "Generate CUDA code for all architectures" ON)
 
 # Must be included before others for options value validation
 include(cmake/Utils.cmake)
