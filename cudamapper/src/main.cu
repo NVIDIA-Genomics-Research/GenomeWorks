@@ -42,8 +42,96 @@ static struct option options[] = {
     {"help", no_argument, 0, 'h'},
 };
 
-void help(int32_t exit_code);
-std::size_t find_largest_contiguous_device_memory_section();
+void help(int32_t exit_code = 0)
+{
+    std::cerr <<
+        R"(Usage: cudamapper [options ...] <query_sequences> <target_sequences>
+     <sequences>
+        Input file in FASTA/FASTQ format (can be compressed with gzip)
+        containing sequences used for all-to-all overlapping
+     options:
+        -k, --kmer-size
+            length of kmer to use for minimizers [15] (Max=)"
+              << claragenomics::cudamapper::Index::maximum_kmer_size() << ")"
+              << R"(
+        -w, --window-size
+            length of window to use for minimizers [15])"
+              << R"(
+        -d, --num-devices
+            number of GPUs to use [1])"
+              << R"(
+        -c, --max-index-device-cache
+            number of indices to keep in GPU memory [100])"
+              << R"(
+        -C, --max-index-host-cache
+            number of indices to keep in host memory [0])"
+              << R"(
+        -m, --max-cached-memory
+            maximum aggregate cached memory per device in GiB, if 0 program tries to allocate as much memory as possible [0])"
+              << R"(
+        -i, --index-size
+            length of batch size used for query in MB [30])"
+              << R"(
+        -t, --target-index-size
+            length of batch sized used for target in MB [30])"
+              << R"(
+        -F, --filtering-parameter
+            filter all representations for which sketch_elements_with_that_representation/total_sketch_elements >= filtering_parameter), filtering disabled if filtering_parameter == 1.0 [1'000'000'001] (Min = 0.0, Max = 1.0))"
+              << R"(
+        -a, --alignment-engines
+            Number of alignment engines to use (per device) for generating CIGAR strings for overlap alignments. Default value 0 = no alignment to be performed. Typically 2-4 engines per device gives best perf.)"
+              << std::endl;
+
+    exit(exit_code);
+}
+
+/// @brief finds largest section of contiguous memory on device
+/// @return number of bytes
+std::size_t find_largest_contiguous_device_memory_section()
+{
+    // find the largest block of contiguous memory
+    size_t free;
+    size_t total;
+    cudaMemGetInfo(&free, &total);
+    const size_t memory_decrement = free / 100;              // decrease requested memory one by one percent
+    size_t size_to_try            = free - memory_decrement; // do not go for all memory
+    while (true)
+    {
+        void* dummy_ptr    = nullptr;
+        cudaError_t status = cudaMalloc(&dummy_ptr, size_to_try);
+        // if it was able to allocate memory free the memory and return the size
+        if (status == cudaSuccess)
+        {
+            cudaFree(dummy_ptr);
+            return size_to_try;
+        }
+
+        if (status == cudaErrorMemoryAllocation)
+        {
+            // if it was not possible to allocate the memory because there was not enough of it
+            // try allocating less memory in next iteration
+            if (size_to_try > memory_decrement)
+            {
+                size_to_try -= memory_decrement;
+            }
+            else
+            { // a very small amount of memory left, report an error
+                CGA_CU_CHECK_ERR(cudaErrorMemoryAllocation);
+                return 0;
+            }
+        }
+        else
+        {
+            // if cudaMalloc failed because of error other than cudaErrorMemoryAllocation process the error
+            CGA_CU_CHECK_ERR(status);
+        }
+    }
+
+    // this point should actually never be reached (loop either finds memory or causes an error)
+    assert(false);
+    CGA_CU_CHECK_ERR(cudaErrorMemoryAllocation);
+    return 0;
+}
 
 int main(int argc, char* argv[])
 {
@@ -492,96 +580,5 @@ int main(int argc, char* argv[])
         CGA_CU_CHECK_ERR(cudaStreamDestroy(cuda_stream));
     }
 
-    return 0;
-}
-
-void help(int32_t exit_code = 0)
-{
-    std::cerr <<
-        R"(Usage: cudamapper [options ...] <query_sequences> <target_sequences>
-     <sequences>
-        Input file in FASTA/FASTQ format (can be compressed with gzip)
-        containing sequences used for all-to-all overlapping
-     options:
-        -k, --kmer-size
-            length of kmer to use for minimizers [15] (Max=)"
-              << claragenomics::cudamapper::Index::maximum_kmer_size() << ")"
-              << R"(
-        -w, --window-size
-            length of window to use for minimizers [15])"
-              << R"(
-        -d, --num-devices
-            number of GPUs to use [1])"
-              << R"(
-        -c, --max-index-device-cache
-            number of indices to keep in GPU memory [100])"
-              << R"(
-        -C, --max-index-host-cache
-            number of indices to keep in host memory [0])"
-              << R"(
-        -m, --max-cached-memory
-            maximum aggregate cached memory per device in GiB, if 0 program tries to allocate as much memory as possible [0])"
-              << R"(
-        -i, --index-size
-            length of batch size used for query in MB [30])"
-              << R"(
-        -t, --target-index-size
-            length of batch sized used for target in MB [30])"
-              << R"(
-        -F, --filtering-parameter
-            filter all representations for which sketch_elements_with_that_representation/total_sketch_elements >= filtering_parameter), filtering disabled if filtering_parameter == 1.0 [1'000'000'001] (Min = 0.0, Max = 1.0))"
-              << R"(
-        -a, --alignment-engines
-            Number of alignment engines to use (per device) for generating CIGAR strings for overlap alignments. Default value 0 = no alignment to be performed. Typically 2-4 engines per device gives best perf.)"
-              << std::endl;
-
-    exit(exit_code);
-}
-
-/// @brief finds largest section of contiguous memory on device
-/// @return number of bytes
-std::size_t find_largest_contiguous_device_memory_section()
-{
-    // find the largest block of contiguous memory
-    size_t free;
-    size_t total;
-    cudaMemGetInfo(&free, &total);
-    const size_t memory_decrement = free / 100;              // decrease requested memory one by one percent
-    size_t size_to_try            = free - memory_decrement; // do not go for all memory
-    while (true)
-    {
-        void* dummy_ptr    = nullptr;
-        cudaError_t status = cudaMalloc(&dummy_ptr, size_to_try);
-        // if it was able to allocate memory free the memory and return the size
-        if (status == cudaSuccess)
-        {
-            cudaFree(dummy_ptr);
-            return size_to_try;
-        }
-
-        if (status == cudaErrorMemoryAllocation)
-        {
-            // if it was not possible to allocate the memory because there was not enough of it
-            // try allocating less memory in next iteration
-            if (size_to_try > memory_decrement)
-            {
-                size_to_try -= memory_decrement;
-            }
-            else
-            { // a very small amount of memory left, report an error
-                CGA_CU_CHECK_ERR(cudaErrorMemoryAllocation);
-                return 0;
-            }
-        }
-        else
-        {
-            // if cudaMalloc failed because of error other than cudaErrorMemoryAllocation process the error
-            CGA_CU_CHECK_ERR(status);
-        }
-    }
-
-    // this point should actually never be reached (loop either finds memory or causes an error)
-    assert(false);
-    CGA_CU_CHECK_ERR(cudaErrorMemoryAllocation);
     return 0;
 }
