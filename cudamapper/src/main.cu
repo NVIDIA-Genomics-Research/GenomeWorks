@@ -267,8 +267,8 @@ int main(int argc, char* argv[])
         target_parser = claragenomics::io::create_kseq_fasta_parser(parameters.target_filepath, parameters.k + parameters.w - 1);
     }
 
-    std::cerr << "Query " << parameters.query_filepath << " index " << query_parser->get_num_seqences() << std::endl;
-    std::cerr << "Target " << parameters.target_filepath << " index " << target_parser->get_num_seqences() << std::endl;
+    std::cerr << "Query file: " << parameters.query_filepath << ", number of reads: " << query_parser->get_num_seqences() << std::endl;
+    std::cerr << "Target file: " << parameters.target_filepath << ", number of reads: " << target_parser->get_num_seqences() << std::endl;
 
     // Data structure for holding overlaps to be written out
     std::mutex overlaps_writer_mtx;
