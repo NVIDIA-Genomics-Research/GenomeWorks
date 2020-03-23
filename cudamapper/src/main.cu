@@ -237,15 +237,15 @@ int main(int argc, char* argv[])
         else
         {
             //create an index, with hashed representations (minimizers)
-            index = std::move(claragenomics::cudamapper::Index::create_index(allocator,
-                                                                             parser,
-                                                                             start_index,
-                                                                             end_index,
-                                                                             k,
-                                                                             w,
-                                                                             true, // hash_representations
-                                                                             filtering_parameter,
-                                                                             cuda_stream));
+            index = claragenomics::cudamapper::Index::create_index(allocator,
+                                                                   parser,
+                                                                   start_index,
+                                                                   end_index,
+                                                                   k,
+                                                                   w,
+                                                                   true, // hash_representations
+                                                                   filtering_parameter,
+                                                                   cuda_stream);
 
             // If in all-to-all mode, put this query in the cache for later use.
             // Cache eviction is handled later on by the calling thread
@@ -257,11 +257,11 @@ int main(int argc, char* argv[])
             else if (get_size<int32_t>(host_index_cache) < max_index_cache_size_on_host && allow_cache_index && device_id == 0)
             {
                 // if not cached on device, update host cache; only done on device 0 to avoid any race conditions in updating the host cache
-                host_index_cache[key] = std::move(claragenomics::cudamapper::IndexHostCopy::create_cache(*index,
-                                                                                                         start_index,
-                                                                                                         k,
-                                                                                                         w,
-                                                                                                         cuda_stream));
+                host_index_cache[key] = claragenomics::cudamapper::IndexHostCopy::create_cache(*index,
+                                                                                               start_index,
+                                                                                               k,
+                                                                                               w,
+                                                                                               cuda_stream);
             }
         }
         return index;

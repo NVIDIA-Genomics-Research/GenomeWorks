@@ -147,7 +147,7 @@ private:
         if ((bytes_needed & 0xFF) != 0)
         {
             // bytes needed not divisible by 256, increase it to the next value divisible by 256
-            bytes_needed = bytes_needed + (0x100 - bytes_needed & 0xFF);
+            bytes_needed = bytes_needed + (0x100 - (bytes_needed & 0xFF));
         }
         assert((bytes_needed & 0xFF) == 0);
 
@@ -203,8 +203,8 @@ private:
     /// @return error status
     cudaError_t free_block(void* pointer)
     {
+        assert(static_cast<char*>(pointer) >= buffer_ptr_.get());
         const size_t block_start = static_cast<char*>(pointer) - buffer_ptr_.get();
-        assert(block_start >= 0);
         assert(block_start < buffer_size_);
 
         // ** look for pointer's memory block
