@@ -203,8 +203,8 @@ private:
     /// @return error status
     cudaError_t free_block(void* pointer)
     {
+        assert(static_cast<char*>(pointer) >= buffer_ptr_.get());
         const size_t block_start = static_cast<char*>(pointer) - buffer_ptr_.get();
-        assert(block_start >= 0);
         assert(block_start < buffer_size_);
 
         // ** look for pointer's memory block
