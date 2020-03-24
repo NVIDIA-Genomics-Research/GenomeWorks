@@ -70,7 +70,7 @@ public:
     /// @param allocator The allocator to use by this buffer.
     /// @param stream The CUDA stream to be associated with this allocation. Default is stream 0.
     /// @tparam AllocatorIn Type of input allocator. If AllocatorIn::value_type is different than T AllocatorIn will be converted to Allocator<T> if possible, compilation will fail otherwise
-    template <typename AllocatorIn>
+    template <typename AllocatorIn, std::enable_if_t<std::is_class<AllocatorIn>::value, int> = 0> // for calls like buffer(5, stream) the other constructor should be used -> only enable if AllocatorIn is a class.
     explicit buffer(AllocatorIn allocator, cudaStream_t stream = 0)
         : buffer(0, allocator, stream)
     {
