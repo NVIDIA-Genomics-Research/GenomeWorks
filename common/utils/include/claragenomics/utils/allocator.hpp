@@ -13,6 +13,7 @@
 #include <memory>
 #include <type_traits>
 
+#include <cuda_runtime_api.h>
 #include <cub/util_allocator.cuh>
 #include <claragenomics/utils/device_preallocated_allocator.cuh>
 
@@ -46,6 +47,7 @@ public:
     template <typename U>
     CudaMallocAllocator(const CudaMallocAllocator<U>& rhs)
     {
+        static_cast<void>(rhs);
     }
 
     /// @brief copy assignment operator
@@ -102,6 +104,7 @@ public:
     /// @return pointer to allocated array
     pointer allocate(std::size_t n, cudaStream_t stream = 0)
     {
+        static_cast<void>(stream);
         void* ptr = 0;
         CGA_CU_CHECK_ERR(cudaMalloc(&ptr, n * sizeof(T)));
         return static_cast<pointer>(ptr);
@@ -113,6 +116,8 @@ public:
     /// @param stream CUDA stream to be associated with this method.
     void deallocate(pointer p, std::size_t n, cudaStream_t stream = 0)
     {
+        static_cast<void>(n);
+        static_cast<void>(stream);
         CGA_CU_ABORT_ON_ERR(cudaFree(p));
     }
 };
@@ -219,6 +224,8 @@ public:
     /// @param stream CUDA stream to be associated with this method.
     void deallocate(pointer p, std::size_t n, cudaStream_t stream = 0)
     {
+        static_cast<void>(n);
+        static_cast<void>(stream);
         // deallocate should not throw execeptions which is why CGA_CU_CHECK_ERR is not used.
         CGA_CU_ABORT_ON_ERR(memory_resource_->DeviceFree(p));
     }
