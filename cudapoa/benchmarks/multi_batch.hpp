@@ -37,8 +37,8 @@ public:
 
         assert(get_size(windows_) > 0);
 
-        /// ToDo define max limits properly, currently using default sizes, equivalent to old hard-codd macros
-        UpperLimits max_limits;
+        BatchSize max_limits;
+        max_limits.setSize(1024, 200);
 
         size_t total = 0, free = 0;
         cudaSetDevice(0);
@@ -48,8 +48,7 @@ public:
         {
             cudaStream_t stream;
             cudaStreamCreate(&stream);
-            batches_.emplace_back(create_batch(200,
-                                               0, stream, mem_per_batch,
+            batches_.emplace_back(create_batch(0, stream, mem_per_batch,
                                                OutputType::consensus,
                                                max_limits,
                                                -8, -6, 8, false));

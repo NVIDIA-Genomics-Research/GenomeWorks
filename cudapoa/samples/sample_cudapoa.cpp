@@ -27,7 +27,7 @@
 using namespace claragenomics;
 using namespace claragenomics::cudapoa;
 
-std::unique_ptr<Batch> initialize_batch(bool msa, UpperLimits max_limits)
+std::unique_ptr<Batch> initialize_batch(bool msa, BatchSize max_limits)
 {
     // Get device information.
     int32_t device_count = 0;
@@ -42,15 +42,13 @@ std::unique_ptr<Batch> initialize_batch(bool msa, UpperLimits max_limits)
     Init();
 
     // Initialize CUDAPOA batch object for batched processing of POAs on the GPU.
-    const int32_t max_sequences_per_poa_group = 100;
     const int32_t device_id                   = 0;
     cudaStream_t stream                       = 0;
     size_t mem_per_batch                      = 0.9 * free; // Using 90% of GPU available memory for CUDAPOA batch.
     const int32_t mismatch_score = -6, gap_score = -8, match_score = 8;
     bool banded_alignment = false;
 
-    std::unique_ptr<Batch> batch = create_batch(max_sequences_per_poa_group,
-                                                device_id,
+    std::unique_ptr<Batch> batch = create_batch(device_id,
                                                 stream,
                                                 mem_per_batch,
                                                 msa ? OutputType::msa : OutputType::consensus,
@@ -149,13 +147,13 @@ void sample_long_reads(bool msa, bool print)
     long_reads[0] = claragenomics::genomeutils::generate_random_genome(read_length, rng);
     for (size_t i = 1; i < long_reads.size(); i++)
     {
-        long_reads[i]       = claragenomics::genomeutils::generate_random_sequence_within_range(long_reads[0], rng, variation_ranges, get_size(long_reads[0]), get_size(long_reads[0]), get_size(long_reads[0]));
+        long_reads[i]       = claragenomics::genomeutils::generate_random_sequence(long_reads[0], rng, read_length, read_length, read_length, &variation_ranges);
         max_sequence_length = max_sequence_length > get_size(long_reads[i]) ? max_sequence_length : get_size(long_reads[i]) + 1;
     }
 
     // Define upper limits for sequence size, graph size ....
-    UpperLimits max_limits;
-    max_limits.setLimits(max_sequence_length);
+    BatchSize max_limits;
+    max_limits.setSize(max_sequence_length, 100);
 
     // Initialize batch.
     std::unique_ptr<Batch> batch = initialize_batch(msa, max_limits);
@@ -271,8 +269,8 @@ int main(int argc, char** argv)
     assert(get_size(windows) > 0);
 
     // Define upper limits for sequence size, graph size ....
-    UpperLimits max_limits;
-    max_limits.setLimits(1024);
+    BatchSize max_limits;
+    max_limits.setSize(1024, 100);
 
     // Initialize batch.
     std::unique_ptr<Batch> batch = initialize_batch(msa, max_limits);

@@ -197,8 +197,7 @@ NWAnswer testNW(const BasicNW& obj)
     int16_t mismatch_score;
     int16_t match_score;
     uint16_t* aligned_nodes; //local; to store num of nodes aligned (length of alignment_graph and alignment_read)
-    UpperLimits max_limits;
-    max_limits.setLimits(1024);
+    BatchSize max_limits;    //default max_sequence_size = 1024, max_sequences_per_poa = 100
 
     //allocate unified memory so they can be accessed by both host and device.
     CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&nodes, max_limits.max_nodes_per_window * sizeof(uint8_t)));
@@ -242,7 +241,7 @@ NWAnswer testNW(const BasicNW& obj)
           read,
           read_count,
           scores,
-          UpperLimits().max_matrix_sequence_dimension,
+          BatchSize().max_matrix_sequence_dimension,
           alignment_graph,
           alignment_read,
           gap_score,

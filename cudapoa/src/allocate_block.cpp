@@ -22,8 +22,8 @@ namespace claragenomics
 namespace cudapoa
 {
 
-BatchBlock::BatchBlock(int32_t device_id, size_t avail_mem, int32_t max_sequences_per_poa, int8_t output_mask, const UpperLimits& max_limits, bool banded_alignment)
-    : max_sequences_per_poa_(throw_on_negative(max_sequences_per_poa, "Maximum sequences per POA has to be non-negative"))
+BatchBlock::BatchBlock(int32_t device_id, size_t avail_mem, int8_t output_mask, const BatchSize& max_limits, bool banded_alignment)
+    : max_sequences_per_poa_(throw_on_negative(max_limits.max_sequences_per_poa, "Maximum sequences per POA has to be non-negative"))
     , banded_alignment_(banded_alignment)
     , device_id_(throw_on_negative(device_id, "Device ID has to be non-negative"))
     , output_mask_(output_mask)
@@ -82,7 +82,7 @@ uint8_t* BatchBlock::get_block_device()
     return block_data_d_;
 }
 
-std::tuple<int64_t, int64_t, int64_t, int64_t> BatchBlock::calculate_space_per_poa(const UpperLimits& max_limits)
+std::tuple<int64_t, int64_t, int64_t, int64_t> BatchBlock::calculate_space_per_poa(const BatchSize& max_limits)
 {
     const int32_t poa_count = 1;
 

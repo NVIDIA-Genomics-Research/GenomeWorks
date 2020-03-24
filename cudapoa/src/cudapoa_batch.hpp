@@ -45,7 +45,7 @@ class BatchBlock;
 class CudapoaBatch : public Batch
 {
 public:
-    CudapoaBatch(int32_t max_sequences_per_poa, int32_t device_id, cudaStream_t stream, size_t max_mem, int8_t output_mask, UpperLimits max_limits, int16_t gap_score = -8, int16_t mismatch_score = -6, int16_t match_score = 8, bool cuda_banded_alignment = false);
+    CudapoaBatch(int32_t device_id, cudaStream_t stream, size_t max_mem, int8_t output_mask, BatchSize max_limits, int16_t gap_score = -8, int16_t mismatch_score = -6, int16_t match_score = 8, bool cuda_banded_alignment = false);
     ~CudapoaBatch();
 
     virtual StatusType add_poa_group(std::vector<StatusType>& per_seq_status,
@@ -118,7 +118,7 @@ protected:
     int8_t output_mask_;
 
     // Upper limits for data size
-    UpperLimits max_limits_;
+    BatchSize max_limits_;
 
     // Gap, mismatch and match scores for NW dynamic programming loop.
     int16_t gap_score_;

@@ -67,17 +67,16 @@ void CudapoaBatch::initialize_graph_details()
     batch_block_->get_graph_details(&graph_details_d_, &graph_details_h_);
 }
 
-CudapoaBatch::CudapoaBatch(int32_t max_sequences_per_poa,
-                           int32_t device_id,
+CudapoaBatch::CudapoaBatch(int32_t device_id,
                            cudaStream_t stream,
                            size_t max_mem,
                            int8_t output_mask,
-                           UpperLimits max_limits,
+                           BatchSize max_limits,
                            int16_t gap_score,
                            int16_t mismatch_score,
                            int16_t match_score,
                            bool cuda_banded_alignment)
-    : max_sequences_per_poa_(throw_on_negative(max_sequences_per_poa, "Maximum sequences per POA has to be non-negative"))
+    : max_sequences_per_poa_(throw_on_negative(max_limits.max_sequences_per_poa, "Maximum sequences per POA has to be non-negative"))
     , device_id_(throw_on_negative(device_id, "Device ID has to be non-negative"))
     , stream_(stream)
     , output_mask_(output_mask)
@@ -88,7 +87,6 @@ CudapoaBatch::CudapoaBatch(int32_t max_sequences_per_poa,
     , banded_alignment_(cuda_banded_alignment)
     , batch_block_(new BatchBlock(device_id,
                                   throw_on_negative(max_mem, "Maximum memory per batch has to be non-negative"),
-                                  max_sequences_per_poa,
                                   output_mask,
                                   max_limits_,
                                   cuda_banded_alignment))

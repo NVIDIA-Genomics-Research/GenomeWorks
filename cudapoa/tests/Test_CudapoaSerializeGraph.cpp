@@ -41,9 +41,10 @@ public:
         cudaSetDevice(device_id);
         cudaMemGetInfo(&free, &total);
         size_t mem_per_batch = 0.9 * free;
-        UpperLimits max_limits;
+        BatchSize max_limits;
+        max_limits.setSize(1024, max_sequences_per_poa);
 
-        cudapoa_batch = claragenomics::cudapoa::create_batch(max_sequences_per_poa, device_id, stream, mem_per_batch, output_mask, max_limits, gap_score, mismatch_score, match_score, banded_alignment);
+        cudapoa_batch = claragenomics::cudapoa::create_batch(device_id, stream, mem_per_batch, output_mask, max_limits, gap_score, mismatch_score, match_score, banded_alignment);
     }
 
 public:

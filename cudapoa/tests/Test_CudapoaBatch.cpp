@@ -30,7 +30,7 @@ public:
     void initialize(int32_t max_sequences_per_poa,
                     size_t mem_per_batch,
                     int32_t device_id,
-                    UpperLimits max_limits,
+                    BatchSize max_limits,
                     cudaStream_t stream    = 0,
                     int8_t output_mask     = OutputType::consensus,
                     int16_t gap_score      = -8,
@@ -38,9 +38,8 @@ public:
                     int16_t match_score    = 8,
                     bool banded_alignment  = false)
     {
-        max_limits.setLimits(1024);
-        cudapoa_batch = claragenomics::cudapoa::create_batch(max_sequences_per_poa,
-                                                             device_id,
+        max_limits.setSize(1024, max_sequences_per_poa);
+        cudapoa_batch = claragenomics::cudapoa::create_batch(device_id,
                                                              stream,
                                                              mem_per_batch,
                                                              output_mask,
@@ -67,7 +66,7 @@ TEST_F(TestCudapoaBatch, InitializeTest)
 {
     const int32_t device_id = 0;
     size_t free             = get_free_device_mem(device_id);
-    initialize(5, 0.9 * free, device_id, UpperLimits());
+    initialize(5, 0.9 * free, device_id, BatchSize());
     EXPECT_EQ(cudapoa_batch->batch_id(), 0);
     EXPECT_EQ(cudapoa_batch->get_total_poas(), 0);
 }
@@ -75,14 +74,14 @@ TEST_F(TestCudapoaBatch, InitializeTest)
 TEST_F(TestCudapoaBatch, InitializeZeroMemTest)
 {
     const int32_t device_id = 0;
-    EXPECT_THROW(initialize(5, 0, device_id, UpperLimits()), std::runtime_error);
+    EXPECT_THROW(initialize(5, 0, device_id, BatchSize()), std::runtime_error);
 }
 
 TEST_F(TestCudapoaBatch, AddPOATest)
 {
     const int32_t device_id = 0;
     size_t free             = get_free_device_mem(device_id);
-    initialize(5, 0.9 * free, device_id, UpperLimits());
+    initialize(5, 0.9 * free, device_id, BatchSize());
     Group poa_group;
     poa_group.push_back(Entry{});
     std::vector<StatusType> status;
@@ -98,7 +97,7 @@ TEST_F(TestCudapoaBatch, MaxSeqPerPOATest)
     const int32_t device_id             = 0;
     const int32_t max_sequences_per_poa = 10;
     size_t free                         = get_free_device_mem(device_id);
-    initialize(max_sequences_per_poa, 0.9 * free, device_id, UpperLimits());
+    initialize(max_sequences_per_poa, 0.9 * free, device_id, BatchSize());
     Group poa_group;
     std::vector<StatusType> status;
 
@@ -122,7 +121,7 @@ TEST_F(TestCudapoaBatch, MaxSeqSizeTest)
 {
     const int32_t device_id = 0;
     size_t free             = get_free_device_mem(device_id);
-    initialize(10, 0.9 * free, device_id, UpperLimits());
+    initialize(10, 0.9 * free, device_id, BatchSize());
     Group poa_group;
     std::vector<StatusType> status;
     Entry e{};
@@ -153,7 +152,7 @@ TEST_F(TestCudapoaBatch, GeneratePoaTest)
 {
     const int32_t device_id = 0;
     size_t free             = get_free_device_mem(device_id);
-    initialize(10, 0.9 * free, device_id, UpperLimits());
+    initialize(10, 0.9 * free, device_id, BatchSize());
     Group poa_group;
     std::vector<StatusType> status;
     Entry e{};

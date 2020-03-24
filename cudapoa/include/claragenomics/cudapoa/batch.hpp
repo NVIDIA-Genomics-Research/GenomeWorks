@@ -20,6 +20,7 @@
 #include <string>
 #include <iostream>
 #include <cuda_runtime_api.h>
+#include <claragenomics/utils/cudautils.hpp>
 
 namespace claragenomics
 {
@@ -45,7 +46,7 @@ struct Entry
 typedef std::vector<Entry> Group;
 
 /// A structure to hold  upper limits for data size processed in POA batches
-struct UpperLimits
+struct BatchSize
 {
     /// Maximum number of elements in a sequence
     uint32_t max_sequence_size = 1024;
@@ -64,20 +65,21 @@ struct UpperLimits
     /// Maximum horizontal dimension of scoring matrix, which stores sequences
     /// Adding 4 elements more to ensure a 4byte boundary alignment for any allocated buffer
     uint32_t max_matrix_sequence_dimension = max_sequence_size + 4;
-    /// ToDO add banded alignment score matrix dimension parameters (maybe?)
-    //uint32_t max_matrix_sequence_dimension_banded;
+    /// Maximum number of equences per POA group
+    uint32_t max_sequences_per_poa = 100;
 
     /// set upper limit parameters based on max_sequence_size
-    void setLimits(const uint32_t max_seq_sz)
+    void setSize(const uint32_t max_seq_sz, const uint32_t max_num_seqs)
     {
+        max_sequences_per_poa       = max_num_seqs;
         max_sequence_size           = max_seq_sz;
         max_concensus_size          = max_sequence_size;
-        max_nodes_per_window        = 3 * max_sequence_size;
-        max_nodes_per_window_banded = 4 * max_sequence_size;
+        max_nodes_per_window        = cudautils::align<int32_t, 4>(3 * max_sequence_size);
+        max_nodes_per_window_banded = cudautils::align<int32_t, 4>(4 * max_sequence_size);
         // Adding 4 elements more to ensure a 4byte boundary alignment for any allocated buffer
-        max_matrix_graph_dimension        = max_nodes_per_window + 4;
-        max_matrix_graph_dimension_banded = max_nodes_per_window_banded + 4;
-        max_matrix_sequence_dimension     = max_sequence_size + 4;
+        max_matrix_graph_dimension        = cudautils::align<int32_t, 4>(max_nodes_per_window + 4);
+        max_matrix_graph_dimension_banded = cudautils::align<int32_t, 4>(max_nodes_per_window_banded + 4);
+        max_matrix_sequence_dimension     = cudautils::align<int32_t, 4>(max_sequence_size + 4);
     }
 };
 
@@ -159,7 +161,6 @@ public:
 
 /// \brief Creates a new CUDA Batch object.
 ///
-/// \param max_sequences_per_poa Maximum number of sequences per POA
 /// \param device_id GPU device on which to run CUDA POA algorithm
 /// \param stream CUDA stream to use on GPU
 /// \param max_mem Maximum GPU memory to use for this batch.
@@ -171,12 +172,11 @@ public:
 /// \param cuda_banded_alignment Whether to use banded alignment
 ///
 /// \return Returns a unique pointer to a new Batch object
-std::unique_ptr<Batch> create_batch(int32_t max_sequences_per_poa,
-                                    int32_t device_id,
+std::unique_ptr<Batch> create_batch(int32_t device_id,
                                     cudaStream_t stream,
                                     size_t max_mem,
                                     int8_t output_mask,
-                                    UpperLimits max_limits,
+                                    BatchSize max_limits,
                                     int16_t gap_score,
                                     int16_t mismatch_score,
                                     int16_t match_score,

@@ -243,10 +243,8 @@ BasicGraph testAddAlignment(const BasicAlignment& obj)
     uint16_t* sequence_begin_nodes_ids;
     uint16_t* outgoing_edges_coverage;
     uint16_t* outgoing_edges_coverage_count;
-    uint16_t s                     = 0;
-    uint32_t max_sequences_per_poa = 100;
-    UpperLimits max_limits;
-    max_limits.setLimits(1024);
+    uint16_t s = 0;
+    BatchSize max_limits; // default max_sequence_size = 1024, max_sequences_per_poa = 100
 
     //allocate unified memory so they can be accessed by both host and device.
     CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&nodes, max_limits.max_nodes_per_window * sizeof(uint8_t)));
@@ -266,8 +264,8 @@ BasicGraph testAddAlignment(const BasicAlignment& obj)
     CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&base_weights, max_limits.max_sequence_size * sizeof(int8_t)));
     CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&alignment_read, max_limits.max_sequence_size * sizeof(uint16_t)));
     CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&node_coverage_counts, max_limits.max_nodes_per_window * sizeof(uint16_t)));
-    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&sequence_begin_nodes_ids, max_sequences_per_poa * sizeof(uint16_t)));
-    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&outgoing_edges_coverage, max_limits.max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES * max_sequences_per_poa * sizeof(uint16_t)));
+    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&sequence_begin_nodes_ids, max_limits.max_sequences_per_poa * sizeof(uint16_t)));
+    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&outgoing_edges_coverage, max_limits.max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES * max_limits.max_sequences_per_poa * sizeof(uint16_t)));
     CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&outgoing_edges_coverage_count, max_limits.max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES * sizeof(uint16_t)));
 
     //initialize all 'count' buffers
@@ -302,7 +300,7 @@ BasicGraph testAddAlignment(const BasicAlignment& obj)
                  outgoing_edges_coverage,
                  outgoing_edges_coverage_count,
                  s,
-                 max_sequences_per_poa,
+                 max_limits.max_sequences_per_poa,
                  max_limits.max_nodes_per_window);
 
     CGA_CU_CHECK_ERR(cudaDeviceSynchronize());

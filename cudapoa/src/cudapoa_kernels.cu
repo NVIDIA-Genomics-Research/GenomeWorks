@@ -370,7 +370,7 @@ void generatePOA(claragenomics::cudapoa::OutputDetails* output_details_d,
                  bool cuda_banded_alignment,
                  uint32_t max_sequences_per_poa,
                  int8_t output_mask,
-                 const UpperLimits& max_limits)
+                 const BatchSize& max_limits)
 {
     // unpack output details
     uint8_t* consensus_d                  = output_details_d->consensus;
