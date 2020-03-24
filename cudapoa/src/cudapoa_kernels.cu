@@ -370,7 +370,7 @@ void generatePOA(claragenomics::cudapoa::OutputDetails* output_details_d,
                  bool cuda_banded_alignment,
                  uint32_t max_sequences_per_poa,
                  int8_t output_mask,
-                 const BatchSize& max_limits)
+                 const BatchSize& batch_size)
 {
     // unpack output details
     uint8_t* consensus_d                  = output_details_d->consensus;
@@ -454,11 +454,11 @@ void generatePOA(claragenomics::cudapoa::OutputDetails* output_details_d,
                                                                                  sequence_begin_nodes_ids,
                                                                                  outgoing_edges_coverage,
                                                                                  outgoing_edges_coverage_count,
-                                                                                 max_limits.max_nodes_per_window,
-                                                                                 max_limits.max_nodes_per_window_banded,
-                                                                                 max_limits.max_matrix_graph_dimension,
-                                                                                 max_limits.max_matrix_graph_dimension_banded,
-                                                                                 max_limits.max_concensus_size);
+                    batch_size.max_nodes_per_window,
+                    batch_size.max_nodes_per_window_banded,
+                    batch_size.max_matrix_graph_dimension,
+                    batch_size.max_matrix_graph_dimension_banded,
+                    batch_size.max_concensus_size);
             CGA_CU_CHECK_ERR(cudaPeekAtLastError());
 
             generateConsensusKernel<true>
@@ -480,9 +480,9 @@ void generatePOA(claragenomics::cudapoa::OutputDetails* output_details_d,
                                                                                        consensus_scores,
                                                                                        consensus_predecessors,
                                                                                        node_coverage_counts,
-                                                                                       max_limits.max_nodes_per_window,
-                                                                                       max_limits.max_nodes_per_window_banded,
-                                                                                       max_limits.max_concensus_size);
+                    batch_size.max_nodes_per_window,
+                    batch_size.max_nodes_per_window_banded,
+                    batch_size.max_concensus_size);
             CGA_CU_CHECK_ERR(cudaPeekAtLastError());
         }
         if (output_mask & OutputType::msa)
@@ -520,11 +520,11 @@ void generatePOA(claragenomics::cudapoa::OutputDetails* output_details_d,
                                                                                  sequence_begin_nodes_ids,
                                                                                  outgoing_edges_coverage,
                                                                                  outgoing_edges_coverage_count,
-                                                                                 max_limits.max_nodes_per_window,
-                                                                                 max_limits.max_nodes_per_window_banded,
-                                                                                 max_limits.max_matrix_graph_dimension,
-                                                                                 max_limits.max_matrix_graph_dimension_banded,
-                                                                                 max_limits.max_concensus_size);
+                    batch_size.max_nodes_per_window,
+                    batch_size.max_nodes_per_window_banded,
+                    batch_size.max_matrix_graph_dimension,
+                    batch_size.max_matrix_graph_dimension_banded,
+                    batch_size.max_concensus_size);
             CGA_CU_CHECK_ERR(cudaPeekAtLastError());
 
             generateMSAKernel<true>
@@ -549,9 +549,9 @@ void generatePOA(claragenomics::cudapoa::OutputDetails* output_details_d,
                                                                       node_marks,
                                                                       check_aligned_nodes,
                                                                       nodes_to_visit,
-                                                                      max_limits.max_nodes_per_window,
-                                                                      max_limits.max_nodes_per_window_banded,
-                                                                      max_limits.max_concensus_size);
+                    batch_size.max_nodes_per_window,
+                    batch_size.max_nodes_per_window_banded,
+                    batch_size.max_concensus_size);
             CGA_CU_CHECK_ERR(cudaPeekAtLastError());
         }
     }
@@ -592,11 +592,11 @@ void generatePOA(claragenomics::cudapoa::OutputDetails* output_details_d,
                                                                     sequence_begin_nodes_ids,
                                                                     outgoing_edges_coverage,
                                                                     outgoing_edges_coverage_count,
-                                                                    max_limits.max_nodes_per_window,
-                                                                    max_limits.max_nodes_per_window_banded,
-                                                                    max_limits.max_matrix_graph_dimension,
-                                                                    max_limits.max_matrix_graph_dimension_banded,
-                                                                    max_limits.max_concensus_size);
+                    batch_size.max_nodes_per_window,
+                    batch_size.max_nodes_per_window_banded,
+                    batch_size.max_matrix_graph_dimension,
+                    batch_size.max_matrix_graph_dimension_banded,
+                    batch_size.max_concensus_size);
             CGA_CU_CHECK_ERR(cudaPeekAtLastError());
 
             generateConsensusKernel<false>
@@ -618,9 +618,9 @@ void generatePOA(claragenomics::cudapoa::OutputDetails* output_details_d,
                                                                                        consensus_scores,
                                                                                        consensus_predecessors,
                                                                                        node_coverage_counts,
-                                                                                       max_limits.max_nodes_per_window,
-                                                                                       max_limits.max_nodes_per_window_banded,
-                                                                                       max_limits.max_concensus_size);
+                    batch_size.max_nodes_per_window,
+                    batch_size.max_nodes_per_window_banded,
+                    batch_size.max_concensus_size);
             CGA_CU_CHECK_ERR(cudaPeekAtLastError());
         }
         if (output_mask & OutputType::msa)
@@ -658,11 +658,11 @@ void generatePOA(claragenomics::cudapoa::OutputDetails* output_details_d,
                                                                     sequence_begin_nodes_ids,
                                                                     outgoing_edges_coverage,
                                                                     outgoing_edges_coverage_count,
-                                                                    max_limits.max_nodes_per_window,
-                                                                    max_limits.max_nodes_per_window_banded,
-                                                                    max_limits.max_matrix_graph_dimension,
-                                                                    max_limits.max_matrix_graph_dimension_banded,
-                                                                    max_limits.max_concensus_size);
+                    batch_size.max_nodes_per_window,
+                    batch_size.max_nodes_per_window_banded,
+                    batch_size.max_matrix_graph_dimension,
+                    batch_size.max_matrix_graph_dimension_banded,
+                    batch_size.max_concensus_size);
             CGA_CU_CHECK_ERR(cudaPeekAtLastError());
 
             generateMSAKernel<false>
@@ -687,9 +687,9 @@ void generatePOA(claragenomics::cudapoa::OutputDetails* output_details_d,
                                                                       node_marks,
                                                                       check_aligned_nodes,
                                                                       nodes_to_visit,
-                                                                      max_limits.max_nodes_per_window,
-                                                                      max_limits.max_nodes_per_window_banded,
-                                                                      max_limits.max_concensus_size);
+                    batch_size.max_nodes_per_window,
+                    batch_size.max_nodes_per_window_banded,
+                    batch_size.max_concensus_size);
             CGA_CU_CHECK_ERR(cudaPeekAtLastError());
         }
     }

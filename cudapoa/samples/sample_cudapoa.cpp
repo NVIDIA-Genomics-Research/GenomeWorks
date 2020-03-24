@@ -27,7 +27,7 @@
 using namespace claragenomics;
 using namespace claragenomics::cudapoa;
 
-std::unique_ptr<Batch> initialize_batch(bool msa, BatchSize max_limits)
+std::unique_ptr<Batch> initialize_batch(bool msa, BatchSize batch_size)
 {
     // Get device information.
     int32_t device_count = 0;
@@ -52,7 +52,7 @@ std::unique_ptr<Batch> initialize_batch(bool msa, BatchSize max_limits)
                                                 stream,
                                                 mem_per_batch,
                                                 msa ? OutputType::msa : OutputType::consensus,
-                                                max_limits,
+                                                batch_size,
                                                 gap_score,
                                                 mismatch_score,
                                                 match_score,
@@ -152,11 +152,11 @@ void sample_long_reads(bool msa, bool print)
     }
 
     // Define upper limits for sequence size, graph size ....
-    BatchSize max_limits;
-    max_limits.setSize(max_sequence_length, 100);
+    BatchSize batch_size;
+    batch_size.setSize(max_sequence_length, 100);
 
     // Initialize batch.
-    std::unique_ptr<Batch> batch = initialize_batch(msa, max_limits);
+    std::unique_ptr<Batch> batch = initialize_batch(msa, batch_size);
 
     Group poa_group;
     // Create a new entry for each sequence and add to the group.
@@ -269,11 +269,11 @@ int main(int argc, char** argv)
     assert(get_size(windows) > 0);
 
     // Define upper limits for sequence size, graph size ....
-    BatchSize max_limits;
-    max_limits.setSize(1024, 100);
+    BatchSize batch_size;
+    batch_size.setSize(1024, 100);
 
     // Initialize batch.
-    std::unique_ptr<Batch> batch = initialize_batch(msa, max_limits);
+    std::unique_ptr<Batch> batch = initialize_batch(msa, batch_size);
 
     // Loop over all the POA groups, add them to the batch and process them.
     int32_t window_count = 0;

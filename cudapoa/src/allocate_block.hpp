@@ -28,7 +28,7 @@ namespace cudapoa
 class BatchBlock
 {
 public:
-    BatchBlock(int32_t device_id_, size_t avail_mem, int8_t output_mask, const BatchSize& max_limits, bool banded_alignment = false);
+    BatchBlock(int32_t device_id_, size_t avail_mem, int8_t output_mask, const BatchSize& batch_size, bool banded_alignment = false);
     ~BatchBlock();
 
     void get_output_details(OutputDetails** output_details_h_p, OutputDetails** output_details_d_p);
@@ -51,7 +51,7 @@ protected:
     // don't vary based on POA count. The latter two are host and device
     // buffer sizes that scale with number of POA entries to process. These sizes do
     // not include the scoring matrix needs for POA processing.
-    std::tuple<int64_t, int64_t, int64_t, int64_t> calculate_space_per_poa(const BatchSize& max_limits);
+    std::tuple<int64_t, int64_t, int64_t, int64_t> calculate_space_per_poa(const BatchSize& batch_size);
 
 protected:
     // Maximum POAs to process in batch.

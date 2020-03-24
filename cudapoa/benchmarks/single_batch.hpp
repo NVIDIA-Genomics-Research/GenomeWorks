@@ -43,10 +43,10 @@ public:
         cudaMemGetInfo(&free, &total);
         size_t mem_per_batch = 0.9 * free;
 
-        BatchSize max_limits;
-        max_limits.setSize(1024, 200);
+        BatchSize batch_size;
+        batch_size.setSize(1024, 200);
 
-        batch_ = create_batch(0, stream, mem_per_batch, OutputType::consensus, max_limits, -8, -6, 8, false);
+        batch_ = create_batch(0, stream, mem_per_batch, OutputType::consensus, batch_size, -8, -6, 8, false);
     }
 
     ~SingleBatch()

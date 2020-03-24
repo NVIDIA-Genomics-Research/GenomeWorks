@@ -22,22 +22,22 @@ namespace claragenomics
 namespace cudapoa
 {
 
-BatchBlock::BatchBlock(int32_t device_id, size_t avail_mem, int8_t output_mask, const BatchSize& max_limits, bool banded_alignment)
-    : max_sequences_per_poa_(throw_on_negative(max_limits.max_sequences_per_poa, "Maximum sequences per POA has to be non-negative"))
+BatchBlock::BatchBlock(int32_t device_id, size_t avail_mem, int8_t output_mask, const BatchSize& batch_size, bool banded_alignment)
+    : max_sequences_per_poa_(throw_on_negative(batch_size.max_sequences_per_poa, "Maximum sequences per POA has to be non-negative"))
     , banded_alignment_(banded_alignment)
     , device_id_(throw_on_negative(device_id, "Device ID has to be non-negative"))
     , output_mask_(output_mask)
 {
     scoped_device_switch dev(device_id_);
 
-    matrix_sequence_dimension_ = banded_alignment_ ? CUDAPOA_BANDED_MAX_MATRIX_SEQUENCE_DIMENSION : max_limits.max_matrix_sequence_dimension;
-    max_graph_dimension_       = banded_alignment_ ? max_limits.max_matrix_graph_dimension_banded : max_limits.max_matrix_graph_dimension;
-    max_nodes_per_window_      = banded_alignment_ ? max_limits.max_nodes_per_window_banded : max_limits.max_nodes_per_window;
+    matrix_sequence_dimension_ = banded_alignment_ ? CUDAPOA_BANDED_MAX_MATRIX_SEQUENCE_DIMENSION : batch_size.max_matrix_sequence_dimension;
+    max_graph_dimension_       = banded_alignment_ ? batch_size.max_matrix_graph_dimension_banded : batch_size.max_matrix_graph_dimension;
+    max_nodes_per_window_      = banded_alignment_ ? batch_size.max_nodes_per_window_banded : batch_size.max_nodes_per_window;
 
     // calculate static and dynamic sizes of buffers needed per POA entry.
     int64_t host_size_fixed, device_size_fixed;
     int64_t host_size_per_poa, device_size_per_poa;
-    std::tie(host_size_fixed, device_size_fixed, host_size_per_poa, device_size_per_poa) = calculate_space_per_poa(max_limits);
+    std::tie(host_size_fixed, device_size_fixed, host_size_per_poa, device_size_per_poa) = calculate_space_per_poa(batch_size);
 
     // Using 2x as a buffer.
     size_t minimum_device_mem = 2 * (device_size_fixed + device_size_per_poa);
@@ -56,8 +56,8 @@ BatchBlock::BatchBlock(int32_t device_id, size_t avail_mem, int8_t output_mask, 
     max_poas_                         = (avail_mem * fraction_for_metadata) / device_size_per_poa;
 
     // Update final sizes for block based on calculated maximum POAs.
-    output_size_ = max_poas_ * static_cast<int64_t>(max_limits.max_concensus_size);
-    input_size_  = max_poas_ * max_sequences_per_poa_ * static_cast<int64_t>(max_limits.max_sequence_size);
+    output_size_ = max_poas_ * static_cast<int64_t>(batch_size.max_concensus_size);
+    input_size_  = max_poas_ * max_sequences_per_poa_ * static_cast<int64_t>(batch_size.max_sequence_size);
     total_h_     = max_poas_ * host_size_per_poa + host_size_fixed;
     total_d_     = avail_mem;
 
@@ -82,15 +82,15 @@ uint8_t* BatchBlock::get_block_device()
     return block_data_d_;
 }
 
-std::tuple<int64_t, int64_t, int64_t, int64_t> BatchBlock::calculate_space_per_poa(const BatchSize& max_limits)
+std::tuple<int64_t, int64_t, int64_t, int64_t> BatchBlock::calculate_space_per_poa(const BatchSize& batch_size)
 {
     const int32_t poa_count = 1;
 
     int64_t host_size_fixed = 0, device_size_fixed = 0;
     int64_t host_size_per_poa = 0, device_size_per_poa = 0;
 
-    int64_t input_size_per_poa  = max_sequences_per_poa_ * max_limits.max_sequence_size * poa_count;
-    int64_t output_size_per_poa = max_limits.max_concensus_size * poa_count;
+    int64_t input_size_per_poa  = max_sequences_per_poa_ * batch_size.max_sequence_size * poa_count;
+    int64_t output_size_per_poa = batch_size.max_concensus_size * poa_count;
 
     // for output - host
     host_size_fixed += sizeof(OutputDetails);                                                                                   // output_details_h_

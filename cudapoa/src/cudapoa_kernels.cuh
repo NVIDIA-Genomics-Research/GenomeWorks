@@ -226,7 +226,7 @@ void generatePOA(claragenomics::cudapoa::OutputDetails* output_details_d,
                  bool banded_alignment,
                  uint32_t max_sequences_per_poa,
                  int8_t output_mask,
-                 const BatchSize& max_limits);
+                 const BatchSize& batch_size);
 
 // host function that calls runTopSortKernel
 void runTopSort(uint16_t* sorted_poa,

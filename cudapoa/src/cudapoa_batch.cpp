@@ -71,16 +71,16 @@ CudapoaBatch::CudapoaBatch(int32_t device_id,
                            cudaStream_t stream,
                            size_t max_mem,
                            int8_t output_mask,
-                           BatchSize max_limits,
+                           BatchSize batch_size,
                            int16_t gap_score,
                            int16_t mismatch_score,
                            int16_t match_score,
                            bool cuda_banded_alignment)
-    : max_sequences_per_poa_(throw_on_negative(max_limits.max_sequences_per_poa, "Maximum sequences per POA has to be non-negative"))
+    : max_sequences_per_poa_(throw_on_negative(batch_size.max_sequences_per_poa, "Maximum sequences per POA has to be non-negative"))
     , device_id_(throw_on_negative(device_id, "Device ID has to be non-negative"))
     , stream_(stream)
     , output_mask_(output_mask)
-    , max_limits_(max_limits)
+    , batch_size_(batch_size)
     , gap_score_(gap_score)
     , mismatch_score_(mismatch_score)
     , match_score_(match_score)
@@ -88,7 +88,7 @@ CudapoaBatch::CudapoaBatch(int32_t device_id,
     , batch_block_(new BatchBlock(device_id,
                                   throw_on_negative(max_mem, "Maximum memory per batch has to be non-negative"),
                                   output_mask,
-                                  max_limits_,
+                                  batch_size_,
                                   cuda_banded_alignment))
     , max_poas_(batch_block_->get_max_poas())
 {
@@ -165,7 +165,7 @@ void CudapoaBatch::generate_poa()
                                         banded_alignment_,
                                         max_sequences_per_poa_,
                                         output_mask_,
-                                        max_limits_);
+                                        batch_size_);
 
     msg = " Launched kernel on device ";
     print_batch_debug_message(msg);
@@ -217,12 +217,12 @@ StatusType CudapoaBatch::get_consensus(std::vector<std::string>& consensus,
     print_batch_debug_message(msg);
     CGA_CU_CHECK_ERR(cudaMemcpyAsync(output_details_h_->consensus,
                                      output_details_d_->consensus,
-                                     max_limits_.max_concensus_size * max_poas_ * sizeof(uint8_t),
+                                     batch_size_.max_concensus_size * max_poas_ * sizeof(uint8_t),
                                      cudaMemcpyDeviceToHost,
                                      stream_));
     CGA_CU_CHECK_ERR(cudaMemcpyAsync(output_details_h_->coverage,
                                      output_details_d_->coverage,
-                                     max_limits_.max_concensus_size * max_poas_ * sizeof(uint16_t),
+                                     batch_size_.max_concensus_size * max_poas_ * sizeof(uint16_t),
                                      cudaMemcpyDeviceToHost,
                                      stream_));
     CGA_CU_CHECK_ERR(cudaStreamSynchronize(stream_));
@@ -234,7 +234,7 @@ StatusType CudapoaBatch::get_consensus(std::vector<std::string>& consensus,
     {
         // Get the consensus string and reverse it since on GPU the
         // string is built backwards..
-        char* c = reinterpret_cast<char*>(&(output_details_h_->consensus[poa * max_limits_.max_concensus_size]));
+        char* c = reinterpret_cast<char*>(&(output_details_h_->consensus[poa * batch_size_.max_concensus_size]));
         // We use the first two entries in the consensus buffer to log error during kernel execution
         // c[0] == 0 means an error occured and when that happens the error type is saved in c[1]
         if (static_cast<uint8_t>(c[0]) == CUDAPOA_KERNEL_ERROR_ENCOUNTERED)
@@ -251,8 +251,8 @@ StatusType CudapoaBatch::get_consensus(std::vector<std::string>& consensus,
             std::reverse(consensus.back().begin(), consensus.back().end());
             // Similarly, get the coverage and reverse it.
             coverage.emplace_back(std::vector<uint16_t>(
-                &(output_details_h_->coverage[poa * max_limits_.max_concensus_size]),
-                &(output_details_h_->coverage[poa * max_limits_.max_concensus_size + get_size(consensus.back())])));
+                &(output_details_h_->coverage[poa * batch_size_.max_concensus_size]),
+                &(output_details_h_->coverage[poa * batch_size_.max_concensus_size + get_size(consensus.back())])));
             std::reverse(coverage.back().begin(), coverage.back().end());
             //std::cout << consensus.back() << std::endl;
         }
@@ -274,13 +274,13 @@ StatusType CudapoaBatch::get_msa(std::vector<std::vector<std::string>>& msa, std
 
     CGA_CU_CHECK_ERR(cudaMemcpyAsync(output_details_h_->multiple_sequence_alignments,
                                      output_details_d_->multiple_sequence_alignments,
-                                     max_poas_ * max_sequences_per_poa_ * max_limits_.max_concensus_size * sizeof(uint8_t),
+                                     max_poas_ * max_sequences_per_poa_ * batch_size_.max_concensus_size * sizeof(uint8_t),
                                      cudaMemcpyDeviceToHost,
                                      stream_));
 
     CGA_CU_CHECK_ERR(cudaMemcpyAsync(output_details_h_->consensus,
                                      output_details_d_->consensus,
-                                     max_limits_.max_concensus_size * max_poas_ * sizeof(uint8_t),
+                                     batch_size_.max_concensus_size * max_poas_ * sizeof(uint8_t),
                                      cudaMemcpyDeviceToHost,
                                      stream_));
 
@@ -292,7 +292,7 @@ StatusType CudapoaBatch::get_msa(std::vector<std::vector<std::string>>& msa, std
     for (int32_t poa = 0; poa < poa_count_; poa++)
     {
         msa.emplace_back(std::vector<std::string>());
-        char* c = reinterpret_cast<char*>(&(output_details_h_->consensus[poa * max_limits_.max_concensus_size]));
+        char* c = reinterpret_cast<char*>(&(output_details_h_->consensus[poa * batch_size_.max_concensus_size]));
         // We use the first two entries in the consensus buffer to log error during kernel execution
         // c[0] == 0 means an error occured and when that happens the error type is saved in c[1]
         if (static_cast<uint8_t>(c[0]) == CUDAPOA_KERNEL_ERROR_ENCOUNTERED)
@@ -305,7 +305,7 @@ StatusType CudapoaBatch::get_msa(std::vector<std::vector<std::string>>& msa, std
             uint16_t num_seqs = input_details_h_->window_details[poa].num_seqs;
             for (uint16_t i = 0; i < num_seqs; i++)
             {
-                char* c = reinterpret_cast<char*>(&(output_details_h_->multiple_sequence_alignments[(poa * max_sequences_per_poa_ + i) * max_limits_.max_concensus_size]));
+                char* c = reinterpret_cast<char*>(&(output_details_h_->multiple_sequence_alignments[(poa * max_sequences_per_poa_ + i) * batch_size_.max_concensus_size]));
                 msa[poa].emplace_back(std::string(c));
             }
         }
@@ -316,7 +316,7 @@ StatusType CudapoaBatch::get_msa(std::vector<std::vector<std::string>>& msa, std
 
 void CudapoaBatch::get_graphs(std::vector<DirectedGraph>& graphs, std::vector<StatusType>& output_status)
 {
-    int32_t max_nodes_per_window_ = banded_alignment_ ? max_limits_.max_nodes_per_window_banded : max_limits_.max_nodes_per_window;
+    int32_t max_nodes_per_window_ = banded_alignment_ ? batch_size_.max_nodes_per_window_banded : batch_size_.max_nodes_per_window;
     CGA_CU_CHECK_ERR(cudaMemcpyAsync(graph_details_h_->nodes,
                                      graph_details_d_->nodes,
                                      sizeof(uint8_t) * max_nodes_per_window_ * max_poas_,
@@ -349,7 +349,7 @@ void CudapoaBatch::get_graphs(std::vector<DirectedGraph>& graphs, std::vector<St
 
     CGA_CU_CHECK_ERR(cudaMemcpyAsync(output_details_h_->consensus,
                                      output_details_d_->consensus,
-                                     max_limits_.max_concensus_size * max_poas_ * sizeof(uint8_t),
+                                     batch_size_.max_concensus_size * max_poas_ * sizeof(uint8_t),
                                      cudaMemcpyDeviceToHost,
                                      stream_));
 
@@ -360,7 +360,7 @@ void CudapoaBatch::get_graphs(std::vector<DirectedGraph>& graphs, std::vector<St
 
     for (int32_t poa = 0; poa < poa_count_; poa++)
     {
-        char* c = reinterpret_cast<char*>(&(output_details_h_->consensus[poa * max_limits_.max_concensus_size]));
+        char* c = reinterpret_cast<char*>(&(output_details_h_->consensus[poa * batch_size_.max_concensus_size]));
         // We use the first two entries in the consensus buffer to log error during kernel execution
         // c[0] == 0 means an error occured and when that happens the error type is saved in c[1]
         if (static_cast<uint8_t>(c[0]) == CUDAPOA_KERNEL_ERROR_ENCOUNTERED)
@@ -395,7 +395,7 @@ void CudapoaBatch::get_graphs(std::vector<DirectedGraph>& graphs, std::vector<St
 
 bool CudapoaBatch::reserve_buf(int32_t max_seq_length)
 {
-    int32_t max_graph_dimension = banded_alignment_ ? max_limits_.max_matrix_graph_dimension_banded : max_limits_.max_matrix_graph_dimension;
+    int32_t max_graph_dimension = banded_alignment_ ? batch_size_.max_matrix_graph_dimension_banded : batch_size_.max_matrix_graph_dimension;
 
     int32_t scores_width = banded_alignment_ ? CUDAPOA_BANDED_MAX_MATRIX_SEQUENCE_DIMENSION : cudautils::align<int32_t, 4>(max_seq_length + 1 + CELLS_PER_THREAD);
     size_t scores_size   = scores_width * max_graph_dimension * sizeof(int16_t);
@@ -473,7 +473,7 @@ StatusType CudapoaBatch::add_poa()
 
 StatusType CudapoaBatch::add_seq_to_poa(const char* seq, const int8_t* weights, int32_t seq_len)
 {
-    if (seq_len >= (int32_t)max_limits_.max_sequence_size)
+    if (seq_len >= (int32_t)batch_size_.max_sequence_size)
     {
         return StatusType::exceeded_maximum_sequence_size;
     }
