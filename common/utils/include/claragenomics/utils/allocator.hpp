@@ -18,6 +18,7 @@
 #include <claragenomics/utils/device_preallocated_allocator.cuh>
 
 #include <claragenomics/utils/cudautils.hpp>
+#include <claragenomics/utils/exceptions.hpp>
 
 namespace claragenomics
 {
@@ -105,8 +106,20 @@ public:
     pointer allocate(std::size_t n, cudaStream_t stream = 0)
     {
         static_cast<void>(stream);
-        void* ptr = 0;
-        CGA_CU_CHECK_ERR(cudaMalloc(&ptr, n * sizeof(T)));
+        void* ptr       = nullptr;
+        cudaError_t err = cudaMalloc(&ptr, n * sizeof(T));
+        if (err == cudaErrorMemoryAllocation)
+        {
+            // Clear the error from the runtime...
+            err = cudaGetLastError();
+            // Did a different (async) error happen in the meantime?
+            if (err != cudaErrorMemoryAllocation)
+            {
+                CGA_CU_CHECK_ERR(err);
+            }
+            throw device_memory_allocation_exception();
+        }
+        CGA_CU_CHECK_ERR(err);
         return static_cast<pointer>(ptr);
     }
 
@@ -213,8 +226,13 @@ public:
     /// @return pointer to allocated array
     pointer allocate(std::size_t n, cudaStream_t stream = 0)
     {
-        void* ptr = 0;
-        CGA_CU_CHECK_ERR(memory_resource_->DeviceAllocate(&ptr, n * sizeof(T), stream));
+        void* ptr       = nullptr;
+        cudaError_t err = memory_resource_->DeviceAllocate(&ptr, n * sizeof(T), stream);
+        if (err == cudaErrorMemoryAllocation)
+        {
+            throw device_memory_allocation_exception();
+        }
+        CGA_CU_CHECK_ERR(err);
         return static_cast<pointer>(ptr);
     }
 
