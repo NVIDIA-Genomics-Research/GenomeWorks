@@ -107,11 +107,11 @@ cdef class CudaPoaBatch:
             raise RuntimeError("Unknown output_type provided. Must be consensus/msa.")
 
         self.batch = cudapoa.create_batch(
-            max_sequences_per_poa,
             device_id,
             temp_stream,
             gpu_mem,
             output_mask,
+            batch_size,
             gap_score,
             mismatch_score,
             match_score,
