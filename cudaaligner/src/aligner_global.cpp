@@ -34,7 +34,7 @@ constexpr int32_t calc_max_result_length(int32_t max_query_length, int32_t max_t
     return ceiling_divide(max_length, alignment_bytes) * alignment_bytes;
 }
 
-AlignerGlobal::AlignerGlobal(int32_t max_query_length, int32_t max_target_length, int32_t max_alignments, cudaStream_t stream, int32_t device_id)
+AlignerGlobal::AlignerGlobal(int32_t max_query_length, int32_t max_target_length, int32_t max_alignments, DefaultDeviceAllocator allocator, cudaStream_t stream, int32_t device_id)
     : max_query_length_(throw_on_negative(max_query_length, "max_query_length must be non-negative."))
     , max_target_length_(throw_on_negative(max_target_length, "max_target_length must be non-negative."))
     , max_alignments_(throw_on_negative(max_alignments, "max_alignments must be non-negative."))
@@ -51,14 +51,15 @@ AlignerGlobal::AlignerGlobal(int32_t max_query_length, int32_t max_target_length
         throw std::runtime_error("Max alignments must be at least 1.");
     }
     scoped_device_switch dev(device_id);
-    sequences_d_        = device_buffer<char>(sequences_h_.size());
-    sequence_lengths_d_ = device_buffer<int32_t>(sequence_lengths_h_.size());
-    results_d_          = device_buffer<int8_t>(results_h_.size());
-    result_lengths_d_   = device_buffer<int32_t>(result_lengths_h_.size());
-    device_memset_async(sequences_d_, 0, stream);
-    device_memset_async(sequence_lengths_d_, 0, stream);
-    device_memset_async(results_d_, 0, stream);
-    device_memset_async(result_lengths_d_, 0, stream);
+    sequences_d_        = device_buffer<char>(sequences_h_.size(), allocator, stream);
+    sequence_lengths_d_ = device_buffer<int32_t>(sequence_lengths_h_.size(), allocator, stream);
+    results_d_          = device_buffer<int8_t>(results_h_.size(), allocator, stream);
+    result_lengths_d_   = device_buffer<int32_t>(result_lengths_h_.size(), allocator, stream);
+
+    CGA_CU_CHECK_ERR(cudaMemsetAsync(sequences_d_.data(), 0, sizeof(char) * sequences_d_.size(), stream));
+    CGA_CU_CHECK_ERR(cudaMemsetAsync(sequence_lengths_d_.data(), 0, sizeof(char) * sequence_lengths_d_.size(), stream));
+    CGA_CU_CHECK_ERR(cudaMemsetAsync(results_d_.data(), 0, sizeof(char) * results_d_.size(), stream));
+    CGA_CU_CHECK_ERR(cudaMemsetAsync(result_lengths_d_.data(), 0, sizeof(char) * result_lengths_d_.size(), stream));
 }
 
 StatusType AlignerGlobal::add_alignment(const char* query, int32_t query_length, const char* target, int32_t target_length, bool reverse_complement_query, bool reverse_complement_target)

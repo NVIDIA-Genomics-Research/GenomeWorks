@@ -523,7 +523,7 @@ int main(int argc, char* argv[])
                 {
                     cigar.resize(overlaps_to_add->size());
                     CGA_NVTX_RANGE(profiler, "align_overlaps");
-                    claragenomics::cudamapper::Overlapper::Overlapper::align_overlaps(*overlaps_to_add, *query_parser, *target_parser, parameters.alignment_engines, cigar);
+                    claragenomics::cudamapper::Overlapper::Overlapper::align_overlaps(*overlaps_to_add, *query_parser, *target_parser, parameters.alignment_engines, cigar, allocator);
                 }
 
                 //Increment counter which tracks number of overlap chunks to be filtered and printed

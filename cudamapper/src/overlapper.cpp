@@ -92,7 +92,8 @@ void run_alignment_batch(std::mutex& overlap_idx_mtx,
                          const claragenomics::io::FastaParser& target_parser,
                          int32_t& overlap_idx,
                          const int32_t max_query_size, const int32_t max_target_size,
-                         std::vector<std::string>& cigar, const int32_t batch_size)
+                         std::vector<std::string>& cigar, const int32_t batch_size,
+                         DefaultDeviceAllocator allocator)
 {
     int32_t device_id;
     CGA_CU_CHECK_ERR(cudaGetDevice(&device_id));
@@ -104,6 +105,7 @@ void run_alignment_batch(std::mutex& overlap_idx_mtx,
             max_target_size,
             batch_size,
             claragenomics::cudaaligner::AlignmentType::global_alignment,
+            allocator,
             stream,
             device_id);
     while (true)
@@ -162,7 +164,8 @@ void Overlapper::align_overlaps(std::vector<Overlap>& overlaps,
                                 const claragenomics::io::FastaParser& query_parser,
                                 const claragenomics::io::FastaParser& target_parser,
                                 int32_t num_alignment_engines,
-                                std::vector<std::string>& cigar)
+                                std::vector<std::string>& cigar,
+                                DefaultDeviceAllocator allocator)
 {
     // Calculate max target/query size in overlaps
     int32_t max_query_size  = 0;
@@ -205,7 +208,8 @@ void Overlapper::align_overlaps(std::vector<Overlap>& overlaps,
                                            max_query_size,
                                            max_target_size,
                                            std::ref(cigar),
-                                           batch_size));
+                                           batch_size,
+                                           allocator));
     }
 
     for (auto& f : align_futures)
