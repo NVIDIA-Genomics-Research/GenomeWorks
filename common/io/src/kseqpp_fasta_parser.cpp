@@ -17,6 +17,7 @@
 
 #include <iostream>
 #include "seqio.h" //TODO add this to 3rdparty
+#include <claragenomics/utils/signed_integer_utils.hpp>
 
 namespace claragenomics
 {
@@ -30,8 +31,8 @@ FastaParserKseqpp::FastaParserKseqpp(const std::string& fasta_file, int min_sequ
     std::vector<FastaSequence> seqs;
     while (iss >> record)
     {
-        FastaSequence seq    = {record.name, record.seq};
-        auto sequence_length = record.seq.size();
+        FastaSequence seq   = {record.name, record.seq};
+        int sequence_length = get_size<int>(record.seq);
         if (sequence_length >= min_sequencece_length)
         {
             reads_.push_back(std::move(seq));
@@ -59,24 +60,25 @@ std::vector<std::pair<int, int>> FastaParserKseqpp::get_read_chunks(int max_chun
 
     std::pair<int, int> chunk;
 
-    chunk.first   = 0;
-    int num_bases = 0;
-    for (int read_idx = 0; read_idx < reads_.size(); read_idx++)
+    const int n_reads = get_size<int>(reads_);
+    chunk.first       = 0;
+    int num_bases     = 0;
+    for (int read_idx = 0; read_idx < n_reads; read_idx++)
     {
-        if (reads_[read_idx].seq.size() + num_bases > max_chunk_size)
+        if (get_size<int>(reads_[read_idx].seq) + num_bases > max_chunk_size)
         {
             chunk.second = read_idx;
             chunks.push_back(chunk);
             chunk.first = read_idx;
-            num_bases   = reads_[read_idx].seq.size();
+            num_bases   = get_size<int>(reads_[read_idx].seq);
         }
         else
         {
-            num_bases += reads_[read_idx].seq.size();
+            num_bases += get_size<int>(reads_[read_idx].seq);
         }
     }
 
-    chunk.second = reads_.size();
+    chunk.second = get_size(reads_);
 
     chunks.push_back(chunk);
     return chunks;

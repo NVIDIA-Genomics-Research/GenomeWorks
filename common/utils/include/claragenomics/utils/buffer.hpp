@@ -51,9 +51,9 @@ public:
     explicit buffer(size_type n           = 0,
                     AllocatorIn allocator = AllocatorIn(),
                     cudaStream_t stream   = 0)
-        : _size(n)
+        : _data(nullptr)
+        , _size(n)
         , _capacity(n)
-        , _data(nullptr)
         , _stream(stream)
         , _allocator(allocator)
     {
@@ -70,7 +70,7 @@ public:
     /// @param allocator The allocator to use by this buffer.
     /// @param stream The CUDA stream to be associated with this allocation. Default is stream 0.
     /// @tparam AllocatorIn Type of input allocator. If AllocatorIn::value_type is different than T AllocatorIn will be converted to Allocator<T> if possible, compilation will fail otherwise
-    template <typename AllocatorIn>
+    template <typename AllocatorIn, std::enable_if_t<std::is_class<AllocatorIn>::value, int> = 0> // for calls like buffer(5, stream) the other constructor should be used -> only enable if AllocatorIn is a class.
     explicit buffer(AllocatorIn allocator, cudaStream_t stream = 0)
         : buffer(0, allocator, stream)
     {
@@ -81,9 +81,9 @@ public:
     /// Buffer to move from (rhs) is left in an empty state (size = capacity = 0), with the original stream and allocator.
     /// @param rhs The bufer to move.
     buffer(buffer&& rhs)
-        : _size(std::exchange(rhs._size, 0))
+        : _data(std::exchange(rhs._data, nullptr))
+        , _size(std::exchange(rhs._size, 0))
         , _capacity(std::exchange(rhs._capacity, 0))
-        , _data(std::exchange(rhs._data, nullptr))
         , _stream(rhs._stream)
         , _allocator(rhs._allocator)
     {
@@ -95,9 +95,9 @@ public:
     /// @return refrence to this buffer.
     buffer& operator=(buffer&& rhs)
     {
+        _data      = std::exchange(rhs._data, nullptr);
         _size      = std::exchange(rhs._size, 0);
         _capacity  = std::exchange(rhs._capacity, 0);
-        _data      = std::exchange(rhs._data, nullptr);
         _stream    = rhs._stream;
         _allocator = rhs._allocator;
         return *this;
