@@ -131,17 +131,17 @@ void sample_long_reads(bool msa, bool print)
     constexpr uint32_t random_seed = 5827349;
     std::minstd_rand rng(random_seed);
 
-    const int16_t number_of_reads = 2;
+    const int16_t number_of_reads = 5;
     const int32_t read_length     = 10000;
-    int32_t max_sequence_length   = read_length + 1;
+    int32_t max_sequence_length   = read_length * 2;
 
     std::vector<std::pair<int, int>> variation_ranges;
-    //variation_ranges.push_back(std::pair<int, int>(3, 5));
-    //variation_ranges.push_back(std::pair<int, int>(300, 500));
-    //variation_ranges.push_back(std::pair<int, int>(1000, 1300));
-    //variation_ranges.push_back(std::pair<int, int>(2000, 2200));
-    //variation_ranges.push_back(std::pair<int, int>(3000, 3500));
-    //variation_ranges.push_back(std::pair<int, int>(4000, 4200));
+    variation_ranges.push_back(std::pair<int, int>(3, 5));
+    variation_ranges.push_back(std::pair<int, int>(300, 500));
+    variation_ranges.push_back(std::pair<int, int>(1000, 1300));
+    variation_ranges.push_back(std::pair<int, int>(2000, 2200));
+    variation_ranges.push_back(std::pair<int, int>(3000, 3500));
+    variation_ranges.push_back(std::pair<int, int>(4000, 4200));
 
     std::vector<std::string> long_reads(number_of_reads);
     long_reads[0] = claragenomics::genomeutils::generate_random_genome(read_length, rng);
@@ -191,7 +191,8 @@ void sample_long_reads(bool msa, bool print)
     else
     {
         // Now process batch.
-        process_batch(batch.get(), msa, print);
+        // if print == true, we only output graph
+        process_batch(batch.get(), msa, false);
     }
 
     std::vector<DirectedGraph> graph;
@@ -211,7 +212,10 @@ void sample_long_reads(bool msa, bool print)
         }
     }
 
-    std::cout << graph.front().serialize_to_dot() << std::endl;
+    if(print)
+    {
+        std::cout << graph.front().serialize_to_dot() << std::endl;
+    }
 }
 
 int main(int argc, char** argv)

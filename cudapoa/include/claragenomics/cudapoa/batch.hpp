@@ -81,6 +81,22 @@ struct BatchSize
         max_matrix_graph_dimension_banded = cudautils::align<int32_t, 4>(max_nodes_per_window_banded + 4);
         max_matrix_sequence_dimension     = cudautils::align<int32_t, 4>(max_sequence_size + 4);
     }
+
+    /// set all parameters, in case that default values used in setSize is not desired
+    void setParams(uint32_t max_seq_sz, uint32_t max_concensus_sz, uint32_t max_nodes_per_w,
+                   uint32_t max_nodes_per_w_banded, uint32_t max_matrix_graph_dim,
+                   uint32_t max_matrix_graph_dim_banded, uint32_t max_matrix_seq_dim,
+                   uint32_t max_seq_per_poa)
+    {
+        max_sequence_size                 = max_seq_sz;
+        max_concensus_size                = max_concensus_sz;
+        max_nodes_per_window              = max_nodes_per_w;
+        max_nodes_per_window_banded       = max_nodes_per_w_banded;
+        max_matrix_graph_dimension        = max_matrix_graph_dim;
+        max_matrix_graph_dimension_banded = max_matrix_graph_dim_banded;
+        max_matrix_sequence_dimension     = max_matrix_seq_dim;
+        max_sequences_per_poa             = max_seq_per_poa;
+    }
 };
 
 /// \class Batch
