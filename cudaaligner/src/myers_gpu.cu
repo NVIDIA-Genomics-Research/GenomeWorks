@@ -316,7 +316,7 @@ __global__ void myers_compute_score_matrix_kernel(
             score(idx, t) = score(idx, t - 1) + warp_carry;
             if (threadIdx.x == 0)
                 warp_carry = 0;
-            if (warp_mask == 0xffff'ffffu)
+            if (warp_mask == 0xffff'ffffu && (threadIdx.x == 0 || threadIdx.x == 31))
                 warp_carry = __shfl_down_sync(0x8000'0001u, warp_carry, warp_size - 1);
             if (threadIdx.x != 0)
                 warp_carry = 0;
