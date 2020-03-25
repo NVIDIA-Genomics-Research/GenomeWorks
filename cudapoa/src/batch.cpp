@@ -28,15 +28,33 @@ std::unique_ptr<Batch> create_batch(int32_t device_id,
                                     int16_t match_score,
                                     bool cuda_banded_alignment)
 {
-    return std::make_unique<CudapoaBatch>(device_id,
-                                          stream,
-                                          max_mem,
-                                          output_mask,
-                                          batch_size,
-                                          gap_score,
-                                          mismatch_score,
-                                          match_score,
-                                          cuda_banded_alignment);
+    // a decision flag to determine proper type definition for ScoreT, factor 4 is selected ad-hoc
+    const bool use_32_bit_for_ScoreT = batch_size.max_nodes_per_window * match_score * 4 > INT16_MAX;
+
+    if (use_32_bit_for_ScoreT)
+    {
+        return std::make_unique<CudapoaBatch<int32_t>>(device_id,
+                                                       stream,
+                                                       max_mem,
+                                                       output_mask,
+                                                       batch_size,
+                                                       gap_score,
+                                                       mismatch_score,
+                                                       match_score,
+                                                       cuda_banded_alignment);
+    }
+    else
+    {
+        return std::make_unique<CudapoaBatch<int16_t>>(device_id,
+                                                       stream,
+                                                       max_mem,
+                                                       output_mask,
+                                                       batch_size,
+                                                       gap_score,
+                                                       mismatch_score,
+                                                       match_score,
+                                                       cuda_banded_alignment);
+    }
 }
 
 } // namespace cudapoa

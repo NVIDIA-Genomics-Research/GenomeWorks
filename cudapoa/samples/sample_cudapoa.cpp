@@ -42,9 +42,9 @@ std::unique_ptr<Batch> initialize_batch(bool msa, BatchSize batch_size)
     Init();
 
     // Initialize CUDAPOA batch object for batched processing of POAs on the GPU.
-    const int32_t device_id                   = 0;
-    cudaStream_t stream                       = 0;
-    size_t mem_per_batch                      = 0.9 * free; // Using 90% of GPU available memory for CUDAPOA batch.
+    const int32_t device_id      = 0;
+    cudaStream_t stream          = 0;
+    size_t mem_per_batch         = 0.9 * free; // Using 90% of GPU available memory for CUDAPOA batch.
     const int32_t mismatch_score = -6, gap_score = -8, match_score = 8;
     bool banded_alignment = false;
 
@@ -132,7 +132,7 @@ void sample_long_reads(bool msa, bool print)
     std::minstd_rand rng(random_seed);
 
     const int16_t number_of_reads = 2;
-    const int32_t read_length     = 1000;
+    const int32_t read_length     = 10000;
     int32_t max_sequence_length   = read_length + 1;
 
     std::vector<std::pair<int, int>> variation_ranges;
@@ -211,7 +211,7 @@ void sample_long_reads(bool msa, bool print)
         }
     }
 
-    //std::string graph_dot = graph.front().serialize_to_dot();
+    std::cout << graph.front().serialize_to_dot() << std::endl;
 }
 
 int main(int argc, char** argv)

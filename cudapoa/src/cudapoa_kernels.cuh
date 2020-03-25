@@ -92,10 +92,11 @@ typedef struct InputDetails
 
 } InputDetails;
 
-typedef struct AlignmentDetails
+template <typename ScoreT>
+struct AlignmentDetails
 {
     // Device buffer for the scoring matrix for all windows.
-    int16_t* scores;
+    ScoreT* scores;
 
     // preallocated size of scores buffer
     size_t scorebuf_alloc_size = 0;
@@ -103,7 +104,7 @@ typedef struct AlignmentDetails
     // Device buffers for alignment backtrace
     int16_t* alignment_graph;
     int16_t* alignment_read;
-} AlignmentDetails;
+};
 
 typedef struct GraphDetails
 {
@@ -218,7 +219,7 @@ void generatePOA(claragenomics::cudapoa::OutputDetails* output_details_d,
                  claragenomics::cudapoa::InputDetails* Input_details_d,
                  int32_t total_windows,
                  cudaStream_t stream,
-                 claragenomics::cudapoa::AlignmentDetails* alignment_details_d,
+                 void* alignment_details_d,
                  claragenomics::cudapoa::GraphDetails* graph_details_d,
                  int16_t gap_score,
                  int16_t mismatch_score,
