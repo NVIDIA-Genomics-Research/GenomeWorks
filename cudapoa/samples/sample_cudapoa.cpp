@@ -212,7 +212,7 @@ void sample_long_reads(bool msa, bool print)
         }
     }
 
-    if(print)
+    if (print)
     {
         std::cout << graph.front().serialize_to_dot() << std::endl;
     }
