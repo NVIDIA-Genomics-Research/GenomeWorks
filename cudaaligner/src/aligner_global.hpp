@@ -13,8 +13,9 @@
 #include "ukkonen_gpu.cuh"
 
 #include <claragenomics/cudaaligner/aligner.hpp>
+#include <claragenomics/utils/allocator.hpp>
 #include <claragenomics/utils/signed_integer_utils.hpp>
-#include <claragenomics/utils/device_buffer.cuh>
+#include <claragenomics/utils/device_buffer.hpp>
 
 #include <thrust/system/cuda/experimental/pinned_allocator.h>
 
@@ -27,7 +28,7 @@ namespace cudaaligner
 class AlignerGlobal : public Aligner
 {
 public:
-    AlignerGlobal(int32_t max_query_length, int32_t max_target_length, int32_t max_alignments, cudaStream_t stream, int32_t device_id);
+    AlignerGlobal(int32_t max_query_length, int32_t max_target_length, int32_t max_alignments, DefaultDeviceAllocator allocator, cudaStream_t stream, int32_t device_id);
     virtual ~AlignerGlobal()            = default;
     AlignerGlobal(const AlignerGlobal&) = delete;
 

@@ -10,7 +10,6 @@
 
 #include "../src/hirschberg_myers_gpu.cu"
 #include "../src/batched_device_matrices.cuh"
-#include <claragenomics/utils/device_buffer.cuh>
 #include <claragenomics/utils/signed_integer_utils.hpp>
 #include <vector>
 #include <gtest/gtest.h>
@@ -46,6 +45,7 @@ __global__ void myers_get_query_pattern_test_kernel(int32_t n_words, WordType* r
 
 matrix<WordType> compute_myers_preprocess_matrix(std::string query_host)
 {
+    DefaultDeviceAllocator allocator;
     CGA_CONSTEXPR int32_t word_size = sizeof(WordType) * CHAR_BIT;
     cudaStream_t stream             = nullptr;
     const int32_t n_words           = ceiling_divide<int32_t>(query_host.size(), word_size);
@@ -53,19 +53,20 @@ matrix<WordType> compute_myers_preprocess_matrix(std::string query_host)
     device_buffer<char> query(query_host.size());
     cudaMemcpy(query.data(), query_host.data(), sizeof(char) * query.size(), cudaMemcpyHostToDevice);
 
-    batched_device_matrices<WordType> query_pattern(1, 8 * n_words, stream);
+    batched_device_matrices<WordType> query_pattern(1, 8 * n_words, allocator, stream);
     myers_preprocess_kernel<<<1, 32>>>(query_pattern.get_device_interface(), query.data(), query.size());
     return query_pattern.get_matrix(0, n_words, 8, stream);
 }
 
 std::vector<WordType> myers_get_query_pattern_test(std::string query_host, int32_t idx, char x, bool reverse)
 {
+    DefaultDeviceAllocator allocator;
     CGA_CONSTEXPR int32_t word_size = sizeof(WordType) * CHAR_BIT;
     cudaStream_t stream             = nullptr;
     const int32_t n_words           = ceiling_divide<int32_t>(query_host.size(), word_size);
     device_buffer<char> query(query_host.size());
     cudaMemcpy(query.data(), query_host.data(), sizeof(char) * query.size(), cudaMemcpyHostToDevice);
-    batched_device_matrices<WordType> query_pattern(1, 8 * n_words, stream);
+    batched_device_matrices<WordType> query_pattern(1, 8 * n_words, allocator, stream);
     myers_preprocess_kernel<<<1, 32>>>(query_pattern.get_device_interface(), query.data(), query.size());
 
     device_buffer<WordType> result(32);

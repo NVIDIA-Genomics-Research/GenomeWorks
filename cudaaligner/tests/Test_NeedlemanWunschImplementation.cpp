@@ -15,7 +15,7 @@
 
 #include <claragenomics/utils/signed_integer_utils.hpp>
 #include <claragenomics/utils/genomeutils.hpp>
-#include <claragenomics/utils/device_buffer.cuh>
+#include <claragenomics/utils/device_buffer.hpp>
 
 #include <cuda_runtime_api.h>
 #include <random>
@@ -145,6 +145,7 @@ protected:
 
 matrix<int> ukkonen_gpu_build_score_matrix(const std::string& target, const std::string& query, int32_t ukkonen_p)
 {
+    DefaultDeviceAllocator allocator;
     // Allocate buffers and prepare data
     int32_t query_length          = query.length();
     int32_t target_length         = target.length();
@@ -153,7 +154,7 @@ matrix<int> ukkonen_gpu_build_score_matrix(const std::string& target, const std:
     int32_t max_length_difference = std::abs(target_length - query_length);
 
     auto score_matrices = std::make_unique<batched_device_matrices<nw_score_t>>(
-        1, ukkonen_max_score_matrix_size(query_length, target_length, max_length_difference, ukkonen_p), nullptr);
+        1, ukkonen_max_score_matrix_size(query_length, target_length, max_length_difference, ukkonen_p), allocator, nullptr);
 
     device_buffer<int8_t> path_d(max_path_length);
     std::vector<int8_t> path_h(max_path_length);
@@ -225,6 +226,7 @@ TEST_P(AlignerImplementation, UkkonenGpuVsUkkonenCpuScoringMatrix)
 
 std::vector<int8_t> run_ukkonen_gpu(const std::string& target, const std::string& query, int32_t ukkonen_p)
 {
+    DefaultDeviceAllocator allocator;
     // Allocate buffers and prepare data
     int32_t query_length          = query.length();
     int32_t target_length         = target.length();
@@ -233,7 +235,7 @@ std::vector<int8_t> run_ukkonen_gpu(const std::string& target, const std::string
     int32_t max_length_difference = std::abs(target_length - query_length);
 
     auto score_matrices = std::make_unique<batched_device_matrices<nw_score_t>>(
-        1, ukkonen_max_score_matrix_size(query_length, target_length, max_length_difference, ukkonen_p), nullptr);
+        1, ukkonen_max_score_matrix_size(query_length, target_length, max_length_difference, ukkonen_p), allocator, nullptr);
 
     device_buffer<int8_t> path_d(max_path_length);
     std::vector<int8_t> path_h(max_path_length);

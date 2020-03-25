@@ -55,6 +55,7 @@ void run_alignment_batch(std::mutex& overlap_idx_mtx,
                          const int32_t max_query_size, const int32_t max_target_size,
                          std::vector<std::string>& cigar, const int32_t batch_size)
 {
+    DefaultDeviceAllocator allocator; // FIXME: Intermediate change. Waiting for bigger changes to merge
     int32_t device_id;
     CGA_CU_CHECK_ERR(cudaGetDevice(&device_id));
     cudaStream_t stream;
@@ -65,6 +66,7 @@ void run_alignment_batch(std::mutex& overlap_idx_mtx,
             max_target_size,
             batch_size,
             claragenomics::cudaaligner::AlignmentType::global_alignment,
+            allocator,
             stream,
             device_id);
     while (true)

@@ -28,6 +28,7 @@ namespace cudaaligner
 
 static void BM_SingleAlignment(benchmark::State& state)
 {
+    DefaultDeviceAllocator allocator;
     int32_t genome_size = state.range(0);
 
     // Generate random sequences
@@ -40,6 +41,7 @@ static void BM_SingleAlignment(benchmark::State& state)
                                                       genome_size,
                                                       1,
                                                       AlignmentType::global_alignment,
+                                                      allocator,
                                                       0,
                                                       0);
     aligner->add_alignment(genome_1.c_str(), genome_1.length(),
@@ -79,6 +81,7 @@ template <typename AlignerT>
 static void BM_SingleBatchAlignment(benchmark::State& state)
 {
     CudaStream stream;
+    DefaultDeviceAllocator allocator;
     int32_t alignments_per_batch = state.range(0);
     int32_t genome_size          = state.range(1);
 
@@ -90,6 +93,7 @@ static void BM_SingleBatchAlignment(benchmark::State& state)
             genome_size,
             genome_size,
             alignments_per_batch,
+            allocator,
             stream.get(),
             0);
 

@@ -11,6 +11,7 @@
 #pragma once
 
 #include <claragenomics/cudaaligner/cudaaligner.hpp>
+#include <claragenomics/utils/allocator.hpp>
 
 #include <memory>
 #include <vector>
@@ -78,11 +79,12 @@ public:
 /// \param max_target_length Maximum length of target string
 /// \param max_alignments Maximum number of alignments to be performed
 /// \param type Type of aligner to construct
+/// \param allocator Allocator to use for internal device memory allocations
 /// \param stream CUDA Stream used for GPU interaction of the object
 /// \param device_id GPU device ID to run all CUDA operations on
 ///
 /// \return Unique pointer to Aligner object
-std::unique_ptr<Aligner> create_aligner(int32_t max_query_length, int32_t max_target_length, int32_t max_alignments, AlignmentType type, cudaStream_t stream, int32_t device_id);
+std::unique_ptr<Aligner> create_aligner(int32_t max_query_length, int32_t max_target_length, int32_t max_alignments, AlignmentType type, DefaultDeviceAllocator allocator, cudaStream_t stream, int32_t device_id);
 
 /// \}
 } // namespace cudaaligner
