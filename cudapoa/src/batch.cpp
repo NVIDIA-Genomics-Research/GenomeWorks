@@ -29,7 +29,7 @@ std::unique_ptr<Batch> create_batch(int32_t device_id,
                                     bool cuda_banded_alignment)
 {
     // a decision flag to determine proper type definition for ScoreT, factor 4 is selected ad-hoc
-    const bool use_32_bit_for_ScoreT = batch_size.max_nodes_per_window * match_score * 4 > INT16_MAX;
+    const bool use_32_bit_for_ScoreT = use32bitInt(batch_size.max_nodes_per_window, match_score);
 
     if (use_32_bit_for_ScoreT)
     {
@@ -38,9 +38,9 @@ std::unique_ptr<Batch> create_batch(int32_t device_id,
                                                        max_mem,
                                                        output_mask,
                                                        batch_size,
-                                                       gap_score,
-                                                       mismatch_score,
-                                                       match_score,
+                                                       (int32_t)gap_score,
+                                                       (int32_t)mismatch_score,
+                                                       (int32_t)match_score,
                                                        cuda_banded_alignment);
     }
     else

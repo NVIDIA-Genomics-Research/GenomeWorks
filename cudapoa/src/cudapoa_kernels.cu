@@ -710,7 +710,7 @@ void generatePOA(claragenomics::cudapoa::OutputDetails* output_details_d,
                  const BatchSize& batch_size)
 {
     // a decision flag to determine proper type definition for ScoreT, factor 4 is selected ad-hoc
-    const bool use_32_bit_for_ScoreT = batch_size.max_nodes_per_window * match_score * 4 > INT16_MAX;
+    const bool use_32_bit_for_ScoreT = use32bitInt(batch_size.max_nodes_per_window, match_score);
 
     if (use_32_bit_for_ScoreT)
     {
@@ -721,9 +721,9 @@ void generatePOA(claragenomics::cudapoa::OutputDetails* output_details_d,
                                                               stream,
                                                               alignment_details_d,
                                                               graph_details_d,
-                                                              gap_score,
-                                                              mismatch_score,
-                                                              match_score,
+                                                              (int32_t)gap_score,
+                                                              (int32_t)mismatch_score,
+                                                              (int32_t)match_score,
                                                               cuda_banded_alignment,
                                                               max_sequences_per_poa,
                                                               output_mask,
@@ -746,6 +746,13 @@ void generatePOA(claragenomics::cudapoa::OutputDetails* output_details_d,
                                                               output_mask,
                                                               batch_size);
     }
+}
+
+
+bool use32bitInt(int32_t max_nodes_per_window, int32_t match_score)
+{
+    // a decision flag to determine proper type definition for ScoreT, factor 4 is selected ad-hoc
+    return (max_nodes_per_window * match_score * 4 > INT16_MAX);
 }
 
 } // namespace cudapoa

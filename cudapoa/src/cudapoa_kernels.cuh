@@ -296,6 +296,9 @@ void generateConsensusTestHost(uint8_t* nodes,
                                uint16_t* node_alignments,
                                uint16_t* node_alignment_count,
                                uint32_t max_limit_consensus_size);
+
+bool use32bitInt(int32_t max_nodes_per_window, int32_t match_score);
+
 } // namespace cudapoa
 
 } // namespace claragenomics

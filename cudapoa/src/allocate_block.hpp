@@ -23,6 +23,16 @@
 #include <claragenomics/logging/logging.hpp>
 #include <claragenomics/utils/signed_integer_utils.hpp>
 
+#ifndef CGA_LOG_LEVEL
+#ifndef NDEBUG
+/// \brief Defines the logging level used in the current module
+#define CGA_LOG_LEVEL cga_log_level_debug
+#else // NDEBUG
+/// \brief Defines the logging level used in the current module
+#define CGA_LOG_LEVEL cga_log_level_error
+#endif // NDEBUG
+#endif // CGA_LOG_LEVEL
+
 namespace claragenomics
 {
 
