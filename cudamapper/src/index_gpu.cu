@@ -70,6 +70,7 @@ void find_first_occurrences_of_representations(DefaultDeviceAllocator allocator,
 
     std::uint32_t input_representations_size = input_representations_d.size();
     cudautils::set_device_value_async(first_occurrence_index_d.end() - 1, &input_representations_size, cuda_stream); // H2D copy
+    cudaStreamSynchronize(cuda_stream);                                                                              //async H2D copy has to complete before input_representations_size goes out of scope
 }
 
 __global__ void find_first_occurrences_of_representations_kernel(const std::uint64_t* const representation_index_mask_d,
