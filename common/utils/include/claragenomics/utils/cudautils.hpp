@@ -137,6 +137,10 @@ void device_copy_n(const Type* src, size_t n, Type* dst)
     CGA_CU_CHECK_ERR(cudaMemcpy(dst, src, n * sizeof(Type), cudaMemcpyDefault));
 }
 
+/// @brief finds largest section of contiguous memory on device
+/// @return number of bytes
+std::size_t find_largest_contiguous_device_memory_section();
+
 #ifdef CGA_PROFILING
 /// \ingroup cudautils
 /// \def CGA_NVTX_RANGE
