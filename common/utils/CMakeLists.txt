@@ -10,28 +10,19 @@
 
 project(utils)
 
-add_library(utils INTERFACE)
-target_link_libraries(utils INTERFACE logging)
-if (cga_profiling)
-    find_library(NVTX_LIBRARY nvToolsExt HINTS ${CUDA_TOOLKIT_ROOT_DIR}/lib64)
-    target_compile_definitions(utils INTERFACE -DCGA_PROFILING)
-    target_link_libraries(utils INTERFACE ${NVTX_LIBRARY})
-endif()
+
+get_property(cga_library_type GLOBAL PROPERTY cga_library_type)
+add_library(utils ${cga_library_type}
+        src/cudautils.cpp)
+target_link_libraries(utils PUBLIC cgaconfig logging)
 
 add_doxygen_source_dir(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 target_include_directories(utils
-    INTERFACE 
+    PUBLIC
         $<INSTALL_INTERFACE:include>    
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 )
-
-if (cga_device_synchronize_kernels)
-target_compile_definitions(utils
-    INTERFACE
-    CGA_DEVICE_SYNCHRONIZE)
-endif()
-
 
 install(TARGETS utils
     EXPORT utils
