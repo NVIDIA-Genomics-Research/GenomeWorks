@@ -135,7 +135,7 @@ public:
                                                         const cudaStream_t cuda_stream = 0) = 0;
 
     /// \brief virtual destructor
-    virtual ~IndexHostCopyBase() = delete;
+    virtual ~IndexHostCopyBase() = default;
 
     /// \brief returns an array of representations of sketch elements (stored on host)
     /// \return an array of representations of sketch elements
