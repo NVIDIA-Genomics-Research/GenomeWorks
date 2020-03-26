@@ -86,6 +86,19 @@ public:
 /// \return Unique pointer to Aligner object
 std::unique_ptr<Aligner> create_aligner(int32_t max_query_length, int32_t max_target_length, int32_t max_alignments, AlignmentType type, DefaultDeviceAllocator allocator, cudaStream_t stream, int32_t device_id);
 
+/// \brief Created Aligner object
+///
+/// \param max_query_length Maximum length of query string
+/// \param max_target_length Maximum length of target string
+/// \param max_alignments Maximum number of alignments to be performed
+/// \param type Type of aligner to construct
+/// \param stream CUDA Stream used for GPU interaction of the object
+/// \param device_id GPU device ID to run all CUDA operations on
+/// \param max_device_memory_allocator_caching_size Maximum amount of device memory to use for cached memory allocations the cudaaligner instance. max_device_memory_allocator_caching_size = 0 (default) means all available device memory.
+///
+/// \return Unique pointer to Aligner object
+std::unique_ptr<Aligner> create_aligner(int32_t max_query_length, int32_t max_target_length, int32_t max_alignments, AlignmentType type, cudaStream_t stream, int32_t device_id, int64_t max_device_memory_allocator_caching_size = 0);
+
 /// \}
 } // namespace cudaaligner
 } // namespace claragenomics
