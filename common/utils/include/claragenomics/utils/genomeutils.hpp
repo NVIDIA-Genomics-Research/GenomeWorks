@@ -38,111 +38,71 @@ inline std::string generate_random_sequence(const std::string& backbone, std::mi
     throw_on_negative(max_insertions, "max_insertions cannot be negative.");
     throw_on_negative(max_deletions, "max_deletions cannot be negative.");
 
-    if (get_size<int>(backbone) < max_deletions)
-        throw std::invalid_argument("max_deletions should be smaller than backbone's length.");
-
     const char alphabet[4] = {'A', 'C', 'G', 'T'};
     std::uniform_int_distribution<int> random_base(0, 3);
 
     std::string sequence = backbone;
+    std::vector<std::pair<int, int>> full_range(1, std::make_pair(0, get_size<int>(backbone)));
 
     if (ranges == nullptr)
     {
+        ranges = &full_range;
+    }
+
+    // max_insertions, max_deletions and max_mutations are capped to range length
+    for (auto range : *ranges)
+    {
+        int start_index = range.first;
+        int end_index   = range.second;
+
+        throw_on_negative(start_index, "start_index of the range cannot be negative.");
+        throw_on_negative(end_index - start_index, "end_index of the range cannot be smaller than start_index.");
+
+        if (get_size<int>(backbone) < end_index)
+            throw std::invalid_argument("end_index should be smaller than backbone's length.");
+
+        int range_length      = end_index - start_index;
+        std::string substring = backbone.substr(start_index, range_length);
+
         std::uniform_real_distribution<double> random_prob(0, 1);
 
-        for (int j = 0; j < max_deletions; j++)
+        for (int j = 0; j < std::min(max_deletions, range_length); j++)
         {
             if (random_prob(rng) > 0.5)
             {
-                int length = sequence.length();
+                int length = substring.length();
                 std::uniform_int_distribution<int> random_del_pos(0, length - 1);
                 int del_pos = random_del_pos(rng);
-                sequence.erase(del_pos, 1);
+                substring.erase(del_pos, 1);
             }
         }
 
-        for (int j = 0; j < max_insertions; j++)
+        for (int j = 0; j < std::min(max_insertions, range_length); j++)
         {
             if (random_prob(rng) > 0.5)
             {
-                int length = sequence.length();
+                int length = substring.length();
                 std::uniform_int_distribution<int> random_ins_pos(0, length);
                 int ins_pos  = random_ins_pos(rng);
                 int ins_base = random_base(rng);
 
-                sequence.insert(ins_pos, 1, alphabet[ins_base]);
+                substring.insert(ins_pos, 1, alphabet[ins_base]);
             }
         }
 
-        int length = sequence.length();
+        int length = substring.length();
         std::uniform_int_distribution<int> random_mut_pos(0, length - 1);
-        for (int j = 0; j < max_mutations; j++)
+        for (int j = 0; j < std::min(max_mutations, range_length); j++)
         {
             if (random_prob(rng) > 0.5)
             {
-                int mut_pos       = random_mut_pos(rng);
-                int swap_base     = random_base(rng);
-                sequence[mut_pos] = alphabet[swap_base];
+                int mut_pos        = random_mut_pos(rng);
+                int swap_base      = random_base(rng);
+                substring[mut_pos] = alphabet[swap_base];
             }
         }
-    }
-    else
-    {
-        // max_insertions, max_deletions and max_mutations are capped to range length
-        for (auto range : *ranges)
-        {
-            int start_index = range.first;
-            int end_index   = range.second;
 
-            throw_on_negative(start_index, "start_index of the range cannot be negative.");
-            throw_on_negative(end_index - start_index, "end_index of the range cannot be smaller than start_index.");
-
-            if (get_size<int>(backbone) < end_index)
-                throw std::invalid_argument("end_index should be smaller than backbone's length.");
-
-            int range_length      = end_index - start_index;
-            std::string substring = backbone.substr(start_index, range_length);
-
-            std::uniform_real_distribution<double> random_prob(0, 1);
-
-            for (int j = 0; j < std::min(max_deletions, range_length); j++)
-            {
-                if (random_prob(rng) > 0.5)
-                {
-                    int length = substring.length();
-                    std::uniform_int_distribution<int> random_del_pos(0, length - 1);
-                    int del_pos = random_del_pos(rng);
-                    substring.erase(del_pos, 1);
-                }
-            }
-
-            for (int j = 0; j < std::min(max_insertions, range_length); j++)
-            {
-                if (random_prob(rng) > 0.5)
-                {
-                    int length = substring.length();
-                    std::uniform_int_distribution<int> random_ins_pos(0, length);
-                    int ins_pos  = random_ins_pos(rng);
-                    int ins_base = random_base(rng);
-
-                    substring.insert(ins_pos, 1, alphabet[ins_base]);
-                }
-            }
-
-            int length = substring.length();
-            std::uniform_int_distribution<int> random_mut_pos(0, length - 1);
-            for (int j = 0; j < std::min(max_mutations, range_length); j++)
-            {
-                if (random_prob(rng) > 0.5)
-                {
-                    int mut_pos        = random_mut_pos(rng);
-                    int swap_base      = random_base(rng);
-                    substring[mut_pos] = alphabet[swap_base];
-                }
-            }
-
-            sequence.replace(start_index, range_length, substring);
-        }
+        sequence.replace(start_index, range_length, substring);
     }
 
     return sequence;
