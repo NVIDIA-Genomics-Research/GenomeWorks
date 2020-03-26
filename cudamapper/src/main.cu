@@ -67,9 +67,9 @@ int main(int argc, char* argv[])
     std::int32_t alignment_engines            = 0;   // a
     std::string optstring                     = "k:w:d:c:C:m:i:t:F:h:a:z:l:b:z:";
     int32_t argument                          = 0;
-    std::int32_t min_residues                 = 20;
-    std::int32_t min_overlap_len              = 200;
-    std::int32_t min_bases_per_residue        = 50;
+    std::int32_t min_residues                 = 150;
+    std::int32_t min_overlap_len              = 500;
+    std::int32_t min_bases_per_residue        = 10;
     float min_overlap_fraction                = 0.85;
     while ((argument = getopt_long(argc, argv, optstring.c_str(), options, nullptr)) != -1)
     {
@@ -380,7 +380,8 @@ int main(int argc, char* argv[])
                                                                                                             std::shared_ptr<claragenomics::cudamapper::Index> query_index,
                                                                                                             std::shared_ptr<claragenomics::cudamapper::Index> target_index,
                                                                                                             const std::vector<std::string>& cigar,
-                                                                                                            const int device_id) {
+                                                                                                            const int device_id,
+                                                                                                            const int k) {
                     // This lambda is expected to run in a separate thread so set current device in order to avoid problems
                     // with deallocating indices with different current device then the one on which they were created
                     cudaSetDevice(device_id);
@@ -401,7 +402,7 @@ int main(int argc, char* argv[])
                     num_overlap_chunks_to_print--;
                 };
 
-                std::thread t(post_process_and_print_overlaps, overlaps_to_add, query_index, target_index, cigar, device_id);
+                std::thread t(post_process_and_print_overlaps, overlaps_to_add, query_index, target_index, cigar, device_id, k);
                 t.detach();
             }
 
@@ -502,6 +503,16 @@ void help(int32_t exit_code = 0)
               << R"(
         -a, --alignment-engines
             Number of alignment engines to use (per device) for generating CIGAR strings for overlap alignments. Default value 0 = no alignment to be performed. Typically 2-4 engines per device gives best perf.)"
+              << R"(
+        -l, --min-overlap-length
+            Minimum length for an overlap [500].)"
+              << R"(
+        -b, --min-bases-per-residue
+            Minimum number of bases in overlap per match [10].)"
+              << R"(
+        -z, --min-overlap-fraction
+            Minimum ratio of overlap length to alginment length [0.85].)"
+
               << std::endl;
 
     exit(exit_code);

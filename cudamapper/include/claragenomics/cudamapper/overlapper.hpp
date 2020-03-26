@@ -55,7 +55,7 @@ public:
     /// \param min_overlap_len the smallest overlap distance which is accepted
     static void filter_overlaps(std::vector<Overlap>& filtered_overlaps,
                                 const std::vector<Overlap>& overlaps,
-                                size_t min_residues = 20,
+                                size_t min_residues    = 20,
                                 size_t min_overlap_len = 50);
 
     /// \brief performs gloval alignment between overlapped regions of reads
@@ -75,7 +75,7 @@ public:
                                   const Index& index_query,
                                   const Index& index_target);
 
-    static void post_process_overlaps(std::vector<Overlap> &overlaps);
+    static void post_process_overlaps(std::vector<Overlap>& overlaps);
 };
 //}
 } // namespace cudamapper

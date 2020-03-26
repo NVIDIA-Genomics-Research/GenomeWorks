@@ -112,7 +112,7 @@ struct cuOverlapArgs_transform
         auto overlap_start    = d_chain_start[idx];
         auto overlap_length   = d_chain_length[idx];
         overlap.overlap_end   = overlap_start + overlap_length;
-        overlap.num_residues  = overlap_length;
+        overlap.num_residues  = overlap_length * 15;
         overlap.overlap_start = overlap_start;
         return overlap;
     }
@@ -141,7 +141,7 @@ struct FilterOverlapOp
     float min_overlap_fraction;
 
     __host__ __device__ __forceinline__ FilterOverlapOp(size_t min_residues, size_t min_overlap_len,
-            size_t min_bases_per_residue, float min_overlap_fraction)
+                                                        size_t min_bases_per_residue, float min_overlap_fraction)
         : min_residues(min_residues)
         , min_overlap_len(min_overlap_len)
         , min_bases_per_residue(min_bases_per_residue)
@@ -153,8 +153,8 @@ struct FilterOverlapOp
     {
 
         auto target_overlap_length = abs(int(overlap.target_end_position_in_read_) - int(overlap.target_start_position_in_read_));
-        auto query_overlap_length = abs(int(overlap.query_end_position_in_read_) - int(overlap.query_start_position_in_read_));
-        auto overlap_length = max(target_overlap_length, query_overlap_length);
+        auto query_overlap_length  = abs(int(overlap.query_end_position_in_read_) - int(overlap.query_start_position_in_read_));
+        auto overlap_length        = max(target_overlap_length, query_overlap_length);
 
         return ((overlap.num_residues_ >= min_residues) &&
                 ((overlap_length / overlap.num_residues_) < min_bases_per_residue) &&

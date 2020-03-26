@@ -509,5 +509,58 @@ TEST(TestCudamapperOverlapperTriggerred, ReverseStrand)
     ASSERT_STREQ(overlaps[0].target_read_name_, testv[2].c_str());
 }
 
+TEST(TestCudamapperOverlapperTriggerred, OverlapPostProcessing)
+{
+    DefaultDeviceAllocator allocator;
+    OverlapperTriggered overlapper(allocator);
+
+    std::vector<Overlap> overlaps;
+
+    Overlap overlap1;
+    overlap1.relative_strand                = RelativeStrand::Forward;
+    overlap1.query_read_id_                 = 20;
+    overlap1.target_read_id_                = 22;
+    overlap1.query_start_position_in_read_  = 1000;
+    overlap1.query_end_position_in_read_    = 2000;
+    overlap1.target_start_position_in_read_ = 4000;
+    overlap1.target_end_position_in_read_   = 5000;
+    overlaps.push_back(overlap1);
+
+    Overlap overlap2;
+    overlap2.relative_strand                = RelativeStrand::Forward;
+    overlap2.query_read_id_                 = 20;
+    overlap2.target_read_id_                = 22;
+    overlap2.query_start_position_in_read_  = 2100;
+    overlap2.query_end_position_in_read_    = 3100;
+    overlap2.target_start_position_in_read_ = 5100;
+    overlap2.target_end_position_in_read_   = 6100;
+    overlaps.push_back(overlap2);
+
+    Overlap overlap3;
+    overlap3.relative_strand                = RelativeStrand::Forward;
+    overlap3.query_read_id_                 = 55;
+    overlap3.target_read_id_                = 90;
+    overlap3.query_start_position_in_read_  = 1000;
+    overlap3.query_end_position_in_read_    = 2000;
+    overlap3.target_start_position_in_read_ = 4000;
+    overlap3.target_end_position_in_read_   = 5000;
+    overlaps.push_back(overlap3);
+
+    Overlap overlap4;
+    overlap4.relative_strand                = RelativeStrand::Forward;
+    overlap4.query_read_id_                 = 55;
+    overlap4.target_read_id_                = 90;
+    overlap4.query_start_position_in_read_  = 2100;
+    overlap4.query_end_position_in_read_    = 3100;
+    overlap4.target_start_position_in_read_ = 5100;
+    overlap4.target_end_position_in_read_   = 6100;
+    overlaps.push_back(overlap4);
+
+    Overlapper::post_process_overlaps(overlaps);
+
+    //2 new overlaps are added
+    ASSERT_EQ(overlaps.size(), 6u);
+}
+
 } // namespace cudamapper
 } // namespace claragenomics
