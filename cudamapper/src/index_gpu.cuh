@@ -28,7 +28,7 @@
 #include <claragenomics/utils/mathutils.hpp>
 #include <claragenomics/utils/signed_integer_utils.hpp>
 
-#include "host_cache.cuh"
+#include "index_host_copy.cuh"
 
 namespace claragenomics
 {
@@ -75,10 +75,10 @@ public:
     /// \brief Constructor which copies the index from host copy
     ///
     /// \param allocator is pointer to asynchronous device allocator
-    /// \param host_cache is a copy of index for a set of reads which has been previously computed and stored on the host.
+    /// \param index_host_copy is a copy of index for a set of reads which has been previously computed and stored on the host.
     /// \param cuda_stream CUDA stream on which the work is to be done. Device arrays are also associated with this stream and will not be freed at least until all work issued on this stream before calling their destructor is done
     IndexGPU(DefaultDeviceAllocator allocator,
-             const HostCache& host_cache,
+             const IndexHostCopy& index_host_copy,
              const cudaStream_t cuda_stream = 0);
 
     /// \brief returns an array of representations of sketch elements
@@ -595,11 +595,11 @@ IndexGPU<SketchElementImpl>::IndexGPU(DefaultDeviceAllocator allocator,
 
 template <typename SketchElementImpl>
 IndexGPU<SketchElementImpl>::IndexGPU(DefaultDeviceAllocator allocator,
-                                      const HostCache& host_cache,
+                                      const IndexHostCopy& index_host_copy,
                                       const cudaStream_t cuda_stream)
-    : first_read_id_(host_cache.first_read_id())
-    , kmer_size_(host_cache.kmer_size())
-    , window_size_(host_cache.window_size())
+    : first_read_id_(index_host_copy.first_read_id())
+    , kmer_size_(index_host_copy.kmer_size())
+    , window_size_(index_host_copy.window_size())
     , allocator_(allocator)
     , representations_d_(allocator)
     , read_ids_d_(allocator)
@@ -609,41 +609,41 @@ IndexGPU<SketchElementImpl>::IndexGPU(DefaultDeviceAllocator allocator,
     , first_occurrence_of_representations_d_(allocator)
     , cuda_stream_(cuda_stream)
 {
-    number_of_reads_                     = host_cache.number_of_reads();
-    number_of_basepairs_in_longest_read_ = host_cache.number_of_basepairs_in_longest_read();
+    number_of_reads_                     = index_host_copy.number_of_reads();
+    number_of_basepairs_in_longest_read_ = index_host_copy.number_of_basepairs_in_longest_read();
 
-    //H2D- representations_d_ = host_cache.representations();
-    representations_d_.resize(host_cache.representations().size());
+    //H2D- representations_d_ = index_host_copy.representations();
+    representations_d_.resize(index_host_copy.representations().size());
     representations_d_.shrink_to_fit();
-    cudautils::device_copy_n(host_cache.representations().data(), host_cache.representations().size(), representations_d_.data(), cuda_stream);
+    cudautils::device_copy_n(index_host_copy.representations().data(), index_host_copy.representations().size(), representations_d_.data(), cuda_stream);
 
-    //H2D- read_ids_d_ = host_cache.read_ids();
-    read_ids_d_.resize(host_cache.read_ids().size());
+    //H2D- read_ids_d_ = index_host_copy.read_ids();
+    read_ids_d_.resize(index_host_copy.read_ids().size());
     read_ids_d_.shrink_to_fit();
-    cudautils::device_copy_n(host_cache.read_ids().data(), host_cache.read_ids().size(), read_ids_d_.data(), cuda_stream);
+    cudautils::device_copy_n(index_host_copy.read_ids().data(), index_host_copy.read_ids().size(), read_ids_d_.data(), cuda_stream);
 
-    //H2D- positions_in_reads_d_ = host_cache.positions_in_reads();
-    positions_in_reads_d_.resize(host_cache.positions_in_reads().size());
+    //H2D- positions_in_reads_d_ = index_host_copy.positions_in_reads();
+    positions_in_reads_d_.resize(index_host_copy.positions_in_reads().size());
     positions_in_reads_d_.shrink_to_fit();
-    cudautils::device_copy_n(host_cache.positions_in_reads().data(), host_cache.positions_in_reads().size(), positions_in_reads_d_.data(), cuda_stream);
+    cudautils::device_copy_n(index_host_copy.positions_in_reads().data(), index_host_copy.positions_in_reads().size(), positions_in_reads_d_.data(), cuda_stream);
 
-    //H2D- directions_of_reads_d_ = host_cache.directions_of_reads();
-    directions_of_reads_d_.resize(host_cache.directions_of_reads().size());
+    //H2D- directions_of_reads_d_ = index_host_copy.directions_of_reads();
+    directions_of_reads_d_.resize(index_host_copy.directions_of_reads().size());
     directions_of_reads_d_.shrink_to_fit();
-    cudautils::device_copy_n(host_cache.directions_of_reads().data(), host_cache.directions_of_reads().size(), directions_of_reads_d_.data(), cuda_stream);
+    cudautils::device_copy_n(index_host_copy.directions_of_reads().data(), index_host_copy.directions_of_reads().size(), directions_of_reads_d_.data(), cuda_stream);
 
-    //H2D- unique_representations_d_ = host_cache.unique_representations();
-    unique_representations_d_.resize(host_cache.unique_representations().size());
+    //H2D- unique_representations_d_ = index_host_copy.unique_representations();
+    unique_representations_d_.resize(index_host_copy.unique_representations().size());
     unique_representations_d_.shrink_to_fit();
-    cudautils::device_copy_n(host_cache.unique_representations().data(), host_cache.unique_representations().size(), unique_representations_d_.data(), cuda_stream);
+    cudautils::device_copy_n(index_host_copy.unique_representations().data(), index_host_copy.unique_representations().size(), unique_representations_d_.data(), cuda_stream);
 
-    //H2D- first_occurrence_of_representations_d_ = host_cache.first_occurrence_of_representations();
-    first_occurrence_of_representations_d_.resize(host_cache.first_occurrence_of_representations().size());
+    //H2D- first_occurrence_of_representations_d_ = index_host_copy.first_occurrence_of_representations();
+    first_occurrence_of_representations_d_.resize(index_host_copy.first_occurrence_of_representations().size());
     first_occurrence_of_representations_d_.shrink_to_fit();
-    cudautils::device_copy_n(host_cache.first_occurrence_of_representations().data(), host_cache.first_occurrence_of_representations().size(), first_occurrence_of_representations_d_.data(), cuda_stream);
+    cudautils::device_copy_n(index_host_copy.first_occurrence_of_representations().data(), index_host_copy.first_occurrence_of_representations().size(), first_occurrence_of_representations_d_.data(), cuda_stream);
 
-    read_id_to_read_name_   = host_cache.read_id_to_read_names();   //H2H
-    read_id_to_read_length_ = host_cache.read_id_to_read_lengths(); //H2H
+    read_id_to_read_name_   = index_host_copy.read_id_to_read_names();   //H2H
+    read_id_to_read_length_ = index_host_copy.read_id_to_read_lengths(); //H2H
 
     // This is not completely necessary, but if removed one has to make sure that the next step
     // uses the same stream or that sync is done in caller

@@ -9,7 +9,7 @@
 */
 
 #include <thrust/copy.h>
-#include "host_cache.cuh"
+#include "index_host_copy.cuh"
 #include "index_gpu.cuh"
 #include "minimizer.hpp"
 
@@ -18,11 +18,11 @@ namespace claragenomics
 namespace cudamapper
 {
 
-HostCache::HostCache(const Index& index,
-                     const read_id_t first_read_id,
-                     const std::uint64_t kmer_size,
-                     const std::uint64_t window_size,
-                     const cudaStream_t cuda_stream)
+IndexHostCopy::IndexHostCopy(const Index& index,
+                             const read_id_t first_read_id,
+                             const std::uint64_t kmer_size,
+                             const std::uint64_t window_size,
+                             const cudaStream_t cuda_stream)
     : first_read_id_(first_read_id)
     , kmer_size_(kmer_size)
     , window_size_(window_size)
@@ -76,75 +76,75 @@ HostCache::HostCache(const Index& index,
     CGA_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
 }
 
-std::unique_ptr<Index> HostCache::copy_index_to_device(DefaultDeviceAllocator allocator,
-                                                       const cudaStream_t cuda_stream)
+std::unique_ptr<Index> IndexHostCopy::copy_index_to_device(DefaultDeviceAllocator allocator,
+                                                           const cudaStream_t cuda_stream)
 {
     return std::make_unique<IndexGPU<Minimizer>>(allocator,
                                                  *this,
                                                  cuda_stream);
 }
 
-const std::vector<representation_t>& HostCache::representations() const
+const std::vector<representation_t>& IndexHostCopy::representations() const
 {
     return representations_;
 }
 
-const std::vector<read_id_t>& HostCache::read_ids() const
+const std::vector<read_id_t>& IndexHostCopy::read_ids() const
 {
     return read_ids_;
 }
 
-const std::vector<position_in_read_t>& HostCache::positions_in_reads() const
+const std::vector<position_in_read_t>& IndexHostCopy::positions_in_reads() const
 {
     return positions_in_reads_;
 }
 
-const std::vector<SketchElement::DirectionOfRepresentation>& HostCache::directions_of_reads() const
+const std::vector<SketchElement::DirectionOfRepresentation>& IndexHostCopy::directions_of_reads() const
 {
     return directions_of_reads_;
 }
 
-const std::vector<representation_t>& HostCache::unique_representations() const
+const std::vector<representation_t>& IndexHostCopy::unique_representations() const
 {
     return unique_representations_;
 }
 
-const std::vector<std::uint32_t>& HostCache::first_occurrence_of_representations() const
+const std::vector<std::uint32_t>& IndexHostCopy::first_occurrence_of_representations() const
 {
     return first_occurrence_of_representations_;
 }
 
-const std::vector<std::string>& HostCache::read_id_to_read_names() const
+const std::vector<std::string>& IndexHostCopy::read_id_to_read_names() const
 {
     return read_id_to_read_name_;
 }
 
-const std::vector<std::uint32_t>& HostCache::read_id_to_read_lengths() const
+const std::vector<std::uint32_t>& IndexHostCopy::read_id_to_read_lengths() const
 {
     return read_id_to_read_length_;
 }
 
-read_id_t HostCache::number_of_reads() const
+read_id_t IndexHostCopy::number_of_reads() const
 {
     return number_of_reads_;
 }
 
-position_in_read_t HostCache::number_of_basepairs_in_longest_read() const
+position_in_read_t IndexHostCopy::number_of_basepairs_in_longest_read() const
 {
     return number_of_basepairs_in_longest_read_;
 }
 
-read_id_t HostCache::first_read_id() const
+read_id_t IndexHostCopy::first_read_id() const
 {
     return first_read_id_;
 }
 
-std::uint64_t HostCache::kmer_size() const
+std::uint64_t IndexHostCopy::kmer_size() const
 {
     return kmer_size_;
 }
 
-std::uint64_t HostCache::window_size() const
+std::uint64_t IndexHostCopy::window_size() const
 {
     return window_size_;
 }
