@@ -10,7 +10,7 @@
 
 cmake_minimum_required(VERSION 3.10.2)
 set(CGA_PROJECT_NAME ClaraGenomicsAnalysis)
-set(CGA_VERSION 0.4.0)
+set(CGA_VERSION 0.4.4)
 project(${CGA_PROJECT_NAME})
 
 # Process options.

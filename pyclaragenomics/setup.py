@@ -95,7 +95,7 @@ extensions = [
 ]
 
 setup(name='pyclaragenomics',
-      version='0.4.3',
+      version='0.4.4',
       description='NVIDIA genomics python libraries and utiliites',
       author='NVIDIA Corporation',
       url="https://github.com/clara-genomics/ClaraGenomicsAnalysis",
