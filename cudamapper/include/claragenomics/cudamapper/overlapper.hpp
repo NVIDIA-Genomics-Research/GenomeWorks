@@ -75,6 +75,8 @@ public:
                                   const Index& index_query,
                                   const Index& index_target);
 
+    /// \brief Identified overlaps which can be combined into a larger overlap and add them to the input vector
+    /// \param overlaps reference to vector of Overlaps. New overlaps (result of fusing) are added to this vector
     static void post_process_overlaps(std::vector<Overlap>& overlaps);
 };
 //}
