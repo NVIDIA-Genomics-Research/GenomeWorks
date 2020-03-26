@@ -16,10 +16,10 @@ namespace claragenomics
 {
 namespace cudamapper
 {
-/// HostCache - Creates and maintains a copy of computed IndexGPU elements on the host
+/// IndexHostCopy - Creates and maintains a copy of computed IndexGPU elements on the host
 ///
 ///
-class HostCache : public IndexHostCopy
+class IndexHostCopy : public IndexHostCopyBase
 {
 public:
     /// \brief Constructor
@@ -30,11 +30,11 @@ public:
     /// \param window_size the number of adjacent k-mers in a window, adjacent = shifted by one basepair
     /// \param cuda_stream D2H copy is done on this stream
     /// \return - pointer to claragenomics::cudamapper::IndexCache
-    explicit HostCache(const Index& index,
-                       const read_id_t first_read_id,
-                       const std::uint64_t kmer_size,
-                       const std::uint64_t window_size,
-                       const cudaStream_t cuda_stream);
+    explicit IndexHostCopy(const Index& index,
+                           const read_id_t first_read_id,
+                           const std::uint64_t kmer_size,
+                           const std::uint64_t window_size,
+                           const cudaStream_t cuda_stream);
 
     /// \brief copy cached index vectors from the host and create an object of Index on GPU
     /// \param allocator pointer to asynchronous device allocator

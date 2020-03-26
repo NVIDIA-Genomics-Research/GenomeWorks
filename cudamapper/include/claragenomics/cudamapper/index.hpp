@@ -121,10 +121,10 @@ public:
                  const cudaStream_t cuda_stream   = 0);
 };
 
-/// IndexHostCopy - Creates and maintains a copy of computed IndexGPU elements on the host, then allows to retrieve target
+/// IndexHostCopyBase - Creates and maintains a copy of computed IndexGPU elements on the host, then allows to retrieve target
 /// indices from host instead of recomputing them again
 ///
-class IndexHostCopy
+class IndexHostCopyBase
 {
 public:
     /// \brief copy cached index vectors from the host and create an object of Index on GPU
@@ -193,12 +193,12 @@ public:
     /// \param kmer_size - number of basepairs in a k-mer
     /// \param window_size the number of adjacent k-mers in a window, adjacent = shifted by one basepair
     /// \param cuda_stream D2H copy is done on this stream
-    /// \return - an instance of IndexHostCopy
-    static std::unique_ptr<IndexHostCopy> create_cache(const Index& index,
-                                                       const read_id_t first_read_id,
-                                                       const std::uint64_t kmer_size,
-                                                       const std::uint64_t window_size,
-                                                       const cudaStream_t cuda_stream = 0);
+    /// \return - an instance of IndexHostCopyBase
+    static std::unique_ptr<IndexHostCopyBase> create_cache(const Index& index,
+                                                           const read_id_t first_read_id,
+                                                           const std::uint64_t kmer_size,
+                                                           const std::uint64_t window_size,
+                                                           const cudaStream_t cuda_stream = 0);
 };
 
 } // namespace cudamapper
