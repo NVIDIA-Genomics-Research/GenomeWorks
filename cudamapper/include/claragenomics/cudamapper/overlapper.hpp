@@ -46,7 +46,10 @@ public:
                               float min_overlap_fraction) = 0;
 
     /// \brief prints overlaps to stdout in <a href="https://github.com/lh3/miniasm/blob/master/PAF.md">PAF format</a>
-    static void print_paf(const std::vector<Overlap>& overlaps, const std::vector<std::string>& cigar);
+    /// \param overlaps vector of overlap objects
+    /// \param cigar cigar strings
+    /// \param k minimizer kmer size
+    static void print_paf(const std::vector<Overlap>& overlaps, const std::vector<std::string>& cigar, const int k);
 
     /// \brief removes overlaps which are unlikely to be true overlaps
     /// \param filtered_overlaps Output vector in which to place filtered overlaps

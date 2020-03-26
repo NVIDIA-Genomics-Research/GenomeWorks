@@ -240,7 +240,7 @@ TEST(TestCudamapperOverlapperTriggerred, FourAnchorsOneOverlap)
     cudautils::device_copy_n(anchors.data(), anchors.size(), anchors_d.data(), cuda_stream); //H2D
 
     std::vector<Overlap> overlaps;
-    overlapper.get_overlaps(overlaps, anchors_d, 0, 0);
+    overlapper.get_overlaps(overlaps, anchors_d, 0, 0, 1000);
     CGA_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
     ASSERT_EQ(overlaps.size(), 1u);
     ASSERT_EQ(overlaps[0].query_read_id_, 1u);
@@ -315,7 +315,7 @@ TEST(TestCudamapperOverlapperTriggerred, FourAnchorsNoOverlap)
     cudautils::device_copy_n(anchors.data(), anchors.size(), anchors_d.data(), cuda_stream); //H2D
 
     std::vector<Overlap> overlaps;
-    overlapper.get_overlaps(overlaps, anchors_d, 0, 0);
+    overlapper.get_overlaps(overlaps, anchors_d, 0, 0, 1000);
     CGA_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
     ASSERT_EQ(overlaps.size(), 0u);
 
@@ -445,7 +445,7 @@ TEST(TestCudamapperOverlapperTriggerred, FourAnchorsLastNotInOverlap)
     cudautils::device_copy_n(anchors.data(), anchors.size(), anchors_d.data(), cuda_stream); //H2D
 
     std::vector<Overlap> overlaps;
-    overlapper.get_overlaps(overlaps, anchors_d, 0, 0);
+    overlapper.get_overlaps(overlaps, anchors_d, 0, 0, 1000);
     CGA_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
     ASSERT_EQ(overlaps.size(), 1u);
     ASSERT_EQ(overlaps[0].query_read_id_, 1u);
@@ -520,7 +520,7 @@ TEST(TestCudamapperOverlapperTriggerred, ReverseStrand)
     cudautils::device_copy_n(anchors.data(), anchors.size(), anchors_d.data(), cuda_stream); //H2D
 
     std::vector<Overlap> overlaps;
-    overlapper.get_overlaps(overlaps, anchors_d, 0, 0);
+    overlapper.get_overlaps(overlaps, anchors_d, 0, 0, 1000);
     CGA_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
     ASSERT_EQ(overlaps.size(), 1u);
     ASSERT_GT(overlaps[0].target_end_position_in_read_, overlaps[0].target_start_position_in_read_);

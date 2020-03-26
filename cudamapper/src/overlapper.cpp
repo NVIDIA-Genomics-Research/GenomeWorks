@@ -175,7 +175,7 @@ void Overlapper::align_overlaps(std::vector<Overlap>& overlaps,
     }
 }
 
-void Overlapper::print_paf(const std::vector<Overlap>& overlaps, const std::vector<std::string>& cigar)
+void Overlapper::print_paf(const std::vector<Overlap>& overlaps, const std::vector<std::string>& cigar, const int k)
 {
     int32_t idx = 0;
     for (const auto& overlap : overlaps)
@@ -191,7 +191,7 @@ void Overlapper::print_paf(const std::vector<Overlap>& overlaps, const std::vect
                     overlap.target_length_,
                     overlap.target_start_position_in_read_,
                     overlap.target_end_position_in_read_,
-                    overlap.num_residues_,
+                    overlap.num_residues_ * k, // Print out the number of residue matches multiplied by kmer size to get approxuimate number of matching bases
                     std::max(std::abs(int(overlap.target_start_position_in_read_) - int(overlap.target_end_position_in_read_)),
                              abs(int(overlap.query_start_position_in_read_) - int(overlap.query_end_position_in_read_))), //Approximate alignment length
                     255);

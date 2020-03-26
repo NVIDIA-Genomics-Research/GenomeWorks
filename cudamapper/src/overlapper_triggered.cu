@@ -112,7 +112,7 @@ struct cuOverlapArgs_transform
         auto overlap_start    = d_chain_start[idx];
         auto overlap_length   = d_chain_length[idx];
         overlap.overlap_end   = overlap_start + overlap_length;
-        overlap.num_residues  = overlap_length * 15;
+        overlap.num_residues  = overlap_length;
         overlap.overlap_start = overlap_start;
         return overlap;
     }
