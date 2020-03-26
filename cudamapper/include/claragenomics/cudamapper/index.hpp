@@ -134,6 +134,9 @@ public:
     virtual std::unique_ptr<Index> copy_index_to_device(DefaultDeviceAllocator allocator,
                                                         const cudaStream_t cuda_stream = 0) = 0;
 
+    /// \brief virtual destructor
+    virtual ~IndexHostCopyBase() = delete;
+
     /// \brief returns an array of representations of sketch elements (stored on host)
     /// \return an array of representations of sketch elements
     virtual const std::vector<representation_t>& representations() const = 0;
