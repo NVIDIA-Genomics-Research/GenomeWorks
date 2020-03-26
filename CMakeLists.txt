@@ -10,7 +10,7 @@
 
 cmake_minimum_required(VERSION 3.10.2)
 set(CGA_PROJECT_NAME ClaraGenomicsAnalysis)
-set(CGA_VERSION 0.4.0)
+set(CGA_VERSION 0.4.4)
 project(${CGA_PROJECT_NAME})
 
 # Process options.
@@ -84,6 +84,6 @@ endif()
 # Add auto formatting.
 cga_enable_formatting_targets()
 
-if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT  AND (${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR}))
     set (CMAKE_INSTALL_PREFIX ${CMAKE_BINARY_DIR}/install CACHE PATH "The default SDK install path is install" FORCE)
-endif (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+endif ()
