@@ -152,8 +152,7 @@ void sample_long_reads(bool msa, bool print)
     }
 
     // Define upper limits for sequence size, graph size ....
-    BatchSize batch_size;
-    batch_size.setSize(max_sequence_length, 100);
+    BatchSize batch_size(max_sequence_length, 100);
 
     // Initialize batch.
     std::unique_ptr<Batch> batch = initialize_batch(msa, batch_size);
@@ -273,8 +272,7 @@ int main(int argc, char** argv)
     assert(get_size(windows) > 0);
 
     // Define upper limits for sequence size, graph size ....
-    BatchSize batch_size;
-    batch_size.setSize(1024, 100);
+    BatchSize batch_size(1024, 100);
 
     // Initialize batch.
     std::unique_ptr<Batch> batch = initialize_batch(msa, batch_size);

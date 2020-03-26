@@ -37,8 +37,7 @@ public:
 
         assert(get_size(windows_) > 0);
 
-        BatchSize batch_size;
-        batch_size.setSize(1024, 200);
+        BatchSize batch_size(1024, 200);
 
         size_t total = 0, free = 0;
         cudaSetDevice(0);

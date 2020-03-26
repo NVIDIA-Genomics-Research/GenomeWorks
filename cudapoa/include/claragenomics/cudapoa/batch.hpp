@@ -49,53 +49,51 @@ typedef std::vector<Entry> Group;
 struct BatchSize
 {
     /// Maximum number of elements in a sequence
-    uint32_t max_sequence_size = 1024;
+    uint32_t max_sequence_size;
     /// Maximum size of final consensus
-    uint32_t max_concensus_size = 1024;
+    uint32_t max_concensus_size;
     /// Maximum number of nodes in a graph, 1 graph per window
-    uint32_t max_nodes_per_window = 3072;
+    uint32_t max_nodes_per_window;
     /// Maximum number of nodes in a graph, 1 graph per window in banded mode
-    uint32_t max_nodes_per_window_banded = 4096;
+    uint32_t max_nodes_per_window_banded;
     /// Maximum vertical dimension of scoring matrix, which stores graph
-    /// Adding 4 elements more to ensure a 4byte boundary alignment for any allocated buffer
-    uint32_t max_matrix_graph_dimension = max_nodes_per_window + 4;
+    uint32_t max_matrix_graph_dimension = max_nodes_per_window;
     /// Maximum vertical dimension of scoring matrix, which stores graph
-    /// Adding 4 elements more to ensure a 4byte boundary alignment for any allocated buffer
-    uint32_t max_matrix_graph_dimension_banded = max_nodes_per_window_banded + 4;
+    uint32_t max_matrix_graph_dimension_banded = max_nodes_per_window_banded;
     /// Maximum horizontal dimension of scoring matrix, which stores sequences
-    /// Adding 4 elements more to ensure a 4byte boundary alignment for any allocated buffer
-    uint32_t max_matrix_sequence_dimension = max_sequence_size + 4;
+    uint32_t max_matrix_sequence_dimension = max_sequence_size;
     /// Maximum number of equences per POA group
-    uint32_t max_sequences_per_poa = 100;
+    uint32_t max_sequences_per_poa;
 
-    /// set upper limit parameters based on max_sequence_size
-    void setSize(const uint32_t max_seq_sz, const uint32_t max_num_seqs)
+    /// constructor- set upper limit parameters based on max_sequence_size
+    BatchSize(uint32_t max_seq_sz = 1024, uint32_t max_num_seqs = 100)
+        : max_sequence_size(max_seq_sz)
+        , max_concensus_size(max_sequence_size)
+        , max_nodes_per_window(cudautils::align<int32_t, 4>(3 * max_sequence_size))
+        , max_nodes_per_window_banded(cudautils::align<int32_t, 4>(4 * max_sequence_size))
+        /// Adding 4 elements more to ensure a 4byte boundary alignment for any allocated buffer
+        , max_matrix_graph_dimension(cudautils::align<int32_t, 4>(max_nodes_per_window + 4))
+        , max_matrix_graph_dimension_banded(cudautils::align<int32_t, 4>(max_nodes_per_window_banded + 4))
+        , max_matrix_sequence_dimension(cudautils::align<int32_t, 4>(max_sequence_size + 4))
+        , max_sequences_per_poa(max_num_seqs)
+
     {
-        max_sequences_per_poa       = max_num_seqs;
-        max_sequence_size           = max_seq_sz;
-        max_concensus_size          = max_sequence_size;
-        max_nodes_per_window        = cudautils::align<int32_t, 4>(3 * max_sequence_size);
-        max_nodes_per_window_banded = cudautils::align<int32_t, 4>(4 * max_sequence_size);
-        // Adding 4 elements more to ensure a 4byte boundary alignment for any allocated buffer
-        max_matrix_graph_dimension        = cudautils::align<int32_t, 4>(max_nodes_per_window + 4);
-        max_matrix_graph_dimension_banded = cudautils::align<int32_t, 4>(max_nodes_per_window_banded + 4);
-        max_matrix_sequence_dimension     = cudautils::align<int32_t, 4>(max_sequence_size + 4);
     }
 
-    /// set all parameters, in case that default values used in setSize is not desired
-    void setParams(uint32_t max_seq_sz, uint32_t max_concensus_sz, uint32_t max_nodes_per_w,
-                   uint32_t max_nodes_per_w_banded, uint32_t max_matrix_graph_dim,
-                   uint32_t max_matrix_graph_dim_banded, uint32_t max_matrix_seq_dim,
-                   uint32_t max_seq_per_poa)
+    /// constructor- set all parameters separately
+    BatchSize(uint32_t max_seq_sz, uint32_t max_concensus_sz, uint32_t max_nodes_per_w,
+              uint32_t max_nodes_per_w_banded, uint32_t max_matrix_graph_dim,
+              uint32_t max_matrix_graph_dim_banded, uint32_t max_matrix_seq_dim,
+              uint32_t max_seq_per_poa)
+        : max_sequence_size(max_seq_sz)
+        , max_concensus_size(max_concensus_sz)
+        , max_nodes_per_window(max_nodes_per_w)
+        , max_nodes_per_window_banded(max_nodes_per_w_banded)
+        , max_matrix_graph_dimension(max_matrix_graph_dim)
+        , max_matrix_graph_dimension_banded(max_matrix_graph_dim_banded)
+        , max_matrix_sequence_dimension(max_matrix_seq_dim)
+        , max_sequences_per_poa(max_seq_per_poa)
     {
-        max_sequence_size                 = max_seq_sz;
-        max_concensus_size                = max_concensus_sz;
-        max_nodes_per_window              = max_nodes_per_w;
-        max_nodes_per_window_banded       = max_nodes_per_w_banded;
-        max_matrix_graph_dimension        = max_matrix_graph_dim;
-        max_matrix_graph_dimension_banded = max_matrix_graph_dim_banded;
-        max_matrix_sequence_dimension     = max_matrix_seq_dim;
-        max_sequences_per_poa             = max_seq_per_poa;
     }
 };
 

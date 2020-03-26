@@ -61,7 +61,6 @@ cdef extern from "claragenomics/cudapoa/batch.hpp" namespace "claragenomics::cud
         uint32_t max_matrix_graph_dimension_banded
         uint32_t max_matrix_sequence_dimension
         uint32_t max_sequences_per_poa
-        void setSize(const uint32_t, const uint32_t)
 
     ctypedef vector[Entry] Group
 
