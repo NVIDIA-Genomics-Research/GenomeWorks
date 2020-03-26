@@ -58,7 +58,7 @@ public:
         , buffer_ptr_(create_buffer(buffer_size))
     {
         assert(buffer_size > 0);
-        free_blocks_.push_back({0, buffer_size});
+        free_blocks_.push_back({0, buffer_size, 0});
     }
 
     DevicePreallocatedAllocator(const DevicePreallocatedAllocator&) = delete;
@@ -116,11 +116,11 @@ private:
     /// @brief allocates the underlying buffer
     /// @param buffer_size
     /// @return allocated shared_ptr
-    std::unique_ptr<char, void (*)(char*)> create_buffer(size_t buffer_size)
+    static std::unique_ptr<char, void (*)(char*)> create_buffer(size_t buffer_size)
     {
         // shared_ptr creation packed in a function so it can be used in constructor's initilaization list
         void* ptr = nullptr;
-        CGA_CU_CHECK_ERR(cudaMalloc(&ptr, buffer_size_));
+        CGA_CU_CHECK_ERR(cudaMalloc(&ptr, buffer_size));
         auto ret_val = std::unique_ptr<char, void (*)(char*)>(static_cast<char*>(ptr),
                                                               [](char* ptr) {
                                                                   CGA_CU_ABORT_ON_ERR(cudaFree(ptr));
@@ -147,7 +147,7 @@ private:
         if ((bytes_needed & 0xFF) != 0)
         {
             // bytes needed not divisible by 256, increase it to the next value divisible by 256
-            bytes_needed = bytes_needed + (0x100 - bytes_needed & 0xFF);
+            bytes_needed = bytes_needed + (0x100 - (bytes_needed & 0xFF));
         }
         assert((bytes_needed & 0xFF) == 0);
 
@@ -203,8 +203,8 @@ private:
     /// @return error status
     cudaError_t free_block(void* pointer)
     {
+        assert(static_cast<char*>(pointer) >= buffer_ptr_.get());
         const size_t block_start = static_cast<char*>(pointer) - buffer_ptr_.get();
-        assert(block_start >= 0);
         assert(block_start < buffer_size_);
 
         // ** look for pointer's memory block

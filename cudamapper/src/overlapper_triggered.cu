@@ -216,15 +216,11 @@ struct CreateOverlap
     };
 };
 
-OverlapperTriggered::OverlapperTriggered(DefaultDeviceAllocator allocator)
+OverlapperTriggered::OverlapperTriggered(DefaultDeviceAllocator allocator,
+                                         const cudaStream_t cuda_stream)
     : _allocator(allocator)
+    , _cuda_stream(cuda_stream)
 {
-    CGA_CU_CHECK_ERR(cudaStreamCreate(&stream));
-}
-OverlapperTriggered::~OverlapperTriggered()
-{
-    CGA_CU_CHECK_ERR(cudaStreamSynchronize(stream));
-    CGA_CU_CHECK_ERR(cudaStreamDestroy(stream));
 }
 
 void OverlapperTriggered::get_overlaps(std::vector<Overlap>& fused_overlaps, device_buffer<Anchor>& d_anchors,
@@ -263,20 +259,20 @@ void OverlapperTriggered::get_overlaps(std::vector<Overlap>& fused_overlaps, dev
 #endif
 
     // temporary workspace buffer on device
-    device_buffer<char> d_temp_buf(_allocator, stream);
+    device_buffer<char> d_temp_buf(_allocator, _cuda_stream);
 
     // Do run length encode to compute the chains
     // note - identifies the start and end anchor of the chain without moving the anchors
     // >>>>>>>>>
 
     // d_start_anchor[i] contains the starting anchor of chain i
-    device_buffer<Anchor> d_start_anchor(n_anchors, _allocator, stream);
+    device_buffer<Anchor> d_start_anchor(n_anchors, _allocator, _cuda_stream);
 
     // d_chain_length[i] contains the length of chain i
-    device_buffer<int32_t> d_chain_length(n_anchors, _allocator, stream);
+    device_buffer<int32_t> d_chain_length(n_anchors, _allocator, _cuda_stream);
 
     // total number of chains found
-    device_buffer<int32_t> d_nchains(1, _allocator, stream);
+    device_buffer<int32_t> d_nchains(1, _allocator, _cuda_stream);
 
     //The equality of two anchors has been overriden, such that they are equal (members of the same chain) if their QID,TID are equal and they fall within a fixed distance of one another
     void* d_temp_storage      = nullptr;
@@ -284,52 +280,52 @@ void OverlapperTriggered::get_overlaps(std::vector<Overlap>& fused_overlaps, dev
     // calculate storage requirement for run length encoding
     cub::DeviceRunLengthEncode::Encode(
         d_temp_storage, temp_storage_bytes, d_anchors.data(), d_start_anchor.data(),
-        d_chain_length.data(), d_nchains.data(), n_anchors, stream);
+        d_chain_length.data(), d_nchains.data(), n_anchors, _cuda_stream);
 
     // allocate temporary storage
-    d_temp_buf.resize(temp_storage_bytes, stream);
+    d_temp_buf.resize(temp_storage_bytes, _cuda_stream);
     d_temp_storage = d_temp_buf.data();
 
     // run encoding
     cub::DeviceRunLengthEncode::Encode(
         d_temp_storage, temp_storage_bytes, d_anchors.data(), d_start_anchor.data(),
-        d_chain_length.data(), d_nchains.data(), n_anchors, stream);
+        d_chain_length.data(), d_nchains.data(), n_anchors, _cuda_stream);
 
     // <<<<<<<<<<
 
     // memcpy D2H
-    auto n_chains = cudautils::get_value_from_device(d_nchains.data(), stream); //We now know the number of chains we are working with.
+    auto n_chains = cudautils::get_value_from_device(d_nchains.data(), _cuda_stream); //We now know the number of chains we are working with.
 
     // use prefix sum to calculate the starting index position of all the chains
     // >>>>>>>>>>>>
     // for a chain i, d_chain_start[i] contains the index of starting anchor from d_anchors array
-    device_buffer<int32_t> d_chain_start(n_chains, _allocator, stream);
+    device_buffer<int32_t> d_chain_start(n_chains, _allocator, _cuda_stream);
 
     d_temp_storage     = nullptr;
     temp_storage_bytes = 0;
     cub::DeviceScan::ExclusiveSum(d_temp_storage, temp_storage_bytes,
                                   d_chain_length.data(), d_chain_start.data(),
-                                  n_chains, stream);
+                                  n_chains, _cuda_stream);
 
     // allocate temporary storage
-    d_temp_buf.resize(temp_storage_bytes, stream);
+    d_temp_buf.resize(temp_storage_bytes, _cuda_stream);
     d_temp_storage = d_temp_buf.data();
 
     cub::DeviceScan::ExclusiveSum(d_temp_storage, temp_storage_bytes,
                                   d_chain_length.data(), d_chain_start.data(),
-                                  n_chains, stream);
+                                  n_chains, _cuda_stream);
 
     // <<<<<<<<<<<<
 
     // calculate overlaps where overlap is a chain with length > tail_length_for_chain
     // >>>>>>>>>>>>
 
-    auto thrust_exec_policy = thrust::cuda::par(_allocator).on(stream);
+    auto thrust_exec_policy = thrust::cuda::par(_allocator).on(_cuda_stream);
 
     // d_overlaps[j] contains index to d_chain_length/d_chain_start where
     // d_chain_length[d_overlaps[j]] and d_chain_start[d_overlaps[j]] corresponds
     // to length and index to starting anchor of the chain-d_overlaps[j] (also referred as overlap j)
-    device_buffer<int32_t> d_overlaps(n_chains, _allocator, stream);
+    device_buffer<int32_t> d_overlaps(n_chains, _allocator, _cuda_stream);
     auto indices_end =
         thrust::copy_if(thrust_exec_policy, thrust::make_counting_iterator<int32_t>(0),
                         thrust::make_counting_iterator<int32_t>(n_chains),
@@ -360,9 +356,9 @@ void OverlapperTriggered::get_overlaps(std::vector<Overlap>& fused_overlaps, dev
         d_values_in(d_overlaps.data(),
                     value_op);
 
-    device_buffer<cuOverlapKey> d_fusedoverlap_keys(n_overlaps, _allocator, stream);
-    device_buffer<cuOverlapArgs> d_fusedoverlaps_args(n_overlaps, _allocator, stream);
-    device_buffer<int32_t> d_nfused_overlaps(1, _allocator, stream);
+    device_buffer<cuOverlapKey> d_fusedoverlap_keys(n_overlaps, _allocator, _cuda_stream);
+    device_buffer<cuOverlapArgs> d_fusedoverlaps_args(n_overlaps, _allocator, _cuda_stream);
+    device_buffer<int32_t> d_nfused_overlaps(1, _allocator, _cuda_stream);
 
     FuseOverlapOp reduction_op;
 
@@ -375,10 +371,10 @@ void OverlapperTriggered::get_overlaps(std::vector<Overlap>& fused_overlaps, dev
                                    d_fusedoverlaps_args.data(), d_nfused_overlaps.data(),
                                    reduction_op,
                                    n_overlaps,
-                                   stream);
+                                   _cuda_stream);
 
     // allocate temporary storage
-    d_temp_buf.resize(temp_storage_bytes, stream);
+    d_temp_buf.resize(temp_storage_bytes, _cuda_stream);
     d_temp_storage = d_temp_buf.data();
 
     cub::DeviceReduce::ReduceByKey(d_temp_storage,
@@ -390,20 +386,20 @@ void OverlapperTriggered::get_overlaps(std::vector<Overlap>& fused_overlaps, dev
                                    d_nfused_overlaps.data(),
                                    reduction_op,
                                    n_overlaps,
-                                   stream);
+                                   _cuda_stream);
 
     // memcpyD2H
-    auto n_fused_overlap = cudautils::get_value_from_device(d_nfused_overlaps.data(), stream);
+    auto n_fused_overlap = cudautils::get_value_from_device(d_nfused_overlaps.data(), _cuda_stream);
 
     // construct overlap from the overlap args
     CreateOverlap fuse_op(d_anchors.data());
-    device_buffer<Overlap> d_fused_overlaps(n_fused_overlap, _allocator, stream); //Overlaps written here
+    device_buffer<Overlap> d_fused_overlaps(n_fused_overlap, _allocator, _cuda_stream); //Overlaps written here
 
     thrust::transform(thrust_exec_policy, d_fusedoverlaps_args.data(),
                       d_fusedoverlaps_args.data() + n_fused_overlap,
                       d_fused_overlaps.data(), fuse_op);
 
-    device_buffer<Overlap> d_filtered_overlaps(n_fused_overlap, _allocator, stream);
+    device_buffer<Overlap> d_filtered_overlaps(n_fused_overlap, _allocator, _cuda_stream);
 
     FilterOverlapOp filterOp(min_residues, min_overlap_len, min_bases_per_residue, min_overlap_fraction);
     auto filtered_overlaps_end =
@@ -416,8 +412,11 @@ void OverlapperTriggered::get_overlaps(std::vector<Overlap>& fused_overlaps, dev
 
     // memcpyD2H - move fused and filtered overlaps to host
     fused_overlaps.resize(n_filtered_overlaps);
-    cudautils::device_copy_n(d_filtered_overlaps.data(), n_filtered_overlaps, fused_overlaps.data(), stream);
-    CGA_CU_CHECK_ERR(cudaStreamSynchronize(stream));
+    cudautils::device_copy_n(d_filtered_overlaps.data(), n_filtered_overlaps, fused_overlaps.data(), _cuda_stream);
+
+    // This is not completely necessary, but if removed one has to make sure that the next step
+    // uses the same stream or that sync is done in caller
+    CGA_CU_CHECK_ERR(cudaStreamSynchronize(_cuda_stream));
 }
 
 } // namespace cudamapper

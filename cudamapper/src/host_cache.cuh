@@ -28,16 +28,20 @@ public:
     /// \param first_read_id - representing smallest read_id in index
     /// \param kmer_size - number of basepairs in a k-mer
     /// \param window_size the number of adjacent k-mers in a window, adjacent = shifted by one basepair
+    /// \param cuda_stream D2H copy is done on this stream
     /// \return - pointer to claragenomics::cudamapper::IndexCache
     explicit HostCache(const Index& index,
                        const read_id_t first_read_id,
                        const std::uint64_t kmer_size,
-                       const std::uint64_t window_size);
+                       const std::uint64_t window_size,
+                       const cudaStream_t cuda_stream);
 
     /// \brief copy cached index vectors from the host and create an object of Index on GPU
     /// \param allocator pointer to asynchronous device allocator
+    /// \param cuda_stream H2D copy is done on this stream. Device arrays are also associated with this stream and will not be freed at least until all work issued on this stream before calling their destructor is done
     /// \return a pointer to claragenomics::cudamapper::Index
-    std::unique_ptr<Index> copy_index_to_device(DefaultDeviceAllocator allocator) override;
+    std::unique_ptr<Index> copy_index_to_device(DefaultDeviceAllocator allocator,
+                                                const cudaStream_t cuda_stream = 0) override;
 
     /// \brief returns an array of representations of sketch elements (stored on host)
     /// \return an array of representations of sketch elements

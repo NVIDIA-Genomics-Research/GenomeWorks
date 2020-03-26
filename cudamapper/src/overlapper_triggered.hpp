@@ -48,12 +48,12 @@ public:
                       size_t min_bases_per_residue = 50,
                       float min_overlap_fraction   = 0.9) override;
 
-    explicit OverlapperTriggered(DefaultDeviceAllocator);
-    ~OverlapperTriggered();
+    explicit OverlapperTriggered(DefaultDeviceAllocator,
+                                 const cudaStream_t cuda_stream = 0);
 
 private:
     DefaultDeviceAllocator _allocator;
-    cudaStream_t stream;
+    cudaStream_t _cuda_stream;
 };
 } // namespace cudamapper
 } // namespace claragenomics

@@ -39,11 +39,11 @@ static struct option options[] = {
     {"target-index-size", required_argument, 0, 't'},
     {"filtering-parameter", required_argument, 0, 'F'},
     {"alignment-engines", required_argument, 0, 'a'},
+    {"help", no_argument, 0, 'h'},
     {"min-residues", required_argument, 0, 'r'},
     {"min-overlap-length", required_argument, 0, 'l'},
     {"min-bases-per-residue", required_argument, 0, 'b'},
     {"min-overlap-fraction", required_argument, 0, 'z'},
-    {"help", no_argument, 0, 'h'},
 };
 
 void help(int32_t exit_code);
@@ -66,11 +66,12 @@ int main(int argc, char* argv[])
     double filtering_parameter                = 1.0; // F
     std::int32_t alignment_engines            = 0;   // a
     std::string optstring                     = "k:w:d:c:C:m:i:t:F:h:a:z:l:b:z:";
-    int32_t argument                          = 0;
     std::int32_t min_residues                 = 150;
     std::int32_t min_overlap_len              = 500;
     std::int32_t min_bases_per_residue        = 10;
     float min_overlap_fraction                = 0.85;
+
+    int32_t argument = 0;
     while ((argument = getopt_long(argc, argv, optstring.c_str(), options, nullptr)) != -1)
     {
         switch (argument)
@@ -122,7 +123,6 @@ int main(int argc, char* argv[])
         case 'z':
             min_overlap_fraction = atof(optarg);
             break;
-
         case 'h':
             help(0);
         default:
@@ -386,6 +386,7 @@ int main(int argc, char* argv[])
                     // with deallocating indices with different current device then the one on which they were created
                     cudaSetDevice(device_id);
 
+                    // Overlap post-processing (add some fused overlaps)
                     claragenomics::cudamapper::Overlapper::post_process_overlaps(*filtered_overlaps);
 
                     // parallel update of the query/target read names for filtered overlaps [parallel on host]
@@ -401,7 +402,6 @@ int main(int argc, char* argv[])
                     //Decrement counter which tracks number of overlap chunks to be filtered and printed
                     num_overlap_chunks_to_print--;
                 };
-
                 std::thread t(post_process_and_print_overlaps, overlaps_to_add, query_index, target_index, cigar, device_id, k);
                 t.detach();
             }
@@ -512,7 +512,6 @@ void help(int32_t exit_code = 0)
               << R"(
         -z, --min-overlap-fraction
             Minimum ratio of overlap length to alginment length [0.85].)"
-
               << std::endl;
 
     exit(exit_code);
