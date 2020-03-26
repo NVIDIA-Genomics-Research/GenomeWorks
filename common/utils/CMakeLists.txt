@@ -10,8 +10,12 @@
 
 project(utils)
 
-add_library(utils INTERFACE)
-target_link_libraries(utils INTERFACE logging)
+find_package(CUDA 9.0 QUIET REQUIRED)
+
+get_property(cga_library_type GLOBAL PROPERTY cga_library_type)
+add_library(utils ${cga_library_type}
+        src/cudautils.cpp)
+target_link_libraries(utils PUBLIC logging ${CUDA_LIBRARIES})
 if (cga_profiling)
     find_library(NVTX_LIBRARY nvToolsExt HINTS ${CUDA_TOOLKIT_ROOT_DIR}/lib64)
     target_compile_definitions(utils INTERFACE -DCGA_PROFILING)
@@ -21,14 +25,15 @@ endif()
 add_doxygen_source_dir(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 target_include_directories(utils
-    INTERFACE 
+    PUBLIC
         $<INSTALL_INTERFACE:include>    
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+        ${CUDA_INCLUDE_DIRS}
 )
 
 if (cga_device_synchronize_kernels)
 target_compile_definitions(utils
-    INTERFACE
+    PUBLIC
     CGA_DEVICE_SYNCHRONIZE)
 endif()
 
