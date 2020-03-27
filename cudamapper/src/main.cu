@@ -70,7 +70,7 @@ void help(int32_t exit_code = 0)
             Number of alignment engines to use (per device) for generating CIGAR strings for overlap alignments. Default value 0 = no alignment to be performed. Typically 2-4 engines per device gives best perf.)"
               << R"(
         -r, --min-residues
-            Minimum number of matching residues in an overlap [10]"
+            Minimum number of matching residues in an overlap [10])"
               << R"(
         -l, --min-overlap-length
             Minimum length for an overlap [500].)"
@@ -79,7 +79,7 @@ void help(int32_t exit_code = 0)
             Minimum number of bases in overlap per match [100].)"
               << R"(
         -z, --min-overlap-fraction
-            Minimum ratio of overlap length to alginment length [0.85].)"
+            Minimum ratio of overlap length to alignment length [0.95].)"
               << std::endl;
 
     exit(exit_code);
@@ -104,7 +104,7 @@ struct ApplicationParameteres
     std::int32_t min_residues          = 10;   // r
     std::int32_t min_overlap_len       = 500;  // l
     std::int32_t min_bases_per_residue = 100;  // b
-    float min_overlap_fraction         = 0.85; //z
+    float min_overlap_fraction         = 0.95; //z
 };
 
 /// @brief reads input from command line
