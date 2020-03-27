@@ -710,7 +710,7 @@ void generatePOA(claragenomics::cudapoa::OutputDetails* output_details_d,
                  const BatchSize& batch_size)
 {
     // a decision flag to determine proper type definition for ScoreT
-    const bool use_32_bit_for_ScoreT = use32bitInt(batch_size.max_nodes_per_window, match_score);
+    const bool use_32_bit_for_ScoreT = use32bitInt(batch_size.max_sequence_size, match_score);
 
     if (use_32_bit_for_ScoreT)
     {
@@ -748,10 +748,10 @@ void generatePOA(claragenomics::cudapoa::OutputDetails* output_details_d,
     }
 }
 
-bool use32bitInt(int32_t max_nodes_per_window, int32_t match_score)
+bool use32bitInt(int32_t max_sequence_size, int32_t match_score)
 {
     // a decision flag to determine proper type definition for ScoreT, factor 2 is selected ad-hoc
-    return (max_nodes_per_window * match_score * 2 > INT16_MAX);
+    return (max_sequence_size * match_score * 2 > INT16_MAX);
 }
 
 } // namespace cudapoa
