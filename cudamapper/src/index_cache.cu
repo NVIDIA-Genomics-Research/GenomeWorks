@@ -10,6 +10,11 @@
 
 #include "index_cache.cuh"
 
+#include "index_host_copy.cu"
+
+#include <claragenomics/cudamapper/index.hpp>
+#include <claragenomics/io/fasta_parser.hpp>
+
 namespace claragenomics
 {
 namespace cudamapper
@@ -39,6 +44,98 @@ std::size_t IndexDescriptorHash::operator()(const IndexDescriptor& index_descrip
     hash |= (index_descriptor.number_of_reads & element_mask) << (8 * bytes_per_element);
 
     return hash;
+}
+
+IndexCacheHost::IndexCacheHost(const bool reuse_data,
+                               claragenomics::DefaultDeviceAllocator allocator,
+                               std::shared_ptr<claragenomics::io::FastaParser> query_parser,
+                               std::shared_ptr<claragenomics::io::FastaParser> target_parser,
+                               const std::uint64_t k,
+                               const std::uint64_t w,
+                               const bool hash_representations,
+                               const double filtering_parameter,
+                               const cudaStream_t cuda_stream)
+    : reuse_data_(reuse_data)
+    , allocator_(allocator)
+    , query_parser_(query_parser)
+    , target_parser_(target_parser)
+    , k_(k)
+    , w_(w)
+    , hash_representations_(hash_representations)
+    , filtering_parameter_(filtering_parameter)
+    , cuda_stream_(cuda_stream)
+{
+}
+
+void IndexCacheHost::update_query_cache(const std::vector<IndexDescriptor>& descriptors_of_indices_to_cache)
+{
+    update_cache(descriptors_of_indices_to_cache, CacheToUpdate::QUERY);
+}
+
+void IndexCacheHost::update_target_cache(const std::vector<IndexDescriptor>& descriptors_of_indices_to_cache)
+{
+    update_cache(descriptors_of_indices_to_cache, CacheToUpdate::TARGET);
+}
+
+std::shared_ptr<Index> IndexCacheHost::get_index_for_query_cache(const IndexDescriptor& descriptor_of_index_to_cache)
+{
+    return query_cache_.at(descriptor_of_index_to_cache)->copy_index_to_device(allocator_, cuda_stream_);
+}
+
+std::shared_ptr<Index> IndexCacheHost::get_index_for_target_cache(const IndexDescriptor& descriptor_of_index_to_cache)
+{
+    return target_cache_.at(descriptor_of_index_to_cache)->copy_index_to_device(allocator_, cuda_stream_);
+}
+
+void IndexCacheHost::update_cache(const std::vector<IndexDescriptor>& descriptors_of_indices_to_cache,
+                                  const CacheToUpdate which_cache)
+{
+    cache_type_t& cache_to_edit                            = (CacheToUpdate::QUERY == which_cache) ? query_cache_ : target_cache_;
+    const cache_type_t& cache_to_check                     = (CacheToUpdate::QUERY == which_cache) ? target_cache_ : query_cache_;
+    std::shared_ptr<claragenomics::io::FastaParser> parser = (CacheToUpdate::QUERY == which_cache) ? query_parser_ : target_parser_;
+
+    cache_to_edit.clear();
+
+    for (const IndexDescriptor& descriptor_of_index_to_cache : descriptors_of_indices_to_cache)
+    {
+
+        std::shared_ptr<const IndexHostCopyBase> index_copy = nullptr;
+
+        if (reuse_data_)
+        {
+            // check if the same index already exists on host
+            auto existing_cache = cache_to_check.find(descriptor_of_index_to_cache);
+            if (existing_cache != cache_to_check.end())
+            {
+                index_copy = existing_cache->second;
+            }
+        }
+
+        if (nullptr == index_copy)
+        {
+            // create index
+            auto index = claragenomics::cudamapper::Index::create_index(allocator_,
+                                                                        *parser,
+                                                                        descriptor_of_index_to_cache.first_read,
+                                                                        descriptor_of_index_to_cache.first_read + descriptor_of_index_to_cache.number_of_reads,
+                                                                        k_,
+                                                                        w_,
+                                                                        hash_representations_,
+                                                                        filtering_parameter_,
+                                                                        cuda_stream_);
+            // copy it to host memory
+            index_copy = claragenomics::cudamapper::IndexHostCopy::create_cache(*index,
+                                                                                descriptor_of_index_to_cache.first_read,
+                                                                                k_,
+                                                                                w_,
+                                                                                cuda_stream_);
+        }
+
+        assert(nullptr != index_copy);
+
+        // save pointer to cached index
+        cache_to_edit[descriptor_of_index_to_cache] = index_copy;
+    }
 }
 
 } // namespace cudamapper
