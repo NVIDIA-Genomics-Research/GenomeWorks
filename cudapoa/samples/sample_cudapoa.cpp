@@ -299,18 +299,6 @@ int main(int argc, char** argv)
         std::vector<StatusType> seq_status;
         StatusType status = batch->add_poa_group(seq_status, poa_group);
 
-        if (status == StatusType::success)
-        {
-            // Check if all sequences in POA group wre added successfully.
-            for (const auto& s : seq_status)
-            {
-                if (s == StatusType::exceeded_maximum_sequence_size)
-                {
-                    std::cerr << "Dropping sequence because sequence exceeded maximum size" << std::endl;
-                }
-            }
-            i++;
-        }
         // NOTE: If number of windows smaller than batch capacity, then run POA generation
         // once last window is added to batch.
         if (status == StatusType::exceeded_maximum_poas || (i == get_size(windows) - 1))
@@ -323,6 +311,19 @@ int main(int argc, char** argv)
 
             std::cout << "Processed windows " << window_count << " - " << i << std::endl;
             window_count = i;
+        }
+
+        if (status == StatusType::success)
+        {
+            // Check if all sequences in POA group wre added successfully.
+            for (const auto& s : seq_status)
+            {
+                if (s == StatusType::exceeded_maximum_sequence_size)
+                {
+                    std::cerr << "Dropping sequence because sequence exceeded maximum size" << std::endl;
+                }
+            }
+            i++;
         }
 
         if (status != StatusType::exceeded_maximum_poas && status != StatusType::success)
