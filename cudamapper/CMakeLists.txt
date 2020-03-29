@@ -31,7 +31,7 @@ target_compile_options(minimizer PRIVATE -Werror)
 cuda_add_library(index_gpu
         src/index.cu
         src/index_gpu.cu
-        src/index_host_copy.cu
+        src/host_cache.cu
         src/minimizer.cu)
 target_include_directories(index_gpu PUBLIC include ${CUB_DIR})
 target_link_libraries(index_gpu logging minimizer pthread utils cgaio)

@@ -40,18 +40,18 @@ std::unique_ptr<Index> Index::create_index(DefaultDeviceAllocator allocator,
                                                  cuda_stream);
 }
 
-std::unique_ptr<IndexHostCopyBase> IndexHostCopyBase::create_cache(const Index& index,
-                                                                   const read_id_t first_read_id,
-                                                                   const std::uint64_t kmer_size,
-                                                                   const std::uint64_t window_size,
-                                                                   const cudaStream_t cuda_stream)
+std::unique_ptr<IndexHostCopy> IndexHostCopy::create_cache(const Index& index,
+                                                           const read_id_t first_read_id,
+                                                           const std::uint64_t kmer_size,
+                                                           const std::uint64_t window_size,
+                                                           const cudaStream_t cuda_stream)
 {
     CGA_NVTX_RANGE(profiler, "cache_D2H");
-    return std::make_unique<IndexHostCopy>(index,
-                                           first_read_id,
-                                           kmer_size,
-                                           window_size,
-                                           cuda_stream);
+    return std::make_unique<HostCache>(index,
+                                       first_read_id,
+                                       kmer_size,
+                                       window_size,
+                                       cuda_stream);
 }
 
 } // namespace cudamapper
