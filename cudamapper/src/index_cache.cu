@@ -23,6 +23,7 @@ namespace cudamapper
 IndexDescriptor::IndexDescriptor(read_id_t first_read, read_id_t number_of_reads)
     : first_read_(first_read)
     , number_of_reads_(number_of_reads)
+    , hash_(0)
 {
     generate_hash();
 }
@@ -45,13 +46,27 @@ std::size_t IndexDescriptor::get_hash() const
 void IndexDescriptor::generate_hash()
 {
     // populate lower half of hash with one value, upper half with the other
-    std::size_t bytes_per_element = sizeof(std::size_t) / 2;
-    // first half of element_mask are zeros, second are ones
-    std::size_t element_mask = (1 << (8 * bytes_per_element)) - 1;
-    // set lower bits
+    std::size_t element_mask = 0;
+    std::uint32_t shift_bits = 0;
+    if (sizeof(std::size_t) == 4)
+    {
+        // 16 bytes per value
+        element_mask = 0xFFFF;
+        shift_bits   = 16;
+    }
+    else if (sizeof(std::size_t) == 8)
+    {
+        // 32 bytes per value
+        element_mask = 0xFFFFFFFF;
+        shift_bits   = 32;
+    }
+    else
+    {
+        assert(false); // implement for systems where std::size_t is not 32 or 64 bits
+    }
+    hash_ = 0;
     hash_ |= first_read_ & element_mask;
-    // set higher bits
-    hash_ |= (number_of_reads_ & element_mask) << (8 * bytes_per_element);
+    hash_ |= static_cast<std::size_t>(number_of_reads_ & element_mask) << shift_bits;
 }
 
 bool operator==(const IndexDescriptor& lhs, const IndexDescriptor& rhs)
