@@ -78,10 +78,12 @@ BUILD_SCRIPT="#!/bin/bash
 set -e
 WORKSPACE=${REPO_PATH_IN_CONTAINER}
 PREBUILD_SCRIPT=${REPO_PATH_IN_CONTAINER}/ci/gpu/prebuild.sh
+PREBUILD_OVERWRITE=${REPO_PATH_IN_CONTAINER}/ci/local/prebuild_overwrite.sh
 BUILD_SCRIPT=${REPO_PATH_IN_CONTAINER}/ci/gpu/build.sh
 if [ -f \${PREBUILD_SCRIPT} ]; then
     source \${PREBUILD_SCRIPT}
 fi
+[ -f \${PREBUILD_OVERWRITE} ] && source \${PREBUILD_OVERWRITE}
 yes | source \${BUILD_SCRIPT}
 "
 
