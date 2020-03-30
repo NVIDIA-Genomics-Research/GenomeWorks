@@ -53,7 +53,7 @@ public:
     /// @brief Constructor
     /// Allocates the buffer
     /// @param buffer_size
-    DevicePreallocatedAllocator(size_t buffer_size = 1e9)
+    DevicePreallocatedAllocator(size_t buffer_size)
         : buffer_size_(buffer_size)
         , buffer_ptr_(create_buffer(buffer_size))
     {
@@ -61,6 +61,7 @@ public:
         free_blocks_.push_back({0, buffer_size, 0});
     }
 
+    DevicePreallocatedAllocator()                                   = delete;
     DevicePreallocatedAllocator(const DevicePreallocatedAllocator&) = delete;
     DevicePreallocatedAllocator operator=(const DevicePreallocatedAllocator&) = delete;
 
