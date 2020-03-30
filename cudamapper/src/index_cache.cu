@@ -24,6 +24,7 @@ IndexDescriptor::IndexDescriptor(read_id_t first_read, read_id_t number_of_reads
     : first_read_(first_read)
     , number_of_reads_(number_of_reads)
 {
+    generate_hash();
 }
 
 read_id_t IndexDescriptor::first_read() const
@@ -38,18 +39,19 @@ read_id_t IndexDescriptor::number_of_reads() const
 
 std::size_t IndexDescriptor::get_hash() const
 {
-    std::size_t hash = 0;
+    return hash_;
+}
 
+void IndexDescriptor::generate_hash()
+{
     // populate lower half of hash with one value, upper half with the other
     std::size_t bytes_per_element = sizeof(std::size_t) / 2;
     // first half of element_mask are zeros, second are ones
     std::size_t element_mask = (1 << (8 * bytes_per_element)) - 1;
     // set lower bits
-    hash |= first_read_ & element_mask;
+    hash_ |= first_read_ & element_mask;
     // set higher bits
-    hash |= (number_of_reads_ & element_mask) << (8 * bytes_per_element);
-
-    return hash;
+    hash_ |= (number_of_reads_ & element_mask) << (8 * bytes_per_element);
 }
 
 bool operator==(const IndexDescriptor& lhs, const IndexDescriptor& rhs)

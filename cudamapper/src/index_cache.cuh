@@ -35,20 +35,31 @@ public:
     /// \brief constructor
     IndexDescriptor(read_id_t first_read, read_id_t number_of_reads);
 
+    IndexDescriptor(const IndexDescriptor&) = default;
+    IndexDescriptor& operator=(const IndexDescriptor&) = default;
+    IndexDescriptor(IndexDescriptor&&)                 = default;
+    IndexDescriptor& operator=(IndexDescriptor&&) = default;
+    ~IndexDescriptor()                            = default;
+
     /// \brief getter
     read_id_t first_read() const;
 
     /// \brief getter
     read_id_t number_of_reads() const;
 
-    /// \brief generates hash value of the object
+    /// \brief returns hash value
     std::size_t get_hash() const;
 
 private:
+    /// \brief generates hash
+    void generate_hash();
+
     /// first read in index
     read_id_t first_read_;
     /// number of reads in index
     read_id_t number_of_reads_;
+    /// hash of this object
+    std::size_t hash_;
 };
 
 /// \brief equality operator
