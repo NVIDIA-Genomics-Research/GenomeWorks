@@ -29,12 +29,26 @@ class Index;
 class IndexHostCopyBase;
 
 /// IndexDescriptor - Every Index is defined by its first read and the number of reads
-struct IndexDescriptor
+class IndexDescriptor
 {
+public:
+    /// \brief constructor
+    IndexDescriptor(read_id_t first_read, read_id_t number_of_reads);
+
+    /// \brief getter
+    read_id_t first_read() const;
+
+    /// \brief getter
+    read_id_t number_of_reads() const;
+
+    /// \brief generates hash value of the object
+    std::size_t get_hash() const;
+
+private:
     /// first read in index
-    read_id_t first_read;
+    read_id_t first_read_;
     /// number of reads in index
-    read_id_t number_of_reads;
+    read_id_t number_of_reads_;
 };
 
 /// \brief equality operator

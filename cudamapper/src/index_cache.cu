@@ -20,9 +20,41 @@ namespace claragenomics
 namespace cudamapper
 {
 
+IndexDescriptor::IndexDescriptor(read_id_t first_read, read_id_t number_of_reads)
+    : first_read_(first_read)
+    , number_of_reads_(number_of_reads)
+{
+}
+
+read_id_t IndexDescriptor::first_read() const
+{
+    return first_read_;
+}
+
+read_id_t IndexDescriptor::number_of_reads() const
+{
+    return number_of_reads_;
+}
+
+std::size_t IndexDescriptor::get_hash() const
+{
+    std::size_t hash = 0;
+
+    // populate lower half of hash with one value, upper half with the other
+    std::size_t bytes_per_element = sizeof(std::size_t) / 2;
+    // first half of element_mask are zeros, second are ones
+    std::size_t element_mask = (1 << (8 * bytes_per_element)) - 1;
+    // set lower bits
+    hash |= first_read_ & element_mask;
+    // set higher bits
+    hash |= (number_of_reads_ & element_mask) << (8 * bytes_per_element);
+
+    return hash;
+}
+
 bool operator==(const IndexDescriptor& lhs, const IndexDescriptor& rhs)
 {
-    return lhs.first_read == rhs.first_read && lhs.number_of_reads == rhs.number_of_reads;
+    return lhs.first_read() == rhs.first_read() && lhs.number_of_reads() == rhs.number_of_reads();
 }
 
 bool operator!=(const IndexDescriptor& lhs, const IndexDescriptor& rhs)
@@ -32,18 +64,7 @@ bool operator!=(const IndexDescriptor& lhs, const IndexDescriptor& rhs)
 
 std::size_t IndexDescriptorHash::operator()(const IndexDescriptor& index_descriptor) const
 {
-    std::size_t hash = 0;
-
-    // populate lower half of hash with one value, upper half with the other
-    std::size_t bytes_per_element = sizeof(std::size_t) / 2;
-    // first half of element_mask are zeros, second are ones
-    std::size_t element_mask = (1 << (8 * bytes_per_element)) - 1;
-    // set lower bits
-    hash |= index_descriptor.first_read & element_mask;
-    // set higher bits
-    hash |= (index_descriptor.number_of_reads & element_mask) << (8 * bytes_per_element);
-
-    return hash;
+    return index_descriptor.get_hash();
 }
 
 IndexCacheHost::IndexCacheHost(const bool reuse_data,
@@ -116,8 +137,8 @@ void IndexCacheHost::update_cache(const std::vector<IndexDescriptor>& descriptor
             // create index
             auto index = claragenomics::cudamapper::Index::create_index(allocator_,
                                                                         *parser,
-                                                                        descriptor_of_index_to_cache.first_read,
-                                                                        descriptor_of_index_to_cache.first_read + descriptor_of_index_to_cache.number_of_reads,
+                                                                        descriptor_of_index_to_cache.first_read(),
+                                                                        descriptor_of_index_to_cache.first_read() + descriptor_of_index_to_cache.number_of_reads(),
                                                                         k_,
                                                                         w_,
                                                                         hash_representations_,
@@ -125,7 +146,7 @@ void IndexCacheHost::update_cache(const std::vector<IndexDescriptor>& descriptor
                                                                         cuda_stream_);
             // copy it to host memory
             index_copy = claragenomics::cudamapper::IndexHostCopy::create_cache(*index,
-                                                                                descriptor_of_index_to_cache.first_read,
+                                                                                descriptor_of_index_to_cache.first_read(),
                                                                                 k_,
                                                                                 w_,
                                                                                 cuda_stream_);
