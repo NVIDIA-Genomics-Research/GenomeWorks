@@ -21,7 +21,7 @@ std::size_t find_largest_contiguous_device_memory_section()
     // find the largest block of contiguous memory
     size_t free;
     size_t total;
-    cudaMemGetInfo(&free, &total);
+    CGA_CU_CHECK_ERR(cudaMemGetInfo(&free, &total));
     const size_t memory_decrement = free / 100;              // decrease requested memory one by one percent
     size_t size_to_try            = free - memory_decrement; // do not go for all memory
     while (true)
