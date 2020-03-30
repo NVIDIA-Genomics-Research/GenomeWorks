@@ -27,7 +27,7 @@
 using namespace claragenomics;
 using namespace claragenomics::cudapoa;
 
-std::unique_ptr<Batch> initialize_batch(bool msa, BatchSize batch_size)
+std::unique_ptr<Batch> initialize_batch(bool msa, const BatchSize& batch_size)
 {
     // Get device information.
     int32_t device_count = 0;
@@ -209,16 +209,16 @@ int main(int argc, char** argv)
     // Define upper limits for sequence size, graph size ....
     BatchSize batch_size;
 
-    if (!long_read)
+    if (long_read)
+    {
+        generate_simulated_long_reads(windows, batch_size);
+    }
+    else
     {
         const std::string input_data = std::string(CUDAPOA_BENCHMARK_DATA_DIR) + "/sample-windows.txt";
         parse_window_data_file(windows, input_data, 1000); // Generate windows.
         assert(get_size(windows) > 0);
         batch_size = BatchSize(1024, 100);
-    }
-    else
-    {
-        generate_simulated_long_reads(windows, batch_size);
     }
 
     // Initialize batch.
