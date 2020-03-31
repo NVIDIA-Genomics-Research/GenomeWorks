@@ -14,6 +14,8 @@
 #include <memory>
 #include <random>
 #include <string>
+#include <fstream>
+#include <exception>
 
 #include <iostream>
 #include "seqio.h" //TODO add this to 3rdparty
@@ -28,8 +30,26 @@ FastaParserKseqpp::FastaParserKseqpp(const std::string& fasta_file, int min_sequ
 {
     klibpp::KSeq record;
     klibpp::SeqStreamIn iss(fasta_file.data());
+
+    /*    std::ifstream query_file(fasta_file);
+    if (query_file.fail())
+    {
+        throw std::invalid_argument("Error: "
+                                    "unable to open file " +
+                                    fasta_file + " !");
+    }*/
+
     std::vector<FastaSequence> seqs;
-    while (iss >> record)
+
+    iss >> record;
+    if (iss.fail())
+    {
+        throw std::invalid_argument("Error: "
+                                    "non-existent or empty file " +
+                                    fasta_file + " !");
+    }
+
+    do
     {
         FastaSequence seq   = {record.name, record.seq};
         int sequence_length = get_size<int>(record.seq);
@@ -37,7 +57,7 @@ FastaParserKseqpp::FastaParserKseqpp(const std::string& fasta_file, int min_sequ
         {
             reads_.push_back(std::move(seq));
         }
-    }
+    } while (iss >> record);
 
     //For many applications, such as cudamapper, performance is better if reads are shuffled.
     std::mt19937 g(0); // seed for deterministic behaviour
