@@ -126,6 +126,14 @@ void process_batch(Batch* batch, bool msa, bool print)
     }
 }
 
+void generate_simulated_short_reads(std::vector<std::vector<std::string>>& windows, BatchSize& batch_size)
+{
+    const std::string input_data = std::string(CUDAPOA_BENCHMARK_DATA_DIR) + "/sample-windows.txt";
+    parse_window_data_file(windows, input_data, 1000); // Generate windows.
+    assert(get_size(windows) > 0);
+    batch_size = BatchSize(1024, 100);
+}
+
 void generate_simulated_long_reads(std::vector<std::vector<std::string>>& windows, BatchSize& batch_size)
 {
     constexpr uint32_t random_seed = 5827349;
@@ -199,7 +207,7 @@ int main(int argc, char** argv)
         std::cout << "Usage:" << std::endl;
         std::cout << "./sample_cudapoa [-m] [-h]" << std::endl;
         std::cout << "-m : Generate MSA (if not provided, generates consensus by default)" << std::endl;
-        std::cout << "-l : Perform long-read sample (if not provided, will run window-based sample by default)" << std::endl;
+        std::cout << "-l : Perform long-read sample (if not provided, will run short-read sample by default)" << std::endl;
         std::cout << "-p : Print the MSA or consensus output to stdout" << std::endl;
         std::cout << "-g : Print POA graph in dot format, this option is only for long-read sample" << std::endl;
         std::cout << "-h : Print help message" << std::endl;
@@ -220,10 +228,7 @@ int main(int argc, char** argv)
     }
     else
     {
-        const std::string input_data = std::string(CUDAPOA_BENCHMARK_DATA_DIR) + "/sample-windows.txt";
-        parse_window_data_file(windows, input_data, 1000); // Generate windows.
-        assert(get_size(windows) > 0);
-        batch_size = BatchSize(1024, 100);
+        generate_simulated_short_reads(windows, batch_size);
     }
 
     // Initialize batch.
