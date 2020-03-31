@@ -164,13 +164,14 @@ void generate_simulated_long_reads(std::vector<std::vector<std::string>>& window
 int main(int argc, char** argv)
 {
     // Process options
-    int c          = 0;
-    bool msa       = false;
-    bool long_read = false;
-    bool help      = false;
-    bool print     = false;
+    int c            = 0;
+    bool msa         = false;
+    bool long_read   = false;
+    bool help        = false;
+    bool print       = false;
+    bool print_graph = false;
 
-    while ((c = getopt(argc, argv, "mlhp")) != -1)
+    while ((c = getopt(argc, argv, "mlhpg")) != -1)
     {
         switch (c)
         {
@@ -182,6 +183,9 @@ int main(int argc, char** argv)
             break;
         case 'p':
             print = true;
+            break;
+        case 'g':
+            print_graph = true;
             break;
         case 'h':
             help = true;
@@ -196,7 +200,8 @@ int main(int argc, char** argv)
         std::cout << "./sample_cudapoa [-m] [-h]" << std::endl;
         std::cout << "-m : Generate MSA (if not provided, generates consensus by default)" << std::endl;
         std::cout << "-l : Perform long-read sample (if not provided, will run window-based sample by default)" << std::endl;
-        std::cout << "-p : Print the MSA or consensus output for short-read sample, print POA graph in dot format for long-read sample" << std::endl;
+        std::cout << "-p : Print the MSA or consensus output to stdout" << std::endl;
+        std::cout << "-g : Print POA graph in dot format, this option is only for long-read sample" << std::endl;
         std::cout << "-h : Print help message" << std::endl;
         std::exit(0);
     }
@@ -251,26 +256,22 @@ int main(int argc, char** argv)
         if (status == StatusType::exceeded_maximum_poas || (i == get_size(windows) - 1))
         {
             // No more POA groups can be added to batch. Now process batch.
-            // for long_reads, if print == true, only POA graph is printed at the end, hence disabled here
-            process_batch(batch.get(), msa, (print && !long_read));
+            process_batch(batch.get(), msa, print);
 
             // After MSA is generated for batch, reset batch to make room for next set of POA groups.
-            // in long_reads, there is only one window, do not reset if need to print graph
-            if (!(long_read && print))
+            // in long_reads, there is only one window, do not reset if needed to print graph
+            if (!(long_read && print_graph))
             {
                 batch->reset();
             }
 
-            if (!(long_read && print))
+            if (i == 0)
             {
-                if (i == 0)
-                {
-                    std::cout << "Processed window " << window_count << std::endl;
-                }
-                else
-                {
-                    std::cout << "Processed windows " << window_count << " - " << i << std::endl;
-                }
+                std::cout << "Processed window " << window_count << std::endl;
+            }
+            else
+            {
+                std::cout << "Processed windows " << window_count << " - " << i << std::endl;
             }
 
             window_count = i;
@@ -298,7 +299,7 @@ int main(int argc, char** argv)
         }
     }
 
-    if (print && long_read)
+    if (print_graph && long_read)
     {
         std::vector<DirectedGraph> graph;
         std::vector<StatusType> graph_status;
