@@ -196,7 +196,7 @@ int main(int argc, char** argv)
         std::cout << "./sample_cudapoa [-m] [-h]" << std::endl;
         std::cout << "-m : Generate MSA (if not provided, generates consensus by default)" << std::endl;
         std::cout << "-l : Perform long-read sample (if not provided, will run window-based sample by default)" << std::endl;
-        std::cout << "-p : Print the MSA or consensus output to stdout" << std::endl;
+        std::cout << "-p : Print the MSA or consensus output for short-read sample, print POA graph in dot format for long-read sample" << std::endl;
         std::cout << "-h : Print help message" << std::endl;
         std::exit(0);
     }
