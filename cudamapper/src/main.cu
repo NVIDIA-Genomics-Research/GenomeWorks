@@ -307,8 +307,8 @@ int main(int argc, char* argv[])
     }
     else
     {
-    	try
-    	{
+        try
+        {
             target_parser = claragenomics::io::create_kseq_fasta_parser(parameters.target_filepath, parameters.k + parameters.w - 1);
         }
         catch (std::invalid_argument& exception)
