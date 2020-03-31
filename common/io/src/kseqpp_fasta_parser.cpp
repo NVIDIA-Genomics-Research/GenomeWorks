@@ -14,9 +14,7 @@
 #include <memory>
 #include <random>
 #include <string>
-#include <fstream>
 #include <exception>
-
 #include <iostream>
 #include "seqio.h" //TODO add this to 3rdparty
 #include <claragenomics/utils/signed_integer_utils.hpp>
