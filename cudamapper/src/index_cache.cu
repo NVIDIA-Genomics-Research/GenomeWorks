@@ -115,12 +115,12 @@ void IndexCacheHost::update_target_cache(const std::vector<IndexDescriptor>& des
     update_cache(descriptors_of_indices_to_cache, CacheToUpdate::TARGET);
 }
 
-std::shared_ptr<Index> IndexCacheHost::get_index_for_query_cache(const IndexDescriptor& descriptor_of_index_to_cache)
+std::shared_ptr<Index> IndexCacheHost::get_index_from_query_cache(const IndexDescriptor& descriptor_of_index_to_cache)
 {
     return query_cache_.at(descriptor_of_index_to_cache)->copy_index_to_device(allocator_, cuda_stream_);
 }
 
-std::shared_ptr<Index> IndexCacheHost::get_index_for_target_cache(const IndexDescriptor& descriptor_of_index_to_cache)
+std::shared_ptr<Index> IndexCacheHost::get_index_from_target_cache(const IndexDescriptor& descriptor_of_index_to_cache)
 {
     return target_cache_.at(descriptor_of_index_to_cache)->copy_index_to_device(allocator_, cuda_stream_);
 }

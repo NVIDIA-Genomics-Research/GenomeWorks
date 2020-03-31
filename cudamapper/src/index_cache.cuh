@@ -115,11 +115,11 @@ public:
 
     /// \brief Copies request Index to device memory
     /// throws if that index is currently not in cache
-    std::shared_ptr<Index> get_index_for_query_cache(const IndexDescriptor& descriptor_of_index_to_cache);
+    std::shared_ptr<Index> get_index_from_query_cache(const IndexDescriptor& descriptor_of_index_to_cache);
 
     /// \brief Copies request Index to device memory
     /// throws if that index is currently not in cache
-    std::shared_ptr<Index> get_index_for_target_cache(const IndexDescriptor& descriptor_of_index_to_cache);
+    std::shared_ptr<Index> get_index_from_target_cache(const IndexDescriptor& descriptor_of_index_to_cache);
 
 private:
     using cache_type_t = std::unordered_map<IndexDescriptor,
