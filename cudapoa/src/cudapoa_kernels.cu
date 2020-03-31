@@ -710,7 +710,7 @@ void generatePOA(claragenomics::cudapoa::OutputDetails* output_details_d,
                  const BatchSize& batch_size)
 {
     // a decision flag to determine proper type definition for ScoreT
-    const bool use_32_bit_for_ScoreT = use32bitInt(batch_size, match_score, gap_score);
+    const bool use_32_bit_for_ScoreT = use32bitInt(batch_size, gap_score, mismatch_score, match_score);
 
     if (use_32_bit_for_ScoreT)
     {
@@ -748,12 +748,12 @@ void generatePOA(claragenomics::cudapoa::OutputDetails* output_details_d,
     }
 }
 
-bool use32bitInt(const BatchSize& batch_size, const int16_t match_score, const int16_t gap_score)
+bool use32bitInt(const BatchSize& batch_size, const int16_t gap_score, const int16_t mismatch_score, const int16_t match_score)
 {
-    // a decision flag to determine proper type definition for ScoreT, factor 2 is selected ad-hoc
-    bool hitting_max_limit = batch_size.max_sequence_size * match_score > INT16_MAX;
-    bool hitting_min_limit = (batch_size.max_sequence_size + batch_size.max_matrix_graph_dimension) * (-gap_score) > (INT16_MAX + 1);
-    return (hitting_max_limit || hitting_min_limit);
+    // a decision control logic to determine proper type definition for ScoreT
+    int32_t upper_bound = batch_size.max_sequence_size * match_score;
+    int32_t lower_bound = batch_size.max_sequence_size * std::max(gap_score, mismatch_score) + (batch_size.max_matrix_graph_dimension - batch_size.max_sequence_size) * gap_score;
+    return (upper_bound > INT16_MAX || (-lower_bound) > (INT16_MAX + 1));
 }
 
 } // namespace cudapoa

@@ -297,7 +297,7 @@ void generateConsensusTestHost(uint8_t* nodes,
                                uint16_t* node_alignment_count,
                                uint32_t max_limit_consensus_size);
 
-bool use32bitInt(const BatchSize& batch_size, const int16_t match_score, const int16_t gap_score);
+bool use32bitInt(const BatchSize& batch_size, const int16_t gap_score, const int16_t mismatch_score, const int16_t match_score);
 
 } // namespace cudapoa
 
