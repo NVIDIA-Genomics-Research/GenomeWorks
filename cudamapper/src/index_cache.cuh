@@ -97,9 +97,9 @@ public:
                    std::shared_ptr<claragenomics::io::FastaParser> target_parser,
                    const std::uint64_t k,
                    const std::uint64_t w,
-                   const bool hash_representations,
-                   const double filtering_parameter,
-                   const cudaStream_t cuda_stream = 0);
+                   const bool hash_representations  = true,
+                   const double filtering_parameter = 1.0,
+                   const cudaStream_t cuda_stream   = 0);
 
     IndexCacheHost(const IndexCacheHost&) = delete;
     IndexCacheHost& operator=(const IndexCacheHost&) = delete;
