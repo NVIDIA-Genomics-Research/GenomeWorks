@@ -31,14 +31,6 @@ FastaParserKseqpp::FastaParserKseqpp(const std::string& fasta_file, int min_sequ
     klibpp::KSeq record;
     klibpp::SeqStreamIn iss(fasta_file.data());
 
-    /*    std::ifstream query_file(fasta_file);
-    if (query_file.fail())
-    {
-        throw std::invalid_argument("Error: "
-                                    "unable to open file " +
-                                    fasta_file + " !");
-    }*/
-
     std::vector<FastaSequence> seqs;
 
     iss >> record;
