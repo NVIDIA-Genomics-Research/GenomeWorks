@@ -21,6 +21,7 @@
 #include <iostream>
 #include <cuda_runtime_api.h>
 #include <claragenomics/utils/cudautils.hpp>
+#include <claragenomics/utils/signed_integer_utils.hpp>
 
 namespace claragenomics
 {
@@ -49,51 +50,62 @@ typedef std::vector<Entry> Group;
 struct BatchSize
 {
     /// Maximum number of elements in a sequence
-    uint32_t max_sequence_size;
+    int32_t max_sequence_size;
     /// Maximum size of final consensus
-    uint32_t max_concensus_size;
+    int32_t max_concensus_size;
     /// Maximum number of nodes in a graph, 1 graph per window
-    uint32_t max_nodes_per_window;
+    int32_t max_nodes_per_window;
     /// Maximum number of nodes in a graph, 1 graph per window in banded mode
-    uint32_t max_nodes_per_window_banded;
+    int32_t max_nodes_per_window_banded;
     /// Maximum vertical dimension of scoring matrix, which stores graph
-    uint32_t max_matrix_graph_dimension = max_nodes_per_window;
+    int32_t max_matrix_graph_dimension = max_nodes_per_window;
     /// Maximum vertical dimension of scoring matrix, which stores graph
-    uint32_t max_matrix_graph_dimension_banded = max_nodes_per_window_banded;
+    int32_t max_matrix_graph_dimension_banded = max_nodes_per_window_banded;
     /// Maximum horizontal dimension of scoring matrix, which stores sequences
-    uint32_t max_matrix_sequence_dimension = max_sequence_size;
+    int32_t max_matrix_sequence_dimension = max_sequence_size;
     /// Maximum number of equences per POA group
-    uint32_t max_sequences_per_poa;
+    int32_t max_sequences_per_poa;
 
     /// constructor- set upper limit parameters based on max_sequence_size
-    BatchSize(uint32_t max_seq_sz = 1024, uint32_t max_num_seqs = 100)
+    BatchSize(int32_t max_seq_sz = 1024, int32_t max_seq_per_poa = 100)
+        /// ensure a 4-byte boundary alignment for any allocated buffer
         : max_sequence_size(max_seq_sz)
         , max_concensus_size(max_sequence_size)
         , max_nodes_per_window(cudautils::align<int32_t, 4>(3 * max_sequence_size))
         , max_nodes_per_window_banded(cudautils::align<int32_t, 4>(4 * max_sequence_size))
-        /// Adding 4 elements more to ensure a 4byte boundary alignment for any allocated buffer
-        , max_matrix_graph_dimension(cudautils::align<int32_t, 4>(max_nodes_per_window + 4))
-        , max_matrix_graph_dimension_banded(cudautils::align<int32_t, 4>(max_nodes_per_window_banded + 4))
-        , max_matrix_sequence_dimension(cudautils::align<int32_t, 4>(max_sequence_size + 4))
-        , max_sequences_per_poa(max_num_seqs)
+        , max_matrix_graph_dimension(cudautils::align<int32_t, 4>(max_nodes_per_window))
+        , max_matrix_graph_dimension_banded(cudautils::align<int32_t, 4>(max_nodes_per_window_banded))
+        , max_matrix_sequence_dimension(cudautils::align<int32_t, 4>(max_sequence_size))
+        , max_sequences_per_poa(max_seq_per_poa)
 
     {
+        throw_on_negative(max_seq_sz, "max_sequence_size cannot be negative.");
+        throw_on_negative(max_seq_per_poa, "max_sequences_per_poa cannot be negative.");
     }
 
     /// constructor- set all parameters separately
-    BatchSize(uint32_t max_seq_sz, uint32_t max_concensus_sz, uint32_t max_nodes_per_w,
-              uint32_t max_nodes_per_w_banded, uint32_t max_matrix_graph_dim,
-              uint32_t max_matrix_graph_dim_banded, uint32_t max_matrix_seq_dim,
-              uint32_t max_seq_per_poa)
+    BatchSize(int32_t max_seq_sz, int32_t max_concensus_sz, int32_t max_nodes_per_w,
+              int32_t max_nodes_per_w_banded, int32_t max_seq_per_poa)
+        /// ensure a 4-byte boundary alignment for any allocated buffer
         : max_sequence_size(max_seq_sz)
         , max_concensus_size(max_concensus_sz)
-        , max_nodes_per_window(max_nodes_per_w)
-        , max_nodes_per_window_banded(max_nodes_per_w_banded)
-        , max_matrix_graph_dimension(max_matrix_graph_dim)
-        , max_matrix_graph_dimension_banded(max_matrix_graph_dim_banded)
-        , max_matrix_sequence_dimension(max_matrix_seq_dim)
+        , max_nodes_per_window(cudautils::align<int32_t, 4>(max_nodes_per_w))
+        , max_nodes_per_window_banded(cudautils::align<int32_t, 4>(max_nodes_per_w_banded))
+        , max_matrix_graph_dimension(cudautils::align<int32_t, 4>(max_nodes_per_window))
+        , max_matrix_graph_dimension_banded(cudautils::align<int32_t, 4>(max_nodes_per_window_banded))
+        , max_matrix_sequence_dimension(cudautils::align<int32_t, 4>(max_sequence_size))
         , max_sequences_per_poa(max_seq_per_poa)
     {
+        throw_on_negative(max_seq_sz, "max_sequence_size cannot be negative.");
+        throw_on_negative(max_concensus_sz, "max_concensus_size cannot be negative.");
+        throw_on_negative(max_nodes_per_w, "max_nodes_per_window cannot be negative.");
+        throw_on_negative(max_nodes_per_w_banded, "max_nodes_per_window_banded cannot be negative.");
+        throw_on_negative(max_seq_per_poa, "max_sequences_per_poa cannot be negative.");
+
+        if (max_nodes_per_window < max_sequence_size)
+            throw std::invalid_argument("max_nodes_per_window should be greater than or equal to max_sequence_size.");
+        if (max_nodes_per_window_banded < max_sequence_size)
+            throw std::invalid_argument("max_nodes_per_window should be greater than or equal to max_sequence_size.");
     }
 };
 
