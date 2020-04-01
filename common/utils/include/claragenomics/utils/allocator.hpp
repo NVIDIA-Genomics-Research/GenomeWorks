@@ -306,12 +306,21 @@ using DefaultDeviceAllocator = CachingDeviceAllocator<char, DevicePreallocatedAl
 using DefaultDeviceAllocator = CachingDeviceAllocator<char, cub::CachingDeviceAllocator>;
 #endif
 
+inline DefaultDeviceAllocator create_default_device_allocator(std::size_t max_caching_size = 2ull * 1024 * 1024 * 1024 /* 2GiB */)
+{
+    return DefaultDeviceAllocator(max_caching_size);
+}
+
 #else
 
 #ifdef CGA_ENABLE_PREALLOCATING_ALLOCATOR
 #error "Preallocating allocator can only be used together with caching allocator"
 #else
 using DefaultDeviceAllocator = CudaMallocAllocator<char>;
+inline DefaultDeviceAllocator create_default_device_allocator(std::size_t /*max_caching_size (unused)*/ = 0)
+{
+    return DefaultDeviceAllocator();
+}
 #endif
 
 #endif

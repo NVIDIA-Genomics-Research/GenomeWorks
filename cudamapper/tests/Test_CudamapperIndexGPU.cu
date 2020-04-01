@@ -172,7 +172,7 @@ void test_find_first_occurrences_of_representations(const thrust::host_vector<re
                                                     const thrust::host_vector<std::uint32_t>& expected_starting_index_of_each_representation_h,
                                                     const thrust::host_vector<representation_t>& expected_unique_representations_h)
 {
-    DefaultDeviceAllocator allocator;
+    DefaultDeviceAllocator allocator = create_default_device_allocator();
 
     cudaStream_t cuda_stream;
     CGA_CU_CHECK_ERR(cudaStreamCreate(&cuda_stream));
@@ -1001,7 +1001,7 @@ void test_filter_out_most_common_representations(const double filtering_paramete
     ASSERT_EQ(expected_output_unique_representations_h.size(), expected_output_first_occurrence_of_representations_h.size() - 1);
     ASSERT_EQ(expected_output_representations_h.size(), expected_output_first_occurrence_of_representations_h.back());
 
-    DefaultDeviceAllocator allocator;
+    DefaultDeviceAllocator allocator = create_default_device_allocator();
 
     cudaStream_t cuda_stream;
     CGA_CU_CHECK_ERR(cudaStreamCreate(&cuda_stream));
@@ -1351,7 +1351,7 @@ void test_function(const std::string& filename,
                    const double filtering_parameter = 1.0)
 {
     std::unique_ptr<io::FastaParser> parser = io::create_kseq_fasta_parser(filename);
-    DefaultDeviceAllocator allocator;
+    DefaultDeviceAllocator allocator        = create_default_device_allocator();
 
     cudaStream_t cuda_stream;
     CGA_CU_CHECK_ERR(cudaStreamCreate(&cuda_stream));

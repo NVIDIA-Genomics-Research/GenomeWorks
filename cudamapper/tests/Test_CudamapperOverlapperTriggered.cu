@@ -147,7 +147,7 @@ TEST(TestCudamapperOverlapperTriggerred, Fusee3Overlapsto2)
 
 TEST(TestCudamapperOverlapperTriggerred, OneAchorNoOverlaps)
 {
-    DefaultDeviceAllocator allocator;
+    DefaultDeviceAllocator allocator = create_default_device_allocator();
     cudaStream_t cuda_stream;
     CGA_CU_CHECK_ERR(cudaStreamCreate(&cuda_stream));
     OverlapperTriggered overlapper(allocator, cuda_stream);
@@ -186,7 +186,7 @@ TEST(TestCudamapperOverlapperTriggerred, OneAchorNoOverlaps)
 
 TEST(TestCudamapperOverlapperTriggerred, FourAnchorsOneOverlap)
 {
-    DefaultDeviceAllocator allocator;
+    DefaultDeviceAllocator allocator = create_default_device_allocator();
     cudaStream_t cuda_stream;
     CGA_CU_CHECK_ERR(cudaStreamCreate(&cuda_stream));
     OverlapperTriggered overlapper(allocator, cuda_stream);
@@ -261,7 +261,7 @@ TEST(TestCudamapperOverlapperTriggerred, FourAnchorsOneOverlap)
 
 TEST(TestCudamapperOverlapperTriggerred, FourAnchorsNoOverlap)
 {
-    DefaultDeviceAllocator allocator;
+    DefaultDeviceAllocator allocator = create_default_device_allocator();
     cudaStream_t cuda_stream;
     CGA_CU_CHECK_ERR(cudaStreamCreate(&cuda_stream));
     OverlapperTriggered overlapper(allocator, cuda_stream);
@@ -326,7 +326,7 @@ TEST(TestCudamapperOverlapperTriggerred, FourAnchorsNoOverlap)
 
 TEST(TestCudamapperOverlapperTriggerred, FourColinearAnchorsOneOverlap)
 {
-    DefaultDeviceAllocator allocator;
+    DefaultDeviceAllocator allocator = create_default_device_allocator();
     cudaStream_t cuda_stream;
     CGA_CU_CHECK_ERR(cudaStreamCreate(&cuda_stream));
     OverlapperTriggered overlapper(allocator);
@@ -391,7 +391,7 @@ TEST(TestCudamapperOverlapperTriggerred, FourColinearAnchorsOneOverlap)
 
 TEST(TestCudamapperOverlapperTriggerred, FourAnchorsLastNotInOverlap)
 {
-    DefaultDeviceAllocator allocator;
+    DefaultDeviceAllocator allocator = create_default_device_allocator();
     cudaStream_t cuda_stream;
     CGA_CU_CHECK_ERR(cudaStreamCreate(&cuda_stream));
     OverlapperTriggered overlapper(allocator);
@@ -466,7 +466,7 @@ TEST(TestCudamapperOverlapperTriggerred, FourAnchorsLastNotInOverlap)
 
 TEST(TestCudamapperOverlapperTriggerred, ReverseStrand)
 {
-    DefaultDeviceAllocator allocator;
+    DefaultDeviceAllocator allocator = create_default_device_allocator();
     cudaStream_t cuda_stream;
     CGA_CU_CHECK_ERR(cudaStreamCreate(&cuda_stream));
     OverlapperTriggered overlapper(allocator);

@@ -28,7 +28,7 @@ void test_function(const std::uint64_t number_of_reads_to_add,
                    const std::vector<Minimizer::ReadidPositionDirection>& expected_rest_h,
                    const bool hash_minimizers)
 {
-    DefaultDeviceAllocator allocator;
+    DefaultDeviceAllocator allocator = create_default_device_allocator();
 
     cudaStream_t cuda_stream;
     CGA_CU_CHECK_ERR(cudaStreamCreate(&cuda_stream));
