@@ -306,23 +306,34 @@ using DefaultDeviceAllocator = CachingDeviceAllocator<char, DevicePreallocatedAl
 using DefaultDeviceAllocator = CachingDeviceAllocator<char, cub::CachingDeviceAllocator>;
 #endif
 
-inline DefaultDeviceAllocator create_default_device_allocator(std::size_t max_caching_size = 2ull * 1024 * 1024 * 1024 /* 2GiB */)
-{
-    return DefaultDeviceAllocator(max_caching_size);
-}
-
 #else
 
 #ifdef CGA_ENABLE_PREALLOCATING_ALLOCATOR
 #error "Preallocating allocator can only be used together with caching allocator"
 #else
 using DefaultDeviceAllocator = CudaMallocAllocator<char>;
-inline DefaultDeviceAllocator create_default_device_allocator(std::size_t /*max_caching_size (unused)*/ = 0)
-{
-    return DefaultDeviceAllocator();
-}
 #endif
 
 #endif
+
+/// Constructs a DefaultDeviceAllocator
+///
+/// This function provides a way to construct a valid DefaultDeviceAllocator
+/// for all possible DefaultDeviceAllocators.
+/// Use this function to obtain a DefaultDeviceAllocator object.
+/// This function is needed, since construction of CachingDeviceAllocator
+/// requires a max_caching_size argument to obtain a valid allocator.
+/// Default constuction of CachingDeviceAllocator yields an dummy object
+/// which cannot allocate memory.
+/// @param max_cached_bytes max bytes used by memory resource used by CachingDeviceAllocator (default: 2GiB, unused for CudaMallocAllocator)
+inline DefaultDeviceAllocator create_default_device_allocator(std::size_t max_caching_size = 2ull * 1024 * 1024 * 1024)
+{
+#ifdef CGA_ENABLE_CACHING_ALLOCATOR
+    return DefaultDeviceAllocator(max_caching_size);
+#else
+    static_cast<void>(max_caching_size);
+    return DefaultDeviceAllocator();
+#endif
+}
 
 } // namespace claragenomics
