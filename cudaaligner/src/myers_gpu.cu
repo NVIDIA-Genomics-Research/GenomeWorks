@@ -311,11 +311,12 @@ __global__ void myers_compute_score_matrix_kernel(
     const int32_t alignment_idx = blockIdx.y * blockDim.y + threadIdx.y;
     if (alignment_idx >= n_alignments)
         return;
-    const int32_t query_size  = sequence_lengths_d[2 * alignment_idx];
-    const int32_t target_size = sequence_lengths_d[2 * alignment_idx + 1];
-    const char* const query   = sequences_d + 2 * alignment_idx * max_sequence_length;
-    const char* const target  = sequences_d + (2 * alignment_idx + 1) * max_sequence_length;
-    const int32_t n_words     = (query_size + word_size - 1) / word_size;
+    const int32_t query_size        = sequence_lengths_d[2 * alignment_idx];
+    const int32_t target_size       = sequence_lengths_d[2 * alignment_idx + 1];
+    const char* const query         = sequences_d + 2 * alignment_idx * max_sequence_length;
+    const char* const target        = sequences_d + (2 * alignment_idx + 1) * max_sequence_length;
+    const int32_t n_words           = (query_size + word_size - 1) / word_size;
+    const int32_t n_warp_iterations = ceiling_divide(n_words, warp_size) * warp_size;
 
     assert(query_size > 0);
 
@@ -335,31 +336,36 @@ __global__ void myers_compute_score_matrix_kernel(
         query_patterns(idx, 2) = myers_generate_query_pattern('T', query, query_size, idx * word_size);
         query_patterns(idx, 3) = myers_generate_query_pattern('G', query, query_size, idx * word_size);
     }
+    __syncwarp();
 
     for (int32_t t = 1; t <= target_size; ++t)
     {
         int32_t warp_carry = 0;
         if (threadIdx.x == 0)
             warp_carry = 1; // for global alignment the (implicit) first row has to be 0,1,2,3,... -> carry 1
-        for (int32_t idx = threadIdx.x; idx < n_words; idx += warp_size)
+        for (int32_t idx = threadIdx.x; idx < n_warp_iterations; idx += warp_size)
         {
-            const uint32_t warp_mask = idx / warp_size < n_words / warp_size ? 0xffff'ffffu : (1u << (n_words % warp_size)) - 1;
+            if (idx < n_words)
+            {
+                const uint32_t warp_mask = idx / warp_size < n_words / warp_size ? 0xffff'ffffu : (1u << (n_words % warp_size)) - 1;
 
-            WordType pv_local          = pv(idx, t - 1);
-            WordType mv_local          = mv(idx, t - 1);
-            const WordType highest_bit = WordType(1) << (idx == (n_words - 1) ? query_size - (n_words - 1) * word_size - 1 : word_size - 1);
-            const WordType eq          = get_query_pattern(query_patterns, idx, 0, target[t - 1], false);
+                WordType pv_local          = pv(idx, t - 1);
+                WordType mv_local          = mv(idx, t - 1);
+                const WordType highest_bit = WordType(1) << (idx == (n_words - 1) ? query_size - (n_words - 1) * word_size - 1 : word_size - 1);
+                const WordType eq          = get_query_pattern(query_patterns, idx, 0, target[t - 1], false);
 
-            warp_carry    = myers_advance_block(warp_mask, highest_bit, eq, pv_local, mv_local, warp_carry);
-            score(idx, t) = score(idx, t - 1) + warp_carry;
-            if (threadIdx.x == 0)
-                warp_carry = 0;
-            if (warp_mask == 0xffff'ffffu && (threadIdx.x == 31 || threadIdx.x == 0))
-                warp_carry = __shfl_down_sync(0x8000'0001u, warp_carry, warp_size - 1);
-            if (threadIdx.x != 0)
-                warp_carry = 0;
-            pv(idx, t) = pv_local;
-            mv(idx, t) = mv_local;
+                warp_carry    = myers_advance_block(warp_mask, highest_bit, eq, pv_local, mv_local, warp_carry);
+                score(idx, t) = score(idx, t - 1) + warp_carry;
+                if (threadIdx.x == 0)
+                    warp_carry = 0;
+                if (warp_mask == 0xffff'ffffu && (threadIdx.x == 31 || threadIdx.x == 0))
+                    warp_carry = __shfl_down_sync(0x8000'0001u, warp_carry, warp_size - 1);
+                if (threadIdx.x != 0)
+                    warp_carry = 0;
+                pv(idx, t) = pv_local;
+                mv(idx, t) = mv_local;
+            }
+            __syncwarp();
         }
     }
 }
@@ -496,30 +502,34 @@ __device__ void myers_compute_scores_horizontal_band_impl(
     assert(n_words == ceiling_divide(width, word_size));
     assert(target_size >= 0);
     assert(t_begin <= t_end);
+    const int32_t n_warp_iterations = ceiling_divide(n_words, warp_size) * warp_size;
     for (int32_t t = t_begin; t < t_end; ++t)
     {
         int32_t warp_carry = 0;
         if (threadIdx.x == 0)
             warp_carry = 1; // worst case for the top boarder of the band
-        for (int32_t idx = threadIdx.x; idx < n_words; idx += warp_size)
+        for (int32_t idx = threadIdx.x; idx < n_warp_iterations; idx += warp_size)
         {
-            const uint32_t warp_mask = idx / warp_size < n_words / warp_size ? 0xffff'ffffu : (1u << (n_words % warp_size)) - 1;
+            if (idx < n_words)
+            {
+                const uint32_t warp_mask   = idx / warp_size < n_words / warp_size ? 0xffff'ffffu : (1u << (n_words % warp_size)) - 1;
+                WordType pv_local          = pv(idx, t - 1);
+                WordType mv_local          = mv(idx, t - 1);
+                const WordType highest_bit = WordType(1) << (idx == (n_words - 1) ? width - (n_words - 1) * word_size - 1 : word_size - 1);
+                const WordType eq          = get_query_pattern(query_patterns, idx, pattern_idx_offset, target_begin[t - 1], false);
 
-            WordType pv_local          = pv(idx, t - 1);
-            WordType mv_local          = mv(idx, t - 1);
-            const WordType highest_bit = WordType(1) << (idx == (n_words - 1) ? width - (n_words - 1) * word_size - 1 : word_size - 1);
-            const WordType eq          = get_query_pattern(query_patterns, idx, pattern_idx_offset, target_begin[t - 1], false);
-
-            warp_carry    = myers_advance_block(warp_mask, highest_bit, eq, pv_local, mv_local, warp_carry);
-            score(idx, t) = score(idx, t - 1) + warp_carry;
-            if (threadIdx.x == 0)
-                warp_carry = 0;
-            if (warp_mask == 0xffff'ffffu && (threadIdx.x == 0 || threadIdx.x == 31))
-                warp_carry = __shfl_down_sync(0x8000'0001u, warp_carry, warp_size - 1);
-            if (threadIdx.x != 0)
-                warp_carry = 0;
-            pv(idx, t) = pv_local;
-            mv(idx, t) = mv_local;
+                warp_carry    = myers_advance_block(warp_mask, highest_bit, eq, pv_local, mv_local, warp_carry);
+                score(idx, t) = score(idx, t - 1) + warp_carry;
+                if (threadIdx.x == 0)
+                    warp_carry = 0;
+                if (warp_mask == 0xffff'ffffu && (threadIdx.x == 0 || threadIdx.x == 31))
+                    warp_carry = __shfl_down_sync(0x8000'0001u, warp_carry, warp_size - 1);
+                if (threadIdx.x != 0)
+                    warp_carry = 0;
+                pv(idx, t) = pv_local;
+                mv(idx, t) = mv_local;
+            }
+            __syncwarp();
         }
     }
 }
@@ -540,55 +550,58 @@ __device__ void myers_compute_scores_diagonal_band_impl(
 {
     assert(n_words_band == ceiling_divide(band_width, warp_size));
     assert(band_width - (n_words_band - 1) * word_size >= 2); // we need at least two bits in the last word
+    const int32_t n_warp_iterations = ceiling_divide(n_words_band, warp_size) * warp_size;
     for (int32_t t = t_begin; t < t_end; ++t)
     {
         int32_t itcnt      = 0;
         int32_t carry_down = 0;
         if (threadIdx.x == 0)
             carry_down = 1; // worst case for the top boarder of the band
-        for (int32_t idx = threadIdx.x; idx < n_words_band; idx += warp_size)
+        for (int32_t idx = threadIdx.x; idx < n_warp_iterations; idx += warp_size)
         {
             // idx within band column
             const uint32_t warp_mask = idx / warp_size < n_words_band / warp_size ? 0xffff'ffffu : (1u << (n_words_band % warp_size)) - 1;
 
-            // data from the previous column
-            WordType pv_local = warp_rightshift_sync(t, ++itcnt, warp_mask, pv(idx, t - 1));
-            WordType mv_local = warp_rightshift_sync(t, ++itcnt, warp_mask, mv(idx, t - 1));
-            if (threadIdx.x == 31 && warp_mask == 0xffff'ffffu)
+            if (idx < n_words_band)
             {
-                if (idx < n_words_band - 1)
+                // data from the previous column
+                WordType pv_local = warp_rightshift_sync(t, ++itcnt, warp_mask, pv(idx, t - 1));
+                WordType mv_local = warp_rightshift_sync(t, ++itcnt, warp_mask, mv(idx, t - 1));
+                if (threadIdx.x == 31 && warp_mask == 0xffff'ffffu)
                 {
-                    pv_local |= pv(idx + 1, t - 1) << (word_size - 1);
-                    mv_local |= mv(idx + 1, t - 1) << (word_size - 1);
+                    if (idx < n_words_band - 1)
+                    {
+                        pv_local |= pv(idx + 1, t - 1) << (word_size - 1);
+                        mv_local |= mv(idx + 1, t - 1) << (word_size - 1);
+                    }
                 }
+
+                const WordType carry_right_bit = WordType(1) << (idx == (n_words_band - 1) ? band_width - (n_words_band - 1) * word_size - 2 : word_size - 2);
+                const WordType carry_down_bit  = carry_right_bit << 1;
+                assert(carry_down_bit != 0);
+
+                const WordType eq = get_query_pattern(query_patterns, idx, pattern_idx_offset + t - t_begin + 1, target_begin[t - 1], false);
+                if (idx == n_words_band - 1)
+                {
+                    // bits who have no left neighbor -> assume worst case: +1
+                    pv_local |= carry_down_bit;
+                    mv_local &= ~carry_down_bit;
+                }
+
+                const int32_t carry_right = myers_advance_block(warp_mask, carry_right_bit, eq, pv_local, mv_local, carry_down);
+                carry_down                = ((pv_local & carry_down_bit) == WordType(0) ? 0 : 1) - ((mv_local & carry_down_bit) == WordType(0) ? 0 : 1);
+                score(idx, t)             = score(idx, t - 1) + carry_right + carry_down;
+                if (threadIdx.x == 0)
+                    carry_down = 0;
+                if (warp_mask == 0xffff'ffffu && (threadIdx.x == 0 || threadIdx.x == 31))
+                    carry_down = __shfl_down_sync(0x8000'0001u, carry_down, warp_size - 1);
+                if (threadIdx.x != 0)
+                    carry_down = 0;
+                pv(idx, t) = pv_local;
+                mv(idx, t) = mv_local;
             }
-            __syncwarp(warp_mask);
-
-            const WordType carry_right_bit = WordType(1) << (idx == (n_words_band - 1) ? band_width - (n_words_band - 1) * word_size - 2 : word_size - 2);
-            const WordType carry_down_bit  = carry_right_bit << 1;
-            assert(carry_down_bit != 0);
-
-            const WordType eq = get_query_pattern(query_patterns, idx, pattern_idx_offset + t - t_begin + 1, target_begin[t - 1], false);
-            if (idx == n_words_band - 1)
-            {
-                // bits who have no left neighbor -> assume worst case: +1
-                pv_local |= carry_down_bit;
-                mv_local &= ~carry_down_bit;
-            }
-
-            const int32_t carry_right = myers_advance_block(warp_mask, carry_right_bit, eq, pv_local, mv_local, carry_down);
-            carry_down                = ((pv_local & carry_down_bit) == WordType(0) ? 0 : 1) - ((mv_local & carry_down_bit) == WordType(0) ? 0 : 1);
-            score(idx, t)             = score(idx, t - 1) + carry_right + carry_down;
-            if (threadIdx.x == 0)
-                carry_down = 0;
-            if (warp_mask == 0xffff'ffffu && (threadIdx.x == 0 || threadIdx.x == 31))
-                carry_down = __shfl_down_sync(0x8000'0001u, carry_down, warp_size - 1);
-            if (threadIdx.x != 0)
-                carry_down = 0;
-            pv(idx, t) = pv_local;
-            mv(idx, t) = mv_local;
+            __syncwarp();
         }
-        __syncwarp();
     }
 }
 
