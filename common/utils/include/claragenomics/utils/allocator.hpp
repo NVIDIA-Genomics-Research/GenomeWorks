@@ -17,6 +17,7 @@
 #include <cub/util_allocator.cuh>
 #include <claragenomics/utils/device_preallocated_allocator.cuh>
 
+#include <claragenomics/logging/logging.hpp>
 #include <claragenomics/utils/cudautils.hpp>
 #include <claragenomics/utils/exceptions.hpp>
 
@@ -148,9 +149,15 @@ public:
     /// pointer to elements of allocated array
     using pointer = T*;
 
+    /// @brief Default constructor
+    /// Constructs an invalid CachingDeviceAllocator to allow default-construction of containers.
+    /// A container using this allocator needs obtain a non-default constructed CachingDeviceAllocator object before performing any allocations.
+    /// This can be achieved through through container assignment for example.
+    CachingDeviceAllocator() = default;
+
     /// @brief Constructor
-    /// @param max_cached_bytes max bytes used by memory resource (default is 2GiB)
-    CachingDeviceAllocator(size_t max_cached_bytes = 2ull * 1024 * 1024 * 1024)
+    /// @param max_cached_bytes max bytes used by memory resource
+    CachingDeviceAllocator(size_t max_cached_bytes)
         : memory_resource_(generate_memory_resource(max_cached_bytes))
     {
     }
@@ -226,6 +233,12 @@ public:
     /// @return pointer to allocated array
     pointer allocate(std::size_t n, cudaStream_t stream = 0)
     {
+        if (!memory_resource_)
+        {
+            CGA_LOG_ERROR("{}\n", "ERROR:: Trying to allocate memory from an default-constructed CachingDeviceAllocator. Please assign a non-default-constructed CachingDeviceAllocator before performing any memory operations.");
+            assert(false);
+            std::abort();
+        }
         void* ptr       = nullptr;
         cudaError_t err = memory_resource_->DeviceAllocate(&ptr, n * sizeof(T), stream);
         if (err == cudaErrorMemoryAllocation)
@@ -244,6 +257,12 @@ public:
     {
         static_cast<void>(n);
         static_cast<void>(stream);
+        if (!memory_resource_)
+        {
+            CGA_LOG_ERROR("{}\n", "ERROR:: Trying to deallocate memory from an default-constructed CachingDeviceAllocator. Please assign a non-default-constructed CachingDeviceAllocator before performing any memory operations.");
+            assert(false);
+            std::abort();
+        }
         // deallocate should not throw execeptions which is why CGA_CU_CHECK_ERR is not used.
         CGA_CU_ABORT_ON_ERR(memory_resource_->DeviceFree(p));
     }
