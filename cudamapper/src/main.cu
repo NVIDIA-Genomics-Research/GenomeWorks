@@ -289,33 +289,19 @@ int main(int argc, char* argv[])
     claragenomics::logging::Init();
 
     const ApplicationParameteres parameters = read_input(argc, argv);
-    std::shared_ptr<claragenomics::io::FastaParser> query_parser;
 
-    try
-    {
-        query_parser = claragenomics::io::create_kseq_fasta_parser(parameters.query_filepath, parameters.k + parameters.w - 1);
-    }
-    catch (std::invalid_argument& exception)
-    {
-        std::cerr << exception.what() << std::endl;
-        exit(1);
-    }
+    std::shared_ptr<claragenomics::io::FastaParser> query_parser;
     std::shared_ptr<claragenomics::io::FastaParser> target_parser;
+
+    query_parser = claragenomics::io::create_kseq_fasta_parser(parameters.query_filepath, parameters.k + parameters.w - 1);
+
     if (parameters.all_to_all)
     {
         target_parser = query_parser;
     }
     else
     {
-        try
-        {
-            target_parser = claragenomics::io::create_kseq_fasta_parser(parameters.target_filepath, parameters.k + parameters.w - 1);
-        }
-        catch (std::invalid_argument& exception)
-        {
-            std::cerr << exception.what() << std::endl;
-            exit(1);
-        }
+        target_parser = claragenomics::io::create_kseq_fasta_parser(parameters.target_filepath, parameters.k + parameters.w - 1);
     }
 
     std::cerr << "Query file: " << parameters.query_filepath << ", number of reads: " << query_parser->get_num_seqences() << std::endl;
