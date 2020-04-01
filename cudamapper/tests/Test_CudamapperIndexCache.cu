@@ -846,6 +846,407 @@ TEST(TestCudamapperIndexCaching, test_index_cache_host_do_not_reuse_data)
                               catcaag_maximum_kmer_size,
                               cuda_stream,
                               "test_index_cache_host_do_not_reuse_data_3");
+
+    CGA_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
+    CGA_CU_CHECK_ERR(cudaStreamDestroy(cuda_stream));
+}
+
+// *** Test IndexCacheDevice ***
+
+TEST(TestCudamapperIndexCaching, test_index_cache_device_reuse_data)
+{
+    // >read_0
+    // CATCAAG
+    // >read_1
+    // AAGCTA
+
+    // CATCAAG minimizers: AAG(4f), ATC(1f), ATG(0r), CAA(3f)
+    // AAGCTA minimizers: AAG(0f), AGC(2r), CTA(3f)
+
+    cudaStream_t cuda_stream;
+    CGA_CU_CHECK_ERR(cudaStreamCreate(&cuda_stream));
+
+    const bool reuse_data                          = true;
+    std::shared_ptr<io::FastaParser> query_parser  = io::create_kseq_fasta_parser(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/catcaag_aagcta.fasta");
+    std::shared_ptr<io::FastaParser> target_parser = query_parser;
+    DefaultDeviceAllocator allocator;
+    const std::uint64_t k            = 3;
+    const std::uint64_t w            = 2;
+    const bool hash_representations  = false;
+    const double filtering_parameter = 1.0;
+
+    // ************* expected indices *************
+
+    // ** CATCAAG: AAG(4f), ATC(1f), CAA(3f), ATG(0r)
+    std::vector<representation_t> catcaag_representations;
+    std::vector<read_id_t> catcaag_read_ids;
+    std::vector<position_in_read_t> catcaag_positions_in_reads;
+    std::vector<SketchElement::DirectionOfRepresentation> catcaag_directions_of_reads;
+    std::vector<representation_t> catcaag_unique_representations;
+    std::vector<std::uint32_t> catcaag_first_occurrence_of_representations;
+
+    // AAG(4f)
+    catcaag_representations.push_back(0b000010);
+    catcaag_read_ids.push_back(0);
+    catcaag_positions_in_reads.push_back(4);
+    catcaag_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::FORWARD);
+    catcaag_unique_representations.push_back(0b000010);
+    catcaag_first_occurrence_of_representations.push_back(0);
+    // ATC(1f)
+    catcaag_representations.push_back(0b001101);
+    catcaag_read_ids.push_back(0);
+    catcaag_positions_in_reads.push_back(1);
+    catcaag_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::FORWARD);
+    catcaag_unique_representations.push_back(0b001101);
+    catcaag_first_occurrence_of_representations.push_back(1);
+    // ATG(0r)
+    catcaag_representations.push_back(0b001110);
+    catcaag_read_ids.push_back(0);
+    catcaag_positions_in_reads.push_back(0);
+    catcaag_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::REVERSE);
+    catcaag_unique_representations.push_back(0b001110);
+    catcaag_first_occurrence_of_representations.push_back(2);
+    // CAA(3f)
+    catcaag_representations.push_back(0b010000);
+    catcaag_read_ids.push_back(0);
+    catcaag_positions_in_reads.push_back(3);
+    catcaag_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::FORWARD);
+    catcaag_unique_representations.push_back(0b010000);
+    catcaag_first_occurrence_of_representations.push_back(3);
+    // trailing elements
+    catcaag_first_occurrence_of_representations.push_back(4);
+
+    const read_id_t catcaag_number_of_reads = 1;
+    const std::vector<std::string> catcaag_read_ids_to_read_names({"read_0"});
+    const std::vector<std::uint32_t> catcaag_read_ids_to_read_lengths({7});
+    const read_id_t catcaag_smallest_read_id                             = 0;
+    const read_id_t catcaag_largest_read_id                              = 0;
+    const position_in_read_t catcaag_number_of_basepairs_in_longest_read = 7;
+    const uint64_t catcaag_maximum_kmer_size                             = sizeof(representation_t) * 8 / 2;
+
+    // ** AAGCTA: AAG(0f), AGC(2f), CTA(3f)
+    std::vector<representation_t> aagcta_representations;
+    std::vector<read_id_t> aagcta_read_ids;
+    std::vector<position_in_read_t> aagcta_positions_in_reads;
+    std::vector<SketchElement::DirectionOfRepresentation> aagcta_directions_of_reads;
+    std::vector<representation_t> aagcta_unique_representations;
+    std::vector<std::uint32_t> aagcta_first_occurrence_of_representations;
+
+    // AAG(0f)
+    aagcta_representations.push_back(0b000010);
+    aagcta_read_ids.push_back(1);
+    aagcta_positions_in_reads.push_back(0);
+    aagcta_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::FORWARD);
+    aagcta_unique_representations.push_back(0b000010);
+    aagcta_first_occurrence_of_representations.push_back(0);
+    // AGC(2r)
+    aagcta_representations.push_back(0b001001);
+    aagcta_read_ids.push_back(1);
+    aagcta_positions_in_reads.push_back(2);
+    aagcta_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::REVERSE);
+    aagcta_unique_representations.push_back(0b001001);
+    aagcta_first_occurrence_of_representations.push_back(1);
+    // CTA(3f)
+    aagcta_representations.push_back(0b011100);
+    aagcta_read_ids.push_back(1);
+    aagcta_positions_in_reads.push_back(3);
+    aagcta_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::FORWARD);
+    aagcta_unique_representations.push_back(0b011100);
+    aagcta_first_occurrence_of_representations.push_back(2);
+    // trailing elements
+    aagcta_first_occurrence_of_representations.push_back(3);
+
+    const read_id_t aagcta_number_of_reads = 1;
+    const std::vector<std::string> aagcta_read_ids_to_read_names({"read_1"});
+    const std::vector<std::uint32_t> aagcta_read_ids_to_read_lengths({6});
+    const read_id_t aagcta_smallest_read_id                             = 1;
+    const read_id_t aagcta_largest_read_id                              = 1;
+    const position_in_read_t aagcta_number_of_basepairs_in_longest_read = 6;
+    const uint64_t aagcta_maximum_kmer_size                             = sizeof(representation_t) * 8 / 2;
+
+    // ************* IndexCacheHost tests *************
+
+    IndexDescriptor catcaag_index_descriptor(0, 1);
+    IndexDescriptor aagcta_index_descriptor(1, 1);
+    std::vector<IndexDescriptor> catcaag_index_descriptors({catcaag_index_descriptor});
+    std::vector<IndexDescriptor> aagcta_index_descriptors({aagcta_index_descriptor});
+    std::vector<IndexDescriptor> catcaag_aagcta_index_descriptors({catcaag_index_descriptor, aagcta_index_descriptor});
+
+    auto index_cache_host = std::make_shared<IndexCacheHost>(reuse_data,
+                                                             allocator,
+                                                             query_parser,
+                                                             target_parser,
+                                                             k,
+                                                             w,
+                                                             hash_representations,
+                                                             filtering_parameter,
+                                                             cuda_stream);
+
+    IndexCacheDevice index_cache_device(reuse_data,
+                                        index_cache_host);
+
+    index_cache_host->update_query_cache(catcaag_index_descriptors);
+    ASSERT_ANY_THROW(index_cache_device.get_index_from_query_cache(catcaag_index_descriptor));
+    index_cache_device.update_query_cache(catcaag_index_descriptors);
+    auto index_query_catcaag = index_cache_device.get_index_from_query_cache(catcaag_index_descriptor);
+    check_if_index_is_correct(index_query_catcaag,
+                              catcaag_representations,
+                              catcaag_read_ids,
+                              catcaag_positions_in_reads,
+                              catcaag_directions_of_reads,
+                              catcaag_unique_representations,
+                              catcaag_first_occurrence_of_representations,
+                              catcaag_number_of_reads,
+                              catcaag_read_ids_to_read_names,
+                              catcaag_read_ids_to_read_lengths,
+                              catcaag_smallest_read_id,
+                              catcaag_largest_read_id,
+                              catcaag_number_of_basepairs_in_longest_read,
+                              catcaag_maximum_kmer_size,
+                              cuda_stream,
+                              "test_index_cache_device_reuse_data_1");
+    ASSERT_ANY_THROW(index_cache_device.get_index_from_query_cache(aagcta_index_descriptor));
+    ASSERT_ANY_THROW(index_cache_device.get_index_from_target_cache(catcaag_index_descriptor));
+    ASSERT_ANY_THROW(index_cache_device.get_index_from_target_cache(aagcta_index_descriptor));
+
+    index_cache_host->update_target_cache(catcaag_aagcta_index_descriptors);
+    ASSERT_ANY_THROW(index_cache_device.get_index_from_target_cache(catcaag_index_descriptor));
+    ASSERT_ANY_THROW(index_cache_device.get_index_from_target_cache(aagcta_index_descriptor));
+    index_cache_device.update_target_cache(catcaag_aagcta_index_descriptors);
+
+    auto index_target_catcaag = index_cache_device.get_index_from_target_cache(catcaag_index_descriptor);
+    ASSERT_EQ(index_query_catcaag, index_target_catcaag); // check same object is used because reuse_data == true
+    check_if_index_is_correct(index_target_catcaag,
+                              catcaag_representations,
+                              catcaag_read_ids,
+                              catcaag_positions_in_reads,
+                              catcaag_directions_of_reads,
+                              catcaag_unique_representations,
+                              catcaag_first_occurrence_of_representations,
+                              catcaag_number_of_reads,
+                              catcaag_read_ids_to_read_names,
+                              catcaag_read_ids_to_read_lengths,
+                              catcaag_smallest_read_id,
+                              catcaag_largest_read_id,
+                              catcaag_number_of_basepairs_in_longest_read,
+                              catcaag_maximum_kmer_size,
+                              cuda_stream,
+                              "test_index_cache_device_reuse_data_2");
+
+    auto index_target_aagcta = index_cache_device.get_index_from_target_cache(aagcta_index_descriptor);
+    check_if_index_is_correct(index_target_aagcta,
+                              aagcta_representations,
+                              aagcta_read_ids,
+                              aagcta_positions_in_reads,
+                              aagcta_directions_of_reads,
+                              aagcta_unique_representations,
+                              aagcta_first_occurrence_of_representations,
+                              aagcta_number_of_reads,
+                              aagcta_read_ids_to_read_names,
+                              aagcta_read_ids_to_read_lengths,
+                              aagcta_smallest_read_id,
+                              aagcta_largest_read_id,
+                              aagcta_number_of_basepairs_in_longest_read,
+                              aagcta_maximum_kmer_size,
+                              cuda_stream,
+                              "test_index_cache_device_reuse_data_3");
+
+    CGA_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
+    CGA_CU_CHECK_ERR(cudaStreamDestroy(cuda_stream));
+}
+
+TEST(TestCudamapperIndexCaching, test_index_cache_device_do_not_reuse_data)
+{
+    // AAGCTA: AAG(0f), AGC(2r), CTA(3f)
+    // CATCAAG: AAG(4f), ATC(1f), ATG(0r), CAA(3f)
+
+    cudaStream_t cuda_stream;
+    CGA_CU_CHECK_ERR(cudaStreamCreate(&cuda_stream));
+
+    const bool reuse_data                          = false;
+    std::shared_ptr<io::FastaParser> query_parser  = io::create_kseq_fasta_parser(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/aagcta.fasta");
+    std::shared_ptr<io::FastaParser> target_parser = io::create_kseq_fasta_parser(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/catcaag.fasta");
+    DefaultDeviceAllocator allocator;
+    const std::uint64_t k            = 3;
+    const std::uint64_t w            = 2;
+    const bool hash_representations  = false;
+    const double filtering_parameter = 1.0;
+
+    // ************* expected indices *************
+
+    // ** AAGCTA: AAG(0f), AGC(2f), CTA(3f)
+    std::vector<representation_t> aagcta_representations;
+    std::vector<read_id_t> aagcta_read_ids;
+    std::vector<position_in_read_t> aagcta_positions_in_reads;
+    std::vector<SketchElement::DirectionOfRepresentation> aagcta_directions_of_reads;
+    std::vector<representation_t> aagcta_unique_representations;
+    std::vector<std::uint32_t> aagcta_first_occurrence_of_representations;
+
+    // AAG(0f)
+    aagcta_representations.push_back(0b000010);
+    aagcta_read_ids.push_back(0);
+    aagcta_positions_in_reads.push_back(0);
+    aagcta_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::FORWARD);
+    aagcta_unique_representations.push_back(0b000010);
+    aagcta_first_occurrence_of_representations.push_back(0);
+    // AGC(2r)
+    aagcta_representations.push_back(0b001001);
+    aagcta_read_ids.push_back(0);
+    aagcta_positions_in_reads.push_back(2);
+    aagcta_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::REVERSE);
+    aagcta_unique_representations.push_back(0b001001);
+    aagcta_first_occurrence_of_representations.push_back(1);
+    // CTA(3f)
+    aagcta_representations.push_back(0b011100);
+    aagcta_read_ids.push_back(0);
+    aagcta_positions_in_reads.push_back(3);
+    aagcta_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::FORWARD);
+    aagcta_unique_representations.push_back(0b011100);
+    aagcta_first_occurrence_of_representations.push_back(2);
+    // trailing elements
+    aagcta_first_occurrence_of_representations.push_back(3);
+
+    const read_id_t aagcta_number_of_reads = 1;
+    const std::vector<std::string> aagcta_read_ids_to_read_names({"read_0"});
+    const std::vector<std::uint32_t> aagcta_read_ids_to_read_lengths({6});
+    const read_id_t aagcta_smallest_read_id                             = 0;
+    const read_id_t aagcta_largest_read_id                              = 0;
+    const position_in_read_t aagcta_number_of_basepairs_in_longest_read = 6;
+    const uint64_t aagcta_maximum_kmer_size                             = sizeof(representation_t) * 8 / 2;
+
+    // ** CATCAAG: AAG(4f), ATC(1f), CAA(3f), ATG(0r)
+    std::vector<representation_t> catcaag_representations;
+    std::vector<read_id_t> catcaag_read_ids;
+    std::vector<position_in_read_t> catcaag_positions_in_reads;
+    std::vector<SketchElement::DirectionOfRepresentation> catcaag_directions_of_reads;
+    std::vector<representation_t> catcaag_unique_representations;
+    std::vector<std::uint32_t> catcaag_first_occurrence_of_representations;
+
+    // AAG(4f)
+    catcaag_representations.push_back(0b000010);
+    catcaag_read_ids.push_back(0);
+    catcaag_positions_in_reads.push_back(4);
+    catcaag_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::FORWARD);
+    catcaag_unique_representations.push_back(0b000010);
+    catcaag_first_occurrence_of_representations.push_back(0);
+    // ATC(1f)
+    catcaag_representations.push_back(0b001101);
+    catcaag_read_ids.push_back(0);
+    catcaag_positions_in_reads.push_back(1);
+    catcaag_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::FORWARD);
+    catcaag_unique_representations.push_back(0b001101);
+    catcaag_first_occurrence_of_representations.push_back(1);
+    // ATG(0r)
+    catcaag_representations.push_back(0b001110);
+    catcaag_read_ids.push_back(0);
+    catcaag_positions_in_reads.push_back(0);
+    catcaag_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::REVERSE);
+    catcaag_unique_representations.push_back(0b001110);
+    catcaag_first_occurrence_of_representations.push_back(2);
+    // CAA(3f)
+    catcaag_representations.push_back(0b010000);
+    catcaag_read_ids.push_back(0);
+    catcaag_positions_in_reads.push_back(3);
+    catcaag_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::FORWARD);
+    catcaag_unique_representations.push_back(0b010000);
+    catcaag_first_occurrence_of_representations.push_back(3);
+    // trailing elements
+    catcaag_first_occurrence_of_representations.push_back(4);
+
+    const read_id_t catcaag_number_of_reads = 1;
+    const std::vector<std::string> catcaag_read_ids_to_read_names({"read_0"});
+    const std::vector<std::uint32_t> catcaag_read_ids_to_read_lengths({7});
+    const read_id_t catcaag_smallest_read_id                             = 0;
+    const read_id_t catcaag_largest_read_id                              = 0;
+    const position_in_read_t catcaag_number_of_basepairs_in_longest_read = 7;
+    const uint64_t catcaag_maximum_kmer_size                             = sizeof(representation_t) * 8 / 2;
+
+    // ************* IndexCacheHost tests *************
+
+    // both rescriptors are the same, but they are going to be used with different parsers
+    IndexDescriptor index_descriptor(0, 1);
+    std::vector<IndexDescriptor> index_descriptors({index_descriptor});
+
+    auto index_cache_host = std::make_shared<IndexCacheHost>(reuse_data,
+                                                             allocator,
+                                                             query_parser,
+                                                             target_parser,
+                                                             k,
+                                                             w,
+                                                             hash_representations,
+                                                             filtering_parameter,
+                                                             cuda_stream);
+
+    IndexCacheDevice index_cache_device(reuse_data,
+                                        index_cache_host);
+
+    index_cache_host->update_query_cache(index_descriptors);
+    ASSERT_ANY_THROW(index_cache_device.get_index_from_query_cache(index_descriptor));
+    ASSERT_ANY_THROW(index_cache_device.get_index_from_target_cache(index_descriptor));
+
+    index_cache_device.update_query_cache(index_descriptors);
+    auto index_query = index_cache_device.get_index_from_query_cache(index_descriptor);
+    check_if_index_is_correct(index_query,
+                              aagcta_representations,
+                              aagcta_read_ids,
+                              aagcta_positions_in_reads,
+                              aagcta_directions_of_reads,
+                              aagcta_unique_representations,
+                              aagcta_first_occurrence_of_representations,
+                              aagcta_number_of_reads,
+                              aagcta_read_ids_to_read_names,
+                              aagcta_read_ids_to_read_lengths,
+                              aagcta_smallest_read_id,
+                              aagcta_largest_read_id,
+                              aagcta_number_of_basepairs_in_longest_read,
+                              aagcta_maximum_kmer_size,
+                              cuda_stream,
+                              "test_index_cache_host_do_not_reuse_data_1");
+    ASSERT_ANY_THROW(index_cache_device.get_index_from_target_cache(index_descriptor));
+
+    ASSERT_ANY_THROW(index_cache_device.update_target_cache(index_descriptors));
+
+    index_cache_host->update_target_cache(index_descriptors);
+    index_cache_device.update_target_cache(index_descriptors);
+
+    index_query       = index_cache_device.get_index_from_query_cache(index_descriptor);
+    auto index_target = index_cache_device.get_index_from_target_cache(index_descriptor);
+    ASSERT_NE(index_query, index_target);
+    check_if_index_is_correct(index_query,
+                              aagcta_representations,
+                              aagcta_read_ids,
+                              aagcta_positions_in_reads,
+                              aagcta_directions_of_reads,
+                              aagcta_unique_representations,
+                              aagcta_first_occurrence_of_representations,
+                              aagcta_number_of_reads,
+                              aagcta_read_ids_to_read_names,
+                              aagcta_read_ids_to_read_lengths,
+                              aagcta_smallest_read_id,
+                              aagcta_largest_read_id,
+                              aagcta_number_of_basepairs_in_longest_read,
+                              aagcta_maximum_kmer_size,
+                              cuda_stream,
+                              "test_index_cache_host_do_not_reuse_data_2");
+    check_if_index_is_correct(index_target,
+                              catcaag_representations,
+                              catcaag_read_ids,
+                              catcaag_positions_in_reads,
+                              catcaag_directions_of_reads,
+                              catcaag_unique_representations,
+                              catcaag_first_occurrence_of_representations,
+                              catcaag_number_of_reads,
+                              catcaag_read_ids_to_read_names,
+                              catcaag_read_ids_to_read_lengths,
+                              catcaag_smallest_read_id,
+                              catcaag_largest_read_id,
+                              catcaag_number_of_basepairs_in_longest_read,
+                              catcaag_maximum_kmer_size,
+                              cuda_stream,
+                              "test_index_cache_host_do_not_reuse_data_3");
+
+    CGA_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
+    CGA_CU_CHECK_ERR(cudaStreamDestroy(cuda_stream));
 }
 
 } // namespace cudamapper
