@@ -117,11 +117,13 @@ void IndexCacheHost::update_target_cache(const std::vector<IndexDescriptor>& des
 
 std::shared_ptr<Index> IndexCacheHost::get_index_from_query_cache(const IndexDescriptor& descriptor_of_index_to_cache)
 {
+    // TODO: throw custom exception if index not found
     return query_cache_.at(descriptor_of_index_to_cache)->copy_index_to_device(allocator_, cuda_stream_);
 }
 
 std::shared_ptr<Index> IndexCacheHost::get_index_from_target_cache(const IndexDescriptor& descriptor_of_index_to_cache)
 {
+    // TODO: throw custom exception if index not found
     return target_cache_.at(descriptor_of_index_to_cache)->copy_index_to_device(allocator_, cuda_stream_);
 }
 
@@ -141,7 +143,7 @@ void IndexCacheHost::update_cache(const std::vector<IndexDescriptor>& descriptor
 
         if (reuse_data_)
         {
-            // check if the same index already exists on host
+            // check if the same index already exists in the other cache
             auto existing_cache = cache_to_check.find(descriptor_of_index_to_cache);
             if (existing_cache != cache_to_check.end())
             {
@@ -173,6 +175,77 @@ void IndexCacheHost::update_cache(const std::vector<IndexDescriptor>& descriptor
 
         // save pointer to cached index
         cache_to_edit[descriptor_of_index_to_cache] = index_copy;
+    }
+}
+
+IndexCacheDevice::IndexCacheDevice(const bool reuse_data,
+                                   std::shared_ptr<IndexCacheHost> index_cache_host)
+    : reuse_data_(reuse_data)
+    , index_cache_host_(index_cache_host)
+{
+}
+
+void IndexCacheDevice::update_query_cache(const std::vector<IndexDescriptor>& descriptors_of_indices_to_cache)
+{
+    update_cache(descriptors_of_indices_to_cache, CacheToUpdate::QUERY);
+}
+
+void IndexCacheDevice::update_target_cache(const std::vector<IndexDescriptor>& descriptors_of_indices_to_cache)
+{
+    update_cache(descriptors_of_indices_to_cache, CacheToUpdate::TARGET);
+}
+
+std::shared_ptr<Index> IndexCacheDevice::get_index_from_query_cache(const IndexDescriptor& descriptor_of_index_to_cache)
+{
+    // TODO: throw custom exception if index not found
+    return query_cache_.at(descriptor_of_index_to_cache);
+}
+
+std::shared_ptr<Index> IndexCacheDevice::get_index_from_target_cache(const IndexDescriptor& descriptor_of_index_to_cache)
+{
+    // TODO: throw custom exception if index not found
+    return target_cache_.at(descriptor_of_index_to_cache);
+}
+
+void IndexCacheDevice::update_cache(const std::vector<IndexDescriptor>& descriptors_of_indices_to_cache,
+                                    const CacheToUpdate which_cache)
+{
+    cache_type_t& cache_to_edit        = (CacheToUpdate::QUERY == which_cache) ? query_cache_ : target_cache_;
+    const cache_type_t& cache_to_check = (CacheToUpdate::QUERY == which_cache) ? target_cache_ : query_cache_;
+
+    cache_to_edit.clear();
+
+    for (const IndexDescriptor& descriptor_of_index_to_cache : descriptors_of_indices_to_cache)
+    {
+
+        std::shared_ptr<Index> index = nullptr;
+
+        if (reuse_data_)
+        {
+            // check if the same index already exists in the other cache
+            auto existing_cache = cache_to_check.find(descriptor_of_index_to_cache);
+            if (existing_cache != cache_to_check.end())
+            {
+                index = existing_cache->second;
+            }
+        }
+
+        if (nullptr == index)
+        {
+            if (CacheToUpdate::QUERY == which_cache)
+            {
+                index = index_cache_host_->get_index_from_query_cache(descriptor_of_index_to_cache);
+            }
+            else
+            {
+                index = index_cache_host_->get_index_from_target_cache(descriptor_of_index_to_cache);
+            }
+        }
+
+        assert(nullptr != index);
+
+        // save pointer to cached index
+        cache_to_edit[descriptor_of_index_to_cache] = index;
     }
 }
 
