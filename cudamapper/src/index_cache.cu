@@ -134,7 +134,7 @@ void IndexCacheHost::update_cache(const std::vector<IndexDescriptor>& descriptor
     const cache_type_t& cache_to_check                     = (CacheToUpdate::QUERY == which_cache) ? target_cache_ : query_cache_;
     std::shared_ptr<claragenomics::io::FastaParser> parser = (CacheToUpdate::QUERY == which_cache) ? query_parser_ : target_parser_;
 
-    cache_to_edit.clear();
+    cache_type_t new_cache;
 
     for (const IndexDescriptor& descriptor_of_index_to_cache : descriptors_of_indices_to_cache)
     {
@@ -174,8 +174,10 @@ void IndexCacheHost::update_cache(const std::vector<IndexDescriptor>& descriptor
         assert(nullptr != index_copy);
 
         // save pointer to cached index
-        cache_to_edit[descriptor_of_index_to_cache] = index_copy;
+        new_cache[descriptor_of_index_to_cache] = index_copy;
     }
+
+    std::swap(new_cache, cache_to_edit);
 }
 
 IndexCacheDevice::IndexCacheDevice(const bool reuse_data,
@@ -213,7 +215,7 @@ void IndexCacheDevice::update_cache(const std::vector<IndexDescriptor>& descript
     cache_type_t& cache_to_edit        = (CacheToUpdate::QUERY == which_cache) ? query_cache_ : target_cache_;
     const cache_type_t& cache_to_check = (CacheToUpdate::QUERY == which_cache) ? target_cache_ : query_cache_;
 
-    cache_to_edit.clear();
+    cache_type_t new_cache;
 
     for (const IndexDescriptor& descriptor_of_index_to_cache : descriptors_of_indices_to_cache)
     {
@@ -245,8 +247,10 @@ void IndexCacheDevice::update_cache(const std::vector<IndexDescriptor>& descript
         assert(nullptr != index);
 
         // save pointer to cached index
-        cache_to_edit[descriptor_of_index_to_cache] = index;
+        new_cache[descriptor_of_index_to_cache] = index;
     }
+
+    std::swap(new_cache, cache_to_edit);
 }
 
 } // namespace cudamapper
