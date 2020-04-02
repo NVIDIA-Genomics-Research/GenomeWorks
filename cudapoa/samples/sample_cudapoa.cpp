@@ -137,17 +137,48 @@ void generate_simulated_short_reads(std::vector<std::vector<std::string>>& windo
 
 void generate_bonito_long_reads(std::vector<std::vector<std::string>>& windows, BatchSize& batch_size)
 {
-    const std::string input_data = std::string(CUDAPOA_BENCHMARK_DATA_DIR) + "/calls_";//1.fasta";
-    int min_sequence_length = 0;
-    std::shared_ptr<claragenomics::io::FastaParser> fasta_parser_1 = claragenomics::io::create_kseq_fasta_parser(input_data + "1.fasta", min_sequence_length);
-    std::shared_ptr<claragenomics::io::FastaParser> fasta_parser_2 = claragenomics::io::create_kseq_fasta_parser(input_data + "2.fasta", min_sequence_length);
-    std::shared_ptr<claragenomics::io::FastaParser> fasta_parser_3 = claragenomics::io::create_kseq_fasta_parser(input_data + "3.fasta", min_sequence_length);
-    std::shared_ptr<claragenomics::io::FastaParser> fasta_parser_4 = claragenomics::io::create_kseq_fasta_parser(input_data + "4.fasta", min_sequence_length);
-    std::shared_ptr<claragenomics::io::FastaParser> fasta_parser_5 = claragenomics::io::create_kseq_fasta_parser(input_data + "5.fasta", min_sequence_length);
-    std::shared_ptr<claragenomics::io::FastaParser> fasta_parser_6 = claragenomics::io::create_kseq_fasta_parser(input_data + "6.fasta", min_sequence_length);
+    const std::string input_prefix   = std::string(CUDAPOA_BENCHMARK_DATA_DIR) + "/calls_";
+    const std::string file_extension = ".fasta";
+    const int32_t min_sequence_length    = 0;
+    const int32_t num_input_files        = 6;
+    std::vector<std::shared_ptr<claragenomics::io::FastaParser>> fasta_parser_vec(num_input_files);
+    std::vector<int> num_reads_per_file(num_input_files);
+    for (int32_t i = 0; i < num_input_files; i++)
+    {
+        fasta_parser_vec[i]   = claragenomics::io::create_kseq_fasta_parser(input_prefix + std::to_string(i + 1) + file_extension, min_sequence_length, false);
+        num_reads_per_file[i] = fasta_parser_vec[i]->get_num_seqences();
+    }
 
+    const int32_t num_reads = num_reads_per_file[0];
 
-    batch_size = BatchSize(1024, 100);
+    for(int32_t i = 1; i < num_input_files; i++)
+    {
+        if(num_reads_per_file[i] != num_reads)
+        {
+            assert(false);
+            std::cerr << "Failed to complete long-read sample." << std::endl;
+            std::cerr << "Number of long-reads per input file do not match with each other." << std::endl;
+            return;
+        }
+    }
+
+    //windows.resize(num_reads);
+    windows.resize(1);
+    int32_t idx = 0;
+    int32_t max_read_length = 0;
+    for (auto& window: windows)
+    {
+        for(int32_t i = 0; i < num_input_files; i++)
+        {
+            window.push_back(fasta_parser_vec[i]->get_sequence_by_id(idx).seq);
+            max_read_length = std::max(max_read_length, get_size<int>(window.back()));
+        }
+        idx++;
+    }
+
+    max_read_length = 1.4*max_read_length;    // account for extra length for consensus
+
+    batch_size = BatchSize(max_read_length, num_input_files);
 }
 
 void generate_simulated_long_reads(std::vector<std::vector<std::string>>& windows, BatchSize& batch_size)
@@ -240,8 +271,8 @@ int main(int argc, char** argv)
 
     if (long_read)
     {
-        generate_simulated_long_reads(windows, batch_size);
-        //generate_bonito_long_reads(windows, batch_size);
+        //generate_simulated_long_reads(windows, batch_size);
+        generate_bonito_long_reads(windows, batch_size);
     }
     else
     {
