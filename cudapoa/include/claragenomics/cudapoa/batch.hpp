@@ -70,7 +70,7 @@ struct BatchSize
     BatchSize(int32_t max_seq_sz = 1024, int32_t max_seq_per_poa = 100)
         /// ensure a 4-byte boundary alignment for any allocated buffer
         : max_sequence_size(max_seq_sz)
-        , max_concensus_size(max_sequence_size)
+        , max_concensus_size(2 * max_sequence_size)
         , max_nodes_per_window(cudautils::align<int32_t, 4>(3 * max_sequence_size))
         , max_nodes_per_window_banded(cudautils::align<int32_t, 4>(4 * max_sequence_size))
         , max_matrix_graph_dimension(cudautils::align<int32_t, 4>(max_nodes_per_window))
@@ -106,6 +106,8 @@ struct BatchSize
             throw std::invalid_argument("max_nodes_per_window should be greater than or equal to max_sequence_size.");
         if (max_nodes_per_window_banded < max_sequence_size)
             throw std::invalid_argument("max_nodes_per_window should be greater than or equal to max_sequence_size.");
+        if (max_concensus_size < max_sequence_size)
+            throw std::invalid_argument("max_concensus_size should be greater than or equal to max_sequence_size.");
     }
 };
 

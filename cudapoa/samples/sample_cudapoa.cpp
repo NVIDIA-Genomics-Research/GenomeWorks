@@ -141,7 +141,7 @@ void generate_simulated_long_reads(std::vector<std::vector<std::string>>& window
 
     const int16_t number_of_reads = 5;
     const int32_t read_length     = 10000;
-    int32_t max_sequence_length   = read_length * 2;
+    int32_t max_sequence_length   = read_length + 1;
 
     std::vector<std::pair<int, int>> variation_ranges;
     variation_ranges.push_back(std::pair<int, int>(30, 50));
