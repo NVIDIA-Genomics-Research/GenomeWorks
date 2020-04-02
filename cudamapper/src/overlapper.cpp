@@ -247,7 +247,7 @@ void Overlapper::print_paf(const std::vector<Overlap>& overlaps, const std::vect
 
 void Overlapper::post_process_overlaps(std::vector<Overlap>& overlaps)
 {
-    const auto num_overlaps = overlaps.size();
+    const auto num_overlaps = get_size(overlaps);
     bool in_fuse            = false;
     int fused_target_start;
     int fused_query_start;
@@ -291,6 +291,8 @@ void Overlapper::post_process_overlaps(std::vector<Overlap>& overlaps)
                 // end depends on whether the overlap is a reverse or forward strand overlap.
                 num_residues += current_overlap.num_residues_;
                 fused_query_end = current_overlap.query_end_position_in_read_;
+                // Query end has been incrememnted. Increment target end or start
+                // depending on whether the overlaps are reverse or forward matching.
                 if (current_overlap.relative_strand == RelativeStrand::Forward)
                 {
                     fused_target_end = current_overlap.target_end_position_in_read_;

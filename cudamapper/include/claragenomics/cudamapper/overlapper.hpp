@@ -40,9 +40,9 @@ public:
     /// \param min_overlap_fraction the minimum ratio between the shortest and longest of the target and query components of an overlap. e.g if Query range is (150,1000) and target range is (1000,2000) then overlap fraction is 0.85
     virtual void get_overlaps(std::vector<Overlap>& fused_overlaps,
                               const device_buffer<Anchor>& d_anchors,
-                              size_t min_residues,
-                              size_t min_overlap_len,
-                              size_t min_bases_per_residue,
+                              int64_t min_residues,
+                              int64_t min_overlap_len,
+                              int64_t min_bases_per_residue,
                               float min_overlap_fraction) = 0;
 
     /// \brief prints overlaps to stdout in <a href="https://github.com/lh3/miniasm/blob/master/PAF.md">PAF format</a>
@@ -58,8 +58,8 @@ public:
     /// \param min_overlap_len the smallest overlap distance which is accepted
     static void filter_overlaps(std::vector<Overlap>& filtered_overlaps,
                                 const std::vector<Overlap>& overlaps,
-                                size_t min_residues    = 20,
-                                size_t min_overlap_len = 50);
+                                int64_t min_residues    = 20,
+                                int64_t min_overlap_len = 50);
 
     /// \brief performs gloval alignment between overlapped regions of reads
     /// \param overlaps List of overlaps to align

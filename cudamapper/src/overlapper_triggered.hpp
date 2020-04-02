@@ -44,10 +44,10 @@ public:
     /// \return vector of Overlap objects
     void get_overlaps(std::vector<Overlap>& fused_overlaps,
                       const device_buffer<Anchor>& d_anchors,
-                      size_t min_residues          = 20,
-                      size_t min_overlap_len       = 50,
-                      size_t min_bases_per_residue = 50,
-                      float min_overlap_fraction   = 0.9) override;
+                      int64_t min_residues          = 20,
+                      int64_t min_overlap_len       = 50,
+                      int64_t min_bases_per_residue = 50,
+                      float min_overlap_fraction    = 0.9) override;
 
     explicit OverlapperTriggered(DefaultDeviceAllocator,
                                  const cudaStream_t cuda_stream = 0);

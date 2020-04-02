@@ -248,7 +248,7 @@ void writer_thread_function(std::mutex& overlaps_writer_mtx,
                             std::shared_ptr<claragenomics::cudamapper::Index> target_index,
                             const std::vector<std::string> cigar,
                             const int device_id,
-                            const int k)
+                            const int kmer_size)
 {
     // This function is expected to run in a separate thread so set current device in order to avoid problems
     // with deallocating indices with different current device than the one on which they were created
@@ -260,7 +260,7 @@ void writer_thread_function(std::mutex& overlaps_writer_mtx,
     // parallel update of the query/target read names for filtered overlaps [parallel on host]
     claragenomics::cudamapper::Overlapper::update_read_names(*filtered_overlaps, *query_index, *target_index);
     std::lock_guard<std::mutex> lck(overlaps_writer_mtx);
-    claragenomics::cudamapper::Overlapper::print_paf(*filtered_overlaps, cigar, k);
+    claragenomics::cudamapper::Overlapper::print_paf(*filtered_overlaps, cigar, kmer_size);
 
     //clear data
     for (auto o : *filtered_overlaps)
