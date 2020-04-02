@@ -23,7 +23,7 @@ cuda_add_library(cudapoa ${cga_library_type}
     src/batch.cpp
     )
 
-target_link_libraries(cudapoa utils logging)
+target_link_libraries(cudapoa utils logging cgaio)
 
 target_compile_options(cudapoa PRIVATE -Werror -Wall -Wextra)
 if (cga_optimize_for_native_cpu)

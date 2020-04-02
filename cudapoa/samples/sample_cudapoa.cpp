@@ -15,6 +15,7 @@
 #include <claragenomics/cudapoa/batch.hpp>
 #include <claragenomics/utils/signed_integer_utils.hpp>
 #include <claragenomics/utils/cudautils.hpp>
+#include <claragenomics/io/fasta_parser.hpp>
 
 #include <cuda_runtime_api.h>
 #include <vector>
@@ -134,6 +135,21 @@ void generate_simulated_short_reads(std::vector<std::vector<std::string>>& windo
     batch_size = BatchSize(1024, 100);
 }
 
+void generate_bonito_long_reads(std::vector<std::vector<std::string>>& windows, BatchSize& batch_size)
+{
+    const std::string input_data = std::string(CUDAPOA_BENCHMARK_DATA_DIR) + "/calls_";//1.fasta";
+    int min_sequence_length = 0;
+    std::shared_ptr<claragenomics::io::FastaParser> fasta_parser_1 = claragenomics::io::create_kseq_fasta_parser(input_data + "1.fasta", min_sequence_length);
+    std::shared_ptr<claragenomics::io::FastaParser> fasta_parser_2 = claragenomics::io::create_kseq_fasta_parser(input_data + "2.fasta", min_sequence_length);
+    std::shared_ptr<claragenomics::io::FastaParser> fasta_parser_3 = claragenomics::io::create_kseq_fasta_parser(input_data + "3.fasta", min_sequence_length);
+    std::shared_ptr<claragenomics::io::FastaParser> fasta_parser_4 = claragenomics::io::create_kseq_fasta_parser(input_data + "4.fasta", min_sequence_length);
+    std::shared_ptr<claragenomics::io::FastaParser> fasta_parser_5 = claragenomics::io::create_kseq_fasta_parser(input_data + "5.fasta", min_sequence_length);
+    std::shared_ptr<claragenomics::io::FastaParser> fasta_parser_6 = claragenomics::io::create_kseq_fasta_parser(input_data + "6.fasta", min_sequence_length);
+
+
+    batch_size = BatchSize(1024, 100);
+}
+
 void generate_simulated_long_reads(std::vector<std::vector<std::string>>& windows, BatchSize& batch_size)
 {
     constexpr uint32_t random_seed = 5827349;
@@ -225,6 +241,7 @@ int main(int argc, char** argv)
     if (long_read)
     {
         generate_simulated_long_reads(windows, batch_size);
+        //generate_bonito_long_reads(windows, batch_size);
     }
     else
     {
