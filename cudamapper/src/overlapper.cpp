@@ -220,7 +220,7 @@ void Overlapper::print_paf(const std::vector<Overlap>& overlaps, const std::vect
     for (const auto& overlap : overlaps)
     {
         // Add basic overlap information.
-        std::printf("%s\t%i\t%i\t%i\t%c\t%s\t%i\t%i\t%i\t%i\t%li\t%i",
+        std::printf("%s\t%i\t%i\t%i\t%c\t%s\t%i\t%i\t%i\t%i\t%ld\t%i",
                     overlap.query_read_name_,
                     overlap.query_length_,
                     overlap.query_start_position_in_read_,
