@@ -290,9 +290,11 @@ int main(int argc, char* argv[])
 
     const ApplicationParameteres parameters = read_input(argc, argv);
 
-    std::shared_ptr<claragenomics::io::FastaParser> query_parser = claragenomics::io::create_kseq_fasta_parser(parameters.query_filepath, parameters.k + parameters.w - 1);
-
+    std::shared_ptr<claragenomics::io::FastaParser> query_parser;
     std::shared_ptr<claragenomics::io::FastaParser> target_parser;
+
+    query_parser = claragenomics::io::create_kseq_fasta_parser(parameters.query_filepath, parameters.k + parameters.w - 1);
+
     if (parameters.all_to_all)
     {
         target_parser = query_parser;

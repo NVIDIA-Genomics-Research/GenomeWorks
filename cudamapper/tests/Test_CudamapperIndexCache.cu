@@ -218,11 +218,11 @@ TEST(TestCudamapperIndexCaching, test_index_cache_host_reuse_data)
     const bool reuse_data                          = true;
     std::shared_ptr<io::FastaParser> query_parser  = io::create_kseq_fasta_parser(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/catcaag_aagcta.fasta");
     std::shared_ptr<io::FastaParser> target_parser = query_parser;
-    DefaultDeviceAllocator allocator;
-    const std::uint64_t k            = 3;
-    const std::uint64_t w            = 2;
-    const bool hash_representations  = false;
-    const double filtering_parameter = 1.0;
+    DefaultDeviceAllocator allocator               = create_default_device_allocator();
+    const std::uint64_t k                          = 3;
+    const std::uint64_t w                          = 2;
+    const bool hash_representations                = false;
+    const double filtering_parameter               = 1.0;
 
     // ************* expected indices *************
 
@@ -678,11 +678,11 @@ TEST(TestCudamapperIndexCaching, test_index_cache_host_do_not_reuse_data)
     const bool reuse_data                          = false;
     std::shared_ptr<io::FastaParser> query_parser  = io::create_kseq_fasta_parser(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/aagcta.fasta");
     std::shared_ptr<io::FastaParser> target_parser = io::create_kseq_fasta_parser(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/catcaag.fasta");
-    DefaultDeviceAllocator allocator;
-    const std::uint64_t k            = 3;
-    const std::uint64_t w            = 2;
-    const bool hash_representations  = false;
-    const double filtering_parameter = 1.0;
+    DefaultDeviceAllocator allocator               = create_default_device_allocator();
+    const std::uint64_t k                          = 3;
+    const std::uint64_t w                          = 2;
+    const bool hash_representations                = false;
+    const double filtering_parameter               = 1.0;
 
     // ************* expected indices *************
 
@@ -869,11 +869,11 @@ TEST(TestCudamapperIndexCaching, test_index_cache_device_reuse_data)
     const bool reuse_data                          = true;
     std::shared_ptr<io::FastaParser> query_parser  = io::create_kseq_fasta_parser(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/catcaag_aagcta.fasta");
     std::shared_ptr<io::FastaParser> target_parser = query_parser;
-    DefaultDeviceAllocator allocator;
-    const std::uint64_t k            = 3;
-    const std::uint64_t w            = 2;
-    const bool hash_representations  = false;
-    const double filtering_parameter = 1.0;
+    DefaultDeviceAllocator allocator               = create_default_device_allocator();
+    const std::uint64_t k                          = 3;
+    const std::uint64_t w                          = 2;
+    const bool hash_representations                = false;
+    const double filtering_parameter               = 1.0;
 
     // ************* expected indices *************
 
@@ -1066,11 +1066,11 @@ TEST(TestCudamapperIndexCaching, test_index_cache_device_do_not_reuse_data)
     const bool reuse_data                          = false;
     std::shared_ptr<io::FastaParser> query_parser  = io::create_kseq_fasta_parser(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/aagcta.fasta");
     std::shared_ptr<io::FastaParser> target_parser = io::create_kseq_fasta_parser(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/catcaag.fasta");
-    DefaultDeviceAllocator allocator;
-    const std::uint64_t k            = 3;
-    const std::uint64_t w            = 2;
-    const bool hash_representations  = false;
-    const double filtering_parameter = 1.0;
+    DefaultDeviceAllocator allocator               = create_default_device_allocator();
+    const std::uint64_t k                          = 3;
+    const std::uint64_t w                          = 2;
+    const bool hash_representations                = false;
+    const double filtering_parameter               = 1.0;
 
     // ************* expected indices *************
 
