@@ -88,23 +88,23 @@ void help(int32_t exit_code = 0)
 /// @brief application parameteres, default or passed through command line
 struct ApplicationParameteres
 {
-    uint32_t k                                  = 15;  // k
-    uint32_t w                                  = 15;  // w
-    std::int32_t num_devices                    = 1;   // d
-    std::int32_t max_index_cache_size_on_device = 100; // c
-    std::int32_t max_index_cache_size_on_host   = 0;   // C
-    std::int32_t max_cached_memory              = 0;   // m
-    std::int32_t index_size                     = 30;  // i
-    std::int32_t target_index_size              = 30;  // t
-    double filtering_parameter                  = 1.0; // F
-    std::int32_t alignment_engines              = 0;   // a
+    uint32_t k                                  = 15;   // k
+    uint32_t w                                  = 15;   // w
+    std::int32_t num_devices                    = 1;    // d
+    std::int32_t max_index_cache_size_on_device = 100;  // c
+    std::int32_t max_index_cache_size_on_host   = 0;    // C
+    std::int32_t max_cached_memory              = 0;    // m
+    std::int32_t index_size                     = 30;   // i
+    std::int32_t target_index_size              = 30;   // t
+    double filtering_parameter                  = 1.0;  // F
+    std::int32_t alignment_engines              = 0;    // a
+    std::int32_t min_residues                   = 10;   // r
+    std::int32_t min_overlap_len                = 500;  // l
+    std::int32_t min_bases_per_residue          = 100;  // b
+    float min_overlap_fraction                  = 0.95; //z
     bool all_to_all                             = false;
     std::string query_filepath;
     std::string target_filepath;
-    std::int32_t min_residues          = 10;   // r
-    std::int32_t min_overlap_len       = 500;  // l
-    std::int32_t min_bases_per_residue = 100;  // b
-    float min_overlap_fraction         = 0.95; //z
 };
 
 /// @brief reads input from command line
@@ -133,7 +133,7 @@ ApplicationParameteres read_input(int argc, char* argv[])
         {"help", no_argument, 0, 'h'},
     };
 
-    std::string optstring = "k:w:d:c:C:m:i:t:F:h:a:z:l:b:z:";
+    std::string optstring = "k:w:d:c:C:m:i:t:F:h:a:r:l:b:z:";
 
     int32_t argument = 0;
     while ((argument = getopt_long(argc, argv, optstring.c_str(), options, nullptr)) != -1)

@@ -152,16 +152,17 @@ struct FilterOverlapOp
     __host__ __device__ __forceinline__ bool operator()(const Overlap& overlap) const
     {
 
-        auto target_overlap_length = abs(int(overlap.target_end_position_in_read_) - int(overlap.target_start_position_in_read_));
-        auto query_overlap_length  = abs(int(overlap.query_end_position_in_read_) - int(overlap.query_start_position_in_read_));
-        auto overlap_length        = max(target_overlap_length, query_overlap_length);
+        const auto target_overlap_length = abs(
+            static_cast<int>(overlap.target_end_position_in_read_) - static_cast<int>(overlap.target_start_position_in_read_));
+        const auto query_overlap_length = abs(static_cast<int>(overlap.query_end_position_in_read_) - static_cast<int>(overlap.query_start_position_in_read_));
+        const auto overlap_length       = max(target_overlap_length, query_overlap_length);
 
         return ((overlap.num_residues_ >= min_residues) &&
                 ((overlap_length / overlap.num_residues_) < min_bases_per_residue) &&
                 ((overlap.query_end_position_in_read_ - overlap.query_start_position_in_read_) > min_overlap_len) &&
                 (overlap.query_read_id_ != overlap.target_read_id_) &&
-                ((float(target_overlap_length) / float(overlap_length)) > min_overlap_fraction) &&
-                ((float(query_overlap_length) / float(overlap_length)) > min_overlap_fraction));
+                ((static_cast<float>(target_overlap_length) / static_cast<float>(overlap_length)) > min_overlap_fraction) &&
+                ((static_cast<float>(query_overlap_length) / static_cast<float>(overlap_length)) > min_overlap_fraction));
     }
 };
 
