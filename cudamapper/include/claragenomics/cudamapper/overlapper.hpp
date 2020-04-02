@@ -39,7 +39,7 @@ public:
     /// \param min_bases_per_residue the minimum number of nucleotides per residue (e.g minimizer) in an overlap
     /// \param min_overlap_fraction the minimum ratio between the shortest and longest of the target and query components of an overlap. e.g if Query range is (150,1000) and target range is (1000,2000) then overlap fraction is 0.85
     virtual void get_overlaps(std::vector<Overlap>& fused_overlaps,
-                              device_buffer<Anchor>& d_anchors,
+                              const device_buffer<Anchor>& d_anchors,
                               size_t min_residues,
                               size_t min_overlap_len,
                               size_t min_bases_per_residue,

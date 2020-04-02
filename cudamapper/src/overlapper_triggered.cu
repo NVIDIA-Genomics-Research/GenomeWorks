@@ -140,8 +140,10 @@ struct FilterOverlapOp
     size_t min_bases_per_residue;
     float min_overlap_fraction;
 
-    __host__ __device__ __forceinline__ FilterOverlapOp(size_t min_residues, size_t min_overlap_len,
-                                                        size_t min_bases_per_residue, float min_overlap_fraction)
+    __host__ __device__ __forceinline__ FilterOverlapOp(size_t min_residues,
+                                                        size_t min_overlap_len,
+                                                        size_t min_bases_per_residue,
+                                                        float min_overlap_fraction)
         : min_residues(min_residues)
         , min_overlap_len(min_overlap_len)
         , min_bases_per_residue(min_bases_per_residue)
@@ -224,7 +226,8 @@ OverlapperTriggered::OverlapperTriggered(DefaultDeviceAllocator allocator,
 {
 }
 
-void OverlapperTriggered::get_overlaps(std::vector<Overlap>& fused_overlaps, device_buffer<Anchor>& d_anchors,
+void OverlapperTriggered::get_overlaps(std::vector<Overlap>& fused_overlaps,
+                                       const device_buffer<Anchor>& d_anchors,
                                        size_t min_residues,
                                        size_t min_overlap_len,
                                        size_t min_bases_per_residue,

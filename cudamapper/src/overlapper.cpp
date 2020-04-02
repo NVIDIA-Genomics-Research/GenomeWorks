@@ -220,7 +220,7 @@ void Overlapper::print_paf(const std::vector<Overlap>& overlaps, const std::vect
     for (const auto& overlap : overlaps)
     {
         // Add basic overlap information.
-        std::printf("%s\t%i\t%i\t%i\t%c\t%s\t%i\t%i\t%i\t%i\t%i\t%i",
+        std::printf("%s\t%i\t%i\t%i\t%c\t%s\t%i\t%i\t%i\t%i\t%li\t%i",
                     overlap.query_read_name_,
                     overlap.query_length_,
                     overlap.query_start_position_in_read_,
@@ -231,8 +231,8 @@ void Overlapper::print_paf(const std::vector<Overlap>& overlaps, const std::vect
                     overlap.target_start_position_in_read_,
                     overlap.target_end_position_in_read_,
                     overlap.num_residues_ * k, // Print out the number of residue matches multiplied by kmer size to get approximate number of matching bases
-                    std::max(std::abs(static_cast<int>(overlap.target_start_position_in_read_) - static_cast<int>(overlap.target_end_position_in_read_)),
-                             abs(static_cast<int>(overlap.query_start_position_in_read_) - static_cast<int>(overlap.query_end_position_in_read_))), //Approximate alignment length
+                    std::max(std::abs(static_cast<std::int64_t>(overlap.target_start_position_in_read_) - static_cast<std::int64_t>(overlap.target_end_position_in_read_)),
+                             abs(static_cast<std::int64_t>(overlap.query_start_position_in_read_) - static_cast<std::int64_t>(overlap.query_end_position_in_read_))), //Approximate alignment length
                     255);
         // If CIGAR string is generated, output in PAF.
         if (cigar.size() != 0)

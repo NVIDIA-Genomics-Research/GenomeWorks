@@ -101,7 +101,7 @@ struct ApplicationParameteres
     std::int32_t min_residues                   = 10;   // r
     std::int32_t min_overlap_len                = 500;  // l
     std::int32_t min_bases_per_residue          = 100;  // b
-    float min_overlap_fraction                  = 0.95; //z
+    float min_overlap_fraction                  = 0.95; // z
     bool all_to_all                             = false;
     std::string query_filepath;
     std::string target_filepath;
