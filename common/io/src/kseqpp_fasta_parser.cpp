@@ -24,7 +24,7 @@ namespace claragenomics
 namespace io
 {
 
-FastaParserKseqpp::FastaParserKseqpp(const std::string& fasta_file, int min_sequencece_length)
+FastaParserKseqpp::FastaParserKseqpp(const std::string& fasta_file, int min_sequencece_length, bool shuffle)
 {
     klibpp::KSeq record;
     klibpp::SeqStreamIn iss(fasta_file.data());
@@ -40,8 +40,11 @@ FastaParserKseqpp::FastaParserKseqpp(const std::string& fasta_file, int min_sequ
     }
 
     //For many applications, such as cudamapper, performance is better if reads are shuffled.
-    std::mt19937 g(0); // seed for deterministic behaviour
-    std::shuffle(reads_.begin(), reads_.end(), g);
+    if(shuffle)
+    {
+        std::mt19937 g(0); // seed for deterministic behaviour
+        std::shuffle(reads_.begin(), reads_.end(), g);
+    }
 }
 
 int32_t FastaParserKseqpp::get_num_seqences() const
