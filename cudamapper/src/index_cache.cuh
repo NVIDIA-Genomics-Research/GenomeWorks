@@ -8,6 +8,8 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
+#pragma once
+
 #include <utility>
 #include <unordered_map>
 
