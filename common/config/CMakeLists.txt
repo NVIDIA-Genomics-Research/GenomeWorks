@@ -13,7 +13,6 @@ project(cgaconfig)
 find_package(CUDA 9.0 QUIET REQUIRED)
 
 add_library(${PROJECT_NAME} INTERFACE)
-configure_file("cga_config.hpp.in" "include/claragenomics/cga_config.hpp")
 target_link_libraries(${PROJECT_NAME} INTERFACE ${CUDA_LIBRARIES})
 
 if (cga_profiling)
@@ -25,7 +24,7 @@ endif()
 target_include_directories(${PROJECT_NAME}
     INTERFACE 
         $<INSTALL_INTERFACE:include>    
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
         ${CUDA_INCLUDE_DIRS}
 )
 
@@ -38,7 +37,7 @@ install(TARGETS ${PROJECT_NAME}
     EXPORT ${PROJECT_NAME}
     INCLUDES DESTINATION include
 )
-install(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/include/" DESTINATION "include")
+install(DIRECTORY include/ DESTINATION include)
 install(EXPORT ${PROJECT_NAME} DESTINATION cmake)
 
 # Adding formatting
