@@ -10,7 +10,7 @@
 
 #pragma once
 
-#include <claragenomics/utils/cudaversions.hpp>
+#include <claragenomics/cga_config.hpp>
 #include <limits>
 #include <cstdint>
 
