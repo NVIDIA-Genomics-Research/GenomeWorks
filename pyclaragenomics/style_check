@@ -9,6 +9,8 @@
 # license agreement from NVIDIA CORPORATION is strictly prohibited.
 #
 
+set -e
+
 PYCGA_DIR=$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")
 echo "Run Python formatting check..."
 flake8 "$PYCGA_DIR"
