@@ -40,7 +40,7 @@ FastaParserKseqpp::FastaParserKseqpp(const std::string& fasta_file, int min_sequ
     }
 
     //For many applications, such as cudamapper, performance is better if reads are shuffled.
-    if(shuffle)
+    if (shuffle)
     {
         std::mt19937 g(0); // seed for deterministic behaviour
         std::shuffle(reads_.begin(), reads_.end(), g);

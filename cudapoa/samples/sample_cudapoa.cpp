@@ -137,10 +137,10 @@ void generate_simulated_short_reads(std::vector<std::vector<std::string>>& windo
 
 void generate_bonito_long_reads(std::vector<std::vector<std::string>>& windows, BatchSize& batch_size)
 {
-    const std::string input_prefix   = std::string(CUDAPOA_BENCHMARK_DATA_DIR) + "/calls_";
-    const std::string file_extension = ".fasta";
-    const int32_t min_sequence_length    = 0;
-    const int32_t num_input_files        = 6;
+    const std::string input_prefix    = std::string(CUDAPOA_BENCHMARK_DATA_DIR) + "/calls_";
+    const std::string file_extension  = ".fasta";
+    const int32_t min_sequence_length = 0;
+    const int32_t num_input_files     = 6;
     std::vector<std::shared_ptr<claragenomics::io::FastaParser>> fasta_parser_vec(num_input_files);
     std::vector<int> num_reads_per_file(num_input_files);
     for (int32_t i = 0; i < num_input_files; i++)
@@ -151,9 +151,9 @@ void generate_bonito_long_reads(std::vector<std::vector<std::string>>& windows, 
 
     const int32_t num_reads = num_reads_per_file[0];
 
-    for(int32_t i = 1; i < num_input_files; i++)
+    for (int32_t i = 1; i < num_input_files; i++)
     {
-        if(num_reads_per_file[i] != num_reads)
+        if (num_reads_per_file[i] != num_reads)
         {
             assert(false);
             std::cerr << "Failed to complete long-read sample." << std::endl;
@@ -163,12 +163,12 @@ void generate_bonito_long_reads(std::vector<std::vector<std::string>>& windows, 
     }
 
     //windows.resize(num_reads);
-    windows.resize(1);
-    int32_t idx = 0;
+    windows.resize(5);
+    int32_t idx             = 0;
     int32_t max_read_length = 0;
-    for (auto& window: windows)
+    for (auto& window : windows)
     {
-        for(int32_t i = 0; i < num_input_files; i++)
+        for (int32_t i = 0; i < num_input_files; i++)
         {
             window.push_back(fasta_parser_vec[i]->get_sequence_by_id(idx).seq);
             max_read_length = std::max(max_read_length, get_size<int>(window.back()));
@@ -176,7 +176,7 @@ void generate_bonito_long_reads(std::vector<std::vector<std::string>>& windows, 
         idx++;
     }
 
-    max_read_length = 1.4*max_read_length;    // account for extra length for consensus
+    max_read_length = 1.4 * max_read_length; // account for extra length for consensus
 
     batch_size = BatchSize(max_read_length, num_input_files);
 }
@@ -284,9 +284,7 @@ int main(int argc, char** argv)
 
     // Loop over all the POA groups, add them to the batch and process them.
     int32_t window_count = 0;
-    // to avoid potential infinite loop
-    int32_t error_count = 0;
-    for (int32_t i = 0; i < get_size(windows);)
+    for (int32_t i = 0; i < get_size(windows); i++)
     {
         const std::vector<std::string>& window = windows[i];
 
@@ -304,6 +302,24 @@ int main(int argc, char** argv)
         std::vector<StatusType> seq_status;
         StatusType status = batch->add_poa_group(seq_status, poa_group);
 
+        if (status == StatusType::success)
+        {
+            // Check if all sequences in POA group wre added successfully.
+            for (const auto& s : seq_status)
+            {
+                if (s == StatusType::exceeded_maximum_sequence_size)
+                {
+                    std::cerr << "Dropping sequence because sequence exceeded maximum size" << std::endl;
+                }
+            }
+            window_count++;
+        }
+
+        if (status != StatusType::exceeded_maximum_poas && status != StatusType::success)
+        {
+            std::cerr << "Could not add POA group " << i << " to batch. Error code " << status << std::endl;
+        }
+
         // NOTE: If number of windows smaller than batch capacity, then run POA generation
         // once last window is added to batch.
         if (status == StatusType::exceeded_maximum_poas || (i == get_size(windows) - 1))
@@ -318,37 +334,7 @@ int main(int argc, char** argv)
                 batch->reset();
             }
 
-            if (i == 0)
-            {
-                std::cout << "Processed window " << window_count << std::endl;
-            }
-            else
-            {
-                std::cout << "Processed windows " << window_count << " - " << i << std::endl;
-            }
-
-            window_count = i;
-        }
-
-        if (status == StatusType::success)
-        {
-            // Check if all sequences in POA group wre added successfully.
-            for (const auto& s : seq_status)
-            {
-                if (s == StatusType::exceeded_maximum_sequence_size)
-                {
-                    std::cerr << "Dropping sequence because sequence exceeded maximum size" << std::endl;
-                }
-            }
-            i++;
-        }
-
-        if (status != StatusType::exceeded_maximum_poas && status != StatusType::success)
-        {
-            std::cerr << "Could not add POA group to batch. Error code " << status << std::endl;
-            error_count++;
-            if (error_count > get_size(windows))
-                break;
+            std::cout << "Processed windows 0 - " << window_count - 1 << std::endl;
         }
     }
 
