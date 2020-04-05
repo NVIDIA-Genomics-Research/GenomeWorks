@@ -92,8 +92,8 @@ public:
     /// \param allocator allocator to use for device arrays
     /// \param query_parser
     /// \param target_parser
-    /// \param k // see Index
-    /// \param w // see Index
+    /// \param kmer_size // see Index
+    /// \param window_size // see Index
     /// \param hash_representations // see Index
     /// \param filtering_parameter // see Index
     /// \param cuda_stream // device memory used for Index copy will only we freed up once all previously scheduled work on this stream has finished
@@ -101,8 +101,8 @@ public:
                    claragenomics::DefaultDeviceAllocator allocator,
                    std::shared_ptr<claragenomics::io::FastaParser> query_parser,
                    std::shared_ptr<claragenomics::io::FastaParser> target_parser,
-                   const std::uint64_t k,
-                   const std::uint64_t w,
+                   const std::uint64_t kmer_size,
+                   const std::uint64_t window_size,
                    const bool hash_representations  = true,
                    const double filtering_parameter = 1.0,
                    const cudaStream_t cuda_stream   = 0);
@@ -152,8 +152,8 @@ private:
     claragenomics::DefaultDeviceAllocator allocator_;
     std::shared_ptr<claragenomics::io::FastaParser> query_parser_;
     std::shared_ptr<claragenomics::io::FastaParser> target_parser_;
-    const std::uint64_t k_;
-    const std::uint64_t w_;
+    const std::uint64_t kmer_size_;
+    const std::uint64_t window_size_;
     const bool hash_representations_;
     const double filtering_parameter_;
     const cudaStream_t cuda_stream_;
