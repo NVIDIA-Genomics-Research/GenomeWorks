@@ -95,7 +95,7 @@ public:
     /// \return Return the maximum kmer length allowable
     static uint64_t maximum_kmer_size()
     {
-        return sizeof(representation_t) * 8 / 2;
+        return sizeof(representation_t) * CHAR_BIT / 2;
     }
 
     /// \brief generates a mapping of (k,w)-kmer-representation to all of its occurrences for one or more sequences

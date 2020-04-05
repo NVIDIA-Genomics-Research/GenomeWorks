@@ -260,7 +260,7 @@ TEST(TestCudamapperIndexCaching, test_index_cache_host_reuse_data)
     const read_id_t catcaag_smallest_read_id                             = 0;
     const read_id_t catcaag_largest_read_id                              = 0;
     const position_in_read_t catcaag_number_of_basepairs_in_longest_read = 7;
-    const uint64_t catcaag_maximum_kmer_size                             = sizeof(representation_t) * 8 / 2;
+    const uint64_t catcaag_maximum_kmer_size                             = sizeof(representation_t) * CHAR_BIT / 2;
 
     // ** AAGCTA: AAG(0f), AGC(2f), CTA(3f)
     std::vector<representation_t> aagcta_representations;
@@ -300,7 +300,7 @@ TEST(TestCudamapperIndexCaching, test_index_cache_host_reuse_data)
     const read_id_t aagcta_smallest_read_id                             = 1;
     const read_id_t aagcta_largest_read_id                              = 1;
     const position_in_read_t aagcta_number_of_basepairs_in_longest_read = 6;
-    const uint64_t aagcta_maximum_kmer_size                             = sizeof(representation_t) * 8 / 2;
+    const uint64_t aagcta_maximum_kmer_size                             = sizeof(representation_t) * CHAR_BIT / 2;
 
     // ** CATCAAG_AAGCTA: AAG(4f0), AAG(0f1), AGC(2r1), ATC(1f0), ATG(0r0), CAA(3f0), CTA(3f1)
     std::vector<representation_t> catcaag_aagcta_representations;
@@ -366,7 +366,7 @@ TEST(TestCudamapperIndexCaching, test_index_cache_host_reuse_data)
     const read_id_t catcaag_aagcta_smallest_read_id                             = 0;
     const read_id_t catcaag_aagcta_largest_read_id                              = 1;
     const position_in_read_t catcaag_aagcta_number_of_basepairs_in_longest_read = 7;
-    const uint64_t catcaag_aagcta_maximum_kmer_size                             = sizeof(representation_t) * 8 / 2;
+    const uint64_t catcaag_aagcta_maximum_kmer_size                             = sizeof(representation_t) * CHAR_BIT / 2;
 
     // ************* IndexCacheHost tests *************
 
@@ -713,7 +713,7 @@ TEST(TestCudamapperIndexCaching, test_index_cache_host_do_not_reuse_data)
     const read_id_t aagcta_smallest_read_id                             = 0;
     const read_id_t aagcta_largest_read_id                              = 0;
     const position_in_read_t aagcta_number_of_basepairs_in_longest_read = 6;
-    const uint64_t aagcta_maximum_kmer_size                             = sizeof(representation_t) * 8 / 2;
+    const uint64_t aagcta_maximum_kmer_size                             = sizeof(representation_t) * CHAR_BIT / 2;
 
     // ** CATCAAG: AAG(4f), ATC(1f), CAA(3f), ATG(0r)
     std::vector<representation_t> catcaag_representations;
@@ -760,7 +760,7 @@ TEST(TestCudamapperIndexCaching, test_index_cache_host_do_not_reuse_data)
     const read_id_t catcaag_smallest_read_id                             = 0;
     const read_id_t catcaag_largest_read_id                              = 0;
     const position_in_read_t catcaag_number_of_basepairs_in_longest_read = 7;
-    const uint64_t catcaag_maximum_kmer_size                             = sizeof(representation_t) * 8 / 2;
+    const uint64_t catcaag_maximum_kmer_size                             = sizeof(representation_t) * CHAR_BIT / 2;
 
     // ************* IndexCacheHost tests *************
 
@@ -911,7 +911,7 @@ TEST(TestCudamapperIndexCaching, test_index_cache_device_reuse_data)
     const read_id_t catcaag_smallest_read_id                             = 0;
     const read_id_t catcaag_largest_read_id                              = 0;
     const position_in_read_t catcaag_number_of_basepairs_in_longest_read = 7;
-    const uint64_t catcaag_maximum_kmer_size                             = sizeof(representation_t) * 8 / 2;
+    const uint64_t catcaag_maximum_kmer_size                             = sizeof(representation_t) * CHAR_BIT / 2;
 
     // ** AAGCTA: AAG(0f), AGC(2f), CTA(3f)
     std::vector<representation_t> aagcta_representations;
@@ -951,7 +951,7 @@ TEST(TestCudamapperIndexCaching, test_index_cache_device_reuse_data)
     const read_id_t aagcta_smallest_read_id                             = 1;
     const read_id_t aagcta_largest_read_id                              = 1;
     const position_in_read_t aagcta_number_of_basepairs_in_longest_read = 6;
-    const uint64_t aagcta_maximum_kmer_size                             = sizeof(representation_t) * 8 / 2;
+    const uint64_t aagcta_maximum_kmer_size                             = sizeof(representation_t) * CHAR_BIT / 2;
 
     // ************* IndexCacheHost tests *************
 
@@ -1101,7 +1101,7 @@ TEST(TestCudamapperIndexCaching, test_index_cache_device_do_not_reuse_data)
     const read_id_t aagcta_smallest_read_id                             = 0;
     const read_id_t aagcta_largest_read_id                              = 0;
     const position_in_read_t aagcta_number_of_basepairs_in_longest_read = 6;
-    const uint64_t aagcta_maximum_kmer_size                             = sizeof(representation_t) * 8 / 2;
+    const uint64_t aagcta_maximum_kmer_size                             = sizeof(representation_t) * CHAR_BIT / 2;
 
     // ** CATCAAG: AAG(4f), ATC(1f), CAA(3f), ATG(0r)
     std::vector<representation_t> catcaag_representations;
@@ -1148,7 +1148,7 @@ TEST(TestCudamapperIndexCaching, test_index_cache_device_do_not_reuse_data)
     const read_id_t catcaag_smallest_read_id                             = 0;
     const read_id_t catcaag_largest_read_id                              = 0;
     const position_in_read_t catcaag_number_of_basepairs_in_longest_read = 7;
-    const uint64_t catcaag_maximum_kmer_size                             = sizeof(representation_t) * 8 / 2;
+    const uint64_t catcaag_maximum_kmer_size                             = sizeof(representation_t) * CHAR_BIT / 2;
 
     // ************* IndexCacheHost tests *************
 
