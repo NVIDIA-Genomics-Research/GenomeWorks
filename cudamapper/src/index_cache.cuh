@@ -10,7 +10,7 @@
 
 #pragma once
 
-#include <utility>
+#include <memory>
 #include <unordered_map>
 
 #include <claragenomics/cudamapper/types.hpp>
