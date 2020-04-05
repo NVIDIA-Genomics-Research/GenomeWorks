@@ -107,12 +107,12 @@ IndexCacheHost::IndexCacheHost(const bool reuse_data,
 
 void IndexCacheHost::update_query_cache(const std::vector<IndexDescriptor>& descriptors_of_indices_to_cache)
 {
-    update_cache(descriptors_of_indices_to_cache, CacheToUpdate::QUERY);
+    update_cache(descriptors_of_indices_to_cache, CacheToUpdate::query);
 }
 
 void IndexCacheHost::update_target_cache(const std::vector<IndexDescriptor>& descriptors_of_indices_to_cache)
 {
-    update_cache(descriptors_of_indices_to_cache, CacheToUpdate::TARGET);
+    update_cache(descriptors_of_indices_to_cache, CacheToUpdate::target);
 }
 
 std::shared_ptr<Index> IndexCacheHost::get_index_from_query_cache(const IndexDescriptor& descriptor_of_index_to_cache)
@@ -130,9 +130,9 @@ std::shared_ptr<Index> IndexCacheHost::get_index_from_target_cache(const IndexDe
 void IndexCacheHost::update_cache(const std::vector<IndexDescriptor>& descriptors_of_indices_to_cache,
                                   const CacheToUpdate which_cache)
 {
-    cache_type_t& cache_to_edit                            = (CacheToUpdate::QUERY == which_cache) ? query_cache_ : target_cache_;
-    const cache_type_t& cache_to_check                     = (CacheToUpdate::QUERY == which_cache) ? target_cache_ : query_cache_;
-    std::shared_ptr<claragenomics::io::FastaParser> parser = (CacheToUpdate::QUERY == which_cache) ? query_parser_ : target_parser_;
+    cache_type_t& cache_to_edit                            = (CacheToUpdate::query == which_cache) ? query_cache_ : target_cache_;
+    const cache_type_t& cache_to_check                     = (CacheToUpdate::query == which_cache) ? target_cache_ : query_cache_;
+    std::shared_ptr<claragenomics::io::FastaParser> parser = (CacheToUpdate::query == which_cache) ? query_parser_ : target_parser_;
 
     cache_type_t new_cache;
 
@@ -189,12 +189,12 @@ IndexCacheDevice::IndexCacheDevice(const bool reuse_data,
 
 void IndexCacheDevice::update_query_cache(const std::vector<IndexDescriptor>& descriptors_of_indices_to_cache)
 {
-    update_cache(descriptors_of_indices_to_cache, CacheToUpdate::QUERY);
+    update_cache(descriptors_of_indices_to_cache, CacheToUpdate::query);
 }
 
 void IndexCacheDevice::update_target_cache(const std::vector<IndexDescriptor>& descriptors_of_indices_to_cache)
 {
-    update_cache(descriptors_of_indices_to_cache, CacheToUpdate::TARGET);
+    update_cache(descriptors_of_indices_to_cache, CacheToUpdate::target);
 }
 
 std::shared_ptr<Index> IndexCacheDevice::get_index_from_query_cache(const IndexDescriptor& descriptor_of_index_to_cache)
@@ -212,8 +212,8 @@ std::shared_ptr<Index> IndexCacheDevice::get_index_from_target_cache(const Index
 void IndexCacheDevice::update_cache(const std::vector<IndexDescriptor>& descriptors_of_indices_to_cache,
                                     const CacheToUpdate which_cache)
 {
-    cache_type_t& cache_to_edit        = (CacheToUpdate::QUERY == which_cache) ? query_cache_ : target_cache_;
-    const cache_type_t& cache_to_check = (CacheToUpdate::QUERY == which_cache) ? target_cache_ : query_cache_;
+    cache_type_t& cache_to_edit        = (CacheToUpdate::query == which_cache) ? query_cache_ : target_cache_;
+    const cache_type_t& cache_to_check = (CacheToUpdate::query == which_cache) ? target_cache_ : query_cache_;
 
     cache_type_t new_cache;
 
@@ -234,7 +234,7 @@ void IndexCacheDevice::update_cache(const std::vector<IndexDescriptor>& descript
 
         if (nullptr == index)
         {
-            if (CacheToUpdate::QUERY == which_cache)
+            if (CacheToUpdate::query == which_cache)
             {
                 index = index_cache_host_->get_index_from_query_cache(descriptor_of_index_to_cache);
             }

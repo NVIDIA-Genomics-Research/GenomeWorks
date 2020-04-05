@@ -134,8 +134,8 @@ private:
 
     enum class CacheToUpdate
     {
-        QUERY,
-        TARGET
+        query,
+        target
     };
 
     /// \brief Discards previously cached Indices, creates new Indices and copies them to host memory
@@ -202,8 +202,8 @@ private:
 
     enum class CacheToUpdate
     {
-        QUERY,
-        TARGET
+        query,
+        target
     };
 
     /// \brief Discards previously cached Indices and caches new ones
