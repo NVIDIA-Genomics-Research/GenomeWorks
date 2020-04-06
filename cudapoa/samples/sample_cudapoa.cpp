@@ -16,6 +16,7 @@
 #include <claragenomics/utils/signed_integer_utils.hpp>
 #include <claragenomics/utils/cudautils.hpp>
 #include <claragenomics/io/fasta_parser.hpp>
+#include <claragenomics/utils/genomeutils.hpp>
 
 #include <cuda_runtime_api.h>
 #include <vector>
@@ -23,7 +24,6 @@
 #include <stdexcept>
 #include <unistd.h>
 #include <random>
-#include <claragenomics/utils/genomeutils.hpp>
 
 using namespace claragenomics;
 using namespace claragenomics::cudapoa;
@@ -159,9 +159,10 @@ void generate_simulated_long_reads(std::vector<std::vector<std::string>>& window
     constexpr uint32_t random_seed = 5827349;
     std::minstd_rand rng(random_seed);
 
-    const int16_t number_of_reads = 5;
-    const int32_t read_length     = 10000;
-    int32_t max_sequence_length   = read_length + 1;
+    const int16_t number_of_windows = 2;
+    const int16_t number_of_reads   = 5;
+    const int32_t read_length       = 10000;
+    int32_t max_sequence_length     = read_length + 1;
 
     std::vector<std::pair<int, int>> variation_ranges;
     variation_ranges.push_back(std::pair<int, int>(30, 50));
@@ -175,18 +176,21 @@ void generate_simulated_long_reads(std::vector<std::vector<std::string>>& window
     variation_ranges.push_back(std::pair<int, int>(8000, 8300));
 
     std::vector<std::string> long_reads(number_of_reads);
-    long_reads[0] = claragenomics::genomeutils::generate_random_genome(read_length, rng);
-    for (int i = 1; i < number_of_reads; i++)
+
+    for (int w = 0; w < number_of_windows; w++)
     {
-        long_reads[i]       = claragenomics::genomeutils::generate_random_sequence(long_reads[0], rng, read_length, read_length, read_length, &variation_ranges);
-        max_sequence_length = max_sequence_length > get_size(long_reads[i]) ? max_sequence_length : get_size(long_reads[i]) + 1;
+        long_reads[0] = claragenomics::genomeutils::generate_random_genome(read_length, rng);
+        for (int i = 1; i < number_of_reads; i++)
+        {
+            long_reads[i]       = claragenomics::genomeutils::generate_random_sequence(long_reads[0], rng, read_length, read_length, read_length, &variation_ranges);
+            max_sequence_length = max_sequence_length > get_size(long_reads[i]) ? max_sequence_length : get_size(long_reads[i]) + 1;
+        }
+        // add long reads as one window
+        windows.push_back(long_reads);
     }
 
     // Define upper limits for sequence size, graph size ....
     batch_size = BatchSize(max_sequence_length, number_of_reads);
-
-    // add long reads as one window
-    windows.push_back(long_reads);
 }
 
 int main(int argc, char** argv)
@@ -279,26 +283,26 @@ int main(int argc, char** argv)
 
         // NOTE: If number of windows smaller than batch capacity, then run POA generation
         // once last window is added to batch.
-        if (status == StatusType::exceeded_maximum_poas || (i == get_size(windows) - 1))
+        if (status == StatusType::exceeded_maximum_poas || status == StatusType::exceeded_batch_size || (i == get_size(windows) - 1))
         {
             // No more POA groups can be added to batch. Now process batch.
             process_batch(batch.get(), msa, print);
 
-            // After MSA is generated for batch, reset batch to make room for next set of POA groups.
-            // in long_reads, there is only one window, do not reset if needed to print graph
-            if (!(long_read && print_graph))
+            if (print_graph && long_read)
             {
-                batch->reset();
+                std::vector<DirectedGraph> graph;
+                std::vector<StatusType> graph_status;
+                batch->get_graphs(graph, graph_status);
+                for (auto& g : graph)
+                {
+                    std::cout << g.serialize_to_dot() << std::endl;
+                }
             }
 
-            if (i == 0)
-            {
-                std::cout << "Processed window " << window_count << std::endl;
-            }
-            else
-            {
-                std::cout << "Processed windows " << window_count << " - " << i << std::endl;
-            }
+            // After MSA is generated for batch, reset batch to make room for next set of POA groups.
+            batch->reset();
+
+            std::cout << "Processed windows " << window_count << " - " << i << std::endl;
 
             window_count = i;
         }
@@ -316,21 +320,13 @@ int main(int argc, char** argv)
             i++;
         }
 
-        if (status != StatusType::exceeded_maximum_poas && status != StatusType::success)
+        if (status != StatusType::exceeded_maximum_poas && status != StatusType::exceeded_batch_size && status != StatusType::success)
         {
             std::cerr << "Could not add POA group to batch. Error code " << status << std::endl;
             error_count++;
             if (error_count > get_size(windows))
                 break;
         }
-    }
-
-    if (print_graph && long_read)
-    {
-        std::vector<DirectedGraph> graph;
-        std::vector<StatusType> graph_status;
-        batch->get_graphs(graph, graph_status);
-        std::cout << graph.front().serialize_to_dot() << std::endl;
     }
 
     return 0;
