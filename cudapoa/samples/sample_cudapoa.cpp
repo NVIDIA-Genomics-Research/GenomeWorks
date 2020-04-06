@@ -271,7 +271,7 @@ int main(int argc, char** argv)
                 std::vector<DirectedGraph> graph;
                 std::vector<StatusType> graph_status;
                 batch->get_graphs(graph, graph_status);
-                for(auto& g : graph)
+                for (auto& g : graph)
                 {
                     std::cout << g.serialize_to_dot() << std::endl;
                 }
