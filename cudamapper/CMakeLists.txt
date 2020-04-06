@@ -25,7 +25,7 @@ endif()
 cuda_add_library(minimizer
         src/minimizer.cu)
 target_include_directories(minimizer PUBLIC include ${CUB_DIR})
-target_link_libraries(minimizer logging pthread utils)
+target_link_libraries(minimizer cgalogging pthread cgautils)
 target_compile_options(minimizer PRIVATE -Werror)
 
 cuda_add_library(index_gpu
@@ -34,13 +34,13 @@ cuda_add_library(index_gpu
         src/index_host_copy.cu
         src/minimizer.cu)
 target_include_directories(index_gpu PUBLIC include ${CUB_DIR})
-target_link_libraries(index_gpu logging minimizer pthread utils cgaio)
+target_link_libraries(index_gpu cgalogging minimizer pthread cgautils cgaio)
 target_compile_options(index_gpu PRIVATE -Werror)
 
 cuda_add_library(matcher_gpu
         src/matcher_gpu.cu)
 target_include_directories(matcher_gpu PUBLIC include ${CUB_DIR})
-target_link_libraries(matcher_gpu logging utils cgaio)
+target_link_libraries(matcher_gpu cgalogging cgautils cgaio)
 target_compile_options(matcher_gpu PRIVATE -Werror)
 
 add_library(cudamapper_utils
@@ -51,7 +51,7 @@ cuda_add_library(overlapper_triggerred
         src/overlapper_triggered.cu
         src/overlapper.cpp)
 target_include_directories(overlapper_triggerred PUBLIC include ${CUB_DIR})
-target_link_libraries(overlapper_triggerred logging utils cgaio cudaaligner)
+target_link_libraries(overlapper_triggerred cgalogging cgautils cgaio cudaaligner)
 target_compile_options(overlapper_triggerred PRIVATE -Werror)
 
 add_doxygen_source_dir(${CMAKE_CURRENT_SOURCE_DIR}/include)
@@ -90,7 +90,7 @@ target_include_directories(cudamapper
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 )
 
-target_link_libraries(cudamapper utils index_gpu matcher_gpu logging overlapper_triggerred cudamapper_utils)
+target_link_libraries(cudamapper cgautils index_gpu matcher_gpu cgalogging overlapper_triggerred cudamapper_utils)
 
 # Add tests folder
 add_subdirectory(tests)
