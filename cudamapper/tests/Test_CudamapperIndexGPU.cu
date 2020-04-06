@@ -1886,7 +1886,7 @@ TEST(TestCudamapperIndexGPU, CATCAAG_AAGCTA_3_2)
     // back end minimizers
     // CTA: 130 3 F 1
 
-    // All minimizers: AAG(0f), AGC(1f), CTA(3f)
+    // All minimizers: AAG(0f), AGC(2r), CTA(3f)
 
     // (2r1) means position 2, reverse direction, read 1
     // (1,2) means array block start at element 1 and has 2 elements
