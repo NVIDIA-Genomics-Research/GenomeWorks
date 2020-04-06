@@ -68,6 +68,18 @@ void help(int32_t exit_code = 0)
               << R"(
         -a, --alignment-engines
             Number of alignment engines to use (per device) for generating CIGAR strings for overlap alignments. Default value 0 = no alignment to be performed. Typically 2-4 engines per device gives best perf.)"
+              << R"(
+        -r, --min-residues
+            Minimum number of matching residues in an overlap [10])"
+              << R"(
+        -l, --min-overlap-length
+            Minimum length for an overlap [500].)"
+              << R"(
+        -b, --min-bases-per-residue
+            Minimum number of bases in overlap per match [100].)"
+              << R"(
+        -z, --min-overlap-fraction
+            Minimum ratio of overlap length to alignment length [0.95].)"
               << std::endl;
 
     exit(exit_code);
@@ -76,16 +88,20 @@ void help(int32_t exit_code = 0)
 /// @brief application parameteres, default or passed through command line
 struct ApplicationParameteres
 {
-    uint32_t k                                  = 15;  // k
-    uint32_t w                                  = 15;  // w
-    std::int32_t num_devices                    = 1;   // d
-    std::int32_t max_index_cache_size_on_device = 100; // c
-    std::int32_t max_index_cache_size_on_host   = 0;   // C
-    std::int32_t max_cached_memory              = 0;   // m
-    std::int32_t index_size                     = 30;  // i
-    std::int32_t target_index_size              = 30;  // t
-    double filtering_parameter                  = 1.0; // F
-    std::int32_t alignment_engines              = 0;   // a
+    uint32_t k                                  = 15;   // k
+    uint32_t w                                  = 15;   // w
+    std::int32_t num_devices                    = 1;    // d
+    std::int32_t max_index_cache_size_on_device = 100;  // c
+    std::int32_t max_index_cache_size_on_host   = 0;    // C
+    std::int32_t max_cached_memory              = 0;    // m
+    std::int32_t index_size                     = 30;   // i
+    std::int32_t target_index_size              = 30;   // t
+    double filtering_parameter                  = 1.0;  // F
+    std::int32_t alignment_engines              = 0;    // a
+    std::int32_t min_residues                   = 10;   // r
+    std::int32_t min_overlap_len                = 500;  // l
+    std::int32_t min_bases_per_residue          = 100;  // b
+    float min_overlap_fraction                  = 0.95; // z
     bool all_to_all                             = false;
     std::string query_filepath;
     std::string target_filepath;
@@ -110,11 +126,16 @@ ApplicationParameteres read_input(int argc, char* argv[])
         {"target-index-size", required_argument, 0, 't'},
         {"filtering-parameter", required_argument, 0, 'F'},
         {"alignment-engines", required_argument, 0, 'a'},
+        {"min-residues", required_argument, 0, 'r'},
+        {"min-overlap-length", required_argument, 0, 'l'},
+        {"min-bases-per-residue", required_argument, 0, 'b'},
+        {"min-overlap-fraction", required_argument, 0, 'z'},
         {"help", no_argument, 0, 'h'},
     };
 
-    std::string optstring = "k:w:d:c:C:m:i:t:F:h:a:";
-    int32_t argument      = 0;
+    std::string optstring = "k:w:d:c:C:m:i:t:F:h:a:r:l:b:z:";
+
+    int32_t argument = 0;
     while ((argument = getopt_long(argc, argv, optstring.c_str(), options, nullptr)) != -1)
     {
         switch (argument)
@@ -153,6 +174,18 @@ ApplicationParameteres read_input(int argc, char* argv[])
         case 'a':
             parameters.alignment_engines = atoi(optarg);
             claragenomics::throw_on_negative(parameters.alignment_engines, "Number of alignment engines should be non-negative");
+            break;
+        case 'r':
+            parameters.min_residues = atoi(optarg);
+            break;
+        case 'l':
+            parameters.min_overlap_len = atoi(optarg);
+            break;
+        case 'b':
+            parameters.min_bases_per_residue = atoi(optarg);
+            break;
+        case 'z':
+            parameters.min_overlap_fraction = atof(optarg);
             break;
         case 'h':
             help(0);
@@ -214,16 +247,20 @@ void writer_thread_function(std::mutex& overlaps_writer_mtx,
                             std::shared_ptr<claragenomics::cudamapper::Index> query_index,
                             std::shared_ptr<claragenomics::cudamapper::Index> target_index,
                             const std::vector<std::string> cigar,
-                            const int device_id)
+                            const int device_id,
+                            const int kmer_size)
 {
     // This function is expected to run in a separate thread so set current device in order to avoid problems
     // with deallocating indices with different current device than the one on which they were created
     cudaSetDevice(device_id);
 
+    // Overlap post processing - add overlaps which can be combined into longer ones.
+    claragenomics::cudamapper::Overlapper::post_process_overlaps(*filtered_overlaps);
+
     // parallel update of the query/target read names for filtered overlaps [parallel on host]
     claragenomics::cudamapper::Overlapper::update_read_names(*filtered_overlaps, *query_index, *target_index);
     std::lock_guard<std::mutex> lck(overlaps_writer_mtx);
-    claragenomics::cudamapper::Overlapper::print_paf(*filtered_overlaps, cigar);
+    claragenomics::cudamapper::Overlapper::print_paf(*filtered_overlaps, cigar, kmer_size);
 
     //clear data
     for (auto o : *filtered_overlaps)
@@ -474,7 +511,11 @@ int main(int argc, char* argv[])
                 // Get unfiltered overlaps
                 auto overlaps_to_add = std::make_shared<std::vector<claragenomics::cudamapper::Overlap>>();
 
-                overlapper.get_overlaps(*overlaps_to_add, matcher->anchors(), 50);
+                overlapper.get_overlaps(*overlaps_to_add, matcher->anchors(),
+                                        parameters.min_residues,
+                                        parameters.min_overlap_len,
+                                        parameters.min_bases_per_residue,
+                                        parameters.min_overlap_fraction);
 
                 std::vector<std::string> cigar;
                 // Align overlaps
@@ -495,7 +536,8 @@ int main(int argc, char* argv[])
                               query_index,
                               target_index,
                               std::move(cigar),
-                              device_id);
+                              device_id,
+                              parameters.k);
                 t.detach();
             }
 
