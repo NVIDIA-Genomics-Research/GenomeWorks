@@ -15,6 +15,7 @@
 #include <sstream>
 #include <fstream>
 #include <cassert>
+#include <chrono>
 
 namespace claragenomics
 {
@@ -90,5 +91,39 @@ inline std::string parse_golden_value_file(const std::string& filename)
     std::getline(infile, line);
     return line;
 }
+
+/// \brief Data structure for measuring wall-clock time spent between start and stop
+struct ChronoTimer
+{
+private:
+    /// time stamps to measure runtime
+    std::chrono::time_point<std::chrono::system_clock> start_wall_clock_;
+    std::chrono::time_point<std::chrono::system_clock> stop_wall_clock_;
+    /// a debug flag to ensure start_timer is called before any stop_timer usage
+    bool timer_initilized_ = false;
+
+public:
+    /// \brief This will record beginning of a session to be measured in the code
+    void start_timer()
+    {
+        start_wall_clock_ = std::chrono::system_clock::now();
+        timer_initilized_ = true;
+    }
+
+    /// \brief records end of a session to be measured, should be called in pair with and following start_timer().
+    /// \brief The measured time (in sec) will update the record for the corresponding block among indexer, matcher or overlapper
+    float stop_timer()
+    {
+        // start_timer was not used before calling stop_timer
+        assert(timer_initilized_ == true);
+        timer_initilized_ = false;
+        stop_wall_clock_  = std::chrono::system_clock::now();
+        auto diff         = stop_wall_clock_ - start_wall_clock_;
+        auto msec         = std::chrono::duration_cast<std::chrono::milliseconds>(diff).count();
+        float spent_time  = (float)msec / 1000;
+        return spent_time;
+    }
+};
+
 } // namespace cudapoa
 } // namespace claragenomics

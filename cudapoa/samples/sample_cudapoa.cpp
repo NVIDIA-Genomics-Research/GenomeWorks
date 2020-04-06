@@ -16,6 +16,9 @@
 #include <claragenomics/utils/signed_integer_utils.hpp>
 #include <claragenomics/utils/cudautils.hpp>
 #include <claragenomics/io/fasta_parser.hpp>
+#include <claragenomics/utils/genomeutils.hpp>
+
+#include "spoa/spoa.hpp"
 
 #include <cuda_runtime_api.h>
 #include <vector>
@@ -23,7 +26,6 @@
 #include <stdexcept>
 #include <unistd.h>
 #include <random>
-#include <claragenomics/utils/genomeutils.hpp>
 
 using namespace claragenomics;
 using namespace claragenomics::cudapoa;
@@ -189,6 +191,27 @@ void generate_simulated_long_reads(std::vector<std::vector<std::string>>& window
     windows.push_back(long_reads);
 }
 
+std::vector<std::string> spoa_generate(std::vector<std::string> sequences,
+                                       spoa::AlignmentType atype = spoa::AlignmentType::kNW,
+                                       int match_score           = 8,
+                                       int mismatch_score        = -6,
+                                       int gap_score             = -8)
+{
+    auto alignment_engine = spoa::createAlignmentEngine(atype, match_score, mismatch_score, gap_score);
+    auto graph            = spoa::createGraph();
+
+    for (const auto& it : sequences)
+    {
+        auto alignment = alignment_engine->align(it, graph);
+        graph->add_alignment(alignment, it);
+    }
+
+    std::vector<std::string> msa;
+    //graph->generate_multiple_sequence_alignment(msa);
+
+    return msa;
+}
+
 int main(int argc, char** argv)
 {
     // Process options
@@ -198,8 +221,9 @@ int main(int argc, char** argv)
     bool help        = false;
     bool print       = false;
     bool print_graph = false;
+    bool benchmark   = false;
 
-    while ((c = getopt(argc, argv, "mlhpg")) != -1)
+    while ((c = getopt(argc, argv, "mlhpgb")) != -1)
     {
         switch (c)
         {
@@ -214,6 +238,9 @@ int main(int argc, char** argv)
             break;
         case 'g':
             print_graph = true;
+            break;
+        case 'b':
+            benchmark = true;
             break;
         case 'h':
             help = true;
@@ -230,6 +257,7 @@ int main(int argc, char** argv)
         std::cout << "-l : Perform long-read sample (if not provided, will run short-read sample by default)" << std::endl;
         std::cout << "-p : Print the MSA or consensus output to stdout" << std::endl;
         std::cout << "-g : Print POA graph in dot format, this option is only for long-read sample" << std::endl;
+        std::cout << "-b : Benchmark against SPOA" << std::endl;
         std::cout << "-h : Print help message" << std::endl;
         std::exit(0);
     }
@@ -310,6 +338,8 @@ int main(int argc, char** argv)
             std::cout << "Processed windows 0 - " << window_count - 1 << std::endl;
         }
     }
+
+    //ChronoTimer timer;
 
     if (print_graph && long_read)
     {

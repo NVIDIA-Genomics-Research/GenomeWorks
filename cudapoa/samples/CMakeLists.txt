@@ -21,5 +21,7 @@ target_link_libraries(${PROJECT_NAME}
                       cudapoa
                       )
 
+target_link_libraries(sample_cudapoa spoa)
+
 install(TARGETS ${PROJECT_NAME}
             DESTINATION samples)
