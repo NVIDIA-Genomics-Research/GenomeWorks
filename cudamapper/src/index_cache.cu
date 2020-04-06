@@ -48,8 +48,8 @@ void IndexDescriptor::generate_hash()
     static_assert(sizeof(size_t) == 8, "only 64-bit values supported, adjust element_mask and shift_bits");
 
     // populate lower half of hash with one value, upper half with the other
-    std::size_t element_mask = 0xFFFFFFFF; // for 64 bits
-    std::uint32_t shift_bits = 32;         // for 64 bits
+    constexpr std::size_t element_mask = 0xFFFFFFFF; // for 64 bits
+    constexpr std::uint32_t shift_bits = 32;         // for 64 bits
 
     hash_ = 0;
     hash_ |= first_read_ & element_mask;
