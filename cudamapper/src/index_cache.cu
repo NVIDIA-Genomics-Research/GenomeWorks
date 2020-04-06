@@ -117,9 +117,9 @@ std::shared_ptr<Index> IndexCacheHost::get_index_from_target_cache(const IndexDe
 void IndexCacheHost::update_cache(const std::vector<IndexDescriptor>& descriptors_of_indices_to_cache,
                                   const CacheToUpdate which_cache)
 {
-    cache_type_t& cache_to_edit            = (CacheToUpdate::query == which_cache) ? query_cache_ : target_cache_;
-    const cache_type_t& cache_to_check     = (CacheToUpdate::query == which_cache) ? target_cache_ : query_cache_;
-    claragenomics::io::FastaParser* parser = (CacheToUpdate::query == which_cache) ? query_parser_.get() : target_parser_.get();
+    cache_type_t& cache_to_edit                  = (CacheToUpdate::query == which_cache) ? query_cache_ : target_cache_;
+    const cache_type_t& cache_to_check           = (CacheToUpdate::query == which_cache) ? target_cache_ : query_cache_;
+    const claragenomics::io::FastaParser* parser = (CacheToUpdate::query == which_cache) ? query_parser_.get() : target_parser_.get();
 
     cache_type_t new_cache;
 
