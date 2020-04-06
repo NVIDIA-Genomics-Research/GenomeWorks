@@ -285,7 +285,9 @@ int main(int argc, char** argv)
 
     // Loop over all the POA groups, add them to the batch and process them.
     int32_t window_count = 0;
-    for (int32_t i = 0; i < get_size(windows); i++)
+    // to avoid potential infinite loop
+    int32_t error_count = 0;
+    for (int32_t i = 0; i < get_size(windows);)
     {
         const std::vector<std::string>& window = windows[i];
 
@@ -303,24 +305,6 @@ int main(int argc, char** argv)
         std::vector<StatusType> seq_status;
         StatusType status = batch->add_poa_group(seq_status, poa_group);
 
-        if (status == StatusType::success)
-        {
-            // Check if all sequences in POA group wre added successfully.
-            for (const auto& s : seq_status)
-            {
-                if (s == StatusType::exceeded_maximum_sequence_size)
-                {
-                    std::cerr << "Dropping sequence because sequence exceeded maximum size" << std::endl;
-                }
-            }
-            window_count++;
-        }
-
-        if (status != StatusType::exceeded_maximum_poas && status != StatusType::success)
-        {
-            std::cerr << "Could not add POA group " << i << " to batch. Error code " << status << std::endl;
-        }
-
         // NOTE: If number of windows smaller than batch capacity, then run POA generation
         // once last window is added to batch.
         if (status == StatusType::exceeded_maximum_poas || (i == get_size(windows) - 1))
@@ -335,7 +319,37 @@ int main(int argc, char** argv)
                 batch->reset();
             }
 
-            std::cout << "Processed windows 0 - " << window_count - 1 << std::endl;
+            if (i == 0)
+            {
+                std::cout << "Processed window " << window_count << std::endl;
+            }
+            else
+            {
+                std::cout << "Processed windows " << window_count << " - " << i << std::endl;
+            }
+
+            window_count = i;
+        }
+
+        if (status == StatusType::success)
+        {
+            // Check if all sequences in POA group wre added successfully.
+            for (const auto& s : seq_status)
+            {
+                if (s == StatusType::exceeded_maximum_sequence_size)
+                {
+                    std::cerr << "Dropping sequence because sequence exceeded maximum size" << std::endl;
+                }
+            }
+            i++;
+        }
+
+        if (status != StatusType::exceeded_maximum_poas && status != StatusType::success)
+        {
+            std::cerr << "Could not add POA group to batch. Error code " << status << std::endl;
+            error_count++;
+            if (error_count > get_size(windows))
+                break;
         }
     }
 
