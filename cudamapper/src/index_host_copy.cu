@@ -77,7 +77,7 @@ IndexHostCopy::IndexHostCopy(const Index& index,
 }
 
 std::unique_ptr<Index> IndexHostCopy::copy_index_to_device(DefaultDeviceAllocator allocator,
-                                                           const cudaStream_t cuda_stream)
+                                                           const cudaStream_t cuda_stream) const
 {
     return std::make_unique<IndexGPU<Minimizer>>(allocator,
                                                  *this,

@@ -95,7 +95,7 @@ public:
     /// \return Return the maximum kmer length allowable
     static uint64_t maximum_kmer_size()
     {
-        return sizeof(representation_t) * 8 / 2;
+        return sizeof(representation_t) * CHAR_BIT / 2;
     }
 
     /// \brief generates a mapping of (k,w)-kmer-representation to all of its occurrences for one or more sequences
@@ -132,7 +132,7 @@ public:
     /// \param cuda_stream H2D copy is done on this stream. Device arrays are also associated with this stream and will not be freed at least until all work issued on this stream before calling their destructor is done
     /// \return a pointer to claragenomics::cudamapper::Index
     virtual std::unique_ptr<Index> copy_index_to_device(DefaultDeviceAllocator allocator,
-                                                        const cudaStream_t cuda_stream = 0) = 0;
+                                                        const cudaStream_t cuda_stream = 0) const = 0;
 
     /// \brief virtual destructor
     virtual ~IndexHostCopyBase() = default;
