@@ -38,6 +38,29 @@ std::vector<GroupOfIndicesDescriptor> split_array_into_groups(const index_id_t f
     return groups;
 }
 
+std::vector<GroupAndSubgroupsOfIndicesDescriptor> generate_groups_and_subgroups(const index_id_t first_index,
+                                                                                const number_of_indices_t total_number_of_indices,
+                                                                                const number_of_indices_t indices_per_group,
+                                                                                const number_of_indices_t indices_per_subgroup)
+{
+    std::vector<GroupAndSubgroupsOfIndicesDescriptor> groups_and_subroups;
+
+    std::vector<GroupOfIndicesDescriptor> main_groups = split_array_into_groups(first_index,
+                                                                                total_number_of_indices,
+                                                                                indices_per_group);
+
+    for (const GroupOfIndicesDescriptor& main_group : main_groups)
+    {
+        std::vector<GroupOfIndicesDescriptor> subgroups = split_array_into_groups(main_group.first_index,
+                                                                                  main_group.number_of_indices,
+                                                                                  indices_per_subgroup);
+
+        groups_and_subroups.push_back({main_group, subgroups});
+    }
+
+    return groups_and_subroups;
+}
+
 } // namespace index_batcher
 } // namespace details
 

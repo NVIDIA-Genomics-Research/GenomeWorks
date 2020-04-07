@@ -35,9 +35,16 @@ struct GroupOfIndicesDescriptor
     number_of_indices_t number_of_indices;
 };
 
+/// GroupAndSubgroupsOfIndicesDescriptor - describes a group of indices and further divides it into subgroups
+struct GroupAndSubgroupsOfIndicesDescriptor
+{
+    GroupOfIndicesDescriptor whole_group;
+    std::vector<GroupOfIndicesDescriptor> subgroups;
+};
+
 /// \brief Splits numbers into groups
 ///
-/// Splits numbers between first_index and first_index + number_of_indies into groups of indices_per_group numbers.
+/// Splits numbers between first_index and first_index + number_of_indices into groups of indices_per_group numbers.
 /// If number_of_indices is not divisible by indices_per_group last group will have less elements.
 ///
 /// For example for:
@@ -54,6 +61,34 @@ struct GroupOfIndicesDescriptor
 std::vector<GroupOfIndicesDescriptor> split_array_into_groups(const index_id_t first_index,
                                                               const number_of_indices_t number_of_indices,
                                                               const number_of_indices_t indices_per_group);
+
+/// \brief Splits numbers into groups and then further splits each group into subgroups
+///
+/// Splits numbers between first_index and first_index + number_of_indices into groups of indices_per_group numbers.
+/// If number_of_indices is not divisible by indices_per_group last group will have less elements.
+/// After this it splits each group into subgroups of indices_per_subgroup elements.
+///
+/// For example for:
+/// first_index = 100
+/// number_of_indices = 71
+/// indices_per_group = 16
+/// indices_per_subgroup = 5
+/// generated groups will be:
+/// (100, 16) - (100, 5), (105, 5), (110, 5), (115, 1)
+/// (116, 16) - (116, 5), (121, 5), (126, 5), (131, 1)
+/// (132, 16) - (132, 5), (137, 5), (142, 5), (147, 1)
+/// (148, 16) - (148, 5), (153, 5), (158, 5), (163, 1)
+/// (164,  7) - (164, 5), (169, 2)
+///
+/// \param first_index
+/// \param total_number_of_indices
+/// \param indices_per_group
+/// \param indices_per_subgroup
+/// \return generated groups
+std::vector<GroupAndSubgroupsOfIndicesDescriptor> generate_groups_and_subgroups(const index_id_t first_index,
+                                                                                const number_of_indices_t total_number_of_indices,
+                                                                                const number_of_indices_t indices_per_group,
+                                                                                const number_of_indices_t indices_per_subgroup);
 
 } // namespace index_batcher
 } // namespace details
