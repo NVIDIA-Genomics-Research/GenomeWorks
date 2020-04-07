@@ -12,11 +12,13 @@ set(TARGET_NAME cudamappertests)
 
 set(SOURCES
     main.cpp
+    Test_CudamapperIndexBatcher.cu
     Test_CudamapperIndexCache.cu
     Test_CudamapperIndexGPU.cu
     Test_CudamapperMatcherGPU.cu
     Test_CudamapperMinimizer.cpp
     Test_CudamapperOverlapperTriggered.cu
+    ../src/index_batcher.cu
     ../src/index_cache.cu)
 
 get_property(cudamapper_data_include_dir GLOBAL PROPERTY cudamapper_data_include_dir)
