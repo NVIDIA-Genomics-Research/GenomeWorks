@@ -357,13 +357,5 @@ int main(int argc, char** argv)
         }
     }
 
-    if (print_graph && long_read)
-    {
-        std::vector<DirectedGraph> graph;
-        std::vector<StatusType> graph_status;
-        batch->get_graphs(graph, graph_status);
-        std::cout << graph.front().serialize_to_dot() << std::endl;
-    }
-
     return 0;
 }
