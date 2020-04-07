@@ -52,15 +52,21 @@ cdef extern from "claragenomics/cudapoa/batch.hpp" namespace "claragenomics::cud
         const int8_t* weights
         int32_t length
 
-    cdef struct BatchSize:
-        uint32_t max_sequence_size
-        uint32_t max_concensus_size
-        uint32_t max_nodes_per_window
-        uint32_t max_nodes_per_window_banded
-        uint32_t max_matrix_graph_dimension
-        uint32_t max_matrix_graph_dimension_banded
-        uint32_t max_matrix_sequence_dimension
-        uint32_t max_sequences_per_poa
+    cdef cppclass BatchSize:
+        int32_t max_sequence_size
+        int32_t max_concensus_size
+        int32_t max_nodes_per_window
+        int32_t max_nodes_per_window_banded
+        int32_t max_matrix_graph_dimension
+        int32_t max_matrix_graph_dimension_banded
+        int32_t max_matrix_sequence_dimension
+        int32_t max_sequences_per_poa
+
+        BatchSize(int32_t, int32_t)
+        BatchSize(int32_t, int32_t, int32_t,
+                  int32_t, int32_t,
+                  int32_t, int32_t,
+                  int32_t)
 
     ctypedef vector[Entry] Group
 
