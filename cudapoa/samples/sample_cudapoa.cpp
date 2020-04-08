@@ -319,7 +319,6 @@ int main(int argc, char** argv)
 
     if (long_read)
     {
-        //generate_simulated_long_reads(windows, batch_size);
         generate_bonito_long_reads(windows, batch_size);
     }
     else
@@ -388,10 +387,17 @@ int main(int argc, char** argv)
                 }
             }
 
-            // After MSA is generated for batch, reset batch to make room for next set of POA groups.
+            // After MSA/consensus is generated for batch, reset batch to make room for next set of POA groups.
             batch->reset();
 
-            std::cout << "Processed windows " << window_count << " - " << i << std::endl;
+            if (status == StatusType::success)
+            {
+                std::cout << "Processed windows " << window_count << " - " << i << std::endl;
+            }
+            else
+            {
+                std::cout << "Processed windows " << window_count << " - " << i - 1 << std::endl;
+            }
 
             window_count = i;
         }
