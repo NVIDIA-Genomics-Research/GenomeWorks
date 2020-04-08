@@ -129,6 +129,72 @@ void process_batch(Batch* batch, bool msa, bool print)
     }
 }
 
+void spoa_generate(const std::vector<std::vector<std::string>>& groups, const int32_t start_id, const int32_t end_id, bool msa, bool print)
+{
+    spoa::AlignmentType atype = spoa::AlignmentType::kNW;
+    int match_score           = 8;
+    int mismatch_score        = -6;
+    int gap_score             = -8;
+
+    auto alignment_engine = spoa::createAlignmentEngine(atype, match_score, mismatch_score, gap_score);
+    auto graph            = spoa::createGraph();
+
+    if (msa)
+    {
+        // Grab MSA results for all groups within the range
+        std::vector<std::vector<std::string>> msa(end_id - start_id); // MSA per group
+
+        for (int32_t g = start_id; g < end_id; g++)
+        {
+            for (const auto& it : groups[g])
+            {
+                auto alignment = alignment_engine->align(it, graph);
+                graph->add_alignment(alignment, it);
+            }
+            graph->generate_multiple_sequence_alignment(msa[g]);
+        }
+
+        if (print)
+        {
+            std::cout << std::endl;
+            for (int32_t g = 0; g < get_size(msa); g++)
+            {
+                {
+                    for (const auto& alignment : msa[g])
+                    {
+                        std::cout << alignment << std::endl;
+                    }
+                }
+            }
+        }
+    }
+    else
+    {
+        // Grab consensus results for all POA groups within the range
+        std::vector<std::string> consensus(end_id - start_id);          // Consensus string for each POA group
+        std::vector<std::vector<uint32_t>> coverage(end_id - start_id); // Per base coverage for each consensus
+
+        for (int32_t g = start_id; g < end_id; g++)
+        {
+            for (const auto& it : groups[g])
+            {
+                auto alignment = alignment_engine->align(it, graph);
+                graph->add_alignment(alignment, it);
+            }
+            consensus[g] = graph->generate_consensus(coverage[g]);
+        }
+
+        if (print)
+        {
+            std::cout << std::endl;
+            for (int32_t g = 0; g < get_size(consensus); g++)
+            {
+                std::cout << consensus[g] << std::endl;
+            }
+        }
+    }
+}
+
 void generate_short_reads(std::vector<std::vector<std::string>>& windows, BatchSize& batch_size)
 {
     const std::string input_data = std::string(CUDAPOA_BENCHMARK_DATA_DIR) + "/sample-windows.txt";
@@ -140,7 +206,7 @@ void generate_short_reads(std::vector<std::vector<std::string>>& windows, BatchS
 void generate_bonito_long_reads(std::vector<std::vector<std::string>>& windows, BatchSize& batch_size)
 {
     const std::string input_data = std::string(CUDAPOA_BENCHMARK_DATA_DIR) + "/sample-bonito.txt";
-    const int32_t num_windows    = 5;
+    const int32_t num_windows    = 4;//5;
     parse_window_data_file(windows, input_data, num_windows); // Generate windows.
     assert(get_size(windows) > 0);
 
@@ -193,27 +259,6 @@ void generate_simulated_long_reads(std::vector<std::vector<std::string>>& window
 
     // Define upper limits for sequence size, graph size ....
     batch_size = BatchSize(max_sequence_length, number_of_reads);
-}
-
-std::vector<std::string> spoa_generate(std::vector<std::string> sequences,
-                                       spoa::AlignmentType atype = spoa::AlignmentType::kNW,
-                                       int match_score           = 8,
-                                       int mismatch_score        = -6,
-                                       int gap_score             = -8)
-{
-    auto alignment_engine = spoa::createAlignmentEngine(atype, match_score, mismatch_score, gap_score);
-    auto graph            = spoa::createGraph();
-
-    for (const auto& it : sequences)
-    {
-        auto alignment = alignment_engine->align(it, graph);
-        graph->add_alignment(alignment, it);
-    }
-
-    std::vector<std::string> msa;
-    //graph->generate_multiple_sequence_alignment(msa);
-
-    return msa;
 }
 
 int main(int argc, char** argv)
@@ -291,6 +336,11 @@ int main(int argc, char** argv)
     int32_t window_count = 0;
     // to avoid potential infinite loop
     int32_t error_count = 0;
+    // for benchmarking
+    float cudapoa_time = 0.f;
+    float spoa_time    = 0.f;
+    ChronoTimer timer;
+
     for (int32_t i = 0; i < get_size(windows);)
     {
         const std::vector<std::string>& window = windows[i];
@@ -314,7 +364,20 @@ int main(int argc, char** argv)
         if (status == StatusType::exceeded_maximum_poas || status == StatusType::exceeded_batch_size || (i == get_size(windows) - 1))
         {
             // No more POA groups can be added to batch. Now process batch.
-            process_batch(batch.get(), msa, print);
+            if (benchmark)
+            {
+                timer.start_timer();
+                process_batch(batch.get(), msa, print);
+                cudapoa_time += timer.stop_timer();
+
+                timer.start_timer();
+                spoa_generate(windows, window_count, window_count + batch->get_total_poas(), msa, print);
+                spoa_time += timer.stop_timer();
+            }
+            else
+            {
+                process_batch(batch.get(), msa, print);
+            }
 
             if (print_graph && long_read)
             {
@@ -355,6 +418,11 @@ int main(int argc, char** argv)
             if (error_count > get_size(windows))
                 break;
         }
+    }
+
+    if (benchmark)
+    {
+        std::cerr << "Compute time: cudaPOA " << cudapoa_time << "(sec), SPOA " << spoa_time << "(sec)" << std::endl;
     }
 
     return 0;
