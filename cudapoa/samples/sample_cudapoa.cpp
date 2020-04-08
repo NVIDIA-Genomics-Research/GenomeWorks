@@ -127,7 +127,7 @@ void process_batch(Batch* batch, bool msa, bool print)
     }
 }
 
-void spoa_generate(const std::vector<std::vector<std::string>>& groups, const int32_t start_id, const int32_t end_id, bool msa, bool print)
+void spoa_compute(const std::vector<std::vector<std::string>>& groups, const int32_t start_id, const int32_t end_id, bool msa, bool print)
 {
     spoa::AlignmentType atype = spoa::AlignmentType::kNW;
     int match_score           = 8;
@@ -149,16 +149,16 @@ void spoa_generate(const std::vector<std::vector<std::string>>& groups, const in
                 auto alignment = alignment_engine->align(it, graph);
                 graph->add_alignment(alignment, it);
             }
-            graph->generate_multiple_sequence_alignment(msa[g]);
+            graph->generate_multiple_sequence_alignment(msa[g - start_id]);
         }
 
         if (print)
         {
             std::cout << std::endl;
-            for (int32_t g = 0; g < get_size(msa); g++)
+            for (int32_t i = 0; i < get_size(msa); i++)
             {
                 {
-                    for (const auto& alignment : msa[g])
+                    for (const auto& alignment : msa[i])
                     {
                         std::cout << alignment << std::endl;
                     }
@@ -179,15 +179,15 @@ void spoa_generate(const std::vector<std::vector<std::string>>& groups, const in
                 auto alignment = alignment_engine->align(it, graph);
                 graph->add_alignment(alignment, it);
             }
-            consensus[g] = graph->generate_consensus(coverage[g]);
+            consensus[g - start_id] = graph->generate_consensus(coverage[g - start_id]);
         }
 
         if (print)
         {
             std::cout << std::endl;
-            for (int32_t g = 0; g < get_size(consensus); g++)
+            for (int32_t i = 0; i < get_size(consensus); i++)
             {
-                std::cout << consensus[g] << std::endl;
+                std::cout << consensus[i] << std::endl;
             }
         }
     }
@@ -204,7 +204,7 @@ void generate_short_reads(std::vector<std::vector<std::string>>& windows, BatchS
 void generate_bonito_long_reads(std::vector<std::vector<std::string>>& windows, BatchSize& batch_size)
 {
     const std::string input_data = std::string(CUDAPOA_BENCHMARK_DATA_DIR) + "/sample-bonito.txt";
-    const int32_t num_windows    = 4;//5;
+    const int32_t num_windows    = 5;
     parse_window_data_file(windows, input_data, num_windows); // Generate windows.
     assert(get_size(windows) > 0);
 
@@ -368,7 +368,7 @@ int main(int argc, char** argv)
                 cudapoa_time += timer.stop_timer();
 
                 timer.start_timer();
-                spoa_generate(windows, window_count, window_count + batch->get_total_poas(), msa, print);
+                spoa_compute(windows, window_count, window_count + batch->get_total_poas(), msa, print);
                 spoa_time += timer.stop_timer();
             }
             else
