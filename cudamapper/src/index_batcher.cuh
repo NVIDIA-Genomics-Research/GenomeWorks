@@ -12,6 +12,8 @@
 
 #include <vector>
 
+#include "index_cache.cuh"
+
 namespace claragenomics
 {
 namespace cudamapper
@@ -40,6 +42,13 @@ struct GroupAndSubgroupsOfIndicesDescriptor
 {
     GroupOfIndicesDescriptor whole_group;
     std::vector<GroupOfIndicesDescriptor> subgroups;
+};
+
+// HostAndDeviceGroupsOfIndices - holds all indices of host batch and device batches
+struct HostAndDeviceGroupsOfIndices
+{
+    std::vector<IndexDescriptor> host_indices_group;
+    std::vector<std::vector<IndexDescriptor>> device_indices_groups;
 };
 
 /// \brief Splits numbers into groups
@@ -89,6 +98,13 @@ std::vector<GroupAndSubgroupsOfIndicesDescriptor> generate_groups_and_subgroups(
                                                                                 const number_of_indices_t total_number_of_indices,
                                                                                 const number_of_indices_t indices_per_group,
                                                                                 const number_of_indices_t indices_per_subgroup);
+
+/// \brief Transforms descriptor of group of indices into descriptors of indices
+/// \param index_descriptors descriptor of every individual index
+/// \param groups_and_subgroups descriptors of groups of indices
+/// \return groups of index descriptors
+std::vector<HostAndDeviceGroupsOfIndices> convert_groups_of_indices_into_groups_of_index_descriptors(const std::vector<IndexDescriptor>& index_descriptors,
+                                                                                                     const std::vector<GroupAndSubgroupsOfIndicesDescriptor>& groups_and_subgroups);
 
 } // namespace index_batcher
 } // namespace details

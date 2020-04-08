@@ -235,5 +235,80 @@ TEST(TestCudamapperIndexBatcher, test_split_array_into_groups_nothing_divisible)
                                        expected_groups);
 }
 
+// *** test convert_groups_of_indices_into_groups_of_index_descriptors ***
+
+void test_convert_groups_of_indices_into_groups_of_index_descriptors(const std::vector<IndexDescriptor>& index_descriptors,
+                                                                     const std::vector<details::index_batcher::GroupAndSubgroupsOfIndicesDescriptor>& groups_and_subgroups,
+                                                                     const std::vector<details::index_batcher::HostAndDeviceGroupsOfIndices>& expected_groups_of_indices)
+{
+    const std::vector<details::index_batcher::HostAndDeviceGroupsOfIndices> generated_groups_of_indices =
+        details::index_batcher::convert_groups_of_indices_into_groups_of_index_descriptors(index_descriptors,
+                                                                                           groups_and_subgroups);
+
+    ASSERT_EQ(expected_groups_of_indices.size(), generated_groups_of_indices.size());
+
+    for (std::size_t i = 0; i < expected_groups_of_indices.size(); ++i)
+    {
+        const details::index_batcher::HostAndDeviceGroupsOfIndices& expected_group_of_indices  = expected_groups_of_indices[i];
+        const details::index_batcher::HostAndDeviceGroupsOfIndices& generated_group_of_indices = generated_groups_of_indices[i];
+        // check indices in host batch
+        ASSERT_EQ(expected_group_of_indices.host_indices_group.size(), generated_group_of_indices.host_indices_group.size()) << "i: " << i;
+        for (std::size_t j = 0; j < expected_group_of_indices.host_indices_group.size(); ++j)
+        {
+            const IndexDescriptor& expected_host_index  = expected_group_of_indices.host_indices_group[j];
+            const IndexDescriptor& generated_host_index = generated_group_of_indices.host_indices_group[j];
+            ASSERT_EQ(expected_host_index.first_read(), generated_host_index.first_read()) << "i: " << i << ", j: " << j;
+            ASSERT_EQ(expected_host_index.number_of_reads(), generated_host_index.number_of_reads()) << "i: " << i << ", j: " << j;
+        }
+        // check indices in multiple device batches
+        ASSERT_EQ(expected_group_of_indices.device_indices_groups.size(), generated_group_of_indices.device_indices_groups.size()) << "i: " << i;
+        for (std::size_t j = 0; j < expected_group_of_indices.device_indices_groups.size(); ++j)
+        {
+            const std::vector<IndexDescriptor>& expected_device_indices_group  = expected_group_of_indices.device_indices_groups[j];
+            const std::vector<IndexDescriptor>& generated_device_indices_group = generated_group_of_indices.device_indices_groups[j];
+            // check indices in every device batch
+            ASSERT_EQ(expected_device_indices_group.size(), generated_device_indices_group.size());
+            for (std::size_t k = 0; k < expected_device_indices_group.size(); ++k)
+            {
+                const IndexDescriptor& expected_host_index  = expected_device_indices_group[k];
+                const IndexDescriptor& generated_host_index = generated_device_indices_group[k];
+                ASSERT_EQ(expected_host_index.first_read(), generated_host_index.first_read()) << "i: " << i << ", j: " << j << "k: " << k;
+                ASSERT_EQ(expected_host_index.number_of_reads(), generated_host_index.number_of_reads()) << "i: " << i << ", j: " << j << "k: " << k;
+            }
+        }
+    }
+}
+
+TEST(TestCudamapperIndexBatcher, test_convert_groups_of_indices_into_groups_of_index_descriptors)
+{
+    std::vector<IndexDescriptor> index_descriptors;
+    index_descriptors.push_back({0, 10});   // 0
+    index_descriptors.push_back({10, 10});  // 1
+    index_descriptors.push_back({20, 10});  // 2
+    index_descriptors.push_back({30, 10});  // 3
+    index_descriptors.push_back({40, 10});  // 4
+    index_descriptors.push_back({50, 20});  // 5
+    index_descriptors.push_back({70, 20});  // 6
+    index_descriptors.push_back({90, 30});  // 7
+    index_descriptors.push_back({120, 50}); // 8
+    index_descriptors.push_back({170, 50}); // 9
+
+    std::vector<details::index_batcher::GroupAndSubgroupsOfIndicesDescriptor> groups_and_subgroups;
+    std::vector<details::index_batcher::HostAndDeviceGroupsOfIndices> expected_groups_of_indices;
+    groups_and_subgroups.push_back({{0, 3}, {{0, 1}, {1, 2}}});
+    expected_groups_of_indices.push_back({{{0, 10}, {10, 10}, {20, 10}},
+                                          {{{0, 10}}, {{10, 10}, {20, 10}}}});
+    groups_and_subgroups.push_back({{3, 4}, {{3, 2}, {5, 2}}});
+    expected_groups_of_indices.push_back({{{30, 10}, {40, 10}, {50, 20}, {70, 20}},
+                                          {{{30, 10}, {40, 10}}, {{50, 20}, {70, 20}}}});
+    groups_and_subgroups.push_back({{7, 3}, {{7, 3}}});
+    expected_groups_of_indices.push_back({{{90, 30}, {120, 50}, {170, 50}},
+                                          {{{90, 30}, {120, 50}, {170, 50}}}});
+
+    test_convert_groups_of_indices_into_groups_of_index_descriptors(index_descriptors,
+                                                                    groups_and_subgroups,
+                                                                    expected_groups_of_indices);
+}
+
 } // namespace cudamapper
 } // namespace claragenomics

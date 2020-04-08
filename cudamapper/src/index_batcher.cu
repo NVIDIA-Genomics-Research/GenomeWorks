@@ -61,6 +61,35 @@ std::vector<GroupAndSubgroupsOfIndicesDescriptor> generate_groups_and_subgroups(
     return groups_and_subroups;
 }
 
+std::vector<HostAndDeviceGroupsOfIndices> convert_groups_of_indices_into_groups_of_index_descriptors(const std::vector<IndexDescriptor>& index_descriptors,
+                                                                                                     const std::vector<GroupAndSubgroupsOfIndicesDescriptor>& groups_and_subgroups)
+{
+    std::vector<HostAndDeviceGroupsOfIndices> results;
+
+    for (const details::index_batcher::GroupAndSubgroupsOfIndicesDescriptor& group_and_its_subgroups : groups_and_subgroups)
+    {
+        details::index_batcher::GroupOfIndicesDescriptor host_group = group_and_its_subgroups.whole_group;
+        std::vector<IndexDescriptor> host_indices;
+        std::copy(std::begin(index_descriptors) + host_group.first_index,
+                  std::begin(index_descriptors) + host_group.first_index + host_group.number_of_indices,
+                  std::back_inserter(host_indices));
+
+        std::vector<details::index_batcher::GroupOfIndicesDescriptor> device_groups = group_and_its_subgroups.subgroups;
+        std::vector<std::vector<IndexDescriptor>> device_indices;
+        for (const details::index_batcher::GroupOfIndicesDescriptor& device_group : device_groups)
+        {
+            std::vector<IndexDescriptor> device_indices_single;
+            std::copy(std::begin(index_descriptors) + device_group.first_index,
+                      std::begin(index_descriptors) + device_group.first_index + device_group.number_of_indices,
+                      std::back_inserter(device_indices_single));
+            device_indices.push_back(std::move(device_indices_single));
+        }
+        results.push_back({host_indices, device_indices});
+    }
+
+    return results;
+}
+
 } // namespace index_batcher
 } // namespace details
 
