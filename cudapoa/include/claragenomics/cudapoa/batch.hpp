@@ -63,7 +63,7 @@ struct BatchSize
     int32_t max_matrix_graph_dimension_banded = max_nodes_per_window_banded;
     /// Maximum horizontal dimension of scoring matrix, which stores sequences
     int32_t max_matrix_sequence_dimension = max_sequence_size;
-    /// Maximum number of equences per POA group
+    /// Maximum number of sequences per POA group
     int32_t max_sequences_per_poa;
 
     /// constructor- set upper limit parameters based on max_sequence_size

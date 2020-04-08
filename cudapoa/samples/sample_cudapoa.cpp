@@ -193,19 +193,20 @@ void spoa_compute(const std::vector<std::vector<std::string>>& groups, const int
     }
 }
 
-void generate_short_reads(std::vector<std::vector<std::string>>& windows, BatchSize& batch_size)
+void generate_short_reads(std::vector<std::vector<std::string>>& windows, BatchSize& batch_size,
+                          const int32_t number_of_windows = 1000, const int32_t sequence_size = 1024, const int32_t group_size = 100)
 {
     const std::string input_data = std::string(CUDAPOA_BENCHMARK_DATA_DIR) + "/sample-windows.txt";
-    parse_window_data_file(windows, input_data, 1000); // Generate windows.
+    parse_window_data_file(windows, input_data, number_of_windows); // Generate windows.
     assert(get_size(windows) > 0);
-    batch_size = BatchSize(1024, 100);
+    batch_size = BatchSize(sequence_size, group_size);
 }
 
-void generate_bonito_long_reads(std::vector<std::vector<std::string>>& windows, BatchSize& batch_size)
+void generate_bonito_long_reads(std::vector<std::vector<std::string>>& windows, BatchSize& batch_size,
+                                const int32_t number_of_windows = 5, const int32_t sequence_size = 20000, const int32_t group_size = 6)
 {
     const std::string input_data = std::string(CUDAPOA_BENCHMARK_DATA_DIR) + "/sample-bonito.txt";
-    const int32_t num_windows    = 5;
-    parse_window_data_file(windows, input_data, num_windows); // Generate windows.
+    parse_window_data_file(windows, input_data, number_of_windows); // Generate windows.
     assert(get_size(windows) > 0);
 
     int32_t max_read_length = 0;
@@ -217,18 +218,18 @@ void generate_bonito_long_reads(std::vector<std::vector<std::string>>& windows, 
         }
     }
 
-    batch_size = BatchSize(max_read_length, 6);
+    assert(sequence_size >= max_read_length);
+
+    batch_size = BatchSize(max_read_length, group_size);
 }
 
-void generate_simulated_long_reads(std::vector<std::vector<std::string>>& windows, BatchSize& batch_size)
+void generate_simulated_long_reads(std::vector<std::vector<std::string>>& windows, BatchSize& batch_size,
+                                   const int32_t number_of_windows = 2, const int32_t sequence_size = 10000, const int32_t group_size = 5)
 {
     constexpr uint32_t random_seed = 5827349;
     std::minstd_rand rng(random_seed);
 
-    const int16_t number_of_windows = 2;
-    const int16_t number_of_reads   = 5;
-    const int32_t read_length       = 10000;
-    int32_t max_sequence_length     = read_length + 1;
+    int32_t max_sequence_length = sequence_size + 1;
 
     std::vector<std::pair<int, int>> variation_ranges;
     variation_ranges.push_back(std::pair<int, int>(30, 50));
@@ -241,14 +242,14 @@ void generate_simulated_long_reads(std::vector<std::vector<std::string>>& window
     variation_ranges.push_back(std::pair<int, int>(6000, 6200));
     variation_ranges.push_back(std::pair<int, int>(8000, 8300));
 
-    std::vector<std::string> long_reads(number_of_reads);
+    std::vector<std::string> long_reads(group_size);
 
     for (int w = 0; w < number_of_windows; w++)
     {
-        long_reads[0] = claragenomics::genomeutils::generate_random_genome(read_length, rng);
-        for (int i = 1; i < number_of_reads; i++)
+        long_reads[0] = claragenomics::genomeutils::generate_random_genome(sequence_size, rng);
+        for (int i = 1; i < group_size; i++)
         {
-            long_reads[i]       = claragenomics::genomeutils::generate_random_sequence(long_reads[0], rng, read_length, read_length, read_length, &variation_ranges);
+            long_reads[i]       = claragenomics::genomeutils::generate_random_sequence(long_reads[0], rng, sequence_size, sequence_size, sequence_size, &variation_ranges);
             max_sequence_length = max_sequence_length > get_size(long_reads[i]) ? max_sequence_length : get_size(long_reads[i]) + 1;
         }
         // add long reads as one window
@@ -256,7 +257,7 @@ void generate_simulated_long_reads(std::vector<std::vector<std::string>>& window
     }
 
     // Define upper limits for sequence size, graph size ....
-    batch_size = BatchSize(max_sequence_length, number_of_reads);
+    batch_size = BatchSize(max_sequence_length, sequence_size);
 }
 
 int main(int argc, char** argv)
@@ -270,7 +271,12 @@ int main(int argc, char** argv)
     bool print_graph = false;
     bool benchmark   = false;
 
-    while ((c = getopt(argc, argv, "mlhpgb")) != -1)
+    // following parameters are used in benchmarking only
+    int32_t number_of_windows = 0;
+    int32_t sequence_size  = 0;
+    int32_t group_size     = 0;
+
+    while ((c = getopt(argc, argv, "mlhpgbW:S:N:")) != -1)
     {
         switch (c)
         {
@@ -289,6 +295,15 @@ int main(int argc, char** argv)
         case 'b':
             benchmark = true;
             break;
+        case 'W':
+            number_of_windows = atoi(optarg);
+            break;
+        case 'S':
+            sequence_size = atoi(optarg);
+            break;
+        case 'N':
+            group_size = atoi(optarg);
+            break;
         case 'h':
             help = true;
             break;
@@ -305,9 +320,17 @@ int main(int argc, char** argv)
         std::cout << "-p : Print the MSA or consensus output to stdout" << std::endl;
         std::cout << "-g : Print POA graph in dot format, this option is only for long-read sample" << std::endl;
         std::cout << "-b : Benchmark against SPOA" << std::endl;
+        std::cout << "-W : Number of total windows used in benchmarking" << std::endl;
+        std::cout << "-S : Maximum sequence length in benchmarking" << std::endl;
+        std::cout << "-N : Number of sequences per POA group" << std::endl;
         std::cout << "-h : Print help message" << std::endl;
         std::exit(0);
     }
+
+    // if not defined as input args, set default values for benchmarking parameters
+    number_of_windows = number_of_windows == 0 ? (long_read ? 10 : 1000) : number_of_windows;
+    sequence_size  = sequence_size == 0 ? (long_read ? 10000 : 1024) : sequence_size;
+    group_size     = group_size == 0 ? (long_read ? 6 : 100) : group_size;
 
     // Load input data. Each POA group is represented as a vector of strings. The sample
     // data for short reads has many such POA groups to process, hence the data is loaded into a vector
@@ -317,13 +340,28 @@ int main(int argc, char** argv)
     // Define upper limits for sequence size, graph size ....
     BatchSize batch_size;
 
-    if (long_read)
+    if (benchmark)
     {
-        generate_bonito_long_reads(windows, batch_size);
+        if (long_read)
+        {
+            generate_simulated_long_reads(windows, batch_size, number_of_windows, sequence_size, group_size);
+            //generate_bonito_long_reads(windows, batch_size, sequence_size, group_size);
+        }
+        else
+        {
+            generate_short_reads(windows, batch_size, sequence_size, group_size);
+        }
     }
     else
     {
-        generate_short_reads(windows, batch_size);
+        if (long_read)
+        {
+            generate_bonito_long_reads(windows, batch_size);
+        }
+        else
+        {
+            generate_short_reads(windows, batch_size);
+        }
     }
 
     // Initialize batch.
