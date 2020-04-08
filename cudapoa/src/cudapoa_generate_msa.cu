@@ -50,7 +50,8 @@ __device__ void generateMSADevice(uint8_t* nodes,
                                   uint16_t* sequence_begin_nodes_ids,      //fill this pointer in the generatePOAKernel
                                   uint8_t* multiple_sequence_alignments,
                                   uint16_t msa_length,
-                                  uint32_t max_sequences_per_poa)
+                                  uint32_t max_sequences_per_poa,
+                                  uint32_t max_limit_consensus_size)
 {
     // each thread operate on a sequence
     uint16_t s = threadIdx.x;
@@ -61,15 +62,15 @@ __device__ void generateMSADevice(uint8_t* nodes,
     uint16_t filled_until = 0;
     while (true)
     {
-        uint16_t msa_pos                                                       = node_id_to_msa_pos[node_id];
-        multiple_sequence_alignments[s * CUDAPOA_MAX_CONSENSUS_SIZE + msa_pos] = nodes[node_id];
+        uint16_t msa_pos                                                     = node_id_to_msa_pos[node_id];
+        multiple_sequence_alignments[s * max_limit_consensus_size + msa_pos] = nodes[node_id];
 
         // fill the gap in current alignment with '-'
         if (msa_pos > filled_until)
         {
             for (uint16_t i = filled_until; i < msa_pos; i++)
             {
-                multiple_sequence_alignments[s * CUDAPOA_MAX_CONSENSUS_SIZE + i] = '-';
+                multiple_sequence_alignments[s * max_limit_consensus_size + i] = '-';
             }
         }
         filled_until = msa_pos + 1;
@@ -101,13 +102,13 @@ __device__ void generateMSADevice(uint8_t* nodes,
             {
                 for (uint16_t i = filled_until; i < msa_length; i++)
                 {
-                    multiple_sequence_alignments[s * CUDAPOA_MAX_CONSENSUS_SIZE + i] = '-';
+                    multiple_sequence_alignments[s * max_limit_consensus_size + i] = '-';
                 }
             }
             break; //no next node, break out of the while loop and we have found a complete sequence.
         }
     }
-    multiple_sequence_alignments[s * CUDAPOA_MAX_CONSENSUS_SIZE + msa_length] = '\0';
+    multiple_sequence_alignments[s * max_limit_consensus_size + msa_length] = '\0';
 }
 
 template <bool cuda_banded_alignment = false>
@@ -131,17 +132,20 @@ __global__ void generateMSAKernel(uint8_t* nodes_d,
                                   uint16_t* node_id_to_pos_d,
                                   uint8_t* node_marks_d,
                                   bool* check_aligned_nodes_d,
-                                  uint16_t* nodes_to_visit_d)
+                                  uint16_t* nodes_to_visit_d,
+                                  uint32_t max_limit_nodes_per_window,
+                                  uint32_t max_limit_nodes_per_window_banded,
+                                  uint32_t max_limit_consensus_size)
 {
     //each block of threads will operate on a window
     uint32_t window_idx = blockIdx.x;
 
-    uint8_t* consensus = &consensus_d[window_idx * CUDAPOA_MAX_CONSENSUS_SIZE];
+    uint8_t* consensus = &consensus_d[window_idx * max_limit_consensus_size];
 
     if (consensus[0] == CUDAPOA_KERNEL_ERROR_ENCOUNTERED) //error during graph generation
         return;
 
-    uint32_t max_nodes_per_window = cuda_banded_alignment ? CUDAPOA_MAX_NODES_PER_WINDOW_BANDED : CUDAPOA_MAX_NODES_PER_WINDOW;
+    uint32_t max_nodes_per_window = cuda_banded_alignment ? max_limit_nodes_per_window_banded : max_limit_nodes_per_window;
 
     // Find the buffer offsets for each thread within the global memory buffers.
     uint8_t* nodes                          = &nodes_d[max_nodes_per_window * window_idx];
@@ -151,7 +155,7 @@ __global__ void generateMSAKernel(uint8_t* nodes_d,
     uint16_t* outgoing_edges_coverage_count = &outgoing_edges_coverage_count_d[window_idx * max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES];
     int16_t* node_id_to_msa_pos             = &node_id_to_msa_pos_d[window_idx * max_nodes_per_window];
     uint16_t* sequence_begin_nodes_ids      = &sequence_begin_nodes_ids_d[window_idx * max_sequences_per_poa];
-    uint8_t* multiple_sequence_alignments   = &multiple_sequence_alignments_d[window_idx * max_sequences_per_poa * CUDAPOA_MAX_CONSENSUS_SIZE];
+    uint8_t* multiple_sequence_alignments   = &multiple_sequence_alignments_d[window_idx * max_sequences_per_poa * max_limit_consensus_size];
     uint16_t* sorted_poa                    = &sorted_poa_d[window_idx * max_nodes_per_window];
     uint16_t* node_alignment_counts         = &node_alignment_counts_d[window_idx * max_nodes_per_window];
     uint32_t num_sequences                  = window_details_d[window_idx].num_seqs;
@@ -180,14 +184,15 @@ __global__ void generateMSAKernel(uint8_t* nodes_d,
                                        node_marks,
                                        check_aligned_nodes,
                                        nodes_to_visit,
-                                       cuda_banded_alignment);
+                                       cuda_banded_alignment,
+                                       (uint16_t)max_nodes_per_window);
 
         msa_length = getNodeIDToMSAPosDevice(sequence_lengths[0],
                                              sorted_poa,
                                              node_id_to_msa_pos,
                                              node_alignment_counts);
 
-        if (msa_length >= CUDAPOA_MAX_CONSENSUS_SIZE)
+        if (msa_length >= max_limit_consensus_size)
         {
             consensus[0] = CUDAPOA_KERNEL_ERROR_ENCOUNTERED;
             consensus[1] = static_cast<uint8_t>(StatusType::exceeded_maximum_sequence_size);
@@ -209,7 +214,8 @@ __global__ void generateMSAKernel(uint8_t* nodes_d,
                       sequence_begin_nodes_ids,
                       multiple_sequence_alignments,
                       msa_length,
-                      max_sequences_per_poa);
+                      max_sequences_per_poa,
+                      max_limit_consensus_size);
 }
 
 } // namespace cudapoa

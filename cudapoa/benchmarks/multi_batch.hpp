@@ -37,6 +37,8 @@ public:
 
         assert(get_size(windows_) > 0);
 
+        BatchSize batch_size(1024, 200);
+
         size_t total = 0, free = 0;
         cudaSetDevice(0);
         cudaMemGetInfo(&free, &total);
@@ -45,9 +47,9 @@ public:
         {
             cudaStream_t stream;
             cudaStreamCreate(&stream);
-            batches_.emplace_back(create_batch(200,
-                                               0, stream, mem_per_batch,
+            batches_.emplace_back(create_batch(0, stream, mem_per_batch,
                                                OutputType::consensus,
+                                               batch_size,
                                                -8, -6, 8, false));
         }
     }

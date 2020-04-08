@@ -124,10 +124,11 @@ extensions = [
         include_dirs=[
             "/usr/local/cuda/include",
             get_verified_absolute_path(os.path.join(cga_install_dir, "include")),
+            get_verified_absolute_path(os.path.join(cga_root_dir, "3rdparty", "spdlog", "include")),
         ],
         library_dirs=["/usr/local/cuda/lib64", get_verified_absolute_path(os.path.join(cga_install_dir, "lib"))],
         runtime_library_dirs=["/usr/local/cuda/lib64", os.path.join('$ORIGIN', os.pardir, 'shared_libs')],
-        libraries=["cudapoa", "cudart", "cgalogging"],
+        libraries=["cudapoa", "cudart", "cgalogging", "cgautils"],
         language="c++",
         extra_compile_args=["-std=c++14"],
     ),
@@ -142,7 +143,7 @@ extensions = [
         ],
         library_dirs=["/usr/local/cuda/lib64", get_verified_absolute_path(os.path.join(cga_install_dir, "lib"))],
         runtime_library_dirs=["/usr/local/cuda/lib64", os.path.join('$ORIGIN', os.pardir, 'shared_libs')],
-        libraries=["cudaaligner", "cudart", "cgalogging"],
+        libraries=["cudaaligner", "cudart", "cgalogging", "cgautils"],
         language="c++",
         extra_compile_args=["-std=c++14"],
     )

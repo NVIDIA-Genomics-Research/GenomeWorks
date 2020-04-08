@@ -21,8 +21,6 @@ cuda_add_library(cudapoa ${cga_library_type}
     src/cudapoa.cpp
     src/cudapoa_kernels.cu
     src/batch.cpp
-    src/cudapoa_batch.cpp
-    src/allocate_block.cpp
     )
 
 target_link_libraries(cudapoa cgautils cgalogging)

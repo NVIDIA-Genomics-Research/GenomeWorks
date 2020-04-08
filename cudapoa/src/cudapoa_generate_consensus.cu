@@ -140,7 +140,8 @@ __device__ void generateConsensus(uint8_t* nodes,
                                   uint16_t* coverage,
                                   uint16_t* node_coverage_counts,
                                   uint16_t* node_alignments,
-                                  uint16_t* node_alignment_count)
+                                  uint16_t* node_alignment_count,
+                                  uint32_t max_limit_consensus_size)
 {
     // Initialize scores and predecessors to default value.
     for (uint16_t i = 0; i < node_count; i++)
@@ -241,7 +242,7 @@ __device__ void generateConsensus(uint8_t* nodes,
         }
         coverage[consensus_pos] = cov;
         max_score_id            = predecessors[max_score_id];
-        consensus_pos           = min(consensus_pos + 1, CUDAPOA_MAX_CONSENSUS_SIZE - 1);
+        consensus_pos           = min(consensus_pos + 1, max_limit_consensus_size - 1);
         consensus_count++;
     }
     consensus[consensus_pos] = nodes[max_score_id];
@@ -253,7 +254,7 @@ __device__ void generateConsensus(uint8_t* nodes,
     coverage[consensus_pos] = cov;
 
     // Check consensus count against maximum size.
-    if (consensus_count >= (CUDAPOA_MAX_CONSENSUS_SIZE - 1))
+    if (consensus_count >= (max_limit_consensus_size - 1))
     {
         consensus[0] = CUDAPOA_KERNEL_ERROR_ENCOUNTERED;
         consensus[1] = static_cast<uint8_t>(StatusType::exceeded_maximum_sequence_size);
@@ -285,7 +286,10 @@ __global__ void generateConsensusKernel(uint8_t* consensus_d,
                                         uint16_t* node_alignment_count_d,
                                         int32_t* consensus_scores_d,
                                         int16_t* consensus_predecessors_d,
-                                        uint16_t* node_coverage_counts_d_)
+                                        uint16_t* node_coverage_counts_d_,
+                                        uint32_t max_limit_nodes_per_window,
+                                        uint32_t max_limit_nodes_per_window_banded,
+                                        uint32_t max_limit_consensus_size)
 {
     //each thread will operate on a window
     int32_t window_idx = blockIdx.x * CUDAPOA_MAX_CONSENSUS_PER_BLOCK + threadIdx.x;
@@ -293,12 +297,12 @@ __global__ void generateConsensusKernel(uint8_t* consensus_d,
     if (window_idx >= total_windows)
         return;
 
-    uint8_t* consensus = &consensus_d[window_idx * CUDAPOA_MAX_CONSENSUS_SIZE];
+    uint8_t* consensus = &consensus_d[window_idx * max_limit_consensus_size];
 
     if (consensus[0] == CUDAPOA_KERNEL_ERROR_ENCOUNTERED) //error during graph generation
         return;
 
-    int32_t max_nodes_per_window = cuda_banded_alignment ? CUDAPOA_MAX_NODES_PER_WINDOW_BANDED : CUDAPOA_MAX_NODES_PER_WINDOW;
+    int32_t max_nodes_per_window = cuda_banded_alignment ? max_limit_nodes_per_window_banded : max_limit_nodes_per_window;
 
     // Find the buffer offsets for each thread within the global memory buffers.
     uint8_t* nodes                  = &nodes_d[max_nodes_per_window * window_idx];
@@ -315,7 +319,7 @@ __global__ void generateConsensusKernel(uint8_t* consensus_d,
     uint16_t* sequence_lengths      = &sequence_lengths_d[window_details_d[window_idx].seq_len_buffer_offset];
 
     //generate consensus
-    uint16_t* coverage              = &coverage_d[window_idx * CUDAPOA_MAX_CONSENSUS_SIZE];
+    uint16_t* coverage              = &coverage_d[window_idx * max_limit_consensus_size];
     int32_t* consensus_scores       = &consensus_scores_d[window_idx * max_nodes_per_window];
     int16_t* consensus_predecessors = &consensus_predecessors_d[window_idx * max_nodes_per_window];
 
@@ -333,7 +337,9 @@ __global__ void generateConsensusKernel(uint8_t* consensus_d,
                       consensus,
                       coverage,
                       node_coverage_counts,
-                      node_alignments, node_alignment_count);
+                      node_alignments,
+                      node_alignment_count,
+                      max_limit_consensus_size);
 }
 
 __global__ void generateConsensusTestKernel(uint8_t* nodes,
@@ -351,7 +357,8 @@ __global__ void generateConsensusTestKernel(uint8_t* nodes,
                                             uint16_t* coverage,
                                             uint16_t* node_coverage_counts,
                                             uint16_t* node_alignments,
-                                            uint16_t* node_alignment_count)
+                                            uint16_t* node_alignment_count,
+                                            uint32_t max_limit_consensus_size)
 {
     generateConsensus(nodes,
                       node_count,
@@ -368,7 +375,8 @@ __global__ void generateConsensusTestKernel(uint8_t* nodes,
                       coverage,
                       node_coverage_counts,
                       node_alignments,
-                      node_alignment_count);
+                      node_alignment_count,
+                      max_limit_consensus_size);
 }
 
 void generateConsensusTestHost(uint8_t* nodes,
@@ -386,7 +394,8 @@ void generateConsensusTestHost(uint8_t* nodes,
                                uint16_t* coverage,
                                uint16_t* node_coverage_counts,
                                uint16_t* node_alignments,
-                               uint16_t* node_alignment_count)
+                               uint16_t* node_alignment_count,
+                               uint32_t max_limit_consensus_size)
 {
     generateConsensusTestKernel<<<1, 1>>>(nodes,
                                           node_count,
@@ -403,7 +412,8 @@ void generateConsensusTestHost(uint8_t* nodes,
                                           coverage,
                                           node_coverage_counts,
                                           node_alignments,
-                                          node_alignment_count);
+                                          node_alignment_count,
+                                          max_limit_consensus_size);
     CGA_CU_CHECK_ERR(cudaPeekAtLastError());
 }
 
