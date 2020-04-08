@@ -77,7 +77,7 @@ public:
 TEST_F(MSATest, CudapoaMSA)
 {
     std::minstd_rand rng(1);
-    int num_sequences    = 500;
+    int num_sequences = 500;
     BatchSize batch_size(1024, num_sequences);
 
     std::string backbone = claragenomics::genomeutils::generate_random_genome(50, rng);
