@@ -15,7 +15,6 @@
 #include <claragenomics/cudapoa/batch.hpp>
 #include <claragenomics/utils/signed_integer_utils.hpp>
 #include <claragenomics/utils/cudautils.hpp>
-#include <claragenomics/io/fasta_parser.hpp>
 #include <claragenomics/utils/genomeutils.hpp>
 
 #include "spoa/spoa.hpp"
@@ -23,7 +22,6 @@
 #include <cuda_runtime_api.h>
 #include <vector>
 #include <string>
-#include <stdexcept>
 #include <unistd.h>
 #include <random>
 
