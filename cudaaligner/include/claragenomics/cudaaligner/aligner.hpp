@@ -94,7 +94,7 @@ std::unique_ptr<Aligner> create_aligner(int32_t max_query_length, int32_t max_ta
 /// \param type Type of aligner to construct
 /// \param stream CUDA Stream used for GPU interaction of the object
 /// \param device_id GPU device ID to run all CUDA operations on
-/// \param max_device_memory_allocator_caching_size Maximum amount of device memory to use for cached memory allocations the cudaaligner instance. max_device_memory_allocator_caching_size = -1 (default) means all available device memory.
+/// \param max_device_memory_allocator_caching_size Maximum amount of device memory to use for cached memory allocations the cudaaligner instance. max_device_memory_allocator_caching_size = -1 (default) means all available device memory. This parameter is ignored if the SDK is compiled for non-caching allocators.
 ///
 /// \return Unique pointer to Aligner object
 std::unique_ptr<Aligner> create_aligner(int32_t max_query_length, int32_t max_target_length, int32_t max_alignments, AlignmentType type, cudaStream_t stream, int32_t device_id, int64_t max_device_memory_allocator_caching_size = -1);
