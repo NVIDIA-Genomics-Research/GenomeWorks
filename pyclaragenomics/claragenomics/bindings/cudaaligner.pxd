@@ -70,4 +70,4 @@ cdef extern from "claragenomics/cudaaligner/aligner.hpp" namespace "claragenomic
         vector[shared_ptr[Alignment]] get_alignments() except +
         void reset() except +
 
-    unique_ptr[Aligner] create_aligner(int32_t, int32_t, int32_t, AlignmentType, _Stream, int32_t)
+    unique_ptr[Aligner] create_aligner(int32_t, int32_t, int32_t, AlignmentType, _Stream, int32_t, int64_t)
