@@ -152,45 +152,6 @@ void generate_bonito_long_reads(std::vector<std::vector<std::string>>& windows, 
     batch_size = BatchSize(max_read_length, 6);
 }
 
-void generate_simulated_long_reads(std::vector<std::vector<std::string>>& windows, BatchSize& batch_size)
-{
-    constexpr uint32_t random_seed = 5827349;
-    std::minstd_rand rng(random_seed);
-
-    const int16_t number_of_windows = 2;
-    const int16_t number_of_reads   = 5;
-    const int32_t read_length       = 10000;
-    int32_t max_sequence_length     = read_length + 1;
-
-    std::vector<std::pair<int, int>> variation_ranges;
-    variation_ranges.push_back(std::pair<int, int>(30, 50));
-    variation_ranges.push_back(std::pair<int, int>(300, 500));
-    variation_ranges.push_back(std::pair<int, int>(1000, 1300));
-    variation_ranges.push_back(std::pair<int, int>(2000, 2200));
-    variation_ranges.push_back(std::pair<int, int>(3000, 3500));
-    variation_ranges.push_back(std::pair<int, int>(4000, 4200));
-    variation_ranges.push_back(std::pair<int, int>(5000, 5400));
-    variation_ranges.push_back(std::pair<int, int>(6000, 6200));
-    variation_ranges.push_back(std::pair<int, int>(8000, 8300));
-
-    std::vector<std::string> long_reads(number_of_reads);
-
-    for (int w = 0; w < number_of_windows; w++)
-    {
-        long_reads[0] = claragenomics::genomeutils::generate_random_genome(read_length, rng);
-        for (int i = 1; i < number_of_reads; i++)
-        {
-            long_reads[i]       = claragenomics::genomeutils::generate_random_sequence(long_reads[0], rng, read_length, read_length, read_length, &variation_ranges);
-            max_sequence_length = max_sequence_length > get_size(long_reads[i]) ? max_sequence_length : get_size(long_reads[i]) + 1;
-        }
-        // add long reads as one window
-        windows.push_back(long_reads);
-    }
-
-    // Define upper limits for sequence size, graph size ....
-    batch_size = BatchSize(max_sequence_length, number_of_reads);
-}
-
 int main(int argc, char** argv)
 {
     // Process options
