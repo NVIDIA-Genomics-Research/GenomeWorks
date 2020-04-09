@@ -24,6 +24,7 @@
 #include <string>
 #include <unistd.h>
 #include <random>
+#include <iomanip>
 
 using namespace claragenomics;
 using namespace claragenomics::cudapoa;
@@ -233,14 +234,14 @@ void generate_simulated_long_reads(std::vector<std::vector<std::string>>& window
 
     std::vector<std::pair<int, int>> variation_ranges;
     variation_ranges.push_back(std::pair<int, int>(30, 50));
-    variation_ranges.push_back(std::pair<int, int>(300, 500));
-    variation_ranges.push_back(std::pair<int, int>(1000, 1300));
-    variation_ranges.push_back(std::pair<int, int>(2000, 2200));
-    variation_ranges.push_back(std::pair<int, int>(3000, 3500));
-    variation_ranges.push_back(std::pair<int, int>(4000, 4200));
-    variation_ranges.push_back(std::pair<int, int>(5000, 5400));
-    variation_ranges.push_back(std::pair<int, int>(6000, 6200));
-    variation_ranges.push_back(std::pair<int, int>(8000, 8300));
+//    variation_ranges.push_back(std::pair<int, int>(300, 500));
+//    variation_ranges.push_back(std::pair<int, int>(1000, 1300));
+//    variation_ranges.push_back(std::pair<int, int>(2000, 2200));
+//    variation_ranges.push_back(std::pair<int, int>(3000, 3500));
+//    variation_ranges.push_back(std::pair<int, int>(4000, 4200));
+//    variation_ranges.push_back(std::pair<int, int>(5000, 5400));
+//    variation_ranges.push_back(std::pair<int, int>(6000, 6200));
+//    variation_ranges.push_back(std::pair<int, int>(8000, 8300));
 
     std::vector<std::string> long_reads(group_size);
 
@@ -273,8 +274,8 @@ int main(int argc, char** argv)
 
     // following parameters are used in benchmarking only
     int32_t number_of_windows = 0;
-    int32_t sequence_size  = 0;
-    int32_t group_size     = 0;
+    int32_t sequence_size     = 0;
+    int32_t group_size        = 0;
 
     while ((c = getopt(argc, argv, "mlhpgbW:S:N:")) != -1)
     {
@@ -329,8 +330,8 @@ int main(int argc, char** argv)
 
     // if not defined as input args, set default values for benchmarking parameters
     number_of_windows = number_of_windows == 0 ? (long_read ? 10 : 1000) : number_of_windows;
-    sequence_size  = sequence_size == 0 ? (long_read ? 10000 : 1024) : sequence_size;
-    group_size     = group_size == 0 ? (long_read ? 6 : 100) : group_size;
+    sequence_size     = sequence_size == 0 ? (long_read ? 10000 : 1024) : sequence_size;
+    group_size        = group_size == 0 ? (long_read ? 6 : 100) : group_size;
 
     // Load input data. Each POA group is represented as a vector of strings. The sample
     // data for short reads has many such POA groups to process, hence the data is loaded into a vector
@@ -464,7 +465,28 @@ int main(int argc, char** argv)
 
     if (benchmark)
     {
-        std::cerr << "Compute time: cudaPOA " << cudapoa_time << "(sec), SPOA " << spoa_time << "(sec)" << std::endl;
+        std::cerr << "benchmark summary:\n";
+        std::cerr << "=========================================================================================================\n";
+        std::cerr << "Number of windows(W) " << std::left << std::setw(13) << std::setfill(' ') << number_of_windows;
+        std::cerr << "Sequence lengthv(S) " << std::left << std::setw(10) << std::setfill(' ') << sequence_size;
+        std::cerr << "Number of sequences per window(N) " << std::left << std::setw(30) << std::setfill(' ') << group_size << std::endl;
+        std::cerr << "Compute time:                     cudaPOA " << cudapoa_time << "(sec),           SPOA " << spoa_time << "(sec)\n";
+        int32_t number_of_bases = number_of_windows * sequence_size * group_size;
+        std::cerr << "Expected performance:             cudaPOA " << (float)number_of_bases / cudapoa_time << "(bases/sec),    SPOA ";
+        std::cerr << (float)number_of_bases / spoa_time << "(bases/sec)" << std::endl;
+        int32_t actual_number_of_bases = 0;
+        for (auto& w : windows)
+        {
+            for (auto& seq : w)
+            {
+                actual_number_of_bases += get_size(seq);
+            }
+        }
+        std::cerr << "Effective performance:            cudaPOA " << (float)actual_number_of_bases / cudapoa_time << "(bases/sec),    SPOA ";
+        std::cerr << (float)actual_number_of_bases / spoa_time << "(bases/sec)" << std::endl;
+        std::cerr << "Expected number of bases (S x N x W) = " << number_of_bases << std::endl;
+        std::cerr << "Actual total number of bases         = " << actual_number_of_bases << std::endl;
+        std::cerr << "=========================================================================================================\n";
     }
 
     return 0;
