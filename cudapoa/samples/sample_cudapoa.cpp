@@ -125,19 +125,11 @@ void process_batch(Batch* batch, bool msa, bool print)
     }
 }
 
-void generate_short_reads(std::vector<std::vector<std::string>>& windows, BatchSize& batch_size)
+void generate_window_data(const std::string& file_name, const int number_of_windows, const int max_sequences_per_poa,
+                          std::vector<std::vector<std::string>>& windows, BatchSize& batch_size)
 {
-    const std::string input_data = std::string(CUDAPOA_BENCHMARK_DATA_DIR) + "/sample-windows.txt";
-    parse_window_data_file(windows, input_data, 1000); // Generate windows.
-    assert(get_size(windows) > 0);
-    batch_size = BatchSize(1024, 100);
-}
-
-void generate_bonito_long_reads(std::vector<std::vector<std::string>>& windows, BatchSize& batch_size)
-{
-    const std::string input_data = std::string(CUDAPOA_BENCHMARK_DATA_DIR) + "/sample-bonito.txt";
-    const int32_t num_windows    = 5;
-    parse_window_data_file(windows, input_data, num_windows); // Generate windows.
+    const std::string input_data = std::string(CUDAPOA_BENCHMARK_DATA_DIR) + file_name;
+    parse_window_data_file(windows, input_data, number_of_windows); // Generate windows.
     assert(get_size(windows) > 0);
 
     int32_t max_read_length = 0;
@@ -149,7 +141,7 @@ void generate_bonito_long_reads(std::vector<std::vector<std::string>>& windows, 
         }
     }
 
-    batch_size = BatchSize(max_read_length, 6);
+    batch_size = BatchSize(max_read_length, max_sequences_per_poa);
 }
 
 int main(int argc, char** argv)
@@ -207,11 +199,11 @@ int main(int argc, char** argv)
 
     if (long_read)
     {
-        generate_bonito_long_reads(windows, batch_size);
+        generate_window_data("/sample-bonito.txt", 8, 6, windows, batch_size);
     }
     else
     {
-        generate_short_reads(windows, batch_size);
+        generate_window_data("/sample-windows.txt", 1000, 100, windows, batch_size);
     }
 
     // Initialize batch.
@@ -260,6 +252,9 @@ int main(int argc, char** argv)
             // After MSA/consensus is generated for batch, reset batch to make room for next set of POA groups.
             batch->reset();
 
+            // In case that number of windows is more than the capacity available on GPU, the for loop breaks into smaller number of windows.
+            // if adding window i in batch->add_poa_group is not successful, it wont be processed in this iteration, therefore we print i-1
+            // to account for the fact that window i was excluded at this round.
             if (status == StatusType::success)
             {
                 std::cout << "Processed windows " << window_count << " - " << i << std::endl;
