@@ -59,10 +59,9 @@ public:
 ///
 /// \param fasta_file Path to FASTA(.gz) file. If .gz, it must be zipped with bgzip.
 /// \param min_sequence_length Minimum length a sequence needs to be to be parsed. Shorter sequences are ignored.
-/// \param shuffle Enables shuffling reads
 ///
 /// \return A unique pointer to a constructed parser object.
-std::unique_ptr<FastaParser> create_kseq_fasta_parser(const std::string& fasta_file, int min_sequence_length = 0, bool shuffle = true);
+std::unique_ptr<FastaParser> create_kseq_fasta_parser(const std::string& fasta_file, int min_sequence_length = 0);
 
 } // namespace io
 } // namespace claragenomics
