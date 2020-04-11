@@ -32,7 +32,7 @@ void test_find_query_target_matches(const thrust::host_vector<representation_t>&
                                     const thrust::host_vector<representation_t>& target_representations_h,
                                     const thrust::host_vector<std::int64_t>& expected_found_target_indices_h)
 {
-    DefaultDeviceAllocator allocator;
+    DefaultDeviceAllocator allocator = create_default_device_allocator();
 
     cudaStream_t cuda_stream;
     CGA_CU_CHECK_ERR(cudaStreamCreate(&cuda_stream));
@@ -125,7 +125,7 @@ void test_compute_number_of_anchors(const thrust::host_vector<std::uint32_t>& qu
                                     const thrust::host_vector<std::uint32_t>& target_starting_index_of_each_representation_h,
                                     const thrust::host_vector<std::int64_t>& expected_anchor_starting_indices_h)
 {
-    DefaultDeviceAllocator allocator;
+    DefaultDeviceAllocator allocator = create_default_device_allocator();
 
     cudaStream_t cuda_stream;
     CGA_CU_CHECK_ERR(cudaStreamCreate(&cuda_stream));
@@ -243,7 +243,7 @@ void test_generate_anchors(
     const position_in_read_t max_basepairs_in_query_reads,
     const position_in_read_t max_basepairs_in_target_reads)
 {
-    DefaultDeviceAllocator allocator;
+    DefaultDeviceAllocator allocator = create_default_device_allocator();
 
     cudaStream_t cuda_stream;
     CGA_CU_CHECK_ERR(cudaStreamCreate(&cuda_stream));
@@ -658,7 +658,7 @@ TEST(TestCudamapperMatcherGPU, test_generate_anchors_small_example_64_bit_positi
 
 TEST(TestCudamapperMatcherGPU, OneReadOneMinimizer)
 {
-    DefaultDeviceAllocator allocator;
+    DefaultDeviceAllocator allocator        = create_default_device_allocator();
     std::unique_ptr<io::FastaParser> parser = io::create_kseq_fasta_parser(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/gatt.fasta");
     std::unique_ptr<Index> query_index      = Index::create_index(allocator, *parser, 0, parser->get_num_seqences(), 4, 1);
     std::unique_ptr<Index> target_index     = Index::create_index(allocator, *parser, 0, parser->get_num_seqences(), 4, 1);
@@ -671,7 +671,7 @@ TEST(TestCudamapperMatcherGPU, OneReadOneMinimizer)
 
 TEST(TestCudamapperMatcherGPU, AtLeastOneIndexEmpty)
 {
-    DefaultDeviceAllocator allocator;
+    DefaultDeviceAllocator allocator        = create_default_device_allocator();
     std::unique_ptr<io::FastaParser> parser = io::create_kseq_fasta_parser(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/gatt.fasta");
     std::unique_ptr<Index> index_full       = Index::create_index(allocator, *parser, 0, parser->get_num_seqences(), 4, 1);
     std::unique_ptr<Index> index_empty      = Index::create_index(allocator, *parser, 0, parser->get_num_seqences(), 5, 1); // kmer longer than read

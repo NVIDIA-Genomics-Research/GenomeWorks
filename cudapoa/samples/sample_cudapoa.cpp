@@ -15,17 +15,18 @@
 #include <claragenomics/cudapoa/batch.hpp>
 #include <claragenomics/utils/signed_integer_utils.hpp>
 #include <claragenomics/utils/cudautils.hpp>
+#include <claragenomics/utils/genomeutils.hpp>
 
 #include <cuda_runtime_api.h>
 #include <vector>
 #include <string>
-#include <stdexcept>
 #include <unistd.h>
+#include <random>
 
 using namespace claragenomics;
 using namespace claragenomics::cudapoa;
 
-std::unique_ptr<Batch> initialize_batch(bool msa)
+std::unique_ptr<Batch> initialize_batch(bool msa, const BatchSize& batch_size)
 {
     // Get device information.
     int32_t device_count = 0;
@@ -40,18 +41,17 @@ std::unique_ptr<Batch> initialize_batch(bool msa)
     Init();
 
     // Initialize CUDAPOA batch object for batched processing of POAs on the GPU.
-    const int32_t max_sequences_per_poa_group = 100;
-    const int32_t device_id                   = 0;
-    cudaStream_t stream                       = 0;
-    size_t mem_per_batch                      = 0.9 * free; // Using 90% of GPU available memory for CUDAPOA batch.
+    const int32_t device_id      = 0;
+    cudaStream_t stream          = 0;
+    size_t mem_per_batch         = 0.9 * free; // Using 90% of GPU available memory for CUDAPOA batch.
     const int32_t mismatch_score = -6, gap_score = -8, match_score = 8;
     bool banded_alignment = false;
 
-    std::unique_ptr<Batch> batch = create_batch(max_sequences_per_poa_group,
-                                                device_id,
+    std::unique_ptr<Batch> batch = create_batch(device_id,
                                                 stream,
                                                 mem_per_batch,
                                                 msa ? OutputType::msa : OutputType::consensus,
+                                                batch_size,
                                                 gap_score,
                                                 mismatch_score,
                                                 match_score,
@@ -125,23 +125,78 @@ void process_batch(Batch* batch, bool msa, bool print)
     }
 }
 
+void generate_short_reads(std::vector<std::vector<std::string>>& windows, BatchSize& batch_size)
+{
+    const std::string input_data = std::string(CUDAPOA_BENCHMARK_DATA_DIR) + "/sample-windows.txt";
+    parse_window_data_file(windows, input_data, 1000); // Generate windows.
+    assert(get_size(windows) > 0);
+    batch_size = BatchSize(1024, 100);
+}
+
+void generate_simulated_long_reads(std::vector<std::vector<std::string>>& windows, BatchSize& batch_size)
+{
+    constexpr uint32_t random_seed = 5827349;
+    std::minstd_rand rng(random_seed);
+
+    const int16_t number_of_windows = 2;
+    const int16_t number_of_reads   = 5;
+    const int32_t read_length       = 10000;
+    int32_t max_sequence_length     = read_length + 1;
+
+    std::vector<std::pair<int, int>> variation_ranges;
+    variation_ranges.push_back(std::pair<int, int>(30, 50));
+    variation_ranges.push_back(std::pair<int, int>(300, 500));
+    variation_ranges.push_back(std::pair<int, int>(1000, 1300));
+    variation_ranges.push_back(std::pair<int, int>(2000, 2200));
+    variation_ranges.push_back(std::pair<int, int>(3000, 3500));
+    variation_ranges.push_back(std::pair<int, int>(4000, 4200));
+    variation_ranges.push_back(std::pair<int, int>(5000, 5400));
+    variation_ranges.push_back(std::pair<int, int>(6000, 6200));
+    variation_ranges.push_back(std::pair<int, int>(8000, 8300));
+
+    std::vector<std::string> long_reads(number_of_reads);
+
+    for (int w = 0; w < number_of_windows; w++)
+    {
+        long_reads[0] = claragenomics::genomeutils::generate_random_genome(read_length, rng);
+        for (int i = 1; i < number_of_reads; i++)
+        {
+            long_reads[i]       = claragenomics::genomeutils::generate_random_sequence(long_reads[0], rng, read_length, read_length, read_length, &variation_ranges);
+            max_sequence_length = max_sequence_length > get_size(long_reads[i]) ? max_sequence_length : get_size(long_reads[i]) + 1;
+        }
+        // add long reads as one window
+        windows.push_back(long_reads);
+    }
+
+    // Define upper limits for sequence size, graph size ....
+    batch_size = BatchSize(max_sequence_length, number_of_reads);
+}
+
 int main(int argc, char** argv)
 {
     // Process options
-    int c      = 0;
-    bool msa   = false;
-    bool help  = false;
-    bool print = false;
+    int c            = 0;
+    bool msa         = false;
+    bool long_read   = false;
+    bool help        = false;
+    bool print       = false;
+    bool print_graph = false;
 
-    while ((c = getopt(argc, argv, "mhp")) != -1)
+    while ((c = getopt(argc, argv, "mlhpg")) != -1)
     {
         switch (c)
         {
         case 'm':
             msa = true;
             break;
+        case 'l':
+            long_read = true;
+            break;
         case 'p':
             print = true;
+            break;
+        case 'g':
+            print_graph = true;
             break;
         case 'h':
             help = true;
@@ -155,24 +210,37 @@ int main(int argc, char** argv)
         std::cout << "Usage:" << std::endl;
         std::cout << "./sample_cudapoa [-m] [-h]" << std::endl;
         std::cout << "-m : Generate MSA (if not provided, generates consensus by default)" << std::endl;
+        std::cout << "-l : Perform long-read sample (if not provided, will run short-read sample by default)" << std::endl;
         std::cout << "-p : Print the MSA or consensus output to stdout" << std::endl;
+        std::cout << "-g : Print POA graph in dot format, this option is only for long-read sample" << std::endl;
         std::cout << "-h : Print help message" << std::endl;
         std::exit(0);
     }
 
     // Load input data. Each POA group is represented as a vector of strings. The sample
-    // data has many such POA groups to process, hence the data is loaded into a vector
-    // of vector of strings.
-    const std::string input_data = std::string(CUDAPOA_BENCHMARK_DATA_DIR) + "/sample-windows.txt";
+    // data for short reads has many such POA groups to process, hence the data is loaded into a vector
+    // of vector of strings. Long read sample creates one POA group.
     std::vector<std::vector<std::string>> windows;
-    parse_window_data_file(windows, input_data, 1000); // Generate windows.
-    assert(get_size(windows) > 0);
+
+    // Define upper limits for sequence size, graph size ....
+    BatchSize batch_size;
+
+    if (long_read)
+    {
+        generate_simulated_long_reads(windows, batch_size);
+    }
+    else
+    {
+        generate_short_reads(windows, batch_size);
+    }
 
     // Initialize batch.
-    std::unique_ptr<Batch> batch = initialize_batch(msa);
+    std::unique_ptr<Batch> batch = initialize_batch(msa, batch_size);
 
     // Loop over all the POA groups, add them to the batch and process them.
     int32_t window_count = 0;
+    // to avoid potential infinite loop
+    int32_t error_count = 0;
     for (int32_t i = 0; i < get_size(windows);)
     {
         const std::vector<std::string>& window = windows[i];
@@ -191,6 +259,32 @@ int main(int argc, char** argv)
         std::vector<StatusType> seq_status;
         StatusType status = batch->add_poa_group(seq_status, poa_group);
 
+        // NOTE: If number of windows smaller than batch capacity, then run POA generation
+        // once last window is added to batch.
+        if (status == StatusType::exceeded_maximum_poas || status == StatusType::exceeded_batch_size || (i == get_size(windows) - 1))
+        {
+            // No more POA groups can be added to batch. Now process batch.
+            process_batch(batch.get(), msa, print);
+
+            if (print_graph && long_read)
+            {
+                std::vector<DirectedGraph> graph;
+                std::vector<StatusType> graph_status;
+                batch->get_graphs(graph, graph_status);
+                for (auto& g : graph)
+                {
+                    std::cout << g.serialize_to_dot() << std::endl;
+                }
+            }
+
+            // After MSA is generated for batch, reset batch to make room for next set of POA groups.
+            batch->reset();
+
+            std::cout << "Processed windows " << window_count << " - " << i << std::endl;
+
+            window_count = i;
+        }
+
         if (status == StatusType::success)
         {
             // Check if all sequences in POA group wre added successfully.
@@ -203,23 +297,13 @@ int main(int argc, char** argv)
             }
             i++;
         }
-        // NOTE: If number of windows smaller than batch capacity, then run POA generation
-        // once last window is added to batch.
-        if (status == StatusType::exceeded_maximum_poas || (i == get_size(windows) - 1))
-        {
-            // No more POA groups can be added to batch. Now process batch.
-            process_batch(batch.get(), msa, print);
 
-            // After MSA is generated for batch, reset batch to make roomf or next set of POA groups.
-            batch->reset();
-
-            std::cout << "Processed windows " << window_count << " - " << i << std::endl;
-            window_count = i;
-        }
-
-        if (status != StatusType::exceeded_maximum_poas && status != StatusType::success)
+        if (status != StatusType::exceeded_maximum_poas && status != StatusType::exceeded_batch_size && status != StatusType::success)
         {
             std::cerr << "Could not add POA group to batch. Error code " << status << std::endl;
+            error_count++;
+            if (error_count > get_size(windows))
+                break;
         }
     }
 

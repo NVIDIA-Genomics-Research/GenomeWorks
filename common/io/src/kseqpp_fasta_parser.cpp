@@ -14,7 +14,7 @@
 #include <memory>
 #include <random>
 #include <string>
-
+#include <exception>
 #include <iostream>
 #include "seqio.h" //TODO add this to 3rdparty
 #include <claragenomics/utils/signed_integer_utils.hpp>
@@ -28,8 +28,18 @@ FastaParserKseqpp::FastaParserKseqpp(const std::string& fasta_file, int min_sequ
 {
     klibpp::KSeq record;
     klibpp::SeqStreamIn iss(fasta_file.data());
+
     std::vector<FastaSequence> seqs;
-    while (iss >> record)
+
+    iss >> record;
+    if (iss.fail())
+    {
+        throw std::invalid_argument("Error: "
+                                    "non-existent or empty file " +
+                                    fasta_file + " !");
+    }
+
+    do
     {
         FastaSequence seq   = {record.name, record.seq};
         int sequence_length = get_size<int>(record.seq);
@@ -37,7 +47,7 @@ FastaParserKseqpp::FastaParserKseqpp(const std::string& fasta_file, int min_sequ
         {
             reads_.push_back(std::move(seq));
         }
-    }
+    } while (iss >> record);
 
     //For many applications, such as cudamapper, performance is better if reads are shuffled.
     if (shuffle)
