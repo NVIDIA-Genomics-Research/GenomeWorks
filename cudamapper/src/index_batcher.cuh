@@ -126,8 +126,51 @@ std::vector<GroupAndSubgroupsOfIndicesDescriptor> generate_groups_and_subgroups(
 std::vector<HostAndDeviceGroupsOfIndices> convert_groups_of_indices_into_groups_of_index_descriptors(const std::vector<IndexDescriptor>& index_descriptors,
                                                                                                      const std::vector<GroupAndSubgroupsOfIndicesDescriptor>& groups_and_subgroups);
 
+/// \brief Combines groups of query and target indices into batches of indices
+///
+/// Host batch simply contains both query and target host index groups.
+/// Every batch in device batches is a combination of one query device group and one target device groups
+///
+/// If same_query_and_target is false every query is batched with every target, if it is true
+/// only targets with id larger or equal than query are kept.
+///
+/// For example imagine that both query and target groups of indices are ((0, 10), (10, 10)), ((20, 10), (30, 10))
+/// If same_query_and_target == false generated host batches would be:
+/// q(( 0, 10), (10, 10)), t(( 0, 10), (10, 10))
+/// q(( 0, 10), (10, 10)), t((20, 10), (30, 10))
+/// q((20, 10), (30, 10)), t(( 0, 10), (10, 10))
+/// q((20, 10), (30, 10)), t((20, 10), (30, 10))
+/// If same_query_and_target == true generated host batches would be:
+/// q(( 0, 10), (10, 10)), t(( 0, 10), (10, 10))
+/// q(( 0, 10), (10, 10)), t((20, 10), (30, 10))
+/// q((20, 10), (30, 10)), t((20, 10), (30, 10))
+/// i.e. q((20, 10), (30, 10)), t(( 0, 10), (10, 10)) would be missing beacuse it is already coveder by q(( 0, 10), (10, 10)), t((20, 10), (30, 10)) by symmetry
+///
+/// The same holds for device batches in every generated host batch in which query and target are the same
+/// If same_query_and_target == true in the case above the follwoing device batches would be generated (assuming that every device batch has only one index)
+/// For q(( 0, 10), (10, 10)), t(( 0, 10), (10, 10)):
+/// q( 0, 10), t( 0, 10)
+/// q( 0, 10), t(10, 10)
+/// skipping q( 10, 10), t( 0, 10) due to symmetry with q( 0, 10), t(10, 10)
+/// q(10, 10), t(10, 10)
+/// For q(( 0, 10), (10, 10)), t((20, 10), (30, 10))
+/// q( 0, 10), t(20, 10)
+/// q( 0, 10), t(30, 10)
+/// q(10, 10), t(20, 10)
+/// q(10, 10), t(30, 10)
+/// For q((20, 10), (30, 10)), t((20, 10), (30, 10))
+/// q(20, 10), t(20, 10)
+/// q(20, 10), t(30, 10)
+/// skipping q(30, 10), t(20, 10) due to symmetry with q( 20, 10), t(30, 10)
+/// q(30, 10), t(30, 10)
+///
+/// \param query_groups_of_indices
+/// \param target_groups_of_indices
+/// \param same_query_and_target
+/// \return generated batches
 std::vector<BatchOfIndices> combine_query_and_target_indices(const std::vector<HostAndDeviceGroupsOfIndices>& query_groups_of_indices,
-                                                             const std::vector<HostAndDeviceGroupsOfIndices>& target_groups_of_indices);
+                                                             const std::vector<HostAndDeviceGroupsOfIndices>& target_groups_of_indices,
+                                                             const bool same_query_and_target);
 
 } // namespace index_batcher
 } // namespace details

@@ -91,26 +91,39 @@ std::vector<HostAndDeviceGroupsOfIndices> convert_groups_of_indices_into_groups_
 }
 
 std::vector<BatchOfIndices> combine_query_and_target_indices(const std::vector<HostAndDeviceGroupsOfIndices>& query_groups_of_indices,
-                                                             const std::vector<HostAndDeviceGroupsOfIndices>& target_groups_of_indices)
+                                                             const std::vector<HostAndDeviceGroupsOfIndices>& target_groups_of_indices,
+                                                             const bool same_query_and_target)
 {
     std::vector<BatchOfIndices> all_batches;
 
-    for (const HostAndDeviceGroupsOfIndices& query_group_of_indices : query_groups_of_indices)
+    for (std::size_t query_host_id = 0; query_host_id < query_groups_of_indices.size(); ++query_host_id)
     {
+        const HostAndDeviceGroupsOfIndices& query_group_of_indices                   = query_groups_of_indices[query_host_id];
         const std::vector<IndexDescriptor>& query_host_group_of_indices              = query_group_of_indices.host_indices_group;
         const std::vector<std::vector<IndexDescriptor>>& query_device_indices_groups = query_group_of_indices.device_indices_groups;
-        for (const HostAndDeviceGroupsOfIndices& target_group_of_indices : target_groups_of_indices)
+        // if same_query_and_target == true only generated batches where target_host_id >= query_host_id
+        // combinations where target_host_id < query_host_id are not needed due to symmetry
+        for (std::size_t target_host_id = same_query_and_target ? query_host_id : 0;
+             target_host_id < target_groups_of_indices.size();
+             ++target_host_id)
         {
+            const HostAndDeviceGroupsOfIndices& target_group_of_indices      = target_groups_of_indices[target_host_id];
             const std::vector<IndexDescriptor>& target_host_group_of_indices = target_group_of_indices.host_indices_group;
             IndexBatch host_batch{query_host_group_of_indices, target_host_group_of_indices};
 
             const std::vector<std::vector<IndexDescriptor>>& target_device_indices_groups = target_group_of_indices.device_indices_groups;
             std::vector<IndexBatch> device_batches;
 
-            for (const std::vector<IndexDescriptor>& query_device_indices_group : query_device_indices_groups)
+            for (std::size_t query_device_id = 0; query_device_id < query_device_indices_groups.size(); ++query_device_id)
             {
-                for (const std::vector<IndexDescriptor>& target_device_indices_group : target_device_indices_groups)
+                const std::vector<IndexDescriptor>& query_device_indices_group = query_device_indices_groups[query_device_id];
+                // if same_query_and_target == true and target_host_id == query_host_id only generated batches where target_device_id >= query_device_id
+                // combinations where target_host_id < query_host_id are not needed due to symmetry
+                for (std::size_t target_device_id = (same_query_and_target && target_host_id == query_host_id) ? query_device_id : 0;
+                     target_device_id < target_device_indices_groups.size();
+                     ++target_device_id)
                 {
+                    const std::vector<IndexDescriptor>& target_device_indices_group = target_device_indices_groups[target_device_id];
                     device_batches.push_back({query_device_indices_group, target_device_indices_group});
                 }
             }
