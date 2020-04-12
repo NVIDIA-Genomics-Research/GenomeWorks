@@ -310,5 +310,262 @@ TEST(TestCudamapperIndexBatcher, test_convert_groups_of_indices_into_groups_of_i
                                                                     expected_groups_of_indices);
 }
 
+// *** test combine_query_and_target_indices ***
+
+void test_combine_query_and_target_indices(const std::vector<details::index_batcher::HostAndDeviceGroupsOfIndices>& query_groups_of_indices,
+                                           const std::vector<details::index_batcher::HostAndDeviceGroupsOfIndices>& target_groups_of_indices,
+                                           const std::vector<BatchOfIndices>& expected_batches)
+{
+    const std::vector<BatchOfIndices> generated_batches = combine_query_and_target_indices(query_groups_of_indices,
+                                                                                           target_groups_of_indices);
+
+    ASSERT_EQ(expected_batches.size(), generated_batches.size());
+
+    for (std::size_t i = 0; i < expected_batches.size(); ++i)
+    {
+        const BatchOfIndices& expected_batches_single  = expected_batches[i];
+        const BatchOfIndices& generated_batches_single = generated_batches[i];
+        ASSERT_EQ(expected_batches_single.host_batch.query_indices.size(), generated_batches_single.host_batch.query_indices.size()) << "i: " << i;
+        for (std::size_t j = 0; j < expected_batches_single.host_batch.query_indices.size(); ++j)
+        {
+            const IndexDescriptor& expected_host_query_index  = expected_batches_single.host_batch.query_indices[j];
+            const IndexDescriptor& generated_host_query_index = generated_batches_single.host_batch.query_indices[j];
+            ASSERT_EQ(expected_host_query_index.first_read(), generated_host_query_index.first_read()) << "i: " << i << ", j: " << j;
+            ASSERT_EQ(expected_host_query_index.number_of_reads(), generated_host_query_index.number_of_reads()) << "i: " << i << ", j: " << j;
+        }
+        ASSERT_EQ(expected_batches_single.host_batch.target_indices.size(), generated_batches_single.host_batch.target_indices.size()) << "i: " << i;
+        for (std::size_t j = 0; j < expected_batches_single.host_batch.target_indices.size(); ++j)
+        {
+            const IndexDescriptor& expected_host_target_index  = expected_batches_single.host_batch.target_indices[j];
+            const IndexDescriptor& generated_host_target_index = generated_batches_single.host_batch.target_indices[j];
+            ASSERT_EQ(expected_host_target_index.first_read(), generated_host_target_index.first_read()) << "i: " << i << ", j: " << j;
+            ASSERT_EQ(expected_host_target_index.number_of_reads(), generated_host_target_index.number_of_reads()) << "i: " << i << ", j: " << j;
+        }
+
+        ASSERT_EQ(expected_batches_single.device_batches.size(), generated_batches_single.device_batches.size());
+        for (std::size_t j = 0; j < expected_batches_single.device_batches.size(); ++j)
+        {
+            const IndexBatch& expected_device_batch                            = expected_batches_single.device_batches[i];
+            const IndexBatch& generated_device_batch                           = generated_batches_single.device_batches[i];
+            const std::vector<IndexDescriptor>& expected_device_query_indices  = expected_device_batch.query_indices;
+            const std::vector<IndexDescriptor>& generated_device_query_indices = generated_device_batch.query_indices;
+            ASSERT_EQ(expected_device_query_indices.size(), generated_device_query_indices.size()) << "i: " << i << ", j: " << j;
+            for (std::size_t k = 0; k < expected_device_query_indices.size(); ++k)
+            {
+                const IndexDescriptor& expected_device_query_index  = expected_device_query_indices[k];
+                const IndexDescriptor& generated_device_query_index = generated_device_query_indices[k];
+                ASSERT_EQ(expected_device_query_index.first_read(), generated_device_query_index.first_read()) << "i: " << i << ", j: " << j << ", k: " << k;
+                ASSERT_EQ(expected_device_query_index.number_of_reads(), generated_device_query_index.number_of_reads()) << "i: " << i << ", j: " << j << ", k: " << k;
+            }
+            const std::vector<IndexDescriptor>& expected_device_target_indices  = expected_device_batch.target_indices;
+            const std::vector<IndexDescriptor>& generated_device_target_indices = generated_device_batch.target_indices;
+            ASSERT_EQ(expected_device_target_indices.size(), generated_device_target_indices.size()) << "i: " << i << ", j: " << j;
+            for (std::size_t k = 0; k < expected_device_target_indices.size(); ++k)
+            {
+                const IndexDescriptor& expected_device_target_index  = expected_device_target_indices[k];
+                const IndexDescriptor& generated_device_target_index = generated_device_target_indices[k];
+                ASSERT_EQ(expected_device_target_index.first_read(), generated_device_target_index.first_read()) << "i: " << i << ", j: " << j << ", k: " << k;
+                ASSERT_EQ(expected_device_target_index.number_of_reads(), generated_device_target_index.number_of_reads()) << "i: " << i << ", j: " << j << ", k: " << k;
+            }
+        }
+    }
+}
+
+TEST(TestCudamapperIndexBatcher, test_combine_query_and_target_indices)
+{
+    std::vector<IndexDescriptor> query_host_indices_group_0{{0, 7}, {7, 4}, {11, 6}, {17, 5}, {22, 9}};
+    std::vector<std::vector<IndexDescriptor>> query_device_indices_groups_0{{{0, 7}, {7, 4}},
+                                                                            {{11, 6}, {17, 5}, {22, 9}}};
+    std::vector<IndexDescriptor> query_host_indices_group_1{{31, 5}, {36, 2}, {38, 8}, {46, 7}, {53, 3}};
+    std::vector<std::vector<IndexDescriptor>> query_device_indices_groups_1{{{31, 5}, {36, 2}, {38, 8}},
+                                                                            {{46, 7}, {53, 3}}};
+    const std::vector<details::index_batcher::HostAndDeviceGroupsOfIndices> query_groups_of_indices{{std::move(query_host_indices_group_0),
+                                                                                                     std::move(query_device_indices_groups_0)},
+                                                                                                    {std::move(query_host_indices_group_1),
+                                                                                                     std::move(query_device_indices_groups_1)}};
+
+    std::vector<IndexDescriptor> target_host_indices_group_0{{0, 6}, {6, 2}, {8, 4}, {12, 7}, {19, 6}};
+    std::vector<std::vector<IndexDescriptor>> target_device_indices_groups_0{{{0, 6}, {6, 2}, {8, 4}},
+                                                                             {{12, 7}, {19, 6}}};
+    std::vector<IndexDescriptor> target_host_indices_group_1{{25, 5}, {30, 4}, {34, 7}, {41, 1}, {42, 8}, {50, 3}};
+    std::vector<std::vector<IndexDescriptor>> target_device_indices_groups_1{{{25, 5}, {30, 4}},
+                                                                             {{34, 7}, {41, 1}},
+                                                                             {{42, 8}, {50, 3}}};
+    const std::vector<details::index_batcher::HostAndDeviceGroupsOfIndices> target_groups_of_indices{{std::move(target_host_indices_group_0),
+                                                                                                      std::move(target_device_indices_groups_0)},
+                                                                                                     {std::move(target_host_indices_group_1),
+                                                                                                      std::move(target_device_indices_groups_1)}};
+
+    std::vector<BatchOfIndices> expected_batches;
+    {
+        // query 0, target 0
+        std::vector<IndexDescriptor> host_batch_query_indices{{0, 7}, {7, 4}, {11, 6}, {17, 5}, {22, 9}};
+        std::vector<IndexDescriptor> host_batch_target_indices{{0, 6}, {6, 2}, {8, 4}, {12, 7}, {19, 6}};
+        IndexBatch host_batch{std::move(host_batch_query_indices),
+                              std::move(host_batch_target_indices)};
+        std::vector<IndexBatch> device_batches;
+        {
+            std::vector<IndexDescriptor> device_batch_query_indices{{0, 7}, {7, 4}};
+            std::vector<IndexDescriptor> device_batch_target_indices{{0, 6}, {6, 2}, {8, 4}};
+            device_batches.push_back({std::move(device_batch_query_indices),
+                                      std::move(device_batch_target_indices)});
+        }
+        {
+            std::vector<IndexDescriptor> device_batch_query_indices{{0, 7}, {7, 4}};
+            std::vector<IndexDescriptor> device_batch_target_indices{{12, 7}, {19, 6}};
+            device_batches.push_back({std::move(device_batch_query_indices),
+                                      std::move(device_batch_target_indices)});
+        }
+        {
+            std::vector<IndexDescriptor> device_batch_query_indices{{11, 6}, {17, 5}, {22, 9}};
+            std::vector<IndexDescriptor> device_batch_target_indices{{0, 6}, {6, 2}, {8, 4}};
+            device_batches.push_back({std::move(device_batch_query_indices),
+                                      std::move(device_batch_target_indices)});
+        }
+        {
+            std::vector<IndexDescriptor> device_batch_query_indices{{11, 6}, {17, 5}, {22, 9}};
+            std::vector<IndexDescriptor> device_batch_target_indices{{12, 7}, {19, 6}};
+            device_batches.push_back({std::move(device_batch_query_indices),
+                                      std::move(device_batch_target_indices)});
+        }
+
+        expected_batches.push_back({std::move(host_batch),
+                                    std::move(device_batches)});
+    }
+    {
+        // query 0, target 1
+        std::vector<IndexDescriptor> host_batch_query_indices{{0, 7}, {7, 4}, {11, 6}, {17, 5}, {22, 9}};
+        std::vector<IndexDescriptor> host_batch_target_indices{{25, 5}, {30, 4}, {34, 7}, {41, 1}, {42, 8}, {50, 3}};
+        IndexBatch host_batch{std::move(host_batch_query_indices),
+                              std::move(host_batch_target_indices)};
+        std::vector<IndexBatch> device_batches;
+        {
+            std::vector<IndexDescriptor> device_batch_query_indices{{0, 7}, {7, 4}};
+            std::vector<IndexDescriptor> device_batch_target_indices{{25, 5}, {30, 4}};
+            device_batches.push_back({std::move(device_batch_query_indices),
+                                      std::move(device_batch_target_indices)});
+        }
+        {
+            std::vector<IndexDescriptor> device_batch_query_indices{{0, 7}, {7, 4}};
+            std::vector<IndexDescriptor> device_batch_target_indices{{34, 7}, {41, 1}};
+            device_batches.push_back({std::move(device_batch_query_indices),
+                                      std::move(device_batch_target_indices)});
+        }
+        {
+            std::vector<IndexDescriptor> device_batch_query_indices{{0, 7}, {7, 4}};
+            std::vector<IndexDescriptor> device_batch_target_indices{};
+            device_batches.push_back({std::move(device_batch_query_indices),
+                                      std::move(device_batch_target_indices)});
+        }
+        {
+            std::vector<IndexDescriptor> device_batch_query_indices{{11, 6}, {17, 5}, {22, 9}};
+            std::vector<IndexDescriptor> device_batch_target_indices{{25, 5}, {30, 4}};
+            device_batches.push_back({std::move(device_batch_query_indices),
+                                      std::move(device_batch_target_indices)});
+        }
+        {
+            std::vector<IndexDescriptor> device_batch_query_indices{{11, 6}, {17, 5}, {22, 9}};
+            std::vector<IndexDescriptor> device_batch_target_indices{{34, 7}, {41, 1}};
+            device_batches.push_back({std::move(device_batch_query_indices),
+                                      std::move(device_batch_target_indices)});
+        }
+        {
+            std::vector<IndexDescriptor> device_batch_query_indices{{11, 6}, {17, 5}, {22, 9}};
+            std::vector<IndexDescriptor> device_batch_target_indices{{42, 8}, {50, 3}};
+            device_batches.push_back({std::move(device_batch_query_indices),
+                                      std::move(device_batch_target_indices)});
+        }
+
+        expected_batches.push_back({std::move(host_batch),
+                                    std::move(device_batches)});
+    }
+    {
+        // query 1, target 0
+        std::vector<IndexDescriptor> host_batch_query_indices{{31, 5}, {36, 2}, {38, 8}, {46, 7}, {53, 3}};
+        std::vector<IndexDescriptor> host_batch_target_indices{{0, 6}, {6, 2}, {8, 4}, {12, 7}, {19, 6}};
+        IndexBatch host_batch{std::move(host_batch_query_indices),
+                              std::move(host_batch_target_indices)};
+        std::vector<IndexBatch> device_batches;
+        {
+            std::vector<IndexDescriptor> device_batch_query_indices{{31, 5}, {36, 2}, {38, 8}};
+            std::vector<IndexDescriptor> device_batch_target_indices{{0, 6}, {6, 2}, {8, 4}};
+            device_batches.push_back({std::move(device_batch_query_indices),
+                                      std::move(device_batch_target_indices)});
+        }
+        {
+            std::vector<IndexDescriptor> device_batch_query_indices{{31, 5}, {36, 2}, {38, 8}};
+            std::vector<IndexDescriptor> device_batch_target_indices{{12, 7}, {19, 6}};
+            device_batches.push_back({std::move(device_batch_query_indices),
+                                      std::move(device_batch_target_indices)});
+        }
+        {
+            std::vector<IndexDescriptor> device_batch_query_indices{{46, 7}, {53, 3}};
+            std::vector<IndexDescriptor> device_batch_target_indices{{0, 6}, {6, 2}, {8, 4}};
+            device_batches.push_back({std::move(device_batch_query_indices),
+                                      std::move(device_batch_target_indices)});
+        }
+        {
+            std::vector<IndexDescriptor> device_batch_query_indices{{46, 7}, {53, 3}};
+            std::vector<IndexDescriptor> device_batch_target_indices{{12, 7}, {19, 6}};
+            device_batches.push_back({std::move(device_batch_query_indices),
+                                      std::move(device_batch_target_indices)});
+        }
+
+        expected_batches.push_back({std::move(host_batch),
+                                    std::move(device_batches)});
+    }
+    {
+        // query 1, target 1
+        std::vector<IndexDescriptor> host_batch_query_indices{{31, 5}, {36, 2}, {38, 8}, {46, 7}, {53, 3}};
+        std::vector<IndexDescriptor> host_batch_target_indices{{25, 5}, {30, 4}, {34, 7}, {41, 1}, {42, 8}, {50, 3}};
+        IndexBatch host_batch{std::move(host_batch_query_indices),
+                              std::move(host_batch_target_indices)};
+        std::vector<IndexBatch> device_batches;
+        {
+            std::vector<IndexDescriptor> device_batch_query_indices{{31, 5}, {36, 2}, {38, 8}};
+            std::vector<IndexDescriptor> device_batch_target_indices{{25, 5}, {30, 4}};
+            device_batches.push_back({std::move(device_batch_query_indices),
+                                      std::move(device_batch_target_indices)});
+        }
+        {
+            std::vector<IndexDescriptor> device_batch_query_indices{{31, 5}, {36, 2}, {38, 8}};
+            std::vector<IndexDescriptor> device_batch_target_indices{{34, 7}, {41, 1}};
+            device_batches.push_back({std::move(device_batch_query_indices),
+                                      std::move(device_batch_target_indices)});
+        }
+        {
+            std::vector<IndexDescriptor> device_batch_query_indices{{31, 5}, {36, 2}, {38, 8}};
+            std::vector<IndexDescriptor> device_batch_target_indices{};
+            device_batches.push_back({std::move(device_batch_query_indices),
+                                      std::move(device_batch_target_indices)});
+        }
+        {
+            std::vector<IndexDescriptor> device_batch_query_indices{{46, 7}, {53, 3}};
+            std::vector<IndexDescriptor> device_batch_target_indices{{25, 5}, {30, 4}};
+            device_batches.push_back({std::move(device_batch_query_indices),
+                                      std::move(device_batch_target_indices)});
+        }
+        {
+            std::vector<IndexDescriptor> device_batch_query_indices{{46, 7}, {53, 3}};
+            std::vector<IndexDescriptor> device_batch_target_indices{{34, 7}, {41, 1}};
+            device_batches.push_back({std::move(device_batch_query_indices),
+                                      std::move(device_batch_target_indices)});
+        }
+        {
+            std::vector<IndexDescriptor> device_batch_query_indices{{46, 7}, {53, 3}};
+            std::vector<IndexDescriptor> device_batch_target_indices{{42, 8}, {50, 3}};
+            device_batches.push_back({std::move(device_batch_query_indices),
+                                      std::move(device_batch_target_indices)});
+        }
+
+        expected_batches.push_back({std::move(host_batch),
+                                    std::move(device_batches)});
+    }
+
+    test_combine_query_and_target_indices(query_groups_of_indices,
+                                          target_groups_of_indices,
+                                          expected_batches);
+}
+
 } // namespace cudamapper
 } // namespace claragenomics

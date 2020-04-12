@@ -22,6 +22,26 @@ namespace cudamapper
 // Functions in this file group Indices in batches of given size
 // These batches can then be used to control host and device Index caches
 
+/// IndexBatch
+///
+/// IndexBatch consists of sets of query and target indices that belong to one batch, either host or device
+struct IndexBatch
+{
+    std::vector<IndexDescriptor> query_indices;
+    std::vector<IndexDescriptor> target_indices;
+};
+
+/// BatchOfIndices
+///
+/// BatchOfIndices represents one batch of query and target indices that should be saved in host memory.
+/// device_batches contains batches of indices that are parts of host_batch. These batches should be loaded into
+/// device memory one by one from host memory
+struct BatchOfIndices
+{
+    IndexBatch host_batch;
+    std::vector<IndexBatch> device_batches;
+};
+
 namespace details
 {
 namespace index_batcher
@@ -105,6 +125,9 @@ std::vector<GroupAndSubgroupsOfIndicesDescriptor> generate_groups_and_subgroups(
 /// \return groups of index descriptors
 std::vector<HostAndDeviceGroupsOfIndices> convert_groups_of_indices_into_groups_of_index_descriptors(const std::vector<IndexDescriptor>& index_descriptors,
                                                                                                      const std::vector<GroupAndSubgroupsOfIndicesDescriptor>& groups_and_subgroups);
+
+std::vector<BatchOfIndices> combine_query_and_target_indices(const std::vector<HostAndDeviceGroupsOfIndices>& query_groups_of_indices,
+                                                             const std::vector<HostAndDeviceGroupsOfIndices>& target_groups_of_indices);
 
 } // namespace index_batcher
 } // namespace details

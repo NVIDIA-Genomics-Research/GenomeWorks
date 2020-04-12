@@ -90,6 +90,38 @@ std::vector<HostAndDeviceGroupsOfIndices> convert_groups_of_indices_into_groups_
     return results;
 }
 
+std::vector<BatchOfIndices> combine_query_and_target_indices(const std::vector<HostAndDeviceGroupsOfIndices>& query_groups_of_indices,
+                                                             const std::vector<HostAndDeviceGroupsOfIndices>& target_groups_of_indices)
+{
+    std::vector<BatchOfIndices> all_batches;
+
+    for (const HostAndDeviceGroupsOfIndices& query_group_of_indices : query_groups_of_indices)
+    {
+        const std::vector<IndexDescriptor>& query_host_group_of_indices              = query_group_of_indices.host_indices_group;
+        const std::vector<std::vector<IndexDescriptor>>& query_device_indices_groups = query_group_of_indices.device_indices_groups;
+        for (const HostAndDeviceGroupsOfIndices& target_group_of_indices : target_groups_of_indices)
+        {
+            const std::vector<IndexDescriptor>& target_host_group_of_indices = target_group_of_indices.host_indices_group;
+            IndexBatch host_batch{query_host_group_of_indices, target_host_group_of_indices};
+
+            const std::vector<std::vector<IndexDescriptor>>& target_device_indices_groups = target_group_of_indices.device_indices_groups;
+            std::vector<IndexBatch> device_batches;
+
+            for (const std::vector<IndexDescriptor>& query_device_indices_group : query_device_indices_groups)
+            {
+                for (const std::vector<IndexDescriptor>& target_device_indices_group : target_device_indices_groups)
+                {
+                    device_batches.push_back({query_device_indices_group, target_device_indices_group});
+                }
+            }
+
+            all_batches.push_back({host_batch, device_batches});
+        }
+    }
+
+    return all_batches;
+}
+
 } // namespace index_batcher
 } // namespace details
 
