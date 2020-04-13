@@ -13,6 +13,8 @@
 #include <memory>
 #include <vector>
 
+#include <claragenomics/defs/types.hpp>
+
 namespace claragenomics
 {
 namespace io
@@ -36,23 +38,20 @@ public:
     virtual ~FastaParser() = default;
 
     /// \brief Return number of sequences in FASTA file
-    ///
     /// \return Sequence count in file
-    virtual int32_t get_num_seqences() const = 0;
+    virtual number_of_reads_t get_num_seqences() const = 0;
 
     /// \brief Fetch an entry from the FASTA file by index position in file.
-    /// \param id Position of sequence in file. If id is greater than file size,
-    ///           an error is thrown.
-    ///
+    /// \param sequence_id Position of sequence in file. If sequence_id is invalid an error is thrown.
     /// \return A FastaSequence object describing the entry.
-    virtual FastaSequence get_sequence_by_id(int32_t id) const = 0;
+    virtual FastaSequence get_sequence_by_id(const read_id_t sequence_id) const = 0;
 
-    /// \brief returns a list of pairs of read_id values where each range has at most max_chunk_size characters
-    /// if a single sequence exceeds max_chunk_size it will be placed in its own chunk.
+    /// \brief returns a list of pairs of read_id values where each range has at most max_chunk_size basepairs
+    /// If a single sequence exceeds max_chunk_size it will be placed in its own chunk.
     ///
-    /// \param max_chunk_size the maximum size (in MB) of a chunk (range of indices)
-    /// \return  a pair of integers with the first and past-the-last read indices of the chunk
-    virtual std::vector<std::pair<int, int>> get_read_chunks(int max_chunk_size = 1000000) const = 0;
+    /// \param max_chunk_size the maximum number of basepairs in a chunk (range of indices)
+    /// \return first and past-the-last read_id of each chunk
+    virtual std::vector<std::pair<read_id_t, read_id_t>> get_read_chunks(const number_of_basepairs_t max_chunk_size = 1000000) const = 0;
 };
 
 /// \brief A builder function that returns a FASTA parser object which uses KSEQPP.
@@ -62,7 +61,9 @@ public:
 /// \param shuffle Enables shuffling reads
 ///
 /// \return A unique pointer to a constructed parser object.
-std::unique_ptr<FastaParser> create_kseq_fasta_parser(const std::string& fasta_file, int min_sequence_length = 0, bool shuffle = true);
+std::unique_ptr<FastaParser> create_kseq_fasta_parser(const std::string& fasta_file,
+                                                      const number_of_basepairs_t min_sequence_length = 0,
+                                                      const bool shuffle                              = true);
 
 } // namespace io
 } // namespace claragenomics
