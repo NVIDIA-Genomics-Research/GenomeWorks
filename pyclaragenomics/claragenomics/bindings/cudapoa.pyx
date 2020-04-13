@@ -16,8 +16,8 @@
 """CUDAPOA binding module."""
 
 from cython.operator cimport dereference as deref
-from libc.stdint cimport uint16_t, int8_t
-from libcpp.memory cimport unique_ptr
+from libc.stdint cimport uint16_t, int8_t, int32_t
+from libcpp.memory cimport unique_ptr, make_unique
 from libcpp.pair cimport pair
 from libcpp.string cimport string
 from libcpp.vector cimport vector
@@ -61,6 +61,7 @@ def status_to_str(status):
 cdef class CudaPoaBatch:
     """Python API for CUDA-accelerated partial order alignment algorithm."""
     cdef unique_ptr[cudapoa.Batch] batch
+    cdef unique_ptr[cudapoa.BatchSize] batch_size
 
     def __cinit__(
             self,
@@ -106,12 +107,17 @@ cdef class CudaPoaBatch:
         else:
             raise RuntimeError("Unknown output_type provided. Must be consensus/msa.")
 
+        # Since cython make_unique doesn't accept python objects, need to
+        # store it in a cdef and then pass into the make unique call
+        cdef int32_t max_seqs = max_sequences_per_poa
+        self.batch_size = make_unique[cudapoa.BatchSize](1024, max_seqs)
+
         self.batch = cudapoa.create_batch(
-            max_sequences_per_poa,
             device_id,
             temp_stream,
             gpu_mem,
             output_mask,
+            deref(self.batch_size),
             gap_score,
             mismatch_score,
             match_score,
