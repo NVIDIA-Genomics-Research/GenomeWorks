@@ -73,9 +73,9 @@ struct BatchSize
         , max_concensus_size(2 * max_sequence_size)
         , max_nodes_per_window(cudautils::align<int32_t, 4>(3 * max_sequence_size))
         , max_nodes_per_window_banded(cudautils::align<int32_t, 4>(4 * max_sequence_size))
-        , max_matrix_graph_dimension(cudautils::align<int32_t, 4>(max_nodes_per_window))
-        , max_matrix_graph_dimension_banded(cudautils::align<int32_t, 4>(max_nodes_per_window_banded))
-        , max_matrix_sequence_dimension(cudautils::align<int32_t, 4>(max_sequence_size))
+        , max_matrix_graph_dimension(cudautils::align<int32_t, 4>(max_nodes_per_window + 4))
+        , max_matrix_graph_dimension_banded(cudautils::align<int32_t, 4>(max_nodes_per_window_banded + 4))
+        , max_matrix_sequence_dimension(cudautils::align<int32_t, 4>(max_sequence_size + 4))
         , max_sequences_per_poa(max_seq_per_poa)
 
     {
@@ -91,9 +91,9 @@ struct BatchSize
         , max_concensus_size(max_concensus_sz)
         , max_nodes_per_window(cudautils::align<int32_t, 4>(max_nodes_per_w))
         , max_nodes_per_window_banded(cudautils::align<int32_t, 4>(max_nodes_per_w_banded))
-        , max_matrix_graph_dimension(cudautils::align<int32_t, 4>(max_nodes_per_window))
-        , max_matrix_graph_dimension_banded(cudautils::align<int32_t, 4>(max_nodes_per_window_banded))
-        , max_matrix_sequence_dimension(cudautils::align<int32_t, 4>(max_sequence_size))
+        , max_matrix_graph_dimension(cudautils::align<int32_t, 4>(max_nodes_per_window + 4))
+        , max_matrix_graph_dimension_banded(cudautils::align<int32_t, 4>(max_nodes_per_window_banded + 4))
+        , max_matrix_sequence_dimension(cudautils::align<int32_t, 4>(max_sequence_size + 4))
         , max_sequences_per_poa(max_seq_per_poa)
     {
         throw_on_negative(max_seq_sz, "max_sequence_size cannot be negative.");
