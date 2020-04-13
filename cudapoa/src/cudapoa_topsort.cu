@@ -96,12 +96,12 @@ __device__ void raconTopologicalSortDeviceUtil(uint16_t* sorted_poa,
                                                uint8_t* node_marks,
                                                bool* check_aligned_nodes,
                                                uint16_t* nodes_to_visit,
-                                               bool banded_alignment)
+                                               bool banded_alignment,
+                                               uint16_t max_nodes_per_window)
 {
     int16_t node_idx        = -1;
     uint16_t sorted_poa_idx = 0;
 
-    uint16_t max_nodes_per_window = banded_alignment ? CUDAPOA_MAX_NODES_PER_WINDOW_BANDED : CUDAPOA_MAX_NODES_PER_WINDOW;
     for (uint16_t i = 0; i < max_nodes_per_window; i++)
     {
         node_marks[i]          = 0;

@@ -21,6 +21,6 @@ set(SOURCES
 include_directories(${CUB_DIR})
 
 set(LIBS
-    utils)
+    cgautils)
 
 cga_add_tests(${TARGET_NAME} "${SOURCES}" "${LIBS}")

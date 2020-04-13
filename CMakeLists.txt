@@ -70,6 +70,7 @@ include(cmake/Packaging.cmake)
 include(cmake/CondaEnv.cmake)
 
 # Add ClaraGenomicsAnalysis projects.
+add_subdirectory(common/config)
 add_subdirectory(common/logging)
 add_subdirectory(common/utils)
 add_subdirectory(common/io)

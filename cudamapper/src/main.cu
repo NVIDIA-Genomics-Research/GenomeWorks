@@ -28,79 +28,164 @@
 #include <claragenomics/cudamapper/overlapper.hpp>
 #include "overlapper_triggered.hpp"
 
-static struct option options[] = {
-    {"kmer-size", required_argument, 0, 'k'},
-    {"window-size", required_argument, 0, 'w'},
-    {"num-devices", required_argument, 0, 'd'},
-    {"max-index-device-cache", required_argument, 0, 'c'},
-    {"max-index-host-cache", required_argument, 0, 'C'},
-    {"max-cached-memory", required_argument, 0, 'm'},
-    {"index-size", required_argument, 0, 'i'},
-    {"target-index-size", required_argument, 0, 't'},
-    {"filtering-parameter", required_argument, 0, 'F'},
-    {"alignment-engines", required_argument, 0, 'a'},
-    {"help", no_argument, 0, 'h'},
+/// @brief prints help message
+/// @param exit_code
+void help(int32_t exit_code = 0)
+{
+    std::cerr <<
+        R"(Usage: cudamapper [options ...] <query_sequences> <target_sequences>
+     <sequences>
+        Input file in FASTA/FASTQ format (can be compressed with gzip)
+        containing sequences used for all-to-all overlapping
+     options:
+        -k, --kmer-size
+            length of kmer to use for minimizers [15] (Max=)"
+              << claragenomics::cudamapper::Index::maximum_kmer_size() << ")"
+              << R"(
+        -w, --window-size
+            length of window to use for minimizers [15])"
+              << R"(
+        -d, --num-devices
+            number of GPUs to use [1])"
+              << R"(
+        -c, --max-index-device-cache
+            number of indices to keep in GPU memory [100])"
+              << R"(
+        -C, --max-index-host-cache
+            number of indices to keep in host memory [0])"
+              << R"(
+        -m, --max-cached-memory
+            maximum aggregate cached memory per device in GiB, if 0 program tries to allocate as much memory as possible [0])"
+              << R"(
+        -i, --index-size
+            length of batch size used for query in MB [30])"
+              << R"(
+        -t, --target-index-size
+            length of batch sized used for target in MB [30])"
+              << R"(
+        -F, --filtering-parameter
+            filter all representations for which sketch_elements_with_that_representation/total_sketch_elements >= filtering_parameter), filtering disabled if filtering_parameter == 1.0 [1'000'000'001] (Min = 0.0, Max = 1.0))"
+              << R"(
+        -a, --alignment-engines
+            Number of alignment engines to use (per device) for generating CIGAR strings for overlap alignments. Default value 0 = no alignment to be performed. Typically 2-4 engines per device gives best perf.)"
+              << R"(
+        -r, --min-residues
+            Minimum number of matching residues in an overlap [10])"
+              << R"(
+        -l, --min-overlap-length
+            Minimum length for an overlap [500].)"
+              << R"(
+        -b, --min-bases-per-residue
+            Minimum number of bases in overlap per match [100].)"
+              << R"(
+        -z, --min-overlap-fraction
+            Minimum ratio of overlap length to alignment length [0.95].)"
+              << std::endl;
+
+    exit(exit_code);
+}
+
+/// @brief application parameteres, default or passed through command line
+struct ApplicationParameteres
+{
+    uint32_t k                                  = 15;   // k
+    uint32_t w                                  = 15;   // w
+    std::int32_t num_devices                    = 1;    // d
+    std::int32_t max_index_cache_size_on_device = 100;  // c
+    std::int32_t max_index_cache_size_on_host   = 0;    // C
+    std::int32_t max_cached_memory              = 0;    // m
+    std::int32_t index_size                     = 30;   // i
+    std::int32_t target_index_size              = 30;   // t
+    double filtering_parameter                  = 1.0;  // F
+    std::int32_t alignment_engines              = 0;    // a
+    std::int32_t min_residues                   = 10;   // r
+    std::int32_t min_overlap_len                = 500;  // l
+    std::int32_t min_bases_per_residue          = 100;  // b
+    float min_overlap_fraction                  = 0.95; // z
+    bool all_to_all                             = false;
+    std::string query_filepath;
+    std::string target_filepath;
 };
 
-void help(int32_t exit_code);
-std::size_t find_largest_contiguous_device_memory_section();
-
-int main(int argc, char* argv[])
+/// @brief reads input from command line
+/// @param argc
+/// @param argv
+/// @return application parameters passed through command line, default otherwise
+ApplicationParameteres read_input(int argc, char* argv[])
 {
-    using claragenomics::get_size;
-    claragenomics::logging::Init();
+    ApplicationParameteres parameters;
 
-    uint32_t k                                  = 15;  // k
-    uint32_t w                                  = 15;  // w
-    std::int32_t num_devices                    = 1;   // d
-    std::int32_t max_index_cache_size_on_device = 100; // c
-    // ToDo: come up with a good heuristic to choose C and c
-    std::int32_t max_index_cache_size_on_host = 0;   // C
-    std::int32_t max_cached_memory            = 0;   // m
-    std::int32_t index_size                   = 30;  // i
-    std::int32_t target_index_size            = 30;  // t
-    double filtering_parameter                = 1.0; // F
-    std::int32_t alignment_engines            = 0;   // a
-    std::string optstring                     = "k:w:d:c:C:m:i:t:F:h:a:";
-    int32_t argument                          = 0;
+    struct option options[] = {
+        {"kmer-size", required_argument, 0, 'k'},
+        {"window-size", required_argument, 0, 'w'},
+        {"num-devices", required_argument, 0, 'd'},
+        {"max-index-device-cache", required_argument, 0, 'c'},
+        {"max-index-host-cache", required_argument, 0, 'C'},
+        {"max-cached-memory", required_argument, 0, 'm'},
+        {"index-size", required_argument, 0, 'i'},
+        {"target-index-size", required_argument, 0, 't'},
+        {"filtering-parameter", required_argument, 0, 'F'},
+        {"alignment-engines", required_argument, 0, 'a'},
+        {"min-residues", required_argument, 0, 'r'},
+        {"min-overlap-length", required_argument, 0, 'l'},
+        {"min-bases-per-residue", required_argument, 0, 'b'},
+        {"min-overlap-fraction", required_argument, 0, 'z'},
+        {"help", no_argument, 0, 'h'},
+    };
+
+    std::string optstring = "k:w:d:c:C:m:i:t:F:h:a:r:l:b:z:";
+
+    int32_t argument = 0;
     while ((argument = getopt_long(argc, argv, optstring.c_str(), options, nullptr)) != -1)
     {
         switch (argument)
         {
         case 'k':
-            k = atoi(optarg);
+            parameters.k = atoi(optarg);
             break;
         case 'w':
-            w = atoi(optarg);
+            parameters.w = atoi(optarg);
             break;
         case 'd':
-            num_devices = atoi(optarg);
+            parameters.num_devices = atoi(optarg);
             break;
         case 'c':
-            max_index_cache_size_on_device = atoi(optarg);
+            parameters.max_index_cache_size_on_device = atoi(optarg);
             break;
         case 'C':
-            max_index_cache_size_on_host = atoi(optarg);
+            parameters.max_index_cache_size_on_host = atoi(optarg);
             break;
         case 'm':
 #ifndef CGA_ENABLE_CACHING_ALLOCATOR
             std::cerr << "ERROR: Argument -m / --max-cached-memory cannot be used without caching allocator" << std::endl;
             exit(1);
 #endif
-            max_cached_memory = atoi(optarg);
+            parameters.max_cached_memory = atoi(optarg);
             break;
         case 'i':
-            index_size = atoi(optarg);
+            parameters.index_size = atoi(optarg);
             break;
         case 't':
-            target_index_size = atoi(optarg);
+            parameters.target_index_size = atoi(optarg);
             break;
         case 'F':
-            filtering_parameter = atof(optarg);
+            parameters.filtering_parameter = atof(optarg);
             break;
         case 'a':
-            alignment_engines = atoi(optarg);
-            claragenomics::throw_on_negative(alignment_engines, "Number of alignment engines should be non-negative");
+            parameters.alignment_engines = atoi(optarg);
+            claragenomics::throw_on_negative(parameters.alignment_engines, "Number of alignment engines should be non-negative");
+            break;
+        case 'r':
+            parameters.min_residues = atoi(optarg);
+            break;
+        case 'l':
+            parameters.min_overlap_len = atoi(optarg);
+            break;
+        case 'b':
+            parameters.min_bases_per_residue = atoi(optarg);
+            break;
+        case 'z':
+            parameters.min_overlap_fraction = atof(optarg);
             break;
         case 'h':
             help(0);
@@ -109,19 +194,19 @@ int main(int argc, char* argv[])
         }
     }
 
-    if (k > claragenomics::cudamapper::Index::maximum_kmer_size())
+    if (parameters.k > claragenomics::cudamapper::Index::maximum_kmer_size())
     {
-        std::cerr << "kmer of size " << k << " is not allowed, maximum k = " << claragenomics::cudamapper::Index::maximum_kmer_size() << std::endl;
+        std::cerr << "kmer of size " << parameters.k << " is not allowed, maximum k = " << claragenomics::cudamapper::Index::maximum_kmer_size() << std::endl;
         exit(1);
     }
 
-    if (filtering_parameter > 1.0 || filtering_parameter < 0.0)
+    if (parameters.filtering_parameter > 1.0 || parameters.filtering_parameter < 0.0)
     {
         std::cerr << "-F / --filtering-parameter must be in range [0.0, 1.0]" << std::endl;
         exit(1);
     }
 
-    if (max_cached_memory < 0)
+    if (parameters.max_cached_memory < 0)
     {
         std::cerr << "-m / --max-cached-memory must not be negative" << std::endl;
         exit(1);
@@ -134,34 +219,81 @@ int main(int argc, char* argv[])
         help(1);
     }
 
-    std::string query_filepath  = std::string(argv[optind++]);
-    std::string target_filepath = std::string(argv[optind++]);
+    parameters.query_filepath  = std::string(argv[optind++]);
+    parameters.target_filepath = std::string(argv[optind++]);
 
-    bool all_to_all = false;
-    if (query_filepath == target_filepath)
+    if (parameters.query_filepath == parameters.target_filepath)
     {
-        all_to_all        = true;
-        target_index_size = index_size;
+        parameters.all_to_all        = true;
+        parameters.target_index_size = parameters.index_size;
         std::cerr << "NOTE - Since query and target files are same, activating all_to_all mode. Query index size used for both files." << std::endl;
     }
 
-    std::shared_ptr<claragenomics::io::FastaParser> query_parser = claragenomics::io::create_kseq_fasta_parser(query_filepath, k + w - 1);
-    int32_t queries                                              = query_parser->get_num_seqences();
+    return parameters;
+}
 
+/// @brief adds read names to overlaps and writes them to output
+/// This function is expected to be executed async to matcher + overlapper
+/// @param overlaps_writer_mtx locked while writing the output
+/// @param num_overlap_chunks_to_print increased before the function is called, decreased right before the function finishes // TODO: improve this design
+/// @param filtered_overlaps overlaps to be written out, on input without read names, on output cleared
+/// @param query_index needed for read names // TODO: consider only passing vector of names, not whole indices
+/// @param target_index needed for read names // TODO: consider only passing vector of names, not whole indices
+/// @param cigar
+/// @param device_id id of device on which query and target indices were created
+void writer_thread_function(std::mutex& overlaps_writer_mtx,
+                            std::atomic<int>& num_overlap_chunks_to_print,
+                            std::shared_ptr<std::vector<claragenomics::cudamapper::Overlap>> filtered_overlaps,
+                            std::shared_ptr<claragenomics::cudamapper::Index> query_index,
+                            std::shared_ptr<claragenomics::cudamapper::Index> target_index,
+                            const std::vector<std::string> cigar,
+                            const int device_id,
+                            const int kmer_size)
+{
+    // This function is expected to run in a separate thread so set current device in order to avoid problems
+    // with deallocating indices with different current device than the one on which they were created
+    cudaSetDevice(device_id);
+
+    // Overlap post processing - add overlaps which can be combined into longer ones.
+    claragenomics::cudamapper::Overlapper::post_process_overlaps(*filtered_overlaps);
+
+    // parallel update of the query/target read names for filtered overlaps [parallel on host]
+    claragenomics::cudamapper::Overlapper::update_read_names(*filtered_overlaps, *query_index, *target_index);
+    std::lock_guard<std::mutex> lck(overlaps_writer_mtx);
+    claragenomics::cudamapper::Overlapper::print_paf(*filtered_overlaps, cigar, kmer_size);
+
+    //clear data
+    for (auto o : *filtered_overlaps)
+    {
+        o.clear();
+    }
+    //Decrement counter which tracks number of overlap chunks to be filtered and printed
+    num_overlap_chunks_to_print--;
+};
+
+int main(int argc, char* argv[])
+{
+    using claragenomics::get_size;
+    claragenomics::logging::Init();
+
+    const ApplicationParameteres parameters = read_input(argc, argv);
+
+    std::shared_ptr<claragenomics::io::FastaParser> query_parser;
     std::shared_ptr<claragenomics::io::FastaParser> target_parser;
-    if (all_to_all)
+
+    query_parser = claragenomics::io::create_kseq_fasta_parser(parameters.query_filepath, parameters.k + parameters.w - 1);
+
+    if (parameters.all_to_all)
     {
         target_parser = query_parser;
     }
     else
     {
-        target_parser = claragenomics::io::create_kseq_fasta_parser(target_filepath, k + w - 1);
+        target_parser = claragenomics::io::create_kseq_fasta_parser(parameters.target_filepath, parameters.k + parameters.w - 1);
     }
 
-    int32_t targets = target_parser->get_num_seqences();
-
-    std::cerr << "Query " << query_filepath << " index " << queries << std::endl;
-    std::cerr << "Target " << target_filepath << " index " << targets << std::endl;
+    std::cerr << "Query file: " << parameters.query_filepath << ", number of reads: " << query_parser->get_num_seqences() << std::endl;
+    std::cerr << "Target file: " << parameters.target_filepath << ", number of reads: " << target_parser->get_num_seqences() << std::endl;
 
     // Data structure for holding overlaps to be written out
     std::mutex overlaps_writer_mtx;
@@ -172,9 +304,9 @@ int main(int argc, char* argv[])
         std::vector<std::pair<std::int32_t, int32_t>> target_ranges;
     };
 
-    ///Factor of 1000000 to make max cache size in MiB
-    auto query_chunks  = query_parser->get_read_chunks(index_size * 1000000);
-    auto target_chunks = target_parser->get_read_chunks(target_index_size * 1000000);
+    ///Factor of 1000000 to make max cache size in MB
+    auto query_chunks  = query_parser->get_read_chunks(parameters.index_size * 1000000);
+    auto target_chunks = target_parser->get_read_chunks(parameters.target_index_size * 1000000);
 
     //First generate all the ranges independently, then loop over them.
     std::vector<QueryTargetsRange> query_target_ranges;
@@ -192,31 +324,31 @@ int main(int argc, char* argv[])
         // in all-to-all, for query chunk 0, we go through target chunks [target_idx = 0 , n = target_chunks.size())
         // for query chunk 1, we only need target chunks [target_idx = 1 , n), and in general for query_chunk i, we need target chunks [target_idx = i , n)
         // therefore as we're looping through query chunks, in all-to-all, will increment target_idx
-        if (all_to_all)
+        if (parameters.all_to_all)
         {
             target_idx++;
         }
     }
 
     // This is host cache, if it has the index it will copy it to device, if not it will generate on device and add it to host cache
-    std::map<std::pair<uint64_t, uint64_t>, std::shared_ptr<claragenomics::cudamapper::IndexHostCopy>> host_index_cache;
+    std::map<std::pair<uint64_t, uint64_t>, std::shared_ptr<claragenomics::cudamapper::IndexHostCopyBase>> host_index_cache;
 
     // This is a per-device cache, if it has the index it will return it, if not it will generate it, store and return it.
-    std::vector<std::map<std::pair<uint64_t, uint64_t>, std::shared_ptr<claragenomics::cudamapper::Index>>> device_index_cache(num_devices);
+    std::vector<std::map<std::pair<uint64_t, uint64_t>, std::shared_ptr<claragenomics::cudamapper::Index>>> device_index_cache(parameters.num_devices);
 
     // The number of overlap chunks which are to be computed
     std::atomic<int> num_overlap_chunks_to_print(0);
 
-    auto get_index = [&device_index_cache, &host_index_cache, max_index_cache_size_on_device, max_index_cache_size_on_host](claragenomics::DefaultDeviceAllocator allocator,
-                                                                                                                            claragenomics::io::FastaParser& parser,
-                                                                                                                            const claragenomics::cudamapper::read_id_t start_index,
-                                                                                                                            const claragenomics::cudamapper::read_id_t end_index,
-                                                                                                                            const std::uint64_t k,
-                                                                                                                            const std::uint64_t w,
-                                                                                                                            const int device_id,
-                                                                                                                            const bool allow_cache_index,
-                                                                                                                            const double filtering_parameter,
-                                                                                                                            const cudaStream_t cuda_stream) {
+    auto get_index = [&device_index_cache, &host_index_cache, &parameters](claragenomics::DefaultDeviceAllocator allocator,
+                                                                           claragenomics::io::FastaParser& parser,
+                                                                           const claragenomics::cudamapper::read_id_t start_index,
+                                                                           const claragenomics::cudamapper::read_id_t end_index,
+                                                                           const std::uint64_t k,
+                                                                           const std::uint64_t w,
+                                                                           const int device_id,
+                                                                           const bool allow_cache_index,
+                                                                           const double filtering_parameter,
+                                                                           const cudaStream_t cuda_stream) {
         CGA_NVTX_RANGE(profiler, "get index");
         std::pair<uint64_t, uint64_t> key;
         key.first  = start_index;
@@ -250,18 +382,18 @@ int main(int argc, char* argv[])
             // If in all-to-all mode, put this query in the cache for later use.
             // Cache eviction is handled later on by the calling thread
             // using the evict_index function.
-            if (get_size<int32_t>(device_index_cache[device_id]) < max_index_cache_size_on_device && allow_cache_index)
+            if (get_size<int32_t>(device_index_cache[device_id]) < parameters.max_index_cache_size_on_device && allow_cache_index)
             {
                 device_index_cache[device_id][key] = index;
             }
-            else if (get_size<int32_t>(host_index_cache) < max_index_cache_size_on_host && allow_cache_index && device_id == 0)
+            else if (get_size<int32_t>(host_index_cache) < parameters.max_index_cache_size_on_host && allow_cache_index && device_id == 0)
             {
                 // if not cached on device, update host cache; only done on device 0 to avoid any race conditions in updating the host cache
-                host_index_cache[key] = claragenomics::cudamapper::IndexHostCopy::create_cache(*index,
-                                                                                               start_index,
-                                                                                               k,
-                                                                                               w,
-                                                                                               cuda_stream);
+                host_index_cache[key] = claragenomics::cudamapper::IndexHostCopyBase::create_cache(*index,
+                                                                                                   start_index,
+                                                                                                   k,
+                                                                                                   w,
+                                                                                                   cuda_stream);
             }
         }
         return index;
@@ -296,10 +428,10 @@ int main(int argc, char* argv[])
 #ifdef CGA_ENABLE_CACHING_ALLOCATOR
     // uses CachingDeviceAllocator
     std::size_t max_cached_bytes = 0;
-    if (max_cached_memory == 0)
+    if (parameters.max_cached_memory == 0)
     {
         std::cerr << "Programmatically looking for max cached memory" << std::endl;
-        max_cached_bytes = find_largest_contiguous_device_memory_section();
+        max_cached_bytes = claragenomics::cudautils::find_largest_contiguous_device_memory_section();
         if (max_cached_bytes == 0)
         {
             std::cerr << "No memory available for caching" << std::endl;
@@ -308,7 +440,7 @@ int main(int argc, char* argv[])
     }
     else
     {
-        max_cached_bytes = max_cached_memory * 1024ull * 1024ull * 1024ull; // max_cached_memory is in GiB
+        max_cached_bytes = parameters.max_cached_memory * 1024ull * 1024ull * 1024ull; // max_cached_memory is in GiB
     }
 
     std::cerr << "Using device memory cache of " << max_cached_bytes << " bytes" << std::endl;
@@ -337,11 +469,11 @@ int main(int argc, char* argv[])
                                     *query_parser,
                                     query_start_index,
                                     query_end_index,
-                                    k,
-                                    w,
+                                    parameters.k,
+                                    parameters.w,
                                     device_id,
-                                    all_to_all,
-                                    filtering_parameter,
+                                    parameters.all_to_all,
+                                    parameters.filtering_parameter,
                                     cuda_stream);
         }
 
@@ -357,11 +489,11 @@ int main(int argc, char* argv[])
                                          *target_parser,
                                          target_start_index,
                                          target_end_index,
-                                         k,
-                                         w,
+                                         parameters.k,
+                                         parameters.w,
                                          device_id,
                                          true,
-                                         filtering_parameter,
+                                         parameters.filtering_parameter,
                                          cuda_stream);
             }
             {
@@ -379,43 +511,33 @@ int main(int argc, char* argv[])
                 // Get unfiltered overlaps
                 auto overlaps_to_add = std::make_shared<std::vector<claragenomics::cudamapper::Overlap>>();
 
-                overlapper.get_overlaps(*overlaps_to_add, matcher->anchors(), 50);
+                overlapper.get_overlaps(*overlaps_to_add, matcher->anchors(),
+                                        parameters.min_residues,
+                                        parameters.min_overlap_len,
+                                        parameters.min_bases_per_residue,
+                                        parameters.min_overlap_fraction);
 
                 std::vector<std::string> cigar;
                 // Align overlaps
-                if (alignment_engines > 0)
+                if (parameters.alignment_engines > 0)
                 {
                     cigar.resize(overlaps_to_add->size());
                     CGA_NVTX_RANGE(profiler, "align_overlaps");
-                    claragenomics::cudamapper::Overlapper::Overlapper::align_overlaps(*overlaps_to_add, *query_parser, *target_parser, alignment_engines, cigar);
+                    claragenomics::cudamapper::Overlapper::Overlapper::align_overlaps(*overlaps_to_add, *query_parser, *target_parser, parameters.alignment_engines, cigar);
                 }
 
                 //Increment counter which tracks number of overlap chunks to be filtered and printed
                 num_overlap_chunks_to_print++;
-                auto print_overlaps = [&overlaps_writer_mtx, &num_overlap_chunks_to_print](std::shared_ptr<std::vector<claragenomics::cudamapper::Overlap>> filtered_overlaps,
-                                                                                           std::shared_ptr<claragenomics::cudamapper::Index> query_index,
-                                                                                           std::shared_ptr<claragenomics::cudamapper::Index> target_index,
-                                                                                           const std::vector<std::string>& cigar,
-                                                                                           const int device_id) {
-                    // This lambda is expected to run in a separate thread so set current device in order to avoid problems
-                    // with deallocating indices with different current device then the one on which they were created
-                    cudaSetDevice(device_id);
 
-                    // parallel update of the query/target read names for filtered overlaps [parallel on host]
-                    claragenomics::cudamapper::Overlapper::update_read_names(*filtered_overlaps, *query_index, *target_index);
-                    std::lock_guard<std::mutex> lck(overlaps_writer_mtx);
-                    claragenomics::cudamapper::Overlapper::print_paf(*filtered_overlaps, cigar);
-
-                    //clear data
-                    for (auto o : *filtered_overlaps)
-                    {
-                        o.clear();
-                    }
-                    //Decrement counter which tracks number of overlap chunks to be filtered and printed
-                    num_overlap_chunks_to_print--;
-                };
-
-                std::thread t(print_overlaps, overlaps_to_add, query_index, target_index, cigar, device_id);
+                std::thread t(writer_thread_function,
+                              std::ref(overlaps_writer_mtx),
+                              std::ref(num_overlap_chunks_to_print),
+                              overlaps_to_add,
+                              query_index,
+                              target_index,
+                              std::move(cigar),
+                              device_id,
+                              parameters.k);
                 t.detach();
             }
 
@@ -424,9 +546,9 @@ int main(int argc, char* argv[])
         }
 
         // If all-to-all mapping query will no longer be needed on device, remove it from the cache
-        if (all_to_all)
+        if (parameters.all_to_all)
         {
-            evict_index(query_start_index, query_end_index, device_id, num_devices);
+            evict_index(query_start_index, query_end_index, device_id, parameters.num_devices);
         }
     };
 
@@ -441,13 +563,13 @@ int main(int argc, char* argv[])
     // Each worker thread gets its own CUDA stream to work on. Currently there is only one worker thread per GPU,
     // but it is still necessary assign streams to each of then explicitly. --default-stream per-thread could
     // cause problems beacuse there are subthreads for worker threads
-    std::vector<cudaStream_t> cuda_streams(num_devices);
+    std::vector<cudaStream_t> cuda_streams(parameters.num_devices);
 
     // Launch worker threads to enable multi-GPU.
     // One worker thread is responsible for one GPU so the number
     // of worker threads launched is equal to the number of devices specified
     // by the user
-    for (int device_id = 0; device_id < num_devices; ++device_id)
+    for (int device_id = 0; device_id < parameters.num_devices; ++device_id)
     {
         CGA_CU_CHECK_ERR(cudaStreamCreate(&cuda_streams[device_id]));
         //Worker thread consumes query-target ranges off a queue
@@ -492,96 +614,5 @@ int main(int argc, char* argv[])
         CGA_CU_CHECK_ERR(cudaStreamDestroy(cuda_stream));
     }
 
-    return 0;
-}
-
-void help(int32_t exit_code = 0)
-{
-    std::cerr <<
-        R"(Usage: cudamapper [options ...] <query_sequences> <target_sequences>
-     <sequences>
-        Input file in FASTA/FASTQ format (can be compressed with gzip)
-        containing sequences used for all-to-all overlapping
-     options:
-        -k, --kmer-size
-            length of kmer to use for minimizers [15] (Max=)"
-              << claragenomics::cudamapper::Index::maximum_kmer_size() << ")"
-              << R"(
-        -w, --window-size
-            length of window to use for minimizers [15])"
-              << R"(
-        -d, --num-devices
-            number of GPUs to use [1])"
-              << R"(
-        -c, --max-index-device-cache
-            number of indices to keep in GPU memory [100])"
-              << R"(
-        -C, --max-index-host-cache
-            number of indices to keep in host memory [0])"
-              << R"(
-        -m, --max-cached-memory
-            maximum aggregate cached memory per device in GiB, if 0 program tries to allocate as much memory as possible [0])"
-              << R"(
-        -i, --index-size
-            length of batch size used for query in MB [30])"
-              << R"(
-        -t, --target-index-size
-            length of batch sized used for target in MB [30])"
-              << R"(
-        -F, --filtering-parameter
-            filter all representations for which sketch_elements_with_that_representation/total_sketch_elements >= filtering_parameter), filtering disabled if filtering_parameter == 1.0 [1'000'000'001] (Min = 0.0, Max = 1.0))"
-              << R"(
-        -a, --alignment-engines
-            Number of alignment engines to use (per device) for generating CIGAR strings for overlap alignments. Default value 0 = no alignment to be performed. Typically 2-4 engines per device gives best perf.)"
-              << std::endl;
-
-    exit(exit_code);
-}
-
-/// @brief finds largest section of contiguous memory on device
-/// @return number of bytes
-std::size_t find_largest_contiguous_device_memory_section()
-{
-    // find the largest block of contiguous memory
-    size_t free;
-    size_t total;
-    cudaMemGetInfo(&free, &total);
-    const size_t memory_decrement = free / 100;              // decrease requested memory one by one percent
-    size_t size_to_try            = free - memory_decrement; // do not go for all memory
-    while (true)
-    {
-        void* dummy_ptr    = nullptr;
-        cudaError_t status = cudaMalloc(&dummy_ptr, size_to_try);
-        // if it was able to allocate memory free the memory and return the size
-        if (status == cudaSuccess)
-        {
-            cudaFree(dummy_ptr);
-            return size_to_try;
-        }
-
-        if (status == cudaErrorMemoryAllocation)
-        {
-            // if it was not possible to allocate the memory because there was not enough of it
-            // try allocating less memory in next iteration
-            if (size_to_try > memory_decrement)
-            {
-                size_to_try -= memory_decrement;
-            }
-            else
-            { // a very small amount of memory left, report an error
-                CGA_CU_CHECK_ERR(cudaErrorMemoryAllocation);
-                return 0;
-            }
-        }
-        else
-        {
-            // if cudaMalloc failed because of error other than cudaErrorMemoryAllocation process the error
-            CGA_CU_CHECK_ERR(status);
-        }
-    }
-
-    // this point should actually never be reached (loop either finds memory or causes an error)
-    assert(false);
-    CGA_CU_CHECK_ERR(cudaErrorMemoryAllocation);
     return 0;
 }
