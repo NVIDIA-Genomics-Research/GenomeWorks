@@ -39,19 +39,18 @@ public:
     /// \return A FastaSequence object describing the entry.
     FastaSequence get_sequence_by_id(const read_id_t sequence_id) const override;
 
-    /// \brief returns a list of pairs of read_id values where each range has at most max_chunk_size basepairs
-    /// If a single sequence exceeds max_chunk_size it will be placed in its own chunk.
+    /// \brief returns a list of IndexDescriptors in which the sum of basepairs in all sequences in one IndexDescriptor is at most max_chunk_size
+    /// If a single sequence exceeds max_chunk_size it will be placed in its own IndexDescriptor.
     ///
-    /// \param max_chunk_size the maximum number of basepairs in a chunk (range of indices)
-    /// \return first and past-the-last read_id of each chunk
-    std::vector<std::pair<read_id_t, read_id_t>> get_read_chunks(const number_of_basepairs_t max_chunk_size) const override;
+    /// \param max_index_size the maximum number of basepairs in an IndexDescriptor
+    /// \return list of IndexDescriptors
+    std::vector<IndexDescriptor> get_index_descriptors(const number_of_basepairs_t max_index_size) const override;
 
 private:
     /// All the reads from the FASTA file are stored in host RAM
     /// given a sufficiently-large FASTA file, there may not be enough host RAM
     /// on the system
     std::vector<FastaSequence> reads_;
-    std::vector<std::pair<read_id_t, read_id_t>> read_chunks_;
 };
 
 } // namespace io
