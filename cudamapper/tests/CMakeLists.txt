@@ -23,7 +23,6 @@ get_property(cudamapper_data_include_dir GLOBAL PROPERTY cudamapper_data_include
 include_directories(${cudamapper_data_include_dir})
 
 set(LIBS
-    bioparser
     index_gpu
     matcher_gpu
     overlapper_triggerred
