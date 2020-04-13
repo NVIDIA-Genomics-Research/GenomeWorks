@@ -125,11 +125,10 @@ void process_batch(Batch* batch, bool msa, bool print)
     }
 }
 
-void generate_window_data(const std::string& file_name, const int number_of_windows, const int max_sequences_per_poa,
+void generate_window_data(const std::string& input_file, const int number_of_windows, const int max_sequences_per_poa,
                           std::vector<std::vector<std::string>>& windows, BatchSize& batch_size)
 {
-    const std::string input_data = std::string(CUDAPOA_BENCHMARK_DATA_DIR) + file_name;
-    parse_window_data_file(windows, input_data, number_of_windows); // Generate windows.
+    parse_window_data_file(windows, input_file, number_of_windows); // Generate windows.
     assert(get_size(windows) > 0);
 
     int32_t max_read_length = 0;
@@ -199,11 +198,13 @@ int main(int argc, char** argv)
 
     if (long_read)
     {
-        generate_window_data("/sample-bonito.txt", 8, 6, windows, batch_size);
+        const std::string input_file = std::string(CUDAPOA_BENCHMARK_DATA_DIR) + "/sample-bonito.txt";
+        generate_window_data(input_file, 8, 6, windows, batch_size);
     }
     else
     {
-        generate_window_data("/sample-windows.txt", 1000, 100, windows, batch_size);
+        const std::string input_file = std::string(CUDAPOA_BENCHMARK_DATA_DIR) + "/sample-windows.txt";
+        generate_window_data(input_file, 1000, 100, windows, batch_size);
     }
 
     // Initialize batch.
