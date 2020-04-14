@@ -117,7 +117,7 @@ cdef class CudaPoaBatch:
             temp_stream,
             gpu_mem,
             output_mask,
-            deref(self.batch_size),
+            self.batch_size,
             gap_score,
             mismatch_score,
             match_score,
