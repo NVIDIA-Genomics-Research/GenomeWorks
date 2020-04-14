@@ -63,10 +63,8 @@ cdef extern from "claragenomics/cudapoa/batch.hpp" namespace "claragenomics::cud
         int32_t max_sequences_per_poa
 
         BatchSize(int32_t, int32_t)
-        BatchSize(int32_t, int32_t, int32_t,
-                  int32_t, int32_t,
-                  int32_t, int32_t,
-                  int32_t)
+        BatchSize(int32_t, int32_t, 
+                  int32_t, int32_t, int32_t)
 
     ctypedef vector[Entry] Group
 
