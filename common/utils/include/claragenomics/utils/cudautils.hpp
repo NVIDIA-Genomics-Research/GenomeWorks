@@ -96,7 +96,7 @@ __host__ __device__ __forceinline__
     align(const IntType& value)
 {
     static_assert((boundary & (boundary - 1)) == 0, "Boundary for align must be power of 2");
-    return (value + boundary) & ~(boundary - 1);
+    return (value + boundary - 1) & ~(boundary - 1);
 }
 
 /// Copy and return value from a device memory location with implicit synchronization
