@@ -238,15 +238,14 @@ ApplicationParameteres read_input(int argc, char* argv[])
     return parameters;
 }
 
-
-void run_alignment_batch(std::mutex& overlap_idx_mtx,
+void run_alignment_batch(claragenomics::DefaultDeviceAllocator allocator,
+                         std::mutex& overlap_idx_mtx,
                          std::vector<claragenomics::cudamapper::Overlap>& overlaps,
                          const claragenomics::io::FastaParser& query_parser,
                          const claragenomics::io::FastaParser& target_parser,
                          int32_t& overlap_idx,
                          const int32_t max_query_size, const int32_t max_target_size,
-                         std::vector<std::string>& cigar, const int32_t batch_size,
-                         claragenomics::DefaultDeviceAllocator allocator)
+                         std::vector<std::string>& cigar, const int32_t batch_size)
 {
     using claragenomics::get_size;
 
@@ -282,14 +281,14 @@ void run_alignment_batch(std::mutex& overlap_idx_mtx,
         }
         for (int32_t idx = idx_start; idx < idx_end; idx++)
         {
-            const claragenomics::cudamapper::Overlap& overlap                        = overlaps[idx];
-            const claragenomics::io::FastaSequence query  = query_parser.get_sequence_by_id(overlap.query_read_id_);
-            const claragenomics::io::FastaSequence target = target_parser.get_sequence_by_id(overlap.target_read_id_);
-            const char* query_start                       = &query.seq[overlap.query_start_position_in_read_];
-            const int32_t query_length                    = overlap.query_end_position_in_read_ - overlap.query_start_position_in_read_;
-            const char* target_start                      = &target.seq[overlap.target_start_position_in_read_];
-            const int32_t target_length                   = overlap.target_end_position_in_read_ - overlap.target_start_position_in_read_;
-            claragenomics::cudaaligner::StatusType status = batch->add_alignment(query_start, query_length, target_start, target_length,
+            const claragenomics::cudamapper::Overlap& overlap = overlaps[idx];
+            const claragenomics::io::FastaSequence query      = query_parser.get_sequence_by_id(overlap.query_read_id_);
+            const claragenomics::io::FastaSequence target     = target_parser.get_sequence_by_id(overlap.target_read_id_);
+            const char* query_start                           = &query.seq[overlap.query_start_position_in_read_];
+            const int32_t query_length                        = overlap.query_end_position_in_read_ - overlap.query_start_position_in_read_;
+            const char* target_start                          = &target.seq[overlap.target_start_position_in_read_];
+            const int32_t target_length                       = overlap.target_end_position_in_read_ - overlap.target_start_position_in_read_;
+            claragenomics::cudaaligner::StatusType status     = batch->add_alignment(query_start, query_length, target_start, target_length,
                                                                                  false, overlap.relative_strand == claragenomics::cudamapper::RelativeStrand::Reverse);
             if (status != claragenomics::cudaaligner::success)
             {
@@ -321,12 +320,12 @@ void run_alignment_batch(std::mutex& overlap_idx_mtx,
 /// \param num_alignment_engines Number of parallel alignment engines to use for alignment
 /// \param cigar Output vector to store CIGAR string for alignments
 /// \param allocator The allocator to allocate memory on the device
-void align_overlaps(std::vector<claragenomics::cudamapper::Overlap>& overlaps,
-                                const claragenomics::io::FastaParser& query_parser,
-                                const claragenomics::io::FastaParser& target_parser,
-                                int32_t num_alignment_engines,
-                                std::vector<std::string>& cigar,
-                                claragenomics::DefaultDeviceAllocator allocator)
+void align_overlaps(claragenomics::DefaultDeviceAllocator allocator,
+                    std::vector<claragenomics::cudamapper::Overlap>& overlaps,
+                    const claragenomics::io::FastaParser& query_parser,
+                    const claragenomics::io::FastaParser& target_parser,
+                    int32_t num_alignment_engines,
+                    std::vector<std::string>& cigar)
 {
     using claragenomics::get_size;
 
@@ -363,6 +362,7 @@ void align_overlaps(std::vector<claragenomics::cudamapper::Overlap>& overlaps,
     {
         align_futures.push_back(std::async(std::launch::async,
                                            &run_alignment_batch,
+                                           allocator,
                                            std::ref(overlap_idx_mtx),
                                            std::ref(overlaps),
                                            std::ref(query_parser),
@@ -371,8 +371,7 @@ void align_overlaps(std::vector<claragenomics::cudamapper::Overlap>& overlaps,
                                            max_query_size,
                                            max_target_size,
                                            std::ref(cigar),
-                                           batch_size,
-                                           allocator));
+                                           batch_size));
     }
 
     for (auto& f : align_futures)
@@ -420,7 +419,7 @@ void writer_thread_function(std::mutex& overlaps_writer_mtx,
     num_overlap_chunks_to_print--;
 };
 
-}
+} // namespace
 
 int main(int argc, char* argv[])
 {
@@ -674,7 +673,7 @@ int main(int argc, char* argv[])
                 {
                     cigar.resize(overlaps_to_add->size());
                     CGA_NVTX_RANGE(profiler, "align_overlaps");
-                    align_overlaps(*overlaps_to_add, *query_parser, *target_parser, parameters.alignment_engines, cigar, allocator);
+                    align_overlaps(allocator, *overlaps_to_add, *query_parser, *target_parser, parameters.alignment_engines, cigar);
                 }
 
                 //Increment counter which tracks number of overlap chunks to be filtered and printed

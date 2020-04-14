@@ -86,7 +86,6 @@ namespace
 {
 } // namespace
 
-
 void Overlapper::print_paf(const std::vector<Overlap>& overlaps, const std::vector<std::string>& cigar, const int k)
 {
     int32_t idx = 0;
