@@ -63,10 +63,8 @@ cdef extern from "claragenomics/cudapoa/batch.hpp" namespace "claragenomics::cud
         int32_t max_sequences_per_poa
 
         BatchSize(int32_t, int32_t)
-        BatchSize(int32_t, int32_t, int32_t,
-                  int32_t, int32_t,
-                  int32_t, int32_t,
-                  int32_t)
+        BatchSize(int32_t, int32_t,
+                  int32_t, int32_t, int32_t)
 
     ctypedef vector[Entry] Group
 
@@ -75,9 +73,11 @@ cdef extern from "claragenomics/cudapoa/batch.hpp" namespace "claragenomics::cud
         void generate_poa() except +
         StatusType get_msa(vector[vector[string]]&, vector[StatusType]&) except +
         StatusType get_consensus(vector[string]&, vector[vector[uint16_t]]&, vector[StatusType]&) except +
-        StatusType get_graphs(vector[DirectedGraph]&, vector[StatusType]&) except +
+        void get_graphs(vector[DirectedGraph]&, vector[StatusType]&) except +
         int get_total_poas() except +
         int batch_id() except +
         void reset() except +
 
-    cdef unique_ptr[Batch] create_batch(int32_t, _Stream, size_t, int8_t, BatchSize, int16_t, int16_t, int16_t, bool)
+    cdef unique_ptr[Batch] create_batch(int32_t, _Stream, size_t, int8_t,
+                                        const BatchSize&, int16_t, int16_t,
+                                        int16_t, bool)
