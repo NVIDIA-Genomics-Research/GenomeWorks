@@ -131,7 +131,7 @@ cdef class CudaAlignerBatch:
             alignment_type="global",
             stream=None,
             device_id=0,
-            max_device_memory_allocator_caching_size=-1
+            max_device_memory_allocator_caching_size=-1,
             *args,
             **kwargs):
         """Construct a CudaAligner object to run CUDA-accelerated sequence
