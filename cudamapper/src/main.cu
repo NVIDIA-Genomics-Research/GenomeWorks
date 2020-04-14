@@ -606,6 +606,8 @@ int main(int argc, char* argv[])
         std::this_thread::sleep_for(std::chrono::milliseconds(200));
     }
 
+    device_index_cache.clear();
+
     // streams can only be destroyed once all writer threads have finished as they hold references
     // to indices which have device arrays associated with streams
     for (cudaStream_t cuda_stream : cuda_streams)
