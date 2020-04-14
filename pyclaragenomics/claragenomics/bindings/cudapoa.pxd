@@ -78,5 +78,5 @@ cdef extern from "claragenomics/cudapoa/batch.hpp" namespace "claragenomics::cud
         int batch_id() except +
         void reset() except +
 
-    cdef unique_ptr[Batch] create_batch(int32_t, _Stream, size_t, int8_t, 
+    cdef unique_ptr[Batch] create_batch(int32_t, _Stream, size_t, int8_t,
         const BatchSize&, int16_t, int16_t, int16_t, bool)
