@@ -14,8 +14,9 @@
 #include <unordered_map>
 
 #include <claragenomics/cudamapper/types.hpp>
-#include <claragenomics/defs/index_descriptor.hpp>
 #include <claragenomics/utils/allocator.hpp>
+
+#include "index_descriptor.hpp"
 
 namespace claragenomics
 {

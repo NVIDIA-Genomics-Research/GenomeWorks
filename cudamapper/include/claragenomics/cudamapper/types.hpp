@@ -13,7 +13,7 @@
 #include <cstdint>
 #include <string>
 
-#include <claragenomics/defs/types.hpp>
+#include <claragenomics/types.hpp>
 
 namespace claragenomics
 {

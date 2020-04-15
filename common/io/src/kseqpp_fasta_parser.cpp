@@ -69,38 +69,5 @@ FastaSequence FastaParserKseqpp::get_sequence_by_id(const read_id_t sequence_id)
     return reads_[sequence_id];
 }
 
-std::vector<IndexDescriptor> FastaParserKseqpp::get_index_descriptors(const number_of_basepairs_t max_index_size = 1000000) const
-{
-    std::vector<IndexDescriptor> index_descriptors;
-
-    const number_of_reads_t n_reads                = get_size<number_of_reads_t>(reads_);
-    read_id_t first_sequence_in_index              = 0;
-    number_of_reads_t number_of_sequences_in_index = 0;
-    number_of_basepairs_t num_bases                = 0;
-    for (read_id_t read_idx = 0; read_idx < n_reads; read_idx++)
-    {
-        if (get_size<number_of_basepairs_t>(reads_[read_idx].seq) + num_bases > max_index_size)
-        {
-            // adding this sequence would lead to index_descriptor being larger than max_index_size
-            // save current index_descriptor and start a new one
-            index_descriptors.push_back({first_sequence_in_index, number_of_sequences_in_index});
-            first_sequence_in_index      = read_idx;
-            number_of_sequences_in_index = 1;
-            num_bases                    = get_size<number_of_basepairs_t>(reads_[read_idx].seq);
-        }
-        else
-        {
-            // add this sequence to the current index_descriptor
-            num_bases += get_size<number_of_basepairs_t>(reads_[read_idx].seq);
-            ++number_of_sequences_in_index;
-        }
-    }
-
-    // save last index_descriptor
-    index_descriptors.push_back({first_sequence_in_index, number_of_sequences_in_index});
-
-    return index_descriptors;
-}
-
 } // namespace io
 } // namespace claragenomics

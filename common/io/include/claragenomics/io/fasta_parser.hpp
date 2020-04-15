@@ -13,8 +13,7 @@
 #include <memory>
 #include <vector>
 
-#include <claragenomics/defs/index_descriptor.hpp>
-#include <claragenomics/defs/types.hpp>
+#include <claragenomics/types.hpp>
 
 namespace claragenomics
 {
@@ -46,13 +45,6 @@ public:
     /// \param sequence_id Position of sequence in file. If sequence_id is invalid an error is thrown.
     /// \return A FastaSequence object describing the entry.
     virtual FastaSequence get_sequence_by_id(const read_id_t sequence_id) const = 0;
-
-    /// \brief returns a list of IndexDescriptors in which the sum of basepairs in all sequences in one IndexDescriptor is at most max_chunk_size
-    /// If a single sequence exceeds max_chunk_size it will be placed in its own IndexDescriptor.
-    ///
-    /// \param max_index_size the maximum number of basepairs in an IndexDescriptor
-    /// \return list of IndexDescriptors
-    virtual std::vector<IndexDescriptor> get_index_descriptors(const number_of_basepairs_t max_index_size = 1000000) const = 0;
 };
 
 /// \brief A builder function that returns a FASTA parser object which uses KSEQPP.

@@ -27,6 +27,7 @@
 #include <claragenomics/cudamapper/matcher.hpp>
 #include <claragenomics/cudamapper/overlapper.hpp>
 #include "overlapper_triggered.hpp"
+#include "index_descriptor.hpp"
 
 /// @brief prints help message
 /// @param exit_code
@@ -300,19 +301,21 @@ int main(int argc, char* argv[])
 
     struct QueryTargetsRange
     {
-        claragenomics::IndexDescriptor query_range;
-        std::vector<claragenomics::IndexDescriptor> target_ranges;
+        claragenomics::cudamapper::IndexDescriptor query_range;
+        std::vector<claragenomics::cudamapper::IndexDescriptor> target_ranges;
     };
 
     ///Factor of 1000000 to make max cache size in MB
-    std::vector<claragenomics::IndexDescriptor> query_index_descriptors  = query_parser->get_index_descriptors(parameters.index_size * 1000000);
-    std::vector<claragenomics::IndexDescriptor> target_index_descriptors = target_parser->get_index_descriptors(parameters.target_index_size * 1000000);
+    std::vector<claragenomics::cudamapper::IndexDescriptor> query_index_descriptors  = claragenomics::cudamapper::group_reads_in_indices(*query_parser,
+                                                                                                                                        parameters.index_size * 1000000);
+    std::vector<claragenomics::cudamapper::IndexDescriptor> target_index_descriptors = claragenomics::cudamapper::group_reads_in_indices(*target_parser,
+                                                                                                                                         parameters.target_index_size * 1000000);
 
     //First generate all the ranges independently, then loop over them.
     std::vector<QueryTargetsRange> query_target_ranges;
 
     int target_idx = 0;
-    for (const claragenomics::IndexDescriptor& query_index_descriptor : query_index_descriptors)
+    for (const claragenomics::cudamapper::IndexDescriptor& query_index_descriptor : query_index_descriptors)
     {
         QueryTargetsRange range{query_index_descriptor, {}};
         for (size_t t = target_idx; t < target_index_descriptors.size(); t++)
@@ -477,7 +480,7 @@ int main(int argc, char* argv[])
         }
 
         //Main loop
-        for (const claragenomics::IndexDescriptor& target_range : query_target_range.target_ranges)
+        for (const claragenomics::cudamapper::IndexDescriptor& target_range : query_target_range.target_ranges)
         {
 
             auto target_start_index = target_range.first_read();
@@ -604,6 +607,13 @@ int main(int argc, char* argv[])
     {
         std::this_thread::sleep_for(std::chrono::milliseconds(200));
     }
+
+    // After last writer_thread_function has decreased num_overlap_chunks_to_print it will still take
+    // some time to destroy its pointer to indices
+    // TODO: this is a workaround, this part of code will be significantly changed with new index caching
+    std::this_thread::sleep_for(std::chrono::milliseconds(200));
+
+    device_index_cache.clear();
 
     // streams can only be destroyed once all writer threads have finished as they hold references
     // to indices which have device arrays associated with streams
