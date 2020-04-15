@@ -8,7 +8,7 @@
 # license agreement from NVIDIA CORPORATION is strictly prohibited.
 #
 
-project(cgautils)
+project(cgabase)
 
 
 get_property(cga_library_type GLOBAL PROPERTY cga_library_type)
