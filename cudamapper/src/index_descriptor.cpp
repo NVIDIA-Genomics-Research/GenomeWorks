@@ -73,31 +73,32 @@ std::vector<IndexDescriptor> group_reads_into_indices(const io::FastaParser& par
 {
     std::vector<IndexDescriptor> index_descriptors;
 
-    const number_of_reads_t number_of_reads        = parser.get_num_seqences();
-    read_id_t first_sequence_in_index              = 0;
-    number_of_reads_t number_of_sequences_in_index = 0;
-    number_of_basepairs_t num_bases                = 0;
-    for (read_id_t read_id = 0; read_id < number_of_reads; read_id++)
+    const number_of_reads_t total_number_of_reads              = parser.get_num_seqences();
+    read_id_t first_read_in_current_index                      = 0;
+    number_of_reads_t number_of_reads_in_current_index         = 0;
+    number_of_basepairs_t number_of_basepairs_in_current_index = 0;
+    for (read_id_t read_id = 0; read_id < total_number_of_reads; read_id++)
     {
-        if (get_size<number_of_basepairs_t>(parser.get_sequence_by_id(read_id).seq) + num_bases > max_basepairs_per_index)
+        number_of_basepairs_t basepairs_in_this_read = get_size<number_of_basepairs_t>(parser.get_sequence_by_id(read_id).seq);
+        if (basepairs_in_this_read + number_of_basepairs_in_current_index > max_basepairs_per_index)
         {
             // adding this sequence would lead to index_descriptor being larger than max_basepairs_per_index
             // save current index_descriptor and start a new one
-            index_descriptors.push_back({first_sequence_in_index, number_of_sequences_in_index});
-            first_sequence_in_index      = read_id;
-            number_of_sequences_in_index = 1;
-            num_bases                    = get_size<number_of_basepairs_t>(parser.get_sequence_by_id(read_id).seq);
+            index_descriptors.push_back({first_read_in_current_index, number_of_reads_in_current_index});
+            first_read_in_current_index          = read_id;
+            number_of_reads_in_current_index     = 1;
+            number_of_basepairs_in_current_index = basepairs_in_this_read;
         }
         else
         {
             // add this sequence to the current index_descriptor
-            num_bases += get_size<number_of_basepairs_t>(parser.get_sequence_by_id(read_id).seq);
-            ++number_of_sequences_in_index;
+            number_of_basepairs_in_current_index += basepairs_in_this_read;
+            ++number_of_reads_in_current_index;
         }
     }
 
     // save last index_descriptor
-    index_descriptors.push_back({first_sequence_in_index, number_of_sequences_in_index});
+    index_descriptors.push_back({first_read_in_current_index, number_of_reads_in_current_index});
 
     return index_descriptors;
 }
