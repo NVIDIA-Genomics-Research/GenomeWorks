@@ -46,7 +46,7 @@ if(cga_enable_caching_allocator)
         endif()
 endif()
 
-target_link_libraries(cudaaligner cgautils cgalogging cub)
+target_link_libraries(cudaaligner cgabase cgalogging cub)
 
 target_compile_options(cudaaligner PRIVATE -Werror -Wall -Wextra)
 if (cga_optimize_for_native_cpu)

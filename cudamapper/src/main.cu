@@ -491,8 +491,8 @@ int main(int argc, char* argv[])
 
     auto get_index = [&device_index_cache, &host_index_cache, &parameters](claragenomics::DefaultDeviceAllocator allocator,
                                                                            claragenomics::io::FastaParser& parser,
-                                                                           const claragenomics::cudamapper::read_id_t start_index,
-                                                                           const claragenomics::cudamapper::read_id_t end_index,
+                                                                           const claragenomics::read_id_t start_index,
+                                                                           const claragenomics::read_id_t end_index,
                                                                            const std::uint64_t k,
                                                                            const std::uint64_t w,
                                                                            const int device_id,
@@ -561,8 +561,8 @@ int main(int argc, char* argv[])
     // Round 2
     // Query: [1000-1999] - Use cache entry (from previous use when now query was a target)
     // Etc..
-    auto evict_index = [&device_index_cache, &host_index_cache](const claragenomics::cudamapper::read_id_t query_start_index,
-                                                                const claragenomics::cudamapper::read_id_t query_end_index,
+    auto evict_index = [&device_index_cache, &host_index_cache](const claragenomics::read_id_t query_start_index,
+                                                                const claragenomics::read_id_t query_end_index,
                                                                 const int device_id,
                                                                 const int num_devices) {
         std::pair<uint64_t, uint64_t> key;
@@ -755,6 +755,13 @@ int main(int argc, char* argv[])
     {
         std::this_thread::sleep_for(std::chrono::milliseconds(200));
     }
+
+    // After last writer_thread_function has decreased num_overlap_chunks_to_print it will still take
+    // some time to destroy its pointer to indices
+    // TODO: this is a workaround, this part of code will be significantly changed with new index caching
+    std::this_thread::sleep_for(std::chrono::milliseconds(200));
+
+    device_index_cache.clear();
 
     // streams can only be destroyed once all writer threads have finished as they hold references
     // to indices which have device arrays associated with streams
