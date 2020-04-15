@@ -13,7 +13,7 @@
 #include "matrix_cpu.hpp"
 
 #include <claragenomics/utils/cudautils.hpp>
-#include <claragenomics/utils/device_buffer.cuh>
+#include <claragenomics/utils/device_buffer.hpp>
 
 #include <tuple>
 #include <cassert>
@@ -111,8 +111,8 @@ public:
         int32_t n_matrices_;
     };
 
-    batched_device_matrices(int32_t n_matrices, int32_t max_elements_per_matrix, cudaStream_t stream)
-        : storage_(static_cast<size_t>(n_matrices) * static_cast<size_t>(max_elements_per_matrix))
+    batched_device_matrices(int32_t n_matrices, int32_t max_elements_per_matrix, DefaultDeviceAllocator allocator, cudaStream_t stream)
+        : storage_(static_cast<size_t>(n_matrices) * static_cast<size_t>(max_elements_per_matrix), allocator, stream)
         , max_elements_per_matrix_(max_elements_per_matrix)
         , n_matrices_(n_matrices)
     {
@@ -125,7 +125,7 @@ public:
 
     ~batched_device_matrices()
     {
-        cudaFree(dev_);
+        CGA_CU_ABORT_ON_ERR(cudaFree(dev_));
     }
 
     device_interface* get_device_interface()

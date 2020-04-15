@@ -35,6 +35,10 @@ endif()
 
 set(CUB_DIR ${PROJECT_SOURCE_DIR}/3rdparty/cub CACHE STRING
     "Path to cub repo")
+add_library(cub INTERFACE IMPORTED)
+#target_include_directories(cub INTERFACE ${CUB_DIR}>) does not work with
+#cmake before 3.11, use the following for now:
+set_property(TARGET cub APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES "${CUB_DIR}")
 
 set(KSEQPP_DIR ${PROJECT_SOURCE_DIR}/3rdparty/kseqpp/src CACHE STRING
     "Path to kseqpp repo")
