@@ -306,10 +306,10 @@ int main(int argc, char* argv[])
     };
 
     ///Factor of 1000000 to make max cache size in MB
-    std::vector<claragenomics::cudamapper::IndexDescriptor> query_index_descriptors  = claragenomics::cudamapper::group_reads_in_indices(*query_parser,
-                                                                                                                                        parameters.index_size * 1000000);
-    std::vector<claragenomics::cudamapper::IndexDescriptor> target_index_descriptors = claragenomics::cudamapper::group_reads_in_indices(*target_parser,
-                                                                                                                                         parameters.target_index_size * 1000000);
+    std::vector<claragenomics::cudamapper::IndexDescriptor> query_index_descriptors  = claragenomics::cudamapper::group_reads_into_indices(*query_parser,
+                                                                                                                                          parameters.index_size * 1000000);
+    std::vector<claragenomics::cudamapper::IndexDescriptor> target_index_descriptors = claragenomics::cudamapper::group_reads_into_indices(*target_parser,
+                                                                                                                                           parameters.target_index_size * 1000000);
 
     //First generate all the ranges independently, then loop over them.
     std::vector<QueryTargetsRange> query_target_ranges;

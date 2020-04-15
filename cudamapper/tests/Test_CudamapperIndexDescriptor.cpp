@@ -56,14 +56,14 @@ TEST(TestCudamapperIndexDescriptor, test_index_descriptor_hash)
     ASSERT_EQ(index_descriptor_hash(index_descriptor), hash);
 }
 
-/// *** test group_reads_in_indices ***
+/// *** test group_reads_into_indices ***
 
-void test_group_reads_in_indices(const io::FastaParser& parser,
-                                 const number_of_basepairs_t max_index_size,
-                                 const std::vector<IndexDescriptor>& expected_index_descriptors)
+void test_group_reads_into_indices(const io::FastaParser& parser,
+                                   const number_of_basepairs_t max_basepairs_per_index,
+                                   const std::vector<IndexDescriptor>& expected_index_descriptors)
 {
-    const std::vector<IndexDescriptor>& generated_index_descriptors = group_reads_in_indices(parser,
-                                                                                             max_index_size);
+    const std::vector<IndexDescriptor>& generated_index_descriptors = group_reads_into_indices(parser,
+                                                                                               max_basepairs_per_index);
 
     ASSERT_EQ(expected_index_descriptors.size(), generated_index_descriptors.size());
 
@@ -76,7 +76,7 @@ void test_group_reads_in_indices(const io::FastaParser& parser,
     }
 }
 
-TEST(TestCudamapperIndexDescriptor, test_group_reads_in_indices_all_reads_fit_in_indices)
+TEST(TestCudamapperIndexDescriptor, test_group_reads_into_indices_all_reads_fit_in_indices)
 {
     // target FASTA: 20_reads.fasta
     // read_0:  4 basepairs
@@ -103,18 +103,18 @@ TEST(TestCudamapperIndexDescriptor, test_group_reads_in_indices_all_reads_fit_in
     // indices: {0, 2}, {2, 1}, {3, 2}, {5, 1}, {6, 2}, {8, 2}, {10, 2}, {12, 3}, {15, 2}, {17, 2}, {19, 1}
 
     const std::shared_ptr<const io::FastaParser> parser = io::create_kseq_fasta_parser(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/20_reads.fasta", 1, false);
-    const number_of_basepairs_t max_index_size          = 10;
+    const number_of_basepairs_t max_basepairs_per_index = 10;
 
     const std::vector<IndexDescriptor> expected_index_descriptors = {{0, 2}, {2, 1}, {3, 2}, {5, 1}, {6, 2}, {8, 2}, {10, 2}, {12, 3}, {15, 2}, {17, 2}, {19, 1}};
 
-    test_group_reads_in_indices(*parser,
-                                max_index_size,
-                                expected_index_descriptors);
+    test_group_reads_into_indices(*parser,
+                                  max_basepairs_per_index,
+                                  expected_index_descriptors);
 }
 
-TEST(TestCudamapperIndexDescriptor, test_group_reads_in_indices_some_reads_larger_than_index)
+TEST(TestCudamapperIndexDescriptor, test_group_reads_into_indices_some_reads_larger_than_index)
 {
-    // Some reads have more basepairs than max_index_size
+    // Some reads have more basepairs than max_basepairs_per_index
     // In that case those reads should be place in an index alone
 
     // target FASTA: 20_reads.fasta
@@ -142,13 +142,13 @@ TEST(TestCudamapperIndexDescriptor, test_group_reads_in_indices_some_reads_large
     // indices: {0, 1}, {1, 1}, {2, 1}, {3, 2}, {5, 1}, {6, 1}, {7, 2}, {9, 1}, {10, 1}, {11, 2}, {13, 1}, {14, 2}, {16, 1}, {17, 1}, {18, 2}
 
     const std::shared_ptr<const io::FastaParser> parser = io::create_kseq_fasta_parser(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/20_reads.fasta", 1, false);
-    const number_of_basepairs_t max_index_size          = 7;
+    const number_of_basepairs_t max_basepairs_per_index = 7;
 
     const std::vector<IndexDescriptor> expected_index_descriptors = {{0, 1}, {1, 1}, {2, 1}, {3, 2}, {5, 1}, {6, 1}, {7, 2}, {9, 1}, {10, 1}, {11, 2}, {13, 1}, {14, 2}, {16, 1}, {17, 1}, {18, 2}};
 
-    test_group_reads_in_indices(*parser,
-                                max_index_size,
-                                expected_index_descriptors);
+    test_group_reads_into_indices(*parser,
+                                  max_basepairs_per_index,
+                                  expected_index_descriptors);
 }
 
 } // namespace cudamapper

@@ -68,8 +68,8 @@ std::size_t IndexDescriptorHash::operator()(const IndexDescriptor& index_descrip
     return index_descriptor.get_hash();
 }
 
-std::vector<IndexDescriptor> group_reads_in_indices(const io::FastaParser& parser,
-                                                    const number_of_basepairs_t max_index_size)
+std::vector<IndexDescriptor> group_reads_into_indices(const io::FastaParser& parser,
+                                                      const number_of_basepairs_t max_basepairs_per_index)
 {
     std::vector<IndexDescriptor> index_descriptors;
 
@@ -79,9 +79,9 @@ std::vector<IndexDescriptor> group_reads_in_indices(const io::FastaParser& parse
     number_of_basepairs_t num_bases                = 0;
     for (read_id_t read_id = 0; read_id < number_of_reads; read_id++)
     {
-        if (get_size<number_of_basepairs_t>(parser.get_sequence_by_id(read_id).seq) + num_bases > max_index_size)
+        if (get_size<number_of_basepairs_t>(parser.get_sequence_by_id(read_id).seq) + num_bases > max_basepairs_per_index)
         {
-            // adding this sequence would lead to index_descriptor being larger than max_index_size
+            // adding this sequence would lead to index_descriptor being larger than max_basepairs_per_index
             // save current index_descriptor and start a new one
             index_descriptors.push_back({first_sequence_in_index, number_of_sequences_in_index});
             first_sequence_in_index      = read_id;

@@ -72,14 +72,14 @@ struct IndexDescriptorHash
     std::size_t operator()(const IndexDescriptor& index_descriptor) const;
 };
 
-/// \brief returns a list of IndexDescriptors in which the sum of basepairs of all reads in one IndexDescriptor is at most max_index_size
+/// \brief returns a list of IndexDescriptors in which the sum of basepairs of all reads in one IndexDescriptor is at most max_basepairs_per_index
 /// If a single read exceeds max_chunk_size it will be placed in its own IndexDescriptor.
 ///
 /// \param parser parser to get the reads from
-/// \param max_index_size the maximum number of basepairs in an IndexDescriptor
+/// \param max_basepairs_per_index the maximum number of basepairs in an IndexDescriptor
 /// \return list of IndexDescriptors
-std::vector<IndexDescriptor> group_reads_in_indices(const io::FastaParser& parser,
-                                                    const number_of_basepairs_t max_index_size = 1000000);
+std::vector<IndexDescriptor> group_reads_into_indices(const io::FastaParser& parser,
+                                                      const number_of_basepairs_t max_basepairs_per_index = 1000000);
 
 } // namespace cudamapper
 } // namespace claragenomics
