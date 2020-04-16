@@ -22,11 +22,11 @@ namespace cudaaligner
 
 struct AlignerGlobalMyers::Workspace
 {
-    Workspace(int32_t max_alignments, int32_t max_n_words, int32_t max_target_length, cudaStream_t stream)
-        : pvs(max_alignments, max_n_words * (max_target_length + 1), stream)
-        , mvs(max_alignments, max_n_words * (max_target_length + 1), stream)
-        , scores(max_alignments, max_n_words * (max_target_length + 1), stream)
-        , query_patterns(max_alignments, max_n_words * 4, stream)
+    Workspace(int32_t max_alignments, int32_t max_n_words, int32_t max_target_length, DefaultDeviceAllocator allocator, cudaStream_t stream)
+        : pvs(max_alignments, max_n_words * (max_target_length + 1), allocator, stream)
+        , mvs(max_alignments, max_n_words * (max_target_length + 1), allocator, stream)
+        , scores(max_alignments, max_n_words * (max_target_length + 1), allocator, stream)
+        , query_patterns(max_alignments, max_n_words * 4, allocator, stream)
     {
     }
     batched_device_matrices<myers::WordType> pvs;
@@ -35,12 +35,12 @@ struct AlignerGlobalMyers::Workspace
     batched_device_matrices<myers::WordType> query_patterns;
 };
 
-AlignerGlobalMyers::AlignerGlobalMyers(int32_t max_query_length, int32_t max_target_length, int32_t max_alignments, cudaStream_t stream, int32_t device_id)
-    : AlignerGlobal(max_query_length, max_target_length, max_alignments, stream, device_id)
+AlignerGlobalMyers::AlignerGlobalMyers(int32_t max_query_length, int32_t max_target_length, int32_t max_alignments, DefaultDeviceAllocator allocator, cudaStream_t stream, int32_t device_id)
+    : AlignerGlobal(max_query_length, max_target_length, max_alignments, allocator, stream, device_id)
     , workspace_()
 {
     scoped_device_switch dev(device_id);
-    workspace_ = std::make_unique<Workspace>(max_alignments, ceiling_divide<int32_t>(max_query_length, sizeof(myers::WordType)), max_target_length, stream);
+    workspace_ = std::make_unique<Workspace>(max_alignments, ceiling_divide<int32_t>(max_query_length, sizeof(myers::WordType)), max_target_length, allocator, stream);
 }
 
 AlignerGlobalMyers::~AlignerGlobalMyers()

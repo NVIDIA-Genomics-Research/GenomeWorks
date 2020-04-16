@@ -8,9 +8,6 @@
 # license agreement from NVIDIA CORPORATION is strictly prohibited.
 #
 
-[submodule "3rdparty/bioparser"]
-	path = 3rdparty/bioparser
-	url = https://github.com/rvaser/bioparser.git
 [submodule "3rdparty/googletest"]
 	path = 3rdparty/googletest
 	url = https://github.com/google/googletest.git

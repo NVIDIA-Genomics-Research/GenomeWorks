@@ -15,7 +15,7 @@
 
 #include <claragenomics/utils/signed_integer_utils.hpp>
 #include <claragenomics/utils/genomeutils.hpp>
-#include <claragenomics/utils/device_buffer.cuh>
+#include <claragenomics/utils/device_buffer.hpp>
 
 #include <cuda_runtime_api.h>
 #include <random>
@@ -145,6 +145,7 @@ protected:
 
 matrix<int> ukkonen_gpu_build_score_matrix(const std::string& target, const std::string& query, int32_t ukkonen_p)
 {
+    DefaultDeviceAllocator allocator = create_default_device_allocator();
     // Allocate buffers and prepare data
     int32_t query_length          = query.length();
     int32_t target_length         = target.length();
@@ -153,19 +154,19 @@ matrix<int> ukkonen_gpu_build_score_matrix(const std::string& target, const std:
     int32_t max_length_difference = std::abs(target_length - query_length);
 
     auto score_matrices = std::make_unique<batched_device_matrices<nw_score_t>>(
-        1, ukkonen_max_score_matrix_size(query_length, target_length, max_length_difference, ukkonen_p), nullptr);
+        1, ukkonen_max_score_matrix_size(query_length, target_length, max_length_difference, ukkonen_p), allocator, nullptr);
 
-    device_buffer<int8_t> path_d(max_path_length);
+    device_buffer<int8_t> path_d(max_path_length, allocator);
     std::vector<int8_t> path_h(max_path_length);
 
-    device_buffer<int32_t> path_length_d(1);
+    device_buffer<int32_t> path_length_d(1, allocator);
     std::vector<int32_t> path_length_h(1);
 
-    device_buffer<char> sequences_d(2 * max_alignment_length);
+    device_buffer<char> sequences_d(2 * max_alignment_length, allocator);
     CGA_CU_CHECK_ERR(cudaMemcpy(sequences_d.data(), query.c_str(), sizeof(char) * query_length, cudaMemcpyHostToDevice));
     CGA_CU_CHECK_ERR(cudaMemcpy(sequences_d.data() + max_alignment_length, target.c_str(), sizeof(char) * target_length, cudaMemcpyHostToDevice));
 
-    device_buffer<int32_t> sequence_lengths_d(2);
+    device_buffer<int32_t> sequence_lengths_d(2, allocator);
     CGA_CU_CHECK_ERR(cudaMemcpy(sequence_lengths_d.data(), &query_length, sizeof(int32_t) * 1, cudaMemcpyHostToDevice));
     CGA_CU_CHECK_ERR(cudaMemcpy(sequence_lengths_d.data() + 1, &target_length, sizeof(int32_t) * 1, cudaMemcpyHostToDevice));
 
@@ -225,6 +226,7 @@ TEST_P(AlignerImplementation, UkkonenGpuVsUkkonenCpuScoringMatrix)
 
 std::vector<int8_t> run_ukkonen_gpu(const std::string& target, const std::string& query, int32_t ukkonen_p)
 {
+    DefaultDeviceAllocator allocator = create_default_device_allocator();
     // Allocate buffers and prepare data
     int32_t query_length          = query.length();
     int32_t target_length         = target.length();
@@ -233,19 +235,19 @@ std::vector<int8_t> run_ukkonen_gpu(const std::string& target, const std::string
     int32_t max_length_difference = std::abs(target_length - query_length);
 
     auto score_matrices = std::make_unique<batched_device_matrices<nw_score_t>>(
-        1, ukkonen_max_score_matrix_size(query_length, target_length, max_length_difference, ukkonen_p), nullptr);
+        1, ukkonen_max_score_matrix_size(query_length, target_length, max_length_difference, ukkonen_p), allocator, nullptr);
 
-    device_buffer<int8_t> path_d(max_path_length);
+    device_buffer<int8_t> path_d(max_path_length, allocator);
     std::vector<int8_t> path_h(max_path_length);
 
-    device_buffer<int32_t> path_length_d(1);
+    device_buffer<int32_t> path_length_d(1, allocator);
     std::vector<int32_t> path_length_h(1);
 
-    device_buffer<char> sequences_d(2 * max_alignment_length);
+    device_buffer<char> sequences_d(2 * max_alignment_length, allocator);
     CGA_CU_CHECK_ERR(cudaMemcpy(sequences_d.data(), query.c_str(), sizeof(char) * query_length, cudaMemcpyHostToDevice));
     CGA_CU_CHECK_ERR(cudaMemcpy(sequences_d.data() + max_alignment_length, target.c_str(), sizeof(char) * target_length, cudaMemcpyHostToDevice));
 
-    device_buffer<int32_t> sequence_lengths_d(2);
+    device_buffer<int32_t> sequence_lengths_d(2, allocator);
     CGA_CU_CHECK_ERR(cudaMemcpy(sequence_lengths_d.data(), &query_length, sizeof(int32_t) * 1, cudaMemcpyHostToDevice));
     CGA_CU_CHECK_ERR(cudaMemcpy(sequence_lengths_d.data() + 1, &target_length, sizeof(int32_t) * 1, cudaMemcpyHostToDevice));
 

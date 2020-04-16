@@ -38,8 +38,15 @@ add_library(cudaaligner_internal INTERFACE)
 target_include_directories(cudaaligner_internal INTERFACE
         ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
+if(cga_enable_caching_allocator)
+        if (cga_enable_preallocating_caching_allocator)
+                target_compile_definitions(cudaaligner PUBLIC CGA_ENABLE_CACHING_ALLOCATOR CGA_ENABLE_PREALLOCATING_ALLOCATOR)
+        else()
+                target_compile_definitions(cudaaligner PUBLIC CGA_ENABLE_CACHING_ALLOCATOR)
+        endif()
+endif()
 
-target_link_libraries(cudaaligner cgautils cgalogging)
+target_link_libraries(cudaaligner cgabase cgalogging cub)
 
 target_compile_options(cudaaligner PRIVATE -Werror -Wall -Wextra)
 if (cga_optimize_for_native_cpu)

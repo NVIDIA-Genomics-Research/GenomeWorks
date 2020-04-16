@@ -49,21 +49,10 @@ std::vector<BatchOfIndices> generate_batches_of_indices(const number_of_indices_
     }
 
     // get IndexDescriptors for all indices
-    // TODO: modify FastaParser so it returns IndexDescriptors
-    std::vector<std::pair<int, int>> query_chunks = query_parser->get_read_chunks(query_basepairs_per_index);
-    std::vector<IndexDescriptor> query_index_descriptors;
-    for (const auto& query_chunk : query_chunks)
-    {
-        // first_read, number_of_reads
-        query_index_descriptors.push_back({static_cast<read_id_t>(query_chunk.first), static_cast<read_id_t>(query_chunk.second - query_chunk.first)});
-    }
-    std::vector<std::pair<int, int>> target_chunks = target_parser->get_read_chunks(target_basepairs_per_index);
-    std::vector<IndexDescriptor> target_index_descriptors;
-    for (const auto& target_chunk : target_chunks)
-    {
-        // first_read, number_of_reads
-        target_index_descriptors.push_back({static_cast<read_id_t>(target_chunk.first), static_cast<read_id_t>(target_chunk.second - target_chunk.first)});
-    }
+    std::vector<IndexDescriptor> query_index_descriptors  = group_reads_into_indices(*query_parser,
+                                                                                    query_basepairs_per_index);
+    std::vector<IndexDescriptor> target_index_descriptors = group_reads_into_indices(*target_parser,
+                                                                                     target_basepairs_per_index);
 
     // find out which Indices go in which batches
     const std::vector<details::index_batcher::GroupAndSubgroupsOfIndicesDescriptor> query_groups_and_subgroups =

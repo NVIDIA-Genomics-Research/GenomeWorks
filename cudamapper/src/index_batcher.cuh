@@ -13,6 +13,7 @@
 #include <vector>
 
 #include "index_cache.cuh"
+#include "index_descriptor.hpp"
 
 #include <claragenomics/io/fasta_parser.hpp>
 
@@ -41,9 +42,8 @@ struct BatchOfIndices
     std::vector<IndexBatch> device_batches;
 };
 
-using index_id_t            = std::size_t;
-using number_of_indices_t   = index_id_t;
-using number_of_basepairs_t = std::int32_t;
+using index_id_t          = std::size_t;
+using number_of_indices_t = index_id_t;
 
 /// \brief Groups indices into batches
 ///

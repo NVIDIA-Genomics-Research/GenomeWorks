@@ -125,51 +125,22 @@ void process_batch(Batch* batch, bool msa, bool print)
     }
 }
 
-void generate_short_reads(std::vector<std::vector<std::string>>& windows, BatchSize& batch_size)
+void generate_window_data(const std::string& input_file, const int number_of_windows, const int max_sequences_per_poa,
+                          std::vector<std::vector<std::string>>& windows, BatchSize& batch_size)
 {
-    const std::string input_data = std::string(CUDAPOA_BENCHMARK_DATA_DIR) + "/sample-windows.txt";
-    parse_window_data_file(windows, input_data, 1000); // Generate windows.
+    parse_window_data_file(windows, input_file, number_of_windows); // Generate windows.
     assert(get_size(windows) > 0);
-    batch_size = BatchSize(1024, 100);
-}
 
-void generate_simulated_long_reads(std::vector<std::vector<std::string>>& windows, BatchSize& batch_size)
-{
-    constexpr uint32_t random_seed = 5827349;
-    std::minstd_rand rng(random_seed);
-
-    const int16_t number_of_windows = 2;
-    const int16_t number_of_reads   = 5;
-    const int32_t read_length       = 10000;
-    int32_t max_sequence_length     = read_length + 1;
-
-    std::vector<std::pair<int, int>> variation_ranges;
-    variation_ranges.push_back(std::pair<int, int>(30, 50));
-    variation_ranges.push_back(std::pair<int, int>(300, 500));
-    variation_ranges.push_back(std::pair<int, int>(1000, 1300));
-    variation_ranges.push_back(std::pair<int, int>(2000, 2200));
-    variation_ranges.push_back(std::pair<int, int>(3000, 3500));
-    variation_ranges.push_back(std::pair<int, int>(4000, 4200));
-    variation_ranges.push_back(std::pair<int, int>(5000, 5400));
-    variation_ranges.push_back(std::pair<int, int>(6000, 6200));
-    variation_ranges.push_back(std::pair<int, int>(8000, 8300));
-
-    std::vector<std::string> long_reads(number_of_reads);
-
-    for (int w = 0; w < number_of_windows; w++)
+    int32_t max_read_length = 0;
+    for (auto& window : windows)
     {
-        long_reads[0] = claragenomics::genomeutils::generate_random_genome(read_length, rng);
-        for (int i = 1; i < number_of_reads; i++)
+        for (auto& seq : window)
         {
-            long_reads[i]       = claragenomics::genomeutils::generate_random_sequence(long_reads[0], rng, read_length, read_length, read_length, &variation_ranges);
-            max_sequence_length = max_sequence_length > get_size(long_reads[i]) ? max_sequence_length : get_size(long_reads[i]) + 1;
+            max_read_length = std::max(max_read_length, get_size<int>(seq) + 1);
         }
-        // add long reads as one window
-        windows.push_back(long_reads);
     }
 
-    // Define upper limits for sequence size, graph size ....
-    batch_size = BatchSize(max_sequence_length, number_of_reads);
+    batch_size = BatchSize(max_read_length, max_sequences_per_poa);
 }
 
 int main(int argc, char** argv)
@@ -227,11 +198,13 @@ int main(int argc, char** argv)
 
     if (long_read)
     {
-        generate_simulated_long_reads(windows, batch_size);
+        const std::string input_file = std::string(CUDAPOA_BENCHMARK_DATA_DIR) + "/sample-bonito.txt";
+        generate_window_data(input_file, 8, 6, windows, batch_size);
     }
     else
     {
-        generate_short_reads(windows, batch_size);
+        const std::string input_file = std::string(CUDAPOA_BENCHMARK_DATA_DIR) + "/sample-windows.txt";
+        generate_window_data(input_file, 1000, 100, windows, batch_size);
     }
 
     // Initialize batch.
@@ -277,10 +250,20 @@ int main(int argc, char** argv)
                 }
             }
 
-            // After MSA is generated for batch, reset batch to make room for next set of POA groups.
+            // After MSA/consensus is generated for batch, reset batch to make room for next set of POA groups.
             batch->reset();
 
-            std::cout << "Processed windows " << window_count << " - " << i << std::endl;
+            // In case that number of windows is more than the capacity available on GPU, the for loop breaks into smaller number of windows.
+            // if adding window i in batch->add_poa_group is not successful, it wont be processed in this iteration, therefore we print i-1
+            // to account for the fact that window i was excluded at this round.
+            if (status == StatusType::success)
+            {
+                std::cout << "Processed windows " << window_count << " - " << i << std::endl;
+            }
+            else
+            {
+                std::cout << "Processed windows " << window_count << " - " << i - 1 << std::endl;
+            }
 
             window_count = i;
         }
