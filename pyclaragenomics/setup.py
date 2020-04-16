@@ -79,8 +79,7 @@ for envvar in ['CGA_INSTALL_DIR', 'CGA_VERSION', 'CGA_ROOT_DIR']:
 cga_root_dir = os.environ['CGA_ROOT_DIR']
 cga_install_dir = os.environ['CGA_INSTALL_DIR']
 cga_version = os.environ['CGA_VERSION']
-cuda_root = '/usr/local/cuda' if 'CUDA_TOOLKIT_ROOT_DIR' not in os.environ.keys() \
-    else os.environ['CUDA_TOOLKIT_ROOT_DIR']
+cuda_root = os.getenv('CUDA_TOOLKIT_ROOT_DIR', '/usr/local/cuda')
 cuda_include_path = os.path.join(cuda_root, 'include')
 cuda_library_path = os.path.join(cuda_root, 'lib64')
 
