@@ -51,7 +51,7 @@ void IndexDescriptor::generate_hash()
 
     hash_ = 0;
     hash_ |= first_read_ & element_mask;
-    hash_ |= static_cast<std::size_t>(number_of_reads_ & element_mask) << shift_bits;
+    hash_ |= (static_cast<std::size_t>(number_of_reads_) & element_mask) << shift_bits;
 }
 
 bool operator==(const IndexDescriptor& lhs, const IndexDescriptor& rhs)
