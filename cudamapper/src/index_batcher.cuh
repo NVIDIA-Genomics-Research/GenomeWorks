@@ -42,8 +42,8 @@ struct BatchOfIndices
     std::vector<IndexBatch> device_batches;
 };
 
-using index_id_t          = std::size_t;
-using number_of_indices_t = index_id_t;
+/// number_of_indices_t
+using number_of_indices_t = std::size_t;
 
 /// \brief Groups indices into batches
 ///
@@ -109,6 +109,9 @@ namespace details
 {
 namespace index_batcher
 {
+
+/// index_id_t
+using index_id_t = number_of_indices_t;
 
 /// GroupOfIndicesDescriptor - describes a group of indices by the id of the first index and the total number of indices in that group
 struct GroupOfIndicesDescriptor

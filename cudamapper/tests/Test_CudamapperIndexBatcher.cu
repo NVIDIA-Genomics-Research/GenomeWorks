@@ -23,7 +23,7 @@ namespace cudamapper
 
 // *** test split_array_into_groups ***
 
-void test_split_array_into_groups(const index_id_t first_index,
+void test_split_array_into_groups(const details::index_batcher::index_id_t first_index,
                                   const number_of_indices_t number_of_indices,
                                   const number_of_indices_t indices_per_group,
                                   const std::vector<details::index_batcher::GroupOfIndicesDescriptor>& expected_groups)
@@ -42,9 +42,9 @@ void test_split_array_into_groups(const index_id_t first_index,
 
 TEST(TestCudamapperIndexBatcher, test_split_array_into_groups_divisible)
 {
-    const index_id_t first_index                = 7;
-    const number_of_indices_t number_of_indices = 16;
-    const number_of_indices_t indices_per_group = 4;
+    const details::index_batcher::index_id_t first_index = 7;
+    const number_of_indices_t number_of_indices          = 16;
+    const number_of_indices_t indices_per_group          = 4;
 
     std::vector<details::index_batcher::GroupOfIndicesDescriptor> expected_groups;
     expected_groups.push_back({7, 4});
@@ -60,9 +60,9 @@ TEST(TestCudamapperIndexBatcher, test_split_array_into_groups_divisible)
 
 TEST(TestCudamapperIndexBatcher, test_split_array_into_groups_not_divisible)
 {
-    const index_id_t first_index                = 13;
-    const number_of_indices_t number_of_indices = 58;
-    const number_of_indices_t indices_per_group = 5;
+    const details::index_batcher::index_id_t first_index = 13;
+    const number_of_indices_t number_of_indices          = 58;
+    const number_of_indices_t indices_per_group          = 5;
 
     std::vector<details::index_batcher::GroupOfIndicesDescriptor> expected_groups;
     expected_groups.push_back({13, 5});
@@ -86,7 +86,7 @@ TEST(TestCudamapperIndexBatcher, test_split_array_into_groups_not_divisible)
 
 // *** test generate_groups_and_subgroups ***
 
-void test_generate_groups_and_subgroups(const index_id_t first_index,
+void test_generate_groups_and_subgroups(const details::index_batcher::index_id_t first_index,
                                         const number_of_indices_t total_number_of_indices,
                                         const number_of_indices_t indices_per_group,
                                         const number_of_indices_t indices_per_subgroup,
@@ -119,10 +119,10 @@ void test_generate_groups_and_subgroups(const index_id_t first_index,
 
 TEST(TestCudamapperIndexBatcher, test_split_array_into_groups_all_divisible)
 {
-    const index_id_t first_index                      = 528;
-    const number_of_indices_t total_number_of_indices = 64;
-    const number_of_indices_t indices_per_group       = 8;
-    const number_of_indices_t indices_per_subgroup    = 4;
+    const details::index_batcher::index_id_t first_index = 528;
+    const number_of_indices_t total_number_of_indices    = 64;
+    const number_of_indices_t indices_per_group          = 8;
+    const number_of_indices_t indices_per_subgroup       = 4;
 
     std::vector<details::index_batcher::GroupAndSubgroupsOfIndicesDescriptor> expected_groups;
     expected_groups.push_back({{528, 8}, {}});
@@ -159,10 +159,10 @@ TEST(TestCudamapperIndexBatcher, test_split_array_into_groups_all_divisible)
 
 TEST(TestCudamapperIndexBatcher, test_split_array_into_groups_subgroup_not_divisible)
 {
-    const index_id_t first_index                      = 528;
-    const number_of_indices_t total_number_of_indices = 64;
-    const number_of_indices_t indices_per_group       = 8;
-    const number_of_indices_t indices_per_subgroup    = 5;
+    const details::index_batcher::index_id_t first_index = 528;
+    const number_of_indices_t total_number_of_indices    = 64;
+    const number_of_indices_t indices_per_group          = 8;
+    const number_of_indices_t indices_per_subgroup       = 5;
 
     std::vector<details::index_batcher::GroupAndSubgroupsOfIndicesDescriptor> expected_groups;
     expected_groups.push_back({{528, 8}, {}});
@@ -199,10 +199,10 @@ TEST(TestCudamapperIndexBatcher, test_split_array_into_groups_subgroup_not_divis
 
 TEST(TestCudamapperIndexBatcher, test_split_array_into_groups_nothing_divisible)
 {
-    const index_id_t first_index                      = 528;
-    const number_of_indices_t total_number_of_indices = 66;
-    const number_of_indices_t indices_per_group       = 8;
-    const number_of_indices_t indices_per_subgroup    = 5;
+    const details::index_batcher::index_id_t first_index = 528;
+    const number_of_indices_t total_number_of_indices    = 66;
+    const number_of_indices_t indices_per_group          = 8;
+    const number_of_indices_t indices_per_subgroup       = 5;
 
     std::vector<details::index_batcher::GroupAndSubgroupsOfIndicesDescriptor> expected_groups;
     expected_groups.push_back({{528, 8}, {}});
