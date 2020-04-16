@@ -59,7 +59,8 @@ struct AlignerTestData
 // Test adding alignments to Aligner objects
 TEST(TestCudaAligner, TestAlignmentAddition)
 {
-    std::unique_ptr<AlignerGlobal> aligner = std::make_unique<AlignerGlobalUkkonen>(10, 10, 5, nullptr, 0);
+    DefaultDeviceAllocator allocator       = create_default_device_allocator();
+    std::unique_ptr<AlignerGlobal> aligner = std::make_unique<AlignerGlobalUkkonen>(10, 10, 5, allocator, nullptr, 0);
     ASSERT_EQ(StatusType::success, aligner->add_alignment("ATCG", 4, "TACG", 4, false, false));
     ASSERT_EQ(StatusType::success, aligner->add_alignment("ATCG", 4, "TACG", 4, false, false));
     ASSERT_EQ(StatusType::success, aligner->add_alignment("ATCG", 4, "TACG", 4, false, false));
@@ -165,6 +166,7 @@ TEST_P(TestAlignerGlobal, TestAlignmentKernel)
     AlignerTestData param                                          = GetParam();
     const std::vector<std::pair<std::string, std::string>>& inputs = param.inputs;
     const std::vector<std::string>& cigars                         = param.cigars;
+    DefaultDeviceAllocator allocator                               = create_default_device_allocator();
 
     if (!cigars.empty())
     {
@@ -179,6 +181,7 @@ TEST_P(TestAlignerGlobal, TestAlignmentKernel)
         aligner = std::make_unique<AlignerGlobalMyers>(max_string_size,
                                                        max_string_size,
                                                        param.inputs.size(),
+                                                       allocator,
                                                        nullptr,
                                                        0);
         break;
@@ -186,6 +189,7 @@ TEST_P(TestAlignerGlobal, TestAlignmentKernel)
         aligner = std::make_unique<AlignerGlobalUkkonen>(max_string_size,
                                                          max_string_size,
                                                          param.inputs.size(),
+                                                         allocator,
                                                          nullptr,
                                                          0);
         break;
@@ -193,6 +197,7 @@ TEST_P(TestAlignerGlobal, TestAlignmentKernel)
         aligner = std::make_unique<AlignerGlobalMyersBanded>(max_string_size,
                                                              max_string_size,
                                                              param.inputs.size(),
+                                                             allocator,
                                                              nullptr,
                                                              0);
         break;
@@ -200,6 +205,7 @@ TEST_P(TestAlignerGlobal, TestAlignmentKernel)
         aligner = std::make_unique<AlignerGlobalHirschbergMyers>(max_string_size,
                                                                  max_string_size,
                                                                  param.inputs.size(),
+                                                                 allocator,
                                                                  nullptr,
                                                                  0);
         break;
@@ -209,6 +215,7 @@ TEST_P(TestAlignerGlobal, TestAlignmentKernel)
                                                              max_string_size,
                                                              param.inputs.size(),
                                                              claragenomics::cudaaligner::AlignmentType::global_alignment,
+                                                             allocator,
                                                              nullptr,
                                                              0);
     }
@@ -275,9 +282,11 @@ TEST_P(TestAlignerGlobalImplPerf, TestAlignmentKernelPerf)
     AlignerTestData param                                          = GetParam();
     const std::vector<std::pair<std::string, std::string>>& inputs = param.inputs;
     const int32_t max_string_size                                  = get_max_sequence_length(inputs) + 1;
+    DefaultDeviceAllocator allocator                               = create_default_device_allocator();
     std::unique_ptr<Aligner> aligner                               = std::make_unique<AlignerGlobalUkkonen>(max_string_size,
                                                                               max_string_size,
                                                                               param.inputs.size(),
+                                                                              allocator,
                                                                               nullptr,
                                                                               0);
 

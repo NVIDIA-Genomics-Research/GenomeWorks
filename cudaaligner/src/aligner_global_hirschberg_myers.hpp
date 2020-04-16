@@ -21,7 +21,7 @@ namespace cudaaligner
 class AlignerGlobalHirschbergMyers : public AlignerGlobal
 {
 public:
-    AlignerGlobalHirschbergMyers(int32_t max_query_length, int32_t max_target_length, int32_t max_alignments, cudaStream_t stream, int32_t device_id);
+    AlignerGlobalHirschbergMyers(int32_t max_query_length, int32_t max_target_length, int32_t max_alignments, DefaultDeviceAllocator allocator, cudaStream_t stream, int32_t device_id);
     virtual ~AlignerGlobalHirschbergMyers();
 
 private:

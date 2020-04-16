@@ -18,7 +18,7 @@ set(SOURCES
 set(LIBS
     cudaaligner_internal
     cudaaligner
-    cgautils)
+    cgabase)
 
 cga_add_benchmarks(${PROJECT_NAME} "cudaaligner" "${SOURCES}" "${LIBS}")
 

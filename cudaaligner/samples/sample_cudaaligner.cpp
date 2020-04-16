@@ -27,7 +27,8 @@ using namespace claragenomics::cudaaligner;
 
 std::unique_ptr<Aligner> initialize_batch(int32_t max_query_size,
                                           int32_t max_target_size,
-                                          int32_t max_alignments_per_batch)
+                                          int32_t max_alignments_per_batch,
+                                          claragenomics::DefaultDeviceAllocator allocator)
 {
     // Get device information.
     int32_t device_count = 0;
@@ -45,6 +46,7 @@ std::unique_ptr<Aligner> initialize_batch(int32_t max_query_size,
                                                     max_target_size,
                                                     max_alignments_per_batch,
                                                     AlignmentType::global_alignment,
+                                                    allocator,
                                                     stream,
                                                     device_id);
 
@@ -99,10 +101,13 @@ int main(int argc, char** argv)
     const int32_t target_length = 15000;
     const uint32_t num_entries  = 1000;
 
+    const std::size_t max_gpu_memory                = claragenomics::cudautils::find_largest_contiguous_device_memory_section();
+    claragenomics::DefaultDeviceAllocator allocator = create_default_device_allocator(max_gpu_memory);
+
     std::cout << "Running pairwise alignment for " << num_entries << " pairs..." << std::endl;
 
     // Initialize batch.
-    std::unique_ptr<Aligner> batch = initialize_batch(query_length, target_length, 100);
+    std::unique_ptr<Aligner> batch = initialize_batch(query_length, target_length, 100, allocator);
 
     // Generate data.
     std::vector<std::pair<std::string, std::string>> data;

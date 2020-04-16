@@ -23,6 +23,6 @@ set(SOURCES
 
 set(LIBS
     cudaaligner
-    cgautils)
+    cgabase)
 
 cga_add_tests(${TARGET_NAME} "${SOURCES}" "${LIBS}")

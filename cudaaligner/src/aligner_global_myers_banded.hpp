@@ -21,7 +21,7 @@ namespace cudaaligner
 class AlignerGlobalMyersBanded : public AlignerGlobal
 {
 public:
-    AlignerGlobalMyersBanded(int32_t max_query_length, int32_t max_target_length, int32_t max_alignments, cudaStream_t stream, int32_t device_id);
+    AlignerGlobalMyersBanded(int32_t max_query_length, int32_t max_target_length, int32_t max_alignments, DefaultDeviceAllocator allocator, cudaStream_t stream, int32_t device_id);
     virtual ~AlignerGlobalMyersBanded();
 
 private:

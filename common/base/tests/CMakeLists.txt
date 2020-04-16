@@ -8,7 +8,7 @@
 # license agreement from NVIDIA CORPORATION is strictly prohibited.
 #
 
-set(TARGET_NAME cgautilstests)
+set(TARGET_NAME cgabasetests)
 
 set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -lineinfo -Xcompiler -Wall,-Wno-pedantic -std=c++14")
 
@@ -21,6 +21,6 @@ set(SOURCES
 include_directories(${CUB_DIR})
 
 set(LIBS
-    cgautils)
+    cgabase)
 
 cga_add_tests(${TARGET_NAME} "${SOURCES}" "${LIBS}")

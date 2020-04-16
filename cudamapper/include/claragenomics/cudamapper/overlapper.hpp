@@ -61,15 +61,6 @@ public:
                                 int64_t min_residues    = 20,
                                 int64_t min_overlap_len = 50);
 
-    /// \brief performs gloval alignment between overlapped regions of reads
-    /// \param overlaps List of overlaps to align
-    /// \param query_parser Parser for query reads
-    /// \param target_parser Parser for target reads
-    /// \param num_alignment_engines Number of parallel alignment engines to use for alignment
-    /// \param cigar Output vector to store CIGAR string for alignments
-    static void align_overlaps(std::vector<Overlap>& overlaps, const claragenomics::io::FastaParser& query_parser,
-                               const claragenomics::io::FastaParser& target_parser, int32_t num_alignment_engines,
-                               std::vector<std::string>& cigar);
     /// \brief updates read names for vector of overlaps output from get_overlaps
     /// \param overlaps input vector of overlaps generated in get_overlaps
     /// \param index_query

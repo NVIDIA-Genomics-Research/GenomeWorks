@@ -20,8 +20,8 @@ namespace cudaaligner
 
 static constexpr float max_target_query_length_difference = 0.1; // query has to be >=90% of target length
 
-AlignerGlobalUkkonen::AlignerGlobalUkkonen(int32_t max_query_length, int32_t max_target_length, int32_t max_alignments, cudaStream_t stream, int32_t device_id)
-    : AlignerGlobal(max_query_length, max_target_length, max_alignments, stream, device_id)
+AlignerGlobalUkkonen::AlignerGlobalUkkonen(int32_t max_query_length, int32_t max_target_length, int32_t max_alignments, DefaultDeviceAllocator allocator, cudaStream_t stream, int32_t device_id)
+    : AlignerGlobal(max_query_length, max_target_length, max_alignments, allocator, stream, device_id)
     , score_matrices_()
     , ukkonen_p_(100)
 {
@@ -30,6 +30,7 @@ AlignerGlobalUkkonen::AlignerGlobalUkkonen(int32_t max_query_length, int32_t max
     score_matrices_                               = std::make_unique<batched_device_matrices<nw_score_t>>(
         max_alignments,
         ukkonen_max_score_matrix_size(this->get_max_query_length(), this->get_max_target_length(), allocated_max_length_difference, ukkonen_p_),
+        allocator,
         stream);
 }
 
