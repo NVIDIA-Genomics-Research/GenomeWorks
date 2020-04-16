@@ -95,15 +95,15 @@ using number_of_basepairs_t = std::int32_t;
 /// \param same_query_and_target
 /// \throw std::invalid_argument if same_query_and_target is true and corresponding parameters for query and target are not the same
 /// \return generated batches
-std::vector<BatchOfIndices> generate_batches_of_indices(const number_of_indices_t query_indices_per_host_batch,
-                                                        const number_of_indices_t query_indices_per_device_batch,
-                                                        const number_of_indices_t target_indices_per_host_batch,
-                                                        const number_of_indices_t target_indices_per_device_batch,
+std::vector<BatchOfIndices> generate_batches_of_indices(number_of_indices_t query_indices_per_host_batch,
+                                                        number_of_indices_t query_indices_per_device_batch,
+                                                        number_of_indices_t target_indices_per_host_batch,
+                                                        number_of_indices_t target_indices_per_device_batch,
                                                         const std::shared_ptr<const claragenomics::io::FastaParser> query_parser,
                                                         const std::shared_ptr<const claragenomics::io::FastaParser> target_parser,
-                                                        const number_of_basepairs_t query_basepairs_per_index,
-                                                        const number_of_basepairs_t target_basepairs_per_index,
-                                                        const bool same_query_and_target);
+                                                        number_of_basepairs_t query_basepairs_per_index,
+                                                        number_of_basepairs_t target_basepairs_per_index,
+                                                        bool same_query_and_target);
 
 namespace details
 {
@@ -147,9 +147,9 @@ struct HostAndDeviceGroupsOfIndices
 /// \param number_of_indices
 /// \param indices_per_group
 /// \return generated groups
-std::vector<GroupOfIndicesDescriptor> split_array_into_groups(const index_id_t first_index,
-                                                              const number_of_indices_t number_of_indices,
-                                                              const number_of_indices_t indices_per_group);
+std::vector<GroupOfIndicesDescriptor> split_array_into_groups(index_id_t first_index,
+                                                              number_of_indices_t number_of_indices,
+                                                              number_of_indices_t indices_per_group);
 
 /// \brief Splits numbers into groups and then further splits each group into subgroups
 ///
@@ -174,10 +174,10 @@ std::vector<GroupOfIndicesDescriptor> split_array_into_groups(const index_id_t f
 /// \param indices_per_group
 /// \param indices_per_subgroup
 /// \return generated groups
-std::vector<GroupAndSubgroupsOfIndicesDescriptor> generate_groups_and_subgroups(const index_id_t first_index,
-                                                                                const number_of_indices_t total_number_of_indices,
-                                                                                const number_of_indices_t indices_per_group,
-                                                                                const number_of_indices_t indices_per_subgroup);
+std::vector<GroupAndSubgroupsOfIndicesDescriptor> generate_groups_and_subgroups(index_id_t first_index,
+                                                                                number_of_indices_t total_number_of_indices,
+                                                                                number_of_indices_t indices_per_group,
+                                                                                number_of_indices_t indices_per_subgroup);
 
 /// \brief Transforms descriptor of group of indices into descriptors of indices
 /// \param index_descriptors descriptor of every individual index
@@ -196,7 +196,7 @@ std::vector<HostAndDeviceGroupsOfIndices> convert_groups_of_indices_into_groups_
 /// \return generated batches
 std::vector<BatchOfIndices> combine_query_and_target_indices(const std::vector<HostAndDeviceGroupsOfIndices>& query_groups_of_indices,
                                                              const std::vector<HostAndDeviceGroupsOfIndices>& target_groups_of_indices,
-                                                             const bool same_query_and_target);
+                                                             bool same_query_and_target);
 
 } // namespace index_batcher
 } // namespace details
