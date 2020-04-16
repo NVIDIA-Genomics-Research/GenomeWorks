@@ -29,7 +29,7 @@ cmake .. "${CMAKE_COMMON_VARIABLES[@]}" \
     -GNinja
 
 logger "Run build..."
-ninja all install package
+NINJA_STATUS="[%r->%f/%t]" ninja all install package
 
 logger "Install package..."
 DISTRO=$(awk -F= '/^NAME/{print $2}' /etc/os-release)
