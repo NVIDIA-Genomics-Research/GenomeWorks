@@ -17,7 +17,14 @@ namespace claragenomics
 
 /// unique ID of a read
 using read_id_t = std::uint32_t;
+
+/// number of reads
+using number_of_reads_t = read_id_t;
+
 /// position of a basepair/kmer in a read
 using position_in_read_t = std::uint32_t;
+
+/// number of basepairs
+using number_of_basepairs_t = position_in_read_t;
 
 } // namespace claragenomics
