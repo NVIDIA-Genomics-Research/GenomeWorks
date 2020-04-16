@@ -134,6 +134,12 @@ struct HostAndDeviceGroupsOfIndices
     std::vector<std::vector<IndexDescriptor>> device_indices_groups;
 };
 
+/// \brief Equality operator for HostAndDeviceGroupsOfIndices
+bool operator==(const HostAndDeviceGroupsOfIndices& lhs, const HostAndDeviceGroupsOfIndices& rhs);
+
+/// \brief Inequality operator for HostAndDeviceGroupsOfIndices
+bool operator!=(const HostAndDeviceGroupsOfIndices& lhs, const HostAndDeviceGroupsOfIndices& rhs);
+
 /// \brief Splits numbers into groups
 ///
 /// Splits numbers between first_index and first_index + number_of_indices into groups of indices_per_group numbers.

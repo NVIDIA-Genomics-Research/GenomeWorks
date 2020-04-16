@@ -86,6 +86,16 @@ namespace details
 namespace index_batcher
 {
 
+bool operator==(const HostAndDeviceGroupsOfIndices& lhs, const HostAndDeviceGroupsOfIndices& rhs)
+{
+    return (lhs.host_indices_group == rhs.host_indices_group) && (lhs.device_indices_groups == rhs.device_indices_groups);
+}
+
+bool operator!=(const HostAndDeviceGroupsOfIndices& lhs, const HostAndDeviceGroupsOfIndices& rhs)
+{
+    return !(lhs == rhs);
+}
+
 std::vector<GroupOfIndicesDescriptor> split_array_into_groups(const index_id_t first_index,
                                                               const number_of_indices_t number_of_indices,
                                                               const number_of_indices_t indices_per_group)
