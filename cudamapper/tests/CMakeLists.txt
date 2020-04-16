@@ -13,11 +13,13 @@ set(TARGET_NAME cudamappertests)
 set(SOURCES
     main.cpp
     Test_CudamapperIndexCache.cu
+    Test_CudamapperIndexDescriptor.cpp
     Test_CudamapperIndexGPU.cu
     Test_CudamapperMatcherGPU.cu
     Test_CudamapperMinimizer.cpp
     Test_CudamapperOverlapperTriggered.cu
-    ../src/index_cache.cu)
+    ../src/index_cache.cu
+    ../src/index_descriptor.cpp)
 
 get_property(cudamapper_data_include_dir GLOBAL PROPERTY cudamapper_data_include_dir)
 include_directories(${cudamapper_data_include_dir})

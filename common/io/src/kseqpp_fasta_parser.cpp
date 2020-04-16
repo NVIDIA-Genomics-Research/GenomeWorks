@@ -24,7 +24,9 @@ namespace claragenomics
 namespace io
 {
 
-FastaParserKseqpp::FastaParserKseqpp(const std::string& fasta_file, int min_sequencece_length, bool shuffle)
+FastaParserKseqpp::FastaParserKseqpp(const std::string& fasta_file,
+                                     const number_of_basepairs_t min_sequencece_length,
+                                     const bool shuffle)
 {
     klibpp::KSeq record;
     klibpp::SeqStreamIn iss(fasta_file.data());
@@ -41,8 +43,8 @@ FastaParserKseqpp::FastaParserKseqpp(const std::string& fasta_file, int min_sequ
 
     do
     {
-        FastaSequence seq   = {record.name, record.seq};
-        int sequence_length = get_size<int>(record.seq);
+        FastaSequence seq                     = {record.name, record.seq};
+        number_of_basepairs_t sequence_length = get_size<number_of_basepairs_t>(record.seq);
         if (sequence_length >= min_sequencece_length)
         {
             reads_.push_back(std::move(seq));
@@ -57,44 +59,14 @@ FastaParserKseqpp::FastaParserKseqpp(const std::string& fasta_file, int min_sequ
     }
 }
 
-int32_t FastaParserKseqpp::get_num_seqences() const
+number_of_reads_t FastaParserKseqpp::get_num_seqences() const
 {
     return reads_.size();
 }
 
-FastaSequence FastaParserKseqpp::get_sequence_by_id(int32_t i) const
+FastaSequence FastaParserKseqpp::get_sequence_by_id(const read_id_t sequence_id) const
 {
-    return reads_[i];
-}
-
-std::vector<std::pair<int, int>> FastaParserKseqpp::get_read_chunks(int max_chunk_size = 1000000) const
-{
-    std::vector<std::pair<int, int>> chunks;
-
-    std::pair<int, int> chunk;
-
-    const int n_reads = get_size<int>(reads_);
-    chunk.first       = 0;
-    int num_bases     = 0;
-    for (int read_idx = 0; read_idx < n_reads; read_idx++)
-    {
-        if (get_size<int>(reads_[read_idx].seq) + num_bases > max_chunk_size)
-        {
-            chunk.second = read_idx;
-            chunks.push_back(chunk);
-            chunk.first = read_idx;
-            num_bases   = get_size<int>(reads_[read_idx].seq);
-        }
-        else
-        {
-            num_bases += get_size<int>(reads_[read_idx].seq);
-        }
-    }
-
-    chunk.second = get_size(reads_);
-
-    chunks.push_back(chunk);
-    return chunks;
+    return reads_[sequence_id];
 }
 
 } // namespace io
