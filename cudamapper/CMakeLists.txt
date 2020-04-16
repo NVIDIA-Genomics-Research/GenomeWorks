@@ -46,14 +46,6 @@ target_compile_options(cudamapper PRIVATE -Werror)
 
 add_doxygen_source_dir(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
-if(cga_enable_caching_allocator)
-        if (cga_enable_preallocating_caching_allocator)
-                target_compile_definitions(cudamapper            PUBLIC CGA_ENABLE_CACHING_ALLOCATOR CGA_ENABLE_PREALLOCATING_ALLOCATOR)
-        else()
-                target_compile_definitions(cudamapper            PUBLIC CGA_ENABLE_CACHING_ALLOCATOR)
-        endif()
-endif()
-
 cuda_add_executable(cudamapper-bin
         src/main.cu
 )
