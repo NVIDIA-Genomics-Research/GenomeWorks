@@ -27,8 +27,8 @@ public:
     /// \param min_sequence_length Minimum length a sequence needs to be to be parsed. Shorter sequences are ignored.
     /// \param shuffle Enables shuffling reads
     FastaParserKseqpp(const std::string& fasta_file,
-                      const number_of_basepairs_t min_sequence_length,
-                      const bool shuffle);
+                      number_of_basepairs_t min_sequence_length,
+                      bool shuffle);
 
     /// \brief Return number of sequences in FASTA file
     /// \return Sequence count in file
@@ -37,7 +37,7 @@ public:
     /// \brief Fetch an entry from the FASTA file by index position in file.
     /// \param sequence_id Position of sequence in file. If sequence_id is invalid an error is thrown.
     /// \return A FastaSequence object describing the entry.
-    FastaSequence get_sequence_by_id(const read_id_t sequence_id) const override;
+    FastaSequence get_sequence_by_id(read_id_t sequence_id) const override;
 
 private:
     /// All the reads from the FASTA file are stored in host RAM

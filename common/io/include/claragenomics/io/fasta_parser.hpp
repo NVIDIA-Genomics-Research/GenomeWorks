@@ -44,7 +44,7 @@ public:
     /// \brief Fetch an entry from the FASTA file by index position in file.
     /// \param sequence_id Position of sequence in file. If sequence_id is invalid an error is thrown.
     /// \return A FastaSequence object describing the entry.
-    virtual FastaSequence get_sequence_by_id(const read_id_t sequence_id) const = 0;
+    virtual FastaSequence get_sequence_by_id(read_id_t sequence_id) const = 0;
 };
 
 /// \brief A builder function that returns a FASTA parser object which uses KSEQPP.
@@ -55,8 +55,8 @@ public:
 ///
 /// \return A unique pointer to a constructed parser object.
 std::unique_ptr<FastaParser> create_kseq_fasta_parser(const std::string& fasta_file,
-                                                      const number_of_basepairs_t min_sequence_length = 0,
-                                                      const bool shuffle                              = true);
+                                                      number_of_basepairs_t min_sequence_length = 0,
+                                                      bool shuffle                              = true);
 
 } // namespace io
 } // namespace claragenomics

@@ -79,7 +79,7 @@ struct IndexDescriptorHash
 /// \param max_basepairs_per_index the maximum number of basepairs in an IndexDescriptor
 /// \return list of IndexDescriptors
 std::vector<IndexDescriptor> group_reads_into_indices(const io::FastaParser& parser,
-                                                      const number_of_basepairs_t max_basepairs_per_index = 1000000);
+                                                      number_of_basepairs_t max_basepairs_per_index = 1000000);
 
 } // namespace cudamapper
 } // namespace claragenomics
