@@ -23,8 +23,8 @@ namespace cudamapper
 
 TEST(TestCudamapperIndexDescriptor, test_index_descriptor_getters)
 {
-    const read_id_t first_read      = 15;
-    const read_id_t number_of_reads = 156;
+    const read_id_t first_read              = 15;
+    const number_of_reads_t number_of_reads = 156;
     const IndexDescriptor index_descriptor(first_read, number_of_reads);
 
     ASSERT_EQ(index_descriptor.first_read(), first_read);
@@ -48,8 +48,8 @@ TEST(TestCudamapperIndexDescriptor, test_index_descriptor_equality_operators)
 TEST(TestCudamapperIndexDescriptor, test_index_descriptor_hash)
 {
     static_assert(sizeof(size_t) == 8, "only 64-bit values supported, adjust element_mask and shift_bits");
-    const read_id_t first_read      = 0x24;
-    const read_id_t number_of_reads = 0xCF;
+    const read_id_t first_read              = 0x24;
+    const number_of_reads_t number_of_reads = 0xCF;
     const IndexDescriptor index_descriptor(first_read, number_of_reads);
     std::size_t hash = 0xCF'00'00'00'24;
     const IndexDescriptorHash index_descriptor_hash;

@@ -23,7 +23,8 @@ class IndexDescriptor
 {
 public:
     /// \brief constructor
-    IndexDescriptor(read_id_t first_read, read_id_t number_of_reads);
+    IndexDescriptor(read_id_t first_read,
+                    number_of_reads_t number_of_reads);
 
     /// \brief copy constructor
     IndexDescriptor(const IndexDescriptor&) = default;
@@ -40,7 +41,7 @@ public:
     read_id_t first_read() const;
 
     /// \brief getter
-    read_id_t number_of_reads() const;
+    number_of_reads_t number_of_reads() const;
 
     /// \brief returns hash value
     std::size_t get_hash() const;
@@ -52,7 +53,7 @@ private:
     /// first read in index
     read_id_t first_read_;
     /// number of reads in index
-    read_id_t number_of_reads_;
+    number_of_reads_t number_of_reads_;
     /// hash of this object
     std::size_t hash_;
 };

@@ -17,7 +17,8 @@ namespace claragenomics
 namespace cudamapper
 {
 
-IndexDescriptor::IndexDescriptor(read_id_t first_read, read_id_t number_of_reads)
+IndexDescriptor::IndexDescriptor(read_id_t first_read,
+                                 number_of_reads_t number_of_reads)
     : first_read_(first_read)
     , number_of_reads_(number_of_reads)
     , hash_(0)
@@ -30,7 +31,7 @@ read_id_t IndexDescriptor::first_read() const
     return first_read_;
 }
 
-read_id_t IndexDescriptor::number_of_reads() const
+number_of_reads_t IndexDescriptor::number_of_reads() const
 {
     return number_of_reads_;
 }
