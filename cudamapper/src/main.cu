@@ -27,6 +27,7 @@
 #include <claragenomics/cudamapper/matcher.hpp>
 #include <claragenomics/cudamapper/overlapper.hpp>
 #include "overlapper_triggered.hpp"
+#include "index_descriptor.hpp"
 
 #include <claragenomics/cudaaligner/aligner.hpp>
 #include <claragenomics/cudaaligner/alignment.hpp>
@@ -450,25 +451,26 @@ int main(int argc, char* argv[])
 
     struct QueryTargetsRange
     {
-        std::pair<std::int32_t, int32_t> query_range;
-        std::vector<std::pair<std::int32_t, int32_t>> target_ranges;
+        claragenomics::cudamapper::IndexDescriptor query_range;
+        std::vector<claragenomics::cudamapper::IndexDescriptor> target_ranges;
     };
 
     ///Factor of 1000000 to make max cache size in MB
-    auto query_chunks  = query_parser->get_read_chunks(parameters.index_size * 1000000);
-    auto target_chunks = target_parser->get_read_chunks(parameters.target_index_size * 1000000);
+    std::vector<claragenomics::cudamapper::IndexDescriptor> query_index_descriptors  = claragenomics::cudamapper::group_reads_into_indices(*query_parser,
+                                                                                                                                          parameters.index_size * 1000000);
+    std::vector<claragenomics::cudamapper::IndexDescriptor> target_index_descriptors = claragenomics::cudamapper::group_reads_into_indices(*target_parser,
+                                                                                                                                           parameters.target_index_size * 1000000);
 
     //First generate all the ranges independently, then loop over them.
     std::vector<QueryTargetsRange> query_target_ranges;
 
     int target_idx = 0;
-    for (auto const& query_chunk : query_chunks)
+    for (const claragenomics::cudamapper::IndexDescriptor& query_index_descriptor : query_index_descriptors)
     {
-        QueryTargetsRange range;
-        range.query_range = query_chunk;
-        for (size_t t = target_idx; t < target_chunks.size(); t++)
+        QueryTargetsRange range{query_index_descriptor, {}};
+        for (size_t t = target_idx; t < target_index_descriptors.size(); t++)
         {
-            range.target_ranges.push_back(target_chunks[t]);
+            range.target_ranges.push_back(target_index_descriptors[t]);
         }
         query_target_ranges.push_back(range);
         // in all-to-all, for query chunk 0, we go through target chunks [target_idx = 0 , n = target_chunks.size())
@@ -604,8 +606,8 @@ int main(int argc, char* argv[])
     auto compute_overlaps = [&](const QueryTargetsRange& query_target_range,
                                 const int device_id,
                                 const cudaStream_t cuda_stream) {
-        auto query_start_index = query_target_range.query_range.first;
-        auto query_end_index   = query_target_range.query_range.second;
+        auto query_start_index = query_target_range.query_range.first_read();
+        auto query_end_index   = query_target_range.query_range.first_read() + query_target_range.query_range.number_of_reads();
 
         std::cerr << "Processing query range: (" << query_start_index << " - " << query_end_index - 1 << ")" << std::endl;
 
@@ -628,11 +630,11 @@ int main(int argc, char* argv[])
         }
 
         //Main loop
-        for (const auto target_range : query_target_range.target_ranges)
+        for (const claragenomics::cudamapper::IndexDescriptor& target_range : query_target_range.target_ranges)
         {
 
-            auto target_start_index = target_range.first;
-            auto target_end_index   = target_range.second;
+            auto target_start_index = target_range.first_read();
+            auto target_end_index   = target_range.first_read() + target_range.number_of_reads();
             {
                 CGA_NVTX_RANGE(profiler, "generate_target_index");
                 target_index = get_index(allocator,
