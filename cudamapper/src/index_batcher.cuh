@@ -14,13 +14,12 @@
 
 #include "index_cache.cuh"
 
+#include <claragenomics/io/fasta_parser.hpp>
+
 namespace claragenomics
 {
 namespace cudamapper
 {
-
-// Functions in this file group Indices in batches of given size
-// These batches can then be used to control host and device Index caches
 
 /// IndexBatch
 ///
@@ -42,13 +41,74 @@ struct BatchOfIndices
     std::vector<IndexBatch> device_batches;
 };
 
+using index_id_t            = std::size_t;
+using number_of_indices_t   = index_id_t;
+using number_of_basepairs_t = std::int32_t;
+
+/// \brief Groups indices into batches
+///
+/// This function groups indices into batches. Host batch contains one section of query and one section of device indices.
+/// Every device batch contains one query subsection and one target subsection of its host host batch
+///
+/// If same_query_and_target is false every section of query indices is combined with ever section of target indices.
+/// If same_query_and_target is true sections of target indices are only combined with sections of target indices with smaller section id.
+/// This is done because on that case due to symmetry having (query_5, target_7) is equivalent to (target_7, query_5)
+///
+/// For example imagine that both query and target sections of indices are ((0, 10), (10, 10)), ((20, 10), (30, 10))
+/// If same_query_and_target == false generated host batches would be:
+/// q(( 0, 10), (10, 10)), t(( 0, 10), (10, 10))
+/// q(( 0, 10), (10, 10)), t((20, 10), (30, 10))
+/// q((20, 10), (30, 10)), t(( 0, 10), (10, 10))
+/// q((20, 10), (30, 10)), t((20, 10), (30, 10))
+/// If same_query_and_target == true generated host batches would be:
+/// q(( 0, 10), (10, 10)), t(( 0, 10), (10, 10))
+/// q(( 0, 10), (10, 10)), t((20, 10), (30, 10))
+/// q((20, 10), (30, 10)), t((20, 10), (30, 10))
+/// i.e. q((20, 10), (30, 10)), t(( 0, 10), (10, 10)) would be missing beacuse it is already coveder by q(( 0, 10), (10, 10)), t((20, 10), (30, 10)) by symmetry
+///
+/// The same holds for device batches in every generated host batch in which query and target sections are the same
+/// If same_query_and_target == true in the case above the follwoing device batches would be generated (assuming that every device batch has only one index)
+/// For q(( 0, 10), (10, 10)), t(( 0, 10), (10, 10)):
+/// q( 0, 10), t( 0, 10)
+/// q( 0, 10), t(10, 10)
+/// skipping q( 10, 10), t( 0, 10) due to symmetry with q( 0, 10), t(10, 10)
+/// q(10, 10), t(10, 10)
+/// For q(( 0, 10), (10, 10)), t((20, 10), (30, 10))
+/// q( 0, 10), t(20, 10)
+/// q( 0, 10), t(30, 10)
+/// q(10, 10), t(20, 10)
+/// q(10, 10), t(30, 10)
+/// For q((20, 10), (30, 10)), t((20, 10), (30, 10))
+/// q(20, 10), t(20, 10)
+/// q(20, 10), t(30, 10)
+/// skipping q(30, 10), t(20, 10) due to symmetry with q( 20, 10), t(30, 10)
+/// q(30, 10), t(30, 10)
+///
+/// \param query_indices_per_host_batch
+/// \param query_indices_per_device_batch
+/// \param target_indices_per_host_batch
+/// \param target_indices_per_device_batch
+/// \param query_parser
+/// \param target_parser
+/// \param query_basepairs_per_index
+/// \param target_basepairs_per_index
+/// \param same_query_and_target
+/// \throw std::invalid_argument if same_query_and_target is true and corresponding parameters for query and target are not the same
+/// \return generated batches
+std::vector<BatchOfIndices> generate_batches_of_indices(const number_of_indices_t query_indices_per_host_batch,
+                                                        const number_of_indices_t query_indices_per_device_batch,
+                                                        const number_of_indices_t target_indices_per_host_batch,
+                                                        const number_of_indices_t target_indices_per_device_batch,
+                                                        const std::shared_ptr<const claragenomics::io::FastaParser> query_parser,
+                                                        const std::shared_ptr<const claragenomics::io::FastaParser> target_parser,
+                                                        const number_of_basepairs_t query_basepairs_per_index,
+                                                        const number_of_basepairs_t target_basepairs_per_index,
+                                                        const bool same_query_and_target);
+
 namespace details
 {
 namespace index_batcher
 {
-
-using index_id_t          = std::size_t;
-using number_of_indices_t = index_id_t;
 
 /// GroupOfIndicesDescriptor - describes a group of indices by the id of the first index and the total number of indices in that group
 struct GroupOfIndicesDescriptor
@@ -64,7 +124,7 @@ struct GroupAndSubgroupsOfIndicesDescriptor
     std::vector<GroupOfIndicesDescriptor> subgroups;
 };
 
-// HostAndDeviceGroupsOfIndices - holds all indices of host batch and device batches
+/// HostAndDeviceGroupsOfIndices - holds all indices of host batch and device batches
 struct HostAndDeviceGroupsOfIndices
 {
     std::vector<IndexDescriptor> host_indices_group;
@@ -128,41 +188,7 @@ std::vector<HostAndDeviceGroupsOfIndices> convert_groups_of_indices_into_groups_
 
 /// \brief Combines groups of query and target indices into batches of indices
 ///
-/// Host batch simply contains both query and target host index groups.
-/// Every batch in device batches is a combination of one query device group and one target device groups
-///
-/// If same_query_and_target is false every query is batched with every target, if it is true
-/// only targets with id larger or equal than query are kept.
-///
-/// For example imagine that both query and target groups of indices are ((0, 10), (10, 10)), ((20, 10), (30, 10))
-/// If same_query_and_target == false generated host batches would be:
-/// q(( 0, 10), (10, 10)), t(( 0, 10), (10, 10))
-/// q(( 0, 10), (10, 10)), t((20, 10), (30, 10))
-/// q((20, 10), (30, 10)), t(( 0, 10), (10, 10))
-/// q((20, 10), (30, 10)), t((20, 10), (30, 10))
-/// If same_query_and_target == true generated host batches would be:
-/// q(( 0, 10), (10, 10)), t(( 0, 10), (10, 10))
-/// q(( 0, 10), (10, 10)), t((20, 10), (30, 10))
-/// q((20, 10), (30, 10)), t((20, 10), (30, 10))
-/// i.e. q((20, 10), (30, 10)), t(( 0, 10), (10, 10)) would be missing beacuse it is already coveder by q(( 0, 10), (10, 10)), t((20, 10), (30, 10)) by symmetry
-///
-/// The same holds for device batches in every generated host batch in which query and target are the same
-/// If same_query_and_target == true in the case above the follwoing device batches would be generated (assuming that every device batch has only one index)
-/// For q(( 0, 10), (10, 10)), t(( 0, 10), (10, 10)):
-/// q( 0, 10), t( 0, 10)
-/// q( 0, 10), t(10, 10)
-/// skipping q( 10, 10), t( 0, 10) due to symmetry with q( 0, 10), t(10, 10)
-/// q(10, 10), t(10, 10)
-/// For q(( 0, 10), (10, 10)), t((20, 10), (30, 10))
-/// q( 0, 10), t(20, 10)
-/// q( 0, 10), t(30, 10)
-/// q(10, 10), t(20, 10)
-/// q(10, 10), t(30, 10)
-/// For q((20, 10), (30, 10)), t((20, 10), (30, 10))
-/// q(20, 10), t(20, 10)
-/// q(20, 10), t(30, 10)
-/// skipping q(30, 10), t(20, 10) due to symmetry with q( 20, 10), t(30, 10)
-/// q(30, 10), t(30, 10)
+/// See generate_batches_of_indices() for details
 ///
 /// \param query_groups_of_indices
 /// \param target_groups_of_indices
