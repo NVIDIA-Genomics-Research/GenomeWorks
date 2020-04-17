@@ -41,7 +41,7 @@ target_include_directories(cudamapper
         $<INSTALL_INTERFACE:include>
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 )
-target_link_libraries(cudamapper cgabase cgaio cgalogging cub pthread)
+target_link_libraries(cudamapper cgabase cgaio cgalogging cub)
 target_compile_options(cudamapper PRIVATE -Werror)
 
 add_doxygen_source_dir(${CMAKE_CURRENT_SOURCE_DIR}/include)
