@@ -26,6 +26,7 @@ cuda_add_library(cudaaligner ${cga_library_type}
     src/aligner_global.cpp
     src/aligner_global_ukkonen.cpp
     src/aligner_global_myers.cpp
+    src/aligner_global_myers_banded.cpp
     src/aligner_global_hirschberg_myers.cpp
     src/needleman_wunsch_cpu.cpp
     src/ukkonen_cpu.cpp

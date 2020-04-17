@@ -31,7 +31,7 @@ __host__ __device__ constexpr inline Integer ceiling_divide(Integer i, Integer j
 }
 
 template <typename T>
-__host__ __device__ inline T const& min3(T const& t1, T const& t2, T const& t3)
+__host__ __device__ inline T min3(T t1, T t2, T t3)
 {
 #ifdef __CUDA_ARCH__
     return min(t1, min(t2, t3));
