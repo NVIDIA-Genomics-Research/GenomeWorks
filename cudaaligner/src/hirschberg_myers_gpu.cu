@@ -323,7 +323,9 @@ myers_compute_scores(
     {
         int32_t warp_carry = 0;
         if (threadIdx.x == 0)
+        {
             warp_carry = 1; // for global alignment the (implicit) first row has to be 0,1,2,3,... -> carry 1
+        }
         for (int32_t idx = threadIdx.x; idx < n_warp_iterations; idx += warp_size)
         {
             if (idx < n_words)
@@ -345,16 +347,22 @@ myers_compute_scores(
                 else
                 {
                     if (idx + 1 == n_words)
+                    {
                         score(t, reverse ? 1 : 0) = score(t - 1, reverse ? 1 : 0) + warp_carry;
+                    }
                 }
                 if (threadIdx.x == 0)
+                {
                     warp_carry = 0;
+                }
                 if (warp_mask == 0xffff'ffffu && (threadIdx.x == 31 || threadIdx.x == 0))
                 {
                     warp_carry = __shfl_down_sync(0x8000'0001u, warp_carry, warp_size - 1);
                 }
                 if (threadIdx.x != 0)
+                {
                     warp_carry = 0;
+                }
                 pv(idx, full_score_matrix ? t : 0) = pv_local;
                 mv(idx, full_score_matrix ? t : 0) = mv_local;
             }
