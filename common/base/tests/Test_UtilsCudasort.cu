@@ -82,7 +82,7 @@ void short_test_template_larger_more_significant_key()
     const LessSignificantKeyT max_value_of_less_significant_key = *std::max_element(std::begin(less_significant_keys_vec),
                                                                                     std::end(less_significant_keys_vec));
 
-    DefaultDeviceAllocator allocator;
+    DefaultDeviceAllocator allocator = create_default_device_allocator();
     device_buffer<MoreSignificantKeyT> more_significant_keys(more_significant_keys_vec.size(), allocator);
     cudautils::device_copy_n(more_significant_keys_vec.data(), more_significant_keys_vec.size(), more_significant_keys.data()); //H2D
     device_buffer<LessSignificantKeyT> less_significant_keys(less_significant_keys_vec.size(), allocator);
@@ -126,7 +126,7 @@ void short_test_template_larger_less_significant_key()
     const LessSignificantKeyT max_value_of_less_significant_key = *std::max_element(std::begin(less_significant_keys_vec),
                                                                                     std::end(less_significant_keys_vec));
 
-    DefaultDeviceAllocator allocator;
+    DefaultDeviceAllocator allocator = create_default_device_allocator();
     device_buffer<MoreSignificantKeyT> more_significant_keys(more_significant_keys_vec.size(), allocator);
     cudautils::device_copy_n(more_significant_keys_vec.data(), more_significant_keys_vec.size(), more_significant_keys.data()); //H2D
     device_buffer<LessSignificantKeyT> less_significant_keys(less_significant_keys_vec.size(), allocator);
@@ -195,7 +195,7 @@ TEST(TestUtilsCudasort, long_deterministic_shuffle_test)
 
     std::mt19937 g(10);
 
-    DefaultDeviceAllocator allocator;
+    DefaultDeviceAllocator allocator = create_default_device_allocator();
 
     // fill the arrays with values 0..number_of_elements and shuffle them
     thrust::host_vector<std::uint32_t> more_significant_keys_h(number_of_elements);

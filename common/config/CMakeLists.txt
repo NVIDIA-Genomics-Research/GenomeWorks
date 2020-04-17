@@ -32,6 +32,13 @@ if (cga_device_synchronize_kernels)
     target_compile_definitions(${PROJECT_NAME} INTERFACE CGA_DEVICE_SYNCHRONIZE)
 endif()
 
+if(cga_enable_caching_allocator)
+        if (cga_enable_preallocating_caching_allocator)
+                target_compile_definitions(${PROJECT_NAME} INTERFACE CGA_ENABLE_CACHING_ALLOCATOR CGA_ENABLE_PREALLOCATING_ALLOCATOR)
+        else()
+                target_compile_definitions(${PROJECT_NAME} INTERFACE CGA_ENABLE_CACHING_ALLOCATOR)
+        endif()
+endif()
 
 install(TARGETS ${PROJECT_NAME}
     EXPORT ${PROJECT_NAME}
