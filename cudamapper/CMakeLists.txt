@@ -58,8 +58,9 @@ set_target_properties(cudamapper-bin PROPERTIES OUTPUT_NAME cudamapper)
 # Add tests folder
 add_subdirectory(tests)
 
-install(TARGETS cudamapper 
+install(TARGETS cudamapper
     EXPORT cudamapper
+    DESTINATION bin
 )
 install(EXPORT cudamapper DESTINATION cmake)
 
