@@ -13,8 +13,9 @@ project(cgabase)
 
 get_property(cga_library_type GLOBAL PROPERTY cga_library_type)
 add_library(${PROJECT_NAME} ${cga_library_type}
-        src/cudautils.cpp)
-target_link_libraries(${PROJECT_NAME} PUBLIC cgaconfig cgalogging)
+        src/cudautils.cpp
+        src/logging.cpp)
+target_link_libraries(${PROJECT_NAME} PUBLIC cgaconfig spdlog)
 
 add_doxygen_source_dir(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
