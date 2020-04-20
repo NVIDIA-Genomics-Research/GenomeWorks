@@ -40,7 +40,7 @@ target_include_directories(cudaaligner_internal INTERFACE
         ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 
-target_link_libraries(cudaaligner cgabase cgalogging cub)
+target_link_libraries(cudaaligner cgabase cub)
 
 target_compile_options(cudaaligner PRIVATE -Werror -Wall -Wextra)
 if (cga_optimize_for_native_cpu)
