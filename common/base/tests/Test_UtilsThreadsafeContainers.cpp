@@ -45,7 +45,7 @@ void test_threadsafe_data_provider(const std::size_t number_of_elements,
             {
                 cga_optional_t<std::size_t> val = data_provider.get_next_element();
 
-                if (!val.has_value()) // reached the end
+                if (!val) // reached the end
                 {
                     break;
                 }
@@ -130,7 +130,7 @@ void test_test_threadsafe_producer_consumer(const std::size_t number_of_elements
             while (true)
             {
                 cga_optional_t<std::size_t> val = producer_consumer.get_next_element();
-                if (!val.has_value()) // reached the end
+                if (!val) // reached the end
                 {
                     break;
                 }
@@ -231,7 +231,7 @@ TEST(TestUtilsThreadsafeContainers, test_threadsafe_producer_consumer_signal_on_
 
     producer_consumer.signal_pushed_last_element();
     auto val = producer_consumer.get_next_element();
-    ASSERT_FALSE(val.has_value());
+    ASSERT_FALSE(val);
 }
 
 } // namespace claragenomics
