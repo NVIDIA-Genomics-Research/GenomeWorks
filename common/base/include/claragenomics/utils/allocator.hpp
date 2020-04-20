@@ -243,6 +243,8 @@ public:
         cudaError_t err = memory_resource_->DeviceAllocate(&ptr, n * sizeof(T), stream);
         if (err == cudaErrorMemoryAllocation)
         {
+            // Run cudaGetLastError() to clear the CUDA error before throwing the exception.
+            cudaGetLastError();
             throw device_memory_allocation_exception();
         }
         CGA_CU_CHECK_ERR(err);
