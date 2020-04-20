@@ -89,22 +89,32 @@ void IndexCacheHost::update_cache(const std::vector<IndexDescriptor>& descriptor
 
         if (nullptr == index_copy)
         {
-            // create index
-            auto index = claragenomics::cudamapper::Index::create_index(allocator_,
-                                                                        *parser,
-                                                                        descriptor_of_index_to_cache.first_read(),
-                                                                        descriptor_of_index_to_cache.first_read() + descriptor_of_index_to_cache.number_of_reads(),
-                                                                        kmer_size_,
-                                                                        window_size_,
-                                                                        hash_representations_,
-                                                                        filtering_parameter_,
-                                                                        cuda_stream_);
-            // copy it to host memory
-            index_copy = claragenomics::cudamapper::IndexHostCopy::create_cache(*index,
-                                                                                descriptor_of_index_to_cache.first_read(),
-                                                                                kmer_size_,
-                                                                                window_size_,
-                                                                                cuda_stream_);
+            // check if this index is already cached in this cache
+            auto existing_cache = cache_to_edit.find(descriptor_of_index_to_cache);
+            if (existing_cache != cache_to_edit.end())
+            {
+                // index already cached
+                index_copy = existing_cache->second;
+            }
+            else
+            {
+                // create index
+                auto index = claragenomics::cudamapper::Index::create_index(allocator_,
+                                                                            *parser,
+                                                                            descriptor_of_index_to_cache.first_read(),
+                                                                            descriptor_of_index_to_cache.first_read() + descriptor_of_index_to_cache.number_of_reads(),
+                                                                            kmer_size_,
+                                                                            window_size_,
+                                                                            hash_representations_,
+                                                                            filtering_parameter_,
+                                                                            cuda_stream_);
+                // copy it to host memory
+                index_copy = claragenomics::cudamapper::IndexHostCopy::create_cache(*index,
+                                                                                    descriptor_of_index_to_cache.first_read(),
+                                                                                    kmer_size_,
+                                                                                    window_size_,
+                                                                                    cuda_stream_);
+            }
         }
 
         assert(nullptr != index_copy);
@@ -170,13 +180,24 @@ void IndexCacheDevice::update_cache(const std::vector<IndexDescriptor>& descript
 
         if (nullptr == index)
         {
-            if (CacheToUpdate::query == which_cache)
+            // check if this index is already cached in this cache
+            auto existing_cache = cache_to_edit.find(descriptor_of_index_to_cache);
+            if (existing_cache != cache_to_edit.end())
             {
-                index = index_cache_host_->get_index_from_query_cache(descriptor_of_index_to_cache);
+                // index already cached
+                index = existing_cache->second;
             }
             else
             {
-                index = index_cache_host_->get_index_from_target_cache(descriptor_of_index_to_cache);
+                // index not already cached -> fetch it from index_cache_host_
+                if (CacheToUpdate::query == which_cache)
+                {
+                    index = index_cache_host_->get_index_from_query_cache(descriptor_of_index_to_cache);
+                }
+                else
+                {
+                    index = index_cache_host_->get_index_from_target_cache(descriptor_of_index_to_cache);
+                }
             }
         }
 

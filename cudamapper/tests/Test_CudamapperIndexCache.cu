@@ -916,7 +916,7 @@ TEST(TestCudamapperIndexCaching, test_index_cache_device_same_query_and_target)
     const position_in_read_t aagcta_number_of_basepairs_in_longest_read = 6;
     const uint64_t aagcta_maximum_kmer_size                             = sizeof(representation_t) * CHAR_BIT / 2;
 
-    // ************* IndexCacheHost tests *************
+    // ************* IndexCacheDevice tests *************
 
     IndexDescriptor catcaag_index_descriptor(0, 1);
     IndexDescriptor aagcta_index_descriptor(1, 1);
@@ -1002,6 +1002,12 @@ TEST(TestCudamapperIndexCaching, test_index_cache_device_same_query_and_target)
                               aagcta_maximum_kmer_size,
                               cuda_stream,
                               "test_index_cache_device_same_query_and_target_3");
+
+    // get the same query and target indices again and make sure they point to the same objects as the last time
+    auto index_query_catcaag_1 = index_cache_device.get_index_from_query_cache(catcaag_index_descriptor);
+    auto index_target_aagcta_1 = index_cache_device.get_index_from_target_cache(aagcta_index_descriptor);
+    ASSERT_EQ(index_query_catcaag, index_query_catcaag_1);
+    ASSERT_EQ(index_target_aagcta, index_target_aagcta_1);
 
     CGA_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
     CGA_CU_CHECK_ERR(cudaStreamDestroy(cuda_stream));
@@ -1113,7 +1119,7 @@ TEST(TestCudamapperIndexCaching, test_index_cache_device_do_not_same_query_and_t
     const position_in_read_t catcaag_number_of_basepairs_in_longest_read = 7;
     const uint64_t catcaag_maximum_kmer_size                             = sizeof(representation_t) * CHAR_BIT / 2;
 
-    // ************* IndexCacheHost tests *************
+    // ************* IndexCacheDevice tests *************
 
     // both rescriptors are the same, but they are going to be used with different parsers
     IndexDescriptor index_descriptor(0, 1);
@@ -1196,6 +1202,12 @@ TEST(TestCudamapperIndexCaching, test_index_cache_device_do_not_same_query_and_t
                               catcaag_maximum_kmer_size,
                               cuda_stream,
                               "test_index_cache_host_do_not_same_query_and_target_3");
+
+    // get the same query and target indices again and make sure they point to the same objects as the last time
+    auto index_query_1  = index_cache_device.get_index_from_query_cache(index_descriptor);
+    auto index_target_1 = index_cache_device.get_index_from_target_cache(index_descriptor);
+    ASSERT_EQ(index_query, index_query_1);
+    ASSERT_EQ(index_target, index_target_1);
 
     CGA_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
     CGA_CU_CHECK_ERR(cudaStreamDestroy(cuda_stream));
