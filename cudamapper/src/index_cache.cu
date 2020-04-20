@@ -10,7 +10,7 @@
 
 #include "index_cache.cuh"
 
-#include "index_host_copy.cuh"
+#include "index_host_copy.cu"
 
 #include <claragenomics/cudamapper/index.hpp>
 #include <claragenomics/io/fasta_parser.hpp>

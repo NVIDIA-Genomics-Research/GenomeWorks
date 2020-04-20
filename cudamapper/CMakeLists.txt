@@ -22,8 +22,7 @@ else()
     set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -lineinfo --expt-extended-lambda -use_fast_math -Xcompiler -Wall,-Wno-pedantic -std=c++14")
 endif()
 
-get_property(cga_library_type GLOBAL PROPERTY cga_library_type)
-cuda_add_library(cudamapper ${cga_library_type}
+cuda_add_library(cudamapper
         src/cudamapper.cpp
         src/index_descriptor.cpp
         src/index.cu
