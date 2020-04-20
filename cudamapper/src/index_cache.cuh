@@ -41,7 +41,7 @@ class IndexCacheHost
 {
 public:
     /// \brief Constructor
-    /// \param reuse_data true means that both query and target are the same, meaning that if requested index exists in query cache it can also be used by target cache directly
+    /// \param same_query_and_target true means that both query and target are the same, meaning that if requested index exists in query cache it can also be used by target cache directly
     /// \param allocator allocator to use for device arrays
     /// \param query_parser
     /// \param target_parser
@@ -50,7 +50,7 @@ public:
     /// \param hash_representations // see Index
     /// \param filtering_parameter // see Index
     /// \param cuda_stream // device memory used for Index copy will only we freed up once all previously scheduled work on this stream has finished
-    IndexCacheHost(const bool reuse_data,
+    IndexCacheHost(const bool same_query_and_target,
                    claragenomics::DefaultDeviceAllocator allocator,
                    std::shared_ptr<claragenomics::io::FastaParser> query_parser,
                    std::shared_ptr<claragenomics::io::FastaParser> target_parser,
@@ -94,14 +94,14 @@ private:
     /// \brief Discards previously cached Indices, creates new Indices and copies them to host memory
     /// Uses which_cache to determine if it should be working on query of target indices
     ///
-    /// If reuse_data_ is true function checks the other cache to see if that index is already in cache
+    /// If same_query_and_target_ is true function checks the other cache to see if that index is already in cache
     void update_cache(const std::vector<IndexDescriptor>& descriptors_of_indices_to_cache,
                       const CacheToUpdate which_cache);
 
     cache_type_t query_cache_;
     cache_type_t target_cache_;
 
-    const bool reuse_data_;
+    const bool same_query_and_target_;
     claragenomics::DefaultDeviceAllocator allocator_;
     std::shared_ptr<claragenomics::io::FastaParser> query_parser_;
     std::shared_ptr<claragenomics::io::FastaParser> target_parser_;
@@ -123,9 +123,9 @@ class IndexCacheDevice
 {
 public:
     /// \brief Constructor
-    /// \param reuse_data true means that both query and target are the same, meaning that if requested index exists in query cache it can also be used by target cache directly
+    /// \param same_query_and_target true means that both query and target are the same, meaning that if requested index exists in query cache it can also be used by target cache directly
     /// \param index_cache_host underlying host cache to get the indices from
-    IndexCacheDevice(const bool reuse_data,
+    IndexCacheDevice(const bool same_query_and_target,
                      std::shared_ptr<IndexCacheHost> index_cache_host);
 
     IndexCacheDevice(const IndexCacheDevice&) = delete;
@@ -162,14 +162,14 @@ private:
     /// \brief Discards previously cached Indices and caches new ones
     /// Uses which_cache to determine if it should be working on query of target indices
     ///
-    /// If reuse_data_ is true function checks the other cache to see if that index is already in cache
+    /// If same_query_and_target_ is true function checks the other cache to see if that index is already in cache
     void update_cache(const std::vector<IndexDescriptor>& descriptors_of_indices_to_cache,
                       const CacheToUpdate which_cache);
 
     cache_type_t query_cache_;
     cache_type_t target_cache_;
 
-    const bool reuse_data_;
+    const bool same_query_and_target_;
     std::shared_ptr<IndexCacheHost> index_cache_host_;
 };
 

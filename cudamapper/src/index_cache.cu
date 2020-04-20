@@ -20,7 +20,7 @@ namespace claragenomics
 namespace cudamapper
 {
 
-IndexCacheHost::IndexCacheHost(const bool reuse_data,
+IndexCacheHost::IndexCacheHost(const bool same_query_and_target,
                                claragenomics::DefaultDeviceAllocator allocator,
                                std::shared_ptr<claragenomics::io::FastaParser> query_parser,
                                std::shared_ptr<claragenomics::io::FastaParser> target_parser,
@@ -29,7 +29,7 @@ IndexCacheHost::IndexCacheHost(const bool reuse_data,
                                const bool hash_representations,
                                const double filtering_parameter,
                                const cudaStream_t cuda_stream)
-    : reuse_data_(reuse_data)
+    : same_query_and_target_(same_query_and_target)
     , allocator_(allocator)
     , query_parser_(query_parser)
     , target_parser_(target_parser)
@@ -77,7 +77,7 @@ void IndexCacheHost::update_cache(const std::vector<IndexDescriptor>& descriptor
 
         std::shared_ptr<const IndexHostCopyBase> index_copy = nullptr;
 
-        if (reuse_data_)
+        if (same_query_and_target_)
         {
             // check if the same index already exists in the other cache
             auto existing_cache = cache_to_check.find(descriptor_of_index_to_cache);
@@ -116,9 +116,9 @@ void IndexCacheHost::update_cache(const std::vector<IndexDescriptor>& descriptor
     std::swap(new_cache, cache_to_edit);
 }
 
-IndexCacheDevice::IndexCacheDevice(const bool reuse_data,
+IndexCacheDevice::IndexCacheDevice(const bool same_query_and_target,
                                    std::shared_ptr<IndexCacheHost> index_cache_host)
-    : reuse_data_(reuse_data)
+    : same_query_and_target_(same_query_and_target)
     , index_cache_host_(index_cache_host)
 {
 }
@@ -158,7 +158,7 @@ void IndexCacheDevice::update_cache(const std::vector<IndexDescriptor>& descript
 
         std::shared_ptr<Index> index = nullptr;
 
-        if (reuse_data_)
+        if (same_query_and_target_)
         {
             // check if the same index already exists in the other cache
             auto existing_cache = cache_to_check.find(descriptor_of_index_to_cache);
