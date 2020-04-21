@@ -73,11 +73,7 @@ public:
     cga_optional_t<T> get_next_element()
     {
         size_t my_counter = counter_++;
-#ifdef __cpp_lib_optional
-        return my_counter < data_.size() ? cga_optional_t<T>(std::move(data_[my_counter])) : std::nullopt;
-#else
-        return my_counter < data_.size() ? cga_optional_t<T>(std::move(data_[my_counter])) : std::experimental::nullopt;
-#endif
+        return my_counter < data_.size() ? cga_optional_t<T>(std::move(data_[my_counter])) : cga_nullopt;
     }
 
 private:
@@ -199,11 +195,7 @@ public:
         const bool no_elements_left = pushed_last_element_ && data_.empty();
         if (no_elements_left)
         {
-#ifdef __cpp_lib_optional
-            return std::nullopt;
-#else
-            return std::experimental::nullopt;
-#endif
+            return cga_nullopt;
         }
         else
         {

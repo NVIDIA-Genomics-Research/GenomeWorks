@@ -37,12 +37,14 @@ using number_of_basepairs_t = position_in_read_t;
 // std::optional can be used directly instead
 #ifdef __cpp_lib_optional
 template <typename T>
-using cga_optional_t = std::optional<T>;
-using cga_nullopt_t  = std::nullopt_t;
+using cga_optional_t                = std::optional<T>;
+using cga_nullopt_t                 = std::nullopt_t;
+constexpr cga_nullopt_t cga_nullopt = std::nullopt;
 #else
 template <typename T>
-using cga_optional_t = std::experimental::optional<T>;
-using cga_nullopt_t  = std::experimental::nullopt_t;
+using cga_optional_t                = std::experimental::optional<T>;
+using cga_nullopt_t                 = std::experimental::nullopt_t;
+constexpr cga_nullopt_t cga_nullopt = std::experimental::nullopt;
 #endif
 
 } // namespace claragenomics
