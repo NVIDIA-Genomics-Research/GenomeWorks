@@ -133,13 +133,15 @@ public:
     void add_new_element(const T& element) // not using reference in order to support both rvalue and lvalue
     {
         // consider adding max number of elements and waiting for consumer to process an element before adding a new one
-        std::lock_guard<std::mutex> lg(mutex_);
-        if (pushed_last_element_)
         {
-            throw std::logic_error("ThreadsafeProducerConsumer: pushed an element after signal_pushed_last_element() has been called");
+            std::lock_guard<std::mutex> lg(mutex_);
+            if (pushed_last_element_)
+            {
+                throw std::logic_error("ThreadsafeProducerConsumer: pushed an element after signal_pushed_last_element() has been called");
+            }
+            data_.push_front(element);
         }
-        data_.push_front(element);
-        condition_variable_.notify_all();
+        condition_variable_.notify_one();
     }
 
     /// \brief adds an element to the queue
@@ -149,13 +151,15 @@ public:
     void add_new_element(T&& element) // not using reference in order to support both rvalue and lvalue
     {
         // consider adding max number of elements and waiting for consumer to process an element before adding a new one
-        std::lock_guard<std::mutex> lg(mutex_);
-        if (pushed_last_element_)
         {
-            throw std::logic_error("ThreadsafeProducerConsumer: pushed an element after signal_pushed_last_element() has been called");
+            std::lock_guard<std::mutex> lg(mutex_);
+            if (pushed_last_element_)
+            {
+                throw std::logic_error("ThreadsafeProducerConsumer: pushed an element after signal_pushed_last_element() has been called");
+            }
+            data_.push_front(std::move(element));
         }
-        data_.push_front(std::move(element));
-        condition_variable_.notify_all();
+        condition_variable_.notify_one();
     }
 
     /// \brief tells container that no new elements are going to be added
@@ -166,12 +170,14 @@ public:
     /// \throw std::logic_error if called after any producer has already called this method
     void signal_pushed_last_element()
     {
-        std::lock_guard<std::mutex> lg(mutex_);
-        if (pushed_last_element_)
         {
-            throw std::logic_error("ThreadsafeProducerConsumer: called signal_pushed_last_element() more than once");
+            std::lock_guard<std::mutex> lg(mutex_);
+            if (pushed_last_element_)
+            {
+                throw std::logic_error("ThreadsafeProducerConsumer: called signal_pushed_last_element() more than once");
+            }
+            pushed_last_element_ = true;
         }
-        pushed_last_element_ = true;
         condition_variable_.notify_all();
     }
 
