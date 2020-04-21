@@ -23,27 +23,27 @@ namespace claragenomics
 
 // *** test ThreadsafeDataProvider ***
 
-void test_threadsafe_data_provider(const std::size_t number_of_elements,
-                                   const std::size_t number_of_threads)
+void test_threadsafe_data_provider(const std::int32_t number_of_elements,
+                                   const std::int32_t number_of_threads)
 {
-    std::vector<std::size_t> data(number_of_elements);
+    std::vector<std::int32_t> data(number_of_elements);
     std::iota(std::begin(data),
               std::end(data),
               0);
 
-    ThreadsafeDataProvider<std::size_t> data_provider(std::move(data));
+    ThreadsafeDataProvider<std::int32_t> data_provider(std::move(data));
 
     std::mutex occurrences_per_element_mutex; // using mutex instead of atomic as the test was failining when using more than 1'000'000 atomics
     std::vector<std::int32_t> occurrences_per_element(number_of_elements, 0);
 
     std::vector<std::thread> threads;
 
-    for (std::size_t thread_id = 0; thread_id < number_of_threads; ++thread_id)
+    for (std::int32_t thread_id = 0; thread_id < number_of_threads; ++thread_id)
     {
         threads.push_back(std::thread([&data_provider, &occurrences_per_element, &occurrences_per_element_mutex]() {
             while (true)
             {
-                cga_optional_t<std::size_t> val = data_provider.get_next_element();
+                cga_optional_t<std::int32_t> val = data_provider.get_next_element();
 
                 if (!val) // reached the end
                 {
@@ -58,14 +58,14 @@ void test_threadsafe_data_provider(const std::size_t number_of_elements,
         }));
     }
 
-    for (std::size_t thread_id = 0; thread_id < number_of_threads; ++thread_id)
+    for (std::thread& thread : threads)
     {
-        threads[thread_id].join();
+        thread.join();
     }
 
     ASSERT_TRUE(std::all_of(std::begin(occurrences_per_element),
                             std::end(occurrences_per_element),
-                            [](const std::size_t val) {
+                            [](const std::int32_t val) {
                                 return val == 1;
                             }));
 }
@@ -82,20 +82,20 @@ TEST(TestUtilsThreadsafeContainers, test_threadsafe_data_provider_no_data)
 
 // *** ThreadsafeProducerConsumer ***
 
-void test_test_threadsafe_producer_consumer(const std::size_t number_of_elements,
-                                            const std::size_t number_of_producers,
-                                            const std::size_t number_of_consumers,
+void test_test_threadsafe_producer_consumer(const std::int32_t number_of_elements,
+                                            const std::int32_t number_of_producers,
+                                            const std::int32_t number_of_consumers,
                                             const std::int32_t producers_sleep_for_ms) // give consumers some time to empty the queue)
 {
     ASSERT_GT(number_of_elements, 0);
     ASSERT_GT(number_of_producers, 0);
     ASSERT_GT(number_of_consumers, 0);
     ASSERT_GT(producers_sleep_for_ms, 0);
-    const std::size_t number_of_elements_per_producer = number_of_elements / number_of_producers;
-    const std::size_t producers_sleep_after           = number_of_elements_per_producer / 10 * 3;
+    const std::int32_t number_of_elements_per_producer = number_of_elements / number_of_producers;
+    const std::int32_t producers_sleep_after           = number_of_elements_per_producer / 10 * 3;
     ASSERT_GT(number_of_elements_per_producer, producers_sleep_after);
 
-    ThreadsafeProducerConsumer<std::size_t> producer_consumer;
+    ThreadsafeProducerConsumer<std::int32_t> producer_consumer;
 
     std::mutex occurrences_per_element_mutex; // using mutex instead of atomic as the test was failining when using more than 1'000'000 atomics
     std::vector<std::int32_t> occurrences_per_element(number_of_elements, 0);
@@ -103,16 +103,16 @@ void test_test_threadsafe_producer_consumer(const std::size_t number_of_elements
     std::vector<std::thread> producer_threads;
     std::vector<std::thread> consumer_threads;
 
-    for (std::size_t producer_id = 0; producer_id < number_of_producers; ++producer_id)
+    for (std::int32_t producer_id = 0; producer_id < number_of_producers; ++producer_id)
     {
         producer_threads.push_back(std::thread([&producer_consumer, number_of_producers, producer_id, producers_sleep_after, producers_sleep_for_ms, number_of_elements_per_producer]() {
-            const std::size_t producer_offset = producer_id * number_of_elements_per_producer;
-            for (std::size_t i = 0; i < producers_sleep_after; ++i)
+            const std::int32_t producer_offset = producer_id * number_of_elements_per_producer;
+            for (std::int32_t i = 0; i < producers_sleep_after; ++i)
             {
                 producer_consumer.add_new_element(producer_offset + i);
             }
             std::this_thread::sleep_for(std::chrono::milliseconds(producers_sleep_for_ms));
-            for (std::size_t i = producers_sleep_after; i < number_of_elements_per_producer; ++i)
+            for (std::int32_t i = producers_sleep_after; i < number_of_elements_per_producer; ++i)
             {
                 producer_consumer.add_new_element(producer_offset + i);
             }
@@ -124,12 +124,12 @@ void test_test_threadsafe_producer_consumer(const std::size_t number_of_elements
         }));
     }
 
-    for (std::size_t consumer_id = 0; consumer_id < number_of_consumers; ++consumer_id)
+    for (std::int32_t consumer_id = 0; consumer_id < number_of_consumers; ++consumer_id)
     {
         consumer_threads.push_back(std::thread([&producer_consumer, &occurrences_per_element, &occurrences_per_element_mutex]() {
             while (true)
             {
-                cga_optional_t<std::size_t> val = producer_consumer.get_next_element();
+                cga_optional_t<std::int32_t> val = producer_consumer.get_next_element();
                 if (!val) // reached the end
                 {
                     break;
@@ -158,18 +158,18 @@ void test_test_threadsafe_producer_consumer(const std::size_t number_of_elements
 
     ASSERT_TRUE(std::all_of(std::begin(occurrences_per_element),
                             std::end(occurrences_per_element),
-                            [](const std::size_t val) {
+                            [](const std::int32_t val) {
                                 return val == 1;
                             }));
 }
 
 TEST(TestUtilsThreadsafeContainers, test_threadsafe_producer_consumer_single_producer_single_consumer)
 {
-    ThreadsafeProducerConsumer<std::size_t> producer_consumer;
+    ThreadsafeProducerConsumer<std::int32_t> producer_consumer;
 
-    const std::size_t number_of_elements      = 1'000'000;
-    const std::size_t number_of_producers     = 1;
-    const std::size_t number_of_consumers     = 1;
+    const std::int32_t number_of_elements     = 1'000'000;
+    const std::int32_t number_of_producers    = 1;
+    const std::int32_t number_of_consumers    = 1;
     const std::int32_t producers_sleep_for_ms = 1000;
 
     test_test_threadsafe_producer_consumer(number_of_elements,
@@ -180,11 +180,11 @@ TEST(TestUtilsThreadsafeContainers, test_threadsafe_producer_consumer_single_pro
 
 TEST(TestUtilsThreadsafeContainers, test_threadsafe_producer_consumer_multiple_producers_multiple_consumers)
 {
-    ThreadsafeProducerConsumer<std::size_t> producer_consumer;
+    ThreadsafeProducerConsumer<std::int32_t> producer_consumer;
 
-    const std::size_t number_of_elements      = 10'000'000;
-    const std::size_t number_of_producers     = 100;
-    const std::size_t number_of_consumers     = 200;
+    const std::int32_t number_of_elements     = 10'000'000;
+    const std::int32_t number_of_producers    = 100;
+    const std::int32_t number_of_consumers    = 200;
     const std::int32_t producers_sleep_for_ms = 1000;
 
     test_test_threadsafe_producer_consumer(number_of_elements,
