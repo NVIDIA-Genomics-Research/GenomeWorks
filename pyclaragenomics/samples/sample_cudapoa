@@ -39,10 +39,10 @@ def run_cudapoa(groups, msa, print_output):
     # Create batch
     max_seq_sz = 1024
     max_sequences_per_poa = 100
-    batch_size = cudapoa.BatchSize(max_seq_sz, max_sequences_per_poa)
     batch = cudapoa.CudaPoaBatch(stream=None,
                                  output_mask=msa,
-                                 batch_size=batch_size)
+                                 max_seq_size=max_seq_sz, 
+                                 max_sequences_per_poa=max_sequences_per_poa)
 
     # Add poa groups to batch
     initial_count = 0
