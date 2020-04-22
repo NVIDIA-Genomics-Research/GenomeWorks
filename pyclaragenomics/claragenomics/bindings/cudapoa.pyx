@@ -65,11 +65,11 @@ cdef class CudaPoaBatch:
 
     def __cinit__(
             self,
-            device_id=0,
-            stream=None,
             max_mem,
             output_mask,
             batch_size,
+            device_id=0,
+            stream=None,
             gap_score=-8,
             mismatch_score=-6,
             match_score=8,
@@ -80,10 +80,11 @@ cdef class CudaPoaBatch:
         partial order alignment across all windows in the batch.
 
         Args:
-            max_sequences_per_poa : Maximum number of sequences per POA
-            stream : CudaStream to use for GPU execution
             device_id : ID of GPU device to use
+            stream : CudaStream to use for GPU execution
+            max_mem : Maximum GPU memory to use for this batch
             output_mask : Types of outputs to generate (consensus, msa)
+            batch_size : Structure encapsulating upper limits for POA batches
             gap_score : Penalty for gaps
             mismatch_score : Penalty for mismatches
             match_score : Reward for match
@@ -101,15 +102,16 @@ cdef class CudaPoaBatch:
 
         # Since cython make_unique doesn't accept python objects, need to
         # store it in a cdef and then pass into the make unique call
-        self.batch_size = make_unique(batch_size)
-        cdef int32_t max_seqs = batch_size.max_sequences_per_poa
+        cdef cudapoa.BatchSize temp_batch_size= batch_size
+        self.batch_size = make_unique(temp_batch_size)
+        cdef int32_t max_seqs = temp_batch_size.max_sequences_per_poa
 
         self.batch = cudapoa.create_batch(
             device_id,
             temp_stream,
             max_mem,
             output_mask,
-            deref(self.batch_size),
+            temp_batch_size,
             gap_score,
             mismatch_score,
             match_score,
@@ -117,11 +119,11 @@ cdef class CudaPoaBatch:
 
     def __init__(
             self,
-            device_id=0,
-            stream=None,
             max_mem,
             output_mask,
             batch_size,
+            device_id=0,
+            stream=None,
             gap_score=-8,
             mismatch_score=-6,
             match_score=8,
