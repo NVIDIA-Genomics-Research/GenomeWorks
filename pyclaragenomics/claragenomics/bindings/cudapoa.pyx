@@ -99,14 +99,6 @@ cdef class CudaPoaBatch:
             st = stream.stream
             temp_stream = <_Stream>st
 
-        # cdef int8_t output_mask
-        # if (output_type == "consensus"):
-        #     output_mask = cudapoa.consensus
-        # elif (output_type == "msa"):
-        #     output_mask = cudapoa.msa
-        # else:
-        #     raise RuntimeError("Unknown output_type provided. Must be consensus/msa.")
-
         # Since cython make_unique doesn't accept python objects, need to
         # store it in a cdef and then pass into the make unique call
         self.batch_size = make_unique(batch_size)

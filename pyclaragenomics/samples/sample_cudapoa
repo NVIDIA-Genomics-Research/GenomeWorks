@@ -16,7 +16,6 @@ import os.path
 
 from claragenomics.bindings import cuda
 from claragenomics.bindings import cudapoa
-from claragenomics.bindings import cudapoa
 from claragenomics.io.utils import read_poa_group_file
 
 """
@@ -79,7 +78,7 @@ def parse_args():
         description="CUDAPOA Python API sample program.")
     parser.add_argument('-m',
                         help="Run MSA generation. By default consensusis generated.",
-                        action='stormsamsae_true')
+                        action='store_true')
     parser.add_argument('-p',
                         help="Print output MSA or consensus for each POA group.",
                         action='store_true')
