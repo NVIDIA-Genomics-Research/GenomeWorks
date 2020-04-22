@@ -20,7 +20,8 @@ import claragenomics.bindings.cuda as cuda
 def test_cudapoa_simple_batch():
     device = cuda.cuda_get_device()
     free, total = cuda.cuda_get_mem_info(device)
-    batch = CudaPoaBatch(10, 1024, 0.9 * free, deivce_id=device)
+    batch = CudaPoaBatch(10, 1024, 0.9 * free, deivce_id=device, \
+        output_mask='consensus')
     poa_1 = ["ACTGACTG", "ACTTACTG", "ACGGACTG", "ATCGACTG"]
     poa_2 = ["ACTGAC", "ACTTAC", "ACGGAC", "ATCGAC"]
     batch.add_poa_group(poa_1)
@@ -31,6 +32,26 @@ def test_cudapoa_simple_batch():
     assert(len(consensus) == 2)
     assert(batch.total_poas == 2)
 
+@pytest.mark.gpu
+def test_cudapoa_incorrect_output_type():
+    device = cuda.cuda_get_device()
+    free, total = cuda.cuda_get_mem_info(device)
+    try:
+        batch = CudaPoaBatch(10, 1024, 0.9 * free, deivce_id=device, \
+            output_type='error_input')
+        assert(False)
+    except RuntimeError:
+        pass
+
+@pytest.mark.gpu
+def test_cudapoa_valid_output_type():
+    device = cuda.cuda_get_device()
+    free, total = cuda.cuda_get_mem_info(device)
+    try:
+        batch = CudaPoaBatch(10, 1024, 0.9 * free, deivce_id=device, \
+            output_type='consensus')
+    except RuntimeError:
+        assert(False)
 
 @pytest.mark.gpu
 def test_cudapoa_reset_batch():

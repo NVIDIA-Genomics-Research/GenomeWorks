@@ -68,7 +68,7 @@ cdef class CudaPoaBatch:
             max_sequences_per_poa,
             max_sequence_size,
             max_gpu_mem,
-            output_mask=cudapoa.consensus,
+            output_type="consensus",
             device_id=0,
             stream=None,
             gap_score=-8,
@@ -87,7 +87,7 @@ cdef class CudaPoaBatch:
             max_sequences_per_poa : Maximum number of sequences per POA
             max_sequence_size : Maximum number of elements in a sequence
             max_gpu_mem : Maximum GPU memory to use for this batch
-            output_mask : Types of outputs to generate (consensus, msa)
+            output_type : Types of outputs to generate (consensus, msa)
             device_id : ID of GPU device to use
             stream : CudaStream to use for GPU execution
             gap_score : Penalty for gaps
@@ -107,6 +107,13 @@ cdef class CudaPoaBatch:
         else:
             st = stream.stream
             temp_stream = <_Stream>st
+
+        if (output_type == "consensus"):
+            output_mask = cudapoa.consensus
+        elif (output_type == "msa"):
+            output_mask = cudapoa.msa
+        else:
+            raise RuntimeError("Unknown output_type provided. Must be consensus/msa.")
 
         # Since cython make_unique doesn't accept python objects, need to
         # store it in a cdef and then pass into the make unique call
@@ -139,7 +146,7 @@ cdef class CudaPoaBatch:
             max_sequences_per_poa,
             max_sequence_size,
             max_gpu_mem,
-            output_mask=cudapoa.consensus,
+            output_type="consensus",
             device_id=0,
             stream=None,
             gap_score=-8,
