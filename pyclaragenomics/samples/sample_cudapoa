@@ -16,6 +16,7 @@ import os.path
 
 from claragenomics.bindings import cuda
 from claragenomics.bindings import cudapoa
+from claragenomics.bindings import cudapoa
 from claragenomics.io.utils import read_poa_group_file
 
 """
@@ -37,12 +38,12 @@ def run_cudapoa(groups, msa, print_output):
     free, total = cuda.cuda_get_mem_info(cuda.cuda_get_device())
 
     # Create batch
+    max_seq_sz = 1024
     max_sequences_per_poa = 100
-    gpu_mem_per_batch = 0.9 * free
-    batch = cudapoa.CudaPoaBatch(max_sequences_per_poa,
-                                 gpu_mem_per_batch,
-                                 stream=None,
-                                 output_type=("msa" if msa else "consensus"))
+    batch_size = cudapoa.BatchSize(max_seq_sz, max_sequences_per_poa)
+    batch = cudapoa.CudaPoaBatch(stream=None,
+                                 output_mask=msa,
+                                 batch_size=batch_size)
 
     # Add poa groups to batch
     initial_count = 0
@@ -78,7 +79,7 @@ def parse_args():
         description="CUDAPOA Python API sample program.")
     parser.add_argument('-m',
                         help="Run MSA generation. By default consensusis generated.",
-                        action='store_true')
+                        action='stormsamsae_true')
     parser.add_argument('-p',
                         help="Print output MSA or consensus for each POA group.",
                         action='store_true')

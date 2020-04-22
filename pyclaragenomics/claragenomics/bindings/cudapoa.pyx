@@ -65,11 +65,11 @@ cdef class CudaPoaBatch:
 
     def __cinit__(
             self,
-            max_sequences_per_poa,
-            gpu_mem,
             device_id=0,
             stream=None,
-            output_type="consensus",
+            max_mem,
+            output_mask,
+            batch_size,
             gap_score=-8,
             mismatch_score=-6,
             match_score=8,
@@ -99,23 +99,23 @@ cdef class CudaPoaBatch:
             st = stream.stream
             temp_stream = <_Stream>st
 
-        cdef int8_t output_mask
-        if (output_type == "consensus"):
-            output_mask = cudapoa.consensus
-        elif (output_type == "msa"):
-            output_mask = cudapoa.msa
-        else:
-            raise RuntimeError("Unknown output_type provided. Must be consensus/msa.")
+        # cdef int8_t output_mask
+        # if (output_type == "consensus"):
+        #     output_mask = cudapoa.consensus
+        # elif (output_type == "msa"):
+        #     output_mask = cudapoa.msa
+        # else:
+        #     raise RuntimeError("Unknown output_type provided. Must be consensus/msa.")
 
         # Since cython make_unique doesn't accept python objects, need to
         # store it in a cdef and then pass into the make unique call
-        cdef int32_t max_seqs = max_sequences_per_poa
-        self.batch_size = make_unique[cudapoa.BatchSize](1024, max_seqs)
+        self.batch_size = make_unique(batch_size)
+        cdef int32_t max_seqs = batch_size.max_sequences_per_poa
 
         self.batch = cudapoa.create_batch(
             device_id,
             temp_stream,
-            gpu_mem,
+            max_mem,
             output_mask,
             deref(self.batch_size),
             gap_score,
@@ -125,11 +125,11 @@ cdef class CudaPoaBatch:
 
     def __init__(
             self,
-            max_sequences_per_poa,
-            gpu_mem,
             device_id=0,
             stream=None,
-            output_mask=cudapoa.consensus,
+            max_mem,
+            output_mask,
+            batch_size,
             gap_score=-8,
             mismatch_score=-6,
             match_score=8,
