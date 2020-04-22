@@ -70,13 +70,9 @@ To build Clara Genomics Analysis -
 ```bash
 mkdir build
 cd build
-cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=install -Dcga_cuda_gen_all_arch=OFF
+cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=install
 make -j install
 ```
-
-NOTE : The `cga_cuda_gen_all_arch=OFF` option pre-generates optimized code only for the GPU(s) on your system.
-For building a binary that pre-generates opimized code for all common GPU architectures, please remove the option
-or set it to `ON`.
 
 ### Install
 To install the SDK -
