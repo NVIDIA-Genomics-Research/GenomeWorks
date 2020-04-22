@@ -65,11 +65,11 @@ cdef class CudaPoaBatch:
 
     def __cinit__(
             self,
-            max_sequences_per_poa,
-            gpu_mem,
+            max_mem,
+            output_mask,
+            batch_size,
             device_id=0,
             stream=None,
-            output_type="consensus",
             gap_score=-8,
             mismatch_score=-6,
             match_score=8,
@@ -80,10 +80,11 @@ cdef class CudaPoaBatch:
         partial order alignment across all windows in the batch.
 
         Args:
-            max_sequences_per_poa : Maximum number of sequences per POA
-            stream : CudaStream to use for GPU execution
             device_id : ID of GPU device to use
+            stream : CudaStream to use for GPU execution
+            max_mem : Maximum GPU memory to use for this batch
             output_mask : Types of outputs to generate (consensus, msa)
+            batch_size : Structure encapsulating upper limits for POA batches
             gap_score : Penalty for gaps
             mismatch_score : Penalty for mismatches
             match_score : Reward for match
@@ -99,25 +100,26 @@ cdef class CudaPoaBatch:
             st = stream.stream
             temp_stream = <_Stream>st
 
-        cdef int8_t output_mask
-        if (output_type == "consensus"):
-            output_mask = cudapoa.consensus
-        elif (output_type == "msa"):
-            output_mask = cudapoa.msa
-        else:
-            raise RuntimeError("Unknown output_type provided. Must be consensus/msa.")
-
         # Since cython make_unique doesn't accept python objects, need to
         # store it in a cdef and then pass into the make unique call
-        cdef int32_t max_seqs = max_sequences_per_poa
-        self.batch_size = make_unique[cudapoa.BatchSize](1024, max_seqs)
+        cdef int32_t max_seq_sz = batch_size.max_seq_sz
+        cdef int32_t max_concensus_sz = batch_size.max_concensus_sz
+        cdef int32_t max_nodes_per_w = batch_size.max_nodes_per_w
+        cdef int32_t max_nodes_per_w_banded = batch_size.max_nodes_per_w_banded
+        cdef int32_t max_seq_per_poa = batch_size.max_seq_per_poa
+
+        self.batch_size = make_unique[cudapoa.BatchSize](
+            max_seq_sz, max_concensus_sz,  max_nodes_per_w,
+            max_nodes_per_w_banded, max_seq_per_poa)
+        
+        cdef int32_t max_seqs = batch_size.max_sequences_per_poa
 
         self.batch = cudapoa.create_batch(
             device_id,
             temp_stream,
-            gpu_mem,
+            max_mem,
             output_mask,
-            deref(self.batch_size),
+            deref(self.batch_size.get()),
             gap_score,
             mismatch_score,
             match_score,
@@ -125,11 +127,11 @@ cdef class CudaPoaBatch:
 
     def __init__(
             self,
-            max_sequences_per_poa,
-            gpu_mem,
+            max_mem,
+            output_mask,
+            batch_size,
             device_id=0,
             stream=None,
-            output_mask=cudapoa.consensus,
             gap_score=-8,
             mismatch_score=-6,
             match_score=8,
