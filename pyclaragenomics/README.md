@@ -20,8 +20,8 @@ pip install pyclaragenomics-cuda10-1
 ```
 
 Details of the packages are available here -
-- https://pypi.org/project/pyclaragenomics-cuda10-0/#description
-- https://pypi.org/project/pyclaragenomics-cuda10-1/#description
+- https://pypi.org/project/pyclaragenomics-cuda-10-0
+- https://pypi.org/project/pyclaragenomics-cuda-10-1
 
 ### Testing installation
 
