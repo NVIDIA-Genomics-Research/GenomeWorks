@@ -109,9 +109,9 @@ cdef class CudaPoaBatch:
         cdef int32_t max_seq_per_poa = batch_size.max_seq_per_poa
 
         self.batch_size = make_unique[cudapoa.BatchSize](
-            max_seq_sz, max_concensus_sz,  max_nodes_per_w,
+            max_seq_sz, max_concensus_sz, max_nodes_per_w,
             max_nodes_per_w_banded, max_seq_per_poa)
-        
+
         cdef int32_t max_seqs = batch_size.max_sequences_per_poa
 
         self.batch = cudapoa.create_batch(
