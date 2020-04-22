@@ -265,8 +265,8 @@ void generate_anchors(
     const device_buffer<position_in_read_t>& query_positions_in_read                  = query_index.positions_in_reads();
 
     const device_buffer<std::uint32_t>& target_starting_index_of_each_representation_d = target_index.first_occurrence_of_representations();
-    const device_buffer<cudamapper::read_id_t>& target_read_ids                        = target_index.read_ids();
-    const device_buffer<cudamapper::position_in_read_t>& target_positions_in_read      = target_index.positions_in_reads();
+    const device_buffer<claragenomics::read_id_t>& target_read_ids                     = target_index.read_ids();
+    const device_buffer<claragenomics::position_in_read_t>& target_positions_in_read   = target_index.positions_in_reads();
 
     assert(anchor_starting_indices_d.size() + 1 == query_starting_index_of_each_representation_d.size());
     assert(found_target_indices_d.size() + 1 == query_starting_index_of_each_representation_d.size());

@@ -10,6 +10,7 @@
 
 #include "../src/aligner_global_ukkonen.hpp"
 #include "../src/aligner_global_myers.hpp"
+#include "../src/aligner_global_myers_banded.hpp"
 #include "../src/aligner_global_hirschberg_myers.hpp"
 
 #include <claragenomics/cudaaligner/alignment.hpp>
@@ -30,6 +31,7 @@ enum class AlignmentAlgorithm
     Default = 0,
     Ukkonen,
     Myers,
+    MyersBanded,
     HirschbergMyers
 };
 
@@ -40,6 +42,7 @@ std::string get_algorithm_name(AlignmentAlgorithm x)
     case AlignmentAlgorithm::Default: return "Default";
     case AlignmentAlgorithm::Ukkonen: return "Ukkonen";
     case AlignmentAlgorithm::Myers: return "Myers";
+    case AlignmentAlgorithm::MyersBanded: return "MyersBanded";
     case AlignmentAlgorithm::HirschbergMyers: return "Hirschberg + Myers";
     default: return "";
     }
@@ -56,7 +59,8 @@ struct AlignerTestData
 // Test adding alignments to Aligner objects
 TEST(TestCudaAligner, TestAlignmentAddition)
 {
-    std::unique_ptr<AlignerGlobal> aligner = std::make_unique<AlignerGlobalUkkonen>(10, 10, 5, nullptr, 0);
+    DefaultDeviceAllocator allocator       = create_default_device_allocator();
+    std::unique_ptr<AlignerGlobal> aligner = std::make_unique<AlignerGlobalUkkonen>(10, 10, 5, allocator, nullptr, 0);
     ASSERT_EQ(StatusType::success, aligner->add_alignment("ATCG", 4, "TACG", 4, false, false));
     ASSERT_EQ(StatusType::success, aligner->add_alignment("ATCG", 4, "TACG", 4, false, false));
     ASSERT_EQ(StatusType::success, aligner->add_alignment("ATCG", 4, "TACG", 4, false, false));
@@ -136,6 +140,7 @@ std::vector<AlignerTestData> create_aligner_test_cases()
     test_cases_final.insert(test_cases_final.end(), test_cases.begin(), test_cases.end());
     std::transform(test_cases.begin(), test_cases.end(), std::back_inserter(test_cases_final), [](AlignerTestData td) { td.algorithm = AlignmentAlgorithm::Ukkonen; return td; });
     std::transform(test_cases.begin(), test_cases.end(), std::back_inserter(test_cases_final), [](AlignerTestData td) { td.algorithm = AlignmentAlgorithm::Myers; return td; });
+    std::transform(test_cases.begin(), test_cases.end(), std::back_inserter(test_cases_final), [](AlignerTestData td) { td.algorithm = AlignmentAlgorithm::MyersBanded; return td; });
     std::transform(test_cases.begin(), test_cases.end(), std::back_inserter(test_cases_final), [](AlignerTestData td) { td.algorithm = AlignmentAlgorithm::HirschbergMyers; return td; });
 
     return test_cases_final;
@@ -161,6 +166,7 @@ TEST_P(TestAlignerGlobal, TestAlignmentKernel)
     AlignerTestData param                                          = GetParam();
     const std::vector<std::pair<std::string, std::string>>& inputs = param.inputs;
     const std::vector<std::string>& cigars                         = param.cigars;
+    DefaultDeviceAllocator allocator                               = create_default_device_allocator();
 
     if (!cigars.empty())
     {
@@ -171,34 +177,47 @@ TEST_P(TestAlignerGlobal, TestAlignmentKernel)
     std::unique_ptr<Aligner> aligner;
     switch (param.algorithm)
     {
-    case AlignmentAlgorithm::Default:
-        aligner = claragenomics::cudaaligner::create_aligner(max_string_size,
-                                                             max_string_size,
-                                                             param.inputs.size(),
-                                                             claragenomics::cudaaligner::AlignmentType::global_alignment,
-                                                             nullptr,
-                                                             0);
+    case AlignmentAlgorithm::Myers:
+        aligner = std::make_unique<AlignerGlobalMyers>(max_string_size,
+                                                       max_string_size,
+                                                       param.inputs.size(),
+                                                       allocator,
+                                                       nullptr,
+                                                       0);
+        break;
     case AlignmentAlgorithm::Ukkonen:
         aligner = std::make_unique<AlignerGlobalUkkonen>(max_string_size,
                                                          max_string_size,
                                                          param.inputs.size(),
+                                                         allocator,
                                                          nullptr,
                                                          0);
+        break;
+    case AlignmentAlgorithm::MyersBanded:
+        aligner = std::make_unique<AlignerGlobalMyersBanded>(max_string_size,
+                                                             max_string_size,
+                                                             param.inputs.size(),
+                                                             allocator,
+                                                             nullptr,
+                                                             0);
         break;
     case AlignmentAlgorithm::HirschbergMyers:
         aligner = std::make_unique<AlignerGlobalHirschbergMyers>(max_string_size,
                                                                  max_string_size,
                                                                  param.inputs.size(),
+                                                                 allocator,
                                                                  nullptr,
                                                                  0);
         break;
+    case AlignmentAlgorithm::Default:
     default:
-    case AlignmentAlgorithm::Myers:
-        aligner = std::make_unique<AlignerGlobalMyers>(max_string_size,
-                                                       max_string_size,
-                                                       param.inputs.size(),
-                                                       nullptr,
-                                                       0);
+        aligner = claragenomics::cudaaligner::create_aligner(max_string_size,
+                                                             max_string_size,
+                                                             param.inputs.size(),
+                                                             claragenomics::cudaaligner::AlignmentType::global_alignment,
+                                                             allocator,
+                                                             nullptr,
+                                                             0);
     }
     for (auto& pair : inputs)
     {
@@ -263,9 +282,11 @@ TEST_P(TestAlignerGlobalImplPerf, TestAlignmentKernelPerf)
     AlignerTestData param                                          = GetParam();
     const std::vector<std::pair<std::string, std::string>>& inputs = param.inputs;
     const int32_t max_string_size                                  = get_max_sequence_length(inputs) + 1;
+    DefaultDeviceAllocator allocator                               = create_default_device_allocator();
     std::unique_ptr<Aligner> aligner                               = std::make_unique<AlignerGlobalUkkonen>(max_string_size,
                                                                               max_string_size,
                                                                               param.inputs.size(),
+                                                                              allocator,
                                                                               nullptr,
                                                                               0);
 

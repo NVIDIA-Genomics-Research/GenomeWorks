@@ -12,6 +12,9 @@
 
 #include <cstdint>
 #include <string>
+
+#include <claragenomics/types.hpp>
+
 namespace claragenomics
 {
 
@@ -29,12 +32,8 @@ struct ArrayBlock
     std::uint32_t block_size_;
 };
 
-/// position_in_read_t
-using position_in_read_t = std::uint32_t;
 /// representation_t
 using representation_t = std::uint64_t; // this depends on kmer size, in some cases could also be 32-bit
-/// read_id_t
-using read_id_t = std::uint32_t;
 
 /// Relative strand - represents whether query and target
 /// are on the same DNA strand (i.e Forward) or not (i.e Reverse).
