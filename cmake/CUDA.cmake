@@ -16,5 +16,6 @@ if(NOT ${CUDA_FOUND})
 else()
     message(STATUS "Using CUDA ${CUDA_VERSION} from ${CUDA_TOOLKIT_ROOT_DIR}")
     set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -lineinfo -use_fast_math -Xcompiler -Wall,-Wno-pedantic")
+    message(STATUS "nvcc flags: ${CUDA_NVCC_FLAGS}")
 endif()
 
