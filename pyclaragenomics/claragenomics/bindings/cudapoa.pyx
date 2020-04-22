@@ -66,6 +66,7 @@ cdef class CudaPoaBatch:
     def __cinit__(
             self,
             max_sequences_per_poa,
+            max_sequence_size,
             max_gpu_mem,
             output_mask=cudapoa.consensus,
             device_id=0,
@@ -74,7 +75,6 @@ cdef class CudaPoaBatch:
             mismatch_score=-6,
             match_score=8,
             cuda_banded_alignment=False,
-            max_sequence_size=1024,
             max_concensus_size=None,
             max_nodes_per_window=None,
             max_nodes_per_window_banded=None,
@@ -85,6 +85,7 @@ cdef class CudaPoaBatch:
 
         Args:
             max_sequences_per_poa : Maximum number of sequences per POA
+            max_sequence_size : Maximum number of elements in a sequence
             max_gpu_mem : Maximum GPU memory to use for this batch
             output_mask : Types of outputs to generate (consensus, msa)
             device_id : ID of GPU device to use
@@ -93,7 +94,6 @@ cdef class CudaPoaBatch:
             mismatch_score : Penalty for mismatches
             match_score : Reward for match
             cuda_banded_alignment : Run POA using banded alignment
-            max_sequence_size : Maximum number of elements in a sequence
             max_concensus_size : Maximum size of final consensus
             max_nodes_per_window : Maximum number of nodes in a graph, 1 graph per window
             max_nodes_per_window_banded : Maximum number of nodes in a graph, 1 graph per window in banded mode
@@ -137,6 +137,7 @@ cdef class CudaPoaBatch:
     def __init__(
             self,
             max_sequences_per_poa,
+            max_sequence_size,
             max_gpu_mem,
             output_mask=cudapoa.consensus,
             device_id=0,
@@ -145,7 +146,6 @@ cdef class CudaPoaBatch:
             mismatch_score=-6,
             match_score=8,
             cuda_banded_alignment=False,
-            max_sequence_size=1024,
             max_concensus_size=None,
             max_nodes_per_window=None,
             max_nodes_per_window_banded=None,
