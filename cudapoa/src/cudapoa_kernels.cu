@@ -79,7 +79,7 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
                                   uint16_t* outgoing_edge_w_d,
                                   uint16_t* sorted_poa_d,
                                   uint16_t* node_id_to_pos_d,
-                                  SizeTT* node_alignments_d,
+                                  SizeT* node_alignments_d,
                                   uint16_t* node_alignment_count_d,
                                   uint16_t* sorted_poa_local_edge_count_d,
                                   uint8_t* node_marks_d_,
@@ -125,7 +125,7 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
     uint16_t* outgoing_edge_weights       = &outgoing_edge_w_d[window_idx * max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES];
     uint16_t* sorted_poa                  = &sorted_poa_d[window_idx * max_nodes_per_window];
     uint16_t* node_id_to_pos              = &node_id_to_pos_d[window_idx * max_nodes_per_window];
-    SizeTT * node_alignments             = &node_alignments_d[window_idx * max_nodes_per_window * CUDAPOA_MAX_NODE_ALIGNMENTS];
+    SizeT* node_alignments                = &node_alignments_d[window_idx * max_nodes_per_window * CUDAPOA_MAX_NODE_ALIGNMENTS];
     uint16_t* node_alignment_count        = &node_alignment_count_d[window_idx * max_nodes_per_window];
     uint16_t* sorted_poa_local_edge_count = &sorted_poa_local_edge_count_d[window_idx * max_nodes_per_window];
 
@@ -156,7 +156,7 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
 
     uint8_t* consensus = &consensus_d[window_idx * max_limit_consensus_size];
 
-    SizeT* sequence_begin_nodes_ids      = nullptr;
+    SizeT* sequence_begin_nodes_ids         = nullptr;
     uint16_t* outgoing_edges_coverage       = nullptr;
     uint16_t* outgoing_edges_coverage_count = nullptr;
 
@@ -377,10 +377,10 @@ void generatePOAtemplated(claragenomics::cudapoa::OutputDetails* output_details_
     uint8_t* multiple_sequence_alignments = output_details_d->multiple_sequence_alignments;
 
     // unpack input details
-    uint8_t* sequences_d               = input_details_d->sequences;
-    int8_t* base_weights_d             = input_details_d->base_weights;
-    SizeT* sequence_lengths_d          = input_details_d->sequence_lengths;
-    WindowDetails* window_details_d    = input_details_d->window_details;
+    uint8_t* sequences_d            = input_details_d->sequences;
+    int8_t* base_weights_d          = input_details_d->base_weights;
+    SizeT* sequence_lengths_d       = input_details_d->sequence_lengths;
+    WindowDetails* window_details_d = input_details_d->window_details;
     SizeT* sequence_begin_nodes_ids = input_details_d->sequence_begin_nodes_ids;
 
     // unpack alignment details
@@ -389,7 +389,7 @@ void generatePOAtemplated(claragenomics::cudapoa::OutputDetails* output_details_
     int16_t* alignment_read  = alignment_details_d->alignment_read;
     // unpack graph details
     uint8_t* nodes                          = graph_details_d->nodes;
-    SizeTT* node_alignments               = graph_details_d->node_alignments;
+    SizeT* node_alignments                  = graph_details_d->node_alignments;
     uint16_t* node_alignment_count          = graph_details_d->node_alignment_count;
     uint16_t* incoming_edges                = graph_details_d->incoming_edges;
     uint16_t* incoming_edge_count           = graph_details_d->incoming_edge_count;

@@ -47,7 +47,7 @@ namespace cudapoa
 {
 
 typedef int32_t SizeT;
-typedef int32_t SizeTT;
+typedef uint16_t SizeTT;
 
 /**
  * @brief A struct to hold information about the sequences
@@ -118,7 +118,7 @@ typedef struct GraphDetails
 
     // Device buffer to store the list of nodes aligned to a
     // specific node in the graph.
-    SizeTT* node_alignments;
+    SizeT* node_alignments;
     uint16_t* node_alignment_count;
 
     // Device buffer to store incoming edges to a node.
@@ -245,7 +245,7 @@ void runTopSort(uint16_t* sorted_poa,
 // Host function that calls the kernel
 void addAlignment(uint8_t* nodes,
                   SizeT* node_count,
-                  SizeTT* node_alignments, uint16_t* node_alignment_count,
+                  SizeT* node_alignments, uint16_t* node_alignment_count,
                   uint16_t* incoming_edges, uint16_t* incoming_edge_count,
                   uint16_t* outgoing_edges, uint16_t* outgoing_edge_count,
                   uint16_t* incoming_edge_w, uint16_t* outgoing_edge_w,
@@ -297,7 +297,7 @@ void generateConsensusTestHost(uint8_t* nodes,
                                uint8_t* consensus,
                                uint16_t* coverage,
                                uint16_t* node_coverage_counts,
-                               SizeTT* node_alignments,
+                               SizeT* node_alignments,
                                uint16_t* node_alignment_count,
                                uint32_t max_limit_consensus_size);
 

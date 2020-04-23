@@ -92,7 +92,7 @@ __device__ void raconTopologicalSortDeviceUtil(uint16_t* sorted_poa,
                                                uint16_t* incoming_edge_count,
                                                uint16_t* incoming_edges,
                                                uint16_t* aligned_node_count,
-                                               SizeTT* aligned_nodes,
+                                               SizeT* aligned_nodes,
                                                uint8_t* node_marks,
                                                bool* check_aligned_nodes,
                                                uint16_t* nodes_to_visit,
@@ -140,7 +140,7 @@ __device__ void raconTopologicalSortDeviceUtil(uint16_t* sorted_poa,
                 {
                     for (uint16_t a = 0; a < aligned_node_count[node_id]; a++)
                     {
-                        SizeTT aid = aligned_nodes[node_id * CUDAPOA_MAX_NODE_ALIGNMENTS + a];
+                        SizeT aid = aligned_nodes[node_id * CUDAPOA_MAX_NODE_ALIGNMENTS + a];
                         if (node_marks[aid] != 2)
                         {
                             node_idx++;
@@ -161,7 +161,7 @@ __device__ void raconTopologicalSortDeviceUtil(uint16_t* sorted_poa,
                         sorted_poa_idx++;
                         for (uint16_t a = 0; a < aligned_node_count[node_id]; a++)
                         {
-                            SizeTT aid               = aligned_nodes[node_id * CUDAPOA_MAX_NODE_ALIGNMENTS + a];
+                            SizeT aid                  = aligned_nodes[node_id * CUDAPOA_MAX_NODE_ALIGNMENTS + a];
                             sorted_poa[sorted_poa_idx] = aid;
                             sorted_poa_node_map[aid]   = sorted_poa_idx;
                             sorted_poa_idx++;
