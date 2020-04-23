@@ -139,7 +139,7 @@ __device__ void generateConsensus(uint8_t* nodes,
                                   uint8_t* consensus,
                                   uint16_t* coverage,
                                   uint16_t* node_coverage_counts,
-                                  uint16_t* node_alignments,
+                                  SizeTT* node_alignments,
                                   uint16_t* node_alignment_count,
                                   uint32_t max_limit_consensus_size)
 {
@@ -282,7 +282,7 @@ __global__ void generateConsensusKernel(uint8_t* consensus_d,
                                         uint16_t* incoming_edge_w_d,
                                         uint16_t* sorted_poa_d,
                                         uint16_t* node_id_to_pos_d,
-                                        uint16_t* node_alignments_d,
+                                        SizeTT* node_alignments_d,
                                         uint16_t* node_alignment_count_d,
                                         int32_t* consensus_scores_d,
                                         int16_t* consensus_predecessors_d,
@@ -313,7 +313,7 @@ __global__ void generateConsensusKernel(uint8_t* consensus_d,
     uint16_t* incoming_edge_weights = &incoming_edge_w_d[window_idx * max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES];
     uint16_t* sorted_poa            = &sorted_poa_d[window_idx * max_nodes_per_window];
     uint16_t* node_id_to_pos        = &node_id_to_pos_d[window_idx * max_nodes_per_window];
-    uint16_t* node_alignments       = &node_alignments_d[window_idx * max_nodes_per_window * CUDAPOA_MAX_NODE_ALIGNMENTS];
+    SizeTT* node_alignments       = &node_alignments_d[window_idx * max_nodes_per_window * CUDAPOA_MAX_NODE_ALIGNMENTS];
     uint16_t* node_alignment_count  = &node_alignment_count_d[window_idx * max_nodes_per_window];
     uint16_t* node_coverage_counts  = &node_coverage_counts_d_[max_nodes_per_window * window_idx];
     SizeT* sequence_lengths         = &sequence_lengths_d[window_details_d[window_idx].seq_len_buffer_offset];
@@ -356,7 +356,7 @@ __global__ void generateConsensusTestKernel(uint8_t* nodes,
                                             uint8_t* consensus,
                                             uint16_t* coverage,
                                             uint16_t* node_coverage_counts,
-                                            uint16_t* node_alignments,
+                                            SizeTT* node_alignments,
                                             uint16_t* node_alignment_count,
                                             uint32_t max_limit_consensus_size)
 {
@@ -393,7 +393,7 @@ void generateConsensusTestHost(uint8_t* nodes,
                                uint8_t* consensus,
                                uint16_t* coverage,
                                uint16_t* node_coverage_counts,
-                               uint16_t* node_alignments,
+                               SizeTT* node_alignments,
                                uint16_t* node_alignment_count,
                                uint32_t max_limit_consensus_size)
 {

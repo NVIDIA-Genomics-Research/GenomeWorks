@@ -126,7 +126,7 @@ __global__ void generateMSAKernel(uint8_t* nodes_d,
                                   uint8_t* multiple_sequence_alignments_d,
                                   SizeT* sequence_lengths_d,
                                   uint16_t* sorted_poa_d,
-                                  uint16_t* node_alignments_d,
+                                  SizeTT* node_alignments_d,
                                   uint16_t* node_alignment_counts_d,
                                   uint32_t max_sequences_per_poa,
                                   uint16_t* node_id_to_pos_d,
@@ -163,7 +163,7 @@ __global__ void generateMSAKernel(uint8_t* nodes_d,
 
     uint16_t* incoming_edges      = &incoming_edges_d[window_idx * max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES];
     uint16_t* incoming_edge_count = &incoming_edge_count_d[window_idx * max_nodes_per_window];
-    uint16_t* node_alignments     = &node_alignments_d[window_idx * max_nodes_per_window * CUDAPOA_MAX_NODE_ALIGNMENTS];
+    SizeTT* node_alignments     = &node_alignments_d[window_idx * max_nodes_per_window * CUDAPOA_MAX_NODE_ALIGNMENTS];
     uint8_t* node_marks           = &node_marks_d[max_nodes_per_window * window_idx];
     bool* check_aligned_nodes     = &check_aligned_nodes_d[max_nodes_per_window * window_idx];
     uint16_t* nodes_to_visit      = &nodes_to_visit_d[max_nodes_per_window * window_idx];

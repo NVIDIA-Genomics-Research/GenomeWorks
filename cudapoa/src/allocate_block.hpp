@@ -222,7 +222,7 @@ public:
         // on device
         graph_details_d->nodes = &block_data_d_[offset_d_];
         offset_d_ += cudautils::align<int64_t, 8>(sizeof(uint8_t) * max_nodes_per_window_ * max_poas_);
-        graph_details_d->node_alignments = reinterpret_cast<uint16_t*>(&block_data_d_[offset_d_]);
+        graph_details_d->node_alignments = reinterpret_cast<SizeTT*>(&block_data_d_[offset_d_]);
         offset_d_ += cudautils::align<int64_t, 8>(sizeof(uint16_t) * max_nodes_per_window_ * CUDAPOA_MAX_NODE_ALIGNMENTS * max_poas_);
         graph_details_d->node_alignment_count = reinterpret_cast<uint16_t*>(&block_data_d_[offset_d_]);
         offset_d_ += cudautils::align<int64_t, 8>(sizeof(uint16_t) * max_nodes_per_window_ * max_poas_);
@@ -339,7 +339,7 @@ protected:
 
         // for graph - device
         device_size_per_poa += sizeof(uint8_t) * max_nodes_per_window_ * poa_count;                                                                                           // graph_details_d_->nodes
-        device_size_per_poa += sizeof(uint16_t) * max_nodes_per_window_ * CUDAPOA_MAX_NODE_ALIGNMENTS * poa_count;                                                            // graph_details_d_->node_alignments
+        device_size_per_poa += sizeof(SizeTT) * max_nodes_per_window_ * CUDAPOA_MAX_NODE_ALIGNMENTS * poa_count;                                                            // graph_details_d_->node_alignments
         device_size_per_poa += sizeof(uint16_t) * max_nodes_per_window_ * poa_count;                                                                                          // graph_details_d_->node_alignment_count
         device_size_per_poa += sizeof(uint16_t) * max_nodes_per_window_ * CUDAPOA_MAX_NODE_EDGES * poa_count;                                                                 // graph_details_d_->incoming_edges
         device_size_per_poa += sizeof(uint16_t) * max_nodes_per_window_ * poa_count;                                                                                          // graph_details_d_->incoming_edge_count

@@ -90,9 +90,9 @@ public:
         *node_count = node_count_;
     }
     //fill in the node_alignments and node_alignment_count pointers
-    void get_node_alignments(uint16_t* node_alignments, uint16_t* node_alignment_count) const
+    void get_node_alignments(SizeTT* node_alignments, uint16_t* node_alignment_count) const
     {
-        uint16_t aligned_node;
+        SizeTT aligned_node;
         for (int i = 0; i < get_size(node_alignments_); i++)
         {
             for (int j = 0; j < get_size(node_alignments_[i]); j++)

@@ -57,7 +57,7 @@ __device__
     addAlignmentToGraph(SizeT& new_node_count,
                         uint8_t* nodes,
                         SizeT node_count,
-                        uint16_t* node_alignments, uint16_t* node_alignment_count,
+                        SizeTT* node_alignments, uint16_t* node_alignment_count,
                         uint16_t* incoming_edges, uint16_t* incoming_edge_count,
                         uint16_t* outgoing_edges, uint16_t* outgoing_edge_count,
                         uint16_t* incoming_edge_w, uint16_t* outgoing_edge_w,
@@ -141,7 +141,7 @@ __device__
                     //printf("looping through alignments\n");
                     for (uint16_t n = 0; n < num_aligned_node; n++)
                     {
-                        uint16_t aid = node_alignments[graph_node_id * CUDAPOA_MAX_NODE_ALIGNMENTS + n];
+                        SizeTT aid = node_alignments[graph_node_id * CUDAPOA_MAX_NODE_ALIGNMENTS + n];
                         if (nodes[aid] == read_base)
                         {
                             aligned_node_id = aid;
@@ -172,11 +172,11 @@ __device__
                         incoming_edge_count[curr_node_id]  = 0;
                         node_alignment_count[curr_node_id] = 0;
                         node_coverage_counts[curr_node_id] = 0;
-                        uint16_t new_node_alignments       = 0;
+                        SizeTT new_node_alignments       = 0;
 
                         for (uint16_t n = 0; n < num_aligned_node; n++)
                         {
-                            uint16_t aid                                                                      = node_alignments[graph_node_id * CUDAPOA_MAX_NODE_ALIGNMENTS + n];
+                            SizeTT aid                                                                      = node_alignments[graph_node_id * CUDAPOA_MAX_NODE_ALIGNMENTS + n];
                             uint16_t aid_count                                                                = node_alignment_count[aid];
                             node_alignments[aid * CUDAPOA_MAX_NODE_ALIGNMENTS + aid_count]                    = curr_node_id;
                             node_alignment_count[aid]                                                         = aid_count + 1;
@@ -276,7 +276,7 @@ __device__
 // kernel that calls the addAlignmentToGraph device funtion
 __global__ void addAlignmentKernel(uint8_t* nodes,
                                    SizeT* node_count,
-                                   uint16_t* node_alignments, uint16_t* node_alignment_count,
+                                   SizeTT * node_alignments, uint16_t* node_alignment_count,
                                    uint16_t* incoming_edges, uint16_t* incoming_edge_count,
                                    uint16_t* outgoing_edges, uint16_t* outgoing_edge_count,
                                    uint16_t* incoming_edge_w, uint16_t* outgoing_edge_w,
@@ -321,7 +321,7 @@ __global__ void addAlignmentKernel(uint8_t* nodes,
 // Host function that calls the kernel
 void addAlignment(uint8_t* nodes,
                   SizeT* node_count,
-                  uint16_t* node_alignments, uint16_t* node_alignment_count,
+                  SizeTT* node_alignments, uint16_t* node_alignment_count,
                   uint16_t* incoming_edges, uint16_t* incoming_edge_count,
                   uint16_t* outgoing_edges, uint16_t* outgoing_edge_count,
                   uint16_t* incoming_edge_w, uint16_t* outgoing_edge_w,
