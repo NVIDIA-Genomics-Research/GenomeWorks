@@ -91,7 +91,7 @@ typedef struct InputDetails
     // Buffer pointers that hold Window Details struct.
     WindowDetails* window_details;
     // Buffer storing begining nodes for sequences
-    uint16_t* sequence_begin_nodes_ids;
+    SizeT* sequence_begin_nodes_ids;
 
 } InputDetails;
 
@@ -255,7 +255,7 @@ void addAlignment(uint8_t* nodes,
                   int16_t* alignment_read,
                   uint16_t* node_coverage_counts,
                   int8_t* base_weights,
-                  uint16_t* sequence_begin_nodes_ids,
+                  SizeT* sequence_begin_nodes_ids,
                   uint16_t* outgoing_edges_coverage,
                   uint16_t* outgoing_edges_coverage_count,
                   uint16_t s,

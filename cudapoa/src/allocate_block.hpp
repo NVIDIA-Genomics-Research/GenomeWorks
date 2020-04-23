@@ -153,8 +153,8 @@ public:
         offset_h_ += max_poas_ * sizeof(WindowDetails);
         if (output_mask_ & OutputType::msa)
         {
-            input_details_h->sequence_begin_nodes_ids = reinterpret_cast<uint16_t*>(&block_data_h_[offset_h_]);
-            offset_h_ += max_poas_ * max_sequences_per_poa_ * sizeof(uint16_t);
+            input_details_h->sequence_begin_nodes_ids = reinterpret_cast<SizeT*>(&block_data_h_[offset_h_]);
+            offset_h_ += max_poas_ * max_sequences_per_poa_ * sizeof(SizeT);
         }
 
         input_details_d = reinterpret_cast<InputDetails*>(&block_data_h_[offset_h_]);
@@ -171,8 +171,8 @@ public:
         offset_d_ += cudautils::align<int64_t, 8>(max_poas_ * sizeof(WindowDetails));
         if (output_mask_ & OutputType::msa)
         {
-            input_details_d->sequence_begin_nodes_ids = reinterpret_cast<uint16_t*>(&block_data_d_[offset_d_]);
-            offset_d_ += cudautils::align<int64_t, 8>(max_poas_ * max_sequences_per_poa_ * sizeof(uint16_t));
+            input_details_d->sequence_begin_nodes_ids = reinterpret_cast<SizeT*>(&block_data_d_[offset_d_]);
+            offset_d_ += cudautils::align<int64_t, 8>(max_poas_ * max_sequences_per_poa_ * sizeof(SizeT));
         }
 
         *input_details_h_p = input_details_h;
@@ -319,7 +319,7 @@ protected:
         host_size_per_poa += input_size_per_poa * sizeof(int8_t);                                                          // input_details_h_->base_weights
         host_size_per_poa += poa_count * max_sequences_per_poa_ * sizeof(SizeT);                                           // input_details_h_->sequence_lengths
         host_size_per_poa += poa_count * sizeof(WindowDetails);                                                            // input_details_h_->window_details
-        host_size_per_poa += (output_mask_ & OutputType::msa) ? poa_count * max_sequences_per_poa_ * sizeof(uint16_t) : 0; // input_details_h_->sequence_begin_nodes_ids
+        host_size_per_poa += (output_mask_ & OutputType::msa) ? poa_count * max_sequences_per_poa_ * sizeof(SizeT) : 0; // input_details_h_->sequence_begin_nodes_ids
 
         host_size_fixed += sizeof(InputDetails); // input_details_d_
         // for input - device
@@ -327,7 +327,7 @@ protected:
         device_size_per_poa += input_size_per_poa * sizeof(int8_t);                                                          // input_details_d_->base_weights
         device_size_per_poa += poa_count * max_sequences_per_poa_ * sizeof(SizeT);                                           // input_details_d_->sequence_lengths
         device_size_per_poa += poa_count * sizeof(WindowDetails);                                                            // input_details_d_->window_details
-        device_size_per_poa += (output_mask_ & OutputType::msa) ? poa_count * max_sequences_per_poa_ * sizeof(uint16_t) : 0; // input_details_d_->sequence_begin_nodes_ids
+        device_size_per_poa += (output_mask_ & OutputType::msa) ? poa_count * max_sequences_per_poa_ * sizeof(SizeT) : 0; // input_details_d_->sequence_begin_nodes_ids
 
         // for graph - host
         host_size_fixed += sizeof(GraphDetails);                                                            // graph_details_h_

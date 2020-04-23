@@ -68,7 +68,7 @@ __device__
                         int16_t* alignment_read,
                         uint16_t* node_coverage_counts,
                         int8_t* base_weights,
-                        uint16_t* sequence_begin_nodes_ids,
+                        SizeT* sequence_begin_nodes_ids,
                         uint16_t* outgoing_edges_coverage,
                         uint16_t* outgoing_edges_coverage_count,
                         uint16_t s,
@@ -76,8 +76,8 @@ __device__
                         uint32_t max_limit_nodes_per_window)
 {
     //printf("Running addition for alignment %d\n", alignment_length);
-    int16_t head_node_id = -1;
-    int16_t curr_node_id = -1;
+    SizeT head_node_id = -1;
+    SizeT curr_node_id = -1;
     uint16_t prev_weight = 0;
 
     // Basic algorithm is to iterate through the alignment of the read.
@@ -137,7 +137,7 @@ __device__
                     // then set the current node as that aligned node.
                     uint16_t num_aligned_node = node_alignment_count[graph_node_id];
                     //printf("aligned nodes are %d\n", num_aligned_node);
-                    int16_t aligned_node_id = -1;
+                    SizeT aligned_node_id = -1;
                     //printf("looping through alignments\n");
                     for (uint16_t n = 0; n < num_aligned_node; n++)
                     {
@@ -287,7 +287,7 @@ __global__ void addAlignmentKernel(uint8_t* nodes,
                                    int16_t* alignment_read,
                                    uint16_t* node_coverage_counts,
                                    int8_t* base_weights,
-                                   uint16_t* sequence_begin_nodes_ids,
+                                   SizeT* sequence_begin_nodes_ids,
                                    uint16_t* outgoing_edges_coverage,
                                    uint16_t* outgoing_edges_coverage_count,
                                    uint16_t s,
@@ -332,7 +332,7 @@ void addAlignment(uint8_t* nodes,
                   int16_t* alignment_read,
                   uint16_t* node_coverage_counts,
                   int8_t* base_weights,
-                  uint16_t* sequence_begin_nodes_ids,
+                  SizeT* sequence_begin_nodes_ids,
                   uint16_t* outgoing_edges_coverage,
                   uint16_t* outgoing_edges_coverage_count,
                   uint16_t s,

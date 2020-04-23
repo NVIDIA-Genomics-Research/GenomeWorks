@@ -90,7 +90,7 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
                                   ScoreT mismatch_score,
                                   ScoreT match_score,
                                   uint32_t max_sequences_per_poa,
-                                  uint16_t* sequence_begin_nodes_ids_d,
+                                  SizeT* sequence_begin_nodes_ids_d,
                                   uint16_t* outgoing_edges_coverage_d,
                                   uint16_t* outgoing_edges_coverage_count_d,
                                   uint32_t max_limit_nodes_per_window,
@@ -156,7 +156,7 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
 
     uint8_t* consensus = &consensus_d[window_idx * max_limit_consensus_size];
 
-    uint16_t* sequence_begin_nodes_ids      = nullptr;
+    SizeT* sequence_begin_nodes_ids      = nullptr;
     uint16_t* outgoing_edges_coverage       = nullptr;
     uint16_t* outgoing_edges_coverage_count = nullptr;
 
@@ -381,7 +381,7 @@ void generatePOAtemplated(claragenomics::cudapoa::OutputDetails* output_details_
     int8_t* base_weights_d             = input_details_d->base_weights;
     SizeT* sequence_lengths_d          = input_details_d->sequence_lengths;
     WindowDetails* window_details_d    = input_details_d->window_details;
-    uint16_t* sequence_begin_nodes_ids = input_details_d->sequence_begin_nodes_ids;
+    SizeT* sequence_begin_nodes_ids = input_details_d->sequence_begin_nodes_ids;
 
     // unpack alignment details
     ScoreT* scores           = alignment_details_d->scores;
