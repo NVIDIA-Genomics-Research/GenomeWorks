@@ -209,8 +209,8 @@ public:
         offset_h_ += sizeof(GraphDetails);
         graph_details_h->nodes = &block_data_h_[offset_h_];
         offset_h_ += sizeof(uint8_t) * max_nodes_per_window_ * max_poas_;
-        graph_details_h->incoming_edges = reinterpret_cast<SizeTT*>(&block_data_h_[offset_h_]);
-        offset_h_ += sizeof(SizeTT) * max_nodes_per_window_ * CUDAPOA_MAX_NODE_EDGES * max_poas_;
+        graph_details_h->incoming_edges = reinterpret_cast<SizeT*>(&block_data_h_[offset_h_]);
+        offset_h_ += sizeof(SizeT) * max_nodes_per_window_ * CUDAPOA_MAX_NODE_EDGES * max_poas_;
         graph_details_h->incoming_edge_weights = reinterpret_cast<uint16_t*>(&block_data_h_[offset_h_]);
         offset_h_ += sizeof(uint16_t) * max_nodes_per_window_ * CUDAPOA_MAX_NODE_EDGES * max_poas_;
         graph_details_h->incoming_edge_count = reinterpret_cast<uint16_t*>(&block_data_h_[offset_h_]);
@@ -226,8 +226,8 @@ public:
         offset_d_ += cudautils::align<int64_t, 8>(sizeof(uint16_t) * max_nodes_per_window_ * CUDAPOA_MAX_NODE_ALIGNMENTS * max_poas_);
         graph_details_d->node_alignment_count = reinterpret_cast<uint16_t*>(&block_data_d_[offset_d_]);
         offset_d_ += cudautils::align<int64_t, 8>(sizeof(uint16_t) * max_nodes_per_window_ * max_poas_);
-        graph_details_d->incoming_edges = reinterpret_cast<SizeTT*>(&block_data_d_[offset_d_]);
-        offset_d_ += cudautils::align<int64_t, 8>(sizeof(SizeTT) * max_nodes_per_window_ * CUDAPOA_MAX_NODE_EDGES * max_poas_);
+        graph_details_d->incoming_edges = reinterpret_cast<SizeT*>(&block_data_d_[offset_d_]);
+        offset_d_ += cudautils::align<int64_t, 8>(sizeof(SizeT) * max_nodes_per_window_ * CUDAPOA_MAX_NODE_EDGES * max_poas_);
         graph_details_d->incoming_edge_count = reinterpret_cast<uint16_t*>(&block_data_d_[offset_d_]);
         offset_d_ += cudautils::align<int64_t, 8>(sizeof(uint16_t) * max_nodes_per_window_ * max_poas_);
         graph_details_d->outgoing_edges = reinterpret_cast<uint16_t*>(&block_data_d_[offset_d_]);
@@ -333,7 +333,7 @@ protected:
         host_size_fixed += sizeof(GraphDetails);                                                            // graph_details_h_
         host_size_fixed += sizeof(GraphDetails);                                                            // graph_details_d_
         host_size_per_poa += sizeof(uint8_t) * max_nodes_per_window_ * poa_count;                           // graph_details_h_->nodes
-        host_size_per_poa += sizeof(SizeTT) * max_nodes_per_window_ * CUDAPOA_MAX_NODE_EDGES * poa_count; // graph_details_d_->incoming_edges
+        host_size_per_poa += sizeof(SizeT) * max_nodes_per_window_ * CUDAPOA_MAX_NODE_EDGES * poa_count;    // graph_details_d_->incoming_edges
         host_size_per_poa += sizeof(uint16_t) * max_nodes_per_window_ * CUDAPOA_MAX_NODE_EDGES * poa_count; // graph_details_d_->incoming_edge_weights
         host_size_per_poa += sizeof(uint16_t) * max_nodes_per_window_ * poa_count;                          // graph_details_d_->incoming_edge_count
 
@@ -341,7 +341,7 @@ protected:
         device_size_per_poa += sizeof(uint8_t) * max_nodes_per_window_ * poa_count;                                                                                           // graph_details_d_->nodes
         device_size_per_poa += sizeof(SizeT) * max_nodes_per_window_ * CUDAPOA_MAX_NODE_ALIGNMENTS * poa_count;                                                               // graph_details_d_->node_alignments
         device_size_per_poa += sizeof(uint16_t) * max_nodes_per_window_ * poa_count;                                                                                          // graph_details_d_->node_alignment_count
-        device_size_per_poa += sizeof(SizeTT) * max_nodes_per_window_ * CUDAPOA_MAX_NODE_EDGES * poa_count;                                                                 // graph_details_d_->incoming_edges
+        device_size_per_poa += sizeof(SizeT) * max_nodes_per_window_ * CUDAPOA_MAX_NODE_EDGES * poa_count;                                                                    // graph_details_d_->incoming_edges
         device_size_per_poa += sizeof(uint16_t) * max_nodes_per_window_ * poa_count;                                                                                          // graph_details_d_->incoming_edge_count
         device_size_per_poa += sizeof(uint16_t) * max_nodes_per_window_ * CUDAPOA_MAX_NODE_EDGES * poa_count;                                                                 // graph_details_d_->outgoing_edges
         device_size_per_poa += sizeof(uint16_t) * max_nodes_per_window_ * poa_count;                                                                                          // graph_details_d_->outgoing_edge_count

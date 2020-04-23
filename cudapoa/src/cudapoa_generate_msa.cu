@@ -116,7 +116,7 @@ __global__ void generateMSAKernel(uint8_t* nodes_d,
                                   uint8_t* consensus_d,
                                   claragenomics::cudapoa::WindowDetails* window_details_d,
                                   uint16_t* incoming_edge_count_d,
-                                  SizeTT* incoming_edges_d,
+                                  SizeT* incoming_edges_d,
                                   uint16_t* outgoing_edge_count_d,
                                   uint16_t* outgoing_edges_d,
                                   uint16_t* outgoing_edges_coverage_d, //fill this pointer in addAlignmentKernel whenever a new edge is added
@@ -160,13 +160,13 @@ __global__ void generateMSAKernel(uint8_t* nodes_d,
     uint16_t* node_alignment_counts         = &node_alignment_counts_d[window_idx * max_nodes_per_window];
     uint32_t num_sequences                  = window_details_d[window_idx].num_seqs;
     SizeT* sequence_lengths                 = &sequence_lengths_d[window_details_d[window_idx].seq_len_buffer_offset];
-    SizeTT* incoming_edges      = &incoming_edges_d[window_idx * max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES];
-    uint16_t* incoming_edge_count = &incoming_edge_count_d[window_idx * max_nodes_per_window];
-    SizeT* node_alignments        = &node_alignments_d[window_idx * max_nodes_per_window * CUDAPOA_MAX_NODE_ALIGNMENTS];
-    uint8_t* node_marks           = &node_marks_d[max_nodes_per_window * window_idx];
-    bool* check_aligned_nodes     = &check_aligned_nodes_d[max_nodes_per_window * window_idx];
-    uint16_t* nodes_to_visit      = &nodes_to_visit_d[max_nodes_per_window * window_idx];
-    uint16_t* node_id_to_pos      = &node_id_to_pos_d[window_idx * max_nodes_per_window];
+    SizeT* incoming_edges                   = &incoming_edges_d[window_idx * max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES];
+    uint16_t* incoming_edge_count           = &incoming_edge_count_d[window_idx * max_nodes_per_window];
+    SizeT* node_alignments                  = &node_alignments_d[window_idx * max_nodes_per_window * CUDAPOA_MAX_NODE_ALIGNMENTS];
+    uint8_t* node_marks                     = &node_marks_d[max_nodes_per_window * window_idx];
+    bool* check_aligned_nodes               = &check_aligned_nodes_d[max_nodes_per_window * window_idx];
+    uint16_t* nodes_to_visit                = &nodes_to_visit_d[max_nodes_per_window * window_idx];
+    uint16_t* node_id_to_pos                = &node_id_to_pos_d[window_idx * max_nodes_per_window];
 
     __shared__ uint16_t msa_length;
 

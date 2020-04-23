@@ -47,7 +47,7 @@ namespace cudapoa
 {
 
 typedef int32_t SizeT;
-typedef int32_t SizeTT;
+typedef uint16_t SizeTT;
 
 /**
  * @brief A struct to hold information about the sequences
@@ -122,7 +122,7 @@ typedef struct GraphDetails
     uint16_t* node_alignment_count;
 
     // Device buffer to store incoming edges to a node.
-    SizeTT* incoming_edges;
+    SizeT* incoming_edges;
     uint16_t* incoming_edge_count;
 
     // Device buffer to store outgoing edges from a node.
@@ -246,7 +246,7 @@ void runTopSort(uint16_t* sorted_poa,
 void addAlignment(uint8_t* nodes,
                   SizeT* node_count,
                   SizeT* node_alignments, uint16_t* node_alignment_count,
-                  SizeTT* incoming_edges, uint16_t* incoming_edge_count,
+                  SizeT* incoming_edges, uint16_t* incoming_edge_count,
                   uint16_t* outgoing_edges, uint16_t* outgoing_edge_count,
                   uint16_t* incoming_edge_w, uint16_t* outgoing_edge_w,
                   uint16_t* alignment_length,
@@ -269,7 +269,7 @@ void runNW(uint8_t* nodes,
            uint16_t* node_id_to_pos,
            SizeT graph_count,
            uint16_t* incoming_edge_count,
-           SizeTT* incoming_edges,
+           SizeT* incoming_edges,
            uint16_t* outgoing_edge_count,
            uint16_t* outgoing_edges,
            uint8_t* read,
@@ -287,7 +287,7 @@ void generateConsensusTestHost(uint8_t* nodes,
                                SizeT node_count,
                                uint16_t* graph,
                                uint16_t* node_id_to_pos,
-                               SizeTT* incoming_edges,
+                               SizeT* incoming_edges,
                                uint16_t* incoming_edge_count,
                                uint16_t* outgoing_edges,
                                uint16_t* outgoing_edge_count,

@@ -26,7 +26,7 @@ __device__
                      uint8_t* nodes,
                      uint16_t node_count,
                      uint16_t* graph,
-                     SizeTT* incoming_edges,
+                     SizeT* incoming_edges,
                      uint16_t* incoming_edge_count,
                      uint16_t* outgoing_edges,
                      uint16_t* outgoing_edge_count,
@@ -46,7 +46,7 @@ __device__
         uint16_t out_node_in_edges = incoming_edge_count[out_node_id];
         for (uint16_t ie = 0; ie < out_node_in_edges; ie++)
         {
-            SizeTT id = incoming_edges[out_node_id * CUDAPOA_MAX_NODE_EDGES + ie];
+            SizeT id = incoming_edges[out_node_id * CUDAPOA_MAX_NODE_EDGES + ie];
             if (id != node_id)
             {
                 scores[id] = -1;
@@ -71,7 +71,7 @@ __device__
         uint16_t in_edges = incoming_edge_count[node_id];
         for (uint16_t e = 0; e < in_edges; e++)
         {
-            SizeTT begin_node_id = incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES + e];
+            SizeT begin_node_id = incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES + e];
             if (scores[begin_node_id] == -1)
             {
                 continue;
@@ -129,7 +129,7 @@ __device__ void generateConsensus(uint8_t* nodes,
                                   SizeT node_count,
                                   uint16_t* graph,
                                   uint16_t* node_id_to_pos,
-                                  SizeTT* incoming_edges,
+                                  SizeT* incoming_edges,
                                   uint16_t* incoming_edge_count,
                                   uint16_t* outgoing_edges,
                                   uint16_t* outgoing_edge_count,
@@ -167,8 +167,8 @@ __device__ void generateConsensus(uint8_t* nodes,
         // then update the score of the node to be the incoming edge weight.
         for (uint16_t e = 0; e < in_edges; e++)
         {
-            int32_t edge_w         = static_cast<int32_t>(incoming_edge_w[node_id * CUDAPOA_MAX_NODE_EDGES + e]);
-            SizeTT begin_node_id = incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES + e];
+            int32_t edge_w      = static_cast<int32_t>(incoming_edge_w[node_id * CUDAPOA_MAX_NODE_EDGES + e]);
+            SizeT begin_node_id = incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES + e];
             if (score_node_id < edge_w ||
                 (score_node_id == edge_w &&
                  scores[predecessors[node_id]] <= scores[begin_node_id]))
@@ -275,7 +275,7 @@ __global__ void generateConsensusKernel(uint8_t* consensus_d,
                                         claragenomics::cudapoa::WindowDetails* window_details_d,
                                         int32_t total_windows,
                                         uint8_t* nodes_d,
-                                        SizeTT* incoming_edges_d,
+                                        SizeT* incoming_edges_d,
                                         uint16_t* incoming_edge_count_d,
                                         uint16_t* outgoing_edges_d,
                                         uint16_t* outgoing_edge_count_d,
@@ -306,7 +306,7 @@ __global__ void generateConsensusKernel(uint8_t* consensus_d,
 
     // Find the buffer offsets for each thread within the global memory buffers.
     uint8_t* nodes                  = &nodes_d[max_nodes_per_window * window_idx];
-    SizeTT* incoming_edges        = &incoming_edges_d[window_idx * max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES];
+    SizeT* incoming_edges           = &incoming_edges_d[window_idx * max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES];
     uint16_t* incoming_edge_count   = &incoming_edge_count_d[window_idx * max_nodes_per_window];
     uint16_t* outoing_edges         = &outgoing_edges_d[window_idx * max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES];
     uint16_t* outgoing_edge_count   = &outgoing_edge_count_d[window_idx * max_nodes_per_window];
@@ -346,7 +346,7 @@ __global__ void generateConsensusTestKernel(uint8_t* nodes,
                                             SizeT node_count,
                                             uint16_t* graph,
                                             uint16_t* node_id_to_pos,
-                                            SizeTT* incoming_edges,
+                                            SizeT* incoming_edges,
                                             uint16_t* incoming_edge_count,
                                             uint16_t* outgoing_edges,
                                             uint16_t* outgoing_edge_count,
@@ -383,7 +383,7 @@ void generateConsensusTestHost(uint8_t* nodes,
                                SizeT node_count,
                                uint16_t* graph,
                                uint16_t* node_id_to_pos,
-                               SizeTT* incoming_edges,
+                               SizeT* incoming_edges,
                                uint16_t* incoming_edge_count,
                                uint16_t* outgoing_edges,
                                uint16_t* outgoing_edge_count,

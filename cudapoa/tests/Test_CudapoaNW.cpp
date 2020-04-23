@@ -42,7 +42,7 @@ public:
 
     BasicNW() = delete;
 
-    void get_graph_buffers(SizeTT* incoming_edges, uint16_t* incoming_edge_count,
+    void get_graph_buffers(SizeT* incoming_edges, uint16_t* incoming_edge_count,
                            uint16_t* outgoing_edges, uint16_t* outgoing_edge_count,
                            uint8_t* nodes, SizeT* node_count,
                            uint16_t* graph, uint16_t* node_id_to_pos) const
@@ -185,7 +185,7 @@ NWAnswer testNW(const BasicNW& obj)
     uint16_t* node_id_to_pos;
     SizeT graph_count; //local
     uint16_t* incoming_edge_count;
-    SizeTT* incoming_edges;
+    SizeT* incoming_edges;
     uint16_t* outgoing_edge_count;
     uint16_t* outgoing_edges;
     uint8_t* read;
@@ -203,7 +203,7 @@ NWAnswer testNW(const BasicNW& obj)
     CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&nodes, batch_size.max_nodes_per_window * sizeof(uint8_t)));
     CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&graph, batch_size.max_nodes_per_window * sizeof(uint16_t)));
     CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&node_id_to_pos, batch_size.max_nodes_per_window * sizeof(uint16_t)));
-    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&incoming_edges, batch_size.max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES * sizeof(SizeTT)));
+    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&incoming_edges, batch_size.max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES * sizeof(SizeT)));
     CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&incoming_edge_count, batch_size.max_nodes_per_window * sizeof(uint16_t)));
     CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&outgoing_edges, batch_size.max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES * sizeof(uint16_t)));
     CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&outgoing_edge_count, batch_size.max_nodes_per_window * sizeof(uint16_t)));

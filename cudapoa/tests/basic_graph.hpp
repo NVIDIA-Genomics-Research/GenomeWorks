@@ -63,7 +63,7 @@ public:
     BasicGraph() = delete;
 
     //fill in the edge-related pointers based on stored graph
-    void get_edges(SizeTT* incoming_edges, uint16_t* incoming_edge_count,
+    void get_edges(SizeT* incoming_edges, uint16_t* incoming_edge_count,
                    uint16_t* outgoing_edges, uint16_t* outgoing_edge_count) const
     {
         uint16_t out_node;

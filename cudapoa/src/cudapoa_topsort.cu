@@ -90,7 +90,7 @@ __device__ void raconTopologicalSortDeviceUtil(uint16_t* sorted_poa,
                                                uint16_t* sorted_poa_node_map,
                                                SizeT node_count,
                                                uint16_t* incoming_edge_count,
-                                               SizeTT* incoming_edges,
+                                               SizeT* incoming_edges,
                                                uint16_t* aligned_node_count,
                                                SizeT* aligned_nodes,
                                                uint8_t* node_marks,
@@ -127,7 +127,7 @@ __device__ void raconTopologicalSortDeviceUtil(uint16_t* sorted_poa,
             {
                 for (uint16_t e = 0; e < incoming_edge_count[node_id]; e++)
                 {
-                    SizeTT begin_node_id = incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES + e];
+                    SizeT begin_node_id = incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES + e];
                     if (node_marks[begin_node_id] != 2)
                     {
                         node_idx++;
