@@ -12,6 +12,12 @@
 
 #include <cstdint>
 
+#if __cplusplus >= 201703
+#include <optional>
+#else
+#include <experimental/optional>
+#endif
+
 namespace claragenomics
 {
 
@@ -26,5 +32,19 @@ using position_in_read_t = std::uint32_t;
 
 /// number of basepairs
 using number_of_basepairs_t = position_in_read_t;
+
+// TODO: Once minimal supported GCC version is moved to GCC 7.1 or higher whole cga_optional_t can be removed and
+// std::optional can be used directly instead
+#if __cplusplus >= 201703
+template <typename T>
+using cga_optional_t                = std::optional<T>;
+using cga_nullopt_t                 = std::nullopt_t;
+constexpr cga_nullopt_t cga_nullopt = std::nullopt;
+#else
+template <typename T>
+using cga_optional_t                = std::experimental::optional<T>;
+using cga_nullopt_t                 = std::experimental::nullopt_t;
+constexpr cga_nullopt_t cga_nullopt = std::experimental::nullopt;
+#endif
 
 } // namespace claragenomics
