@@ -41,6 +41,7 @@ def run_cudapoa(groups, msa, print_output):
     max_seq_sz = 1024
     batch = cudapoa.CudaPoaBatch(max_sequences_per_poa,
                                  max_seq_sz,
+                                 0.9 * free,
                                  stream=None,
                                  output_mask=msa)
 
