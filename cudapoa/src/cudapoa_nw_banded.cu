@@ -174,7 +174,7 @@ __device__
     runNeedlemanWunschBanded(SeqT* nodes,
                              uint16_t* graph,
                              uint16_t* node_id_to_pos,
-                             uint16_t graph_count,
+                             SizeT graph_count,
                              uint16_t* incoming_edge_count,
                              uint16_t* incoming_edges,
                              uint16_t* outgoing_edge_count,

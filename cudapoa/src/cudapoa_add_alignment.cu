@@ -54,9 +54,9 @@ namespace cudapoa
 template <bool msa = false>
 __device__
     uint8_t
-    addAlignmentToGraph(uint16_t& new_node_count,
+    addAlignmentToGraph(SizeT& new_node_count,
                         uint8_t* nodes,
-                        uint16_t node_count,
+                        SizeT node_count,
                         uint16_t* node_alignments, uint16_t* node_alignment_count,
                         uint16_t* incoming_edges, uint16_t* incoming_edge_count,
                         uint16_t* outgoing_edges, uint16_t* outgoing_edge_count,
@@ -275,7 +275,7 @@ __device__
 
 // kernel that calls the addAlignmentToGraph device funtion
 __global__ void addAlignmentKernel(uint8_t* nodes,
-                                   uint16_t* node_count,
+                                   SizeT* node_count,
                                    uint16_t* node_alignments, uint16_t* node_alignment_count,
                                    uint16_t* incoming_edges, uint16_t* incoming_edge_count,
                                    uint16_t* outgoing_edges, uint16_t* outgoing_edge_count,
@@ -295,7 +295,7 @@ __global__ void addAlignmentKernel(uint8_t* nodes,
                                    uint32_t max_limit_nodes_per_window)
 {
     // all pointers will be allocated in unified memory visible to both host and device
-    uint16_t new_node_count;
+    SizeT new_node_count;
     uint8_t error_code = addAlignmentToGraph(new_node_count, nodes,
                                              *node_count,
                                              node_alignments, node_alignment_count,
@@ -320,7 +320,7 @@ __global__ void addAlignmentKernel(uint8_t* nodes,
 
 // Host function that calls the kernel
 void addAlignment(uint8_t* nodes,
-                  uint16_t* node_count,
+                  SizeT* node_count,
                   uint16_t* node_alignments, uint16_t* node_alignment_count,
                   uint16_t* incoming_edges, uint16_t* incoming_edge_count,
                   uint16_t* outgoing_edges, uint16_t* outgoing_edge_count,

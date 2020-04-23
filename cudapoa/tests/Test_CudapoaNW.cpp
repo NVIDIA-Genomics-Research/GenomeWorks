@@ -44,7 +44,7 @@ public:
 
     void get_graph_buffers(uint16_t* incoming_edges, uint16_t* incoming_edge_count,
                            uint16_t* outgoing_edges, uint16_t* outgoing_edge_count,
-                           uint8_t* nodes, uint16_t* node_count,
+                           uint8_t* nodes, SizeT* node_count,
                            uint16_t* graph, uint16_t* node_id_to_pos) const
     {
         graph_.get_edges(incoming_edges, incoming_edge_count, outgoing_edges, outgoing_edge_count);
@@ -183,7 +183,7 @@ NWAnswer testNW(const BasicNW& obj)
     uint8_t* nodes;
     uint16_t* graph;
     uint16_t* node_id_to_pos;
-    uint16_t graph_count; //local
+    SizeT graph_count; //local
     uint16_t* incoming_edge_count;
     uint16_t* incoming_edges;
     uint16_t* outgoing_edge_count;

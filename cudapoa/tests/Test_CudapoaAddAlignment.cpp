@@ -65,7 +65,7 @@ public:
 
     void get_graph_buffers(uint16_t* incoming_edges, uint16_t* incoming_edge_count,
                            uint16_t* outgoing_edges, uint16_t* outgoing_edge_count,
-                           uint8_t* nodes, uint16_t* node_count,
+                           uint8_t* nodes, SizeT* node_count,
                            uint16_t* node_alignments, uint16_t* node_alignment_count,
                            uint16_t* node_coverage_counts) const
     {
@@ -224,7 +224,7 @@ BasicGraph testAddAlignment(const BasicAlignment& obj)
 {
     //declare device buffer
     uint8_t* nodes;
-    uint16_t* node_count;
+    SizeT* node_count;
     uint16_t* node_alignments;
     uint16_t* node_alignment_count;
     uint16_t* incoming_edges;
@@ -248,7 +248,7 @@ BasicGraph testAddAlignment(const BasicAlignment& obj)
 
     //allocate unified memory so they can be accessed by both host and device.
     CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&nodes, batch_size.max_nodes_per_window * sizeof(uint8_t)));
-    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&node_count, sizeof(uint16_t)));
+    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&node_count, sizeof(SizeT)));
     CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&node_alignments, batch_size.max_nodes_per_window * CUDAPOA_MAX_NODE_ALIGNMENTS * sizeof(uint16_t)));
     CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&node_alignment_count, batch_size.max_nodes_per_window * sizeof(uint16_t)));
     CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&incoming_edges, batch_size.max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES * sizeof(uint16_t)));

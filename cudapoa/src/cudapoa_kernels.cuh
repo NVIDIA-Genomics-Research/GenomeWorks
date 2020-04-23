@@ -45,6 +45,9 @@ namespace claragenomics
 
 namespace cudapoa
 {
+
+typedef uint16_t SizeT;
+
 /**
  * @brief A struct to hold information about the sequences
  *        inside a window.
@@ -84,7 +87,7 @@ typedef struct InputDetails
     // Buffer pointer for weights of each base.
     int8_t* base_weights;
     // Buffer for sequence lengths.
-    uint16_t* sequence_lengths;
+    SizeT* sequence_lengths;
     // Buffer pointers that hold Window Details struct.
     WindowDetails* window_details;
     // Buffer storing begining nodes for sequences
@@ -232,7 +235,7 @@ void generatePOA(claragenomics::cudapoa::OutputDetails* output_details_d,
 // host function that calls runTopSortKernel
 void runTopSort(uint16_t* sorted_poa,
                 uint16_t* sorted_poa_node_map,
-                uint16_t node_count,
+                SizeT node_count,
                 uint16_t* incoming_edge_count,
                 uint16_t* outgoing_edges,
                 uint16_t* outgoing_edge_count,
@@ -240,7 +243,7 @@ void runTopSort(uint16_t* sorted_poa,
 
 // Host function that calls the kernel
 void addAlignment(uint8_t* nodes,
-                  uint16_t* node_count,
+                  SizeT* node_count,
                   uint16_t* node_alignments, uint16_t* node_alignment_count,
                   uint16_t* incoming_edges, uint16_t* incoming_edge_count,
                   uint16_t* outgoing_edges, uint16_t* outgoing_edge_count,
@@ -263,7 +266,7 @@ void addAlignment(uint8_t* nodes,
 void runNW(uint8_t* nodes,
            uint16_t* graph,
            uint16_t* node_id_to_pos,
-           uint16_t graph_count,
+           SizeT graph_count,
            uint16_t* incoming_edge_count,
            uint16_t* incoming_edges,
            uint16_t* outgoing_edge_count,
@@ -280,7 +283,7 @@ void runNW(uint8_t* nodes,
            uint16_t* algined_nodes);
 
 void generateConsensusTestHost(uint8_t* nodes,
-                               uint16_t node_count,
+                               SizeT node_count,
                                uint16_t* graph,
                                uint16_t* node_id_to_pos,
                                uint16_t* incoming_edges,

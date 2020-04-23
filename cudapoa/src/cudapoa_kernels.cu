@@ -64,7 +64,7 @@ template <int32_t TPB = 64, bool cuda_banded_alignment = false, bool msa = false
 __global__ void generatePOAKernel(uint8_t* consensus_d,
                                   uint8_t* sequences_d,
                                   int8_t* base_weights_d,
-                                  uint16_t* sequence_lengths_d,
+                                  SizeT* sequence_lengths_d,
                                   claragenomics::cudapoa::WindowDetails* window_details_d,
                                   int32_t total_windows,
                                   ScoreT* scores_d,
@@ -148,7 +148,7 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
     uint16_t* nodes_to_visit  = &nodes_to_visit_d_[max_nodes_per_window * window_idx];
 #endif
 
-    uint16_t* sequence_lengths = &sequence_lengths_d[window_details_d[window_idx].seq_len_buffer_offset];
+    SizeT* sequence_lengths = &sequence_lengths_d[window_details_d[window_idx].seq_len_buffer_offset];
 
     uint32_t num_sequences = window_details_d[window_idx].num_seqs;
     uint8_t* sequence      = &sequences_d[window_details_d[window_idx].seq_starts];
@@ -184,7 +184,7 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
         }
 
         //Build the rest of the graphs
-        for (uint16_t nucleotide_idx = 1; nucleotide_idx < sequence_lengths[0]; nucleotide_idx++)
+        for (SizeT nucleotide_idx = 1; nucleotide_idx < sequence_lengths[0]; nucleotide_idx++)
         {
             nodes[nucleotide_idx]                                          = sequence[nucleotide_idx];
             sorted_poa[nucleotide_idx]                                     = nucleotide_idx;
@@ -212,7 +212,7 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
     // Align each subsequent read, add alignment to graph, run topoligical sort.
     for (uint16_t s = 1; s < num_sequences; s++)
     {
-        uint16_t seq_len = sequence_lengths[s];
+        SizeT seq_len = sequence_lengths[s];
         sequence += sequence_lengths[s - 1];     // increment the pointer so it is pointing to correct sequence data
         base_weights += sequence_lengths[s - 1]; // increment the pointer so it is pointing to correct sequence data
 
@@ -290,7 +290,7 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
         {
 
             // Add alignment to graph.
-            uint16_t new_node_count;
+            SizeT new_node_count;
             uint8_t error_code = addAlignmentToGraph<msa>(new_node_count,
                                                           nodes, sequence_lengths[0],
                                                           node_alignments, node_alignment_count,
@@ -379,7 +379,7 @@ void generatePOAtemplated(claragenomics::cudapoa::OutputDetails* output_details_
     // unpack input details
     uint8_t* sequences_d               = input_details_d->sequences;
     int8_t* base_weights_d             = input_details_d->base_weights;
-    uint16_t* sequence_lengths_d       = input_details_d->sequence_lengths;
+    SizeT* sequence_lengths_d        = input_details_d->sequence_lengths;
     WindowDetails* window_details_d    = input_details_d->window_details;
     uint16_t* sequence_begin_nodes_ids = input_details_d->sequence_begin_nodes_ids;
 

@@ -124,7 +124,7 @@ __global__ void generateMSAKernel(uint8_t* nodes_d,
                                   int16_t* node_id_to_msa_pos_d,        //this is calculated with the getNodeIDToMSAPos function above
                                   uint16_t* sequence_begin_nodes_ids_d, //fill this pointer in the generatePOAKernel
                                   uint8_t* multiple_sequence_alignments_d,
-                                  uint16_t* sequence_lengths_d,
+                                  SizeT* sequence_lengths_d,
                                   uint16_t* sorted_poa_d,
                                   uint16_t* node_alignments_d,
                                   uint16_t* node_alignment_counts_d,
@@ -159,7 +159,7 @@ __global__ void generateMSAKernel(uint8_t* nodes_d,
     uint16_t* sorted_poa                    = &sorted_poa_d[window_idx * max_nodes_per_window];
     uint16_t* node_alignment_counts         = &node_alignment_counts_d[window_idx * max_nodes_per_window];
     uint32_t num_sequences                  = window_details_d[window_idx].num_seqs;
-    uint16_t* sequence_lengths              = &sequence_lengths_d[window_details_d[window_idx].seq_len_buffer_offset];
+    SizeT* sequence_lengths               = &sequence_lengths_d[window_details_d[window_idx].seq_len_buffer_offset];
 
     uint16_t* incoming_edges      = &incoming_edges_d[window_idx * max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES];
     uint16_t* incoming_edge_count = &incoming_edge_count_d[window_idx * max_nodes_per_window];

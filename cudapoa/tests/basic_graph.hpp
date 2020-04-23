@@ -24,6 +24,7 @@ namespace cudapoa
 
 // alias for the 2d vector graph representation
 typedef std::vector<std::vector<uint16_t>> Uint16Vec2D;
+typedef std::vector<std::vector<SizeT>> SizeTVec2D;
 typedef std::vector<std::vector<std::vector<uint16_t>>> Uint16Vec3D;
 
 class BasicGraph
@@ -80,7 +81,7 @@ public:
         }
     }
     //fill in the nodes and node_count pointer
-    void get_nodes(uint8_t* nodes, uint16_t* node_count) const
+    void get_nodes(uint8_t* nodes, SizeT* node_count) const
     {
         for (int i = 0; i < get_size(nodes_); i++)
         {

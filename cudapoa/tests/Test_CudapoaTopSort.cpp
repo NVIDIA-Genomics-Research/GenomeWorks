@@ -55,7 +55,7 @@ std::vector<TopSortTestPair> getTopSortTestCases()
 }
 
 // host function for calling the kernel to test topsort device function.
-std::string testTopSortDeviceUtil(uint16_t node_count, std::vector<std::vector<uint16_t>> outgoing_edges_vec)
+std::string testTopSortDeviceUtil(SizeT node_count, std::vector<std::vector<uint16_t>> outgoing_edges_vec)
 {
     //declare device buffer
     uint16_t* sorted_poa;

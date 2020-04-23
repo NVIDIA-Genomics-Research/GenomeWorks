@@ -126,7 +126,7 @@ __device__
  * @param[in] node_alignment)count  Device buffer with aligned nodes count for each node in graph
  */
 __device__ void generateConsensus(uint8_t* nodes,
-                                  uint16_t node_count,
+                                  SizeT node_count,
                                   uint16_t* graph,
                                   uint16_t* node_id_to_pos,
                                   uint16_t* incoming_edges,
@@ -271,7 +271,7 @@ __device__ void generateConsensus(uint8_t* nodes,
 template <bool cuda_banded_alignment = false>
 __global__ void generateConsensusKernel(uint8_t* consensus_d,
                                         uint16_t* coverage_d,
-                                        uint16_t* sequence_lengths_d,
+                                        SizeT* sequence_lengths_d,
                                         claragenomics::cudapoa::WindowDetails* window_details_d,
                                         int32_t total_windows,
                                         uint8_t* nodes_d,
@@ -316,7 +316,7 @@ __global__ void generateConsensusKernel(uint8_t* consensus_d,
     uint16_t* node_alignments       = &node_alignments_d[window_idx * max_nodes_per_window * CUDAPOA_MAX_NODE_ALIGNMENTS];
     uint16_t* node_alignment_count  = &node_alignment_count_d[window_idx * max_nodes_per_window];
     uint16_t* node_coverage_counts  = &node_coverage_counts_d_[max_nodes_per_window * window_idx];
-    uint16_t* sequence_lengths      = &sequence_lengths_d[window_details_d[window_idx].seq_len_buffer_offset];
+    SizeT* sequence_lengths       = &sequence_lengths_d[window_details_d[window_idx].seq_len_buffer_offset];
 
     //generate consensus
     uint16_t* coverage              = &coverage_d[window_idx * max_limit_consensus_size];
@@ -343,7 +343,7 @@ __global__ void generateConsensusKernel(uint8_t* consensus_d,
 }
 
 __global__ void generateConsensusTestKernel(uint8_t* nodes,
-                                            uint16_t node_count,
+                                            SizeT node_count,
                                             uint16_t* graph,
                                             uint16_t* node_id_to_pos,
                                             uint16_t* incoming_edges,
@@ -380,7 +380,7 @@ __global__ void generateConsensusTestKernel(uint8_t* nodes,
 }
 
 void generateConsensusTestHost(uint8_t* nodes,
-                               uint16_t node_count,
+                               SizeT node_count,
                                uint16_t* graph,
                                uint16_t* node_id_to_pos,
                                uint16_t* incoming_edges,
