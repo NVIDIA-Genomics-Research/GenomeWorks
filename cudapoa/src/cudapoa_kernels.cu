@@ -71,7 +71,7 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
                                   int16_t* alignment_graph_d,
                                   int16_t* alignment_read_d,
                                   uint8_t* nodes_d,
-                                  uint16_t* incoming_edges_d,
+                                  SizeTT* incoming_edges_d,
                                   uint16_t* incoming_edge_count_d,
                                   uint16_t* outgoing_edges_d,
                                   uint16_t* outgoing_edge_count_d,
@@ -117,7 +117,7 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
 
     // Find the buffer offsets for each thread within the global memory buffers.
     uint8_t* nodes                        = &nodes_d[max_nodes_per_window * window_idx];
-    uint16_t* incoming_edges              = &incoming_edges_d[window_idx * max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES];
+    SizeTT* incoming_edges              = &incoming_edges_d[window_idx * max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES];
     uint16_t* incoming_edge_count         = &incoming_edge_count_d[window_idx * max_nodes_per_window];
     uint16_t* outoing_edges               = &outgoing_edges_d[window_idx * max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES];
     uint16_t* outgoing_edge_count         = &outgoing_edge_count_d[window_idx * max_nodes_per_window];
@@ -190,7 +190,7 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
             sorted_poa[nucleotide_idx]                                     = nucleotide_idx;
             outoing_edges[(nucleotide_idx - 1) * CUDAPOA_MAX_NODE_EDGES]   = nucleotide_idx;
             outgoing_edge_count[nucleotide_idx - 1]                        = 1;
-            incoming_edges[nucleotide_idx * CUDAPOA_MAX_NODE_EDGES]        = nucleotide_idx - uint16_t(1);
+            incoming_edges[nucleotide_idx * CUDAPOA_MAX_NODE_EDGES]        = nucleotide_idx - SizeT(1);
             incoming_edge_weights[nucleotide_idx * CUDAPOA_MAX_NODE_EDGES] = base_weights[nucleotide_idx - 1] + base_weights[nucleotide_idx];
             incoming_edge_count[nucleotide_idx]                            = 1;
             node_alignment_count[nucleotide_idx]                           = 0;
@@ -391,7 +391,7 @@ void generatePOAtemplated(claragenomics::cudapoa::OutputDetails* output_details_
     uint8_t* nodes                          = graph_details_d->nodes;
     SizeT* node_alignments                  = graph_details_d->node_alignments;
     uint16_t* node_alignment_count          = graph_details_d->node_alignment_count;
-    uint16_t* incoming_edges                = graph_details_d->incoming_edges;
+    SizeTT* incoming_edges                = graph_details_d->incoming_edges;
     uint16_t* incoming_edge_count           = graph_details_d->incoming_edge_count;
     uint16_t* outgoing_edges                = graph_details_d->outgoing_edges;
     uint16_t* outgoing_edge_count           = graph_details_d->outgoing_edge_count;

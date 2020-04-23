@@ -46,7 +46,7 @@ __device__ __forceinline__
                  uint16_t pred_count,
                  IndexT pred_idx,
                  uint16_t* node_id_to_pos,
-                 uint16_t* incoming_edges,
+                 SizeTT* incoming_edges,
                  ScoreT* scores,
                  int32_t scores_width,
                  ScoreT gap_score,
@@ -146,7 +146,7 @@ __device__
                        uint16_t* node_id_to_pos,
                        SizeT graph_count,
                        uint16_t* incoming_edge_count,
-                       uint16_t* incoming_edges,
+                       SizeTT* incoming_edges,
                        uint16_t* outgoing_edge_count,
                        uint16_t* outgoing_edges,
                        SeqT* read,
@@ -192,7 +192,7 @@ __device__
                 ScoreT penalty = SHRT_MIN;
                 for (uint16_t p = 0; p < pred_count; p++)
                 {
-                    uint16_t pred_node_id        = incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES + p];
+                    SizeTT pred_node_id        = incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES + p];
                     uint16_t pred_node_graph_pos = node_id_to_pos[pred_node_id] + 1;
                     penalty                      = max(penalty, scores[pred_node_graph_pos * scores_width]);
                 }
@@ -455,7 +455,7 @@ __global__ void runNeedlemanWunschKernel(uint8_t* nodes,
                                          uint16_t* node_id_to_pos,
                                          SizeT graph_count,
                                          uint16_t* incoming_edge_count,
-                                         uint16_t* incoming_edges,
+                                         SizeTT* incoming_edges,
                                          uint16_t* outgoing_edge_count,
                                          uint16_t* outgoing_edges,
                                          uint8_t* read,
@@ -493,7 +493,7 @@ void runNW(uint8_t* nodes,
            uint16_t* node_id_to_pos,
            SizeT graph_count,
            uint16_t* incoming_edge_count,
-           uint16_t* incoming_edges,
+           SizeTT* incoming_edges,
            uint16_t* outgoing_edge_count,
            uint16_t* outgoing_edges,
            uint8_t* read,

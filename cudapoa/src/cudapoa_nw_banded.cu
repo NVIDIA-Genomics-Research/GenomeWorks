@@ -176,7 +176,7 @@ __device__
                              uint16_t* node_id_to_pos,
                              SizeT graph_count,
                              uint16_t* incoming_edge_count,
-                             uint16_t* incoming_edges,
+                             SizeTT* incoming_edges,
                              uint16_t* outgoing_edge_count,
                              SeqT* read,
                              uint16_t read_length,
@@ -228,7 +228,7 @@ __device__
                 ScoreT penalty = SHRT_MIN;
                 for (uint16_t p = 0; p < pred_count; p++)
                 {
-                    uint16_t pred_node_id        = incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES + p];
+                    SizeTT pred_node_id        = incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES + p];
                     uint16_t pred_node_graph_pos = node_id_to_pos[pred_node_id] + 1;
                     penalty                      = max(penalty, get_score(scores, pred_node_graph_pos, 0, gradient, band_width, read_length + 1, min_score_abs));
                 }
