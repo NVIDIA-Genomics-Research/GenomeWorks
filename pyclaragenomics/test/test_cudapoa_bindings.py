@@ -33,6 +33,24 @@ def test_cudapoa_simple_batch():
     assert(batch.total_poas == 2)
 
 
+def test_cudapoa_banded_aligned_batch():
+    device = cuda.cuda_get_device()
+    free, total = cuda.cuda_get_mem_info(device)
+    batch = CudaPoaBatch(10, 1024, 0.9 * free,
+                         deivce_id=device,
+                         output_mask='consensus',
+                         cuda_banded_alignment=True)
+    poa_1 = ["ACTGACTG", "ACTTACTG", "ACGGACTG", "ATCGACTG"]
+    poa_2 = ["ACTGAC", "ACTTAC", "ACGGAC", "ATCGAC"]
+    batch.add_poa_group(poa_1)
+    batch.add_poa_group(poa_2)
+    batch.generate_poa()
+    consensus, coverage, status = batch.get_consensus()
+
+    assert(len(consensus) == 2)
+    assert(batch.total_poas == 2)
+
+
 @pytest.mark.gpu
 def test_cudapoa_incorrect_output_type():
     device = cuda.cuda_get_device()
