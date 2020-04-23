@@ -316,7 +316,7 @@ __global__ void generateConsensusKernel(uint8_t* consensus_d,
     uint16_t* node_alignments       = &node_alignments_d[window_idx * max_nodes_per_window * CUDAPOA_MAX_NODE_ALIGNMENTS];
     uint16_t* node_alignment_count  = &node_alignment_count_d[window_idx * max_nodes_per_window];
     uint16_t* node_coverage_counts  = &node_coverage_counts_d_[max_nodes_per_window * window_idx];
-    SizeT* sequence_lengths       = &sequence_lengths_d[window_details_d[window_idx].seq_len_buffer_offset];
+    SizeT* sequence_lengths         = &sequence_lengths_d[window_details_d[window_idx].seq_len_buffer_offset];
 
     //generate consensus
     uint16_t* coverage              = &coverage_d[window_idx * max_limit_consensus_size];

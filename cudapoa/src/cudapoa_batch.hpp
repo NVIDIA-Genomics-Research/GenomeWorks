@@ -157,7 +157,7 @@ public:
         CGA_CU_CHECK_ERR(cudaMemcpyAsync(input_details_d_->window_details, input_details_h_->window_details,
                                          poa_count_ * sizeof(claragenomics::cudapoa::WindowDetails), cudaMemcpyHostToDevice, stream_));
         CGA_CU_CHECK_ERR(cudaMemcpyAsync(input_details_d_->sequence_lengths, input_details_h_->sequence_lengths,
-                                         global_sequence_idx_ * sizeof(uint16_t), cudaMemcpyHostToDevice, stream_));
+                                         global_sequence_idx_ * sizeof(SizeT), cudaMemcpyHostToDevice, stream_));
 
         // Launch kernel to run 1 POA per thread in thread block.
         std::string msg = " Launching kernel for " + std::to_string(poa_count_) + " on device ";

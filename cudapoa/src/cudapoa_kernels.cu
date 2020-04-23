@@ -379,7 +379,7 @@ void generatePOAtemplated(claragenomics::cudapoa::OutputDetails* output_details_
     // unpack input details
     uint8_t* sequences_d               = input_details_d->sequences;
     int8_t* base_weights_d             = input_details_d->base_weights;
-    SizeT* sequence_lengths_d        = input_details_d->sequence_lengths;
+    SizeT* sequence_lengths_d          = input_details_d->sequence_lengths;
     WindowDetails* window_details_d    = input_details_d->window_details;
     uint16_t* sequence_begin_nodes_ids = input_details_d->sequence_begin_nodes_ids;
 

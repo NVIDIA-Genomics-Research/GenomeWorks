@@ -46,7 +46,7 @@ namespace claragenomics
 namespace cudapoa
 {
 
-typedef uint16_t SizeT;
+typedef int32_t SizeT;
 
 /**
  * @brief A struct to hold information about the sequences

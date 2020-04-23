@@ -317,7 +317,7 @@ protected:
         host_size_fixed += sizeof(InputDetails);                                                                           // input_details_h_
         host_size_per_poa += input_size_per_poa * sizeof(uint8_t);                                                         // input_details_h_->sequences
         host_size_per_poa += input_size_per_poa * sizeof(int8_t);                                                          // input_details_h_->base_weights
-        host_size_per_poa += poa_count * max_sequences_per_poa_ * sizeof(SizeT);                                         // input_details_h_->sequence_lengths
+        host_size_per_poa += poa_count * max_sequences_per_poa_ * sizeof(SizeT);                                           // input_details_h_->sequence_lengths
         host_size_per_poa += poa_count * sizeof(WindowDetails);                                                            // input_details_h_->window_details
         host_size_per_poa += (output_mask_ & OutputType::msa) ? poa_count * max_sequences_per_poa_ * sizeof(uint16_t) : 0; // input_details_h_->sequence_begin_nodes_ids
 
@@ -325,7 +325,7 @@ protected:
         // for input - device
         device_size_per_poa += input_size_per_poa * sizeof(uint8_t);                                                         // input_details_d_->sequences
         device_size_per_poa += input_size_per_poa * sizeof(int8_t);                                                          // input_details_d_->base_weights
-        device_size_per_poa += poa_count * max_sequences_per_poa_ * sizeof(SizeT);                                         // input_details_d_->sequence_lengths
+        device_size_per_poa += poa_count * max_sequences_per_poa_ * sizeof(SizeT);                                           // input_details_d_->sequence_lengths
         device_size_per_poa += poa_count * sizeof(WindowDetails);                                                            // input_details_d_->window_details
         device_size_per_poa += (output_mask_ & OutputType::msa) ? poa_count * max_sequences_per_poa_ * sizeof(uint16_t) : 0; // input_details_d_->sequence_begin_nodes_ids
 
