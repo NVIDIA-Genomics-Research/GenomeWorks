@@ -48,7 +48,7 @@ namespace cudapoa
 
 typedef int32_t SizeT;
 typedef int16_t SizeTT; //temporary, to find the problem in GraphDetails:outgoing_edges
-typedef int16_t SizeTTT;
+typedef int32_t SizeTTT;
 
 /**
  * @brief A struct to hold information about the sequences
@@ -152,7 +152,7 @@ typedef struct GraphDetails
 
     // Device buffer to store the predecessors of nodes during
     // graph traversal.
-    int16_t* consensus_predecessors;
+    SizeTTT* consensus_predecessors;
 
     // Device buffer to store node marks when performing spoa accurate topsort.
     uint8_t* node_marks;
@@ -293,7 +293,7 @@ void generateConsensusTestHost(uint8_t* nodes,
                                SizeTT* outgoing_edges,
                                uint16_t* outgoing_edge_count,
                                uint16_t* incoming_edge_w,
-                               int16_t* predecessors,
+                               SizeTTT* predecessors,
                                int32_t* scores,
                                uint8_t* consensus,
                                uint16_t* coverage,

@@ -401,7 +401,7 @@ void generatePOAtemplated(claragenomics::cudapoa::OutputDetails* output_details_
     SizeT* node_id_to_pos                   = graph_details_d->sorted_poa_node_map;
     uint16_t* sorted_poa_local_edge_count   = graph_details_d->sorted_poa_local_edge_count;
     int32_t* consensus_scores               = graph_details_d->consensus_scores;
-    int16_t* consensus_predecessors         = graph_details_d->consensus_predecessors;
+    SizeTTT* consensus_predecessors         = graph_details_d->consensus_predecessors;
     uint8_t* node_marks                     = graph_details_d->node_marks;
     bool* check_aligned_nodes               = graph_details_d->check_aligned_nodes;
     uint16_t* nodes_to_visit                = graph_details_d->nodes_to_visit;
