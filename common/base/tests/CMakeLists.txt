@@ -15,12 +15,12 @@ set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -lineinfo -Xcompiler -Wall,-Wno-pedantic
 set(SOURCES
     main.cpp
     Test_UtilsCudasort.cu
+    Test_UtilsThreadsafeContainers.cpp
     TestGraph.cpp
     Test_GenomeUtils.cpp)
 
-include_directories(${CUB_DIR})
-
 set(LIBS
-    cgabase)
+    cgabase
+    cub)
 
 cga_add_tests(${TARGET_NAME} "${SOURCES}" "${LIBS}")

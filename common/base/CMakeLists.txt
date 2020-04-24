@@ -10,18 +10,37 @@
 
 project(cgabase)
 
+find_package(CUDA 9.0 QUIET REQUIRED)
 
 get_property(cga_library_type GLOBAL PROPERTY cga_library_type)
 add_library(${PROJECT_NAME} ${cga_library_type}
-        src/cudautils.cpp)
-target_link_libraries(${PROJECT_NAME} PUBLIC cgaconfig cgalogging)
+        src/cudautils.cpp
+        src/logging.cpp)
+target_link_libraries(${PROJECT_NAME} PUBLIC spdlog ${CUDA_LIBRARIES})
 
-add_doxygen_source_dir(${CMAKE_CURRENT_SOURCE_DIR}/include)
+if (cga_profiling)
+    find_library(NVTX_LIBRARY nvToolsExt HINTS ${CUDA_TOOLKIT_ROOT_DIR}/lib64)
+    target_compile_definitions(${PROJECT_NAME} PUBLIC -DCGA_PROFILING)
+    target_link_libraries(${PROJECT_NAME} PUBLIC ${NVTX_LIBRARY})
+endif()
+
+if (cga_device_synchronize_kernels)
+    target_compile_definitions(${PROJECT_NAME} PUBLIC CGA_DEVICE_SYNCHRONIZE)
+endif()
+
+if(cga_enable_caching_allocator)
+        if (cga_enable_preallocating_caching_allocator)
+            target_compile_definitions(${PROJECT_NAME} PUBLIC CGA_ENABLE_CACHING_ALLOCATOR CGA_ENABLE_PREALLOCATING_ALLOCATOR)
+        else()
+            target_compile_definitions(${PROJECT_NAME} PUBLIC CGA_ENABLE_CACHING_ALLOCATOR)
+        endif()
+endif()
 
 target_include_directories(${PROJECT_NAME}
     PUBLIC
         $<INSTALL_INTERFACE:include>    
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+        ${CUDA_INCLUDE_DIRS}
 )
 
 install(TARGETS ${PROJECT_NAME}
@@ -31,6 +50,9 @@ install(TARGETS ${PROJECT_NAME}
 )
 install(DIRECTORY include/ DESTINATION include)
 install(EXPORT ${PROJECT_NAME} DESTINATION cmake)
+
+# Add documentation
+add_doxygen_source_dir(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 # Add tests
 add_subdirectory(tests)
