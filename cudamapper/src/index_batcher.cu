@@ -13,6 +13,8 @@
 #include <algorithm>
 #include <exception>
 
+#include <claragenomics/utils/signed_integer_utils.hpp>
+
 namespace claragenomics
 {
 namespace cudamapper
@@ -48,37 +50,40 @@ std::vector<BatchOfIndices> generate_batches_of_indices(const number_of_indices_
         }
     }
 
-    // get IndexDescriptors for all indices
+    // split indices into IndexDescriptors
     std::vector<IndexDescriptor> query_index_descriptors  = group_reads_into_indices(*query_parser,
                                                                                     query_basepairs_per_index);
     std::vector<IndexDescriptor> target_index_descriptors = group_reads_into_indices(*target_parser,
                                                                                      target_basepairs_per_index);
 
-    // find out which Indices go in which batches
-    const std::vector<details::index_batcher::GroupAndSubgroupsOfIndicesDescriptor> query_groups_and_subgroups =
-        details::index_batcher::generate_groups_and_subgroups(0,
-                                                              query_index_descriptors.size(),
-                                                              query_indices_per_host_batch,
-                                                              query_indices_per_device_batch);
+    // find host batches
+    std::vector<IndexBatch> host_batches = details::index_batcher::group_into_batches(query_index_descriptors,
+                                                                                      target_index_descriptors,
+                                                                                      query_indices_per_host_batch,
+                                                                                      target_indices_per_host_batch,
+                                                                                      same_query_and_target);
 
-    std::vector<details::index_batcher::HostAndDeviceGroupsOfIndices> query_index_descriptors_groups_and_subgroups =
-        convert_groups_of_indices_into_groups_of_index_descriptors(query_index_descriptors,
-                                                                   query_groups_and_subgroups);
+    // create device batches for every host batch
+    std::vector<BatchOfIndices> all_batches;
+    for (IndexBatch& batch : host_batches)
+    {
+        // Device batches are only symmetric is their query and target indices are the same
+        const bool same_query_and_target_in_batch = same_query_and_target && std::equal(begin(batch.query_indices),
+                                                                                        end(batch.query_indices),
+                                                                                        begin(batch.target_indices),
+                                                                                        end(batch.target_indices));
 
-    const std::vector<details::index_batcher::GroupAndSubgroupsOfIndicesDescriptor> target_groups_and_subgroups =
-        details::index_batcher::generate_groups_and_subgroups(0,
-                                                              target_index_descriptors.size(),
-                                                              target_indices_per_host_batch,
-                                                              target_indices_per_device_batch);
+        std::vector<IndexBatch> device_batches = details::index_batcher::group_into_batches(batch.query_indices,
+                                                                                            batch.target_indices,
+                                                                                            query_indices_per_device_batch,
+                                                                                            target_indices_per_device_batch,
+                                                                                            same_query_and_target_in_batch);
 
-    std::vector<details::index_batcher::HostAndDeviceGroupsOfIndices> target_index_descriptors_groups_and_subgroups =
-        convert_groups_of_indices_into_groups_of_index_descriptors(target_index_descriptors,
-                                                                   target_groups_and_subgroups);
+        all_batches.push_back({std::move(batch),
+                               std::move(device_batches)});
+    }
 
-    // combine query and target index groups and return
-    return combine_query_and_target_indices(query_index_descriptors_groups_and_subgroups,
-                                            target_index_descriptors_groups_and_subgroups,
-                                            same_query_and_target);
+    return all_batches;
 }
 
 namespace details
@@ -86,129 +91,40 @@ namespace details
 namespace index_batcher
 {
 
-bool operator==(const HostAndDeviceGroupsOfIndices& lhs, const HostAndDeviceGroupsOfIndices& rhs)
+std::vector<IndexBatch> group_into_batches(const std::vector<IndexDescriptor>& query_indices,
+                                           const std::vector<IndexDescriptor>& target_indices,
+                                           const number_of_indices_t query_indices_per_batch,
+                                           const number_of_indices_t target_indices_per_batch,
+                                           const bool same_query_and_target)
 {
-    return (lhs.host_indices_group == rhs.host_indices_group) && (lhs.device_indices_groups == rhs.device_indices_groups);
-}
-
-bool operator!=(const HostAndDeviceGroupsOfIndices& lhs, const HostAndDeviceGroupsOfIndices& rhs)
-{
-    return !(lhs == rhs);
-}
-
-std::vector<GroupOfIndicesDescriptor> split_array_into_groups(const index_id_t first_index,
-                                                              const number_of_indices_t number_of_indices,
-                                                              const number_of_indices_t indices_per_group)
-{
-    std::vector<GroupOfIndicesDescriptor> groups;
-    const index_id_t past_the_last_index = first_index + number_of_indices;
-
-    for (index_id_t first_index_in_group = first_index; first_index_in_group < past_the_last_index; first_index_in_group += indices_per_group)
+    if (same_query_and_target)
     {
-        const number_of_indices_t indices_in_this_group = std::min(indices_per_group, past_the_last_index - first_index_in_group);
-        groups.push_back({first_index_in_group, indices_in_this_group});
-    }
-
-    return groups;
-}
-
-std::vector<GroupAndSubgroupsOfIndicesDescriptor> generate_groups_and_subgroups(const index_id_t first_index,
-                                                                                const number_of_indices_t total_number_of_indices,
-                                                                                const number_of_indices_t indices_per_group,
-                                                                                const number_of_indices_t indices_per_subgroup)
-{
-    std::vector<GroupAndSubgroupsOfIndicesDescriptor> groups_and_subroups;
-
-    std::vector<GroupOfIndicesDescriptor> main_groups = split_array_into_groups(first_index,
-                                                                                total_number_of_indices,
-                                                                                indices_per_group);
-
-    for (const GroupOfIndicesDescriptor& main_group : main_groups)
-    {
-        std::vector<GroupOfIndicesDescriptor> subgroups = split_array_into_groups(main_group.first_index,
-                                                                                  main_group.number_of_indices,
-                                                                                  indices_per_subgroup);
-
-        groups_and_subroups.push_back({main_group, subgroups});
-    }
-
-    return groups_and_subroups;
-}
-
-std::vector<HostAndDeviceGroupsOfIndices> convert_groups_of_indices_into_groups_of_index_descriptors(const std::vector<IndexDescriptor>& index_descriptors,
-                                                                                                     const std::vector<GroupAndSubgroupsOfIndicesDescriptor>& groups_and_subgroups)
-{
-    std::vector<HostAndDeviceGroupsOfIndices> results;
-
-    for (const details::index_batcher::GroupAndSubgroupsOfIndicesDescriptor& group_and_its_subgroups : groups_and_subgroups)
-    {
-        details::index_batcher::GroupOfIndicesDescriptor host_group = group_and_its_subgroups.whole_group;
-        std::vector<IndexDescriptor> host_indices;
-        std::copy(std::begin(index_descriptors) + host_group.first_index,
-                  std::begin(index_descriptors) + host_group.first_index + host_group.number_of_indices,
-                  std::back_inserter(host_indices));
-
-        std::vector<details::index_batcher::GroupOfIndicesDescriptor> device_groups = group_and_its_subgroups.subgroups;
-        std::vector<std::vector<IndexDescriptor>> device_indices;
-        for (const details::index_batcher::GroupOfIndicesDescriptor& device_group : device_groups)
+        if (query_indices_per_batch != target_indices_per_batch)
         {
-            std::vector<IndexDescriptor> device_indices_single;
-            std::copy(std::begin(index_descriptors) + device_group.first_index,
-                      std::begin(index_descriptors) + device_group.first_index + device_group.number_of_indices,
-                      std::back_inserter(device_indices_single));
-            device_indices.push_back(std::move(device_indices_single));
-        }
-        results.push_back({host_indices, device_indices});
-    }
-
-    return results;
-}
-
-std::vector<BatchOfIndices> combine_query_and_target_indices(const std::vector<HostAndDeviceGroupsOfIndices>& query_groups_of_indices,
-                                                             const std::vector<HostAndDeviceGroupsOfIndices>& target_groups_of_indices,
-                                                             const bool same_query_and_target)
-{
-    assert(!same_query_and_target || (query_groups_of_indices == target_groups_of_indices));
-
-    std::vector<BatchOfIndices> all_batches;
-
-    for (std::size_t query_host_id = 0; query_host_id < query_groups_of_indices.size(); ++query_host_id)
-    {
-        const HostAndDeviceGroupsOfIndices& query_group_of_indices                   = query_groups_of_indices[query_host_id];
-        const std::vector<IndexDescriptor>& query_host_group_of_indices              = query_group_of_indices.host_indices_group;
-        const std::vector<std::vector<IndexDescriptor>>& query_device_indices_groups = query_group_of_indices.device_indices_groups;
-        // if same_query_and_target == true only generated batches where target_host_id >= query_host_id
-        // combinations where target_host_id < query_host_id are not needed due to symmetry
-        for (std::size_t target_host_id = same_query_and_target ? query_host_id : 0;
-             target_host_id < target_groups_of_indices.size();
-             ++target_host_id)
-        {
-            const HostAndDeviceGroupsOfIndices& target_group_of_indices      = target_groups_of_indices[target_host_id];
-            const std::vector<IndexDescriptor>& target_host_group_of_indices = target_group_of_indices.host_indices_group;
-            IndexBatch host_batch{query_host_group_of_indices, target_host_group_of_indices};
-
-            const std::vector<std::vector<IndexDescriptor>>& target_device_indices_groups = target_group_of_indices.device_indices_groups;
-            std::vector<IndexBatch> device_batches;
-
-            for (std::size_t query_device_id = 0; query_device_id < query_device_indices_groups.size(); ++query_device_id)
-            {
-                const std::vector<IndexDescriptor>& query_device_indices_group = query_device_indices_groups[query_device_id];
-                // if same_query_and_target == true and target_host_id == query_host_id only generated batches where target_device_id >= query_device_id
-                // combinations where target_host_id < query_host_id are not needed due to symmetry
-                for (std::size_t target_device_id = (same_query_and_target && target_host_id == query_host_id) ? query_device_id : 0;
-                     target_device_id < target_device_indices_groups.size();
-                     ++target_device_id)
-                {
-                    const std::vector<IndexDescriptor>& target_device_indices_group = target_device_indices_groups[target_device_id];
-                    device_batches.push_back({query_device_indices_group, target_device_indices_group});
-                }
-            }
-
-            all_batches.push_back({host_batch, device_batches});
+            throw std::invalid_argument("split_batch: same_query_and_target is true, but indices_per_batch not the same.");
         }
     }
 
-    return all_batches;
+    std::vector<IndexBatch> batches;
+    for (auto query_it = begin(query_indices); query_it < end(query_indices); query_it += query_indices_per_batch)
+    {
+        // if same_query_and_target only generate upper triangle of the query*target matrix instead of doing all-to-all
+        auto t_begin = begin(target_indices) + (same_query_and_target ? distance(begin(query_indices), query_it) : 0);
+        for (auto target_it = t_begin; target_it < end(target_indices); target_it += target_indices_per_batch)
+        {
+            std::vector<IndexDescriptor> batch_query_indices(query_it,
+                                                             std::min(query_it + query_indices_per_batch,
+                                                                      end(query_indices)));
+            std::vector<IndexDescriptor> batch_target_indices(target_it,
+                                                              std::min(target_it + target_indices_per_batch,
+                                                                       end(target_indices)));
+
+            batches.push_back({std::move(batch_query_indices),
+                               std::move(batch_target_indices)});
+        }
+    }
+
+    return batches;
 }
 
 } // namespace index_batcher
