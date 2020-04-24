@@ -31,7 +31,7 @@ namespace cudapoa
  * @param[in] outgoing_edge_count        Device buffer with number of outgoing edges per node
  * @param[in] local_incoming_edge_count  Device scratch space for maintaining edge counts during topological sort
  */
-__device__ void topologicalSortDeviceUtil(SizeTTT* sorted_poa,
+__device__ void topologicalSortDeviceUtil(SizeT* sorted_poa,
                                           uint16_t* sorted_poa_node_map,
                                           SizeT node_count,
                                           uint16_t* incoming_edge_count,
@@ -65,7 +65,7 @@ __device__ void topologicalSortDeviceUtil(SizeTTT* sorted_poa,
     // add its node ID to the sorted order list.
     for (uint16_t n = 0; n < sorted_poa_position; n++)
     {
-        SizeTTT node = sorted_poa[n];
+        SizeT node = sorted_poa[n];
         for (uint16_t edge = 0; edge < outgoing_edge_count[node]; edge++)
         {
             SizeTT out_node = outgoing_edges[node * CUDAPOA_MAX_NODE_EDGES + edge];
@@ -86,7 +86,7 @@ __device__ void topologicalSortDeviceUtil(SizeTTT* sorted_poa,
 // racon source topological sort. This is helpful in ensuring the
 // correctness of the GPU implementation. With this change,
 // the GPU code exactly matches the SISD implementation of spoa.
-__device__ void raconTopologicalSortDeviceUtil(SizeTTT* sorted_poa,
+__device__ void raconTopologicalSortDeviceUtil(SizeT* sorted_poa,
                                                uint16_t* sorted_poa_node_map,
                                                SizeT node_count,
                                                uint16_t* incoming_edge_count,
@@ -182,7 +182,7 @@ __device__ void raconTopologicalSortDeviceUtil(SizeTTT* sorted_poa,
     }
 }
 
-__global__ void runTopSortKernel(SizeTTT* sorted_poa,
+__global__ void runTopSortKernel(SizeT* sorted_poa,
                                  uint16_t* sorted_poa_node_map,
                                  SizeT node_count,
                                  uint16_t* incoming_edge_count,
@@ -200,7 +200,7 @@ __global__ void runTopSortKernel(SizeTTT* sorted_poa,
                               local_incoming_edge_count);
 }
 
-void runTopSort(SizeTTT* sorted_poa,
+void runTopSort(SizeT* sorted_poa,
                 uint16_t* sorted_poa_node_map,
                 SizeT node_count,
                 uint16_t* incoming_edge_count,

@@ -142,7 +142,7 @@ template <typename SeqT,
 __device__
     uint16_t
     runNeedlemanWunsch(SeqT* nodes,
-                       SizeTTT* graph,
+                       SizeT* graph,
                        uint16_t* node_id_to_pos,
                        SizeT graph_count,
                        uint16_t* incoming_edge_count,
@@ -360,7 +360,7 @@ __device__
             // Check if move is diagonal.
             if (i != 0 && j != 0)
             {
-                SizeTTT node_id    = graph[i - 1];
+                SizeT node_id       = graph[i - 1];
                 ScoreT match_cost   = (nodes[node_id] == read[j - 1] ? match_score : mismatch_score);
                 uint16_t pred_count = incoming_edge_count[node_id];
                 uint16_t pred_i     = (pred_count == 0 ? 0 : (node_id_to_pos[incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES]] + 1));
@@ -392,7 +392,7 @@ __device__
             // Check if move is vertical.
             if (!pred_found && i != 0)
             {
-                SizeTTT node_id    = graph[i - 1];
+                SizeT node_id       = graph[i - 1];
                 uint16_t pred_count = incoming_edge_count[node_id];
                 uint16_t pred_i     = (pred_count == 0 ? 0 : node_id_to_pos[incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES]] + 1);
 
@@ -451,7 +451,7 @@ __device__
 }
 
 __global__ void runNeedlemanWunschKernel(uint8_t* nodes,
-                                         SizeTTT* graph,
+                                         SizeT* graph,
                                          uint16_t* node_id_to_pos,
                                          SizeT graph_count,
                                          uint16_t* incoming_edge_count,
@@ -489,7 +489,7 @@ __global__ void runNeedlemanWunschKernel(uint8_t* nodes,
 }
 
 void runNW(uint8_t* nodes,
-           SizeTTT* graph,
+           SizeT* graph,
            uint16_t* node_id_to_pos,
            SizeT graph_count,
            uint16_t* incoming_edge_count,

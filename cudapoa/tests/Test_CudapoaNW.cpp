@@ -32,7 +32,7 @@ public:
     const static int16_t match_score_    = 8;
 
 public:
-    BasicNW(std::vector<uint8_t> nodes, std::vector<SizeTTT> sorted_graph, SizeTVec2D outgoing_edges,
+    BasicNW(std::vector<uint8_t> nodes, std::vector<SizeT> sorted_graph, SizeTVec2D outgoing_edges,
             std::vector<uint8_t> read)
         : graph_(nodes, sorted_graph, outgoing_edges)
         , read_(read)
@@ -45,7 +45,7 @@ public:
     void get_graph_buffers(SizeT* incoming_edges, uint16_t* incoming_edge_count,
                            SizeTT* outgoing_edges, uint16_t* outgoing_edge_count,
                            uint8_t* nodes, SizeT* node_count,
-                           SizeTTT* graph, uint16_t* node_id_to_pos) const
+                           SizeT* graph, uint16_t* node_id_to_pos) const
     {
         graph_.get_edges(incoming_edges, incoming_edge_count, outgoing_edges, outgoing_edge_count);
         graph_.get_nodes(nodes, node_count);
@@ -181,7 +181,7 @@ NWAnswer testNW(const BasicNW& obj)
 {
     //declare device buffer
     uint8_t* nodes;
-    SizeTTT* graph;
+    SizeT* graph;
     uint16_t* node_id_to_pos;
     SizeT graph_count; //local
     uint16_t* incoming_edge_count;
@@ -201,7 +201,7 @@ NWAnswer testNW(const BasicNW& obj)
 
     //allocate unified memory so they can be accessed by both host and device.
     CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&nodes, batch_size.max_nodes_per_window * sizeof(uint8_t)));
-    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&graph, batch_size.max_nodes_per_window * sizeof(SizeTTT)));
+    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&graph, batch_size.max_nodes_per_window * sizeof(SizeT)));
     CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&node_id_to_pos, batch_size.max_nodes_per_window * sizeof(uint16_t)));
     CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&incoming_edges, batch_size.max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES * sizeof(SizeT)));
     CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&incoming_edge_count, batch_size.max_nodes_per_window * sizeof(uint16_t)));
