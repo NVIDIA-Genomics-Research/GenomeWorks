@@ -45,7 +45,7 @@ __device__ __forceinline__
                  SeqT graph_base,
                  uint16_t pred_count,
                  IndexT pred_idx,
-                 SizeTTT* node_id_to_pos,
+                 SizeT* node_id_to_pos,
                  SizeT* incoming_edges,
                  ScoreT* scores,
                  int32_t scores_width,
@@ -90,7 +90,7 @@ __device__ __forceinline__
     // Perform same score updates as above, but for rest of predecessors.
     for (IndexT p = 1; p < pred_count; p++)
     {
-        SizeTTT pred_idx = node_id_to_pos[incoming_edges[gIdx * CUDAPOA_MAX_NODE_EDGES + p]] + 1;
+        SizeT pred_idx = node_id_to_pos[incoming_edges[gIdx * CUDAPOA_MAX_NODE_EDGES + p]] + 1;
 
         ScoreT4<ScoreT>* pred_scores = (ScoreT4<ScoreT>*)&scores[pred_idx * scores_width];
 
@@ -143,7 +143,7 @@ __device__
     uint16_t
     runNeedlemanWunsch(SeqT* nodes,
                        SizeT* graph,
-                       SizeTTT* node_id_to_pos,
+                       SizeT* node_id_to_pos,
                        SizeT graph_count,
                        uint16_t* incoming_edge_count,
                        SizeT* incoming_edges,
@@ -192,9 +192,9 @@ __device__
                 ScoreT penalty = SHRT_MIN;
                 for (uint16_t p = 0; p < pred_count; p++)
                 {
-                    SizeT pred_node_id           = incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES + p];
-                    SizeTTT pred_node_graph_pos = node_id_to_pos[pred_node_id] + 1;
-                    penalty                      = max(penalty, scores[pred_node_graph_pos * scores_width]);
+                    SizeT pred_node_id        = incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES + p];
+                    SizeT pred_node_graph_pos = node_id_to_pos[pred_node_id] + 1;
+                    penalty                   = max(penalty, scores[pred_node_graph_pos * scores_width]);
                 }
                 scores[i * scores_width] = penalty + gap_score;
             }
@@ -222,7 +222,7 @@ __device__
 
         uint16_t pred_count = incoming_edge_count[node_id];
 
-        SizeTTT pred_idx = (pred_count == 0 ? 0 : node_id_to_pos[incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES]] + 1);
+        SizeT pred_idx = (pred_count == 0 ? 0 : node_id_to_pos[incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES]] + 1);
 
         SeqT graph_base = nodes[node_id];
 
@@ -363,7 +363,7 @@ __device__
                 SizeT node_id       = graph[i - 1];
                 ScoreT match_cost   = (nodes[node_id] == read[j - 1] ? match_score : mismatch_score);
                 uint16_t pred_count = incoming_edge_count[node_id];
-                SizeTTT pred_i     = (pred_count == 0 ? 0 : (node_id_to_pos[incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES]] + 1));
+                SizeT pred_i        = (pred_count == 0 ? 0 : (node_id_to_pos[incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES]] + 1));
 
                 if (scores_ij == (scores[pred_i * scores_width + (j - 1)] + match_cost))
                 {
@@ -394,7 +394,7 @@ __device__
             {
                 SizeT node_id       = graph[i - 1];
                 uint16_t pred_count = incoming_edge_count[node_id];
-                SizeTTT pred_i     = (pred_count == 0 ? 0 : node_id_to_pos[incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES]] + 1);
+                SizeT pred_i        = (pred_count == 0 ? 0 : node_id_to_pos[incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES]] + 1);
 
                 if (scores_ij == scores[pred_i * scores_width + j] + gap_score)
                 {
@@ -452,7 +452,7 @@ __device__
 
 __global__ void runNeedlemanWunschKernel(uint8_t* nodes,
                                          SizeT* graph,
-                                         SizeTTT* node_id_to_pos,
+                                         SizeT* node_id_to_pos,
                                          SizeT graph_count,
                                          uint16_t* incoming_edge_count,
                                          SizeT* incoming_edges,
@@ -490,7 +490,7 @@ __global__ void runNeedlemanWunschKernel(uint8_t* nodes,
 
 void runNW(uint8_t* nodes,
            SizeT* graph,
-           SizeTTT* node_id_to_pos,
+           SizeT* node_id_to_pos,
            SizeT graph_count,
            uint16_t* incoming_edge_count,
            SizeT* incoming_edges,

@@ -35,7 +35,7 @@ public:
     }
 
     void get_graph_buffers(uint8_t* nodes, SizeT* node_count,
-                           SizeT* sorted_poa, SizeTTT* node_id_to_pos,
+                           SizeT* sorted_poa, SizeT* node_id_to_pos,
                            SizeT* incoming_edges, uint16_t* incoming_edge_count,
                            SizeTT* outgoing_edges, uint16_t* outgoing_edge_count,
                            uint16_t* incoming_edge_w, uint16_t* node_coverage_counts,
@@ -162,7 +162,7 @@ std::string testGenerateConsensus(const BasicGenerateConsensus& obj)
     uint8_t* nodes;
     SizeT* node_count;
     SizeT* graph;
-    SizeTTT* node_id_to_pos;
+    SizeT* node_id_to_pos;
     SizeT* incoming_edges;
     uint16_t* incoming_edge_count;
     SizeTT* outgoing_edges;
@@ -185,7 +185,7 @@ std::string testGenerateConsensus(const BasicGenerateConsensus& obj)
     CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&nodes, batch_size.max_nodes_per_window * sizeof(uint8_t)));
     CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&node_count, sizeof(SizeT)));
     CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&graph, batch_size.max_nodes_per_window * sizeof(SizeT)));
-    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&node_id_to_pos, batch_size.max_nodes_per_window * sizeof(SizeTTT)));
+    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&node_id_to_pos, batch_size.max_nodes_per_window * sizeof(SizeT)));
     CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&incoming_edges, batch_size.max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES * sizeof(SizeT)));
     CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&incoming_edge_count, batch_size.max_nodes_per_window * sizeof(uint16_t)));
     CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&outgoing_edges, batch_size.max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES * sizeof(SizeTT)));

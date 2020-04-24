@@ -44,12 +44,12 @@ public:
     }
     SortedGraph() = delete;
 
-    void get_node_id_to_pos(SizeTTT* node_id_to_pos) const
+    void get_node_id_to_pos(SizeT* node_id_to_pos) const
     {
         for (int32_t pos = 0; pos < get_size(sorted_graph_); pos++)
         {
             int32_t id         = sorted_graph_[pos];
-            node_id_to_pos[id] = static_cast<SizeTTT>(pos);
+            node_id_to_pos[id] = static_cast<SizeT>(pos);
         }
     }
 
