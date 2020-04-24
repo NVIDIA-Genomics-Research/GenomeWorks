@@ -16,6 +16,7 @@
 #include <claragenomics/utils/signed_integer_utils.hpp> //get_size
 
 #include "gtest/gtest.h"
+#include "basic_graph.hpp"
 
 namespace claragenomics
 {
@@ -23,10 +24,8 @@ namespace claragenomics
 namespace cudapoa
 {
 
-// alias for the 2d vector graph representation
-typedef std::vector<std::vector<uint16_t>> Uint16Vec2D;
 // alias for a test case (answer, graph)
-typedef std::pair<std::string, Uint16Vec2D> TopSortTestPair;
+typedef std::pair<std::string, SizeTVec2D> TopSortTestPair;
 
 using ::testing::TestWithParam;
 using ::testing::ValuesIn;
@@ -37,16 +36,16 @@ std::vector<TopSortTestPair> getTopSortTestCases()
 
     std::vector<TopSortTestPair> test_cases;
 
-    Uint16Vec2D outgoing_edges_1 = {{}, {}, {3}, {1}, {0, 1}, {0, 2}};
-    std::string answer_1         = "4-5-0-2-3-1";
+    SizeTVec2D outgoing_edges_1 = {{}, {}, {3}, {1}, {0, 1}, {0, 2}};
+    std::string answer_1        = "4-5-0-2-3-1";
     test_cases.emplace_back(answer_1, outgoing_edges_1);
 
-    Uint16Vec2D outgoing_edges_2 = {{1, 3}, {2, 3}, {3, 4, 5}, {4, 5}, {5}, {}};
-    std::string answer_2         = "0-1-2-3-4-5";
+    SizeTVec2D outgoing_edges_2 = {{1, 3}, {2, 3}, {3, 4, 5}, {4, 5}, {5}, {}};
+    std::string answer_2        = "0-1-2-3-4-5";
     test_cases.emplace_back(answer_2, outgoing_edges_2);
 
-    Uint16Vec2D outgoing_edges_3 = {{}, {}, {3}, {1}, {0, 1, 7}, {0, 2}, {4}, {5}};
-    std::string answer_3         = "6-4-7-5-0-2-3-1";
+    SizeTVec2D outgoing_edges_3 = {{}, {}, {3}, {1}, {0, 1, 7}, {0, 2}, {4}, {5}};
+    std::string answer_3        = "6-4-7-5-0-2-3-1";
     test_cases.emplace_back(answer_3, outgoing_edges_3);
 
     //add more test cases below
@@ -55,13 +54,13 @@ std::vector<TopSortTestPair> getTopSortTestCases()
 }
 
 // host function for calling the kernel to test topsort device function.
-std::string testTopSortDeviceUtil(SizeT node_count, std::vector<std::vector<uint16_t>> outgoing_edges_vec)
+std::string testTopSortDeviceUtil(SizeT node_count, SizeTVec2D outgoing_edges_vec)
 {
     //declare device buffer
     uint16_t* sorted_poa;
     uint16_t* sorted_poa_node_map;
     uint16_t* incoming_edge_count;
-    uint16_t* outgoing_edges;
+    SizeTT* outgoing_edges;
     uint16_t* outgoing_edge_count;
     uint16_t* local_incoming_edge_count;
 
@@ -71,7 +70,7 @@ std::string testTopSortDeviceUtil(SizeT node_count, std::vector<std::vector<uint
     CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&sorted_poa, graph_size));
     CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&sorted_poa_node_map, graph_size));
     CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&incoming_edge_count, graph_size));
-    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&outgoing_edges, graph_size * CUDAPOA_MAX_NODE_EDGES));
+    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&outgoing_edges, node_count * sizeof(SizeTT) * CUDAPOA_MAX_NODE_EDGES));
     CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&outgoing_edge_count, graph_size));
     CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&local_incoming_edge_count, graph_size));
 
@@ -81,7 +80,7 @@ std::string testTopSortDeviceUtil(SizeT node_count, std::vector<std::vector<uint
 
     //calculate edge counts on host
 
-    uint16_t out_node;
+    SizeTT out_node;
     for (int i = 0; i < node_count; i++)
     {
         outgoing_edge_count[i] = get_size(outgoing_edges_vec[i]);
@@ -122,7 +121,7 @@ class TopSortDeviceUtilTest : public TestWithParam<TopSortTestPair>
 public:
     void SetUp() {}
 
-    std::string runTopSortDevice(Uint16Vec2D outgoing_edges)
+    std::string runTopSortDevice(SizeTVec2D outgoing_edges)
     {
         return testTopSortDeviceUtil(get_size(outgoing_edges), outgoing_edges);
     }

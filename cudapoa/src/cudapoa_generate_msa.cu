@@ -43,7 +43,7 @@ __device__ uint16_t getNodeIDToMSAPosDevice(uint16_t node_count,
 __device__ void generateMSADevice(uint8_t* nodes,
                                   uint16_t num_sequences,
                                   uint16_t* outgoing_edge_count,
-                                  uint16_t* outgoing_edges,
+                                  SizeTT* outgoing_edges,
                                   uint16_t* outgoing_edges_coverage,       //fill this pointer with seq ids in addAlignmentToGraph whenever a new edge is added
                                   uint16_t* outgoing_edges_coverage_count, //ditto
                                   int16_t* node_id_to_msa_pos,             //this is calculated with the getNodeIDToMSAPos device function above
@@ -79,7 +79,7 @@ __device__ void generateMSADevice(uint8_t* nodes,
         bool end_node = true;
         for (uint16_t n = 0; n < outgoing_edge_count[node_id]; n++)
         {
-            uint16_t to_node = outgoing_edges[node_id * CUDAPOA_MAX_NODE_EDGES + n];
+            SizeTT to_node = outgoing_edges[node_id * CUDAPOA_MAX_NODE_EDGES + n];
             for (uint16_t m = 0; m < outgoing_edges_coverage_count[node_id * CUDAPOA_MAX_NODE_EDGES + n]; m++)
             {
                 uint16_t curr_edge_seq = outgoing_edges_coverage[node_id * CUDAPOA_MAX_NODE_EDGES * max_sequences_per_poa +
@@ -118,7 +118,7 @@ __global__ void generateMSAKernel(uint8_t* nodes_d,
                                   uint16_t* incoming_edge_count_d,
                                   SizeT* incoming_edges_d,
                                   uint16_t* outgoing_edge_count_d,
-                                  uint16_t* outgoing_edges_d,
+                                  SizeTT* outgoing_edges_d,
                                   uint16_t* outgoing_edges_coverage_d, //fill this pointer in addAlignmentKernel whenever a new edge is added
                                   uint16_t* outgoing_edges_coverage_count_d,
                                   int16_t* node_id_to_msa_pos_d,     //this is calculated with the getNodeIDToMSAPos function above
@@ -150,7 +150,7 @@ __global__ void generateMSAKernel(uint8_t* nodes_d,
     // Find the buffer offsets for each thread within the global memory buffers.
     uint8_t* nodes                          = &nodes_d[max_nodes_per_window * window_idx];
     uint16_t* outgoing_edge_count           = &outgoing_edge_count_d[window_idx * max_nodes_per_window];
-    uint16_t* outgoing_edges                = &outgoing_edges_d[window_idx * max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES];
+    SizeTT* outgoing_edges                  = &outgoing_edges_d[window_idx * max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES];
     uint16_t* outgoing_edges_coverage       = &outgoing_edges_coverage_d[window_idx * max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES * max_sequences_per_poa];
     uint16_t* outgoing_edges_coverage_count = &outgoing_edges_coverage_count_d[window_idx * max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES];
     int16_t* node_id_to_msa_pos             = &node_id_to_msa_pos_d[window_idx * max_nodes_per_window];

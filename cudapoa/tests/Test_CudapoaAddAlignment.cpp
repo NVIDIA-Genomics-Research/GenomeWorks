@@ -26,7 +26,7 @@ namespace cudapoa
 class BasicAlignment
 {
 public:
-    BasicAlignment(std::vector<uint8_t> nodes, Uint16Vec2D outgoing_edges,
+    BasicAlignment(std::vector<uint8_t> nodes, SizeTVec2D outgoing_edges,
                    Uint16Vec2D node_alignments, std::vector<uint16_t> node_coverage_counts,
                    std::vector<uint8_t> read, std::vector<int8_t> base_weights, std::vector<int16_t> alignment_graph, std::vector<int16_t> alignment_read)
         : graph(nodes, outgoing_edges, node_alignments, node_coverage_counts)
@@ -64,7 +64,7 @@ public:
     }
 
     void get_graph_buffers(SizeT* incoming_edges, uint16_t* incoming_edge_count,
-                           uint16_t* outgoing_edges, uint16_t* outgoing_edge_count,
+                           SizeTT* outgoing_edges, uint16_t* outgoing_edge_count,
                            uint8_t* nodes, SizeT* node_count,
                            SizeT* node_alignments, uint16_t* node_alignment_count,
                            uint16_t* node_coverage_counts) const
@@ -113,7 +113,7 @@ std::vector<AddAlginmentTestPair> getAddAlignmentTestCases()
      *                       \ /
      *                        A
      */
-    BasicGraph ans_1(Uint16Vec2D({{}, {0}, {1}, {2, 4}, {1}}));
+    BasicGraph ans_1(SizeTVec2D({{}, {0}, {1}, {2, 4}, {1}}));
     BasicAlignment ali_1({'A', 'A', 'A', 'A'}, //nodes
                          {{}, {0}, {1}, {2}},  //outgoing_edges
                          {{}, {}, {}, {}},     //node_alignments
@@ -133,7 +133,7 @@ std::vector<AddAlginmentTestPair> getAddAlignmentTestCases()
      * final graph      A — T — C — G — A
      * 
      */
-    BasicGraph ans_2(Uint16Vec2D({{}, {0}, {1}, {2}, {3}}));
+    BasicGraph ans_2(SizeTVec2D({{}, {0}, {1}, {2}, {3}}));
     BasicAlignment ali_2({'A', 'T', 'C', 'G'},      //nodes
                          {{}, {0}, {1}, {2}},       //outgoing_edges
                          {{}, {}, {}, {}},          //node_alignments
@@ -157,7 +157,7 @@ std::vector<AddAlginmentTestPair> getAddAlignmentTestCases()
      *                    \   /
      *                      A
      */
-    BasicGraph ans_3(Uint16Vec2D({{}, {0}, {1, 4, 5}, {2}, {0}, {0}}));
+    BasicGraph ans_3(SizeTVec2D({{}, {0}, {1, 4, 5}, {2}, {0}, {0}}));
     BasicAlignment ali_3({'A', 'A', 'C', 'G', 'C'},   //nodes
                          {{}, {0}, {1, 4}, {2}, {0}}, //outgoing_edges
                          {{}, {}, {}, {}},            //node_alignments
@@ -178,7 +178,7 @@ std::vector<AddAlginmentTestPair> getAddAlignmentTestCases()
      *                   \_____________/
      * 
      */
-    BasicGraph ans_4(Uint16Vec2D({{}, {0}, {1}, {2}, {3, 0}}));
+    BasicGraph ans_4(SizeTVec2D({{}, {0}, {1}, {2}, {3, 0}}));
     BasicAlignment ali_4({'A', 'T', 'T', 'G', 'A'}, //nodes
                          {{}, {0}, {1}, {2}, {3}},  //outgoing_edges
                          {{}, {}, {}, {}},          //node_alignments
@@ -203,7 +203,7 @@ std::vector<AddAlginmentTestPair> getAddAlignmentTestCases()
      *                          T
      * 
      */
-    BasicGraph ans_5(Uint16Vec2D({{}, {0}, {1}, {2, 6, 7}, {3}, {0}, {5}, {5}}));
+    BasicGraph ans_5(SizeTVec2D({{}, {0}, {1}, {2, 6, 7}, {3}, {0}, {5}, {5}}));
     BasicAlignment ali_5({'A', 'T', 'G', 'T', 'A', 'C', 'A'},   //nodes
                          {{}, {0}, {1}, {2, 6}, {3}, {0}, {5}}, //outgoing_edges
                          {{}, {}, {}, {}},                      //node_alignments
@@ -229,7 +229,7 @@ BasicGraph testAddAlignment(const BasicAlignment& obj)
     uint16_t* node_alignment_count;
     SizeT* incoming_edges;
     uint16_t* incoming_edge_count;
-    uint16_t* outgoing_edges;
+    SizeTT* outgoing_edges;
     uint16_t* outgoing_edge_count;
     uint16_t* incoming_edge_w;
     uint16_t* outgoing_edge_w;
@@ -253,7 +253,7 @@ BasicGraph testAddAlignment(const BasicAlignment& obj)
     CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&node_alignment_count, batch_size.max_nodes_per_window * sizeof(uint16_t)));
     CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&incoming_edges, batch_size.max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES * sizeof(SizeT)));
     CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&incoming_edge_count, batch_size.max_nodes_per_window * sizeof(uint16_t)));
-    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&outgoing_edges, batch_size.max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES * sizeof(uint16_t)));
+    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&outgoing_edges, batch_size.max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES * sizeof(SizeTT)));
     CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&outgoing_edge_count, batch_size.max_nodes_per_window * sizeof(uint16_t)));
     CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&incoming_edge_w, batch_size.max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES * sizeof(uint16_t)));
     CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&outgoing_edge_w, batch_size.max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES * sizeof(uint16_t)));

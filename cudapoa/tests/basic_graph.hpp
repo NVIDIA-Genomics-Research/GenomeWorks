@@ -24,13 +24,13 @@ namespace cudapoa
 
 // alias for the 2d vector graph representation
 typedef std::vector<std::vector<uint16_t>> Uint16Vec2D;
-typedef std::vector<std::vector<SizeT>> SizeTVec2D;
+typedef std::vector<std::vector<SizeTT>> SizeTVec2D;
 typedef std::vector<std::vector<std::vector<uint16_t>>> Uint16Vec3D;
 
 class BasicGraph
 {
 public:
-    BasicGraph(std::vector<uint8_t> nodes, Uint16Vec2D outgoing_edges, Uint16Vec2D node_alignments, std::vector<uint16_t> node_coverage_counts, Uint16Vec3D outgoing_edges_coverage = {})
+    BasicGraph(std::vector<uint8_t> nodes, SizeTVec2D outgoing_edges, Uint16Vec2D node_alignments, std::vector<uint16_t> node_coverage_counts, Uint16Vec3D outgoing_edges_coverage = {})
         : nodes_(nodes)
         , outgoing_edges_(outgoing_edges)
         , node_alignments_(node_alignments)
@@ -41,20 +41,20 @@ public:
         node_count_     = get_size(nodes_);
     }
 
-    BasicGraph(uint16_t* outgoing_edges, uint16_t* outgoing_edge_count, uint16_t node_count)
+    BasicGraph(SizeTT* outgoing_edges, uint16_t* outgoing_edge_count, SizeTT node_count)
     {
         graph_complete_ = false;
         outgoing_edges_ = edges_to_graph(outgoing_edges, outgoing_edge_count, node_count);
     }
 
-    BasicGraph(Uint16Vec2D outgoing_edges)
+    BasicGraph(SizeTVec2D outgoing_edges)
     {
         graph_complete_ = false;
         outgoing_edges_ = outgoing_edges;
         node_count_     = get_size(outgoing_edges);
     }
 
-    BasicGraph(std::vector<uint8_t> nodes, Uint16Vec2D outgoing_edges)
+    BasicGraph(std::vector<uint8_t> nodes, SizeTVec2D outgoing_edges)
         : BasicGraph(outgoing_edges)
     {
         nodes_ = nodes;
@@ -64,9 +64,9 @@ public:
 
     //fill in the edge-related pointers based on stored graph
     void get_edges(SizeT* incoming_edges, uint16_t* incoming_edge_count,
-                   uint16_t* outgoing_edges, uint16_t* outgoing_edge_count) const
+                   SizeTT* outgoing_edges, uint16_t* outgoing_edge_count) const
     {
-        uint16_t out_node;
+        SizeTT out_node;
         for (int i = 0; i < node_count_; i++)
         {
             outgoing_edge_count[i] = get_size(outgoing_edges_[i]);
@@ -113,9 +113,9 @@ public:
     }
 
     // convert results from outgoing_edges to Uint16Vec2D graph
-    Uint16Vec2D edges_to_graph(uint16_t* outgoing_edges, uint16_t* outgoing_edge_count, uint16_t node_count)
+    SizeTVec2D edges_to_graph(SizeTT* outgoing_edges, uint16_t* outgoing_edge_count, uint16_t node_count)
     {
-        Uint16Vec2D graph(node_count);
+        SizeTVec2D graph(node_count);
         for (uint16_t i = 0; i < node_count; i++)
         {
             for (uint16_t j = 0; j < outgoing_edge_count[i]; j++)
@@ -155,12 +155,12 @@ public:
         return this->outgoing_edges_ == rhs.outgoing_edges_;
     }
 
-    const Uint16Vec2D& get_outgoing_edges() const { return outgoing_edges_; }
+    const SizeTVec2D& get_outgoing_edges() const { return outgoing_edges_; }
 
 protected:
     bool graph_complete_;
     std::vector<uint8_t> nodes_;
-    Uint16Vec2D outgoing_edges_; //this uniquely represents the graph structure; equality of BasicGraph is based on this member.
+    SizeTVec2D outgoing_edges_; //this uniquely represents the graph structure; equality of BasicGraph is based on this member.
     Uint16Vec3D outgoing_edges_coverage_;
     Uint16Vec2D node_alignments_;
     std::vector<uint16_t> node_coverage_counts_;

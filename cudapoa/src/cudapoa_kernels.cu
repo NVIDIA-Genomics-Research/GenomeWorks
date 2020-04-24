@@ -73,7 +73,7 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
                                   uint8_t* nodes_d,
                                   SizeT* incoming_edges_d,
                                   uint16_t* incoming_edge_count_d,
-                                  uint16_t* outgoing_edges_d,
+                                  SizeTT* outgoing_edges_d,
                                   uint16_t* outgoing_edge_count_d,
                                   uint16_t* incoming_edge_w_d,
                                   uint16_t* outgoing_edge_w_d,
@@ -119,7 +119,7 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
     uint8_t* nodes                        = &nodes_d[max_nodes_per_window * window_idx];
     SizeT* incoming_edges                 = &incoming_edges_d[window_idx * max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES];
     uint16_t* incoming_edge_count         = &incoming_edge_count_d[window_idx * max_nodes_per_window];
-    uint16_t* outoing_edges               = &outgoing_edges_d[window_idx * max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES];
+    SizeTT* outoing_edges                 = &outgoing_edges_d[window_idx * max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES];
     uint16_t* outgoing_edge_count         = &outgoing_edge_count_d[window_idx * max_nodes_per_window];
     uint16_t* incoming_edge_weights       = &incoming_edge_w_d[window_idx * max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES];
     uint16_t* outgoing_edge_weights       = &outgoing_edge_w_d[window_idx * max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES];
@@ -393,7 +393,7 @@ void generatePOAtemplated(claragenomics::cudapoa::OutputDetails* output_details_
     uint16_t* node_alignment_count          = graph_details_d->node_alignment_count;
     SizeT* incoming_edges                   = graph_details_d->incoming_edges;
     uint16_t* incoming_edge_count           = graph_details_d->incoming_edge_count;
-    uint16_t* outgoing_edges                = graph_details_d->outgoing_edges;
+    SizeTT* outgoing_edges                  = graph_details_d->outgoing_edges;
     uint16_t* outgoing_edge_count           = graph_details_d->outgoing_edge_count;
     uint16_t* incoming_edge_w               = graph_details_d->incoming_edge_weights;
     uint16_t* outgoing_edge_w               = graph_details_d->outgoing_edge_weights;

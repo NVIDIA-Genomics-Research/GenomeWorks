@@ -27,7 +27,7 @@ class BasicGenerateConsensus
 
 public:
     BasicGenerateConsensus(std::vector<uint8_t> nodes, std::vector<uint16_t> sorted_graph, Uint16Vec2D node_alignments,
-                           Uint16Vec2D outgoing_edges, std::vector<uint16_t> node_coverage_counts, Uint16Vec2D outgoing_edge_w)
+                           SizeTVec2D outgoing_edges, std::vector<uint16_t> node_coverage_counts, Uint16Vec2D outgoing_edge_w)
         : graph_(nodes, sorted_graph, node_alignments, node_coverage_counts, outgoing_edges)
         , outgoing_edge_w_(outgoing_edge_w)
         , outgoing_edges_(outgoing_edges)
@@ -37,7 +37,7 @@ public:
     void get_graph_buffers(uint8_t* nodes, SizeT* node_count,
                            uint16_t* sorted_poa, uint16_t* node_id_to_pos,
                            SizeT* incoming_edges, uint16_t* incoming_edge_count,
-                           uint16_t* outgoing_edges, uint16_t* outgoing_edge_count,
+                           SizeTT* outgoing_edges, uint16_t* outgoing_edge_count,
                            uint16_t* incoming_edge_w, uint16_t* node_coverage_counts,
                            SizeT* node_alignments, uint16_t* node_alignment_count) const
     {
@@ -57,7 +57,7 @@ public:
         {
             for (int j = 0; j < get_size(outgoing_edges[i]); j++)
             {
-                uint16_t to_node                                      = outgoing_edges[i][j];
+                SizeTT to_node                                        = outgoing_edges[i][j];
                 incoming_edge_w[to_node * CUDAPOA_MAX_NODE_EDGES + i] = outgoing_edge_w_[i][j];
             }
         }
@@ -65,7 +65,7 @@ public:
 
 protected:
     SortedGraph graph_;
-    Uint16Vec2D outgoing_edges_;
+    SizeTVec2D outgoing_edges_;
     Uint16Vec2D outgoing_edge_w_;
 };
 
@@ -165,7 +165,7 @@ std::string testGenerateConsensus(const BasicGenerateConsensus& obj)
     uint16_t* node_id_to_pos;
     SizeT* incoming_edges;
     uint16_t* incoming_edge_count;
-    uint16_t* outgoing_edges;
+    SizeTT* outgoing_edges;
     uint16_t* outgoing_edge_count;
     uint16_t* incoming_edge_w;
     uint16_t* node_coverage_counts;
@@ -188,7 +188,7 @@ std::string testGenerateConsensus(const BasicGenerateConsensus& obj)
     CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&node_id_to_pos, batch_size.max_nodes_per_window * sizeof(uint16_t)));
     CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&incoming_edges, batch_size.max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES * sizeof(SizeT)));
     CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&incoming_edge_count, batch_size.max_nodes_per_window * sizeof(uint16_t)));
-    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&outgoing_edges, batch_size.max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES * sizeof(uint16_t)));
+    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&outgoing_edges, batch_size.max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES * sizeof(SizeTT)));
     CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&outgoing_edge_count, batch_size.max_nodes_per_window * sizeof(uint16_t)));
     CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&incoming_edge_w, batch_size.max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES * sizeof(uint16_t)));
     CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&node_coverage_counts, batch_size.max_nodes_per_window * sizeof(uint16_t)));
