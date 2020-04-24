@@ -45,7 +45,7 @@ public:
     void get_graph_buffers(SizeT* incoming_edges, uint16_t* incoming_edge_count,
                            SizeTT* outgoing_edges, uint16_t* outgoing_edge_count,
                            uint8_t* nodes, SizeT* node_count,
-                           SizeT* graph, uint16_t* node_id_to_pos) const
+                           SizeT* graph, SizeTTT* node_id_to_pos) const
     {
         graph_.get_edges(incoming_edges, incoming_edge_count, outgoing_edges, outgoing_edge_count);
         graph_.get_nodes(nodes, node_count);
@@ -182,7 +182,7 @@ NWAnswer testNW(const BasicNW& obj)
     //declare device buffer
     uint8_t* nodes;
     SizeT* graph;
-    uint16_t* node_id_to_pos;
+    SizeTTT* node_id_to_pos;
     SizeT graph_count; //local
     uint16_t* incoming_edge_count;
     SizeT* incoming_edges;
@@ -202,7 +202,7 @@ NWAnswer testNW(const BasicNW& obj)
     //allocate unified memory so they can be accessed by both host and device.
     CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&nodes, batch_size.max_nodes_per_window * sizeof(uint8_t)));
     CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&graph, batch_size.max_nodes_per_window * sizeof(SizeT)));
-    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&node_id_to_pos, batch_size.max_nodes_per_window * sizeof(uint16_t)));
+    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&node_id_to_pos, batch_size.max_nodes_per_window * sizeof(SizeTTT)));
     CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&incoming_edges, batch_size.max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES * sizeof(SizeT)));
     CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&incoming_edge_count, batch_size.max_nodes_per_window * sizeof(uint16_t)));
     CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&outgoing_edges, batch_size.max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES * sizeof(SizeTT)));
@@ -216,7 +216,7 @@ NWAnswer testNW(const BasicNW& obj)
     //initialize all 'count' buffers
     memset((void**)incoming_edge_count, 0, batch_size.max_nodes_per_window * sizeof(uint16_t));
     memset((void**)outgoing_edge_count, 0, batch_size.max_nodes_per_window * sizeof(uint16_t));
-    memset((void**)node_id_to_pos, 0, batch_size.max_nodes_per_window * sizeof(uint16_t));
+    memset((void**)node_id_to_pos, 0, batch_size.max_nodes_per_window * sizeof(SizeTTT));
     memset((void**)scores, 0, batch_size.max_matrix_graph_dimension * batch_size.max_matrix_sequence_dimension * sizeof(int16_t));
 
     //calculate edge counts on host

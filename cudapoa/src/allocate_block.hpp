@@ -240,8 +240,8 @@ public:
         offset_d_ += cudautils::align<int64_t, 8>(sizeof(uint16_t) * max_nodes_per_window_ * CUDAPOA_MAX_NODE_EDGES * max_poas_);
         graph_details_d->sorted_poa = reinterpret_cast<SizeT*>(&block_data_d_[offset_d_]);
         offset_d_ += cudautils::align<int64_t, 8>(sizeof(SizeT) * max_nodes_per_window_ * max_poas_);
-        graph_details_d->sorted_poa_node_map = reinterpret_cast<uint16_t*>(&block_data_d_[offset_d_]);
-        offset_d_ += cudautils::align<int64_t, 8>(sizeof(uint16_t) * max_nodes_per_window_ * max_poas_);
+        graph_details_d->sorted_poa_node_map = reinterpret_cast<SizeTTT*>(&block_data_d_[offset_d_]);
+        offset_d_ += cudautils::align<int64_t, 8>(sizeof(SizeTTT) * max_nodes_per_window_ * max_poas_);
         graph_details_d->sorted_poa_local_edge_count = reinterpret_cast<uint16_t*>(&block_data_d_[offset_d_]);
         offset_d_ += cudautils::align<int64_t, 8>(sizeof(uint16_t) * max_nodes_per_window_ * max_poas_);
         if (output_mask_ & OutputType::consensus)
@@ -348,7 +348,7 @@ protected:
         device_size_per_poa += sizeof(uint16_t) * max_nodes_per_window_ * CUDAPOA_MAX_NODE_EDGES * poa_count;                                                                 // graph_details_d_->incoming_edge_weights
         device_size_per_poa += sizeof(uint16_t) * max_nodes_per_window_ * CUDAPOA_MAX_NODE_EDGES * poa_count;                                                                 // graph_details_d_->outgoing_edge_weights
         device_size_per_poa += sizeof(SizeT) * max_nodes_per_window_ * poa_count;                                                                                             // graph_details_d_->sorted_poa
-        device_size_per_poa += sizeof(uint16_t) * max_nodes_per_window_ * poa_count;                                                                                          // graph_details_d_->sorted_poa_node_map
+        device_size_per_poa += sizeof(SizeTTT) * max_nodes_per_window_ * poa_count;                                                                                          // graph_details_d_->sorted_poa_node_map
         device_size_per_poa += sizeof(uint16_t) * max_nodes_per_window_ * poa_count;                                                                                          // graph_details_d_->sorted_poa_local_edge_count
         device_size_per_poa += (output_mask_ & OutputType::consensus) ? sizeof(int32_t) * max_nodes_per_window_ * poa_count : 0;                                              // graph_details_d_->consensus_scores
         device_size_per_poa += (output_mask_ & OutputType::consensus) ? sizeof(int16_t) * max_nodes_per_window_ * poa_count : 0;                                              // graph_details_d_->consensus_predecessors

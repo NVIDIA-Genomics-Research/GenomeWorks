@@ -58,7 +58,7 @@ std::string testTopSortDeviceUtil(SizeT node_count, SizeTVec2D outgoing_edges_ve
 {
     //declare device buffer
     SizeT* sorted_poa;
-    uint16_t* sorted_poa_node_map;
+    SizeTTT* sorted_poa_node_map;
     uint16_t* incoming_edge_count;
     SizeTT* outgoing_edges;
     uint16_t* outgoing_edge_count;
@@ -68,7 +68,7 @@ std::string testTopSortDeviceUtil(SizeT node_count, SizeTVec2D outgoing_edges_ve
 
     //allocate unified memory so they can be accessed by both host and device.
     CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&sorted_poa, node_count * sizeof(SizeT)));
-    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&sorted_poa_node_map, graph_size));
+    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&sorted_poa_node_map, node_count * sizeof(SizeTTT)));
     CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&incoming_edge_count, graph_size));
     CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&outgoing_edges, node_count * sizeof(SizeTT) * CUDAPOA_MAX_NODE_EDGES));
     CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&outgoing_edge_count, graph_size));

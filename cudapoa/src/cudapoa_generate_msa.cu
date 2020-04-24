@@ -129,7 +129,7 @@ __global__ void generateMSAKernel(uint8_t* nodes_d,
                                   SizeT* node_alignments_d,
                                   uint16_t* node_alignment_counts_d,
                                   uint32_t max_sequences_per_poa,
-                                  uint16_t* node_id_to_pos_d,
+                                  SizeTTT* node_id_to_pos_d,
                                   uint8_t* node_marks_d,
                                   bool* check_aligned_nodes_d,
                                   uint16_t* nodes_to_visit_d,
@@ -166,7 +166,7 @@ __global__ void generateMSAKernel(uint8_t* nodes_d,
     uint8_t* node_marks                     = &node_marks_d[max_nodes_per_window * window_idx];
     bool* check_aligned_nodes               = &check_aligned_nodes_d[max_nodes_per_window * window_idx];
     uint16_t* nodes_to_visit                = &nodes_to_visit_d[max_nodes_per_window * window_idx];
-    uint16_t* node_id_to_pos                = &node_id_to_pos_d[window_idx * max_nodes_per_window];
+    SizeTTT* node_id_to_pos                = &node_id_to_pos_d[window_idx * max_nodes_per_window];
 
     __shared__ uint16_t msa_length;
 

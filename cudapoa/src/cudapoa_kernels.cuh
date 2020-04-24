@@ -48,7 +48,7 @@ namespace cudapoa
 
 typedef int32_t SizeT;
 typedef int16_t SizeTT; //temporary, to find the problem in GraphDetails:outgoing_edges
-typedef int16_t SizeTTT;
+typedef int32_t SizeTTT;
 
 /**
  * @brief A struct to hold information about the sequences
@@ -140,7 +140,7 @@ typedef struct GraphDetails
 
     // Device buffer that maintains a mapping between the node ID and its
     // position in the topologically sorted graph.
-    uint16_t* sorted_poa_node_map;
+    SizeTTT* sorted_poa_node_map;
 
     // Device buffer used during topological sort to store incoming
     // edge counts for nodes.
@@ -236,7 +236,7 @@ void generatePOA(claragenomics::cudapoa::OutputDetails* output_details_d,
 
 // host function that calls runTopSortKernel
 void runTopSort(SizeT* sorted_poa,
-                uint16_t* sorted_poa_node_map,
+                SizeTTT* sorted_poa_node_map,
                 SizeT node_count,
                 uint16_t* incoming_edge_count,
                 SizeTT* outgoing_edges,
@@ -267,7 +267,7 @@ void addAlignment(uint8_t* nodes,
 // Host function that calls the kernel
 void runNW(uint8_t* nodes,
            SizeT* graph,
-           uint16_t* node_id_to_pos,
+           SizeTTT* node_id_to_pos,
            SizeT graph_count,
            uint16_t* incoming_edge_count,
            SizeT* incoming_edges,
@@ -287,7 +287,7 @@ void runNW(uint8_t* nodes,
 void generateConsensusTestHost(uint8_t* nodes,
                                SizeT node_count,
                                SizeT* graph,
-                               uint16_t* node_id_to_pos,
+                               SizeTTT* node_id_to_pos,
                                SizeT* incoming_edges,
                                uint16_t* incoming_edge_count,
                                SizeTT* outgoing_edges,
