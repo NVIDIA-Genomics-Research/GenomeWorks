@@ -32,7 +32,7 @@ __device__
                      uint16_t* outgoing_edge_count,
                      uint16_t* incoming_edge_w,
                      int32_t* scores,
-                     SizeTTT* predecessors)
+                     SizeT* predecessors)
 {
     SizeT node_id = graph[max_score_id_pos];
 
@@ -134,7 +134,7 @@ __device__ void generateConsensus(uint8_t* nodes,
                                   SizeTT* outgoing_edges,
                                   uint16_t* outgoing_edge_count,
                                   uint16_t* incoming_edge_w,
-                                  SizeTTT* predecessors,
+                                  SizeT* predecessors,
                                   int32_t* scores,
                                   uint8_t* consensus,
                                   uint16_t* coverage,
@@ -144,7 +144,7 @@ __device__ void generateConsensus(uint8_t* nodes,
                                   uint32_t max_limit_consensus_size)
 {
     // Initialize scores and predecessors to default value.
-    for (SizeTTT i = 0; i < node_count; i++)
+    for (SizeT i = 0; i < node_count; i++)
     {
         predecessors[i] = -1;
         scores[i]       = -1;
@@ -227,7 +227,7 @@ __device__ void generateConsensus(uint8_t* nodes,
 
     // Use consensus_pos to track which position to put new element in. Clip this to the maximum
     // size of consensus so as not to overwrite other good data.
-    SizeTTT consensus_pos = 0;
+    SizeT consensus_pos = 0;
     // Use consensus_count to track how many elements are in consensus. If more than the maximum
     // size, then consensus cannot be properly represented. So throw error.
     uint16_t consensus_count = 0;
@@ -285,7 +285,7 @@ __global__ void generateConsensusKernel(uint8_t* consensus_d,
                                         SizeT* node_alignments_d,
                                         uint16_t* node_alignment_count_d,
                                         int32_t* consensus_scores_d,
-                                        SizeTTT* consensus_predecessors_d,
+                                        SizeT* consensus_predecessors_d,
                                         uint16_t* node_coverage_counts_d_,
                                         uint32_t max_limit_nodes_per_window,
                                         uint32_t max_limit_nodes_per_window_banded,
@@ -319,9 +319,9 @@ __global__ void generateConsensusKernel(uint8_t* consensus_d,
     SizeT* sequence_lengths         = &sequence_lengths_d[window_details_d[window_idx].seq_len_buffer_offset];
 
     //generate consensus
-    uint16_t* coverage              = &coverage_d[window_idx * max_limit_consensus_size];
-    int32_t* consensus_scores       = &consensus_scores_d[window_idx * max_nodes_per_window];
-    SizeTTT* consensus_predecessors = &consensus_predecessors_d[window_idx * max_nodes_per_window];
+    uint16_t* coverage            = &coverage_d[window_idx * max_limit_consensus_size];
+    int32_t* consensus_scores     = &consensus_scores_d[window_idx * max_nodes_per_window];
+    SizeT* consensus_predecessors = &consensus_predecessors_d[window_idx * max_nodes_per_window];
 
     generateConsensus(nodes,
                       sequence_lengths[0],
@@ -351,7 +351,7 @@ __global__ void generateConsensusTestKernel(uint8_t* nodes,
                                             SizeTT* outgoing_edges,
                                             uint16_t* outgoing_edge_count,
                                             uint16_t* incoming_edge_w,
-                                            SizeTTT* predecessors,
+                                            SizeT* predecessors,
                                             int32_t* scores,
                                             uint8_t* consensus,
                                             uint16_t* coverage,
@@ -388,7 +388,7 @@ void generateConsensusTestHost(uint8_t* nodes,
                                SizeTT* outgoing_edges,
                                uint16_t* outgoing_edge_count,
                                uint16_t* incoming_edge_w,
-                               SizeTTT* predecessors,
+                               SizeT* predecessors,
                                int32_t* scores,
                                uint8_t* consensus,
                                uint16_t* coverage,

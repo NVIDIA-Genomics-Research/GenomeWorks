@@ -173,7 +173,7 @@ std::string testGenerateConsensus(const BasicGenerateConsensus& obj)
     uint16_t* node_alignment_count;
 
     //buffers that don't need initialization
-    SizeTTT* predecessors;
+    SizeT* predecessors;
     int32_t* scores;
     uint8_t* consensus;
     uint16_t* coverage;
@@ -195,7 +195,7 @@ std::string testGenerateConsensus(const BasicGenerateConsensus& obj)
     CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&node_alignments, batch_size.max_nodes_per_window * CUDAPOA_MAX_NODE_ALIGNMENTS * sizeof(SizeT)));
     CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&node_alignment_count, batch_size.max_nodes_per_window * sizeof(uint16_t)));
 
-    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&predecessors, batch_size.max_nodes_per_window * sizeof(SizeTTT)));
+    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&predecessors, batch_size.max_nodes_per_window * sizeof(SizeT)));
     CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&scores, batch_size.max_nodes_per_window * sizeof(int32_t)));
     CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&consensus, batch_size.max_concensus_size * sizeof(uint8_t)));
     CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&coverage, batch_size.max_concensus_size * sizeof(uint16_t)));

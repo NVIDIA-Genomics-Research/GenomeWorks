@@ -152,7 +152,7 @@ typedef struct GraphDetails
 
     // Device buffer to store the predecessors of nodes during
     // graph traversal.
-    SizeTTT* consensus_predecessors;
+    SizeT* consensus_predecessors;
 
     // Device buffer to store node marks when performing spoa accurate topsort.
     uint8_t* node_marks;
@@ -293,7 +293,7 @@ void generateConsensusTestHost(uint8_t* nodes,
                                SizeTT* outgoing_edges,
                                uint16_t* outgoing_edge_count,
                                uint16_t* incoming_edge_w,
-                               SizeTTT* predecessors,
+                               SizeT* predecessors,
                                int32_t* scores,
                                uint8_t* consensus,
                                uint16_t* coverage,
