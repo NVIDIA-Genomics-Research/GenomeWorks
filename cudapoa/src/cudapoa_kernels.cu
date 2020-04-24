@@ -77,7 +77,7 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
                                   uint16_t* outgoing_edge_count_d,
                                   uint16_t* incoming_edge_w_d,
                                   uint16_t* outgoing_edge_w_d,
-                                  uint16_t* sorted_poa_d,
+                                  SizeTTT* sorted_poa_d,
                                   uint16_t* node_id_to_pos_d,
                                   SizeT* node_alignments_d,
                                   uint16_t* node_alignment_count_d,
@@ -123,7 +123,7 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
     uint16_t* outgoing_edge_count         = &outgoing_edge_count_d[window_idx * max_nodes_per_window];
     uint16_t* incoming_edge_weights       = &incoming_edge_w_d[window_idx * max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES];
     uint16_t* outgoing_edge_weights       = &outgoing_edge_w_d[window_idx * max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES];
-    uint16_t* sorted_poa                  = &sorted_poa_d[window_idx * max_nodes_per_window];
+    SizeTTT* sorted_poa                  = &sorted_poa_d[window_idx * max_nodes_per_window];
     uint16_t* node_id_to_pos              = &node_id_to_pos_d[window_idx * max_nodes_per_window];
     SizeT* node_alignments                = &node_alignments_d[window_idx * max_nodes_per_window * CUDAPOA_MAX_NODE_ALIGNMENTS];
     uint16_t* node_alignment_count        = &node_alignment_count_d[window_idx * max_nodes_per_window];
@@ -397,7 +397,7 @@ void generatePOAtemplated(claragenomics::cudapoa::OutputDetails* output_details_
     uint16_t* outgoing_edge_count           = graph_details_d->outgoing_edge_count;
     uint16_t* incoming_edge_w               = graph_details_d->incoming_edge_weights;
     uint16_t* outgoing_edge_w               = graph_details_d->outgoing_edge_weights;
-    uint16_t* sorted_poa                    = graph_details_d->sorted_poa;
+    SizeTTT* sorted_poa                    = graph_details_d->sorted_poa;
     uint16_t* node_id_to_pos                = graph_details_d->sorted_poa_node_map;
     uint16_t* sorted_poa_local_edge_count   = graph_details_d->sorted_poa_local_edge_count;
     int32_t* consensus_scores               = graph_details_d->consensus_scores;

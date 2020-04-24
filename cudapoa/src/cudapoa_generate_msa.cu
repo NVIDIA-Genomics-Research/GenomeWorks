@@ -21,14 +21,14 @@ namespace cudapoa
 {
 
 __device__ uint16_t getNodeIDToMSAPosDevice(uint16_t node_count,
-                                            uint16_t* sorted_poa,
+                                            SizeTTT* sorted_poa,
                                             int16_t* node_id_to_msa_pos,
                                             uint16_t* node_alignment_counts)
 {
     uint16_t msa_pos = 0;
     for (uint16_t rank = 0; rank < node_count; rank++)
     {
-        uint16_t node_id            = sorted_poa[rank];
+        SizeTTT node_id            = sorted_poa[rank];
         node_id_to_msa_pos[node_id] = msa_pos;
         uint16_t alignment_count    = node_alignment_counts[node_id];
         for (uint16_t n = 0; n < alignment_count; n++)
@@ -125,7 +125,7 @@ __global__ void generateMSAKernel(uint8_t* nodes_d,
                                   SizeT* sequence_begin_nodes_ids_d, //fill this pointer in the generatePOAKernel
                                   uint8_t* multiple_sequence_alignments_d,
                                   SizeT* sequence_lengths_d,
-                                  uint16_t* sorted_poa_d,
+                                  SizeTTT* sorted_poa_d,
                                   SizeT* node_alignments_d,
                                   uint16_t* node_alignment_counts_d,
                                   uint32_t max_sequences_per_poa,
@@ -156,7 +156,7 @@ __global__ void generateMSAKernel(uint8_t* nodes_d,
     int16_t* node_id_to_msa_pos             = &node_id_to_msa_pos_d[window_idx * max_nodes_per_window];
     SizeT* sequence_begin_nodes_ids         = &sequence_begin_nodes_ids_d[window_idx * max_sequences_per_poa];
     uint8_t* multiple_sequence_alignments   = &multiple_sequence_alignments_d[window_idx * max_sequences_per_poa * max_limit_consensus_size];
-    uint16_t* sorted_poa                    = &sorted_poa_d[window_idx * max_nodes_per_window];
+    SizeTTT* sorted_poa                    = &sorted_poa_d[window_idx * max_nodes_per_window];
     uint16_t* node_alignment_counts         = &node_alignment_counts_d[window_idx * max_nodes_per_window];
     uint32_t num_sequences                  = window_details_d[window_idx].num_seqs;
     SizeT* sequence_lengths                 = &sequence_lengths_d[window_details_d[window_idx].seq_len_buffer_offset];

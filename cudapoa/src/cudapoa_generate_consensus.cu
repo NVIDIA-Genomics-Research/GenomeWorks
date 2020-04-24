@@ -21,11 +21,11 @@ namespace cudapoa
 {
 
 __device__
-    uint16_t
+    SizeTTT
     branchCompletion(uint16_t max_score_id_pos,
                      uint8_t* nodes,
                      uint16_t node_count,
-                     uint16_t* graph,
+                     SizeTTT* graph,
                      SizeT* incoming_edges,
                      uint16_t* incoming_edge_count,
                      SizeTT* outgoing_edges,
@@ -34,7 +34,7 @@ __device__
                      int32_t* scores,
                      int16_t* predecessors)
 {
-    uint16_t node_id = graph[max_score_id_pos];
+    SizeTTT node_id = graph[max_score_id_pos];
 
     // Go through all the outgoing edges of the node, and for
     // each of the end nodes of the edges clear the scores
@@ -55,7 +55,7 @@ __device__
     }
 
     int32_t max_score     = 0;
-    uint16_t max_score_id = 0;
+    SizeTTT max_score_id = 0;
     // Run the same node weight traversal algorithm as always, to find the new
     // node with maximum weight.
     // We can start from the very next position in the graph rank because
@@ -127,7 +127,7 @@ __device__
  */
 __device__ void generateConsensus(uint8_t* nodes,
                                   SizeT node_count,
-                                  uint16_t* graph,
+                                  SizeTTT* graph,
                                   uint16_t* node_id_to_pos,
                                   SizeT* incoming_edges,
                                   uint16_t* incoming_edge_count,
@@ -150,12 +150,12 @@ __device__ void generateConsensus(uint8_t* nodes,
         scores[i]       = -1;
     }
 
-    uint16_t max_score_id = 0;
+    SizeTTT max_score_id = 0;
     int32_t max_score     = -1;
 
     for (uint16_t graph_pos = 0; graph_pos < node_count; graph_pos++)
     {
-        uint16_t node_id  = graph[graph_pos];
+        SizeTTT node_id  = graph[graph_pos];
         uint16_t in_edges = incoming_edge_count[node_id];
 
         int32_t score_node_id = scores[node_id];
@@ -280,7 +280,7 @@ __global__ void generateConsensusKernel(uint8_t* consensus_d,
                                         SizeTT* outgoing_edges_d,
                                         uint16_t* outgoing_edge_count_d,
                                         uint16_t* incoming_edge_w_d,
-                                        uint16_t* sorted_poa_d,
+                                        SizeTTT* sorted_poa_d,
                                         uint16_t* node_id_to_pos_d,
                                         SizeT* node_alignments_d,
                                         uint16_t* node_alignment_count_d,
@@ -311,7 +311,7 @@ __global__ void generateConsensusKernel(uint8_t* consensus_d,
     SizeTT* outgoing_edges          = &outgoing_edges_d[window_idx * max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES];
     uint16_t* outgoing_edge_count   = &outgoing_edge_count_d[window_idx * max_nodes_per_window];
     uint16_t* incoming_edge_weights = &incoming_edge_w_d[window_idx * max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES];
-    uint16_t* sorted_poa            = &sorted_poa_d[window_idx * max_nodes_per_window];
+    SizeTTT* sorted_poa            = &sorted_poa_d[window_idx * max_nodes_per_window];
     uint16_t* node_id_to_pos        = &node_id_to_pos_d[window_idx * max_nodes_per_window];
     SizeT* node_alignments          = &node_alignments_d[window_idx * max_nodes_per_window * CUDAPOA_MAX_NODE_ALIGNMENTS];
     uint16_t* node_alignment_count  = &node_alignment_count_d[window_idx * max_nodes_per_window];
@@ -344,7 +344,7 @@ __global__ void generateConsensusKernel(uint8_t* consensus_d,
 
 __global__ void generateConsensusTestKernel(uint8_t* nodes,
                                             SizeT node_count,
-                                            uint16_t* graph,
+                                            SizeTTT* graph,
                                             uint16_t* node_id_to_pos,
                                             SizeT* incoming_edges,
                                             uint16_t* incoming_edge_count,
@@ -381,7 +381,7 @@ __global__ void generateConsensusTestKernel(uint8_t* nodes,
 
 void generateConsensusTestHost(uint8_t* nodes,
                                SizeT node_count,
-                               uint16_t* graph,
+                               SizeTTT* graph,
                                uint16_t* node_id_to_pos,
                                SizeT* incoming_edges,
                                uint16_t* incoming_edge_count,

@@ -172,7 +172,7 @@ template <typename SeqT,
 __device__
     uint16_t
     runNeedlemanWunschBanded(SeqT* nodes,
-                             uint16_t* graph,
+                             SizeTTT* graph,
                              uint16_t* node_id_to_pos,
                              SizeT graph_count,
                              uint16_t* incoming_edge_count,
@@ -215,7 +215,7 @@ __device__
 
             set_score(scores, 0, 0, (ScoreT)0, gradient, band_width, max_column);
 
-            uint16_t node_id = graph[graph_pos];
+            SizeTTT node_id = graph[graph_pos];
             IndexT i         = graph_pos + 1;
 
             uint16_t pred_count = incoming_edge_count[node_id];
@@ -383,7 +383,7 @@ __device__
             if (i != 0 && j != 0)
             {
 
-                uint16_t node_id  = graph[i - 1];
+                SizeTTT node_id  = graph[i - 1];
                 ScoreT match_cost = (nodes[node_id] == read[j - 1] ? match_score : mismatch_score);
 
                 uint16_t pred_count = incoming_edge_count[node_id];
@@ -416,7 +416,7 @@ __device__
             // Check if move is vertical.
             if (!pred_found && i != 0)
             {
-                uint16_t node_id    = graph[i - 1];
+                SizeTTT node_id    = graph[i - 1];
                 uint16_t pred_count = incoming_edge_count[node_id];
                 uint16_t pred_i     = (pred_count == 0 ? 0 : node_id_to_pos[incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES]] + 1);
 

@@ -57,7 +57,7 @@ std::vector<TopSortTestPair> getTopSortTestCases()
 std::string testTopSortDeviceUtil(SizeT node_count, SizeTVec2D outgoing_edges_vec)
 {
     //declare device buffer
-    uint16_t* sorted_poa;
+    SizeTTT* sorted_poa;
     uint16_t* sorted_poa_node_map;
     uint16_t* incoming_edge_count;
     SizeTT* outgoing_edges;
@@ -67,7 +67,7 @@ std::string testTopSortDeviceUtil(SizeT node_count, SizeTVec2D outgoing_edges_ve
     size_t graph_size = node_count * sizeof(uint16_t);
 
     //allocate unified memory so they can be accessed by both host and device.
-    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&sorted_poa, graph_size));
+    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&sorted_poa, node_count * sizeof(SizeTTT)));
     CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&sorted_poa_node_map, graph_size));
     CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&incoming_edge_count, graph_size));
     CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&outgoing_edges, node_count * sizeof(SizeTT) * CUDAPOA_MAX_NODE_EDGES));
@@ -104,7 +104,7 @@ std::string testTopSortDeviceUtil(SizeT node_count, SizeTVec2D outgoing_edges_ve
 
     CGA_CU_CHECK_ERR(cudaDeviceSynchronize());
 
-    std::string res = claragenomics::stringutils::array_to_string<uint16_t>(sorted_poa, node_count);
+    std::string res = claragenomics::stringutils::array_to_string<SizeTTT>(sorted_poa, node_count);
 
     CGA_CU_CHECK_ERR(cudaFree(sorted_poa));
     CGA_CU_CHECK_ERR(cudaFree(sorted_poa_node_map));

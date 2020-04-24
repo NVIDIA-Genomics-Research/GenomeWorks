@@ -47,7 +47,8 @@ namespace cudapoa
 {
 
 typedef int32_t SizeT;
-typedef int32_t SizeTT;
+typedef int16_t SizeTT;    //temporary, to find the problem in GraphDetails:outgoing_edges
+typedef int32_t SizeTTT;
 
 /**
  * @brief A struct to hold information about the sequences
@@ -135,7 +136,7 @@ typedef struct GraphDetails
 
     // Device buffer to store the topologically sorted graph. Each element
     // of this buffer is an ID of the node.
-    uint16_t* sorted_poa;
+    SizeTTT* sorted_poa;
 
     // Device buffer that maintains a mapping between the node ID and its
     // position in the topologically sorted graph.
@@ -234,7 +235,7 @@ void generatePOA(claragenomics::cudapoa::OutputDetails* output_details_d,
                  const BatchSize& batch_size);
 
 // host function that calls runTopSortKernel
-void runTopSort(uint16_t* sorted_poa,
+void runTopSort(SizeTTT* sorted_poa,
                 uint16_t* sorted_poa_node_map,
                 SizeT node_count,
                 uint16_t* incoming_edge_count,
@@ -250,7 +251,7 @@ void addAlignment(uint8_t* nodes,
                   SizeTT* outgoing_edges, uint16_t* outgoing_edge_count,
                   uint16_t* incoming_edge_w, uint16_t* outgoing_edge_w,
                   uint16_t* alignment_length,
-                  uint16_t* graph,
+                  SizeTTT* graph,
                   int16_t* alignment_graph,
                   uint8_t* read,
                   int16_t* alignment_read,
@@ -265,7 +266,7 @@ void addAlignment(uint8_t* nodes,
 
 // Host function that calls the kernel
 void runNW(uint8_t* nodes,
-           uint16_t* graph,
+           SizeTTT* graph,
            uint16_t* node_id_to_pos,
            SizeT graph_count,
            uint16_t* incoming_edge_count,
@@ -285,7 +286,7 @@ void runNW(uint8_t* nodes,
 
 void generateConsensusTestHost(uint8_t* nodes,
                                SizeT node_count,
-                               uint16_t* graph,
+                               SizeTTT* graph,
                                uint16_t* node_id_to_pos,
                                SizeT* incoming_edges,
                                uint16_t* incoming_edge_count,
