@@ -84,7 +84,7 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
                                   uint16_t* sorted_poa_local_edge_count_d,
                                   uint8_t* node_marks_d_,
                                   bool* check_aligned_nodes_d_,
-                                  uint16_t* nodes_to_visit_d_,
+                                  SizeTTT* nodes_to_visit_d_,
                                   uint16_t* node_coverage_counts_d_,
                                   ScoreT gap_score,
                                   ScoreT mismatch_score,
@@ -145,7 +145,7 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
 #ifdef SPOA_ACCURATE
     uint8_t* node_marks       = &node_marks_d_[max_nodes_per_window * window_idx];
     bool* check_aligned_nodes = &check_aligned_nodes_d_[max_nodes_per_window * window_idx];
-    uint16_t* nodes_to_visit  = &nodes_to_visit_d_[max_nodes_per_window * window_idx];
+    SizeTTT* nodes_to_visit  = &nodes_to_visit_d_[max_nodes_per_window * window_idx];
 #endif
 
     SizeT* sequence_lengths = &sequence_lengths_d[window_details_d[window_idx].seq_len_buffer_offset];
@@ -404,7 +404,7 @@ void generatePOAtemplated(claragenomics::cudapoa::OutputDetails* output_details_
     SizeT* consensus_predecessors           = graph_details_d->consensus_predecessors;
     uint8_t* node_marks                     = graph_details_d->node_marks;
     bool* check_aligned_nodes               = graph_details_d->check_aligned_nodes;
-    uint16_t* nodes_to_visit                = graph_details_d->nodes_to_visit;
+    SizeTTT* nodes_to_visit                = graph_details_d->nodes_to_visit;
     uint16_t* node_coverage_counts          = graph_details_d->node_coverage_counts;
     uint16_t* outgoing_edges_coverage       = graph_details_d->outgoing_edges_coverage;
     uint16_t* outgoing_edges_coverage_count = graph_details_d->outgoing_edges_coverage_count;
