@@ -107,7 +107,7 @@ struct AlignmentDetails
     size_t scorebuf_alloc_size = 0;
 
     // Device buffers for alignment backtrace
-    int16_t* alignment_graph;
+    SizeTTT* alignment_graph;
     int16_t* alignment_read;
 };
 
@@ -252,7 +252,7 @@ void addAlignment(uint8_t* nodes,
                   uint16_t* incoming_edge_w, uint16_t* outgoing_edge_w,
                   uint16_t* alignment_length,
                   SizeT* graph,
-                  int16_t* alignment_graph,
+                  SizeTTT* alignment_graph,
                   uint8_t* read,
                   int16_t* alignment_read,
                   uint16_t* node_coverage_counts,
@@ -277,12 +277,12 @@ void runNW(uint8_t* nodes,
            uint16_t read_count,
            int16_t* scores,
            int32_t scores_width,
-           int16_t* alignment_graph,
+           SizeTTT* alignment_graph,
            int16_t* alignment_read,
            int16_t gap_score,
            int16_t mismatch_score,
            int16_t match_score,
-           uint16_t* algined_nodes);
+           SizeTTT* algined_nodes);
 
 void generateConsensusTestHost(uint8_t* nodes,
                                SizeT node_count,

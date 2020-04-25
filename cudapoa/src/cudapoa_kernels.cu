@@ -68,7 +68,7 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
                                   claragenomics::cudapoa::WindowDetails* window_details_d,
                                   int32_t total_windows,
                                   ScoreT* scores_d,
-                                  int16_t* alignment_graph_d,
+                                  SizeTTT* alignment_graph_d,
                                   int16_t* alignment_read_d,
                                   uint8_t* nodes_d,
                                   SizeT* incoming_edges_d,
@@ -138,7 +138,7 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
     else
         scores = &scores_d[scores_offset];
 
-    int16_t* alignment_graph       = &alignment_graph_d[max_graph_dimension * window_idx];
+    SizeTTT* alignment_graph       = &alignment_graph_d[max_graph_dimension * window_idx];
     int16_t* alignment_read        = &alignment_read_d[max_graph_dimension * window_idx];
     uint16_t* node_coverage_counts = &node_coverage_counts_d_[max_nodes_per_window * window_idx];
 
@@ -385,7 +385,7 @@ void generatePOAtemplated(claragenomics::cudapoa::OutputDetails* output_details_
 
     // unpack alignment details
     ScoreT* scores           = alignment_details_d->scores;
-    int16_t* alignment_graph = alignment_details_d->alignment_graph;
+    SizeTTT* alignment_graph = alignment_details_d->alignment_graph;
     int16_t* alignment_read  = alignment_details_d->alignment_read;
     // unpack graph details
     uint8_t* nodes                          = graph_details_d->nodes;

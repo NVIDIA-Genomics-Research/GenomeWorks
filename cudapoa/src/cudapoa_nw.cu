@@ -153,7 +153,7 @@ __device__
                        uint16_t read_count,
                        ScoreT* scores,
                        int32_t scores_width,
-                       int16_t* alignment_graph,
+                       SizeTTT* alignment_graph,
                        int16_t* alignment_read,
                        ScoreT gap_score,
                        ScoreT mismatch_score,
@@ -462,12 +462,12 @@ __global__ void runNeedlemanWunschKernel(uint8_t* nodes,
                                          uint16_t read_count,
                                          int16_t* scores,
                                          int32_t scores_width,
-                                         int16_t* alignment_graph,
+                                         SizeTTT* alignment_graph,
                                          int16_t* alignment_read,
                                          int16_t gap_score,
                                          int16_t mismatch_score,
                                          int16_t match_score,
-                                         uint16_t* aligned_nodes)
+                                         SizeTTT* aligned_nodes)
 {
     *aligned_nodes = runNeedlemanWunsch<uint8_t, uint16_t, int16_t>(nodes,
                                                                     graph,
@@ -500,12 +500,12 @@ void runNW(uint8_t* nodes,
            uint16_t read_count,
            int16_t* scores,
            int32_t scores_width,
-           int16_t* alignment_graph,
+           SizeTTT* alignment_graph,
            int16_t* alignment_read,
            int16_t gap_score,
            int16_t mismatch_score,
            int16_t match_score,
-           uint16_t* aligned_nodes)
+           SizeTTT* aligned_nodes)
 {
     runNeedlemanWunschKernel<<<1, 64>>>(nodes,
                                         graph,

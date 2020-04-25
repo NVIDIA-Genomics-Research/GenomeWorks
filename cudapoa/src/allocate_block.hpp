@@ -188,8 +188,8 @@ public:
         offset_h_ += sizeof(AlignmentDetails<ScoreT>);
 
         // on device;
-        alignment_details_d->alignment_graph = reinterpret_cast<int16_t*>(&block_data_d_[offset_d_]);
-        offset_d_ += cudautils::align<int64_t, 8>(sizeof(int16_t) * max_graph_dimension_ * max_poas_);
+        alignment_details_d->alignment_graph = reinterpret_cast<SizeTTT*>(&block_data_d_[offset_d_]);
+        offset_d_ += cudautils::align<int64_t, 8>(sizeof(SizeTTT) * max_graph_dimension_ * max_poas_);
         alignment_details_d->alignment_read = reinterpret_cast<int16_t*>(&block_data_d_[offset_d_]);
         offset_d_ += cudautils::align<int64_t, 8>(sizeof(int16_t) * max_graph_dimension_ * max_poas_);
 
@@ -363,7 +363,7 @@ protected:
         // for alignment - host
         host_size_fixed += sizeof(AlignmentDetails<ScoreT>); // alignment_details_d_
         // for alignment - device
-        device_size_per_poa += sizeof(int16_t) * max_graph_dimension_ * poa_count; // alignment_details_d_->alignment_graph
+        device_size_per_poa += sizeof(SizeTTT) * max_graph_dimension_ * poa_count; // alignment_details_d_->alignment_graph
         device_size_per_poa += sizeof(int16_t) * max_graph_dimension_ * poa_count; // alignment_details_d_->alignment_read
 
         return std::make_tuple(host_size_fixed, device_size_fixed, host_size_per_poa, device_size_per_poa);

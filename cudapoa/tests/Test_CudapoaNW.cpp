@@ -191,12 +191,12 @@ NWAnswer testNW(const BasicNW& obj)
     uint8_t* read;
     uint16_t read_count; //local
     int16_t* scores;
-    int16_t* alignment_graph;
+    SizeTTT* alignment_graph;
     int16_t* alignment_read;
     int16_t gap_score;
     int16_t mismatch_score;
     int16_t match_score;
-    uint16_t* aligned_nodes; //local; to store num of nodes aligned (length of alignment_graph and alignment_read)
+    SizeTTT* aligned_nodes; //local; to store num of nodes aligned (length of alignment_graph and alignment_read)
     BatchSize batch_size;    //default max_sequence_size = 1024, max_sequences_per_poa = 100
 
     //allocate unified memory so they can be accessed by both host and device.
@@ -253,7 +253,7 @@ NWAnswer testNW(const BasicNW& obj)
 
     //input and output buffers are the same ones in unified memory, so the results are updated in place
     //results are stored in alignment_graph and alignment_read; return string representation of those
-    auto res = std::make_pair(claragenomics::stringutils::array_to_string<int16_t>(alignment_graph, *aligned_nodes, ","),
+    auto res = std::make_pair(claragenomics::stringutils::array_to_string<SizeTTT>(alignment_graph, *aligned_nodes, ","),
                               claragenomics::stringutils::array_to_string<int16_t>(alignment_read, *aligned_nodes, ","));
 
     CGA_CU_CHECK_ERR(cudaFree(nodes));
