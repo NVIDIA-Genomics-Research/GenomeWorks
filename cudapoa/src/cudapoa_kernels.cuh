@@ -108,7 +108,7 @@ struct AlignmentDetails
 
     // Device buffers for alignment backtrace
     SizeT* alignment_graph;
-    int16_t* alignment_read;
+    SizeTTT* alignment_read;
 };
 
 typedef struct GraphDetails
@@ -254,7 +254,7 @@ void addAlignment(uint8_t* nodes,
                   SizeT* graph,
                   SizeT* alignment_graph,
                   uint8_t* read,
-                  int16_t* alignment_read,
+                  SizeTTT* alignment_read,
                   uint16_t* node_coverage_counts,
                   int8_t* base_weights,
                   SizeT* sequence_begin_nodes_ids,
@@ -278,7 +278,7 @@ void runNW(uint8_t* nodes,
            int16_t* scores,
            int32_t scores_width,
            SizeT* alignment_graph,
-           int16_t* alignment_read,
+           SizeTTT* alignment_read,
            int16_t gap_score,
            int16_t mismatch_score,
            int16_t match_score,

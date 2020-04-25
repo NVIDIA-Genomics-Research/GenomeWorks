@@ -192,7 +192,7 @@ NWAnswer testNW(const BasicNW& obj)
     uint16_t read_count; //local
     int16_t* scores;
     SizeT* alignment_graph;
-    int16_t* alignment_read;
+    SizeTTT* alignment_read;
     int16_t gap_score;
     int16_t mismatch_score;
     int16_t match_score;
@@ -208,10 +208,10 @@ NWAnswer testNW(const BasicNW& obj)
     CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&outgoing_edges, batch_size.max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES * sizeof(SizeTT)));
     CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&outgoing_edge_count, batch_size.max_nodes_per_window * sizeof(uint16_t)));
     CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&scores, batch_size.max_matrix_graph_dimension * batch_size.max_matrix_sequence_dimension * sizeof(int16_t)));
-    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&alignment_graph, batch_size.max_matrix_graph_dimension * sizeof(int16_t)));
+    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&alignment_graph, batch_size.max_matrix_graph_dimension * sizeof(SizeT)));
     CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&read, batch_size.max_sequence_size * sizeof(uint8_t)));
-    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&alignment_read, batch_size.max_matrix_graph_dimension * sizeof(int16_t)));
-    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&aligned_nodes, sizeof(uint16_t)));
+    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&alignment_read, batch_size.max_matrix_graph_dimension * sizeof(SizeTTT)));
+    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&aligned_nodes, sizeof(SizeT)));
 
     //initialize all 'count' buffers
     memset((void**)incoming_edge_count, 0, batch_size.max_nodes_per_window * sizeof(uint16_t));
@@ -254,7 +254,7 @@ NWAnswer testNW(const BasicNW& obj)
     //input and output buffers are the same ones in unified memory, so the results are updated in place
     //results are stored in alignment_graph and alignment_read; return string representation of those
     auto res = std::make_pair(claragenomics::stringutils::array_to_string<SizeT>(alignment_graph, *aligned_nodes, ","),
-                              claragenomics::stringutils::array_to_string<int16_t>(alignment_read, *aligned_nodes, ","));
+                              claragenomics::stringutils::array_to_string<SizeTTT>(alignment_read, *aligned_nodes, ","));
 
     CGA_CU_CHECK_ERR(cudaFree(nodes));
     CGA_CU_CHECK_ERR(cudaFree(graph));

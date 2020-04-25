@@ -182,7 +182,7 @@ __device__
                              uint16_t read_length,
                              ScoreT* scores,
                              SizeT* alignment_graph,
-                             int16_t* alignment_read,
+                             SizeTTT* alignment_read,
                              ScoreT gap_score,
                              ScoreT mismatch_score,
                              ScoreT match_score)
