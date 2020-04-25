@@ -69,7 +69,7 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
                                   int32_t total_windows,
                                   ScoreT* scores_d,
                                   SizeT* alignment_graph_d,
-                                  SizeTTT* alignment_read_d,
+                                  SizeT* alignment_read_d,
                                   uint8_t* nodes_d,
                                   SizeT* incoming_edges_d,
                                   uint16_t* incoming_edge_count_d,
@@ -139,7 +139,7 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
         scores = &scores_d[scores_offset];
 
     SizeT* alignment_graph         = &alignment_graph_d[max_graph_dimension * window_idx];
-    SizeTTT* alignment_read        = &alignment_read_d[max_graph_dimension * window_idx];
+    SizeT* alignment_read          = &alignment_read_d[max_graph_dimension * window_idx];
     uint16_t* node_coverage_counts = &node_coverage_counts_d_[max_nodes_per_window * window_idx];
 
 #ifdef SPOA_ACCURATE
@@ -384,9 +384,9 @@ void generatePOAtemplated(claragenomics::cudapoa::OutputDetails* output_details_
     SizeT* sequence_begin_nodes_ids = input_details_d->sequence_begin_nodes_ids;
 
     // unpack alignment details
-    ScoreT* scores          = alignment_details_d->scores;
-    SizeT* alignment_graph  = alignment_details_d->alignment_graph;
-    SizeTTT* alignment_read = alignment_details_d->alignment_read;
+    ScoreT* scores         = alignment_details_d->scores;
+    SizeT* alignment_graph = alignment_details_d->alignment_graph;
+    SizeT* alignment_read  = alignment_details_d->alignment_read;
     // unpack graph details
     uint8_t* nodes                          = graph_details_d->nodes;
     SizeT* node_alignments                  = graph_details_d->node_alignments;

@@ -65,7 +65,7 @@ __device__
                         SizeT* graph,
                         SizeT* alignment_graph,
                         uint8_t* read,
-                        SizeTTT* alignment_read,
+                        SizeT* alignment_read,
                         uint16_t* node_coverage_counts,
                         int8_t* base_weights,
                         SizeT* sequence_begin_nodes_ids,
@@ -91,8 +91,8 @@ __device__
     //             else use one of aligned nodes and move on.
     for (int16_t pos = alignment_length - 1; pos >= 0; pos--)
     {
-        bool new_node    = false;
-        SizeTTT read_pos = alignment_read[pos];
+        bool new_node  = false;
+        SizeT read_pos = alignment_read[pos];
         // Case where base in read in an insert.
         if (read_pos != -1)
         {
@@ -284,7 +284,7 @@ __global__ void addAlignmentKernel(uint8_t* nodes,
                                    SizeT* graph,
                                    SizeT* alignment_graph,
                                    uint8_t* read,
-                                   SizeTTT* alignment_read,
+                                   SizeT* alignment_read,
                                    uint16_t* node_coverage_counts,
                                    int8_t* base_weights,
                                    SizeT* sequence_begin_nodes_ids,
@@ -329,7 +329,7 @@ void addAlignment(uint8_t* nodes,
                   SizeT* graph,
                   SizeT* alignment_graph,
                   uint8_t* read,
-                  SizeTTT* alignment_read,
+                  SizeT* alignment_read,
                   uint16_t* node_coverage_counts,
                   int8_t* base_weights,
                   SizeT* sequence_begin_nodes_ids,

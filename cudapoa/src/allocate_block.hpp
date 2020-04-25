@@ -190,8 +190,8 @@ public:
         // on device;
         alignment_details_d->alignment_graph = reinterpret_cast<SizeT*>(&block_data_d_[offset_d_]);
         offset_d_ += cudautils::align<int64_t, 8>(sizeof(SizeT) * max_graph_dimension_ * max_poas_);
-        alignment_details_d->alignment_read = reinterpret_cast<SizeTTT*>(&block_data_d_[offset_d_]);
-        offset_d_ += cudautils::align<int64_t, 8>(sizeof(SizeTTT) * max_graph_dimension_ * max_poas_);
+        alignment_details_d->alignment_read = reinterpret_cast<SizeT*>(&block_data_d_[offset_d_]);
+        offset_d_ += cudautils::align<int64_t, 8>(sizeof(SizeT) * max_graph_dimension_ * max_poas_);
 
         // rest of the available memory is assigned to scores buffer
         alignment_details_d->scorebuf_alloc_size = total_d_ - offset_d_;
@@ -363,8 +363,8 @@ protected:
         // for alignment - host
         host_size_fixed += sizeof(AlignmentDetails<ScoreT>); // alignment_details_d_
         // for alignment - device
-        device_size_per_poa += sizeof(SizeT) * max_graph_dimension_ * poa_count;   // alignment_details_d_->alignment_graph
-        device_size_per_poa += sizeof(SizeTTT) * max_graph_dimension_ * poa_count; // alignment_details_d_->alignment_read
+        device_size_per_poa += sizeof(SizeT) * max_graph_dimension_ * poa_count; // alignment_details_d_->alignment_graph
+        device_size_per_poa += sizeof(SizeT) * max_graph_dimension_ * poa_count; // alignment_details_d_->alignment_read
 
         return std::make_tuple(host_size_fixed, device_size_fixed, host_size_per_poa, device_size_per_poa);
     }
