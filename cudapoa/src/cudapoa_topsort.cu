@@ -95,7 +95,7 @@ __device__ void raconTopologicalSortDeviceUtil(SizeT* sorted_poa,
                                                SizeT* aligned_nodes,
                                                uint8_t* node_marks,
                                                bool* check_aligned_nodes,
-                                               SizeTTT* nodes_to_visit,
+                                               SizeT* nodes_to_visit,
                                                bool banded_alignment,
                                                uint16_t max_nodes_per_window)
 {
@@ -120,8 +120,8 @@ __device__ void raconTopologicalSortDeviceUtil(SizeT* sorted_poa,
 
         while (node_idx != -1)
         {
-            SizeTTT node_id = nodes_to_visit[node_idx];
-            bool valid       = true;
+            SizeT node_id = nodes_to_visit[node_idx];
+            bool valid    = true;
 
             if (node_marks[node_id] != 2)
             {

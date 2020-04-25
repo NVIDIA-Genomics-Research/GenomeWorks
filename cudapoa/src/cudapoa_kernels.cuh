@@ -161,7 +161,7 @@ typedef struct GraphDetails
     bool* check_aligned_nodes;
 
     // Device buffer to store stack for nodes to be visited.
-    SizeTTT* nodes_to_visit;
+    SizeT* nodes_to_visit;
 
     // Device buffer for storing coverage of each node in graph.
     uint16_t* node_coverage_counts;

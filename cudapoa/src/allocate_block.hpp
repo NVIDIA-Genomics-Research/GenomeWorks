@@ -256,8 +256,8 @@ public:
         offset_d_ += cudautils::align<int64_t, 8>(sizeof(int8_t) * max_nodes_per_window_ * max_poas_);
         graph_details_d->check_aligned_nodes = reinterpret_cast<bool*>(&block_data_d_[offset_d_]);
         offset_d_ += cudautils::align<int64_t, 8>(sizeof(bool) * max_nodes_per_window_ * max_poas_);
-        graph_details_d->nodes_to_visit = reinterpret_cast<SizeTTT*>(&block_data_d_[offset_d_]);
-        offset_d_ += cudautils::align<int64_t, 8>(sizeof(SizeTTT) * max_nodes_per_window_ * max_poas_);
+        graph_details_d->nodes_to_visit = reinterpret_cast<SizeT*>(&block_data_d_[offset_d_]);
+        offset_d_ += cudautils::align<int64_t, 8>(sizeof(SizeT) * max_nodes_per_window_ * max_poas_);
         graph_details_d->node_coverage_counts = reinterpret_cast<uint16_t*>(&block_data_d_[offset_d_]);
         offset_d_ += cudautils::align<int64_t, 8>(sizeof(uint16_t) * max_nodes_per_window_ * max_poas_);
         if (output_mask_ & OutputType::msa)
@@ -354,7 +354,7 @@ protected:
         device_size_per_poa += (output_mask_ & OutputType::consensus) ? sizeof(SizeT) * max_nodes_per_window_ * poa_count : 0;                                                // graph_details_d_->consensus_predecessors
         device_size_per_poa += sizeof(int8_t) * max_nodes_per_window_ * poa_count;                                                                                            // graph_details_d_->node_marks
         device_size_per_poa += sizeof(bool) * max_nodes_per_window_ * poa_count;                                                                                              // graph_details_d_->check_aligned_nodes
-        device_size_per_poa += sizeof(SizeTTT) * max_nodes_per_window_ * poa_count;                                                                                          // graph_details_d_->nodes_to_visit
+        device_size_per_poa += sizeof(SizeT) * max_nodes_per_window_ * poa_count;                                                                                             // graph_details_d_->nodes_to_visit
         device_size_per_poa += sizeof(uint16_t) * max_nodes_per_window_ * poa_count;                                                                                          // graph_details_d_->node_coverage_counts
         device_size_per_poa += (output_mask_ & OutputType::msa) ? sizeof(uint16_t) * max_nodes_per_window_ * CUDAPOA_MAX_NODE_EDGES * max_sequences_per_poa_ * poa_count : 0; // graph_details_d_->outgoing_edges_coverage
         device_size_per_poa += (output_mask_ & OutputType::msa) ? sizeof(uint16_t) * max_nodes_per_window_ * CUDAPOA_MAX_NODE_EDGES * poa_count : 0;                          // graph_details_d_->outgoing_edges_coverage_count
