@@ -168,7 +168,7 @@ typedef struct GraphDetails
 
     uint16_t* outgoing_edges_coverage;
     uint16_t* outgoing_edges_coverage_count;
-    SizeTTT* node_id_to_msa_pos;
+    SizeT* node_id_to_msa_pos;
 
 } GraphDetails;
 

@@ -266,8 +266,8 @@ public:
             offset_d_ += cudautils::align<int64_t, 8>(sizeof(uint16_t) * max_nodes_per_window_ * CUDAPOA_MAX_NODE_EDGES * max_sequences_per_poa_ * max_poas_);
             graph_details_d->outgoing_edges_coverage_count = reinterpret_cast<uint16_t*>(&block_data_d_[offset_d_]);
             offset_d_ += cudautils::align<int64_t, 8>(sizeof(uint16_t) * max_nodes_per_window_ * CUDAPOA_MAX_NODE_EDGES * max_poas_);
-            graph_details_d->node_id_to_msa_pos = reinterpret_cast<SizeTTT*>(&block_data_d_[offset_d_]);
-            offset_d_ += cudautils::align<int64_t, 8>(sizeof(SizeTTT) * max_nodes_per_window_ * max_poas_);
+            graph_details_d->node_id_to_msa_pos = reinterpret_cast<SizeT*>(&block_data_d_[offset_d_]);
+            offset_d_ += cudautils::align<int64_t, 8>(sizeof(SizeT) * max_nodes_per_window_ * max_poas_);
         }
 
         *graph_details_d_p = graph_details_d;
@@ -358,7 +358,7 @@ protected:
         device_size_per_poa += sizeof(uint16_t) * max_nodes_per_window_ * poa_count;                                                                                          // graph_details_d_->node_coverage_counts
         device_size_per_poa += (output_mask_ & OutputType::msa) ? sizeof(uint16_t) * max_nodes_per_window_ * CUDAPOA_MAX_NODE_EDGES * max_sequences_per_poa_ * poa_count : 0; // graph_details_d_->outgoing_edges_coverage
         device_size_per_poa += (output_mask_ & OutputType::msa) ? sizeof(uint16_t) * max_nodes_per_window_ * CUDAPOA_MAX_NODE_EDGES * poa_count : 0;                          // graph_details_d_->outgoing_edges_coverage_count
-        device_size_per_poa += (output_mask_ & OutputType::msa) ? sizeof(SizeTTT) * max_nodes_per_window_ * poa_count : 0;                                                    // graph_details_d_->node_id_to_msa_pos
+        device_size_per_poa += (output_mask_ & OutputType::msa) ? sizeof(SizeT) * max_nodes_per_window_ * poa_count : 0;                                                      // graph_details_d_->node_id_to_msa_pos
 
         // for alignment - host
         host_size_fixed += sizeof(AlignmentDetails<ScoreT>); // alignment_details_d_

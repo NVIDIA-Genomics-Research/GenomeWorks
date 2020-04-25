@@ -408,7 +408,7 @@ void generatePOAtemplated(claragenomics::cudapoa::OutputDetails* output_details_
     uint16_t* node_coverage_counts          = graph_details_d->node_coverage_counts;
     uint16_t* outgoing_edges_coverage       = graph_details_d->outgoing_edges_coverage;
     uint16_t* outgoing_edges_coverage_count = graph_details_d->outgoing_edges_coverage_count;
-    SizeTTT* node_id_to_msa_pos             = graph_details_d->node_id_to_msa_pos;
+    SizeT* node_id_to_msa_pos               = graph_details_d->node_id_to_msa_pos;
 
     int32_t nwindows_per_block = CUDAPOA_THREADS_PER_BLOCK / WARP_SIZE;
     int32_t nblocks            = (total_windows + nwindows_per_block - 1) / nwindows_per_block;
