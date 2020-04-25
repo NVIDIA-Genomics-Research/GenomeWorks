@@ -28,7 +28,7 @@ class BasicAlignment
 public:
     BasicAlignment(std::vector<uint8_t> nodes, SizeTVec2D outgoing_edges,
                    Uint16Vec2D node_alignments, std::vector<uint16_t> node_coverage_counts,
-                   std::vector<uint8_t> read, std::vector<int8_t> base_weights, std::vector<SizeTTT> alignment_graph, std::vector<int16_t> alignment_read)
+                   std::vector<uint8_t> read, std::vector<int8_t> base_weights, std::vector<SizeT> alignment_graph, std::vector<int16_t> alignment_read)
         : graph(nodes, outgoing_edges, node_alignments, node_coverage_counts)
         , read_(read)
         , alignment_graph_(alignment_graph)
@@ -37,7 +37,7 @@ public:
         //do nothing for now
     }
 
-    void get_alignments(SizeTTT* alignment_graph, int16_t* alignment_read, uint16_t* alignment_length) const
+    void get_alignments(SizeT* alignment_graph, int16_t* alignment_read, uint16_t* alignment_length) const
     {
         for (int i = 0; i < get_size(alignment_graph_); i++)
         {
@@ -79,7 +79,7 @@ public:
         graph.get_node_coverage_counts(node_coverage_counts);
     }
 
-    void get_alignment_buffers(SizeTTT* alignment_graph, int16_t* alignment_read, uint16_t* alignment_length,
+    void get_alignment_buffers(SizeT* alignment_graph, int16_t* alignment_read, uint16_t* alignment_length,
                                uint8_t* read, int8_t* base_weights) const
     {
         get_alignments(alignment_graph, alignment_read, alignment_length);
@@ -91,7 +91,7 @@ protected:
     BasicGraph graph;
     std::vector<uint8_t> read_;
     std::vector<int8_t> base_weights_;
-    std::vector<SizeTTT> alignment_graph_;
+    std::vector<SizeT> alignment_graph_;
     std::vector<int16_t> alignment_read_;
 };
 
@@ -235,7 +235,7 @@ BasicGraph testAddAlignment(const BasicAlignment& obj)
     uint16_t* outgoing_edge_w;
     uint16_t* alignment_length;
     SizeT* graph;
-    SizeTTT* alignment_graph;
+    SizeT* alignment_graph;
     uint8_t* read;
     int8_t* base_weights;
     int16_t* alignment_read;
@@ -259,7 +259,7 @@ BasicGraph testAddAlignment(const BasicAlignment& obj)
     CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&outgoing_edge_w, batch_size.max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES * sizeof(uint16_t)));
     CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&alignment_length, sizeof(uint16_t)));
     CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&graph, batch_size.max_nodes_per_window * sizeof(SizeT)));
-    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&alignment_graph, batch_size.max_sequence_size * sizeof(SizeTTT)));
+    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&alignment_graph, batch_size.max_sequence_size * sizeof(SizeT)));
     CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&read, batch_size.max_sequence_size * sizeof(uint8_t)));
     CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&base_weights, batch_size.max_sequence_size * sizeof(int8_t)));
     CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&alignment_read, batch_size.max_sequence_size * sizeof(uint16_t)));

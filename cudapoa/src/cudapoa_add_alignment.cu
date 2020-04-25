@@ -63,7 +63,7 @@ __device__
                         uint16_t* incoming_edge_w, uint16_t* outgoing_edge_w,
                         uint16_t alignment_length,
                         SizeT* graph,
-                        SizeTTT* alignment_graph,
+                        SizeT* alignment_graph,
                         uint8_t* read,
                         int16_t* alignment_read,
                         uint16_t* node_coverage_counts,
@@ -99,8 +99,8 @@ __device__
             int8_t NODE_WEIGHT = base_weights[read_pos];
 
             //printf("%c ", read[read_pos]);
-            uint8_t read_base     = read[read_pos];
-            SizeTTT graph_node_id = alignment_graph[pos];
+            uint8_t read_base   = read[read_pos];
+            SizeT graph_node_id = alignment_graph[pos];
             if (graph_node_id == -1)
             {
                 // No alignment node found in graph.
@@ -282,7 +282,7 @@ __global__ void addAlignmentKernel(uint8_t* nodes,
                                    uint16_t* incoming_edge_w, uint16_t* outgoing_edge_w,
                                    uint16_t* alignment_length,
                                    SizeT* graph,
-                                   SizeTTT* alignment_graph,
+                                   SizeT* alignment_graph,
                                    uint8_t* read,
                                    int16_t* alignment_read,
                                    uint16_t* node_coverage_counts,
@@ -327,7 +327,7 @@ void addAlignment(uint8_t* nodes,
                   uint16_t* incoming_edge_w, uint16_t* outgoing_edge_w,
                   uint16_t* alignment_length,
                   SizeT* graph,
-                  SizeTTT* alignment_graph,
+                  SizeT* alignment_graph,
                   uint8_t* read,
                   int16_t* alignment_read,
                   uint16_t* node_coverage_counts,

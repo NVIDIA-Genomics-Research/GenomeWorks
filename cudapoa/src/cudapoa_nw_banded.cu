@@ -181,7 +181,7 @@ __device__
                              SeqT* read,
                              uint16_t read_length,
                              ScoreT* scores,
-                             SizeTTT* alignment_graph,
+                             SizeT* alignment_graph,
                              int16_t* alignment_read,
                              ScoreT gap_score,
                              ScoreT mismatch_score,
