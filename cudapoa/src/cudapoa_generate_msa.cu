@@ -20,13 +20,13 @@ namespace claragenomics
 namespace cudapoa
 {
 
-__device__ uint16_t getNodeIDToMSAPosDevice(uint16_t node_count,
+__device__ SizeTTT getNodeIDToMSAPosDevice(SizeTTT node_count,
                                             SizeT* sorted_poa,
-                                            int16_t* node_id_to_msa_pos,
+                                            SizeTTT* node_id_to_msa_pos,
                                             uint16_t* node_alignment_counts)
 {
-    uint16_t msa_pos = 0;
-    for (uint16_t rank = 0; rank < node_count; rank++)
+    SizeTTT msa_pos = 0;
+    for (SizeTTT rank = 0; rank < node_count; rank++)
     {
         SizeT node_id               = sorted_poa[rank];
         node_id_to_msa_pos[node_id] = msa_pos;
@@ -46,7 +46,7 @@ __device__ void generateMSADevice(uint8_t* nodes,
                                   SizeTT* outgoing_edges,
                                   uint16_t* outgoing_edges_coverage,       //fill this pointer with seq ids in addAlignmentToGraph whenever a new edge is added
                                   uint16_t* outgoing_edges_coverage_count, //ditto
-                                  int16_t* node_id_to_msa_pos,             //this is calculated with the getNodeIDToMSAPos device function above
+                                  SizeTTT* node_id_to_msa_pos,             //this is calculated with the getNodeIDToMSAPos device function above
                                   SizeT* sequence_begin_nodes_ids,         //fill this pointer in the generatePOAKernel
                                   uint8_t* multiple_sequence_alignments,
                                   uint16_t msa_length,
@@ -59,16 +59,16 @@ __device__ void generateMSADevice(uint8_t* nodes,
         return;
 
     SizeT node_id         = sequence_begin_nodes_ids[s];
-    uint16_t filled_until = 0;
+    SizeTTT filled_until = 0;
     while (true)
     {
-        uint16_t msa_pos                                                     = node_id_to_msa_pos[node_id];
+        SizeTTT msa_pos                                                     = node_id_to_msa_pos[node_id];
         multiple_sequence_alignments[s * max_limit_consensus_size + msa_pos] = nodes[node_id];
 
         // fill the gap in current alignment with '-'
         if (msa_pos > filled_until)
         {
-            for (uint16_t i = filled_until; i < msa_pos; i++)
+            for (SizeTTT i = filled_until; i < msa_pos; i++)
             {
                 multiple_sequence_alignments[s * max_limit_consensus_size + i] = '-';
             }
@@ -100,7 +100,7 @@ __device__ void generateMSADevice(uint8_t* nodes,
         {
             if (filled_until < msa_length)
             {
-                for (uint16_t i = filled_until; i < msa_length; i++)
+                for (SizeTTT i = filled_until; i < msa_length; i++)
                 {
                     multiple_sequence_alignments[s * max_limit_consensus_size + i] = '-';
                 }
@@ -121,7 +121,7 @@ __global__ void generateMSAKernel(uint8_t* nodes_d,
                                   SizeTT* outgoing_edges_d,
                                   uint16_t* outgoing_edges_coverage_d, //fill this pointer in addAlignmentKernel whenever a new edge is added
                                   uint16_t* outgoing_edges_coverage_count_d,
-                                  int16_t* node_id_to_msa_pos_d,     //this is calculated with the getNodeIDToMSAPos function above
+                                  SizeTTT* node_id_to_msa_pos_d,     //this is calculated with the getNodeIDToMSAPos function above
                                   SizeT* sequence_begin_nodes_ids_d, //fill this pointer in the generatePOAKernel
                                   uint8_t* multiple_sequence_alignments_d,
                                   SizeT* sequence_lengths_d,
@@ -153,7 +153,7 @@ __global__ void generateMSAKernel(uint8_t* nodes_d,
     SizeTT* outgoing_edges                  = &outgoing_edges_d[window_idx * max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES];
     uint16_t* outgoing_edges_coverage       = &outgoing_edges_coverage_d[window_idx * max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES * max_sequences_per_poa];
     uint16_t* outgoing_edges_coverage_count = &outgoing_edges_coverage_count_d[window_idx * max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES];
-    int16_t* node_id_to_msa_pos             = &node_id_to_msa_pos_d[window_idx * max_nodes_per_window];
+    SizeTTT* node_id_to_msa_pos             = &node_id_to_msa_pos_d[window_idx * max_nodes_per_window];
     SizeT* sequence_begin_nodes_ids         = &sequence_begin_nodes_ids_d[window_idx * max_sequences_per_poa];
     uint8_t* multiple_sequence_alignments   = &multiple_sequence_alignments_d[window_idx * max_sequences_per_poa * max_limit_consensus_size];
     SizeT* sorted_poa                       = &sorted_poa_d[window_idx * max_nodes_per_window];
@@ -168,7 +168,7 @@ __global__ void generateMSAKernel(uint8_t* nodes_d,
     SizeT* nodes_to_visit                   = &nodes_to_visit_d[max_nodes_per_window * window_idx];
     SizeT* node_id_to_pos                   = &node_id_to_pos_d[window_idx * max_nodes_per_window];
 
-    __shared__ uint16_t msa_length;
+    __shared__ SizeTTT msa_length;
 
     if (threadIdx.x == 0) //one thread will fill in node_id_to_msa_pos and msa_length for it's block/window
     {
