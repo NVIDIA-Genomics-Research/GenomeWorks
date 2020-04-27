@@ -23,6 +23,7 @@ else()
 endif()
 
 cuda_add_library(cudamapper
+        src/application_parameters.cu
         src/cudamapper.cpp
         src/index_batcher.cu
         src/index_descriptor.cpp
