@@ -51,7 +51,7 @@ namespace cudapoa
  * @return Status code for any errors encountered.
  */
 
-template <bool msa = false>
+template <bool msa = false, typename SizeT>
 __device__
     uint8_t
     addAlignmentToGraph(SizeT& new_node_count,
@@ -60,9 +60,9 @@ __device__
                         SizeT* node_alignments, uint16_t* node_alignment_count,
                         SizeT* incoming_edges, uint16_t* incoming_edge_count,
                         SizeT* outgoing_edges, uint16_t* outgoing_edge_count,
-                        uint16_t* incoming_edge_w, uint16_t* outgoing_edge_w,
+                        uint16_t* incoming_edge_w, uint16_t* /*outgoing_edge_w*/,
                         uint16_t alignment_length,
-                        SizeT* graph,
+                        SizeT* /*graph*/,
                         SizeT* alignment_graph,
                         uint8_t* read,
                         SizeT* alignment_read,
@@ -273,7 +273,8 @@ __device__
     return static_cast<uint8_t>(StatusType::success);
 }
 
-// kernel that calls the addAlignmentToGraph device funtion
+// kernel that calls the addAlignmentToGraph device function
+template <typename SizeT>
 __global__ void addAlignmentKernel(uint8_t* nodes,
                                    SizeT* node_count,
                                    SizeT* node_alignments, uint16_t* node_alignment_count,
@@ -296,29 +297,30 @@ __global__ void addAlignmentKernel(uint8_t* nodes,
 {
     // all pointers will be allocated in unified memory visible to both host and device
     SizeT new_node_count;
-    uint8_t error_code = addAlignmentToGraph(new_node_count, nodes,
-                                             *node_count,
-                                             node_alignments, node_alignment_count,
-                                             incoming_edges, incoming_edge_count,
-                                             outgoing_edges, outgoing_edge_count,
-                                             incoming_edge_w, outgoing_edge_w,
-                                             *alignment_length,
-                                             graph,
-                                             alignment_graph,
-                                             read,
-                                             alignment_read,
-                                             node_coverage_counts,
-                                             base_weights,
-                                             sequence_begin_nodes_ids,
-                                             outgoing_edges_coverage,
-                                             outgoing_edges_coverage_count,
-                                             s,
-                                             max_sequences_per_poa,
-                                             max_limit_nodes_per_window);
-    *node_count        = new_node_count;
+    /*uint8_t error_code =*/addAlignmentToGraph(new_node_count, nodes,
+                                                *node_count,
+                                                node_alignments, node_alignment_count,
+                                                incoming_edges, incoming_edge_count,
+                                                outgoing_edges, outgoing_edge_count,
+                                                incoming_edge_w, outgoing_edge_w,
+                                                *alignment_length,
+                                                graph,
+                                                alignment_graph,
+                                                read,
+                                                alignment_read,
+                                                node_coverage_counts,
+                                                base_weights,
+                                                sequence_begin_nodes_ids,
+                                                outgoing_edges_coverage,
+                                                outgoing_edges_coverage_count,
+                                                s,
+                                                max_sequences_per_poa,
+                                                max_limit_nodes_per_window);
+    *node_count = new_node_count;
 }
 
 // Host function that calls the kernel
+template <typename SizeT>
 void addAlignment(uint8_t* nodes,
                   SizeT* node_count,
                   SizeT* node_alignments, uint16_t* node_alignment_count,
@@ -339,25 +341,25 @@ void addAlignment(uint8_t* nodes,
                   uint32_t max_sequences_per_poa,
                   uint32_t max_limit_nodes_per_window)
 {
-    addAlignmentKernel<<<1, 1>>>(nodes,
-                                 node_count,
-                                 node_alignments, node_alignment_count,
-                                 incoming_edges, incoming_edge_count,
-                                 outgoing_edges, outgoing_edge_count,
-                                 incoming_edge_w, outgoing_edge_w,
-                                 alignment_length,
-                                 graph,
-                                 alignment_graph,
-                                 read,
-                                 alignment_read,
-                                 node_coverage_counts,
-                                 base_weights,
-                                 sequence_begin_nodes_ids,
-                                 outgoing_edges_coverage,
-                                 outgoing_edges_coverage_count,
-                                 s,
-                                 max_sequences_per_poa,
-                                 max_limit_nodes_per_window);
+    addAlignmentKernel<SizeT><<<1, 1>>>(nodes,
+                                        node_count,
+                                        node_alignments, node_alignment_count,
+                                        incoming_edges, incoming_edge_count,
+                                        outgoing_edges, outgoing_edge_count,
+                                        incoming_edge_w, outgoing_edge_w,
+                                        alignment_length,
+                                        graph,
+                                        alignment_graph,
+                                        read,
+                                        alignment_read,
+                                        node_coverage_counts,
+                                        base_weights,
+                                        sequence_begin_nodes_ids,
+                                        outgoing_edges_coverage,
+                                        outgoing_edges_coverage_count,
+                                        s,
+                                        max_sequences_per_poa,
+                                        max_limit_nodes_per_window);
     CGA_CU_CHECK_ERR(cudaPeekAtLastError());
 }
 

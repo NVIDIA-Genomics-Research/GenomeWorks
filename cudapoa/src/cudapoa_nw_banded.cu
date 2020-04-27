@@ -168,7 +168,8 @@ __device__ ScoreT4<ScoreT> get_scores(uint16_t read_pos,
 
 template <typename SeqT,
           typename IndexT,
-          typename ScoreT>
+          typename ScoreT,
+          typename SizeT>
 __device__
     uint16_t
     runNeedlemanWunschBanded(SeqT* nodes,

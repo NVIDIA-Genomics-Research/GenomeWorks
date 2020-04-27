@@ -31,6 +31,7 @@ namespace cudapoa
  * @param[in] outgoing_edge_count        Device buffer with number of outgoing edges per node
  * @param[in] local_incoming_edge_count  Device scratch space for maintaining edge counts during topological sort
  */
+template <typename SizeT>
 __device__ void topologicalSortDeviceUtil(SizeT* sorted_poa,
                                           SizeT* sorted_poa_node_map,
                                           SizeT node_count,
@@ -86,6 +87,7 @@ __device__ void topologicalSortDeviceUtil(SizeT* sorted_poa,
 // racon source topological sort. This is helpful in ensuring the
 // correctness of the GPU implementation. With this change,
 // the GPU code exactly matches the SISD implementation of spoa.
+template <typename SizeT>
 __device__ void raconTopologicalSortDeviceUtil(SizeT* sorted_poa,
                                                SizeT* sorted_poa_node_map,
                                                SizeT node_count,
@@ -96,7 +98,7 @@ __device__ void raconTopologicalSortDeviceUtil(SizeT* sorted_poa,
                                                uint8_t* node_marks,
                                                bool* check_aligned_nodes,
                                                SizeT* nodes_to_visit,
-                                               bool banded_alignment,
+                                               bool /*banded_alignment*/,
                                                uint16_t max_nodes_per_window)
 {
     int16_t node_idx        = -1;
@@ -182,6 +184,7 @@ __device__ void raconTopologicalSortDeviceUtil(SizeT* sorted_poa,
     }
 }
 
+template <typename SizeT>
 __global__ void runTopSortKernel(SizeT* sorted_poa,
                                  SizeT* sorted_poa_node_map,
                                  SizeT node_count,
@@ -200,6 +203,8 @@ __global__ void runTopSortKernel(SizeT* sorted_poa,
                               local_incoming_edge_count);
 }
 
+// host function that calls runTopSortKernel
+template <typename SizeT>
 void runTopSort(SizeT* sorted_poa,
                 SizeT* sorted_poa_node_map,
                 SizeT node_count,

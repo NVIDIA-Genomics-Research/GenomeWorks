@@ -36,7 +36,8 @@ __device__ __forceinline__
 
 template <typename SeqT,
           typename IndexT,
-          typename ScoreT>
+          typename ScoreT,
+          typename SizeT>
 __device__ __forceinline__
     ScoreT4<ScoreT>
     computeScore(IndexT rIdx,
@@ -138,6 +139,7 @@ __device__ __forceinline__
 template <typename SeqT,
           typename IndexT,
           typename ScoreT,
+          typename SizeT,
           int32_t CPT = 4>
 __device__
     uint16_t
@@ -450,6 +452,7 @@ __device__
     return aligned_nodes;
 }
 
+template <typename SizeT>
 __global__ void runNeedlemanWunschKernel(uint8_t* nodes,
                                          SizeT* graph,
                                          SizeT* node_id_to_pos,
@@ -469,25 +472,27 @@ __global__ void runNeedlemanWunschKernel(uint8_t* nodes,
                                          int16_t match_score,
                                          SizeT* aligned_nodes)
 {
-    *aligned_nodes = runNeedlemanWunsch<uint8_t, uint16_t, int16_t>(nodes,
-                                                                    graph,
-                                                                    node_id_to_pos,
-                                                                    graph_count,
-                                                                    incoming_edge_count,
-                                                                    incoming_edges,
-                                                                    outgoing_edge_count,
-                                                                    outgoing_edges,
-                                                                    read,
-                                                                    read_count,
-                                                                    scores,
-                                                                    scores_width,
-                                                                    alignment_graph,
-                                                                    alignment_read,
-                                                                    gap_score,
-                                                                    mismatch_score,
-                                                                    match_score);
+    *aligned_nodes = runNeedlemanWunsch<uint8_t, uint16_t, int16_t, SizeT>(nodes,
+                                                                           graph,
+                                                                           node_id_to_pos,
+                                                                           graph_count,
+                                                                           incoming_edge_count,
+                                                                           incoming_edges,
+                                                                           outgoing_edge_count,
+                                                                           outgoing_edges,
+                                                                           read,
+                                                                           read_count,
+                                                                           scores,
+                                                                           scores_width,
+                                                                           alignment_graph,
+                                                                           alignment_read,
+                                                                           gap_score,
+                                                                           mismatch_score,
+                                                                           match_score);
 }
 
+// Host function that calls the kernel
+template <typename SizeT>
 void runNW(uint8_t* nodes,
            SizeT* graph,
            SizeT* node_id_to_pos,

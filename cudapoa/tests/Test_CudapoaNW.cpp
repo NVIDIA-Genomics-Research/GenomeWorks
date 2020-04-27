@@ -179,6 +179,8 @@ std::vector<NWTestPair> getNWTestCases()
 // host function for calling the kernel to test topsort device function.
 NWAnswer testNW(const BasicNW& obj)
 {
+    typedef int16_t SizeT;
+
     //declare device buffer
     uint8_t* nodes;
     SizeT* graph;
@@ -230,24 +232,24 @@ NWAnswer testNW(const BasicNW& obj)
     match_score    = BasicNW::match_score_;
 
     //call the host wrapper of nw kernel
-    runNW(nodes,
-          graph,
-          node_id_to_pos,
-          graph_count,
-          incoming_edge_count,
-          incoming_edges,
-          outgoing_edge_count,
-          outgoing_edges,
-          read,
-          read_count,
-          scores,
-          BatchSize().max_matrix_sequence_dimension,
-          alignment_graph,
-          alignment_read,
-          gap_score,
-          mismatch_score,
-          match_score,
-          aligned_nodes);
+    runNW<SizeT>(nodes,
+                 graph,
+                 node_id_to_pos,
+                 graph_count,
+                 incoming_edge_count,
+                 incoming_edges,
+                 outgoing_edge_count,
+                 outgoing_edges,
+                 read,
+                 read_count,
+                 scores,
+                 BatchSize().max_matrix_sequence_dimension,
+                 alignment_graph,
+                 alignment_read,
+                 gap_score,
+                 mismatch_score,
+                 match_score,
+                 aligned_nodes);
 
     CGA_CU_CHECK_ERR(cudaDeviceSynchronize());
 

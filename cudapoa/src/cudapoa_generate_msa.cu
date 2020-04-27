@@ -20,6 +20,7 @@ namespace claragenomics
 namespace cudapoa
 {
 
+template <typename SizeT>
 __device__ SizeT getNodeIDToMSAPosDevice(SizeT node_count,
                                          SizeT* sorted_poa,
                                          SizeT* node_id_to_msa_pos,
@@ -40,6 +41,7 @@ __device__ SizeT getNodeIDToMSAPosDevice(SizeT node_count,
     return msa_pos;
 }
 
+template <typename SizeT>
 __device__ void generateMSADevice(uint8_t* nodes,
                                   uint16_t num_sequences,
                                   uint16_t* outgoing_edge_count,
@@ -111,7 +113,7 @@ __device__ void generateMSADevice(uint8_t* nodes,
     multiple_sequence_alignments[s * max_limit_consensus_size + msa_length] = '\0';
 }
 
-template <bool cuda_banded_alignment = false>
+template <bool cuda_banded_alignment = false, typename SizeT>
 __global__ void generateMSAKernel(uint8_t* nodes_d,
                                   uint8_t* consensus_d,
                                   claragenomics::cudapoa::WindowDetails* window_details_d,
@@ -186,10 +188,10 @@ __global__ void generateMSAKernel(uint8_t* nodes_d,
                                        cuda_banded_alignment,
                                        (uint16_t)max_nodes_per_window);
 
-        msa_length = getNodeIDToMSAPosDevice(sequence_lengths[0],
-                                             sorted_poa,
-                                             node_id_to_msa_pos,
-                                             node_alignment_counts);
+        msa_length = getNodeIDToMSAPosDevice<SizeT>(sequence_lengths[0],
+                                                    sorted_poa,
+                                                    node_id_to_msa_pos,
+                                                    node_alignment_counts);
 
         if (msa_length >= max_limit_consensus_size)
         {
@@ -203,18 +205,18 @@ __global__ void generateMSAKernel(uint8_t* nodes_d,
     if (consensus[0] == CUDAPOA_KERNEL_ERROR_ENCOUNTERED)
         return;
 
-    generateMSADevice(nodes,
-                      num_sequences,
-                      outgoing_edge_count,
-                      outgoing_edges,
-                      outgoing_edges_coverage,
-                      outgoing_edges_coverage_count,
-                      node_id_to_msa_pos,
-                      sequence_begin_nodes_ids,
-                      multiple_sequence_alignments,
-                      msa_length,
-                      max_sequences_per_poa,
-                      max_limit_consensus_size);
+    generateMSADevice<SizeT>(nodes,
+                             num_sequences,
+                             outgoing_edge_count,
+                             outgoing_edges,
+                             outgoing_edges_coverage,
+                             outgoing_edges_coverage_count,
+                             node_id_to_msa_pos,
+                             sequence_begin_nodes_ids,
+                             multiple_sequence_alignments,
+                             msa_length,
+                             max_sequences_per_poa,
+                             max_limit_consensus_size);
 }
 
 } // namespace cudapoa

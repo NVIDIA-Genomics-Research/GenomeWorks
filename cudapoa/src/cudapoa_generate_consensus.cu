@@ -20,6 +20,7 @@ namespace claragenomics
 namespace cudapoa
 {
 
+template <typename SizeT>
 __device__
     SizeT
     branchCompletion(uint16_t max_score_id_pos,
@@ -125,6 +126,7 @@ __device__
  * @param[in] node_alignments       Device buffer with aligned nodes for each node in graph
  * @param[in] node_alignment)count  Device buffer with aligned nodes count for each node in graph
  */
+template <typename SizeT>
 __device__ void generateConsensus(uint8_t* nodes,
                                   SizeT node_count,
                                   SizeT* graph,
@@ -268,7 +270,7 @@ __device__ void generateConsensus(uint8_t* nodes,
     consensus[consensus_pos] = '\0';
 }
 
-template <bool cuda_banded_alignment = false>
+template <bool cuda_banded_alignment = false, typename SizeT>
 __global__ void generateConsensusKernel(uint8_t* consensus_d,
                                         uint16_t* coverage_d,
                                         SizeT* sequence_lengths_d,
@@ -342,6 +344,7 @@ __global__ void generateConsensusKernel(uint8_t* consensus_d,
                       max_limit_consensus_size);
 }
 
+template <typename SizeT>
 __global__ void generateConsensusTestKernel(uint8_t* nodes,
                                             SizeT node_count,
                                             SizeT* graph,
@@ -379,6 +382,7 @@ __global__ void generateConsensusTestKernel(uint8_t* nodes,
                       max_limit_consensus_size);
 }
 
+template <typename SizeT>
 void generateConsensusTestHost(uint8_t* nodes,
                                SizeT node_count,
                                SizeT* graph,
@@ -415,7 +419,7 @@ void generateConsensusTestHost(uint8_t* nodes,
                                           node_alignment_count,
                                           max_limit_consensus_size);
     CGA_CU_CHECK_ERR(cudaPeekAtLastError());
-}
+};
 
 } // namespace cudapoa
 

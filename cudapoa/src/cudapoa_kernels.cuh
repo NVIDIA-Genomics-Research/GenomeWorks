@@ -16,6 +16,7 @@
 #include <cuda_runtime_api.h>
 #include <stdio.h>
 #include <claragenomics/cudapoa/batch.hpp>
+#include "cudastructs.cuh"
 
 // Maximum number of edges per node.
 #define CUDAPOA_MAX_NODE_EDGES 50
@@ -43,8 +44,6 @@ namespace claragenomics
 
 namespace cudapoa
 {
-
-typedef int32_t SizeT;
 
 /**
  * @brief A struct to hold information about the sequences
@@ -78,7 +77,8 @@ typedef struct OutputDetails
     uint8_t* multiple_sequence_alignments;
 } OutputDetails;
 
-typedef struct InputDetails
+template <typename SizeT>
+struct InputDetails
 {
     // Buffer pointer for input data.
     uint8_t* sequences;
@@ -90,10 +90,9 @@ typedef struct InputDetails
     WindowDetails* window_details;
     // Buffer storing begining nodes for sequences
     SizeT* sequence_begin_nodes_ids;
+};
 
-} InputDetails;
-
-template <typename ScoreT>
+template <typename ScoreT, typename SizeT>
 struct AlignmentDetails
 {
     // Device buffer for the scoring matrix for all windows.
@@ -107,7 +106,8 @@ struct AlignmentDetails
     SizeT* alignment_read;
 };
 
-typedef struct GraphDetails
+template <typename SizeT>
+struct GraphDetails
 {
     // Device buffer to store nodes of the graph. The node itself is the base
     // (A, T, C, G) and the id of the node is it's position in the buffer.
@@ -165,8 +165,7 @@ typedef struct GraphDetails
     uint16_t* outgoing_edges_coverage;
     uint16_t* outgoing_edges_coverage_count;
     SizeT* node_id_to_msa_pos;
-
-} GraphDetails;
+};
 
 /**
  * @brief The host function which calls the kernel that runs the partial order alignment
@@ -217,11 +216,11 @@ typedef struct GraphDetails
  */
 
 void generatePOA(claragenomics::cudapoa::OutputDetails* output_details_d,
-                 claragenomics::cudapoa::InputDetails* Input_details_d,
+                 void* Input_details_d,
                  int32_t total_windows,
                  cudaStream_t stream,
                  void* alignment_details_d,
-                 claragenomics::cudapoa::GraphDetails* graph_details_d,
+                 void* graph_details_d,
                  int16_t gap_score,
                  int16_t mismatch_score,
                  int16_t match_score,
@@ -230,75 +229,11 @@ void generatePOA(claragenomics::cudapoa::OutputDetails* output_details_d,
                  int8_t output_mask,
                  const BatchSize& batch_size);
 
-// host function that calls runTopSortKernel
-void runTopSort(SizeT* sorted_poa,
-                SizeT* sorted_poa_node_map,
-                SizeT node_count,
-                uint16_t* incoming_edge_count,
-                SizeT* outgoing_edges,
-                uint16_t* outgoing_edge_count,
-                uint16_t* local_incoming_edge_count);
-
-// Host function that calls the kernel
-void addAlignment(uint8_t* nodes,
-                  SizeT* node_count,
-                  SizeT* node_alignments, uint16_t* node_alignment_count,
-                  SizeT* incoming_edges, uint16_t* incoming_edge_count,
-                  SizeT* outgoing_edges, uint16_t* outgoing_edge_count,
-                  uint16_t* incoming_edge_w, uint16_t* outgoing_edge_w,
-                  uint16_t* alignment_length,
-                  SizeT* graph,
-                  SizeT* alignment_graph,
-                  uint8_t* read,
-                  SizeT* alignment_read,
-                  uint16_t* node_coverage_counts,
-                  int8_t* base_weights,
-                  SizeT* sequence_begin_nodes_ids,
-                  uint16_t* outgoing_edges_coverage,
-                  uint16_t* outgoing_edges_coverage_count,
-                  uint16_t s,
-                  uint32_t max_sequences_per_poa,
-                  uint32_t max_limit_nodes_per_window);
-
-// Host function that calls the kernel
-void runNW(uint8_t* nodes,
-           SizeT* graph,
-           SizeT* node_id_to_pos,
-           SizeT graph_count,
-           uint16_t* incoming_edge_count,
-           SizeT* incoming_edges,
-           uint16_t* outgoing_edge_count,
-           SizeT* outgoing_edges,
-           uint8_t* read,
-           uint16_t read_count,
-           int16_t* scores,
-           int32_t scores_width,
-           SizeT* alignment_graph,
-           SizeT* alignment_read,
-           int16_t gap_score,
-           int16_t mismatch_score,
-           int16_t match_score,
-           SizeT* algined_nodes);
-
-void generateConsensusTestHost(uint8_t* nodes,
-                               SizeT node_count,
-                               SizeT* graph,
-                               SizeT* node_id_to_pos,
-                               SizeT* incoming_edges,
-                               uint16_t* incoming_edge_count,
-                               SizeT* outgoing_edges,
-                               uint16_t* outgoing_edge_count,
-                               uint16_t* incoming_edge_w,
-                               SizeT* predecessors,
-                               int32_t* scores,
-                               uint8_t* consensus,
-                               uint16_t* coverage,
-                               uint16_t* node_coverage_counts,
-                               SizeT* node_alignments,
-                               uint16_t* node_alignment_count,
-                               uint32_t max_limit_consensus_size);
-
+// determine proper type definition for ScoreT, used for values of score matrix
 bool use32bitScore(const BatchSize& batch_size, const int16_t gap_score, const int16_t mismatch_score, const int16_t match_score);
+
+// determine proper type definition for SizeT, used for length of arrays in POA
+bool use32bitSize(const BatchSize& batch_size, bool banded);
 
 } // namespace cudapoa
 
