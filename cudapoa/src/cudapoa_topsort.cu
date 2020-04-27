@@ -35,7 +35,7 @@ __device__ void topologicalSortDeviceUtil(SizeT* sorted_poa,
                                           SizeT* sorted_poa_node_map,
                                           SizeT node_count,
                                           uint16_t* incoming_edge_count,
-                                          SizeTT* outgoing_edges,
+                                          SizeT* outgoing_edges,
                                           uint16_t* outgoing_edge_count,
                                           uint16_t* local_incoming_edge_count)
 {
@@ -68,7 +68,7 @@ __device__ void topologicalSortDeviceUtil(SizeT* sorted_poa,
         SizeT node = sorted_poa[n];
         for (uint16_t edge = 0; edge < outgoing_edge_count[node]; edge++)
         {
-            SizeTT out_node = outgoing_edges[node * CUDAPOA_MAX_NODE_EDGES + edge];
+            SizeT out_node = outgoing_edges[node * CUDAPOA_MAX_NODE_EDGES + edge];
             //printf("%d\n", out_node);
             local_incoming_edge_count[out_node]--;
             if (local_incoming_edge_count[out_node] == 0)
@@ -186,7 +186,7 @@ __global__ void runTopSortKernel(SizeT* sorted_poa,
                                  SizeT* sorted_poa_node_map,
                                  SizeT node_count,
                                  uint16_t* incoming_edge_count,
-                                 SizeTT* outgoing_edges,
+                                 SizeT* outgoing_edges,
                                  uint16_t* outgoing_edge_count,
                                  uint16_t* local_incoming_edge_count)
 {
@@ -204,7 +204,7 @@ void runTopSort(SizeT* sorted_poa,
                 SizeT* sorted_poa_node_map,
                 SizeT node_count,
                 uint16_t* incoming_edge_count,
-                SizeTT* outgoing_edges,
+                SizeT* outgoing_edges,
                 uint16_t* outgoing_edge_count,
                 uint16_t* local_incoming_edge_count)
 {

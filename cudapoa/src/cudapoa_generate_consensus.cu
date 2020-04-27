@@ -28,7 +28,7 @@ __device__
                      SizeT* graph,
                      SizeT* incoming_edges,
                      uint16_t* incoming_edge_count,
-                     SizeTT* outgoing_edges,
+                     SizeT* outgoing_edges,
                      uint16_t* outgoing_edge_count,
                      uint16_t* incoming_edge_w,
                      int32_t* scores,
@@ -42,7 +42,7 @@ __device__
     uint16_t out_edges = outgoing_edge_count[node_id];
     for (uint16_t oe = 0; oe < out_edges; oe++)
     {
-        SizeTT out_node_id         = outgoing_edges[node_id * CUDAPOA_MAX_NODE_EDGES + oe];
+        SizeT out_node_id          = outgoing_edges[node_id * CUDAPOA_MAX_NODE_EDGES + oe];
         uint16_t out_node_in_edges = incoming_edge_count[out_node_id];
         for (uint16_t ie = 0; ie < out_node_in_edges; ie++)
         {
@@ -131,7 +131,7 @@ __device__ void generateConsensus(uint8_t* nodes,
                                   SizeT* node_id_to_pos,
                                   SizeT* incoming_edges,
                                   uint16_t* incoming_edge_count,
-                                  SizeTT* outgoing_edges,
+                                  SizeT* outgoing_edges,
                                   uint16_t* outgoing_edge_count,
                                   uint16_t* incoming_edge_w,
                                   SizeT* predecessors,
@@ -277,7 +277,7 @@ __global__ void generateConsensusKernel(uint8_t* consensus_d,
                                         uint8_t* nodes_d,
                                         SizeT* incoming_edges_d,
                                         uint16_t* incoming_edge_count_d,
-                                        SizeTT* outgoing_edges_d,
+                                        SizeT* outgoing_edges_d,
                                         uint16_t* outgoing_edge_count_d,
                                         uint16_t* incoming_edge_w_d,
                                         SizeT* sorted_poa_d,
@@ -308,7 +308,7 @@ __global__ void generateConsensusKernel(uint8_t* consensus_d,
     uint8_t* nodes                  = &nodes_d[max_nodes_per_window * window_idx];
     SizeT* incoming_edges           = &incoming_edges_d[window_idx * max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES];
     uint16_t* incoming_edge_count   = &incoming_edge_count_d[window_idx * max_nodes_per_window];
-    SizeTT* outgoing_edges          = &outgoing_edges_d[window_idx * max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES];
+    SizeT* outgoing_edges           = &outgoing_edges_d[window_idx * max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES];
     uint16_t* outgoing_edge_count   = &outgoing_edge_count_d[window_idx * max_nodes_per_window];
     uint16_t* incoming_edge_weights = &incoming_edge_w_d[window_idx * max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES];
     SizeT* sorted_poa               = &sorted_poa_d[window_idx * max_nodes_per_window];
@@ -348,7 +348,7 @@ __global__ void generateConsensusTestKernel(uint8_t* nodes,
                                             SizeT* node_id_to_pos,
                                             SizeT* incoming_edges,
                                             uint16_t* incoming_edge_count,
-                                            SizeTT* outgoing_edges,
+                                            SizeT* outgoing_edges,
                                             uint16_t* outgoing_edge_count,
                                             uint16_t* incoming_edge_w,
                                             SizeT* predecessors,
@@ -385,7 +385,7 @@ void generateConsensusTestHost(uint8_t* nodes,
                                SizeT* node_id_to_pos,
                                SizeT* incoming_edges,
                                uint16_t* incoming_edge_count,
-                               SizeTT* outgoing_edges,
+                               SizeT* outgoing_edges,
                                uint16_t* outgoing_edge_count,
                                uint16_t* incoming_edge_w,
                                SizeT* predecessors,

@@ -60,7 +60,7 @@ std::string testTopSortDeviceUtil(SizeT node_count, SizeTVec2D outgoing_edges_ve
     SizeT* sorted_poa;
     SizeT* sorted_poa_node_map;
     uint16_t* incoming_edge_count;
-    SizeTT* outgoing_edges;
+    SizeT* outgoing_edges;
     uint16_t* outgoing_edge_count;
     uint16_t* local_incoming_edge_count;
 
@@ -70,7 +70,7 @@ std::string testTopSortDeviceUtil(SizeT node_count, SizeTVec2D outgoing_edges_ve
     CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&sorted_poa, node_count * sizeof(SizeT)));
     CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&sorted_poa_node_map, node_count * sizeof(SizeT)));
     CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&incoming_edge_count, graph_size));
-    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&outgoing_edges, node_count * sizeof(SizeTT) * CUDAPOA_MAX_NODE_EDGES));
+    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&outgoing_edges, node_count * sizeof(SizeT) * CUDAPOA_MAX_NODE_EDGES));
     CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&outgoing_edge_count, graph_size));
     CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&local_incoming_edge_count, graph_size));
 
@@ -80,7 +80,7 @@ std::string testTopSortDeviceUtil(SizeT node_count, SizeTVec2D outgoing_edges_ve
 
     //calculate edge counts on host
 
-    SizeTT out_node;
+    SizeT out_node;
     for (int i = 0; i < node_count; i++)
     {
         outgoing_edge_count[i] = get_size(outgoing_edges_vec[i]);

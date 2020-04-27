@@ -24,7 +24,7 @@ namespace cudapoa
 
 // alias for the 2d vector graph representation
 typedef std::vector<std::vector<uint16_t>> Uint16Vec2D;
-typedef std::vector<std::vector<SizeTT>> SizeTVec2D;
+typedef std::vector<std::vector<SizeT>> SizeTVec2D;
 typedef std::vector<std::vector<std::vector<uint16_t>>> Uint16Vec3D;
 
 class BasicGraph
@@ -41,7 +41,7 @@ public:
         node_count_     = get_size(nodes_);
     }
 
-    BasicGraph(SizeTT* outgoing_edges, uint16_t* outgoing_edge_count, SizeTT node_count)
+    BasicGraph(SizeT* outgoing_edges, uint16_t* outgoing_edge_count, SizeT node_count)
     {
         graph_complete_ = false;
         outgoing_edges_ = edges_to_graph(outgoing_edges, outgoing_edge_count, node_count);
@@ -64,9 +64,9 @@ public:
 
     //fill in the edge-related pointers based on stored graph
     void get_edges(SizeT* incoming_edges, uint16_t* incoming_edge_count,
-                   SizeTT* outgoing_edges, uint16_t* outgoing_edge_count) const
+                   SizeT* outgoing_edges, uint16_t* outgoing_edge_count) const
     {
-        SizeTT out_node;
+        SizeT out_node;
         for (int i = 0; i < node_count_; i++)
         {
             outgoing_edge_count[i] = get_size(outgoing_edges_[i]);
@@ -113,7 +113,7 @@ public:
     }
 
     // convert results from outgoing_edges to Uint16Vec2D graph
-    SizeTVec2D edges_to_graph(SizeTT* outgoing_edges, uint16_t* outgoing_edge_count, uint16_t node_count)
+    SizeTVec2D edges_to_graph(SizeT* outgoing_edges, uint16_t* outgoing_edge_count, uint16_t node_count)
     {
         SizeTVec2D graph(node_count);
         for (uint16_t i = 0; i < node_count; i++)

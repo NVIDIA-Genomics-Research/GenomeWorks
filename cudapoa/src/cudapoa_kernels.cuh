@@ -47,8 +47,6 @@ namespace cudapoa
 {
 
 typedef int32_t SizeT;
-typedef int32_t SizeTT; //temporary, to find the problem in GraphDetails:outgoing_edges
-
 
 /**
  * @brief A struct to hold information about the sequences
@@ -127,7 +125,7 @@ typedef struct GraphDetails
     uint16_t* incoming_edge_count;
 
     // Device buffer to store outgoing edges from a node.
-    SizeTT* outgoing_edges;
+    SizeT* outgoing_edges;
     uint16_t* outgoing_edge_count;
 
     // Devices buffers to store incoming and outgoing edge weights.
@@ -239,7 +237,7 @@ void runTopSort(SizeT* sorted_poa,
                 SizeT* sorted_poa_node_map,
                 SizeT node_count,
                 uint16_t* incoming_edge_count,
-                SizeTT* outgoing_edges,
+                SizeT* outgoing_edges,
                 uint16_t* outgoing_edge_count,
                 uint16_t* local_incoming_edge_count);
 
@@ -248,7 +246,7 @@ void addAlignment(uint8_t* nodes,
                   SizeT* node_count,
                   SizeT* node_alignments, uint16_t* node_alignment_count,
                   SizeT* incoming_edges, uint16_t* incoming_edge_count,
-                  SizeTT* outgoing_edges, uint16_t* outgoing_edge_count,
+                  SizeT* outgoing_edges, uint16_t* outgoing_edge_count,
                   uint16_t* incoming_edge_w, uint16_t* outgoing_edge_w,
                   uint16_t* alignment_length,
                   SizeT* graph,
@@ -272,7 +270,7 @@ void runNW(uint8_t* nodes,
            uint16_t* incoming_edge_count,
            SizeT* incoming_edges,
            uint16_t* outgoing_edge_count,
-           SizeTT* outgoing_edges,
+           SizeT* outgoing_edges,
            uint8_t* read,
            uint16_t read_count,
            int16_t* scores,
@@ -290,7 +288,7 @@ void generateConsensusTestHost(uint8_t* nodes,
                                SizeT* node_id_to_pos,
                                SizeT* incoming_edges,
                                uint16_t* incoming_edge_count,
-                               SizeTT* outgoing_edges,
+                               SizeT* outgoing_edges,
                                uint16_t* outgoing_edge_count,
                                uint16_t* incoming_edge_w,
                                SizeT* predecessors,
