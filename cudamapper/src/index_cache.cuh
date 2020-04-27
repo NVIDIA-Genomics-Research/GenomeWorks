@@ -11,6 +11,7 @@
 #pragma once
 
 #include <memory>
+#include <unordered_set>
 #include <unordered_map>
 
 #include <claragenomics/cudamapper/types.hpp>
@@ -41,7 +42,7 @@ class IndexCacheHost
 {
 public:
     /// \brief Constructor
-    /// \param reuse_data true means that both query and target are the same, meaning that if requested index exists in query cache it can also be used by target cache directly
+    /// \param same_query_and_target true means that both query and target are the same, meaning that if requested index exists in query cache it can also be used by target cache directly
     /// \param allocator allocator to use for device arrays
     /// \param query_parser
     /// \param target_parser
@@ -50,7 +51,7 @@ public:
     /// \param hash_representations // see Index
     /// \param filtering_parameter // see Index
     /// \param cuda_stream // device memory used for Index copy will only we freed up once all previously scheduled work on this stream has finished
-    IndexCacheHost(const bool reuse_data,
+    IndexCacheHost(const bool same_query_and_target,
                    claragenomics::DefaultDeviceAllocator allocator,
                    std::shared_ptr<claragenomics::io::FastaParser> query_parser,
                    std::shared_ptr<claragenomics::io::FastaParser> target_parser,
@@ -67,10 +68,26 @@ public:
     ~IndexCacheHost()                           = default;
 
     /// \brief Discards previously cached query Indices, creates new Indices and copies them to host memory
-    void update_query_cache(const std::vector<IndexDescriptor>& descriptors_of_indices_to_cache);
+    ///
+    /// Expected usage pattern is to call update_query_cache() with certain index descriptors and then immediately retrieve some of them.
+    /// To avoid immediately copying back those indices from host to device it is possible to specify descriptors_of_indices_to_keep_on_device
+    //  which will be copied to host, but also kept on device until retrieved for the first time using get_index_from_query_cache
+    ///
+    /// \param descriptors_of_indices_to_cache descriptors on indices to keep in host memory
+    /// \param descriptors_of_indices_to_keep_on_device descriptors of indices to keep in device memory in addition to host memory until retrieved for the first time
+    void update_query_cache(const std::vector<IndexDescriptor>& descriptors_of_indices_to_cache,
+                            const std::vector<IndexDescriptor>& descriptors_of_indices_to_keep_on_device = {});
 
     /// \brief Discards previously cached target Indices, creates new Indices and copies them to host memory
-    void update_target_cache(const std::vector<IndexDescriptor>& descriptors_of_indices_to_cache);
+    ///
+    /// Expected usage pattern is to call update_target_cache() with certain index descriptors and then immediately retrieve some of them.
+    /// To avoid immediately copying back those indices from host to device it is possible to specify descriptors_of_indices_to_keep_on_device
+    /// which will be copied to host, but also kept on device until retrieved for the first time using get_index_from_taget_cache
+    ///
+    /// \param descriptors_of_indices_to_cache descriptors on indices to keep in host memory
+    /// \param descriptors_of_indices_to_keep_on_device descriptors of indices to keep in device memory in addition to host memory until retrieved for the first time
+    void update_target_cache(const std::vector<IndexDescriptor>& descriptors_of_indices_to_cache,
+                             const std::vector<IndexDescriptor>& descriptors_of_indices_to_keep_on_device = {});
 
     /// \brief Copies request Index to device memory
     /// throws if that index is currently not in cache
@@ -85,23 +102,44 @@ private:
                                             std::shared_ptr<const IndexHostCopyBase>,
                                             IndexDescriptorHash>;
 
+    using device_cache_type_t = std::unordered_map<IndexDescriptor,
+                                                   std::shared_ptr<Index>,
+                                                   IndexDescriptorHash>;
+
+    using set_of_descriptors_t = std::unordered_set<IndexDescriptor,
+                                                    IndexDescriptorHash>;
+
     enum class CacheToUpdate
     {
         query,
         target
     };
 
+    /// \brief Helper function which converts vector of descriptors into unordered_set of descriptors for easier querying
+    set_of_descriptors_t convert_vector_of_descriptors_into_set(const std::vector<IndexDescriptor>& descriptors);
+
     /// \brief Discards previously cached Indices, creates new Indices and copies them to host memory
     /// Uses which_cache to determine if it should be working on query of target indices
     ///
-    /// If reuse_data_ is true function checks the other cache to see if that index is already in cache
+    /// If same_query_and_target_ is true function checks the other cache to see if that index is already in cache
     void update_cache(const std::vector<IndexDescriptor>& descriptors_of_indices_to_cache,
+                      const set_of_descriptors_t& descriptors_of_indices_to_keep_on_device,
                       const CacheToUpdate which_cache);
 
+    /// \brief Fetches requested index
+    /// Copies index from host to device memory, unless index is saved in temp device cache
+    /// If that is the case it returs that device copy are removes it from temp device cache
+    std::shared_ptr<Index> get_index_from_cache(const IndexDescriptor& descriptor_of_index_to_cache,
+                                                const CacheToUpdate which_cache);
+
+    /// Host copies of indices
     cache_type_t query_cache_;
     cache_type_t target_cache_;
+    /// User can instruct cache to also keep certain indices in device memory until retrieved for the first time
+    device_cache_type_t query_temp_device_cache_;
+    device_cache_type_t target_temp_device_cache_;
 
-    const bool reuse_data_;
+    const bool same_query_and_target_;
     claragenomics::DefaultDeviceAllocator allocator_;
     std::shared_ptr<claragenomics::io::FastaParser> query_parser_;
     std::shared_ptr<claragenomics::io::FastaParser> target_parser_;
@@ -123,9 +161,9 @@ class IndexCacheDevice
 {
 public:
     /// \brief Constructor
-    /// \param reuse_data true means that both query and target are the same, meaning that if requested index exists in query cache it can also be used by target cache directly
+    /// \param same_query_and_target true means that both query and target are the same, meaning that if requested index exists in query cache it can also be used by target cache directly
     /// \param index_cache_host underlying host cache to get the indices from
-    IndexCacheDevice(const bool reuse_data,
+    IndexCacheDevice(const bool same_query_and_target,
                      std::shared_ptr<IndexCacheHost> index_cache_host);
 
     IndexCacheDevice(const IndexCacheDevice&) = delete;
@@ -162,14 +200,14 @@ private:
     /// \brief Discards previously cached Indices and caches new ones
     /// Uses which_cache to determine if it should be working on query of target indices
     ///
-    /// If reuse_data_ is true function checks the other cache to see if that index is already in cache
+    /// If same_query_and_target_ is true function checks the other cache to see if that index is already in cache
     void update_cache(const std::vector<IndexDescriptor>& descriptors_of_indices_to_cache,
                       const CacheToUpdate which_cache);
 
     cache_type_t query_cache_;
     cache_type_t target_cache_;
 
-    const bool reuse_data_;
+    const bool same_query_and_target_;
     std::shared_ptr<IndexCacheHost> index_cache_host_;
 };
 
