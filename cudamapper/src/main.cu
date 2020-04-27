@@ -60,12 +60,6 @@ void help(int32_t exit_code = 0)
         -d, --num-devices
             number of GPUs to use [1])"
               << R"(
-        -c, --max-index-device-cache
-            number of indices to keep in GPU memory [100])"
-              << R"(
-        -C, --max-index-host-cache
-            number of indices to keep in host memory [0])"
-              << R"(
         -m, --max-cached-memory
             maximum aggregate cached memory per device in GiB, if 0 program tries to allocate as much memory as possible [0])"
               << R"(
@@ -91,7 +85,19 @@ void help(int32_t exit_code = 0)
             Minimum number of bases in overlap per match [100].)"
               << R"(
         -z, --min-overlap-fraction
-            Minimum ratio of overlap length to alignment length [0.95].)"
+            Minimum ratio of overlap length to alignment length [0.95].)
+              << R"(
+        -q, --query-indices-in-host-memory
+            number of query indices to keep in host memory [10])"
+              << R"(
+        -Q, --query-indices-in-device-memory
+            number of query indices to keep in device memory [5])"
+              << R"(
+        -c, --target-indices-in-host-memory
+            number of target indices to keep in host memory [10])"
+              << R"(
+        -C, --target-indices-in-device-memory
+            number of target indices to keep in device memory [5])"
               << std::endl;
 
     exit(exit_code);
@@ -100,21 +106,23 @@ void help(int32_t exit_code = 0)
 /// @brief application parameteres, default or passed through command line
 struct ApplicationParameteres
 {
-    uint32_t k                                  = 15;   // k
-    uint32_t w                                  = 15;   // w
-    std::int32_t num_devices                    = 1;    // d
-    std::int32_t max_index_cache_size_on_device = 100;  // c
-    std::int32_t max_index_cache_size_on_host   = 0;    // C
-    std::int32_t max_cached_memory              = 0;    // m
-    std::int32_t index_size                     = 30;   // i
-    std::int32_t target_index_size              = 30;   // t
-    double filtering_parameter                  = 1.0;  // F
-    std::int32_t alignment_engines              = 0;    // a
-    std::int32_t min_residues                   = 10;   // r
-    std::int32_t min_overlap_len                = 500;  // l
-    std::int32_t min_bases_per_residue          = 100;  // b
-    float min_overlap_fraction                  = 0.95; // z
-    bool all_to_all                             = false;
+    uint32_t k                                   = 15;   // k
+    uint32_t w                                   = 15;   // w
+    std::int32_t num_devices                     = 1;    // d
+    std::int32_t max_cached_memory               = 0;    // m
+    std::int32_t index_size                      = 30;   // i
+    std::int32_t target_index_size               = 30;   // t
+    double filtering_parameter                   = 1.0;  // F
+    std::int32_t alignment_engines               = 0;    // a
+    std::int32_t min_residues                    = 10;   // r
+    std::int32_t min_overlap_len                 = 500;  // l
+    std::int32_t min_bases_per_residue           = 100;  // b
+    float min_overlap_fraction                   = 0.95; // z
+    std::int32_t query_indices_in_host_memory    = 10;   // q
+    std::int32_t query_indices_in_device_memory  = 5;    // Q
+    std::int32_t target_indices_in_host_memory   = 10;   // c
+    std::int32_t target_indices_in_device_memory = 5;    // C
+    bool all_to_all                              = false;
     std::string query_filepath;
     std::string target_filepath;
 };
@@ -131,8 +139,6 @@ ApplicationParameteres read_input(int argc, char* argv[])
         {"kmer-size", required_argument, 0, 'k'},
         {"window-size", required_argument, 0, 'w'},
         {"num-devices", required_argument, 0, 'd'},
-        {"max-index-device-cache", required_argument, 0, 'c'},
-        {"max-index-host-cache", required_argument, 0, 'C'},
         {"max-cached-memory", required_argument, 0, 'm'},
         {"index-size", required_argument, 0, 'i'},
         {"target-index-size", required_argument, 0, 't'},
@@ -142,10 +148,14 @@ ApplicationParameteres read_input(int argc, char* argv[])
         {"min-overlap-length", required_argument, 0, 'l'},
         {"min-bases-per-residue", required_argument, 0, 'b'},
         {"min-overlap-fraction", required_argument, 0, 'z'},
+        {"query-indices-in-host-memory", required_argument, 0, 'q'},
+        {"query-indices-in-device-memory", required_argument, 0, 'Q'},
+        {"target-indices-in-host-memory", required_argument, 0, 'c'},
+        {"target-indices-in-device-memory", required_argument, 0, 'C'},
         {"help", no_argument, 0, 'h'},
     };
 
-    std::string optstring = "k:w:d:c:C:m:i:t:F:h:a:r:l:b:z:";
+    std::string optstring = "k:w:d:m:i:t:F:h:a:r:l:b:z:q:Q:c:C:";
 
     int32_t argument = 0;
     while ((argument = getopt_long(argc, argv, optstring.c_str(), options, nullptr)) != -1)
@@ -160,12 +170,6 @@ ApplicationParameteres read_input(int argc, char* argv[])
             break;
         case 'd':
             parameters.num_devices = atoi(optarg);
-            break;
-        case 'c':
-            parameters.max_index_cache_size_on_device = atoi(optarg);
-            break;
-        case 'C':
-            parameters.max_index_cache_size_on_host = atoi(optarg);
             break;
         case 'm':
 #ifndef CGA_ENABLE_CACHING_ALLOCATOR
@@ -198,6 +202,18 @@ ApplicationParameteres read_input(int argc, char* argv[])
             break;
         case 'z':
             parameters.min_overlap_fraction = atof(optarg);
+            break;
+        case 'q':
+            parameters.query_indices_in_host_memory = atoi(optarg);
+            break;
+        case 'Q':
+            parameters.query_indices_in_device_memory = atoi(optarg);
+            break;
+        case 'c':
+            parameters.target_indices_in_host_memory = atoi(optarg);
+            break;
+        case 'C':
+            parameters.target_indices_in_device_memory = atoi(optarg);
             break;
         case 'h':
             help(0);
@@ -534,11 +550,13 @@ int main(int argc, char* argv[])
             // If in all-to-all mode, put this query in the cache for later use.
             // Cache eviction is handled later on by the calling thread
             // using the evict_index function.
-            if (get_size<int32_t>(device_index_cache[device_id]) < parameters.max_index_cache_size_on_device && allow_cache_index)
+            // TODO: using target_indices_in_device_memory for both target a query, adjust this
+            if (get_size<int32_t>(device_index_cache[device_id]) < parameters.target_indices_in_device_memory && allow_cache_index)
             {
                 device_index_cache[device_id][key] = index;
             }
-            else if (get_size<int32_t>(host_index_cache) < parameters.max_index_cache_size_on_host && allow_cache_index && device_id == 0)
+            // TODO: using target_indices_in_host_memory for both target a query, adjust this
+            else if (get_size<int32_t>(host_index_cache) < parameters.target_indices_in_host_memory && allow_cache_index && device_id == 0)
             {
                 // if not cached on device, update host cache; only done on device 0 to avoid any race conditions in updating the host cache
                 host_index_cache[key] = IndexHostCopyBase::create_cache(*index,
