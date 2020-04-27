@@ -104,8 +104,137 @@ void help(int32_t exit_code = 0)
 }
 
 /// @brief application parameteres, default or passed through command line
-struct ApplicationParameters
+class ApplicationParameters
 {
+public:
+    /// @brief constructor reads input from command line
+    /// @param argc
+    /// @param argv
+    ApplicationParameters(int argc, char* argv[])
+    {
+        struct option options[] = {
+            {"kmer-size", required_argument, 0, 'k'},
+            {"window-size", required_argument, 0, 'w'},
+            {"num-devices", required_argument, 0, 'd'},
+            {"max-cached-memory", required_argument, 0, 'm'},
+            {"index-size", required_argument, 0, 'i'},
+            {"target-index-size", required_argument, 0, 't'},
+            {"filtering-parameter", required_argument, 0, 'F'},
+            {"alignment-engines", required_argument, 0, 'a'},
+            {"min-residues", required_argument, 0, 'r'},
+            {"min-overlap-length", required_argument, 0, 'l'},
+            {"min-bases-per-residue", required_argument, 0, 'b'},
+            {"min-overlap-fraction", required_argument, 0, 'z'},
+            {"query-indices-in-host-memory", required_argument, 0, 'q'},
+            {"query-indices-in-device-memory", required_argument, 0, 'Q'},
+            {"target-indices-in-host-memory", required_argument, 0, 'c'},
+            {"target-indices-in-device-memory", required_argument, 0, 'C'},
+            {"help", no_argument, 0, 'h'},
+        };
+
+        std::string optstring = "k:w:d:m:i:t:F:h:a:r:l:b:z:q:Q:c:C:";
+
+        int32_t argument = 0;
+        while ((argument = getopt_long(argc, argv, optstring.c_str(), options, nullptr)) != -1)
+        {
+            switch (argument)
+            {
+            case 'k':
+                kmer_size = atoi(optarg);
+                break;
+            case 'w':
+                windows_size = atoi(optarg);
+                break;
+            case 'd':
+                num_devices = atoi(optarg);
+                break;
+            case 'm':
+#ifndef CGA_ENABLE_CACHING_ALLOCATOR
+                std::cerr << "ERROR: Argument -m / --max-cached-memory cannot be used without caching allocator" << std::endl;
+                exit(1);
+#endif
+                max_cached_memory = atoi(optarg);
+                break;
+            case 'i':
+                index_size = atoi(optarg);
+                break;
+            case 't':
+                target_index_size = atoi(optarg);
+                break;
+            case 'F':
+                filtering_parameter = atof(optarg);
+                break;
+            case 'a':
+                alignment_engines = atoi(optarg);
+                throw_on_negative(alignment_engines, "Number of alignment engines should be non-negative");
+                break;
+            case 'r':
+                min_residues = atoi(optarg);
+                break;
+            case 'l':
+                min_overlap_len = atoi(optarg);
+                break;
+            case 'b':
+                min_bases_per_residue = atoi(optarg);
+                break;
+            case 'z':
+                min_overlap_fraction = atof(optarg);
+                break;
+            case 'q':
+                query_indices_in_host_memory = atoi(optarg);
+                break;
+            case 'Q':
+                query_indices_in_device_memory = atoi(optarg);
+                break;
+            case 'c':
+                target_indices_in_host_memory = atoi(optarg);
+                break;
+            case 'C':
+                target_indices_in_device_memory = atoi(optarg);
+                break;
+            case 'h':
+                help(0);
+            default:
+                exit(1);
+            }
+        }
+
+        if (kmer_size > Index::maximum_kmer_size())
+        {
+            std::cerr << "kmer of size " << kmer_size << " is not allowed, maximum k = " << Index::maximum_kmer_size() << std::endl;
+            exit(1);
+        }
+
+        if (filtering_parameter > 1.0 || filtering_parameter < 0.0)
+        {
+            std::cerr << "-F / --filtering-parameter must be in range [0.0, 1.0]" << std::endl;
+            exit(1);
+        }
+
+        if (max_cached_memory < 0)
+        {
+            std::cerr << "-m / --max-cached-memory must not be negative" << std::endl;
+            exit(1);
+        }
+
+        // Check remaining argument count.
+        if ((argc - optind) < 2)
+        {
+            std::cerr << "Invalid inputs. Please refer to the help function." << std::endl;
+            help(1);
+        }
+
+        query_filepath  = std::string(argv[optind++]);
+        target_filepath = std::string(argv[optind++]);
+
+        if (query_filepath == target_filepath)
+        {
+            all_to_all        = true;
+            target_index_size = index_size;
+            std::cerr << "NOTE - Since query and target files are same, activating all_to_all mode. Query index size used for both files." << std::endl;
+        }
+    }
+
     uint32_t kmer_size                           = 15;   // k
     uint32_t windows_size                        = 15;   // w
     std::int32_t num_devices                     = 1;    // d
@@ -126,139 +255,6 @@ struct ApplicationParameters
     std::string query_filepath;
     std::string target_filepath;
 };
-
-/// @brief reads input from command line
-/// @param argc
-/// @param argv
-/// @return application parameters passed through command line, default otherwise
-ApplicationParameters read_input(int argc, char* argv[])
-{
-    ApplicationParameters parameters;
-
-    struct option options[] = {
-        {"kmer-size", required_argument, 0, 'k'},
-        {"window-size", required_argument, 0, 'w'},
-        {"num-devices", required_argument, 0, 'd'},
-        {"max-cached-memory", required_argument, 0, 'm'},
-        {"index-size", required_argument, 0, 'i'},
-        {"target-index-size", required_argument, 0, 't'},
-        {"filtering-parameter", required_argument, 0, 'F'},
-        {"alignment-engines", required_argument, 0, 'a'},
-        {"min-residues", required_argument, 0, 'r'},
-        {"min-overlap-length", required_argument, 0, 'l'},
-        {"min-bases-per-residue", required_argument, 0, 'b'},
-        {"min-overlap-fraction", required_argument, 0, 'z'},
-        {"query-indices-in-host-memory", required_argument, 0, 'q'},
-        {"query-indices-in-device-memory", required_argument, 0, 'Q'},
-        {"target-indices-in-host-memory", required_argument, 0, 'c'},
-        {"target-indices-in-device-memory", required_argument, 0, 'C'},
-        {"help", no_argument, 0, 'h'},
-    };
-
-    std::string optstring = "k:w:d:m:i:t:F:h:a:r:l:b:z:q:Q:c:C:";
-
-    int32_t argument = 0;
-    while ((argument = getopt_long(argc, argv, optstring.c_str(), options, nullptr)) != -1)
-    {
-        switch (argument)
-        {
-        case 'k':
-            parameters.kmer_size = atoi(optarg);
-            break;
-        case 'w':
-            parameters.windows_size = atoi(optarg);
-            break;
-        case 'd':
-            parameters.num_devices = atoi(optarg);
-            break;
-        case 'm':
-#ifndef CGA_ENABLE_CACHING_ALLOCATOR
-            std::cerr << "ERROR: Argument -m / --max-cached-memory cannot be used without caching allocator" << std::endl;
-            exit(1);
-#endif
-            parameters.max_cached_memory = atoi(optarg);
-            break;
-        case 'i':
-            parameters.index_size = atoi(optarg);
-            break;
-        case 't':
-            parameters.target_index_size = atoi(optarg);
-            break;
-        case 'F':
-            parameters.filtering_parameter = atof(optarg);
-            break;
-        case 'a':
-            parameters.alignment_engines = atoi(optarg);
-            throw_on_negative(parameters.alignment_engines, "Number of alignment engines should be non-negative");
-            break;
-        case 'r':
-            parameters.min_residues = atoi(optarg);
-            break;
-        case 'l':
-            parameters.min_overlap_len = atoi(optarg);
-            break;
-        case 'b':
-            parameters.min_bases_per_residue = atoi(optarg);
-            break;
-        case 'z':
-            parameters.min_overlap_fraction = atof(optarg);
-            break;
-        case 'q':
-            parameters.query_indices_in_host_memory = atoi(optarg);
-            break;
-        case 'Q':
-            parameters.query_indices_in_device_memory = atoi(optarg);
-            break;
-        case 'c':
-            parameters.target_indices_in_host_memory = atoi(optarg);
-            break;
-        case 'C':
-            parameters.target_indices_in_device_memory = atoi(optarg);
-            break;
-        case 'h':
-            help(0);
-        default:
-            exit(1);
-        }
-    }
-
-    if (parameters.kmer_size > Index::maximum_kmer_size())
-    {
-        std::cerr << "kmer of size " << parameters.kmer_size << " is not allowed, maximum k = " << Index::maximum_kmer_size() << std::endl;
-        exit(1);
-    }
-
-    if (parameters.filtering_parameter > 1.0 || parameters.filtering_parameter < 0.0)
-    {
-        std::cerr << "-F / --filtering-parameter must be in range [0.0, 1.0]" << std::endl;
-        exit(1);
-    }
-
-    if (parameters.max_cached_memory < 0)
-    {
-        std::cerr << "-m / --max-cached-memory must not be negative" << std::endl;
-        exit(1);
-    }
-
-    // Check remaining argument count.
-    if ((argc - optind) < 2)
-    {
-        std::cerr << "Invalid inputs. Please refer to the help function." << std::endl;
-        help(1);
-    }
-
-    parameters.query_filepath  = std::string(argv[optind++]);
-    parameters.target_filepath = std::string(argv[optind++]);
-
-    if (parameters.query_filepath == parameters.target_filepath)
-    {
-        parameters.all_to_all        = true;
-        parameters.target_index_size = parameters.index_size;
-        std::cerr << "NOTE - Since query and target files are same, activating all_to_all mode. Query index size used for both files." << std::endl;
-    }
-
-    return parameters;
-}
 
 void run_alignment_batch(DefaultDeviceAllocator allocator,
                          std::mutex& overlap_idx_mtx,
@@ -503,7 +499,7 @@ int main(int argc, char* argv[])
 {
     logging::Init();
 
-    const ApplicationParameters parameters = read_input(argc, argv);
+    const ApplicationParameters parameters(argc, argv);
 
     std::shared_ptr<io::FastaParser> query_parser;
     std::shared_ptr<io::FastaParser> target_parser;
