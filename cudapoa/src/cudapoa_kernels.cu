@@ -710,7 +710,7 @@ void generatePOA(claragenomics::cudapoa::OutputDetails* output_details_d,
                  const BatchSize& batch_size)
 {
     // a decision flag to determine proper type definition for ScoreT
-    const bool use_32_bit_for_ScoreT = use32bitInt(batch_size, gap_score, mismatch_score, match_score);
+    const bool use_32_bit_for_ScoreT = use32bitScore(batch_size, gap_score, mismatch_score, match_score);
 
     if (use_32_bit_for_ScoreT)
     {
@@ -748,8 +748,8 @@ void generatePOA(claragenomics::cudapoa::OutputDetails* output_details_d,
     }
 }
 
-// a decision control logic to determine proper type definition for ScoreT
-bool use32bitInt(const BatchSize& batch_size, const int16_t gap_score, const int16_t mismatch_score, const int16_t match_score)
+// determine proper type definition for ScoreT, used for values of score matrix
+bool use32bitScore(const BatchSize& batch_size, const int16_t gap_score, const int16_t mismatch_score, const int16_t match_score)
 {
     // theoretical max score takes place when sequence and graph completely match with each other
     int32_t upper_bound = batch_size.max_sequence_size * match_score;
@@ -758,6 +758,23 @@ bool use32bitInt(const BatchSize& batch_size, const int16_t gap_score, const int
     int32_t lower_bound = batch_size.max_sequence_size * std::max(gap_score, mismatch_score) + (batch_size.max_matrix_graph_dimension - batch_size.max_sequence_size) * gap_score;
     // if theoretical upper or lower bound exceed the range represented by int16_t, then int32_t should be used
     return (upper_bound > INT16_MAX || (-lower_bound) > (INT16_MAX + 1));
+}
+
+// determine proper type definition for SizeT, used for length of arrays in POA
+bool use32bitSize(const BatchSize& batch_size, bool banded)
+{
+    int32_t max_length = batch_size.max_concensus_size;
+    if (banded)
+    {
+        max_length = std::max(max_length, batch_size.max_matrix_graph_dimension_banded);
+    }
+    else
+    {
+        max_length = std::max(max_length, batch_size.max_matrix_graph_dimension);
+    }
+    max_length = std::max(max_length, batch_size.max_matrix_sequence_dimension);
+    //if max array length in POA analysis exceeds the range represented by int16_t, then int32_t should be used
+    return (max_length > INT16_MAX);
 }
 
 } // namespace cudapoa
