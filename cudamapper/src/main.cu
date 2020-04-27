@@ -104,10 +104,10 @@ void help(int32_t exit_code = 0)
 }
 
 /// @brief application parameteres, default or passed through command line
-struct ApplicationParameteres
+struct ApplicationParameters
 {
-    uint32_t k                                   = 15;   // k
-    uint32_t w                                   = 15;   // w
+    uint32_t kmer_size                           = 15;   // k
+    uint32_t windows_size                        = 15;   // w
     std::int32_t num_devices                     = 1;    // d
     std::int32_t max_cached_memory               = 0;    // m
     std::int32_t index_size                      = 30;   // i
@@ -131,9 +131,9 @@ struct ApplicationParameteres
 /// @param argc
 /// @param argv
 /// @return application parameters passed through command line, default otherwise
-ApplicationParameteres read_input(int argc, char* argv[])
+ApplicationParameters read_input(int argc, char* argv[])
 {
-    ApplicationParameteres parameters;
+    ApplicationParameters parameters;
 
     struct option options[] = {
         {"kmer-size", required_argument, 0, 'k'},
@@ -163,10 +163,10 @@ ApplicationParameteres read_input(int argc, char* argv[])
         switch (argument)
         {
         case 'k':
-            parameters.k = atoi(optarg);
+            parameters.kmer_size = atoi(optarg);
             break;
         case 'w':
-            parameters.w = atoi(optarg);
+            parameters.windows_size = atoi(optarg);
             break;
         case 'd':
             parameters.num_devices = atoi(optarg);
@@ -222,9 +222,9 @@ ApplicationParameteres read_input(int argc, char* argv[])
         }
     }
 
-    if (parameters.k > Index::maximum_kmer_size())
+    if (parameters.kmer_size > Index::maximum_kmer_size())
     {
-        std::cerr << "kmer of size " << parameters.k << " is not allowed, maximum k = " << Index::maximum_kmer_size() << std::endl;
+        std::cerr << "kmer of size " << parameters.kmer_size << " is not allowed, maximum k = " << Index::maximum_kmer_size() << std::endl;
         exit(1);
     }
 
@@ -443,12 +443,13 @@ void writer_thread_function(std::mutex& overlaps_writer_mtx,
 /// \param application_parameters
 void get_input_parsers(std::shared_ptr<io::FastaParser>& query_parser,
                        std::shared_ptr<io::FastaParser>& target_parser,
-                       const ApplicationParameteres& application_parameters)
+                       const ApplicationParameters& application_parameters)
 {
     assert(query_parser == nullptr);
     assert(target_parser == nullptr);
 
-    query_parser = io::create_kseq_fasta_parser(application_parameters.query_filepath, application_parameters.k + application_parameters.w - 1);
+    query_parser = io::create_kseq_fasta_parser(application_parameters.query_filepath,
+                                                application_parameters.kmer_size + application_parameters.windows_size - 1);
 
     if (application_parameters.all_to_all)
     {
@@ -456,7 +457,8 @@ void get_input_parsers(std::shared_ptr<io::FastaParser>& query_parser,
     }
     else
     {
-        target_parser = io::create_kseq_fasta_parser(application_parameters.target_filepath, application_parameters.k + application_parameters.w - 1);
+        target_parser = io::create_kseq_fasta_parser(application_parameters.target_filepath,
+                                                     application_parameters.kmer_size + application_parameters.windows_size - 1);
     }
 
     std::cerr << "Query file: " << application_parameters.query_filepath << ", number of reads: " << query_parser->get_num_seqences() << std::endl;
@@ -501,7 +503,7 @@ int main(int argc, char* argv[])
 {
     logging::Init();
 
-    const ApplicationParameteres parameters = read_input(argc, argv);
+    const ApplicationParameters parameters = read_input(argc, argv);
 
     std::shared_ptr<io::FastaParser> query_parser;
     std::shared_ptr<io::FastaParser> target_parser;
@@ -660,8 +662,8 @@ int main(int argc, char* argv[])
                                     *query_parser,
                                     query_start_index,
                                     query_end_index,
-                                    parameters.k,
-                                    parameters.w,
+                                    parameters.kmer_size,
+                                    parameters.windows_size,
                                     device_id,
                                     parameters.all_to_all,
                                     parameters.filtering_parameter,
@@ -680,8 +682,8 @@ int main(int argc, char* argv[])
                                          *target_parser,
                                          target_start_index,
                                          target_end_index,
-                                         parameters.k,
-                                         parameters.w,
+                                         parameters.kmer_size,
+                                         parameters.windows_size,
                                          device_id,
                                          true,
                                          parameters.filtering_parameter,
@@ -728,7 +730,7 @@ int main(int argc, char* argv[])
                               target_index,
                               std::move(cigar),
                               device_id,
-                              parameters.k);
+                              parameters.kmer_size);
                 t.detach();
             }
 
