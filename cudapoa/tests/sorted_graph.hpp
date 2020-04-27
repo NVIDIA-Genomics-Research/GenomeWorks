@@ -35,7 +35,7 @@ public:
     }
 
     SortedGraph(std::vector<uint8_t> nodes, std::vector<SizeT> sorted_graph,
-                Uint16Vec2D node_alignments, std::vector<uint16_t> node_coverage_counts,
+                SizeTVec2D node_alignments, std::vector<uint16_t> node_coverage_counts,
                 SizeTVec2D outgoing_edges, Uint16Vec3D outgoing_edges_coverage = {})
         : BasicGraph(nodes, outgoing_edges, node_alignments, node_coverage_counts, outgoing_edges_coverage)
         , sorted_graph_(sorted_graph)

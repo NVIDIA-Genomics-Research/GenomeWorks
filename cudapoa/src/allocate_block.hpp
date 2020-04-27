@@ -223,7 +223,7 @@ public:
         graph_details_d->nodes = &block_data_d_[offset_d_];
         offset_d_ += cudautils::align<int64_t, 8>(sizeof(uint8_t) * max_nodes_per_window_ * max_poas_);
         graph_details_d->node_alignments = reinterpret_cast<SizeT*>(&block_data_d_[offset_d_]);
-        offset_d_ += cudautils::align<int64_t, 8>(sizeof(uint16_t) * max_nodes_per_window_ * CUDAPOA_MAX_NODE_ALIGNMENTS * max_poas_);
+        offset_d_ += cudautils::align<int64_t, 8>(sizeof(SizeT) * max_nodes_per_window_ * CUDAPOA_MAX_NODE_ALIGNMENTS * max_poas_);
         graph_details_d->node_alignment_count = reinterpret_cast<uint16_t*>(&block_data_d_[offset_d_]);
         offset_d_ += cudautils::align<int64_t, 8>(sizeof(uint16_t) * max_nodes_per_window_ * max_poas_);
         graph_details_d->incoming_edges = reinterpret_cast<SizeT*>(&block_data_d_[offset_d_]);

@@ -30,7 +30,7 @@ typedef std::vector<std::vector<std::vector<uint16_t>>> Uint16Vec3D;
 class BasicGraph
 {
 public:
-    BasicGraph(std::vector<uint8_t> nodes, SizeTVec2D outgoing_edges, Uint16Vec2D node_alignments, std::vector<uint16_t> node_coverage_counts, Uint16Vec3D outgoing_edges_coverage = {})
+    BasicGraph(std::vector<uint8_t> nodes, SizeTVec2D outgoing_edges, SizeTVec2D node_alignments, std::vector<uint16_t> node_coverage_counts, Uint16Vec3D outgoing_edges_coverage = {})
         : nodes_(nodes)
         , outgoing_edges_(outgoing_edges)
         , node_alignments_(node_alignments)
@@ -162,7 +162,7 @@ protected:
     std::vector<uint8_t> nodes_;
     SizeTVec2D outgoing_edges_; //this uniquely represents the graph structure; equality of BasicGraph is based on this member.
     Uint16Vec3D outgoing_edges_coverage_;
-    Uint16Vec2D node_alignments_;
+    SizeTVec2D node_alignments_;
     std::vector<uint16_t> node_coverage_counts_;
     uint16_t node_count_;
 };

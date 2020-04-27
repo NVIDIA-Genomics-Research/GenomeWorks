@@ -47,8 +47,8 @@ namespace cudapoa
 {
 
 typedef int32_t SizeT;
-typedef int16_t SizeTT; //temporary, to find the problem in GraphDetails:outgoing_edges
-typedef int32_t SizeTTT;
+typedef int32_t SizeTT; //temporary, to find the problem in GraphDetails:outgoing_edges
+
 
 /**
  * @brief A struct to hold information about the sequences
