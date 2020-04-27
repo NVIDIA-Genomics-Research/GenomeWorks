@@ -437,6 +437,32 @@ void writer_thread_function(std::mutex& overlaps_writer_mtx,
     num_overlap_chunks_to_print--;
 };
 
+/// \brief gets query and target parsers
+/// \param query_parser nullptr on input, query parser on output
+/// \param target_parser nullptr on input, target parser on output
+/// \param application_parameters
+void get_input_parsers(std::shared_ptr<io::FastaParser>& query_parser,
+                       std::shared_ptr<io::FastaParser>& target_parser,
+                       const ApplicationParameteres& application_parameters)
+{
+    assert(query_parser == nullptr);
+    assert(target_parser == nullptr);
+
+    query_parser = io::create_kseq_fasta_parser(application_parameters.query_filepath, application_parameters.k + application_parameters.w - 1);
+
+    if (application_parameters.all_to_all)
+    {
+        target_parser = query_parser;
+    }
+    else
+    {
+        target_parser = io::create_kseq_fasta_parser(application_parameters.target_filepath, application_parameters.k + application_parameters.w - 1);
+    }
+
+    std::cerr << "Query file: " << application_parameters.query_filepath << ", number of reads: " << query_parser->get_num_seqences() << std::endl;
+    std::cerr << "Target file: " << application_parameters.target_filepath << ", number of reads: " << target_parser->get_num_seqences() << std::endl;
+}
+
 } // namespace
 
 int main(int argc, char* argv[])
@@ -447,20 +473,7 @@ int main(int argc, char* argv[])
 
     std::shared_ptr<io::FastaParser> query_parser;
     std::shared_ptr<io::FastaParser> target_parser;
-
-    query_parser = io::create_kseq_fasta_parser(parameters.query_filepath, parameters.k + parameters.w - 1);
-
-    if (parameters.all_to_all)
-    {
-        target_parser = query_parser;
-    }
-    else
-    {
-        target_parser = io::create_kseq_fasta_parser(parameters.target_filepath, parameters.k + parameters.w - 1);
-    }
-
-    std::cerr << "Query file: " << parameters.query_filepath << ", number of reads: " << query_parser->get_num_seqences() << std::endl;
-    std::cerr << "Target file: " << parameters.target_filepath << ", number of reads: " << target_parser->get_num_seqences() << std::endl;
+    get_input_parsers(query_parser, target_parser, parameters);
 
     // Data structure for holding overlaps to be written out
     std::mutex overlaps_writer_mtx;
