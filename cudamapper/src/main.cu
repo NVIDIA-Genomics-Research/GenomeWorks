@@ -463,6 +463,38 @@ void get_input_parsers(std::shared_ptr<io::FastaParser>& query_parser,
     std::cerr << "Target file: " << application_parameters.target_filepath << ", number of reads: " << target_parser->get_num_seqences() << std::endl;
 }
 
+/// \brief crated a device allocator
+/// \param max_cached_memory in GiB, ignored if not using CGA_ENABLE_CACHING_ALLOCATOR
+/// \return device allocator
+DefaultDeviceAllocator get_device_allocator(const std::int32_t max_cached_memory)
+{
+#ifdef CGA_ENABLE_CACHING_ALLOCATOR
+    // uses CachingDeviceAllocator
+    std::size_t max_cached_bytes = 0;
+    if (max_cached_memory == 0)
+    {
+        std::cerr << "Programmatically looking for max cached memory" << std::endl;
+        max_cached_bytes = cudautils::find_largest_contiguous_device_memory_section();
+        if (max_cached_bytes == 0)
+        {
+            std::cerr << "No memory available for caching" << std::endl;
+            exit(1);
+        }
+    }
+    else
+    {
+        max_cached_bytes = max_cached_memory * 1024ull * 1024ull * 1024ull; // max_cached_memory is in GiB
+    }
+
+    std::cerr << "Using device memory cache of " << max_cached_bytes << " bytes" << std::endl;
+
+    return {max_cached_bytes};
+#else
+    // uses CudaMallocAllocator
+    return {};
+#endif
+}
+
 } // namespace
 
 int main(int argc, char* argv[])
@@ -608,31 +640,7 @@ int main(int argc, char* argv[])
             host_index_cache.erase(key);
     };
 
-#ifdef CGA_ENABLE_CACHING_ALLOCATOR
-    // uses CachingDeviceAllocator
-    std::size_t max_cached_bytes = 0;
-    if (parameters.max_cached_memory == 0)
-    {
-        std::cerr << "Programmatically looking for max cached memory" << std::endl;
-        max_cached_bytes = cudautils::find_largest_contiguous_device_memory_section();
-        if (max_cached_bytes == 0)
-        {
-            std::cerr << "No memory available for caching" << std::endl;
-            exit(1);
-        }
-    }
-    else
-    {
-        max_cached_bytes = parameters.max_cached_memory * 1024ull * 1024ull * 1024ull; // max_cached_memory is in GiB
-    }
-
-    std::cerr << "Using device memory cache of " << max_cached_bytes << " bytes" << std::endl;
-
-    DefaultDeviceAllocator allocator(max_cached_bytes);
-#else
-    // uses CudaMallocAllocator
-    DefaultDeviceAllocator allocator;
-#endif
+    DefaultDeviceAllocator allocator = get_device_allocator(parameters.max_cached_memory);
 
     auto compute_overlaps = [&](const QueryTargetsRange& query_target_range,
                                 const int device_id,
