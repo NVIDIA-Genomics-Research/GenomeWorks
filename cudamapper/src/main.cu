@@ -233,6 +233,10 @@ public:
             target_index_size = index_size;
             std::cerr << "NOTE - Since query and target files are same, activating all_to_all mode. Query index size used for both files." << std::endl;
         }
+
+        get_input_parsers(query_parser, target_parser);
+
+        allocator = get_device_allocator(max_cached_memory);
     }
 
     uint32_t kmer_size                           = 15;   // k
@@ -254,6 +258,68 @@ public:
     bool all_to_all                              = false;
     std::string query_filepath;
     std::string target_filepath;
+    std::shared_ptr<io::FastaParser> query_parser;
+    std::shared_ptr<io::FastaParser> target_parser;
+    DefaultDeviceAllocator allocator;
+
+private:
+    /// \brief gets query and target parsers
+    /// \param query_parser nullptr on input, query parser on output
+    /// \param target_parser nullptr on input, target parser on output
+    void get_input_parsers(std::shared_ptr<io::FastaParser>& query_parser,
+                           std::shared_ptr<io::FastaParser>& target_parser)
+    {
+        assert(query_parser == nullptr);
+        assert(target_parser == nullptr);
+
+        query_parser = io::create_kseq_fasta_parser(query_filepath,
+                                                    kmer_size + windows_size - 1);
+
+        if (all_to_all)
+        {
+            target_parser = query_parser;
+        }
+        else
+        {
+            target_parser = io::create_kseq_fasta_parser(target_filepath,
+                                                         kmer_size + windows_size - 1);
+        }
+
+        std::cerr << "Query file: " << query_filepath << ", number of reads: " << query_parser->get_num_seqences() << std::endl;
+        std::cerr << "Target file: " << target_filepath << ", number of reads: " << target_parser->get_num_seqences() << std::endl;
+    }
+
+    /// \brief crated a device allocator
+    /// \param max_cached_memory in GiB, ignored if not using CGA_ENABLE_CACHING_ALLOCATOR
+    /// \return device allocator
+    DefaultDeviceAllocator get_device_allocator(const std::int32_t max_cached_memory)
+    {
+#ifdef CGA_ENABLE_CACHING_ALLOCATOR
+        // uses CachingDeviceAllocator
+        std::size_t max_cached_bytes = 0;
+        if (max_cached_memory == 0)
+        {
+            std::cerr << "Programmatically looking for max cached memory" << std::endl;
+            max_cached_bytes = cudautils::find_largest_contiguous_device_memory_section();
+            if (max_cached_bytes == 0)
+            {
+                std::cerr << "No memory available for caching" << std::endl;
+                exit(1);
+            }
+        }
+        else
+        {
+            max_cached_bytes = max_cached_memory * 1024ull * 1024ull * 1024ull; // max_cached_memory is in GiB
+        }
+
+        std::cerr << "Using device memory cache of " << max_cached_bytes << " bytes" << std::endl;
+
+        return {max_cached_bytes};
+#else
+        // uses CudaMallocAllocator
+        return {};
+#endif
+    }
 };
 
 void run_alignment_batch(DefaultDeviceAllocator allocator,
@@ -433,66 +499,6 @@ void writer_thread_function(std::mutex& overlaps_writer_mtx,
     num_overlap_chunks_to_print--;
 };
 
-/// \brief gets query and target parsers
-/// \param query_parser nullptr on input, query parser on output
-/// \param target_parser nullptr on input, target parser on output
-/// \param application_parameters
-void get_input_parsers(std::shared_ptr<io::FastaParser>& query_parser,
-                       std::shared_ptr<io::FastaParser>& target_parser,
-                       const ApplicationParameters& application_parameters)
-{
-    assert(query_parser == nullptr);
-    assert(target_parser == nullptr);
-
-    query_parser = io::create_kseq_fasta_parser(application_parameters.query_filepath,
-                                                application_parameters.kmer_size + application_parameters.windows_size - 1);
-
-    if (application_parameters.all_to_all)
-    {
-        target_parser = query_parser;
-    }
-    else
-    {
-        target_parser = io::create_kseq_fasta_parser(application_parameters.target_filepath,
-                                                     application_parameters.kmer_size + application_parameters.windows_size - 1);
-    }
-
-    std::cerr << "Query file: " << application_parameters.query_filepath << ", number of reads: " << query_parser->get_num_seqences() << std::endl;
-    std::cerr << "Target file: " << application_parameters.target_filepath << ", number of reads: " << target_parser->get_num_seqences() << std::endl;
-}
-
-/// \brief crated a device allocator
-/// \param max_cached_memory in GiB, ignored if not using CGA_ENABLE_CACHING_ALLOCATOR
-/// \return device allocator
-DefaultDeviceAllocator get_device_allocator(const std::int32_t max_cached_memory)
-{
-#ifdef CGA_ENABLE_CACHING_ALLOCATOR
-    // uses CachingDeviceAllocator
-    std::size_t max_cached_bytes = 0;
-    if (max_cached_memory == 0)
-    {
-        std::cerr << "Programmatically looking for max cached memory" << std::endl;
-        max_cached_bytes = cudautils::find_largest_contiguous_device_memory_section();
-        if (max_cached_bytes == 0)
-        {
-            std::cerr << "No memory available for caching" << std::endl;
-            exit(1);
-        }
-    }
-    else
-    {
-        max_cached_bytes = max_cached_memory * 1024ull * 1024ull * 1024ull; // max_cached_memory is in GiB
-    }
-
-    std::cerr << "Using device memory cache of " << max_cached_bytes << " bytes" << std::endl;
-
-    return {max_cached_bytes};
-#else
-    // uses CudaMallocAllocator
-    return {};
-#endif
-}
-
 } // namespace
 
 int main(int argc, char* argv[])
@@ -500,10 +506,6 @@ int main(int argc, char* argv[])
     logging::Init();
 
     const ApplicationParameters parameters(argc, argv);
-
-    std::shared_ptr<io::FastaParser> query_parser;
-    std::shared_ptr<io::FastaParser> target_parser;
-    get_input_parsers(query_parser, target_parser, parameters);
 
     // Data structure for holding overlaps to be written out
     std::mutex overlaps_writer_mtx;
@@ -515,9 +517,9 @@ int main(int argc, char* argv[])
     };
 
     ///Factor of 1000000 to make max cache size in MB
-    std::vector<IndexDescriptor> query_index_descriptors  = group_reads_into_indices(*query_parser,
+    std::vector<IndexDescriptor> query_index_descriptors  = group_reads_into_indices(*parameters.query_parser,
                                                                                     parameters.index_size * 1000000);
-    std::vector<IndexDescriptor> target_index_descriptors = group_reads_into_indices(*target_parser,
+    std::vector<IndexDescriptor> target_index_descriptors = group_reads_into_indices(*parameters.target_parser,
                                                                                      parameters.target_index_size * 1000000);
 
     //First generate all the ranges independently, then loop over them.
@@ -638,8 +640,6 @@ int main(int argc, char* argv[])
             host_index_cache.erase(key);
     };
 
-    DefaultDeviceAllocator allocator = get_device_allocator(parameters.max_cached_memory);
-
     auto compute_overlaps = [&](const QueryTargetsRange& query_target_range,
                                 const int device_id,
                                 const cudaStream_t cuda_stream) {
@@ -654,8 +654,8 @@ int main(int argc, char* argv[])
 
         {
             CGA_NVTX_RANGE(profiler, "generate_query_index");
-            query_index = get_index(allocator,
-                                    *query_parser,
+            query_index = get_index(parameters.allocator,
+                                    *parameters.query_parser,
                                     query_start_index,
                                     query_end_index,
                                     parameters.kmer_size,
@@ -674,8 +674,8 @@ int main(int argc, char* argv[])
             auto target_end_index   = target_range.first_read() + target_range.number_of_reads();
             {
                 CGA_NVTX_RANGE(profiler, "generate_target_index");
-                target_index = get_index(allocator,
-                                         *target_parser,
+                target_index = get_index(parameters.allocator,
+                                         *parameters.target_parser,
                                          target_start_index,
                                          target_end_index,
                                          parameters.kmer_size,
@@ -687,14 +687,14 @@ int main(int argc, char* argv[])
             }
             {
                 CGA_NVTX_RANGE(profiler, "generate_matcher");
-                matcher = Matcher::create_matcher(allocator,
+                matcher = Matcher::create_matcher(parameters.allocator,
                                                   *query_index,
                                                   *target_index,
                                                   cuda_stream);
             }
             {
 
-                OverlapperTriggered overlapper(allocator, cuda_stream);
+                OverlapperTriggered overlapper(parameters.allocator, cuda_stream);
                 CGA_NVTX_RANGE(profiler, "generate_overlaps");
 
                 // Get unfiltered overlaps
@@ -712,7 +712,12 @@ int main(int argc, char* argv[])
                 {
                     cigar.resize(overlaps_to_add->size());
                     CGA_NVTX_RANGE(profiler, "align_overlaps");
-                    align_overlaps(allocator, *overlaps_to_add, *query_parser, *target_parser, parameters.alignment_engines, cigar);
+                    align_overlaps(parameters.allocator,
+                                   *overlaps_to_add,
+                                   *parameters.query_parser,
+                                   *parameters.target_parser,
+                                   parameters.alignment_engines,
+                                   cigar);
                 }
 
                 //Increment counter which tracks number of overlap chunks to be filtered and printed
