@@ -43,7 +43,7 @@ struct BatchOfIndices
 };
 
 /// number_of_indices_t
-using number_of_indices_t = std::size_t;
+using number_of_indices_t = std::int32_t;
 
 /// \brief Groups indices into batches
 ///

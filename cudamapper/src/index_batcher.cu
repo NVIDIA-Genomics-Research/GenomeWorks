@@ -11,9 +11,6 @@
 #include "index_batcher.cuh"
 
 #include <algorithm>
-#include <exception>
-
-#include <claragenomics/utils/signed_integer_utils.hpp>
 
 namespace claragenomics
 {
