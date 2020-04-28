@@ -12,6 +12,7 @@ set(TARGET_NAME cudamappertests)
 
 set(SOURCES
     main.cpp
+    Test_CudamapperIndexBatcher.cu
     Test_CudamapperIndexCache.cu
     Test_CudamapperIndexDescriptor.cpp
     Test_CudamapperIndexGPU.cu
