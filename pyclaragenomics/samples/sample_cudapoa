@@ -35,41 +35,74 @@ def run_cudapoa(groups, msa, print_output):
     """
     # Get avaialble memory information
     free, total = cuda.cuda_get_mem_info(cuda.cuda_get_device())
+    gpu_mem_per_batch = 0.9 * free
+
+    # Calculate max bounds for sequence size and sequences per POA.
+    max_sequences_per_poa = 0
+    max_seq_sz = 0
+    for group in groups:
+        longest_seq = len(max(group, key=len))
+        max_seq_sz = longest_seq if longest_seq > max_seq_sz else max_seq_sz
+        seq_in_poa = len(group)
+        max_sequences_per_poa = seq_in_poa if seq_in_poa > max_sequences_per_poa else max_sequences_per_poa
+
+    max_sequences_per_poa += 1
+    max_seq_sz += 1
 
     # Create batch
-    max_sequences_per_poa = 100
-    max_seq_sz = 1024
-    gpu_mem_per_batch = 0.9 * free
     batch = cudapoa.CudaPoaBatch(max_sequences_per_poa,
                                  max_seq_sz,
                                  gpu_mem_per_batch,
                                  stream=None,
-                                 output_type=("msa" if msa else "consensus"))
+                                 output_type=("msa" if msa else "consensus"),
+                                 banded=True)
 
     # Add poa groups to batch
     initial_count = 0
-    for i, group in enumerate(groups):
-        group_status, seq_status = batch.add_poa_group(group)
-        if (group_status == 0):
-            pass
+    i = 0
+    while (i < len(groups)):
+        group = groups[i]
 
-        # Once batch is full, run POA processing
+        # Because of internal type limitations, only graphs with max sequence sizes of 15000 can be handled.
+        # TODO: Update internal types to deal with sequences > 15000
+        max_len = len(max(group, key=len))
+        if (max_len >= 15000):
+            print("Skipping POA group {} - max length {}".format(i, max_len))
+            i += 1
+            continue
+
+        group_status, seq_status = batch.add_poa_group(group)
+
+        # If group was added and more space is left in batch, continue onto next group.
+        if (group_status == 0):
+            for status in seq_status:
+                if status != 0:
+                    print("Could not add sequence to POA {} - error {}".format(i, cudapoa.status_to_str(status)))
+            i += 1
+
+        # Otherwise print error.
+        # Once batch is full or no groups are left, run POA processing.
         if ((group_status == 1) or (i == len(groups) - 1)):
             batch.generate_poa()
 
             if msa:
-                msa, status = batch.get_msa()
+                msa, msa_status = batch.get_msa()
                 if print_output:
                     print(msa)
             else:
-                consensus, coverage, status = batch.get_consensus()
+                consensus, coverage, con_status = batch.get_consensus()
+                for p, status in enumerate(con_status):
+                    if status != 0:
+                        print("Could not get consensus for POA group {} - {}".format(initial_count + p, cudapoa.status_to_str(status)))
                 if print_output:
                     print(consensus)
 
-            print("Processed group {} - {}".format(initial_count, i))
+            print("---- Processed group {} - {} ----".format(initial_count, i))
             initial_count = i
             batch.reset()
-            group_status, seq_status = batch.add_poa_group(group)
+        # In the case where POA group wasn't processed correctly.
+        elif (group_status != 0):
+            print("Could not add POA group {} to batch - {}".format(i, cudapoa.status_to_str(group_status)))
 
 
 def parse_args():
@@ -84,6 +117,9 @@ def parse_args():
     parser.add_argument('-p',
                         help="Print output MSA or consensus for each POA group.",
                         action='store_true')
+    parser.add_argument('-l',
+                        help="Use long or short read sample data.",
+                        action='store_true')
     return parser.parse_args()
 
 
@@ -96,7 +132,7 @@ if __name__ == "__main__":
     cwd = os.path.dirname(os.path.abspath(__file__))
     cga_root = os.path.dirname(os.path.dirname(cwd))
     cudapoa_data_dir = os.path.join(cga_root, "cudapoa", "data")
-    sample_windows = os.path.join(cudapoa_data_dir, "sample-windows.txt")
+    sample_windows = os.path.join(cudapoa_data_dir, "sample-bonito.txt" if args.l else "sample-windows.txt")
     groups = read_poa_group_file(sample_windows, 1000)
 
     # Run CUDAPOA.
