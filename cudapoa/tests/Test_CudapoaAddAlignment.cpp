@@ -222,6 +222,7 @@ std::vector<AddAlginmentTestPair> getAddAlignmentTestCases()
 // host function for calling the kernel to test topsort device function.
 BasicGraph testAddAlignment(const BasicAlignment& obj)
 {
+    typedef int16_t SizeT;
     //declare device buffer
     uint8_t* nodes;
     SizeT* node_count;
@@ -301,7 +302,8 @@ BasicGraph testAddAlignment(const BasicAlignment& obj)
                  outgoing_edges_coverage_count,
                  s,
                  batch_size.max_sequences_per_poa,
-                 batch_size.max_nodes_per_window);
+                 batch_size.max_nodes_per_window,
+                 false, batch_size);
 
     CGA_CU_CHECK_ERR(cudaDeviceSynchronize());
 

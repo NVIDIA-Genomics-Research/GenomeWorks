@@ -22,10 +22,12 @@ namespace claragenomics
 namespace cudapoa
 {
 
+// in all tests, SizeT can be considered int16_t
+typedef int16_t SizeT;
 // alias for the 2d vector graph representation
-typedef std::vector<std::vector<uint16_t>> Uint16Vec2D;
 typedef std::vector<std::vector<SizeT>> SizeTVec2D;
 typedef std::vector<std::vector<std::vector<uint16_t>>> Uint16Vec3D;
+typedef std::vector<std::vector<uint16_t>> Uint16Vec2D;
 
 class BasicGraph
 {

@@ -34,7 +34,7 @@ namespace cudapoa
 template <typename SizeT>
 __device__ void topologicalSortDeviceUtil(SizeT* sorted_poa,
                                           SizeT* sorted_poa_node_map,
-                                          SizeT node_count,
+                                          int32_t node_count,
                                           uint16_t* incoming_edge_count,
                                           SizeT* outgoing_edges,
                                           uint16_t* outgoing_edge_count,
@@ -90,7 +90,7 @@ __device__ void topologicalSortDeviceUtil(SizeT* sorted_poa,
 template <typename SizeT>
 __device__ void raconTopologicalSortDeviceUtil(SizeT* sorted_poa,
                                                SizeT* sorted_poa_node_map,
-                                               SizeT node_count,
+                                               int32_t node_count,
                                                uint16_t* incoming_edge_count,
                                                SizeT* incoming_edges,
                                                uint16_t* aligned_node_count,
@@ -187,7 +187,7 @@ __device__ void raconTopologicalSortDeviceUtil(SizeT* sorted_poa,
 template <typename SizeT>
 __global__ void runTopSortKernel(SizeT* sorted_poa,
                                  SizeT* sorted_poa_node_map,
-                                 SizeT node_count,
+                                 int32_t node_count,
                                  uint16_t* incoming_edge_count,
                                  SizeT* outgoing_edges,
                                  uint16_t* outgoing_edge_count,
@@ -205,13 +205,13 @@ __global__ void runTopSortKernel(SizeT* sorted_poa,
 
 // host function that calls runTopSortKernel
 template <typename SizeT>
-void runTopSort(SizeT* sorted_poa,
-                SizeT* sorted_poa_node_map,
-                SizeT node_count,
-                uint16_t* incoming_edge_count,
-                SizeT* outgoing_edges,
-                uint16_t* outgoing_edge_count,
-                uint16_t* local_incoming_edge_count)
+void runTopSortTemplated(SizeT* sorted_poa,
+                         SizeT* sorted_poa_node_map,
+                         int32_t node_count,
+                         uint16_t* incoming_edge_count,
+                         SizeT* outgoing_edges,
+                         uint16_t* outgoing_edge_count,
+                         uint16_t* local_incoming_edge_count)
 {
     // calls the topsort kernel on 1 thread
     runTopSortKernel<<<1, 1>>>(sorted_poa,

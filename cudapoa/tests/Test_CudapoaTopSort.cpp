@@ -100,7 +100,8 @@ std::string testTopSortDeviceUtil(SizeT node_count, SizeTVec2D outgoing_edges_ve
                incoming_edge_count,
                outgoing_edges,
                outgoing_edge_count,
-               local_incoming_edge_count);
+               local_incoming_edge_count,
+               false, BatchSize(node_count));
 
     CGA_CU_CHECK_ERR(cudaDeviceSynchronize());
 

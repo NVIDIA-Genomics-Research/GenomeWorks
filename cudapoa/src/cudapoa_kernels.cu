@@ -778,6 +778,289 @@ void generatePOA(claragenomics::cudapoa::OutputDetails* output_details_d,
     }
 }
 
+void addAlignment(uint8_t* nodes,
+                  void* node_count_void,
+                  void* node_alignments_void, uint16_t* node_alignment_count,
+                  void* incoming_edges_void, uint16_t* incoming_edge_count,
+                  void* outgoing_edges_void, uint16_t* outgoing_edge_count,
+                  uint16_t* incoming_edge_w, uint16_t* outgoing_edge_w,
+                  uint16_t* alignment_length,
+                  void* graph_void,
+                  void* alignment_graph_void,
+                  uint8_t* read,
+                  void* alignment_read_void,
+                  uint16_t* node_coverage_counts,
+                  int8_t* base_weights,
+                  void* sequence_begin_nodes_ids_void,
+                  uint16_t* outgoing_edges_coverage,
+                  uint16_t* outgoing_edges_coverage_count,
+                  uint16_t s,
+                  uint32_t max_sequences_per_poa,
+                  uint32_t max_limit_nodes_per_window,
+                  bool cuda_banded_alignment,
+                  const BatchSize& batch_size)
+{
+    if (use32bitSize(batch_size, cuda_banded_alignment))
+    {
+        auto* node_count               = static_cast<int32_t*>(node_count_void);
+        auto* node_alignments          = static_cast<int32_t*>(node_alignments_void);
+        auto* incoming_edges           = static_cast<int32_t*>(incoming_edges_void);
+        auto* outgoing_edges           = static_cast<int32_t*>(outgoing_edges_void);
+        auto* graph                    = static_cast<int32_t*>(graph_void);
+        auto* alignment_graph          = static_cast<int32_t*>(alignment_graph_void);
+        auto* alignment_read           = static_cast<int32_t*>(alignment_read_void);
+        auto* sequence_begin_nodes_ids = static_cast<int32_t*>(sequence_begin_nodes_ids_void);
+
+        addAlignmentTemplated<int32_t>(nodes,
+                                       node_count,
+                                       node_alignments, node_alignment_count,
+                                       incoming_edges, incoming_edge_count,
+                                       outgoing_edges, outgoing_edge_count,
+                                       incoming_edge_w, outgoing_edge_w,
+                                       alignment_length,
+                                       graph,
+                                       alignment_graph,
+                                       read,
+                                       alignment_read,
+                                       node_coverage_counts,
+                                       base_weights,
+                                       sequence_begin_nodes_ids,
+                                       outgoing_edges_coverage,
+                                       outgoing_edges_coverage_count,
+                                       s,
+                                       max_sequences_per_poa,
+                                       max_limit_nodes_per_window);
+    }
+    else
+    {
+        auto* node_count               = static_cast<int16_t*>(node_count_void);
+        auto* node_alignments          = static_cast<int16_t*>(node_alignments_void);
+        auto* incoming_edges           = static_cast<int16_t*>(incoming_edges_void);
+        auto* outgoing_edges           = static_cast<int16_t*>(outgoing_edges_void);
+        auto* graph                    = static_cast<int16_t*>(graph_void);
+        auto* alignment_graph          = static_cast<int16_t*>(alignment_graph_void);
+        auto* alignment_read           = static_cast<int16_t*>(alignment_read_void);
+        auto* sequence_begin_nodes_ids = static_cast<int16_t*>(sequence_begin_nodes_ids_void);
+
+        addAlignmentTemplated<int16_t>(nodes,
+                                       node_count,
+                                       node_alignments, node_alignment_count,
+                                       incoming_edges, incoming_edge_count,
+                                       outgoing_edges, outgoing_edge_count,
+                                       incoming_edge_w, outgoing_edge_w,
+                                       alignment_length,
+                                       graph,
+                                       alignment_graph,
+                                       read,
+                                       alignment_read,
+                                       node_coverage_counts,
+                                       base_weights,
+                                       sequence_begin_nodes_ids,
+                                       outgoing_edges_coverage,
+                                       outgoing_edges_coverage_count,
+                                       s,
+                                       max_sequences_per_poa,
+                                       max_limit_nodes_per_window);
+    }
+}
+
+void runNW(uint8_t* nodes,
+           void* graph_void,
+           void* node_id_to_pos_void,
+           int32_t graph_count,
+           uint16_t* incoming_edge_count,
+           void* incoming_edges_void,
+           uint16_t* outgoing_edge_count,
+           void* outgoing_edges_void,
+           uint8_t* read,
+           uint16_t read_count,
+           int16_t* scores,
+           int32_t scores_width,
+           void* alignment_graph_void,
+           void* alignment_read_void,
+           int16_t gap_score,
+           int16_t mismatch_score,
+           int16_t match_score,
+           void* aligned_nodes_void,
+           bool cuda_banded_alignment,
+           const BatchSize& batch_size)
+{
+    if (use32bitSize(batch_size, cuda_banded_alignment))
+    {
+        auto* graph           = static_cast<int32_t*>(graph_void);
+        auto* node_id_to_pos  = static_cast<int32_t*>(node_id_to_pos_void);
+        auto* incoming_edges  = static_cast<int32_t*>(incoming_edges_void);
+        auto* outgoing_edges  = static_cast<int32_t*>(outgoing_edges_void);
+        auto* alignment_graph = static_cast<int32_t*>(alignment_graph_void);
+        auto* alignment_read  = static_cast<int32_t*>(alignment_read_void);
+        auto* aligned_nodes   = static_cast<int32_t*>(aligned_nodes_void);
+
+        runNWtemplated<int32_t>(nodes,
+                                graph,
+                                node_id_to_pos,
+                                graph_count,
+                                incoming_edge_count,
+                                incoming_edges,
+                                outgoing_edge_count,
+                                outgoing_edges,
+                                read,
+                                read_count,
+                                scores,
+                                scores_width,
+                                alignment_graph,
+                                alignment_read,
+                                gap_score,
+                                mismatch_score,
+                                match_score,
+                                aligned_nodes);
+    }
+    else
+    {
+        auto* graph           = static_cast<int16_t*>(graph_void);
+        auto* node_id_to_pos  = static_cast<int16_t*>(node_id_to_pos_void);
+        auto* incoming_edges  = static_cast<int16_t*>(incoming_edges_void);
+        auto* outgoing_edges  = static_cast<int16_t*>(outgoing_edges_void);
+        auto* alignment_graph = static_cast<int16_t*>(alignment_graph_void);
+        auto* alignment_read  = static_cast<int16_t*>(alignment_read_void);
+        auto* aligned_nodes   = static_cast<int16_t*>(aligned_nodes_void);
+
+        runNWtemplated<int16_t>(nodes,
+                                graph,
+                                node_id_to_pos,
+                                graph_count,
+                                incoming_edge_count,
+                                incoming_edges,
+                                outgoing_edge_count,
+                                outgoing_edges,
+                                read,
+                                read_count,
+                                scores,
+                                scores_width,
+                                alignment_graph,
+                                alignment_read,
+                                gap_score,
+                                mismatch_score,
+                                match_score,
+                                aligned_nodes);
+    }
+}
+
+void generateConsensusTestHost(uint8_t* nodes,
+                               int32_t node_count,
+                               void* graph_void,
+                               void* node_id_to_pos_void,
+                               void* incoming_edges_void,
+                               uint16_t* incoming_edge_count,
+                               void* outgoing_edges_void,
+                               uint16_t* outgoing_edge_count,
+                               uint16_t* incoming_edge_w,
+                               void* predecessors_void,
+                               int32_t* scores,
+                               uint8_t* consensus,
+                               uint16_t* coverage,
+                               uint16_t* node_coverage_counts,
+                               void* node_alignments_void,
+                               uint16_t* node_alignment_count,
+                               uint32_t max_limit_consensus_size,
+                               bool cuda_banded_alignment,
+                               const BatchSize& batch_size)
+{
+    if (use32bitSize(batch_size, cuda_banded_alignment))
+    {
+        auto* graph           = static_cast<int32_t*>(graph_void);
+        auto* node_id_to_pos  = static_cast<int32_t*>(node_id_to_pos_void);
+        auto* incoming_edges  = static_cast<int32_t*>(incoming_edges_void);
+        auto* outgoing_edges  = static_cast<int32_t*>(outgoing_edges_void);
+        auto* predecessors    = static_cast<int32_t*>(predecessors_void);
+        auto* node_alignments = static_cast<int32_t*>(node_alignments_void);
+
+        generateConsensusTemplated(nodes,
+                                   node_count,
+                                   graph,
+                                   node_id_to_pos,
+                                   incoming_edges,
+                                   incoming_edge_count,
+                                   outgoing_edges,
+                                   outgoing_edge_count,
+                                   incoming_edge_w,
+                                   predecessors,
+                                   scores,
+                                   consensus,
+                                   coverage,
+                                   node_coverage_counts,
+                                   node_alignments,
+                                   node_alignment_count,
+                                   max_limit_consensus_size);
+    }
+    else
+    {
+        auto* graph           = static_cast<int16_t*>(graph_void);
+        auto* node_id_to_pos  = static_cast<int16_t*>(node_id_to_pos_void);
+        auto* incoming_edges  = static_cast<int16_t*>(incoming_edges_void);
+        auto* outgoing_edges  = static_cast<int16_t*>(outgoing_edges_void);
+        auto* predecessors    = static_cast<int16_t*>(predecessors_void);
+        auto* node_alignments = static_cast<int16_t*>(node_alignments_void);
+
+        generateConsensusTemplated(nodes,
+                                   node_count,
+                                   graph,
+                                   node_id_to_pos,
+                                   incoming_edges,
+                                   incoming_edge_count,
+                                   outgoing_edges,
+                                   outgoing_edge_count,
+                                   incoming_edge_w,
+                                   predecessors,
+                                   scores,
+                                   consensus,
+                                   coverage,
+                                   node_coverage_counts,
+                                   node_alignments,
+                                   node_alignment_count,
+                                   max_limit_consensus_size);
+    }
+}
+
+void runTopSort(void* sorted_poa_void,
+                void* sorted_poa_node_map_void,
+                int32_t node_count,
+                uint16_t* incoming_edge_count,
+                void* outgoing_edges_void,
+                uint16_t* outgoing_edge_count,
+                uint16_t* local_incoming_edge_count,
+                bool cuda_banded_alignment,
+                const BatchSize& batch_size)
+{
+    if (use32bitSize(batch_size, cuda_banded_alignment))
+    {
+        auto* sorted_poa          = static_cast<int32_t*>(sorted_poa_void);
+        auto* sorted_poa_node_map = static_cast<int32_t*>(sorted_poa_node_map_void);
+        auto* outgoing_edges      = static_cast<int32_t*>(outgoing_edges_void);
+
+        runTopSortTemplated(sorted_poa,
+                            sorted_poa_node_map,
+                            node_count,
+                            incoming_edge_count,
+                            outgoing_edges,
+                            outgoing_edge_count,
+                            local_incoming_edge_count);
+    }
+    else
+    {
+        auto* sorted_poa          = static_cast<int16_t*>(sorted_poa_void);
+        auto* sorted_poa_node_map = static_cast<int16_t*>(sorted_poa_node_map_void);
+        auto* outgoing_edges      = static_cast<int16_t*>(outgoing_edges_void);
+
+        runTopSortTemplated(sorted_poa,
+                            sorted_poa_node_map,
+                            node_count,
+                            incoming_edge_count,
+                            outgoing_edges,
+                            outgoing_edge_count,
+                            local_incoming_edge_count);
+    }
+}
+
 bool use32bitScore(const BatchSize& batch_size, const int16_t gap_score, const int16_t mismatch_score, const int16_t match_score)
 {
     // theoretical max score takes place when sequence and graph completely match with each other

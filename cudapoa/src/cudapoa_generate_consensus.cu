@@ -25,7 +25,7 @@ __device__
     SizeT
     branchCompletion(uint16_t max_score_id_pos,
                      uint8_t* nodes,
-                     uint16_t node_count,
+                     int32_t node_count,
                      SizeT* graph,
                      SizeT* incoming_edges,
                      uint16_t* incoming_edge_count,
@@ -62,7 +62,7 @@ __device__
     // We can start from the very next position in the graph rank because
     // the graph is topologically sorted and hence guarantees that successor of the current max
     // node will be processed again.
-    for (uint16_t graph_pos = max_score_id_pos + 1; graph_pos < node_count; graph_pos++)
+    for (SizeT graph_pos = max_score_id_pos + 1; graph_pos < node_count; graph_pos++)
     {
         node_id = graph[graph_pos];
 
@@ -128,7 +128,7 @@ __device__
  */
 template <typename SizeT>
 __device__ void generateConsensus(uint8_t* nodes,
-                                  SizeT node_count,
+                                  int32_t node_count,
                                   SizeT* graph,
                                   SizeT* node_id_to_pos,
                                   SizeT* incoming_edges,
@@ -346,7 +346,7 @@ __global__ void generateConsensusKernel(uint8_t* consensus_d,
 
 template <typename SizeT>
 __global__ void generateConsensusTestKernel(uint8_t* nodes,
-                                            SizeT node_count,
+                                            int32_t node_count,
                                             SizeT* graph,
                                             SizeT* node_id_to_pos,
                                             SizeT* incoming_edges,
@@ -383,23 +383,23 @@ __global__ void generateConsensusTestKernel(uint8_t* nodes,
 }
 
 template <typename SizeT>
-void generateConsensusTestHost(uint8_t* nodes,
-                               SizeT node_count,
-                               SizeT* graph,
-                               SizeT* node_id_to_pos,
-                               SizeT* incoming_edges,
-                               uint16_t* incoming_edge_count,
-                               SizeT* outgoing_edges,
-                               uint16_t* outgoing_edge_count,
-                               uint16_t* incoming_edge_w,
-                               SizeT* predecessors,
-                               int32_t* scores,
-                               uint8_t* consensus,
-                               uint16_t* coverage,
-                               uint16_t* node_coverage_counts,
-                               SizeT* node_alignments,
-                               uint16_t* node_alignment_count,
-                               uint32_t max_limit_consensus_size)
+void generateConsensusTemplated(uint8_t* nodes,
+                                int32_t node_count,
+                                SizeT* graph,
+                                SizeT* node_id_to_pos,
+                                SizeT* incoming_edges,
+                                uint16_t* incoming_edge_count,
+                                SizeT* outgoing_edges,
+                                uint16_t* outgoing_edge_count,
+                                uint16_t* incoming_edge_w,
+                                SizeT* predecessors,
+                                int32_t* scores,
+                                uint8_t* consensus,
+                                uint16_t* coverage,
+                                uint16_t* node_coverage_counts,
+                                SizeT* node_alignments,
+                                uint16_t* node_alignment_count,
+                                uint32_t max_limit_consensus_size)
 {
     generateConsensusTestKernel<<<1, 1>>>(nodes,
                                           node_count,
