@@ -105,14 +105,6 @@ public:
     /// \return first occurrence of corresponding representation from unique_representations() in data arrays, plus one more element with the total number of sketch elements
     const device_buffer<std::uint32_t>& first_occurrence_of_representations() const override;
 
-    /// \brief returns look up table array mapping read id to read name
-    /// \return the array mapping read id to read name
-    const std::vector<std::string>& read_ids_to_read_names() const override;
-
-    /// \brief returns an array used for mapping read id to the length of the read
-    /// \return the array used for mapping read ids to their lengths
-    const std::vector<std::uint32_t>& read_ids_to_read_lengths() const override;
-
     /// \brief returns number of reads in input data
     /// \return number of reads in input data
     read_id_t number_of_reads() const override;
@@ -144,9 +136,6 @@ private:
 
     device_buffer<representation_t> unique_representations_d_;
     device_buffer<std::uint32_t> first_occurrence_of_representations_d_;
-
-    std::vector<std::string> read_id_to_read_name_;
-    std::vector<std::uint32_t> read_id_to_read_length_;
 
     const read_id_t first_read_id_ = 0;
     // number of basepairs in a k-mer
@@ -633,9 +622,6 @@ IndexGPU<SketchElementImpl>::IndexGPU(DefaultDeviceAllocator allocator,
     first_occurrence_of_representations_d_.shrink_to_fit();
     cudautils::device_copy_n(index_host_copy.first_occurrence_of_representations().data(), index_host_copy.first_occurrence_of_representations().size(), first_occurrence_of_representations_d_.data(), cuda_stream);
 
-    read_id_to_read_name_   = index_host_copy.read_id_to_read_names();   //H2H
-    read_id_to_read_length_ = index_host_copy.read_id_to_read_lengths(); //H2H
-
     // This is not completely necessary, but if removed one has to make sure that the next step
     // uses the same stream or that sync is done in caller
     CGA_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream_));
@@ -675,18 +661,6 @@ template <typename SketchElementImpl>
 const device_buffer<std::uint32_t>& IndexGPU<SketchElementImpl>::first_occurrence_of_representations() const
 {
     return first_occurrence_of_representations_d_;
-}
-
-template <typename SketchElementImpl>
-const std::vector<std::string>& IndexGPU<SketchElementImpl>::read_ids_to_read_names() const
-{
-    return read_id_to_read_name_;
-}
-
-template <typename SketchElementImpl>
-const std::vector<std::uint32_t>& IndexGPU<SketchElementImpl>::read_ids_to_read_lengths() const
-{
-    return read_id_to_read_length_;
 }
 
 template <typename SketchElementImpl>
@@ -748,8 +722,6 @@ void IndexGPU<SketchElementImpl>::generate_index(const io::FastaParser& parser,
             // TODO: make sure that no read is longer than what fits into position_in_read_t
             read_id_to_basepairs_section_h.emplace_back(ArrayBlock{total_basepairs, static_cast<std::uint32_t>(read_basepairs.length())});
             total_basepairs += read_basepairs.length();
-            read_id_to_read_name_.push_back(read_name);
-            read_id_to_read_length_.push_back(read_basepairs.length());
             number_of_basepairs_in_longest_read_ = std::max(number_of_basepairs_in_longest_read_, static_cast<position_in_read_t>(read_basepairs.length()));
         }
         else

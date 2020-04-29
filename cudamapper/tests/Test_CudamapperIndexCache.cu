@@ -36,8 +36,6 @@ void check_if_index_is_correct(const std::shared_ptr<Index>& index,
                                const std::vector<representation_t>& expected_unique_representations,
                                const std::vector<std::uint32_t>& expected_first_occurrence_of_representations,
                                const read_id_t expected_number_of_reads,
-                               const std::vector<std::string>& expected_read_ids_to_read_names,
-                               const std::vector<std::uint32_t>& expected_read_ids_to_read_lengths,
                                const read_id_t expected_smallest_read_id,
                                const read_id_t expected_largest_read_id,
                                const position_in_read_t expected_number_of_basepairs_in_longest_read,
@@ -49,8 +47,6 @@ void check_if_index_is_correct(const std::shared_ptr<Index>& index,
     ASSERT_EQ(get_size(expected_representations), get_size(expected_positions_in_reads)) << " test_uid: " << test_uid;
     ASSERT_EQ(get_size(expected_representations), get_size(expected_directions_of_reads)) << " test_uid: " << test_uid;
     ASSERT_EQ(get_size(expected_unique_representations), get_size(expected_first_occurrence_of_representations) - 1) << " test_uid: " << test_uid;
-    ASSERT_EQ(expected_number_of_reads, get_size(expected_read_ids_to_read_names)) << " test_uid: " << test_uid;
-    ASSERT_EQ(expected_number_of_reads, get_size(expected_read_ids_to_read_lengths)) << " test_uid: " << test_uid;
     ASSERT_LE(expected_number_of_reads, expected_largest_read_id - expected_smallest_read_id + 1) << " test_uid: " << test_uid;
 
     ASSERT_EQ(get_size(index->representations()), get_size(expected_representations)) << " test_uid: " << test_uid;
@@ -79,10 +75,6 @@ void check_if_index_is_correct(const std::shared_ptr<Index>& index,
 
     read_id_t index_number_of_reads = index->number_of_reads();
 
-    std::vector<std::string> index_read_ids_to_read_names = index->read_ids_to_read_names();
-
-    std::vector<std::uint32_t> index_read_ids_to_read_lengths = index->read_ids_to_read_lengths();
-
     read_id_t index_smallest_read_id = index->smallest_read_id();
 
     read_id_t index_largest_read_id = index->largest_read_id();
@@ -100,8 +92,6 @@ void check_if_index_is_correct(const std::shared_ptr<Index>& index,
     ASSERT_EQ(index_unique_representations, expected_unique_representations) << " test_uid: " << test_uid;
     ASSERT_EQ(index_first_occurrence_of_representations, expected_first_occurrence_of_representations) << " test_uid: " << test_uid;
     ASSERT_EQ(index_number_of_reads, expected_number_of_reads) << " test_uid: " << test_uid;
-    ASSERT_EQ(index_read_ids_to_read_names, expected_read_ids_to_read_names) << " test_uid: " << test_uid;
-    ASSERT_EQ(index_read_ids_to_read_lengths, expected_read_ids_to_read_lengths) << " test_uid: " << test_uid;
     ASSERT_EQ(index_smallest_read_id, expected_smallest_read_id) << " test_uid: " << test_uid;
     ASSERT_EQ(index_largest_read_id, expected_largest_read_id) << " test_uid: " << test_uid;
     ASSERT_EQ(index_number_of_basepairs_in_longest_read, expected_number_of_basepairs_in_longest_read) << " test_uid: " << test_uid;
@@ -257,9 +247,7 @@ TEST(TestCudamapperIndexCaching, test_index_cache_host_reuse_data)
     // trailing elements
     aagcta_first_occurrence_of_representations.push_back(3);
 
-    const read_id_t aagcta_number_of_reads = 1;
-    const std::vector<std::string> aagcta_read_ids_to_read_names({"read_1"});
-    const std::vector<std::uint32_t> aagcta_read_ids_to_read_lengths({6});
+    const read_id_t aagcta_number_of_reads                              = 1;
     const read_id_t aagcta_smallest_read_id                             = 1;
     const read_id_t aagcta_largest_read_id                              = 1;
     const position_in_read_t aagcta_number_of_basepairs_in_longest_read = 6;
@@ -323,9 +311,7 @@ TEST(TestCudamapperIndexCaching, test_index_cache_host_reuse_data)
     // trailing elements
     catcaag_aagcta_first_occurrence_of_representations.push_back(7);
 
-    const read_id_t catcaag_aagcta_number_of_reads = 2;
-    const std::vector<std::string> catcaag_aagcta_read_ids_to_read_names({"read_0", "read_1"});
-    const std::vector<std::uint32_t> catcaag_aagcta_read_ids_to_read_lengths({7, 6});
+    const read_id_t catcaag_aagcta_number_of_reads                              = 2;
     const read_id_t catcaag_aagcta_smallest_read_id                             = 0;
     const read_id_t catcaag_aagcta_largest_read_id                              = 1;
     const position_in_read_t catcaag_aagcta_number_of_basepairs_in_longest_read = 7;
@@ -362,8 +348,6 @@ TEST(TestCudamapperIndexCaching, test_index_cache_host_reuse_data)
                               catcaag_unique_representations,
                               catcaag_first_occurrence_of_representations,
                               catcaag_number_of_reads,
-                              catcaag_read_ids_to_read_names,
-                              catcaag_read_ids_to_read_lengths,
                               catcaag_smallest_read_id,
                               catcaag_largest_read_id,
                               catcaag_number_of_basepairs_in_longest_read,
@@ -387,8 +371,6 @@ TEST(TestCudamapperIndexCaching, test_index_cache_host_reuse_data)
                               catcaag_unique_representations,
                               catcaag_first_occurrence_of_representations,
                               catcaag_number_of_reads,
-                              catcaag_read_ids_to_read_names,
-                              catcaag_read_ids_to_read_lengths,
                               catcaag_smallest_read_id,
                               catcaag_largest_read_id,
                               catcaag_number_of_basepairs_in_longest_read,
@@ -407,8 +389,6 @@ TEST(TestCudamapperIndexCaching, test_index_cache_host_reuse_data)
                               aagcta_unique_representations,
                               aagcta_first_occurrence_of_representations,
                               aagcta_number_of_reads,
-                              aagcta_read_ids_to_read_names,
-                              aagcta_read_ids_to_read_lengths,
                               aagcta_smallest_read_id,
                               aagcta_largest_read_id,
                               aagcta_number_of_basepairs_in_longest_read,
@@ -429,8 +409,6 @@ TEST(TestCudamapperIndexCaching, test_index_cache_host_reuse_data)
                               aagcta_unique_representations,
                               aagcta_first_occurrence_of_representations,
                               aagcta_number_of_reads,
-                              aagcta_read_ids_to_read_names,
-                              aagcta_read_ids_to_read_lengths,
                               aagcta_smallest_read_id,
                               aagcta_largest_read_id,
                               aagcta_number_of_basepairs_in_longest_read,
@@ -448,8 +426,6 @@ TEST(TestCudamapperIndexCaching, test_index_cache_host_reuse_data)
                               aagcta_unique_representations,
                               aagcta_first_occurrence_of_representations,
                               aagcta_number_of_reads,
-                              aagcta_read_ids_to_read_names,
-                              aagcta_read_ids_to_read_lengths,
                               aagcta_smallest_read_id,
                               aagcta_largest_read_id,
                               aagcta_number_of_basepairs_in_longest_read,
@@ -469,8 +445,6 @@ TEST(TestCudamapperIndexCaching, test_index_cache_host_reuse_data)
                               catcaag_unique_representations,
                               catcaag_first_occurrence_of_representations,
                               catcaag_number_of_reads,
-                              catcaag_read_ids_to_read_names,
-                              catcaag_read_ids_to_read_lengths,
                               catcaag_smallest_read_id,
                               catcaag_largest_read_id,
                               catcaag_number_of_basepairs_in_longest_read,
@@ -486,8 +460,6 @@ TEST(TestCudamapperIndexCaching, test_index_cache_host_reuse_data)
                               aagcta_unique_representations,
                               aagcta_first_occurrence_of_representations,
                               aagcta_number_of_reads,
-                              aagcta_read_ids_to_read_names,
-                              aagcta_read_ids_to_read_lengths,
                               aagcta_smallest_read_id,
                               aagcta_largest_read_id,
                               aagcta_number_of_basepairs_in_longest_read,
@@ -505,8 +477,6 @@ TEST(TestCudamapperIndexCaching, test_index_cache_host_reuse_data)
                               aagcta_unique_representations,
                               aagcta_first_occurrence_of_representations,
                               aagcta_number_of_reads,
-                              aagcta_read_ids_to_read_names,
-                              aagcta_read_ids_to_read_lengths,
                               aagcta_smallest_read_id,
                               aagcta_largest_read_id,
                               aagcta_number_of_basepairs_in_longest_read,
@@ -526,8 +496,6 @@ TEST(TestCudamapperIndexCaching, test_index_cache_host_reuse_data)
                               catcaag_unique_representations,
                               catcaag_first_occurrence_of_representations,
                               catcaag_number_of_reads,
-                              catcaag_read_ids_to_read_names,
-                              catcaag_read_ids_to_read_lengths,
                               catcaag_smallest_read_id,
                               catcaag_largest_read_id,
                               catcaag_number_of_basepairs_in_longest_read,
@@ -543,8 +511,6 @@ TEST(TestCudamapperIndexCaching, test_index_cache_host_reuse_data)
                               aagcta_unique_representations,
                               aagcta_first_occurrence_of_representations,
                               aagcta_number_of_reads,
-                              aagcta_read_ids_to_read_names,
-                              aagcta_read_ids_to_read_lengths,
                               aagcta_smallest_read_id,
                               aagcta_largest_read_id,
                               aagcta_number_of_basepairs_in_longest_read,
@@ -563,8 +529,6 @@ TEST(TestCudamapperIndexCaching, test_index_cache_host_reuse_data)
                               catcaag_aagcta_unique_representations,
                               catcaag_aagcta_first_occurrence_of_representations,
                               catcaag_aagcta_number_of_reads,
-                              catcaag_aagcta_read_ids_to_read_names,
-                              catcaag_aagcta_read_ids_to_read_lengths,
                               catcaag_aagcta_smallest_read_id,
                               catcaag_aagcta_largest_read_id,
                               catcaag_aagcta_number_of_basepairs_in_longest_read,
@@ -670,9 +634,7 @@ TEST(TestCudamapperIndexCaching, test_index_cache_host_do_not_reuse_data)
     // trailing elements
     aagcta_first_occurrence_of_representations.push_back(3);
 
-    const read_id_t aagcta_number_of_reads = 1;
-    const std::vector<std::string> aagcta_read_ids_to_read_names({"read_0"});
-    const std::vector<std::uint32_t> aagcta_read_ids_to_read_lengths({6});
+    const read_id_t aagcta_number_of_reads                              = 1;
     const read_id_t aagcta_smallest_read_id                             = 0;
     const read_id_t aagcta_largest_read_id                              = 0;
     const position_in_read_t aagcta_number_of_basepairs_in_longest_read = 6;
@@ -717,9 +679,7 @@ TEST(TestCudamapperIndexCaching, test_index_cache_host_do_not_reuse_data)
     // trailing elements
     catcaag_first_occurrence_of_representations.push_back(4);
 
-    const read_id_t catcaag_number_of_reads = 1;
-    const std::vector<std::string> catcaag_read_ids_to_read_names({"read_0"});
-    const std::vector<std::uint32_t> catcaag_read_ids_to_read_lengths({7});
+    const read_id_t catcaag_number_of_reads                              = 1;
     const read_id_t catcaag_smallest_read_id                             = 0;
     const read_id_t catcaag_largest_read_id                              = 0;
     const position_in_read_t catcaag_number_of_basepairs_in_longest_read = 7;
@@ -752,8 +712,6 @@ TEST(TestCudamapperIndexCaching, test_index_cache_host_do_not_reuse_data)
                               aagcta_unique_representations,
                               aagcta_first_occurrence_of_representations,
                               aagcta_number_of_reads,
-                              aagcta_read_ids_to_read_names,
-                              aagcta_read_ids_to_read_lengths,
                               aagcta_smallest_read_id,
                               aagcta_largest_read_id,
                               aagcta_number_of_basepairs_in_longest_read,
@@ -773,8 +731,6 @@ TEST(TestCudamapperIndexCaching, test_index_cache_host_do_not_reuse_data)
                               aagcta_unique_representations,
                               aagcta_first_occurrence_of_representations,
                               aagcta_number_of_reads,
-                              aagcta_read_ids_to_read_names,
-                              aagcta_read_ids_to_read_lengths,
                               aagcta_smallest_read_id,
                               aagcta_largest_read_id,
                               aagcta_number_of_basepairs_in_longest_read,
@@ -790,8 +746,6 @@ TEST(TestCudamapperIndexCaching, test_index_cache_host_do_not_reuse_data)
                               catcaag_unique_representations,
                               catcaag_first_occurrence_of_representations,
                               catcaag_number_of_reads,
-                              catcaag_read_ids_to_read_names,
-                              catcaag_read_ids_to_read_lengths,
                               catcaag_smallest_read_id,
                               catcaag_largest_read_id,
                               catcaag_number_of_basepairs_in_longest_read,
@@ -868,9 +822,7 @@ TEST(TestCudamapperIndexCaching, test_index_cache_device_reuse_data)
     // trailing elements
     catcaag_first_occurrence_of_representations.push_back(4);
 
-    const read_id_t catcaag_number_of_reads = 1;
-    const std::vector<std::string> catcaag_read_ids_to_read_names({"read_0"});
-    const std::vector<std::uint32_t> catcaag_read_ids_to_read_lengths({7});
+    const read_id_t catcaag_number_of_reads                              = 1;
     const read_id_t catcaag_smallest_read_id                             = 0;
     const read_id_t catcaag_largest_read_id                              = 0;
     const position_in_read_t catcaag_number_of_basepairs_in_longest_read = 7;
@@ -908,9 +860,7 @@ TEST(TestCudamapperIndexCaching, test_index_cache_device_reuse_data)
     // trailing elements
     aagcta_first_occurrence_of_representations.push_back(3);
 
-    const read_id_t aagcta_number_of_reads = 1;
-    const std::vector<std::string> aagcta_read_ids_to_read_names({"read_1"});
-    const std::vector<std::uint32_t> aagcta_read_ids_to_read_lengths({6});
+    const read_id_t aagcta_number_of_reads                              = 1;
     const read_id_t aagcta_smallest_read_id                             = 1;
     const read_id_t aagcta_largest_read_id                              = 1;
     const position_in_read_t aagcta_number_of_basepairs_in_longest_read = 6;
@@ -949,8 +899,6 @@ TEST(TestCudamapperIndexCaching, test_index_cache_device_reuse_data)
                               catcaag_unique_representations,
                               catcaag_first_occurrence_of_representations,
                               catcaag_number_of_reads,
-                              catcaag_read_ids_to_read_names,
-                              catcaag_read_ids_to_read_lengths,
                               catcaag_smallest_read_id,
                               catcaag_largest_read_id,
                               catcaag_number_of_basepairs_in_longest_read,
@@ -976,8 +924,6 @@ TEST(TestCudamapperIndexCaching, test_index_cache_device_reuse_data)
                               catcaag_unique_representations,
                               catcaag_first_occurrence_of_representations,
                               catcaag_number_of_reads,
-                              catcaag_read_ids_to_read_names,
-                              catcaag_read_ids_to_read_lengths,
                               catcaag_smallest_read_id,
                               catcaag_largest_read_id,
                               catcaag_number_of_basepairs_in_longest_read,
@@ -994,8 +940,6 @@ TEST(TestCudamapperIndexCaching, test_index_cache_device_reuse_data)
                               aagcta_unique_representations,
                               aagcta_first_occurrence_of_representations,
                               aagcta_number_of_reads,
-                              aagcta_read_ids_to_read_names,
-                              aagcta_read_ids_to_read_lengths,
                               aagcta_smallest_read_id,
                               aagcta_largest_read_id,
                               aagcta_number_of_basepairs_in_longest_read,
@@ -1058,9 +1002,7 @@ TEST(TestCudamapperIndexCaching, test_index_cache_device_do_not_reuse_data)
     // trailing elements
     aagcta_first_occurrence_of_representations.push_back(3);
 
-    const read_id_t aagcta_number_of_reads = 1;
-    const std::vector<std::string> aagcta_read_ids_to_read_names({"read_0"});
-    const std::vector<std::uint32_t> aagcta_read_ids_to_read_lengths({6});
+    const read_id_t aagcta_number_of_reads                              = 1;
     const read_id_t aagcta_smallest_read_id                             = 0;
     const read_id_t aagcta_largest_read_id                              = 0;
     const position_in_read_t aagcta_number_of_basepairs_in_longest_read = 6;
@@ -1105,9 +1047,7 @@ TEST(TestCudamapperIndexCaching, test_index_cache_device_do_not_reuse_data)
     // trailing elements
     catcaag_first_occurrence_of_representations.push_back(4);
 
-    const read_id_t catcaag_number_of_reads = 1;
-    const std::vector<std::string> catcaag_read_ids_to_read_names({"read_0"});
-    const std::vector<std::uint32_t> catcaag_read_ids_to_read_lengths({7});
+    const read_id_t catcaag_number_of_reads                              = 1;
     const read_id_t catcaag_smallest_read_id                             = 0;
     const read_id_t catcaag_largest_read_id                              = 0;
     const position_in_read_t catcaag_number_of_basepairs_in_longest_read = 7;
@@ -1146,8 +1086,6 @@ TEST(TestCudamapperIndexCaching, test_index_cache_device_do_not_reuse_data)
                               aagcta_unique_representations,
                               aagcta_first_occurrence_of_representations,
                               aagcta_number_of_reads,
-                              aagcta_read_ids_to_read_names,
-                              aagcta_read_ids_to_read_lengths,
                               aagcta_smallest_read_id,
                               aagcta_largest_read_id,
                               aagcta_number_of_basepairs_in_longest_read,
@@ -1172,8 +1110,6 @@ TEST(TestCudamapperIndexCaching, test_index_cache_device_do_not_reuse_data)
                               aagcta_unique_representations,
                               aagcta_first_occurrence_of_representations,
                               aagcta_number_of_reads,
-                              aagcta_read_ids_to_read_names,
-                              aagcta_read_ids_to_read_lengths,
                               aagcta_smallest_read_id,
                               aagcta_largest_read_id,
                               aagcta_number_of_basepairs_in_longest_read,
@@ -1188,8 +1124,6 @@ TEST(TestCudamapperIndexCaching, test_index_cache_device_do_not_reuse_data)
                               catcaag_unique_representations,
                               catcaag_first_occurrence_of_representations,
                               catcaag_number_of_reads,
-                              catcaag_read_ids_to_read_names,
-                              catcaag_read_ids_to_read_lengths,
                               catcaag_smallest_read_id,
                               catcaag_largest_read_id,
                               catcaag_number_of_basepairs_in_longest_read,
