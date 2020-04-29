@@ -36,8 +36,8 @@ public:
 
     /// \brief Fetch an entry from the FASTA file by index position in file.
     /// \param sequence_id Position of sequence in file. If sequence_id is invalid an error is thrown.
-    /// \return A FastaSequence object describing the entry.
-    FastaSequence get_sequence_by_id(read_id_t sequence_id) const override;
+    /// \return A reference to FastaSequence describing the entry.
+    const FastaSequence& get_sequence_by_id(read_id_t sequence_id) const override;
 
 private:
     /// All the reads from the FASTA file are stored in host RAM

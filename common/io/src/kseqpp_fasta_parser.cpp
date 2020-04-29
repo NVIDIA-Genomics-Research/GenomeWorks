@@ -64,7 +64,7 @@ number_of_reads_t FastaParserKseqpp::get_num_seqences() const
     return reads_.size();
 }
 
-FastaSequence FastaParserKseqpp::get_sequence_by_id(const read_id_t sequence_id) const
+const FastaSequence& FastaParserKseqpp::get_sequence_by_id(const read_id_t sequence_id) const
 {
     return reads_[sequence_id];
 }

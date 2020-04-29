@@ -16,6 +16,8 @@
 
 #include "cudamapper_file_location.hpp"
 
+#include <claragenomics/utils/signed_integer_utils.hpp>
+
 namespace claragenomics
 {
 namespace cudamapper
@@ -26,14 +28,14 @@ void test_generated_batches(const std::vector<BatchOfIndices>& generated_batches
 {
     ASSERT_EQ(expected_batches.size(), generated_batches.size());
 
-    for (std::size_t i = 0; i < expected_batches.size(); ++i)
+    for (std::int64_t i = 0; i < get_size<std::int64_t>(expected_batches); ++i)
     {
         const BatchOfIndices& expected_batch                                   = expected_batches[i];
         const BatchOfIndices& generated_batch                                  = generated_batches[i];
         const std::vector<IndexDescriptor>& expected_batch_host_query_indices  = expected_batch.host_batch.query_indices;
         const std::vector<IndexDescriptor>& generated_batch_host_query_indices = generated_batch.host_batch.query_indices;
-        ASSERT_EQ(expected_batch_host_query_indices.size(), generated_batch_host_query_indices.size()) << "i: " << i;
-        for (std::size_t j = 0; j < expected_batch_host_query_indices.size(); ++j)
+        ASSERT_EQ(get_size<std::int64_t>(expected_batch_host_query_indices), get_size<std::int64_t>(generated_batch_host_query_indices)) << "i: " << i;
+        for (std::int64_t j = 0; j < get_size<std::int64_t>(expected_batch_host_query_indices); ++j)
         {
             const IndexDescriptor& expected_host_query_index  = expected_batch_host_query_indices[j];
             const IndexDescriptor& generated_host_query_index = generated_batch_host_query_indices[j];
@@ -42,8 +44,8 @@ void test_generated_batches(const std::vector<BatchOfIndices>& generated_batches
         }
         const std::vector<IndexDescriptor>& expected_batch_host_target_indices  = expected_batch.host_batch.target_indices;
         const std::vector<IndexDescriptor>& generated_batch_host_target_indices = generated_batch.host_batch.target_indices;
-        ASSERT_EQ(expected_batch_host_target_indices.size(), generated_batch_host_target_indices.size()) << "i: " << i;
-        for (std::size_t j = 0; j < expected_batch_host_target_indices.size(); ++j)
+        ASSERT_EQ(get_size<std::int64_t>(expected_batch_host_target_indices), get_size<std::int64_t>(generated_batch_host_target_indices)) << "i: " << i;
+        for (std::int64_t j = 0; j < get_size<std::int64_t>(expected_batch_host_target_indices); ++j)
         {
             const IndexDescriptor& expected_host_target_index  = expected_batch_host_target_indices[j];
             const IndexDescriptor& generated_host_target_index = generated_batch_host_target_indices[j];
@@ -51,15 +53,15 @@ void test_generated_batches(const std::vector<BatchOfIndices>& generated_batches
             ASSERT_EQ(expected_host_target_index.number_of_reads(), generated_host_target_index.number_of_reads()) << "i: " << i << ", j: " << j;
         }
 
-        ASSERT_EQ(expected_batch.device_batches.size(), generated_batch.device_batches.size()) << "i: " << i;
-        for (std::size_t j = 0; j < expected_batch.device_batches.size(); ++j)
+        ASSERT_EQ(get_size<std::int64_t>(expected_batch.device_batches), get_size<std::int64_t>(generated_batch.device_batches)) << "i: " << i;
+        for (std::int64_t j = 0; j < get_size<std::int64_t>(expected_batch.device_batches); ++j)
         {
             const IndexBatch& expected_device_batch                            = expected_batch.device_batches[j];
             const IndexBatch& generated_device_batch                           = generated_batch.device_batches[j];
             const std::vector<IndexDescriptor>& expected_device_query_indices  = expected_device_batch.query_indices;
             const std::vector<IndexDescriptor>& generated_device_query_indices = generated_device_batch.query_indices;
-            ASSERT_EQ(expected_device_query_indices.size(), generated_device_query_indices.size()) << "i: " << i << ", j: " << j;
-            for (std::size_t k = 0; k < expected_device_query_indices.size(); ++k)
+            ASSERT_EQ(get_size<std::int64_t>(expected_device_query_indices), get_size<std::int64_t>(generated_device_query_indices)) << "i: " << i << ", j: " << j;
+            for (std::int64_t k = 0; k < get_size<std::int64_t>(expected_device_query_indices); ++k)
             {
                 const IndexDescriptor& expected_device_query_index  = expected_device_query_indices[k];
                 const IndexDescriptor& generated_device_query_index = generated_device_query_indices[k];
@@ -68,8 +70,8 @@ void test_generated_batches(const std::vector<BatchOfIndices>& generated_batches
             }
             const std::vector<IndexDescriptor>& expected_device_target_indices  = expected_device_batch.target_indices;
             const std::vector<IndexDescriptor>& generated_device_target_indices = generated_device_batch.target_indices;
-            ASSERT_EQ(expected_device_target_indices.size(), generated_device_target_indices.size()) << "i: " << i << ", j: " << j;
-            for (std::size_t k = 0; k < expected_device_target_indices.size(); ++k)
+            ASSERT_EQ(get_size<std::int64_t>(expected_device_target_indices), get_size<std::int64_t>(generated_device_target_indices)) << "i: " << i << ", j: " << j;
+            for (std::int64_t k = 0; k < get_size<std::int64_t>(expected_device_target_indices); ++k)
             {
                 const IndexDescriptor& expected_device_target_index  = expected_device_target_indices[k];
                 const IndexDescriptor& generated_device_target_index = generated_device_target_indices[k];
@@ -848,66 +850,66 @@ TEST(TestCudamapperIndexBatcher, test_generate_batches_of_indices_exceptions)
     const number_of_basepairs_t query_basepairs_per_index                    = 10;
     const std::shared_ptr<const claragenomics::io::FastaParser> query_parser = claragenomics::io::create_kseq_fasta_parser(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/10_reads.fasta", 1, false);
 
-    number_of_indices_t target_indices_per_host_batch                   = 5;
-    number_of_indices_t target_indices_per_device_batch                 = 2;
+    number_of_indices_t target_indices_per_host_batch                   = query_indices_per_host_batch;
+    number_of_indices_t target_indices_per_device_batch                 = query_indices_per_device_batch;
+    number_of_basepairs_t target_basepairs_per_index                    = query_basepairs_per_index;
     std::shared_ptr<const claragenomics::io::FastaParser> target_parser = query_parser;
-    number_of_basepairs_t target_basepairs_per_index                    = 10;
 
     const bool same_query_and_target = true;
 
     // indices_per_host_batch different
     target_indices_per_host_batch = 100;
-    ASSERT_THROW(const auto& generated_batches = generate_batches_of_indices(query_indices_per_host_batch,
-                                                                             query_indices_per_device_batch,
-                                                                             target_indices_per_host_batch,
-                                                                             target_indices_per_device_batch,
-                                                                             query_parser,
-                                                                             target_parser,
-                                                                             query_basepairs_per_index,
-                                                                             target_basepairs_per_index,
-                                                                             same_query_and_target),
+    ASSERT_THROW(generate_batches_of_indices(query_indices_per_host_batch,
+                                             query_indices_per_device_batch,
+                                             target_indices_per_host_batch,
+                                             target_indices_per_device_batch,
+                                             query_parser,
+                                             target_parser,
+                                             query_basepairs_per_index,
+                                             target_basepairs_per_index,
+                                             same_query_and_target),
                  std::invalid_argument);
     target_indices_per_host_batch = query_indices_per_host_batch;
 
     // indices_per_device_batch different
     target_indices_per_device_batch = 100;
-    ASSERT_THROW(const auto& generated_batches = generate_batches_of_indices(query_indices_per_host_batch,
-                                                                             query_indices_per_device_batch,
-                                                                             target_indices_per_host_batch,
-                                                                             target_indices_per_device_batch,
-                                                                             query_parser,
-                                                                             target_parser,
-                                                                             query_basepairs_per_index,
-                                                                             target_basepairs_per_index,
-                                                                             same_query_and_target),
+    ASSERT_THROW(generate_batches_of_indices(query_indices_per_host_batch,
+                                             query_indices_per_device_batch,
+                                             target_indices_per_host_batch,
+                                             target_indices_per_device_batch,
+                                             query_parser,
+                                             target_parser,
+                                             query_basepairs_per_index,
+                                             target_basepairs_per_index,
+                                             same_query_and_target),
                  std::invalid_argument);
     target_indices_per_device_batch = query_indices_per_device_batch;
 
     // parser different
     target_parser = claragenomics::io::create_kseq_fasta_parser(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/20_reads.fasta", 1, false);
-    ASSERT_THROW(const auto& generated_batches = generate_batches_of_indices(query_indices_per_host_batch,
-                                                                             query_indices_per_device_batch,
-                                                                             target_indices_per_host_batch,
-                                                                             target_indices_per_device_batch,
-                                                                             query_parser,
-                                                                             target_parser,
-                                                                             query_basepairs_per_index,
-                                                                             target_basepairs_per_index,
-                                                                             same_query_and_target),
+    ASSERT_THROW(generate_batches_of_indices(query_indices_per_host_batch,
+                                             query_indices_per_device_batch,
+                                             target_indices_per_host_batch,
+                                             target_indices_per_device_batch,
+                                             query_parser,
+                                             target_parser,
+                                             query_basepairs_per_index,
+                                             target_basepairs_per_index,
+                                             same_query_and_target),
                  std::invalid_argument);
     target_parser = query_parser;
 
     // indices_per_host_batch different
     target_basepairs_per_index = 100;
-    ASSERT_THROW(const auto& generated_batches = generate_batches_of_indices(query_indices_per_host_batch,
-                                                                             query_indices_per_device_batch,
-                                                                             target_indices_per_host_batch,
-                                                                             target_indices_per_device_batch,
-                                                                             query_parser,
-                                                                             target_parser,
-                                                                             query_basepairs_per_index,
-                                                                             target_basepairs_per_index,
-                                                                             same_query_and_target),
+    ASSERT_THROW(generate_batches_of_indices(query_indices_per_host_batch,
+                                             query_indices_per_device_batch,
+                                             target_indices_per_host_batch,
+                                             target_indices_per_device_batch,
+                                             query_parser,
+                                             target_parser,
+                                             query_basepairs_per_index,
+                                             target_basepairs_per_index,
+                                             same_query_and_target),
                  std::invalid_argument);
     target_basepairs_per_index = query_basepairs_per_index;
 }

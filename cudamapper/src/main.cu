@@ -181,15 +181,15 @@ void align_overlaps(DefaultDeviceAllocator allocator,
 /// @param overlaps_writer_mtx locked while writing the output
 /// @param num_overlap_chunks_to_print increased before the function is called, decreased right before the function finishes // TODO: improve this design
 /// @param filtered_overlaps overlaps to be written out, on input without read names, on output cleared
-/// @param query_index needed for read names // TODO: consider only passing vector of names, not whole indices
-/// @param target_index needed for read names // TODO: consider only passing vector of names, not whole indices
+/// @param query_parser needed for read names and lenghts
+/// @param target_parser needed for read names and lenghts
 /// @param cigar
 /// @param device_id id of device on which query and target indices were created
 void writer_thread_function(std::mutex& overlaps_writer_mtx,
                             std::atomic<int>& num_overlap_chunks_to_print,
                             std::shared_ptr<std::vector<Overlap>> filtered_overlaps,
-                            std::shared_ptr<Index> query_index,
-                            std::shared_ptr<Index> target_index,
+                            const io::FastaParser& query_parser,
+                            const io::FastaParser& target_parser,
                             const std::vector<std::string> cigar,
                             const int device_id,
                             const int kmer_size)
@@ -202,7 +202,7 @@ void writer_thread_function(std::mutex& overlaps_writer_mtx,
     Overlapper::post_process_overlaps(*filtered_overlaps);
 
     // parallel update of the query/target read names for filtered overlaps [parallel on host]
-    Overlapper::update_read_names(*filtered_overlaps, *query_index, *target_index);
+    Overlapper::update_read_names(*filtered_overlaps, query_parser, target_parser);
     std::lock_guard<std::mutex> lck(overlaps_writer_mtx);
     Overlapper::print_paf(*filtered_overlaps, cigar, kmer_size);
 
@@ -443,8 +443,8 @@ int main(int argc, char* argv[])
                               std::ref(overlaps_writer_mtx),
                               std::ref(num_overlap_chunks_to_print),
                               overlaps_to_add,
-                              query_index,
-                              target_index,
+                              std::ref(*parameters.query_parser),
+                              std::ref(*parameters.target_parser),
                               std::move(cigar),
                               device_id,
                               parameters.kmer_size);
