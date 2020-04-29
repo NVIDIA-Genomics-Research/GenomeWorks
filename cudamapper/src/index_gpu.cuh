@@ -105,19 +105,10 @@ public:
     /// \return first occurrence of corresponding representation from unique_representations() in data arrays, plus one more element with the total number of sketch elements
     const device_buffer<std::uint32_t>& first_occurrence_of_representations() const override;
 
-    /// \brief returns read name of read with the given read_id
-    /// \param read_id
-    /// \return read name of read with the given read_id
-    const std::string& read_id_to_read_name(const read_id_t read_id) const override;
-
-    /// \brief returns read length for the read with the gived read_id
-    /// \param read_id
-    /// \return read length for the read with the gived read_id
-    const std::uint32_t& read_id_to_read_length(const read_id_t read_id) const override;
-
     /// \brief returns look up table array mapping read id to read name
     /// \return the array mapping read id to read name
     const std::vector<std::string>& read_ids_to_read_names() const override;
+
     /// \brief returns an array used for mapping read id to the length of the read
     /// \return the array used for mapping read ids to their lengths
     const std::vector<std::uint32_t>& read_ids_to_read_lengths() const override;
@@ -684,18 +675,6 @@ template <typename SketchElementImpl>
 const device_buffer<std::uint32_t>& IndexGPU<SketchElementImpl>::first_occurrence_of_representations() const
 {
     return first_occurrence_of_representations_d_;
-}
-
-template <typename SketchElementImpl>
-const std::string& IndexGPU<SketchElementImpl>::read_id_to_read_name(const read_id_t read_id) const
-{
-    return read_id_to_read_name_[read_id - first_read_id_];
-}
-
-template <typename SketchElementImpl>
-const std::uint32_t& IndexGPU<SketchElementImpl>::read_id_to_read_length(const read_id_t read_id) const
-{
-    return read_id_to_read_length_[read_id - first_read_id_];
 }
 
 template <typename SketchElementImpl>

@@ -49,11 +49,6 @@ public:
     /// \return an array of directions in which sketch elements were read
     virtual const device_buffer<SketchElement::DirectionOfRepresentation>& directions_of_reads() const = 0;
 
-    /// \brief returns read name of read with the given read_id
-    /// \param read_id
-    /// \return read name of read with the given read_id
-    virtual const std::string& read_id_to_read_name(const read_id_t read_id) const = 0;
-
     /// \brief returns an array where each representation is recorder only once, sorted by representation
     /// \return an array where each representation is recorder only once, sorted by representation
     virtual const device_buffer<representation_t>& unique_representations() const = 0;
@@ -61,11 +56,6 @@ public:
     /// \brief returns first occurrence of corresponding representation from unique_representations() in data arrays
     /// \return first occurrence of corresponding representation from unique_representations() in data arrays
     virtual const device_buffer<std::uint32_t>& first_occurrence_of_representations() const = 0;
-
-    /// \brief returns read length for the read with the gived read_id
-    /// \param read_id
-    /// \return read length for the read with the gived read_id
-    virtual const std::uint32_t& read_id_to_read_length(const read_id_t read_id) const = 0;
 
     /// \brief returns number of reads in input data
     /// \return number of reads in input data
