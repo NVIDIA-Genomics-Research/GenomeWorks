@@ -8,14 +8,18 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
+#include "gtest/gtest.h"
+
+#include "../src/overlapper_triggered.hpp"
+#include "../src/cudamapper_utils.hpp"
+
+#include "mock_fasta_parser.hpp"
+
 #include <algorithm>
 #include <numeric>
 #include <random>
-#include "gtest/gtest.h"
-#include "mock_index.cuh"
+
 #include "cudamapper_file_location.hpp"
-#include "../src/cudamapper_utils.hpp"
-#include "../src/overlapper_triggered.hpp"
 
 namespace claragenomics
 {
@@ -155,18 +159,11 @@ TEST(TestCudamapperOverlapperTriggerred, OneAchorNoOverlaps)
     std::vector<Overlap> unfused_overlaps;
     std::vector<Anchor> anchors;
 
-    MockIndex test_index(allocator);
     std::vector<std::string> testv;
     testv.push_back("READ0");
     testv.push_back("READ1");
     testv.push_back("READ2");
     std::vector<std::uint32_t> test_read_length(testv.size(), 1000);
-
-    for (std::size_t i = 0; i < testv.size(); ++i)
-    {
-        EXPECT_CALL(test_index, read_id_to_read_name(i)).WillRepeatedly(testing::ReturnRef(testv[i]));
-        EXPECT_CALL(test_index, read_id_to_read_length(i)).WillRepeatedly(testing::ReturnRef(test_read_length[i]));
-    }
 
     Anchor anchor1;
     anchors.push_back(anchor1);
@@ -194,17 +191,15 @@ TEST(TestCudamapperOverlapperTriggerred, FourAnchorsOneOverlap)
     std::vector<Overlap> unfused_overlaps;
     std::vector<Anchor> anchors;
 
-    MockIndex test_index(allocator);
-    std::vector<std::string> testv;
-    testv.push_back("READ0");
-    testv.push_back("READ1");
-    testv.push_back("READ2");
-    std::vector<std::uint32_t> test_read_length(testv.size(), 1000);
+    MockFastaParser test_parser;
+    std::vector<io::FastaSequence> fasta_sequences;
+    fasta_sequences.push_back({"READ0", {}});
+    fasta_sequences.push_back({"READ1", {}});
+    fasta_sequences.push_back({"READ2", {}});
 
-    for (std::size_t i = 0; i < testv.size(); ++i)
+    for (std::size_t i = 0; i < fasta_sequences.size(); ++i)
     {
-        EXPECT_CALL(test_index, read_id_to_read_name(i)).WillRepeatedly(testing::ReturnRef(testv[i]));
-        EXPECT_CALL(test_index, read_id_to_read_length(i)).WillRepeatedly(testing::ReturnRef(test_read_length[i]));
+        EXPECT_CALL(test_parser, get_sequence_by_id(i)).WillRepeatedly(testing::ReturnRef(fasta_sequences[i]));
     }
 
     Anchor anchor1;
@@ -250,9 +245,9 @@ TEST(TestCudamapperOverlapperTriggerred, FourAnchorsOneOverlap)
     ASSERT_EQ(overlaps[0].target_start_position_in_read_, 1000u);
     ASSERT_EQ(overlaps[0].target_end_position_in_read_, 1300u);
 
-    overlapper.update_read_names(overlaps, test_index, test_index);
-    ASSERT_STREQ(overlaps[0].query_read_name_, testv[1].c_str());
-    ASSERT_STREQ(overlaps[0].target_read_name_, testv[2].c_str());
+    overlapper.update_read_names(overlaps, test_parser, test_parser);
+    ASSERT_STREQ(overlaps[0].query_read_name_, fasta_sequences[1].name.c_str());
+    ASSERT_STREQ(overlaps[0].target_read_name_, fasta_sequences[2].name.c_str());
 
     anchors_d.free();
     CGA_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
@@ -268,19 +263,6 @@ TEST(TestCudamapperOverlapperTriggerred, FourAnchorsNoOverlap)
 
     std::vector<Overlap> unfused_overlaps;
     std::vector<Anchor> anchors;
-
-    MockIndex test_index(allocator);
-    std::vector<std::string> testv;
-    testv.push_back("READ0");
-    testv.push_back("READ1");
-    testv.push_back("READ2");
-    std::vector<std::uint32_t> test_read_length(testv.size(), 1000);
-
-    for (std::size_t i = 0; i < testv.size(); ++i)
-    {
-        EXPECT_CALL(test_index, read_id_to_read_name(i)).WillRepeatedly(testing::ReturnRef(testv[i]));
-        EXPECT_CALL(test_index, read_id_to_read_length(i)).WillRepeatedly(testing::ReturnRef(test_read_length[i]));
-    }
 
     Anchor anchor1;
     anchor1.query_read_id_           = 1;
@@ -334,19 +316,6 @@ TEST(TestCudamapperOverlapperTriggerred, FourColinearAnchorsOneOverlap)
     std::vector<Overlap> unfused_overlaps;
     std::vector<Anchor> anchors;
 
-    MockIndex test_index(allocator);
-    std::vector<std::string> testv;
-    testv.push_back("READ0");
-    testv.push_back("READ1");
-    testv.push_back("READ2");
-    std::vector<std::uint32_t> test_read_length(testv.size(), 1000);
-
-    for (std::size_t i = 0; i < testv.size(); ++i)
-    {
-        EXPECT_CALL(test_index, read_id_to_read_name(i)).WillRepeatedly(testing::ReturnRef(testv[i]));
-        EXPECT_CALL(test_index, read_id_to_read_length(i)).WillRepeatedly(testing::ReturnRef(test_read_length[i]));
-    }
-
     Anchor anchor1;
     anchor1.query_read_id_           = 1;
     anchor1.target_read_id_          = 2;
@@ -399,17 +368,15 @@ TEST(TestCudamapperOverlapperTriggerred, FourAnchorsLastNotInOverlap)
     std::vector<Overlap> unfused_overlaps;
     std::vector<Anchor> anchors;
 
-    MockIndex test_index(allocator);
-    std::vector<std::string> testv;
-    testv.push_back("READ0");
-    testv.push_back("READ1");
-    testv.push_back("READ2");
-    std::vector<std::uint32_t> test_read_length(testv.size(), 1000);
+    MockFastaParser test_parser;
+    std::vector<io::FastaSequence> fasta_sequences;
+    fasta_sequences.push_back({"READ0", {}});
+    fasta_sequences.push_back({"READ1", {}});
+    fasta_sequences.push_back({"READ2", {}});
 
-    for (std::size_t i = 0; i < testv.size(); ++i)
+    for (std::size_t i = 0; i < fasta_sequences.size(); ++i)
     {
-        EXPECT_CALL(test_index, read_id_to_read_name(i)).WillRepeatedly(testing::ReturnRef(testv[i]));
-        EXPECT_CALL(test_index, read_id_to_read_length(i)).WillRepeatedly(testing::ReturnRef(test_read_length[i]));
+        EXPECT_CALL(test_parser, get_sequence_by_id(i)).WillRepeatedly(testing::ReturnRef(fasta_sequences[i]));
     }
 
     Anchor anchor1;
@@ -455,9 +422,9 @@ TEST(TestCudamapperOverlapperTriggerred, FourAnchorsLastNotInOverlap)
     ASSERT_EQ(overlaps[0].target_start_position_in_read_, 1000u);
     ASSERT_EQ(overlaps[0].target_end_position_in_read_, 1200u);
 
-    overlapper.update_read_names(overlaps, test_index, test_index);
-    ASSERT_STREQ(overlaps[0].query_read_name_, testv[1].c_str());
-    ASSERT_STREQ(overlaps[0].target_read_name_, testv[2].c_str());
+    overlapper.update_read_names(overlaps, test_parser, test_parser);
+    ASSERT_STREQ(overlaps[0].query_read_name_, fasta_sequences[1].name.c_str());
+    ASSERT_STREQ(overlaps[0].target_read_name_, fasta_sequences[2].name.c_str());
 
     anchors_d.free();
     CGA_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
@@ -474,17 +441,15 @@ TEST(TestCudamapperOverlapperTriggerred, ReverseStrand)
     std::vector<Overlap> unfused_overlaps;
     std::vector<Anchor> anchors;
 
-    MockIndex test_index(allocator);
-    std::vector<std::string> testv;
-    testv.push_back("READ0");
-    testv.push_back("READ1");
-    testv.push_back("READ2");
-    std::vector<std::uint32_t> test_read_length(testv.size(), 1000);
+    MockFastaParser test_parser;
+    std::vector<io::FastaSequence> fasta_sequences;
+    fasta_sequences.push_back({"READ0", {}});
+    fasta_sequences.push_back({"READ1", {}});
+    fasta_sequences.push_back({"READ2", {}});
 
-    for (std::size_t i = 0; i < testv.size(); ++i)
+    for (std::size_t i = 0; i < fasta_sequences.size(); ++i)
     {
-        EXPECT_CALL(test_index, read_id_to_read_name(i)).WillRepeatedly(testing::ReturnRef(testv[i]));
-        EXPECT_CALL(test_index, read_id_to_read_length(i)).WillRepeatedly(testing::ReturnRef(test_read_length[i]));
+        EXPECT_CALL(test_parser, get_sequence_by_id(i)).WillRepeatedly(testing::ReturnRef(fasta_sequences[i]));
     }
 
     Anchor anchor1;
@@ -527,9 +492,9 @@ TEST(TestCudamapperOverlapperTriggerred, ReverseStrand)
     ASSERT_EQ(overlaps[0].relative_strand, RelativeStrand::Reverse);
     ASSERT_EQ(char(overlaps[0].relative_strand), '-');
 
-    overlapper.update_read_names(overlaps, test_index, test_index);
-    ASSERT_STREQ(overlaps[0].query_read_name_, testv[1].c_str());
-    ASSERT_STREQ(overlaps[0].target_read_name_, testv[2].c_str());
+    overlapper.update_read_names(overlaps, test_parser, test_parser);
+    ASSERT_STREQ(overlaps[0].query_read_name_, fasta_sequences[1].name.c_str());
+    ASSERT_STREQ(overlaps[0].target_read_name_, fasta_sequences[2].name.c_str());
 
     anchors_d.free();
     CGA_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));

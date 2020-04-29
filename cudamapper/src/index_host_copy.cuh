@@ -67,14 +67,6 @@ public:
     /// \return first occurrence of corresponding representation from unique_representations(), plus one more element with the total number of sketch elements
     const std::vector<std::uint32_t>& first_occurrence_of_representations() const override;
 
-    /// \brief returns look up table array mapping read id to read name
-    /// \return the array mapping read id to read name
-    const std::vector<std::string>& read_id_to_read_names() const override;
-
-    /// \brief returns an array used for mapping read id to the length of the read
-    /// \return the array used for mapping read ids to their lengths
-    const std::vector<std::uint32_t>& read_id_to_read_lengths() const override;
-
     /// \brief returns number of reads in input data
     /// \return number of reads in input data
     read_id_t number_of_reads() const override;
@@ -103,9 +95,6 @@ private:
 
     std::vector<representation_t> unique_representations_;
     std::vector<std::uint32_t> first_occurrence_of_representations_;
-
-    std::vector<std::string> read_id_to_read_name_;
-    std::vector<std::uint32_t> read_id_to_read_length_;
 
     read_id_t number_of_reads_;
     position_in_read_t number_of_basepairs_in_longest_read_;
