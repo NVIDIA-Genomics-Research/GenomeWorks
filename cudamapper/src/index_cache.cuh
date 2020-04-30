@@ -51,15 +51,15 @@ public:
     /// \param hash_representations // see Index
     /// \param filtering_parameter // see Index
     /// \param cuda_stream // device memory used for Index copy will only we freed up once all previously scheduled work on this stream has finished
-    IndexCacheHost(const bool same_query_and_target,
+    IndexCacheHost(bool same_query_and_target,
                    claragenomics::DefaultDeviceAllocator allocator,
                    std::shared_ptr<claragenomics::io::FastaParser> query_parser,
                    std::shared_ptr<claragenomics::io::FastaParser> target_parser,
-                   const std::uint64_t kmer_size,
-                   const std::uint64_t window_size,
-                   const bool hash_representations  = true,
-                   const double filtering_parameter = 1.0,
-                   const cudaStream_t cuda_stream   = 0);
+                   std::uint64_t kmer_size,
+                   std::uint64_t window_size,
+                   bool hash_representations  = true,
+                   double filtering_parameter = 1.0,
+                   cudaStream_t cuda_stream   = 0);
 
     IndexCacheHost(const IndexCacheHost&) = delete;
     IndexCacheHost& operator=(const IndexCacheHost&) = delete;
@@ -124,13 +124,13 @@ private:
     /// If same_query_and_target_ is true function checks the other cache to see if that index is already in cache
     void update_cache(const std::vector<IndexDescriptor>& descriptors_of_indices_to_cache,
                       const set_of_descriptors_t& descriptors_of_indices_to_keep_on_device,
-                      const CacheToUpdate which_cache);
+                      CacheToUpdate which_cache);
 
     /// \brief Fetches requested index
     /// Copies index from host to device memory, unless index is saved in temp device cache
     /// If that is the case it returs that device copy are removes it from temp device cache
     std::shared_ptr<Index> get_index_from_cache(const IndexDescriptor& descriptor_of_index_to_cache,
-                                                const CacheToUpdate which_cache);
+                                                CacheToUpdate which_cache);
 
     /// Host copies of indices
     cache_type_t query_cache_;
@@ -163,7 +163,7 @@ public:
     /// \brief Constructor
     /// \param same_query_and_target true means that both query and target are the same, meaning that if requested index exists in query cache it can also be used by target cache directly
     /// \param index_cache_host underlying host cache to get the indices from
-    IndexCacheDevice(const bool same_query_and_target,
+    IndexCacheDevice(bool same_query_and_target,
                      std::shared_ptr<IndexCacheHost> index_cache_host);
 
     IndexCacheDevice(const IndexCacheDevice&) = delete;
@@ -202,7 +202,7 @@ private:
     ///
     /// If same_query_and_target_ is true function checks the other cache to see if that index is already in cache
     void update_cache(const std::vector<IndexDescriptor>& descriptors_of_indices_to_cache,
-                      const CacheToUpdate which_cache);
+                      CacheToUpdate which_cache);
 
     cache_type_t query_cache_;
     cache_type_t target_cache_;
