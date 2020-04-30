@@ -9,6 +9,8 @@
 */
 
 #pragma once
+
+#ifdef __CUDACC_VER_MAJOR__
 /// \def CGA_CUDA_BEFORE_XX_X
 /// \brief Macros to enable/disable CUDA version specific code
 #define CGA_CUDA_BEFORE_XX_X 1
@@ -19,6 +21,7 @@
 
 #if (__CUDACC_VER_MAJOR__ == 9 && __CUDACC_VER_MINOR__ < 2)
 #define CGA_CUDA_BEFORE_9_2
+#endif
 #endif
 
 /// \def CGA_CONSTEXPR
