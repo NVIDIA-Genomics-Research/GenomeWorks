@@ -337,7 +337,7 @@ TEST(TestCudamapperIndexCaching, test_index_cache_host_same_query_and_target)
                                     filtering_parameter,
                                     cuda_stream);
 
-    index_host_cache.update_query_cache(catcaag_index_descriptors);
+    index_host_cache.generate_query_cache_content(catcaag_index_descriptors);
 
     auto index_query_catcaag = index_host_cache.get_index_from_query_cache(catcaag_index_descriptor);
     check_if_index_is_correct(index_query_catcaag,
@@ -360,7 +360,7 @@ TEST(TestCudamapperIndexCaching, test_index_cache_host_same_query_and_target)
     ASSERT_ANY_THROW(index_host_cache.get_index_from_target_cache(aagcta_index_descriptor));
     ASSERT_ANY_THROW(index_host_cache.get_index_from_query_cache(catcaag_aagcta_index_descriptor));
 
-    index_host_cache.update_target_cache(aagcta_index_descriptors);
+    index_host_cache.generate_target_cache_content(aagcta_index_descriptors);
 
     index_query_catcaag = index_host_cache.get_index_from_query_cache(catcaag_index_descriptor);
     check_if_index_is_correct(index_query_catcaag,
@@ -397,7 +397,7 @@ TEST(TestCudamapperIndexCaching, test_index_cache_host_same_query_and_target)
                               "test_index_cache_host_same_query_and_target_3");
     ASSERT_ANY_THROW(index_host_cache.get_index_from_query_cache(catcaag_aagcta_index_descriptor));
 
-    index_host_cache.update_query_cache(aagcta_index_descriptors);
+    index_host_cache.generate_query_cache_content(aagcta_index_descriptors);
 
     ASSERT_ANY_THROW(index_host_cache.get_index_from_query_cache(catcaag_index_descriptor));
     auto index_query_aagcta = index_host_cache.get_index_from_query_cache(aagcta_index_descriptor);
@@ -434,7 +434,7 @@ TEST(TestCudamapperIndexCaching, test_index_cache_host_same_query_and_target)
                               "test_index_cache_host_same_query_and_target_5");
     ASSERT_ANY_THROW(index_host_cache.get_index_from_query_cache(catcaag_aagcta_index_descriptor));
 
-    index_host_cache.update_query_cache(catcaag_aagcta_separate_index_descriptors);
+    index_host_cache.generate_query_cache_content(catcaag_aagcta_separate_index_descriptors);
 
     auto index_query_catcaag_separate = index_host_cache.get_index_from_query_cache(catcaag_index_descriptor);
     check_if_index_is_correct(index_query_catcaag_separate,
@@ -485,7 +485,7 @@ TEST(TestCudamapperIndexCaching, test_index_cache_host_same_query_and_target)
                               "test_index_cache_host_same_query_and_target_8");
     ASSERT_ANY_THROW(index_host_cache.get_index_from_query_cache(catcaag_aagcta_index_descriptor));
 
-    index_host_cache.update_target_cache(catcaag_aagcta_one_index_descriptors);
+    index_host_cache.generate_target_cache_content(catcaag_aagcta_one_index_descriptors);
 
     index_query_catcaag_separate = index_host_cache.get_index_from_query_cache(catcaag_index_descriptor);
     check_if_index_is_correct(index_query_catcaag_separate,
@@ -701,7 +701,7 @@ TEST(TestCudamapperIndexCaching, test_index_cache_host_not_the_same_query_and_ta
                                     filtering_parameter,
                                     cuda_stream);
 
-    index_host_cache.update_query_cache(index_descriptors);
+    index_host_cache.generate_query_cache_content(index_descriptors);
 
     auto index_query_aagcta = index_host_cache.get_index_from_query_cache(index_descriptor);
     check_if_index_is_correct(index_query_aagcta,
@@ -720,7 +720,7 @@ TEST(TestCudamapperIndexCaching, test_index_cache_host_not_the_same_query_and_ta
                               "test_index_cache_host_not_the_same_query_and_target_1");
     ASSERT_ANY_THROW(index_host_cache.get_index_from_target_cache(index_descriptor));
 
-    index_host_cache.update_target_cache(index_descriptors);
+    index_host_cache.generate_target_cache_content(index_descriptors);
 
     index_query_aagcta = index_host_cache.get_index_from_query_cache(index_descriptor);
     check_if_index_is_correct(index_query_aagcta,
@@ -828,10 +828,10 @@ TEST(TestCudamapperIndexCaching, test_index_cache_host_keep_on_device)
                                                              filtering_parameter,
                                                              cuda_stream);
 
-    index_cache_host->update_query_cache(index_descriptors,
-                                         index_descriptors);
-    index_cache_host->update_target_cache(index_descriptors,
-                                          index_descriptors);
+    index_cache_host->generate_query_cache_content(index_descriptors,
+                                                   index_descriptors);
+    index_cache_host->generate_target_cache_content(index_descriptors,
+                                                    index_descriptors);
 
     auto index_query_temp_device_cache  = index_cache_host->get_index_from_query_cache(index_descriptor);
     auto index_query_copy_from_host     = index_cache_host->get_index_from_query_cache(index_descriptor);
@@ -1030,9 +1030,9 @@ TEST(TestCudamapperIndexCaching, test_index_cache_device_same_query_and_target)
     IndexCacheDevice index_cache_device(same_query_and_target,
                                         index_cache_host);
 
-    index_cache_host->update_query_cache(catcaag_index_descriptors);
+    index_cache_host->generate_query_cache_content(catcaag_index_descriptors);
     ASSERT_ANY_THROW(index_cache_device.get_index_from_query_cache(catcaag_index_descriptor));
-    index_cache_device.update_query_cache(catcaag_index_descriptors);
+    index_cache_device.generate_query_cache_content(catcaag_index_descriptors);
     auto index_query_catcaag = index_cache_device.get_index_from_query_cache(catcaag_index_descriptor);
     check_if_index_is_correct(index_query_catcaag,
                               catcaag_representations,
@@ -1052,10 +1052,10 @@ TEST(TestCudamapperIndexCaching, test_index_cache_device_same_query_and_target)
     ASSERT_ANY_THROW(index_cache_device.get_index_from_target_cache(catcaag_index_descriptor));
     ASSERT_ANY_THROW(index_cache_device.get_index_from_target_cache(aagcta_index_descriptor));
 
-    index_cache_host->update_target_cache(catcaag_aagcta_index_descriptors);
+    index_cache_host->generate_target_cache_content(catcaag_aagcta_index_descriptors);
     ASSERT_ANY_THROW(index_cache_device.get_index_from_target_cache(catcaag_index_descriptor));
     ASSERT_ANY_THROW(index_cache_device.get_index_from_target_cache(aagcta_index_descriptor));
-    index_cache_device.update_target_cache(catcaag_aagcta_index_descriptors);
+    index_cache_device.generate_target_cache_content(catcaag_aagcta_index_descriptors);
 
     auto index_target_catcaag = index_cache_device.get_index_from_target_cache(catcaag_index_descriptor);
     ASSERT_EQ(index_query_catcaag, index_target_catcaag); // check same object is used because same_query_and_target == true
@@ -1221,11 +1221,11 @@ TEST(TestCudamapperIndexCaching, test_index_cache_device_not_the_same_query_and_
     IndexCacheDevice index_cache_device(same_query_and_target,
                                         index_cache_host);
 
-    index_cache_host->update_query_cache(index_descriptors);
+    index_cache_host->generate_query_cache_content(index_descriptors);
     ASSERT_ANY_THROW(index_cache_device.get_index_from_query_cache(index_descriptor));
     ASSERT_ANY_THROW(index_cache_device.get_index_from_target_cache(index_descriptor));
 
-    index_cache_device.update_query_cache(index_descriptors);
+    index_cache_device.generate_query_cache_content(index_descriptors);
     auto index_query = index_cache_device.get_index_from_query_cache(index_descriptor);
     check_if_index_is_correct(index_query,
                               aagcta_representations,
@@ -1243,10 +1243,10 @@ TEST(TestCudamapperIndexCaching, test_index_cache_device_not_the_same_query_and_
                               "test_index_cache_device_not_the_same_query_and_target_1");
     ASSERT_ANY_THROW(index_cache_device.get_index_from_target_cache(index_descriptor));
 
-    ASSERT_ANY_THROW(index_cache_device.update_target_cache(index_descriptors));
+    ASSERT_ANY_THROW(index_cache_device.generate_target_cache_content(index_descriptors));
 
-    index_cache_host->update_target_cache(index_descriptors);
-    index_cache_device.update_target_cache(index_descriptors);
+    index_cache_host->generate_target_cache_content(index_descriptors);
+    index_cache_device.generate_target_cache_content(index_descriptors);
 
     index_query       = index_cache_device.get_index_from_query_cache(index_descriptor);
     auto index_target = index_cache_device.get_index_from_target_cache(index_descriptor);

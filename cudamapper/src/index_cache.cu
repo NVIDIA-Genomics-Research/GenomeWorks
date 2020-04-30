@@ -12,6 +12,8 @@
 
 #include "index_host_copy.cu"
 
+#include <unordered_set>
+
 #include <claragenomics/cudamapper/index.hpp>
 #include <claragenomics/io/fasta_parser.hpp>
 
@@ -41,55 +43,47 @@ IndexCacheHost::IndexCacheHost(const bool same_query_and_target,
 {
 }
 
-void IndexCacheHost::update_query_cache(const std::vector<IndexDescriptor>& descriptors_of_indices_to_cache,
-                                        const std::vector<IndexDescriptor>& descriptors_of_indices_to_keep_on_device)
+void IndexCacheHost::generate_query_cache_content(const std::vector<IndexDescriptor>& descriptors_of_indices_to_cache,
+                                                  const std::vector<IndexDescriptor>& descriptors_of_indices_to_keep_on_device)
 {
-    update_cache(descriptors_of_indices_to_cache,
-                 convert_vector_of_descriptors_into_set(descriptors_of_indices_to_keep_on_device),
-                 CacheToUpdate::query);
+    generate_cache_content(descriptors_of_indices_to_cache,
+                           descriptors_of_indices_to_keep_on_device,
+                           CacheSelector::query_cache);
 }
 
-void IndexCacheHost::update_target_cache(const std::vector<IndexDescriptor>& descriptors_of_indices_to_cache,
-                                         const std::vector<IndexDescriptor>& descriptors_of_indices_to_keep_on_device)
+void IndexCacheHost::generate_target_cache_content(const std::vector<IndexDescriptor>& descriptors_of_indices_to_cache,
+                                                   const std::vector<IndexDescriptor>& descriptors_of_indices_to_keep_on_device)
 {
-    update_cache(descriptors_of_indices_to_cache,
-                 convert_vector_of_descriptors_into_set(descriptors_of_indices_to_keep_on_device),
-                 CacheToUpdate::target);
+    generate_cache_content(descriptors_of_indices_to_cache,
+                           descriptors_of_indices_to_keep_on_device,
+                           CacheSelector::target_cache);
 }
 
 std::shared_ptr<Index> IndexCacheHost::get_index_from_query_cache(const IndexDescriptor& descriptor_of_index_to_cache)
 {
     return get_index_from_cache(descriptor_of_index_to_cache,
-                                CacheToUpdate::query);
+                                CacheSelector::query_cache);
 }
 
 std::shared_ptr<Index> IndexCacheHost::get_index_from_target_cache(const IndexDescriptor& descriptor_of_index_to_cache)
 {
     return get_index_from_cache(descriptor_of_index_to_cache,
-                                CacheToUpdate::target);
+                                CacheSelector::target_cache);
 }
 
-IndexCacheHost::set_of_descriptors_t IndexCacheHost::convert_vector_of_descriptors_into_set(const std::vector<IndexDescriptor>& descriptors)
+void IndexCacheHost::generate_cache_content(const std::vector<IndexDescriptor>& descriptors_of_indices_to_cache,
+                                            const std::vector<IndexDescriptor>& descriptors_of_indices_to_keep_on_device,
+                                            const CacheSelector which_cache)
 {
-    set_of_descriptors_t set_of_descriptors;
+    cache_type_t& cache_to_edit                           = (CacheSelector::query_cache == which_cache) ? query_cache_ : target_cache_;
+    const cache_type_t& cache_to_check                    = (CacheSelector::query_cache == which_cache) ? target_cache_ : query_cache_;
+    device_cache_type_t& temp_device_cache_to_edit        = (CacheSelector::query_cache == which_cache) ? query_temp_device_cache_ : target_temp_device_cache_;
+    const device_cache_type_t& temp_device_cache_to_check = (CacheSelector::query_cache == which_cache) ? target_temp_device_cache_ : query_temp_device_cache_;
+    const claragenomics::io::FastaParser* parser          = (CacheSelector::query_cache == which_cache) ? query_parser_.get() : target_parser_.get();
 
-    for (const IndexDescriptor& descriptor : descriptors)
-    {
-        set_of_descriptors.insert(descriptor);
-    }
-
-    return set_of_descriptors;
-}
-
-void IndexCacheHost::update_cache(const std::vector<IndexDescriptor>& descriptors_of_indices_to_cache,
-                                  const set_of_descriptors_t& descriptors_of_indices_to_keep_on_device,
-                                  const CacheToUpdate which_cache)
-{
-    cache_type_t& cache_to_edit                           = (CacheToUpdate::query == which_cache) ? query_cache_ : target_cache_;
-    const cache_type_t& cache_to_check                    = (CacheToUpdate::query == which_cache) ? target_cache_ : query_cache_;
-    device_cache_type_t& temp_device_cache_to_edit        = (CacheToUpdate::query == which_cache) ? query_temp_device_cache_ : target_temp_device_cache_;
-    const device_cache_type_t& temp_device_cache_to_check = (CacheToUpdate::query == which_cache) ? target_temp_device_cache_ : query_temp_device_cache_;
-    const claragenomics::io::FastaParser* parser          = (CacheToUpdate::query == which_cache) ? query_parser_.get() : target_parser_.get();
+    // convert descriptors_of_indices_to_keep_on_device into set for faster search
+    std::unordered_set<IndexDescriptor, IndexDescriptorHash> descriptors_of_indices_to_keep_on_device_set(begin(descriptors_of_indices_to_keep_on_device),
+                                                                                                          end(descriptors_of_indices_to_keep_on_device));
 
     cache_type_t new_cache;
     temp_device_cache_to_edit.clear(); // this should be empty by now anyway
@@ -97,7 +91,7 @@ void IndexCacheHost::update_cache(const std::vector<IndexDescriptor>& descriptor
     for (const IndexDescriptor& descriptor_of_index_to_cache : descriptors_of_indices_to_cache)
     {
         // check if this index should be kept on device in addition to copying it to host
-        const bool keep_on_device = descriptors_of_indices_to_keep_on_device.count(descriptor_of_index_to_cache) != 0;
+        const bool keep_on_device = descriptors_of_indices_to_keep_on_device_set.count(descriptor_of_index_to_cache) != 0;
 
         std::shared_ptr<const IndexHostCopyBase> index_copy = nullptr;
         std::shared_ptr<Index> index_on_device              = nullptr;
@@ -140,21 +134,21 @@ void IndexCacheHost::update_cache(const std::vector<IndexDescriptor>& descriptor
             else
             {
                 // create index
-                index_on_device = claragenomics::cudamapper::Index::create_index(allocator_,
-                                                                                 *parser,
-                                                                                 descriptor_of_index_to_cache.first_read(),
-                                                                                 descriptor_of_index_to_cache.first_read() + descriptor_of_index_to_cache.number_of_reads(),
-                                                                                 kmer_size_,
-                                                                                 window_size_,
-                                                                                 hash_representations_,
-                                                                                 filtering_parameter_,
-                                                                                 cuda_stream_);
+                index_on_device = Index::create_index(allocator_,
+                                                      *parser,
+                                                      descriptor_of_index_to_cache.first_read(),
+                                                      descriptor_of_index_to_cache.first_read() + descriptor_of_index_to_cache.number_of_reads(),
+                                                      kmer_size_,
+                                                      window_size_,
+                                                      hash_representations_,
+                                                      filtering_parameter_,
+                                                      cuda_stream_);
                 // copy it to host memory
-                index_copy = claragenomics::cudamapper::IndexHostCopy::create_cache(*index_on_device,
-                                                                                    descriptor_of_index_to_cache.first_read(),
-                                                                                    kmer_size_,
-                                                                                    window_size_,
-                                                                                    cuda_stream_);
+                index_copy = IndexHostCopy::create_cache(*index_on_device,
+                                                         descriptor_of_index_to_cache.first_read(),
+                                                         kmer_size_,
+                                                         window_size_,
+                                                         cuda_stream_);
             }
         }
 
@@ -172,12 +166,12 @@ void IndexCacheHost::update_cache(const std::vector<IndexDescriptor>& descriptor
 }
 
 std::shared_ptr<Index> IndexCacheHost::get_index_from_cache(const IndexDescriptor& descriptor_of_index_to_cache,
-                                                            const CacheToUpdate which_cache)
+                                                            const CacheSelector which_cache)
 {
     std::shared_ptr<Index> index;
 
-    const cache_type_t& host_cache               = (CacheToUpdate::query == which_cache) ? query_cache_ : target_cache_;
-    device_cache_type_t& temp_device_index_cache = (CacheToUpdate::query == which_cache) ? query_temp_device_cache_ : target_temp_device_cache_;
+    const cache_type_t& host_cache               = (CacheSelector::query_cache == which_cache) ? query_cache_ : target_cache_;
+    device_cache_type_t& temp_device_index_cache = (CacheSelector::query_cache == which_cache) ? query_temp_device_cache_ : target_temp_device_cache_;
 
     auto temp_device_index_cache_iter = temp_device_index_cache.find(descriptor_of_index_to_cache);
     // check if index is present in device memory, copy from host if not
@@ -203,14 +197,14 @@ IndexCacheDevice::IndexCacheDevice(const bool same_query_and_target,
 {
 }
 
-void IndexCacheDevice::update_query_cache(const std::vector<IndexDescriptor>& descriptors_of_indices_to_cache)
+void IndexCacheDevice::generate_query_cache_content(const std::vector<IndexDescriptor>& descriptors_of_indices_to_cache)
 {
-    update_cache(descriptors_of_indices_to_cache, CacheToUpdate::query);
+    generate_cache_content(descriptors_of_indices_to_cache, CacheSelector::query_cache);
 }
 
-void IndexCacheDevice::update_target_cache(const std::vector<IndexDescriptor>& descriptors_of_indices_to_cache)
+void IndexCacheDevice::generate_target_cache_content(const std::vector<IndexDescriptor>& descriptors_of_indices_to_cache)
 {
-    update_cache(descriptors_of_indices_to_cache, CacheToUpdate::target);
+    generate_cache_content(descriptors_of_indices_to_cache, CacheSelector::target_cache);
 }
 
 std::shared_ptr<Index> IndexCacheDevice::get_index_from_query_cache(const IndexDescriptor& descriptor_of_index_to_cache)
@@ -225,11 +219,11 @@ std::shared_ptr<Index> IndexCacheDevice::get_index_from_target_cache(const Index
     return target_cache_.at(descriptor_of_index_to_cache);
 }
 
-void IndexCacheDevice::update_cache(const std::vector<IndexDescriptor>& descriptors_of_indices_to_cache,
-                                    const CacheToUpdate which_cache)
+void IndexCacheDevice::generate_cache_content(const std::vector<IndexDescriptor>& descriptors_of_indices_to_cache,
+                                              const CacheSelector which_cache)
 {
-    cache_type_t& cache_to_edit        = (CacheToUpdate::query == which_cache) ? query_cache_ : target_cache_;
-    const cache_type_t& cache_to_check = (CacheToUpdate::query == which_cache) ? target_cache_ : query_cache_;
+    cache_type_t& cache_to_edit        = (CacheSelector::query_cache == which_cache) ? query_cache_ : target_cache_;
+    const cache_type_t& cache_to_check = (CacheSelector::query_cache == which_cache) ? target_cache_ : query_cache_;
 
     cache_type_t new_cache;
 
@@ -260,7 +254,7 @@ void IndexCacheDevice::update_cache(const std::vector<IndexDescriptor>& descript
             else
             {
                 // index not already cached -> fetch it from index_cache_host_
-                if (CacheToUpdate::query == which_cache)
+                if (CacheSelector::query_cache == which_cache)
                 {
                     index = index_cache_host_->get_index_from_query_cache(descriptor_of_index_to_cache);
                 }

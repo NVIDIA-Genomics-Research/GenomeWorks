@@ -199,8 +199,8 @@ void process_one_device_batch(const IndexBatch& device_batch,
     const std::vector<IndexDescriptor>& target_index_descriptors = device_batch.target_indices;
 
     // fetch indices for this batch from host memory
-    device_cache.update_query_cache(query_index_descriptors);
-    device_cache.update_target_cache(target_index_descriptors);
+    device_cache.generate_query_cache_content(query_index_descriptors);
+    device_cache.generate_target_cache_content(target_index_descriptors);
 
     // process pairs of query and target indices
     for (const IndexDescriptor& query_index_descriptor : query_index_descriptors)
@@ -267,10 +267,10 @@ void process_one_batch(const BatchOfIndices& batch,
     const std::vector<IndexBatch>& device_batches = batch.device_batches;
 
     // load indices into host memory
-    host_cache.update_query_cache(host_batch.query_indices,
-                                  device_batches.front().query_indices);
-    host_cache.update_target_cache(host_batch.target_indices,
-                                   device_batches.front().target_indices);
+    host_cache.generate_query_cache_content(host_batch.query_indices,
+                                            device_batches.front().query_indices);
+    host_cache.generate_target_cache_content(host_batch.target_indices,
+                                             device_batches.front().target_indices);
 
     // process device batches one by one
     for (const IndexBatch& device_batch : batch.device_batches)
