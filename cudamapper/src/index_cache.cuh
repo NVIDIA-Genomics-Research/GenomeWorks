@@ -11,7 +11,6 @@
 #pragma once
 
 #include <memory>
-#include <unordered_set>
 #include <unordered_map>
 
 #include <claragenomics/cudamapper/types.hpp>
@@ -106,24 +105,18 @@ private:
                                                    std::shared_ptr<Index>,
                                                    IndexDescriptorHash>;
 
-    using set_of_descriptors_t = std::unordered_set<IndexDescriptor,
-                                                    IndexDescriptorHash>;
-
     enum class CacheSelector
     {
         query_cache,
         target_cache
     };
 
-    /// \brief Helper function which converts vector of descriptors into unordered_set of descriptors for easier querying
-    set_of_descriptors_t convert_vector_of_descriptors_into_set(const std::vector<IndexDescriptor>& descriptors);
-
     /// \brief Discards previously cached Indices, creates new Indices and copies them to host memory
     /// Uses which_cache to determine if it should be working on query of target indices
     ///
     /// If same_query_and_target_ is true function checks the other cache to see if that index is already in cache
     void update_cache(const std::vector<IndexDescriptor>& descriptors_of_indices_to_cache,
-                      const set_of_descriptors_t& descriptors_of_indices_to_keep_on_device,
+                      const std::vector<IndexDescriptor>& descriptors_of_indices_to_keep_on_device,
                       CacheSelector which_cache);
 
     /// \brief Fetches requested index
