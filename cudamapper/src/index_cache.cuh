@@ -109,10 +109,10 @@ private:
     using set_of_descriptors_t = std::unordered_set<IndexDescriptor,
                                                     IndexDescriptorHash>;
 
-    enum class CacheToUpdate
+    enum class CacheSelector
     {
-        query,
-        target
+        query_cache,
+        target_cache
     };
 
     /// \brief Helper function which converts vector of descriptors into unordered_set of descriptors for easier querying
@@ -124,13 +124,13 @@ private:
     /// If same_query_and_target_ is true function checks the other cache to see if that index is already in cache
     void update_cache(const std::vector<IndexDescriptor>& descriptors_of_indices_to_cache,
                       const set_of_descriptors_t& descriptors_of_indices_to_keep_on_device,
-                      CacheToUpdate which_cache);
+                      CacheSelector which_cache);
 
     /// \brief Fetches requested index
     /// Copies index from host to device memory, unless index is saved in temp device cache
     /// If that is the case it returs that device copy are removes it from temp device cache
     std::shared_ptr<Index> get_index_from_cache(const IndexDescriptor& descriptor_of_index_to_cache,
-                                                CacheToUpdate which_cache);
+                                                CacheSelector which_cache);
 
     /// Host copies of indices
     cache_type_t query_cache_;
@@ -191,10 +191,10 @@ private:
                                             std::shared_ptr<Index>,
                                             IndexDescriptorHash>;
 
-    enum class CacheToUpdate
+    enum class CacheSelector
     {
-        query,
-        target
+        query_cache,
+        target_cache
     };
 
     /// \brief Discards previously cached Indices and caches new ones
@@ -202,7 +202,7 @@ private:
     ///
     /// If same_query_and_target_ is true function checks the other cache to see if that index is already in cache
     void update_cache(const std::vector<IndexDescriptor>& descriptors_of_indices_to_cache,
-                      CacheToUpdate which_cache);
+                      CacheSelector which_cache);
 
     cache_type_t query_cache_;
     cache_type_t target_cache_;
