@@ -70,11 +70,9 @@ public:
             throw std::runtime_error(msg);
         }
 
-        // Calculate max POAs possible based on heirustics and available memory.
-        // TODO: Remove this fixed partitioing and making the filling up of buffer
-        // fully dynamic.
-        const float fraction_for_metadata = 0.4f;
-        max_poas_                         = (avail_mem * fraction_for_metadata) / device_size_per_poa;
+        // Calculate max POAs possible based on available memory.
+        int64_t device_size_per_score_matrix = (int64_t)matrix_sequence_dimension_ * (int64_t)max_graph_dimension_ * sizeof(ScoreT);
+        max_poas_                            = avail_mem / (device_size_per_poa + device_size_per_score_matrix);
 
         // Update final sizes for block based on calculated maximum POAs.
         output_size_ = max_poas_ * static_cast<int64_t>(batch_size.max_concensus_size);
