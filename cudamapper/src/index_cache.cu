@@ -140,21 +140,21 @@ void IndexCacheHost::update_cache(const std::vector<IndexDescriptor>& descriptor
             else
             {
                 // create index
-                index_on_device = claragenomics::cudamapper::Index::create_index(allocator_,
-                                                                                 *parser,
-                                                                                 descriptor_of_index_to_cache.first_read(),
-                                                                                 descriptor_of_index_to_cache.first_read() + descriptor_of_index_to_cache.number_of_reads(),
-                                                                                 kmer_size_,
-                                                                                 window_size_,
-                                                                                 hash_representations_,
-                                                                                 filtering_parameter_,
-                                                                                 cuda_stream_);
+                index_on_device = Index::create_index(allocator_,
+                                                      *parser,
+                                                      descriptor_of_index_to_cache.first_read(),
+                                                      descriptor_of_index_to_cache.first_read() + descriptor_of_index_to_cache.number_of_reads(),
+                                                      kmer_size_,
+                                                      window_size_,
+                                                      hash_representations_,
+                                                      filtering_parameter_,
+                                                      cuda_stream_);
                 // copy it to host memory
-                index_copy = claragenomics::cudamapper::IndexHostCopy::create_cache(*index_on_device,
-                                                                                    descriptor_of_index_to_cache.first_read(),
-                                                                                    kmer_size_,
-                                                                                    window_size_,
-                                                                                    cuda_stream_);
+                index_copy = IndexHostCopy::create_cache(*index_on_device,
+                                                         descriptor_of_index_to_cache.first_read(),
+                                                         kmer_size_,
+                                                         window_size_,
+                                                         cuda_stream_);
             }
         }
 
