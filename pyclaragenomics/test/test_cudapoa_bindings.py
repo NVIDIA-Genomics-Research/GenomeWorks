@@ -20,7 +20,26 @@ import claragenomics.bindings.cuda as cuda
 def test_cudapoa_simple_batch():
     device = cuda.cuda_get_device()
     free, total = cuda.cuda_get_mem_info(device)
-    batch = CudaPoaBatch(10, 0.9 * free, deivce_id=device)
+    batch = CudaPoaBatch(10, 1024, 0.9 * free, deivce_id=device,
+                         output_mask='consensus')
+    poa_1 = ["ACTGACTG", "ACTTACTG", "ACGGACTG", "ATCGACTG"]
+    poa_2 = ["ACTGAC", "ACTTAC", "ACGGAC", "ATCGAC"]
+    batch.add_poa_group(poa_1)
+    batch.add_poa_group(poa_2)
+    batch.generate_poa()
+    consensus, coverage, status = batch.get_consensus()
+
+    assert(len(consensus) == 2)
+    assert(batch.total_poas == 2)
+
+
+def test_cudapoa_banded_aligned_batch():
+    device = cuda.cuda_get_device()
+    free, total = cuda.cuda_get_mem_info(device)
+    batch = CudaPoaBatch(10, 1024, 0.9 * free,
+                         deivce_id=device,
+                         output_mask='consensus',
+                         cuda_banded_alignment=True)
     poa_1 = ["ACTGACTG", "ACTTACTG", "ACGGACTG", "ATCGACTG"]
     poa_2 = ["ACTGAC", "ACTTAC", "ACGGAC", "ATCGAC"]
     batch.add_poa_group(poa_1)
@@ -33,10 +52,33 @@ def test_cudapoa_simple_batch():
 
 
 @pytest.mark.gpu
+def test_cudapoa_incorrect_output_type():
+    device = cuda.cuda_get_device()
+    free, total = cuda.cuda_get_mem_info(device)
+    try:
+        CudaPoaBatch(10, 1024, 0.9 * free, deivce_id=device,
+                     output_type='error_input')
+        assert(False)
+    except RuntimeError:
+        pass
+
+
+@pytest.mark.gpu
+def test_cudapoa_valid_output_type():
+    device = cuda.cuda_get_device()
+    free, total = cuda.cuda_get_mem_info(device)
+    try:
+        CudaPoaBatch(10, 1024, 0.9 * free, deivce_id=device,
+                     output_type='consensus')
+    except RuntimeError:
+        assert(False)
+
+
+@pytest.mark.gpu
 def test_cudapoa_reset_batch():
     device = cuda.cuda_get_device()
     free, total = cuda.cuda_get_mem_info(device)
-    batch = CudaPoaBatch(10, 0.9 * free, device_id=device)
+    batch = CudaPoaBatch(10, 1024, 0.9 * free, device_id=device)
     poa_1 = ["ACTGACTG", "ACTTACTG", "ACGGACTG", "ATCGACTG"]
     batch.add_poa_group(poa_1)
     batch.generate_poa()
@@ -53,7 +95,7 @@ def test_cudapoa_reset_batch():
 def test_cudapoa_graph():
     device = cuda.cuda_get_device()
     free, total = cuda.cuda_get_mem_info(device)
-    batch = CudaPoaBatch(10, 0.9 * free, device_id=device)
+    batch = CudaPoaBatch(10, 1024, 0.9 * free, device_id=device)
     poa_1 = ["ACTGACTG", "ACTTACTG", "ACTCACTG"]
     batch.add_poa_group(poa_1)
     batch.generate_poa()
@@ -91,7 +133,7 @@ def test_cudapoa_complex_batch():
     device = cuda.cuda_get_device()
     free, total = cuda.cuda_get_mem_info(device)
     stream = cuda.CudaStream()
-    batch = CudaPoaBatch(1000, 0.9 * free, stream=stream, device_id=device)
+    batch = CudaPoaBatch(1000, 1024, 0.9 * free, stream=stream, device_id=device)
     (add_status, seq_status) = batch.add_poa_group(reads)
     batch.generate_poa()
 
