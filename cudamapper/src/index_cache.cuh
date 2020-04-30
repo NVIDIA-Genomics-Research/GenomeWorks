@@ -34,7 +34,7 @@ class IndexHostCopyBase;
 
 /// IndexCacheHost - Creates Indices, stores them in host memory and on demand copies them back to device memory
 ///
-/// The user tells cache which Indices to keep in cache using update_query_cache() and update_target_cache() and
+/// The user tells cache which Indices to keep in cache using generate_query_cache_content() and generate_target_cache_content() and
 /// retrieves indices using get_index_from_query_cache() and get_index_from_target_cache(). Trying to retrieve an
 /// Index which was not previously stored in cache results in an exception
 class IndexCacheHost
@@ -68,25 +68,25 @@ public:
 
     /// \brief Discards previously cached query Indices, creates new Indices and copies them to host memory
     ///
-    /// Expected usage pattern is to call update_query_cache() with certain index descriptors and then immediately retrieve some of them.
+    /// Expected usage pattern is to call generate_query_cache_content() with certain index descriptors and then immediately retrieve some of them.
     /// To avoid immediately copying back those indices from host to device it is possible to specify descriptors_of_indices_to_keep_on_device
     //  which will be copied to host, but also kept on device until retrieved for the first time using get_index_from_query_cache
     ///
     /// \param descriptors_of_indices_to_cache descriptors on indices to keep in host memory
     /// \param descriptors_of_indices_to_keep_on_device descriptors of indices to keep in device memory in addition to host memory until retrieved for the first time
-    void update_query_cache(const std::vector<IndexDescriptor>& descriptors_of_indices_to_cache,
-                            const std::vector<IndexDescriptor>& descriptors_of_indices_to_keep_on_device = {});
+    void generate_query_cache_content(const std::vector<IndexDescriptor>& descriptors_of_indices_to_cache,
+                                      const std::vector<IndexDescriptor>& descriptors_of_indices_to_keep_on_device = {});
 
     /// \brief Discards previously cached target Indices, creates new Indices and copies them to host memory
     ///
-    /// Expected usage pattern is to call update_target_cache() with certain index descriptors and then immediately retrieve some of them.
+    /// Expected usage pattern is to call generate_target_cache_content() with certain index descriptors and then immediately retrieve some of them.
     /// To avoid immediately copying back those indices from host to device it is possible to specify descriptors_of_indices_to_keep_on_device
     /// which will be copied to host, but also kept on device until retrieved for the first time using get_index_from_taget_cache
     ///
     /// \param descriptors_of_indices_to_cache descriptors on indices to keep in host memory
     /// \param descriptors_of_indices_to_keep_on_device descriptors of indices to keep in device memory in addition to host memory until retrieved for the first time
-    void update_target_cache(const std::vector<IndexDescriptor>& descriptors_of_indices_to_cache,
-                             const std::vector<IndexDescriptor>& descriptors_of_indices_to_keep_on_device = {});
+    void generate_target_cache_content(const std::vector<IndexDescriptor>& descriptors_of_indices_to_cache,
+                                       const std::vector<IndexDescriptor>& descriptors_of_indices_to_keep_on_device = {});
 
     /// \brief Copies request Index to device memory
     /// throws if that index is currently not in cache
@@ -115,9 +115,9 @@ private:
     /// Uses which_cache to determine if it should be working on query of target indices
     ///
     /// If same_query_and_target_ is true function checks the other cache to see if that index is already in cache
-    void update_cache(const std::vector<IndexDescriptor>& descriptors_of_indices_to_cache,
-                      const std::vector<IndexDescriptor>& descriptors_of_indices_to_keep_on_device,
-                      CacheSelector which_cache);
+    void generate_cache_content(const std::vector<IndexDescriptor>& descriptors_of_indices_to_cache,
+                                const std::vector<IndexDescriptor>& descriptors_of_indices_to_keep_on_device,
+                                CacheSelector which_cache);
 
     /// \brief Fetches requested index
     /// Copies index from host to device memory, unless index is saved in temp device cache
@@ -145,7 +145,7 @@ private:
 
 /// IndexCacheDevice - Keeps copies of Indices in device memory
 ///
-/// The user tells cache which Indices to keep in cache using update_query_cache() and update_target_cache() and
+/// The user tells cache which Indices to keep in cache using generate_query_cache_content() and generate_target_cache_content() and
 /// retrieves indices using get_index_from_query_cache() and get_index_from_target_cache(). Trying to retrieve an
 /// Index which was not previously stored in cache results in an exception.
 ///
@@ -166,10 +166,10 @@ public:
     ~IndexCacheDevice()                             = default;
 
     /// \brief Discards previously cached query Indices, creates new Indices and copies them to host memory
-    void update_query_cache(const std::vector<IndexDescriptor>& descriptors_of_indices_to_cache);
+    void generate_query_cache_content(const std::vector<IndexDescriptor>& descriptors_of_indices_to_cache);
 
     /// \brief Discards previously cached target Indices, creates new Indices and copies them to host memory
-    void update_target_cache(const std::vector<IndexDescriptor>& descriptors_of_indices_to_cache);
+    void generate_target_cache_content(const std::vector<IndexDescriptor>& descriptors_of_indices_to_cache);
 
     /// \brief Copies request Index to device memory
     /// throws if that index is currently not in cache
@@ -194,8 +194,8 @@ private:
     /// Uses which_cache to determine if it should be working on query of target indices
     ///
     /// If same_query_and_target_ is true function checks the other cache to see if that index is already in cache
-    void update_cache(const std::vector<IndexDescriptor>& descriptors_of_indices_to_cache,
-                      CacheSelector which_cache);
+    void generate_cache_content(const std::vector<IndexDescriptor>& descriptors_of_indices_to_cache,
+                                CacheSelector which_cache);
 
     cache_type_t query_cache_;
     cache_type_t target_cache_;
