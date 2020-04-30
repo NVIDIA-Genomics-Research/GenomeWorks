@@ -149,6 +149,12 @@ public:
     {
         scoped_device_switch dev(device_id_);
 
+        if (poa_count_ == 0)
+        {
+            print_batch_debug_message(" No POA was added to compute! ");
+            return;
+        }
+
         //Copy sequencecs, sequence lengths and window details to device
         CGA_CU_CHECK_ERR(cudaMemcpyAsync(input_details_d_->sequences, input_details_h_->sequences,
                                          num_nucleotides_copied_ * sizeof(uint8_t), cudaMemcpyHostToDevice, stream_));
