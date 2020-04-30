@@ -539,7 +539,7 @@ protected:
         int32_t max_graph_dimension = banded_alignment_ ? batch_size_.max_matrix_graph_dimension_banded : batch_size_.max_matrix_graph_dimension;
 
         int32_t scores_width = banded_alignment_ ? CUDAPOA_BANDED_MAX_MATRIX_SEQUENCE_DIMENSION : cudautils::align<int32_t, 4>(max_seq_length + 1 + CELLS_PER_THREAD);
-        size_t scores_size   = scores_width * max_graph_dimension * sizeof(ScoreT);
+        size_t scores_size   = (size_t)scores_width * (size_t)max_graph_dimension * sizeof(ScoreT);
 
         if (scores_size > avail_scorebuf_mem_)
         {
