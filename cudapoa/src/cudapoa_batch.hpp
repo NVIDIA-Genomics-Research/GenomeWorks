@@ -112,7 +112,7 @@ public:
 
         if (!reserve_buf(max_seq_length))
         {
-            return StatusType::exceeded_batch_size;
+            return StatusType::exceeded_maximum_poas;
         }
 
         // If matrix fits, see if a new poa group can be added.

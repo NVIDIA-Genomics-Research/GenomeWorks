@@ -40,8 +40,6 @@ def status_to_str(status):
         return "exceeded_maximum_sequence_size"
     elif status == cudapoa.exceeded_maximum_sequences_per_poa:
         return "exceeded_maximum_sequences_per_poa"
-    elif status == cudapoa.exceeded_batch_size:
-        return "exceeded_batch_size"
     elif status == cudapoa.node_count_exceeded_maximum_graph_size:
         return "node_count_exceeded_maximum_graph_size"
     elif status == cudapoa.edge_count_exceeded_maximum_graph_size:

@@ -233,7 +233,7 @@ int main(int argc, char** argv)
 
         // NOTE: If number of windows smaller than batch capacity, then run POA generation
         // once last window is added to batch.
-        if (status == StatusType::exceeded_maximum_poas || status == StatusType::exceeded_batch_size || (i == get_size(windows) - 1))
+        if (status == StatusType::exceeded_maximum_poas || (i == get_size(windows) - 1))
         {
             // at least one POA should have been added before processing the batch
             if (batch->get_total_poas() > 0)
@@ -290,7 +290,7 @@ int main(int argc, char** argv)
             i++;
         }
 
-        if (status != StatusType::exceeded_maximum_poas && status != StatusType::exceeded_batch_size && status != StatusType::success)
+        if (status != StatusType::exceeded_maximum_poas && status != StatusType::success)
         {
             std::cout << "Could not add POA group " << i << " to batch. Error code " << status << std::endl;
             i++;
