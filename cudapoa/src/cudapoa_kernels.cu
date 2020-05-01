@@ -709,10 +709,7 @@ void generatePOA(claragenomics::cudapoa::OutputDetails* output_details_d,
                  int8_t output_mask,
                  const BatchSize& batch_size)
 {
-    // a decision flag to determine proper type definition for ScoreT
-    const bool use_32_bit_for_ScoreT = use32bitScore(batch_size, gap_score, mismatch_score, match_score);
-
-    if (use_32_bit_for_ScoreT)
+    if (use32bitScore(batch_size, gap_score, mismatch_score, match_score))
     {
         if (use32bitSize(batch_size, cuda_banded_alignment))
         {

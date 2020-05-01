@@ -16,7 +16,6 @@
 #include <cuda_runtime_api.h>
 #include <stdio.h>
 #include <claragenomics/cudapoa/batch.hpp>
-#include "cudastructs.cuh"
 
 // Maximum number of edges per node.
 #define CUDAPOA_MAX_NODE_EDGES 50
