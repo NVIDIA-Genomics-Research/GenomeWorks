@@ -19,6 +19,7 @@
 #include "matrix_cpu.hpp"
 
 #include <claraparabricks/genomeworks/utils/cudautils.hpp>
+#include <claraparabricks/genomeworks/utils/limits.cuh>
 #include <claraparabricks/genomeworks/utils/device_buffer.hpp>
 
 #include <tuple>
@@ -88,49 +89,70 @@ public:
     class device_interface
     {
     public:
-        device_interface(T* storage, int32_t n_matrices, int32_t max_elements_per_matrix)
+        device_interface(T* storage, ptrdiff_t* offsets, int32_t n_matrices)
             : storage_(storage)
-            , max_elements_per_matrix_(max_elements_per_matrix)
+            , offsets_(offsets)
             , n_matrices_(n_matrices)
         {
+            assert(storage_ != nullptr);
+            assert(offsets_ != nullptr);
+            assert(n_matrices >= 0);
         }
+
         __device__ device_matrix_view<T> get_matrix_view(int32_t id, int32_t n_rows, int32_t n_cols)
         {
-            assert(id < n_matrices_);
-            assert(n_rows * n_cols <= max_elements_per_matrix_ || error(n_rows * n_cols, max_elements_per_matrix_));
-            if (n_rows * n_cols > max_elements_per_matrix_)
+            assert(storage_ != nullptr);
+            assert(id < n_matrices_ || error(id, n_matrices_));
+            const int32_t max_elements = get_max_elements_per_matrix(id);
+            assert(n_rows * n_cols <= max_elements || error(n_rows * n_cols, max_elements));
+            if (n_rows * n_cols > max_elements)
             {
                 n_rows = 0;
                 n_cols = 0;
             }
-            return device_matrix_view<T>(storage_ + id * static_cast<ptrdiff_t>(max_elements_per_matrix_), n_rows, n_cols);
-        }
-        __device__ inline T* data(int32_t id)
-        {
-            return storage_ + id * static_cast<ptrdiff_t>(max_elements_per_matrix_);
+            return device_matrix_view<T>(storage_ + offsets_[id], n_rows, n_cols);
         }
 
-        __device__ inline int32_t get_max_elements_per_matrix() const
+        __device__ inline T* data(int32_t id)
         {
-            return max_elements_per_matrix_;
+            assert(storage_ != nullptr);
+            assert(id < n_matrices_);
+            return storage_ + offsets_[id];
+        }
+
+        __device__ inline int32_t get_max_elements_per_matrix(int32_t id) const
+        {
+            assert(id < n_matrices_);
+            assert(offsets_[id + 1] - offsets_[id] >= 0);
+            assert(offsets_[id + 1] - offsets_[id] <= numeric_limits<int32_t>::max());
+            return offsets_[id + 1] - offsets_[id];
         }
 
     private:
         T* storage_;
-        int32_t max_elements_per_matrix_;
+        ptrdiff_t* offsets_;
         int32_t n_matrices_;
+        friend class batched_device_matrices<T>;
     };
 
     batched_device_matrices(int32_t n_matrices, int32_t max_elements_per_matrix, DefaultDeviceAllocator allocator, cudaStream_t stream)
         : storage_(static_cast<size_t>(n_matrices) * static_cast<size_t>(max_elements_per_matrix), allocator, stream)
-        , max_elements_per_matrix_(max_elements_per_matrix)
+        , offsets_(n_matrices + 1, allocator, stream)
         , n_matrices_(n_matrices)
     {
+        assert(n_matrices >= 0);
+        assert(max_elements_per_matrix >= 0);
         GW_CU_CHECK_ERR(cudaMalloc(reinterpret_cast<void**>(&dev_), sizeof(device_interface)));
         GW_CU_CHECK_ERR(cudaMemsetAsync(storage_.data(), 0, storage_.size() * sizeof(T), stream));
-        device_interface tmp(storage_.data(), n_matrices_, max_elements_per_matrix_);
+        std::vector<ptrdiff_t> offsets(n_matrices + 1);
+        for (int32_t i = 0; i < n_matrices + 1; ++i)
+        {
+            offsets[i] = max_elements_per_matrix * i;
+        }
+        cudautils::device_copy_n(offsets.data(), n_matrices + 1, offsets_.data(), stream);
+        device_interface tmp(storage_.data(), offsets_.data(), n_matrices_);
         GW_CU_CHECK_ERR(cudaMemcpyAsync(dev_, &tmp, sizeof(device_interface), cudaMemcpyHostToDevice, stream));
-        GW_CU_CHECK_ERR(cudaStreamSynchronize(stream)); // sync because tmp will be destroyed.
+        GW_CU_CHECK_ERR(cudaStreamSynchronize(stream)); // sync because local vars will be destroyed.
     }
 
     ~batched_device_matrices()
@@ -152,18 +174,21 @@ public:
         if (id >= n_matrices_)
             throw std::runtime_error("Requested id is out of bounds.");
 
-        if (n_rows * n_cols > max_elements_per_matrix_)
-            throw std::runtime_error("Requested matrix size is larger than batched_device_matrices::max_elements_per_matrix_.");
+        std::array<ptrdiff_t, 2> offsets;
+        cudautils::device_copy_n(offsets_.data() + id, 2, offsets.data(), stream);
         matrix<T> m(n_rows, n_cols);
-        GW_CU_CHECK_ERR(cudaMemcpyAsync(m.data(), storage_.data() + id * static_cast<ptrdiff_t>(max_elements_per_matrix_), sizeof(T) * n_rows * n_cols, cudaMemcpyDeviceToHost, stream));
+        GW_CU_CHECK_ERR(cudaStreamSynchronize(stream));
+        if (n_rows * n_cols > offsets[1] - offsets[0])
+            throw std::runtime_error("Requested matrix size is larger than allocated memory on device.");
+        cudautils::device_copy_n(storage_.data() + offsets[0], n_rows * n_cols, m.data(), stream);
         GW_CU_CHECK_ERR(cudaStreamSynchronize(stream));
         return m;
     }
 
 private:
     device_buffer<T> storage_;
+    device_buffer<ptrdiff_t> offsets_;
     device_interface* dev_ = nullptr;
-    int32_t max_elements_per_matrix_;
     int32_t n_matrices_;
 };
 

@@ -596,8 +596,8 @@ __device__ void hirschberg_myers(
     warp_shared_stack<query_target_range> stack(stack_buffer_begin, stack_buffer_end);
     stack.push({query_begin_absolute, query_end_absolute, target_begin_absolute, target_end_absolute});
 
-    assert(pvi->get_max_elements_per_matrix() == mvi->get_max_elements_per_matrix());
-    assert(scorei->get_max_elements_per_matrix() >= pvi->get_max_elements_per_matrix());
+    assert(pvi->get_max_elements_per_matrix(alignment_idx) == mvi->get_max_elements_per_matrix(alignment_idx));
+    assert(scorei->get_max_elements_per_matrix(alignment_idx) >= pvi->get_max_elements_per_matrix(alignment_idx));
 
     bool success   = true;
     int32_t length = 0;
@@ -624,7 +624,7 @@ __device__ void hirschberg_myers(
             if (e.query_end - e.query_begin < full_myers_threshold && e.query_end != e.query_begin)
             {
                 const int32_t n_words = ceiling_divide<int32_t>(e.query_end - e.query_begin, word_size);
-                if ((e.target_end - e.target_begin + 1) * n_words <= pvi->get_max_elements_per_matrix())
+                if ((e.target_end - e.target_begin + 1) * n_words <= pvi->get_max_elements_per_matrix(alignment_idx))
                 {
                     hirschberg_myers_compute_path(path, &length, pvi, mvi, scorei, query_patterns, e.target_begin, e.target_end, e.query_begin, e.query_end, query_begin_absolute, alignment_idx);
                     continue;
