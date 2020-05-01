@@ -49,8 +49,14 @@ public:
     /// \brief prints overlaps to stdout in <a href="https://github.com/lh3/miniasm/blob/master/PAF.md">PAF format</a>
     /// \param overlaps vector of overlap objects
     /// \param cigar cigar strings
-    /// \param k minimizer kmer size
-    static void print_paf(const std::vector<Overlap>& overlaps, const std::vector<std::string>& cigar, const int k);
+    /// \param query_parser needed for read names and lenghts
+    /// \param target_parser needed for read names and lenghts
+    /// \param kmer_size minimizer kmer size
+    static void print_paf(const std::vector<Overlap>& overlaps,
+                          const std::vector<std::string>& cigar,
+                          const io::FastaParser& query_parser,
+                          const io::FastaParser& target_parser,
+                          std::int32_t kmer_size);
 
     /// \brief removes overlaps which are unlikely to be true overlaps
     /// \param filtered_overlaps Output vector in which to place filtered overlaps
@@ -61,14 +67,6 @@ public:
                                 const std::vector<Overlap>& overlaps,
                                 int64_t min_residues    = 20,
                                 int64_t min_overlap_len = 50);
-
-    /// \brief updates read names for vector of overlaps output from get_overlaps
-    /// \param overlaps input vector of overlaps generated in get_overlaps
-    /// \param query_parser needed for read names and lenghts
-    /// \param target_parser needed for read names and lenghts
-    static void update_read_names(std::vector<Overlap>& overlaps,
-                                  const io::FastaParser& query_parser,
-                                  const io::FastaParser& target_parser);
 
     /// \brief Identified overlaps which can be combined into a larger overlap and add them to the input vector
     /// \param overlaps reference to vector of Overlaps. New overlaps (result of fusing) are added to this vector

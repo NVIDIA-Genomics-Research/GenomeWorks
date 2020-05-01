@@ -407,16 +407,13 @@ void writer_thread_function(std::mutex& overlaps_writer_mtx,
     // Overlap post processing - add overlaps which can be combined into longer ones.
     Overlapper::post_process_overlaps(*filtered_overlaps);
 
-    // parallel update of the query/target read names for filtered overlaps [parallel on host]
-    Overlapper::update_read_names(*filtered_overlaps, query_parser, target_parser);
     std::lock_guard<std::mutex> lck(overlaps_writer_mtx);
-    Overlapper::print_paf(*filtered_overlaps, cigar, kmer_size);
+    Overlapper::print_paf(*filtered_overlaps,
+                          cigar,
+                          query_parser,
+                          target_parser,
+                          kmer_size);
 
-    //clear data
-    for (auto o : *filtered_overlaps)
-    {
-        o.clear();
-    }
     //Decrement counter which tracks number of overlap chunks to be filtered and printed
     num_overlap_chunks_to_print--;
 };
