@@ -12,6 +12,7 @@
 
 #include <claragenomics/cudamapper/index.hpp>
 #include <claragenomics/cudamapper/types.hpp>
+#include <claragenomics/io/fasta_parser.hpp>
 
 #include <thrust/execution_policy.h>
 
@@ -63,11 +64,11 @@ public:
 
     /// \brief updates read names for vector of overlaps output from get_overlaps
     /// \param overlaps input vector of overlaps generated in get_overlaps
-    /// \param index_query
-    /// \param index_target
+    /// \param query_parser needed for read names and lenghts
+    /// \param target_parser needed for read names and lenghts
     static void update_read_names(std::vector<Overlap>& overlaps,
-                                  const Index& index_query,
-                                  const Index& index_target);
+                                  const io::FastaParser& query_parser,
+                                  const io::FastaParser& target_parser);
 
     /// \brief Identified overlaps which can be combined into a larger overlap and add them to the input vector
     /// \param overlaps reference to vector of Overlaps. New overlaps (result of fusing) are added to this vector
