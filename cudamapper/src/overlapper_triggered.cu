@@ -12,7 +12,6 @@
 
 #include <fstream>
 #include <cstdlib>
-#include <omp.h>
 
 #include <claragenomics/utils/cudautils.hpp>
 

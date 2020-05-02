@@ -10,6 +10,8 @@
 
 #pragma once
 
+#include <mutex>
+
 #include <claragenomics/cudamapper/index.hpp>
 #include <claragenomics/cudamapper/types.hpp>
 #include <claragenomics/io/fasta_parser.hpp>
@@ -52,11 +54,13 @@ public:
     /// \param query_parser needed for read names and lenghts
     /// \param target_parser needed for read names and lenghts
     /// \param kmer_size minimizer kmer size
+    /// \param write_output_mutex mutex that enables exclusive access to output stream
     static void print_paf(const std::vector<Overlap>& overlaps,
                           const std::vector<std::string>& cigar,
                           const io::FastaParser& query_parser,
                           const io::FastaParser& target_parser,
-                          std::int32_t kmer_size);
+                          std::int32_t kmer_size,
+                          std::mutex& write_output_mutex);
 
     /// \brief removes overlaps which are unlikely to be true overlaps
     /// \param filtered_overlaps Output vector in which to place filtered overlaps
