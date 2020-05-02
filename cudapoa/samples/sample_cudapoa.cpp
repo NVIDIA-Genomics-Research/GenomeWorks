@@ -9,6 +9,7 @@
 */
 
 #include "../benchmarks/common/utils.hpp"
+#include "../src/cudapoa_kernels.cuh" // for estimate_max_poas()
 
 #include <file_location.hpp>
 #include <claragenomics/cudapoa/cudapoa.hpp>
@@ -140,6 +141,150 @@ void generate_window_data(const std::string& input_file, const int number_of_win
     }
 
     batch_size = BatchSize(max_read_length, max_sequences_per_poa);
+}
+
+size_t estimate_max_poas(const BatchSize& batch_size, const bool banded_alignment, const bool msa_flag)
+{
+    int32_t matrix_sequence_dimension = banded_alignment ? CUDAPOA_BANDED_MAX_MATRIX_SEQUENCE_DIMENSION : batch_size.max_matrix_sequence_dimension;
+    int32_t matrix_graph_dimension    = banded_alignment ? batch_size.max_matrix_graph_dimension_banded : batch_size.max_matrix_graph_dimension;
+    int32_t max_nodes_per_window      = banded_alignment ? batch_size.max_nodes_per_window_banded : batch_size.max_nodes_per_window;
+
+    // Initialize CUDAPOA batch object for batched processing of POAs on the GPU.
+    size_t total = 0, free = 0;
+    cudaMemGetInfo(&free, &total);
+    size_t mem_per_batch         = 0.9 * free; // Using 90% of GPU available memory for CUDAPOA batch.
+    const int32_t mismatch_score = -6, gap_score = -8, match_score = 8;
+
+    int64_t sizeof_ScoreT = use32bitScore(batch_size, gap_score, mismatch_score, match_score) ? 4 : 2;
+    int64_t sizeof_SizeT  = use32bitSize(batch_size, banded_alignment) ? 4 : 2;
+
+    // calculate static and dynamic sizes of buffers needed per POA entry.
+    int64_t device_size_per_poa = 0;
+    int64_t input_size_per_poa  = batch_size.max_sequences_per_poa * batch_size.max_sequence_size;
+    int64_t output_size_per_poa = batch_size.max_concensus_size;
+    device_size_per_poa += output_size_per_poa * sizeof(uint8_t);                                                                                // output_details_d_->consensus
+    device_size_per_poa += (!msa_flag) ? output_size_per_poa * sizeof(uint16_t) : 0;                                                             // output_details_d_->coverage
+    device_size_per_poa += (msa_flag) ? output_size_per_poa * batch_size.max_sequences_per_poa * sizeof(uint8_t) : 0;                            // output_details_d_->multiple_sequence_alignments
+    device_size_per_poa += input_size_per_poa * sizeof(uint8_t);                                                                                 // input_details_d_->sequences
+    device_size_per_poa += input_size_per_poa * sizeof(int8_t);                                                                                  // input_details_d_->base_weights
+    device_size_per_poa += batch_size.max_sequences_per_poa * sizeof_SizeT;                                                                      // input_details_d_->sequence_lengths
+    device_size_per_poa += sizeof(WindowDetails);                                                                                                // input_details_d_->window_details
+    device_size_per_poa += (msa_flag) ? batch_size.max_sequences_per_poa * sizeof_SizeT : 0;                                                     // input_details_d_->sequence_begin_nodes_ids
+    device_size_per_poa += sizeof(uint8_t) * max_nodes_per_window;                                                                               // graph_details_d_->nodes
+    device_size_per_poa += sizeof_SizeT * max_nodes_per_window * CUDAPOA_MAX_NODE_ALIGNMENTS;                                                    // graph_details_d_->node_alignments
+    device_size_per_poa += sizeof(uint16_t) * max_nodes_per_window;                                                                              // graph_details_d_->node_alignment_count
+    device_size_per_poa += sizeof_SizeT * max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES;                                                         // graph_details_d_->incoming_edges
+    device_size_per_poa += sizeof(uint16_t) * max_nodes_per_window;                                                                              // graph_details_d_->incoming_edge_count
+    device_size_per_poa += sizeof_SizeT * max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES;                                                         // graph_details_d_->outgoing_edges
+    device_size_per_poa += sizeof(uint16_t) * max_nodes_per_window;                                                                              // graph_details_d_->outgoing_edge_count
+    device_size_per_poa += sizeof(uint16_t) * max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES;                                                     // graph_details_d_->incoming_edge_weights
+    device_size_per_poa += sizeof(uint16_t) * max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES;                                                     // graph_details_d_->outgoing_edge_weights
+    device_size_per_poa += sizeof_SizeT * max_nodes_per_window;                                                                                  // graph_details_d_->sorted_poa
+    device_size_per_poa += sizeof_SizeT * max_nodes_per_window;                                                                                  // graph_details_d_->sorted_poa_node_map
+    device_size_per_poa += sizeof(uint16_t) * max_nodes_per_window;                                                                              // graph_details_d_->sorted_poa_local_edge_count
+    device_size_per_poa += (!msa_flag) ? sizeof(int32_t) * max_nodes_per_window : 0;                                                             // graph_details_d_->consensus_scores
+    device_size_per_poa += (!msa_flag) ? sizeof_SizeT * max_nodes_per_window : 0;                                                                // graph_details_d_->consensus_predecessors
+    device_size_per_poa += sizeof(int8_t) * max_nodes_per_window;                                                                                // graph_details_d_->node_marks
+    device_size_per_poa += sizeof(bool) * max_nodes_per_window;                                                                                  // graph_details_d_->check_aligned_nodes
+    device_size_per_poa += sizeof_SizeT * max_nodes_per_window;                                                                                  // graph_details_d_->nodes_to_visit
+    device_size_per_poa += sizeof(uint16_t) * max_nodes_per_window;                                                                              // graph_details_d_->node_coverage_counts
+    device_size_per_poa += (msa_flag) ? sizeof(uint16_t) * max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES * batch_size.max_sequences_per_poa : 0; // graph_details_d_->outgoing_edges_coverage
+    device_size_per_poa += (msa_flag) ? sizeof(uint16_t) * max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES : 0;                                    // graph_details_d_->outgoing_edges_coverage_count
+    device_size_per_poa += (msa_flag) ? sizeof_SizeT * max_nodes_per_window : 0;                                                                 // graph_details_d_->node_id_to_msa_pos
+    device_size_per_poa += sizeof_SizeT * matrix_graph_dimension;                                                                                // alignment_details_d_->alignment_graph
+    device_size_per_poa += sizeof_SizeT * matrix_graph_dimension;                                                                                // alignment_details_d_->alignment_read
+
+    // Comput required size for score matrix
+    int64_t device_size_per_score_matrix = (int64_t)matrix_sequence_dimension * (int64_t)matrix_graph_dimension * sizeof_ScoreT;
+
+    // Calculate max POAs possible based on available memory.
+    size_t max_poas = mem_per_batch / (device_size_per_poa + device_size_per_score_matrix);
+
+    return max_poas;
+}
+
+void generate_batch_sizes(const std::vector<std::vector<std::string>>& windows, const bool banded_alignment, const bool msa_flag,
+                          std::vector<BatchSize>& list_of_batches, std::vector<std::vector<size_t>>& list_of_windows_per_batch)
+{
+    // got through all the windows and evaluate maximum number of POAs of that size where can be processed in a single batch
+    size_t num_windows = windows.size();
+    std::vector<size_t> max_poas(num_windows);    // maximum number of POAs that canrun in parallel for windows of this size
+    std::vector<size_t> max_lengths(num_windows); // maximum sequence length within the window
+
+    for (size_t i = 0; i < windows.size(); i++)
+    {
+        size_t max_read_length = 0;
+        for (auto& seq : windows[i])
+        {
+            max_read_length = std::max(max_read_length, get_size<size_t>(seq) + 1);
+        }
+        max_poas[i]    = estimate_max_poas(BatchSize(max_read_length, windows[i].size()), banded_alignment, msa_flag);
+        max_lengths[i] = max_read_length;
+    }
+
+    // create histogram based on number of max POAs
+    size_t num_bins = 20;
+    std::vector<size_t> bins_frequency(num_bins, 0);             // count the windows that fall within corresponding range
+    std::vector<size_t> bins_max_length(num_bins, 0);            // represents the length of the window with maximum sequence length in the bin
+    std::vector<size_t> bins_num_reads(num_bins, 0);             // represents the number of reads in the window with maximum sequence length in the bin
+    std::vector<size_t> bins_ranges(num_bins, 1);                // represents maximum POAs
+    std::vector<std::vector<size_t>> bins_window_list(num_bins); // list of windows that are added to each bin
+
+    for (size_t j = 1; j < num_bins; j++)
+    {
+        bins_ranges[j] = bins_ranges[j - 1] * 2;
+    }
+
+    // go through all windows and keep track of the bin they fit
+    for (size_t i = 0; i < num_windows; i++)
+    {
+        for (size_t j = 0; j < num_bins; j++)
+        {
+            if (max_poas[i] <= bins_ranges[j] || j == num_bins - 1)
+            {
+                bins_frequency[j]++;
+                bins_window_list[j].push_back(i);
+                if (bins_max_length[j] < max_lengths[i])
+                {
+                    bins_max_length[j] = max_lengths[i];
+                    bins_num_reads[j]  = windows[i].size();
+                }
+                break;
+            }
+        }
+    }
+
+    // a bin in range N means a batch made based on this bean, can launch up to N POAs. If the sum of bins frequency of higher ranges
+    // is smaller than N, they can all fit in batch N and no need to create extra batches.
+    // For example. consider the following:
+    //
+    // bins_ranges      1        2       4       8       16      32      64      128     256     512
+    // bins frequency   0        0       0       0       0       0       10      51      0       0
+    // bins width       0        0       0       0       0       0       5120    3604    0       0
+    //
+    // note that bin_ranges represent max POAs. This means larger bin ranges follow with smaller corresponding max lengths
+    // In the example above, to process 10 windows that fall within bin range 64, we need to create one batch. This batch can process up to 64 windows of
+    // max length 5120 or smaller. This means all the windows in bin range 128 can also be processed with the same batch and no need to launch an extra batch
+
+    size_t remaining_windows = num_windows;
+    for (size_t j = 0; j < num_bins; j++)
+    {
+        if (bins_frequency[j] > 0)
+        {
+            list_of_batches.emplace_back(bins_max_length[j], bins_num_reads[j]);
+            list_of_windows_per_batch.push_back(bins_window_list[j]);
+            remaining_windows -= bins_frequency[j];
+            if (bins_ranges[j] > remaining_windows)
+            {
+                auto& remaining_list = list_of_windows_per_batch.back();
+                for (auto it = bins_window_list.begin() + j; it != bins_window_list.end(); it++)
+                {
+                    remaining_list.insert(remaining_list.end(), it->begin(), it->end());
+                }
+                break;
+            }
+        }
+    }
 }
 
 int main(int argc, char** argv)
