@@ -29,6 +29,7 @@
 #include <claragenomics/cudamapper/overlapper.hpp>
 
 #include "application_parameters.cuh"
+#include "cudamapper_utils.hpp"
 #include "index_batcher.cuh"
 #include "overlapper_triggered.hpp"
 
@@ -305,25 +306,14 @@ void writer_thread_function(const std::int32_t device_id,
         // Overlap post processing - add overlaps which can be combined into longer ones.
         Overlapper::post_process_overlaps(data_to_write->overlaps);
 
-        // parallel update of the query/target read names for filtered overlaps [parallel on host]
-        Overlapper::update_read_names(overlaps,
-                                      *application_parameters.query_parser,
-                                      *application_parameters.query_parser);
-
         // write to output
         {
-            std::lock_guard<std::mutex> output_mutex_lock(output_mutex);
-
-            Overlapper::print_paf(overlaps,
-                                  cigars,
-                                  application_parameters.kmer_size);
-        }
-
-        // clear data
-        // TODO: this is a consequence of design of Overlap, improve it
-        for (auto overlap : overlaps)
-        {
-            overlap.clear();
+            print_paf(overlaps,
+                      cigars,
+                      *application_parameters.query_parser,
+                      *application_parameters.query_parser,
+                      application_parameters.kmer_size,
+                      output_mutex);
         }
 
         data_to_write = overlaps_and_cigars_to_write.get_next_element();
