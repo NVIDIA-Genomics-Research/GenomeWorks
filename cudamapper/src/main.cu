@@ -26,8 +26,10 @@
 #include <claragenomics/cudamapper/index.hpp>
 #include <claragenomics/cudamapper/matcher.hpp>
 #include <claragenomics/cudamapper/overlapper.hpp>
-#include "overlapper_triggered.hpp"
+
+#include "cudamapper_utils.hpp"
 #include "index_descriptor.hpp"
+#include "overlapper_triggered.hpp"
 
 #include <claragenomics/cudaaligner/aligner.hpp>
 #include <claragenomics/cudaaligner/alignment.hpp>
@@ -404,17 +406,20 @@ void writer_thread_function(std::mutex& overlaps_writer_mtx,
     // with deallocating indices with different current device than the one on which they were created
     cudaSetDevice(device_id);
 
-    // Overlap post processing - add overlaps which can be combined into longer ones.
-    Overlapper::post_process_overlaps(*filtered_overlaps);
+    {
+        CGA_NVTX_RANGE(profiler, "post_process_overlaps");
+        // Overlap post processing - add overlaps which can be combined into longer ones.
+        Overlapper::post_process_overlaps(*filtered_overlaps);
+    }
 
     {
         CGA_NVTX_RANGE(profiler, "print_paf");
-        Overlapper::print_paf(*filtered_overlaps,
-                              cigar,
-                              query_parser,
-                              target_parser,
-                              kmer_size,
-                              overlaps_writer_mtx);
+        print_paf(*filtered_overlaps,
+                  cigar,
+                  query_parser,
+                  target_parser,
+                  kmer_size,
+                  overlaps_writer_mtx);
     }
 
     //Decrement counter which tracks number of overlap chunks to be filtered and printed

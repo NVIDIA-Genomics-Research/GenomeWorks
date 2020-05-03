@@ -10,13 +10,8 @@
 
 #pragma once
 
-#include <mutex>
-
-#include <claragenomics/cudamapper/index.hpp>
 #include <claragenomics/cudamapper/types.hpp>
-#include <claragenomics/io/fasta_parser.hpp>
-
-#include <thrust/execution_policy.h>
+#include <claragenomics/utils/device_buffer.hpp>
 
 namespace claragenomics
 {
@@ -47,20 +42,6 @@ public:
                               int64_t min_overlap_len,
                               int64_t min_bases_per_residue,
                               float min_overlap_fraction) = 0;
-
-    /// \brief prints overlaps to stdout in <a href="https://github.com/lh3/miniasm/blob/master/PAF.md">PAF format</a>
-    /// \param overlaps vector of overlap objects
-    /// \param cigar cigar strings
-    /// \param query_parser needed for read names and lenghts
-    /// \param target_parser needed for read names and lenghts
-    /// \param kmer_size minimizer kmer size
-    /// \param write_output_mutex mutex that enables exclusive access to output stream
-    static void print_paf(const std::vector<Overlap>& overlaps,
-                          const std::vector<std::string>& cigar,
-                          const io::FastaParser& query_parser,
-                          const io::FastaParser& target_parser,
-                          std::int32_t kmer_size,
-                          std::mutex& write_output_mutex);
 
     /// \brief removes overlaps which are unlikely to be true overlaps
     /// \param filtered_overlaps Output vector in which to place filtered overlaps
