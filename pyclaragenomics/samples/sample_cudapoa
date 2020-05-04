@@ -59,30 +59,22 @@ def run_cudapoa(groups, msa, print_output):
 
     # Add poa groups to batch
     initial_count = 0
-    i = 0
-    while (i < len(groups)):
-        group = groups[i]
-
-        # Because of internal type limitations, only graphs with max sequence sizes of 15000 can be handled.
-        # TODO: Update internal types to deal with sequences > 15000
-        max_len = len(max(group, key=len))
-        if (max_len >= 15000):
-            print("Skipping POA group {} - max length {}".format(i, max_len))
-            i += 1
-            continue
+    poa_index = 0
+    while (poa_index < len(groups)):
+        group = groups[poa_index]
 
         group_status, seq_status = batch.add_poa_group(group)
 
         # If group was added and more space is left in batch, continue onto next group.
         if (group_status == 0):
-            for status in seq_status:
+            for seq_index, status in enumerate(seq_status):
                 if status != 0:
-                    print("Could not add sequence to POA {} - error {}".format(i, cudapoa.status_to_str(status)))
-            i += 1
+                    print("Could not add sequence {} to POA {} - error {}".format(seq_index, poa_index, cudapoa.status_to_str(status)))
+            poa_index += 1
 
         # Otherwise print error.
         # Once batch is full or no groups are left, run POA processing.
-        if ((group_status == 1) or (i == len(groups) - 1)):
+        if ((group_status == 1) or (poa_index == len(groups) - 1)):
             batch.generate_poa()
 
             if msa:
@@ -97,12 +89,13 @@ def run_cudapoa(groups, msa, print_output):
                 if print_output:
                     print(consensus)
 
-            print("---- Processed group {} - {} ----".format(initial_count, i))
-            initial_count = i
+            print("---- Processed group {} - {} ----".format(initial_count, poa_index))
+            initial_count = poa_index
             batch.reset()
         # In the case where POA group wasn't processed correctly.
         elif (group_status != 0):
-            print("Could not add POA group {} to batch - {}".format(i, cudapoa.status_to_str(group_status)))
+            print("Could not add POA group {} to batch - {}".format(poa_index, cudapoa.status_to_str(group_status)))
+            poa_index += 1
 
 
 def parse_args():
