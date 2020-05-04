@@ -31,11 +31,12 @@ namespace cudapoa
  * @param[in] outgoing_edge_count        Device buffer with number of outgoing edges per node
  * @param[in] local_incoming_edge_count  Device scratch space for maintaining edge counts during topological sort
  */
-__device__ void topologicalSortDeviceUtil(uint16_t* sorted_poa,
-                                          uint16_t* sorted_poa_node_map,
-                                          uint16_t node_count,
+template <typename SizeT>
+__device__ void topologicalSortDeviceUtil(SizeT* sorted_poa,
+                                          SizeT* sorted_poa_node_map,
+                                          int32_t node_count,
                                           uint16_t* incoming_edge_count,
-                                          uint16_t* outgoing_edges,
+                                          SizeT* outgoing_edges,
                                           uint16_t* outgoing_edge_count,
                                           uint16_t* local_incoming_edge_count)
 {
@@ -48,7 +49,7 @@ __device__ void topologicalSortDeviceUtil(uint16_t* sorted_poa,
     // Iterate through node IDs (since nodes are from 0
     // through node_count -1, a simple loop works) and fill
     // out the incoming edge count.
-    for (uint16_t n = 0; n < node_count; n++)
+    for (SizeT n = 0; n < node_count; n++)
     {
         local_incoming_edge_count[n] = incoming_edge_count[n];
         // If we find a node ID has 0 incoming edges, add it to sorted nodes list.
@@ -65,10 +66,10 @@ __device__ void topologicalSortDeviceUtil(uint16_t* sorted_poa,
     // add its node ID to the sorted order list.
     for (uint16_t n = 0; n < sorted_poa_position; n++)
     {
-        uint16_t node = sorted_poa[n];
+        SizeT node = sorted_poa[n];
         for (uint16_t edge = 0; edge < outgoing_edge_count[node]; edge++)
         {
-            uint16_t out_node = outgoing_edges[node * CUDAPOA_MAX_NODE_EDGES + edge];
+            SizeT out_node = outgoing_edges[node * CUDAPOA_MAX_NODE_EDGES + edge];
             //printf("%d\n", out_node);
             local_incoming_edge_count[out_node]--;
             if (local_incoming_edge_count[out_node] == 0)
@@ -86,17 +87,18 @@ __device__ void topologicalSortDeviceUtil(uint16_t* sorted_poa,
 // racon source topological sort. This is helpful in ensuring the
 // correctness of the GPU implementation. With this change,
 // the GPU code exactly matches the SISD implementation of spoa.
-__device__ void raconTopologicalSortDeviceUtil(uint16_t* sorted_poa,
-                                               uint16_t* sorted_poa_node_map,
-                                               uint16_t node_count,
+template <typename SizeT>
+__device__ void raconTopologicalSortDeviceUtil(SizeT* sorted_poa,
+                                               SizeT* sorted_poa_node_map,
+                                               int32_t node_count,
                                                uint16_t* incoming_edge_count,
-                                               uint16_t* incoming_edges,
+                                               SizeT* incoming_edges,
                                                uint16_t* aligned_node_count,
-                                               uint16_t* aligned_nodes,
+                                               SizeT* aligned_nodes,
                                                uint8_t* node_marks,
                                                bool* check_aligned_nodes,
-                                               uint16_t* nodes_to_visit,
-                                               bool banded_alignment,
+                                               SizeT* nodes_to_visit,
+                                               bool /*banded_alignment*/,
                                                uint16_t max_nodes_per_window)
 {
     int16_t node_idx        = -1;
@@ -108,7 +110,7 @@ __device__ void raconTopologicalSortDeviceUtil(uint16_t* sorted_poa,
         check_aligned_nodes[i] = true;
     }
 
-    for (uint16_t i = 0; i < node_count; i++)
+    for (SizeT i = 0; i < node_count; i++)
     {
         if (node_marks[i] != 0)
         {
@@ -120,14 +122,14 @@ __device__ void raconTopologicalSortDeviceUtil(uint16_t* sorted_poa,
 
         while (node_idx != -1)
         {
-            uint16_t node_id = nodes_to_visit[node_idx];
-            bool valid       = true;
+            SizeT node_id = nodes_to_visit[node_idx];
+            bool valid    = true;
 
             if (node_marks[node_id] != 2)
             {
                 for (uint16_t e = 0; e < incoming_edge_count[node_id]; e++)
                 {
-                    uint16_t begin_node_id = incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES + e];
+                    SizeT begin_node_id = incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES + e];
                     if (node_marks[begin_node_id] != 2)
                     {
                         node_idx++;
@@ -140,7 +142,7 @@ __device__ void raconTopologicalSortDeviceUtil(uint16_t* sorted_poa,
                 {
                     for (uint16_t a = 0; a < aligned_node_count[node_id]; a++)
                     {
-                        uint16_t aid = aligned_nodes[node_id * CUDAPOA_MAX_NODE_ALIGNMENTS + a];
+                        SizeT aid = aligned_nodes[node_id * CUDAPOA_MAX_NODE_ALIGNMENTS + a];
                         if (node_marks[aid] != 2)
                         {
                             node_idx++;
@@ -161,7 +163,7 @@ __device__ void raconTopologicalSortDeviceUtil(uint16_t* sorted_poa,
                         sorted_poa_idx++;
                         for (uint16_t a = 0; a < aligned_node_count[node_id]; a++)
                         {
-                            uint16_t aid               = aligned_nodes[node_id * CUDAPOA_MAX_NODE_ALIGNMENTS + a];
+                            SizeT aid                  = aligned_nodes[node_id * CUDAPOA_MAX_NODE_ALIGNMENTS + a];
                             sorted_poa[sorted_poa_idx] = aid;
                             sorted_poa_node_map[aid]   = sorted_poa_idx;
                             sorted_poa_idx++;
@@ -182,11 +184,12 @@ __device__ void raconTopologicalSortDeviceUtil(uint16_t* sorted_poa,
     }
 }
 
-__global__ void runTopSortKernel(uint16_t* sorted_poa,
-                                 uint16_t* sorted_poa_node_map,
-                                 uint16_t node_count,
+template <typename SizeT>
+__global__ void runTopSortKernel(SizeT* sorted_poa,
+                                 SizeT* sorted_poa_node_map,
+                                 int32_t node_count,
                                  uint16_t* incoming_edge_count,
-                                 uint16_t* outgoing_edges,
+                                 SizeT* outgoing_edges,
                                  uint16_t* outgoing_edge_count,
                                  uint16_t* local_incoming_edge_count)
 {
@@ -200,13 +203,15 @@ __global__ void runTopSortKernel(uint16_t* sorted_poa,
                               local_incoming_edge_count);
 }
 
-void runTopSort(uint16_t* sorted_poa,
-                uint16_t* sorted_poa_node_map,
-                uint16_t node_count,
-                uint16_t* incoming_edge_count,
-                uint16_t* outgoing_edges,
-                uint16_t* outgoing_edge_count,
-                uint16_t* local_incoming_edge_count)
+// host function that calls runTopSortKernel
+template <typename SizeT>
+void runTopSortTemplated(SizeT* sorted_poa,
+                         SizeT* sorted_poa_node_map,
+                         int32_t node_count,
+                         uint16_t* incoming_edge_count,
+                         SizeT* outgoing_edges,
+                         uint16_t* outgoing_edge_count,
+                         uint16_t* local_incoming_edge_count)
 {
     // calls the topsort kernel on 1 thread
     runTopSortKernel<<<1, 1>>>(sorted_poa,

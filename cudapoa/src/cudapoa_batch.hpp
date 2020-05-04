@@ -49,7 +49,7 @@ namespace cudapoa
 
 /// \class
 /// Batched GPU CUDA POA object
-template <typename ScoreT>
+template <typename ScoreT, typename SizeT>
 class CudapoaBatch : public Batch
 {
 public:
@@ -65,11 +65,11 @@ public:
         , mismatch_score_(mismatch_score)
         , match_score_(match_score)
         , banded_alignment_(cuda_banded_alignment)
-        , batch_block_(new BatchBlock<ScoreT>(device_id,
-                                              throw_on_negative(max_mem, "Maximum memory per batch has to be non-negative"),
-                                              output_mask,
-                                              batch_size_,
-                                              cuda_banded_alignment))
+        , batch_block_(new BatchBlock<ScoreT, SizeT>(device_id,
+                                                     throw_on_negative(max_mem, "Maximum memory per batch has to be non-negative"),
+                                                     output_mask,
+                                                     batch_size_,
+                                                     cuda_banded_alignment))
         , max_poas_(batch_block_->get_max_poas())
     {
         // Set CUDA device
@@ -112,7 +112,7 @@ public:
 
         if (!reserve_buf(max_seq_length))
         {
-            return StatusType::exceeded_batch_size;
+            return StatusType::exceeded_maximum_poas;
         }
 
         // If matrix fits, see if a new poa group can be added.
@@ -149,6 +149,12 @@ public:
     {
         scoped_device_switch dev(device_id_);
 
+        if (poa_count_ == 0)
+        {
+            print_batch_debug_message(" No POA was added to compute! ");
+            return;
+        }
+
         //Copy sequencecs, sequence lengths and window details to device
         CGA_CU_CHECK_ERR(cudaMemcpyAsync(input_details_d_->sequences, input_details_h_->sequences,
                                          num_nucleotides_copied_ * sizeof(uint8_t), cudaMemcpyHostToDevice, stream_));
@@ -156,8 +162,9 @@ public:
                                          num_nucleotides_copied_ * sizeof(uint8_t), cudaMemcpyHostToDevice, stream_));
         CGA_CU_CHECK_ERR(cudaMemcpyAsync(input_details_d_->window_details, input_details_h_->window_details,
                                          poa_count_ * sizeof(claragenomics::cudapoa::WindowDetails), cudaMemcpyHostToDevice, stream_));
+        /// ToDo may need to revise the following sizeof()
         CGA_CU_CHECK_ERR(cudaMemcpyAsync(input_details_d_->sequence_lengths, input_details_h_->sequence_lengths,
-                                         global_sequence_idx_ * sizeof(uint16_t), cudaMemcpyHostToDevice, stream_));
+                                         global_sequence_idx_ * sizeof(*input_details_h_->sequence_lengths), cudaMemcpyHostToDevice, stream_));
 
         // Launch kernel to run 1 POA per thread in thread block.
         std::string msg = " Launching kernel for " + std::to_string(poa_count_) + " on device ";
@@ -533,7 +540,7 @@ protected:
         int32_t max_graph_dimension = banded_alignment_ ? batch_size_.max_matrix_graph_dimension_banded : batch_size_.max_matrix_graph_dimension;
 
         int32_t scores_width = banded_alignment_ ? CUDAPOA_BANDED_MAX_MATRIX_SEQUENCE_DIMENSION : cudautils::align<int32_t, 4>(max_seq_length + 1 + CELLS_PER_THREAD);
-        size_t scores_size   = scores_width * max_graph_dimension * sizeof(ScoreT);
+        size_t scores_size   = static_cast<size_t>(scores_width) * static_cast<size_t>(max_graph_dimension) * sizeof(ScoreT);
 
         if (scores_size > avail_scorebuf_mem_)
         {
@@ -572,15 +579,15 @@ protected:
     OutputDetails* output_details_d_;
 
     // Host and device buffer pointer for input data.
-    InputDetails* input_details_d_;
-    InputDetails* input_details_h_;
+    InputDetails<SizeT>* input_details_d_;
+    InputDetails<SizeT>* input_details_h_;
 
     // Device buffer struct for alignment details
-    AlignmentDetails<ScoreT>* alignment_details_d_;
+    AlignmentDetails<ScoreT, SizeT>* alignment_details_d_;
 
     // Device buffer struct for graph details
-    GraphDetails* graph_details_d_;
-    GraphDetails* graph_details_h_;
+    GraphDetails<SizeT>* graph_details_d_;
+    GraphDetails<SizeT>* graph_details_h_;
 
     // Batch ID.
     int32_t bid_ = 0;
@@ -604,7 +611,7 @@ protected:
     bool banded_alignment_;
 
     // Pointer of a seperate class BatchBlock that implements details on calculating and allocating the memory for each batch
-    std::unique_ptr<BatchBlock<ScoreT>> batch_block_;
+    std::unique_ptr<BatchBlock<ScoreT, SizeT>> batch_block_;
 
     // Maximum POAs to process in batch.
     int32_t max_poas_ = 0;
@@ -614,8 +621,8 @@ public:
     static int32_t batches;
 };
 
-template <typename ScoreT>
-int32_t CudapoaBatch<ScoreT>::batches = 0;
+template <typename ScoreT, typename SizeT>
+int32_t CudapoaBatch<ScoreT, SizeT>::batches = 0;
 
 /// \}
 

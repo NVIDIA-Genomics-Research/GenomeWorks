@@ -38,8 +38,10 @@ def run_cudapoa(groups, msa, print_output):
 
     # Create batch
     max_sequences_per_poa = 100
+    max_seq_sz = 1024
     gpu_mem_per_batch = 0.9 * free
     batch = cudapoa.CudaPoaBatch(max_sequences_per_poa,
+                                 max_seq_sz,
                                  gpu_mem_per_batch,
                                  stream=None,
                                  output_type=("msa" if msa else "consensus"))

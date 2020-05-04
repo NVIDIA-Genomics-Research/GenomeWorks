@@ -12,20 +12,18 @@ set(TARGET_NAME cudamappertests)
 
 set(SOURCES
     main.cpp
+    Test_CudamapperIndexBatcher.cu
     Test_CudamapperIndexCache.cu
+    Test_CudamapperIndexDescriptor.cpp
     Test_CudamapperIndexGPU.cu
     Test_CudamapperMatcherGPU.cu
     Test_CudamapperMinimizer.cpp
     Test_CudamapperOverlapperTriggered.cu
-    ../src/index_cache.cu)
+   )
 
 get_property(cudamapper_data_include_dir GLOBAL PROPERTY cudamapper_data_include_dir)
 include_directories(${cudamapper_data_include_dir})
 
-set(LIBS
-    index_gpu
-    matcher_gpu
-    overlapper_triggerred
-    cudamapper_utils)
+set(LIBS cudamapper)
 
 cga_add_tests(${TARGET_NAME} "${SOURCES}" "${LIBS}")
