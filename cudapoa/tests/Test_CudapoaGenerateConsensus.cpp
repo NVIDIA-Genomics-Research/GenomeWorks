@@ -197,8 +197,8 @@ std::string testGenerateConsensus(const BasicGenerateConsensus& obj)
 
     CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&predecessors, batch_size.max_nodes_per_window * sizeof(int16_t)));
     CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&scores, batch_size.max_nodes_per_window * sizeof(int32_t)));
-    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&consensus, batch_size.max_concensus_size * sizeof(uint8_t)));
-    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&coverage, batch_size.max_concensus_size * sizeof(uint16_t)));
+    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&consensus, batch_size.max_consensus_size * sizeof(uint8_t)));
+    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&coverage, batch_size.max_consensus_size * sizeof(uint16_t)));
 
     //initialize all 'count' buffers
     memset((void**)incoming_edge_count, 0, batch_size.max_nodes_per_window * sizeof(uint16_t));
@@ -231,7 +231,7 @@ std::string testGenerateConsensus(const BasicGenerateConsensus& obj)
                               node_coverage_counts,
                               node_alignments,
                               node_alignment_count,
-                              batch_size.max_concensus_size);
+                              batch_size.max_consensus_size);
 
     CGA_CU_CHECK_ERR(cudaDeviceSynchronize());
 

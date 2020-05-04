@@ -126,9 +126,9 @@ TEST_F(MSATest, CudapoaMSAFailure)
     std::minstd_rand rng(1);
     int num_sequences = 10;
     BatchSize batch_size(1024, num_sequences);
-    batch_size.max_concensus_size = batch_size.max_sequence_size;
+    batch_size.max_consensus_size = batch_size.max_sequence_size;
 
-    std::string backbone = claragenomics::genomeutils::generate_random_genome(batch_size.max_concensus_size - 1, rng);
+    std::string backbone = claragenomics::genomeutils::generate_random_genome(batch_size.max_consensus_size - 1, rng);
     auto sequences       = claragenomics::genomeutils::generate_random_sequences(backbone, num_sequences, rng, 10, 5, 10);
 
     initialize(batch_size);

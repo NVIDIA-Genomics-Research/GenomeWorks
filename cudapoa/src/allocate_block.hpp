@@ -77,7 +77,7 @@ public:
         max_poas_                         = (avail_mem * fraction_for_metadata) / device_size_per_poa;
 
         // Update final sizes for block based on calculated maximum POAs.
-        output_size_ = max_poas_ * static_cast<int64_t>(batch_size.max_concensus_size);
+        output_size_ = max_poas_ * static_cast<int64_t>(batch_size.max_consensus_size);
         input_size_  = max_poas_ * max_sequences_per_poa_ * static_cast<int64_t>(batch_size.max_sequence_size);
         total_h_     = max_poas_ * host_size_per_poa + host_size_fixed;
         total_d_     = avail_mem;
@@ -300,7 +300,7 @@ protected:
         int64_t host_size_per_poa = 0, device_size_per_poa = 0;
 
         int64_t input_size_per_poa  = max_sequences_per_poa_ * batch_size.max_sequence_size * poa_count;
-        int64_t output_size_per_poa = batch_size.max_concensus_size * poa_count;
+        int64_t output_size_per_poa = batch_size.max_consensus_size * poa_count;
 
         // for output - host
         host_size_fixed += sizeof(OutputDetails);                                                                                                                        // output_details_h_
