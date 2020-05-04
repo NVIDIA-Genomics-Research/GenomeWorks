@@ -316,7 +316,7 @@ protected:
         host_size_per_poa += input_size_per_poa * sizeof(*InputDetails<SizeT>::sequences);                                                                       // input_details_h_->sequences
         host_size_per_poa += input_size_per_poa * sizeof(*InputDetails<SizeT>::base_weights);                                                                    // input_details_h_->base_weights
         host_size_per_poa += poa_count * max_sequences_per_poa_ * sizeof(*InputDetails<SizeT>::sequence_lengths);                                                // input_details_h_->sequence_lengths
-        host_size_per_poa += poa_count * sizeof(*InputDetails<SizeT>::window_details);                                                                                           // input_details_h_->window_details
+        host_size_per_poa += poa_count * sizeof(*InputDetails<SizeT>::window_details);                                                                           // input_details_h_->window_details
         host_size_per_poa += (output_mask_ & OutputType::msa) ? poa_count * max_sequences_per_poa_ * sizeof(*InputDetails<SizeT>::sequence_begin_nodes_ids) : 0; // input_details_h_->sequence_begin_nodes_ids
 
         host_size_fixed += sizeof(InputDetails<SizeT>); // input_details_d_
@@ -324,7 +324,7 @@ protected:
         device_size_per_poa += input_size_per_poa * sizeof(*InputDetails<SizeT>::sequences);                                                                       // input_details_d_->sequences
         device_size_per_poa += input_size_per_poa * sizeof(*InputDetails<SizeT>::base_weights);                                                                    // input_details_d_->base_weights
         device_size_per_poa += poa_count * max_sequences_per_poa_ * sizeof(*InputDetails<SizeT>::sequence_lengths);                                                // input_details_d_->sequence_lengths
-        device_size_per_poa += poa_count * sizeof(*InputDetails<SizeT>::window_details);                                                                                           // input_details_d_->window_details
+        device_size_per_poa += poa_count * sizeof(*InputDetails<SizeT>::window_details);                                                                           // input_details_d_->window_details
         device_size_per_poa += (output_mask_ & OutputType::msa) ? poa_count * max_sequences_per_poa_ * sizeof(*InputDetails<SizeT>::sequence_begin_nodes_ids) : 0; // input_details_d_->sequence_begin_nodes_ids
 
         // for graph - host
