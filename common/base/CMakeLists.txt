@@ -29,11 +29,7 @@ if (cga_device_synchronize_kernels)
 endif()
 
 if(cga_enable_caching_allocator)
-        if (cga_enable_preallocating_caching_allocator)
-            target_compile_definitions(${PROJECT_NAME} PUBLIC CGA_ENABLE_CACHING_ALLOCATOR CGA_ENABLE_PREALLOCATING_ALLOCATOR)
-        else()
-            target_compile_definitions(${PROJECT_NAME} PUBLIC CGA_ENABLE_CACHING_ALLOCATOR)
-        endif()
+    target_compile_definitions(${PROJECT_NAME} PUBLIC CGA_ENABLE_CACHING_ALLOCATOR)
 endif()
 
 target_include_directories(${PROJECT_NAME}
