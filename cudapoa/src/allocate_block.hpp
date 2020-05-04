@@ -71,7 +71,7 @@ public:
         }
 
         // Calculate max POAs possible based on available memory.
-        int64_t device_size_per_score_matrix = (int64_t)matrix_sequence_dimension_ * (int64_t)max_graph_dimension_ * sizeof(ScoreT);
+        int64_t device_size_per_score_matrix = static_cast<int64_t>(matrix_sequence_dimension_) * static_cast<int64_t>(max_graph_dimension_) * sizeof(ScoreT);
         max_poas_                            = avail_mem / (device_size_per_poa + device_size_per_score_matrix);
 
         // Update final sizes for block based on calculated maximum POAs.
