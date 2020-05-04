@@ -168,21 +168,22 @@ __device__ ScoreT4<ScoreT> get_scores(uint16_t read_pos,
 
 template <typename SeqT,
           typename IndexT,
-          typename ScoreT>
+          typename ScoreT,
+          typename SizeT>
 __device__
     uint16_t
     runNeedlemanWunschBanded(SeqT* nodes,
-                             uint16_t* graph,
-                             uint16_t* node_id_to_pos,
-                             uint16_t graph_count,
+                             SizeT* graph,
+                             SizeT* node_id_to_pos,
+                             SizeT graph_count,
                              uint16_t* incoming_edge_count,
-                             uint16_t* incoming_edges,
+                             SizeT* incoming_edges,
                              uint16_t* outgoing_edge_count,
                              SeqT* read,
                              uint16_t read_length,
                              ScoreT* scores,
-                             int16_t* alignment_graph,
-                             int16_t* alignment_read,
+                             SizeT* alignment_graph,
+                             SizeT* alignment_read,
                              ScoreT gap_score,
                              ScoreT mismatch_score,
                              ScoreT match_score)
@@ -215,8 +216,8 @@ __device__
 
             set_score(scores, 0, 0, (ScoreT)0, gradient, band_width, max_column);
 
-            uint16_t node_id = graph[graph_pos];
-            IndexT i         = graph_pos + 1;
+            SizeT node_id = graph[graph_pos];
+            IndexT i      = graph_pos + 1;
 
             uint16_t pred_count = incoming_edge_count[node_id];
             if (pred_count == 0)
@@ -228,9 +229,9 @@ __device__
                 ScoreT penalty = SHRT_MIN;
                 for (uint16_t p = 0; p < pred_count; p++)
                 {
-                    uint16_t pred_node_id        = incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES + p];
-                    uint16_t pred_node_graph_pos = node_id_to_pos[pred_node_id] + 1;
-                    penalty                      = max(penalty, get_score(scores, pred_node_graph_pos, 0, gradient, band_width, read_length + 1, min_score_abs));
+                    SizeT pred_node_id        = incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES + p];
+                    SizeT pred_node_graph_pos = node_id_to_pos[pred_node_id] + 1;
+                    penalty                   = max(penalty, get_score(scores, pred_node_graph_pos, 0, gradient, band_width, read_length + 1, min_score_abs));
                 }
                 set_score(scores, i, 0, (ScoreT)(penalty + gap_score), gradient, band_width, max_column);
             }
@@ -255,7 +256,7 @@ __device__
 
         uint16_t pred_count = incoming_edge_count[node_id];
 
-        uint16_t pred_idx = (pred_count == 0 ? 0 : node_id_to_pos[incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES]] + 1);
+        SizeT pred_idx = (pred_count == 0 ? 0 : node_id_to_pos[incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES]] + 1);
 
         SeqT graph_base = nodes[node_id];
 
@@ -275,7 +276,7 @@ __device__
             // Perform same score updates as above, but for rest of predecessors.
             for (uint16_t p = 1; p < pred_count; p++)
             {
-                int16_t pred_idx2        = node_id_to_pos[incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES + p]] + 1;
+                SizeT pred_idx2          = node_id_to_pos[incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES + p]] + 1;
                 ScoreT4<ScoreT> scores_4 = get_scores(read_pos, scores, pred_idx2, gap_score, char_profile, gradient, band_width, SHRT_MIN + min_score_abs, read_length + 1);
 
                 score.s0 = max(score.s0, scores_4.s0);
@@ -383,11 +384,11 @@ __device__
             if (i != 0 && j != 0)
             {
 
-                uint16_t node_id  = graph[i - 1];
+                SizeT node_id     = graph[i - 1];
                 ScoreT match_cost = (nodes[node_id] == read[j - 1] ? match_score : mismatch_score);
 
                 uint16_t pred_count = incoming_edge_count[node_id];
-                uint16_t pred_i     = (pred_count == 0 ? 0 : (node_id_to_pos[incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES]] + 1));
+                SizeT pred_i        = (pred_count == 0 ? 0 : (node_id_to_pos[incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES]] + 1));
 
                 if (scores_ij == (get_score(scores, pred_i, j - 1, gradient, band_width, read_length + 1, min_score_abs) + match_cost))
                 {
@@ -416,9 +417,9 @@ __device__
             // Check if move is vertical.
             if (!pred_found && i != 0)
             {
-                uint16_t node_id    = graph[i - 1];
+                SizeT node_id       = graph[i - 1];
                 uint16_t pred_count = incoming_edge_count[node_id];
-                uint16_t pred_i     = (pred_count == 0 ? 0 : node_id_to_pos[incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES]] + 1);
+                SizeT pred_i        = (pred_count == 0 ? 0 : node_id_to_pos[incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES]] + 1);
 
                 if (scores_ij == get_score(scores, pred_i, j, gradient, band_width, read_length + 1, min_score_abs) + gap_score)
                 {
