@@ -17,37 +17,15 @@
 #include <stdint.h>
 #include <cuda_runtime_api.h>
 #include <stdio.h>
-#include <string>
-#include <vector>
+#include <claragenomics/cudapoa/batch.hpp>
 
-// Maximum vnumber of edges per node.
+// Maximum number of edges per node.
 #define CUDAPOA_MAX_NODE_EDGES 50
 
 // Maximum number of nodes aligned to each other.
 #define CUDAPOA_MAX_NODE_ALIGNMENTS 50
 
-// Maximum number of nodes in a graph, 1 graph per window.
-#define CUDAPOA_MAX_NODES_PER_WINDOW 3072
-#define CUDAPOA_MAX_NODES_PER_WINDOW_BANDED 4096
-
-// Maximum number of elements in a sequence.
-#define CUDAPOA_MAX_SEQUENCE_SIZE 1024
-
-// Maximum size of final consensus
-#define CUDAPOA_MAX_CONSENSUS_SIZE 1024
-
-// Maximum vertical dimension of scoring matrix, which stores graph.
-// Adding 4 elements more to ensure a 4byte boundary alignment for
-// any allocated buffer.
-#define CUDAPOA_MAX_MATRIX_GRAPH_DIMENSION (CUDAPOA_MAX_NODES_PER_WINDOW + 4)
-#define CUDAPOA_MAX_MATRIX_GRAPH_DIMENSION_BANDED (CUDAPOA_MAX_NODES_PER_WINDOW_BANDED + 4)
-
-// Maximum horizontal dimension of scoring matrix, which stores sequences.
-// Adding 4 elements more to ensure a 4byte boundary alignment for
-// any allocated buffer.
-#define CUDAPOA_MAX_MATRIX_SEQUENCE_DIMENSION (CUDAPOA_MAX_SEQUENCE_SIZE + 4)
-
-// imensions for Banded alignment score matrix
+// Dimensions for Banded alignment score matrix
 #define WARP_SIZE 32
 #define CELLS_PER_THREAD 4
 #define CUDAPOA_BAND_WIDTH (CELLS_PER_THREAD * WARP_SIZE)
@@ -67,7 +45,6 @@ namespace claragenomics
 
 namespace cudapoa
 {
-
 /**
  * @brief A struct to hold information about the sequences
  *        inside a window.
@@ -115,10 +92,11 @@ typedef struct InputDetails
 
 } InputDetails;
 
-typedef struct AlignmentDetails
+template <typename ScoreT>
+struct AlignmentDetails
 {
     // Device buffer for the scoring matrix for all windows.
-    int16_t* scores;
+    ScoreT* scores;
 
     // preallocated size of scores buffer
     size_t scorebuf_alloc_size = 0;
@@ -126,7 +104,7 @@ typedef struct AlignmentDetails
     // Device buffers for alignment backtrace
     int16_t* alignment_graph;
     int16_t* alignment_read;
-} AlignmentDetails;
+};
 
 typedef struct GraphDetails
 {
@@ -241,14 +219,15 @@ void generatePOA(claragenomics::cudapoa::OutputDetails* output_details_d,
                  claragenomics::cudapoa::InputDetails* Input_details_d,
                  int32_t total_windows,
                  cudaStream_t stream,
-                 claragenomics::cudapoa::AlignmentDetails* alignment_details_d,
+                 void* alignment_details_d,
                  claragenomics::cudapoa::GraphDetails* graph_details_d,
                  int16_t gap_score,
                  int16_t mismatch_score,
                  int16_t match_score,
                  bool banded_alignment,
                  uint32_t max_sequences_per_poa,
-                 int8_t output_mask);
+                 int8_t output_mask,
+                 const BatchSize& batch_size);
 
 // host function that calls runTopSortKernel
 void runTopSort(uint16_t* sorted_poa,
@@ -277,7 +256,8 @@ void addAlignment(uint8_t* nodes,
                   uint16_t* outgoing_edges_coverage,
                   uint16_t* outgoing_edges_coverage_count,
                   uint16_t s,
-                  uint32_t max_sequences_per_poa);
+                  uint32_t max_sequences_per_poa,
+                  uint32_t max_limit_nodes_per_window);
 
 // Host function that calls the kernel
 void runNW(uint8_t* nodes,
@@ -314,7 +294,11 @@ void generateConsensusTestHost(uint8_t* nodes,
                                uint16_t* coverage,
                                uint16_t* node_coverage_counts,
                                uint16_t* node_alignments,
-                               uint16_t* node_alignment_count);
+                               uint16_t* node_alignment_count,
+                               uint32_t max_limit_consensus_size);
+
+bool use32bitInt(const BatchSize& batch_size, const int16_t gap_score, const int16_t mismatch_score, const int16_t match_score);
+
 } // namespace cudapoa
 
 } // namespace claragenomics

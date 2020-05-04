@@ -39,5 +39,15 @@ void myers_gpu(int8_t* paths_d, int32_t* path_lengths_d, int32_t max_path_length
                batched_device_matrices<myers::WordType>& query_patterns,
                cudaStream_t stream);
 
+void myers_banded_gpu(int8_t* paths_d, int32_t* path_lengths_d, int32_t max_path_length,
+                      char const* sequences_d,
+                      int32_t const* sequence_lengths_d,
+                      int32_t max_sequence_length,
+                      int32_t n_alignments,
+                      batched_device_matrices<myers::WordType>& pv,
+                      batched_device_matrices<myers::WordType>& mv,
+                      batched_device_matrices<int32_t>& score,
+                      batched_device_matrices<myers::WordType>& query_patterns,
+                      cudaStream_t stream);
 } // end namespace cudaaligner
 } // end namespace claragenomics

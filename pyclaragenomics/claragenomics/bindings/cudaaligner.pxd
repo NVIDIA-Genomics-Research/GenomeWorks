@@ -15,7 +15,7 @@
 
 from libcpp.string cimport string
 from libcpp.vector cimport vector
-from libc.stdint cimport int32_t
+from libc.stdint cimport int32_t, int64_t
 from libcpp.memory cimport unique_ptr, shared_ptr
 
 from bindings.cuda_runtime_api cimport _Stream
@@ -70,4 +70,4 @@ cdef extern from "claragenomics/cudaaligner/aligner.hpp" namespace "claragenomic
         vector[shared_ptr[Alignment]] get_alignments() except +
         void reset() except +
 
-    unique_ptr[Aligner] create_aligner(int32_t, int32_t, int32_t, AlignmentType, _Stream, int32_t)
+    unique_ptr[Aligner] create_aligner(int32_t, int32_t, int32_t, AlignmentType, _Stream, int32_t, int64_t)

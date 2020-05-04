@@ -71,13 +71,17 @@ def copy_all_files_in_directory(src, dest, file_ext="*.so"):
 
 
 # Must be set before calling pip
-for envvar in ['CGA_INSTALL_DIR', 'CGA_VERSION']:
+for envvar in ['CGA_INSTALL_DIR', 'CGA_VERSION', 'CGA_ROOT_DIR']:
     if envvar not in os.environ.keys():
         raise EnvironmentError(
             '{} environment variables must be set'.format(envvar))
 
+cga_root_dir = os.environ['CGA_ROOT_DIR']
 cga_install_dir = os.environ['CGA_INSTALL_DIR']
 cga_version = os.environ['CGA_VERSION']
+cuda_root = os.getenv('CUDA_TOOLKIT_ROOT_DIR', '/usr/local/cuda')
+cuda_include_path = os.path.join(cuda_root, 'include')
+cuda_library_path = os.path.join(cuda_root, 'lib64')
 
 # Get current dir (pyclaragenomics folder is copied into a temp directory created by pip)
 current_dir = os.path.dirname(os.path.realpath(__file__))
@@ -109,10 +113,10 @@ extensions = [
         "claragenomics.bindings.cuda",
         sources=[os.path.join("claragenomics/**/cuda.pyx")],
         include_dirs=[
-            "/usr/local/cuda/include",
+            cuda_include_path,
         ],
-        library_dirs=["/usr/local/cuda/lib64"],
-        runtime_library_dirs=["/usr/local/cuda/lib64"],
+        library_dirs=[cuda_library_path],
+        runtime_library_dirs=[cuda_library_path],
         libraries=["cudart"],
         language="c++",
         extra_compile_args=["-std=c++14"],
@@ -121,12 +125,13 @@ extensions = [
         "claragenomics.bindings.cudapoa",
         sources=[os.path.join("claragenomics/**/cudapoa.pyx")],
         include_dirs=[
-            "/usr/local/cuda/include",
+            cuda_include_path,
             get_verified_absolute_path(os.path.join(cga_install_dir, "include")),
+            get_verified_absolute_path(os.path.join(cga_root_dir, "3rdparty", "spdlog", "include")),
         ],
-        library_dirs=["/usr/local/cuda/lib64", get_verified_absolute_path(os.path.join(cga_install_dir, "lib"))],
-        runtime_library_dirs=["/usr/local/cuda/lib64", os.path.join('$ORIGIN', os.pardir, 'shared_libs')],
-        libraries=["cudapoa", "cudart", "logging"],
+        library_dirs=[cuda_library_path, get_verified_absolute_path(os.path.join(cga_install_dir, "lib"))],
+        runtime_library_dirs=[cuda_library_path, os.path.join('$ORIGIN', os.pardir, 'shared_libs')],
+        libraries=["cudapoa", "cudart", "cgabase"],
         language="c++",
         extra_compile_args=["-std=c++14"],
     ),
@@ -134,12 +139,14 @@ extensions = [
         "claragenomics.bindings.cudaaligner",
         sources=[os.path.join("claragenomics/**/cudaaligner.pyx")],
         include_dirs=[
-            "/usr/local/cuda/include",
+            cuda_include_path,
             get_verified_absolute_path(os.path.join(cga_install_dir, "include")),
+            get_verified_absolute_path(os.path.join(cga_root_dir, "3rdparty", "cub")),
+            get_verified_absolute_path(os.path.join(cga_root_dir, "3rdparty", "spdlog", "include")),
         ],
-        library_dirs=["/usr/local/cuda/lib64", get_verified_absolute_path(os.path.join(cga_install_dir, "lib"))],
-        runtime_library_dirs=["/usr/local/cuda/lib64", os.path.join('$ORIGIN', os.pardir, 'shared_libs')],
-        libraries=["cudaaligner", "cudart", "logging"],
+        library_dirs=[cuda_library_path, get_verified_absolute_path(os.path.join(cga_install_dir, "lib"))],
+        runtime_library_dirs=[cuda_library_path, os.path.join('$ORIGIN', os.pardir, 'shared_libs')],
+        libraries=["cudaaligner", "cudart", "cgabase"],
         language="c++",
         extra_compile_args=["-std=c++14"],
     )

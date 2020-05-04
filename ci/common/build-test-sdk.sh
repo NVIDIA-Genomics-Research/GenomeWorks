@@ -8,7 +8,6 @@
 # license agreement from NVIDIA CORPORATION is strictly prohibited.
 #
 
-CMAKE_BUILD_GPU=""
 LOCAL_BUILD_ROOT=$1
 CMAKE_OPTS=$2
 BUILD_THREADS=$3
@@ -22,15 +21,15 @@ mkdir --parents ${LOCAL_BUILD_DIR}
 cd ${LOCAL_BUILD_DIR}
 
 logger "Configure CMake..."
-cmake .. $CMAKE_COMMON_VARIABLES ${CMAKE_BUILD_GPU} \
+cmake .. "${CMAKE_COMMON_VARIABLES[@]}" \
     -Dcga_enable_tests=ON \
     -Dcga_enable_benchmarks=ON \
     -Dcga_build_shared=ON \
-    -DCMAKE_INSTALL_PREFIX=${LOCAL_BUILD_DIR}/install \
+    -DCMAKE_INSTALL_PREFIX="${LOCAL_BUILD_DIR}/install" \
     -GNinja
 
 logger "Run build..."
-ninja all install package
+NINJA_STATUS="[%r->%f/%t]" ninja all install package
 
 logger "Install package..."
 DISTRO=$(awk -F= '/^NAME/{print $2}' /etc/os-release)

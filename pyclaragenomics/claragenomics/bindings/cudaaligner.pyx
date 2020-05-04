@@ -122,6 +122,7 @@ cdef class CudaAlignerBatch:
     """Python API for CUDA-accelerated sequence to sequence alignment.
     """
     cdef unique_ptr[cudaaligner.Aligner] aligner
+    cdef public object stream
 
     def __cinit__(
             self,
@@ -131,6 +132,7 @@ cdef class CudaAlignerBatch:
             alignment_type="global",
             stream=None,
             device_id=0,
+            max_device_memory_allocator_caching_size=-1,
             *args,
             **kwargs):
         """Construct a CudaAligner object to run CUDA-accelerated sequence
@@ -143,6 +145,9 @@ cdef class CudaAlignerBatch:
             alignment_type - Type of alignment (only global supported right now)
             stream - CUDA stream for running kernel
             device_id - GPU device to use for running kernels
+            max_device_memory_allocator_caching_size - Maximum amount of device memory to use for cached memory
+            allocations the cudaaligner instance. max_device_memory_allocator_caching_size = -1 (default) means
+            all available device memory.
         """
         cdef size_t st
         cdef _Stream temp_stream
@@ -153,6 +158,7 @@ cdef class CudaAlignerBatch:
         else:
             st = stream.stream
             temp_stream = <_Stream>st
+        self.stream = stream  # keep a reference to the stream, such that it gets destroyed after the aligner.
 
         cdef cudaaligner.AlignmentType alignment_type_enum
         if (alignment_type == "global"):
@@ -166,7 +172,8 @@ cdef class CudaAlignerBatch:
             max_alignments,
             alignment_type_enum,
             temp_stream,
-            device_id)
+            device_id,
+            max_device_memory_allocator_caching_size)
 
     def __init__(
             self,
@@ -176,6 +183,7 @@ cdef class CudaAlignerBatch:
             alignment_type="global",
             stream=None,
             device_id=0,
+            max_device_memory_allocator_caching_size=-1,
             *args,
             **kwargs):
         """Dummy implementation of __init__ function to allow
@@ -250,6 +258,9 @@ cdef class CudaAlignerBatch:
                 state,
                 format_alignment))
         return alignments
+
+    def __dealloc__(self):
+        self.aligner.reset()
 
     def reset(self):
         """Reset the contents of the batch so the same GPU memory can be used to

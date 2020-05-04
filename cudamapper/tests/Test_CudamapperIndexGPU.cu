@@ -172,7 +172,7 @@ void test_find_first_occurrences_of_representations(const thrust::host_vector<re
                                                     const thrust::host_vector<std::uint32_t>& expected_starting_index_of_each_representation_h,
                                                     const thrust::host_vector<representation_t>& expected_unique_representations_h)
 {
-    DefaultDeviceAllocator allocator;
+    DefaultDeviceAllocator allocator = create_default_device_allocator();
 
     cudaStream_t cuda_stream;
     CGA_CU_CHECK_ERR(cudaStreamCreate(&cuda_stream));
@@ -1001,7 +1001,7 @@ void test_filter_out_most_common_representations(const double filtering_paramete
     ASSERT_EQ(expected_output_unique_representations_h.size(), expected_output_first_occurrence_of_representations_h.size() - 1);
     ASSERT_EQ(expected_output_representations_h.size(), expected_output_first_occurrence_of_representations_h.back());
 
-    DefaultDeviceAllocator allocator;
+    DefaultDeviceAllocator allocator = create_default_device_allocator();
 
     cudaStream_t cuda_stream;
     CGA_CU_CHECK_ERR(cudaStreamCreate(&cuda_stream));
@@ -1344,14 +1344,12 @@ void test_function(const std::string& filename,
                    const std::vector<SketchElement::DirectionOfRepresentation>& expected_directions_of_reads,
                    const std::vector<representation_t>& expected_unique_representations,
                    const std::vector<std::uint32_t>& expected_first_occurrence_of_representations,
-                   const std::vector<std::string>& expected_read_id_to_read_name,
-                   const std::vector<std::uint32_t>& expected_read_id_to_read_length,
                    const read_id_t expected_number_of_reads,
                    const position_in_read_t expected_number_of_basepairs_in_longest_read,
                    const double filtering_parameter = 1.0)
 {
     std::unique_ptr<io::FastaParser> parser = io::create_kseq_fasta_parser(filename);
-    DefaultDeviceAllocator allocator;
+    DefaultDeviceAllocator allocator        = create_default_device_allocator();
 
     cudaStream_t cuda_stream;
     CGA_CU_CHECK_ERR(cudaStreamCreate(&cuda_stream));
@@ -1378,14 +1376,6 @@ void test_function(const std::string& filename,
         ASSERT_EQ(index.largest_read_id(), expected_largest_read_id);
 
         ASSERT_EQ(expected_number_of_basepairs_in_longest_read, index.number_of_basepairs_in_longest_read());
-
-        ASSERT_EQ(expected_number_of_reads, expected_read_id_to_read_name.size());
-        ASSERT_EQ(expected_number_of_reads, expected_read_id_to_read_length.size());
-        for (read_id_t read_id = first_read_id; read_id < past_the_last_read_id; ++read_id)
-        {
-            ASSERT_EQ(index.read_id_to_read_length(read_id), expected_read_id_to_read_length[read_id - first_read_id]) << "read_id: " << read_id;
-            ASSERT_EQ(index.read_id_to_read_name(read_id), expected_read_id_to_read_name[read_id - first_read_id]) << "read_id: " << read_id;
-        }
 
         // check arrays
         const device_buffer<representation_t>& representations_d                             = index.representations();
@@ -1449,12 +1439,6 @@ TEST(TestCudamapperIndexGPU, GATT_4_1)
     const std::uint64_t minimizer_size = 4;
     const std::uint64_t window_size    = 1;
 
-    std::vector<std::string> expected_read_id_to_read_name;
-    expected_read_id_to_read_name.push_back("read_0");
-
-    std::vector<std::uint32_t> expected_read_id_to_read_length;
-    expected_read_id_to_read_length.push_back(4);
-
     std::vector<representation_t> expected_representations;
     std::vector<position_in_read_t> expected_positions_in_reads;
     std::vector<read_id_t> expected_read_ids;
@@ -1489,8 +1473,6 @@ TEST(TestCudamapperIndexGPU, GATT_4_1)
                   expected_directions_of_reads,
                   expected_unique_representations,
                   expected_first_occurrence_of_representations,
-                  expected_read_id_to_read_name,
-                  expected_read_id_to_read_length,
                   expected_number_of_reads,
                   expected_number_of_basepairs_in_longest_read);
 }
@@ -1527,12 +1509,6 @@ TEST(TestCudamapperIndexGPU, GATT_2_3)
     const std::string filename         = std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/gatt.fasta";
     const std::uint64_t minimizer_size = 2;
     const std::uint64_t window_size    = 3;
-
-    std::vector<std::string> expected_read_id_to_read_name;
-    expected_read_id_to_read_name.push_back("read_0");
-
-    std::vector<std::uint32_t> expected_read_id_to_read_length;
-    expected_read_id_to_read_length.push_back(4);
 
     std::vector<representation_t> expected_representations;
     std::vector<position_in_read_t> expected_positions_in_reads;
@@ -1580,8 +1556,6 @@ TEST(TestCudamapperIndexGPU, GATT_2_3)
                   expected_directions_of_reads,
                   expected_unique_representations,
                   expected_first_occurrence_of_representations,
-                  expected_read_id_to_read_name,
-                  expected_read_id_to_read_length,
                   expected_number_of_reads,
                   expected_number_of_basepairs_in_longest_read);
 }
@@ -1598,10 +1572,6 @@ TEST(TestCudamapperIndexGPU, CCCATACC_2_8)
     const std::uint64_t window_size    = 8;
 
     // all data arrays should be empty
-
-    std::vector<std::string> expected_read_id_to_read_name;
-
-    std::vector<std::uint32_t> expected_read_id_to_read_length;
 
     std::vector<representation_t> expected_representations;
     std::vector<position_in_read_t> expected_positions_in_reads;
@@ -1628,8 +1598,6 @@ TEST(TestCudamapperIndexGPU, CCCATACC_2_8)
                   expected_directions_of_reads,
                   expected_unique_representations,
                   expected_first_occurrence_of_representations,
-                  expected_read_id_to_read_name,
-                  expected_read_id_to_read_length,
                   expected_number_of_reads,
                   expected_number_of_basepairs_in_longest_read);
 }
@@ -1683,12 +1651,6 @@ TEST(TestCudamapperIndexGPU, CCCATACC_2_8)
 //    const std::uint64_t minimizer_size = 3;
 //    const std::uint64_t window_size    = 5;
 //
-//    std::vector<std::string> expected_read_id_to_read_name;
-//    expected_read_id_to_read_name.push_back("read_0");
-//
-//    std::vector<std::uint32_t> expected_read_id_to_read_length;
-//    expected_read_id_to_read_length.push_back(7);
-//
 //    std::vector<representation_t> expected_representations;
 //    std::vector<position_in_read_t> expected_positions_in_reads;
 //    std::vector<read_id_t> expected_read_ids;
@@ -1718,8 +1680,6 @@ TEST(TestCudamapperIndexGPU, CCCATACC_2_8)
 //                  expected_positions_in_reads,
 //                  expected_read_ids,
 //                  expected_directions_of_reads,
-//                  expected_read_id_to_read_name,
-//                  expected_read_id_to_read_length,
 //                  expected_number_of_reads,
 //                  expected_number_of_basepairs_in_longest_read); // <- only one read goes into index, the other is too short
 //}
@@ -1766,12 +1726,6 @@ TEST(TestCudamapperIndexGPU, CCCATACC_3_5)
     const std::string filename         = std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/cccatacc.fasta";
     const std::uint64_t minimizer_size = 3;
     const std::uint64_t window_size    = 5;
-
-    std::vector<std::string> expected_read_id_to_read_name;
-    expected_read_id_to_read_name.push_back("read_0");
-
-    std::vector<std::uint32_t> expected_read_id_to_read_length;
-    expected_read_id_to_read_length.push_back(8);
 
     std::vector<representation_t> expected_representations;
     std::vector<position_in_read_t> expected_positions_in_reads;
@@ -1831,8 +1785,6 @@ TEST(TestCudamapperIndexGPU, CCCATACC_3_5)
                   expected_directions_of_reads,
                   expected_unique_representations,
                   expected_first_occurrence_of_representations,
-                  expected_read_id_to_read_name,
-                  expected_read_id_to_read_length,
                   expected_number_of_reads,
                   expected_number_of_basepairs_in_longest_read);
 }
@@ -1886,7 +1838,7 @@ TEST(TestCudamapperIndexGPU, CATCAAG_AAGCTA_3_2)
     // back end minimizers
     // CTA: 130 3 F 1
 
-    // All minimizers: AAG(0f), AGC(1f), CTA(3f)
+    // All minimizers: AAG(0f), AGC(2r), CTA(3f)
 
     // (2r1) means position 2, reverse direction, read 1
     // (1,2) means array block start at element 1 and has 2 elements
@@ -1897,14 +1849,6 @@ TEST(TestCudamapperIndexGPU, CATCAAG_AAGCTA_3_2)
     const std::string filename         = std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/catcaag_aagcta.fasta";
     const std::uint64_t minimizer_size = 3;
     const std::uint64_t window_size    = 2;
-
-    std::vector<std::string> expected_read_id_to_read_name;
-    expected_read_id_to_read_name.push_back("read_0");
-    expected_read_id_to_read_name.push_back("read_1");
-
-    std::vector<std::uint32_t> expected_read_id_to_read_length;
-    expected_read_id_to_read_length.push_back(7);
-    expected_read_id_to_read_length.push_back(6);
 
     std::vector<representation_t> expected_representations;
     std::vector<position_in_read_t> expected_positions_in_reads;
@@ -1974,8 +1918,6 @@ TEST(TestCudamapperIndexGPU, CATCAAG_AAGCTA_3_2)
                   expected_directions_of_reads,
                   expected_unique_representations,
                   expected_first_occurrence_of_representations,
-                  expected_read_id_to_read_name,
-                  expected_read_id_to_read_length,
                   expected_number_of_reads,
                   expected_number_of_basepairs_in_longest_read);
 }
@@ -2052,14 +1994,6 @@ TEST(TestCudamapperIndexGPU, AAAACTGAA_GCCAAAG_2_3)
     const std::string filename         = std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/aaaactgaa_gccaaag.fasta";
     const std::uint64_t minimizer_size = 2;
     const std::uint64_t window_size    = 3;
-
-    std::vector<std::string> expected_read_id_to_read_name;
-    expected_read_id_to_read_name.push_back("read_0");
-    expected_read_id_to_read_name.push_back("read_1");
-
-    std::vector<std::uint32_t> expected_read_id_to_read_length;
-    expected_read_id_to_read_length.push_back(9);
-    expected_read_id_to_read_length.push_back(7);
 
     std::vector<representation_t> expected_representations;
     std::vector<position_in_read_t> expected_positions_in_reads;
@@ -2149,8 +2083,6 @@ TEST(TestCudamapperIndexGPU, AAAACTGAA_GCCAAAG_2_3)
                   expected_directions_of_reads,
                   expected_unique_representations,
                   expected_first_occurrence_of_representations,
-                  expected_read_id_to_read_name,
-                  expected_read_id_to_read_length,
                   expected_number_of_reads,
                   expected_number_of_basepairs_in_longest_read);
 }
@@ -2202,11 +2134,6 @@ TEST(TestCudamapperIndexGPU, AAAACTGAA_GCCAAAG_2_3_only_second_read_in_index)
     const std::uint64_t window_size    = 3;
 
     // only take second read
-    std::vector<std::string> expected_read_id_to_read_name;
-    expected_read_id_to_read_name.push_back("read_1");
-
-    std::vector<std::uint32_t> expected_read_id_to_read_length;
-    expected_read_id_to_read_length.push_back(7);
 
     std::vector<representation_t> expected_representations;
     std::vector<position_in_read_t> expected_positions_in_reads;
@@ -2270,8 +2197,6 @@ TEST(TestCudamapperIndexGPU, AAAACTGAA_GCCAAAG_2_3_only_second_read_in_index)
                   expected_directions_of_reads,
                   expected_unique_representations,
                   expected_first_occurrence_of_representations,
-                  expected_read_id_to_read_name,
-                  expected_read_id_to_read_length,
                   expected_number_of_reads,
                   expected_number_of_basepairs_in_longest_read);
 }
@@ -2355,14 +2280,6 @@ TEST(TestCudamapperIndexGPU, AAAACTGAA_GCCAAAG_2_3_filtering)
     const std::uint64_t window_size    = 3;
     const double filtering_parameter   = 0.5;
 
-    std::vector<std::string> expected_read_id_to_read_name;
-    expected_read_id_to_read_name.push_back("read_0");
-    expected_read_id_to_read_name.push_back("read_1");
-
-    std::vector<std::uint32_t> expected_read_id_to_read_length;
-    expected_read_id_to_read_length.push_back(9);
-    expected_read_id_to_read_length.push_back(7);
-
     std::vector<representation_t> expected_representations;
     std::vector<position_in_read_t> expected_positions_in_reads;
     std::vector<read_id_t> expected_read_ids;
@@ -2425,8 +2342,6 @@ TEST(TestCudamapperIndexGPU, AAAACTGAA_GCCAAAG_2_3_filtering)
                   expected_directions_of_reads,
                   expected_unique_representations,
                   expected_first_occurrence_of_representations,
-                  expected_read_id_to_read_name,
-                  expected_read_id_to_read_length,
                   expected_number_of_reads,
                   expected_number_of_basepairs_in_longest_read,
                   filtering_parameter);
