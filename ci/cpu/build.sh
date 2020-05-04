@@ -38,8 +38,8 @@ source ci/common/prep-init-env.sh "${WORKSPACE}" "${CONDA_ENV_NAME}"
 ################################################################################
 
 logger "Build SDK..."
-CMAKE_COMMON_VARIABLES="-DCMAKE_BUILD_TYPE=Release"
-source ci/common/build-test-sdk.sh "${WORKSPACE}" ${CMAKE_COMMON_VARIABLES} ${PARALLEL_LEVEL} 0
+CMAKE_COMMON_VARIABLES=(-DCMAKE_BUILD_TYPE=Release)
+source ci/common/build-test-sdk.sh "${WORKSPACE}" "${CMAKE_COMMON_VARIABLES[@]}" "${PARALLEL_LEVEL}" 0
 
 rm -rf "${WORKSPACE}"/build
 

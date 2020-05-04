@@ -39,9 +39,7 @@ public:
 
     MOCK_METHOD(device_buffer<read_id_t>&, read_ids, (), (const, override));
     MOCK_METHOD(device_buffer<position_in_read_t>&, positions_in_reads, (), (const, override));
-    MOCK_METHOD(const std::string&, read_id_to_read_name, (const read_id_t read_id), (const, override));
     MOCK_METHOD(device_buffer<std::uint32_t>&, first_occurrence_of_representations, (), (const, override));
-    MOCK_METHOD(const std::uint32_t&, read_id_to_read_length, (const read_id_t read_id), (const, override));
     MOCK_METHOD(read_id_t, number_of_reads, (), (const, override));
     MOCK_METHOD(read_id_t, smallest_read_id, (), (const, override));
     MOCK_METHOD(read_id_t, largest_read_id, (), (const, override));

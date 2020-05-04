@@ -26,6 +26,7 @@ cuda_add_library(cudaaligner ${cga_library_type}
     src/aligner_global.cpp
     src/aligner_global_ukkonen.cpp
     src/aligner_global_myers.cpp
+    src/aligner_global_myers_banded.cpp
     src/aligner_global_hirschberg_myers.cpp
     src/needleman_wunsch_cpu.cpp
     src/ukkonen_cpu.cpp
@@ -39,7 +40,7 @@ target_include_directories(cudaaligner_internal INTERFACE
         ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 
-target_link_libraries(cudaaligner utils logging)
+target_link_libraries(cudaaligner cgabase cub)
 
 target_compile_options(cudaaligner PRIVATE -Werror -Wall -Wextra)
 if (cga_optimize_for_native_cpu)

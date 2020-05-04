@@ -49,11 +49,6 @@ public:
     /// \return an array of directions in which sketch elements were read
     virtual const device_buffer<SketchElement::DirectionOfRepresentation>& directions_of_reads() const = 0;
 
-    /// \brief returns read name of read with the given read_id
-    /// \param read_id
-    /// \return read name of read with the given read_id
-    virtual const std::string& read_id_to_read_name(const read_id_t read_id) const = 0;
-
     /// \brief returns an array where each representation is recorder only once, sorted by representation
     /// \return an array where each representation is recorder only once, sorted by representation
     virtual const device_buffer<representation_t>& unique_representations() const = 0;
@@ -62,22 +57,9 @@ public:
     /// \return first occurrence of corresponding representation from unique_representations() in data arrays
     virtual const device_buffer<std::uint32_t>& first_occurrence_of_representations() const = 0;
 
-    /// \brief returns read length for the read with the gived read_id
-    /// \param read_id
-    /// \return read length for the read with the gived read_id
-    virtual const std::uint32_t& read_id_to_read_length(const read_id_t read_id) const = 0;
-
     /// \brief returns number of reads in input data
     /// \return number of reads in input data
     virtual read_id_t number_of_reads() const = 0;
-
-    /// \brief returns look up table array mapping read id to read name
-    /// \return the array mapping read id to read name
-    virtual const std::vector<std::string>& read_ids_to_read_names() const = 0;
-
-    /// \brief returns an array used for mapping read id to the length of the read
-    /// \return the array used for mapping read ids to their lengths
-    virtual const std::vector<std::uint32_t>& read_ids_to_read_lengths() const = 0;
 
     /// \brief returns smallest read_id in index
     /// \return smallest read_id in index (0 if empty index)
@@ -95,7 +77,7 @@ public:
     /// \return Return the maximum kmer length allowable
     static uint64_t maximum_kmer_size()
     {
-        return sizeof(representation_t) * 8 / 2;
+        return sizeof(representation_t) * CHAR_BIT / 2;
     }
 
     /// \brief generates a mapping of (k,w)-kmer-representation to all of its occurrences for one or more sequences
@@ -121,10 +103,10 @@ public:
                  const cudaStream_t cuda_stream   = 0);
 };
 
-/// IndexHostCopy - Creates and maintains a copy of computed IndexGPU elements on the host, then allows to retrieve target
+/// IndexHostCopyBase - Creates and maintains a copy of computed IndexGPU elements on the host, then allows to retrieve target
 /// indices from host instead of recomputing them again
 ///
-class IndexHostCopy
+class IndexHostCopyBase
 {
 public:
     /// \brief copy cached index vectors from the host and create an object of Index on GPU
@@ -132,7 +114,10 @@ public:
     /// \param cuda_stream H2D copy is done on this stream. Device arrays are also associated with this stream and will not be freed at least until all work issued on this stream before calling their destructor is done
     /// \return a pointer to claragenomics::cudamapper::Index
     virtual std::unique_ptr<Index> copy_index_to_device(DefaultDeviceAllocator allocator,
-                                                        const cudaStream_t cuda_stream = 0) = 0;
+                                                        const cudaStream_t cuda_stream = 0) const = 0;
+
+    /// \brief virtual destructor
+    virtual ~IndexHostCopyBase() = default;
 
     /// \brief returns an array of representations of sketch elements (stored on host)
     /// \return an array of representations of sketch elements
@@ -157,14 +142,6 @@ public:
     /// \brief returns first occurrence of corresponding representation from unique_representations(), plus one more element with the total number of sketch elements (stored on host)
     /// \return first occurrence of corresponding representation from unique_representations(), plus one more element with the total number of sketch elements
     virtual const std::vector<std::uint32_t>& first_occurrence_of_representations() const = 0;
-
-    /// \brief returns look up table array mapping read id to read name
-    /// \return the array mapping read id to read name
-    virtual const std::vector<std::string>& read_id_to_read_names() const = 0;
-
-    /// \brief returns an array used for mapping read id to the length of the read
-    /// \return the array used for mapping read ids to their lengths
-    virtual const std::vector<std::uint32_t>& read_id_to_read_lengths() const = 0;
 
     /// \brief returns number of reads in input data
     /// \return number of reads in input data
@@ -193,12 +170,12 @@ public:
     /// \param kmer_size - number of basepairs in a k-mer
     /// \param window_size the number of adjacent k-mers in a window, adjacent = shifted by one basepair
     /// \param cuda_stream D2H copy is done on this stream
-    /// \return - an instance of IndexHostCopy
-    static std::unique_ptr<IndexHostCopy> create_cache(const Index& index,
-                                                       const read_id_t first_read_id,
-                                                       const std::uint64_t kmer_size,
-                                                       const std::uint64_t window_size,
-                                                       const cudaStream_t cuda_stream = 0);
+    /// \return - an instance of IndexHostCopyBase
+    static std::unique_ptr<IndexHostCopyBase> create_cache(const Index& index,
+                                                           const read_id_t first_read_id,
+                                                           const std::uint64_t kmer_size,
+                                                           const std::uint64_t window_size,
+                                                           const cudaStream_t cuda_stream = 0);
 };
 
 } // namespace cudamapper

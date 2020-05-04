@@ -31,8 +31,8 @@ option(spoa_accurate "Run cudapoa code in mode that matches spoa" OFF)
 option(cga_enable_cudapoa_nw_print "Enable verbose prints within cudapoa NW kernel" OFF)
 option(cga_profiling "Compile a binary for profiling with NVTX markers." OFF)
 option(cga_enable_caching_allocator "Enable caching allocator." ON)
-option(cga_enable_preallocating_caching_allocator "Enable preallocating caching allocator." ON)
 option(cga_generate_docs "Generate Doxygen documentation" ON)
+option(cga_cuda_gen_all_arch "ON: Generate optimized CUDA code for all architectures | OFF: for detected architectures only" ON)
 
 # Must be included before others for options value validation
 include(cmake/Utils.cmake)
@@ -69,8 +69,7 @@ include(cmake/Packaging.cmake)
 include(cmake/CondaEnv.cmake)
 
 # Add ClaraGenomicsAnalysis projects.
-add_subdirectory(common/logging)
-add_subdirectory(common/utils)
+add_subdirectory(common/base)
 add_subdirectory(common/io)
 add_subdirectory(cudapoa)
 add_subdirectory(cudamapper)

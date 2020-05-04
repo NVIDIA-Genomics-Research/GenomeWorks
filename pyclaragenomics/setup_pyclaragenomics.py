@@ -87,12 +87,13 @@ class CMakeWrapper:
         self._run_build_cmd()
 
 
-def setup_python_binding(is_develop_mode, wheel_output_folder, pycga_dir, cga_install_dir):
+def setup_python_binding(is_develop_mode, wheel_output_folder, cga_dir, pycga_dir, cga_install_dir):
     """Setup python bindings and claragenomics modules for pyclaragenomics.
 
     Args:
         is_develop_mode : Develop or install mode for installation
         wheel_output_folder : Output directory for pyclaragenomics wheel file
+        cga_dir : Root ClaraGenomicsAnalysis directory
         pycga_dir : Root pyclaragenomics directory
         cga_install_dir : Directory with ClaraGenomicsAnalysis SDK installation
     """
@@ -102,6 +103,7 @@ def setup_python_binding(is_develop_mode, wheel_output_folder, pycga_dir, cga_in
 
     if wheel_output_folder:
         setup_command = [
+            'python3', '-m',
             'pip', 'wheel', '.',
             '--global-option', 'sdist',
             '--wheel-dir', wheel_output_folder, '--no-deps'
@@ -109,7 +111,7 @@ def setup_python_binding(is_develop_mode, wheel_output_folder, pycga_dir, cga_in
         completion_message = \
             "A wheel file was create for pyclaragenomics under {}".format(wheel_output_folder)
     else:
-        setup_command = ['pip', 'install'] + (['-e'] if is_develop_mode else []) + ["."]
+        setup_command = ['python3', '-m', 'pip', 'install'] + (['-e'] if is_develop_mode else []) + ["."]
         completion_message = \
             "pyclaragenomics was successfully setup in {} mode!".format(
                 "development" if args.develop else "installation")
@@ -117,6 +119,7 @@ def setup_python_binding(is_develop_mode, wheel_output_folder, pycga_dir, cga_in
     subprocess.check_call(setup_command,
                           env={
                               **os.environ,
+                              'CGA_ROOT_DIR': cga_dir,
                               'CGA_INSTALL_DIR': cga_install_dir,
                               'CGA_VERSION': version_str
                           },
@@ -128,9 +131,10 @@ if __name__ == "__main__":
 
     args = parse_arguments()
     current_dir = os.path.dirname(os.path.realpath(__file__))
+    cga_root_dir = os.path.dirname(current_dir)
     cga_installation_directory = os.path.join(args.build_output_folder, "install")
     # Build & install Clara Genomics Analysis SDK
-    cmake_proj = CMakeWrapper(cmake_root_dir=os.path.dirname(current_dir),
+    cmake_proj = CMakeWrapper(cmake_root_dir=cga_root_dir,
                               cmake_build_path=args.build_output_folder,
                               cga_install_dir=cga_installation_directory,
                               cmake_extra_args="-Dcga_build_shared=ON")
@@ -139,6 +143,7 @@ if __name__ == "__main__":
     setup_python_binding(
         is_develop_mode=args.develop,
         wheel_output_folder='pyclaragenomics_wheel/' if args.create_wheel_only else None,
+        cga_dir=cga_root_dir,
         pycga_dir=current_dir,
         cga_install_dir=os.path.realpath(cga_installation_directory)
     )

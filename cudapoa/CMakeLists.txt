@@ -21,11 +21,9 @@ cuda_add_library(cudapoa ${cga_library_type}
     src/cudapoa.cpp
     src/cudapoa_kernels.cu
     src/batch.cpp
-    src/cudapoa_batch.cpp
-    src/allocate_block.cpp
     )
 
-target_link_libraries(cudapoa utils logging)
+target_link_libraries(cudapoa cgabase)
 
 target_compile_options(cudapoa PRIVATE -Werror -Wall -Wextra)
 if (cga_optimize_for_native_cpu)
@@ -49,7 +47,7 @@ target_include_directories(cudapoa
 add_doxygen_source_dir(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 install(TARGETS cudapoa
-    COMPONENT logging
+    COMPONENT cgalogging
     EXPORT cudapoa
     DESTINATION lib
     INCLUDES DESTINATION include
