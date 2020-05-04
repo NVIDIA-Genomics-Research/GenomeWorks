@@ -21,7 +21,7 @@ if [[ ${RUNNING_CI_LOCALLY} = true  ]]; then
 # Skip upload if CI is not executed locally and current branch is not master
 elif [ "${GIT_BRANCH}" != "${SOURCE_BRANCH}" ]; then
     echo "Skipping PyPI upload - not master branch"
-    #return 0
+    return 0
 fi 
 
 for f in ${WORKSPACE}/pyclaragenomics/pyclaragenomics_wheel/*.whl; do
@@ -37,7 +37,7 @@ for f in ${WORKSPACE}/pyclaragenomics/pyclaragenomics_wheel/*.whl; do
         mv ${f} ${MODIFIED_WHL_NAME}
         echo "File name ${f} was changed into ${MODIFIED_WHL_NAME}"
         # Perform Upload
-        python3 -m twine upload --repository-url https://test.pypi.org/legacy/ ${WORKSPACE}/pyclaragenomics/pyclaragenomics_wheel/
+        python3 -m twine upload --skip-existing --repository-url https://test.pypi.org/legacy/ ${WORKSPACE}/pyclaragenomics/pyclaragenomics_wheel/
     fi
 done
 
