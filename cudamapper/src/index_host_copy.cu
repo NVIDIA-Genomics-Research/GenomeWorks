@@ -65,9 +65,6 @@ IndexHostCopy::IndexHostCopy(const Index& index,
                              first_occurrence_of_representations_.data(),
                              cuda_stream);
 
-    read_id_to_read_name_   = index.read_ids_to_read_names();
-    read_id_to_read_length_ = index.read_ids_to_read_lengths();
-
     number_of_reads_                     = index.number_of_reads();
     number_of_basepairs_in_longest_read_ = index.number_of_basepairs_in_longest_read();
 
@@ -112,16 +109,6 @@ const std::vector<representation_t>& IndexHostCopy::unique_representations() con
 const std::vector<std::uint32_t>& IndexHostCopy::first_occurrence_of_representations() const
 {
     return first_occurrence_of_representations_;
-}
-
-const std::vector<std::string>& IndexHostCopy::read_id_to_read_names() const
-{
-    return read_id_to_read_name_;
-}
-
-const std::vector<std::uint32_t>& IndexHostCopy::read_id_to_read_lengths() const
-{
-    return read_id_to_read_length_;
 }
 
 read_id_t IndexHostCopy::number_of_reads() const

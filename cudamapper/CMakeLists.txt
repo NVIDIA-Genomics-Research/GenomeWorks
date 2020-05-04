@@ -33,6 +33,7 @@ endif()
 
 cuda_add_library(cudamapper
         src/cudamapper.cpp
+        src/index_batcher.cu
         src/index_descriptor.cpp
         src/index.cu
         src/index_cache.cu

@@ -36,7 +36,8 @@ __device__ __forceinline__
 
 template <typename SeqT,
           typename IndexT,
-          typename ScoreT>
+          typename ScoreT,
+          typename SizeT>
 __device__ __forceinline__
     ScoreT4<ScoreT>
     computeScore(IndexT rIdx,
@@ -45,8 +46,8 @@ __device__ __forceinline__
                  SeqT graph_base,
                  uint16_t pred_count,
                  IndexT pred_idx,
-                 uint16_t* node_id_to_pos,
-                 uint16_t* incoming_edges,
+                 SizeT* node_id_to_pos,
+                 SizeT* incoming_edges,
                  ScoreT* scores,
                  int32_t scores_width,
                  ScoreT gap_score,
@@ -90,7 +91,7 @@ __device__ __forceinline__
     // Perform same score updates as above, but for rest of predecessors.
     for (IndexT p = 1; p < pred_count; p++)
     {
-        int16_t pred_idx = node_id_to_pos[incoming_edges[gIdx * CUDAPOA_MAX_NODE_EDGES + p]] + 1;
+        SizeT pred_idx = node_id_to_pos[incoming_edges[gIdx * CUDAPOA_MAX_NODE_EDGES + p]] + 1;
 
         ScoreT4<ScoreT>* pred_scores = (ScoreT4<ScoreT>*)&scores[pred_idx * scores_width];
 
@@ -138,23 +139,24 @@ __device__ __forceinline__
 template <typename SeqT,
           typename IndexT,
           typename ScoreT,
+          typename SizeT,
           int32_t CPT = 4>
 __device__
     uint16_t
     runNeedlemanWunsch(SeqT* nodes,
-                       uint16_t* graph,
-                       uint16_t* node_id_to_pos,
-                       uint16_t graph_count,
+                       SizeT* graph,
+                       SizeT* node_id_to_pos,
+                       int32_t graph_count,
                        uint16_t* incoming_edge_count,
-                       uint16_t* incoming_edges,
+                       SizeT* incoming_edges,
                        uint16_t* outgoing_edge_count,
-                       uint16_t* outgoing_edges,
+                       SizeT* outgoing_edges,
                        SeqT* read,
                        uint16_t read_count,
                        ScoreT* scores,
                        int32_t scores_width,
-                       int16_t* alignment_graph,
-                       int16_t* alignment_read,
+                       SizeT* alignment_graph,
+                       SizeT* alignment_read,
                        ScoreT gap_score,
                        ScoreT mismatch_score,
                        ScoreT match_score)
@@ -192,9 +194,9 @@ __device__
                 ScoreT penalty = SHRT_MIN;
                 for (uint16_t p = 0; p < pred_count; p++)
                 {
-                    uint16_t pred_node_id        = incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES + p];
-                    uint16_t pred_node_graph_pos = node_id_to_pos[pred_node_id] + 1;
-                    penalty                      = max(penalty, scores[pred_node_graph_pos * scores_width]);
+                    SizeT pred_node_id        = incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES + p];
+                    SizeT pred_node_graph_pos = node_id_to_pos[pred_node_id] + 1;
+                    penalty                   = max(penalty, scores[pred_node_graph_pos * scores_width]);
                 }
                 scores[i * scores_width] = penalty + gap_score;
             }
@@ -222,7 +224,7 @@ __device__
 
         uint16_t pred_count = incoming_edge_count[node_id];
 
-        uint16_t pred_idx = (pred_count == 0 ? 0 : node_id_to_pos[incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES]] + 1);
+        SizeT pred_idx = (pred_count == 0 ? 0 : node_id_to_pos[incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES]] + 1);
 
         SeqT graph_base = nodes[node_id];
 
@@ -360,10 +362,10 @@ __device__
             // Check if move is diagonal.
             if (i != 0 && j != 0)
             {
-                uint16_t node_id    = graph[i - 1];
+                SizeT node_id       = graph[i - 1];
                 ScoreT match_cost   = (nodes[node_id] == read[j - 1] ? match_score : mismatch_score);
                 uint16_t pred_count = incoming_edge_count[node_id];
-                uint16_t pred_i     = (pred_count == 0 ? 0 : (node_id_to_pos[incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES]] + 1));
+                SizeT pred_i        = (pred_count == 0 ? 0 : (node_id_to_pos[incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES]] + 1));
 
                 if (scores_ij == (scores[pred_i * scores_width + (j - 1)] + match_cost))
                 {
@@ -392,9 +394,9 @@ __device__
             // Check if move is vertical.
             if (!pred_found && i != 0)
             {
-                uint16_t node_id    = graph[i - 1];
+                SizeT node_id       = graph[i - 1];
                 uint16_t pred_count = incoming_edge_count[node_id];
-                uint16_t pred_i     = (pred_count == 0 ? 0 : node_id_to_pos[incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES]] + 1);
+                SizeT pred_i        = (pred_count == 0 ? 0 : node_id_to_pos[incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES]] + 1);
 
                 if (scores_ij == scores[pred_i * scores_width + j] + gap_score)
                 {
@@ -450,62 +452,65 @@ __device__
     return aligned_nodes;
 }
 
+template <typename SizeT>
 __global__ void runNeedlemanWunschKernel(uint8_t* nodes,
-                                         uint16_t* graph,
-                                         uint16_t* node_id_to_pos,
-                                         uint16_t graph_count,
+                                         SizeT* graph,
+                                         SizeT* node_id_to_pos,
+                                         int32_t graph_count,
                                          uint16_t* incoming_edge_count,
-                                         uint16_t* incoming_edges,
+                                         SizeT* incoming_edges,
                                          uint16_t* outgoing_edge_count,
-                                         uint16_t* outgoing_edges,
+                                         SizeT* outgoing_edges,
                                          uint8_t* read,
                                          uint16_t read_count,
                                          int16_t* scores,
                                          int32_t scores_width,
-                                         int16_t* alignment_graph,
-                                         int16_t* alignment_read,
+                                         SizeT* alignment_graph,
+                                         SizeT* alignment_read,
                                          int16_t gap_score,
                                          int16_t mismatch_score,
                                          int16_t match_score,
-                                         uint16_t* aligned_nodes)
+                                         SizeT* aligned_nodes)
 {
-    *aligned_nodes = runNeedlemanWunsch<uint8_t, uint16_t, int16_t>(nodes,
-                                                                    graph,
-                                                                    node_id_to_pos,
-                                                                    graph_count,
-                                                                    incoming_edge_count,
-                                                                    incoming_edges,
-                                                                    outgoing_edge_count,
-                                                                    outgoing_edges,
-                                                                    read,
-                                                                    read_count,
-                                                                    scores,
-                                                                    scores_width,
-                                                                    alignment_graph,
-                                                                    alignment_read,
-                                                                    gap_score,
-                                                                    mismatch_score,
-                                                                    match_score);
+    *aligned_nodes = runNeedlemanWunsch<uint8_t, uint16_t, int16_t, SizeT>(nodes,
+                                                                           graph,
+                                                                           node_id_to_pos,
+                                                                           graph_count,
+                                                                           incoming_edge_count,
+                                                                           incoming_edges,
+                                                                           outgoing_edge_count,
+                                                                           outgoing_edges,
+                                                                           read,
+                                                                           read_count,
+                                                                           scores,
+                                                                           scores_width,
+                                                                           alignment_graph,
+                                                                           alignment_read,
+                                                                           gap_score,
+                                                                           mismatch_score,
+                                                                           match_score);
 }
 
-void runNW(uint8_t* nodes,
-           uint16_t* graph,
-           uint16_t* node_id_to_pos,
-           uint16_t graph_count,
-           uint16_t* incoming_edge_count,
-           uint16_t* incoming_edges,
-           uint16_t* outgoing_edge_count,
-           uint16_t* outgoing_edges,
-           uint8_t* read,
-           uint16_t read_count,
-           int16_t* scores,
-           int32_t scores_width,
-           int16_t* alignment_graph,
-           int16_t* alignment_read,
-           int16_t gap_score,
-           int16_t mismatch_score,
-           int16_t match_score,
-           uint16_t* aligned_nodes)
+// Host function that calls the kernel
+template <typename SizeT>
+void runNWtemplated(uint8_t* nodes,
+                    SizeT* graph,
+                    SizeT* node_id_to_pos,
+                    int32_t graph_count,
+                    uint16_t* incoming_edge_count,
+                    SizeT* incoming_edges,
+                    uint16_t* outgoing_edge_count,
+                    SizeT* outgoing_edges,
+                    uint8_t* read,
+                    uint16_t read_count,
+                    int16_t* scores,
+                    int32_t scores_width,
+                    SizeT* alignment_graph,
+                    SizeT* alignment_read,
+                    int16_t gap_score,
+                    int16_t mismatch_score,
+                    int16_t match_score,
+                    SizeT* aligned_nodes)
 {
     runNeedlemanWunschKernel<<<1, 64>>>(nodes,
                                         graph,
