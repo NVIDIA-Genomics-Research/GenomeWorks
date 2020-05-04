@@ -1,0 +1,46 @@
+claragenomics.shared\_libs namespace
+====================================
+
+Submodules
+----------
+
+claragenomics.shared\_libs.libcgabase module
+--------------------------------------------
+
+.. automodule:: claragenomics.shared_libs.libcgabase
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+claragenomics.shared\_libs.libcgaio module
+------------------------------------------
+
+.. automodule:: claragenomics.shared_libs.libcgaio
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+claragenomics.shared\_libs.libcudaaligner module
+------------------------------------------------
+
+.. automodule:: claragenomics.shared_libs.libcudaaligner
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+claragenomics.shared\_libs.libcudamapper module
+-----------------------------------------------
+
+.. automodule:: claragenomics.shared_libs.libcudamapper
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+claragenomics.shared\_libs.libcudapoa module
+--------------------------------------------
+
+.. automodule:: claragenomics.shared_libs.libcudapoa
+   :members:
+   :undoc-members:
+   :show-inheritance:
+

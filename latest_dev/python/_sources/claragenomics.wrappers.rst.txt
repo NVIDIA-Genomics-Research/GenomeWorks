@@ -1,0 +1,22 @@
+claragenomics.wrappers package
+==============================
+
+Submodules
+----------
+
+claragenomics.wrappers.wrappers module
+--------------------------------------
+
+.. automodule:: claragenomics.wrappers.wrappers
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+Module contents
+---------------
+
+.. automodule:: claragenomics.wrappers
+   :members:
+   :undoc-members:
+   :show-inheritance:

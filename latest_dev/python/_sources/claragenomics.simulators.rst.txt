@@ -1,0 +1,30 @@
+claragenomics.simulators package
+================================
+
+Submodules
+----------
+
+claragenomics.simulators.genomesim module
+-----------------------------------------
+
+.. automodule:: claragenomics.simulators.genomesim
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+claragenomics.simulators.readsim module
+---------------------------------------
+
+.. automodule:: claragenomics.simulators.readsim
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+Module contents
+---------------
+
+.. automodule:: claragenomics.simulators
+   :members:
+   :undoc-members:
+   :show-inheritance:

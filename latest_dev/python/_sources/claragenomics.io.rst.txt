@@ -1,0 +1,38 @@
+claragenomics.io package
+========================
+
+Submodules
+----------
+
+claragenomics.io.fastaio module
+-------------------------------
+
+.. automodule:: claragenomics.io.fastaio
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+claragenomics.io.pafio module
+-----------------------------
+
+.. automodule:: claragenomics.io.pafio
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+claragenomics.io.utils module
+-----------------------------
+
+.. automodule:: claragenomics.io.utils
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+Module contents
+---------------
+
+.. automodule:: claragenomics.io
+   :members:
+   :undoc-members:
+   :show-inheritance:

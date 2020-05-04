@@ -1,0 +1,191 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>claragenomics.wrappers package &#8212; Clara Genomics Analysis SDK x.y.z documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="claragenomics-wrappers-package">
+<h1>claragenomics.wrappers package<a class="headerlink" href="#claragenomics-wrappers-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-claragenomics.wrappers.wrappers">
+<span id="claragenomics-wrappers-wrappers-module"></span><h2>claragenomics.wrappers.wrappers module<a class="headerlink" href="#module-claragenomics.wrappers.wrappers" title="Permalink to this headline">¶</a></h2>
+<p>Classes for tool wrappers.</p>
+<dl class="class">
+<dt id="claragenomics.wrappers.wrappers.MiniasmWrapper">
+<em class="property">class </em><code class="sig-prename descclassname">claragenomics.wrappers.wrappers.</code><code class="sig-name descname">MiniasmWrapper</code><span class="sig-paren">(</span><em class="sig-param">tool_path=None</em><span class="sig-paren">)</span><a class="headerlink" href="#claragenomics.wrappers.wrappers.MiniasmWrapper" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Wrapper class for miniasm tool.</p>
+<dl class="method">
+<dt id="claragenomics.wrappers.wrappers.MiniasmWrapper.assemble">
+<code class="sig-name descname">assemble</code><span class="sig-paren">(</span><em class="sig-param">reads_filepath</em>, <em class="sig-param">overlaps_filepath</em>, <em class="sig-param">assembly_filepath</em><span class="sig-paren">)</span><a class="headerlink" href="#claragenomics.wrappers.wrappers.MiniasmWrapper.assemble" title="Permalink to this definition">¶</a></dt>
+<dd><p>Assembles from reads and alignments.</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>reads_filepath (string): Path where the reads located
+overlaps_filepath (string): Path where the alignments are located
+assembly_filepath (string): Location for output assembly</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="claragenomics.wrappers.wrappers.Minimap2Wrapper">
+<em class="property">class </em><code class="sig-prename descclassname">claragenomics.wrappers.wrappers.</code><code class="sig-name descname">Minimap2Wrapper</code><span class="sig-paren">(</span><em class="sig-param">tool_path=None</em><span class="sig-paren">)</span><a class="headerlink" href="#claragenomics.wrappers.wrappers.Minimap2Wrapper" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Wrapper class for minimap2 tool.</p>
+<dl class="method">
+<dt id="claragenomics.wrappers.wrappers.Minimap2Wrapper.overlap">
+<code class="sig-name descname">overlap</code><span class="sig-paren">(</span><em class="sig-param">refs_filepath</em>, <em class="sig-param">reads_filepath</em>, <em class="sig-param">overlaps_filepath</em>, <em class="sig-param">args=''</em>, <em class="sig-param">extra_args=''</em><span class="sig-paren">)</span><a class="headerlink" href="#claragenomics.wrappers.wrappers.Minimap2Wrapper.overlap" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates overlaps with minimap2 tool for alignment.</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>refs_filepath (string): Path where the reference is located
+reads_filepath (string): Path where the reads are located
+overlaps_filepath (string): Path for the output alignments
+args (string): Parameters for different data types, e.g. -x ava-one
+extra_args (string): Extra settings e.g. number of threads</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="claragenomics.wrappers.wrappers.QuastWrapper">
+<em class="property">class </em><code class="sig-prename descclassname">claragenomics.wrappers.wrappers.</code><code class="sig-name descname">QuastWrapper</code><a class="headerlink" href="#claragenomics.wrappers.wrappers.QuastWrapper" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Wrapper class for Quast.</p>
+<dl class="method">
+<dt id="claragenomics.wrappers.wrappers.QuastWrapper.assess">
+<code class="sig-name descname">assess</code><span class="sig-paren">(</span><em class="sig-param">assembly_filepath</em>, <em class="sig-param">reference_filepath</em>, <em class="sig-param">output_dir</em><span class="sig-paren">)</span><a class="headerlink" href="#claragenomics.wrappers.wrappers.QuastWrapper.assess" title="Permalink to this definition">¶</a></dt>
+<dd><p>Assesses assembly compared to reference.</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>assembly_filepath (string): Path where the assembly is located
+reference_filepath (string): Path where the reference is located
+output_dir (string): Location for output files including report</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="claragenomics.wrappers.wrappers.RaconWrapper">
+<em class="property">class </em><code class="sig-prename descclassname">claragenomics.wrappers.wrappers.</code><code class="sig-name descname">RaconWrapper</code><span class="sig-paren">(</span><em class="sig-param">tool_path=None</em>, <em class="sig-param">gpu=False</em><span class="sig-paren">)</span><a class="headerlink" href="#claragenomics.wrappers.wrappers.RaconWrapper" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Wrapper class for Racon with GPU support.</p>
+<dl class="method">
+<dt id="claragenomics.wrappers.wrappers.RaconWrapper.polish">
+<code class="sig-name descname">polish</code><span class="sig-paren">(</span><em class="sig-param">reads_filepath</em>, <em class="sig-param">aligned_filepath</em>, <em class="sig-param">assembly_filepath</em>, <em class="sig-param">polished_filepath</em>, <em class="sig-param">extra_args='-m 8 -x -6 -g -8 -w 500 -t 12 -q -1'</em><span class="sig-paren">)</span><a class="headerlink" href="#claragenomics.wrappers.wrappers.RaconWrapper.polish" title="Permalink to this definition">¶</a></dt>
+<dd><p>Polishes with Racon.</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>reads_filepath (string): Path where the reads are located
+aligned_filepath (string): Path where the aligned reads are located
+assembly_filepath (string): Path where the assembled sequence is located
+polished_filepath (string): Path for the output polished sequence
+extra_args (string): Extra settings for Racon, e.g. scores, number of threads</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-claragenomics.wrappers">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-claragenomics.wrappers" title="Permalink to this headline">¶</a></h2>
+<p>init file for wrapper submodule.</p>
+</div>
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">Clara Genomics Analysis SDK</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2020, NVIDIA Corportation.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/claragenomics.wrappers.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
