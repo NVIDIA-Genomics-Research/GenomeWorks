@@ -8,8 +8,7 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-#include "cudapoa_kernels.cuh"
-
+#include "cudastructs.cuh"
 #include <claragenomics/utils/cudautils.hpp>
 
 #include <stdio.h>
@@ -321,7 +320,7 @@ __global__ void addAlignmentKernel(uint8_t* nodes,
 
 // Host function that calls the kernel
 template <typename SizeT>
-void addAlignmentTemplated(uint8_t* nodes,
+void addAlignment(uint8_t* nodes,
                            SizeT* node_count,
                            SizeT* node_alignments, uint16_t* node_alignment_count,
                            SizeT* incoming_edges, uint16_t* incoming_edge_count,

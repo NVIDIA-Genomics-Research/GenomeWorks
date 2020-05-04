@@ -8,7 +8,7 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-#include "cudapoa_kernels.cuh"
+#include "cudastructs.cuh"
 
 #include <claragenomics/utils/cudautils.hpp>
 
@@ -383,7 +383,7 @@ __global__ void generateConsensusTestKernel(uint8_t* nodes,
 }
 
 template <typename SizeT>
-void generateConsensusTemplated(uint8_t* nodes,
+void generateConsensusTestHost(uint8_t* nodes,
                                 int32_t node_count,
                                 SizeT* graph,
                                 SizeT* node_id_to_pos,

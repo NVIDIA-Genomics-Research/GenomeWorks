@@ -94,14 +94,13 @@ std::string testTopSortDeviceUtil(SizeT node_count, SizeTVec2D outgoing_edges_ve
     }
 
     // call the host wrapper of topsort kernel
-    runTopSort(sorted_poa,
+    runTopSort<SizeT>(sorted_poa,
                sorted_poa_node_map,
                node_count,
                incoming_edge_count,
                outgoing_edges,
                outgoing_edge_count,
-               local_incoming_edge_count,
-               false, BatchSize(node_count));
+               local_incoming_edge_count);
 
     CGA_CU_CHECK_ERR(cudaDeviceSynchronize());
 

@@ -164,7 +164,7 @@ public:
         std::string msg = " Launching kernel for " + std::to_string(poa_count_) + " on device ";
         print_batch_debug_message(msg);
 
-        claragenomics::cudapoa::generatePOA(output_details_d_,
+        claragenomics::cudapoa::generatePOA<ScoreT, SizeT>(output_details_d_,
                                             input_details_d_,
                                             poa_count_,
                                             stream_,

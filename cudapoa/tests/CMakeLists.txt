@@ -13,7 +13,7 @@ set(TARGET_NAME cudapoatests)
 set(SOURCES
     main.cpp
     Test_CudapoaBatch.cpp
-    Test_CudapoaTopSort.cpp
+    Test_CudapoaTopSort.cu
     Test_CudapoaAddAlignment.cpp
     Test_CudapoaNW.cpp
     Test_CudapoaGenerateConsensus.cpp

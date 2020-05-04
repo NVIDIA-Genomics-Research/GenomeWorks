@@ -8,7 +8,6 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-#include "cudapoa_kernels.cuh"
 #include "cudastructs.cuh"
 
 #include <claragenomics/utils/cudautils.hpp>

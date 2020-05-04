@@ -8,7 +8,7 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-#include "cudapoa_kernels.cuh"
+#include "cudastructs.cuh"
 
 #include <claragenomics/utils/cudautils.hpp>
 
@@ -205,7 +205,7 @@ __global__ void runTopSortKernel(SizeT* sorted_poa,
 
 // host function that calls runTopSortKernel
 template <typename SizeT>
-void runTopSortTemplated(SizeT* sorted_poa,
+void runTopSort(SizeT* sorted_poa,
                          SizeT* sorted_poa_node_map,
                          int32_t node_count,
                          uint16_t* incoming_edge_count,

@@ -8,7 +8,6 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-#include "cudapoa_kernels.cuh"
 #include "cudastructs.cuh"
 
 #include <claragenomics/utils/cudautils.hpp>
@@ -493,7 +492,7 @@ __global__ void runNeedlemanWunschKernel(uint8_t* nodes,
 
 // Host function that calls the kernel
 template <typename SizeT>
-void runNWtemplated(uint8_t* nodes,
+void runNW(uint8_t* nodes,
                     SizeT* graph,
                     SizeT* node_id_to_pos,
                     int32_t graph_count,
