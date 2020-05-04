@@ -26,7 +26,7 @@
 using namespace claragenomics;
 using namespace claragenomics::cudapoa;
 
-std::unique_ptr<Batch> initialize_batch(bool msa, const BatchSize& batch_size)
+std::unique_ptr<Batch> initialize_batch(bool msa, bool banded_alignment, const BatchSize& batch_size)
 {
     // Get device information.
     int32_t device_count = 0;
@@ -45,7 +45,6 @@ std::unique_ptr<Batch> initialize_batch(bool msa, const BatchSize& batch_size)
     cudaStream_t stream          = 0;
     size_t mem_per_batch         = 0.9 * free; // Using 90% of GPU available memory for CUDAPOA batch.
     const int32_t mismatch_score = -6, gap_score = -8, match_score = 8;
-    bool banded_alignment = false;
 
     std::unique_ptr<Batch> batch = create_batch(device_id,
                                                 stream,
@@ -149,11 +148,12 @@ int main(int argc, char** argv)
     int c            = 0;
     bool msa         = false;
     bool long_read   = false;
+    bool banded      = false;
     bool help        = false;
     bool print       = false;
     bool print_graph = false;
 
-    while ((c = getopt(argc, argv, "mlhpg")) != -1)
+    while ((c = getopt(argc, argv, "mlbpgh")) != -1)
     {
         switch (c)
         {
@@ -162,6 +162,9 @@ int main(int argc, char** argv)
             break;
         case 'l':
             long_read = true;
+            break;
+        case 'b':
+            banded = true;
             break;
         case 'p':
             print = true;
@@ -182,6 +185,7 @@ int main(int argc, char** argv)
         std::cout << "./sample_cudapoa [-m] [-h]" << std::endl;
         std::cout << "-m : Generate MSA (if not provided, generates consensus by default)" << std::endl;
         std::cout << "-l : Perform long-read sample (if not provided, will run short-read sample by default)" << std::endl;
+        std::cout << "-b : Perform banded alignment (if not provided, full alignment is used by default)" << std::endl;
         std::cout << "-p : Print the MSA or consensus output to stdout" << std::endl;
         std::cout << "-g : Print POA graph in dot format, this option is only for long-read sample" << std::endl;
         std::cout << "-h : Print help message" << std::endl;
@@ -208,7 +212,7 @@ int main(int argc, char** argv)
     }
 
     // Initialize batch.
-    std::unique_ptr<Batch> batch = initialize_batch(msa, batch_size);
+    std::unique_ptr<Batch> batch = initialize_batch(msa, banded, batch_size);
 
     // Loop over all the POA groups, add them to the batch and process them.
     int32_t window_count = 0;
