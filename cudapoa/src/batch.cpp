@@ -29,32 +29,45 @@ std::unique_ptr<Batch> create_batch(int32_t device_id,
                                     int16_t match_score,
                                     bool cuda_banded_alignment)
 {
-    // a decision flag to determine proper type definition for ScoreT
-    const bool use_32_bit_for_ScoreT = use32bitInt(batch_size, gap_score, mismatch_score, match_score);
-
-    if (use_32_bit_for_ScoreT)
+    if (use32bitScore(batch_size, gap_score, mismatch_score, match_score))
     {
-        return std::make_unique<CudapoaBatch<int32_t>>(device_id,
-                                                       stream,
-                                                       max_mem,
-                                                       output_mask,
-                                                       batch_size,
-                                                       (int32_t)gap_score,
-                                                       (int32_t)mismatch_score,
-                                                       (int32_t)match_score,
-                                                       cuda_banded_alignment);
+        if (use32bitSize(batch_size, cuda_banded_alignment))
+        {
+            return std::make_unique<CudapoaBatch<int32_t, int32_t>>(device_id,
+                                                                    stream,
+                                                                    max_mem,
+                                                                    output_mask,
+                                                                    batch_size,
+                                                                    (int32_t)gap_score,
+                                                                    (int32_t)mismatch_score,
+                                                                    (int32_t)match_score,
+                                                                    cuda_banded_alignment);
+        }
+        else
+        {
+            return std::make_unique<CudapoaBatch<int32_t, int16_t>>(device_id,
+                                                                    stream,
+                                                                    max_mem,
+                                                                    output_mask,
+                                                                    batch_size,
+                                                                    (int32_t)gap_score,
+                                                                    (int32_t)mismatch_score,
+                                                                    (int32_t)match_score,
+                                                                    cuda_banded_alignment);
+        }
     }
     else
     {
-        return std::make_unique<CudapoaBatch<int16_t>>(device_id,
-                                                       stream,
-                                                       max_mem,
-                                                       output_mask,
-                                                       batch_size,
-                                                       gap_score,
-                                                       mismatch_score,
-                                                       match_score,
-                                                       cuda_banded_alignment);
+        // if ScoreT is 16-bit, then it's safe to assume SizeT is 16-bit
+        return std::make_unique<CudapoaBatch<int16_t, int16_t>>(device_id,
+                                                                stream,
+                                                                max_mem,
+                                                                output_mask,
+                                                                batch_size,
+                                                                gap_score,
+                                                                mismatch_score,
+                                                                match_score,
+                                                                cuda_banded_alignment);
     }
 }
 

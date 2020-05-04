@@ -43,8 +43,8 @@ public:
 
     /// \brief Fetch an entry from the FASTA file by index position in file.
     /// \param sequence_id Position of sequence in file. If sequence_id is invalid an error is thrown.
-    /// \return A FastaSequence object describing the entry.
-    virtual FastaSequence get_sequence_by_id(read_id_t sequence_id) const = 0;
+    /// \return A reference to FastaSequence describing the entry.
+    virtual const FastaSequence& get_sequence_by_id(read_id_t sequence_id) const = 0;
 };
 
 /// \brief A builder function that returns a FASTA parser object which uses KSEQPP.
