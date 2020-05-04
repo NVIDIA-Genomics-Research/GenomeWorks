@@ -1,0 +1,9 @@
+var searchData=
+[
+  ['batch_16',['Batch',['../classclaragenomics_1_1cudapoa_1_1Batch.html',1,'claragenomics::cudapoa']]],
+  ['batch_5fid_17',['batch_id',['../classclaragenomics_1_1cudapoa_1_1Batch.html#ab807c4b01c2cddcdebb32952df13c0ec',1,'claragenomics::cudapoa::Batch']]],
+  ['batchsize_18',['BatchSize',['../structclaragenomics_1_1cudapoa_1_1BatchSize.html',1,'claragenomics::cudapoa::BatchSize'],['../structclaragenomics_1_1cudapoa_1_1BatchSize.html#ae240d1cebf0573dbf61c0a765f1336de',1,'claragenomics::cudapoa::BatchSize::BatchSize(int32_t max_seq_sz=1024, int32_t max_seq_per_poa=100)'],['../structclaragenomics_1_1cudapoa_1_1BatchSize.html#ac2de5ef4784b8053545c7fd4b0313f1d',1,'claragenomics::cudapoa::BatchSize::BatchSize(int32_t max_seq_sz, int32_t max_concensus_sz, int32_t max_nodes_per_w, int32_t max_nodes_per_w_banded, int32_t max_seq_per_poa)']]],
+  ['begin_19',['begin',['../classclaragenomics_1_1buffer.html#ad84dba6f9ae453774f4423763931f220',1,'claragenomics::buffer::begin()'],['../classclaragenomics_1_1buffer.html#a9e5230bbd48f0e62ddba31546f872596',1,'claragenomics::buffer::begin() const']]],
+  ['block_5fsize_5f_20',['block_size_',['../structclaragenomics_1_1cudamapper_1_1ArrayBlock.html#a33ff27afee2ddb07e6fbdda0ff1de229',1,'claragenomics::cudamapper::ArrayBlock']]],
+  ['buffer_21',['buffer',['../classclaragenomics_1_1buffer.html',1,'claragenomics::buffer&lt; T, Allocator &gt;'],['../classclaragenomics_1_1buffer.html#a60936eb915d052d919292379f51f3811',1,'claragenomics::buffer::buffer(size_type n=0, AllocatorIn allocator=AllocatorIn(), cudaStream_t stream=0)'],['../classclaragenomics_1_1buffer.html#a66b51829e64e0a05e2991ecefcd42004',1,'claragenomics::buffer::buffer(AllocatorIn allocator, cudaStream_t stream=0)'],['../classclaragenomics_1_1buffer.html#abdb1b53804b4b3e820b9dc79ec577db2',1,'claragenomics::buffer::buffer(buffer &amp;&amp;rhs)']]]
+];
