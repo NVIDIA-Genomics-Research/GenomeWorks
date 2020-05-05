@@ -13,5 +13,6 @@ networkx==2.4
 numpy==1.16.3
 pytest==4.4.1
 quast==5.0.2
+setuptools>=41.4.0
 sortedcollections==1.1.2
 tqdm==4.31.1
