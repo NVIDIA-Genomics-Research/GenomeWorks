@@ -238,20 +238,20 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
         if (cuda_banded_alignment)
         {
             alignment_length = runNeedlemanWunschBanded<uint8_t, ScoreT, SizeT>(nodes,
-                                                                                   sorted_poa,
-                                                                                   node_id_to_pos,
-                                                                                   sequence_lengths[0],
-                                                                                   incoming_edge_count,
-                                                                                   incoming_edges,
-                                                                                   outgoing_edge_count,
-                                                                                   sequence,
-                                                                                   seq_len,
-                                                                                   scores,
-                                                                                   alignment_graph,
-                                                                                   alignment_read,
-                                                                                   gap_score,
-                                                                                   mismatch_score,
-                                                                                   match_score);
+                                                                                sorted_poa,
+                                                                                node_id_to_pos,
+                                                                                sequence_lengths[0],
+                                                                                incoming_edge_count,
+                                                                                incoming_edges,
+                                                                                outgoing_edge_count,
+                                                                                sequence,
+                                                                                seq_len,
+                                                                                scores,
+                                                                                alignment_graph,
+                                                                                alignment_read,
+                                                                                gap_score,
+                                                                                mismatch_score,
+                                                                                match_score);
         }
         else
         {
@@ -1050,7 +1050,7 @@ void runTopSort(void* sorted_poa_void,
 
         runTopSortTemplated(sorted_poa,
                             sorted_poa_node_map,
-                            node_count,
+                            static_cast<int16_t>(node_count),
                             incoming_edge_count,
                             outgoing_edges,
                             outgoing_edge_count,
