@@ -1071,7 +1071,7 @@ bool use32bitScore(const BatchSize& batch_size, const int16_t gap_score, const i
 
 bool use32bitSize(const BatchSize& batch_size, bool banded)
 {
-    int32_t max_length = batch_size.max_concensus_size;
+    int32_t max_length = batch_size.max_consensus_size;
     if (banded)
     {
         max_length = std::max(max_length, batch_size.max_matrix_graph_dimension_banded);
