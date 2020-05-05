@@ -135,7 +135,7 @@ void generate_window_data(const std::string& input_file, const int number_of_win
     {
         for (auto& seq : window)
         {
-            max_read_length = std::max(max_read_length, get_size<int>(seq) + 1);
+            max_read_length = std::max(max_read_length, get_size<int>(seq));
         }
     }
 

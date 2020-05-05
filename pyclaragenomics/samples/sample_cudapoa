@@ -46,9 +46,6 @@ def run_cudapoa(groups, msa, print_output):
         seq_in_poa = len(group)
         max_sequences_per_poa = seq_in_poa if seq_in_poa > max_sequences_per_poa else max_sequences_per_poa
 
-    max_sequences_per_poa += 1
-    max_seq_sz += 1
-
     # Create batch
     batch = cudapoa.CudaPoaBatch(max_sequences_per_poa,
                                  max_seq_sz,
