@@ -999,7 +999,7 @@ void generateConsensusTestHost(uint8_t* nodes,
         auto* node_alignments = static_cast<int16_t*>(node_alignments_void);
 
         generateConsensusTemplated(nodes,
-                                   node_count,
+                                   static_cast<int16_t>(node_count),
                                    graph,
                                    node_id_to_pos,
                                    incoming_edges,
