@@ -233,7 +233,7 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
         }
 
         // Run Needleman-Wunsch alignment between graph and new sequence.
-        uint16_t alignment_length;
+        SizeT alignment_length;
 
         if (cuda_banded_alignment)
         {
@@ -781,7 +781,7 @@ void addAlignment(uint8_t* nodes,
                   void* incoming_edges_void, uint16_t* incoming_edge_count,
                   void* outgoing_edges_void, uint16_t* outgoing_edge_count,
                   uint16_t* incoming_edge_w, uint16_t* outgoing_edge_w,
-                  uint16_t* alignment_length,
+                  void* alignment_length_void,
                   void* graph_void,
                   void* alignment_graph_void,
                   uint8_t* read,
@@ -803,6 +803,7 @@ void addAlignment(uint8_t* nodes,
         auto* node_alignments          = static_cast<int32_t*>(node_alignments_void);
         auto* incoming_edges           = static_cast<int32_t*>(incoming_edges_void);
         auto* outgoing_edges           = static_cast<int32_t*>(outgoing_edges_void);
+        auto* alignment_length         = static_cast<int32_t*>(alignment_length_void);
         auto* graph                    = static_cast<int32_t*>(graph_void);
         auto* alignment_graph          = static_cast<int32_t*>(alignment_graph_void);
         auto* alignment_read           = static_cast<int32_t*>(alignment_read_void);
@@ -834,6 +835,7 @@ void addAlignment(uint8_t* nodes,
         auto* node_alignments          = static_cast<int16_t*>(node_alignments_void);
         auto* incoming_edges           = static_cast<int16_t*>(incoming_edges_void);
         auto* outgoing_edges           = static_cast<int16_t*>(outgoing_edges_void);
+        auto* alignment_length         = static_cast<int16_t*>(alignment_length_void);
         auto* graph                    = static_cast<int16_t*>(graph_void);
         auto* alignment_graph          = static_cast<int16_t*>(alignment_graph_void);
         auto* alignment_read           = static_cast<int16_t*>(alignment_read_void);
