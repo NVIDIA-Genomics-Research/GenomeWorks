@@ -210,7 +210,7 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
     __syncwarp();
 
     // Align each subsequent read, add alignment to graph, run topoligical sort.
-    for (uint16_t s = 1; s < num_sequences; s++)
+    for (SizeT s = 1; s < num_sequences; s++)
     {
         SizeT seq_len = sequence_lengths[s];
         sequence += sequence_lengths[s - 1];     // increment the pointer so it is pointing to correct sequence data
@@ -255,23 +255,23 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
         }
         else
         {
-            alignment_length = runNeedlemanWunsch<uint8_t, uint16_t, ScoreT, SizeT>(nodes,
-                                                                                    sorted_poa,
-                                                                                    node_id_to_pos,
-                                                                                    sequence_lengths[0],
-                                                                                    incoming_edge_count,
-                                                                                    incoming_edges,
-                                                                                    outgoing_edge_count,
-                                                                                    outoing_edges,
-                                                                                    sequence,
-                                                                                    seq_len,
-                                                                                    scores,
-                                                                                    scores_width,
-                                                                                    alignment_graph,
-                                                                                    alignment_read,
-                                                                                    gap_score,
-                                                                                    mismatch_score,
-                                                                                    match_score);
+            alignment_length = runNeedlemanWunsch<uint8_t, ScoreT, SizeT>(nodes,
+                                                                          sorted_poa,
+                                                                          node_id_to_pos,
+                                                                          sequence_lengths[0],
+                                                                          incoming_edge_count,
+                                                                          incoming_edges,
+                                                                          outgoing_edge_count,
+                                                                          outoing_edges,
+                                                                          sequence,
+                                                                          seq_len,
+                                                                          scores,
+                                                                          scores_width,
+                                                                          alignment_graph,
+                                                                          alignment_read,
+                                                                          gap_score,
+                                                                          mismatch_score,
+                                                                          match_score);
         }
 
         __syncwarp();
@@ -897,13 +897,13 @@ void runNW(uint8_t* nodes,
         runNWtemplated<int32_t>(nodes,
                                 graph,
                                 node_id_to_pos,
-                                graph_count,
+                                static_cast<int32_t>(graph_count),
                                 incoming_edge_count,
                                 incoming_edges,
                                 outgoing_edge_count,
                                 outgoing_edges,
                                 read,
-                                read_count,
+                                static_cast<int32_t>(read_count),
                                 scores,
                                 scores_width,
                                 alignment_graph,
@@ -926,13 +926,13 @@ void runNW(uint8_t* nodes,
         runNWtemplated<int16_t>(nodes,
                                 graph,
                                 node_id_to_pos,
-                                graph_count,
+                                static_cast<int16_t>(graph_count),
                                 incoming_edge_count,
                                 incoming_edges,
                                 outgoing_edge_count,
                                 outgoing_edges,
                                 read,
-                                read_count,
+                                static_cast<int16_t>(read_count),
                                 scores,
                                 scores_width,
                                 alignment_graph,

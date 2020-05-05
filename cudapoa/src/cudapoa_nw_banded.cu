@@ -461,7 +461,7 @@ __device__
             j = prev_j;
         }
 
-        /// ToDo replace INT16_MAX
+        /// ToDo replace UINT16_MAX
         if (loop_count >= (read_length + graph_count + 2))
         {
             aligned_nodes = UINT16_MAX;
