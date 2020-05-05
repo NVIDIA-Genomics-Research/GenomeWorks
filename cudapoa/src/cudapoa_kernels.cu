@@ -237,7 +237,7 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
 
         if (cuda_banded_alignment)
         {
-            alignment_length = runNeedlemanWunschBanded<uint8_t, uint16_t, ScoreT>(nodes,
+            alignment_length = runNeedlemanWunschBanded<uint8_t, ScoreT, SizeT>(nodes,
                                                                                    sorted_poa,
                                                                                    node_id_to_pos,
                                                                                    sequence_lengths[0],
