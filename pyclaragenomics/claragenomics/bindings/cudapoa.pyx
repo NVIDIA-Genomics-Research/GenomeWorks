@@ -192,8 +192,6 @@ cdef class CudaPoaBatch:
             entry.length = len(seq)
             poa_group.push_back(entry)
         status = deref(self.batch).add_poa_group(seq_status, poa_group)
-        if status != cudapoa.success and status != cudapoa.exceeded_maximum_poas:
-            raise RuntimeError("Could not add POA group: Error code " + status_to_str(status))
         return (status, seq_status)
 
     @property

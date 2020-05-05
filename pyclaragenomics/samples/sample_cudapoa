@@ -55,7 +55,7 @@ def run_cudapoa(groups, msa, print_output):
                                  gpu_mem_per_batch,
                                  stream=None,
                                  output_type=("msa" if msa else "consensus"),
-                                 banded=True)
+                                 cuda_banded_alignment=True)
 
     # Add poa groups to batch
     initial_count = 0
@@ -74,7 +74,7 @@ def run_cudapoa(groups, msa, print_output):
 
         # Otherwise print error.
         # Once batch is full or no groups are left, run POA processing.
-        if ((group_status == 1) or (poa_index == len(groups) - 1)):
+        if ((group_status == 1) or ((group_status == 0) and (poa_index == len(groups) - 1))):
             batch.generate_poa()
 
             if msa:

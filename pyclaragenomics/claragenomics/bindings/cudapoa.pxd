@@ -18,6 +18,13 @@ from libcpp.string cimport string
 from libc.stdint cimport int8_t, int16_t, uint16_t, int32_t
 from libcpp.vector cimport vector
 
+# NOTE: The mixup between Python bool type and C++ bool type leads to very nasty
+# bugs in cython. If the Python bool type is used in pxd file and a bool value is
+# supplied as arg to bingins, it's always interpreted as True. The libcpp bool object
+# handles bool values passthrough from Python -> C correctly, and therefore must always
+# be used.
+from libcpp cimport bool as c_bool
+
 from bindings.cuda_runtime_api cimport _Stream
 from bindings.graph cimport DirectedGraph
 
@@ -80,4 +87,4 @@ cdef extern from "claragenomics/cudapoa/batch.hpp" namespace "claragenomics::cud
 
     cdef unique_ptr[Batch] create_batch(int32_t, _Stream, size_t, int8_t,
                                         const BatchSize&, int16_t, int16_t,
-                                        int16_t, bool)
+                                        int16_t, c_bool)
