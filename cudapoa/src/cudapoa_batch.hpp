@@ -112,7 +112,7 @@ public:
 
         if (!reserve_buf(max_seq_length))
         {
-            return StatusType::exceeded_batch_size;
+            return StatusType::exceeded_maximum_poas;
         }
 
         // If matrix fits, see if a new poa group can be added.
@@ -148,6 +148,12 @@ public:
     void generate_poa()
     {
         scoped_device_switch dev(device_id_);
+
+        if (poa_count_ == 0)
+        {
+            print_batch_debug_message(" No POA was added to compute! ");
+            return;
+        }
 
         //Copy sequencecs, sequence lengths and window details to device
         CGA_CU_CHECK_ERR(cudaMemcpyAsync(input_details_d_->sequences, input_details_h_->sequences,
@@ -534,7 +540,7 @@ protected:
         int32_t max_graph_dimension = banded_alignment_ ? batch_size_.max_matrix_graph_dimension_banded : batch_size_.max_matrix_graph_dimension;
 
         int32_t scores_width = banded_alignment_ ? CUDAPOA_BANDED_MAX_MATRIX_SEQUENCE_DIMENSION : cudautils::align<int32_t, 4>(max_seq_length + 1 + CELLS_PER_THREAD);
-        size_t scores_size   = scores_width * max_graph_dimension * sizeof(ScoreT);
+        size_t scores_size   = static_cast<size_t>(scores_width) * static_cast<size_t>(max_graph_dimension) * sizeof(ScoreT);
 
         if (scores_size > avail_scorebuf_mem_)
         {

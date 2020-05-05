@@ -216,8 +216,7 @@ int main(int argc, char** argv)
 
     // Loop over all the POA groups, add them to the batch and process them.
     int32_t window_count = 0;
-    // to avoid potential infinite loop
-    int32_t error_count = 0;
+
     for (int32_t i = 0; i < get_size(windows);)
     {
         const std::vector<std::string>& window = windows[i];
@@ -238,35 +237,45 @@ int main(int argc, char** argv)
 
         // NOTE: If number of windows smaller than batch capacity, then run POA generation
         // once last window is added to batch.
-        if (status == StatusType::exceeded_maximum_poas || status == StatusType::exceeded_batch_size || (i == get_size(windows) - 1))
+        if (status == StatusType::exceeded_maximum_poas || (i == get_size(windows) - 1))
         {
-            // No more POA groups can be added to batch. Now process batch.
-            process_batch(batch.get(), msa, print);
-
-            if (print_graph && long_read)
+            // at least one POA should have been added before processing the batch
+            if (batch->get_total_poas() > 0)
             {
-                std::vector<DirectedGraph> graph;
-                std::vector<StatusType> graph_status;
-                batch->get_graphs(graph, graph_status);
-                for (auto& g : graph)
+                // No more POA groups can be added to batch. Now process batch.
+                process_batch(batch.get(), msa, print);
+
+                if (print_graph && long_read)
                 {
-                    std::cout << g.serialize_to_dot() << std::endl;
+                    std::vector<DirectedGraph> graph;
+                    std::vector<StatusType> graph_status;
+                    batch->get_graphs(graph, graph_status);
+                    for (auto& g : graph)
+                    {
+                        std::cout << g.serialize_to_dot() << std::endl;
+                    }
                 }
-            }
 
-            // After MSA/consensus is generated for batch, reset batch to make room for next set of POA groups.
-            batch->reset();
+                // After MSA/consensus is generated for batch, reset batch to make room for next set of POA groups.
+                batch->reset();
 
-            // In case that number of windows is more than the capacity available on GPU, the for loop breaks into smaller number of windows.
-            // if adding window i in batch->add_poa_group is not successful, it wont be processed in this iteration, therefore we print i-1
-            // to account for the fact that window i was excluded at this round.
-            if (status == StatusType::success)
-            {
-                std::cout << "Processed windows " << window_count << " - " << i << std::endl;
+                // In case that number of windows is more than the capacity available on GPU, the for loop breaks into smaller number of windows.
+                // if adding window i in batch->add_poa_group is not successful, it wont be processed in this iteration, therefore we print i-1
+                // to account for the fact that window i was excluded at this round.
+                if (status == StatusType::success)
+                {
+                    std::cout << "Processed windows " << window_count << " - " << i << std::endl;
+                }
+                else
+                {
+                    std::cout << "Processed windows " << window_count << " - " << i - 1 << std::endl;
+                }
             }
             else
             {
-                std::cout << "Processed windows " << window_count << " - " << i - 1 << std::endl;
+                // the POA was too large to be added to the GPU, skip and move on
+                std::cout << "Could not add POA group " << i << " to batch. Error code " << status << std::endl;
+                i++;
             }
 
             window_count = i;
@@ -285,12 +294,10 @@ int main(int argc, char** argv)
             i++;
         }
 
-        if (status != StatusType::exceeded_maximum_poas && status != StatusType::exceeded_batch_size && status != StatusType::success)
+        if (status != StatusType::exceeded_maximum_poas && status != StatusType::success)
         {
-            std::cerr << "Could not add POA group to batch. Error code " << status << std::endl;
-            error_count++;
-            if (error_count > get_size(windows))
-                break;
+            std::cout << "Could not add POA group " << i << " to batch. Error code " << status << std::endl;
+            i++;
         }
     }
 

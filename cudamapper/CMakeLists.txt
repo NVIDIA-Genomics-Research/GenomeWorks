@@ -20,6 +20,15 @@ if(NOT ${CUDA_FOUND})
 else()
     message(STATUS "Using CUDA ${CUDA_VERSION} from ${CUDA_TOOLKIT_ROOT_DIR}")
     set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -lineinfo --expt-extended-lambda -use_fast_math -Xcompiler -Wall,-Wno-pedantic -std=c++14")
+    # Determine arch flags
+    validate_boolean(cga_cuda_gen_all_arch)
+    if (cga_cuda_gen_all_arch)
+        CUDA_SELECT_NVCC_ARCH_FLAGS(ARCH_FLAGS "Common")
+    else()
+        CUDA_SELECT_NVCC_ARCH_FLAGS(ARCH_FLAGS "Auto")
+    endif()
+    set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} ${ARCH_FLAGS}")
+    message(STATUS "nvcc flags for cudamapper: ${CUDA_NVCC_FLAGS}")
 endif()
 
 cuda_add_library(cudamapper
