@@ -40,7 +40,7 @@ AlignerGlobalMyers::AlignerGlobalMyers(int32_t max_query_length, int32_t max_tar
     , workspace_()
 {
     scoped_device_switch dev(device_id);
-    workspace_ = std::make_unique<Workspace>(max_alignments, ceiling_divide<int32_t>(max_query_length, sizeof(myers::WordType)), max_target_length, allocator, stream);
+    workspace_ = std::make_unique<Workspace>(max_alignments, ceiling_divide<int32_t>(max_query_length, CHAR_BIT * sizeof(myers::WordType)), max_target_length, allocator, stream);
 }
 
 AlignerGlobalMyers::~AlignerGlobalMyers()
