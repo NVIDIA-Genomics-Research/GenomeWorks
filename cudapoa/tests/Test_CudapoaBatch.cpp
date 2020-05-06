@@ -124,7 +124,7 @@ TEST_F(TestCudapoaBatch, MaxSeqSizeTest)
     std::vector<StatusType> status;
     Entry e{};
 
-    int32_t seq_length = 1023;
+    int32_t seq_length = 1024;
     std::string seq(seq_length, 'A');
     std::vector<int8_t> weights(seq_length, 1);
     e.seq     = seq.c_str();
@@ -133,7 +133,7 @@ TEST_F(TestCudapoaBatch, MaxSeqSizeTest)
     poa_group.push_back(e);
 
     Entry e_2{};
-    seq_length        = 1024;
+    seq_length        = 1025;
     std::string seq_2 = std::string(seq_length, 'A');
     std::vector<int8_t> weights_2(seq_length, 1);
     e_2.seq     = seq_2.c_str();
