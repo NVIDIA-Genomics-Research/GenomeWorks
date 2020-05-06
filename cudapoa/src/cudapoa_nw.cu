@@ -67,8 +67,8 @@ __device__ __forceinline__
     // Instead it is better to load a 4B or 8B chunk into a register
     // using a single load inst, and then extracting necessary part of
     // of the data using bit arithmatic. Also reduces register count.
-
-    ScoreT4<ScoreT>* pred_scores = (ScoreT4<ScoreT>*)&scores[pred_idx * scores_width];
+    int64_t score_index = static_cast<int64_t>(pred_idx) * static_cast<int64_t>(scores_width);
+    ScoreT4<ScoreT>* pred_scores = (ScoreT4<ScoreT>*)&scores[score_index];
 
     // loads 8 consecutive bytes (4 shorts)
     ScoreT4<ScoreT> score4 = pred_scores[rIdx];
@@ -92,7 +92,8 @@ __device__ __forceinline__
     {
         SizeT pred_idx = node_id_to_pos[incoming_edges[gIdx * CUDAPOA_MAX_NODE_EDGES + p]] + 1;
 
-        ScoreT4<ScoreT>* pred_scores = (ScoreT4<ScoreT>*)&scores[pred_idx * scores_width];
+        score_index = static_cast<int64_t>(pred_idx) * static_cast<int64_t>(scores_width);
+        ScoreT4<ScoreT>* pred_scores = (ScoreT4<ScoreT>*)&scores[score_index];
 
         // Reasoning for 8B preload same as above.
         ScoreT4<ScoreT> score4      = pred_scores[rIdx];
@@ -164,6 +165,8 @@ __device__
 
     int16_t lane_idx = threadIdx.x % WARP_SIZE;
 
+    int64_t score_index;
+
     // Init horizonal boundary conditions (read).
     for (SizeT j = lane_idx; j < read_length + 1; j += WARP_SIZE)
     {
@@ -175,7 +178,6 @@ __device__
 #ifdef NW_VERBOSE_PRINT
         printf("graph %d, read %d\n", graph_count, read_length);
 #endif
-
         // Init vertical boundary (graph).
         for (SizeT graph_pos = 0; graph_pos < graph_count; graph_pos++)
         {
@@ -184,7 +186,8 @@ __device__
             uint16_t pred_count = incoming_edge_count[node_id];
             if (pred_count == 0)
             {
-                scores[i * scores_width] = gap_score;
+                score_index = static_cast<int64_t>(i) * static_cast<int64_t>(scores_width);
+                scores[score_index] = gap_score;
             }
             else
             {
@@ -193,9 +196,11 @@ __device__
                 {
                     SizeT pred_node_id        = incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES + p];
                     SizeT pred_node_graph_pos = node_id_to_pos[pred_node_id] + 1;
-                    penalty                   = max(penalty, scores[pred_node_graph_pos * scores_width]);
+                    score_index = static_cast<int64_t>(pred_node_graph_pos) * static_cast<int64_t>(scores_width);
+                    penalty                   = max(penalty, scores[score_index]);
                 }
-                scores[i * scores_width] = penalty + gap_score;
+                score_index = static_cast<int64_t>(i) * static_cast<int64_t>(scores_width);
+                scores[score_index] = penalty + gap_score;
             }
         }
     }
@@ -215,7 +220,8 @@ __device__
         SizeT node_id    = graph[graph_pos]; // node id for the graph node
         SizeT score_gIdx = graph_pos + 1;    // score matrix index for this graph node
 
-        ScoreT first_element_prev_score = scores[score_gIdx * scores_width];
+        score_index = static_cast<int64_t>(score_gIdx) * static_cast<int64_t>(scores_width);
+        ScoreT first_element_prev_score = scores[score_index];
 
         uint16_t pred_count = incoming_edge_count[node_id];
 
@@ -303,12 +309,13 @@ __device__
             first_element_prev_score = __shfl_sync(FULL_MASK, score.s3, WARP_SIZE - 1);
 
             // Index into score matrix.
+            score_index = static_cast<int64_t>(score_gIdx) * static_cast<int64_t>(scores_width) + static_cast<int64_t>(read_pos);
             if (read_pos < read_length)
             {
-                scores[score_gIdx * scores_width + read_pos + 1] = score.s0;
-                scores[score_gIdx * scores_width + read_pos + 2] = score.s1;
-                scores[score_gIdx * scores_width + read_pos + 3] = score.s2;
-                scores[score_gIdx * scores_width + read_pos + 4] = score.s3;
+                scores[score_index + 1L] = score.s0;
+                scores[score_index + 2L] = score.s1;
+                scores[score_index + 3L] = score.s2;
+                scores[score_index + 4L] = score.s3;
             }
             __syncwarp();
         }
@@ -326,7 +333,8 @@ __device__
         {
             if (outgoing_edge_count[graph[idx - 1]] == 0)
             {
-                ScoreT s = scores[idx * scores_width + j];
+                score_index = static_cast<int64_t>(idx) * static_cast<int64_t>(scores_width) + static_cast<int64_t>(j);
+                ScoreT s = scores[score_index];
                 if (mscore < s)
                 {
                     mscore = s;
@@ -349,7 +357,8 @@ __device__
         while (!(i == 0 && j == 0) && loop_count < static_cast<int32_t>(read_length + graph_count + 2))
         {
             loop_count++;
-            ScoreT scores_ij = scores[i * scores_width + j];
+            score_index = static_cast<int64_t>(i) * static_cast<int64_t>(scores_width) + static_cast<int64_t>(j);
+            ScoreT scores_ij = scores[score_index];
             bool pred_found  = false;
 
             // Check if move is diagonal.
@@ -360,7 +369,8 @@ __device__
                 uint16_t pred_count = incoming_edge_count[node_id];
                 SizeT pred_i        = (pred_count == 0 ? 0 : (node_id_to_pos[incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES]] + 1));
 
-                if (scores_ij == (scores[pred_i * scores_width + (j - 1)] + match_cost))
+                score_index = static_cast<int64_t>(pred_i) * static_cast<int64_t>(scores_width) + static_cast<int64_t>(j - 1);
+                if (scores_ij == (scores[score_index] + match_cost))
                 {
                     prev_i     = pred_i;
                     prev_j     = j - 1;
@@ -373,7 +383,8 @@ __device__
                     {
                         pred_i = (node_id_to_pos[incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES + p]] + 1);
 
-                        if (scores_ij == (scores[pred_i * scores_width + (j - 1)] + match_cost))
+                        score_index = static_cast<int64_t>(pred_i) * static_cast<int64_t>(scores_width) + static_cast<int64_t>(j - 1);
+                        if (scores_ij == (scores[score_index] + match_cost))
                         {
                             prev_i     = pred_i;
                             prev_j     = j - 1;
@@ -391,7 +402,8 @@ __device__
                 uint16_t pred_count = incoming_edge_count[node_id];
                 SizeT pred_i        = (pred_count == 0 ? 0 : node_id_to_pos[incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES]] + 1);
 
-                if (scores_ij == scores[pred_i * scores_width + j] + gap_score)
+                score_index = static_cast<int64_t>(pred_i) * static_cast<int64_t>(scores_width) + static_cast<int64_t>(j);
+                if (scores_ij == scores[score_index] + gap_score)
                 {
                     prev_i     = pred_i;
                     prev_j     = j;
@@ -404,7 +416,8 @@ __device__
                     {
                         pred_i = node_id_to_pos[incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES + p]] + 1;
 
-                        if (scores_ij == scores[pred_i * scores_width + j] + gap_score)
+                        score_index = static_cast<int64_t>(pred_i) * static_cast<int64_t>(scores_width) + static_cast<int64_t>(j);
+                        if (scores_ij == scores[score_index] + gap_score)
                         {
                             prev_i     = pred_i;
                             prev_j     = j;
@@ -416,7 +429,8 @@ __device__
             }
 
             // Check if move is horizontal.
-            if (!pred_found && scores_ij == scores[i * scores_width + (j - 1)] + gap_score)
+            score_index = static_cast<int64_t>(i) * static_cast<int64_t>(scores_width) + static_cast<int64_t>(j - 1);
+            if (!pred_found && scores_ij == scores[score_index] + gap_score)
             {
                 prev_i     = i;
                 prev_j     = j - 1;
