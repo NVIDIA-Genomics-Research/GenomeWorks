@@ -67,7 +67,7 @@ __device__ __forceinline__
     // Instead it is better to load a 4B or 8B chunk into a register
     // using a single load inst, and then extracting necessary part of
     // of the data using bit arithmatic. Also reduces register count.
-    int64_t score_index = static_cast<int64_t>(pred_idx) * static_cast<int64_t>(scores_width);
+    int64_t score_index          = static_cast<int64_t>(pred_idx) * static_cast<int64_t>(scores_width);
     ScoreT4<ScoreT>* pred_scores = (ScoreT4<ScoreT>*)&scores[score_index];
 
     // loads 8 consecutive bytes (4 shorts)
@@ -92,7 +92,7 @@ __device__ __forceinline__
     {
         SizeT pred_idx = node_id_to_pos[incoming_edges[gIdx * CUDAPOA_MAX_NODE_EDGES + p]] + 1;
 
-        score_index = static_cast<int64_t>(pred_idx) * static_cast<int64_t>(scores_width);
+        score_index                  = static_cast<int64_t>(pred_idx) * static_cast<int64_t>(scores_width);
         ScoreT4<ScoreT>* pred_scores = (ScoreT4<ScoreT>*)&scores[score_index];
 
         // Reasoning for 8B preload same as above.
@@ -186,7 +186,7 @@ __device__
             uint16_t pred_count = incoming_edge_count[node_id];
             if (pred_count == 0)
             {
-                score_index = static_cast<int64_t>(i) * static_cast<int64_t>(scores_width);
+                score_index         = static_cast<int64_t>(i) * static_cast<int64_t>(scores_width);
                 scores[score_index] = gap_score;
             }
             else
@@ -196,10 +196,10 @@ __device__
                 {
                     SizeT pred_node_id        = incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES + p];
                     SizeT pred_node_graph_pos = node_id_to_pos[pred_node_id] + 1;
-                    score_index = static_cast<int64_t>(pred_node_graph_pos) * static_cast<int64_t>(scores_width);
+                    score_index               = static_cast<int64_t>(pred_node_graph_pos) * static_cast<int64_t>(scores_width);
                     penalty                   = max(penalty, scores[score_index]);
                 }
-                score_index = static_cast<int64_t>(i) * static_cast<int64_t>(scores_width);
+                score_index         = static_cast<int64_t>(i) * static_cast<int64_t>(scores_width);
                 scores[score_index] = penalty + gap_score;
             }
         }
@@ -220,7 +220,7 @@ __device__
         SizeT node_id    = graph[graph_pos]; // node id for the graph node
         SizeT score_gIdx = graph_pos + 1;    // score matrix index for this graph node
 
-        score_index = static_cast<int64_t>(score_gIdx) * static_cast<int64_t>(scores_width);
+        score_index                     = static_cast<int64_t>(score_gIdx) * static_cast<int64_t>(scores_width);
         ScoreT first_element_prev_score = scores[score_index];
 
         uint16_t pred_count = incoming_edge_count[node_id];
@@ -334,7 +334,7 @@ __device__
             if (outgoing_edge_count[graph[idx - 1]] == 0)
             {
                 score_index = static_cast<int64_t>(idx) * static_cast<int64_t>(scores_width) + static_cast<int64_t>(j);
-                ScoreT s = scores[score_index];
+                ScoreT s    = scores[score_index];
                 if (mscore < s)
                 {
                     mscore = s;
@@ -357,7 +357,7 @@ __device__
         while (!(i == 0 && j == 0) && loop_count < static_cast<int32_t>(read_length + graph_count + 2))
         {
             loop_count++;
-            score_index = static_cast<int64_t>(i) * static_cast<int64_t>(scores_width) + static_cast<int64_t>(j);
+            score_index      = static_cast<int64_t>(i) * static_cast<int64_t>(scores_width) + static_cast<int64_t>(j);
             ScoreT scores_ij = scores[score_index];
             bool pred_found  = false;
 
