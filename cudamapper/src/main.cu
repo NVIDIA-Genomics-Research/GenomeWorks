@@ -17,6 +17,8 @@
 #include <thread>
 #include <atomic>
 
+#include <omp.h>
+
 #include <claragenomics/utils/cudautils.hpp>
 #include <claragenomics/utils/signed_integer_utils.hpp>
 #include <claragenomics/utils/threadsafe_containers.hpp>
@@ -345,6 +347,9 @@ void worker_thread_function(const std::int32_t device_id,
 {
     // This function is expected to run in a separate thread so set current device in order to avoid problems
     CGA_CU_CHECK_ERR(cudaSetDevice(device_id));
+
+    // divide OMP threads among GPU-controlling threads
+    omp_set_num_threads(omp_get_max_threads() / application_parameters.num_devices);
 
     // create host_cache, data is not loaded at this point but later as each batch gets processed
     auto host_cache = std::make_shared<IndexCacheHost>(application_parameters.all_to_all,
