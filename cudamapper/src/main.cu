@@ -191,10 +191,12 @@ struct OverlapsAndCigars
 /// \param device_cache data will be loaded into cache within the function
 /// \param application_parameters
 /// \param overlaps_and_cigars_to_write overlaps and cigars are output here
+/// \param cuda_stream
 void process_one_device_batch(const IndexBatch& device_batch,
                               IndexCacheDevice& device_cache,
                               const ApplicationParameters& application_parameters,
-                              ThreadsafeProducerConsumer<OverlapsAndCigars>& overlaps_and_cigars_to_write)
+                              ThreadsafeProducerConsumer<OverlapsAndCigars>& overlaps_and_cigars_to_write,
+                              cudaStream_t cuda_stream)
 {
     const std::vector<IndexDescriptor>& query_index_descriptors  = device_batch.query_indices;
     const std::vector<IndexDescriptor>& target_index_descriptors = device_batch.target_indices;
@@ -217,10 +219,12 @@ void process_one_device_batch(const IndexBatch& device_batch,
                 // find anchors and overlaps
                 auto matcher = Matcher::create_matcher(application_parameters.allocator,
                                                        *query_index,
-                                                       *target_index);
+                                                       *target_index,
+                                                       cuda_stream);
 
                 std::vector<Overlap> overlaps;
-                OverlapperTriggered overlapper(application_parameters.allocator);
+                OverlapperTriggered overlapper(application_parameters.allocator,
+                                               cuda_stream);
                 overlapper.get_overlaps(overlaps,
                                         matcher->anchors(),
                                         application_parameters.min_residues,
@@ -258,11 +262,13 @@ void process_one_device_batch(const IndexBatch& device_batch,
 /// \param host_cache data will be loaded into cache within the function
 /// \param device_cache data will be loaded into cache within the function
 /// \param overlaps_and_cigars_to_write overlaps and cigars are output here
+/// \param cuda_stream
 void process_one_batch(const BatchOfIndices& batch,
                        const ApplicationParameters& application_parameters,
                        IndexCacheHost& host_cache,
                        IndexCacheDevice& device_cache,
-                       ThreadsafeProducerConsumer<OverlapsAndCigars>& overlaps_and_cigars_to_write)
+                       ThreadsafeProducerConsumer<OverlapsAndCigars>& overlaps_and_cigars_to_write,
+                       cudaStream_t cuda_stream)
 {
     const IndexBatch& host_batch                  = batch.host_batch;
     const std::vector<IndexBatch>& device_batches = batch.device_batches;
@@ -279,7 +285,8 @@ void process_one_batch(const BatchOfIndices& batch,
         process_one_device_batch(device_batch,
                                  device_cache,
                                  application_parameters,
-                                 overlaps_and_cigars_to_write);
+                                 overlaps_and_cigars_to_write,
+                                 cuda_stream);
     }
 }
 
@@ -329,10 +336,12 @@ void writer_thread_function(const std::int32_t device_id,
 /// \param batches_of_indices
 /// \param application_parameters
 /// \param output_mutex
+/// \param cuda_stream
 void worker_thread_function(const std::int32_t device_id,
                             ThreadsafeDataProvider<BatchOfIndices>& batches_of_indices,
                             const ApplicationParameters& application_parameters,
-                            std::mutex& output_mutex)
+                            std::mutex& output_mutex,
+                            cudaStream_t cuda_stream)
 {
     // This function is expected to run in a separate thread so set current device in order to avoid problems
     CGA_CU_CHECK_ERR(cudaSetDevice(device_id));
@@ -345,7 +354,8 @@ void worker_thread_function(const std::int32_t device_id,
                                                        application_parameters.kmer_size,
                                                        application_parameters.windows_size,
                                                        true, // hash_representations
-                                                       application_parameters.filtering_parameter);
+                                                       application_parameters.filtering_parameter,
+                                                       cuda_stream);
 
     // create host_cache, data is not loaded at this point but later as each batch gets processed
     IndexCacheDevice device_cache(application_parameters.all_to_all,
@@ -371,7 +381,8 @@ void worker_thread_function(const std::int32_t device_id,
                           application_parameters,
                           *host_cache,
                           device_cache,
-                          overlaps_and_cigars_to_write);
+                          overlaps_and_cigars_to_write,
+                          cuda_stream);
 
         batch_of_indices = batches_of_indices.get_next_element();
     }
@@ -380,6 +391,9 @@ void worker_thread_function(const std::int32_t device_id,
     overlaps_and_cigars_to_write.signal_pushed_last_element();
 
     writer_thread.join();
+
+    // by this point all GPU work should anyway be done as writer_thread also finished and all GPU work had to be done before last values could be written
+    CGA_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
 }
 
 } // namespace
@@ -404,22 +418,28 @@ int main(int argc, char* argv[])
                                                                                           parameters.target_index_size * 1'000'000, // value was in MB
                                                                                           parameters.all_to_all));
 
+    // explicitly assign one stream to each GPU
+    std::vector<cudaStream_t> cuda_streams(parameters.num_devices);
+
     // create worker threads (one thread per device)
     // these thread process batches_of_indices one by one
     std::vector<std::thread> worker_threads;
     for (std::int32_t device_id = 0; device_id < parameters.num_devices; ++device_id)
     {
+        CGA_CU_CHECK_ERR(cudaStreamCreate(&cuda_streams[device_id]));
         worker_threads.emplace_back(worker_thread_function,
                                     device_id,
                                     std::ref(batches_of_indices),
                                     std::ref(parameters),
-                                    std::ref(output_mutex));
+                                    std::ref(output_mutex),
+                                    cuda_streams[device_id]);
     }
 
     // wait for all work to be done
-    for (std::thread& worker_thread : worker_threads)
+    for (std::int32_t device_id = 0; device_id < parameters.num_devices; ++device_id)
     {
-        worker_thread.join();
+        worker_threads[device_id].join();
+        CGA_CU_CHECK_ERR(cudaStreamDestroy(cuda_streams[device_id])); // no need to sync, it should be done at the end of worker_threads
     }
 
     return 0;
