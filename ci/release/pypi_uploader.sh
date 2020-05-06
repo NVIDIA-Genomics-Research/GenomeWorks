@@ -31,13 +31,14 @@ for f in ${WORKSPACE}/pyclaragenomics/pyclaragenomics_wheel/*.whl; do
         exit 1
     else
         conda install -c conda-forge twine
+        python3 -m pip install 'readme-renderer>=21.0' # to support py3.5 images
         # Change .whl package name to support PyPI
         CUDA_VERSION=$(cat /usr/local/cuda/version.txt | cut -d" " -f3 | cut -d"." -f1-2 | sed -e "s/\./_/g")
         MODIFIED_WHL_NAME=$(dirname ${f})/$(basename ${f} | sed -r "s/(pyclaragenomics)(-.+-.+)-.+-.+.whl/\1_cuda_${CUDA_VERSION}\2-none-any.whl/") 
         mv ${f} ${MODIFIED_WHL_NAME}
         echo "File name ${f} was changed into ${MODIFIED_WHL_NAME}"
         # Perform Upload
-        python3 -m twine upload --skip-existing --repository-url https://test.pypi.org/legacy/ ${WORKSPACE}/pyclaragenomics/pyclaragenomics_wheel/
+        python3 -m twine upload --skip-existing --repository-url https://test.pypi.org/legacy/ ${WORKSPACE}/pyclaragenomics/pyclaragenomics_wheel/*
     fi
 done
 
