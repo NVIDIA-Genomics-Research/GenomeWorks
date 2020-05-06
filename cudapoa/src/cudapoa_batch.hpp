@@ -485,7 +485,7 @@ protected:
     // Add sequence to last partial order alignment.
     StatusType add_seq_to_poa(const char* seq, const int8_t* weights, int32_t seq_len)
     {
-        if (seq_len >= (int32_t)batch_size_.max_sequence_size)
+        if (seq_len > (int32_t)batch_size_.max_sequence_size)
         {
             return StatusType::exceeded_maximum_sequence_size;
         }
