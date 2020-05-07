@@ -184,4 +184,4 @@ bash ci/local/build.sh -r <ClaraGenomicsAnalysis repo path> -i gpuci/clara-genom
 
 ## pyclaragenomics 
 The python API for the Clara Genomics Analysis SDK is available through the `pyclaragenomics` package. More details
-on how to use and develop `pyclaragenomics` can be found in the [pyclaragenomics README](pyclaragenomics/README.md).
+on how to use and develop `pyclaragenomics` can be found in the README under `pyclaragenomics` folder.
