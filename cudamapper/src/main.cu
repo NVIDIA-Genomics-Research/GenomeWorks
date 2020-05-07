@@ -354,7 +354,7 @@ void worker_thread_function(const std::int32_t device_id,
     // divide OMP threads among GPU-controlling threads
     omp_set_num_threads(omp_get_max_threads() / application_parameters.num_devices);
 
-    DefaultDeviceAllocator device_allocator = get_device_allocator(application_parameters.max_cached_memory);
+    DefaultDeviceAllocator device_allocator = get_device_allocator(application_parameters.max_cached_memory_bytes);
 
     // create host_cache, data is not loaded at this point but later as each batch gets processed
     auto host_cache = std::make_shared<IndexCacheHost>(application_parameters.all_to_all,
