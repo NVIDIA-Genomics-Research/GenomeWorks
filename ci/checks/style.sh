@@ -40,7 +40,7 @@ logger "Run Copyright header check..."
 
 # Python
 logger "Run Python/Cython formatting check..."
-python -m pip install -r ./ci/checks/python-style-requirements.txt
+python -m pip install -r ./pyclaragenomics/python-style-requirements.txt
 source pyclaragenomics/style_check
 
 # C++

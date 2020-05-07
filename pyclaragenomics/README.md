@@ -67,15 +67,8 @@ NOTE: `pyclaragenomics` needs to be built completely in order for the
 documentation to pick up docstrings for bindings.
 
 ```
-pip install -r ../ci/checks/python-style-requirements.txt
-mkdir docs; cd docs
-sphinx-quickstart -p "Clara Genomics Analysis SDK" -v "x.y.z" -a "NVIDIA Corportation" -q --ext-autodoc --sep
-##### Update sphinx conf.py with path for modules
-sed -i '1s@^@import sys \n@' source/conf.py
-sed -i '2s@^@sys.path.insert\(0, "'$PWD'/.."\) \n@' source/conf.py
-#####
-sphinx-apidoc --implicit-namespaces -f -o source/ ../claragenomics/ ../claragenomics/bindings/*cpython* ../claragenomics/shared_libs
-make html
+pip install -r python-style-requirements.txt
+./generate_docs
 ```
 
 ### Code Formatting
@@ -86,7 +79,7 @@ CI system for Clara Genomics Analysis run `flake8` to check the style.
 To run style check manually, simply run the following from the top level folder.
 
 ```
-pip install -r ../ci/checks/python-style-requirements.txt
+pip install -r python-style-requirements.txt
 ./style_check
 ```
 
