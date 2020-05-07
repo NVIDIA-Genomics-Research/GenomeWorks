@@ -167,9 +167,9 @@ cdef class CudaPoaBatch:
         Args:
             poas : List of POA groups. Each group is a list of
                    sequences.
-                   e.g. [["ACTG", "ATCG"], <--- Group 1
-                         ["GCTA", "GACT", "ACGTC"] <--- Group 2
-                        ]
+                   e.g.
+                   [["ACTG", "ATCG"], <--- Group 1
+                   ["GCTA", "GACT", "ACGTC"]] <--- Group 2
                    Throws exception if error is encountered while
                    adding POA groups.
         """
