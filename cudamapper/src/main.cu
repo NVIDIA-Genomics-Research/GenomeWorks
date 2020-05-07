@@ -431,6 +431,7 @@ int main(int argc, char* argv[])
     std::vector<std::thread> worker_threads;
     for (std::int32_t device_id = 0; device_id < parameters.num_devices; ++device_id)
     {
+        CGA_CU_CHECK_ERR(cudaSetDevice(device_id));
         CGA_CU_CHECK_ERR(cudaStreamCreate(&cuda_streams[device_id]));
         worker_threads.emplace_back(worker_thread_function,
                                     device_id,
@@ -443,6 +444,7 @@ int main(int argc, char* argv[])
     // wait for all work to be done
     for (std::int32_t device_id = 0; device_id < parameters.num_devices; ++device_id)
     {
+        CGA_CU_CHECK_ERR(cudaSetDevice(device_id));
         worker_threads[device_id].join();
         CGA_CU_CHECK_ERR(cudaStreamDestroy(cuda_streams[device_id])); // no need to sync, it should be done at the end of worker_threads
     }
