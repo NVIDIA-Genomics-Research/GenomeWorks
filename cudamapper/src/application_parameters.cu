@@ -147,8 +147,6 @@ ApplicationParameters::ApplicationParameters(int argc, char* argv[])
     }
 
     get_input_parsers(query_parser, target_parser);
-
-    allocator = get_device_allocator(max_cached_memory);
 }
 
 void ApplicationParameters::get_input_parsers(std::shared_ptr<io::FastaParser>& query_parser,
@@ -170,38 +168,6 @@ void ApplicationParameters::get_input_parsers(std::shared_ptr<io::FastaParser>& 
 
     std::cerr << "Query file: " << query_filepath << ", number of reads: " << query_parser->get_num_seqences() << std::endl;
     std::cerr << "Target file: " << target_filepath << ", number of reads: " << target_parser->get_num_seqences() << std::endl;
-}
-
-/// \brief crated a device allocator
-/// \param max_cached_memory in GiB, ignored if not using CGA_ENABLE_CACHING_ALLOCATOR
-/// \return device allocator
-DefaultDeviceAllocator ApplicationParameters::get_device_allocator(const std::int32_t max_cached_memory)
-{
-#ifdef CGA_ENABLE_CACHING_ALLOCATOR
-    // uses CachingDeviceAllocator
-    std::size_t max_cached_bytes = 0;
-    if (max_cached_memory == 0)
-    {
-        std::cerr << "Programmatically looking for max cached memory" << std::endl;
-        max_cached_bytes = cudautils::find_largest_contiguous_device_memory_section();
-
-        if (max_cached_bytes == 0)
-        {
-            std::cerr << "No memory available for caching" << std::endl;
-            exit(1);
-        }
-    }
-    else
-    {
-        max_cached_bytes = max_cached_memory * 1024ull * 1024ull * 1024ull; // max_cached_memory is in GiB
-    }
-
-    std::cerr << "Using device memory cache of " << max_cached_bytes << " bytes" << std::endl;
-    return {max_cached_bytes};
-#else
-    // uses CudaMallocAllocator
-    return {};
-#endif
 }
 
 void ApplicationParameters::help(int32_t exit_code)

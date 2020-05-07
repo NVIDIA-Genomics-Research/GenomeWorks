@@ -14,6 +14,7 @@
 #include <vector>
 
 #include <claragenomics/cudamapper/types.hpp>
+#include <claragenomics/utils/allocator.hpp>
 
 namespace claragenomics
 {
@@ -39,6 +40,11 @@ void print_paf(const std::vector<Overlap>& overlaps,
                const io::FastaParser& target_parser,
                std::int32_t kmer_size,
                std::mutex& write_output_mutex);
+
+/// \brief crated a device allocator
+/// \param max_cached_memory in GiB, ignored if not using CGA_ENABLE_CACHING_ALLOCATOR
+/// \return device allocator
+DefaultDeviceAllocator get_device_allocator(const std::int32_t max_cached_memory);
 
 } // namespace cudamapper
 } // namespace claragenomics

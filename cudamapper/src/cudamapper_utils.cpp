@@ -11,6 +11,7 @@
 #include "cudamapper_utils.hpp"
 
 #include <cassert>
+#include <iostream>
 
 #include <omp.h>
 
@@ -98,6 +99,35 @@ void print_paf(const std::vector<Overlap>& overlaps,
         std::lock_guard<std::mutex> lg(write_output_mutex);
         printf("%s", buffer.data());
     }
+}
+
+DefaultDeviceAllocator get_device_allocator(const std::int32_t max_cached_memory)
+{
+#ifdef CGA_ENABLE_CACHING_ALLOCATOR
+    // uses CachingDeviceAllocator
+    std::size_t max_cached_bytes = 0;
+    if (max_cached_memory == 0)
+    {
+        std::cerr << "Programmatically looking for max cached memory" << std::endl;
+        max_cached_bytes = cudautils::find_largest_contiguous_device_memory_section();
+
+        if (max_cached_bytes == 0)
+        {
+            std::cerr << "No memory available for caching" << std::endl;
+            exit(1);
+        }
+    }
+    else
+    {
+        max_cached_bytes = max_cached_memory * 1024ull * 1024ull * 1024ull; // max_cached_memory is in GiB
+    }
+
+    std::cerr << "Using device memory cache of " << max_cached_bytes << " bytes" << std::endl;
+    return {max_cached_bytes};
+#else
+    // uses CudaMallocAllocator
+    return {};
+#endif
 }
 
 } // namespace cudamapper

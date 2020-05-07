@@ -53,7 +53,6 @@ public:
     std::string target_filepath;
     std::shared_ptr<io::FastaParser> query_parser;
     std::shared_ptr<io::FastaParser> target_parser;
-    DefaultDeviceAllocator allocator;
 
 private:
     /// \brief gets query and target parsers
@@ -61,11 +60,6 @@ private:
     /// \param target_parser nullptr on input, target parser on output
     void get_input_parsers(std::shared_ptr<io::FastaParser>& query_parser,
                            std::shared_ptr<io::FastaParser>& target_parser);
-
-    /// \brief crated a device allocator
-    /// \param max_cached_memory in GiB, ignored if not using CGA_ENABLE_CACHING_ALLOCATOR
-    /// \return device allocator
-    DefaultDeviceAllocator get_device_allocator(const std::int32_t max_cached_memory);
 
     /// @brief prints help message
     /// @param exit_code

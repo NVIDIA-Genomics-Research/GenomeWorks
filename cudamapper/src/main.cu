@@ -197,6 +197,7 @@ struct OverlapsAndCigars
 void process_one_device_batch(const IndexBatch& device_batch,
                               IndexCacheDevice& device_cache,
                               const ApplicationParameters& application_parameters,
+                              DefaultDeviceAllocator device_allocator,
                               ThreadsafeProducerConsumer<OverlapsAndCigars>& overlaps_and_cigars_to_write,
                               cudaStream_t cuda_stream)
 {
@@ -219,13 +220,13 @@ void process_one_device_batch(const IndexBatch& device_batch,
                 std::shared_ptr<Index> target_index = device_cache.get_index_from_target_cache(target_index_descriptor);
 
                 // find anchors and overlaps
-                auto matcher = Matcher::create_matcher(application_parameters.allocator,
+                auto matcher = Matcher::create_matcher(device_allocator,
                                                        *query_index,
                                                        *target_index,
                                                        cuda_stream);
 
                 std::vector<Overlap> overlaps;
-                OverlapperTriggered overlapper(application_parameters.allocator,
+                OverlapperTriggered overlapper(device_allocator,
                                                cuda_stream);
                 overlapper.get_overlaps(overlaps,
                                         matcher->anchors(),
@@ -243,7 +244,7 @@ void process_one_device_batch(const IndexBatch& device_batch,
                 {
                     cigar.resize(overlaps.size());
                     CGA_NVTX_RANGE(profiler, "align_overlaps");
-                    align_overlaps(application_parameters.allocator,
+                    align_overlaps(device_allocator,
                                    overlaps,
                                    *application_parameters.query_parser,
                                    *application_parameters.target_parser,
@@ -267,6 +268,7 @@ void process_one_device_batch(const IndexBatch& device_batch,
 /// \param cuda_stream
 void process_one_batch(const BatchOfIndices& batch,
                        const ApplicationParameters& application_parameters,
+                       DefaultDeviceAllocator device_allocator,
                        IndexCacheHost& host_cache,
                        IndexCacheDevice& device_cache,
                        ThreadsafeProducerConsumer<OverlapsAndCigars>& overlaps_and_cigars_to_write,
@@ -287,6 +289,7 @@ void process_one_batch(const BatchOfIndices& batch,
         process_one_device_batch(device_batch,
                                  device_cache,
                                  application_parameters,
+                                 device_allocator,
                                  overlaps_and_cigars_to_write,
                                  cuda_stream);
     }
@@ -351,9 +354,11 @@ void worker_thread_function(const std::int32_t device_id,
     // divide OMP threads among GPU-controlling threads
     omp_set_num_threads(omp_get_max_threads() / application_parameters.num_devices);
 
+    DefaultDeviceAllocator device_allocator = get_device_allocator(application_parameters.max_cached_memory);
+
     // create host_cache, data is not loaded at this point but later as each batch gets processed
     auto host_cache = std::make_shared<IndexCacheHost>(application_parameters.all_to_all,
-                                                       application_parameters.allocator,
+                                                       device_allocator,
                                                        application_parameters.query_parser,
                                                        application_parameters.target_parser,
                                                        application_parameters.kmer_size,
@@ -384,6 +389,7 @@ void worker_thread_function(const std::int32_t device_id,
 
         process_one_batch(batch_of_indices.value(),
                           application_parameters,
+                          device_allocator,
                           *host_cache,
                           device_cache,
                           overlaps_and_cigars_to_write,
