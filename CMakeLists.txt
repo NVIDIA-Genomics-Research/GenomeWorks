@@ -10,7 +10,8 @@
 
 cmake_minimum_required(VERSION 3.10.2)
 set(CGA_PROJECT_NAME ClaraGenomicsAnalysis)
-set(CGA_VERSION 0.4.4)
+file(READ "${CMAKE_CURRENT_SOURCE_DIR}/VERSION" CGA_VERSION)
+string(STRIP ${CGA_VERSION} CGA_VERSION)
 project(${CGA_PROJECT_NAME})
 
 # Process options.
@@ -18,6 +19,7 @@ option(cga_enable_tests "Build ClaraGenomicsAnalysis unit tests" OFF)
 option(cga_enable_benchmarks "Build ClaraGenomicsAnalysis benchmarks" OFF)
 option(cga_build_shared "Build ClaraGenomicsAnalysis libraries as shared objects" OFF)
 option(cga_device_synchronize_kernels "Run cudaDeviceSynchronize() in CGA_CU_CHECK_ERR calls" OFF)
+option(cga_optimize_for_native_cpu "Build with march=native" ON)
 # The spoa_accurate option runs a different (and slower) version of
 # the topological sort in cudapoa which exactly matches the output
 # of the topological sort implementation in the SPOA library. This is
@@ -28,7 +30,9 @@ option(cga_device_synchronize_kernels "Run cudaDeviceSynchronize() in CGA_CU_CHE
 option(spoa_accurate "Run cudapoa code in mode that matches spoa" OFF)
 option(cga_enable_cudapoa_nw_print "Enable verbose prints within cudapoa NW kernel" OFF)
 option(cga_profiling "Compile a binary for profiling with NVTX markers." OFF)
+option(cga_enable_caching_allocator "Enable caching allocator." ON)
 option(cga_generate_docs "Generate Doxygen documentation" ON)
+option(cga_cuda_gen_all_arch "ON: Generate optimized CUDA code for all architectures | OFF: for detected architectures only" ON)
 
 # Must be included before others for options value validation
 include(cmake/Utils.cmake)
@@ -62,10 +66,10 @@ include(cmake/Tests.cmake)
 include(cmake/Benchmarks.cmake)
 include(cmake/Format.cmake)
 include(cmake/Packaging.cmake)
+include(cmake/CondaEnv.cmake)
 
 # Add ClaraGenomicsAnalysis projects.
-add_subdirectory(common/logging)
-add_subdirectory(common/utils)
+add_subdirectory(common/base)
 add_subdirectory(common/io)
 add_subdirectory(cudapoa)
 add_subdirectory(cudamapper)

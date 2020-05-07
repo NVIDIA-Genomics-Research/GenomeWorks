@@ -8,81 +8,93 @@
 # license agreement from NVIDIA CORPORATION is strictly prohibited.
 #
 
+# cython: profile=False
 # distutils: language = c++
+# cython: embedsignature = True
+# cython: language_level = 3
+
+"""CUDAPOA binding module."""
 
 from cython.operator cimport dereference as deref
-from libc.stdint cimport uint16_t
-from libcpp.memory cimport unique_ptr
+from libc.stdint cimport uint16_t, int8_t, int32_t
+from libcpp.memory cimport unique_ptr, make_unique
 from libcpp.pair cimport pair
 from libcpp.string cimport string
 from libcpp.vector cimport vector
 import networkx as nx
 
+from bindings.cuda_runtime_api cimport _Stream
+from bindings.graph cimport DirectedGraph
+from bindings cimport cudapoa
+
 from claragenomics.bindings import cuda
-from claragenomics.bindings cimport cudapoa
 
 
 def status_to_str(status):
-    """
-    Convert status to their string representations.
-    """
-    if status == success:
+    """Convert status to their string representations."""
+    if status == cudapoa.success:
         return "success"
-    elif status == exceeded_maximum_poas:
+    elif status == cudapoa.exceeded_maximum_poas:
         return "exceeded_maximum_poas"
-    elif status == exceeded_maximum_sequence_size:
+    elif status == cudapoa.exceeded_maximum_sequence_size:
         return "exceeded_maximum_sequence_size"
-    elif status == exceeded_maximum_sequences_per_poa:
+    elif status == cudapoa.exceeded_maximum_sequences_per_poa:
         return "exceeded_maximum_sequences_per_poa"
-    elif status == exceeded_batch_size:
-        return "exceeded_batch_size"
-    elif status == node_count_exceeded_maximum_graph_size:
+    elif status == cudapoa.node_count_exceeded_maximum_graph_size:
         return "node_count_exceeded_maximum_graph_size"
-    elif status == edge_count_exceeded_maximum_graph_size:
+    elif status == cudapoa.edge_count_exceeded_maximum_graph_size:
         return "edge_count_exceeded_maximum_graph_size"
-    elif status == seq_len_exceeded_maximum_nodes_per_window:
+    elif status == cudapoa.seq_len_exceeded_maximum_nodes_per_window:
         return "seq_len_exceeded_maximum_nodes_per_window"
-    elif status == loop_count_exceeded_upper_bound:
+    elif status == cudapoa.loop_count_exceeded_upper_bound:
         return "loop_count_exceeded_upper_bound"
-    elif status == output_type_unavailable:
+    elif status == cudapoa.output_type_unavailable:
         return "output_type_unavailable"
-    elif status == generic_error:
+    elif status == cudapoa.generic_error:
         return "generic_error"
     else:
         raise RuntimeError("Unknown error status : " + status)
 
+
 cdef class CudaPoaBatch:
-    """
-    Python API for CUDA-accelerated partial order alignment algorithm.
-    """
+    """Python API for CUDA-accelerated partial order alignment algorithm."""
     cdef unique_ptr[cudapoa.Batch] batch
+    cdef unique_ptr[cudapoa.BatchSize] batch_size
 
     def __cinit__(
             self,
             max_sequences_per_poa,
-            gpu_mem,
+            max_sequence_size,
+            max_gpu_mem,
+            output_type="consensus",
             device_id=0,
             stream=None,
-            output_type="consensus",
             gap_score=-8,
             mismatch_score=-6,
             match_score=8,
             cuda_banded_alignment=False,
+            max_concensus_size=None,
+            max_nodes_per_window=None,
+            max_nodes_per_window_banded=None,
             *args,
             **kwargs):
-        """
-        Construct a CUDAPOA Batch object to run CUDA-accelerated
+        """Construct a CUDAPOA Batch object to run CUDA-accelerated
         partial order alignment across all windows in the batch.
 
         Args:
             max_sequences_per_poa : Maximum number of sequences per POA
-            stream : CudaStream to use for GPU execution
+            max_sequence_size : Maximum number of elements in a sequence
+            max_gpu_mem : Maximum GPU memory to use for this batch
+            output_type : Types of outputs to generate (consensus, msa)
             device_id : ID of GPU device to use
-            output_mask : Types of outputs to generate (consensus, msa)
+            stream : CudaStream to use for GPU execution
             gap_score : Penalty for gaps
             mismatch_score : Penalty for mismatches
             match_score : Reward for match
             cuda_banded_alignment : Run POA using banded alignment
+            max_concensus_size : Maximum size of final consensus
+            max_nodes_per_window : Maximum number of nodes in a graph, 1 graph per window
+            max_nodes_per_window_banded : Maximum number of nodes in a graph, 1 graph per window in banded mode
         """
         cdef size_t st
         cdef _Stream temp_stream
@@ -94,47 +106,63 @@ cdef class CudaPoaBatch:
             st = stream.stream
             temp_stream = <_Stream>st
 
-        cdef int8_t output_mask
         if (output_type == "consensus"):
-            output_mask = consensus
+            output_mask = cudapoa.consensus
         elif (output_type == "msa"):
-            output_mask = msa
+            output_mask = cudapoa.msa
         else:
             raise RuntimeError("Unknown output_type provided. Must be consensus/msa.")
 
+        # Since cython make_unique doesn't accept python objects, need to
+        # store it in a cdef and then pass into the make unique call
+        cdef int32_t mx_seq_sz = max_sequence_size
+        cdef int32_t mx_seq_per_poa = max_sequences_per_poa
+        cdef int32_t mx_concensus_sz = \
+            2 * max_sequence_size if max_concensus_size is None else max_concensus_size
+        cdef int32_t mx_nodes_per_w = \
+            3 * max_sequence_size if max_nodes_per_window is None else max_nodes_per_window
+        cdef int32_t mx_nodes_per_w_banded = \
+            4 * max_sequence_size if max_nodes_per_window_banded is None else max_nodes_per_window_banded
+
+        self.batch_size = make_unique[cudapoa.BatchSize](
+            mx_seq_sz, mx_concensus_sz, mx_nodes_per_w,
+            mx_nodes_per_w_banded, mx_seq_per_poa)
+
         self.batch = cudapoa.create_batch(
-                max_sequences_per_poa,
-                device_id,
-                temp_stream,
-                gpu_mem,
-                output_mask,
-                gap_score,
-                mismatch_score,
-                match_score,
-                cuda_banded_alignment)
+            device_id,
+            temp_stream,
+            max_gpu_mem,
+            output_mask,
+            deref(self.batch_size),
+            gap_score,
+            mismatch_score,
+            match_score,
+            cuda_banded_alignment)
 
     def __init__(
             self,
             max_sequences_per_poa,
-            gpu_mem,
+            max_sequence_size,
+            max_gpu_mem,
+            output_type="consensus",
             device_id=0,
             stream=None,
-            output_mask=consensus,
             gap_score=-8,
             mismatch_score=-6,
             match_score=8,
             cuda_banded_alignment=False,
+            max_concensus_size=None,
+            max_nodes_per_window=None,
+            max_nodes_per_window_banded=None,
             *args,
             **kwargs):
-        """
-        Dummy implementation of __init__ function to allow
+        """Dummy implementation of __init__ function to allow
         for Python subclassing.
         """
         pass
 
     def add_poa_group(self, poa):
-        """
-        Set the POA groups to run alignment on.
+        """Set the POA groups to run alignment on.
 
         Args:
             poas : List of POA groups. Each group is a list of
@@ -153,7 +181,7 @@ cdef class CudaPoaBatch:
         cdef cudapoa.Group poa_group
         cdef cudapoa.Entry entry
         cdef vector[cudapoa.StatusType] seq_status
-        byte_list = [] # To store byte array of POA sequences
+        byte_list = []  # To store byte array of POA sequences
         for seq in poa:
             byte_list.append(seq.encode('utf-8'))
             c_string = byte_list[-1]
@@ -162,14 +190,11 @@ cdef class CudaPoaBatch:
             entry.length = len(seq)
             poa_group.push_back(entry)
         status = deref(self.batch).add_poa_group(seq_status, poa_group)
-        if status != success and status != exceeded_maximum_poas:
-            raise RuntimeError("Could not add POA group: Error code " + status_to_str(status))
         return (status, seq_status)
 
     @property
     def total_poas(self):
-        """
-        Get total number of POA groups added to batch.
+        """Get total number of POA groups added to batch.
 
         Returns:
             Number of POA groups added to batch.
@@ -178,8 +203,7 @@ cdef class CudaPoaBatch:
 
     @property
     def batch_id(self):
-        """
-        Get the batch ID of the cudapoa Batch object.
+        """Get the batch ID of the cudapoa Batch object.
 
         Returns:
             Batch ID.
@@ -187,15 +211,13 @@ cdef class CudaPoaBatch:
         return deref(self.batch).batch_id()
 
     def generate_poa(self):
-        """
-        Run asynchronous partial order alignment on all POA groups
+        """Run asynchronous partial order alignment on all POA groups
         in batch.
         """
         deref(self.batch).generate_poa()
 
     def get_msa(self):
-        """
-        Get the multi-sequence alignment for each POA group.
+        """Get the multi-sequence alignment for each POA group.
 
         Returns:
             A tuple where
@@ -206,13 +228,12 @@ cdef class CudaPoaBatch:
         cdef vector[vector[string]] msa
         cdef vector[cudapoa.StatusType] status
         error = deref(self.batch).get_msa(msa, status)
-        if error == output_type_unavailable:
+        if error == cudapoa.output_type_unavailable:
             raise RuntimeError("Output type not requested during batch initialization")
         return (msa, status)
 
     def get_consensus(self):
-        """
-        Get the consensus for each POA group.
+        """Get the consensus for each POA group.
 
         Returns:
             A tuple where
@@ -224,14 +245,13 @@ cdef class CudaPoaBatch:
         cdef vector[vector[uint16_t]] coverage
         cdef vector[cudapoa.StatusType] status
         error = deref(self.batch).get_consensus(consensus, coverage, status)
-        if error == output_type_unavailable:
+        if error == cudapoa.output_type_unavailable:
             raise RuntimeError("Output type not requested during batch initialization")
         decoded_consensus = [c.decode('utf-8') for c in consensus]
         return (decoded_consensus, coverage, status)
 
     def get_graphs(self):
-        """
-        Get the POA graph for each POA group.
+        """Get the POA graph for each POA group.
 
         Returns:
             A tuple where
@@ -261,14 +281,13 @@ cdef class CudaPoaBatch:
                                     weight=weight)
             attributes = {}
             for n in nx_digraph.nodes:
-                attributes[n] = {'label' : deref(graph).get_node_label(n).decode('utf-8')}
+                attributes[n] = {'label': deref(graph).get_node_label(n).decode('utf-8')}
             nx.set_node_attributes(nx_digraph, attributes)
             nx_digraphs.append(nx_digraph)
         return (nx_digraphs, status)
 
     def reset(self):
-        """
-        Reset the batch object. Involves deleting all windows previously
+        """Reset the batch object. Involves deleting all windows previously
         assigned to batch object.
         """
         deref(self.batch).reset()

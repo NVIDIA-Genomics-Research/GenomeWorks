@@ -7,10 +7,7 @@
 # distribution of this software and related documentation without an express
 # license agreement from NVIDIA CORPORATION is strictly prohibited.
 #
-
-"""
-Functions for FASTA file I/O
-"""
+"""Functions for FASTA file I/O."""
 import gzip
 
 
@@ -25,7 +22,6 @@ def write_fasta(seqs, filepath, gzip_compressed=False):
     Returns:
       None.
     """
-
     with open(filepath, 'w') as f:
         for s in seqs:
             fasta_string = ">{}\n".format(s[0])

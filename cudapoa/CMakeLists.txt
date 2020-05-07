@@ -15,19 +15,21 @@ add_subdirectory(data)
 
 # Project specific NVCC flags
 set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -std=c++11")
+message(STATUS "nvcc flags for cudapoa: ${CUDA_NVCC_FLAGS}")
 
 get_property(cga_library_type GLOBAL PROPERTY cga_library_type)
 cuda_add_library(cudapoa ${cga_library_type}
     src/cudapoa.cpp
     src/cudapoa_kernels.cu
     src/batch.cpp
-    src/cudapoa_batch.cpp
-    src/allocate_block.cpp
     )
 
-target_link_libraries(cudapoa utils logging)
+target_link_libraries(cudapoa cgabase)
 
-target_compile_options(cudapoa PRIVATE -Werror -Wall -Wextra -march=native)
+target_compile_options(cudapoa PRIVATE -Werror -Wall -Wextra)
+if (cga_optimize_for_native_cpu)
+    target_compile_options(cudapoa PRIVATE -march=native)
+endif()
 
 if(cga_enable_cudapoa_nw_print)
     target_compile_definitions(cudapoa PUBLIC NW_VERBOSE_PRINT)
@@ -37,16 +39,16 @@ if(spoa_accurate)
     target_compile_definitions(cudapoa PUBLIC SPOA_ACCURATE)
 endif()
 
-target_include_directories(cudapoa 
-    PUBLIC 
-        $<INSTALL_INTERFACE:include>    
+target_include_directories(cudapoa
+    PUBLIC
+        $<INSTALL_INTERFACE:include>
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 )
 
 add_doxygen_source_dir(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 install(TARGETS cudapoa
-    COMPONENT logging
+    COMPONENT cgalogging
     EXPORT cudapoa
     DESTINATION lib
     INCLUDES DESTINATION include

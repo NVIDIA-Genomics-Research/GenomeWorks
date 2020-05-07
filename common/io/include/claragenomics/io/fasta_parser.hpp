@@ -11,6 +11,9 @@
 
 #include <string>
 #include <memory>
+#include <vector>
+
+#include <claragenomics/types.hpp>
 
 namespace claragenomics
 {
@@ -35,31 +38,25 @@ public:
     virtual ~FastaParser() = default;
 
     /// \brief Return number of sequences in FASTA file
-    ///
     /// \return Sequence count in file
-    virtual int32_t get_num_seqences() const = 0;
+    virtual number_of_reads_t get_num_seqences() const = 0;
 
     /// \brief Fetch an entry from the FASTA file by index position in file.
-    /// \param id Position of sequence in file. If id is greater than file size,
-    ///           an error is thrown.
-    ///
-    /// \return A FastaSequence object describing the entry.
-    virtual FastaSequence get_sequence_by_id(int32_t id) const = 0;
-
-    /// \brief Fetch an entry from the FASTA file by name.
-    /// \param name Name of the sequence in FASTA file. If there is no entry
-    ///             by that name, an error is thrown.
-    ///
-    /// \return A FastaSequence object describing the entry.
-    virtual FastaSequence get_sequence_by_name(const std::string& name) const = 0;
+    /// \param sequence_id Position of sequence in file. If sequence_id is invalid an error is thrown.
+    /// \return A reference to FastaSequence describing the entry.
+    virtual const FastaSequence& get_sequence_by_id(read_id_t sequence_id) const = 0;
 };
 
-/// \brief A builder function that returns a FASA parser object.
+/// \brief A builder function that returns a FASTA parser object which uses KSEQPP.
 ///
 /// \param fasta_file Path to FASTA(.gz) file. If .gz, it must be zipped with bgzip.
+/// \param min_sequence_length Minimum length a sequence needs to be to be parsed. Shorter sequences are ignored.
+/// \param shuffle Enables shuffling reads
 ///
 /// \return A unique pointer to a constructed parser object.
-std::unique_ptr<FastaParser> create_fasta_parser(const std::string& fasta_file);
+std::unique_ptr<FastaParser> create_kseq_fasta_parser(const std::string& fasta_file,
+                                                      number_of_basepairs_t min_sequence_length = 0,
+                                                      bool shuffle                              = true);
 
 } // namespace io
 } // namespace claragenomics

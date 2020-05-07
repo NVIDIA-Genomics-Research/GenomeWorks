@@ -10,6 +10,7 @@
 
 #include "aligner_global_ukkonen.hpp"
 #include "aligner_global_myers.hpp"
+#include "aligner_global_myers_banded.hpp"
 #include "aligner_global_hirschberg_myers.hpp"
 
 #include <claragenomics/utils/genomeutils.hpp>
@@ -28,18 +29,20 @@ namespace cudaaligner
 
 static void BM_SingleAlignment(benchmark::State& state)
 {
-    int32_t genome_size = state.range(0);
+    DefaultDeviceAllocator allocator = create_default_device_allocator();
+    const int32_t genome_size        = state.range(0);
 
     // Generate random sequences
     std::minstd_rand rng(1);
     std::string genome_1 = claragenomics::genomeutils::generate_random_genome(genome_size, rng);
-    std::string genome_2 = claragenomics::genomeutils::generate_random_genome(genome_size, rng);
+    std::string genome_2 = claragenomics::genomeutils::generate_random_sequence(genome_1, rng, genome_size / 30, genome_size / 30, genome_size / 30); // 3*x/30 = 10% difference
 
     // Create aligner object
-    std::unique_ptr<Aligner> aligner = create_aligner(genome_size,
-                                                      genome_size,
+    std::unique_ptr<Aligner> aligner = create_aligner(get_size(genome_1),
+                                                      get_size(genome_2),
                                                       1,
                                                       AlignmentType::global_alignment,
+                                                      allocator,
                                                       0,
                                                       0);
     aligner->add_alignment(genome_1.c_str(), genome_1.length(),
@@ -78,9 +81,11 @@ private:
 template <typename AlignerT>
 static void BM_SingleBatchAlignment(benchmark::State& state)
 {
+    const std::size_t max_gpu_memory = cudautils::find_largest_contiguous_device_memory_section();
     CudaStream stream;
-    int32_t alignments_per_batch = state.range(0);
-    int32_t genome_size          = state.range(1);
+    DefaultDeviceAllocator allocator   = create_default_device_allocator(max_gpu_memory);
+    const int32_t alignments_per_batch = state.range(0);
+    const int32_t genome_size          = state.range(1);
 
     std::unique_ptr<Aligner> aligner;
     // Create aligner object
@@ -90,6 +95,7 @@ static void BM_SingleBatchAlignment(benchmark::State& state)
             genome_size,
             genome_size,
             alignments_per_batch,
+            allocator,
             stream.get(),
             0);
 
@@ -99,7 +105,11 @@ static void BM_SingleBatchAlignment(benchmark::State& state)
         {
             // TODO: generate genomes with indels as well
             std::string genome_1 = claragenomics::genomeutils::generate_random_genome(genome_size, rng);
-            std::string genome_2 = claragenomics::genomeutils::generate_random_genome(genome_size, rng);
+            std::string genome_2 = claragenomics::genomeutils::generate_random_sequence(genome_1, rng, genome_size / 30, genome_size / 30, genome_size / 30); // 3*x/30 = 10% difference
+            if (get_size(genome_2) > genome_size)
+            {
+                genome_2.resize(genome_size);
+            }
 
             aligner->add_alignment(genome_1.c_str(), genome_1.length(),
                                    genome_2.c_str(), genome_2.length());
@@ -130,6 +140,11 @@ BENCHMARK_TEMPLATE(BM_SingleBatchAlignment, AlignerGlobalUkkonen)
     ->Ranges({{32, 1024}, {512, 65536}});
 
 BENCHMARK_TEMPLATE(BM_SingleBatchAlignment, AlignerGlobalMyers)
+    ->Unit(benchmark::kMillisecond)
+    ->RangeMultiplier(4)
+    ->Ranges({{32, 1024}, {512, 65536}});
+
+BENCHMARK_TEMPLATE(BM_SingleBatchAlignment, AlignerGlobalMyersBanded)
     ->Unit(benchmark::kMillisecond)
     ->RangeMultiplier(4)
     ->Ranges({{32, 1024}, {512, 65536}});

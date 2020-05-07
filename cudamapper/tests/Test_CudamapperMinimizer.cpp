@@ -11,6 +11,8 @@
 #include "gtest/gtest.h"
 #include "../src/minimizer.hpp"
 
+#include <claragenomics/utils/cudautils.hpp>
+
 namespace claragenomics
 {
 namespace cudamapper
@@ -26,40 +28,46 @@ void test_function(const std::uint64_t number_of_reads_to_add,
                    const std::vector<Minimizer::ReadidPositionDirection>& expected_rest_h,
                    const bool hash_minimizers)
 {
-    device_buffer<char> merged_basepairs_d(merged_basepairs_h.size());
-    CGA_CU_CHECK_ERR(cudaMemcpy(merged_basepairs_d.data(),
-                                merged_basepairs_h.data(),
-                                merged_basepairs_h.size() * sizeof(char),
-                                cudaMemcpyHostToDevice));
+    DefaultDeviceAllocator allocator = create_default_device_allocator();
 
-    device_buffer<ArrayBlock> read_id_to_basepairs_section_d(read_id_to_basepairs_section_h.size());
-    CGA_CU_CHECK_ERR(cudaMemcpy(read_id_to_basepairs_section_d.data(),
-                                read_id_to_basepairs_section_h.data(),
-                                read_id_to_basepairs_section_h.size() * sizeof(ArrayBlock),
-                                cudaMemcpyHostToDevice));
+    cudaStream_t cuda_stream;
+    CGA_CU_CHECK_ERR(cudaStreamCreate(&cuda_stream));
 
-    auto sketch_elements = Minimizer::generate_sketch_elements(number_of_reads_to_add,
+    device_buffer<char> merged_basepairs_d(merged_basepairs_h.size(), allocator, cuda_stream);
+    cudautils::device_copy_n(merged_basepairs_h.data(),
+                             merged_basepairs_h.size(),
+                             merged_basepairs_d.data(),
+                             cuda_stream);
+
+    device_buffer<ArrayBlock> read_id_to_basepairs_section_d(read_id_to_basepairs_section_h.size(), allocator, cuda_stream);
+    cudautils::device_copy_n(read_id_to_basepairs_section_h.data(),
+                             read_id_to_basepairs_section_h.size(),
+                             read_id_to_basepairs_section_d.data(),
+                             cuda_stream);
+
+    auto sketch_elements = Minimizer::generate_sketch_elements(allocator,
+                                                               number_of_reads_to_add,
                                                                minimizer_size,
                                                                window_size,
                                                                read_id_of_first_read,
                                                                merged_basepairs_d,
                                                                read_id_to_basepairs_section_h,
                                                                read_id_to_basepairs_section_d,
-                                                               hash_minimizers);
+                                                               hash_minimizers,
+                                                               cuda_stream);
 
     device_buffer<representation_t> representations_d = std::move(sketch_elements.representations_d);
     std::vector<representation_t> representations_h(representations_d.size());
-    CGA_CU_CHECK_ERR(cudaMemcpy(representations_h.data(),
-                                representations_d.data(),
-                                representations_d.size() * sizeof(representation_t),
-                                cudaMemcpyDeviceToHost));
-
+    cudautils::device_copy_n(representations_d.data(),
+                             representations_d.size(),
+                             representations_h.data(),
+                             cuda_stream);
     device_buffer<Minimizer::ReadidPositionDirection> rest_d = std::move(sketch_elements.rest_d);
     std::vector<Minimizer::ReadidPositionDirection> rest_h(rest_d.size());
-    CGA_CU_CHECK_ERR(cudaMemcpy(rest_h.data(),
-                                rest_d.data(),
-                                rest_d.size() * sizeof(Minimizer::ReadidPositionDirection),
-                                cudaMemcpyDeviceToHost));
+    cudautils::device_copy_n(rest_d.data(),
+                             rest_d.size(),
+                             rest_h.data(), cuda_stream);
+    CGA_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
 
     ASSERT_EQ(expected_representations_h.size(), expected_rest_h.size());
     ASSERT_EQ(expected_representations_h.size(), representations_h.size());
@@ -72,14 +80,22 @@ void test_function(const std::uint64_t number_of_reads_to_add,
         EXPECT_EQ(expected_rest_h[i].position_in_read_, rest_h[i].position_in_read_) << "index: " << i;
         EXPECT_EQ(expected_rest_h[i].direction_, rest_h[i].direction_) << "index: " << i;
     }
+
+    merged_basepairs_d.free();
+    read_id_to_basepairs_section_d.free();
+    representations_d.free();
+    rest_d.free();
+
+    CGA_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
+    CGA_CU_CHECK_ERR(cudaStreamDestroy(cuda_stream));
 }
 
 TEST(TestCudamappperMinimizer, GATT_4_1)
 {
-    const std::uint64_t number_of_reads_to_add = 1;
-    const std::uint64_t minimizer_size         = 4;
-    const std::uint64_t window_size            = 1;
-    const std::uint64_t read_id_of_first_read  = 0;
+    const read_id_t number_of_reads_to_add    = 1;
+    const std::uint64_t minimizer_size        = 4;
+    const std::uint64_t window_size           = 1;
+    const std::uint64_t read_id_of_first_read = 0;
 
     const std::vector<char> merged_basepairs_h{'G', 'A', 'T', 'T'};
 
@@ -137,10 +153,10 @@ TEST(TestCudamappperMinimizer, GATT_2_3)
     // back end minimizers
     // TT: 00 2 R 0
 
-    const std::uint64_t number_of_reads_to_add = 1;
-    const std::uint64_t minimizer_size         = 2;
-    const std::uint64_t window_size            = 3;
-    const std::uint64_t read_id_of_first_read  = 0;
+    const read_id_t number_of_reads_to_add    = 1;
+    const std::uint64_t minimizer_size        = 2;
+    const std::uint64_t window_size           = 3;
+    const std::uint64_t read_id_of_first_read = 0;
 
     const std::vector<char> merged_basepairs_h{'G', 'A', 'T', 'T'};
 
@@ -219,10 +235,10 @@ TEST(TestCudamappperMinimizer, CCCATACC_2_7)
     // ACC    : 01 5 F 0
     // CC     : 11 6 F 0
 
-    const std::uint64_t number_of_reads_to_add = 1;
-    const std::uint64_t minimizer_size         = 2;
-    const std::uint64_t window_size            = 7;
-    const std::uint64_t read_id_of_first_read  = 0;
+    const read_id_t number_of_reads_to_add    = 1;
+    const std::uint64_t minimizer_size        = 2;
+    const std::uint64_t window_size           = 7;
+    const std::uint64_t read_id_of_first_read = 0;
 
     const std::vector<char> merged_basepairs_h{'C', 'C', 'C', 'A', 'T', 'A', 'C', 'C'};
 
@@ -322,10 +338,10 @@ TEST(TestCudamappperMinimizer, CATCAAG_AAGCTA_3_2)
 
     // all minimizers: (032,0,R,0), (031,1,F,0), (100,3,F,0), (002,4,F,0), (002,0,F,1), (021,2,R,1), (130,3,F,1)
 
-    const std::uint64_t number_of_reads_to_add = 2;
-    const std::uint64_t minimizer_size         = 3;
-    const std::uint64_t window_size            = 2;
-    const std::uint64_t read_id_of_first_read  = 0;
+    const read_id_t number_of_reads_to_add    = 2;
+    const std::uint64_t minimizer_size        = 3;
+    const std::uint64_t window_size           = 2;
+    const std::uint64_t read_id_of_first_read = 0;
 
     const std::vector<char> merged_basepairs_h{'C', 'A', 'T', 'C', 'A', 'A', 'G', 'A', 'A', 'G', 'C', 'T', 'A'};
 
@@ -433,10 +449,10 @@ TEST(TestCudamappperMinimizer, CATCAAG_AAGCTA_3_2_read_id_offset_5)
 
     // all minimizers: (032,0,R,0), (031,1,F,0), (100,3,F,0), (002,4,F,0), (002,0,F,1), (021,2,R,1), (130,3,F,1)
 
-    const std::uint64_t number_of_reads_to_add = 2;
-    const std::uint64_t minimizer_size         = 3;
-    const std::uint64_t window_size            = 2;
-    const std::uint64_t read_id_of_first_read  = 5;
+    const read_id_t number_of_reads_to_add    = 2;
+    const std::uint64_t minimizer_size        = 3;
+    const std::uint64_t window_size           = 2;
+    const std::uint64_t read_id_of_first_read = 5;
 
     const std::vector<char> merged_basepairs_h{'C', 'A', 'T', 'C', 'A', 'A', 'G', 'A', 'A', 'G', 'C', 'T', 'A'};
 

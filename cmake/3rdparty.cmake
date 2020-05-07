@@ -9,10 +9,6 @@
 #
 
 # Add 3rd party build dependencies.
-if (NOT TARGET bioparser)
-    add_subdirectory(3rdparty/bioparser EXCLUDE_FROM_ALL)
-endif()
-
 get_property(enable_tests GLOBAL PROPERTY enable_tests)
 if (enable_tests AND NOT TARGET gtest)
     add_subdirectory(3rdparty/googletest EXCLUDE_FROM_ALL)
@@ -38,5 +34,11 @@ if (NOT TARGET spoa)
 endif()
 
 set(CUB_DIR ${PROJECT_SOURCE_DIR}/3rdparty/cub CACHE STRING
-	  "Path to cub repo")
+    "Path to cub repo")
+add_library(cub INTERFACE IMPORTED)
+#target_include_directories(cub INTERFACE ${CUB_DIR}>) does not work with
+#cmake before 3.11, use the following for now:
+set_property(TARGET cub APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES "${CUB_DIR}")
 
+set(KSEQPP_DIR ${PROJECT_SOURCE_DIR}/3rdparty/kseqpp/src CACHE STRING
+    "Path to kseqpp repo")

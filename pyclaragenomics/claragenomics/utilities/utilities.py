@@ -7,15 +7,14 @@
 # distribution of this software and related documentation without an express
 # license agreement from NVIDIA CORPORATION is strictly prohibited.
 #
-
-"""Class for utility functions"""
+"""Class for utility functions."""
 import logging
 import os
 import subprocess
 
 
 class Utilities:
-    """Class for small utility functions"""
+    """Class for small utility functions."""
 
     @staticmethod
     def gfa2fa(gfa_filepath, fa_filepath):

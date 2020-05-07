@@ -78,10 +78,12 @@ BUILD_SCRIPT="#!/bin/bash
 set -e
 WORKSPACE=${REPO_PATH_IN_CONTAINER}
 PREBUILD_SCRIPT=${REPO_PATH_IN_CONTAINER}/ci/gpu/prebuild.sh
+PREBUILD_LOCAL=${REPO_PATH_IN_CONTAINER}/ci/local/prebuild.sh
 BUILD_SCRIPT=${REPO_PATH_IN_CONTAINER}/ci/gpu/build.sh
 if [ -f \${PREBUILD_SCRIPT} ]; then
     source \${PREBUILD_SCRIPT}
 fi
+[ -f \${PREBUILD_LOCAL} ] && source \${PREBUILD_LOCAL}
 yes | source \${BUILD_SCRIPT}
 "
 
@@ -125,10 +127,25 @@ fi
 
 # Run the generated build script in a container
 sudo docker pull "${DOCKER_IMAGE}"
-sudo docker run --runtime=nvidia --rm -it -e NVIDIA_VISIBLE_DEVICES="${NVIDIA_VISIBLE_DEVICES}" \
-       -u "$(id -u)":"$(id -g)" \
-       -v "${REPO_PATH}":"${REPO_PATH_IN_CONTAINER}" \
-       -v "$PASSWD_FILE":/etc/passwd:ro \
-       -v "$GROUP_FILE":/etc/group:ro \
-       --cap-add=SYS_PTRACE \
-       "${DOCKER_IMAGE}" bash -c "${COMMAND}"
+
+
+# Compare Docker version to find Nvidia Container Toolkit support.
+# Please refer https://github.com/NVIDIA/nvidia-docker
+DOCKER_VERSION_WITH_GPU_SUPPORT="19.03.0"
+DOCKER_VERSION=$(docker version | grep -i version | head -1 | awk '{print $2'})
+
+PARAM_RUNTIME="--runtime=nvidia"
+PARAM_GPUS="-e NVIDIA_VISIBLE_DEVICES=${NVIDIA_VISIBLE_DEVICES}"
+
+if [ "$DOCKER_VERSION_WITH_GPU_SUPPORT" == "$(echo -e "$DOCKER_VERSION\n$DOCKER_VERSION_WITH_GPU_SUPPORT" | sort -V | head -1)" ]; then
+    PARAM_RUNTIME=""
+    PARAM_GPUS="--gpus ${NVIDIA_VISIBLE_DEVICES}"
+fi
+
+sudo docker run $PARAM_RUNTIME --rm -it $PARAM_GPUS \
+    -u "$(id -u)":"$(id -g)" \
+    -v "${REPO_PATH}":"${REPO_PATH_IN_CONTAINER}" \
+    -v "$PASSWD_FILE":/etc/passwd:ro \
+    -v "$GROUP_FILE":/etc/group:ro \
+    --cap-add=SYS_PTRACE \
+    "${DOCKER_IMAGE}" bash -c "${COMMAND}"

@@ -26,20 +26,20 @@ class BasicGenerateConsensus
 {
 
 public:
-    BasicGenerateConsensus(std::vector<uint8_t> nodes, std::vector<uint16_t> sorted_graph, Uint16Vec2D node_alignments,
-                           Uint16Vec2D outgoing_edges, std::vector<uint16_t> node_coverage_counts, Uint16Vec2D outgoing_edge_w)
+    BasicGenerateConsensus(std::vector<uint8_t> nodes, std::vector<SizeT> sorted_graph, SizeTVec2D node_alignments,
+                           SizeTVec2D outgoing_edges, std::vector<uint16_t> node_coverage_counts, Uint16Vec2D outgoing_edge_w)
         : graph_(nodes, sorted_graph, node_alignments, node_coverage_counts, outgoing_edges)
         , outgoing_edge_w_(outgoing_edge_w)
         , outgoing_edges_(outgoing_edges)
     {
     }
 
-    void get_graph_buffers(uint8_t* nodes, uint16_t* node_count,
-                           uint16_t* sorted_poa, uint16_t* node_id_to_pos,
-                           uint16_t* incoming_edges, uint16_t* incoming_edge_count,
-                           uint16_t* outgoing_edges, uint16_t* outgoing_edge_count,
+    void get_graph_buffers(uint8_t* nodes, SizeT* node_count,
+                           SizeT* sorted_poa, SizeT* node_id_to_pos,
+                           SizeT* incoming_edges, uint16_t* incoming_edge_count,
+                           SizeT* outgoing_edges, uint16_t* outgoing_edge_count,
                            uint16_t* incoming_edge_w, uint16_t* node_coverage_counts,
-                           uint16_t* node_alignments, uint16_t* node_alignment_count) const
+                           SizeT* node_alignments, uint16_t* node_alignment_count) const
     {
         graph_.get_nodes(nodes, node_count);
         graph_.get_sorted_graph(sorted_poa);
@@ -57,7 +57,7 @@ public:
         {
             for (int j = 0; j < get_size(outgoing_edges[i]); j++)
             {
-                uint16_t to_node                                      = outgoing_edges[i][j];
+                SizeT to_node                                         = outgoing_edges[i][j];
                 incoming_edge_w[to_node * CUDAPOA_MAX_NODE_EDGES + i] = outgoing_edge_w_[i][j];
             }
         }
@@ -65,7 +65,7 @@ public:
 
 protected:
     SortedGraph graph_;
-    Uint16Vec2D outgoing_edges_;
+    SizeTVec2D outgoing_edges_;
     Uint16Vec2D outgoing_edge_w_;
 };
 
@@ -160,48 +160,51 @@ std::string testGenerateConsensus(const BasicGenerateConsensus& obj)
 {
     //declare device buffer
     uint8_t* nodes;
-    uint16_t* node_count;
-    uint16_t* graph;
-    uint16_t* node_id_to_pos;
-    uint16_t* incoming_edges;
+    SizeT* node_count;
+    SizeT* graph;
+    SizeT* node_id_to_pos;
+    SizeT* incoming_edges;
     uint16_t* incoming_edge_count;
-    uint16_t* outgoing_edges;
+    SizeT* outgoing_edges;
     uint16_t* outgoing_edge_count;
     uint16_t* incoming_edge_w;
     uint16_t* node_coverage_counts;
-    uint16_t* node_alignments;
+    SizeT* node_alignments;
     uint16_t* node_alignment_count;
 
     //buffers that don't need initialization
-    int16_t* predecessors;
+    SizeT* predecessors;
     int32_t* scores;
     uint8_t* consensus;
     uint16_t* coverage;
 
-    //allocate unified memory so they can be accessed by both host and device.
-    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&nodes, CUDAPOA_MAX_NODES_PER_WINDOW * sizeof(uint8_t)));
-    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&node_count, sizeof(uint16_t)));
-    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&graph, CUDAPOA_MAX_NODES_PER_WINDOW * sizeof(uint16_t)));
-    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&node_id_to_pos, CUDAPOA_MAX_NODES_PER_WINDOW * sizeof(uint16_t)));
-    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&incoming_edges, CUDAPOA_MAX_NODES_PER_WINDOW * CUDAPOA_MAX_NODE_EDGES * sizeof(uint16_t)));
-    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&incoming_edge_count, CUDAPOA_MAX_NODES_PER_WINDOW * sizeof(uint16_t)));
-    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&outgoing_edges, CUDAPOA_MAX_NODES_PER_WINDOW * CUDAPOA_MAX_NODE_EDGES * sizeof(uint16_t)));
-    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&outgoing_edge_count, CUDAPOA_MAX_NODES_PER_WINDOW * sizeof(uint16_t)));
-    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&incoming_edge_w, CUDAPOA_MAX_NODES_PER_WINDOW * CUDAPOA_MAX_NODE_EDGES * sizeof(uint16_t)));
-    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&node_coverage_counts, CUDAPOA_MAX_NODES_PER_WINDOW * sizeof(uint16_t)));
-    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&node_alignments, CUDAPOA_MAX_NODES_PER_WINDOW * CUDAPOA_MAX_NODE_ALIGNMENTS * sizeof(uint16_t)));
-    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&node_alignment_count, CUDAPOA_MAX_NODES_PER_WINDOW * sizeof(uint16_t)));
+    //default data size limits
+    BatchSize batch_size;
 
-    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&predecessors, CUDAPOA_MAX_NODES_PER_WINDOW * sizeof(int16_t)));
-    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&scores, CUDAPOA_MAX_NODES_PER_WINDOW * sizeof(int32_t)));
-    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&consensus, CUDAPOA_MAX_CONSENSUS_SIZE * sizeof(uint8_t)));
-    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&coverage, CUDAPOA_MAX_CONSENSUS_SIZE * sizeof(uint16_t)));
+    //allocate unified memory so they can be accessed by both host and device.
+    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&nodes, batch_size.max_nodes_per_window * sizeof(uint8_t)));
+    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&node_count, sizeof(SizeT)));
+    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&graph, batch_size.max_nodes_per_window * sizeof(SizeT)));
+    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&node_id_to_pos, batch_size.max_nodes_per_window * sizeof(SizeT)));
+    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&incoming_edges, batch_size.max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES * sizeof(SizeT)));
+    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&incoming_edge_count, batch_size.max_nodes_per_window * sizeof(uint16_t)));
+    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&outgoing_edges, batch_size.max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES * sizeof(SizeT)));
+    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&outgoing_edge_count, batch_size.max_nodes_per_window * sizeof(uint16_t)));
+    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&incoming_edge_w, batch_size.max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES * sizeof(uint16_t)));
+    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&node_coverage_counts, batch_size.max_nodes_per_window * sizeof(uint16_t)));
+    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&node_alignments, batch_size.max_nodes_per_window * CUDAPOA_MAX_NODE_ALIGNMENTS * sizeof(SizeT)));
+    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&node_alignment_count, batch_size.max_nodes_per_window * sizeof(uint16_t)));
+
+    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&predecessors, batch_size.max_nodes_per_window * sizeof(SizeT)));
+    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&scores, batch_size.max_nodes_per_window * sizeof(int32_t)));
+    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&consensus, batch_size.max_concensus_size * sizeof(uint8_t)));
+    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&coverage, batch_size.max_concensus_size * sizeof(uint16_t)));
 
     //initialize all 'count' buffers
-    memset((void**)incoming_edge_count, 0, CUDAPOA_MAX_NODES_PER_WINDOW * sizeof(uint16_t));
-    memset((void**)outgoing_edge_count, 0, CUDAPOA_MAX_NODES_PER_WINDOW * sizeof(uint16_t));
-    memset((void**)node_coverage_counts, 0, CUDAPOA_MAX_NODES_PER_WINDOW * sizeof(uint16_t));
-    memset((void**)node_alignment_count, 0, CUDAPOA_MAX_NODES_PER_WINDOW * sizeof(uint16_t));
+    memset((void**)incoming_edge_count, 0, batch_size.max_nodes_per_window * sizeof(uint16_t));
+    memset((void**)outgoing_edge_count, 0, batch_size.max_nodes_per_window * sizeof(uint16_t));
+    memset((void**)node_coverage_counts, 0, batch_size.max_nodes_per_window * sizeof(uint16_t));
+    memset((void**)node_alignment_count, 0, batch_size.max_nodes_per_window * sizeof(uint16_t));
 
     //calculate edge counts on host
     obj.get_graph_buffers(nodes, node_count,
@@ -227,7 +230,9 @@ std::string testGenerateConsensus(const BasicGenerateConsensus& obj)
                               coverage,
                               node_coverage_counts,
                               node_alignments,
-                              node_alignment_count);
+                              node_alignment_count,
+                              batch_size.max_concensus_size,
+                              false, batch_size);
 
     CGA_CU_CHECK_ERR(cudaDeviceSynchronize());
 

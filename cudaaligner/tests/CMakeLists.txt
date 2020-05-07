@@ -12,6 +12,7 @@ set(TARGET_NAME cudaalignertests)
 
 set(SOURCES
     main.cpp
+    cudaaligner_test_cases.cpp
     Test_Misc.cpp
     Test_AlignmentImpl.cpp
     Test_AlignerGlobal.cpp
@@ -22,6 +23,6 @@ set(SOURCES
 
 set(LIBS
     cudaaligner
-    utils)
+    cgabase)
 
 cga_add_tests(${TARGET_NAME} "${SOURCES}" "${LIBS}")

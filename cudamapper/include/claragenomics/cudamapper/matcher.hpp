@@ -11,8 +11,8 @@
 #pragma once
 
 #include <memory>
-#include <thrust/device_vector.h>
 #include <claragenomics/cudamapper/index.hpp>
+#include <claragenomics/utils/device_buffer.hpp>
 
 namespace claragenomics
 {
@@ -31,14 +31,18 @@ public:
 
     /// \brief returns anchors
     /// \return anchors
-    virtual thrust::device_vector<Anchor>& anchors() = 0;
+    virtual device_buffer<Anchor>& anchors() = 0;
 
     /// \brief Creates a Matcher object
+    /// \param allocator The device memory allocator to use for buffer allocations
     /// \param query_index
     /// \param target_index
+    /// \param cuda_stream CUDA stream on which the work is to be done. Device arrays are also associated with this stream and will not be freed at least until all work issued on this stream before calling their destructor is done
     /// \return matcher
-    static std::unique_ptr<Matcher> create_matcher(const Index& query_index,
-                                                   const Index& target_index);
+    static std::unique_ptr<Matcher> create_matcher(DefaultDeviceAllocator allocator,
+                                                   const Index& query_index,
+                                                   const Index& target_index,
+                                                   const cudaStream_t cuda_stream = 0);
 };
 
 /// \}

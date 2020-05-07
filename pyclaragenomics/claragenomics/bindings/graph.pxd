@@ -18,14 +18,14 @@ from libcpp.string cimport string
 from libc.stdint cimport int32_t
 from libcpp.vector cimport vector
 
-# This file declares public structs and API calls 
+# This file declares public structs and API calls
 # from the ClaraGenomicsAnalysis `graph` utility class.
 
 # Declare structs and APIs from graph.hpp.
 cdef extern from "claragenomics/utils/graph.hpp" namespace "claragenomics":
     cdef cppclass Graph:
-        ctypedef int32_t node_id_t 
-        ctypedef int32_t edge_weight_t 
+        ctypedef int32_t node_id_t
+        ctypedef int32_t edge_weight_t
         ctypedef pair[node_id_t, node_id_t] edge_t
 
     cdef cppclass DirectedGraph(Graph):

@@ -66,7 +66,7 @@ std::vector<AlignmentTestData> create_alignment_test_cases()
         AlignmentState::match,
         AlignmentState::mismatch,
         AlignmentState::insertion};
-    data.formatted_alignment = std::make_pair("AAAA-", "TTATG");
+    data.formatted_alignment = FormattedAlignment{"AAAA-", "xx|x ", "TTATG"};
     data.cigar               = "4M1I";
     test_cases.push_back(data);
 
@@ -82,7 +82,7 @@ std::vector<AlignmentTestData> create_alignment_test_cases()
         AlignmentState::match,
         AlignmentState::deletion,
         AlignmentState::deletion};
-    data.formatted_alignment = std::make_pair("CGATAATG", "-CATAA--");
+    data.formatted_alignment = FormattedAlignment{"CGATAATG", " x||||  ", "-CATAA--"};
     data.cigar               = "1D5M2D";
     test_cases.push_back(data);
 
@@ -101,7 +101,7 @@ std::vector<AlignmentTestData> create_alignment_test_cases()
         AlignmentState::insertion,
         AlignmentState::insertion,
     };
-    data.formatted_alignment = std::make_pair("--GT-TAG--", "AAGTCTAGAA");
+    data.formatted_alignment = FormattedAlignment{"--GT-TAG--", "  || |||  ", "AAGTCTAGAA"};
     data.cigar               = "2I2M1I3M2I";
     test_cases.push_back(data);
 
@@ -116,7 +116,7 @@ std::vector<AlignmentTestData> create_alignment_test_cases()
         AlignmentState::deletion,
         AlignmentState::match,
         AlignmentState::match};
-    data.formatted_alignment = std::make_pair("G-TTACA", "GATT-CA");
+    data.formatted_alignment = FormattedAlignment{"G-TTACA", "| || ||", "GATT-CA"};
     data.cigar               = "1M1I2M1D2M";
     test_cases.push_back(data);
 
@@ -160,10 +160,9 @@ TEST_P(TestAlignmentImpl, AlignmentState)
 TEST_P(TestAlignmentImpl, AlignmentFormatting)
 {
     FormattedAlignment formatted_alignment = alignment_->format_alignment();
-    std::string query                      = formatted_alignment.first;
-    std::string target                     = formatted_alignment.second;
-    ASSERT_EQ(param_.formatted_alignment.first, query);
-    ASSERT_EQ(param_.formatted_alignment.second, target);
+    ASSERT_EQ(param_.formatted_alignment.query, formatted_alignment.query);
+    ASSERT_EQ(param_.formatted_alignment.pairing, formatted_alignment.pairing);
+    ASSERT_EQ(param_.formatted_alignment.target, formatted_alignment.target);
 }
 
 TEST_P(TestAlignmentImpl, CigarFormatting)

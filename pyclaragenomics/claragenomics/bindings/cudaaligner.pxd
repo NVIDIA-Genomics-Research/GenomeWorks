@@ -13,13 +13,12 @@
 # cython: embedsignature = True
 # cython: language_level = 3
 
-from libcpp.pair cimport pair
 from libcpp.string cimport string
 from libcpp.vector cimport vector
-from libc.stdint cimport int32_t
+from libc.stdint cimport int32_t, int64_t
 from libcpp.memory cimport unique_ptr, shared_ptr
 
-from claragenomics.bindings.cuda_runtime_api cimport _Stream
+from bindings.cuda_runtime_api cimport _Stream
 
 # This file declared public structs and API calls
 # from the ClaraGenomicsAnalysis `cudaaligner` module.
@@ -41,14 +40,17 @@ cdef extern from "claragenomics/cudaaligner/cudaaligner.hpp" namespace "claragen
     cdef enum AlignmentState:
         match = 0
         mismatch
-        insertion # Absent in query, present in target
-        deletion # Present in query, absent in target
+        insertion  # Absent in query, present in target
+        deletion   # Present in query, absent in target
 
     cdef StatusType Init()
 
 # Declare structs and APIs from alignment.hpp
 cdef extern from "claragenomics/cudaaligner/alignment.hpp" namespace "claragenomics::cudaaligner":
-    ctypedef pair[string, string] FormattedAlignment
+    ctypedef struct  FormattedAlignment:
+        string query
+        string pairing
+        string target
 
     cdef cppclass Alignment:
         string get_query_sequence() except +
@@ -68,4 +70,4 @@ cdef extern from "claragenomics/cudaaligner/aligner.hpp" namespace "claragenomic
         vector[shared_ptr[Alignment]] get_alignments() except +
         void reset() except +
 
-    unique_ptr[Aligner] create_aligner(int32_t, int32_t, int32_t, AlignmentType, _Stream, int32_t)
+    unique_ptr[Aligner] create_aligner(int32_t, int32_t, int32_t, AlignmentType, _Stream, int32_t, int64_t)

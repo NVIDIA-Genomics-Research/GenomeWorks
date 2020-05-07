@@ -149,7 +149,7 @@ if __name__ == "__main__":
     script_dir = os.path.dirname(os.path.realpath(__file__))
     root_dir = os.path.abspath(os.path.dirname(os.path.dirname(script_dir)))
     files = get_tracked_files(root_dir)
-    files = filter_files(files, r"LICENSE|README|data\/|docs\/")
+    files = filter_files(files, r"LICENSE|README|VERSION|data\/|docs\/")
 
     # Git list of files missing headers.
     missing_header_files = [f for f in files if not copyright_present(f)]

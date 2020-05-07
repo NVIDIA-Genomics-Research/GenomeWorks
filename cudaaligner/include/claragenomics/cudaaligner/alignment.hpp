@@ -24,11 +24,23 @@ namespace cudaaligner
 /// \addtogroup cudaaligner
 /// \{
 
-/// \typedef FormattedAlignment
-/// Holds formatted strings representing an alignment.
-/// FormattedAlignment.first = formatted string for query
-/// FormattedAlignment.second = formatted string for target
-typedef std::pair<std::string, std::string> FormattedAlignment;
+/// FormattedAlignment -Holds formatted strings representing an alignment.
+typedef struct FormattedAlignment
+{
+    /// \brief FormattedAlignment.query = formatted string for query
+    std::string query;
+    /// \brief FormattedAlignment.pairing = formatted pairing string
+    std::string pairing;
+    /// \brief FormattedAlignment.target = formatted string for target
+    std::string target;
+    /// \brief Maximal line length when outputting to ostream, default = 80 (default terminal size)
+    uint32_t linebreak_after = 80;
+} FormattedAlignment;
+
+/// \brief Write FormattedAlignment struct content to output stream
+///
+/// \return ostream
+std::ostream& operator<<(std::ostream& os, const FormattedAlignment& formatted_alignment);
 
 /// Alignment - Object encapsulating an alignment between 2 string.
 class Alignment
@@ -67,7 +79,7 @@ public:
     virtual const std::vector<AlignmentState>& get_alignment() const = 0;
 
     /// \brief Print formatted alignment to stderr.
-    virtual FormattedAlignment format_alignment() const = 0;
+    virtual FormattedAlignment format_alignment(int32_t maximal_line_length = 80) const = 0;
 };
 
 /// \}

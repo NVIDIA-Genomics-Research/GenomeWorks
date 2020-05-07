@@ -19,7 +19,7 @@ The `cudaaligner` package provides GPU-accelerated global alignment.
 
 ### cudamapper
 
-**Note** cudamapper is still in pre-alpha stage and should be considered experimental.
+**Note** cudamapper is still under heavy development and should be considered experimental.
 
 The `cudamapper` package provides minimizer-based GPU-accelerated approximate mapping. `cudamapper` outputs mappings in
 the PAF format and is currently optimised for all-vs-all long read (ONT, Pacific Biosciences) sequences.
@@ -58,10 +58,9 @@ git clone --recursive git@github.com:clara-genomics/ClaraGenomicsAnalysis.git
 Minimum requirements -
 
 1. Ubuntu 16.04 or Ubuntu 18.04
-2. CUDA 9.0+
+2. CUDA 9.0+ (official instructions for installing CUDA are available [here](https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html))
 3. gcc/g++ 5.4.0+
 4. Python 3.6.7+
-5. htslib 1.9+ (https://github.com/samtools/htslib, also requires `zlib1g-dev`, `libbz2-dev` and `liblzma-dev` to be installed on Ubuntu)
 
 ## Clara Genomics Analysis Setup
 
@@ -71,9 +70,13 @@ To build Clara Genomics Analysis -
 ```bash
 mkdir build
 cd build
-cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=install
+cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=install -Dcga_cuda_gen_all_arch=OFF
 make -j install
 ```
+
+NOTE : The `cga_cuda_gen_all_arch=OFF` option pre-generates optimized code only for the GPU(s) on your system.
+For building a binary that pre-generates opimized code for all common GPU architectures, please remove the option
+or set it to `ON`.
 
 ### Install
 To install the SDK -
@@ -165,7 +168,8 @@ CI system for Clara Genomics Analysis run `flake8` to check the style.
 
 To run style check manually, simply run the following from the top level folder.
 ```
-flake8 pyclaragenomics/
+pip install -r ci/checks/python-style-requirements.txt
+./pyclaragenomics/style_check
 ```
 
 ## Running CI Tests Locally
