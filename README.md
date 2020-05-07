@@ -182,6 +182,6 @@ Other images from [gpuci/clara-genomics-base](https://hub.docker.com/r/gpuci/cla
 bash ci/local/build.sh -r <ClaraGenomicsAnalysis repo path> -i gpuci/clara-genomics-base:cuda10.0-ubuntu18.04-gcc7-py3.6
 ```
 
-## PyClaraGenomics
+## pyclaragenomics 
 The python API for the Clara Genomics Analysis SDK is available through the `pyclaragenomics` package. More details
-on how to use and develop `pyclaragenomics` can be found in the [PyClaragenomics README](pyclaragenomics/README.md).
+on how to use and develop `pyclaragenomics` can be found in the [pyclaragenomics README](pyclaragenomics/README.md).

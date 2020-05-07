@@ -60,7 +60,7 @@ pip install -r requirements.txt
 python setup_pyclaragenomics.py --create_wheel_only
 ```
 
-## Enable Doc Generation
+### Enable Doc Generation
 `pyclaragenomics` documentation generation is managed through `Sphinx`.
 
 NOTE: `pyclaragenomics` needs to be built completely in order for the
@@ -78,7 +78,7 @@ sphinx-apidoc --implicit-namespaces -f -o source/ ../claragenomics/ ../clarageno
 make html
 ```
 
-## Code Formatting
+### Code Formatting
 
 Clara Genomics Analysis follows the PEP-8 style guidelines for all its Python code. The automated
 CI system for Clara Genomics Analysis run `flake8` to check the style.
