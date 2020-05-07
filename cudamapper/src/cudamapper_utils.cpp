@@ -15,6 +15,7 @@
 #include <omp.h>
 
 #include <claragenomics/io/fasta_parser.hpp>
+#include <claragenomics/utils/cudautils.hpp>
 
 namespace claragenomics
 {
@@ -28,6 +29,8 @@ void print_paf(const std::vector<Overlap>& overlaps,
                const std::int32_t kmer_size,
                std::mutex& write_output_mutex)
 {
+    CGA_NVTX_RANGE(profiler, "print_paf");
+
     assert(!cigar.empty() || (overlaps.size() && cigar.size()));
 
 #pragma omp parallel
@@ -95,8 +98,11 @@ void print_paf(const std::vector<Overlap>& overlaps,
         }
         buffer[chars_in_buffer] = '\0';
 
-        std::lock_guard<std::mutex> lg(write_output_mutex);
-        printf("%s", buffer.data());
+        {
+            CGA_NVTX_RANGE(profiler, "print_paf::writing_to_disk");
+            std::lock_guard<std::mutex> lg(write_output_mutex);
+            printf("%s", buffer.data());
+        }
     }
 }
 

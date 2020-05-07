@@ -201,6 +201,7 @@ void process_one_device_batch(const IndexBatch& device_batch,
                               ThreadsafeProducerConsumer<OverlapsAndCigars>& overlaps_and_cigars_to_write,
                               cudaStream_t cuda_stream)
 {
+    CGA_NVTX_RANGE(profiler, "main::process_one_device_batch");
     const std::vector<IndexDescriptor>& query_index_descriptors  = device_batch.query_indices;
     const std::vector<IndexDescriptor>& target_index_descriptors = device_batch.target_indices;
 
@@ -274,14 +275,18 @@ void process_one_batch(const BatchOfIndices& batch,
                        ThreadsafeProducerConsumer<OverlapsAndCigars>& overlaps_and_cigars_to_write,
                        cudaStream_t cuda_stream)
 {
+    CGA_NVTX_RANGE(profiler, "main::process_one_batch");
     const IndexBatch& host_batch                  = batch.host_batch;
     const std::vector<IndexBatch>& device_batches = batch.device_batches;
 
     // load indices into host memory
-    host_cache.generate_query_cache_content(host_batch.query_indices,
-                                            device_batches.front().query_indices);
-    host_cache.generate_target_cache_content(host_batch.target_indices,
-                                             device_batches.front().target_indices);
+    {
+        CGA_NVTX_RANGE(profiler, "main::process_one_batch::host_indices");
+        host_cache.generate_query_cache_content(host_batch.query_indices,
+                                                device_batches.front().query_indices);
+        host_cache.generate_target_cache_content(host_batch.target_indices,
+                                                 device_batches.front().target_indices);
+    }
 
     // process device batches one by one
     for (const IndexBatch& device_batch : batch.device_batches)
@@ -305,6 +310,7 @@ void writer_thread_function(const std::int32_t device_id,
                             ThreadsafeProducerConsumer<OverlapsAndCigars>& overlaps_and_cigars_to_write,
                             std::mutex& output_mutex)
 {
+    CGA_NVTX_RANGE(profiler, "main::writer_thread");
     // This function is expected to run in a separate thread so set current device in order to avoid problems
     CGA_CU_CHECK_ERR(cudaSetDevice(device_id));
 
@@ -312,14 +318,19 @@ void writer_thread_function(const std::int32_t device_id,
     cga_optional_t<OverlapsAndCigars> data_to_write = overlaps_and_cigars_to_write.get_next_element();
     while (data_to_write) // if optional is empty that means that there will be no more overlaps to process and the thread can finish
     {
+        CGA_NVTX_RANGE(profiler, "main::writer_thread::one_set");
         std::vector<Overlap>& overlaps         = data_to_write->overlaps;
         const std::vector<std::string>& cigars = data_to_write->cigars;
 
-        // Overlap post processing - add overlaps which can be combined into longer ones.
-        Overlapper::post_process_overlaps(data_to_write->overlaps);
+        {
+            CGA_NVTX_RANGE(profiler, "main::writer_thread::postprocessing");
+            // Overlap post processing - add overlaps which can be combined into longer ones.
+            Overlapper::post_process_overlaps(data_to_write->overlaps);
+        }
 
         // write to output
         {
+            CGA_NVTX_RANGE(profiler, "main::writer_thread::print_paf");
             print_paf(overlaps,
                       cigars,
                       *application_parameters.query_parser,
@@ -348,6 +359,8 @@ void worker_thread_function(const std::int32_t device_id,
                             std::mutex& output_mutex,
                             cudaStream_t cuda_stream)
 {
+    CGA_NVTX_RANGE(profiler, "main::worker_thread");
+
     // This function is expected to run in a separate thread so set current device in order to avoid problems
     CGA_CU_CHECK_ERR(cudaSetDevice(device_id));
 
