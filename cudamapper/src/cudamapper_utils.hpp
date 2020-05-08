@@ -50,8 +50,16 @@ namespace cudamapper
 void fuse_overlaps(std::vector<Overlap>& fused_overlaps, const std::vector<Overlap>& unfused_overlaps);
 
 
+/// \brief Given a string s, produce its kmers (length <kmer-length>) and return them as a vector of strings.
+/// \param s A string sequence to kmerize.
+/// \param kmer_length A kmer length to use for producing kmers.
+/// \param stride The number of bases to skip when selecting kmers (most often, this should be equal to 1).
 std::vector<std::string> kmerize_string(const std::string& s, int kmer_length, int stride);
 
+
+/// \brief Given two sorted vectors of comparable types, return a size_t count of the number of shared elements.
+/// \param a A vector of elements. These must be comparable (i.e., they must implement the == and < operators).
+/// \param b A vector of elements. These must be comparable and must be the same type as those in a.
 template<typename T>
 std::size_t count_shared_elements(const std::vector<T>& a, const std::vector<T>& b);
 
