@@ -9,6 +9,7 @@
 */
 
 #include <vector>
+#include <algorithm>
 
 #include "claragenomics/cudamapper/types.hpp"
 
@@ -65,5 +66,51 @@ void fuse_overlaps(std::vector<Overlap>& fused_overlaps, const std::vector<Overl
     set_relative_strand(fused_overlap);
     fused_overlaps.push_back(fused_overlap);
 }
+
+
+std::vector<std::string> kmerize_string(const std::string& s, int kmer_length, int stride){
+    std::size_t kmer_count = s.length() - kmer_length + 1;
+    std::vector<std::string> kmers;
+    for (std::size_t i = 0; i < kmer_count; i += stride){
+        kmers.push_back(s.substr(i, i + kmer_length));
+    }
+    return kmers;
+}
+
+template<typename T>
+std::size_t count_shared_elements(const std::vector<T>& a, const std::vector<T>& b){
+    std::size_t a_index = 0;
+    std::size_t b_index = 0;
+    std::size_t shared_count = 0;
+
+    while (a_index < a.size() && b_index < b.size()){
+        if (a[a_index] == b[b_index]){
+            ++shared_count;
+            ++a_index;
+            ++b_index;
+        }
+        else if (a[a_index] < b[b_index]){
+            ++a_index;
+        }
+        else {
+            ++b_index;
+        }
+    }
+    return shared_count;
+}
+
+float similarity(std::string a, std::string b, int kmer_length, int stride){
+    std::vector<std::string> a_kmers = kmerize_string(a, kmer_length, stride);
+    std::vector<std::string> b_kmers = kmerize_string(b, kmer_length, stride);
+    std::sort(a_kmers.begin(), a_kmers.end());
+    std::sort(b_kmers.begin(), b_kmers.end());
+
+    std::size_t shared_kmers = count_shared_elements(a_kmers, b_kmers);
+    // Calculate "containment", i.e., the total number of shared elements divided by
+    // the number of elements in the smallest set. Min: 0, Max: 1.
+    std::size_t shortest_kmer_set_length = std::min(a_kmers.size(), b_kmers.size());
+    return static_cast<float>(shared_kmers) / static_cast<float>(shortest_kmer_set_length);
+}
+
 } // namespace cudamapper
 } // namespace claragenomics
