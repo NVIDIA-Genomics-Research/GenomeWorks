@@ -57,4 +57,9 @@ logger "Build Pyclaragenomics..."
 cd "${WORKSPACE}"
 source ci/common/test-pyclaragenomics.sh "${WORKSPACE}"/pyclaragenomics
 
+# disable uploads from GPU jobs for now
+#logger "Upload Wheel to PyPI..."
+#cd "${WORKSPACE}"
+#source ci/release/pypi_uploader.sh
+
 logger "Done..."

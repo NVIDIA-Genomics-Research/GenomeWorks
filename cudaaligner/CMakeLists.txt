@@ -16,6 +16,7 @@ set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -std=c++14 --expt-relaxed-constexpr")
 else()
 set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -std=c++14")
 endif()
+message(STATUS "nvcc flags for cudaaligner: ${CUDA_NVCC_FLAGS}")
 
 get_property(cga_library_type GLOBAL PROPERTY cga_library_type)
 cuda_add_library(cudaaligner ${cga_library_type}
