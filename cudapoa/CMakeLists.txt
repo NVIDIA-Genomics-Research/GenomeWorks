@@ -20,7 +20,6 @@ get_property(cga_library_type GLOBAL PROPERTY cga_library_type)
 cuda_add_library(cudapoa ${cga_library_type}
     src/cudapoa.cpp
     src/cudapoa_kernels.cu
-    src/cudapoa_nw_banded.cu
     src/batch.cpp
     )
 
