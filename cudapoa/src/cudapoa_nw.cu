@@ -448,10 +448,9 @@ __device__
 
         } // end of while
 
-        /// ToDo replace UINT16_MAX
         if (loop_count >= (read_length + graph_count + 2))
         {
-            aligned_nodes = UINT16_MAX;
+            aligned_nodes = -1;
         }
 
 #ifdef NW_VERBOSE_PRINT

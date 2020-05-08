@@ -276,7 +276,7 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
 
         __syncwarp();
 
-        if (alignment_length == UINT16_MAX)
+        if (alignment_length == -1)
         {
             if (lane_idx == 0)
             {
