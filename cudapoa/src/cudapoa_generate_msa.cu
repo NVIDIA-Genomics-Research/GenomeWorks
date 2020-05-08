@@ -186,7 +186,7 @@ __global__ void generateMSAKernel(uint8_t* nodes_d,
                                        check_aligned_nodes,
                                        nodes_to_visit,
                                        cuda_banded_alignment,
-                                       (uint16_t)max_nodes_per_window);
+                                       static_cast<SizeT>(max_nodes_per_window));
 
         msa_length = getNodeIDToMSAPosDevice<SizeT>(sequence_lengths[0],
                                                     sorted_poa,
