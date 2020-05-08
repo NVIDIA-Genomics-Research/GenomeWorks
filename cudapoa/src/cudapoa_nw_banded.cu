@@ -191,7 +191,7 @@ __device__
 {
 
     CGA_CONSTEXPR ScoreT score_type_min_limit = numeric_limits<ScoreT>::min();
-    const ScoreT min_score_value              = abs(min(min(gap_score, mismatch_score), match_score) - 1) + score_type_min_limit;
+    const ScoreT min_score_value              = 2 * abs(min(min(gap_score, mismatch_score), -match_score) - 1) + score_type_min_limit;
 
     int16_t lane_idx = threadIdx.x % WARP_SIZE;
 
