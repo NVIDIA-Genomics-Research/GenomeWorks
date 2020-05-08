@@ -49,5 +49,23 @@ namespace cudamapper
 /// \param unfused_overlaps vector of overlaps, sorted by (query_id, target_id) combination and query_start_position
 void fuse_overlaps(std::vector<Overlap>& fused_overlaps, const std::vector<Overlap>& unfused_overlaps);
 
+
+std::vector<std::string> kmerize_string(const std::string& s, int kmer_length, int stride);
+
+template<typename T>
+std::size_t count_shared_elements(const std::vector<T>& a, const std::vector<T>& b);
+
+/// \brief Given two sequences 'a' and 'b', calculate an estimate of their similarity
+/// Calculates the approximate nucleotide identity (or "similarity")
+/// estimated from the Jaccard index of the kmers of strings a and b.
+/// Note: This function assumes that a and b are on the same strand; you may need to 
+/// reverse-complement one of the strings if testing similarity on strings from different
+/// strands.
+/// \param a A C++ string
+/// \param b A C++ string
+/// \param kmer_length The kmer length to use for estimating similarity.
+/// \param stride The number of bases to stride between kmers.
+float similarity(std::string a, std::string b, int kmer_length, int stride);
+
 } // namespace cudamapper
 } // namespace claragenomics
