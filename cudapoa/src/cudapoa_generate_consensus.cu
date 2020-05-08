@@ -23,9 +23,9 @@ namespace cudapoa
 template <typename SizeT>
 __device__
     SizeT
-    branchCompletion(uint16_t max_score_id_pos,
+    branchCompletion(SizeT max_score_id_pos,
                      uint8_t* nodes,
-                     int32_t node_count,
+                     SizeT node_count,
                      SizeT* graph,
                      SizeT* incoming_edges,
                      uint16_t* incoming_edge_count,
@@ -128,7 +128,7 @@ __device__
  */
 template <typename SizeT>
 __device__ void generateConsensus(uint8_t* nodes,
-                                  int32_t node_count,
+                                  SizeT node_count,
                                   SizeT* graph,
                                   SizeT* node_id_to_pos,
                                   SizeT* incoming_edges,
@@ -155,7 +155,7 @@ __device__ void generateConsensus(uint8_t* nodes,
     SizeT max_score_id = 0;
     int32_t max_score  = -1;
 
-    for (uint16_t graph_pos = 0; graph_pos < node_count; graph_pos++)
+    for (SizeT graph_pos = 0; graph_pos < node_count; graph_pos++)
     {
         SizeT node_id     = graph[graph_pos];
         uint16_t in_edges = incoming_edge_count[node_id];
@@ -200,7 +200,7 @@ __device__ void generateConsensus(uint8_t* nodes,
 
     // If the node with maximum score isn't a leaf of the graph
     // then run a special branch completion function.
-    uint16_t loop_count = 0;
+    SizeT loop_count = 0;
     if (outgoing_edge_count[max_score_id] != 0)
     {
         while (outgoing_edge_count[max_score_id] != 0 && loop_count < node_count)
@@ -232,7 +232,7 @@ __device__ void generateConsensus(uint8_t* nodes,
     SizeT consensus_pos = 0;
     // Use consensus_count to track how many elements are in consensus. If more than the maximum
     // size, then consensus cannot be properly represented. So throw error.
-    uint16_t consensus_count = 0;
+    SizeT consensus_count = 0;
 
     while (predecessors[max_score_id] != -1)
     {
@@ -346,7 +346,7 @@ __global__ void generateConsensusKernel(uint8_t* consensus_d,
 
 template <typename SizeT>
 __global__ void generateConsensusTestKernel(uint8_t* nodes,
-                                            int32_t node_count,
+                                            SizeT node_count,
                                             SizeT* graph,
                                             SizeT* node_id_to_pos,
                                             SizeT* incoming_edges,
@@ -384,7 +384,7 @@ __global__ void generateConsensusTestKernel(uint8_t* nodes,
 
 template <typename SizeT>
 void generateConsensusTemplated(uint8_t* nodes,
-                                int32_t node_count,
+                                SizeT node_count,
                                 SizeT* graph,
                                 SizeT* node_id_to_pos,
                                 SizeT* incoming_edges,
