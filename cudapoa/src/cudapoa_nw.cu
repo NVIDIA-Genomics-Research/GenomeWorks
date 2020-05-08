@@ -12,6 +12,7 @@
 #include "cudastructs.cuh"
 
 #include <claragenomics/utils/cudautils.hpp>
+#include <claragenomics/utils/limits.cuh>
 
 #include <stdio.h>
 
@@ -163,8 +164,9 @@ __device__
 
     static_assert(CPT == 4, "implementation currently supports only 4 cells per thread");
 
-    int16_t lane_idx = threadIdx.x % WARP_SIZE;
+    CGA_CONSTEXPR ScoreT score_type_min_limit = numeric_limits<ScoreT>::min();
 
+    int16_t lane_idx = threadIdx.x % WARP_SIZE;
     int64_t score_index;
 
     // Init horizonal boundary conditions (read).
@@ -191,7 +193,7 @@ __device__
             }
             else
             {
-                ScoreT penalty = SHRT_MIN;
+                ScoreT penalty = score_type_min_limit;
                 for (uint16_t p = 0; p < pred_count; p++)
                 {
                     SizeT pred_node_id        = incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES + p];
@@ -327,7 +329,7 @@ __device__
         // Find location of the maximum score in the matrix.
         SizeT i       = 0;
         SizeT j       = read_length;
-        ScoreT mscore = SHRT_MIN;
+        ScoreT mscore = score_type_min_limit;
 
         for (SizeT idx = 1; idx <= graph_count; idx++)
         {

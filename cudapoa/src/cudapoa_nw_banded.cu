@@ -12,6 +12,7 @@
 #include "cudastructs.cuh"
 
 #include <claragenomics/utils/cudautils.hpp>
+#include <claragenomics/utils/limits.cuh>
 
 #include <stdio.h>
 
@@ -99,14 +100,14 @@ __device__ void initialize_band(ScoreT* scores, SizeT row, ScoreT value, float g
 };
 
 template <typename ScoreT, typename SizeT>
-__device__ ScoreT get_score(ScoreT* scores, SizeT row, SizeT column, float gradient, SizeT bandwidth, SizeT max_column, const ScoreT out_of_band_score_offset)
+__device__ ScoreT get_score(ScoreT* scores, SizeT row, SizeT column, float gradient, SizeT bandwidth, SizeT max_column, const ScoreT min_score_value)
 {
     SizeT band_start = get_band_start_for_row(row, gradient, bandwidth, max_column);
     SizeT band_end   = band_start + bandwidth;
 
     if (((column > band_end) || (column < band_start)) && column != 0)
     {
-        return static_cast<ScoreT>(SHRT_MIN + out_of_band_score_offset);
+        return min_score_value;
     }
     else
     {
@@ -188,8 +189,11 @@ __device__
                              ScoreT mismatch_score,
                              ScoreT match_score)
 {
-    const ScoreT min_score_abs = abs(min(min(gap_score, mismatch_score), match_score) - 1);
-    int16_t lane_idx           = threadIdx.x % WARP_SIZE;
+
+    CGA_CONSTEXPR ScoreT score_type_min_limit = numeric_limits<ScoreT>::min();
+    const ScoreT min_score_value              = abs(min(min(gap_score, mismatch_score), match_score) - 1) + score_type_min_limit;
+
+    int16_t lane_idx = threadIdx.x % WARP_SIZE;
 
     //Calculate gradient for the scores matrix
     float gradient = float(read_length + 1) / float(graph_count + 1);
@@ -226,12 +230,12 @@ __device__
             }
             else
             {
-                ScoreT penalty = SHRT_MIN;
+                ScoreT penalty = score_type_min_limit;
                 for (uint16_t p = 0; p < pred_count; p++)
                 {
                     SizeT pred_node_id        = incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES + p];
                     SizeT pred_node_graph_pos = node_id_to_pos[pred_node_id] + 1;
-                    penalty                   = max(penalty, get_score(scores, pred_node_graph_pos, (SizeT)0, gradient, band_width, static_cast<SizeT>(read_length + 1), min_score_abs));
+                    penalty                   = max(penalty, get_score(scores, pred_node_graph_pos, (SizeT)0, gradient, band_width, static_cast<SizeT>(read_length + 1), min_score_value));
                 }
                 set_score(scores, i, (SizeT)0, static_cast<ScoreT>(penalty + gap_score), gradient, band_width, max_column);
             }
@@ -250,9 +254,9 @@ __device__
 
         SizeT band_start = get_band_start_for_row(score_gIdx, gradient, band_width, static_cast<SizeT>(read_length + 1));
 
-        initialize_band(scores, score_gIdx, static_cast<ScoreT>(SHRT_MIN + min_score_abs), gradient, band_width, static_cast<SizeT>(read_length + 1));
+        initialize_band(scores, score_gIdx, min_score_value, gradient, band_width, static_cast<SizeT>(read_length + 1));
 
-        ScoreT first_element_prev_score = get_score(scores, score_gIdx, (SizeT)0, gradient, band_width, static_cast<SizeT>(read_length + 1), min_score_abs);
+        ScoreT first_element_prev_score = get_score(scores, score_gIdx, (SizeT)0, gradient, band_width, static_cast<SizeT>(read_length + 1), min_score_value);
 
         uint16_t pred_count = incoming_edge_count[node_id];
 
@@ -271,13 +275,13 @@ __device__
             char_profile.s2 = (graph_base == read4.r2 ? match_score : mismatch_score);
             char_profile.s3 = (graph_base == read4.r3 ? match_score : mismatch_score);
 
-            ScoreT4<ScoreT> score = get_scores(read_pos, scores, pred_idx, gap_score, char_profile, gradient, band_width, static_cast<ScoreT>(SHRT_MIN + min_score_abs), static_cast<SizeT>(read_length + 1));
+            ScoreT4<ScoreT> score = get_scores(read_pos, scores, pred_idx, gap_score, char_profile, gradient, band_width, min_score_value, static_cast<SizeT>(read_length + 1));
 
             // Perform same score updates as above, but for rest of predecessors.
             for (uint16_t p = 1; p < pred_count; p++)
             {
                 SizeT pred_idx2          = node_id_to_pos[incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES + p]] + 1;
-                ScoreT4<ScoreT> scores_4 = get_scores(read_pos, scores, pred_idx2, gap_score, char_profile, gradient, band_width, static_cast<ScoreT>(SHRT_MIN + min_score_abs), static_cast<SizeT>(read_length + 1));
+                ScoreT4<ScoreT> scores_4 = get_scores(read_pos, scores, pred_idx2, gap_score, char_profile, gradient, band_width, min_score_value, static_cast<SizeT>(read_length + 1));
 
                 score.s0 = max(score.s0, scores_4.s0);
                 score.s1 = max(score.s1, scores_4.s1);
@@ -355,13 +359,13 @@ __device__
         // Find location of the maximum score in the matrix.
         SizeT i       = 0;
         SizeT j       = read_length;
-        ScoreT mscore = SHRT_MIN;
+        ScoreT mscore = score_type_min_limit;
 
         for (SizeT idx = 1; idx <= graph_count; idx++)
         {
             if (outgoing_edge_count[graph[idx - 1]] == 0)
             {
-                ScoreT s = get_score(scores, idx, j, gradient, band_width, static_cast<SizeT>(read_length + 1), min_score_abs);
+                ScoreT s = get_score(scores, idx, j, gradient, band_width, static_cast<SizeT>(read_length + 1), min_score_value);
                 if (mscore < s)
                 {
                     mscore = s;
@@ -378,7 +382,7 @@ __device__
         while (!(i == 0 && j == 0) && loop_count < static_cast<int32_t>(read_length + graph_count + 2))
         {
             loop_count++;
-            ScoreT scores_ij = get_score(scores, i, j, gradient, band_width, static_cast<SizeT>(read_length + 1), min_score_abs);
+            ScoreT scores_ij = get_score(scores, i, j, gradient, band_width, static_cast<SizeT>(read_length + 1), min_score_value);
             bool pred_found  = false;
             // Check if move is diagonal.
             if (i != 0 && j != 0)
@@ -390,7 +394,7 @@ __device__
                 uint16_t pred_count = incoming_edge_count[node_id];
                 SizeT pred_i        = (pred_count == 0 ? 0 : (node_id_to_pos[incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES]] + 1));
 
-                if (scores_ij == (get_score(scores, pred_i, static_cast<SizeT>(j - 1), gradient, band_width, static_cast<SizeT>(read_length + 1), min_score_abs) + match_cost))
+                if (scores_ij == (get_score(scores, pred_i, static_cast<SizeT>(j - 1), gradient, band_width, static_cast<SizeT>(read_length + 1), min_score_value) + match_cost))
                 {
                     prev_i     = pred_i;
                     prev_j     = j - 1;
@@ -403,7 +407,7 @@ __device__
                     {
                         pred_i = (node_id_to_pos[incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES + p]] + 1);
 
-                        if (scores_ij == (get_score(scores, pred_i, static_cast<SizeT>(j - 1), gradient, band_width, static_cast<SizeT>(read_length + 1), min_score_abs) + match_cost))
+                        if (scores_ij == (get_score(scores, pred_i, static_cast<SizeT>(j - 1), gradient, band_width, static_cast<SizeT>(read_length + 1), min_score_value) + match_cost))
                         {
                             prev_i     = pred_i;
                             prev_j     = j - 1;
@@ -421,7 +425,7 @@ __device__
                 uint16_t pred_count = incoming_edge_count[node_id];
                 SizeT pred_i        = (pred_count == 0 ? 0 : node_id_to_pos[incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES]] + 1);
 
-                if (scores_ij == get_score(scores, pred_i, j, gradient, band_width, static_cast<SizeT>(read_length + 1), min_score_abs) + gap_score)
+                if (scores_ij == get_score(scores, pred_i, j, gradient, band_width, static_cast<SizeT>(read_length + 1), min_score_value) + gap_score)
                 {
                     prev_i     = pred_i;
                     prev_j     = j;
@@ -434,7 +438,7 @@ __device__
                     {
                         pred_i = node_id_to_pos[incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES + p]] + 1;
 
-                        if (scores_ij == get_score(scores, pred_i, j, gradient, band_width, static_cast<SizeT>(read_length + 1), min_score_abs) + gap_score)
+                        if (scores_ij == get_score(scores, pred_i, j, gradient, band_width, static_cast<SizeT>(read_length + 1), min_score_value) + gap_score)
                         {
                             prev_i     = pred_i;
                             prev_j     = j;
@@ -446,7 +450,7 @@ __device__
             }
 
             // Check if move is horizontal.
-            if (!pred_found && scores_ij == get_score(scores, i, static_cast<SizeT>(j - 1), gradient, band_width, static_cast<SizeT>(read_length + 1), min_score_abs) + gap_score)
+            if (!pred_found && scores_ij == get_score(scores, i, static_cast<SizeT>(j - 1), gradient, band_width, static_cast<SizeT>(read_length + 1), min_score_value) + gap_score)
             {
                 prev_i     = i;
                 prev_j     = j - 1;
