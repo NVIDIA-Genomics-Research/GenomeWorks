@@ -61,7 +61,7 @@ __device__
                         SizeT* incoming_edges, uint16_t* incoming_edge_count,
                         SizeT* outgoing_edges, uint16_t* outgoing_edge_count,
                         uint16_t* incoming_edge_w, uint16_t* /*outgoing_edge_w*/,
-                        uint16_t alignment_length,
+                        SizeT alignment_length,
                         SizeT* /*graph*/,
                         SizeT* alignment_graph,
                         uint8_t* read,
@@ -89,7 +89,7 @@ __device__
     //         if node base doesn't match, check other aligned nodes
     //             if none of the other aligned nodes match, add new node
     //             else use one of aligned nodes and move on.
-    for (int16_t pos = alignment_length - 1; pos >= 0; pos--)
+    for (SizeT pos = alignment_length - 1; pos >= 0; pos--)
     {
         bool new_node  = false;
         SizeT read_pos = alignment_read[pos];
@@ -281,7 +281,7 @@ __global__ void addAlignmentKernel(uint8_t* nodes,
                                    SizeT* incoming_edges, uint16_t* incoming_edge_count,
                                    SizeT* outgoing_edges, uint16_t* outgoing_edge_count,
                                    uint16_t* incoming_edge_w, uint16_t* outgoing_edge_w,
-                                   uint16_t* alignment_length,
+                                   SizeT* alignment_length,
                                    SizeT* graph,
                                    SizeT* alignment_graph,
                                    uint8_t* read,
@@ -327,7 +327,7 @@ void addAlignmentTemplated(uint8_t* nodes,
                            SizeT* incoming_edges, uint16_t* incoming_edge_count,
                            SizeT* outgoing_edges, uint16_t* outgoing_edge_count,
                            uint16_t* incoming_edge_w, uint16_t* outgoing_edge_w,
-                           uint16_t* alignment_length,
+                           SizeT* alignment_length,
                            SizeT* graph,
                            SizeT* alignment_graph,
                            uint8_t* read,
