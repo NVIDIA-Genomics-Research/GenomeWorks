@@ -67,39 +67,46 @@ void fuse_overlaps(std::vector<Overlap>& fused_overlaps, const std::vector<Overl
     fused_overlaps.push_back(fused_overlap);
 }
 
-
-std::vector<std::string> kmerize_string(const std::string& s, int kmer_length, int stride){
+std::vector<std::string> kmerize_string(const std::string& s, int kmer_length, int stride)
+{
     std::size_t kmer_count = s.length() - kmer_length + 1;
     std::vector<std::string> kmers;
-    for (std::size_t i = 0; i < kmer_count; i += stride){
+    for (std::size_t i = 0; i < kmer_count; i += stride)
+    {
         kmers.push_back(s.substr(i, i + kmer_length));
     }
     return kmers;
 }
 
-template<typename T>
-std::size_t count_shared_elements(const std::vector<T>& a, const std::vector<T>& b){
-    std::size_t a_index = 0;
-    std::size_t b_index = 0;
+template <typename T>
+std::size_t count_shared_elements(const std::vector<T>& a, const std::vector<T>& b)
+{
+    std::size_t a_index      = 0;
+    std::size_t b_index      = 0;
     std::size_t shared_count = 0;
 
-    while (a_index < a.size() && b_index < b.size()){
-        if (a[a_index] == b[b_index]){
+    while (a_index < a.size() && b_index < b.size())
+    {
+        if (a[a_index] == b[b_index])
+        {
             ++shared_count;
             ++a_index;
             ++b_index;
         }
-        else if (a[a_index] < b[b_index]){
+        else if (a[a_index] < b[b_index])
+        {
             ++a_index;
         }
-        else {
+        else
+        {
             ++b_index;
         }
     }
     return shared_count;
 }
 
-float similarity(std::string a, std::string b, int kmer_length, int stride){
+float similarity(std::string a, std::string b, int kmer_length, int stride)
+{
     std::vector<std::string> a_kmers = kmerize_string(a, kmer_length, stride);
     std::vector<std::string> b_kmers = kmerize_string(b, kmer_length, stride);
     std::sort(a_kmers.begin(), a_kmers.end());
