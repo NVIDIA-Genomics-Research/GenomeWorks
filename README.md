@@ -140,7 +140,6 @@ To disable documentation generation add `-Dcga_generate_docs=OFF` to the `cmake`
 
 ## Code Formatting
 
-### C++ / CUDA
 Clara Genomics Analysis makes use of `clang-format` to format it's source and header files. To make use of
 auto-formatting, `clang-format` would have to be installed from the LLVM package (for latest builds,
 best to refer to http://releases.llvm.org/download.html).
@@ -160,16 +159,6 @@ To check if files are correct formatted, run the following in your build directo
 
 ```bash
 make check-format
-```
-
-### Python
-Clara Genomics Analysis follows the PEP-8 style guidelines for all its Python code. The automated
-CI system for Clara Genomics Analysis run `flake8` to check the style.
-
-To run style check manually, simply run the following from the top level folder.
-```
-pip install -r ci/checks/python-style-requirements.txt
-./pyclaragenomics/style_check
 ```
 
 ## Running CI Tests Locally
@@ -192,3 +181,7 @@ Other images from [gpuci/clara-genomics-base](https://hub.docker.com/r/gpuci/cla
 ```bash
 bash ci/local/build.sh -r <ClaraGenomicsAnalysis repo path> -i gpuci/clara-genomics-base:cuda10.0-ubuntu18.04-gcc7-py3.6
 ```
+
+## pyclaragenomics 
+The python API for the Clara Genomics Analysis SDK is available through the `pyclaragenomics` package. More details
+on how to use and develop `pyclaragenomics` can be found in the README under `pyclaragenomics` folder.

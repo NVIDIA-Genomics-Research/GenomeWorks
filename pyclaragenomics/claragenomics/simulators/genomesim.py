@@ -62,7 +62,7 @@ class MarkovGenomeSimulator(GenomeSimulator):
         Args:
           section_idx_and_length (int, int):  tuple consisting of section id and section length
           transitions: dict of dict with all transition probabilities
-            e.g {'A': {'A':0.1,'C':0.3',...}, 'C':{'A':0.3,...}...}
+          e.g {'A': {'A':0.1,'C':0.3',...}, 'C':{'A':0.3,...}...}
           num_threads: number of threads to use when computing reference
 
         Returns:
@@ -89,7 +89,7 @@ class MarkovGenomeSimulator(GenomeSimulator):
         Args:
           reference_length (int): The desired genome length
           transitions: dict of dict with all transition probabilities
-            e.g {'A': {'A':0.1,'C':0.3',...}, 'C':{'A':0.3,...}...}
+          e.g {'A': {'A':0.1,'C':0.3',...}, 'C':{'A':0.3,...}...}
           num_threads: number of threads to use when computing reference
 
         Returns:

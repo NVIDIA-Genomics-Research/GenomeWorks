@@ -65,7 +65,8 @@ class CMakeWrapper:
         """Build and call CMake command."""
         cmake_args = ['-DCMAKE_INSTALL_PREFIX=' + self.cga_install_dir,
                       '-DCMAKE_BUILD_TYPE=' + 'Release',
-                      '-DCMAKE_INSTALL_RPATH=' + os.path.join(self.cga_install_dir, "lib")]
+                      '-DCMAKE_INSTALL_RPATH=' + os.path.join(self.cga_install_dir, "lib"),
+                      '-Dcga_generate_docs=OFF']
         cmake_args += [self.cmake_extra_args] if self.cmake_extra_args else []
 
         if self.cuda_toolkit_root_dir:

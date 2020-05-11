@@ -54,9 +54,33 @@ python setup_pyclaragenomics.py --build_output_folder BUILD_FOLDER --develop
 ### Create a Wheel package
 
 Use the following command in order to package pyclaragenomics into a wheel. (without installing)
+
 ```
 pip install -r requirements.txt
 python setup_pyclaragenomics.py --create_wheel_only
+```
+
+### Enable Doc Generation
+`pyclaragenomics` documentation generation is managed through `Sphinx`.
+
+NOTE: `pyclaragenomics` needs to be built completely in order for the
+documentation to pick up docstrings for bindings.
+
+```
+pip install -r python-style-requirements.txt
+./generate_docs
+```
+
+### Code Formatting
+
+Clara Genomics Analysis follows the PEP-8 style guidelines for all its Python code. The automated
+CI system for Clara Genomics Analysis run `flake8` to check the style.
+
+To run style check manually, simply run the following from the top level folder.
+
+```
+pip install -r python-style-requirements.txt
+./style_check
 ```
 
 ## Generating a simulated genome

@@ -1,5 +1,6 @@
+#!/usr/bin/env bash
 #
-# Copyright (c) 2019, NVIDIA CORPORATION.  All rights reserved.
+# Copyright (c) 2020, NVIDIA CORPORATION.  All rights reserved.
 #
 # NVIDIA CORPORATION and its licensors retain all intellectual property
 # and proprietary rights in and to this software, related documentation
@@ -8,11 +9,4 @@
 # license agreement from NVIDIA CORPORATION is strictly prohibited.
 #
 
-Cython==0.29.12
-networkx==2.4
-numpy==1.16.3
-pytest==4.4.1
-quast==5.0.2
-setuptools>=41.4.0
-sortedcollections==1.1.2
-tqdm==4.31.1
+export RUNNING_CI_LOCALLY=true

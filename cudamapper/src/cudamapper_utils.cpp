@@ -64,7 +64,7 @@ void print_paf(const std::vector<Overlap>& overlaps,
 
             // Add basic overlap information.
             std::int32_t added_chars = std::sprintf(buffer.data() + chars_in_buffer,
-                                                    "%s\t%lu\t%i\t%i\t%c\t%s\t%lu\t%i\t%i\t%i\t%ldem\t%i",
+                                                    "%s\t%lu\t%i\t%i\t%c\t%s\t%lu\t%i\t%i\t%i\t%ld\t%i",
                                                     query_read_name.c_str(),
                                                     query_parser.get_sequence_by_id(overlaps[i].query_read_id_).seq.length(),
                                                     overlaps[i].query_start_position_in_read_,
