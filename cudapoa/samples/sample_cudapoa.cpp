@@ -158,7 +158,7 @@ size_t estimate_max_poas(const BatchSize& batch_size, const bool banded_alignmen
     int64_t sizeof_ScoreT = use32bitScore(batch_size, gap_score, mismatch_score, match_score) ? 4 : 2;
     int64_t sizeof_SizeT  = use32bitSize(batch_size, banded_alignment) ? 4 : 2;
 
-    // calculate static and dynamic sizes of buffers needed per POA entry.
+    // Calculate memory requirements for POA arrays
     int64_t device_size_per_poa = 0;
     int64_t input_size_per_poa  = batch_size.max_sequences_per_poa * batch_size.max_sequence_size;
     int64_t output_size_per_poa = batch_size.max_concensus_size;
@@ -194,7 +194,7 @@ size_t estimate_max_poas(const BatchSize& batch_size, const bool banded_alignmen
     device_size_per_poa += sizeof_SizeT * matrix_graph_dimension;                                                                                // alignment_details_d_->alignment_graph
     device_size_per_poa += sizeof_SizeT * matrix_graph_dimension;                                                                                // alignment_details_d_->alignment_read
 
-    // Comput required size for score matrix
+    // Compute required memory for score matrix
     int64_t device_size_per_score_matrix = (int64_t)matrix_sequence_dimension * (int64_t)matrix_graph_dimension * sizeof_ScoreT;
 
     // Calculate max POAs possible based on available memory.
@@ -293,7 +293,7 @@ int main(int argc, char** argv)
     int c            = 0;
     bool msa         = false;
     bool long_read   = false;
-    bool banded      = false;
+    bool banded      = true;
     bool help        = false;
     bool print       = false;
     bool print_graph = false;
@@ -308,8 +308,8 @@ int main(int argc, char** argv)
         case 'l':
             long_read = true;
             break;
-        case 'b':
-            banded = true;
+        case 'f':
+            banded = false;
             break;
         case 'p':
             print = true;
@@ -330,7 +330,7 @@ int main(int argc, char** argv)
         std::cout << "./sample_cudapoa [-m] [-h]" << std::endl;
         std::cout << "-m : Generate MSA (if not provided, generates consensus by default)" << std::endl;
         std::cout << "-l : Perform long-read sample (if not provided, will run short-read sample by default)" << std::endl;
-        std::cout << "-b : Perform banded alignment (if not provided, full alignment is used by default)" << std::endl;
+        std::cout << "-f : Perform full alignment (if not provided, banded alignment is used by default)" << std::endl;
         std::cout << "-p : Print the MSA or consensus output to stdout" << std::endl;
         std::cout << "-g : Print POA graph in dot format, this option is only for long-read sample" << std::endl;
         std::cout << "-h : Print help message" << std::endl;
@@ -348,7 +348,7 @@ int main(int argc, char** argv)
     if (long_read)
     {
         const std::string input_file = std::string(CUDAPOA_BENCHMARK_DATA_DIR) + "/sample-bonito.txt";
-        generate_window_data(input_file, 8, 6, windows, batch_size);
+        generate_window_data(input_file, 200, 6, windows, batch_size);
     }
     else
     {
@@ -365,8 +365,8 @@ int main(int argc, char** argv)
 
     for (size_t b = 0; b < list_of_batch_sizes.size(); b++)
     {
-        auto& batch_size    = list_of_batch_sizes[b];
-        auto& batch_windows = list_of_windows_per_batch[b];
+        auto& batch_size       = list_of_batch_sizes[b];
+        auto& batch_window_ids = list_of_windows_per_batch[b];
 
         // Initialize batch.
         std::unique_ptr<Batch> batch = initialize_batch(msa, banded, batch_size);
@@ -374,9 +374,9 @@ int main(int argc, char** argv)
         // Loop over all the POA groups for the current batch, add them to the batch and process them.
         int32_t window_count = 0;
 
-        for (int32_t i = 0; i < get_size(batch_windows);)
+        for (int32_t i = 0; i < get_size(batch_window_ids);)
         {
-            const std::vector<std::string>& window = windows[batch_windows[i]];
+            const std::vector<std::string>& window = windows[batch_window_ids[i]];
 
             Group poa_group;
             // Create a new entry for each sequence and add to the group.
@@ -394,7 +394,7 @@ int main(int argc, char** argv)
 
             // NOTE: If number of batch windows smaller than batch capacity, then run POA generation
             // once last window is added to batch.
-            if (status == StatusType::exceeded_maximum_poas || (i == get_size(batch_windows) - 1))
+            if (status == StatusType::exceeded_maximum_poas || (i == get_size(batch_window_ids) - 1))
             {
                 // at least one POA should have been added before processing the batch
                 if (batch->get_total_poas() > 0)
@@ -458,7 +458,7 @@ int main(int argc, char** argv)
             }
         }
 
-        window_count_offset += get_size(batch_windows);
+        window_count_offset += get_size(batch_window_ids);
     }
 
     return 0;
