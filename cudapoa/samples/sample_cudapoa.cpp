@@ -148,7 +148,7 @@ int main(int argc, char** argv)
     int c            = 0;
     bool msa         = false;
     bool long_read   = false;
-    bool banded      = false;
+    bool banded      = true;
     bool help        = false;
     bool print       = false;
     bool print_graph = false;
@@ -163,8 +163,8 @@ int main(int argc, char** argv)
         case 'l':
             long_read = true;
             break;
-        case 'b':
-            banded = true;
+        case 'f':
+            banded = false;
             break;
         case 'p':
             print = true;
@@ -185,7 +185,7 @@ int main(int argc, char** argv)
         std::cout << "./sample_cudapoa [-m] [-h]" << std::endl;
         std::cout << "-m : Generate MSA (if not provided, generates consensus by default)" << std::endl;
         std::cout << "-l : Perform long-read sample (if not provided, will run short-read sample by default)" << std::endl;
-        std::cout << "-b : Perform banded alignment (if not provided, full alignment is used by default)" << std::endl;
+        std::cout << "-f : Perform full alignment (if not provided, banded alignment is used by default)" << std::endl;
         std::cout << "-p : Print the MSA or consensus output to stdout" << std::endl;
         std::cout << "-g : Print POA graph in dot format, this option is only for long-read sample" << std::endl;
         std::cout << "-h : Print help message" << std::endl;
@@ -203,7 +203,7 @@ int main(int argc, char** argv)
     if (long_read)
     {
         const std::string input_file = std::string(CUDAPOA_BENCHMARK_DATA_DIR) + "/sample-bonito.txt";
-        generate_window_data(input_file, 8, 6, windows, batch_size);
+        generate_window_data(input_file, 55, 6, windows, batch_size);
     }
     else
     {
