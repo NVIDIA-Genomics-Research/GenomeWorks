@@ -86,7 +86,7 @@ public:
     static void rescue_overlap_ends(std::vector<Overlap>& overlaps,
                                     const io::FastaParser& query_parser,
                                     const io::FastaParser& target_parser,
-                                    std::int32_t max_extension,
+                                    std::int32_t extension,
                                     float required_similarity);
 };
 //}
