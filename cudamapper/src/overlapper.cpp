@@ -208,7 +208,7 @@ void Overlapper::post_process_overlaps(std::vector<Overlap>& overlaps)
 void Overlapper::rescue_overlap_ends(std::vector<Overlap>& overlaps,
                                      const io::FastaParser& query_parser,
                                      const io::FastaParser& target_parser,
-                                     int max_extension,
+                                     std::int32_t max_extension,
                                      float required_similarity)
 {
 
@@ -219,22 +219,35 @@ void Overlapper::rescue_overlap_ends(std::vector<Overlap>& overlaps,
 
     for (auto& overlap : overlaps)
     {
-        std::string query_sequence  = query_parser.get_sequence_by_id(overlap.query_read_id_).seq;
-        std::string target_sequence = target_parser.get_sequence_by_id(overlap.target_read_id_).seq;
-        // TODO: reverse complement target if match is on '-' relative strand.
-
-        // overlap rescue at "head" (i.e., "left-side") of overlap
-        std::size_t query_rescue_head_start  = std::min(static_cast<int32_t>(0), static_cast<int32_t>(overlap.query_start_position_in_read_) - max_extension);
-        std::size_t target_rescue_head_start = std::min(static_cast<int32_t>(0), static_cast<int32_t>(overlap.target_start_position_in_read_) - max_extension);
-        std::string query_head               = string_slice(query_sequence, query_rescue_head_start, overlap.query_start_position_in_read_);
-        std::string target_head              = string_slice(target_sequence, target_rescue_head_start, overlap.target_start_position_in_read_);
-        float head_similarity                = similarity(query_head, target_head, 15, 1);
-        if (head_similarity >= required_similarity)
+        if (overlap.relative_strand == RelativeStrand::Forward)
         {
-            overlap.query_start_position_in_read_  = query_rescue_head_start;
-            overlap.target_start_position_in_read_ = target_rescue_head_start;
+            std::string query_sequence  = query_parser.get_sequence_by_id(overlap.query_read_id_).seq;
+            std::string target_sequence = target_parser.get_sequence_by_id(overlap.target_read_id_).seq;
+            // TODO: reverse complement target if match is on '-' relative strand.
+
+            // overlap rescue at "head" (i.e., "left-side") of overlap
+            std::size_t query_rescue_head_start  = overlap.query_start_position_in_read_ > max_extension ? overlap.query_start_position_in_read_ - max_extension : overlap.query_start_position_in_read_;
+            std::size_t target_rescue_head_start = overlap.target_start_position_in_read_ > max_extension ? overlap.target_start_position_in_read_ - max_extension : overlap.target_start_position_in_read_;
+
+            if (query_rescue_head_start != overlap.query_start_position_in_read_)
+            {
+                std::cerr << "Modifying query " << std::endl;
+            }
+            // std::cerr << "query head start: " << overlap.query_start_position_in_read_ << " " << query_rescue_head_start << std::endl;
+            // std::cerr << "target head start: " << overlap.target_start_position_in_read_ << " " << target_rescue_head_start << std::endl;
+            std::string query_head = string_slice(query_sequence, query_rescue_head_start, overlap.query_start_position_in_read_);
+            std::cerr << "qstring " << query_head << std::endl;
+            std::string target_head = string_slice(target_sequence, target_rescue_head_start, overlap.target_start_position_in_read_);
+            std::cerr << "tstring " << target_head << std::endl;
+            float head_similarity = similarity(query_head, target_head, 15, 1);
+            std::cerr << head_similarity << std::endl;
+            if (head_similarity >= required_similarity)
+            {
+                overlap.query_start_position_in_read_  = query_rescue_head_start;
+                overlap.target_start_position_in_read_ = target_rescue_head_start;
+            }
+            // overlap rescue at "tail" (i.e., "right-side") of overlap
         }
-        // overlap rescue at "tail" (i.e., "right-side") of overlap
     }
 }
 
