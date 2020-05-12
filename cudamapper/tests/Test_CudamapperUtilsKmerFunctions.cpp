@@ -53,6 +53,18 @@ TEST(CountSharedElementTest, shared_strings_correctly_counted)
     ASSERT_EQ(shared_count, 3);
 }
 
+TEST(CountSharedElementsTest, empty_vectors_counted_correctly)
+{
+    std::vector<int> first;
+    std::vector<int> second;
+    std::vector<int> third{1};
+    std::size_t empty_shared_count = count_shared_elements(first, second);
+    std::size_t no_overlap_count = count_shared_elements(first, third);
+    ASSERT_EQ(empty_shared_count, 0);
+    ASSERT_EQ(no_overlap_count, 0);
+
+}
+
 TEST(SimilarityTest, similarity_of_identical_seqs_is_1)
 {
     std::string a("AAACCTATGAGGG");
