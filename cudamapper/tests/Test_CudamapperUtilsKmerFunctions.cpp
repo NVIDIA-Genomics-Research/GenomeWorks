@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2019, NVIDIA CORPORATION.  All rights reserved.
+* Copyright (c) 2020, NVIDIA CORPORATION.  All rights reserved.
 *
 * NVIDIA CORPORATION and its licensors retain all intellectual property
 * and proprietary rights in and to this software, related documentation
@@ -59,10 +59,9 @@ TEST(CountSharedElementsTest, empty_vectors_counted_correctly)
     std::vector<int> second;
     std::vector<int> third{1};
     std::size_t empty_shared_count = count_shared_elements(first, second);
-    std::size_t no_overlap_count = count_shared_elements(first, third);
+    std::size_t no_overlap_count   = count_shared_elements(first, third);
     ASSERT_EQ(empty_shared_count, 0);
     ASSERT_EQ(no_overlap_count, 0);
-
 }
 
 TEST(SimilarityTest, similarity_of_identical_seqs_is_1)
