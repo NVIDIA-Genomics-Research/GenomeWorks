@@ -93,6 +93,9 @@ void help(int32_t exit_code = 0)
               << R"(
         -z, --min-overlap-fraction
             Minimum ratio of overlap length to alignment length [0.95].)"
+              << R"(
+        -R, --rescue-overlap-ends
+            Run a kmer-based procedure that attempts to extend overlaps at the ends of the query/target.)"
               << std::endl;
 
     exit(exit_code);
@@ -116,6 +119,7 @@ struct ApplicationParameteres
     std::int32_t min_bases_per_residue          = 100;  // b
     float min_overlap_fraction                  = 0.95; // z
     bool all_to_all                             = false;
+    bool perform_overlap_end_rescue             = false;
     std::string query_filepath;
     std::string target_filepath;
 };
@@ -143,10 +147,11 @@ ApplicationParameteres read_input(int argc, char* argv[])
         {"min-overlap-length", required_argument, 0, 'l'},
         {"min-bases-per-residue", required_argument, 0, 'b'},
         {"min-overlap-fraction", required_argument, 0, 'z'},
+        {"rescue-overlap-ends", no_argument, 0, 'R'},
         {"help", no_argument, 0, 'h'},
     };
 
-    std::string optstring = "k:w:d:c:C:m:i:t:F:h:a:r:l:b:z:";
+    std::string optstring = "k:w:d:c:C:m:i:t:F:h:a:r:l:b:z:R";
 
     int32_t argument = 0;
     while ((argument = getopt_long(argc, argv, optstring.c_str(), options, nullptr)) != -1)
@@ -199,6 +204,9 @@ ApplicationParameteres read_input(int argc, char* argv[])
             break;
         case 'z':
             parameters.min_overlap_fraction = atof(optarg);
+            break;
+        case 'R':
+            parameters.perform_overlap_end_rescue = true;
             break;
         case 'h':
             help(0);
@@ -399,7 +407,8 @@ void writer_thread_function(std::mutex& overlaps_writer_mtx,
                             const io::FastaParser& target_parser,
                             const std::vector<std::string> cigar,
                             const int device_id,
-                            const int kmer_size)
+                            const int kmer_size,
+                            bool perform_overlap_end_rescue)
 {
     // This function is expected to run in a separate thread so set current device in order to avoid problems
     // with deallocating indices with different current device than the one on which they were created
@@ -407,6 +416,12 @@ void writer_thread_function(std::mutex& overlaps_writer_mtx,
 
     // Overlap post processing - add overlaps which can be combined into longer ones.
     Overlapper::post_process_overlaps(*filtered_overlaps);
+
+    // Perform overlap-end rescue
+    if (perform_overlap_end_rescue)
+    {
+        Overlapper::rescue_overlap_ends(*filtered_overlaps, query_parser, target_parser, 50, 0.5);
+    }
 
     // parallel update of the query/target read names for filtered overlaps [parallel on host]
     Overlapper::update_read_names(*filtered_overlaps, query_parser, target_parser);
@@ -690,7 +705,8 @@ int main(int argc, char* argv[])
                               std::ref(*target_parser),
                               std::move(cigar),
                               device_id,
-                              parameters.k);
+                              parameters.k,
+                              parameters.perform_overlap_end_rescue);
                 t.detach();
             }
 

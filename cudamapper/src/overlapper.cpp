@@ -249,16 +249,17 @@ void Overlapper::rescue_overlap_ends(std::vector<Overlap>& overlaps,
 
             // Overlap rescue at "tail" (i.e., "right-side") of overlap
             // Get the sequence(s) to the right of the query/target ends
-            position_in_read_t query_rescue_tail_start = overlap.query_length_ > overlap.query_end_position_in_read_ + extension ? overlap.query_end_position_in_read_ + extension : overlap.query_length_;
+            position_in_read_t query_rescue_tail_start  = overlap.query_length_ > overlap.query_end_position_in_read_ + extension ? overlap.query_end_position_in_read_ + extension : overlap.query_length_;
             position_in_read_t target_rescue_tail_start = overlap.target_length_ > overlap.target_end_position_in_read_ + extension ? overlap.target_end_position_in_read_ + extension : overlap.target_length_;
 
-            std::string query_tail = string_slice(query_sequence, overlap.query_end_position_in_read_, query_rescue_tail_start);
+            std::string query_tail  = string_slice(query_sequence, overlap.query_end_position_in_read_, query_rescue_tail_start);
             std::string target_tail = string_slice(target_sequence, overlap.target_end_position_in_read_, target_rescue_tail_start);
 
             float tail_similarity = similarity(query_tail, target_tail, 15, 1);
-            if (tail_similarity >= required_similarity){
-                std::size_t match_length = std::min(query_tail.length(), target_tail.length());
-                overlap.query_end_position_in_read_ = overlap.query_end_position_in_read_ + static_cast<position_in_read_t>(match_length);
+            if (tail_similarity >= required_similarity)
+            {
+                std::size_t match_length             = std::min(query_tail.length(), target_tail.length());
+                overlap.query_end_position_in_read_  = overlap.query_end_position_in_read_ + static_cast<position_in_read_t>(match_length);
                 overlap.target_end_position_in_read_ = overlap.target_end_position_in_read_ + static_cast<position_in_read_t>(match_length);
             }
         }
