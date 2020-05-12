@@ -74,6 +74,15 @@ public:
     /// \param overlaps reference to vector of Overlaps. New overlaps (result of fusing) are added to this vector
     static void post_process_overlaps(std::vector<Overlap>& overlaps);
 
+    ///
+    ///@brief Given a vector of overlaps, extend the start/end of the overlaps based on the sequence similarity of the query and target.
+    ///
+    ///@param overlaps A vector of overlaps. This is modified in-place; query_start_position_in_read_, query_end_position_in_read_,
+    /// target_start_position_in_read_ and target_end_position_in_read_ may be modified.
+    ///@param query_parser A FastaParser for query sequences.
+    ///@param target_parser A FastaParser for target sequences.
+    ///@param max_extension The number of basepairs to extend and overlap.
+    ///@param required_similarity The minimum similarity required to extend an overlap.
     static void rescue_overlap_ends(std::vector<Overlap>& overlaps,
                                     const io::FastaParser& query_parser,
                                     const io::FastaParser& target_parser,
