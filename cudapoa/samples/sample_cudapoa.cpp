@@ -298,7 +298,7 @@ int main(int argc, char** argv)
     bool print       = false;
     bool print_graph = false;
 
-    while ((c = getopt(argc, argv, "mlbpgh")) != -1)
+    while ((c = getopt(argc, argv, "mlfpgh")) != -1)
     {
         switch (c)
         {
@@ -431,7 +431,7 @@ int main(int argc, char** argv)
                 else
                 {
                     // the POA was too large to be added to the GPU, skip and move on
-                    std::cout << "Could not add POA group " << i + window_count_offset << " (batch " << b << ") to batch. Error code " << status << std::endl;
+                    std::cout << "Could not add POA group " << batch_window_ids[i] << "to batch " << b << ". Error code " << status << std::endl;
                     i++;
                 }
 
@@ -453,7 +453,7 @@ int main(int argc, char** argv)
 
             if (status != StatusType::exceeded_maximum_poas && status != StatusType::success)
             {
-                std::cout << "Could not add POA group " << i + window_count_offset << " (batch " << b << ") to batch. Error code " << status << std::endl;
+                std::cout << "Could not add POA group " << batch_window_ids[i] << "to batch " << b << ". Error code " << status << std::endl;
                 i++;
             }
         }
