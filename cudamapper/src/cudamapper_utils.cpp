@@ -73,7 +73,7 @@ std::string string_slice(const std::string& s, std::size_t start, std::size_t en
     return s.substr(start, end - start);
 }
 
-std::vector<std::string> kmerize_string(const std::string& s, std::uint32_t kmer_length, std::uint32_t stride)
+std::vector<std::string> kmerize_string(const std::string& s, std::int32_t kmer_length, std::int32_t stride)
 {
     std::size_t kmer_count = s.length() - kmer_length + 1;
     std::vector<std::string> kmers;
@@ -117,7 +117,7 @@ std::size_t count_shared_elements(const std::vector<T>& a, const std::vector<T>&
     return shared_count;
 }
 
-float similarity(const std::string& a, const std::string& b, std::uint32_t kmer_length, std::uint32_t stride)
+float similarity(const std::string& a, const std::string& b, std::int32_t kmer_length, std::int32_t stride)
 {
     std::vector<std::string> a_kmers = kmerize_string(a, kmer_length, stride);
     std::vector<std::string> b_kmers = kmerize_string(b, kmer_length, stride);
