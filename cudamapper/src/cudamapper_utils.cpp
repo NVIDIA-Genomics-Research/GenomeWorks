@@ -10,6 +10,7 @@
 
 #include <vector>
 #include <algorithm>
+#include <iostream>
 
 #include "claragenomics/cudamapper/types.hpp"
 
@@ -72,10 +73,16 @@ std::string string_slice(const std::string& s, std::size_t start, std::size_t en
     return s.substr(start, end - start);
 }
 
-std::vector<std::string> kmerize_string(const std::string& s, int kmer_length, int stride)
+std::vector<std::string> kmerize_string(const std::string& s, std::uint32_t kmer_length, std::uint32_t stride)
 {
     std::size_t kmer_count = s.length() - kmer_length + 1;
     std::vector<std::string> kmers;
+
+    if (s.length() < kmer_length)
+    {
+        return kmers;
+    }
+
     for (std::size_t i = 0; i < kmer_count; i += stride)
     {
         kmers.push_back(s.substr(i, i + kmer_length));
@@ -110,7 +117,7 @@ std::size_t count_shared_elements(const std::vector<T>& a, const std::vector<T>&
     return shared_count;
 }
 
-float similarity(std::string a, std::string b, int kmer_length, int stride)
+float similarity(const std::string& a, const std::string& b, std::uint32_t kmer_length, std::uint32_t stride)
 {
     std::vector<std::string> a_kmers = kmerize_string(a, kmer_length, stride);
     std::vector<std::string> b_kmers = kmerize_string(b, kmer_length, stride);

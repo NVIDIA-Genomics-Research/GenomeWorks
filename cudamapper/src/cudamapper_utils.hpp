@@ -55,11 +55,12 @@ std::string string_slice(const std::string& s, std::size_t start, std::size_t en
 /// \param s A string sequence to kmerize.
 /// \param kmer_length A kmer length to use for producing kmers.
 /// \param stride The number of bases to skip when selecting kmers (most often, this should be equal to 1).
-std::vector<std::string> kmerize_string(const std::string& s, int kmer_length, int stride);
+std::vector<std::string> kmerize_string(const std::string& s, std::uint32_t kmer_length, std::uint32_t stride);
 
 /// \brief Given two sorted vectors of comparable types, return a size_t count of the number of shared elements.
-/// \param a A vector of elements. These must be comparable (i.e., they must implement the == and < operators).
-/// \param b A vector of elements. These must be comparable and must be the same type as those in a.
+/// \param a A vector of elements. These must be comparable (i.e., they must implement the == and < operators) AND sorted in ascending order.
+/// \param b A vector of elements. These must be comparable, sorted in ascending order, and must be the same type as those in a.
+/// \return The number of elements the two sets have in common, including repeated elements, as a std::size_t.
 template <typename T>
 std::size_t count_shared_elements(const std::vector<T>& a, const std::vector<T>& b);
 
@@ -73,7 +74,8 @@ std::size_t count_shared_elements(const std::vector<T>& a, const std::vector<T>&
 /// \param b A C++ string
 /// \param kmer_length The kmer length to use for estimating similarity.
 /// \param stride The number of bases to stride between kmers.
-float similarity(std::string a, std::string b, int kmer_length, int stride);
+/// \return The estimated Jaccard index as a float.
+float similarity(const std::string& a, const std::string& b, std::uint32_t kmer_length, std::uint32_t stride);
 
 } // namespace cudamapper
 } // namespace claragenomics
