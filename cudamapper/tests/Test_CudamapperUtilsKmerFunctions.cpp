@@ -28,6 +28,13 @@ TEST(KmerizeStringTest, AAACCTTCTCT_k4_s1)
     ASSERT_STREQ(kmers[7].c_str(), "CTCT");
 }
 
+TEST(KmerizeStringTest, empty_string)
+{
+    std::string s("");
+    std::vector<std::string> kmers = kmerize_string(s, 4, 1);
+    ASSERT_EQ(kmers.size(), 0);
+}
+
 TEST(CountSharedElementsTest, Shared_ints_correctly_counted)
 {
     std::vector<int> test_ints_a{1, 2, 5, 10, 1000, 10000};
