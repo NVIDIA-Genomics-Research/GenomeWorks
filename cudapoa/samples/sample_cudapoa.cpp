@@ -15,13 +15,11 @@
 #include <claragenomics/cudapoa/batch.hpp>
 #include <claragenomics/utils/signed_integer_utils.hpp>
 #include <claragenomics/utils/cudautils.hpp>
-#include <claragenomics/utils/genomeutils.hpp>
 
 #include <cuda_runtime_api.h>
 #include <vector>
 #include <string>
 #include <unistd.h>
-#include <random>
 
 using namespace claraparabricks::genomeworks;
 using namespace claraparabricks::genomeworks::cudapoa;
@@ -153,7 +151,7 @@ int main(int argc, char** argv)
     bool print       = false;
     bool print_graph = false;
 
-    while ((c = getopt(argc, argv, "mlbpgh")) != -1)
+    while ((c = getopt(argc, argv, "mlfpgh")) != -1)
     {
         switch (c)
         {
