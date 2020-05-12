@@ -11,6 +11,7 @@
 #include <algorithm>
 #include <claragenomics/io/fasta_parser.hpp>
 #include <claragenomics/cudamapper/overlapper.hpp>
+#include "cudamapper_utils.hpp"
 #include <claragenomics/utils/cudautils.hpp>
 #include <claragenomics/utils/signed_integer_utils.hpp>
 #include <mutex>
@@ -203,5 +204,39 @@ void Overlapper::post_process_overlaps(std::vector<Overlap>& overlaps)
         overlaps.push_back(fused_overlap);
     }
 }
+
+void Overlapper::rescue_overlap_ends(std::vector<Overlap>& overlaps,
+                                     const io::FastaParser& query_parser,
+                                     const io::FastaParser& target_parser,
+                                     int max_extension,
+                                     float required_similarity)
+{
+
+    // Loop over all overlaps
+    // For each overlap, retrieve the read sequence and
+    // check the similarity of the overlapping head and tail sections (matched for length)
+    // If they are more than or equal to <required_similarity> similar, extend the overlap start/end fields by <max_extension> basepairs.
+
+    for (auto& overlap : overlaps)
+    {
+        std::string query_sequence  = query_parser.get_sequence_by_id(overlap.query_read_id_).seq;
+        std::string target_sequence = target_parser.get_sequence_by_id(overlap.target_read_id_).seq;
+        // TODO: reverse complement target if match is on '-' relative strand.
+
+        // overlap rescue at "head" (i.e., "left-side") of overlap
+        std::size_t query_rescue_head_start  = std::min(static_cast<int32_t>(0), static_cast<int32_t>(overlap.query_start_position_in_read_) - max_extension);
+        std::size_t target_rescue_head_start = std::min(static_cast<int32_t>(0), static_cast<int32_t>(overlap.target_start_position_in_read_) - max_extension);
+        std::string query_head               = string_slice(query_sequence, query_rescue_head_start, overlap.query_start_position_in_read_);
+        std::string target_head              = string_slice(target_sequence, target_rescue_head_start, overlap.target_start_position_in_read_);
+        float head_similarity                = similarity(query_head, target_head, 15, 1);
+        if (head_similarity >= required_similarity)
+        {
+            overlap.query_start_position_in_read_  = query_rescue_head_start;
+            overlap.target_start_position_in_read_ = target_rescue_head_start;
+        }
+        // overlap rescue at "tail" (i.e., "right-side") of overlap
+    }
+}
+
 } // namespace cudamapper
 } // namespace claragenomics

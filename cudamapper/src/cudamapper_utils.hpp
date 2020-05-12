@@ -49,6 +49,8 @@ namespace cudamapper
 /// \param unfused_overlaps vector of overlaps, sorted by (query_id, target_id) combination and query_start_position
 void fuse_overlaps(std::vector<Overlap>& fused_overlaps, const std::vector<Overlap>& unfused_overlaps);
 
+std::string string_slice(const std::string& s, std::size_t start, std::size_t end);
+
 /// \brief Given a string s, produce its kmers (length <kmer-length>) and return them as a vector of strings.
 /// \param s A string sequence to kmerize.
 /// \param kmer_length A kmer length to use for producing kmers.

@@ -73,6 +73,12 @@ public:
     /// \brief Identified overlaps which can be combined into a larger overlap and add them to the input vector
     /// \param overlaps reference to vector of Overlaps. New overlaps (result of fusing) are added to this vector
     static void post_process_overlaps(std::vector<Overlap>& overlaps);
+
+    static void rescue_overlap_ends(std::vector<Overlap>& overlaps,
+                                    const io::FastaParser& query_parser,
+                                    const io::FastaParser& target_parser,
+                                    int max_extension,
+                                    float required_similarity);
 };
 //}
 } // namespace cudamapper
