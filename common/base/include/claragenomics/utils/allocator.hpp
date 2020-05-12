@@ -126,11 +126,9 @@ public:
     /// @brief Asynchronously dealllocates allocated array
     /// @param p pointer to the array to deallocate
     /// @param n number of elements the array was allocated for
-    /// @param stream CUDA stream to be associated with this method.
-    void deallocate(pointer p, std::size_t n, cudaStream_t stream = 0)
+    void deallocate(pointer p, std::size_t n)
     {
         static_cast<void>(n);
-        static_cast<void>(stream);
         CGA_CU_ABORT_ON_ERR(cudaFree(p));
     }
 };
@@ -251,11 +249,9 @@ public:
     /// @brief Asynchronously dealllocates allocated array
     /// @param p pointer to the array to deallocate
     /// @param n number of elements the array was allocated for
-    /// @param stream CUDA stream to be associated with this method.
-    void deallocate(pointer p, std::size_t n, cudaStream_t stream = 0)
+    void deallocate(pointer p, std::size_t n)
     {
         static_cast<void>(n);
-        static_cast<void>(stream);
         if (!memory_resource_)
         {
             CGA_LOG_ERROR("{}\n", "ERROR:: Trying to deallocate memory from an default-constructed CachingDeviceAllocator. Please assign a non-default-constructed CachingDeviceAllocator before performing any memory operations.");

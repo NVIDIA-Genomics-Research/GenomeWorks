@@ -108,7 +108,7 @@ public:
     {
         if (nullptr != _data)
         {
-            _allocator.deallocate(_data, _capacity, _stream);
+            _allocator.deallocate(_data, _capacity);
         }
     }
 
@@ -168,7 +168,7 @@ public:
             }
             if (nullptr != _data)
             {
-                _allocator.deallocate(_data, _capacity, _stream);
+                _allocator.deallocate(_data, _capacity);
             }
             _data     = new_data;
             _capacity = new_capacity;
@@ -228,7 +228,7 @@ public:
             }
             if (nullptr != _data)
             {
-                _allocator.deallocate(_data, _capacity, _stream);
+                _allocator.deallocate(_data, _capacity);
             }
             _data     = new_data;
             _capacity = _size;
@@ -249,7 +249,7 @@ public:
         set_stream(stream);
         if (nullptr != _data)
         {
-            _allocator.deallocate(_data, _capacity, _stream);
+            _allocator.deallocate(_data, _capacity);
         }
         _data     = nullptr;
         _capacity = 0;
