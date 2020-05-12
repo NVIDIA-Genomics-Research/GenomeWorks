@@ -125,24 +125,6 @@ void process_batch(Batch* batch, bool msa, bool print)
     }
 }
 
-void generate_window_data(const std::string& input_file, const int number_of_windows, const int max_sequences_per_poa,
-                          std::vector<std::vector<std::string>>& windows, BatchSize& batch_size)
-{
-    parse_window_data_file(windows, input_file, number_of_windows); // Generate windows.
-    assert(get_size(windows) > 0);
-
-    int32_t max_read_length = 0;
-    for (auto& window : windows)
-    {
-        for (auto& seq : window)
-        {
-            max_read_length = std::max(max_read_length, get_size<int>(seq));
-        }
-    }
-
-    batch_size = BatchSize(max_read_length, max_sequences_per_poa);
-}
-
 size_t estimate_max_poas(const BatchSize& batch_size, const bool banded_alignment, const bool msa_flag)
 {
     int32_t matrix_sequence_dimension = banded_alignment ? CUDAPOA_BANDED_MAX_MATRIX_SEQUENCE_DIMENSION : batch_size.max_matrix_sequence_dimension;
@@ -206,7 +188,7 @@ size_t estimate_max_poas(const BatchSize& batch_size, const bool banded_alignmen
 void generate_batch_sizes(const std::vector<std::vector<std::string>>& windows, const bool banded_alignment, const bool msa_flag,
                           std::vector<BatchSize>& list_of_batch_sizes, std::vector<std::vector<size_t>>& list_of_windows_per_batch)
 {
-    // got through all the windows and evaluate maximum number of POAs of that size where can be processed in a single batch
+    // go through all the windows and evaluate maximum number of POAs of that size where can be processed in a single batch
     size_t num_windows = windows.size();
     std::vector<size_t> max_poas(num_windows);    // maximum number of POAs that canrun in parallel for windows of this size
     std::vector<size_t> max_lengths(num_windows); // maximum sequence length within the window
@@ -224,7 +206,7 @@ void generate_batch_sizes(const std::vector<std::vector<std::string>>& windows, 
 
     // create histogram based on number of max POAs
     size_t num_bins = 20;
-    std::vector<size_t> bins_frequency(num_bins, 0);             // count the windows that fall within corresponding range
+    std::vector<size_t> bins_frequency(num_bins, 0);             // represents the count of windows that fall within the corresponding range
     std::vector<size_t> bins_max_length(num_bins, 0);            // represents the length of the window with maximum sequence length in the bin
     std::vector<size_t> bins_num_reads(num_bins, 0);             // represents the number of reads in the window with maximum sequence length in the bin
     std::vector<size_t> bins_ranges(num_bins, 1);                // represents maximum POAs
@@ -262,7 +244,7 @@ void generate_batch_sizes(const std::vector<std::vector<std::string>>& windows, 
     // bins frequency   0        0       0       0       0       0       10      51      0       0
     // bins width       0        0       0       0       0       0       5120    3604    0       0
     //
-    // note that bin_ranges represent max POAs. This means larger bin ranges follow with smaller corresponding max lengths
+    // note that bin_ranges represent max POAs. This means larger bin ranges follow with smaller corresponding max lengths (windows with shorter reads)
     // In the example above, to process 10 windows that fall within bin range 64, we need to create one batch. This batch can process up to 64 windows of
     // max length 5120 or smaller. This means all the windows in bin range 128 can also be processed with the same batch and no need to launch an extra batch
 
@@ -342,18 +324,15 @@ int main(int argc, char** argv)
     // of vector of strings. Long read sample creates one POA group.
     std::vector<std::vector<std::string>> windows;
 
-    // Define upper limits for sequence size, graph size ....
-    BatchSize batch_size;
-
     if (long_read)
     {
         const std::string input_file = std::string(CUDAPOA_BENCHMARK_DATA_DIR) + "/sample-bonito.txt";
-        generate_window_data(input_file, 55, 6, windows, batch_size);
+        parse_window_data_file(windows, input_file, 55);
     }
     else
     {
         const std::string input_file = std::string(CUDAPOA_BENCHMARK_DATA_DIR) + "/sample-windows.txt";
-        generate_window_data(input_file, 1000, 100, windows, batch_size);
+        parse_window_data_file(windows, input_file, 1000);
     }
 
     // analyze the windows and create a minimal set of batches to process them all
