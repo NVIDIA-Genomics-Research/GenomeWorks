@@ -27,8 +27,10 @@
 #include <claragenomics/cudamapper/index.hpp>
 #include <claragenomics/cudamapper/matcher.hpp>
 #include <claragenomics/cudamapper/overlapper.hpp>
-#include "overlapper_triggered.hpp"
+
+#include "cudamapper_utils.hpp"
 #include "index_descriptor.hpp"
+#include "overlapper_triggered.hpp"
 
 #include <claragenomics/cudaaligner/aligner.hpp>
 #include <claragenomics/cudaaligner/alignment.hpp>
@@ -383,41 +385,48 @@ void align_overlaps(DefaultDeviceAllocator allocator,
     }
 }
 
-/// @brief adds read names to overlaps and writes them to output
+/// \brief adds read names to overlaps and writes them to output
 /// This function is expected to be executed async to matcher + overlapper
-/// @param overlaps_writer_mtx locked while writing the output
-/// @param num_overlap_chunks_to_print increased before the function is called, decreased right before the function finishes // TODO: improve this design
-/// @param filtered_overlaps overlaps to be written out, on input without read names, on output cleared
-/// @param query_parser needed for read names and lenghts
-/// @param target_parser needed for read names and lenghts
-/// @param cigar
-/// @param device_id id of device on which query and target indices were created
+/// \param overlaps_writer_mtx locked while writing the output
+/// \param num_overlap_chunks_to_print increased before the function is called, decreased right before the function finishes // TODO: improve this design
+/// \param filtered_overlaps overlaps to be written out, on input without read names, on output cleared
+/// \param query_parser needed for read names and lenghts
+/// \param target_parser needed for read names and lenghts
+/// \param cigar
+/// \param kmer_size
+/// \param device_id id of device on which query and target indices were created
+/// \param number_of_device
 void writer_thread_function(std::mutex& overlaps_writer_mtx,
                             std::atomic<int>& num_overlap_chunks_to_print,
                             std::shared_ptr<std::vector<Overlap>> filtered_overlaps,
                             const io::FastaParser& query_parser,
                             const io::FastaParser& target_parser,
                             const std::vector<std::string> cigar,
-                            const int device_id,
-                            const int kmer_size)
+                            const int32_t kmer_size,
+                            const int32_t device_id,
+                            const int32_t number_of_device)
 {
     // This function is expected to run in a separate thread so set current device in order to avoid problems
     // with deallocating indices with different current device than the one on which they were created
     cudaSetDevice(device_id);
 
-    // Overlap post processing - add overlaps which can be combined into longer ones.
-    Overlapper::post_process_overlaps(*filtered_overlaps);
-
-    // parallel update of the query/target read names for filtered overlaps [parallel on host]
-    Overlapper::update_read_names(*filtered_overlaps, query_parser, target_parser);
-    std::lock_guard<std::mutex> lck(overlaps_writer_mtx);
-    Overlapper::print_paf(*filtered_overlaps, cigar, kmer_size);
-
-    //clear data
-    for (auto o : *filtered_overlaps)
     {
-        o.clear();
+        CGA_NVTX_RANGE(profiler, "post_process_overlaps");
+        // Overlap post processing - add overlaps which can be combined into longer ones.
+        Overlapper::post_process_overlaps(*filtered_overlaps);
     }
+
+    {
+        CGA_NVTX_RANGE(profiler, "print_paf");
+        print_paf(*filtered_overlaps,
+                  cigar,
+                  query_parser,
+                  target_parser,
+                  kmer_size,
+                  overlaps_writer_mtx,
+                  number_of_device);
+    }
+
     //Decrement counter which tracks number of overlap chunks to be filtered and printed
     num_overlap_chunks_to_print--;
 };
@@ -689,8 +698,9 @@ int main(int argc, char* argv[])
                               std::ref(*query_parser),
                               std::ref(*target_parser),
                               std::move(cigar),
+                              parameters.k,
                               device_id,
-                              parameters.k);
+                              parameters.num_devices);
                 t.detach();
             }
 
