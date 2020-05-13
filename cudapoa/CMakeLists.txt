@@ -13,8 +13,9 @@ project(cudapoa)
 # Process data subdirectory first
 add_subdirectory(data)
 
-# Project specific NVCC flags
-set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -std=c++11")
+# Project specific NVCC flags, --expt-relaxed-constexpr is being added to allow using numeric_limits inside device kernels
+set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -std=c++11 --expt-relaxed-constexpr")
+message(STATUS "nvcc flags for cudapoa: ${CUDA_NVCC_FLAGS}")
 
 get_property(cga_library_type GLOBAL PROPERTY cga_library_type)
 cuda_add_library(cudapoa ${cga_library_type}

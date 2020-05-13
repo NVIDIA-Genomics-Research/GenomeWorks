@@ -40,8 +40,6 @@ def status_to_str(status):
         return "exceeded_maximum_sequence_size"
     elif status == cudapoa.exceeded_maximum_sequences_per_poa:
         return "exceeded_maximum_sequences_per_poa"
-    elif status == cudapoa.exceeded_batch_size:
-        return "exceeded_batch_size"
     elif status == cudapoa.node_count_exceeded_maximum_graph_size:
         return "node_count_exceeded_maximum_graph_size"
     elif status == cudapoa.edge_count_exceeded_maximum_graph_size:
@@ -169,9 +167,9 @@ cdef class CudaPoaBatch:
         Args:
             poas : List of POA groups. Each group is a list of
                    sequences.
-                   e.g. [["ACTG", "ATCG"], <--- Group 1
-                         ["GCTA", "GACT", "ACGTC"] <--- Group 2
-                        ]
+                   e.g.
+                   [["ACTG", "ATCG"], <--- Group 1
+                   ["GCTA", "GACT", "ACGTC"]] <--- Group 2
                    Throws exception if error is encountered while
                    adding POA groups.
         """
@@ -192,8 +190,6 @@ cdef class CudaPoaBatch:
             entry.length = len(seq)
             poa_group.push_back(entry)
         status = deref(self.batch).add_poa_group(seq_status, poa_group)
-        if status != cudapoa.success and status != cudapoa.exceeded_maximum_poas:
-            raise RuntimeError("Could not add POA group: Error code " + status_to_str(status))
         return (status, seq_status)
 
     @property

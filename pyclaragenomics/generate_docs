@@ -1,0 +1,26 @@
+#!/bin/bash
+#
+# Copyright (c) 2020, NVIDIA CORPORATION.  All rights reserved.
+#
+# NVIDIA CORPORATION and its licensors retain all intellectual property
+# and proprietary rights in and to this software, related documentation
+# and any modifications thereto.  Any use, reproduction, disclosure or
+# distribution of this software and related documentation without an express
+# license agreement from NVIDIA CORPORATION is strictly prohibited.
+#
+
+set -e
+
+PYCGA_DIR=$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")
+VERSION=`cat $PYCGA_DIR/../VERSION`
+echo "Run Python doc generation..."
+rm -rf $PYCGA_DIR/docs
+mkdir $PYCGA_DIR/docs
+cd $PYCGA_DIR/docs
+sphinx-quickstart -p "Clara Genomics Analysis SDK" -v "$VERSION" -a "NVIDIA Corportation" -q --ext-autodoc --sep
+##### Update sphinx conf.py with path for modules
+sed -i '1s@^@import sys \n@' source/conf.py
+sed -i '2s@^@sys.path.insert\(0, "'$PWD'/.."\) \n@' source/conf.py
+#####
+sphinx-apidoc --implicit-namespaces -f -o source/ ../claragenomics/ ../claragenomics/bindings/*cpython* ../claragenomics/shared_libs
+make html

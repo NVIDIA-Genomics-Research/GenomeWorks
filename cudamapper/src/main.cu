@@ -12,6 +12,7 @@
 #include <iostream>
 #include <string>
 #include <deque>
+#include <map>
 #include <mutex>
 #include <future>
 #include <thread>
@@ -336,7 +337,8 @@ void writer_thread_function(const std::int32_t device_id,
                       *application_parameters.query_parser,
                       *application_parameters.query_parser,
                       application_parameters.kmer_size,
-                      output_mutex);
+                      output_mutex,
+                      application_parameters.num_devices);
         }
 
         data_to_write = overlaps_and_cigars_to_write.get_next_element();

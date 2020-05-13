@@ -34,12 +34,14 @@ namespace cudamapper
 /// \param target_parser needed for read names and lenghts
 /// \param kmer_size minimizer kmer size
 /// \param write_output_mutex mutex that enables exclusive access to output stream
+/// \param number_of_devices function uses hardware_concurrency()/number_of_devices threads
 void print_paf(const std::vector<Overlap>& overlaps,
                const std::vector<std::string>& cigar,
                const io::FastaParser& query_parser,
                const io::FastaParser& target_parser,
-               std::int32_t kmer_size,
-               std::mutex& write_output_mutex);
+               int32_t kmer_size,
+               std::mutex& write_output_mutex,
+               int32_t number_of_devices);
 
 /// \brief crated a device allocator
 /// \param max_cached_memory_bytes

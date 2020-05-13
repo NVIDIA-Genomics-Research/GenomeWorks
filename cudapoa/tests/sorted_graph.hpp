@@ -27,16 +27,16 @@ class SortedGraph : public BasicGraph
 {
 
 public:
-    SortedGraph(std::vector<uint8_t> nodes, std::vector<uint16_t> sorted_graph, Uint16Vec2D outgoing_edges)
+    SortedGraph(std::vector<uint8_t> nodes, std::vector<SizeT> sorted_graph, SizeTVec2D outgoing_edges)
         : BasicGraph(nodes, outgoing_edges)
         , sorted_graph_(sorted_graph)
     {
         // do nothing for now
     }
 
-    SortedGraph(std::vector<uint8_t> nodes, std::vector<uint16_t> sorted_graph,
-                Uint16Vec2D node_alignments, std::vector<uint16_t> node_coverage_counts,
-                Uint16Vec2D outgoing_edges, Uint16Vec3D outgoing_edges_coverage = {})
+    SortedGraph(std::vector<uint8_t> nodes, std::vector<SizeT> sorted_graph,
+                SizeTVec2D node_alignments, std::vector<uint16_t> node_coverage_counts,
+                SizeTVec2D outgoing_edges, Uint16Vec3D outgoing_edges_coverage = {})
         : BasicGraph(nodes, outgoing_edges, node_alignments, node_coverage_counts, outgoing_edges_coverage)
         , sorted_graph_(sorted_graph)
     {
@@ -44,16 +44,16 @@ public:
     }
     SortedGraph() = delete;
 
-    void get_node_id_to_pos(uint16_t* node_id_to_pos) const
+    void get_node_id_to_pos(SizeT* node_id_to_pos) const
     {
         for (int32_t pos = 0; pos < get_size(sorted_graph_); pos++)
         {
             int32_t id         = sorted_graph_[pos];
-            node_id_to_pos[id] = static_cast<uint16_t>(pos);
+            node_id_to_pos[id] = static_cast<SizeT>(pos);
         }
     }
 
-    void get_sorted_graph(uint16_t* graph) const
+    void get_sorted_graph(SizeT* graph) const
     {
         for (int i = 0; i < get_size(sorted_graph_); i++)
         {
@@ -62,7 +62,7 @@ public:
     }
 
 protected:
-    std::vector<uint16_t> sorted_graph_;
+    std::vector<SizeT> sorted_graph_;
 };
 
 } // namespace cudapoa
