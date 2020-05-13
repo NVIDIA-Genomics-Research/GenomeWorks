@@ -8,7 +8,7 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-#include "application_parameters.cuh"
+#include "application_parameters.hpp"
 
 #include <getopt.h>
 #include <iostream>

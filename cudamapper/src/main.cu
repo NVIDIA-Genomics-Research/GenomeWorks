@@ -31,7 +31,7 @@
 #include <claragenomics/cudamapper/matcher.hpp>
 #include <claragenomics/cudamapper/overlapper.hpp>
 
-#include "application_parameters.cuh"
+#include "application_parameters.hpp"
 #include "cudamapper_utils.hpp"
 #include "index_batcher.cuh"
 #include "overlapper_triggered.hpp"
