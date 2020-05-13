@@ -23,6 +23,7 @@
 #include <stdint.h>
 #include <string>
 #include <iostream>
+#include <iomanip>
 #include <cuda_runtime_api.h>
 
 #ifndef TABS
@@ -547,6 +548,12 @@ protected:
 
         if (scores_size > avail_scorebuf_mem_)
         {
+            if (get_total_poas() == 0)
+            {
+                std::cout << "Memory available " << std::fixed << std::setprecision(2) << ((double)avail_scorebuf_mem_) / 1024. / 1024. / 1024.;
+                std::cout << "GB, Memory required " << ((double)scores_size) / 1024. / 1024. / 1024.;
+                std::cout << "GB (sequence length " << max_seq_length << ", graph length " << max_graph_dimension << ")" << std::endl;
+            }
             return false;
         }
         else
