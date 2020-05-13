@@ -22,7 +22,7 @@ TEST(KmerizeStringTest, AAACCTTCTCT_k4_s1)
 {
     std::string test_str("AAACCTTCTCT");
     // AAAC AACC ACCT CCTT CTTC TTCT TCTC CTCT (n = 8)
-    std::vector<std::string> kmers = kmerize_string(test_str, 4, 1);
+    std::vector<std::string> kmers = split_into_kmers(test_str, 4, 1);
     ASSERT_EQ(kmers.size(), 8);
     ASSERT_STREQ(kmers[0].c_str(), "AAAC");
     ASSERT_STREQ(kmers[7].c_str(), "CTCT");
@@ -31,7 +31,7 @@ TEST(KmerizeStringTest, AAACCTTCTCT_k4_s1)
 TEST(KmerizeStringTest, empty_string)
 {
     std::string s("");
-    std::vector<std::string> kmers = kmerize_string(s, 4, 1);
+    std::vector<std::string> kmers = split_into_kmers(s, 4, 1);
     ASSERT_EQ(kmers.size(), 0);
 }
 

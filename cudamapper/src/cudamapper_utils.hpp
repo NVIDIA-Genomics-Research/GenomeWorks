@@ -63,7 +63,7 @@ std::string string_slice(const std::string& s, std::size_t start, std::size_t en
 /// \param kmer_length A kmer length to use for producing kmers.
 /// \param stride The number of bases to skip when selecting kmers (most often, this should be equal to 1).
 /// \return A vector of strings containing the kmers (of length kmer_length) of s.
-std::vector<std::string> kmerize_string(const std::string& s, std::int32_t kmer_size, std::int32_t stride);
+std::vector<std::string> split_into_kmers(const std::string& s, std::int32_t kmer_size, std::int32_t stride);
 
 /// \brief Given two sorted vectors of comparable types, return a size_t count of the number of shared elements.
 /// \param a A sorted vector of elements. These must be comparable (i.e., they must implement the == and < operators) and sorted in ascending order.

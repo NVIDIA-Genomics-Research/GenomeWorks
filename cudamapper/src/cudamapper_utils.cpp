@@ -72,7 +72,7 @@ std::string string_slice(const std::string& s, const std::size_t start, const st
     return s.substr(start, end - start);
 }
 
-std::vector<std::string> kmerize_string(const std::string& s, const std::int32_t kmer_size, const std::int32_t stride)
+std::vector<std::string> split_into_kmers(const std::string& s, const std::int32_t kmer_size, const std::int32_t stride)
 {
     std::size_t kmer_count = s.length() - kmer_size + 1;
     std::vector<std::string> kmers;
@@ -118,8 +118,8 @@ std::size_t count_shared_elements(const std::vector<T>& a, const std::vector<T>&
 
 float containment(const std::string& a, const std::string& b, const std::int32_t kmer_size, const std::int32_t stride)
 {
-    std::vector<std::string> a_kmers = kmerize_string(a, kmer_size, stride);
-    std::vector<std::string> b_kmers = kmerize_string(b, kmer_size, stride);
+    std::vector<std::string> a_kmers = split_into_kmers(a, kmer_size, stride);
+    std::vector<std::string> b_kmers = split_into_kmers(b, kmer_size, stride);
     std::sort(a_kmers.begin(), a_kmers.end());
     std::sort(b_kmers.begin(), b_kmers.end());
 
@@ -132,8 +132,8 @@ float containment(const std::string& a, const std::string& b, const std::int32_t
 
 float similarity(const std::string& a, const std::string& b, const std::int32_t kmer_size, const std::int32_t stride)
 {
-    std::vector<std::string> a_kmers = kmerize_string(a, kmer_size, stride);
-    std::vector<std::string> b_kmers = kmerize_string(b, kmer_size, stride);
+    std::vector<std::string> a_kmers = split_into_kmers(a, kmer_size, stride);
+    std::vector<std::string> b_kmers = split_into_kmers(b, kmer_size, stride);
     std::sort(a_kmers.begin(), a_kmers.end());
     std::sort(b_kmers.begin(), b_kmers.end());
 
