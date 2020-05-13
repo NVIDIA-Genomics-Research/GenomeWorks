@@ -99,7 +99,7 @@ void print_part_of_data(const std::vector<Overlap>& overlaps,
             chars_in_buffer += added_cigar_chars;
         }
         // Add new line to demarcate new entry.
-        buffer.data()[chars_in_buffer] = '\n';
+        buffer[chars_in_buffer] = '\n';
         ++chars_in_buffer;
     }
     buffer[chars_in_buffer] = '\0';
@@ -127,7 +127,7 @@ void print_paf(const std::vector<Overlap>& overlaps,
 
     std::vector<std::thread> threads;
 
-    for (uint32_t thread_id = 0; thread_id < number_of_threads; ++thread_id)
+    for (int32_t thread_id = 0; thread_id < number_of_threads; ++thread_id)
     {
         threads.emplace_back(print_part_of_data,
                              std::ref(overlaps),
