@@ -115,8 +115,8 @@ float sequence_jaccard_containment(const std::string& a, const std::string& b, c
 {
     std::vector<std::string> a_kmers = split_into_kmers(a, kmer_size, stride);
     std::vector<std::string> b_kmers = split_into_kmers(b, kmer_size, stride);
-    std::sort(a_kmers.begin(), a_kmers.end());
-    std::sort(b_kmers.begin(), b_kmers.end());
+    std::sort(std::begin(a_kmers), std::end(a_kmers));
+    std::sort(std::begin(b_kmers), std::end(b_kmers));
 
     const std::size_t shared_kmers = count_shared_elements(a_kmers, b_kmers);
     // Calculate "containment", i.e., the total number of shared elements divided by
@@ -129,8 +129,8 @@ float sequence_jaccard_similarity(const std::string& a, const std::string& b, co
 {
     std::vector<std::string> a_kmers = split_into_kmers(a, kmer_size, stride);
     std::vector<std::string> b_kmers = split_into_kmers(b, kmer_size, stride);
-    std::sort(a_kmers.begin(), a_kmers.end());
-    std::sort(b_kmers.begin(), b_kmers.end());
+    std::sort(std::begin(a_kmers), std::end(a_kmers));
+    std::sort(std::begin(b_kmers), std::end(b_kmers));
 
     const std::size_t shared_kmers = count_shared_elements(a_kmers, b_kmers);
     // Calculate the set union size of a and b
