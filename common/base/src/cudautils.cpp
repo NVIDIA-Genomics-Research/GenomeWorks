@@ -10,7 +10,7 @@
 
 #include <claragenomics/utils/cudautils.hpp>
 
-namespace claragenomics
+namespace genomeworks
 {
 
 namespace cudautils
@@ -63,4 +63,4 @@ std::size_t find_largest_contiguous_device_memory_section()
     return 0;
 }
 } // namespace cudautils
-} // namespace claragenomics
+} // namespace genomeworks

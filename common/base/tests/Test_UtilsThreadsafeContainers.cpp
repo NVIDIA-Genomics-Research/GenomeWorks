@@ -18,7 +18,7 @@
 #include <numeric>
 #include <thread>
 
-namespace claragenomics
+namespace genomeworks
 {
 
 // *** test ThreadsafeDataProvider ***
@@ -234,4 +234,4 @@ TEST(TestUtilsThreadsafeContainers, test_threadsafe_producer_consumer_signal_on_
     ASSERT_FALSE(val);
 }
 
-} // namespace claragenomics
+} // namespace genomeworks

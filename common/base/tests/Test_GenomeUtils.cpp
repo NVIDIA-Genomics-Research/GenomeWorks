@@ -13,7 +13,7 @@
 
 #include "gtest/gtest.h"
 
-namespace claragenomics
+namespace genomeworks
 {
 
 namespace genomeutils
@@ -30,4 +30,4 @@ TEST(GenomeUtilsTest, ReverseComplement)
 
 } // namespace genomeutils
 
-} // namespace claragenomics
+} // namespace genomeworks

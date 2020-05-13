@@ -12,7 +12,7 @@
 #include <memory>
 #include <claragenomics/utils/cudautils.hpp>
 
-namespace claragenomics
+namespace genomeworks
 {
 
 /// @brief Container for an array of elements of type `T` in host or device memory.
@@ -284,4 +284,4 @@ private:
     }
 };
 
-} // namespace claragenomics
+} // namespace genomeworks

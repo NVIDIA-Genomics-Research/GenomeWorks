@@ -15,7 +15,7 @@
 #include <stdexcept>
 #include <type_traits>
 
-namespace claragenomics
+namespace genomeworks
 {
 
 template <class Container>
@@ -44,4 +44,4 @@ T throw_on_negative(T x, const char* message)
     return x;
 }
 
-} // namespace claragenomics
+} // namespace genomeworks

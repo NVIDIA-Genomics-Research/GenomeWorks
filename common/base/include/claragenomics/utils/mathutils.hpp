@@ -18,7 +18,7 @@
 #include <algorithm>
 #endif
 
-namespace claragenomics
+namespace genomeworks
 {
 
 template <typename Integer>
@@ -69,4 +69,4 @@ std::int32_t int_floor_log2(T val)
     return power;
 }
 
-} // namespace claragenomics
+} // namespace genomeworks

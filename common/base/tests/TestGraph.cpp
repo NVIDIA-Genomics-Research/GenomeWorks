@@ -12,7 +12,7 @@
 
 #include "gtest/gtest.h"
 
-namespace claragenomics
+namespace genomeworks
 {
 
 TEST(GraphTest, DirectedGraph)
@@ -74,4 +74,4 @@ TEST(GraphTest, UndirectedGraph)
     EXPECT_NE(std::find(adjacent_nodes_to_3.begin(), adjacent_nodes_to_3.end(), 2), adjacent_nodes_to_3.end());
 }
 
-} // namespace claragenomics
+} // namespace genomeworks

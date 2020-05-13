@@ -12,7 +12,7 @@
 
 #include <exception>
 
-namespace claragenomics
+namespace genomeworks
 {
 
 /// @brief Exception class for out-of-(device-)memory errors.
@@ -40,4 +40,4 @@ public:
     }
 };
 
-} // namespace claragenomics
+} // namespace genomeworks

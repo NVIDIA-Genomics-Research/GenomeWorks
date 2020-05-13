@@ -14,7 +14,7 @@
 #include <string>
 #include <vector>
 
-namespace claragenomics
+namespace genomeworks
 {
 namespace io
 {
@@ -47,4 +47,4 @@ private:
 };
 
 } // namespace io
-} // namespace claragenomics
+} // namespace genomeworks

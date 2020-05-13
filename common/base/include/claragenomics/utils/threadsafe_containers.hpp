@@ -19,7 +19,7 @@
 
 #include <claragenomics/types.hpp>
 
-namespace claragenomics
+namespace genomeworks
 {
 
 /// ThreadsafeDataProvider - wrapper around std::vector which gives elements one by one to multiple threads and signals when there are no elements left
@@ -216,4 +216,4 @@ private:
     std::condition_variable condition_variable_;
 };
 
-} // namespace claragenomics
+} // namespace genomeworks
