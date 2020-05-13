@@ -37,14 +37,14 @@ ApplicationParameters::ApplicationParameters(int argc, char* argv[])
         {"min-overlap-length", required_argument, 0, 'l'},
         {"min-bases-per-residue", required_argument, 0, 'b'},
         {"min-overlap-fraction", required_argument, 0, 'z'},
-        {"query-indices-in-host-memory", required_argument, 0, 'q'},
-        {"query-indices-in-device-memory", required_argument, 0, 'Q'},
-        {"target-indices-in-host-memory", required_argument, 0, 'c'},
-        {"target-indices-in-device-memory", required_argument, 0, 'C'},
+        {"query-indices-in-host-memory", required_argument, 0, 'Q'},
+        {"query-indices-in-device-memory", required_argument, 0, 'q'},
+        {"target-indices-in-host-memory", required_argument, 0, 'C'},
+        {"target-indices-in-device-memory", required_argument, 0, 'q'},
         {"help", no_argument, 0, 'h'},
     };
 
-    std::string optstring = "k:w:d:m:i:t:F:h:a:r:l:b:z:q:Q:c:C:";
+    std::string optstring = "k:w:d:m:i:t:F:h:a:r:l:b:z:Q:q:C:c:";
 
     bool target_indices_in_host_memory_set   = false;
     bool target_indices_in_device_memory_set = false;
@@ -94,17 +94,17 @@ ApplicationParameters::ApplicationParameters(int argc, char* argv[])
         case 'z':
             min_overlap_fraction = atof(optarg);
             break;
-        case 'q':
+        case 'Q':
             query_indices_in_host_memory = atoi(optarg);
             break;
-        case 'Q':
+        case 'q':
             query_indices_in_device_memory = atoi(optarg);
             break;
-        case 'c':
+        case 'C':
             target_indices_in_host_memory     = atoi(optarg);
             target_indices_in_host_memory_set = true;
             break;
-        case 'C':
+        case 'c':
             target_indices_in_device_memory     = atoi(optarg);
             target_indices_in_device_memory_set = true;
             break;
@@ -142,13 +142,13 @@ ApplicationParameters::ApplicationParameters(int argc, char* argv[])
 
     if (!target_indices_in_host_memory_set)
     {
-        std::cerr << "-c / --target-indices-in-host-memory not set, using -q / --query-indices-in-host-memory value: " << query_indices_in_host_memory << std::endl;
+        std::cerr << "-C / --target-indices-in-host-memory not set, using -Q / --query-indices-in-host-memory value: " << query_indices_in_host_memory << std::endl;
         target_indices_in_host_memory = query_indices_in_host_memory;
     }
 
     if (!target_indices_in_device_memory_set)
     {
-        std::cerr << "-C / --target-indices-in-device-memory not set, using -Q / --query-indices-in-device-memory value: " << query_indices_in_device_memory << std::endl;
+        std::cerr << "-c / --target-indices-in-device-memory not set, using -q / --query-indices-in-device-memory value: " << query_indices_in_device_memory << std::endl;
         target_indices_in_device_memory = query_indices_in_device_memory;
     }
 
@@ -261,16 +261,16 @@ void ApplicationParameters::help(int32_t exit_code)
         -z, --min-overlap-fraction
             Minimum ratio of overlap length to alignment length [0.95].)
               << R"(
-        -q, --query-indices-in-host-memory
+        -Q, --query-indices-in-host-memory
             number of query indices to keep in host memory [10])"
               << R"(
-        -Q, --query-indices-in-device-memory
+        -q, --query-indices-in-device-memory
             number of query indices to keep in device memory [5])"
               << R"(
-        -c, --target-indices-in-host-memory
+        -C, --target-indices-in-host-memory
             number of target indices to keep in host memory [10])"
               << R"(
-        -C, --target-indices-in-device-memory
+        -c, --target-indices-in-device-memory
             number of target indices to keep in device memory [5])"
               << std::endl;
 

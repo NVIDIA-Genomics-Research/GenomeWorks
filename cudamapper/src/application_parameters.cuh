@@ -44,10 +44,10 @@ public:
     std::int32_t min_overlap_len                 = 500;  // l
     std::int32_t min_bases_per_residue           = 100;  // b
     float min_overlap_fraction                   = 0.95; // z
-    std::int32_t query_indices_in_host_memory    = 10;   // q
-    std::int32_t query_indices_in_device_memory  = 5;    // Q
-    std::int32_t target_indices_in_host_memory   = 10;   // c
-    std::int32_t target_indices_in_device_memory = 5;    // C
+    std::int32_t query_indices_in_host_memory    = 10;   // Q
+    std::int32_t query_indices_in_device_memory  = 5;    // q
+    std::int32_t target_indices_in_host_memory   = 10;   // C
+    std::int32_t target_indices_in_device_memory = 5;    // c
     bool all_to_all                              = false;
     std::string query_filepath;
     std::string target_filepath;
