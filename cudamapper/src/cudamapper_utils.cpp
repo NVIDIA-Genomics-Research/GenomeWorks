@@ -16,7 +16,7 @@
 #include <claragenomics/io/fasta_parser.hpp>
 #include <claragenomics/utils/signed_integer_utils.hpp>
 
-namespace claragenomics
+namespace genomeworks
 {
 namespace cudamapper
 {
@@ -147,4 +147,4 @@ void print_paf(const std::vector<Overlap>& overlaps,
 }
 
 } // namespace cudamapper
-} // namespace claragenomics
+} // namespace genomeworks

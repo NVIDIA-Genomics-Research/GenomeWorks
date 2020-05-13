@@ -23,7 +23,7 @@
 #include <thrust/host_vector.h>
 #endif
 
-namespace claragenomics
+namespace genomeworks
 {
 namespace cudamapper
 {
@@ -422,4 +422,4 @@ void OverlapperTriggered::get_overlaps(std::vector<Overlap>& fused_overlaps,
 }
 
 } // namespace cudamapper
-} // namespace claragenomics
+} // namespace genomeworks

@@ -14,7 +14,7 @@
 /// Base docs for the cudamapper package (tbd)
 /// \{
 
-namespace claragenomics
+namespace genomeworks
 {
 namespace cudamapper
 {
@@ -26,6 +26,6 @@ enum class StatusType
 
 StatusType Init();
 }; // namespace cudamapper
-}; // namespace claragenomics
+}; // namespace genomeworks
 
 /// \}

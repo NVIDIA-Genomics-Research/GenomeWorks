@@ -14,7 +14,7 @@
 #include <memory>
 #include <claragenomics/cudamapper/types.hpp>
 
-namespace claragenomics
+namespace genomeworks
 {
 
 namespace cudamapper
@@ -57,4 +57,4 @@ public:
 
 } // namespace cudamapper
 
-} // namespace claragenomics
+} // namespace genomeworks

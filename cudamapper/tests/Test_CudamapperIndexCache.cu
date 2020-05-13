@@ -21,7 +21,7 @@
 #include <claragenomics/cudamapper/index.hpp>
 #include <claragenomics/io/fasta_parser.hpp>
 
-namespace claragenomics
+namespace genomeworks
 {
 namespace cudamapper
 {
@@ -1291,4 +1291,4 @@ TEST(TestCudamapperIndexCaching, test_index_cache_device_not_the_same_query_and_
 }
 
 } // namespace cudamapper
-} // namespace claragenomics
+} // namespace genomeworks

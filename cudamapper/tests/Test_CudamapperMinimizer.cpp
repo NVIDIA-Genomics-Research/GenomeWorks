@@ -13,7 +13,7 @@
 
 #include <claragenomics/utils/cudautils.hpp>
 
-namespace claragenomics
+namespace genomeworks
 {
 namespace cudamapper
 {
@@ -516,4 +516,4 @@ TEST(TestCudamappperMinimizer, CATCAAG_AAGCTA_3_2_read_id_offset_5)
     // Test with minimizer hashing enabled
 }
 } // namespace cudamapper
-} // namespace claragenomics
+} // namespace genomeworks

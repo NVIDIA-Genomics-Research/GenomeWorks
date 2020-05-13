@@ -21,7 +21,7 @@
 #include <claragenomics/utils/mathutils.hpp>
 #include <claragenomics/utils/signed_integer_utils.hpp>
 
-namespace claragenomics
+namespace genomeworks
 {
 namespace cudamapper
 {
@@ -2348,4 +2348,4 @@ TEST(TestCudamapperIndexGPU, AAAACTGAA_GCCAAAG_2_3_filtering)
 }
 
 } // namespace cudamapper
-} // namespace claragenomics
+} // namespace genomeworks

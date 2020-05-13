@@ -18,7 +18,7 @@
 
 #include "index_descriptor.hpp"
 
-namespace claragenomics
+namespace genomeworks
 {
 
 namespace io
@@ -51,9 +51,9 @@ public:
     /// \param filtering_parameter // see Index
     /// \param cuda_stream // device memory used for Index copy will only we freed up once all previously scheduled work on this stream has finished
     IndexCacheHost(bool same_query_and_target,
-                   claragenomics::DefaultDeviceAllocator allocator,
-                   std::shared_ptr<claragenomics::io::FastaParser> query_parser,
-                   std::shared_ptr<claragenomics::io::FastaParser> target_parser,
+                   genomeworks::DefaultDeviceAllocator allocator,
+                   std::shared_ptr<genomeworks::io::FastaParser> query_parser,
+                   std::shared_ptr<genomeworks::io::FastaParser> target_parser,
                    std::uint64_t kmer_size,
                    std::uint64_t window_size,
                    bool hash_representations  = true,
@@ -133,9 +133,9 @@ private:
     device_cache_type_t target_temp_device_cache_;
 
     const bool same_query_and_target_;
-    claragenomics::DefaultDeviceAllocator allocator_;
-    std::shared_ptr<claragenomics::io::FastaParser> query_parser_;
-    std::shared_ptr<claragenomics::io::FastaParser> target_parser_;
+    genomeworks::DefaultDeviceAllocator allocator_;
+    std::shared_ptr<genomeworks::io::FastaParser> query_parser_;
+    std::shared_ptr<genomeworks::io::FastaParser> target_parser_;
     const std::uint64_t kmer_size_;
     const std::uint64_t window_size_;
     const bool hash_representations_;
@@ -205,4 +205,4 @@ private:
 };
 
 } // namespace cudamapper
-} // namespace claragenomics
+} // namespace genomeworks

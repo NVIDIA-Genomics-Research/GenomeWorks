@@ -16,7 +16,7 @@
 #include <claragenomics/cudamapper/overlapper.hpp>
 #include <claragenomics/utils/device_buffer.hpp>
 
-namespace claragenomics
+namespace genomeworks
 {
 namespace cudamapper
 {
@@ -57,4 +57,4 @@ private:
     cudaStream_t _cuda_stream;
 };
 } // namespace cudamapper
-} // namespace claragenomics
+} // namespace genomeworks

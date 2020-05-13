@@ -16,7 +16,7 @@
 #include <claragenomics/cudamapper/types.hpp>
 #include <claragenomics/utils/device_buffer.hpp>
 
-namespace claragenomics
+namespace genomeworks
 {
 namespace cudamapper
 {
@@ -100,4 +100,4 @@ private:
 };
 
 } // namespace cudamapper
-} // namespace claragenomics
+} // namespace genomeworks

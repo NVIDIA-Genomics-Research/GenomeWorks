@@ -14,7 +14,7 @@
 
 #include <claragenomics/io/fasta_parser.hpp>
 
-namespace claragenomics
+namespace genomeworks
 {
 namespace cudamapper
 {
@@ -27,4 +27,4 @@ public:
 };
 
 } // namespace cudamapper
-} // namespace claragenomics
+} // namespace genomeworks

@@ -23,7 +23,7 @@
 
 #include "../src/matcher_gpu.cuh"
 
-namespace claragenomics
+namespace genomeworks
 {
 
 namespace cudamapper
@@ -703,4 +703,4 @@ TEST(TestCudamapperMatcherGPU, AtLeastOneIndexEmpty)
 }
 
 } // namespace cudamapper
-} // namespace claragenomics
+} // namespace genomeworks
