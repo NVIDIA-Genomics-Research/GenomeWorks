@@ -54,7 +54,7 @@ __device__ ScoreT* get_score_ptr(ScoreT* scores, SizeT row, SizeT column, float 
 
     if (column == 0)
     {
-        col_idx = band_start;
+        col_idx = 0;
     }
     else
     {
