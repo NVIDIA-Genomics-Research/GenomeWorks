@@ -17,7 +17,7 @@
 #include <vector>
 #include <tuple>
 
-namespace claragenomics
+namespace genomeworks
 {
 
 namespace cudaaligner
@@ -46,4 +46,4 @@ matrix<int> ukkonen_build_score_matrix_naive(std::string const& target, std::str
 std::vector<int8_t> ukkonen_cpu(std::string const& target, std::string const& query, int const p);
 
 } // namespace cudaaligner
-} // namespace claragenomics
+} // namespace genomeworks

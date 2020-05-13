@@ -21,7 +21,7 @@
 #include <algorithm>
 #include <cuda_runtime_api.h>
 
-namespace claragenomics
+namespace genomeworks
 {
 
 namespace cudaaligner
@@ -192,4 +192,4 @@ void AlignerGlobal::reset()
     alignments_.clear();
 }
 } // namespace cudaaligner
-} // namespace claragenomics
+} // namespace genomeworks

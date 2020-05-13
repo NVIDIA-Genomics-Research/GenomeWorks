@@ -14,7 +14,7 @@
 #include <cassert>
 #include <iostream>
 
-namespace claragenomics
+namespace genomeworks
 {
 
 namespace cudaaligner
@@ -116,4 +116,4 @@ inline bool operator!=(matrix<T> const& a, matrix<T> const& b)
     return !(a == b);
 }
 } // namespace cudaaligner
-} // namespace claragenomics
+} // namespace genomeworks

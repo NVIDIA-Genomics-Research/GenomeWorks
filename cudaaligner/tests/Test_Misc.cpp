@@ -12,7 +12,7 @@
 
 #include "gtest/gtest.h"
 
-namespace claragenomics
+namespace genomeworks
 {
 
 namespace cudaaligner
@@ -30,4 +30,4 @@ TEST(TestCudaAlignerMisc, CeilingDivide)
 }
 
 } // namespace cudaaligner
-} // namespace claragenomics
+} // namespace genomeworks

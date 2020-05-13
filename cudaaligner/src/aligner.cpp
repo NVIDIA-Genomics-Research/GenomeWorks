@@ -12,7 +12,7 @@
 
 #include "aligner_global_hirschberg_myers.hpp"
 
-namespace claragenomics
+namespace genomeworks
 {
 
 namespace cudaaligner
@@ -46,18 +46,18 @@ std::unique_ptr<Aligner> create_aligner(
     // uses CachingDeviceAllocator
     if (max_device_memory_allocator_caching_size == -1)
     {
-        max_device_memory_allocator_caching_size = claragenomics::cudautils::find_largest_contiguous_device_memory_section();
+        max_device_memory_allocator_caching_size = genomeworks::cudautils::find_largest_contiguous_device_memory_section();
         if (max_device_memory_allocator_caching_size == 0)
         {
             throw std::runtime_error("No memory available for caching");
         }
     }
-    claragenomics::DefaultDeviceAllocator allocator(max_device_memory_allocator_caching_size);
+    genomeworks::DefaultDeviceAllocator allocator(max_device_memory_allocator_caching_size);
 #else
     // uses CudaMallocAllocator
-    claragenomics::DefaultDeviceAllocator allocator;
+    genomeworks::DefaultDeviceAllocator allocator;
 #endif
     return create_aligner(max_query_length, max_target_length, max_alignments, type, allocator, stream, device_id);
 }
 } // namespace cudaaligner
-} // namespace claragenomics
+} // namespace genomeworks

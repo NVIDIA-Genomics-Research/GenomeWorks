@@ -13,7 +13,7 @@
 #include <vector>
 #include <string>
 
-namespace claragenomics
+namespace genomeworks
 {
 
 struct TestCaseData
@@ -24,4 +24,4 @@ struct TestCaseData
 
 std::vector<TestCaseData> create_cudaaligner_test_cases();
 
-} // namespace claragenomics
+} // namespace genomeworks

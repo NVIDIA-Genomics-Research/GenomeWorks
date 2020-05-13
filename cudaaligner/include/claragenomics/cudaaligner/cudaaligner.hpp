@@ -12,7 +12,7 @@
 
 #include <cstdint>
 
-namespace claragenomics
+namespace genomeworks
 {
 
 namespace cudaaligner
@@ -52,4 +52,4 @@ enum AlignmentState : int8_t
 StatusType Init();
 /// \}
 } // namespace cudaaligner
-} // namespace claragenomics
+} // namespace genomeworks

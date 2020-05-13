@@ -16,7 +16,7 @@
 #include <climits>
 #include <vector>
 
-namespace claragenomics
+namespace genomeworks
 {
 
 namespace cudaaligner
@@ -121,4 +121,4 @@ int32_t myers_compute_edit_distance(std::string const& target, std::string const
 }
 
 } // namespace cudaaligner
-} // namespace claragenomics
+} // namespace genomeworks

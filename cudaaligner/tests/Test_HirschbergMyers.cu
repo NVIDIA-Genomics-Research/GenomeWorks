@@ -14,7 +14,7 @@
 #include <vector>
 #include <gtest/gtest.h>
 
-namespace claragenomics
+namespace genomeworks
 {
 
 namespace cudaaligner
@@ -195,4 +195,4 @@ TEST(HirschbergMyers, myers_get_query_pattern_reverse)
 }
 
 } // namespace cudaaligner
-} // namespace claragenomics
+} // namespace genomeworks

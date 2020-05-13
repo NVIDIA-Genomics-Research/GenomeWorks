@@ -19,7 +19,7 @@
 
 #include <thrust/system/cuda/experimental/pinned_allocator.h>
 
-namespace claragenomics
+namespace genomeworks
 {
 
 namespace cudaaligner
@@ -88,4 +88,4 @@ private:
 };
 
 } // namespace cudaaligner
-} // namespace claragenomics
+} // namespace genomeworks

@@ -17,7 +17,7 @@
 #include <vector>
 #include <cuda_runtime_api.h>
 
-namespace claragenomics
+namespace genomeworks
 {
 
 namespace cudaaligner
@@ -101,4 +101,4 @@ std::unique_ptr<Aligner> create_aligner(int32_t max_query_length, int32_t max_ta
 
 /// \}
 } // namespace cudaaligner
-} // namespace claragenomics
+} // namespace genomeworks

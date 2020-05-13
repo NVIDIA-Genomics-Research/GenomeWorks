@@ -16,7 +16,7 @@
 #include <vector>
 #include <string>
 
-namespace claragenomics
+namespace genomeworks
 {
 
 namespace cudaaligner
@@ -84,4 +84,4 @@ public:
 
 /// \}
 } // namespace cudaaligner
-} // namespace claragenomics
+} // namespace genomeworks
