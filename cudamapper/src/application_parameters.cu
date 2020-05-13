@@ -152,6 +152,18 @@ ApplicationParameters::ApplicationParameters(int argc, char* argv[])
         target_indices_in_device_memory = query_indices_in_device_memory;
     }
 
+    if (target_indices_in_host_memory < target_indices_in_device_memory)
+    {
+        std::cerr << "-C / --target-indices-in-host-memory  has to be larger or equal than -c / --target-indices-in-device-memory" << std::endl;
+        exit(1);
+    }
+
+    if (query_indices_in_host_memory < query_indices_in_device_memory)
+    {
+        std::cerr << "-Q / --query-indices-in-host-memory  has to be larger or equal than -q / --query-indices-in-device-memory" << std::endl;
+        exit(1);
+    }
+
     query_filepath  = std::string(argv[optind++]);
     target_filepath = std::string(argv[optind++]);
 
