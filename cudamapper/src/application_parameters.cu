@@ -46,7 +46,9 @@ ApplicationParameters::ApplicationParameters(int argc, char* argv[])
 
     std::string optstring = "k:w:d:m:i:t:F:h:a:r:l:b:z:q:Q:c:C:";
 
-    int32_t argument = 0;
+    bool target_indices_in_host_memory_set   = false;
+    bool target_indices_in_device_memory_set = false;
+    int32_t argument                         = 0;
     while ((argument = getopt_long(argc, argv, optstring.c_str(), options, nullptr)) != -1)
     {
         switch (argument)
@@ -99,10 +101,12 @@ ApplicationParameters::ApplicationParameters(int argc, char* argv[])
             query_indices_in_device_memory = atoi(optarg);
             break;
         case 'c':
-            target_indices_in_host_memory = atoi(optarg);
+            target_indices_in_host_memory     = atoi(optarg);
+            target_indices_in_host_memory_set = true;
             break;
         case 'C':
-            target_indices_in_device_memory = atoi(optarg);
+            target_indices_in_device_memory     = atoi(optarg);
+            target_indices_in_device_memory_set = true;
             break;
         case 'h':
             help(0);
@@ -134,6 +138,18 @@ ApplicationParameters::ApplicationParameters(int argc, char* argv[])
     {
         std::cerr << "Invalid inputs. Please refer to the help function." << std::endl;
         help(1);
+    }
+
+    if (!target_indices_in_host_memory_set)
+    {
+        std::cerr << "-c / --target-indices-in-host-memory not set, using -q / --query-indices-in-host-memory value: " << query_indices_in_host_memory << std::endl;
+        target_indices_in_host_memory = query_indices_in_host_memory;
+    }
+
+    if (!target_indices_in_device_memory_set)
+    {
+        std::cerr << "-C / --target-indices-in-device-memory not set, using -Q / --query-indices-in-device-memory value: " << query_indices_in_device_memory << std::endl;
+        target_indices_in_device_memory = query_indices_in_device_memory;
     }
 
     query_filepath  = std::string(argv[optind++]);
