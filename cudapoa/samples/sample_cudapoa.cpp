@@ -10,6 +10,7 @@
 
 #include "../benchmarks/common/utils.hpp"
 #include "../src/cudapoa_kernels.cuh" // for estimate_max_poas()
+#include "../src/allocate_block.hpp"
 
 #include <file_location.hpp>
 #include <claragenomics/cudapoa/cudapoa.hpp>
@@ -127,56 +128,35 @@ void process_batch(Batch* batch, bool msa, bool print)
 
 size_t estimate_max_poas(const BatchSize& batch_size, const bool banded_alignment, const bool msa_flag)
 {
-    int32_t matrix_sequence_dimension = banded_alignment ? CUDAPOA_BANDED_MAX_MATRIX_SEQUENCE_DIMENSION : batch_size.max_matrix_sequence_dimension;
-    int32_t matrix_graph_dimension    = banded_alignment ? batch_size.max_matrix_graph_dimension_banded : batch_size.max_matrix_graph_dimension;
-    int32_t max_nodes_per_window      = banded_alignment ? batch_size.max_nodes_per_window_banded : batch_size.max_nodes_per_window;
-
-    // Initialize CUDAPOA batch object for batched processing of POAs on the GPU.
     size_t total = 0, free = 0;
     cudaMemGetInfo(&free, &total);
-    size_t mem_per_batch         = 0.9 * free; // Using 90% of GPU available memory for CUDAPOA batch.
+    size_t mem_per_batch         = 0.9 * free; // Using 90% of GPU available memory for cudapoa batch.
     const int32_t mismatch_score = -6, gap_score = -8, match_score = 8;
 
-    int64_t sizeof_ScoreT = use32bitScore(batch_size, gap_score, mismatch_score, match_score) ? 4 : 2;
-    int64_t sizeof_SizeT  = use32bitSize(batch_size, banded_alignment) ? 4 : 2;
-
-    // Calculate memory requirements for POA arrays
+    int64_t sizeof_ScoreT       = 2;
     int64_t device_size_per_poa = 0;
-    int64_t input_size_per_poa  = batch_size.max_sequences_per_poa * batch_size.max_sequence_size;
-    int64_t output_size_per_poa = batch_size.max_concensus_size;
-    device_size_per_poa += output_size_per_poa * sizeof(uint8_t);                                                                                // output_details_d_->consensus
-    device_size_per_poa += (!msa_flag) ? output_size_per_poa * sizeof(uint16_t) : 0;                                                             // output_details_d_->coverage
-    device_size_per_poa += (msa_flag) ? output_size_per_poa * batch_size.max_sequences_per_poa * sizeof(uint8_t) : 0;                            // output_details_d_->multiple_sequence_alignments
-    device_size_per_poa += input_size_per_poa * sizeof(uint8_t);                                                                                 // input_details_d_->sequences
-    device_size_per_poa += input_size_per_poa * sizeof(int8_t);                                                                                  // input_details_d_->base_weights
-    device_size_per_poa += batch_size.max_sequences_per_poa * sizeof_SizeT;                                                                      // input_details_d_->sequence_lengths
-    device_size_per_poa += sizeof(WindowDetails);                                                                                                // input_details_d_->window_details
-    device_size_per_poa += (msa_flag) ? batch_size.max_sequences_per_poa * sizeof_SizeT : 0;                                                     // input_details_d_->sequence_begin_nodes_ids
-    device_size_per_poa += sizeof(uint8_t) * max_nodes_per_window;                                                                               // graph_details_d_->nodes
-    device_size_per_poa += sizeof_SizeT * max_nodes_per_window * CUDAPOA_MAX_NODE_ALIGNMENTS;                                                    // graph_details_d_->node_alignments
-    device_size_per_poa += sizeof(uint16_t) * max_nodes_per_window;                                                                              // graph_details_d_->node_alignment_count
-    device_size_per_poa += sizeof_SizeT * max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES;                                                         // graph_details_d_->incoming_edges
-    device_size_per_poa += sizeof(uint16_t) * max_nodes_per_window;                                                                              // graph_details_d_->incoming_edge_count
-    device_size_per_poa += sizeof_SizeT * max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES;                                                         // graph_details_d_->outgoing_edges
-    device_size_per_poa += sizeof(uint16_t) * max_nodes_per_window;                                                                              // graph_details_d_->outgoing_edge_count
-    device_size_per_poa += sizeof(uint16_t) * max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES;                                                     // graph_details_d_->incoming_edge_weights
-    device_size_per_poa += sizeof(uint16_t) * max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES;                                                     // graph_details_d_->outgoing_edge_weights
-    device_size_per_poa += sizeof_SizeT * max_nodes_per_window;                                                                                  // graph_details_d_->sorted_poa
-    device_size_per_poa += sizeof_SizeT * max_nodes_per_window;                                                                                  // graph_details_d_->sorted_poa_node_map
-    device_size_per_poa += sizeof(uint16_t) * max_nodes_per_window;                                                                              // graph_details_d_->sorted_poa_local_edge_count
-    device_size_per_poa += (!msa_flag) ? sizeof(int32_t) * max_nodes_per_window : 0;                                                             // graph_details_d_->consensus_scores
-    device_size_per_poa += (!msa_flag) ? sizeof_SizeT * max_nodes_per_window : 0;                                                                // graph_details_d_->consensus_predecessors
-    device_size_per_poa += sizeof(int8_t) * max_nodes_per_window;                                                                                // graph_details_d_->node_marks
-    device_size_per_poa += sizeof(bool) * max_nodes_per_window;                                                                                  // graph_details_d_->check_aligned_nodes
-    device_size_per_poa += sizeof_SizeT * max_nodes_per_window;                                                                                  // graph_details_d_->nodes_to_visit
-    device_size_per_poa += sizeof(uint16_t) * max_nodes_per_window;                                                                              // graph_details_d_->node_coverage_counts
-    device_size_per_poa += (msa_flag) ? sizeof(uint16_t) * max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES * batch_size.max_sequences_per_poa : 0; // graph_details_d_->outgoing_edges_coverage
-    device_size_per_poa += (msa_flag) ? sizeof(uint16_t) * max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES : 0;                                    // graph_details_d_->outgoing_edges_coverage_count
-    device_size_per_poa += (msa_flag) ? sizeof_SizeT * max_nodes_per_window : 0;                                                                 // graph_details_d_->node_id_to_msa_pos
-    device_size_per_poa += sizeof_SizeT * matrix_graph_dimension;                                                                                // alignment_details_d_->alignment_graph
-    device_size_per_poa += sizeof_SizeT * matrix_graph_dimension;                                                                                // alignment_details_d_->alignment_read
+
+    if (use32bitScore(batch_size, gap_score, mismatch_score, match_score))
+    {
+        sizeof_ScoreT = 4;
+        if (use32bitSize(batch_size, banded_alignment))
+        {
+            device_size_per_poa = BatchBlock<int32_t, int32_t>::compute_device_memory_per_poa(batch_size, banded_alignment, msa_flag);
+        }
+        else
+        {
+            device_size_per_poa = BatchBlock<int32_t, int16_t>::compute_device_memory_per_poa(batch_size, banded_alignment, msa_flag);
+        }
+    }
+    else
+    {
+        // if ScoreT is 16-bit, it's safe to assume SizeT is also 16-bit
+        device_size_per_poa = BatchBlock<int16_t, int16_t>::compute_device_memory_per_poa(batch_size, banded_alignment, msa_flag);
+    }
 
     // Compute required memory for score matrix
+    int32_t matrix_sequence_dimension    = banded_alignment ? CUDAPOA_BANDED_MAX_MATRIX_SEQUENCE_DIMENSION : batch_size.max_matrix_sequence_dimension;
+    int32_t matrix_graph_dimension       = banded_alignment ? batch_size.max_matrix_graph_dimension_banded : batch_size.max_matrix_graph_dimension;
     int64_t device_size_per_score_matrix = (int64_t)matrix_sequence_dimension * (int64_t)matrix_graph_dimension * sizeof_ScoreT;
 
     // Calculate max POAs possible based on available memory.
