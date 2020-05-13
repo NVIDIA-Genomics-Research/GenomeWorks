@@ -115,13 +115,14 @@ void print_paf(const std::vector<Overlap>& overlaps,
                const io::FastaParser& query_parser,
                const io::FastaParser& target_parser,
                const int32_t kmer_size,
-               std::mutex& write_output_mutex)
+               std::mutex& write_output_mutex,
+               const int32_t number_of_devices)
 {
     assert(!cigar.empty() || (overlaps.size() == cigar.size()));
 
     // divide the work into several threads
 
-    int32_t number_of_threads   = std::thread::hardware_concurrency(); // We could use a better heuristic here
+    int32_t number_of_threads   = std::thread::hardware_concurrency() / number_of_devices; // We could use a better heuristic here
     int64_t overlaps_per_thread = get_size<int64_t>(overlaps) / number_of_threads;
 
     std::vector<std::thread> threads;

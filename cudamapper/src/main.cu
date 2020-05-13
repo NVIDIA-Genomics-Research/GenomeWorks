@@ -385,23 +385,26 @@ void align_overlaps(DefaultDeviceAllocator allocator,
     }
 }
 
-/// @brief adds read names to overlaps and writes them to output
+/// \brief adds read names to overlaps and writes them to output
 /// This function is expected to be executed async to matcher + overlapper
-/// @param overlaps_writer_mtx locked while writing the output
-/// @param num_overlap_chunks_to_print increased before the function is called, decreased right before the function finishes // TODO: improve this design
-/// @param filtered_overlaps overlaps to be written out, on input without read names, on output cleared
-/// @param query_parser needed for read names and lenghts
-/// @param target_parser needed for read names and lenghts
-/// @param cigar
-/// @param device_id id of device on which query and target indices were created
+/// \param overlaps_writer_mtx locked while writing the output
+/// \param num_overlap_chunks_to_print increased before the function is called, decreased right before the function finishes // TODO: improve this design
+/// \param filtered_overlaps overlaps to be written out, on input without read names, on output cleared
+/// \param query_parser needed for read names and lenghts
+/// \param target_parser needed for read names and lenghts
+/// \param cigar
+/// \param kmer_size
+/// \param device_id id of device on which query and target indices were created
+/// \param number_of_device
 void writer_thread_function(std::mutex& overlaps_writer_mtx,
                             std::atomic<int>& num_overlap_chunks_to_print,
                             std::shared_ptr<std::vector<Overlap>> filtered_overlaps,
                             const io::FastaParser& query_parser,
                             const io::FastaParser& target_parser,
                             const std::vector<std::string> cigar,
-                            const int device_id,
-                            const int kmer_size)
+                            const int32_t kmer_size,
+                            const int32_t device_id,
+                            const int32_t number_of_device)
 {
     // This function is expected to run in a separate thread so set current device in order to avoid problems
     // with deallocating indices with different current device than the one on which they were created
@@ -420,7 +423,8 @@ void writer_thread_function(std::mutex& overlaps_writer_mtx,
                   query_parser,
                   target_parser,
                   kmer_size,
-                  overlaps_writer_mtx);
+                  overlaps_writer_mtx,
+                  number_of_device);
     }
 
     //Decrement counter which tracks number of overlap chunks to be filtered and printed
@@ -694,8 +698,9 @@ int main(int argc, char* argv[])
                               std::ref(*query_parser),
                               std::ref(*target_parser),
                               std::move(cigar),
+                              parameters.k,
                               device_id,
-                              parameters.k);
+                              parameters.num_devices);
                 t.detach();
             }
 
