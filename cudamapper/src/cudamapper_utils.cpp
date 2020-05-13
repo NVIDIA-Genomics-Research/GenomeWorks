@@ -8,9 +8,8 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-#include <vector>
 #include <algorithm>
-#include <iostream>
+#include <vector>
 
 #include "claragenomics/cudamapper/types.hpp"
 
@@ -68,12 +67,12 @@ void fuse_overlaps(std::vector<Overlap>& fused_overlaps, const std::vector<Overl
     fused_overlaps.push_back(fused_overlap);
 }
 
-std::string string_slice(const std::string& s, std::size_t start, std::size_t end)
+std::string string_slice(const std::string& s, const std::size_t start, const std::size_t end)
 {
     return s.substr(start, end - start);
 }
 
-std::vector<std::string> kmerize_string(const std::string& s, std::int32_t kmer_length, std::int32_t stride)
+std::vector<std::string> kmerize_string(const std::string& s, const std::int32_t kmer_length, const std::int32_t stride)
 {
     std::size_t kmer_count = s.length() - kmer_length + 1;
     std::vector<std::string> kmers;
@@ -117,7 +116,7 @@ std::size_t count_shared_elements(const std::vector<T>& a, const std::vector<T>&
     return shared_count;
 }
 
-float containment(const std::string& a, const std::string& b, std::int32_t kmer_length, std::int32_t stride)
+float containment(const std::string& a, const std::string& b, const std::int32_t kmer_length, const std::int32_t stride)
 {
     std::vector<std::string> a_kmers = kmerize_string(a, kmer_length, stride);
     std::vector<std::string> b_kmers = kmerize_string(b, kmer_length, stride);
@@ -131,7 +130,7 @@ float containment(const std::string& a, const std::string& b, std::int32_t kmer_
     return static_cast<float>(shared_kmers) / static_cast<float>(shortest_kmer_set_length);
 }
 
-float similarity(const std::string& a, const std::string& b, std::int32_t kmer_length, std::int32_t stride)
+float similarity(const std::string& a, const std::string& b, const std::int32_t kmer_length, const std::int32_t stride)
 {
     std::vector<std::string> a_kmers = kmerize_string(a, kmer_length, stride);
     std::vector<std::string> b_kmers = kmerize_string(b, kmer_length, stride);
