@@ -55,6 +55,15 @@ bool overlaps_mergable(const claragenomics::cudamapper::Overlap o1, const clarag
     bool gap_ratio_ok = (gap_ratio > 0.8) || ((query_gap < 500) && (target_gap < 500)); //TODO make these user-configurable?
     return gap_ratio_ok;
 }
+
+
+std::string string_slice(const std::string& s, const std::size_t start, const std::size_t end)
+{
+    return s.substr(start, end - start);
+}
+
+
+
 } // namespace
 
 namespace claragenomics
@@ -209,8 +218,8 @@ void Overlapper::post_process_overlaps(std::vector<Overlap>& overlaps)
 void Overlapper::rescue_overlap_ends(std::vector<Overlap>& overlaps,
                                      const io::FastaParser& query_parser,
                                      const io::FastaParser& target_parser,
-                                     std::int32_t extension,
-                                     float required_similarity)
+                                     const std::int32_t extension,
+                                     const float required_similarity)
 {
 
     auto reverse_overlap = [](cudamapper::Overlap& overlap, std::uint32_t target_sequence_length) {
@@ -257,7 +266,7 @@ void Overlapper::rescue_overlap_ends(std::vector<Overlap>& overlaps,
         std::string target_head = string_slice(target_sequence, target_rescue_head_start, overlap.target_start_position_in_read_);
 
         // Calculate the similarity of the two head sequences.
-        float head_similarity = similarity(query_head, target_head, 15, 1);
+        float head_similarity = sequence_jaccard_similarity(query_head, target_head, 15, 1);
         if (head_similarity >= required_similarity)
         {
             // The most we can extend is the length of the shortest substring.
@@ -274,7 +283,7 @@ void Overlapper::rescue_overlap_ends(std::vector<Overlap>& overlaps,
         std::string query_tail  = string_slice(query_sequence, overlap.query_end_position_in_read_, query_rescue_tail_start);
         std::string target_tail = string_slice(target_sequence, overlap.target_end_position_in_read_, target_rescue_tail_start);
 
-        float tail_similarity = similarity(query_tail, target_tail, 15, 1);
+        float tail_similarity = sequence_jaccard_similarity(query_tail, target_tail, 15, 1);
         if (tail_similarity >= required_similarity)
         {
             std::size_t match_length             = std::min(query_tail.length(), target_tail.length());

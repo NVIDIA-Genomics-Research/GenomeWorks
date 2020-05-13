@@ -67,11 +67,6 @@ void fuse_overlaps(std::vector<Overlap>& fused_overlaps, const std::vector<Overl
     fused_overlaps.push_back(fused_overlap);
 }
 
-std::string string_slice(const std::string& s, const std::size_t start, const std::size_t end)
-{
-    return s.substr(start, end - start);
-}
-
 std::vector<std::string> split_into_kmers(const std::string& s, const std::int32_t kmer_size, const std::int32_t stride)
 {
     std::size_t kmer_count = s.length() - kmer_size + 1;
