@@ -69,7 +69,7 @@ void fuse_overlaps(std::vector<Overlap>& fused_overlaps, const std::vector<Overl
 
 std::vector<std::string> split_into_kmers(const std::string& s, const std::int32_t kmer_size, const std::int32_t stride)
 {
-    std::size_t kmer_count = s.length() - kmer_size + 1;
+    const std::size_t kmer_count = s.length() - kmer_size + 1;
     std::vector<std::string> kmers;
 
     if (s.length() < kmer_size)
@@ -118,7 +118,7 @@ float sequence_jaccard_containment(const std::string& a, const std::string& b, c
     std::sort(a_kmers.begin(), a_kmers.end());
     std::sort(b_kmers.begin(), b_kmers.end());
 
-    std::size_t shared_kmers = count_shared_elements(a_kmers, b_kmers);
+    const std::size_t shared_kmers = count_shared_elements(a_kmers, b_kmers);
     // Calculate "containment", i.e., the total number of shared elements divided by
     // the number of elements in the smallest set. Min: 0, Max: 1.
     std::size_t shortest_kmer_set_length = std::min(a_kmers.size(), b_kmers.size());
@@ -132,7 +132,7 @@ float sequence_jaccard_similarity(const std::string& a, const std::string& b, co
     std::sort(a_kmers.begin(), a_kmers.end());
     std::sort(b_kmers.begin(), b_kmers.end());
 
-    std::size_t shared_kmers = count_shared_elements(a_kmers, b_kmers);
+    const std::size_t shared_kmers = count_shared_elements(a_kmers, b_kmers);
     // Calculate the set union size of a and b
     std::size_t union_size = a_kmers.size() + b_kmers.size() - shared_kmers;
     return static_cast<float>(shared_kmers) / static_cast<float>(union_size);
