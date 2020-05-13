@@ -24,7 +24,7 @@ from bindings.cuda_runtime_api cimport _Stream
 # from the ClaraGenomicsAnalysis `cudaaligner` module.
 
 # Declare structs and APIs from cudaaligner.hpp
-cdef extern from "claragenomics/cudaaligner/cudaaligner.hpp" namespace "claragenomics::cudaaligner":
+cdef extern from "claragenomics/cudaaligner/cudaaligner.hpp" namespace "genomeworks::cudaaligner":
     cdef enum StatusType:
         success = 0,
         uninitialized
@@ -46,7 +46,7 @@ cdef extern from "claragenomics/cudaaligner/cudaaligner.hpp" namespace "claragen
     cdef StatusType Init()
 
 # Declare structs and APIs from alignment.hpp
-cdef extern from "claragenomics/cudaaligner/alignment.hpp" namespace "claragenomics::cudaaligner":
+cdef extern from "claragenomics/cudaaligner/alignment.hpp" namespace "genomeworks::cudaaligner":
     ctypedef struct  FormattedAlignment:
         string query
         string pairing
@@ -62,7 +62,7 @@ cdef extern from "claragenomics/cudaaligner/alignment.hpp" namespace "claragenom
         FormattedAlignment format_alignment() except +
 
 # Declare structs and APIs from aligner.hpp
-cdef extern from "claragenomics/cudaaligner/aligner.hpp" namespace "claragenomics::cudaaligner":
+cdef extern from "claragenomics/cudaaligner/aligner.hpp" namespace "genomeworks::cudaaligner":
     cdef cppclass Aligner:
         StatusType align_all() except +
         StatusType sync_alignments() except +
