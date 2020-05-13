@@ -390,7 +390,7 @@ int main(int argc, char** argv)
                 else
                 {
                     // the POA was too large to be added to the GPU, skip and move on
-                    std::cout << "Could not add POA group " << batch_window_ids[i] << "to batch " << b << ". Error code " << status << std::endl;
+                    std::cout << "Could not add POA group " << batch_window_ids[i] << " to batch " << b << std::endl;
                     i++;
                 }
 
@@ -412,7 +412,7 @@ int main(int argc, char** argv)
 
             if (status != StatusType::exceeded_maximum_poas && status != StatusType::success)
             {
-                std::cout << "Could not add POA group " << batch_window_ids[i] << "to batch " << b << ". Error code " << status << std::endl;
+                std::cout << "Could not add POA group " << batch_window_ids[i] << " to batch " << b << ". Error code " << status << std::endl;
                 i++;
             }
         }
