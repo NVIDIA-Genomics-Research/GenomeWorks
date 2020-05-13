@@ -8,13 +8,15 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-#include <algorithm>
-#include <claragenomics/io/fasta_parser.hpp>
 #include <claragenomics/cudamapper/overlapper.hpp>
+
+#include <algorithm>
+#include <vector>
+
+#include <claragenomics/io/fasta_parser.hpp>
 #include <claragenomics/utils/cudautils.hpp>
 #include <claragenomics/utils/signed_integer_utils.hpp>
-#include <mutex>
-#include <future>
+
 namespace
 {
 bool overlaps_mergable(const claragenomics::cudamapper::Overlap o1, const claragenomics::cudamapper::Overlap o2)
@@ -59,63 +61,6 @@ namespace claragenomics
 {
 namespace cudamapper
 {
-
-void Overlapper::update_read_names(std::vector<Overlap>& overlaps,
-                                   const io::FastaParser& query_parser,
-                                   const io::FastaParser& target_parser)
-{
-#pragma omp parallel for
-    for (size_t i = 0; i < overlaps.size(); i++)
-    {
-        auto& o                             = overlaps[i];
-        const std::string& query_read_name  = query_parser.get_sequence_by_id(o.query_read_id_).name;
-        const std::string& target_read_name = target_parser.get_sequence_by_id(o.target_read_id_).name;
-
-        o.query_read_name_ = new char[query_read_name.length() + 1];
-        strcpy(o.query_read_name_, query_read_name.c_str());
-
-        o.target_read_name_ = new char[target_read_name.length() + 1];
-        strcpy(o.target_read_name_, target_read_name.c_str());
-
-        o.query_length_  = query_parser.get_sequence_by_id(o.query_read_id_).seq.length();
-        o.target_length_ = target_parser.get_sequence_by_id(o.target_read_id_).seq.length();
-    }
-}
-
-namespace
-{
-} // namespace
-
-void Overlapper::print_paf(const std::vector<Overlap>& overlaps, const std::vector<std::string>& cigar, const int k)
-{
-    int32_t idx = 0;
-    for (const auto& overlap : overlaps)
-    {
-        // Add basic overlap information.
-        std::printf("%s\t%i\t%i\t%i\t%c\t%s\t%i\t%i\t%i\t%i\t%ld\t%i",
-                    overlap.query_read_name_,
-                    overlap.query_length_,
-                    overlap.query_start_position_in_read_,
-                    overlap.query_end_position_in_read_,
-                    static_cast<unsigned char>(overlap.relative_strand),
-                    overlap.target_read_name_,
-                    overlap.target_length_,
-                    overlap.target_start_position_in_read_,
-                    overlap.target_end_position_in_read_,
-                    overlap.num_residues_ * k, // Print out the number of residue matches multiplied by kmer size to get approximate number of matching bases
-                    std::max(std::abs(static_cast<std::int64_t>(overlap.target_start_position_in_read_) - static_cast<std::int64_t>(overlap.target_end_position_in_read_)),
-                             std::abs(static_cast<std::int64_t>(overlap.query_start_position_in_read_) - static_cast<std::int64_t>(overlap.query_end_position_in_read_))), //Approximate alignment length
-                    255);
-        // If CIGAR string is generated, output in PAF.
-        if (cigar.size() != 0)
-        {
-            std::printf("\tcg:Z:%s", cigar[idx].c_str());
-        }
-        // Add new line to demarcate new entry.
-        std::printf("\n");
-        idx++;
-    }
-}
 
 void Overlapper::post_process_overlaps(std::vector<Overlap>& overlaps)
 {

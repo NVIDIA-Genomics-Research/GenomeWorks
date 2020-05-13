@@ -8,16 +8,15 @@
  * license agreement from NVIDIA CORPORATION is strictly prohibited.
  */
 
-#include <cub/cub.cuh>
+#include "overlapper_triggered.hpp"
 
 #include <fstream>
 #include <cstdlib>
-#include <omp.h>
+
+#include <cub/cub.cuh>
+#include <thrust/execution_policy.h>
 
 #include <claragenomics/utils/cudautils.hpp>
-
-#include "cudamapper_utils.hpp"
-#include "overlapper_triggered.hpp"
 
 #ifndef NDEBUG // only needed to check if input is sorted in assert
 #include <algorithm>
