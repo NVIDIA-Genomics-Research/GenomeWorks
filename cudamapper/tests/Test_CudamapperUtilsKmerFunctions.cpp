@@ -10,6 +10,7 @@
 
 #include "gtest/gtest.h"
 #include <string>
+#include <string_view>
 #include <vector>
 #include "../src/cudamapper_utils.cpp"
 
@@ -51,6 +52,16 @@ TEST(CountSharedElementTest, shared_strings_correctly_counted)
     std::sort(test_str_b.begin(), test_str_b.end());
     std::size_t shared_count = count_shared_elements(test_str_a, test_str_b);
     ASSERT_EQ(shared_count, 3);
+}
+
+TEST(CountSharedElementsTest, string_views_can_be_compared){
+    std::string_view s("first");
+    std::string_view t("first");
+    std::string_view w("second");
+    std::vector<std::string_view> test_a {s, w};
+    std::vector<std::string_view> test_b {t};
+    std::size_t shared_count = count_shared_elements(test_a, test_b);
+    ASSERT_EQ(shared_count, 1);
 }
 
 TEST(CountSharedElementsTest, empty_vectors_counted_correctly)
