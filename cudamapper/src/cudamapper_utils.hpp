@@ -83,7 +83,7 @@ std::size_t count_shared_elements(const std::vector<T>& a, const std::vector<T>&
 /// \param kmer_length The kmer length to use for estimating similarity.
 /// \param stride The number of bases to stride between kmers.
 /// \return The estimated Jaccard index as a float.
-float similarity(const std::string& a, const std::string& b, std::int32_t kmer_size, std::int32_t stride);
+float sequence_jaccard_similarity(const std::string& a, const std::string& b, std::int32_t kmer_size, std::int32_t stride);
 
 /// \brief Given two sequences 'a' and 'b', calculate the Jaccard containment
 /// The containment is similar to the Jaccard index (or similarity coefficient,
@@ -96,7 +96,7 @@ float similarity(const std::string& a, const std::string& b, std::int32_t kmer_s
 /// \param kmer_length The kmer length to use for estimating similarity.
 /// \param stride The number of bases to stride between kmers.
 /// \return The estimated Jaccard containment as a float.
-float containment(const std::string& a, const std::string& b, std::int32_t kmer_size, std::int32_t stride);
+float sequence_jaccard_containment(const std::string& a, const std::string& b, std::int32_t kmer_size, std::int32_t stride);
 
 } // namespace cudamapper
 } // namespace claragenomics

@@ -69,8 +69,9 @@ TEST(SimilarityTest, similarity_of_identical_seqs_is_1)
     std::string a("AAACCTATGAGGG");
     std::string b("AAACCTATGAGGG");
     std::string long_b("AAACCTATGAGGGAAACCTATGAGGG");
-    float sim      = similarity(a, b, 4, 1);
-    float long_sim = similarity(a, long_b, 4, 1);
+    float sim              = sequence_jaccard_similarity(a, b, 4, 1);
+    float long_containment = sequence_jaccard_containment(a, long_b, 4, 1);
+    float long_containment = sequence_jaccard_similarity(a, long_b, 4, 1);
     ASSERT_EQ(sim, 1.0);
     ASSERT_EQ(long_sim, 1.0);
 }
@@ -78,14 +79,14 @@ TEST(SimilarityTest, similarity_of_disjoint_seqs_is_0)
 {
     std::string a("AAACCTATGAGGG");
     std::string b("CCCAATTTAAATT");
-    float sim = similarity(a, b, 4, 1);
+    float sim = sequence_jaccard_similarity(a, b, 4, 1);
     ASSERT_EQ(sim, 0.0);
 }
 TEST(SimilarityTest, similarity_of_similar_seqs_is_accurate_estimate)
 {
     std::string a("AAACCTATGAGGG");
     std::string b("AAACCTAAGAGGG");
-    float sim = similarity(a, b, 4, 1);
+    float sim = sequence_jaccard_similarity(a, b, 4, 1);
     ASSERT_GT(sim, 0.0);
     ASSERT_LT(sim, 1.0);
 }

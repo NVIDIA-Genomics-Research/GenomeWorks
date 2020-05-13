@@ -116,7 +116,7 @@ std::size_t count_shared_elements(const std::vector<T>& a, const std::vector<T>&
     return shared_count;
 }
 
-float containment(const std::string& a, const std::string& b, const std::int32_t kmer_size, const std::int32_t stride)
+float sequence_jaccard_containment(const std::string& a, const std::string& b, const std::int32_t kmer_size, const std::int32_t stride)
 {
     std::vector<std::string> a_kmers = split_into_kmers(a, kmer_size, stride);
     std::vector<std::string> b_kmers = split_into_kmers(b, kmer_size, stride);
@@ -130,7 +130,7 @@ float containment(const std::string& a, const std::string& b, const std::int32_t
     return static_cast<float>(shared_kmers) / static_cast<float>(shortest_kmer_set_length);
 }
 
-float similarity(const std::string& a, const std::string& b, const std::int32_t kmer_size, const std::int32_t stride)
+float sequence_jaccard_similarity(const std::string& a, const std::string& b, const std::int32_t kmer_size, const std::int32_t stride)
 {
     std::vector<std::string> a_kmers = split_into_kmers(a, kmer_size, stride);
     std::vector<std::string> b_kmers = split_into_kmers(b, kmer_size, stride);
