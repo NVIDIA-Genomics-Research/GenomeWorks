@@ -30,6 +30,9 @@
 
 #include "index_host_copy.cuh"
 
+namespace claraparabricks
+{
+
 namespace genomeworks
 {
 namespace cudamapper
@@ -848,3 +851,5 @@ void IndexGPU<SketchElementImpl>::generate_index(const io::FastaParser& parser,
 
 } // namespace cudamapper
 } // namespace genomeworks
+
+} // namespace claraparabricks

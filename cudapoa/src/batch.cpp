@@ -13,6 +13,9 @@
 
 #include <claragenomics/cudapoa/batch.hpp>
 
+namespace claraparabricks
+{
+
 namespace genomeworks
 {
 
@@ -74,3 +77,5 @@ std::unique_ptr<Batch> create_batch(int32_t device_id,
 } // namespace cudapoa
 
 } // namespace genomeworks
+
+} // namespace claraparabricks

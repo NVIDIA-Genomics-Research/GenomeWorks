@@ -18,6 +18,9 @@
 #include <algorithm>
 #endif
 
+namespace claraparabricks
+{
+
 namespace genomeworks
 {
 
@@ -70,3 +73,5 @@ std::int32_t int_floor_log2(T val)
 }
 
 } // namespace genomeworks
+
+} // namespace claraparabricks

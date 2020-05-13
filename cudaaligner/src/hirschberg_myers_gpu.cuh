@@ -13,6 +13,9 @@
 #include <cuda_runtime_api.h>
 #include "batched_device_matrices.cuh"
 
+namespace claraparabricks
+{
+
 namespace genomeworks
 {
 namespace cudaaligner
@@ -48,3 +51,5 @@ void hirschberg_myers_gpu(device_buffer<hirschbergmyers::query_target_range>& st
 
 } // end namespace cudaaligner
 } // end namespace genomeworks
+
+} // end namespace claraparabricks

@@ -17,6 +17,9 @@
 #include <vector>
 #include <stdint.h>
 
+namespace claraparabricks
+{
+
 namespace genomeworks
 {
 
@@ -68,3 +71,5 @@ protected:
 } // namespace cudapoa
 
 } // namespace genomeworks
+
+} // namespace claraparabricks

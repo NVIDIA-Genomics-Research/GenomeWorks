@@ -14,6 +14,9 @@
 
 #include <stdio.h>
 
+namespace claraparabricks
+{
+
 namespace genomeworks
 {
 
@@ -424,3 +427,5 @@ void generateConsensusTemplated(uint8_t* nodes,
 } // namespace cudapoa
 
 } // namespace genomeworks
+
+} // namespace claraparabricks

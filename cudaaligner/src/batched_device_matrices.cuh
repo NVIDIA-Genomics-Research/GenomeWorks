@@ -18,6 +18,9 @@
 #include <tuple>
 #include <cassert>
 
+namespace claraparabricks
+{
+
 namespace genomeworks
 {
 namespace cudaaligner
@@ -159,3 +162,5 @@ private:
 
 } // end namespace cudaaligner
 } // end namespace genomeworks
+
+} // end namespace claraparabricks

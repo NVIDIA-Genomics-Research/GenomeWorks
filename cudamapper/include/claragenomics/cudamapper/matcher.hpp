@@ -14,6 +14,9 @@
 #include <claragenomics/cudamapper/index.hpp>
 #include <claragenomics/utils/device_buffer.hpp>
 
+namespace claraparabricks
+{
+
 namespace genomeworks
 {
 
@@ -50,3 +53,5 @@ public:
 } // namespace cudamapper
 
 } // namespace genomeworks
+
+} // namespace claraparabricks

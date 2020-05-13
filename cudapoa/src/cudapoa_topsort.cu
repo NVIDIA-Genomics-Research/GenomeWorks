@@ -14,6 +14,9 @@
 
 #include <stdio.h>
 
+namespace claraparabricks
+{
+
 namespace genomeworks
 {
 
@@ -227,3 +230,5 @@ void runTopSortTemplated(SizeT* sorted_poa,
 } // namespace cudapoa
 
 } // namespace genomeworks
+
+} // namespace claraparabricks

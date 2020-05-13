@@ -15,6 +15,9 @@
 #include "gtest/gtest.h"
 #include <memory>
 
+namespace claraparabricks
+{
+
 namespace genomeworks
 {
 
@@ -174,3 +177,5 @@ TEST_P(TestAlignmentImpl, CigarFormatting)
 INSTANTIATE_TEST_SUITE_P(TestAlignment, TestAlignmentImpl, ValuesIn(create_alignment_test_cases()));
 } // namespace cudaaligner
 } // namespace genomeworks
+
+} // namespace claraparabricks

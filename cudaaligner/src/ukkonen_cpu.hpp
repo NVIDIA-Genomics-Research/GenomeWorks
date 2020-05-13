@@ -17,6 +17,9 @@
 #include <vector>
 #include <tuple>
 
+namespace claraparabricks
+{
+
 namespace genomeworks
 {
 
@@ -47,3 +50,5 @@ std::vector<int8_t> ukkonen_cpu(std::string const& target, std::string const& qu
 
 } // namespace cudaaligner
 } // namespace genomeworks
+
+} // namespace claraparabricks

@@ -15,6 +15,9 @@
 
 #include <cuda_runtime_api.h>
 
+namespace claraparabricks
+{
+
 namespace genomeworks
 {
 namespace cudaaligner
@@ -51,3 +54,5 @@ void myers_banded_gpu(int8_t* paths_d, int32_t* path_lengths_d, int32_t max_path
                       cudaStream_t stream);
 } // end namespace cudaaligner
 } // end namespace genomeworks
+
+} // end namespace claraparabricks

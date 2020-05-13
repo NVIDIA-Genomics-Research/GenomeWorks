@@ -16,6 +16,9 @@
 
 #include "gtest/gtest.h"
 
+namespace claraparabricks
+{
+
 namespace genomeworks
 {
 
@@ -285,3 +288,5 @@ INSTANTIATE_TEST_SUITE_P(TestGenerateConsensus, GenerateConsensusTest, ValuesIn(
 } // namespace cudapoa
 
 } // namespace genomeworks
+
+} // namespace claraparabricks

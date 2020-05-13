@@ -19,6 +19,9 @@
 
 #include <claragenomics/types.hpp>
 
+namespace claraparabricks
+{
+
 namespace genomeworks
 {
 
@@ -217,3 +220,5 @@ private:
 };
 
 } // namespace genomeworks
+
+} // namespace claraparabricks

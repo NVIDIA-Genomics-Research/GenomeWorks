@@ -11,6 +11,9 @@
 #include "index_gpu.cuh"
 #include <thrust/transform_scan.h>
 
+namespace claraparabricks
+{
+
 namespace genomeworks
 {
 namespace cudamapper
@@ -138,3 +141,5 @@ __global__ void compress_unique_representations_after_filtering_kernel(const std
 
 } // namespace cudamapper
 } // namespace genomeworks
+
+} // namespace claraparabricks

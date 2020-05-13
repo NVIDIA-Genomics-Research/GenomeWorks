@@ -14,6 +14,9 @@
 
 #include <stdio.h>
 
+namespace claraparabricks
+{
+
 namespace genomeworks
 {
 
@@ -222,3 +225,5 @@ __global__ void generateMSAKernel(uint8_t* nodes_d,
 } // namespace cudapoa
 
 } // namespace genomeworks
+
+} // namespace claraparabricks

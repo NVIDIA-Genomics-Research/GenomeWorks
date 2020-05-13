@@ -14,6 +14,9 @@
 #include <string>
 #include <vector>
 
+namespace claraparabricks
+{
+
 namespace genomeworks
 {
 namespace io
@@ -48,3 +51,5 @@ private:
 
 } // namespace io
 } // namespace genomeworks
+
+} // namespace claraparabricks

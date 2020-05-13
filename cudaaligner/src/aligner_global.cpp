@@ -21,6 +21,9 @@
 #include <algorithm>
 #include <cuda_runtime_api.h>
 
+namespace claraparabricks
+{
+
 namespace genomeworks
 {
 
@@ -193,3 +196,5 @@ void AlignerGlobal::reset()
 }
 } // namespace cudaaligner
 } // namespace genomeworks
+
+} // namespace claraparabricks

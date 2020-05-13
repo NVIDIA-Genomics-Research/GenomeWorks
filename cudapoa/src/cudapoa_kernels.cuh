@@ -38,6 +38,9 @@
 #define CUDAPOA_KERNEL_ERROR_ENCOUNTERED UINT8_MAX
 #define CUDAPOA_KERNEL_NOERROR_ENCOUNTERED 0
 
+namespace claraparabricks
+{
+
 namespace genomeworks
 {
 
@@ -310,3 +313,5 @@ bool use32bitSize(const BatchSize& batch_size, bool banded);
 } // namespace cudapoa
 
 } // namespace genomeworks
+
+} // namespace claraparabricks

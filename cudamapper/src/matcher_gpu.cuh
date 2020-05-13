@@ -14,6 +14,9 @@
 #include <claragenomics/cudamapper/types.hpp>
 #include <claragenomics/utils/device_buffer.hpp>
 
+namespace claraparabricks
+{
+
 namespace genomeworks
 {
 
@@ -205,3 +208,5 @@ __global__ void find_query_target_matches_kernel(
 } // namespace cudamapper
 
 } // namespace genomeworks
+
+} // namespace claraparabricks

@@ -19,6 +19,9 @@
 #include <sstream>
 #include <algorithm>
 
+namespace claraparabricks
+{
+
 namespace genomeworks
 {
 
@@ -272,3 +275,5 @@ public:
 };
 
 } // namespace genomeworks
+
+} // namespace claraparabricks

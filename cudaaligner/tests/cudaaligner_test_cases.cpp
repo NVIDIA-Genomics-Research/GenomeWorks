@@ -20,16 +20,19 @@ constexpr int32_t n_random_testcases  = 10;
 constexpr int32_t max_sequence_length = 5000;
 constexpr uint32_t random_seed        = 5827349;
 
-genomeworks::TestCaseData generate_random_test_case(std::minstd_rand& rng)
+claraparabricks::genomeworks::TestCaseData generate_random_test_case(std::minstd_rand& rng)
 {
-    using genomeworks::get_size;
-    genomeworks::TestCaseData t;
+    using claraparabricks::genomeworks::get_size;
+    claraparabricks::genomeworks::TestCaseData t;
     std::uniform_int_distribution<int> random_length(0, max_sequence_length);
-    t.target = genomeworks::genomeutils::generate_random_genome(random_length(rng), rng);
-    t.query  = genomeworks::genomeutils::generate_random_sequence(t.target, rng, get_size(t.target), get_size(t.target), get_size(t.target));
+    t.target = claraparabricks::genomeworks::genomeutils::generate_random_genome(random_length(rng), rng);
+    t.query  = claraparabricks::genomeworks::genomeutils::generate_random_sequence(t.target, rng, get_size(t.target), get_size(t.target), get_size(t.target));
     return t;
 }
 } // namespace
+
+namespace claraparabricks
+{
 
 namespace genomeworks
 {
@@ -85,3 +88,5 @@ std::vector<TestCaseData> create_cudaaligner_test_cases()
     return tests;
 }
 } // namespace genomeworks
+
+} // namespace claraparabricks

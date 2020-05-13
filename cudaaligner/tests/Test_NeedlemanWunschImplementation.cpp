@@ -22,6 +22,9 @@
 #include <algorithm>
 #include "gtest/gtest.h"
 
+namespace claraparabricks
+{
+
 namespace genomeworks
 {
 
@@ -286,3 +289,5 @@ TEST_P(AlignerImplementation, UkkonenCpuFullVsUkkonenGpuFull)
 INSTANTIATE_TEST_SUITE_P(TestNeedlemanWunschImplementation, AlignerImplementation, ValuesIn(getTestCases()));
 } // namespace cudaaligner
 } // namespace genomeworks
+
+} // namespace claraparabricks

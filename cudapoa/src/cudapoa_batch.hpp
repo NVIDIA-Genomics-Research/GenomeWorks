@@ -39,6 +39,9 @@ inline std::string printTabs(int32_t tab_count)
     return s;
 }
 
+namespace claraparabricks
+{
+
 namespace genomeworks
 {
 
@@ -629,3 +632,5 @@ int32_t CudapoaBatch<ScoreT, SizeT>::batches = 0;
 } // namespace cudapoa
 
 } // namespace genomeworks
+
+} // namespace claraparabricks

@@ -13,6 +13,9 @@
 #include <string>
 #include <stdint.h>
 
+namespace claraparabricks
+{
+
 namespace genomeworks
 {
 
@@ -31,6 +34,8 @@ inline std::string array_to_string(T* arr, size_t len, std::string delim = "-")
     return res;
 }
 
-} //namespace stringutils
+} // namespace stringutils
 
 } // namespace genomeworks
+
+} // namespace claraparabricks

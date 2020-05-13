@@ -13,6 +13,9 @@
 
 #include "gtest/gtest.h"
 
+namespace claraparabricks
+{
+
 namespace genomeworks
 {
 
@@ -31,3 +34,5 @@ TEST(GenomeUtilsTest, ReverseComplement)
 } // namespace genomeutils
 
 } // namespace genomeworks
+
+} // namespace claraparabricks

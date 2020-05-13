@@ -13,6 +13,9 @@
 #include <vector>
 #include <string>
 
+namespace claraparabricks
+{
+
 namespace genomeworks
 {
 
@@ -25,3 +28,5 @@ struct TestCaseData
 std::vector<TestCaseData> create_cudaaligner_test_cases();
 
 } // namespace genomeworks
+
+} // namespace claraparabricks

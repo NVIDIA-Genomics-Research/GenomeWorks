@@ -11,6 +11,9 @@
 #include <claragenomics/cudamapper/cudamapper.hpp>
 #include <claragenomics/logging/logging.hpp>
 
+namespace claraparabricks
+{
+
 namespace genomeworks
 {
 namespace cudamapper
@@ -30,3 +33,5 @@ StatusType Init()
 } // namespace cudamapper
 
 } // namespace genomeworks
+
+} // namespace claraparabricks

@@ -21,6 +21,9 @@
 #include <claragenomics/utils/cudautils.hpp>
 #include <claragenomics/cudapoa/batch.hpp>
 
+namespace claraparabricks
+{
+
 namespace genomeworks
 {
 
@@ -1090,3 +1093,5 @@ bool use32bitSize(const BatchSize& batch_size, bool banded)
 } // namespace cudapoa
 
 } // namespace genomeworks
+
+} // namespace claraparabricks

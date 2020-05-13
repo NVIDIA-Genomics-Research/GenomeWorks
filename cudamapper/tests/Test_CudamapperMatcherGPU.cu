@@ -23,6 +23,9 @@
 
 #include "../src/matcher_gpu.cuh"
 
+namespace claraparabricks
+{
+
 namespace genomeworks
 {
 
@@ -704,3 +707,5 @@ TEST(TestCudamapperMatcherGPU, AtLeastOneIndexEmpty)
 
 } // namespace cudamapper
 } // namespace genomeworks
+
+} // namespace claraparabricks

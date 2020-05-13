@@ -13,6 +13,9 @@
 #include "index_gpu.cuh"
 #include "minimizer.hpp"
 
+namespace claraparabricks
+{
+
 namespace genomeworks
 {
 namespace cudamapper
@@ -56,3 +59,5 @@ std::unique_ptr<IndexHostCopyBase> IndexHostCopyBase::create_cache(const Index& 
 
 } // namespace cudamapper
 } // namespace genomeworks
+
+} // namespace claraparabricks

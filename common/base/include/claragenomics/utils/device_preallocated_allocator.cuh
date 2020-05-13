@@ -17,6 +17,9 @@
 
 #include <claragenomics/utils/cudautils.hpp>
 
+namespace claraparabricks
+{
+
 namespace genomeworks
 {
 
@@ -312,3 +315,5 @@ private:
 };
 
 } // namespace genomeworks
+
+} // namespace claraparabricks

@@ -13,6 +13,9 @@
 #include <claragenomics/cudapoa/batch.hpp>
 #include <claragenomics/utils/signed_integer_utils.hpp>
 
+namespace claraparabricks
+{
+
 namespace genomeworks
 {
 
@@ -93,3 +96,5 @@ private:
 };
 } // namespace cudapoa
 } // namespace genomeworks
+
+} // namespace claraparabricks

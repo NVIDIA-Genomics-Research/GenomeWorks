@@ -14,6 +14,9 @@
 
 #include "gtest/gtest.h"
 
+namespace claraparabricks
+{
+
 namespace genomeworks
 {
 
@@ -84,3 +87,5 @@ INSTANTIATE_TEST_SUITE_P(TestEnd2End, TestCudapoaBatchEnd2End, ::testing::Values
 } // namespace cudapoa
 
 } // namespace genomeworks
+
+} // namespace claraparabricks

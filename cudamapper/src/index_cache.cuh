@@ -18,6 +18,9 @@
 
 #include "index_descriptor.hpp"
 
+namespace claraparabricks
+{
+
 namespace genomeworks
 {
 
@@ -206,3 +209,5 @@ private:
 
 } // namespace cudamapper
 } // namespace genomeworks
+
+} // namespace claraparabricks

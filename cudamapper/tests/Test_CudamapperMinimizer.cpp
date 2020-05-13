@@ -13,6 +13,9 @@
 
 #include <claragenomics/utils/cudautils.hpp>
 
+namespace claraparabricks
+{
+
 namespace genomeworks
 {
 namespace cudamapper
@@ -517,3 +520,5 @@ TEST(TestCudamappperMinimizer, CATCAAG_AAGCTA_3_2_read_id_offset_5)
 }
 } // namespace cudamapper
 } // namespace genomeworks
+
+} // namespace claraparabricks

@@ -12,6 +12,9 @@
 
 #include "gtest/gtest.h"
 
+namespace claraparabricks
+{
+
 namespace genomeworks
 {
 
@@ -199,3 +202,5 @@ TEST_F(TestCudapoaBatch, GeneratePoaTest)
 } // namespace cudapoa
 
 } // namespace genomeworks
+
+} // namespace claraparabricks

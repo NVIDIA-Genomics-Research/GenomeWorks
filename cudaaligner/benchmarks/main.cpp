@@ -21,6 +21,9 @@
 #include <cuda_runtime_api.h>
 #include <random>
 
+namespace claraparabricks
+{
+
 namespace genomeworks
 {
 
@@ -156,5 +159,7 @@ BENCHMARK_TEMPLATE(BM_SingleBatchAlignment, AlignerGlobalHirschbergMyers)
 
 } // namespace cudaaligner
 } // namespace genomeworks
+
+} // namespace claraparabricks
 
 BENCHMARK_MAIN();

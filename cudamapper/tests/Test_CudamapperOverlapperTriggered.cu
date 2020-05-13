@@ -12,6 +12,9 @@
 
 #include "../src/overlapper_triggered.hpp"
 
+namespace claraparabricks
+{
+
 namespace genomeworks
 {
 namespace cudamapper
@@ -485,3 +488,5 @@ TEST(TestCudamapperOverlapperTriggerred, OverlapPostProcessingOneForwardOneRever
 
 } // namespace cudamapper
 } // namespace genomeworks
+
+} // namespace claraparabricks

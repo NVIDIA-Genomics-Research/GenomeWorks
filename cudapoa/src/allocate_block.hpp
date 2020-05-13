@@ -33,6 +33,9 @@
 #endif // NDEBUG
 #endif // CGA_LOG_LEVEL
 
+namespace claraparabricks
+{
+
 namespace genomeworks
 {
 
@@ -403,3 +406,5 @@ protected:
 } // namespace cudapoa
 
 } // namespace genomeworks
+
+} // namespace claraparabricks

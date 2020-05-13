@@ -12,6 +12,9 @@
 
 #include <claragenomics/cudamapper/index.hpp>
 
+namespace claraparabricks
+{
+
 namespace genomeworks
 {
 namespace cudamapper
@@ -106,3 +109,5 @@ private:
 
 } // namespace cudamapper
 } // namespace genomeworks
+
+} // namespace claraparabricks

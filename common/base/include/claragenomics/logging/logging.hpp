@@ -93,6 +93,9 @@
 #include <spdlog/spdlog.h>
 #endif
 
+namespace claraparabricks
+{
+
 namespace genomeworks
 {
 namespace logging
@@ -177,5 +180,7 @@ LoggingStatus SetHeader(bool logTime, bool logLocation);
 
 } // namespace logging
 } // namespace genomeworks
+
+} // namespace claraparabricks
 
 /// \}

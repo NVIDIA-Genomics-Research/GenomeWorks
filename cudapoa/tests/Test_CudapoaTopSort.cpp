@@ -18,6 +18,9 @@
 #include "gtest/gtest.h"
 #include "basic_graph.hpp"
 
+namespace claraparabricks
+{
+
 namespace genomeworks
 {
 
@@ -139,3 +142,5 @@ INSTANTIATE_TEST_SUITE_P(TestTopSort, TopSortDeviceUtilTest, ValuesIn(getTopSort
 } // namespace cudapoa
 
 } // namespace genomeworks
+
+} // namespace claraparabricks

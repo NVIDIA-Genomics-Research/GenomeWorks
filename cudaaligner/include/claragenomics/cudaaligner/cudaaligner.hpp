@@ -12,6 +12,9 @@
 
 #include <cstdint>
 
+namespace claraparabricks
+{
+
 namespace genomeworks
 {
 
@@ -53,3 +56,5 @@ StatusType Init();
 /// \}
 } // namespace cudaaligner
 } // namespace genomeworks
+
+} // namespace claraparabricks

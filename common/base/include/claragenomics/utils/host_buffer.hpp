@@ -12,6 +12,9 @@
 #include <claragenomics/utils/buffer.hpp>
 #include <claragenomics/utils/allocator.hpp>
 
+namespace claraparabricks
+{
+
 namespace genomeworks
 {
 
@@ -19,3 +22,5 @@ template <typename T>
 using host_buffer = buffer<T, HostAllocator>;
 
 } // namespace genomeworks
+
+} // namespace claraparabricks

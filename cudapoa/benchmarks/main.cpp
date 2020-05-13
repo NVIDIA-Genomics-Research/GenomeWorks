@@ -18,6 +18,9 @@
 #include <benchmark/benchmark.h>
 #include <cuda_runtime_api.h>
 
+namespace claraparabricks
+{
+
 namespace genomeworks
 {
 
@@ -67,5 +70,7 @@ BENCHMARK(BM_MultiBatchTest)
     ->Apply(CustomArguments);
 } // namespace cudapoa
 } // namespace genomeworks
+
+} // namespace claraparabricks
 
 BENCHMARK_MAIN();

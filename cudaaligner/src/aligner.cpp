@@ -12,6 +12,9 @@
 
 #include "aligner_global_hirschberg_myers.hpp"
 
+namespace claraparabricks
+{
+
 namespace genomeworks
 {
 
@@ -61,3 +64,5 @@ std::unique_ptr<Aligner> create_aligner(
 }
 } // namespace cudaaligner
 } // namespace genomeworks
+
+} // namespace claraparabricks

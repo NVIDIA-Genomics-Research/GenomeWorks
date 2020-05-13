@@ -12,6 +12,9 @@
 
 #include "gtest/gtest.h"
 
+namespace claraparabricks
+{
+
 namespace genomeworks
 {
 
@@ -31,3 +34,5 @@ TEST(TestCudaAlignerMisc, CeilingDivide)
 
 } // namespace cudaaligner
 } // namespace genomeworks
+
+} // namespace claraparabricks

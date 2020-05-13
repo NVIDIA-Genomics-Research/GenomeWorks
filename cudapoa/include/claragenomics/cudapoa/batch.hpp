@@ -23,6 +23,9 @@
 #include <claragenomics/utils/cudautils.hpp>
 #include <claragenomics/utils/signed_integer_utils.hpp>
 
+namespace claraparabricks
+{
+
 namespace genomeworks
 {
 
@@ -215,3 +218,5 @@ std::unique_ptr<Batch> create_batch(int32_t device_id,
 } // namespace cudapoa
 
 } // namespace genomeworks
+
+} // namespace claraparabricks

@@ -13,6 +13,9 @@
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/sinks/stdout_sinks.h>
 
+namespace claraparabricks
+{
+
 namespace genomeworks
 {
 namespace logging
@@ -79,3 +82,5 @@ LoggingStatus SetHeader(bool logTime, bool logLocation)
 }
 } // namespace logging
 } // namespace genomeworks
+
+} // namespace claraparabricks

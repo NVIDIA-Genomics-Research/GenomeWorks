@@ -18,6 +18,9 @@
 #include <assert.h>
 #include <algorithm>
 
+namespace claraparabricks
+{
+
 namespace genomeworks
 {
 
@@ -157,3 +160,5 @@ TEST_F(MSATest, CudapoaMSAFailure)
 } // namespace cudapoa
 
 } // namespace genomeworks
+
+} // namespace claraparabricks

@@ -12,6 +12,9 @@
 
 #include <claragenomics/cudaaligner/alignment.hpp>
 
+namespace claraparabricks
+{
+
 namespace genomeworks
 {
 
@@ -101,3 +104,5 @@ private:
 };
 } // namespace cudaaligner
 } // namespace genomeworks
+
+} // namespace claraparabricks

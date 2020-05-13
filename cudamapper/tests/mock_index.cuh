@@ -18,6 +18,9 @@
 #include "../src/minimizer.hpp"
 #include "cudamapper_file_location.hpp"
 
+namespace claraparabricks
+{
+
 namespace genomeworks
 {
 namespace cudamapper
@@ -48,3 +51,5 @@ public:
 
 } // namespace cudamapper
 } // namespace genomeworks
+
+} // namespace claraparabricks

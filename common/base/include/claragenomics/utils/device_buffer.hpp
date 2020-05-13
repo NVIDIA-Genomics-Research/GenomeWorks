@@ -13,6 +13,9 @@
 #include <claragenomics/utils/buffer.hpp>
 #include <claragenomics/utils/allocator.hpp>
 
+namespace claraparabricks
+{
+
 namespace genomeworks
 {
 
@@ -24,3 +27,5 @@ using device_buffer = buffer<T, CudaMallocAllocator<T>>;
 #endif
 
 } // namespace genomeworks
+
+} // namespace claraparabricks

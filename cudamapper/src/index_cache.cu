@@ -17,6 +17,9 @@
 #include <claragenomics/cudamapper/index.hpp>
 #include <claragenomics/io/fasta_parser.hpp>
 
+namespace claraparabricks
+{
+
 namespace genomeworks
 {
 namespace cudamapper
@@ -276,3 +279,5 @@ void IndexCacheDevice::generate_cache_content(const std::vector<IndexDescriptor>
 
 } // namespace cudamapper
 } // namespace genomeworks
+
+} // namespace claraparabricks

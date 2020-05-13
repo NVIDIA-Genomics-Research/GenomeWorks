@@ -16,6 +16,9 @@
 #include <vector>
 #include <string>
 
+namespace claraparabricks
+{
+
 namespace genomeworks
 {
 
@@ -85,3 +88,5 @@ public:
 /// \}
 } // namespace cudaaligner
 } // namespace genomeworks
+
+} // namespace claraparabricks

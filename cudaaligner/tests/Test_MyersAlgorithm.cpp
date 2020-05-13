@@ -14,6 +14,9 @@
 
 #include <gtest/gtest.h>
 
+namespace claraparabricks
+{
+
 namespace genomeworks
 {
 
@@ -62,3 +65,5 @@ INSTANTIATE_TEST_SUITE_P(TestMyersAlgorithm, TestMyersScoreMatrix, ::testing::Va
 
 } // namespace cudaaligner
 } // namespace genomeworks
+
+} // namespace claraparabricks

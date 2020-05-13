@@ -16,6 +16,9 @@
 #include <claragenomics/cudamapper/overlapper.hpp>
 #include <claragenomics/utils/device_buffer.hpp>
 
+namespace claraparabricks
+{
+
 namespace genomeworks
 {
 namespace cudamapper
@@ -58,3 +61,5 @@ private:
 };
 } // namespace cudamapper
 } // namespace genomeworks
+
+} // namespace claraparabricks

@@ -14,6 +14,9 @@
 
 #include <stdio.h>
 
+namespace claraparabricks
+{
+
 namespace genomeworks
 {
 
@@ -366,3 +369,5 @@ void addAlignmentTemplated(uint8_t* nodes,
 } // namespace cudapoa
 
 } // namespace genomeworks
+
+} // namespace claraparabricks

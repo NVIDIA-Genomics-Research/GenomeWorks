@@ -14,6 +14,9 @@
 #include <cassert>
 #include <iostream>
 
+namespace claraparabricks
+{
+
 namespace genomeworks
 {
 
@@ -117,3 +120,5 @@ inline bool operator!=(matrix<T> const& a, matrix<T> const& b)
 }
 } // namespace cudaaligner
 } // namespace genomeworks
+
+} // namespace claraparabricks

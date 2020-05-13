@@ -18,6 +18,9 @@
 #include <numeric>
 #include <thread>
 
+namespace claraparabricks
+{
+
 namespace genomeworks
 {
 
@@ -235,3 +238,5 @@ TEST(TestUtilsThreadsafeContainers, test_threadsafe_producer_consumer_signal_on_
 }
 
 } // namespace genomeworks
+
+} // namespace claraparabricks

@@ -12,6 +12,9 @@
 
 #include <iostream>
 
+namespace claraparabricks
+{
+
 namespace genomeworks
 {
 
@@ -33,3 +36,5 @@ std::ostream& operator<<(std::ostream& os, const FormattedAlignment& formatted_a
 
 } // namespace cudaaligner
 } // namespace genomeworks
+
+} // namespace claraparabricks

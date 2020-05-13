@@ -24,6 +24,9 @@
 #include <claragenomics/utils/device_buffer.hpp>
 #include <claragenomics/utils/mathutils.hpp>
 
+namespace claraparabricks
+{
+
 namespace genomeworks
 {
 namespace cudautils
@@ -228,3 +231,5 @@ void sort_by_two_keys(device_buffer<MoreSignificantKeyT>& more_significant_keys,
 
 } // namespace cudautils
 } // namespace genomeworks
+
+} // namespace claraparabricks

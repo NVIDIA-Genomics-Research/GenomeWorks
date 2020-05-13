@@ -21,6 +21,9 @@
 #include <claragenomics/utils/mathutils.hpp>
 #include <claragenomics/utils/signed_integer_utils.hpp>
 
+namespace claraparabricks
+{
+
 namespace genomeworks
 {
 
@@ -478,3 +481,5 @@ __global__ void find_query_target_matches_kernel(
 } // namespace cudamapper
 
 } // namespace genomeworks
+
+} // namespace claraparabricks

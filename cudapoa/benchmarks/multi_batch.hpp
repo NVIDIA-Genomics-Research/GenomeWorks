@@ -16,6 +16,9 @@
 #include <future>
 #include <numeric>
 
+namespace claraparabricks
+{
+
 namespace genomeworks
 {
 namespace cudapoa
@@ -212,3 +215,5 @@ private:
 };
 } // namespace cudapoa
 } // namespace genomeworks
+
+} // namespace claraparabricks

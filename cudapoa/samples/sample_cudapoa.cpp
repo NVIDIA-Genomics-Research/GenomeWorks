@@ -23,8 +23,8 @@
 #include <unistd.h>
 #include <random>
 
-using namespace genomeworks;
-using namespace genomeworks::cudapoa;
+using namespace claraparabricks::genomeworks;
+using namespace claraparabricks::genomeworks::cudapoa;
 
 std::unique_ptr<Batch> initialize_batch(bool msa, bool banded_alignment, const BatchSize& batch_size)
 {

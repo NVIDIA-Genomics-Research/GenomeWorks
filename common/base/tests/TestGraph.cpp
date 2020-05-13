@@ -12,6 +12,9 @@
 
 #include "gtest/gtest.h"
 
+namespace claraparabricks
+{
+
 namespace genomeworks
 {
 
@@ -75,3 +78,5 @@ TEST(GraphTest, UndirectedGraph)
 }
 
 } // namespace genomeworks
+
+} // namespace claraparabricks

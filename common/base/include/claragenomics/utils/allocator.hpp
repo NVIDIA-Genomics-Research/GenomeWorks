@@ -20,6 +20,9 @@
 #include <claragenomics/utils/cudautils.hpp>
 #include <claragenomics/utils/exceptions.hpp>
 
+namespace claraparabricks
+{
+
 namespace genomeworks
 {
 
@@ -301,3 +304,5 @@ inline DefaultDeviceAllocator create_default_device_allocator(std::size_t max_ca
 }
 
 } // namespace genomeworks
+
+} // namespace claraparabricks

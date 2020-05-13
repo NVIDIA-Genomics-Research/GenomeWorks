@@ -19,6 +19,9 @@
 
 #include <thrust/system/cuda/experimental/pinned_allocator.h>
 
+namespace claraparabricks
+{
+
 namespace genomeworks
 {
 
@@ -89,3 +92,5 @@ private:
 
 } // namespace cudaaligner
 } // namespace genomeworks
+
+} // namespace claraparabricks

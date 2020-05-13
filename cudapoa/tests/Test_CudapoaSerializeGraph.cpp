@@ -14,6 +14,9 @@
 
 #include "gtest/gtest.h"
 
+namespace claraparabricks
+{
+
 namespace genomeworks
 {
 
@@ -84,3 +87,5 @@ TEST_F(GraphTest, CudapoaSerializeGraph)
 } // namespace cudapoa
 
 } // namespace genomeworks
+
+} // namespace claraparabricks

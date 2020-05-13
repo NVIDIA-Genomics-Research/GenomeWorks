@@ -19,10 +19,10 @@
 
 namespace
 {
-bool overlaps_mergable(const genomeworks::cudamapper::Overlap o1, const genomeworks::cudamapper::Overlap o2)
+bool overlaps_mergable(const claraparabricks::genomeworks::cudamapper::Overlap o1, const claraparabricks::genomeworks::cudamapper::Overlap o2)
 {
-    bool relative_strands_forward = (o2.relative_strand == genomeworks::cudamapper::RelativeStrand::Forward) && (o1.relative_strand == genomeworks::cudamapper::RelativeStrand::Forward);
-    bool relative_strands_reverse = (o2.relative_strand == genomeworks::cudamapper::RelativeStrand::Reverse) && (o1.relative_strand == genomeworks::cudamapper::RelativeStrand::Reverse);
+    bool relative_strands_forward = (o2.relative_strand == claraparabricks::genomeworks::cudamapper::RelativeStrand::Forward) && (o1.relative_strand == claraparabricks::genomeworks::cudamapper::RelativeStrand::Forward);
+    bool relative_strands_reverse = (o2.relative_strand == claraparabricks::genomeworks::cudamapper::RelativeStrand::Reverse) && (o1.relative_strand == claraparabricks::genomeworks::cudamapper::RelativeStrand::Reverse);
 
     if (!(relative_strands_forward || relative_strands_reverse))
     {
@@ -56,6 +56,9 @@ bool overlaps_mergable(const genomeworks::cudamapper::Overlap o1, const genomewo
     return gap_ratio_ok;
 }
 } // namespace
+
+namespace claraparabricks
+{
 
 namespace genomeworks
 {
@@ -150,3 +153,5 @@ void Overlapper::post_process_overlaps(std::vector<Overlap>& overlaps)
 }
 } // namespace cudamapper
 } // namespace genomeworks
+
+} // namespace claraparabricks

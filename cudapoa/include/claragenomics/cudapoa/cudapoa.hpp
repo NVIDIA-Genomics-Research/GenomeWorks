@@ -10,6 +10,9 @@
 
 #pragma once
 
+namespace claraparabricks
+{
+
 namespace genomeworks
 {
 namespace cudapoa
@@ -46,3 +49,5 @@ enum OutputType
 /// \}
 } // namespace cudapoa
 } // namespace genomeworks
+
+} // namespace claraparabricks

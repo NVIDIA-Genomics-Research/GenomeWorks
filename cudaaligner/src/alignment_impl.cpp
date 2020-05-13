@@ -12,6 +12,9 @@
 
 #include <claragenomics/utils/signed_integer_utils.hpp>
 
+namespace claraparabricks
+{
+
 namespace genomeworks
 {
 
@@ -109,3 +112,5 @@ FormattedAlignment AlignmentImpl::format_alignment(int32_t maximal_line_length) 
 }
 } // namespace cudaaligner
 } // namespace genomeworks
+
+} // namespace claraparabricks

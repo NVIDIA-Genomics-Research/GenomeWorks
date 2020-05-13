@@ -17,6 +17,9 @@
 
 #include <claragenomics/io/fasta_parser.hpp>
 
+namespace claraparabricks
+{
+
 namespace genomeworks
 {
 namespace cudamapper
@@ -131,3 +134,5 @@ std::vector<IndexBatch> group_into_batches(const std::vector<IndexDescriptor>& q
 
 } // namespace cudamapper
 } // namespace genomeworks
+
+} // namespace claraparabricks

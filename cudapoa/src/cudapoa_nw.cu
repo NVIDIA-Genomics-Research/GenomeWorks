@@ -16,6 +16,9 @@
 
 #include <stdio.h>
 
+namespace claraparabricks
+{
+
 namespace genomeworks
 {
 
@@ -546,3 +549,5 @@ void runNWtemplated(uint8_t* nodes,
 } // namespace cudapoa
 
 } // namespace genomeworks
+
+} // namespace claraparabricks

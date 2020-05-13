@@ -14,6 +14,9 @@
 #include <limits>
 #include <cstdint>
 
+namespace claraparabricks
+{
+
 namespace genomeworks
 {
 #ifdef CGA_CUDA_BEFORE_10_1
@@ -40,3 +43,5 @@ using std::numeric_limits;
 #endif
 
 } // end namespace genomeworks
+
+} // end namespace claraparabricks

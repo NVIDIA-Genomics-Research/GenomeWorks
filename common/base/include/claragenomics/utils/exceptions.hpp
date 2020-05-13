@@ -12,6 +12,9 @@
 
 #include <exception>
 
+namespace claraparabricks
+{
+
 namespace genomeworks
 {
 
@@ -41,3 +44,5 @@ public:
 };
 
 } // namespace genomeworks
+
+} // namespace claraparabricks

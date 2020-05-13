@@ -17,6 +17,9 @@
 
 #include "gtest/gtest.h"
 
+namespace claraparabricks
+{
+
 namespace genomeworks
 {
 
@@ -300,3 +303,5 @@ INSTANTIATE_TEST_SUITE_P(TestNW, NWTest, ValuesIn(getNWTestCases()));
 } // namespace cudapoa
 
 } // namespace genomeworks
+
+} // namespace claraparabricks

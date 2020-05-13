@@ -16,6 +16,9 @@
 
 #include <stdio.h>
 
+namespace claraparabricks
+{
+
 namespace genomeworks
 {
 
@@ -481,3 +484,5 @@ __device__
 } // namespace cudapoa
 
 } // namespace genomeworks
+
+} // namespace claraparabricks

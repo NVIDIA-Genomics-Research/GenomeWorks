@@ -21,6 +21,9 @@
 
 #define CGA_UKKONEN_MAX_THREADS_PER_BLOCK 1024
 
+namespace claraparabricks
+{
+
 namespace genomeworks
 {
 namespace cudaaligner
@@ -325,3 +328,5 @@ size_t ukkonen_max_score_matrix_size(int32_t max_query_length, int32_t max_targe
 
 } // end namespace cudaaligner
 } // end namespace genomeworks
+
+} // end namespace claraparabricks

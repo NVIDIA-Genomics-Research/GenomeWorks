@@ -15,6 +15,9 @@
 #include <stdexcept>
 #include <type_traits>
 
+namespace claraparabricks
+{
+
 namespace genomeworks
 {
 
@@ -45,3 +48,5 @@ T throw_on_negative(T x, const char* message)
 }
 
 } // namespace genomeworks
+
+} // namespace claraparabricks

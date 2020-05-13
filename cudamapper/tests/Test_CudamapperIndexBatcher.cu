@@ -18,6 +18,9 @@
 
 #include <claragenomics/utils/signed_integer_utils.hpp>
 
+namespace claraparabricks
+{
+
 namespace genomeworks
 {
 namespace cudamapper
@@ -916,3 +919,5 @@ TEST(TestCudamapperIndexBatcher, test_generate_batches_of_indices_exceptions)
 
 } // namespace cudamapper
 } // namespace genomeworks
+
+} // namespace claraparabricks

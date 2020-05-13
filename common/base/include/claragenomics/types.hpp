@@ -18,6 +18,9 @@
 #include <experimental/optional>
 #endif
 
+namespace claraparabricks
+{
+
 namespace genomeworks
 {
 
@@ -48,3 +51,5 @@ constexpr cga_nullopt_t cga_nullopt = std::experimental::nullopt;
 #endif
 
 } // namespace genomeworks
+
+} // namespace claraparabricks

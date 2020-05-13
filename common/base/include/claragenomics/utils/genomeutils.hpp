@@ -14,6 +14,9 @@
 #include <stdexcept>
 #include <claragenomics/utils/signed_integer_utils.hpp>
 
+namespace claraparabricks
+{
+
 namespace genomeworks
 {
 
@@ -143,3 +146,5 @@ inline void reverse_complement(const char* src, const int32_t length, char* dest
 } // namespace genomeutils
 
 } // namespace genomeworks
+
+} // namespace claraparabricks

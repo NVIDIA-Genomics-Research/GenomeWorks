@@ -13,6 +13,9 @@
 #include "index_gpu.cuh"
 #include "minimizer.hpp"
 
+namespace claraparabricks
+{
+
 namespace genomeworks
 {
 namespace cudamapper
@@ -138,3 +141,5 @@ std::uint64_t IndexHostCopy::window_size() const
 
 } // namespace cudamapper
 } // namespace genomeworks
+
+} // namespace claraparabricks

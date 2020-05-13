@@ -10,6 +10,9 @@
 
 #pragma once
 
+namespace claraparabricks
+{
+
 namespace genomeworks
 {
 
@@ -35,3 +38,5 @@ struct __align__(4) ScoreT4<int16_t>
 };
 } // namespace cudapoa
 } // namespace genomeworks
+
+} // namespace claraparabricks

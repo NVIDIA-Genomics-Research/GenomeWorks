@@ -17,6 +17,9 @@
 
 #include "gtest/gtest.h"
 
+namespace claraparabricks
+{
+
 namespace genomeworks
 {
 
@@ -360,3 +363,5 @@ INSTANTIATE_TEST_SUITE_P(TestAddAlginment, AddAlignmentTest, ValuesIn(getAddAlig
 } // namespace cudapoa
 
 } // namespace genomeworks
+
+} // namespace claraparabricks

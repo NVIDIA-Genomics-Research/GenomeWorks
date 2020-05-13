@@ -11,6 +11,9 @@
 #include <claragenomics/cudamapper/matcher.hpp>
 #include "matcher_gpu.cuh"
 
+namespace claraparabricks
+{
+
 namespace genomeworks
 {
 namespace cudamapper
@@ -29,3 +32,5 @@ std::unique_ptr<Matcher> Matcher::create_matcher(DefaultDeviceAllocator allocato
 
 } // namespace cudamapper
 } // namespace genomeworks
+
+} // namespace claraparabricks
