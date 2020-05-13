@@ -37,7 +37,7 @@ void print_paf(const std::vector<Overlap>& overlaps,
                const std::vector<std::string>& cigar,
                const io::FastaParser& query_parser,
                const io::FastaParser& target_parser,
-               std::int32_t kmer_size,
+               int32_t kmer_size,
                std::mutex& write_output_mutex);
 
 } // namespace cudamapper
