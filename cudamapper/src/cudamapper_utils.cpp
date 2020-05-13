@@ -140,7 +140,7 @@ float similarity(const std::string& a, const std::string& b, std::int32_t kmer_l
 
     std::size_t shared_kmers = count_shared_elements(a_kmers, b_kmers);
     // Calculate the set union size of a and b
-    std::size_t union_size = a_kmers.size() + b_kmers.size();
+    std::size_t union_size = a_kmers.size() + b_kmers.size() - shared_kmers;
     return static_cast<float>(shared_kmers) / static_cast<float>(union_size);
 }
 
