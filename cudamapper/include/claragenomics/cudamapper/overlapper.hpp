@@ -12,6 +12,7 @@
 
 #include <claragenomics/cudamapper/index.hpp>
 #include <claragenomics/cudamapper/types.hpp>
+#include <claragenomics/utils/genomeutils.hpp>
 #include <claragenomics/io/fasta_parser.hpp>
 
 #include <thrust/execution_policy.h>

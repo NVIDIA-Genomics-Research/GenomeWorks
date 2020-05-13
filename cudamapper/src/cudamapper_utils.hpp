@@ -95,7 +95,7 @@ float similarity(const std::string& a, const std::string& b, std::int32_t kmer_l
 /// \param b A C++ string
 /// \param kmer_length The kmer length to use for estimating similarity.
 /// \param stride The number of bases to stride between kmers.
-/// \return The estimated Jaccard index as a float.
+/// \return The estimated Jaccard containment as a float.
 float containment(const std::string& a, const std::string& b, std::int32_t kmer_length, std::int32_t stride);
 
 } // namespace cudamapper
