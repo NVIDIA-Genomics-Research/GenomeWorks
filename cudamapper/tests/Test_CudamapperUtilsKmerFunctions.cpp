@@ -54,12 +54,13 @@ TEST(CountSharedElementTest, shared_strings_correctly_counted)
     ASSERT_EQ(shared_count, 3);
 }
 
-TEST(CountSharedElementsTest, string_views_can_be_compared){
+TEST(CountSharedElementsTest, string_views_can_be_compared)
+{
     std::string_view s("first");
     std::string_view t("first");
     std::string_view w("second");
-    std::vector<std::string_view> test_a {s, w};
-    std::vector<std::string_view> test_b {t};
+    std::vector<std::string_view> test_a{s, w};
+    std::vector<std::string_view> test_b{t};
     std::size_t shared_count = count_shared_elements(test_a, test_b);
     ASSERT_EQ(shared_count, 1);
 }
