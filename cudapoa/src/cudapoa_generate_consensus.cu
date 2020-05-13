@@ -14,7 +14,7 @@
 
 #include <stdio.h>
 
-namespace claragenomics
+namespace genomeworks
 {
 
 namespace cudapoa
@@ -274,7 +274,7 @@ template <bool cuda_banded_alignment = false, typename SizeT>
 __global__ void generateConsensusKernel(uint8_t* consensus_d,
                                         uint16_t* coverage_d,
                                         SizeT* sequence_lengths_d,
-                                        claragenomics::cudapoa::WindowDetails* window_details_d,
+                                        genomeworks::cudapoa::WindowDetails* window_details_d,
                                         int32_t total_windows,
                                         uint8_t* nodes_d,
                                         SizeT* incoming_edges_d,
@@ -423,4 +423,4 @@ void generateConsensusTemplated(uint8_t* nodes,
 
 } // namespace cudapoa
 
-} // namespace claragenomics
+} // namespace genomeworks

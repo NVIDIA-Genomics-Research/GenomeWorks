@@ -14,7 +14,7 @@
 
 #include <stdio.h>
 
-namespace claragenomics
+namespace genomeworks
 {
 
 namespace cudapoa
@@ -226,4 +226,4 @@ void runTopSortTemplated(SizeT* sorted_poa,
 
 } // namespace cudapoa
 
-} // namespace claragenomics
+} // namespace genomeworks

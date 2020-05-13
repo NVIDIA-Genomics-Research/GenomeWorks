@@ -18,7 +18,7 @@
 #include <benchmark/benchmark.h>
 #include <cuda_runtime_api.h>
 
-namespace claragenomics
+namespace genomeworks
 {
 
 namespace cudapoa
@@ -66,6 +66,6 @@ BENCHMARK(BM_MultiBatchTest)
     ->Unit(benchmark::kMillisecond)
     ->Apply(CustomArguments);
 } // namespace cudapoa
-} // namespace claragenomics
+} // namespace genomeworks
 
 BENCHMARK_MAIN();

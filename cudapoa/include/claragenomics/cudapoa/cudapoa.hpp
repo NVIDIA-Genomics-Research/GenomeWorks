@@ -10,7 +10,7 @@
 
 #pragma once
 
-namespace claragenomics
+namespace genomeworks
 {
 namespace cudapoa
 {
@@ -45,4 +45,4 @@ enum OutputType
 
 /// \}
 } // namespace cudapoa
-} // namespace claragenomics
+} // namespace genomeworks

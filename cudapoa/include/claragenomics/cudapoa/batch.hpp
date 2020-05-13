@@ -23,7 +23,7 @@
 #include <claragenomics/utils/cudautils.hpp>
 #include <claragenomics/utils/signed_integer_utils.hpp>
 
-namespace claragenomics
+namespace genomeworks
 {
 
 namespace cudapoa
@@ -156,7 +156,7 @@ public:
     /// \return Status indicating whether consensus generation is available for this batch.
     virtual StatusType get_consensus(std::vector<std::string>& consensus,
                                      std::vector<std::vector<uint16_t>>& coverage,
-                                     std::vector<claragenomics::cudapoa::StatusType>& output_status) = 0;
+                                     std::vector<genomeworks::cudapoa::StatusType>& output_status) = 0;
 
     /// \brief Get the multiple sequence alignments for each POA.
     ///
@@ -214,4 +214,4 @@ std::unique_ptr<Batch> create_batch(int32_t device_id,
 
 } // namespace cudapoa
 
-} // namespace claragenomics
+} // namespace genomeworks

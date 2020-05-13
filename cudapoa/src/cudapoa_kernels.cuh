@@ -38,7 +38,7 @@
 #define CUDAPOA_KERNEL_ERROR_ENCOUNTERED UINT8_MAX
 #define CUDAPOA_KERNEL_NOERROR_ENCOUNTERED 0
 
-namespace claragenomics
+namespace genomeworks
 {
 
 namespace cudapoa
@@ -214,7 +214,7 @@ struct GraphDetails
  * @param[in] banded_alignment            Use banded alignment
  */
 
-void generatePOA(claragenomics::cudapoa::OutputDetails* output_details_d,
+void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
                  void* Input_details_d,
                  int32_t total_windows,
                  cudaStream_t stream,
@@ -309,4 +309,4 @@ bool use32bitSize(const BatchSize& batch_size, bool banded);
 
 } // namespace cudapoa
 
-} // namespace claragenomics
+} // namespace genomeworks

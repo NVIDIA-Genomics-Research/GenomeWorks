@@ -14,7 +14,7 @@
 
 #include <stdio.h>
 
-namespace claragenomics
+namespace genomeworks
 {
 
 namespace cudapoa
@@ -365,4 +365,4 @@ void addAlignmentTemplated(uint8_t* nodes,
 
 } // namespace cudapoa
 
-} // namespace claragenomics
+} // namespace genomeworks

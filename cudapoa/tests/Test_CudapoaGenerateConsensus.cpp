@@ -16,7 +16,7 @@
 
 #include "gtest/gtest.h"
 
-namespace claragenomics
+namespace genomeworks
 {
 
 namespace cudapoa
@@ -284,4 +284,4 @@ INSTANTIATE_TEST_SUITE_P(TestGenerateConsensus, GenerateConsensusTest, ValuesIn(
 
 } // namespace cudapoa
 
-} // namespace claragenomics
+} // namespace genomeworks
