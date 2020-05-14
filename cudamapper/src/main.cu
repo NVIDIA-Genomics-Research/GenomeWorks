@@ -420,11 +420,6 @@ void writer_thread_function(std::mutex& overlaps_writer_mtx,
     // with deallocating indices with different current device than the one on which they were created
     cudaSetDevice(device_id);
 
-    // parallel update of the query/target read names for filtered overlaps [parallel on host]
-    Overlapper::update_read_names(*filtered_overlaps, query_parser, target_parser);
-    std::lock_guard<std::mutex> lck(overlaps_writer_mtx);
-
-    // Overlap post processing - add overlaps which can be combined into longer ones.
     {
         CGA_NVTX_RANGE(profiler, "post_process_overlaps");
         // Overlap post processing - add overlaps which can be combined into longer ones.
