@@ -150,7 +150,7 @@ std::size_t find_largest_contiguous_device_memory_section();
 /// \brief starts an NVTX range for profiling which stops automatically at the end of the scope
 /// \param varname an arbitrary variable name for the nvtx_range object, which doesn't conflict with other variables in the scope
 /// \param label the label/name of the NVTX range
-#define CGA_NVTX_RANGE(varname, label) ::genomeworks::cudautils::nvtx_range varname(label)
+#define CGA_NVTX_RANGE(varname, label) ::claraparabricks::genomeworks::cudautils::nvtx_range varname(label)
 /// nvtx_range
 /// implementation of CGA_NVTX_RANGE
 class nvtx_range
