@@ -17,7 +17,10 @@
 
 #include "gtest/gtest.h"
 
-namespace claragenomics
+namespace claraparabricks
+{
+
+namespace genomeworks
 {
 
 namespace cudapoa
@@ -256,8 +259,8 @@ NWAnswer testNW(const BasicNW& obj)
 
     //input and output buffers are the same ones in unified memory, so the results are updated in place
     //results are stored in alignment_graph and alignment_read; return string representation of those
-    auto res = std::make_pair(claragenomics::stringutils::array_to_string<SizeT>(alignment_graph, *aligned_nodes, ","),
-                              claragenomics::stringutils::array_to_string<SizeT>(alignment_read, *aligned_nodes, ","));
+    auto res = std::make_pair(genomeworks::stringutils::array_to_string<SizeT>(alignment_graph, *aligned_nodes, ","),
+                              genomeworks::stringutils::array_to_string<SizeT>(alignment_read, *aligned_nodes, ","));
 
     CGA_CU_CHECK_ERR(cudaFree(nodes));
     CGA_CU_CHECK_ERR(cudaFree(graph));
@@ -299,4 +302,6 @@ INSTANTIATE_TEST_SUITE_P(TestNW, NWTest, ValuesIn(getNWTestCases()));
 
 } // namespace cudapoa
 
-} // namespace claragenomics
+} // namespace genomeworks
+
+} // namespace claraparabricks

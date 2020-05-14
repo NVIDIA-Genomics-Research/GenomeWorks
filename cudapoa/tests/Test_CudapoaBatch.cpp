@@ -12,7 +12,10 @@
 
 #include "gtest/gtest.h"
 
-namespace claragenomics
+namespace claraparabricks
+{
+
+namespace genomeworks
 {
 
 namespace cudapoa
@@ -37,15 +40,15 @@ public:
                     int16_t match_score    = 8,
                     bool banded_alignment  = false)
     {
-        cudapoa_batch = claragenomics::cudapoa::create_batch(device_id,
-                                                             stream,
-                                                             mem_per_batch,
-                                                             output_mask,
-                                                             batch_size,
-                                                             gap_score,
-                                                             mismatch_score,
-                                                             match_score,
-                                                             banded_alignment);
+        cudapoa_batch = genomeworks::cudapoa::create_batch(device_id,
+                                                           stream,
+                                                           mem_per_batch,
+                                                           output_mask,
+                                                           batch_size,
+                                                           gap_score,
+                                                           mismatch_score,
+                                                           match_score,
+                                                           banded_alignment);
     }
 
     size_t get_free_device_mem(int32_t device_id)
@@ -57,7 +60,7 @@ public:
     }
 
 public:
-    std::unique_ptr<claragenomics::cudapoa::Batch> cudapoa_batch;
+    std::unique_ptr<genomeworks::cudapoa::Batch> cudapoa_batch;
 };
 
 TEST_F(TestCudapoaBatch, InitializeTest)
@@ -186,7 +189,7 @@ TEST_F(TestCudapoaBatch, GeneratePoaTest)
     // Get consensus
     std::vector<std::string> consensus;
     std::vector<std::vector<uint16_t>> coverage;
-    std::vector<claragenomics::cudapoa::StatusType> output_status;
+    std::vector<genomeworks::cudapoa::StatusType> output_status;
     cudapoa_batch->generate_poa();
     cudapoa_batch->get_consensus(consensus, coverage, output_status);
 
@@ -198,4 +201,6 @@ TEST_F(TestCudapoaBatch, GeneratePoaTest)
 
 } // namespace cudapoa
 
-} // namespace claragenomics
+} // namespace genomeworks
+
+} // namespace claraparabricks

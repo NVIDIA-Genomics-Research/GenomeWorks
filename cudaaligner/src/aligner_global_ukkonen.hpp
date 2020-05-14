@@ -13,7 +13,10 @@
 #include "aligner_global.hpp"
 #include "ukkonen_gpu.cuh"
 
-namespace claragenomics
+namespace claraparabricks
+{
+
+namespace genomeworks
 {
 
 namespace cudaaligner
@@ -41,4 +44,7 @@ private:
 };
 
 } // namespace cudaaligner
-} // namespace claragenomics
+
+} // namespace genomeworks
+
+} // namespace claraparabricks

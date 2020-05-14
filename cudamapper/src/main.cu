@@ -35,8 +35,12 @@
 #include <claragenomics/cudaaligner/aligner.hpp>
 #include <claragenomics/cudaaligner/alignment.hpp>
 
-namespace claragenomics
+namespace claraparabricks
 {
+
+namespace genomeworks
+{
+
 namespace cudamapper
 {
 
@@ -788,11 +792,14 @@ int main(int argc, char* argv[])
 }
 
 } // namespace cudamapper
-} // namespace claragenomics
+
+} // namespace genomeworks
+
+} // namespace claraparabricks
 
 /// \brief main function
 /// main function cannot be in a namespace so using this function to call actual main function
 int main(int argc, char* argv[])
 {
-    return claragenomics::cudamapper::main(argc, argv);
+    return claraparabricks::genomeworks::cudamapper::main(argc, argv);
 }

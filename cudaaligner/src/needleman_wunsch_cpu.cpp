@@ -17,7 +17,10 @@
 #include <cassert>
 #include <algorithm>
 
-namespace claragenomics
+namespace claraparabricks
+{
+
+namespace genomeworks
 {
 
 namespace cudaaligner
@@ -175,4 +178,7 @@ std::vector<int8_t> needleman_wunsch_cpu(std::string const& text, std::string co
 }
 
 } // namespace cudaaligner
-} // namespace claragenomics
+
+} // namespace genomeworks
+
+} // namespace claraparabricks

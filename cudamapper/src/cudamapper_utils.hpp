@@ -15,7 +15,10 @@
 
 #include <claragenomics/cudamapper/types.hpp>
 
-namespace claragenomics
+namespace claraparabricks
+{
+
+namespace genomeworks
 {
 
 namespace io
@@ -43,4 +46,7 @@ void print_paf(const std::vector<Overlap>& overlaps,
                int32_t number_of_devices);
 
 } // namespace cudamapper
-} // namespace claragenomics
+
+} // namespace genomeworks
+
+} // namespace claraparabricks

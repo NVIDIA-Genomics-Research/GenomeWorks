@@ -10,8 +10,12 @@
 
 #pragma once
 
-namespace claragenomics
+namespace claraparabricks
 {
+
+namespace genomeworks
+{
+
 namespace cudapoa
 {
 /// \defgroup cudapoa CUDA POA package
@@ -45,4 +49,7 @@ enum OutputType
 
 /// \}
 } // namespace cudapoa
-} // namespace claragenomics
+
+} // namespace genomeworks
+
+} // namespace claraparabricks

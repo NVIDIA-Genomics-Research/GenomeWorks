@@ -21,7 +21,10 @@
 #include <claragenomics/utils/device_buffer.hpp>
 #include <claragenomics/utils/signed_integer_utils.hpp>
 
-namespace claragenomics
+namespace claraparabricks
+{
+
+namespace genomeworks
 {
 
 template <typename MoreSignificantKeyT,
@@ -232,4 +235,6 @@ TEST(TestUtilsCudasort, long_deterministic_shuffle_test)
                   max_value_of_less_significant_key);
 }
 
-} //namespace claragenomics
+} // namespace genomeworks
+
+} // namespace claraparabricks
