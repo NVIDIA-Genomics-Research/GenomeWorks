@@ -88,6 +88,6 @@ endif()
 # Add auto formatting.
 cga_enable_formatting_targets()
 
-if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT  AND (${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR}))
+if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
     set (CMAKE_INSTALL_PREFIX ${CMAKE_BINARY_DIR}/install CACHE PATH "The default SDK install path is install" FORCE)
 endif ()
