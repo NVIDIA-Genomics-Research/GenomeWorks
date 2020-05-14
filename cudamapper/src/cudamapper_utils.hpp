@@ -52,7 +52,7 @@ void print_paf(const std::vector<Overlap>& overlaps,
 
 /// \brief Given a string s, produce its kmers (length <kmer-length>) and return them as a vector of strings.
 /// \param s A string sequence to kmerize.
-/// \param kmer_length A kmer length to use for producing kmers.
+/// \param kmer_size A kmer length to use for producing kmers.
 /// \param stride The number of bases to skip when selecting kmers (most often, this should be equal to 1).
 /// \return A vector of strings containing the kmers (of length kmer_length) of s.
 std::vector<std::string> split_into_kmers(const std::string& s, std::int32_t kmer_size, std::int32_t stride);
@@ -72,7 +72,7 @@ std::size_t count_shared_elements(const std::vector<T>& a, const std::vector<T>&
 /// strands.
 /// \param a A C++ string
 /// \param b A C++ string
-/// \param kmer_length The kmer length to use for estimating similarity.
+/// \param kmer_size The kmer length to use for estimating similarity.
 /// \param stride The number of bases to stride between kmers.
 /// \return The estimated Jaccard index as a float.
 float sequence_jaccard_similarity(const std::string& a, const std::string& b, std::int32_t kmer_size, std::int32_t stride);
@@ -85,7 +85,7 @@ float sequence_jaccard_similarity(const std::string& a, const std::string& b, st
 /// strands.
 /// \param a A C++ string
 /// \param b A C++ string
-/// \param kmer_length The kmer length to use for estimating similarity.
+/// \param kmer_size The kmer length to use for estimating similarity.
 /// \param stride The number of bases to stride between kmers.
 /// \return The estimated Jaccard containment as a float.
 float sequence_jaccard_containment(const std::string& a, const std::string& b, std::int32_t kmer_size, std::int32_t stride);
