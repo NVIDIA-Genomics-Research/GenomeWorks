@@ -18,6 +18,7 @@ set(SOURCES
     Test_CudamapperIndexGPU.cu
     Test_CudamapperMatcherGPU.cu
     Test_CudamapperMinimizer.cpp
+    Test_CudamapperOverlapper.cpp
     Test_CudamapperOverlapperTriggered.cu
     Test_CudamapperUtilsKmerFunctions.cpp
    )
