@@ -13,6 +13,7 @@
 #include <claragenomics/cudamapper/types.hpp>
 #include <claragenomics/utils/genomeutils.hpp>
 #include <claragenomics/io/fasta_parser.hpp>
+#include <claragenomics/types.hpp>
 
 #include <thrust/execution_policy.h>
 #include <claragenomics/utils/device_buffer.hpp>
@@ -60,6 +61,13 @@ public:
     /// \brief Identified overlaps which can be combined into a larger overlap and add them to the input vector
     /// \param overlaps reference to vector of Overlaps. New overlaps (result of fusing) are added to this vector
     static void post_process_overlaps(std::vector<Overlap>& overlaps);
+
+
+    static void extend_overlap_by_sequence_similarity(Overlap& overlap,
+                                                      cga_string_view_t& query_sequence,
+                                                      cga_string_view_t& target_sequence,
+                                                      std::int32_t extension,
+                                                      float required_similarity);
 
     ///
     ///@brief Given a vector of overlaps, extend the start/end of the overlaps based on the sequence similarity of the query and target.

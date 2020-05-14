@@ -17,6 +17,7 @@
 #include <claragenomics/io/fasta_parser.hpp>
 #include <claragenomics/utils/cudautils.hpp>
 #include <claragenomics/utils/signed_integer_utils.hpp>
+#include <claragenomics/types.hpp>
 
 #include "cudamapper_utils.hpp"
 
@@ -76,8 +77,13 @@ void reverse_complement(std::string& s, const std::size_t len)
         s[len - 1 - i] = static_cast<char>(complement_array[static_cast<int>(tmp) - 65]);
     }
 }
-
 std::string string_slice(const std::string& s, const std::size_t start, const std::size_t end)
+{
+    return s.substr(start, end - start);
+}
+
+
+claragenomics::cga_string_view_t string_view_slice(const claragenomics::cga_string_view_t& s, const std::size_t start, const std::size_t end)
 {
     return s.substr(start, end - start);
 }
@@ -174,6 +180,24 @@ void Overlapper::post_process_overlaps(std::vector<Overlap>& overlaps)
         fused_overlap.num_residues_                  = num_residues;
         overlaps.push_back(fused_overlap);
     }
+}
+
+void Overlapper::extend_overlap_by_sequence_similarity(Overlap& overlap,
+                                                       cga_string_view_t& query_sequence,
+                                                       cga_string_view_t& target_sequence,
+                                                       const std::int32_t extension,
+                                                       const float required_similarity)
+{
+
+    const position_in_read_t query_window_size = std::min(overlap.query_start_position_in_read_, static_cast<position_in_read_t>(extension));
+    const position_in_read_t target_window_size = std::min(overlap.target_start_position_in_read_, static_cast<position_in_read_t>(extension));
+    // Calculate the shortest sequence length and use this as the window for comparison.
+    const position_in_read_t window_size = std::min(query_window_size, target_window_size);
+
+    const position_in_read_t query_head_start = overlap.query_start_position_in_read_ - window_size;
+    const position_in_read_t target_head_start = overlap.target_start_position_in_read_ - window_size;
+
+
 }
 
 void Overlapper::rescue_overlap_ends(std::vector<Overlap>& overlaps,
