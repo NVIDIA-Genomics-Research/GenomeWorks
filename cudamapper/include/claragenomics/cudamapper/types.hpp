@@ -15,7 +15,10 @@
 
 #include <claragenomics/types.hpp>
 
-namespace claragenomics
+namespace claraparabricks
+{
+
+namespace genomeworks
 {
 
 namespace cudamapper
@@ -87,4 +90,6 @@ typedef struct Overlap
 
 } // namespace cudamapper
 
-} // namespace claragenomics
+} // namespace genomeworks
+
+} // namespace claraparabricks

@@ -11,7 +11,10 @@
 #include <claragenomics/cudaaligner/cudaaligner.hpp>
 #include <claragenomics/logging/logging.hpp>
 
-namespace claragenomics
+namespace claraparabricks
+{
+
+namespace genomeworks
 {
 
 namespace cudaaligner
@@ -25,4 +28,7 @@ StatusType Init()
     return StatusType::success;
 }
 } // namespace cudaaligner
-} // namespace claragenomics
+
+} // namespace genomeworks
+
+} // namespace claraparabricks

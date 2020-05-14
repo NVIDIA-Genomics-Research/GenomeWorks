@@ -12,13 +12,16 @@
 
 #include <claragenomics/utils/allocator.hpp>
 
-namespace claragenomics
+namespace claraparabricks
+{
+
+namespace genomeworks
 {
 
 namespace io
 {
 class FastaParser;
-}
+} // namespace io
 
 namespace cudamapper
 {
@@ -76,4 +79,7 @@ private:
 };
 
 } // namespace cudamapper
-} // namespace claragenomics
+
+} // namespace genomeworks
+
+} // namespace claraparabricks

@@ -18,7 +18,10 @@
 #include "gtest/gtest.h"
 #include "basic_graph.hpp"
 
-namespace claragenomics
+namespace claraparabricks
+{
+
+namespace genomeworks
 {
 
 namespace cudapoa
@@ -105,7 +108,7 @@ std::string testTopSortDeviceUtil(SizeT node_count, SizeTVec2D outgoing_edges_ve
 
     CGA_CU_CHECK_ERR(cudaDeviceSynchronize());
 
-    std::string res = claragenomics::stringutils::array_to_string<SizeT>(sorted_poa, node_count);
+    std::string res = genomeworks::stringutils::array_to_string<SizeT>(sorted_poa, node_count);
 
     CGA_CU_CHECK_ERR(cudaFree(sorted_poa));
     CGA_CU_CHECK_ERR(cudaFree(sorted_poa_node_map));
@@ -138,4 +141,6 @@ INSTANTIATE_TEST_SUITE_P(TestTopSort, TopSortDeviceUtilTest, ValuesIn(getTopSort
 
 } // namespace cudapoa
 
-} // namespace claragenomics
+} // namespace genomeworks
+
+} // namespace claraparabricks

@@ -16,7 +16,10 @@
 #include <claragenomics/cudamapper/types.hpp>
 #include <claragenomics/utils/allocator.hpp>
 
-namespace claragenomics
+namespace claraparabricks
+{
+
+namespace genomeworks
 {
 
 namespace io
@@ -49,4 +52,7 @@ void print_paf(const std::vector<Overlap>& overlaps,
 DefaultDeviceAllocator get_device_allocator(const std::size_t max_cached_memory_bytes);
 
 } // namespace cudamapper
-} // namespace claragenomics
+
+} // namespace genomeworks
+
+} // namespace claraparabricks

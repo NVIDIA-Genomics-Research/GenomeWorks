@@ -17,8 +17,12 @@
 #include <claragenomics/cudamapper/index.hpp>
 #include <claragenomics/io/fasta_parser.hpp>
 
-namespace claragenomics
+namespace claraparabricks
 {
+
+namespace genomeworks
+{
+
 namespace cudamapper
 {
 
@@ -290,4 +294,7 @@ void ApplicationParameters::help(int32_t exit_code)
 }
 
 } // namespace cudamapper
-} // namespace claragenomics
+
+} // namespace genomeworks
+
+} // namespace claraparabricks

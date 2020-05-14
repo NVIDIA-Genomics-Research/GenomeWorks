@@ -14,7 +14,10 @@
 
 #include "gtest/gtest.h"
 
-namespace claragenomics
+namespace claraparabricks
+{
+
+namespace genomeworks
 {
 
 namespace cudapoa
@@ -43,19 +46,19 @@ public:
         size_t mem_per_batch = 0.9 * free;
         BatchSize batch_size(1024, max_sequences_per_poa);
 
-        cudapoa_batch = claragenomics::cudapoa::create_batch(device_id, stream, mem_per_batch, output_mask, batch_size, gap_score, mismatch_score, match_score, banded_alignment);
+        cudapoa_batch = genomeworks::cudapoa::create_batch(device_id, stream, mem_per_batch, output_mask, batch_size, gap_score, mismatch_score, match_score, banded_alignment);
     }
 
 public:
-    std::unique_ptr<claragenomics::cudapoa::Batch> cudapoa_batch;
+    std::unique_ptr<genomeworks::cudapoa::Batch> cudapoa_batch;
 };
 
 TEST_F(GraphTest, CudapoaSerializeGraph)
 {
     std::minstd_rand rng(1);
     int num_sequences    = 500;
-    std::string backbone = claragenomics::genomeutils::generate_random_genome(50, rng);
-    auto sequences       = claragenomics::genomeutils::generate_random_sequences(backbone, num_sequences, rng, 10, 5, 10);
+    std::string backbone = genomeworks::genomeutils::generate_random_genome(50, rng);
+    auto sequences       = genomeworks::genomeutils::generate_random_sequences(backbone, num_sequences, rng, 10, 5, 10);
 
     initialize(num_sequences);
     Group poa_group;
@@ -83,4 +86,6 @@ TEST_F(GraphTest, CudapoaSerializeGraph)
 
 } // namespace cudapoa
 
-} // namespace claragenomics
+} // namespace genomeworks
+
+} // namespace claraparabricks
