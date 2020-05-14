@@ -200,10 +200,10 @@ void ApplicationParameters::get_input_parsers(std::shared_ptr<io::FastaParser>& 
     std::cerr << "Target file: " << target_filepath << ", number of reads: " << target_parser->get_num_seqences() << std::endl;
 }
 
-std::size_t ApplicationParameters::get_max_cached_memory_bytes()
+std::int64_t ApplicationParameters::get_max_cached_memory_bytes()
 {
 #ifdef CGA_ENABLE_CACHING_ALLOCATOR
-    std::size_t max_cached_bytes = 0;
+    std::int64_t max_cached_bytes = 0;
     if (max_cached_memory == 0)
     {
         std::cerr << "Programmatically looking for max cached memory" << std::endl;

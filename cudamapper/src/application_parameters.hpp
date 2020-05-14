@@ -53,7 +53,7 @@ public:
     std::string target_filepath;
     std::shared_ptr<io::FastaParser> query_parser;
     std::shared_ptr<io::FastaParser> target_parser;
-    std::size_t max_cached_memory_bytes;
+    std::int64_t max_cached_memory_bytes;
 
 private:
     /// \brief gets query and target parsers
@@ -68,7 +68,7 @@ private:
     /// Returns 0 if CGA_ENABLE_CACHING_ALLOCATOR is not set
     ///
     /// \return max_cached_memory_bytes
-    std::size_t get_max_cached_memory_bytes();
+    std::int64_t get_max_cached_memory_bytes();
 
     /// @brief prints help message
     /// @param exit_code
