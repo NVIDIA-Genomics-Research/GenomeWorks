@@ -18,6 +18,7 @@ namespace claraparabricks
 
 namespace genomeworks
 {
+
 namespace logging
 {
 static std::shared_ptr<spdlog::logger> logger = nullptr;
@@ -81,6 +82,7 @@ LoggingStatus SetHeader(bool logTime, bool logLocation)
     return LoggingStatus::success;
 }
 } // namespace logging
+
 } // namespace genomeworks
 
 } // namespace claraparabricks

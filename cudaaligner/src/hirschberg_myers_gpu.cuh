@@ -18,6 +18,7 @@ namespace claraparabricks
 
 namespace genomeworks
 {
+
 namespace cudaaligner
 {
 
@@ -49,7 +50,8 @@ void hirschberg_myers_gpu(device_buffer<hirschbergmyers::query_target_range>& st
                           int32_t switch_to_myers_threshold,
                           cudaStream_t stream);
 
-} // end namespace cudaaligner
-} // end namespace genomeworks
+} // namespace cudaaligner
 
-} // end namespace claraparabricks
+} // namespace genomeworks
+
+} // namespace claraparabricks

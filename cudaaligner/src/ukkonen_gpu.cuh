@@ -18,6 +18,7 @@ namespace claraparabricks
 
 namespace genomeworks
 {
+
 namespace cudaaligner
 {
 
@@ -39,7 +40,8 @@ void ukkonen_gpu(int8_t* paths_d, int32_t* path_lengths_d, int32_t max_path_leng
                  int32_t ukkonen_p,
                  cudaStream_t stream);
 
-} // end namespace cudaaligner
-} // end namespace genomeworks
+} // namespace cudaaligner
 
-} // end namespace claraparabricks
+} // namespace genomeworks
+
+} // namespace claraparabricks

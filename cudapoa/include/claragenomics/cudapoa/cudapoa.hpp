@@ -15,6 +15,7 @@ namespace claraparabricks
 
 namespace genomeworks
 {
+
 namespace cudapoa
 {
 /// \defgroup cudapoa CUDA POA package
@@ -48,6 +49,7 @@ enum OutputType
 
 /// \}
 } // namespace cudapoa
+
 } // namespace genomeworks
 
 } // namespace claraparabricks

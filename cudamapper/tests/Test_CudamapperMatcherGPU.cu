@@ -706,6 +706,7 @@ TEST(TestCudamapperMatcherGPU, AtLeastOneIndexEmpty)
 }
 
 } // namespace cudamapper
+
 } // namespace genomeworks
 
 } // namespace claraparabricks

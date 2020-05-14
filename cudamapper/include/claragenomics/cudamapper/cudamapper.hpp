@@ -19,6 +19,7 @@ namespace claraparabricks
 
 namespace genomeworks
 {
+
 namespace cudamapper
 {
 enum class StatusType

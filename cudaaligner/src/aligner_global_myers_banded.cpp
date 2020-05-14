@@ -63,6 +63,7 @@ void AlignerGlobalMyersBanded::run_alignment(int8_t* results_d, int32_t* result_
 }
 
 } // namespace cudaaligner
+
 } // namespace genomeworks
 
 } // namespace claraparabricks

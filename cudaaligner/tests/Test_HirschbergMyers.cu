@@ -198,6 +198,7 @@ TEST(HirschbergMyers, myers_get_query_pattern_reverse)
 }
 
 } // namespace cudaaligner
+
 } // namespace genomeworks
 
 } // namespace claraparabricks

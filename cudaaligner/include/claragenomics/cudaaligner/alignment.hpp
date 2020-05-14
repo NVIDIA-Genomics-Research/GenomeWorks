@@ -87,6 +87,7 @@ public:
 
 /// \}
 } // namespace cudaaligner
+
 } // namespace genomeworks
 
 } // namespace claraparabricks

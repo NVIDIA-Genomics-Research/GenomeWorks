@@ -94,6 +94,7 @@ inline std::string parse_golden_value_file(const std::string& filename)
     return line;
 }
 } // namespace cudapoa
+
 } // namespace genomeworks
 
 } // namespace claraparabricks

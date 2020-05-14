@@ -28,6 +28,7 @@ StatusType Init()
     return StatusType::success;
 }
 } // namespace cudaaligner
+
 } // namespace genomeworks
 
 } // namespace claraparabricks

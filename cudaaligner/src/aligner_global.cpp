@@ -195,6 +195,7 @@ void AlignerGlobal::reset()
     alignments_.clear();
 }
 } // namespace cudaaligner
+
 } // namespace genomeworks
 
 } // namespace claraparabricks

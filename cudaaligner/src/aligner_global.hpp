@@ -91,6 +91,7 @@ private:
 };
 
 } // namespace cudaaligner
+
 } // namespace genomeworks
 
 } // namespace claraparabricks

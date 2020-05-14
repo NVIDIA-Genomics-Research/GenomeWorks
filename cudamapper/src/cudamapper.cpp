@@ -16,8 +16,10 @@ namespace claraparabricks
 
 namespace genomeworks
 {
+
 namespace cudamapper
 {
+
 namespace cudamapper
 {
 

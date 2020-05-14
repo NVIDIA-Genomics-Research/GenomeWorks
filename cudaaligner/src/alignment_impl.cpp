@@ -111,6 +111,7 @@ FormattedAlignment AlignmentImpl::format_alignment(int32_t maximal_line_length) 
     return ret_formatted_alignment;
 }
 } // namespace cudaaligner
+
 } // namespace genomeworks
 
 } // namespace claraparabricks

@@ -26,11 +26,13 @@ namespace claraparabricks
 
 namespace genomeworks
 {
+
 namespace cudamapper
 {
 
 namespace details
 {
+
 namespace index_gpu
 {
 
@@ -1332,6 +1334,7 @@ TEST(TestCudamapperIndexGPU, test_filter_out_most_common_representations_large_e
 }
 
 } // namespace index_gpu
+
 } // namespace details
 
 void test_function(const std::string& filename,
@@ -2351,6 +2354,7 @@ TEST(TestCudamapperIndexGPU, AAAACTGAA_GCCAAAG_2_3_filtering)
 }
 
 } // namespace cudamapper
+
 } // namespace genomeworks
 
 } // namespace claraparabricks

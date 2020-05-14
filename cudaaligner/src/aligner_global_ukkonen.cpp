@@ -74,6 +74,7 @@ void AlignerGlobalUkkonen::run_alignment(int8_t* results_d, int32_t* result_leng
 }
 
 } // namespace cudaaligner
+
 } // namespace genomeworks
 
 } // namespace claraparabricks

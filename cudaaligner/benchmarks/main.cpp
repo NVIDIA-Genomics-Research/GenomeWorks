@@ -158,6 +158,7 @@ BENCHMARK_TEMPLATE(BM_SingleBatchAlignment, AlignerGlobalHirschbergMyers)
     ->Ranges({{32, 1024}, {512, 65536}});
 
 } // namespace cudaaligner
+
 } // namespace genomeworks
 
 } // namespace claraparabricks

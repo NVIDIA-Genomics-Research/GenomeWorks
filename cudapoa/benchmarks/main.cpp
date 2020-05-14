@@ -69,6 +69,7 @@ BENCHMARK(BM_MultiBatchTest)
     ->Unit(benchmark::kMillisecond)
     ->Apply(CustomArguments);
 } // namespace cudapoa
+
 } // namespace genomeworks
 
 } // namespace claraparabricks

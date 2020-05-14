@@ -17,6 +17,7 @@ namespace claraparabricks
 
 namespace genomeworks
 {
+
 namespace cudamapper
 {
 /// IndexHostCopy - Creates and maintains a copy of computed IndexGPU elements on the host
@@ -108,6 +109,7 @@ private:
 };
 
 } // namespace cudamapper
+
 } // namespace genomeworks
 
 } // namespace claraparabricks

@@ -23,6 +23,7 @@ namespace claraparabricks
 
 namespace genomeworks
 {
+
 namespace cudaaligner
 {
 
@@ -160,7 +161,8 @@ private:
     int32_t n_matrices_;
 };
 
-} // end namespace cudaaligner
-} // end namespace genomeworks
+} // namespace cudaaligner
 
-} // end namespace claraparabricks
+} // namespace genomeworks
+
+} // namespace claraparabricks

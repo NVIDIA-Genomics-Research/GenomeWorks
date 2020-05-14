@@ -40,6 +40,7 @@ namespace claraparabricks
 
 namespace genomeworks
 {
+
 namespace cudamapper
 {
 
@@ -791,6 +792,7 @@ int main(int argc, char* argv[])
 }
 
 } // namespace cudamapper
+
 } // namespace genomeworks
 
 } // namespace claraparabricks

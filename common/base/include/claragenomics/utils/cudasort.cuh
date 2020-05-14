@@ -29,8 +29,10 @@ namespace claraparabricks
 
 namespace genomeworks
 {
+
 namespace cudautils
 {
+
 namespace details
 {
 
@@ -230,6 +232,7 @@ void sort_by_two_keys(device_buffer<MoreSignificantKeyT>& more_significant_keys,
 }
 
 } // namespace cudautils
+
 } // namespace genomeworks
 
 } // namespace claraparabricks

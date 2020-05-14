@@ -22,6 +22,7 @@ namespace claraparabricks
 
 namespace genomeworks
 {
+
 namespace cudamapper
 {
 
@@ -110,6 +111,7 @@ std::vector<BatchOfIndices> generate_batches_of_indices(number_of_indices_t quer
 
 namespace details
 {
+
 namespace index_batcher
 {
 
@@ -130,9 +132,11 @@ std::vector<IndexBatch> group_into_batches(const std::vector<IndexDescriptor>& q
                                            bool same_query_and_target);
 
 } // namespace index_batcher
+
 } // namespace details
 
 } // namespace cudamapper
+
 } // namespace genomeworks
 
 } // namespace claraparabricks

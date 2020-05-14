@@ -104,6 +104,7 @@ std::unique_ptr<Aligner> create_aligner(int32_t max_query_length, int32_t max_ta
 
 /// \}
 } // namespace cudaaligner
+
 } // namespace genomeworks
 
 } // namespace claraparabricks

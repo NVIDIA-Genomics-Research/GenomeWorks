@@ -19,6 +19,7 @@ namespace claraparabricks
 
 namespace genomeworks
 {
+
 namespace io
 {
 
@@ -32,6 +33,7 @@ std::unique_ptr<FastaParser> create_kseq_fasta_parser(const std::string& fasta_f
 }
 
 } // namespace io
+
 } // namespace genomeworks
 
 } // namespace claraparabricks

@@ -62,6 +62,7 @@ namespace claraparabricks
 
 namespace genomeworks
 {
+
 namespace cudamapper
 {
 
@@ -152,6 +153,7 @@ void Overlapper::post_process_overlaps(std::vector<Overlap>& overlaps)
     }
 }
 } // namespace cudamapper
+
 } // namespace genomeworks
 
 } // namespace claraparabricks

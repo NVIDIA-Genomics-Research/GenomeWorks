@@ -478,6 +478,7 @@ __global__ void find_query_target_matches_kernel(
 } // namespace matcher_gpu
 
 } // namespace details
+
 } // namespace cudamapper
 
 } // namespace genomeworks

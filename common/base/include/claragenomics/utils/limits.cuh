@@ -42,6 +42,6 @@ struct numeric_limits<int32_t>
 using std::numeric_limits;
 #endif
 
-} // end namespace genomeworks
+} // namespace genomeworks
 
-} // end namespace claraparabricks
+} // namespace claraparabricks

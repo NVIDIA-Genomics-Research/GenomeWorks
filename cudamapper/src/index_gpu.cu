@@ -16,10 +16,13 @@ namespace claraparabricks
 
 namespace genomeworks
 {
+
 namespace cudamapper
 {
+
 namespace details
 {
+
 namespace index_gpu
 {
 void find_first_occurrences_of_representations(DefaultDeviceAllocator allocator,
@@ -137,9 +140,11 @@ __global__ void compress_unique_representations_after_filtering_kernel(const std
 }
 
 } // namespace index_gpu
+
 } // namespace details
 
 } // namespace cudamapper
+
 } // namespace genomeworks
 
 } // namespace claraparabricks

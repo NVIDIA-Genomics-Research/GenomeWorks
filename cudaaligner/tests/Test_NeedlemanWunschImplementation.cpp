@@ -288,6 +288,7 @@ TEST_P(AlignerImplementation, UkkonenCpuFullVsUkkonenGpuFull)
 
 INSTANTIATE_TEST_SUITE_P(TestNeedlemanWunschImplementation, AlignerImplementation, ValuesIn(getTestCases()));
 } // namespace cudaaligner
+
 } // namespace genomeworks
 
 } // namespace claraparabricks

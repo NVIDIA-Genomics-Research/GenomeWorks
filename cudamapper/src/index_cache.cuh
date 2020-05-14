@@ -208,6 +208,7 @@ private:
 };
 
 } // namespace cudamapper
+
 } // namespace genomeworks
 
 } // namespace claraparabricks

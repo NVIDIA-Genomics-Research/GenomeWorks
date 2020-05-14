@@ -98,6 +98,7 @@ namespace claraparabricks
 
 namespace genomeworks
 {
+
 namespace logging
 {
 /// \ingroup logging
@@ -179,6 +180,7 @@ LoggingStatus SetHeader(bool logTime, bool logLocation);
 #endif
 
 } // namespace logging
+
 } // namespace genomeworks
 
 } // namespace claraparabricks

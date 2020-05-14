@@ -66,6 +66,7 @@ std::size_t find_largest_contiguous_device_memory_section()
     return 0;
 }
 } // namespace cudautils
+
 } // namespace genomeworks
 
 } // namespace claraparabricks

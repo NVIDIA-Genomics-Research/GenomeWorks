@@ -23,6 +23,7 @@ namespace claraparabricks
 
 namespace genomeworks
 {
+
 namespace cudamapper
 {
 
@@ -918,6 +919,7 @@ TEST(TestCudamapperIndexBatcher, test_generate_batches_of_indices_exceptions)
 }
 
 } // namespace cudamapper
+
 } // namespace genomeworks
 
 } // namespace claraparabricks

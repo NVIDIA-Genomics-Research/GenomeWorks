@@ -35,6 +35,7 @@ namespace claraparabricks
 
 namespace genomeworks
 {
+
 namespace cudamapper
 {
 /// IndexGPU - Contains sketch elements grouped by representation and by read id within the representation
@@ -156,6 +157,7 @@ private:
 
 namespace details
 {
+
 namespace index_gpu
 {
 /// \brief Creates compressed representation of index
@@ -539,6 +541,7 @@ void filter_out_most_common_representations(DefaultDeviceAllocator allocator,
 }
 
 } // namespace index_gpu
+
 } // namespace details
 
 template <typename SketchElementImpl>
@@ -850,6 +853,7 @@ void IndexGPU<SketchElementImpl>::generate_index(const io::FastaParser& parser,
 }
 
 } // namespace cudamapper
+
 } // namespace genomeworks
 
 } // namespace claraparabricks

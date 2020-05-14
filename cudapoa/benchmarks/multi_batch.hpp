@@ -21,6 +21,7 @@ namespace claraparabricks
 
 namespace genomeworks
 {
+
 namespace cudapoa
 {
 
@@ -214,6 +215,7 @@ private:
     std::vector<std::vector<uint16_t>> coverages_;
 };
 } // namespace cudapoa
+
 } // namespace genomeworks
 
 } // namespace claraparabricks

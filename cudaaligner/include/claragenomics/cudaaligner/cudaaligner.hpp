@@ -55,6 +55,7 @@ enum AlignmentState : int8_t
 StatusType Init();
 /// \}
 } // namespace cudaaligner
+
 } // namespace genomeworks
 
 } // namespace claraparabricks

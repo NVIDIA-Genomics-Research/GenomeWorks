@@ -95,6 +95,7 @@ private:
     int32_t max_poas_per_batch_;
 };
 } // namespace cudapoa
+
 } // namespace genomeworks
 
 } // namespace claraparabricks

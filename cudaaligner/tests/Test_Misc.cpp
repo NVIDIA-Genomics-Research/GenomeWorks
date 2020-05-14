@@ -33,6 +33,7 @@ TEST(TestCudaAlignerMisc, CeilingDivide)
 }
 
 } // namespace cudaaligner
+
 } // namespace genomeworks
 
 } // namespace claraparabricks

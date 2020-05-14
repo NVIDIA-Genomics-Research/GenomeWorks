@@ -46,6 +46,7 @@ void print_paf(const std::vector<Overlap>& overlaps,
                int32_t number_of_devices);
 
 } // namespace cudamapper
+
 } // namespace genomeworks
 
 } // namespace claraparabricks

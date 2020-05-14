@@ -17,6 +17,7 @@ namespace claraparabricks
 
 namespace genomeworks
 {
+
 namespace cudamapper
 {
 
@@ -108,6 +109,7 @@ std::vector<IndexDescriptor> group_reads_into_indices(const io::FastaParser& par
 }
 
 } // namespace cudamapper
+
 } // namespace genomeworks
 
 } // namespace claraparabricks

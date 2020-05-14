@@ -17,6 +17,7 @@ namespace claraparabricks
 
 namespace genomeworks
 {
+
 namespace cudamapper
 {
 
@@ -487,6 +488,7 @@ TEST(TestCudamapperOverlapperTriggerred, OverlapPostProcessingOneForwardOneRever
 }
 
 } // namespace cudamapper
+
 } // namespace genomeworks
 
 } // namespace claraparabricks

@@ -37,6 +37,7 @@ struct __align__(4) ScoreT4<int16_t>
     int16_t s0, s1, s2, s3;
 };
 } // namespace cudapoa
+
 } // namespace genomeworks
 
 } // namespace claraparabricks

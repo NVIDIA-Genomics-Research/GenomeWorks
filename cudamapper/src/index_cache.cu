@@ -22,6 +22,7 @@ namespace claraparabricks
 
 namespace genomeworks
 {
+
 namespace cudamapper
 {
 
@@ -278,6 +279,7 @@ void IndexCacheDevice::generate_cache_content(const std::vector<IndexDescriptor>
 }
 
 } // namespace cudamapper
+
 } // namespace genomeworks
 
 } // namespace claraparabricks

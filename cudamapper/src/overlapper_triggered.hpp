@@ -21,6 +21,7 @@ namespace claraparabricks
 
 namespace genomeworks
 {
+
 namespace cudamapper
 {
 
@@ -60,6 +61,7 @@ private:
     cudaStream_t _cuda_stream;
 };
 } // namespace cudamapper
+
 } // namespace genomeworks
 
 } // namespace claraparabricks
