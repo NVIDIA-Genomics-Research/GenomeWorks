@@ -68,7 +68,7 @@ public:
     /// target_start_position_in_read_ and target_end_position_in_read_ may be modified.
     ///@param query_parser A FastaParser for query sequences.
     ///@param target_parser A FastaParser for target sequences.
-    ///@param max_extension The number of basepairs to extend and overlap.
+    ///@param extension The number of basepairs to extend and overlap.
     ///@param required_similarity The minimum similarity required to extend an overlap.
     static void rescue_overlap_ends(std::vector<Overlap>& overlaps,
                                     const io::FastaParser& query_parser,

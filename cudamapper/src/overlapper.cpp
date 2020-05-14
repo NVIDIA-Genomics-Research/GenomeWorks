@@ -13,14 +13,12 @@
 #include <future>
 #include <vector>
 
-
 #include <claragenomics/cudamapper/overlapper.hpp>
 #include <claragenomics/io/fasta_parser.hpp>
 #include <claragenomics/utils/cudautils.hpp>
 #include <claragenomics/utils/signed_integer_utils.hpp>
 
 #include "cudamapper_utils.hpp"
-
 
 namespace
 {
@@ -237,8 +235,8 @@ void Overlapper::rescue_overlap_ends(std::vector<Overlap>& overlaps,
 
         // Overlap rescue at "tail" (i.e., "right-side") of overlap
         // Get the sequence(s) to the right of the query/target ends
-        const position_in_read_t query_rescue_tail_start  = overlap.query_length_ > overlap.query_end_position_in_read_ + extension ? overlap.query_end_position_in_read_ + extension : overlap.query_length_;
-        const position_in_read_t target_rescue_tail_start = overlap.target_length_ > overlap.target_end_position_in_read_ + extension ? overlap.target_end_position_in_read_ + extension : overlap.target_length_;
+        const position_in_read_t query_rescue_tail_start  = query_sequence.length() > overlap.query_end_position_in_read_ + extension ? overlap.query_end_position_in_read_ + extension : query_sequence.length();
+        const position_in_read_t target_rescue_tail_start = target_sequence.length() > overlap.target_end_position_in_read_ + extension ? overlap.target_end_position_in_read_ + extension : target_sequence.length();
 
         std::string query_tail  = string_slice(query_sequence, overlap.query_end_position_in_read_, query_rescue_tail_start);
         std::string target_tail = string_slice(target_sequence, overlap.target_end_position_in_read_, target_rescue_tail_start);
