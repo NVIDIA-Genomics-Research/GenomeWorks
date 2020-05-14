@@ -58,6 +58,8 @@ void print_paf(const std::vector<Overlap>& overlaps,
 std::vector<std::string> split_into_kmers(const std::string& s, std::int32_t kmer_size, std::int32_t stride);
 
 /// \brief Given two sorted vectors of comparable types, return a size_t count of the number of shared elements.
+/// Duplicates are counted the number of times they appear (i.e., two vectors of ten identical elements would
+/// return a shared count of 10).
 /// \param a A sorted vector of elements. These must be comparable (i.e., they must implement the == and < operators) and sorted in ascending order.
 /// \param b A sorted vector of elements. These must be comparable with those in a and sorted in ascending order.
 /// \return The number of elements the two sets have in common, including repeated elements, as a std::size_t.
