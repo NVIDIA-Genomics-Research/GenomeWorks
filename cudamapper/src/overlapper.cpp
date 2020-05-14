@@ -9,8 +9,8 @@
 */
 #include <algorithm>
 #include <cstddef>
-#include <mutex>
 #include <future>
+#include <mutex>
 #include <vector>
 
 #include <claragenomics/cudamapper/overlapper.hpp>
