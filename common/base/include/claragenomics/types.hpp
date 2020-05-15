@@ -51,7 +51,7 @@ template <typename T>
 using cga_optional_t                = std::experimental::optional<T>;
 using cga_nullopt_t                 = std::experimental::nullopt_t;
 constexpr cga_nullopt_t cga_nullopt = std::experimental::nullopt;
-using cga_string_view_t = std::experimental::string_view;
+using cga_string_view_t             = std::experimental::string_view;
 #endif
 
 } // namespace genomeworks

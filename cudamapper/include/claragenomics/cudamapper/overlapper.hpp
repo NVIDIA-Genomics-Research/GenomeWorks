@@ -66,7 +66,8 @@ public:
     static void post_process_overlaps(std::vector<Overlap>& overlaps);
 
     /// \brief Extends a single overlap at its ends if the similarity of the query and target sequences is above a specified threshold.
-    /// \param overlap An Overlap which is modified in place. The start and ends fields for 
+    /// \param overlap An Overlap which is modified in place. Any of the query_start_position_in_read, query_end_position_in_read,
+    /// target_start_position_in_read, and target_end_position_in_read fields may be modified.
     /// \param query_sequence A std::string_view of the query read sequence.
     /// \param target_sequence A std::string_view of the target read sequence.
     /// \param extension The number of bases to extend at the head and tail of the overlap. If the head or tail is shorter than extension,
