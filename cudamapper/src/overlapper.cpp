@@ -83,7 +83,7 @@ std::string string_slice(const std::string& s, const std::size_t start, const st
 }
 
 
-claragenomics::cga_string_view_t string_view_slice(const claragenomics::cga_string_view_t& s, const std::size_t start, const std::size_t end)
+claraparabricks::genomeworks::cga_string_view_t string_view_slice(const claraparabricks::genomeworks::cga_string_view_t& s, const std::size_t start, const std::size_t end)
 {
     return s.substr(start, end - start);
 }
@@ -200,6 +200,10 @@ void Overlapper::extend_overlap_by_sequence_similarity(Overlap& overlap,
 
     const position_in_read_t query_head_start = overlap.query_start_position_in_read_ - window_size;
     const position_in_read_t target_head_start = overlap.target_start_position_in_read_ - window_size;
+
+    cga_string_view_t query_head_sequence = string_view_slice(query_sequence, query_head_start, overlap.query_start_position_in_read_);
+    cga_string_view_t target_head_sequence = string_view_slice(target_sequence, target_head_start, overlap.target_start_position_in_read_);
+
 
 
 }

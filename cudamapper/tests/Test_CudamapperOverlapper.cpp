@@ -13,8 +13,11 @@
 #include <vector>
 #include "../include/claragenomics/cudamapper/overlapper.hpp"
 
-namespace claragenomics
+namespace claraparabricks
 {
+namespace genomeworks
+{
+
 namespace cudamapper
 {
 
@@ -56,7 +59,7 @@ TEST(TestOverlapExtension, short_forward_head_overlap_properly_extended)
                                 "TAGTGCCGCCATGGAAGAGGTAGTACGCGCTTTACAGGAGAATGGGACATGTTAGTTTGG"
                                 "CTGGCCGAACATTTGGTCAAATATTATTCCGGCTTTAACG");
 
-    cga_string_view_t query_view(query_sequence);
+    claraparabricks::genomeworks::cga_string_view_t query_view(query_sequence);
     cga_string_view_t target_view(target_sequence);
 
     cudamapper::Overlap o;
@@ -75,4 +78,6 @@ TEST(TestOverlapExtension, short_forward_head_overlap_properly_extended)
 }
 
 } // namespace cudamapper
-} // namespace claragenomics
+
+} // namespace genomeworks
+} // namespace claraparabricks
