@@ -20,7 +20,10 @@
 #include <experimental/string_view>
 #endif
 
-namespace claragenomics
+namespace claraparabricks
+{
+
+namespace genomeworks
 {
 
 /// unique ID of a read
@@ -51,4 +54,6 @@ constexpr cga_nullopt_t cga_nullopt = std::experimental::nullopt;
 using cga_string_view_t = std::experimental::string_view;
 #endif
 
-} // namespace claragenomics
+} // namespace genomeworks
+
+} // namespace claraparabricks

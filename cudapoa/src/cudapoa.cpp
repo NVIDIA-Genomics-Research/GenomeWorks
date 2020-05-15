@@ -11,8 +11,12 @@
 #include <claragenomics/cudapoa/cudapoa.hpp>
 #include <claragenomics/logging/logging.hpp>
 
-namespace claragenomics
+namespace claraparabricks
 {
+
+namespace genomeworks
+{
+
 namespace cudapoa
 {
 
@@ -25,4 +29,7 @@ StatusType Init()
 }
 
 } // namespace cudapoa
-} // namespace claragenomics
+
+} // namespace genomeworks
+
+} // namespace claraparabricks

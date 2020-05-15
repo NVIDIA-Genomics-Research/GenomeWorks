@@ -16,8 +16,12 @@
 #include <future>
 #include <numeric>
 
-namespace claragenomics
+namespace claraparabricks
 {
+
+namespace genomeworks
+{
+
 namespace cudapoa
 {
 
@@ -120,7 +124,7 @@ public:
                 {
                     std::vector<std::string> consensus_temp;
                     std::vector<std::vector<uint16_t>> coverages_temp;
-                    std::vector<claragenomics::cudapoa::StatusType> output_status;
+                    std::vector<genomeworks::cudapoa::StatusType> output_status;
 
                     // Launch workload.
                     batch->generate_poa();
@@ -211,4 +215,7 @@ private:
     std::vector<std::vector<uint16_t>> coverages_;
 };
 } // namespace cudapoa
-} // namespace claragenomics
+
+} // namespace genomeworks
+
+} // namespace claraparabricks

@@ -21,7 +21,10 @@
 #include <claragenomics/utils/cudautils.hpp>
 #include <claragenomics/cudapoa/batch.hpp>
 
-namespace claragenomics
+namespace claraparabricks
+{
+
+namespace genomeworks
 {
 
 namespace cudapoa
@@ -65,7 +68,7 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
                                   uint8_t* sequences_d,
                                   int8_t* base_weights_d,
                                   SizeT* sequence_lengths_d,
-                                  claragenomics::cudapoa::WindowDetails* window_details_d,
+                                  genomeworks::cudapoa::WindowDetails* window_details_d,
                                   int32_t total_windows,
                                   ScoreT* scores_d,
                                   SizeT* alignment_graph_d,
@@ -357,12 +360,12 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
 }
 
 template <typename ScoreT, typename SizeT>
-void generatePOAtemplated(claragenomics::cudapoa::OutputDetails* output_details_d,
-                          claragenomics::cudapoa::InputDetails<SizeT>* input_details_d,
+void generatePOAtemplated(genomeworks::cudapoa::OutputDetails* output_details_d,
+                          genomeworks::cudapoa::InputDetails<SizeT>* input_details_d,
                           int32_t total_windows,
                           cudaStream_t stream,
-                          claragenomics::cudapoa::AlignmentDetails<ScoreT, SizeT>* alignment_details_d,
-                          claragenomics::cudapoa::GraphDetails<SizeT>* graph_details_d,
+                          genomeworks::cudapoa::AlignmentDetails<ScoreT, SizeT>* alignment_details_d,
+                          genomeworks::cudapoa::GraphDetails<SizeT>* graph_details_d,
                           ScoreT gap_score,
                           ScoreT mismatch_score,
                           ScoreT match_score,
@@ -695,7 +698,7 @@ void generatePOAtemplated(claragenomics::cudapoa::OutputDetails* output_details_
 }
 
 // Host function call for POA kernel
-void generatePOA(claragenomics::cudapoa::OutputDetails* output_details_d,
+void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
                  void* input_details_void,
                  int32_t total_windows,
                  cudaStream_t stream,
@@ -713,65 +716,65 @@ void generatePOA(claragenomics::cudapoa::OutputDetails* output_details_d,
     {
         if (use32bitSize(batch_size, cuda_banded_alignment))
         {
-            auto* alignment_details_d = static_cast<claragenomics::cudapoa::AlignmentDetails<int32_t, int32_t>*>(alignment_details_void);
-            auto* input_details_d     = static_cast<claragenomics::cudapoa::InputDetails<int32_t>*>(input_details_void);
-            auto* graph_details_d     = static_cast<claragenomics::cudapoa::GraphDetails<int32_t>*>(graph_details_void);
+            auto* alignment_details_d = static_cast<genomeworks::cudapoa::AlignmentDetails<int32_t, int32_t>*>(alignment_details_void);
+            auto* input_details_d     = static_cast<genomeworks::cudapoa::InputDetails<int32_t>*>(input_details_void);
+            auto* graph_details_d     = static_cast<genomeworks::cudapoa::GraphDetails<int32_t>*>(graph_details_void);
 
-            claragenomics::cudapoa::generatePOAtemplated<int32_t, int32_t>(output_details_d,
-                                                                           input_details_d,
-                                                                           total_windows,
-                                                                           stream,
-                                                                           alignment_details_d,
-                                                                           graph_details_d,
-                                                                           (int32_t)gap_score,
-                                                                           (int32_t)mismatch_score,
-                                                                           (int32_t)match_score,
-                                                                           cuda_banded_alignment,
-                                                                           max_sequences_per_poa,
-                                                                           output_mask,
-                                                                           batch_size);
+            genomeworks::cudapoa::generatePOAtemplated<int32_t, int32_t>(output_details_d,
+                                                                         input_details_d,
+                                                                         total_windows,
+                                                                         stream,
+                                                                         alignment_details_d,
+                                                                         graph_details_d,
+                                                                         (int32_t)gap_score,
+                                                                         (int32_t)mismatch_score,
+                                                                         (int32_t)match_score,
+                                                                         cuda_banded_alignment,
+                                                                         max_sequences_per_poa,
+                                                                         output_mask,
+                                                                         batch_size);
         }
         else
         {
-            auto* alignment_details_d = static_cast<claragenomics::cudapoa::AlignmentDetails<int32_t, int16_t>*>(alignment_details_void);
-            auto* input_details_d     = static_cast<claragenomics::cudapoa::InputDetails<int16_t>*>(input_details_void);
-            auto* graph_details_d     = static_cast<claragenomics::cudapoa::GraphDetails<int16_t>*>(graph_details_void);
+            auto* alignment_details_d = static_cast<genomeworks::cudapoa::AlignmentDetails<int32_t, int16_t>*>(alignment_details_void);
+            auto* input_details_d     = static_cast<genomeworks::cudapoa::InputDetails<int16_t>*>(input_details_void);
+            auto* graph_details_d     = static_cast<genomeworks::cudapoa::GraphDetails<int16_t>*>(graph_details_void);
 
-            claragenomics::cudapoa::generatePOAtemplated<int32_t, int16_t>(output_details_d,
-                                                                           input_details_d,
-                                                                           total_windows,
-                                                                           stream,
-                                                                           alignment_details_d,
-                                                                           graph_details_d,
-                                                                           (int32_t)gap_score,
-                                                                           (int32_t)mismatch_score,
-                                                                           (int32_t)match_score,
-                                                                           cuda_banded_alignment,
-                                                                           max_sequences_per_poa,
-                                                                           output_mask,
-                                                                           batch_size);
+            genomeworks::cudapoa::generatePOAtemplated<int32_t, int16_t>(output_details_d,
+                                                                         input_details_d,
+                                                                         total_windows,
+                                                                         stream,
+                                                                         alignment_details_d,
+                                                                         graph_details_d,
+                                                                         (int32_t)gap_score,
+                                                                         (int32_t)mismatch_score,
+                                                                         (int32_t)match_score,
+                                                                         cuda_banded_alignment,
+                                                                         max_sequences_per_poa,
+                                                                         output_mask,
+                                                                         batch_size);
         }
     }
     else
     {
         // if ScoreT is 16-bit, then it's safe to assume SizeT is 16-bit
-        auto* alignment_details_d = static_cast<claragenomics::cudapoa::AlignmentDetails<int16_t, int16_t>*>(alignment_details_void);
-        auto* input_details_d     = static_cast<claragenomics::cudapoa::InputDetails<int16_t>*>(input_details_void);
-        auto* graph_details_d     = static_cast<claragenomics::cudapoa::GraphDetails<int16_t>*>(graph_details_void);
+        auto* alignment_details_d = static_cast<genomeworks::cudapoa::AlignmentDetails<int16_t, int16_t>*>(alignment_details_void);
+        auto* input_details_d     = static_cast<genomeworks::cudapoa::InputDetails<int16_t>*>(input_details_void);
+        auto* graph_details_d     = static_cast<genomeworks::cudapoa::GraphDetails<int16_t>*>(graph_details_void);
 
-        claragenomics::cudapoa::generatePOAtemplated<int16_t, int16_t>(output_details_d,
-                                                                       input_details_d,
-                                                                       total_windows,
-                                                                       stream,
-                                                                       alignment_details_d,
-                                                                       graph_details_d,
-                                                                       gap_score,
-                                                                       mismatch_score,
-                                                                       match_score,
-                                                                       cuda_banded_alignment,
-                                                                       max_sequences_per_poa,
-                                                                       output_mask,
-                                                                       batch_size);
+        genomeworks::cudapoa::generatePOAtemplated<int16_t, int16_t>(output_details_d,
+                                                                     input_details_d,
+                                                                     total_windows,
+                                                                     stream,
+                                                                     alignment_details_d,
+                                                                     graph_details_d,
+                                                                     gap_score,
+                                                                     mismatch_score,
+                                                                     match_score,
+                                                                     cuda_banded_alignment,
+                                                                     max_sequences_per_poa,
+                                                                     output_mask,
+                                                                     batch_size);
     }
 }
 
@@ -1089,4 +1092,6 @@ bool use32bitSize(const BatchSize& batch_size, bool banded)
 
 } // namespace cudapoa
 
-} // namespace claragenomics
+} // namespace genomeworks
+
+} // namespace claraparabricks

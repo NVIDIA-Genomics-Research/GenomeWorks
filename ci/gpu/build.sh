@@ -38,7 +38,7 @@ source ci/common/prep-init-env.sh "${WORKSPACE}" "${CONDA_ENV_NAME}"
 ################################################################################
 
 logger "Build SDK in Release mode..."
-CMAKE_COMMON_VARIABLES=(-DCMAKE_BUILD_TYPE=Release)
+CMAKE_COMMON_VARIABLES=(-DCMAKE_BUILD_TYPE=Release -Dcga_profiling=ON)
 source ci/common/build-test-sdk.sh "${WORKSPACE}" "${CMAKE_COMMON_VARIABLES[@]}" "${PARALLEL_LEVEL}" "${TEST_ON_GPU}"
 
 cd "${WORKSPACE}"

@@ -14,7 +14,10 @@
 
 #include <gtest/gtest.h>
 
-namespace claragenomics
+namespace claraparabricks
+{
+
+namespace genomeworks
 {
 
 namespace cudaaligner
@@ -61,4 +64,7 @@ INSTANTIATE_TEST_SUITE_P(TestMyersAlgorithm, TestMyersEditDistance, ::testing::V
 INSTANTIATE_TEST_SUITE_P(TestMyersAlgorithm, TestMyersScoreMatrix, ::testing::ValuesIn(create_cudaaligner_test_cases()));
 
 } // namespace cudaaligner
-} // namespace claragenomics
+
+} // namespace genomeworks
+
+} // namespace claraparabricks

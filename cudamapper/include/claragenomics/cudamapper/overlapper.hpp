@@ -18,7 +18,10 @@
 #include <thrust/execution_policy.h>
 #include <claragenomics/utils/device_buffer.hpp>
 
-namespace claragenomics
+namespace claraparabricks
+{
+
+namespace genomeworks
 {
 
 namespace cudamapper
@@ -62,22 +65,26 @@ public:
     /// \param overlaps reference to vector of Overlaps. New overlaps (result of fusing) are added to this vector
     static void post_process_overlaps(std::vector<Overlap>& overlaps);
 
-
+    /// \brief Extends a single overlap at its ends if the similarity of the query and target sequences is above a specified threshold.
+    /// \param overlap An Overlap which is modified in place. The start and ends fields for 
+    /// \param query_sequence A std::string_view of the query read sequence.
+    /// \param target_sequence A std::string_view of the target read sequence.
+    /// \param extension The number of bases to extend at the head and tail of the overlap. If the head or tail is shorter than extension,
+    /// the function only tries to extend to the end of the read.
+    /// \param required_similarity The minimum similarity to require to extend an overlap.
     static void extend_overlap_by_sequence_similarity(Overlap& overlap,
                                                       cga_string_view_t& query_sequence,
                                                       cga_string_view_t& target_sequence,
                                                       std::int32_t extension,
                                                       float required_similarity);
 
-    ///
-    ///@brief Given a vector of overlaps, extend the start/end of the overlaps based on the sequence similarity of the query and target.
-    ///
-    ///@param overlaps A vector of overlaps. This is modified in-place; query_start_position_in_read_, query_end_position_in_read_,
+    /// \brief Given a vector of overlaps, extend the start/end of the overlaps based on the sequence similarity of the query and target.
+    /// \param overlaps A vector of overlaps. This is modified in-place; query_start_position_in_read_, query_end_position_in_read_,
     /// target_start_position_in_read_ and target_end_position_in_read_ may be modified.
-    ///@param query_parser A FastaParser for query sequences.
-    ///@param target_parser A FastaParser for target sequences.
-    ///@param extension The number of basepairs to extend and overlap.
-    ///@param required_similarity The minimum similarity required to extend an overlap.
+    /// \param query_parser A FastaParser for query sequences.
+    /// \param target_parser A FastaParser for target sequences.
+    /// \param extension The number of basepairs to extend and overlap.
+    /// \param required_similarity The minimum similarity required to extend an overlap.
     static void rescue_overlap_ends(std::vector<Overlap>& overlaps,
                                     const io::FastaParser& query_parser,
                                     const io::FastaParser& target_parser,
@@ -87,4 +94,6 @@ public:
 //}
 } // namespace cudamapper
 
-} // namespace claragenomics
+} // namespace genomeworks
+
+} // namespace claraparabricks

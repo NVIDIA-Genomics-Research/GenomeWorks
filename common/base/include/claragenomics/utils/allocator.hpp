@@ -20,7 +20,10 @@
 #include <claragenomics/utils/cudautils.hpp>
 #include <claragenomics/utils/exceptions.hpp>
 
-namespace claragenomics
+namespace claraparabricks
+{
+
+namespace genomeworks
 {
 
 /// @brief Allocator that allocates device memory using cudaMalloc/cudaFree
@@ -300,4 +303,6 @@ inline DefaultDeviceAllocator create_default_device_allocator(std::size_t max_ca
 #endif
 }
 
-} // namespace claragenomics
+} // namespace genomeworks
+
+} // namespace claraparabricks

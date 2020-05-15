@@ -13,8 +13,12 @@
 #include <vector>
 #include "../src/cudamapper_utils.cpp"
 
-namespace claragenomics
+namespace claraparabricks
 {
+
+namespace genomeworks
+{
+
 namespace cudamapper
 {
 
@@ -89,6 +93,7 @@ TEST(SimilarityTest, similarity_of_similar_seqs_is_accurate_estimate)
     ASSERT_GT(sim, 0.0);
     ASSERT_LT(sim, 1.0);
 }
-
 } // namespace cudamapper
-} // namespace claragenomics
+
+} // namespace genomeworks
+} // namespace claraparabricks
