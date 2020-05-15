@@ -70,6 +70,8 @@ TEST(TestOverlapExtension, short_forward_head_overlap_properly_extended)
 
     ASSERT_EQ(o.query_start_position_in_read_, 1);
     ASSERT_EQ(o.target_start_position_in_read_, 341);
+    ASSERT_EQ(o.query_end_position_in_read_, 660);
+    ASSERT_EQ(o.target_end_position_in_read_, 1000);
 }
 
 } // namespace cudamapper
