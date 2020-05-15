@@ -159,6 +159,7 @@ std::vector<cga_string_view_t> split_into_kmers(const cga_string_view_t& s, cons
 
     if (s.length() < kmer_size)
     {
+        kmers.push_back(s);
         return kmers;
     }
 
