@@ -71,8 +71,8 @@ TEST(TestOverlapExtension, short_forward_head_overlap_properly_extended)
 
     Overlapper::extend_overlap_by_sequence_similarity(o, query_view, target_view, 50, 0.8);
 
-    ASSERT_EQ(o.query_start_position_in_read_, 1);
-    ASSERT_EQ(o.target_start_position_in_read_, 341);
+    ASSERT_EQ(o.query_start_position_in_read_, 0);
+    ASSERT_EQ(o.target_start_position_in_read_, 340);
     ASSERT_EQ(o.query_end_position_in_read_, 660);
     ASSERT_EQ(o.target_end_position_in_read_, 1000);
 }

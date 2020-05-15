@@ -37,7 +37,8 @@ TEST(KmerizeStringTest, empty_string)
 {
     std::string s("");
     std::vector<cga_string_view_t> kmers = split_into_kmers(s, 4, 1);
-    ASSERT_EQ(kmers.size(), 0);
+    ASSERT_EQ(kmers.size(), 1);
+    ASSERT_EQ(kmers[0].compare(""), 0);
 }
 
 TEST(CountSharedElementsTest, Shared_ints_correctly_counted)
