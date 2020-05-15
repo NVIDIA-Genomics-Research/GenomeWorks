@@ -193,18 +193,36 @@ void Overlapper::extend_overlap_by_sequence_similarity(Overlap& overlap,
                                                        const float required_similarity)
 {
 
-    const position_in_read_t query_window_size = std::min(overlap.query_start_position_in_read_, static_cast<position_in_read_t>(extension));
-    const position_in_read_t target_window_size = std::min(overlap.target_start_position_in_read_, static_cast<position_in_read_t>(extension));
+    const position_in_read_t query_head_rescue_size = std::min(overlap.query_start_position_in_read_, static_cast<position_in_read_t>(extension));
+    const position_in_read_t target_head_rescue_size = std::min(overlap.target_start_position_in_read_, static_cast<position_in_read_t>(extension));
     // Calculate the shortest sequence length and use this as the window for comparison.
-    const position_in_read_t window_size = std::min(query_window_size, target_window_size);
+    const position_in_read_t head_rescue_size = std::min(query_head_rescue_size, target_head_rescue_size);
 
-    const position_in_read_t query_head_start = overlap.query_start_position_in_read_ - window_size;
-    const position_in_read_t target_head_start = overlap.target_start_position_in_read_ - window_size;
+    const position_in_read_t query_head_start = overlap.query_start_position_in_read_ - head_rescue_size;
+    const position_in_read_t target_head_start = overlap.target_start_position_in_read_ - head_rescue_size;
 
     cga_string_view_t query_head_sequence = string_view_slice(query_sequence, query_head_start, overlap.query_start_position_in_read_);
     cga_string_view_t target_head_sequence = string_view_slice(target_sequence, target_head_start, overlap.target_start_position_in_read_);
 
+    float head_similarity = sequence_jaccard_similarity(query_head_sequence, target_head_sequence, 15, 1);
+    if (head_similarity >= required_similarity){
+        overlap.query_start_position_in_read_ = overlap.query_start_position_in_read_ - window_size;
+        overlap.target_start_position_in_read_ = overlap.target_start_position_in_read_ - window_size;
+    }
 
+    const position_in_read_t query_tail_rescue_size = std::min(overlap.query_end_position_in_read_ + extension, static_cast<position_in_read_t>(query_sequence.length()));
+    const position_in_read_t target_tail_rescue_size = std::min(overlap.target_end_position_in_read_ + extension, static_cast<position_in_read_t>(target_sequence.length()));
+    // Calculate the shortest sequence length at the tail and use this as the window for comparison.
+    const position_in_read_t tail_rescue_size = std::min(query_tail_rescue_size, target_tail_rescue_size);
+
+    cga_string_view_t query_tail_sequence = string_view_slice(query_sequence, overlap.query_end_position_in_read_, overlap.query_end_position_in_read_ + tail_rescue_size);
+    cga_string_view_t target_tail_sequence = string_view_slice(target_sequence, overlap.target_end_position_in_read_, overlap.target_end_position_in_read_ + tail_rescue_size);
+
+    const float tail_similarity = sequence_jaccard_similarity(query_tail_sequence, target_tail_sequence, 15, 1);
+    if (tail_similarity >= required_similarity){
+        overlap.query_end_position_in_read_ = overlap.query_end_position_in_read_ + tail_rescue_size;
+        overlap.target_end_position_in_read_ = overlap.target_end_position_in_read_ + tail_rescue_size;
+    }
 
 }
 
