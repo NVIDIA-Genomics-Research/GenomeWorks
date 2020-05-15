@@ -12,8 +12,12 @@
 
 #include <algorithm>
 
-namespace claragenomics
+namespace claraparabricks
 {
+
+namespace genomeworks
+{
+
 namespace cudamapper
 {
 
@@ -21,8 +25,8 @@ std::vector<BatchOfIndices> generate_batches_of_indices(const number_of_indices_
                                                         const number_of_indices_t query_indices_per_device_batch,
                                                         const number_of_indices_t target_indices_per_host_batch,
                                                         const number_of_indices_t target_indices_per_device_batch,
-                                                        const std::shared_ptr<const claragenomics::io::FastaParser> query_parser,
-                                                        const std::shared_ptr<const claragenomics::io::FastaParser> target_parser,
+                                                        const std::shared_ptr<const genomeworks::io::FastaParser> query_parser,
+                                                        const std::shared_ptr<const genomeworks::io::FastaParser> target_parser,
                                                         const number_of_basepairs_t query_basepairs_per_index,
                                                         const number_of_basepairs_t target_basepairs_per_index,
                                                         const bool same_query_and_target)
@@ -85,6 +89,7 @@ std::vector<BatchOfIndices> generate_batches_of_indices(const number_of_indices_
 
 namespace details
 {
+
 namespace index_batcher
 {
 
@@ -125,7 +130,11 @@ std::vector<IndexBatch> group_into_batches(const std::vector<IndexDescriptor>& q
 }
 
 } // namespace index_batcher
+
 } // namespace details
 
 } // namespace cudamapper
-} // namespace claragenomics
+
+} // namespace genomeworks
+
+} // namespace claraparabricks

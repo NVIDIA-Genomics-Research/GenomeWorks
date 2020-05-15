@@ -17,7 +17,10 @@
 #include <thrust/execution_policy.h>
 #include <claragenomics/utils/device_buffer.hpp>
 
-namespace claragenomics
+namespace claraparabricks
+{
+
+namespace genomeworks
 {
 
 namespace cudamapper
@@ -78,4 +81,6 @@ public:
 //}
 } // namespace cudamapper
 
-} // namespace claragenomics
+} // namespace genomeworks
+
+} // namespace claraparabricks

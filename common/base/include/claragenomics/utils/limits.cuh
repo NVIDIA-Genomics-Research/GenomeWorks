@@ -14,7 +14,10 @@
 #include <limits>
 #include <cstdint>
 
-namespace claragenomics
+namespace claraparabricks
+{
+
+namespace genomeworks
 {
 #ifdef CGA_CUDA_BEFORE_10_1
 template <typename T>
@@ -39,4 +42,6 @@ struct numeric_limits<int32_t>
 using std::numeric_limits;
 #endif
 
-} // end namespace claragenomics
+} // namespace genomeworks
+
+} // namespace claraparabricks

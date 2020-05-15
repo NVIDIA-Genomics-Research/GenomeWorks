@@ -19,7 +19,10 @@
 #include <sstream>
 #include <algorithm>
 
-namespace claragenomics
+namespace claraparabricks
+{
+
+namespace genomeworks
 {
 
 /// \struct PairHash
@@ -271,4 +274,6 @@ public:
     }
 };
 
-} // namespace claragenomics
+} // namespace genomeworks
+
+} // namespace claraparabricks

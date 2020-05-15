@@ -18,8 +18,12 @@
 #include <tuple>
 #include <cassert>
 
-namespace claragenomics
+namespace claraparabricks
 {
+
+namespace genomeworks
+{
+
 namespace cudaaligner
 {
 
@@ -157,5 +161,8 @@ private:
     int32_t n_matrices_;
 };
 
-} // end namespace cudaaligner
-} // end namespace claragenomics
+} // namespace cudaaligner
+
+} // namespace genomeworks
+
+} // namespace claraparabricks

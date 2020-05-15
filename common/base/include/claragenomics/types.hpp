@@ -18,7 +18,10 @@
 #include <experimental/optional>
 #endif
 
-namespace claragenomics
+namespace claraparabricks
+{
+
+namespace genomeworks
 {
 
 /// unique ID of a read
@@ -47,4 +50,6 @@ using cga_nullopt_t                 = std::experimental::nullopt_t;
 constexpr cga_nullopt_t cga_nullopt = std::experimental::nullopt;
 #endif
 
-} // namespace claragenomics
+} // namespace genomeworks
+
+} // namespace claraparabricks

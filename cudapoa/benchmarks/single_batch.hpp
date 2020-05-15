@@ -13,7 +13,10 @@
 #include <claragenomics/cudapoa/batch.hpp>
 #include <claragenomics/utils/signed_integer_utils.hpp>
 
-namespace claragenomics
+namespace claraparabricks
+{
+
+namespace genomeworks
 {
 
 namespace cudapoa
@@ -82,7 +85,7 @@ public:
         batch_->generate_poa();
         std::vector<std::string> consensus;
         std::vector<std::vector<uint16_t>> coverage;
-        std::vector<claragenomics::cudapoa::StatusType> output_status;
+        std::vector<genomeworks::cudapoa::StatusType> output_status;
         batch_->get_consensus(consensus, coverage, output_status);
     }
 
@@ -92,4 +95,7 @@ private:
     int32_t max_poas_per_batch_;
 };
 } // namespace cudapoa
-} // namespace claragenomics
+
+} // namespace genomeworks
+
+} // namespace claraparabricks

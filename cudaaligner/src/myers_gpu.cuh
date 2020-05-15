@@ -15,8 +15,12 @@
 
 #include <cuda_runtime_api.h>
 
-namespace claragenomics
+namespace claraparabricks
 {
+
+namespace genomeworks
+{
+
 namespace cudaaligner
 {
 
@@ -49,5 +53,8 @@ void myers_banded_gpu(int8_t* paths_d, int32_t* path_lengths_d, int32_t max_path
                       batched_device_matrices<int32_t>& score,
                       batched_device_matrices<myers::WordType>& query_patterns,
                       cudaStream_t stream);
-} // end namespace cudaaligner
-} // end namespace claragenomics
+} // namespace cudaaligner
+
+} // namespace genomeworks
+
+} // namespace claraparabricks

@@ -32,7 +32,7 @@ from bindings.graph cimport DirectedGraph
 # from the ClaraGenomicsAnalysis `cudapoa` module.
 
 # Declare structs and APIs from cudapoa.hpp.
-cdef extern from "claragenomics/cudapoa/cudapoa.hpp" namespace "claragenomics::cudapoa":
+cdef extern from "claragenomics/cudapoa/cudapoa.hpp" namespace "claraparabricks::genomeworks::cudapoa":
     cdef enum StatusType:
         success = 0
         exceeded_maximum_poas
@@ -52,7 +52,7 @@ cdef extern from "claragenomics/cudapoa/cudapoa.hpp" namespace "claragenomics::c
     cdef StatusType Init()
 
 # Declare structs and APIs from batch.hpp.
-cdef extern from "claragenomics/cudapoa/batch.hpp" namespace "claragenomics::cudapoa":
+cdef extern from "claragenomics/cudapoa/batch.hpp" namespace "claraparabricks::genomeworks::cudapoa":
     cdef struct Entry:
         const char* seq
         const int8_t* weights

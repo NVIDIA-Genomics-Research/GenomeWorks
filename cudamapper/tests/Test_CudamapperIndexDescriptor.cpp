@@ -14,8 +14,12 @@
 
 #include "cudamapper_file_location.hpp"
 
-namespace claragenomics
+namespace claraparabricks
 {
+
+namespace genomeworks
+{
+
 namespace cudamapper
 {
 
@@ -152,4 +156,7 @@ TEST(TestCudamapperIndexDescriptor, test_group_reads_into_indices_some_reads_lar
 }
 
 } // namespace cudamapper
-} // namespace claragenomics
+
+} // namespace genomeworks
+
+} // namespace claraparabricks

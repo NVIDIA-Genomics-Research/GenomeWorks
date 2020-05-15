@@ -18,8 +18,12 @@
 #include <claragenomics/io/fasta_parser.hpp>
 #include <claragenomics/utils/signed_integer_utils.hpp>
 
-namespace claragenomics
+namespace claraparabricks
 {
+
+namespace genomeworks
+{
+
 namespace cudamapper
 {
 
@@ -220,4 +224,7 @@ float sequence_jaccard_similarity(const std::string& a, const std::string& b, co
 }
 
 } // namespace cudamapper
-} // namespace claragenomics
+
+} // namespace genomeworks
+
+} // namespace claraparabricks

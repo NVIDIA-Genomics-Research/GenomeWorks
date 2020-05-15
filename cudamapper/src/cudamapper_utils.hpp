@@ -15,7 +15,10 @@
 
 #include <claragenomics/cudamapper/types.hpp>
 
-namespace claragenomics
+namespace claraparabricks
+{
+
+namespace genomeworks
 {
 
 namespace io
@@ -93,4 +96,7 @@ float sequence_jaccard_similarity(const std::string& a, const std::string& b, st
 float sequence_jaccard_containment(const std::string& a, const std::string& b, std::int32_t kmer_size, std::int32_t stride);
 
 } // namespace cudamapper
-} // namespace claragenomics
+
+} // namespace genomeworks
+
+} // namespace claraparabricks
