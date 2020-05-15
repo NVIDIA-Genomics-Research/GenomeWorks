@@ -281,7 +281,29 @@ void Overlapper::rescue_overlap_ends(std::vector<Overlap>& overlaps,
         }
         cga_string_view_t target_view(target_sequence);
 
-        extend_overlap_by_sequence_similarity(overlap, query_view, target_view, 100, 0.9);
+        const std::size_t max_rescue_rounds  = 3;
+        std::size_t rescue_rounds            = 0;
+        position_in_read_t prev_query_start  = overlap.query_start_position_in_read_;
+        position_in_read_t prev_query_end    = overlap.query_end_position_in_read_;
+        position_in_read_t prev_target_start = overlap.target_start_position_in_read_;
+        position_in_read_t prev_target_end   = overlap.target_end_position_in_read_;
+
+        while (rescue_rounds < max_rescue_rounds)
+        {
+            extend_overlap_by_sequence_similarity(overlap, query_view, target_view, 100, 0.9);
+            ++rescue_rounds;
+            if (overlap.query_end_position_in_read_ == prev_query_start &&
+                overlap.query_end_position_in_read_ == prev_query_end &&
+                overlap.target_start_position_in_read_ == prev_target_start &&
+                overlap.target_end_position_in_read_ == prev_target_end)
+            {
+                break;
+            }
+            prev_query_start  = overlap.query_start_position_in_read_;
+            prev_query_end    = overlap.query_end_position_in_read_;
+            prev_target_start = overlap.target_start_position_in_read_;
+            prev_target_end   = overlap.target_end_position_in_read_;
+        }
 
         if (reversed)
         {
