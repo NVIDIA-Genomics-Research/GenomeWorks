@@ -152,10 +152,10 @@ void print_paf(const std::vector<Overlap>& overlaps,
     }
 }
 
-std::vector<std::string> split_into_kmers(const std::string& s, const std::int32_t kmer_size, const std::int32_t stride)
+std::vector<cga_string_view_t> split_into_kmers(const cga_string_view_t& s, const std::int32_t kmer_size, const std::int32_t stride)
 {
     const std::size_t kmer_count = s.length() - kmer_size + 1;
-    std::vector<std::string> kmers;
+    std::vector<cga_string_view_t> kmers;
 
     if (s.length() < kmer_size)
     {
@@ -198,8 +198,8 @@ std::size_t count_shared_elements(const std::vector<T>& a, const std::vector<T>&
 
 float sequence_jaccard_containment(const std::string& a, const std::string& b, const std::int32_t kmer_size, const std::int32_t stride)
 {
-    std::vector<std::string> a_kmers = split_into_kmers(a, kmer_size, stride);
-    std::vector<std::string> b_kmers = split_into_kmers(b, kmer_size, stride);
+    std::vector<cga_string_view_t> a_kmers = split_into_kmers(a, kmer_size, stride);
+    std::vector<cga_string_view_t> b_kmers = split_into_kmers(b, kmer_size, stride);
     std::sort(std::begin(a_kmers), std::end(a_kmers));
     std::sort(std::begin(b_kmers), std::end(b_kmers));
 
@@ -210,10 +210,10 @@ float sequence_jaccard_containment(const std::string& a, const std::string& b, c
     return static_cast<float>(shared_kmers) / static_cast<float>(shortest_kmer_set_length);
 }
 
-float sequence_jaccard_similarity(const std::string& a, const std::string& b, const std::int32_t kmer_size, const std::int32_t stride)
+float sequence_jaccard_similarity(const cga_string_view_t& a, const cga_string_view_t& b, const std::int32_t kmer_size, const std::int32_t stride)
 {
-    std::vector<std::string> a_kmers = split_into_kmers(a, kmer_size, stride);
-    std::vector<std::string> b_kmers = split_into_kmers(b, kmer_size, stride);
+    std::vector<cga_string_view_t> a_kmers = split_into_kmers(a, kmer_size, stride);
+    std::vector<cga_string_view_t> b_kmers = split_into_kmers(b, kmer_size, stride);
     std::sort(std::begin(a_kmers), std::end(a_kmers));
     std::sort(std::begin(b_kmers), std::end(b_kmers));
 

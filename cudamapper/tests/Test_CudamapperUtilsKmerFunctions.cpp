@@ -25,17 +25,18 @@ namespace cudamapper
 TEST(KmerizeStringTest, AAACCTTCTCT_k4_s1)
 {
     std::string test_str("AAACCTTCTCT");
+    cga_string_view_t test_view(test_str);
     // AAAC AACC ACCT CCTT CTTC TTCT TCTC CTCT (n = 8)
-    std::vector<std::string> kmers = split_into_kmers(test_str, 4, 1);
+    std::vector<cga_string_view_t> kmers = split_into_kmers(test_view, 4, 1);
     ASSERT_EQ(kmers.size(), 8);
-    ASSERT_STREQ(kmers[0].c_str(), "AAAC");
-    ASSERT_STREQ(kmers[7].c_str(), "CTCT");
+    ASSERT_EQ(kmers[0].compare(cga_string_view_t("AAAC")), 0);
+    ASSERT_EQ(kmers[7].compare(cga_string_view_t("CTCT")), 0);
 }
 
 TEST(KmerizeStringTest, empty_string)
 {
     std::string s("");
-    std::vector<std::string> kmers = split_into_kmers(s, 4, 1);
+    std::vector<cga_string_view_t> kmers = split_into_kmers(s, 4, 1);
     ASSERT_EQ(kmers.size(), 0);
 }
 
