@@ -39,7 +39,7 @@ using position_in_read_t = std::uint32_t;
 using number_of_basepairs_t = position_in_read_t;
 
 // TODO: Once minimal supported GCC version is moved to GCC 7.1
-// or higher, thecga_optional_t and cga_string_view_t aliases 
+// or higher, thecga_optional_t and cga_string_view_t aliases
 // can be removed and std::optional and std::string_view can
 // be used directly instead
 #if __cplusplus >= 201703
