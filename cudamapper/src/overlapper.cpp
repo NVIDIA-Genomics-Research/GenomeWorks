@@ -173,11 +173,11 @@ void Overlapper::post_process_overlaps(std::vector<Overlap>& overlaps)
     }
 }
 
-void Overlapper::extend_overlap_by_sequence_similarity(Overlap& overlap,
-                                                       cga_string_view_t& query_sequence,
-                                                       cga_string_view_t& target_sequence,
-                                                       const std::int32_t extension,
-                                                       const float required_similarity)
+void details::overlapper::extend_overlap_by_sequence_similarity(Overlap& overlap,
+                                                                cga_string_view_t& query_sequence,
+                                                                cga_string_view_t& target_sequence,
+                                                                const std::int32_t extension,
+                                                                const float required_similarity)
 {
 
     const position_in_read_t query_head_rescue_size  = std::min(overlap.query_start_position_in_read_, static_cast<position_in_read_t>(extension));
@@ -264,7 +264,7 @@ void Overlapper::rescue_overlap_ends(std::vector<Overlap>& overlaps,
 
         while (rescue_rounds < max_rescue_rounds)
         {
-            extend_overlap_by_sequence_similarity(overlap, query_view, target_view, 100, 0.9);
+            details::overlapper::extend_overlap_by_sequence_similarity(overlap, query_view, target_view, 100, 0.9);
             ++rescue_rounds;
             if (overlap.query_end_position_in_read_ == prev_query_start &&
                 overlap.query_end_position_in_read_ == prev_query_end &&
