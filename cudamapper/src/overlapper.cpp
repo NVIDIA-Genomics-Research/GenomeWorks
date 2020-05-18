@@ -8,13 +8,9 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 #include <algorithm>
-#include <cstddef>
-#include <future>
-#include <mutex>
 #include <vector>
 
 #include <claragenomics/cudamapper/overlapper.hpp>
-#include <claragenomics/io/fasta_parser.hpp>
 #include <claragenomics/utils/cudautils.hpp>
 #include <claragenomics/utils/signed_integer_utils.hpp>
 #include <claragenomics/types.hpp>
