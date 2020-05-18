@@ -7,13 +7,9 @@
 * distribution of this software and related documentation without an express
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
-#include <algorithm>
-#include <vector>
-
 #include <claragenomics/cudamapper/overlapper.hpp>
 #include <claragenomics/utils/cudautils.hpp>
 #include <claragenomics/utils/signed_integer_utils.hpp>
-#include <claragenomics/types.hpp>
 
 #include "cudamapper_utils.hpp"
 
