@@ -110,22 +110,22 @@ void help(int32_t exit_code = 0)
 /// @brief application parameteres, default or passed through command line
 struct ApplicationParameteres
 {
-    uint32_t k                                  = 15;   // k
-    uint32_t w                                  = 15;   // w
-    std::int32_t num_devices                    = 1;    // d
-    std::int32_t max_index_cache_size_on_device = 100;  // c
-    std::int32_t max_index_cache_size_on_host   = 0;    // C
-    std::int32_t max_cached_memory              = 0;    // m
-    std::int32_t index_size                     = 30;   // i
-    std::int32_t target_index_size              = 30;   // t
-    double filtering_parameter                  = 1.0;  // F
-    std::int32_t alignment_engines              = 0;    // a
-    std::int32_t min_residues                   = 10;   // r
-    std::int32_t min_overlap_len                = 500;  // l
-    std::int32_t min_bases_per_residue          = 100;  // b
-    float min_overlap_fraction                  = 0.95; // z
+    uint32_t k                                  = 15;    // k
+    uint32_t w                                  = 15;    // w
+    std::int32_t num_devices                    = 1;     // d
+    std::int32_t max_index_cache_size_on_device = 100;   // c
+    std::int32_t max_index_cache_size_on_host   = 0;     // C
+    std::int32_t max_cached_memory              = 0;     // m
+    std::int32_t index_size                     = 30;    // i
+    std::int32_t target_index_size              = 30;    // t
+    double filtering_parameter                  = 1.0;   // F
+    std::int32_t alignment_engines              = 0;     // a
+    std::int32_t min_residues                   = 10;    // r
+    std::int32_t min_overlap_len                = 500;   // l
+    std::int32_t min_bases_per_residue          = 100;   // b
+    float min_overlap_fraction                  = 0.95;  // z
+    bool perform_overlap_end_rescue             = false; // R
     bool all_to_all                             = false;
-    bool perform_overlap_end_rescue             = false;
     std::string query_filepath;
     std::string target_filepath;
 };
