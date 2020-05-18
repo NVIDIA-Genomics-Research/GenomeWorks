@@ -74,19 +74,6 @@ std::size_t count_shared_elements(const std::vector<T>& a, const std::vector<T>&
 /// \return The estimated Jaccard index as a float.
 float sequence_jaccard_similarity(const cga_string_view_t& a, const cga_string_view_t& b, std::int32_t kmer_size, std::int32_t stride);
 
-/// \brief Given two sequences 'a' and 'b', calculate the Jaccard containment
-/// The containment is similar to the Jaccard index (or similarity coefficient,
-/// implemented in similarity) but is more robust to strings of different lengths.
-/// Note: This function assumes that a and b are on the same strand; you may need to
-/// reverse-complement one of the strings if testing similarity on strings from different
-/// strands.
-/// \param a A C++ string
-/// \param b A C++ string
-/// \param kmer_size The kmer length to use for estimating similarity.
-/// \param stride The number of bases to stride between kmers.
-/// \return The estimated Jaccard containment as a float.
-float sequence_jaccard_containment(const std::string& a, const std::string& b, std::int32_t kmer_size, std::int32_t stride);
-
 } // namespace cudamapper
 
 } // namespace genomeworks

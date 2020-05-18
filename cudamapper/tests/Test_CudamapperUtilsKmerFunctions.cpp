@@ -76,9 +76,7 @@ TEST(SimilarityTest, similarity_of_identical_seqs_is_1)
     std::string b("AAACCTATGAGGG");
     std::string long_b("AAACCTATGAGGGAAACCTATGAGGG");
     float sim              = sequence_jaccard_similarity(a, b, 4, 1);
-    float long_containment = sequence_jaccard_containment(a, long_b, 4, 1);
     ASSERT_EQ(sim, 1.0);
-    ASSERT_EQ(long_containment, 1.0);
 }
 TEST(SimilarityTest, similarity_of_disjoint_seqs_is_0)
 {

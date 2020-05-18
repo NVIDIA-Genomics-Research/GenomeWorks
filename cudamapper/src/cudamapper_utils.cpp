@@ -197,20 +197,6 @@ std::size_t count_shared_elements(const std::vector<T>& a, const std::vector<T>&
     return shared_count;
 }
 
-float sequence_jaccard_containment(const std::string& a, const std::string& b, const std::int32_t kmer_size, const std::int32_t stride)
-{
-    std::vector<cga_string_view_t> a_kmers = split_into_kmers(a, kmer_size, stride);
-    std::vector<cga_string_view_t> b_kmers = split_into_kmers(b, kmer_size, stride);
-    std::sort(std::begin(a_kmers), std::end(a_kmers));
-    std::sort(std::begin(b_kmers), std::end(b_kmers));
-
-    const std::size_t shared_kmers = count_shared_elements(a_kmers, b_kmers);
-    // Calculate "containment", i.e., the total number of shared elements divided by
-    // the number of elements in the smallest set. Min: 0, Max: 1.
-    std::size_t shortest_kmer_set_length = std::min(a_kmers.size(), b_kmers.size());
-    return static_cast<float>(shared_kmers) / static_cast<float>(shortest_kmer_set_length);
-}
-
 float sequence_jaccard_similarity(const cga_string_view_t& a, const cga_string_view_t& b, const std::int32_t kmer_size, const std::int32_t stride)
 {
     std::vector<cga_string_view_t> a_kmers = split_into_kmers(a, kmer_size, stride);
