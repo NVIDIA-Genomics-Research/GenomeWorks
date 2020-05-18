@@ -212,7 +212,6 @@ void Overlapper::extend_overlap_by_sequence_similarity(Overlap& overlap,
         overlap.query_end_position_in_read_  = overlap.query_end_position_in_read_ + tail_rescue_size;
         overlap.target_end_position_in_read_ = overlap.target_end_position_in_read_ + tail_rescue_size;
     }
-
 }
 
 void Overlapper::rescue_overlap_ends(std::vector<Overlap>& overlaps,
