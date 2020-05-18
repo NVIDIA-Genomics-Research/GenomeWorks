@@ -77,10 +77,6 @@ void reverse_complement(std::string& s, const std::size_t len)
         s[len - 1 - i] = static_cast<char>(complement_array[static_cast<int>(tmp) - 65]);
     }
 }
-std::string string_slice(const std::string& s, const std::size_t start, const std::size_t end)
-{
-    return s.substr(start, end - start);
-}
 
 claraparabricks::genomeworks::cga_string_view_t string_view_slice(const claraparabricks::genomeworks::cga_string_view_t& s, const std::size_t start, const std::size_t end)
 {
