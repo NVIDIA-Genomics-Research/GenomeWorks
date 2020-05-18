@@ -211,6 +211,7 @@ void process_one_device_batch(const IndexBatch& device_batch,
     const std::vector<IndexDescriptor>& target_index_descriptors = device_batch.target_indices;
 
     // fetch indices for this batch from host memory
+    assert(!query_index_descriptors.empty() && !target_index_descriptors.empty());
     device_cache.generate_query_cache_content(query_index_descriptors);
     device_cache.generate_target_cache_content(target_index_descriptors);
 
@@ -284,13 +285,22 @@ void process_one_batch(const BatchOfIndices& batch,
     const IndexBatch& host_batch                  = batch.host_batch;
     const std::vector<IndexBatch>& device_batches = batch.device_batches;
 
+    // if there is only one device batch and it is the same as host bach (which should be the case then) there is no need to copy indices to host
+    // as they will be queried only once
+    const bool skip_copy_to_host = 1 == device_batches.size();
+    assert(!skip_copy_to_host || (host_batch.query_indices == device_batches.front().query_indices && host_batch.target_indices == device_batches.front().target_indices));
+
     // load indices into host memory
     {
+        assert(!host_batch.query_indices.empty() && !host_batch.target_indices.empty() && !device_batches.empty());
+
         CGA_NVTX_RANGE(profiler, "main::process_one_batch::host_indices");
         host_cache.generate_query_cache_content(host_batch.query_indices,
-                                                device_batches.front().query_indices);
+                                                device_batches.front().query_indices,
+                                                skip_copy_to_host);
         host_cache.generate_target_cache_content(host_batch.target_indices,
-                                                 device_batches.front().target_indices);
+                                                 device_batches.front().target_indices,
+                                                 skip_copy_to_host);
     }
 
     // process device batches one by one
