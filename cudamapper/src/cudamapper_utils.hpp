@@ -45,14 +45,6 @@ void print_paf(const std::vector<Overlap>& overlaps,
                std::mutex& write_output_mutex,
                int32_t number_of_devices);
 
-// ///@brief Given a string s, return the substring s[start, end].
-// ///
-// ///@param s A string
-// ///@param start The 0-based start index of the returned substring.
-// ///@param end The 0-based end index of the returned substring
-// ///@return A std::string from s[start] to s[end].
-// std::string string_slice(const std::string& s, std::size_t start, std::size_t end);
-
 /// \brief Given a string s, produce its kmers (length <kmer-length>) and return them as a vector of strings.
 /// \param s A string sequence to kmerize.
 /// \param kmer_size A kmer length to use for producing kmers.
