@@ -12,7 +12,6 @@
 
 #include <claragenomics/cudamapper/types.hpp>
 #include <claragenomics/io/fasta_parser.hpp>
-#include <claragenomics/types.hpp>
 
 #include <thrust/execution_policy.h>
 #include <claragenomics/utils/device_buffer.hpp>
