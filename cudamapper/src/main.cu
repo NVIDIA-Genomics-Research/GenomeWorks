@@ -408,6 +408,9 @@ void align_overlaps(DefaultDeviceAllocator allocator,
 /// \param kmer_size
 /// \param device_id id of device on which query and target indices were created
 /// \param number_of_device
+/// \param kmer_size
+/// \param perform_overlap_end_rescue If true, run rescue_overlap_ends
+/// (which extends overlaps using approximate sequence similarity) on all overlaps.
 void writer_thread_function(std::mutex& overlaps_writer_mtx,
                             std::atomic<int>& num_overlap_chunks_to_print,
                             std::shared_ptr<std::vector<Overlap>> filtered_overlaps,
