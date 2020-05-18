@@ -213,19 +213,6 @@ void Overlapper::extend_overlap_by_sequence_similarity(Overlap& overlap,
         overlap.target_end_position_in_read_ = overlap.target_end_position_in_read_ + tail_rescue_size;
     }
 
-    //     std::cerr <<
-    //     "head sz:" << head_rescue_size << " " <<
-    //     query_head_sequence << " " <<
-    //     target_head_sequence << " " <<
-    //      "head sim: " << head_similarity << " " <<
-    //       "tail sim: " << tail_similarity <<
-    //        std::endl;
-    // std::cerr <<
-    //     "tail sz:" << tail_rescue_size << " " <<
-    //     query_tail_sequence << " " <<
-    //     target_tail_sequence << " " <<
-    //      "tail sim: " << tail_similarity << " " <<
-    //        std::endl;
 }
 
 void Overlapper::rescue_overlap_ends(std::vector<Overlap>& overlaps,
