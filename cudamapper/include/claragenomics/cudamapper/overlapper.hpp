@@ -11,7 +11,6 @@
 #pragma once
 
 #include <claragenomics/cudamapper/types.hpp>
-#include <claragenomics/utils/genomeutils.hpp>
 #include <claragenomics/io/fasta_parser.hpp>
 #include <claragenomics/types.hpp>
 
