@@ -99,6 +99,9 @@ void help(int32_t exit_code = 0)
               << R"(
         -z, --min-overlap-fraction
             Minimum ratio of overlap length to alignment length [0.95].)"
+              << R"(
+        -R, --rescue-overlap-ends
+            Run a kmer-based procedure that attempts to extend overlaps at the ends of the query/target.)"
               << std::endl;
 
     exit(exit_code);
@@ -107,20 +110,21 @@ void help(int32_t exit_code = 0)
 /// @brief application parameteres, default or passed through command line
 struct ApplicationParameteres
 {
-    uint32_t k                                  = 15;   // k
-    uint32_t w                                  = 15;   // w
-    std::int32_t num_devices                    = 1;    // d
-    std::int32_t max_index_cache_size_on_device = 100;  // c
-    std::int32_t max_index_cache_size_on_host   = 0;    // C
-    std::int32_t max_cached_memory              = 0;    // m
-    std::int32_t index_size                     = 30;   // i
-    std::int32_t target_index_size              = 30;   // t
-    double filtering_parameter                  = 1.0;  // F
-    std::int32_t alignment_engines              = 0;    // a
-    std::int32_t min_residues                   = 10;   // r
-    std::int32_t min_overlap_len                = 500;  // l
-    std::int32_t min_bases_per_residue          = 100;  // b
-    float min_overlap_fraction                  = 0.95; // z
+    uint32_t k                                  = 15;    // k
+    uint32_t w                                  = 15;    // w
+    std::int32_t num_devices                    = 1;     // d
+    std::int32_t max_index_cache_size_on_device = 100;   // c
+    std::int32_t max_index_cache_size_on_host   = 0;     // C
+    std::int32_t max_cached_memory              = 0;     // m
+    std::int32_t index_size                     = 30;    // i
+    std::int32_t target_index_size              = 30;    // t
+    double filtering_parameter                  = 1.0;   // F
+    std::int32_t alignment_engines              = 0;     // a
+    std::int32_t min_residues                   = 10;    // r
+    std::int32_t min_overlap_len                = 500;   // l
+    std::int32_t min_bases_per_residue          = 100;   // b
+    float min_overlap_fraction                  = 0.95;  // z
+    bool perform_overlap_end_rescue             = false; // R
     bool all_to_all                             = false;
     std::string query_filepath;
     std::string target_filepath;
@@ -149,10 +153,11 @@ ApplicationParameteres read_input(int argc, char* argv[])
         {"min-overlap-length", required_argument, 0, 'l'},
         {"min-bases-per-residue", required_argument, 0, 'b'},
         {"min-overlap-fraction", required_argument, 0, 'z'},
+        {"rescue-overlap-ends", no_argument, 0, 'R'},
         {"help", no_argument, 0, 'h'},
     };
 
-    std::string optstring = "k:w:d:c:C:m:i:t:F:h:a:r:l:b:z:";
+    std::string optstring = "k:w:d:c:C:m:i:t:F:h:a:r:l:b:z:R";
 
     int32_t argument = 0;
     while ((argument = getopt_long(argc, argv, optstring.c_str(), options, nullptr)) != -1)
@@ -205,6 +210,9 @@ ApplicationParameteres read_input(int argc, char* argv[])
             break;
         case 'z':
             parameters.min_overlap_fraction = atof(optarg);
+            break;
+        case 'R':
+            parameters.perform_overlap_end_rescue = true;
             break;
         case 'h':
             help(0);
@@ -400,15 +408,20 @@ void align_overlaps(DefaultDeviceAllocator allocator,
 /// \param kmer_size
 /// \param device_id id of device on which query and target indices were created
 /// \param number_of_device
+/// \param kmer_size
+/// \param perform_overlap_end_rescue If true, run rescue_overlap_ends
+/// (which extends overlaps using approximate sequence similarity) on all overlaps.
 void writer_thread_function(std::mutex& overlaps_writer_mtx,
                             std::atomic<int>& num_overlap_chunks_to_print,
                             std::shared_ptr<std::vector<Overlap>> filtered_overlaps,
                             const io::FastaParser& query_parser,
                             const io::FastaParser& target_parser,
                             const std::vector<std::string> cigar,
-                            const int32_t kmer_size,
                             const int32_t device_id,
-                            const int32_t number_of_device)
+                            const int32_t number_of_device,
+                            const int32_t kmer_size,
+                            bool perform_overlap_end_rescue)
+
 {
     // This function is expected to run in a separate thread so set current device in order to avoid problems
     // with deallocating indices with different current device than the one on which they were created
@@ -418,6 +431,12 @@ void writer_thread_function(std::mutex& overlaps_writer_mtx,
         CGA_NVTX_RANGE(profiler, "post_process_overlaps");
         // Overlap post processing - add overlaps which can be combined into longer ones.
         Overlapper::post_process_overlaps(*filtered_overlaps);
+    }
+
+    // Perform overlap-end rescue
+    if (perform_overlap_end_rescue)
+    {
+        Overlapper::rescue_overlap_ends(*filtered_overlaps, query_parser, target_parser, 50, 0.5);
     }
 
     {
@@ -702,9 +721,10 @@ int main(int argc, char* argv[])
                               std::ref(*query_parser),
                               std::ref(*target_parser),
                               std::move(cigar),
-                              parameters.k,
                               device_id,
-                              parameters.num_devices);
+                              parameters.num_devices,
+                              parameters.k,
+                              parameters.perform_overlap_end_rescue);
                 t.detach();
             }
 

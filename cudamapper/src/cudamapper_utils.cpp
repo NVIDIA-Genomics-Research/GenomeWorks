@@ -8,10 +8,12 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-#include "cudamapper_utils.hpp"
-
+#include <algorithm>
 #include <cassert>
 #include <thread>
+#include <vector>
+
+#include "cudamapper_utils.hpp"
 
 #include <claragenomics/io/fasta_parser.hpp>
 #include <claragenomics/utils/signed_integer_utils.hpp>
@@ -148,6 +150,64 @@ void print_paf(const std::vector<Overlap>& overlaps,
     {
         thread.join();
     }
+}
+
+std::vector<cga_string_view_t> split_into_kmers(const cga_string_view_t& s, const std::int32_t kmer_size, const std::int32_t stride)
+{
+    const std::size_t kmer_count = s.length() - kmer_size + 1;
+    std::vector<cga_string_view_t> kmers;
+
+    if (s.length() < kmer_size)
+    {
+        kmers.push_back(s);
+        return kmers;
+    }
+
+    for (std::size_t i = 0; i < kmer_count; i += stride)
+    {
+        kmers.push_back(s.substr(i, i + kmer_size));
+    }
+    return kmers;
+}
+
+template <typename T>
+std::size_t count_shared_elements(const std::vector<T>& a, const std::vector<T>& b)
+{
+    std::size_t a_index      = 0;
+    std::size_t b_index      = 0;
+    std::size_t shared_count = 0;
+
+    while (a_index < a.size() && b_index < b.size())
+    {
+        if (a[a_index] == b[b_index])
+        {
+            ++shared_count;
+            ++a_index;
+            ++b_index;
+        }
+        else if (a[a_index] < b[b_index])
+        {
+            ++a_index;
+        }
+        else
+        {
+            ++b_index;
+        }
+    }
+    return shared_count;
+}
+
+float sequence_jaccard_similarity(const cga_string_view_t& a, const cga_string_view_t& b, const std::int32_t kmer_size, const std::int32_t stride)
+{
+    std::vector<cga_string_view_t> a_kmers = split_into_kmers(a, kmer_size, stride);
+    std::vector<cga_string_view_t> b_kmers = split_into_kmers(b, kmer_size, stride);
+    std::sort(std::begin(a_kmers), std::end(a_kmers));
+    std::sort(std::begin(b_kmers), std::end(b_kmers));
+
+    const std::size_t shared_kmers = count_shared_elements(a_kmers, b_kmers);
+    // Calculate the set union size of a and b
+    std::size_t union_size = a_kmers.size() + b_kmers.size() - shared_kmers;
+    return static_cast<float>(shared_kmers) / static_cast<float>(union_size);
 }
 
 } // namespace cudamapper
