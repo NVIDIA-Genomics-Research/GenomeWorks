@@ -201,7 +201,7 @@ int main(int argc, char** argv)
     if (long_read)
     {
         const std::string input_file = std::string(CUDAPOA_BENCHMARK_DATA_DIR) + "/sample-bonito.txt";
-        generate_window_data(input_file, 55, 6, windows, batch_size);
+        generate_window_data(input_file, -1, 6, windows, batch_size);
     }
     else
     {
