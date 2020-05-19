@@ -63,8 +63,8 @@ public:
         int64_t host_size_per_poa, device_size_per_poa;
         std::tie(host_size_fixed, device_size_fixed, host_size_per_poa, device_size_per_poa) = calculate_space_per_poa(batch_size);
 
-        // Using 2x as a buffer.
-        size_t minimum_device_mem = 2 * (device_size_fixed + device_size_per_poa);
+        // Check minimum requirement for device memory
+        size_t minimum_device_mem = device_size_fixed + device_size_per_poa;
         if (avail_mem < minimum_device_mem)
         {
             std::string msg = std::string("Require at least ")
