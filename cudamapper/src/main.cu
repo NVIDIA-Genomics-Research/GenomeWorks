@@ -455,8 +455,17 @@ int main(int argc, char* argv[])
 
     std::mutex output_mutex;
 
-    // split work into batches
-    // TODO: explain in more details
+    // Program should process all combinations of query and target (if query and target are the same half of those can be skipped
+    // due to symmetry). The matrix of query-target combinations is split into tiles called batches. Worker threads (one per GPU)
+    // take batches one by one and process them.
+    // Every batch is small enough for its indices to fit in host memory. Batches are further divided into sub-batches which are
+    // small enough that all their indices fit in device memory.
+    // After a worker thread has taken a batch it generates all necessary indices and saves them in host memory using IndexCacheHost.
+    // It then processes sub-batches one by one but first loading indices into IndexCacheDevice from IndexCacheHost and then finding
+    // the overlaps.
+    // Output formatting and writing is done by a separate thread.
+
+    // Split work into batches
     ThreadsafeDataProvider<BatchOfIndices> batches_of_indices(generate_batches_of_indices(parameters.query_indices_in_host_memory,
                                                                                           parameters.query_indices_in_device_memory,
                                                                                           parameters.target_indices_in_host_memory,
