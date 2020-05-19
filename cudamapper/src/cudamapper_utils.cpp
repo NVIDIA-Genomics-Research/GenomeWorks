@@ -11,7 +11,6 @@
 #include "cudamapper_utils.hpp"
 
 #include <cassert>
-#include <thread>
 
 #include <claragenomics/io/fasta_parser.hpp>
 #include <claragenomics/utils/cudautils.hpp>
@@ -26,28 +25,20 @@ namespace genomeworks
 namespace cudamapper
 {
 
-namespace
+void print_paf(const std::vector<Overlap>& overlaps,
+               const std::vector<std::string>& cigar,
+               const io::FastaParser& query_parser,
+               const io::FastaParser& target_parser,
+               const int32_t kmer_size,
+               std::mutex& write_output_mutex,
+               const int32_t number_of_devices)
 {
+    CGA_NVTX_RANGE(profiler, "print_paf");
 
-/// \brief prints part of data passed to print_paf(), to be run in a separate thread
-/// \param overlaps see print_paf()
-/// \param cigar see print_paf()
-/// \param query_parser see print_paf()
-/// \param target_parser see print_paf()
-/// \param target_parser see print_paf()
-/// \param kmer_size see print_paf()
-/// \param write_output_mutex see print_paf()
-/// \param first_overlap_to_print index of first overlap from overlaps to print
-/// \param number_of_overlaps_to_print number of overlaps to print
-void print_part_of_data(const std::vector<Overlap>& overlaps,
-                        const std::vector<std::string>& cigar,
-                        const io::FastaParser& query_parser,
-                        const io::FastaParser& target_parser,
-                        const int32_t kmer_size,
-                        std::mutex& write_output_mutex,
-                        const int64_t first_overlap_to_print,
-                        const int64_t number_of_overlaps_to_print)
-{
+    assert(!cigar.empty() || (overlaps.size() == cigar.size()));
+
+    const int64_t number_of_overlaps_to_print = get_size<int64_t>(overlaps);
+
     if (number_of_overlaps_to_print <= 0)
     {
         return;
@@ -55,14 +46,14 @@ void print_part_of_data(const std::vector<Overlap>& overlaps,
 
     // All overlaps are saved to a single vector of chars and that vector is then printed to output.
     // Writing overlaps directly to output would be inefficinet as all writes to output have to protected by a mutex.
-    //
-    // Allocate approximately 150 characters for each overlap which will be processed by this thread,
+
+    // Allocate approximately 150 characters for each overlap which will be processed,
     // if more characters are needed buffer will be reallocated.
     std::vector<char> buffer(150 * number_of_overlaps_to_print);
     // characters written buffer so far
     int64_t chars_in_buffer = 0;
 
-    for (int64_t i = first_overlap_to_print; i < first_overlap_to_print + number_of_overlaps_to_print; ++i)
+    for (int64_t i = 0; i < number_of_overlaps_to_print; ++i)
     {
         const std::string& query_read_name  = query_parser.get_sequence_by_id(overlaps[i].query_read_id_).name;
         const std::string& target_read_name = target_parser.get_sequence_by_id(overlaps[i].target_read_id_).name;
@@ -113,46 +104,6 @@ void print_part_of_data(const std::vector<Overlap>& overlaps,
         CGA_NVTX_RANGE(profiler, "print_paf::writing_to_disk");
         std::lock_guard<std::mutex> lg(write_output_mutex);
         printf("%s", buffer.data());
-    }
-}
-
-} // namespace
-
-void print_paf(const std::vector<Overlap>& overlaps,
-               const std::vector<std::string>& cigar,
-               const io::FastaParser& query_parser,
-               const io::FastaParser& target_parser,
-               const int32_t kmer_size,
-               std::mutex& write_output_mutex,
-               const int32_t number_of_devices)
-{
-    CGA_NVTX_RANGE(profiler, "print_paf");
-
-    assert(!cigar.empty() || (overlaps.size() == cigar.size()));
-
-    // divide the work into several threads
-
-    int32_t number_of_threads   = std::thread::hardware_concurrency() / number_of_devices; // We could use a better heuristic here
-    int64_t overlaps_per_thread = get_size<int64_t>(overlaps) / number_of_threads;
-
-    std::vector<std::thread> threads;
-
-    for (int32_t thread_id = 0; thread_id < number_of_threads; ++thread_id)
-    {
-        threads.emplace_back(print_part_of_data,
-                             std::ref(overlaps),
-                             std::ref(cigar),
-                             std::ref(query_parser),
-                             std::ref(target_parser),
-                             kmer_size,
-                             std::ref(write_output_mutex),
-                             thread_id * overlaps_per_thread,
-                             thread_id != number_of_threads - 1 ? overlaps_per_thread : get_size<int64_t>(overlaps) - thread_id * overlaps_per_thread); // last thread prints all remaining overlaps
-    }
-
-    for (std::thread& thread : threads)
-    {
-        thread.join();
     }
 }
 
