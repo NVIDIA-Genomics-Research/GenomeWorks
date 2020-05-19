@@ -8,15 +8,13 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
+#include <atomic>
 #include <algorithm>
 #include <iostream>
-#include <string>
-#include <deque>
-#include <map>
-#include <mutex>
 #include <future>
+#include <mutex>
+#include <string>
 #include <thread>
-#include <atomic>
 
 #include <claragenomics/utils/cudautils.hpp>
 #include <claragenomics/utils/signed_integer_utils.hpp>
@@ -318,7 +316,7 @@ void process_one_batch(const BatchOfIndices& batch,
 /// \param application_parameters
 /// \param overlaps_and_cigars_to_write new data is added as it gets available
 /// \param output_mutex controls access to output to prevent race conditions
-void writer_thread_function(const std::int32_t device_id,
+void writer_thread_function(const int32_t device_id,
                             const ApplicationParameters& application_parameters,
                             ThreadsafeProducerConsumer<OverlapsAndCigars>& overlaps_and_cigars_to_write,
                             std::mutex& output_mutex)
@@ -369,11 +367,13 @@ void writer_thread_function(const std::int32_t device_id,
 /// \param application_parameters
 /// \param output_mutex
 /// \param cuda_stream
-void worker_thread_function(const std::int32_t device_id,
+void worker_thread_function(const int32_t device_id,
                             ThreadsafeDataProvider<BatchOfIndices>& batches_of_indices,
                             const ApplicationParameters& application_parameters,
                             std::mutex& output_mutex,
-                            cudaStream_t cuda_stream)
+                            cudaStream_t cuda_stream,
+                            const int64_t number_of_total_batches,
+                            std::atomic<int64_t>& number_of_processed_batches)
 {
     CGA_NVTX_RANGE(profiler, "main::worker_thread");
 
@@ -420,7 +420,9 @@ void worker_thread_function(const std::int32_t device_id,
     cga_optional_t<BatchOfIndices> batch_of_indices = batches_of_indices.get_next_element();
     while (batch_of_indices) // if optional is empty that means that there are no more batches to process and the thread can finish
     {
-        std::cerr << "Device " << device_id << " took new batch" << std::endl; // TODO: possible race condition, switch to logging library
+        const int64_t batch_number         = number_of_processed_batches.fetch_add(1); // as this is not called atomically with get_next_element() the value does not have to be completely accurate, but this is ok as the value is only use for displaying progress
+        const std::string progress_message = "Device " + std::to_string(device_id) + " took batch " + std::to_string(batch_number + 1) + " out of " + std::to_string(number_of_total_batches) + " batches in total\n";
+        std::cerr << progress_message; // TODO: possible race condition, switch to logging library
 
         process_one_batch(batch_of_indices.value(),
                           application_parameters,
@@ -466,15 +468,18 @@ int main(int argc, char* argv[])
     // Output formatting and writing is done by a separate thread.
 
     // Split work into batches
-    ThreadsafeDataProvider<BatchOfIndices> batches_of_indices(generate_batches_of_indices(parameters.query_indices_in_host_memory,
-                                                                                          parameters.query_indices_in_device_memory,
-                                                                                          parameters.target_indices_in_host_memory,
-                                                                                          parameters.target_indices_in_device_memory,
-                                                                                          parameters.query_parser,
-                                                                                          parameters.target_parser,
-                                                                                          parameters.index_size * 1'000'000,        // value was in MB
-                                                                                          parameters.target_index_size * 1'000'000, // value was in MB
-                                                                                          parameters.all_to_all));
+    std::vector<BatchOfIndices> batches_of_indices_vect = generate_batches_of_indices(parameters.query_indices_in_host_memory,
+                                                                                      parameters.query_indices_in_device_memory,
+                                                                                      parameters.target_indices_in_host_memory,
+                                                                                      parameters.target_indices_in_device_memory,
+                                                                                      parameters.query_parser,
+                                                                                      parameters.target_parser,
+                                                                                      parameters.index_size * 1'000'000,        // value was in MB
+                                                                                      parameters.target_index_size * 1'000'000, // value was in MB
+                                                                                      parameters.all_to_all);
+    const int64_t number_of_total_batches               = get_size<int64_t>(batches_of_indices_vect);
+    std::atomic<int64_t> number_of_processed_batches(0);
+    ThreadsafeDataProvider<BatchOfIndices> batches_of_indices(std::move(batches_of_indices_vect));
 
     // explicitly assign one stream to each GPU
     std::vector<cudaStream_t> cuda_streams(parameters.num_devices);
@@ -482,7 +487,7 @@ int main(int argc, char* argv[])
     // create worker threads (one thread per device)
     // these thread process batches_of_indices one by one
     std::vector<std::thread> worker_threads;
-    for (std::int32_t device_id = 0; device_id < parameters.num_devices; ++device_id)
+    for (int32_t device_id = 0; device_id < parameters.num_devices; ++device_id)
     {
         CGA_CU_CHECK_ERR(cudaSetDevice(device_id));
         CGA_CU_CHECK_ERR(cudaStreamCreate(&cuda_streams[device_id]));
@@ -491,11 +496,13 @@ int main(int argc, char* argv[])
                                     std::ref(batches_of_indices),
                                     std::ref(parameters),
                                     std::ref(output_mutex),
-                                    cuda_streams[device_id]);
+                                    cuda_streams[device_id],
+                                    number_of_total_batches,
+                                    std::ref(number_of_processed_batches));
     }
 
     // wait for all work to be done
-    for (std::int32_t device_id = 0; device_id < parameters.num_devices; ++device_id)
+    for (int32_t device_id = 0; device_id < parameters.num_devices; ++device_id)
     {
         CGA_CU_CHECK_ERR(cudaSetDevice(device_id));
         worker_threads[device_id].join();

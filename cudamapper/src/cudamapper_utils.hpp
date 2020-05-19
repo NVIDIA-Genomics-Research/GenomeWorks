@@ -49,7 +49,7 @@ void print_paf(const std::vector<Overlap>& overlaps,
 /// \brief crated a device allocator
 /// \param max_cached_memory_bytes
 /// \return device allocator
-DefaultDeviceAllocator get_device_allocator(const std::size_t max_cached_memory_bytes);
+DefaultDeviceAllocator get_device_allocator(const size_t max_cached_memory_bytes);
 
 } // namespace cudamapper
 

@@ -84,8 +84,8 @@ void print_paf(const std::vector<Overlap>& overlaps,
                                                      overlaps[i].target_start_position_in_read_,
                                                      overlaps[i].target_end_position_in_read_,
                                                      overlaps[i].num_residues_ * kmer_size, // Print out the number of residue matches multiplied by kmer size to get approximate number of matching bases
-                                                     std::max(std::abs(static_cast<std::int64_t>(overlaps[i].target_start_position_in_read_) - static_cast<std::int64_t>(overlaps[i].target_end_position_in_read_)),
-                                                              std::abs(static_cast<std::int64_t>(overlaps[i].query_start_position_in_read_) - static_cast<std::int64_t>(overlaps[i].query_end_position_in_read_))), //Approximate alignment length
+                                                     std::max(std::abs(static_cast<int64_t>(overlaps[i].target_start_position_in_read_) - static_cast<int64_t>(overlaps[i].target_end_position_in_read_)),
+                                                              std::abs(static_cast<int64_t>(overlaps[i].query_start_position_in_read_) - static_cast<int64_t>(overlaps[i].query_end_position_in_read_))), //Approximate alignment length
                                                      255);
             chars_in_buffer += added_chars;
             // If CIGAR string is generated, output in PAF.
@@ -110,7 +110,7 @@ void print_paf(const std::vector<Overlap>& overlaps,
     }
 }
 
-DefaultDeviceAllocator get_device_allocator(const std::size_t max_cached_memory_bytes)
+DefaultDeviceAllocator get_device_allocator(const size_t max_cached_memory_bytes)
 {
 #ifdef CGA_ENABLE_CACHING_ALLOCATOR
     return {max_cached_memory_bytes};
