@@ -323,7 +323,7 @@ void writer_thread_function(const std::int32_t device_id,
                             ThreadsafeProducerConsumer<OverlapsAndCigars>& overlaps_and_cigars_to_write,
                             std::mutex& output_mutex)
 {
-    CGA_NVTX_RANGE(profiler, "main::writer_thread");
+    CGA_NVTX_RANGE(profiler, ("main::writer_thread_for_device_" + std::to_string(device_id)).c_str());
     // This function is expected to run in a separate thread so set current device in order to avoid problems
     CGA_CU_CHECK_ERR(cudaSetDevice(device_id));
 
@@ -331,26 +331,28 @@ void writer_thread_function(const std::int32_t device_id,
     cga_optional_t<OverlapsAndCigars> data_to_write = overlaps_and_cigars_to_write.get_next_element();
     while (data_to_write) // if optional is empty that means that there will be no more overlaps to process and the thread can finish
     {
-        CGA_NVTX_RANGE(profiler, "main::writer_thread::one_set");
-        std::vector<Overlap>& overlaps         = data_to_write->overlaps;
-        const std::vector<std::string>& cigars = data_to_write->cigars;
-
         {
-            CGA_NVTX_RANGE(profiler, "main::writer_thread::postprocessing");
-            // Overlap post processing - add overlaps which can be combined into longer ones.
-            Overlapper::post_process_overlaps(data_to_write->overlaps);
-        }
+            CGA_NVTX_RANGE(profiler, "main::writer_thread::one_set");
+            std::vector<Overlap>& overlaps         = data_to_write->overlaps;
+            const std::vector<std::string>& cigars = data_to_write->cigars;
 
-        // write to output
-        {
-            CGA_NVTX_RANGE(profiler, "main::writer_thread::print_paf");
-            print_paf(overlaps,
-                      cigars,
-                      *application_parameters.query_parser,
-                      *application_parameters.query_parser,
-                      application_parameters.kmer_size,
-                      output_mutex,
-                      application_parameters.num_devices);
+            {
+                CGA_NVTX_RANGE(profiler, "main::writer_thread::postprocessing");
+                // Overlap post processing - add overlaps which can be combined into longer ones.
+                Overlapper::post_process_overlaps(data_to_write->overlaps);
+            }
+
+            // write to output
+            {
+                CGA_NVTX_RANGE(profiler, "main::writer_thread::print_paf");
+                print_paf(overlaps,
+                          cigars,
+                          *application_parameters.query_parser,
+                          *application_parameters.query_parser,
+                          application_parameters.kmer_size,
+                          output_mutex,
+                          application_parameters.num_devices);
+            }
         }
 
         data_to_write = overlaps_and_cigars_to_write.get_next_element();
@@ -398,12 +400,21 @@ void worker_thread_function(const std::int32_t device_id,
     // data structure used to exchnage data with writer_thread
     ThreadsafeProducerConsumer<OverlapsAndCigars> overlaps_and_cigars_to_write;
 
-    // writer_thread runs in the background and writes overlaps and cigars to output as they become available in overlaps_and_cigars_to_write
-    std::thread writer_thread(writer_thread_function,
-                              device_id,
-                              std::ref(application_parameters),
-                              std::ref(overlaps_and_cigars_to_write),
-                              std::ref(output_mutex));
+    // There should be at least one writter_thread per worker_thread. If more threads are available one thread should be reserved for
+    // worker_thread and all other threads should be writter_threads
+    const int32_t threads_per_device         = (std::thread::hardware_concurrency() + application_parameters.num_devices - 1) / application_parameters.num_devices;
+    const int32_t writter_threads_per_device = std::max(threads_per_device - 1, 1);
+
+    // writer_threads run in the background and write overlaps and cigars to output as they become available in overlaps_and_cigars_to_write
+    std::vector<std::thread> writer_threads;
+    for (int32_t i = 0; i < writter_threads_per_device; ++i)
+    {
+        writer_threads.emplace_back(writer_thread_function,
+                                    device_id,
+                                    std::ref(application_parameters),
+                                    std::ref(overlaps_and_cigars_to_write),
+                                    std::ref(output_mutex));
+    }
 
     // keep processing batches of indices until there are none left
     cga_optional_t<BatchOfIndices> batch_of_indices = batches_of_indices.get_next_element();
@@ -425,7 +436,10 @@ void worker_thread_function(const std::int32_t device_id,
     // tell writer thread that there will be no more overlaps and it can finish once it has written all overlaps
     overlaps_and_cigars_to_write.signal_pushed_last_element();
 
-    writer_thread.join();
+    for (std::thread& writer_thread : writer_threads)
+    {
+        writer_thread.join();
+    }
 
     // by this point all GPU work should anyway be done as writer_thread also finished and all GPU work had to be done before last values could be written
     CGA_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));

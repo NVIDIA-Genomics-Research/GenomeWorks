@@ -53,52 +53,55 @@ void print_paf(const std::vector<Overlap>& overlaps,
     // characters written buffer so far
     int64_t chars_in_buffer = 0;
 
-    for (int64_t i = 0; i < number_of_overlaps_to_print; ++i)
     {
-        const std::string& query_read_name  = query_parser.get_sequence_by_id(overlaps[i].query_read_id_).name;
-        const std::string& target_read_name = target_parser.get_sequence_by_id(overlaps[i].target_read_id_).name;
-        // (over)estimate the number of character that are going to be needed
-        // 150 is an overestimate of number of characters that are going to be needed for non-string values
-        int32_t expected_chars = 150 + get_size<int32_t>(query_read_name) + get_size<int32_t>(target_read_name);
-        if (!cigar.empty())
+        CGA_NVTX_RANGE(profiler, "print_paf::formatting_output");
+        for (int64_t i = 0; i < number_of_overlaps_to_print; ++i)
         {
-            expected_chars += get_size<int32_t>(cigar[i]);
+            const std::string& query_read_name  = query_parser.get_sequence_by_id(overlaps[i].query_read_id_).name;
+            const std::string& target_read_name = target_parser.get_sequence_by_id(overlaps[i].target_read_id_).name;
+            // (over)estimate the number of character that are going to be needed
+            // 150 is an overestimate of number of characters that are going to be needed for non-string values
+            int32_t expected_chars = 150 + get_size<int32_t>(query_read_name) + get_size<int32_t>(target_read_name);
+            if (!cigar.empty())
+            {
+                expected_chars += get_size<int32_t>(cigar[i]);
+            }
+            // if there is not enough space in buffer reallocate
+            if (get_size<int64_t>(buffer) - chars_in_buffer < expected_chars)
+            {
+                buffer.resize(buffer.size() * 2 + expected_chars);
+            }
+            // Add basic overlap information.
+            const int32_t added_chars = std::sprintf(buffer.data() + chars_in_buffer,
+                                                     "%s\t%lu\t%i\t%i\t%c\t%s\t%lu\t%i\t%i\t%i\t%ld\t%i",
+                                                     query_read_name.c_str(),
+                                                     query_parser.get_sequence_by_id(overlaps[i].query_read_id_).seq.length(),
+                                                     overlaps[i].query_start_position_in_read_,
+                                                     overlaps[i].query_end_position_in_read_,
+                                                     static_cast<unsigned char>(overlaps[i].relative_strand),
+                                                     target_read_name.c_str(),
+                                                     target_parser.get_sequence_by_id(overlaps[i].target_read_id_).seq.length(),
+                                                     overlaps[i].target_start_position_in_read_,
+                                                     overlaps[i].target_end_position_in_read_,
+                                                     overlaps[i].num_residues_ * kmer_size, // Print out the number of residue matches multiplied by kmer size to get approximate number of matching bases
+                                                     std::max(std::abs(static_cast<std::int64_t>(overlaps[i].target_start_position_in_read_) - static_cast<std::int64_t>(overlaps[i].target_end_position_in_read_)),
+                                                              std::abs(static_cast<std::int64_t>(overlaps[i].query_start_position_in_read_) - static_cast<std::int64_t>(overlaps[i].query_end_position_in_read_))), //Approximate alignment length
+                                                     255);
+            chars_in_buffer += added_chars;
+            // If CIGAR string is generated, output in PAF.
+            if (!cigar.empty())
+            {
+                const int32_t added_cigar_chars = std::sprintf(buffer.data() + chars_in_buffer,
+                                                               "\tcg:Z:%s",
+                                                               cigar[i].c_str());
+                chars_in_buffer += added_cigar_chars;
+            }
+            // Add new line to demarcate new entry.
+            buffer[chars_in_buffer] = '\n';
+            ++chars_in_buffer;
         }
-        // if there is not enough space in buffer reallocate
-        if (get_size<int64_t>(buffer) - chars_in_buffer < expected_chars)
-        {
-            buffer.resize(buffer.size() * 2 + expected_chars);
-        }
-        // Add basic overlap information.
-        const int32_t added_chars = std::sprintf(buffer.data() + chars_in_buffer,
-                                                 "%s\t%lu\t%i\t%i\t%c\t%s\t%lu\t%i\t%i\t%i\t%ld\t%i",
-                                                 query_read_name.c_str(),
-                                                 query_parser.get_sequence_by_id(overlaps[i].query_read_id_).seq.length(),
-                                                 overlaps[i].query_start_position_in_read_,
-                                                 overlaps[i].query_end_position_in_read_,
-                                                 static_cast<unsigned char>(overlaps[i].relative_strand),
-                                                 target_read_name.c_str(),
-                                                 target_parser.get_sequence_by_id(overlaps[i].target_read_id_).seq.length(),
-                                                 overlaps[i].target_start_position_in_read_,
-                                                 overlaps[i].target_end_position_in_read_,
-                                                 overlaps[i].num_residues_ * kmer_size, // Print out the number of residue matches multiplied by kmer size to get approximate number of matching bases
-                                                 std::max(std::abs(static_cast<std::int64_t>(overlaps[i].target_start_position_in_read_) - static_cast<std::int64_t>(overlaps[i].target_end_position_in_read_)),
-                                                          std::abs(static_cast<std::int64_t>(overlaps[i].query_start_position_in_read_) - static_cast<std::int64_t>(overlaps[i].query_end_position_in_read_))), //Approximate alignment length
-                                                 255);
-        chars_in_buffer += added_chars;
-        // If CIGAR string is generated, output in PAF.
-        if (!cigar.empty())
-        {
-            const int32_t added_cigar_chars = std::sprintf(buffer.data() + chars_in_buffer,
-                                                           "\tcg:Z:%s",
-                                                           cigar[i].c_str());
-            chars_in_buffer += added_cigar_chars;
-        }
-        // Add new line to demarcate new entry.
-        buffer[chars_in_buffer] = '\n';
-        ++chars_in_buffer;
+        buffer[chars_in_buffer] = '\0';
     }
-    buffer[chars_in_buffer] = '\0';
 
     {
         CGA_NVTX_RANGE(profiler, "print_paf::writing_to_disk");
