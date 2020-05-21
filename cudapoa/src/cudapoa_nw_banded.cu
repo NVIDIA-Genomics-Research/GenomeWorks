@@ -64,7 +64,7 @@ __device__ ScoreT* get_score_ptr(ScoreT* scores, SizeT row, SizeT column, float 
         col_idx = column - band_start;
     }
 
-    return &scores[(col_idx) + row * CUDAPOA_BANDED_MAX_MATRIX_SEQUENCE_DIMENSION];
+    return &scores[(col_idx) + row * (band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING)];
 };
 
 template <typename ScoreT, typename SizeT>
@@ -82,7 +82,7 @@ __device__ void set_score(ScoreT* scores, SizeT row, SizeT column, ScoreT value,
         col_idx = column - band_start;
     }
 
-    scores[col_idx + row * CUDAPOA_BANDED_MAX_MATRIX_SEQUENCE_DIMENSION] = value;
+    scores[col_idx + row * (band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING)] = value;
 }
 
 template <typename ScoreT, typename SizeT>
@@ -188,6 +188,7 @@ __device__
                              ScoreT* scores,
                              SizeT* alignment_graph,
                              SizeT* alignment_read,
+                             SizeT band_width,
                              ScoreT gap_score,
                              ScoreT mismatch_score,
                              ScoreT match_score)
@@ -201,12 +202,11 @@ __device__
     //Calculate gradient for the scores matrix
     float gradient = float(read_length + 1) / float(graph_count + 1);
 
-    SizeT band_width = CUDAPOA_BAND_WIDTH;
-
-    SizeT max_column = read_length + 1;
+    SizeT max_column                    = read_length + 1;
+    SizeT max_matrix_sequence_dimension = band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING;
 
     // Initialise the horizontal boundary of the score matrix
-    for (SizeT j = lane_idx; j < CUDAPOA_BANDED_MAX_MATRIX_SEQUENCE_DIMENSION; j += WARP_SIZE)
+    for (SizeT j = lane_idx; j < max_matrix_sequence_dimension; j += WARP_SIZE)
     {
         set_score(scores, static_cast<SizeT>(0), j, static_cast<ScoreT>(j * gap_score), gradient, band_width, max_column);
     }
@@ -347,10 +347,10 @@ __device__
             // which can be used to compute the first cell of the next warp.
             first_element_prev_score = __shfl_sync(FULL_MASK, score.s3, WARP_SIZE - 1);
 
-            scores[score_gIdx * CUDAPOA_BANDED_MAX_MATRIX_SEQUENCE_DIMENSION + read_pos + 1 - band_start] = score.s0;
-            scores[score_gIdx * CUDAPOA_BANDED_MAX_MATRIX_SEQUENCE_DIMENSION + read_pos + 2 - band_start] = score.s1;
-            scores[score_gIdx * CUDAPOA_BANDED_MAX_MATRIX_SEQUENCE_DIMENSION + read_pos + 3 - band_start] = score.s2;
-            scores[score_gIdx * CUDAPOA_BANDED_MAX_MATRIX_SEQUENCE_DIMENSION + read_pos + 4 - band_start] = score.s3;
+            scores[score_gIdx * max_matrix_sequence_dimension + read_pos + 1 - band_start] = score.s0;
+            scores[score_gIdx * max_matrix_sequence_dimension + read_pos + 2 - band_start] = score.s1;
+            scores[score_gIdx * max_matrix_sequence_dimension + read_pos + 3 - band_start] = score.s2;
+            scores[score_gIdx * max_matrix_sequence_dimension + read_pos + 4 - band_start] = score.s3;
 
             __syncwarp();
         }

@@ -131,7 +131,7 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
 
     ScoreT* scores = 0;
     if (cuda_banded_alignment)
-        scores = &scores_d[max_graph_dimension * CUDAPOA_BANDED_MAX_MATRIX_SEQUENCE_DIMENSION * window_idx];
+        scores = &scores_d[max_graph_dimension * (banded_alignment_bandwidth + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING) * window_idx];
     else
         scores = &scores_d[scores_offset];
 
@@ -246,6 +246,7 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
                                                                                 scores,
                                                                                 alignment_graph,
                                                                                 alignment_read,
+                                                                                banded_alignment_bandwidth,
                                                                                 gap_score,
                                                                                 mismatch_score,
                                                                                 match_score);
