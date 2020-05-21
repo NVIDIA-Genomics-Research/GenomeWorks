@@ -201,7 +201,7 @@ __device__
     //Calculate gradient for the scores matrix
     float gradient = float(read_length + 1) / float(graph_count + 1);
 
-    SizeT band_width = WARP_SIZE * CELLS_PER_THREAD;
+    SizeT band_width = CUDAPOA_BAND_WIDTH;
 
     SizeT max_column = read_length + 1;
 
@@ -267,7 +267,7 @@ __device__
 
         SeqT graph_base = nodes[node_id];
 
-        SizeT read_pos = lane_idx * CELLS_PER_THREAD + band_start;
+        for (SizeT read_pos = lane_idx * CELLS_PER_THREAD + band_start; read_pos < band_start + band_width; read_pos += WARP_SIZE * CELLS_PER_THREAD)
         {
             SizeT rIdx        = read_pos / CELLS_PER_THREAD;
             SeqT4<SeqT> read4 = d_read4[rIdx];
