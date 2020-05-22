@@ -67,7 +67,7 @@ struct BatchSize
     /// Maximum horizontal dimension of scoring matrix, which stores sequences
     int32_t max_matrix_sequence_dimension = max_sequence_size;
     /// Bandwidth used in banded alignment
-    int32_t alignment_bandwidth = 128;
+    int32_t alignment_bandwidth;
     /// Maximum number of equences per POA group
     int32_t max_sequences_per_poa;
 
@@ -81,8 +81,8 @@ struct BatchSize
         , max_matrix_graph_dimension(cudautils::align<int32_t, 4>(max_nodes_per_window))
         , max_matrix_graph_dimension_banded(cudautils::align<int32_t, 4>(max_nodes_per_window_banded))
         , max_matrix_sequence_dimension(cudautils::align<int32_t, 4>(max_sequence_size))
-        /// ensure 32-byte alignment for bandwidth
-        , alignment_bandwidth(cudautils::align<int32_t, 32>(bandwidth))
+        /// ensure 128-alignment for bandwidth size
+        , alignment_bandwidth(cudautils::align<int32_t, 128>(bandwidth))
         , max_sequences_per_poa(max_seq_per_poa)
 
     {
@@ -102,8 +102,8 @@ struct BatchSize
         , max_matrix_graph_dimension(cudautils::align<int32_t, 4>(max_nodes_per_window))
         , max_matrix_graph_dimension_banded(cudautils::align<int32_t, 4>(max_nodes_per_window_banded))
         , max_matrix_sequence_dimension(cudautils::align<int32_t, 4>(max_sequence_size))
-        /// ensure 32-byte alignment for bandwidth
-        , alignment_bandwidth(cudautils::align<int32_t, 32>(bandwidth))
+        /// ensure 128-alignment for bandwidth size
+        , alignment_bandwidth(cudautils::align<int32_t, 128>(bandwidth))
         , max_sequences_per_poa(max_seq_per_poa)
     {
         throw_on_negative(max_seq_sz, "max_sequence_size cannot be negative.");

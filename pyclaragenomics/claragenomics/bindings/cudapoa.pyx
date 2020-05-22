@@ -73,6 +73,7 @@ cdef class CudaPoaBatch:
             mismatch_score=-6,
             match_score=8,
             cuda_banded_alignment=False,
+            bandwidth_size=128,
             max_concensus_size=None,
             max_nodes_per_window=None,
             max_nodes_per_window_banded=None,
@@ -92,6 +93,7 @@ cdef class CudaPoaBatch:
             mismatch_score : Penalty for mismatches
             match_score : Reward for match
             cuda_banded_alignment : Run POA using banded alignment
+            bandwidth_size : Bandwidth size if using banded alignment
             max_concensus_size : Maximum size of final consensus
             max_nodes_per_window : Maximum number of nodes in a graph, 1 graph per window
             max_nodes_per_window_banded : Maximum number of nodes in a graph, 1 graph per window in banded mode
@@ -116,6 +118,7 @@ cdef class CudaPoaBatch:
         # Since cython make_unique doesn't accept python objects, need to
         # store it in a cdef and then pass into the make unique call
         cdef int32_t mx_seq_sz = max_sequence_size
+        cdef int32_t bandwidth_sz = bandwidth_size
         cdef int32_t mx_seq_per_poa = max_sequences_per_poa
         cdef int32_t mx_concensus_sz = \
             2 * max_sequence_size if max_concensus_size is None else max_concensus_size
@@ -126,7 +129,7 @@ cdef class CudaPoaBatch:
 
         self.batch_size = make_unique[cudapoa.BatchSize](
             mx_seq_sz, mx_concensus_sz, mx_nodes_per_w,
-            mx_nodes_per_w_banded, mx_seq_per_poa)
+            mx_nodes_per_w_banded, bandwidth_sz, mx_seq_per_poa)
 
         self.batch = cudapoa.create_batch(
             device_id,
@@ -151,6 +154,7 @@ cdef class CudaPoaBatch:
             mismatch_score=-6,
             match_score=8,
             cuda_banded_alignment=False,
+            bandwidth_size=128,
             max_concensus_size=None,
             max_nodes_per_window=None,
             max_nodes_per_window_banded=None,
