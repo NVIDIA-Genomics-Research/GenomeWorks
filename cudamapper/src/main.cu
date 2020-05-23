@@ -28,6 +28,7 @@
 #include <claragenomics/cudamapper/matcher.hpp>
 #include <claragenomics/cudamapper/overlapper.hpp>
 
+#include "claragenomics/cudamapper/version.hpp"
 #include "cudamapper_utils.hpp"
 #include "index_descriptor.hpp"
 #include "overlapper_triggered.hpp"
@@ -46,6 +47,16 @@ namespace cudamapper
 
 namespace
 {
+
+void printVersion(bool exit_on_completion=true)
+{
+    std::cerr << "Version: " << VERSION << std::endl;
+
+    if (exit_on_completion)
+    {
+        exit(1);
+    }
+}
 
 /// @brief prints help message
 /// @param exit_code
@@ -102,7 +113,10 @@ void help(int32_t exit_code = 0)
               << R"(
         -R, --rescue-overlap-ends
             Run a kmer-based procedure that attempts to extend overlaps at the ends of the query/target.)"
-              << std::endl;
+            << R"(
+        -v, --version
+            Version information)"
+            << std::endl;
 
     exit(exit_code);
 }
@@ -154,10 +168,11 @@ ApplicationParameteres read_input(int argc, char* argv[])
         {"min-bases-per-residue", required_argument, 0, 'b'},
         {"min-overlap-fraction", required_argument, 0, 'z'},
         {"rescue-overlap-ends", no_argument, 0, 'R'},
+        {"version", no_argument, 0, 'v'},
         {"help", no_argument, 0, 'h'},
     };
 
-    std::string optstring = "k:w:d:c:C:m:i:t:F:h:a:r:l:b:z:R";
+    std::string optstring = "k:w:d:c:C:m:i:t:F:h:a:r:l:b:z:R:v";
 
     int32_t argument = 0;
     while ((argument = getopt_long(argc, argv, optstring.c_str(), options, nullptr)) != -1)
@@ -214,6 +229,8 @@ ApplicationParameteres read_input(int argc, char* argv[])
         case 'R':
             parameters.perform_overlap_end_rescue = true;
             break;
+        case 'v':
+            printVersion();
         case 'h':
             help(0);
         default:
