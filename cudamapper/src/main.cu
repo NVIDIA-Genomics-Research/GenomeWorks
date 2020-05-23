@@ -48,7 +48,7 @@ namespace cudamapper
 namespace
 {
 
-void printVersion(bool exit_on_completion=true)
+void printVersion(bool exit_on_completion = true)
 {
     std::cerr << "Version: " << VERSION << std::endl;
 
@@ -113,10 +113,10 @@ void help(int32_t exit_code = 0)
               << R"(
         -R, --rescue-overlap-ends
             Run a kmer-based procedure that attempts to extend overlaps at the ends of the query/target.)"
-            << R"(
+              << R"(
         -v, --version
             Version information)"
-            << std::endl;
+              << std::endl;
 
     exit(exit_code);
 }
