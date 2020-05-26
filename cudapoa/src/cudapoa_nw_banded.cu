@@ -64,7 +64,8 @@ __device__ ScoreT* get_score_ptr(ScoreT* scores, SizeT row, SizeT column, float 
         col_idx = column - band_start;
     }
 
-    return &scores[(col_idx) + row * (band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING)];
+    int64_t score_index = static_cast<int64_t>(col_idx) + static_cast<int64_t>(row) * static_cast<int64_t>(band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING);
+    return &scores[score_index];
 };
 
 template <typename ScoreT, typename SizeT>
@@ -82,7 +83,8 @@ __device__ void set_score(ScoreT* scores, SizeT row, SizeT column, ScoreT value,
         col_idx = column - band_start;
     }
 
-    scores[col_idx + row * (band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING)] = value;
+    int64_t score_index = static_cast<int64_t>(col_idx) + static_cast<int64_t>(row) * static_cast<int64_t>(band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING);
+    scores[score_index] = value;
 }
 
 template <typename ScoreT, typename SizeT>
@@ -198,6 +200,7 @@ __device__
     const ScoreT min_score_value              = 2 * abs(min(min(gap_score, mismatch_score), -match_score) - 1) + score_type_min_limit;
 
     int16_t lane_idx = threadIdx.x % WARP_SIZE;
+    int64_t score_index;
 
     //Calculate gradient for the scores matrix
     float gradient = float(read_length + 1) / float(graph_count + 1);
@@ -347,10 +350,12 @@ __device__
             // which can be used to compute the first cell of the next warp.
             first_element_prev_score = __shfl_sync(FULL_MASK, score.s3, WARP_SIZE - 1);
 
-            scores[score_gIdx * max_matrix_sequence_dimension + read_pos + 1 - band_start] = score.s0;
-            scores[score_gIdx * max_matrix_sequence_dimension + read_pos + 2 - band_start] = score.s1;
-            scores[score_gIdx * max_matrix_sequence_dimension + read_pos + 3 - band_start] = score.s2;
-            scores[score_gIdx * max_matrix_sequence_dimension + read_pos + 4 - band_start] = score.s3;
+            score_index = static_cast<int64_t>(read_pos + 1 - band_start) + static_cast<int64_t>(score_gIdx) * static_cast<int64_t>(max_matrix_sequence_dimension);
+
+            scores[score_index]      = score.s0;
+            scores[score_index + 1L] = score.s1;
+            scores[score_index + 2L] = score.s2;
+            scores[score_index + 3L] = score.s3;
 
             __syncwarp();
         }

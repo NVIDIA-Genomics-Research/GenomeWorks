@@ -385,6 +385,7 @@ void generatePOAtemplated(genomeworks::cudapoa::OutputDetails* output_details_d,
     ScoreT* scores         = alignment_details_d->scores;
     SizeT* alignment_graph = alignment_details_d->alignment_graph;
     SizeT* alignment_read  = alignment_details_d->alignment_read;
+
     // unpack graph details
     uint8_t* nodes                          = graph_details_d->nodes;
     SizeT* node_alignments                  = graph_details_d->node_alignments;
