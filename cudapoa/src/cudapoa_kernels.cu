@@ -127,13 +127,17 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
     uint16_t* sorted_poa_local_edge_count = &sorted_poa_local_edge_count_d[window_idx * max_nodes_per_window];
 
     int32_t scores_width = window_details_d[window_idx].scores_width;
-    size_t scores_offset = window_details_d[window_idx].scores_offset * max_graph_dimension;
 
-    ScoreT* scores = 0;
+    int64_t scores_offset;
     if (cuda_banded_alignment)
-        scores = &scores_d[max_graph_dimension * (banded_alignment_bandwidth + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING) * window_idx];
+    {
+        scores_offset = static_cast<int64_t>(max_graph_dimension) * static_cast<int64_t>(banded_alignment_bandwidth + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING) * static_cast<int64_t>(window_idx);
+    }
     else
-        scores = &scores_d[scores_offset];
+    {
+        scores_offset = static_cast<int64_t>(window_details_d[window_idx].scores_offset) * static_cast<int64_t>(max_graph_dimension);
+    }
+    ScoreT* scores = &scores_d[scores_offset];
 
     SizeT* alignment_graph         = &alignment_graph_d[max_graph_dimension * window_idx];
     SizeT* alignment_read          = &alignment_read_d[max_graph_dimension * window_idx];
