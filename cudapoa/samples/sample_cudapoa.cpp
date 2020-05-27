@@ -122,7 +122,7 @@ void process_batch(Batch* batch, bool msa, bool print)
     }
 }
 
-void generate_window_data(const std::string& input_file, const int number_of_windows, const int max_sequences_per_poa,
+void generate_window_data(const std::string& input_file, const int number_of_windows, const int max_sequences_per_poa, const int band_width,
                           std::vector<std::vector<std::string>>& windows, BatchSize& batch_size)
 {
     parse_window_data_file(windows, input_file, number_of_windows); // Generate windows.
@@ -137,21 +137,22 @@ void generate_window_data(const std::string& input_file, const int number_of_win
         }
     }
 
-    batch_size = BatchSize(max_read_length, max_sequences_per_poa);
+    batch_size = BatchSize(max_read_length, max_sequences_per_poa, band_width);
 }
 
 int main(int argc, char** argv)
 {
     // Process options
-    int c            = 0;
-    bool msa         = false;
-    bool long_read   = false;
-    bool banded      = true;
-    bool help        = false;
-    bool print       = false;
-    bool print_graph = false;
+    int c              = 0;
+    bool msa           = false;
+    bool long_read     = false;
+    bool banded        = true;
+    int32_t band_width = 128;
+    bool help          = false;
+    bool print         = false;
+    bool print_graph   = false;
 
-    while ((c = getopt(argc, argv, "mlfpgh")) != -1)
+    while ((c = getopt(argc, argv, "mlfb:pgh")) != -1)
     {
         switch (c)
         {
@@ -163,6 +164,9 @@ int main(int argc, char** argv)
             break;
         case 'f':
             banded = false;
+            break;
+        case 'b':
+            band_width = atoi(optarg);
             break;
         case 'p':
             print = true;
@@ -184,10 +188,17 @@ int main(int argc, char** argv)
         std::cout << "-m : Generate MSA (if not provided, generates consensus by default)" << std::endl;
         std::cout << "-l : Perform long-read sample (if not provided, will run short-read sample by default)" << std::endl;
         std::cout << "-f : Perform full alignment (if not provided, banded alignment is used by default)" << std::endl;
+        std::cout << "-b : Band-width used in banded alignment. It should be multiple of 128. This option is ignored if option -f is used. Default size 128" << std::endl;
         std::cout << "-p : Print the MSA or consensus output to stdout" << std::endl;
         std::cout << "-g : Print POA graph in dot format, this option is only for long-read sample" << std::endl;
         std::cout << "-h : Print help message" << std::endl;
         std::exit(0);
+    }
+
+    if (cudautils::align<int32_t, 128>(band_width) <= 0)
+    {
+        std::cerr << "band-width of size " << band_width << " is not allowed. See option -b" << std::endl;
+        exit(1);
     }
 
     // Load input data. Each POA group is represented as a vector of strings. The sample
