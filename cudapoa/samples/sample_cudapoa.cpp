@@ -188,7 +188,7 @@ int main(int argc, char** argv)
         std::cout << "-m : Generate MSA (if not provided, generates consensus by default)" << std::endl;
         std::cout << "-l : Perform long-read sample (if not provided, will run short-read sample by default)" << std::endl;
         std::cout << "-f : Perform full alignment (if not provided, banded alignment is used by default)" << std::endl;
-        std::cout << "-b : Band-width used in banded alignment. It should be multiple of 128. This option is ignored if option -f is used. Default size 128" << std::endl;
+        std::cout << "-b : Band-width used in banded alignment. It should be multiple of 128. This option is ignored if option -f is used. Default size [128]" << std::endl;
         std::cout << "-p : Print the MSA or consensus output to stdout" << std::endl;
         std::cout << "-g : Print POA graph in dot format, this option is only for long-read sample" << std::endl;
         std::cout << "-h : Print help message" << std::endl;
@@ -212,12 +212,12 @@ int main(int argc, char** argv)
     if (long_read)
     {
         const std::string input_file = std::string(CUDAPOA_BENCHMARK_DATA_DIR) + "/sample-bonito.txt";
-        generate_window_data(input_file, -1, 6, windows, batch_size);
+        generate_window_data(input_file, -1, 6, band_width, windows, batch_size);
     }
     else
     {
         const std::string input_file = std::string(CUDAPOA_BENCHMARK_DATA_DIR) + "/sample-windows.txt";
-        generate_window_data(input_file, 1000, 100, windows, batch_size);
+        generate_window_data(input_file, 1000, 100, band_width, windows, batch_size);
     }
 
     // Initialize batch.
