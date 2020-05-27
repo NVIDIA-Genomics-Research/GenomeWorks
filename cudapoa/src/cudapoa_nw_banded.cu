@@ -105,10 +105,10 @@ __device__ void initialize_band(ScoreT* scores, SizeT row, ScoreT value, float g
 };
 
 template <typename ScoreT, typename SizeT>
-__device__ ScoreT get_score(ScoreT* scores, SizeT row, SizeT column, float gradient, SizeT bandwidth, SizeT max_column, const ScoreT min_score_value)
+__device__ ScoreT get_score(ScoreT* scores, SizeT row, SizeT column, float gradient, SizeT band_width, SizeT max_column, const ScoreT min_score_value)
 {
-    SizeT band_start = get_band_start_for_row(row, gradient, bandwidth, max_column);
-    SizeT band_end   = band_start + bandwidth;
+    SizeT band_start = get_band_start_for_row(row, gradient, band_width, max_column);
+    SizeT band_end   = band_start + band_width;
 
     if (((column > band_end) || (column < band_start)) && column != 0)
     {
@@ -116,7 +116,7 @@ __device__ ScoreT get_score(ScoreT* scores, SizeT row, SizeT column, float gradi
     }
     else
     {
-        return *get_score_ptr(scores, row, column, gradient, bandwidth, max_column);
+        return *get_score_ptr(scores, row, column, gradient, band_width, max_column);
     }
 }
 
@@ -127,7 +127,7 @@ __device__ ScoreT4<ScoreT> get_scores(SizeT read_pos,
                                       ScoreT gap_score,
                                       ScoreT4<ScoreT> char_profile,
                                       float gradient,
-                                      SizeT bandwidth,
+                                      SizeT band_width,
                                       ScoreT default_value,
                                       SizeT max_column)
 {
@@ -140,9 +140,9 @@ __device__ ScoreT4<ScoreT> get_scores(SizeT read_pos,
     // using a single load inst, and then extracting necessary part of
     // of the data using bit arithmatic. Also reduces register count.
 
-    SizeT band_start = get_band_start_for_row(node, gradient, bandwidth, max_column);
+    SizeT band_start = get_band_start_for_row(node, gradient, band_width, max_column);
 
-    SizeT band_end = static_cast<SizeT>(band_start + bandwidth + CELLS_PER_THREAD);
+    SizeT band_end = static_cast<SizeT>(band_start + band_width + CELLS_PER_THREAD);
 
     if (((static_cast<SizeT>(read_pos + 1) > band_end) || (static_cast<SizeT>(read_pos + 1) < band_start)) && static_cast<SizeT>(read_pos + 1) != 0)
     {
@@ -150,7 +150,7 @@ __device__ ScoreT4<ScoreT> get_scores(SizeT read_pos,
     }
     else
     {
-        ScoreT4<ScoreT>* pred_scores = (ScoreT4<ScoreT>*)get_score_ptr(scores, node, read_pos, gradient, bandwidth, max_column);
+        ScoreT4<ScoreT>* pred_scores = (ScoreT4<ScoreT>*)get_score_ptr(scores, node, read_pos, gradient, band_width, max_column);
 
         // loads 8 consecutive bytes (4 shorts)
         ScoreT4<ScoreT> score4 = pred_scores[0];

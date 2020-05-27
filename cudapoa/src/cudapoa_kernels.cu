@@ -99,7 +99,7 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
                                   uint32_t max_nodes_per_window,
                                   uint32_t max_graph_dimension,
                                   uint32_t max_limit_consensus_size,
-                                  uint32_t banded_alignment_bandwidth = 0)
+                                  uint32_t banded_alignment_band_width = 0)
 {
     // shared error indicator within a warp
     bool warp_error = false;
@@ -131,7 +131,7 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
     int64_t scores_offset;
     if (cuda_banded_alignment)
     {
-        scores_offset = static_cast<int64_t>(max_graph_dimension) * static_cast<int64_t>(banded_alignment_bandwidth + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING) * static_cast<int64_t>(window_idx);
+        scores_offset = static_cast<int64_t>(max_graph_dimension) * static_cast<int64_t>(banded_alignment_band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING) * static_cast<int64_t>(window_idx);
     }
     else
     {
@@ -250,7 +250,7 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
                                                                                 scores,
                                                                                 alignment_graph,
                                                                                 alignment_read,
-                                                                                banded_alignment_bandwidth,
+                                                                                banded_alignment_band_width,
                                                                                 gap_score,
                                                                                 mismatch_score,
                                                                                 match_score);
@@ -459,7 +459,7 @@ void generatePOAtemplated(genomeworks::cudapoa::OutputDetails* output_details_d,
                                                                                  batch_size.max_nodes_per_window_banded,
                                                                                  batch_size.max_matrix_graph_dimension_banded,
                                                                                  batch_size.max_concensus_size,
-                                                                                 batch_size.alignment_bandwidth);
+                                                                                 batch_size.alignment_band_width);
             CGA_CU_CHECK_ERR(cudaPeekAtLastError());
 
             generateConsensusKernel<true, SizeT>
@@ -523,7 +523,7 @@ void generatePOAtemplated(genomeworks::cudapoa::OutputDetails* output_details_d,
                                                                                  batch_size.max_nodes_per_window_banded,
                                                                                  batch_size.max_matrix_graph_dimension_banded,
                                                                                  batch_size.max_concensus_size,
-                                                                                 batch_size.alignment_bandwidth);
+                                                                                 batch_size.alignment_band_width);
             CGA_CU_CHECK_ERR(cudaPeekAtLastError());
 
             generateMSAKernel<true, SizeT>
