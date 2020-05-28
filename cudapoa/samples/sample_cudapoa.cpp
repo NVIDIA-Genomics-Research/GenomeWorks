@@ -15,6 +15,7 @@
 #include <claragenomics/cudapoa/batch.hpp>
 #include <claragenomics/utils/signed_integer_utils.hpp>
 #include <claragenomics/utils/cudautils.hpp>
+#include <claragenomics/io/fasta_parser.hpp>
 
 #include <cuda_runtime_api.h>
 #include <vector>
@@ -138,6 +139,27 @@ void generate_window_data(const std::string& input_file, const int number_of_win
     }
 
     batch_size = BatchSize(max_read_length, max_sequences_per_poa, band_width);
+}
+
+void generate_window_data_from_fasta(const std::string& input_file, const int band_width,
+                                     std::vector<std::vector<std::string>>& windows, BatchSize& batch_size)
+{
+    const std::string input_prefix    = std::string(CUDAPOA_BENCHMARK_DATA_DIR) + "/sequences";
+    const std::string file_extension  = ".fasta";
+    const int32_t min_sequence_length = 0;
+    std::shared_ptr<io::FastaParser> fasta_parser;
+    fasta_parser = io::create_kseq_fasta_parser(input_prefix + file_extension, min_sequence_length, false);
+
+    int32_t num_sequences   = fasta_parser->get_num_seqences();
+    int32_t max_read_length = 0;
+    windows.resize(1);
+    for (int32_t i = 0; i < num_sequences; i++)
+    {
+        windows[0].push_back(fasta_parser->get_sequence_by_id(i).seq);
+        max_read_length = std::max(max_read_length, get_size<int>(windows[0].back()));
+    }
+
+    batch_size = BatchSize(max_read_length, num_sequences, band_width);
 }
 
 int main(int argc, char** argv)
