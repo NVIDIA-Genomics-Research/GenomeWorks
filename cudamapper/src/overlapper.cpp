@@ -7,22 +7,18 @@
 * distribution of this software and related documentation without an express
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
-
 #include <claragenomics/cudamapper/overlapper.hpp>
-
-#include <algorithm>
-#include <vector>
-
-#include <claragenomics/io/fasta_parser.hpp>
 #include <claragenomics/utils/cudautils.hpp>
 #include <claragenomics/utils/signed_integer_utils.hpp>
 
+#include "cudamapper_utils.hpp"
+
 namespace
 {
-bool overlaps_mergable(const claragenomics::cudamapper::Overlap o1, const claragenomics::cudamapper::Overlap o2)
+bool overlaps_mergable(const claraparabricks::genomeworks::cudamapper::Overlap o1, const claraparabricks::genomeworks::cudamapper::Overlap o2)
 {
-    bool relative_strands_forward = (o2.relative_strand == claragenomics::cudamapper::RelativeStrand::Forward) && (o1.relative_strand == claragenomics::cudamapper::RelativeStrand::Forward);
-    bool relative_strands_reverse = (o2.relative_strand == claragenomics::cudamapper::RelativeStrand::Reverse) && (o1.relative_strand == claragenomics::cudamapper::RelativeStrand::Reverse);
+    bool relative_strands_forward = (o2.relative_strand == claraparabricks::genomeworks::cudamapper::RelativeStrand::Forward) && (o1.relative_strand == claraparabricks::genomeworks::cudamapper::RelativeStrand::Forward);
+    bool relative_strands_reverse = (o2.relative_strand == claraparabricks::genomeworks::cudamapper::RelativeStrand::Reverse) && (o1.relative_strand == claraparabricks::genomeworks::cudamapper::RelativeStrand::Reverse);
 
     if (!(relative_strands_forward || relative_strands_reverse))
     {
@@ -55,10 +51,38 @@ bool overlaps_mergable(const claragenomics::cudamapper::Overlap o1, const clarag
     bool gap_ratio_ok = (gap_ratio > 0.8) || ((query_gap < 500) && (target_gap < 500)); //TODO make these user-configurable?
     return gap_ratio_ok;
 }
+
+// Reverse complement lookup table
+static char complement_array[26] = {
+    84, 66, 71, 68, 69,
+    70, 67, 72, 73, 74,
+    75, 76, 77, 78, 79,
+    80, 81, 82, 83, 65,
+    85, 86, 87, 88, 89, 90};
+
+void reverse_complement(std::string& s, const std::size_t len)
+{
+    for (std::size_t i = 0; i < len / 2; ++i)
+    {
+        char tmp       = s[i];
+        s[i]           = static_cast<char>(complement_array[static_cast<int>(s[len - 1 - i] - 65)]);
+        s[len - 1 - i] = static_cast<char>(complement_array[static_cast<int>(tmp) - 65]);
+    }
+}
+
+claraparabricks::genomeworks::cga_string_view_t string_view_slice(const claraparabricks::genomeworks::cga_string_view_t& s, const std::size_t start, const std::size_t end)
+{
+    return s.substr(start, end - start);
+}
+
 } // namespace
 
-namespace claragenomics
+namespace claraparabricks
 {
+
+namespace genomeworks
+{
+
 namespace cudamapper
 {
 
@@ -148,5 +172,122 @@ void Overlapper::post_process_overlaps(std::vector<Overlap>& overlaps)
         overlaps.push_back(fused_overlap);
     }
 }
+
+void details::overlapper::extend_overlap_by_sequence_similarity(Overlap& overlap,
+                                                                cga_string_view_t& query_sequence,
+                                                                cga_string_view_t& target_sequence,
+                                                                const std::int32_t extension,
+                                                                const float required_similarity)
+{
+
+    const position_in_read_t query_head_rescue_size  = std::min(overlap.query_start_position_in_read_, static_cast<position_in_read_t>(extension));
+    const position_in_read_t target_head_rescue_size = std::min(overlap.target_start_position_in_read_, static_cast<position_in_read_t>(extension));
+    // Calculate the shortest sequence length and use this as the window for comparison.
+    const position_in_read_t head_rescue_size = std::min(query_head_rescue_size, target_head_rescue_size);
+
+    const position_in_read_t query_head_start  = overlap.query_start_position_in_read_ - head_rescue_size;
+    const position_in_read_t target_head_start = overlap.target_start_position_in_read_ - head_rescue_size;
+
+    cga_string_view_t query_head_sequence  = string_view_slice(query_sequence, query_head_start, overlap.query_start_position_in_read_);
+    cga_string_view_t target_head_sequence = string_view_slice(target_sequence, target_head_start, overlap.target_start_position_in_read_);
+
+    float head_similarity = sequence_jaccard_similarity(query_head_sequence, target_head_sequence, 15, 1);
+    if (head_similarity >= required_similarity)
+    {
+        overlap.query_start_position_in_read_  = overlap.query_start_position_in_read_ - head_rescue_size;
+        overlap.target_start_position_in_read_ = overlap.target_start_position_in_read_ - head_rescue_size;
+    }
+
+    const position_in_read_t query_tail_rescue_size  = std::min(static_cast<position_in_read_t>(extension), static_cast<position_in_read_t>(query_sequence.length()) - overlap.query_end_position_in_read_);
+    const position_in_read_t target_tail_rescue_size = std::min(static_cast<position_in_read_t>(extension), static_cast<position_in_read_t>(target_sequence.length()) - overlap.target_end_position_in_read_);
+    // Calculate the shortest sequence length at the tail and use this as the window for comparison.
+    const position_in_read_t tail_rescue_size = std::min(query_tail_rescue_size, target_tail_rescue_size);
+
+    cga_string_view_t query_tail_sequence  = string_view_slice(query_sequence, overlap.query_end_position_in_read_, overlap.query_end_position_in_read_ + tail_rescue_size);
+    cga_string_view_t target_tail_sequence = string_view_slice(target_sequence, overlap.target_end_position_in_read_, overlap.target_end_position_in_read_ + tail_rescue_size);
+
+    const float tail_similarity = sequence_jaccard_similarity(query_tail_sequence, target_tail_sequence, 15, 1);
+    if (tail_similarity >= required_similarity)
+    {
+        overlap.query_end_position_in_read_  = overlap.query_end_position_in_read_ + tail_rescue_size;
+        overlap.target_end_position_in_read_ = overlap.target_end_position_in_read_ + tail_rescue_size;
+    }
+}
+
+void Overlapper::rescue_overlap_ends(std::vector<Overlap>& overlaps,
+                                     const io::FastaParser& query_parser,
+                                     const io::FastaParser& target_parser,
+                                     const std::int32_t extension,
+                                     const float required_similarity)
+{
+
+    auto reverse_overlap = [](cudamapper::Overlap& overlap, std::uint32_t target_sequence_length) {
+        overlap.relative_strand      = overlap.relative_strand == RelativeStrand::Forward ? RelativeStrand::Reverse : RelativeStrand::Forward;
+        position_in_read_t start_tmp = overlap.target_start_position_in_read_;
+        // Oddly, the target_length_ field appears to be zero up till this point, so use the sequence's length instead.
+        overlap.target_start_position_in_read_ = target_sequence_length - overlap.target_end_position_in_read_;
+        overlap.target_end_position_in_read_   = target_sequence_length - start_tmp;
+    };
+
+    // Loop over all overlaps
+    // For each overlap, retrieve the read sequence and
+    // check the similarity of the overlapping head and tail sections (matched for length)
+    // If they are more than or equal to <required_similarity> similar, extend the overlap start/end fields by <extension> basepairs.
+
+    for (auto& overlap : overlaps)
+    {
+        // Track whether the overlap needs to be reversed from its original orientation on the '-' strand.
+        bool reversed = false;
+
+        // Overlap rescue at "head" (i.e., "left-side") of overlap
+        // Get the sequences of the query and target
+        const std::string query_sequence = query_parser.get_sequence_by_id(overlap.query_read_id_).seq;
+        cga_string_view_t query_view(query_sequence);
+        // target_sequence is non-const as it may be modified when reversing an overlap.
+        std::string target_sequence = target_parser.get_sequence_by_id(overlap.target_read_id_).seq;
+
+        if (overlap.relative_strand == RelativeStrand::Reverse)
+        {
+
+            reverse_overlap(overlap, static_cast<uint32_t>(target_sequence.length()));
+            reverse_complement(target_sequence, target_sequence.length());
+            reversed = true;
+        }
+        cga_string_view_t target_view(target_sequence);
+
+        const std::size_t max_rescue_rounds  = 3;
+        std::size_t rescue_rounds            = 0;
+        position_in_read_t prev_query_start  = overlap.query_start_position_in_read_;
+        position_in_read_t prev_query_end    = overlap.query_end_position_in_read_;
+        position_in_read_t prev_target_start = overlap.target_start_position_in_read_;
+        position_in_read_t prev_target_end   = overlap.target_end_position_in_read_;
+
+        while (rescue_rounds < max_rescue_rounds)
+        {
+            details::overlapper::extend_overlap_by_sequence_similarity(overlap, query_view, target_view, 100, 0.9);
+            ++rescue_rounds;
+            if (overlap.query_end_position_in_read_ == prev_query_start &&
+                overlap.query_end_position_in_read_ == prev_query_end &&
+                overlap.target_start_position_in_read_ == prev_target_start &&
+                overlap.target_end_position_in_read_ == prev_target_end)
+            {
+                break;
+            }
+            prev_query_start  = overlap.query_start_position_in_read_;
+            prev_query_end    = overlap.query_end_position_in_read_;
+            prev_target_start = overlap.target_start_position_in_read_;
+            prev_target_end   = overlap.target_end_position_in_read_;
+        }
+
+        if (reversed)
+        {
+            reverse_overlap(overlap, static_cast<uint32_t>(target_sequence.length()));
+        }
+    }
+}
+
 } // namespace cudamapper
-} // namespace claragenomics
+
+} // namespace genomeworks
+
+} // namespace claraparabricks

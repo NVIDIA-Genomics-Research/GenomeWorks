@@ -20,7 +20,10 @@
 #include <random>
 #include "gtest/gtest.h"
 
-namespace claragenomics
+namespace claraparabricks
+{
+
+namespace genomeworks
 {
 
 namespace cudaaligner
@@ -130,7 +133,7 @@ std::vector<AlignerTestData> create_aligner_test_cases()
     test_cases.push_back(data);
 
     std::minstd_rand rng(1);
-    data.inputs    = {{claragenomics::genomeutils::generate_random_genome(4800, rng), claragenomics::genomeutils::generate_random_genome(5000, rng)}};
+    data.inputs    = {{genomeworks::genomeutils::generate_random_genome(4800, rng), genomeworks::genomeutils::generate_random_genome(5000, rng)}};
     data.cigars    = {}; // do not test cigars
     data.algorithm = AlignmentAlgorithm::Default;
     test_cases.push_back(data);
@@ -211,13 +214,13 @@ TEST_P(TestAlignerGlobal, TestAlignmentKernel)
         break;
     case AlignmentAlgorithm::Default:
     default:
-        aligner = claragenomics::cudaaligner::create_aligner(max_string_size,
-                                                             max_string_size,
-                                                             param.inputs.size(),
-                                                             claragenomics::cudaaligner::AlignmentType::global_alignment,
-                                                             allocator,
-                                                             nullptr,
-                                                             0);
+        aligner = genomeworks::cudaaligner::create_aligner(max_string_size,
+                                                           max_string_size,
+                                                           param.inputs.size(),
+                                                           genomeworks::cudaaligner::AlignmentType::global_alignment,
+                                                           allocator,
+                                                           nullptr,
+                                                           0);
     }
     for (auto& pair : inputs)
     {
@@ -260,14 +263,14 @@ std::vector<AlignerTestData> create_aligner_perf_test_cases()
 
     // Test case 1
     std::minstd_rand rng(1);
-    data.inputs = {{claragenomics::genomeutils::generate_random_genome(1000, rng), claragenomics::genomeutils::generate_random_genome(1000, rng)}};
+    data.inputs = {{genomeworks::genomeutils::generate_random_genome(1000, rng), genomeworks::genomeutils::generate_random_genome(1000, rng)}};
     test_cases.push_back(data);
 
     // Test case 2
-    data.inputs = {{claragenomics::genomeutils::generate_random_genome(9500, rng), claragenomics::genomeutils::generate_random_genome(9000, rng)},
-                   {claragenomics::genomeutils::generate_random_genome(3456, rng), claragenomics::genomeutils::generate_random_genome(3213, rng)},
-                   {claragenomics::genomeutils::generate_random_genome(20000, rng), claragenomics::genomeutils::generate_random_genome(20000, rng)},
-                   {claragenomics::genomeutils::generate_random_genome(15000, rng), claragenomics::genomeutils::generate_random_genome(14000, rng)}};
+    data.inputs = {{genomeworks::genomeutils::generate_random_genome(9500, rng), genomeworks::genomeutils::generate_random_genome(9000, rng)},
+                   {genomeworks::genomeutils::generate_random_genome(3456, rng), genomeworks::genomeutils::generate_random_genome(3213, rng)},
+                   {genomeworks::genomeutils::generate_random_genome(20000, rng), genomeworks::genomeutils::generate_random_genome(20000, rng)},
+                   {genomeworks::genomeutils::generate_random_genome(15000, rng), genomeworks::genomeutils::generate_random_genome(14000, rng)}};
     test_cases.push_back(data);
 
     return test_cases;
@@ -307,4 +310,7 @@ TEST_P(TestAlignerGlobalImplPerf, TestAlignmentKernelPerf)
 
 INSTANTIATE_TEST_SUITE_P(TestCudaAligner, TestAlignerGlobalImplPerf, ::testing::ValuesIn(create_aligner_perf_test_cases()));
 } // namespace cudaaligner
-} // namespace claragenomics
+
+} // namespace genomeworks
+
+} // namespace claraparabricks

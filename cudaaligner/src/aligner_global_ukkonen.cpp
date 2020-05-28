@@ -12,7 +12,10 @@
 #include "ukkonen_gpu.cuh"
 #include "batched_device_matrices.cuh"
 
-namespace claragenomics
+namespace claraparabricks
+{
+
+namespace genomeworks
 {
 
 namespace cudaaligner
@@ -71,4 +74,7 @@ void AlignerGlobalUkkonen::run_alignment(int8_t* results_d, int32_t* result_leng
 }
 
 } // namespace cudaaligner
-} // namespace claragenomics
+
+} // namespace genomeworks
+
+} // namespace claraparabricks

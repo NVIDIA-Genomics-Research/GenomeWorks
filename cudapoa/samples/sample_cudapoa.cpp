@@ -17,16 +17,14 @@
 #include <claragenomics/cudapoa/batch.hpp>
 #include <claragenomics/utils/signed_integer_utils.hpp>
 #include <claragenomics/utils/cudautils.hpp>
-#include <claragenomics/utils/genomeutils.hpp>
 
 #include <cuda_runtime_api.h>
 #include <vector>
 #include <string>
 #include <unistd.h>
-#include <random>
 
-using namespace claragenomics;
-using namespace claragenomics::cudapoa;
+using namespace claraparabricks::genomeworks;
+using namespace claraparabricks::genomeworks::cudapoa;
 
 std::unique_ptr<Batch> initialize_batch(bool msa, bool banded_alignment, const BatchSize& batch_size)
 {
@@ -155,7 +153,7 @@ size_t estimate_max_poas(const BatchSize& batch_size, const bool banded_alignmen
     }
 
     // Compute required memory for score matrix
-    int32_t matrix_sequence_dimension    = banded_alignment ? CUDAPOA_BANDED_MAX_MATRIX_SEQUENCE_DIMENSION : batch_size.max_matrix_sequence_dimension;
+    int32_t matrix_sequence_dimension    = banded_alignment ? batch_size.alignment_band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING : batch_size.max_matrix_sequence_dimension;
     int32_t matrix_graph_dimension       = banded_alignment ? batch_size.max_matrix_graph_dimension_banded : batch_size.max_matrix_graph_dimension;
     int64_t device_size_per_score_matrix = (int64_t)matrix_sequence_dimension * (int64_t)matrix_graph_dimension * sizeof_ScoreT;
 
@@ -307,7 +305,7 @@ int main(int argc, char** argv)
     if (long_read)
     {
         const std::string input_file = std::string(CUDAPOA_BENCHMARK_DATA_DIR) + "/sample-bonito.txt";
-        parse_window_data_file(windows, input_file, 55);
+        parse_window_data_file(windows, input_file, -1);
     }
     else
     {

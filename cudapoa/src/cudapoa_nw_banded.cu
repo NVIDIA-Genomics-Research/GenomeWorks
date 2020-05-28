@@ -16,7 +16,10 @@
 
 #include <stdio.h>
 
-namespace claragenomics
+namespace claraparabricks
+{
+
+namespace genomeworks
 {
 
 namespace cudapoa
@@ -61,7 +64,8 @@ __device__ ScoreT* get_score_ptr(ScoreT* scores, SizeT row, SizeT column, float 
         col_idx = column - band_start;
     }
 
-    return &scores[(col_idx) + row * CUDAPOA_BANDED_MAX_MATRIX_SEQUENCE_DIMENSION];
+    int64_t score_index = static_cast<int64_t>(col_idx) + static_cast<int64_t>(row) * static_cast<int64_t>(band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING);
+    return &scores[score_index];
 };
 
 template <typename ScoreT, typename SizeT>
@@ -79,7 +83,8 @@ __device__ void set_score(ScoreT* scores, SizeT row, SizeT column, ScoreT value,
         col_idx = column - band_start;
     }
 
-    scores[col_idx + row * CUDAPOA_BANDED_MAX_MATRIX_SEQUENCE_DIMENSION] = value;
+    int64_t score_index = static_cast<int64_t>(col_idx) + static_cast<int64_t>(row) * static_cast<int64_t>(band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING);
+    scores[score_index] = value;
 }
 
 template <typename ScoreT, typename SizeT>
@@ -100,10 +105,10 @@ __device__ void initialize_band(ScoreT* scores, SizeT row, ScoreT value, float g
 };
 
 template <typename ScoreT, typename SizeT>
-__device__ ScoreT get_score(ScoreT* scores, SizeT row, SizeT column, float gradient, SizeT bandwidth, SizeT max_column, const ScoreT min_score_value)
+__device__ ScoreT get_score(ScoreT* scores, SizeT row, SizeT column, float gradient, SizeT band_width, SizeT max_column, const ScoreT min_score_value)
 {
-    SizeT band_start = get_band_start_for_row(row, gradient, bandwidth, max_column);
-    SizeT band_end   = band_start + bandwidth;
+    SizeT band_start = get_band_start_for_row(row, gradient, band_width, max_column);
+    SizeT band_end   = band_start + band_width;
 
     if (((column > band_end) || (column < band_start)) && column != 0)
     {
@@ -111,7 +116,7 @@ __device__ ScoreT get_score(ScoreT* scores, SizeT row, SizeT column, float gradi
     }
     else
     {
-        return *get_score_ptr(scores, row, column, gradient, bandwidth, max_column);
+        return *get_score_ptr(scores, row, column, gradient, band_width, max_column);
     }
 }
 
@@ -122,7 +127,7 @@ __device__ ScoreT4<ScoreT> get_scores(SizeT read_pos,
                                       ScoreT gap_score,
                                       ScoreT4<ScoreT> char_profile,
                                       float gradient,
-                                      SizeT bandwidth,
+                                      SizeT band_width,
                                       ScoreT default_value,
                                       SizeT max_column)
 {
@@ -135,9 +140,9 @@ __device__ ScoreT4<ScoreT> get_scores(SizeT read_pos,
     // using a single load inst, and then extracting necessary part of
     // of the data using bit arithmatic. Also reduces register count.
 
-    SizeT band_start = get_band_start_for_row(node, gradient, bandwidth, max_column);
+    SizeT band_start = get_band_start_for_row(node, gradient, band_width, max_column);
 
-    SizeT band_end = static_cast<SizeT>(band_start + bandwidth + CELLS_PER_THREAD);
+    SizeT band_end = static_cast<SizeT>(band_start + band_width + CELLS_PER_THREAD);
 
     if (((static_cast<SizeT>(read_pos + 1) > band_end) || (static_cast<SizeT>(read_pos + 1) < band_start)) && static_cast<SizeT>(read_pos + 1) != 0)
     {
@@ -145,7 +150,7 @@ __device__ ScoreT4<ScoreT> get_scores(SizeT read_pos,
     }
     else
     {
-        ScoreT4<ScoreT>* pred_scores = (ScoreT4<ScoreT>*)get_score_ptr(scores, node, read_pos, gradient, bandwidth, max_column);
+        ScoreT4<ScoreT>* pred_scores = (ScoreT4<ScoreT>*)get_score_ptr(scores, node, read_pos, gradient, band_width, max_column);
 
         // loads 8 consecutive bytes (4 shorts)
         ScoreT4<ScoreT> score4 = pred_scores[0];
@@ -185,6 +190,7 @@ __device__
                              ScoreT* scores,
                              SizeT* alignment_graph,
                              SizeT* alignment_read,
+                             SizeT band_width,
                              ScoreT gap_score,
                              ScoreT mismatch_score,
                              ScoreT match_score)
@@ -194,16 +200,16 @@ __device__
     const ScoreT min_score_value              = 2 * abs(min(min(gap_score, mismatch_score), -match_score) - 1) + score_type_min_limit;
 
     int16_t lane_idx = threadIdx.x % WARP_SIZE;
+    int64_t score_index;
 
     //Calculate gradient for the scores matrix
     float gradient = float(read_length + 1) / float(graph_count + 1);
 
-    SizeT band_width = WARP_SIZE * CELLS_PER_THREAD;
-
-    SizeT max_column = read_length + 1;
+    SizeT max_column                    = read_length + 1;
+    SizeT max_matrix_sequence_dimension = band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING;
 
     // Initialise the horizontal boundary of the score matrix
-    for (SizeT j = lane_idx; j < CUDAPOA_BANDED_MAX_MATRIX_SEQUENCE_DIMENSION; j += WARP_SIZE)
+    for (SizeT j = lane_idx; j < max_matrix_sequence_dimension; j += WARP_SIZE)
     {
         set_score(scores, static_cast<SizeT>(0), j, static_cast<ScoreT>(j * gap_score), gradient, band_width, max_column);
     }
@@ -264,7 +270,7 @@ __device__
 
         SeqT graph_base = nodes[node_id];
 
-        SizeT read_pos = lane_idx * CELLS_PER_THREAD + band_start;
+        for (SizeT read_pos = lane_idx * CELLS_PER_THREAD + band_start; read_pos < band_start + band_width; read_pos += WARP_SIZE * CELLS_PER_THREAD)
         {
             SizeT rIdx        = read_pos / CELLS_PER_THREAD;
             SeqT4<SeqT> read4 = d_read4[rIdx];
@@ -344,10 +350,12 @@ __device__
             // which can be used to compute the first cell of the next warp.
             first_element_prev_score = __shfl_sync(FULL_MASK, score.s3, WARP_SIZE - 1);
 
-            scores[score_gIdx * CUDAPOA_BANDED_MAX_MATRIX_SEQUENCE_DIMENSION + read_pos + 1 - band_start] = score.s0;
-            scores[score_gIdx * CUDAPOA_BANDED_MAX_MATRIX_SEQUENCE_DIMENSION + read_pos + 2 - band_start] = score.s1;
-            scores[score_gIdx * CUDAPOA_BANDED_MAX_MATRIX_SEQUENCE_DIMENSION + read_pos + 3 - band_start] = score.s2;
-            scores[score_gIdx * CUDAPOA_BANDED_MAX_MATRIX_SEQUENCE_DIMENSION + read_pos + 4 - band_start] = score.s3;
+            score_index = static_cast<int64_t>(read_pos + 1 - band_start) + static_cast<int64_t>(score_gIdx) * static_cast<int64_t>(max_matrix_sequence_dimension);
+
+            scores[score_index]      = score.s0;
+            scores[score_index + 1L] = score.s1;
+            scores[score_index + 2L] = score.s2;
+            scores[score_index + 3L] = score.s3;
 
             __syncwarp();
         }
@@ -480,4 +488,6 @@ __device__
 
 } // namespace cudapoa
 
-} // namespace claragenomics
+} // namespace genomeworks
+
+} // namespace claraparabricks

@@ -12,8 +12,12 @@
 
 #include <claragenomics/utils/signed_integer_utils.hpp>
 
-namespace claragenomics
+namespace claraparabricks
 {
+
+namespace genomeworks
+{
+
 namespace cudamapper
 {
 
@@ -105,4 +109,7 @@ std::vector<IndexDescriptor> group_reads_into_indices(const io::FastaParser& par
 }
 
 } // namespace cudamapper
-} // namespace claragenomics
+
+} // namespace genomeworks
+
+} // namespace claraparabricks

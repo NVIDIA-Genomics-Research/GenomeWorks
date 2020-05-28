@@ -28,9 +28,9 @@
 /// \ingroup cudautils
 /// \def CGA_CU_CHECK_ERR
 /// \brief Log on CUDA error in enclosed expression
-#define CGA_CU_CHECK_ERR(ans)                                            \
-    {                                                                    \
-        claragenomics::cudautils::gpu_assert((ans), __FILE__, __LINE__); \
+#define CGA_CU_CHECK_ERR(ans)                                                           \
+    {                                                                                   \
+        claraparabricks::genomeworks::cudautils::gpu_assert((ans), __FILE__, __LINE__); \
     }
 // ^^^^ CGA_CU_CHECK_ERR currently has the same implementation as CGA_CU_ABORT_ON_ERR.
 //      The idea is that in the future CGA_CU_CHECK_ERR could have a "softer" error reporting (= not calling std::abort)
@@ -38,14 +38,17 @@
 /// \ingroup cudautils
 /// \def CGA_CU_ABORT_ON_ERR
 /// \brief Log on CUDA error in enclosed expression and termine in release mode, fail assertion in debug mode
-#define CGA_CU_ABORT_ON_ERR(ans)                                         \
-    {                                                                    \
-        claragenomics::cudautils::gpu_assert((ans), __FILE__, __LINE__); \
+#define CGA_CU_ABORT_ON_ERR(ans)                                                        \
+    {                                                                                   \
+        claraparabricks::genomeworks::cudautils::gpu_assert((ans), __FILE__, __LINE__); \
     }
 
 /// \}
 
-namespace claragenomics
+namespace claraparabricks
+{
+
+namespace genomeworks
 {
 
 namespace cudautils
@@ -147,7 +150,7 @@ std::size_t find_largest_contiguous_device_memory_section();
 /// \brief starts an NVTX range for profiling which stops automatically at the end of the scope
 /// \param varname an arbitrary variable name for the nvtx_range object, which doesn't conflict with other variables in the scope
 /// \param label the label/name of the NVTX range
-#define CGA_NVTX_RANGE(varname, label) ::claragenomics::cudautils::nvtx_range varname(label)
+#define CGA_NVTX_RANGE(varname, label) ::claraparabricks::genomeworks::cudautils::nvtx_range varname(label)
 /// nvtx_range
 /// implementation of CGA_NVTX_RANGE
 class nvtx_range
@@ -205,4 +208,6 @@ private:
     int32_t device_id_before_;
 };
 
-} // namespace claragenomics
+} // namespace genomeworks
+
+} // namespace claraparabricks
