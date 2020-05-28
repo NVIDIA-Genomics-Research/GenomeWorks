@@ -144,11 +144,9 @@ void generate_window_data(const std::string& input_file, const int number_of_win
 void generate_window_data_from_fasta(const std::string& input_file, const int band_width,
                                      std::vector<std::vector<std::string>>& windows, BatchSize& batch_size)
 {
-    const std::string input_prefix    = std::string(CUDAPOA_BENCHMARK_DATA_DIR) + "/sequences";
-    const std::string file_extension  = ".fasta";
     const int32_t min_sequence_length = 0;
     std::shared_ptr<io::FastaParser> fasta_parser;
-    fasta_parser = io::create_kseq_fasta_parser(input_prefix + file_extension, min_sequence_length, false);
+    fasta_parser = io::create_kseq_fasta_parser(input_file, min_sequence_length, false);
 
     int32_t num_sequences   = fasta_parser->get_num_seqences();
     int32_t max_read_length = 0;
@@ -174,7 +172,9 @@ int main(int argc, char** argv)
     bool print         = false;
     bool print_graph   = false;
 
-    while ((c = getopt(argc, argv, "mlfb:pgh")) != -1)
+    std::string fasta_input_file;
+
+    while ((c = getopt(argc, argv, "mlfb:i:pgh")) != -1)
     {
         switch (c)
         {
@@ -189,6 +189,9 @@ int main(int argc, char** argv)
             break;
         case 'b':
             band_width = atoi(optarg);
+            break;
+        case 'i':
+            fasta_input_file = std::string(optarg);
             break;
         case 'p':
             print = true;
@@ -211,6 +214,7 @@ int main(int argc, char** argv)
         std::cout << "-l : Perform long-read sample (if not provided, will run short-read sample by default)" << std::endl;
         std::cout << "-f : Perform full alignment (if not provided, banded alignment is used by default)" << std::endl;
         std::cout << "-b : Band-width used in banded alignment. It should be multiple of 128. This option is ignored if option -f is used. Default size [128]" << std::endl;
+        std::cout << "-i : Fasta input file" << std::endl;
         std::cout << "-p : Print the MSA or consensus output to stdout" << std::endl;
         std::cout << "-g : Print POA graph in dot format, this option is only for long-read sample" << std::endl;
         std::cout << "-h : Print help message" << std::endl;
@@ -225,21 +229,31 @@ int main(int argc, char** argv)
 
     // Load input data. Each POA group is represented as a vector of strings. The sample
     // data for short reads has many such POA groups to process, hence the data is loaded into a vector
-    // of vector of strings. Long read sample creates one POA group.
+    // of vector of strings. Read from fasta file create only one window.
     std::vector<std::vector<std::string>> windows;
 
     // Define upper limits for sequence size, graph size ....
     BatchSize batch_size;
 
-    if (long_read)
+    if (!fasta_input_file.empty())
     {
-        const std::string input_file = std::string(CUDAPOA_BENCHMARK_DATA_DIR) + "/sample-bonito.txt";
-        generate_window_data(input_file, -1, 6, band_width, windows, batch_size);
+        std::string argv_str(argv[0]);
+        std::string base             = argv_str.substr(0, argv_str.find_last_of("/"));
+        const std::string input_file = base + "/" + fasta_input_file;
+        generate_window_data_from_fasta(input_file, band_width, windows, batch_size);
     }
     else
     {
-        const std::string input_file = std::string(CUDAPOA_BENCHMARK_DATA_DIR) + "/sample-windows.txt";
-        generate_window_data(input_file, 1000, 100, band_width, windows, batch_size);
+        if (long_read)
+        {
+            const std::string input_file = std::string(CUDAPOA_BENCHMARK_DATA_DIR) + "/sample-bonito.txt";
+            generate_window_data(input_file, -1, 6, band_width, windows, batch_size);
+        }
+        else
+        {
+            const std::string input_file = std::string(CUDAPOA_BENCHMARK_DATA_DIR) + "/sample-windows.txt";
+            generate_window_data(input_file, 1000, 100, band_width, windows, batch_size);
+        }
     }
 
     // Initialize batch.
