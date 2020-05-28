@@ -141,16 +141,21 @@ void generate_window_data(const std::string& input_file, const int number_of_win
     batch_size = BatchSize(max_read_length, max_sequences_per_poa, band_width);
 }
 
-void generate_window_data_from_fasta(const std::string& input_file, const int band_width,
+void generate_window_data_from_fasta(const std::string& input_file, int32_t num_sequences, const int32_t band_width,
                                      std::vector<std::vector<std::string>>& windows, BatchSize& batch_size)
 {
     const int32_t min_sequence_length = 0;
     std::shared_ptr<io::FastaParser> fasta_parser;
     fasta_parser = io::create_kseq_fasta_parser(input_file, min_sequence_length, false);
 
-    int32_t num_sequences   = fasta_parser->get_num_seqences();
+    if (num_sequences < 0)
+    {
+        num_sequences = fasta_parser->get_num_seqences();
+    }
+
     int32_t max_read_length = 0;
     windows.resize(1);
+
     for (int32_t i = 0; i < num_sequences; i++)
     {
         windows[0].push_back(fasta_parser->get_sequence_by_id(i).seq);
@@ -163,18 +168,19 @@ void generate_window_data_from_fasta(const std::string& input_file, const int ba
 int main(int argc, char** argv)
 {
     // Process options
-    int c              = 0;
-    bool msa           = false;
-    bool long_read     = false;
-    bool banded        = true;
-    int32_t band_width = 128;
-    bool help          = false;
-    bool print         = false;
-    bool print_graph   = false;
+    int c                 = 0;
+    bool msa              = false;
+    bool long_read        = false;
+    bool banded           = true;
+    int32_t band_width    = 128;
+    int32_t num_sequences = -1;
+    bool help             = false;
+    bool print            = false;
+    bool print_graph      = false;
 
     std::string fasta_input_file;
 
-    while ((c = getopt(argc, argv, "mlfb:i:pgh")) != -1)
+    while ((c = getopt(argc, argv, "mlfb:i:n:pgh")) != -1)
     {
         switch (c)
         {
@@ -189,6 +195,9 @@ int main(int argc, char** argv)
             break;
         case 'b':
             band_width = atoi(optarg);
+            break;
+        case 'n':
+            num_sequences = atoi(optarg);
             break;
         case 'i':
             fasta_input_file = std::string(optarg);
@@ -215,6 +224,7 @@ int main(int argc, char** argv)
         std::cout << "-f : Perform full alignment (if not provided, banded alignment is used by default)" << std::endl;
         std::cout << "-b : Band-width used in banded alignment. It should be multiple of 128. This option is ignored if option -f is used. Default size [128]" << std::endl;
         std::cout << "-i : Fasta input file" << std::endl;
+        std::cout << "-n : Number of sequences to be processed per POA group. Defaul [-1] will consider all sequences in the input file" << std::endl;
         std::cout << "-p : Print the MSA or consensus output to stdout" << std::endl;
         std::cout << "-g : Print POA graph in dot format, this option is only for long-read sample" << std::endl;
         std::cout << "-h : Print help message" << std::endl;
@@ -240,7 +250,7 @@ int main(int argc, char** argv)
         std::string argv_str(argv[0]);
         std::string base             = argv_str.substr(0, argv_str.find_last_of("/"));
         const std::string input_file = base + "/" + fasta_input_file;
-        generate_window_data_from_fasta(input_file, band_width, windows, batch_size);
+        generate_window_data_from_fasta(input_file, num_sequences, band_width, windows, batch_size);
     }
     else
     {
