@@ -223,10 +223,10 @@ int main(int argc, char** argv)
         std::cout << "-l : Perform long-read sample (if not provided, will run short-read sample by default)" << std::endl;
         std::cout << "-f : Perform full alignment (if not provided, banded alignment is used by default)" << std::endl;
         std::cout << "-b : Band-width used in banded alignment. It should be multiple of 128. This option is ignored if option -f is used. Default size [128]" << std::endl;
-        std::cout << "-i : Fasta input file" << std::endl;
+        std::cout << "-i : Fasta input file relative path" << std::endl;
         std::cout << "-n : Number of sequences to be processed per POA group. Defaul [-1] will consider all sequences in the input file" << std::endl;
         std::cout << "-p : Print the MSA or consensus output to stdout" << std::endl;
-        std::cout << "-g : Print POA graph in dot format, this option is only for long-read sample" << std::endl;
+        std::cout << "-g : Print POA graph in dot format" << std::endl;
         std::cout << "-h : Print help message" << std::endl;
         std::exit(0);
     }
@@ -300,7 +300,7 @@ int main(int argc, char** argv)
                 // No more POA groups can be added to batch. Now process batch.
                 process_batch(batch.get(), msa, print);
 
-                if (print_graph && long_read)
+                if (print_graph)
                 {
                     std::vector<DirectedGraph> graph;
                     std::vector<StatusType> graph_status;
