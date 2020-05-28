@@ -112,10 +112,17 @@ inline std::string parse_golden_value_file(const std::string& filename)
 /// \param mismatch_score [in] mismatch score, default -6
 /// \param gap_score [in] gap score, default -8
 /// \param match_score [in] match core, default 8
-void generate_batch_sizes(std::vector<BatchSize>& list_of_batch_sizes, std::vector<std::vector<size_t>>& list_of_windows_per_batch,
-                          const std::vector<std::vector<std::string>>& windows, bool banded_alignment = true, bool msa_flag = false,
-                          int32_t num_bins = 20, float gpu_memory_usage_quota = 0.9,
-                          int32_t mismatch_score = -6, int32_t gap_score = -8, int32_t match_score = 8)
+void generate_batch_sizes(std::vector<BatchSize>& list_of_batch_sizes,
+                          std::vector<std::vector<size_t>>& list_of_windows_per_batch,
+                          const std::vector<std::vector<std::string>>& windows,
+                          bool banded_alignment        = true,
+                          bool msa_flag                = false,
+                          int32_t band_width           = 256,
+                          int32_t num_bins             = 20,
+                          float gpu_memory_usage_quota = 0.9,
+                          int32_t mismatch_score       = -6,
+                          int32_t gap_score            = -8,
+                          int32_t match_score          = 8)
 {
     // go through all the windows and evaluate maximum number of POAs of that size where can be processed in a single batch
     size_t num_windows = windows.size();
@@ -129,7 +136,7 @@ void generate_batch_sizes(std::vector<BatchSize>& list_of_batch_sizes, std::vect
         {
             max_read_length = std::max(max_read_length, get_size<size_t>(seq) + 1);
         }
-        max_poas[i]    = BatchBlock<int32_t, int32_t>::estimate_max_poas(BatchSize(max_read_length, windows[i].size()),
+        max_poas[i]    = BatchBlock<int32_t, int32_t>::estimate_max_poas(BatchSize(max_read_length, windows[i].size(), band_width),
                                                                       banded_alignment, msa_flag,
                                                                       gpu_memory_usage_quota,
                                                                       mismatch_score, gap_score, match_score);
