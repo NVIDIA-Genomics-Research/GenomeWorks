@@ -359,6 +359,45 @@ public:
         return host_size_per_poa;
     }
 
+    static int64_t estimate_max_poas(const BatchSize& batch_size, bool banded_alignment, bool msa_flag, float memory_usage_quota,
+                                     int32_t mismatch_score, int32_t gap_score, int32_t match_score)
+    {
+        size_t total = 0, free = 0;
+        cudaMemGetInfo(&free, &total);
+        size_t mem_per_batch = memory_usage_quota * free; // Using memory_usage_quota of GPU available memory for cudapoa batch.
+
+        int64_t sizeof_ScoreT       = 2;
+        int64_t device_size_per_poa = 0;
+
+        if (use32bitScore(batch_size, gap_score, mismatch_score, match_score))
+        {
+            sizeof_ScoreT = 4;
+            if (use32bitSize(batch_size, banded_alignment))
+            {
+                device_size_per_poa = BatchBlock<int32_t, int32_t>::compute_device_memory_per_poa(batch_size, banded_alignment, msa_flag);
+            }
+            else
+            {
+                device_size_per_poa = BatchBlock<int32_t, int16_t>::compute_device_memory_per_poa(batch_size, banded_alignment, msa_flag);
+            }
+        }
+        else
+        {
+            // if ScoreT is 16-bit, it's safe to assume SizeT is also 16-bit
+            device_size_per_poa = BatchBlock<int16_t, int16_t>::compute_device_memory_per_poa(batch_size, banded_alignment, msa_flag);
+        }
+
+        // Compute required memory for score matrix
+        int32_t matrix_sequence_dimension    = banded_alignment ? batch_size.alignment_band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING : batch_size.max_matrix_sequence_dimension;
+        int32_t matrix_graph_dimension       = banded_alignment ? batch_size.max_matrix_graph_dimension_banded : batch_size.max_matrix_graph_dimension;
+        int64_t device_size_per_score_matrix = (int64_t)matrix_sequence_dimension * (int64_t)matrix_graph_dimension * sizeof_ScoreT;
+
+        // Calculate max POAs possible based on available memory.
+        int64_t max_poas = mem_per_batch / (device_size_per_poa + device_size_per_score_matrix);
+
+        return max_poas;
+    }
+
 protected:
     // Returns amount of host and device memory needed to store metadata per POA entry.
     // The first two elements of the tuple are fixed host and device sizes that

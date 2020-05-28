@@ -124,129 +124,6 @@ void process_batch(Batch* batch, bool msa, bool print)
     }
 }
 
-size_t estimate_max_poas(const BatchSize& batch_size, const bool banded_alignment, const bool msa_flag)
-{
-    size_t total = 0, free = 0;
-    cudaMemGetInfo(&free, &total);
-    size_t mem_per_batch         = 0.9 * free; // Using 90% of GPU available memory for cudapoa batch.
-    const int32_t mismatch_score = -6, gap_score = -8, match_score = 8;
-
-    int64_t sizeof_ScoreT       = 2;
-    int64_t device_size_per_poa = 0;
-
-    if (use32bitScore(batch_size, gap_score, mismatch_score, match_score))
-    {
-        sizeof_ScoreT = 4;
-        if (use32bitSize(batch_size, banded_alignment))
-        {
-            device_size_per_poa = BatchBlock<int32_t, int32_t>::compute_device_memory_per_poa(batch_size, banded_alignment, msa_flag);
-        }
-        else
-        {
-            device_size_per_poa = BatchBlock<int32_t, int16_t>::compute_device_memory_per_poa(batch_size, banded_alignment, msa_flag);
-        }
-    }
-    else
-    {
-        // if ScoreT is 16-bit, it's safe to assume SizeT is also 16-bit
-        device_size_per_poa = BatchBlock<int16_t, int16_t>::compute_device_memory_per_poa(batch_size, banded_alignment, msa_flag);
-    }
-
-    // Compute required memory for score matrix
-    int32_t matrix_sequence_dimension    = banded_alignment ? batch_size.alignment_band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING : batch_size.max_matrix_sequence_dimension;
-    int32_t matrix_graph_dimension       = banded_alignment ? batch_size.max_matrix_graph_dimension_banded : batch_size.max_matrix_graph_dimension;
-    int64_t device_size_per_score_matrix = (int64_t)matrix_sequence_dimension * (int64_t)matrix_graph_dimension * sizeof_ScoreT;
-
-    // Calculate max POAs possible based on available memory.
-    size_t max_poas = mem_per_batch / (device_size_per_poa + device_size_per_score_matrix);
-
-    return max_poas;
-}
-
-void generate_batch_sizes(const std::vector<std::vector<std::string>>& windows, const bool banded_alignment, const bool msa_flag,
-                          std::vector<BatchSize>& list_of_batch_sizes, std::vector<std::vector<size_t>>& list_of_windows_per_batch)
-{
-    // go through all the windows and evaluate maximum number of POAs of that size where can be processed in a single batch
-    size_t num_windows = windows.size();
-    std::vector<size_t> max_poas(num_windows);    // maximum number of POAs that canrun in parallel for windows of this size
-    std::vector<size_t> max_lengths(num_windows); // maximum sequence length within the window
-
-    for (size_t i = 0; i < windows.size(); i++)
-    {
-        size_t max_read_length = 0;
-        for (auto& seq : windows[i])
-        {
-            max_read_length = std::max(max_read_length, get_size<size_t>(seq) + 1);
-        }
-        max_poas[i]    = estimate_max_poas(BatchSize(max_read_length, windows[i].size()), banded_alignment, msa_flag);
-        max_lengths[i] = max_read_length;
-    }
-
-    // create histogram based on number of max POAs
-    size_t num_bins = 20;
-    std::vector<size_t> bins_frequency(num_bins, 0);             // represents the count of windows that fall within the corresponding range
-    std::vector<size_t> bins_max_length(num_bins, 0);            // represents the length of the window with maximum sequence length in the bin
-    std::vector<size_t> bins_num_reads(num_bins, 0);             // represents the number of reads in the window with maximum sequence length in the bin
-    std::vector<size_t> bins_ranges(num_bins, 1);                // represents maximum POAs
-    std::vector<std::vector<size_t>> bins_window_list(num_bins); // list of windows that are added to each bin
-
-    for (size_t j = 1; j < num_bins; j++)
-    {
-        bins_ranges[j] = bins_ranges[j - 1] * 2;
-    }
-
-    // go through all windows and keep track of the bin they fit
-    for (size_t i = 0; i < num_windows; i++)
-    {
-        for (size_t j = 0; j < num_bins; j++)
-        {
-            if (max_poas[i] <= bins_ranges[j] || j == num_bins - 1)
-            {
-                bins_frequency[j]++;
-                bins_window_list[j].push_back(i);
-                if (bins_max_length[j] < max_lengths[i])
-                {
-                    bins_max_length[j] = max_lengths[i];
-                    bins_num_reads[j]  = windows[i].size();
-                }
-                break;
-            }
-        }
-    }
-
-    // a bin in range N means a batch made based on this bean, can launch up to N POAs. If the sum of bins frequency of higher ranges
-    // is smaller than N, they can all fit in batch N and no need to create extra batches.
-    // For example. consider the following:
-    //
-    // bins_ranges      1        2       4       8       16      32      64      128     256     512
-    // bins frequency   0        0       0       0       0       0       10      51      0       0
-    // bins width       0        0       0       0       0       0       5120    3604    0       0
-    //
-    // note that bin_ranges represent max POAs. This means larger bin ranges follow with smaller corresponding max lengths (windows with shorter reads)
-    // In the example above, to process 10 windows that fall within bin range 64, we need to create one batch. This batch can process up to 64 windows of
-    // max length 5120 or smaller. This means all the windows in bin range 128 can also be processed with the same batch and no need to launch an extra batch
-
-    size_t remaining_windows = num_windows;
-    for (size_t j = 0; j < num_bins; j++)
-    {
-        if (bins_frequency[j] > 0)
-        {
-            list_of_batch_sizes.emplace_back(bins_max_length[j], bins_num_reads[j]);
-            list_of_windows_per_batch.push_back(bins_window_list[j]);
-            remaining_windows -= bins_frequency[j];
-            if (bins_ranges[j] > remaining_windows)
-            {
-                auto& remaining_list = list_of_windows_per_batch.back();
-                for (auto it = bins_window_list.begin() + j + 1; it != bins_window_list.end(); it++)
-                {
-                    remaining_list.insert(remaining_list.end(), it->begin(), it->end());
-                }
-                break;
-            }
-        }
-    }
-}
-
 int main(int argc, char** argv)
 {
     // Process options
@@ -316,7 +193,7 @@ int main(int argc, char** argv)
     // analyze the windows and create a minimal set of batches to process them all
     std::vector<BatchSize> list_of_batch_sizes;
     std::vector<std::vector<size_t>> list_of_windows_per_batch;
-    generate_batch_sizes(windows, banded, msa, list_of_batch_sizes, list_of_windows_per_batch);
+    cudapoa::generate_batch_sizes(list_of_batch_sizes, list_of_windows_per_batch, windows, banded, msa);
 
     int32_t window_count_offset = 0;
 
