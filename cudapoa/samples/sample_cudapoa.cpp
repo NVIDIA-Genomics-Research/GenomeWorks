@@ -9,8 +9,6 @@
 */
 
 #include "../benchmarks/common/utils.hpp"
-#include "../src/cudapoa_kernels.cuh" // for estimate_max_poas()
-#include "../src/allocate_block.hpp"
 
 #include <file_location.hpp>
 #include <claragenomics/cudapoa/cudapoa.hpp>
@@ -175,8 +173,8 @@ int main(int argc, char** argv)
     }
 
     // Load input data. Each POA group is represented as a vector of strings. The sample
-    // data for short reads has many such POA groups to process, hence the data is loaded into a vector
-    // of vector of strings. Long read sample creates one POA group.
+    // data has many such POA groups to process, hence the data is loaded into a vector
+    // of vector of strings.
     std::vector<std::vector<std::string>> windows;
 
     if (long_read)

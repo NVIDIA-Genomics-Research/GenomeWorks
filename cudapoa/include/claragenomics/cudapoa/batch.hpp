@@ -72,7 +72,7 @@ struct BatchSize
     int32_t max_sequences_per_poa;
 
     /// constructor- set upper limit parameters based on max_sequence_size
-    BatchSize(int32_t max_seq_sz = 1024, int32_t max_seq_per_poa = 100, int32_t band_width = 128)
+    BatchSize(int32_t max_seq_sz = 1024, int32_t max_seq_per_poa = 100, int32_t band_width = 256)
         /// ensure a 4-byte boundary alignment for any allocated buffer
         : max_sequence_size(max_seq_sz)
         , max_concensus_size(2 * max_sequence_size)
