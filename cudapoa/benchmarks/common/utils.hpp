@@ -113,7 +113,7 @@ inline std::string parse_golden_value_file(const std::string& filename)
 /// \param gap_score [in] gap score, default -8
 /// \param match_score [in] match core, default 8
 void generate_batch_sizes(std::vector<BatchSize>& list_of_batch_sizes,
-                          std::vector<std::vector<size_t>>& list_of_windows_per_batch,
+                          std::vector<std::vector<int32_t>>& list_of_windows_per_batch,
                           const std::vector<std::vector<std::string>>& windows,
                           bool banded_alignment        = true,
                           bool msa_flag                = false,
@@ -125,16 +125,16 @@ void generate_batch_sizes(std::vector<BatchSize>& list_of_batch_sizes,
                           int32_t match_score          = 8)
 {
     // go through all the windows and evaluate maximum number of POAs of that size where can be processed in a single batch
-    size_t num_windows = windows.size();
-    std::vector<size_t> max_poas(num_windows);    // maximum number of POAs that canrun in parallel for windows of this size
-    std::vector<size_t> max_lengths(num_windows); // maximum sequence length within the window
+    int32_t num_windows = get_size(windows);
+    std::vector<int32_t> max_poas(num_windows);    // maximum number of POAs that canrun in parallel for windows of this size
+    std::vector<int32_t> max_lengths(num_windows); // maximum sequence length within the window
 
-    for (size_t i = 0; i < windows.size(); i++)
+    for (int32_t i = 0; i < num_windows; i++)
     {
-        size_t max_read_length = 0;
+        int32_t max_read_length = 0;
         for (auto& seq : windows[i])
         {
-            max_read_length = std::max(max_read_length, get_size<size_t>(seq) + 1);
+            max_read_length = std::max(max_read_length, get_size<int32_t>(seq) + 1);
         }
         max_poas[i]    = BatchBlock<int32_t, int32_t>::estimate_max_poas(BatchSize(max_read_length, windows[i].size(), band_width),
                                                                       banded_alignment, msa_flag,
@@ -144,21 +144,21 @@ void generate_batch_sizes(std::vector<BatchSize>& list_of_batch_sizes,
     }
 
     // create histogram based on number of max POAs
-    std::vector<size_t> bins_frequency(num_bins, 0);             // represents the count of windows that fall within the corresponding range
-    std::vector<size_t> bins_max_length(num_bins, 0);            // represents the length of the window with maximum sequence length in the bin
-    std::vector<size_t> bins_num_reads(num_bins, 0);             // represents the number of reads in the window with maximum sequence length in the bin
-    std::vector<size_t> bins_ranges(num_bins, 1);                // represents maximum POAs
-    std::vector<std::vector<size_t>> bins_window_list(num_bins); // list of windows that are added to each bin
+    std::vector<int32_t> bins_frequency(num_bins, 0);             // represents the count of windows that fall within the corresponding range
+    std::vector<int32_t> bins_max_length(num_bins, 0);            // represents the length of the window with maximum sequence length in the bin
+    std::vector<int32_t> bins_num_reads(num_bins, 0);             // represents the number of reads in the window with maximum sequence length in the bin
+    std::vector<int32_t> bins_ranges(num_bins, 1);                // represents maximum POAs
+    std::vector<std::vector<int32_t>> bins_window_list(num_bins); // list of windows that are added to each bin
 
-    for (size_t j = 1; j < num_bins; j++)
+    for (int32_t j = 1; j < num_bins; j++)
     {
         bins_ranges[j] = bins_ranges[j - 1] * 2;
     }
 
     // go through all windows and keep track of the bin they fit
-    for (size_t i = 0; i < num_windows; i++)
+    for (int32_t i = 0; i < num_windows; i++)
     {
-        for (size_t j = 0; j < num_bins; j++)
+        for (int32_t j = 0; j < num_bins; j++)
         {
             if (max_poas[i] <= bins_ranges[j] || j == num_bins - 1)
             {
@@ -185,21 +185,23 @@ void generate_batch_sizes(std::vector<BatchSize>& list_of_batch_sizes,
     // note that bin_ranges represent max POAs. This means larger bin ranges correspond with smaller windows, i.e. windows with shorter or smaller number of reads
     // In the example above, to process 10 windows that fall within bin range 64, we need to create one batch. This batch can process up to 64 windows of
     // max length 5120 or smaller. This means all the windows in bin range 128 can also be processed with the same batch and no need to launch an extra batch
-
-    size_t remaining_windows = num_windows;
-    for (size_t j = 0; j < num_bins; j++)
+    // loop to reduce number of bins by merging applicable bins into each other.
+    int32_t remaining_windows = num_windows;
+    for (int32_t j = 0; j < num_bins; j++)
     {
         if (bins_frequency[j] > 0)
         {
             list_of_batch_sizes.emplace_back(bins_max_length[j], bins_num_reads[j]);
             list_of_windows_per_batch.push_back(bins_window_list[j]);
             remaining_windows -= bins_frequency[j];
+
             if (bins_ranges[j] > remaining_windows)
             {
-                auto& remaining_list = list_of_windows_per_batch.back();
+                // check if all the remaining windows from following bins can be merged into the current bin
+                auto& list_of_windows_in_last_batch = list_of_windows_per_batch.back();
                 for (auto it = bins_window_list.begin() + j + 1; it != bins_window_list.end(); it++)
                 {
-                    remaining_list.insert(remaining_list.end(), it->begin(), it->end());
+                    list_of_windows_in_last_batch.insert(list_of_windows_in_last_batch.end(), it->begin(), it->end());
                 }
                 break;
             }
