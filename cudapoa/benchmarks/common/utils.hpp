@@ -147,12 +147,12 @@ void generate_batch_sizes(std::vector<BatchSize>& list_of_batch_sizes,
     std::vector<int32_t> bins_frequency(num_bins, 0);             // represents the count of windows that fall within the corresponding range
     std::vector<int32_t> bins_max_length(num_bins, 0);            // represents the length of the window with maximum sequence length in the bin
     std::vector<int32_t> bins_num_reads(num_bins, 0);             // represents the number of reads in the window with maximum sequence length in the bin
-    std::vector<int32_t> bins_ranges(num_bins, 1);                // represents maximum POAs
+    std::vector<int32_t> bins_capacity(num_bins, 1);              // represents maximum POAs
     std::vector<std::vector<int32_t>> bins_window_list(num_bins); // list of windows that are added to each bin
 
     for (int32_t j = 1; j < num_bins; j++)
     {
-        bins_ranges[j] = bins_ranges[j - 1] * 2;
+        bins_capacity[j] = bins_capacity[j - 1] * 2;
     }
 
     // go through all windows and keep track of the bin they fit
@@ -160,7 +160,7 @@ void generate_batch_sizes(std::vector<BatchSize>& list_of_batch_sizes,
     {
         for (int32_t j = 0; j < num_bins; j++)
         {
-            if (max_poas[i] <= bins_ranges[j] || j == num_bins - 1)
+            if (max_poas[i] <= bins_capacity[j] || j == num_bins - 1)
             {
                 bins_frequency[j]++;
                 bins_window_list[j].push_back(i);
@@ -178,7 +178,7 @@ void generate_batch_sizes(std::vector<BatchSize>& list_of_batch_sizes,
     // is smaller than N, they can all fit in batch N and no need to create extra batches.
     // For example. consider the following:
     //
-    // bins_ranges      1        2       4       8       16      32      64      128     256     512
+    // bins_capacity      1        2       4       8       16      32      64      128     256     512
     // bins frequency   0        0       0       0       0       0       10      51      0       0
     // bins width       0        0       0       0       0       0       5120    3604    0       0
     //
@@ -195,15 +195,37 @@ void generate_batch_sizes(std::vector<BatchSize>& list_of_batch_sizes,
             list_of_windows_per_batch.push_back(bins_window_list[j]);
             remaining_windows -= bins_frequency[j];
 
-            if (bins_ranges[j] > remaining_windows)
+            if (bins_capacity[j] >= remaining_windows)
             {
                 // check if all the remaining windows from following bins can be merged into the current bin
-                auto& list_of_windows_in_last_batch = list_of_windows_per_batch.back();
+                auto& list_of_windows_in_current_batch = list_of_windows_per_batch.back();
                 for (auto it = bins_window_list.begin() + j + 1; it != bins_window_list.end(); it++)
                 {
-                    list_of_windows_in_last_batch.insert(list_of_windows_in_last_batch.end(), it->begin(), it->end());
+                    list_of_windows_in_current_batch.insert(list_of_windows_in_current_batch.end(), it->begin(), it->end());
                 }
                 break;
+            }
+            else
+            {
+                // check if windows in the following bins can be merged into the current bin
+                for (int32_t k = j + 1; k < num_bins; k++)
+                {
+                    if (bins_frequency[k] > 0)
+                    {
+                        if (bins_capacity[j] >= bins_frequency[k])
+                        {
+                            auto& list_of_windows_in_current_batch = list_of_windows_per_batch.back();
+                            auto it                                = bins_window_list.begin() + k;
+                            list_of_windows_in_current_batch.insert(list_of_windows_in_current_batch.end(), it->begin(), it->end());
+                            remaining_windows -= bins_frequency[k];
+                            bins_frequency[k] = 0;
+                        }
+                        else
+                        {
+                            break;
+                        }
+                    }
+                }
             }
         }
     }

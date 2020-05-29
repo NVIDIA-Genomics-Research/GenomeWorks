@@ -191,7 +191,7 @@ int main(int argc, char** argv)
     // analyze the windows and create a minimal set of batches to process them all
     std::vector<BatchSize> list_of_batch_sizes;
     std::vector<std::vector<int32_t>> list_of_windows_per_batch;
-    cudapoa::generate_batch_sizes(list_of_batch_sizes, list_of_windows_per_batch, windows, banded, msa, 2048, 10);
+    cudapoa::generate_batch_sizes(list_of_batch_sizes, list_of_windows_per_batch, windows, banded, msa);
 
     int32_t window_count_offset = 0;
 
