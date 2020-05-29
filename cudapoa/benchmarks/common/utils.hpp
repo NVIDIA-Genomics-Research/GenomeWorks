@@ -193,37 +193,21 @@ void generate_batch_sizes(std::vector<BatchSize>& list_of_batch_sizes,
         {
             list_of_batch_sizes.emplace_back(bins_max_length[j], bins_num_reads[j]);
             list_of_windows_per_batch.push_back(bins_window_list[j]);
-            remaining_windows -= bins_frequency[j];
-
-            if (bins_capacity[j] >= remaining_windows)
+            // check if windows in the following bins can be merged into the current bin
+            for (int32_t k = j + 1; k < num_bins; k++)
             {
-                // check if all the remaining windows from following bins can be merged into the current bin
-                auto& list_of_windows_in_current_batch = list_of_windows_per_batch.back();
-                for (auto it = bins_window_list.begin() + j + 1; it != bins_window_list.end(); it++)
+                if (bins_frequency[k] > 0)
                 {
-                    list_of_windows_in_current_batch.insert(list_of_windows_in_current_batch.end(), it->begin(), it->end());
-                }
-                break;
-            }
-            else
-            {
-                // check if windows in the following bins can be merged into the current bin
-                for (int32_t k = j + 1; k < num_bins; k++)
-                {
-                    if (bins_frequency[k] > 0)
+                    if (bins_capacity[j] >= bins_frequency[k])
                     {
-                        if (bins_capacity[j] >= bins_frequency[k])
-                        {
-                            auto& list_of_windows_in_current_batch = list_of_windows_per_batch.back();
-                            auto it                                = bins_window_list.begin() + k;
-                            list_of_windows_in_current_batch.insert(list_of_windows_in_current_batch.end(), it->begin(), it->end());
-                            remaining_windows -= bins_frequency[k];
-                            bins_frequency[k] = 0;
-                        }
-                        else
-                        {
-                            break;
-                        }
+                        auto& list_of_windows_in_current_batch = list_of_windows_per_batch.back();
+                        auto it                                = bins_window_list.begin() + k;
+                        list_of_windows_in_current_batch.insert(list_of_windows_in_current_batch.end(), it->begin(), it->end());
+                        bins_frequency[k] = 0;
+                    }
+                    else
+                    {
+                        break;
                     }
                 }
             }
