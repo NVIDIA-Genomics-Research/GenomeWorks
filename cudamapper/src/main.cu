@@ -28,7 +28,7 @@
 #include <claragenomics/cudamapper/matcher.hpp>
 #include <claragenomics/cudamapper/overlapper.hpp>
 
-#include "claragenomics/cudamapper/version.hpp"
+#include "claragenomics/version.hpp"
 #include "cudamapper_utils.hpp"
 #include "index_descriptor.hpp"
 #include "overlapper_triggered.hpp"
@@ -50,7 +50,7 @@ namespace
 
 void printVersion(bool exit_on_completion = true)
 {
-    std::cerr << "Version: " << VERSION << std::endl;
+    std::cerr << VERSION << std::endl;
 
     if (exit_on_completion)
     {
