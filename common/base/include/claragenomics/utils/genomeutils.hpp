@@ -94,18 +94,24 @@ inline std::string generate_random_sequence(const std::string& backbone, std::mi
         }
 
         int length = substring.length();
-        std::uniform_int_distribution<int> random_mut_pos(0, length - 1);
-        for (int j = 0; j < std::min(max_mutations, range_length); j++)
+        if (length > 0)
         {
-            if (random_prob(rng) > 0.5)
+            std::uniform_int_distribution<int> random_mut_pos(0, length - 1);
+            for (int j = 0; j < std::min(max_mutations, range_length); j++)
             {
-                int mut_pos        = random_mut_pos(rng);
-                int swap_base      = random_base(rng);
-                substring[mut_pos] = alphabet[swap_base];
+                if (random_prob(rng) > 0.5)
+                {
+                    int mut_pos        = random_mut_pos(rng);
+                    int swap_base      = random_base(rng);
+                    substring[mut_pos] = alphabet[swap_base];
+                }
             }
         }
 
-        sequence.replace(start_index, range_length, substring);
+        if (start_index < static_cast<int>(sequence.length()))
+        {
+            sequence.replace(start_index, range_length, substring);
+        }
     }
 
     return sequence;
