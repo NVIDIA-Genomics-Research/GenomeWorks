@@ -19,6 +19,7 @@
 #include <thread>
 #include <atomic>
 
+#include <claragenomics/version.hpp>
 #include <claragenomics/logging/logging.hpp>
 #include <claragenomics/io/fasta_parser.hpp>
 #include <claragenomics/utils/cudautils.hpp>
@@ -28,7 +29,6 @@
 #include <claragenomics/cudamapper/matcher.hpp>
 #include <claragenomics/cudamapper/overlapper.hpp>
 
-#include "claragenomics/version.hpp"
 #include "cudamapper_utils.hpp"
 #include "index_descriptor.hpp"
 #include "overlapper_triggered.hpp"
@@ -48,9 +48,9 @@ namespace cudamapper
 namespace
 {
 
-void printVersion(bool exit_on_completion = true)
+void print_version(bool exit_on_completion = true)
 {
-    std::cerr << VERSION << std::endl;
+    std::cerr << claraparabricks_genomeworks_version() << std::endl;
 
     if (exit_on_completion)
     {
@@ -230,7 +230,7 @@ ApplicationParameteres read_input(int argc, char* argv[])
             parameters.perform_overlap_end_rescue = true;
             break;
         case 'v':
-            printVersion();
+            print_version();
         case 'h':
             help(0);
         default:

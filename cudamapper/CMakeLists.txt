@@ -15,9 +15,8 @@ add_subdirectory(data)
 
 GitVersion()
 
-configure_file(${CMAKE_SOURCE_DIR}/common/templates/version.cpp.in
+configure_file(${CMAKE_SOURCE_DIR}/common/base/src/version.cpp.in
                 ${CMAKE_CURRENT_BINARY_DIR}/version.cpp)
-set(version_file "${CMAKE_CURRENT_BINARY_DIR}/version.cpp")
 
 find_package(CUDA 9.0 QUIET REQUIRED)
 
@@ -51,7 +50,7 @@ cuda_add_library(cudamapper
         src/cudamapper_utils.cpp
         src/overlapper.cpp
         src/overlapper_triggered.cu
-        ${version_file})
+        ${CMAKE_CURRENT_BINARY_DIR}/version.cpp)
 
 target_include_directories(cudamapper
     PUBLIC
