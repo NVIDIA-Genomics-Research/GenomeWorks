@@ -41,6 +41,7 @@ ApplicationParameters::ApplicationParameters(int argc, char* argv[])
         {"min-overlap-length", required_argument, 0, 'l'},
         {"min-bases-per-residue", required_argument, 0, 'b'},
         {"min-overlap-fraction", required_argument, 0, 'z'},
+        {"rescue-overlap-ends", no_argument, 0, 'R'},
         {"query-indices-in-host-memory", required_argument, 0, 'Q'},
         {"query-indices-in-device-memory", required_argument, 0, 'q'},
         {"target-indices-in-host-memory", required_argument, 0, 'C'},
@@ -48,7 +49,7 @@ ApplicationParameters::ApplicationParameters(int argc, char* argv[])
         {"help", no_argument, 0, 'h'},
     };
 
-    std::string optstring = "k:w:d:m:i:t:F:h:a:r:l:b:z:Q:q:C:c:";
+    std::string optstring = "k:w:d:m:i:t:F:h:a:r:l:b:z:R:Q:q:C:c:";
 
     bool target_indices_in_host_memory_set   = false;
     bool target_indices_in_device_memory_set = false;
@@ -97,6 +98,9 @@ ApplicationParameters::ApplicationParameters(int argc, char* argv[])
             break;
         case 'z':
             min_overlap_fraction = atof(optarg);
+            break;
+        case 'R':
+            perform_overlap_end_rescue = true;
             break;
         case 'Q':
             query_indices_in_host_memory = atoi(optarg);
@@ -275,7 +279,10 @@ void ApplicationParameters::help(int32_t exit_code)
             Minimum number of bases in overlap per match [100].)"
               << R"(
         -z, --min-overlap-fraction
-            Minimum ratio of overlap length to alignment length [0.95].)
+            Minimum ratio of overlap length to alignment length [0.95].)"
+              << R"(
+        -R, --rescue-overlap-ends
+            Run a kmer-based procedure that attempts to extend overlaps at the ends of the query/target.)"
               << R"(
         -Q, --query-indices-in-host-memory
             number of query indices to keep in host memory [10])"

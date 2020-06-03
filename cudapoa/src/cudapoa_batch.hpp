@@ -23,6 +23,7 @@
 #include <stdint.h>
 #include <string>
 #include <iostream>
+#include <iomanip>
 #include <cuda_runtime_api.h>
 
 #ifndef TABS
@@ -542,11 +543,17 @@ protected:
     {
         int32_t max_graph_dimension = banded_alignment_ ? batch_size_.max_matrix_graph_dimension_banded : batch_size_.max_matrix_graph_dimension;
 
-        int32_t scores_width = banded_alignment_ ? CUDAPOA_BANDED_MAX_MATRIX_SEQUENCE_DIMENSION : cudautils::align<int32_t, 4>(max_seq_length + 1 + CELLS_PER_THREAD);
+        int32_t scores_width = banded_alignment_ ? (batch_size_.alignment_band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING) : cudautils::align<int32_t, 4>(max_seq_length + 1 + CELLS_PER_THREAD);
         size_t scores_size   = static_cast<size_t>(scores_width) * static_cast<size_t>(max_graph_dimension) * sizeof(ScoreT);
 
         if (scores_size > avail_scorebuf_mem_)
         {
+            if (get_total_poas() == 0)
+            {
+                std::cout << "Memory available " << std::fixed << std::setprecision(2) << (static_cast<double>(avail_scorebuf_mem_)) / 1024. / 1024. / 1024.;
+                std::cout << "GB, Memory required " << (static_cast<double>(scores_size)) / 1024. / 1024. / 1024.;
+                std::cout << "GB (sequence length " << max_seq_length << ", graph length " << max_graph_dimension << ")" << std::endl;
+            }
             return false;
         }
         else

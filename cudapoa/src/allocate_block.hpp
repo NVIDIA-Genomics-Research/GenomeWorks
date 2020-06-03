@@ -54,7 +54,7 @@ public:
     {
         scoped_device_switch dev(device_id_);
 
-        matrix_sequence_dimension_ = banded_alignment_ ? CUDAPOA_BANDED_MAX_MATRIX_SEQUENCE_DIMENSION : batch_size.max_matrix_sequence_dimension;
+        matrix_sequence_dimension_ = banded_alignment_ ? (batch_size.alignment_band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING) : batch_size.max_matrix_sequence_dimension;
         max_graph_dimension_       = banded_alignment_ ? batch_size.max_matrix_graph_dimension_banded : batch_size.max_matrix_graph_dimension;
         max_nodes_per_window_      = banded_alignment_ ? batch_size.max_nodes_per_window_banded : batch_size.max_nodes_per_window;
 
@@ -63,8 +63,8 @@ public:
         int64_t host_size_per_poa, device_size_per_poa;
         std::tie(host_size_fixed, device_size_fixed, host_size_per_poa, device_size_per_poa) = calculate_space_per_poa(batch_size);
 
-        // Using 2x as a buffer.
-        size_t minimum_device_mem = 2 * (device_size_fixed + device_size_per_poa);
+        // Check minimum requirement for device memory
+        size_t minimum_device_mem = device_size_fixed + device_size_per_poa;
         if (avail_mem < minimum_device_mem)
         {
             std::string msg = std::string("Require at least ")

@@ -96,11 +96,10 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
                                   SizeT* sequence_begin_nodes_ids_d,
                                   uint16_t* outgoing_edges_coverage_d,
                                   uint16_t* outgoing_edges_coverage_count_d,
-                                  uint32_t max_limit_nodes_per_window,
-                                  uint32_t max_limit_nodes_per_window_banded,
-                                  uint32_t max_limit_matrix_graph_dimension,
-                                  uint32_t max_limit_matrix_graph_dimension_banded,
-                                  uint32_t max_limit_consensus_size)
+                                  uint32_t max_nodes_per_window,
+                                  uint32_t max_graph_dimension,
+                                  uint32_t max_limit_consensus_size,
+                                  uint32_t banded_alignment_band_width = 0)
 {
     // shared error indicator within a warp
     bool warp_error = false;
@@ -112,11 +111,6 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
 
     if (window_idx >= total_windows)
         return;
-
-    // These are not being changed to int32_t to make use of larger range
-    // without having to use 2 registers which would be needed for 64bit
-    uint32_t max_nodes_per_window = cuda_banded_alignment ? max_limit_nodes_per_window_banded : max_limit_nodes_per_window;
-    uint32_t max_graph_dimension  = cuda_banded_alignment ? max_limit_matrix_graph_dimension_banded : max_limit_matrix_graph_dimension;
 
     // Find the buffer offsets for each thread within the global memory buffers.
     uint8_t* nodes                        = &nodes_d[max_nodes_per_window * window_idx];
@@ -133,13 +127,17 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
     uint16_t* sorted_poa_local_edge_count = &sorted_poa_local_edge_count_d[window_idx * max_nodes_per_window];
 
     int32_t scores_width = window_details_d[window_idx].scores_width;
-    size_t scores_offset = window_details_d[window_idx].scores_offset * max_graph_dimension;
 
-    ScoreT* scores = 0;
+    int64_t scores_offset;
     if (cuda_banded_alignment)
-        scores = &scores_d[max_graph_dimension * CUDAPOA_BANDED_MAX_MATRIX_SEQUENCE_DIMENSION * window_idx];
+    {
+        scores_offset = static_cast<int64_t>(max_graph_dimension) * static_cast<int64_t>(banded_alignment_band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING) * static_cast<int64_t>(window_idx);
+    }
     else
-        scores = &scores_d[scores_offset];
+    {
+        scores_offset = static_cast<int64_t>(window_details_d[window_idx].scores_offset) * static_cast<int64_t>(max_graph_dimension);
+    }
+    ScoreT* scores = &scores_d[scores_offset];
 
     SizeT* alignment_graph         = &alignment_graph_d[max_graph_dimension * window_idx];
     SizeT* alignment_read          = &alignment_read_d[max_graph_dimension * window_idx];
@@ -252,6 +250,7 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
                                                                                 scores,
                                                                                 alignment_graph,
                                                                                 alignment_read,
+                                                                                banded_alignment_band_width,
                                                                                 gap_score,
                                                                                 mismatch_score,
                                                                                 match_score);
@@ -390,6 +389,7 @@ void generatePOAtemplated(genomeworks::cudapoa::OutputDetails* output_details_d,
     ScoreT* scores         = alignment_details_d->scores;
     SizeT* alignment_graph = alignment_details_d->alignment_graph;
     SizeT* alignment_read  = alignment_details_d->alignment_read;
+
     // unpack graph details
     uint8_t* nodes                          = graph_details_d->nodes;
     SizeT* node_alignments                  = graph_details_d->node_alignments;
@@ -456,11 +456,10 @@ void generatePOAtemplated(genomeworks::cudapoa::OutputDetails* output_details_d,
                                                                                  sequence_begin_nodes_ids,
                                                                                  outgoing_edges_coverage,
                                                                                  outgoing_edges_coverage_count,
-                                                                                 batch_size.max_nodes_per_window,
                                                                                  batch_size.max_nodes_per_window_banded,
-                                                                                 batch_size.max_matrix_graph_dimension,
                                                                                  batch_size.max_matrix_graph_dimension_banded,
-                                                                                 batch_size.max_concensus_size);
+                                                                                 batch_size.max_concensus_size,
+                                                                                 batch_size.alignment_band_width);
             CGA_CU_CHECK_ERR(cudaPeekAtLastError());
 
             generateConsensusKernel<true, SizeT>
@@ -482,7 +481,6 @@ void generatePOAtemplated(genomeworks::cudapoa::OutputDetails* output_details_d,
                                                                                        consensus_scores,
                                                                                        consensus_predecessors,
                                                                                        node_coverage_counts,
-                                                                                       batch_size.max_nodes_per_window,
                                                                                        batch_size.max_nodes_per_window_banded,
                                                                                        batch_size.max_concensus_size);
             CGA_CU_CHECK_ERR(cudaPeekAtLastError());
@@ -522,11 +520,10 @@ void generatePOAtemplated(genomeworks::cudapoa::OutputDetails* output_details_d,
                                                                                  sequence_begin_nodes_ids,
                                                                                  outgoing_edges_coverage,
                                                                                  outgoing_edges_coverage_count,
-                                                                                 batch_size.max_nodes_per_window,
                                                                                  batch_size.max_nodes_per_window_banded,
-                                                                                 batch_size.max_matrix_graph_dimension,
                                                                                  batch_size.max_matrix_graph_dimension_banded,
-                                                                                 batch_size.max_concensus_size);
+                                                                                 batch_size.max_concensus_size,
+                                                                                 batch_size.alignment_band_width);
             CGA_CU_CHECK_ERR(cudaPeekAtLastError());
 
             generateMSAKernel<true, SizeT>
@@ -595,9 +592,7 @@ void generatePOAtemplated(genomeworks::cudapoa::OutputDetails* output_details_d,
                                                                     outgoing_edges_coverage,
                                                                     outgoing_edges_coverage_count,
                                                                     batch_size.max_nodes_per_window,
-                                                                    batch_size.max_nodes_per_window_banded,
                                                                     batch_size.max_matrix_graph_dimension,
-                                                                    batch_size.max_matrix_graph_dimension_banded,
                                                                     batch_size.max_concensus_size);
             CGA_CU_CHECK_ERR(cudaPeekAtLastError());
 
@@ -621,7 +616,6 @@ void generatePOAtemplated(genomeworks::cudapoa::OutputDetails* output_details_d,
                                                                                        consensus_predecessors,
                                                                                        node_coverage_counts,
                                                                                        batch_size.max_nodes_per_window,
-                                                                                       batch_size.max_nodes_per_window_banded,
                                                                                        batch_size.max_concensus_size);
             CGA_CU_CHECK_ERR(cudaPeekAtLastError());
         }
@@ -661,9 +655,7 @@ void generatePOAtemplated(genomeworks::cudapoa::OutputDetails* output_details_d,
                                                                     outgoing_edges_coverage,
                                                                     outgoing_edges_coverage_count,
                                                                     batch_size.max_nodes_per_window,
-                                                                    batch_size.max_nodes_per_window_banded,
                                                                     batch_size.max_matrix_graph_dimension,
-                                                                    batch_size.max_matrix_graph_dimension_banded,
                                                                     batch_size.max_concensus_size);
             CGA_CU_CHECK_ERR(cudaPeekAtLastError());
 

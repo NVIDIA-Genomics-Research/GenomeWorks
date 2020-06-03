@@ -340,6 +340,17 @@ void writer_thread_function(const int32_t device_id,
                 Overlapper::post_process_overlaps(data_to_write->overlaps);
             }
 
+            if (application_parameters.perform_overlap_end_rescue)
+            {
+                CGA_NVTX_RANGE(profiler, "main::writer_thread::rescue_overlap_end");
+                // Perform overlap-end rescue
+                Overlapper::rescue_overlap_ends(data_to_write->overlaps,
+                                                *application_parameters.query_parser,
+                                                *application_parameters.target_parser,
+                                                50,
+                                                0.5);
+            }
+
             // write to output
             {
                 CGA_NVTX_RANGE(profiler, "main::writer_thread::print_paf");
@@ -400,14 +411,14 @@ void worker_thread_function(const int32_t device_id,
     // data structure used to exchnage data with writer_thread
     ThreadsafeProducerConsumer<OverlapsAndCigars> overlaps_and_cigars_to_write;
 
-    // There should be at least one writter_thread per worker_thread. If more threads are available one thread should be reserved for
-    // worker_thread and all other threads should be writter_threads
-    const int32_t threads_per_device         = (std::thread::hardware_concurrency() + application_parameters.num_devices - 1) / application_parameters.num_devices;
-    const int32_t writter_threads_per_device = std::max(threads_per_device - 1, 1);
+    // There should be at least one writer_thread per worker_thread. If more threads are available one thread should be reserved for
+    // worker_thread and all other threads should be writer_threads
+    const int32_t threads_per_device        = (std::thread::hardware_concurrency() + application_parameters.num_devices - 1) / application_parameters.num_devices;
+    const int32_t writer_threads_per_device = std::max(threads_per_device - 1, 1);
 
     // writer_threads run in the background and write overlaps and cigars to output as they become available in overlaps_and_cigars_to_write
     std::vector<std::thread> writer_threads;
-    for (int32_t i = 0; i < writter_threads_per_device; ++i)
+    for (int32_t i = 0; i < writer_threads_per_device; ++i)
     {
         writer_threads.emplace_back(writer_thread_function,
                                     device_id,
