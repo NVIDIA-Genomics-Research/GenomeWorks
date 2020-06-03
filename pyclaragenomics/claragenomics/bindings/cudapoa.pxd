@@ -66,10 +66,11 @@ cdef extern from "claragenomics/cudapoa/batch.hpp" namespace "claraparabricks::g
         int32_t max_matrix_graph_dimension
         int32_t max_matrix_graph_dimension_banded
         int32_t max_matrix_sequence_dimension
+        int32_t alignment_band_width
         int32_t max_sequences_per_poa
 
-        BatchSize(int32_t, int32_t)
-        BatchSize(int32_t, int32_t,
+        BatchSize(int32_t, int32_t, int32_t)
+        BatchSize(int32_t, int32_t, int32_t,
                   int32_t, int32_t, int32_t)
 
     ctypedef vector[Entry] Group

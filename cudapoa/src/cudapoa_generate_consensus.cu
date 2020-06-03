@@ -292,8 +292,7 @@ __global__ void generateConsensusKernel(uint8_t* consensus_d,
                                         int32_t* consensus_scores_d,
                                         SizeT* consensus_predecessors_d,
                                         uint16_t* node_coverage_counts_d_,
-                                        uint32_t max_limit_nodes_per_window,
-                                        uint32_t max_limit_nodes_per_window_banded,
+                                        uint32_t max_nodes_per_window,
                                         uint32_t max_limit_consensus_size)
 {
     //each thread will operate on a window
@@ -306,8 +305,6 @@ __global__ void generateConsensusKernel(uint8_t* consensus_d,
 
     if (consensus[0] == CUDAPOA_KERNEL_ERROR_ENCOUNTERED) //error during graph generation
         return;
-
-    int32_t max_nodes_per_window = cuda_banded_alignment ? max_limit_nodes_per_window_banded : max_limit_nodes_per_window;
 
     // Find the buffer offsets for each thread within the global memory buffers.
     uint8_t* nodes                  = &nodes_d[max_nodes_per_window * window_idx];
