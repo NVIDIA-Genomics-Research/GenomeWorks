@@ -359,8 +359,7 @@ void writer_thread_function(const int32_t device_id,
                           *application_parameters.query_parser,
                           *application_parameters.query_parser,
                           application_parameters.kmer_size,
-                          output_mutex,
-                          application_parameters.num_devices);
+                          output_mutex);
             }
         }
 

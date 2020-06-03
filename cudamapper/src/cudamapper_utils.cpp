@@ -32,8 +32,7 @@ void print_paf(const std::vector<Overlap>& overlaps,
                const io::FastaParser& query_parser,
                const io::FastaParser& target_parser,
                const int32_t kmer_size,
-               std::mutex& write_output_mutex,
-               const int32_t number_of_devices)
+               std::mutex& write_output_mutex)
 {
     CGA_NVTX_RANGE(profiler, "print_paf");
 
