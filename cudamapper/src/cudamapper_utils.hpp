@@ -44,7 +44,7 @@ void print_paf(const std::vector<Overlap>& overlaps,
                int32_t kmer_size,
                std::mutex& write_output_mutex);
 
-/// \brief crated a device allocator
+/// \brief create a device allocator
 /// \param max_cached_memory_bytes
 /// \return device allocator
 DefaultDeviceAllocator get_device_allocator(const size_t max_cached_memory_bytes);
