@@ -94,7 +94,7 @@ public:
         CGA_CU_CHECK_ERR(cudaFreeHost(block_data_h_));
     }
 
-        void get_output_details(OutputDetails** output_details_h_p, OutputDetails** output_details_d_p)
+    void get_output_details(OutputDetails** output_details_h_p, OutputDetails** output_details_d_p)
     {
         OutputDetails* output_details_h{};
         OutputDetails* output_details_d{};
@@ -180,7 +180,7 @@ public:
         *input_details_d_p = input_details_d;
     }
 
-        void get_alignment_details(AlignmentDetails<ScoreT, SizeT>** alignment_details_d_p)
+    void get_alignment_details(AlignmentDetails<ScoreT, SizeT>** alignment_details_d_p)
     {
         AlignmentDetails<ScoreT, SizeT>* alignment_details_d{};
 
