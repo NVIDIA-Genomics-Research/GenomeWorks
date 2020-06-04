@@ -222,7 +222,7 @@ public:
 
         // on device
         graph_details_d->nodes = &block_data_d_[offset_d_];
-        offset_d_ += cudautils::align<int64_t, 8>(sizeof(*graph_details_h->nodes) * max_nodes_per_window_ * max_poas_);
+        offset_d_ += cudautils::align<int64_t, 8>(sizeof(*graph_details_d->nodes) * max_nodes_per_window_ * max_poas_);
         graph_details_d->node_alignments = reinterpret_cast<decltype(graph_details_d->node_alignments)>(&block_data_d_[offset_d_]);
         offset_d_ += cudautils::align<int64_t, 8>(sizeof(*graph_details_d->node_alignments) * max_nodes_per_window_ * CUDAPOA_MAX_NODE_ALIGNMENTS * max_poas_);
         graph_details_d->node_alignment_count = reinterpret_cast<decltype(graph_details_d->node_alignment_count)>(&block_data_d_[offset_d_]);
