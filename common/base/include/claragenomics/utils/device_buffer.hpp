@@ -13,7 +13,10 @@
 #include <claragenomics/utils/buffer.hpp>
 #include <claragenomics/utils/allocator.hpp>
 
-namespace claragenomics
+namespace claraparabricks
+{
+
+namespace genomeworks
 {
 
 template <typename T>
@@ -23,4 +26,6 @@ using device_buffer = buffer<T, CachingDeviceAllocator<T, DevicePreallocatedAllo
 using device_buffer = buffer<T, CudaMallocAllocator<T>>;
 #endif
 
-} // namespace claragenomics
+} // namespace genomeworks
+
+} // namespace claraparabricks

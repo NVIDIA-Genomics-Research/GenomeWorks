@@ -17,15 +17,19 @@
 #include <claragenomics/cudamapper/index.hpp>
 #include <claragenomics/io/fasta_parser.hpp>
 
-namespace claragenomics
+namespace claraparabricks
 {
+
+namespace genomeworks
+{
+
 namespace cudamapper
 {
 
 IndexCacheHost::IndexCacheHost(const bool same_query_and_target,
-                               claragenomics::DefaultDeviceAllocator allocator,
-                               std::shared_ptr<claragenomics::io::FastaParser> query_parser,
-                               std::shared_ptr<claragenomics::io::FastaParser> target_parser,
+                               genomeworks::DefaultDeviceAllocator allocator,
+                               std::shared_ptr<genomeworks::io::FastaParser> query_parser,
+                               std::shared_ptr<genomeworks::io::FastaParser> target_parser,
                                const std::uint64_t kmer_size,
                                const std::uint64_t window_size,
                                const bool hash_representations,
@@ -44,18 +48,22 @@ IndexCacheHost::IndexCacheHost(const bool same_query_and_target,
 }
 
 void IndexCacheHost::generate_query_cache_content(const std::vector<IndexDescriptor>& descriptors_of_indices_to_cache,
-                                                  const std::vector<IndexDescriptor>& descriptors_of_indices_to_keep_on_device)
+                                                  const std::vector<IndexDescriptor>& descriptors_of_indices_to_keep_on_device,
+                                                  const bool skip_copy_to_host)
 {
     generate_cache_content(descriptors_of_indices_to_cache,
                            descriptors_of_indices_to_keep_on_device,
+                           skip_copy_to_host,
                            CacheSelector::query_cache);
 }
 
 void IndexCacheHost::generate_target_cache_content(const std::vector<IndexDescriptor>& descriptors_of_indices_to_cache,
-                                                   const std::vector<IndexDescriptor>& descriptors_of_indices_to_keep_on_device)
+                                                   const std::vector<IndexDescriptor>& descriptors_of_indices_to_keep_on_device,
+                                                   const bool skip_copy_to_host)
 {
     generate_cache_content(descriptors_of_indices_to_cache,
                            descriptors_of_indices_to_keep_on_device,
+                           skip_copy_to_host,
                            CacheSelector::target_cache);
 }
 
@@ -73,13 +81,18 @@ std::shared_ptr<Index> IndexCacheHost::get_index_from_target_cache(const IndexDe
 
 void IndexCacheHost::generate_cache_content(const std::vector<IndexDescriptor>& descriptors_of_indices_to_cache,
                                             const std::vector<IndexDescriptor>& descriptors_of_indices_to_keep_on_device,
+                                            const bool skip_copy_to_host,
                                             const CacheSelector which_cache)
 {
+    // skip_copy_to_host only makes sense if descriptors_of_indices_to_cache and descriptors_of_indices_to_keep_on_device are the same
+    // otherwise some indices would be created and not saved on either host or device
+    assert(!skip_copy_to_host || (descriptors_of_indices_to_cache == descriptors_of_indices_to_keep_on_device));
+
     cache_type_t& cache_to_edit                           = (CacheSelector::query_cache == which_cache) ? query_cache_ : target_cache_;
     const cache_type_t& cache_to_check                    = (CacheSelector::query_cache == which_cache) ? target_cache_ : query_cache_;
     device_cache_type_t& temp_device_cache_to_edit        = (CacheSelector::query_cache == which_cache) ? query_temp_device_cache_ : target_temp_device_cache_;
     const device_cache_type_t& temp_device_cache_to_check = (CacheSelector::query_cache == which_cache) ? target_temp_device_cache_ : query_temp_device_cache_;
-    const claragenomics::io::FastaParser* parser          = (CacheSelector::query_cache == which_cache) ? query_parser_.get() : target_parser_.get();
+    const genomeworks::io::FastaParser* parser            = (CacheSelector::query_cache == which_cache) ? query_parser_.get() : target_parser_.get();
 
     // convert descriptors_of_indices_to_keep_on_device into set for faster search
     std::unordered_set<IndexDescriptor, IndexDescriptorHash> descriptors_of_indices_to_keep_on_device_set(begin(descriptors_of_indices_to_keep_on_device),
@@ -144,11 +157,14 @@ void IndexCacheHost::generate_cache_content(const std::vector<IndexDescriptor>& 
                                                       filtering_parameter_,
                                                       cuda_stream_);
                 // copy it to host memory
-                index_copy = IndexHostCopy::create_cache(*index_on_device,
-                                                         descriptor_of_index_to_cache.first_read(),
-                                                         kmer_size_,
-                                                         window_size_,
-                                                         cuda_stream_);
+                if (!skip_copy_to_host)
+                {
+                    index_copy = IndexHostCopy::create_cache(*index_on_device,
+                                                             descriptor_of_index_to_cache.first_read(),
+                                                             kmer_size_,
+                                                             window_size_,
+                                                             cuda_stream_);
+                }
             }
         }
 
@@ -275,4 +291,7 @@ void IndexCacheDevice::generate_cache_content(const std::vector<IndexDescriptor>
 }
 
 } // namespace cudamapper
-} // namespace claragenomics
+
+} // namespace genomeworks
+
+} // namespace claraparabricks

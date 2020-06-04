@@ -14,7 +14,10 @@
 
 #include <stdio.h>
 
-namespace claragenomics
+namespace claraparabricks
+{
+
+namespace genomeworks
 {
 
 namespace cudapoa
@@ -116,7 +119,7 @@ __device__ void generateMSADevice(uint8_t* nodes,
 template <bool cuda_banded_alignment = false, typename SizeT>
 __global__ void generateMSAKernel(uint8_t* nodes_d,
                                   uint8_t* consensus_d,
-                                  claragenomics::cudapoa::WindowDetails* window_details_d,
+                                  genomeworks::cudapoa::WindowDetails* window_details_d,
                                   uint16_t* incoming_edge_count_d,
                                   SizeT* incoming_edges_d,
                                   uint16_t* outgoing_edge_count_d,
@@ -221,4 +224,6 @@ __global__ void generateMSAKernel(uint8_t* nodes_d,
 
 } // namespace cudapoa
 
-} // namespace claragenomics
+} // namespace genomeworks
+
+} // namespace claraparabricks

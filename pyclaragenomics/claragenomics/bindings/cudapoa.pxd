@@ -32,7 +32,7 @@ from bindings.graph cimport DirectedGraph
 # from the ClaraGenomicsAnalysis `cudapoa` module.
 
 # Declare structs and APIs from cudapoa.hpp.
-cdef extern from "claragenomics/cudapoa/cudapoa.hpp" namespace "claragenomics::cudapoa":
+cdef extern from "claragenomics/cudapoa/cudapoa.hpp" namespace "claraparabricks::genomeworks::cudapoa":
     cdef enum StatusType:
         success = 0
         exceeded_maximum_poas
@@ -52,7 +52,7 @@ cdef extern from "claragenomics/cudapoa/cudapoa.hpp" namespace "claragenomics::c
     cdef StatusType Init()
 
 # Declare structs and APIs from batch.hpp.
-cdef extern from "claragenomics/cudapoa/batch.hpp" namespace "claragenomics::cudapoa":
+cdef extern from "claragenomics/cudapoa/batch.hpp" namespace "claraparabricks::genomeworks::cudapoa":
     cdef struct Entry:
         const char* seq
         const int8_t* weights
@@ -66,10 +66,11 @@ cdef extern from "claragenomics/cudapoa/batch.hpp" namespace "claragenomics::cud
         int32_t max_matrix_graph_dimension
         int32_t max_matrix_graph_dimension_banded
         int32_t max_matrix_sequence_dimension
+        int32_t alignment_band_width
         int32_t max_sequences_per_poa
 
-        BatchSize(int32_t, int32_t)
-        BatchSize(int32_t, int32_t,
+        BatchSize(int32_t, int32_t, int32_t)
+        BatchSize(int32_t, int32_t, int32_t,
                   int32_t, int32_t, int32_t)
 
     ctypedef vector[Entry] Group

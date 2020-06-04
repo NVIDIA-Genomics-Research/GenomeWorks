@@ -17,7 +17,10 @@
 
 #include <claragenomics/utils/cudautils.hpp>
 
-namespace claragenomics
+namespace claraparabricks
+{
+
+namespace genomeworks
 {
 
 /// @brief Allocator that preallocates one big buffer of device memory and assigns sections of it to allocation requests
@@ -311,4 +314,6 @@ private:
     std::list<MemoryBlock> used_blocks_;
 };
 
-} // namespace claragenomics
+} // namespace genomeworks
+
+} // namespace claraparabricks

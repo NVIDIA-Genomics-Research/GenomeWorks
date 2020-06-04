@@ -23,6 +23,7 @@
 #include <stdint.h>
 #include <string>
 #include <iostream>
+#include <iomanip>
 #include <cuda_runtime_api.h>
 
 #ifndef TABS
@@ -39,7 +40,10 @@ inline std::string printTabs(int32_t tab_count)
     return s;
 }
 
-namespace claragenomics
+namespace claraparabricks
+{
+
+namespace genomeworks
 {
 
 namespace cudapoa
@@ -161,7 +165,7 @@ public:
         CGA_CU_CHECK_ERR(cudaMemcpyAsync(input_details_d_->base_weights, input_details_h_->base_weights,
                                          num_nucleotides_copied_ * sizeof(uint8_t), cudaMemcpyHostToDevice, stream_));
         CGA_CU_CHECK_ERR(cudaMemcpyAsync(input_details_d_->window_details, input_details_h_->window_details,
-                                         poa_count_ * sizeof(claragenomics::cudapoa::WindowDetails), cudaMemcpyHostToDevice, stream_));
+                                         poa_count_ * sizeof(genomeworks::cudapoa::WindowDetails), cudaMemcpyHostToDevice, stream_));
         /// ToDo may need to revise the following sizeof()
         CGA_CU_CHECK_ERR(cudaMemcpyAsync(input_details_d_->sequence_lengths, input_details_h_->sequence_lengths,
                                          global_sequence_idx_ * sizeof(*input_details_h_->sequence_lengths), cudaMemcpyHostToDevice, stream_));
@@ -170,19 +174,19 @@ public:
         std::string msg = " Launching kernel for " + std::to_string(poa_count_) + " on device ";
         print_batch_debug_message(msg);
 
-        claragenomics::cudapoa::generatePOA(output_details_d_,
-                                            input_details_d_,
-                                            poa_count_,
-                                            stream_,
-                                            alignment_details_d_,
-                                            graph_details_d_,
-                                            gap_score_,
-                                            mismatch_score_,
-                                            match_score_,
-                                            banded_alignment_,
-                                            max_sequences_per_poa_,
-                                            output_mask_,
-                                            batch_size_);
+        genomeworks::cudapoa::generatePOA(output_details_d_,
+                                          input_details_d_,
+                                          poa_count_,
+                                          stream_,
+                                          alignment_details_d_,
+                                          graph_details_d_,
+                                          gap_score_,
+                                          mismatch_score_,
+                                          match_score_,
+                                          banded_alignment_,
+                                          max_sequences_per_poa_,
+                                          output_mask_,
+                                          batch_size_);
 
         msg = " Launched kernel on device ";
         print_batch_debug_message(msg);
@@ -191,7 +195,7 @@ public:
     // Get the consensus for each POA.
     StatusType get_consensus(std::vector<std::string>& consensus,
                              std::vector<std::vector<uint16_t>>& coverage,
-                             std::vector<claragenomics::cudapoa::StatusType>& output_status)
+                             std::vector<genomeworks::cudapoa::StatusType>& output_status)
     {
         // Check if consensus was requested at init time.
         if (!(OutputType::consensus & output_mask_))
@@ -225,14 +229,14 @@ public:
             // c[0] == 0 means an error occured and when that happens the error type is saved in c[1]
             if (static_cast<uint8_t>(c[0]) == CUDAPOA_KERNEL_ERROR_ENCOUNTERED)
             {
-                decode_cudapoa_kernel_error(static_cast<claragenomics::cudapoa::StatusType>(c[1]), output_status);
+                decode_cudapoa_kernel_error(static_cast<genomeworks::cudapoa::StatusType>(c[1]), output_status);
                 // push back empty placeholder for consensus and coverage
                 consensus.emplace_back(std::string());
                 coverage.emplace_back(std::vector<uint16_t>());
             }
             else
             {
-                output_status.emplace_back(claragenomics::cudapoa::StatusType::success);
+                output_status.emplace_back(genomeworks::cudapoa::StatusType::success);
                 consensus.emplace_back(std::string(c));
                 std::reverse(consensus.back().begin(), consensus.back().end());
                 // Similarly, get the coverage and reverse it.
@@ -285,11 +289,11 @@ public:
             // c[0] == 0 means an error occured and when that happens the error type is saved in c[1]
             if (static_cast<uint8_t>(c[0]) == CUDAPOA_KERNEL_ERROR_ENCOUNTERED)
             {
-                decode_cudapoa_kernel_error(static_cast<claragenomics::cudapoa::StatusType>(c[1]), output_status);
+                decode_cudapoa_kernel_error(static_cast<genomeworks::cudapoa::StatusType>(c[1]), output_status);
             }
             else
             {
-                output_status.emplace_back(claragenomics::cudapoa::StatusType::success);
+                output_status.emplace_back(genomeworks::cudapoa::StatusType::success);
                 uint16_t num_seqs = input_details_h_->window_details[poa].num_seqs;
                 for (uint16_t i = 0; i < num_seqs; i++)
                 {
@@ -354,11 +358,11 @@ public:
             // c[0] == 0 means an error occured and when that happens the error type is saved in c[1]
             if (static_cast<uint8_t>(c[0]) == CUDAPOA_KERNEL_ERROR_ENCOUNTERED)
             {
-                decode_cudapoa_kernel_error(static_cast<claragenomics::cudapoa::StatusType>(c[1]), output_status);
+                decode_cudapoa_kernel_error(static_cast<genomeworks::cudapoa::StatusType>(c[1]), output_status);
             }
             else
             {
-                output_status.emplace_back(claragenomics::cudapoa::StatusType::success);
+                output_status.emplace_back(genomeworks::cudapoa::StatusType::success);
                 DirectedGraph& graph = graphs[poa];
                 int32_t seq_0_offset = input_details_h_->window_details[poa].seq_len_buffer_offset;
                 int32_t num_nodes    = input_details_h_->sequence_lengths[seq_0_offset];
@@ -431,28 +435,28 @@ protected:
     }
 
     // Log cudapoa kernel error
-    void decode_cudapoa_kernel_error(claragenomics::cudapoa::StatusType error_type,
+    void decode_cudapoa_kernel_error(genomeworks::cudapoa::StatusType error_type,
                                      std::vector<StatusType>& output_status)
     {
         switch (error_type)
         {
-        case claragenomics::cudapoa::StatusType::node_count_exceeded_maximum_graph_size:
+        case genomeworks::cudapoa::StatusType::node_count_exceeded_maximum_graph_size:
             CGA_LOG_WARN("Kernel Error:: Node count exceeded maximum nodes per graph in batch {}\n", bid_);
             output_status.emplace_back(error_type);
             break;
-        case claragenomics::cudapoa::StatusType::edge_count_exceeded_maximum_graph_size:
+        case genomeworks::cudapoa::StatusType::edge_count_exceeded_maximum_graph_size:
             CGA_LOG_WARN("Kernel Error:: Edge count exceeded maximum edges per graph in batch {}\n", bid_);
             output_status.emplace_back(error_type);
             break;
-        case claragenomics::cudapoa::StatusType::seq_len_exceeded_maximum_nodes_per_window:
+        case genomeworks::cudapoa::StatusType::seq_len_exceeded_maximum_nodes_per_window:
             CGA_LOG_WARN("Kernel Error:: Sequence length exceeded maximum nodes per window in batch {}\n", bid_);
             output_status.emplace_back(error_type);
             break;
-        case claragenomics::cudapoa::StatusType::loop_count_exceeded_upper_bound:
+        case genomeworks::cudapoa::StatusType::loop_count_exceeded_upper_bound:
             CGA_LOG_WARN("Kernel Error:: Loop count exceeded upper bound in nw algorithm in batch {}\n", bid_);
             output_status.emplace_back(error_type);
             break;
-        case claragenomics::cudapoa::StatusType::exceeded_maximum_sequence_size:
+        case genomeworks::cudapoa::StatusType::exceeded_maximum_sequence_size:
             CGA_LOG_WARN("Kernel Error:: Consensus/MSA sequence size exceeded max sequence size in batch {}\n", bid_);
             output_status.emplace_back(error_type);
             break;
@@ -539,11 +543,17 @@ protected:
     {
         int32_t max_graph_dimension = banded_alignment_ ? batch_size_.max_matrix_graph_dimension_banded : batch_size_.max_matrix_graph_dimension;
 
-        int32_t scores_width = banded_alignment_ ? CUDAPOA_BANDED_MAX_MATRIX_SEQUENCE_DIMENSION : cudautils::align<int32_t, 4>(max_seq_length + 1 + CELLS_PER_THREAD);
+        int32_t scores_width = banded_alignment_ ? (batch_size_.alignment_band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING) : cudautils::align<int32_t, 4>(max_seq_length + 1 + CELLS_PER_THREAD);
         size_t scores_size   = static_cast<size_t>(scores_width) * static_cast<size_t>(max_graph_dimension) * sizeof(ScoreT);
 
         if (scores_size > avail_scorebuf_mem_)
         {
+            if (get_total_poas() == 0)
+            {
+                std::cout << "Memory available " << std::fixed << std::setprecision(2) << (static_cast<double>(avail_scorebuf_mem_)) / 1024. / 1024. / 1024.;
+                std::cout << "GB, Memory required " << (static_cast<double>(scores_size)) / 1024. / 1024. / 1024.;
+                std::cout << "GB (sequence length " << max_seq_length << ", graph length " << max_graph_dimension << ")" << std::endl;
+            }
             return false;
         }
         else
@@ -628,4 +638,6 @@ int32_t CudapoaBatch<ScoreT, SizeT>::batches = 0;
 
 } // namespace cudapoa
 
-} // namespace claragenomics
+} // namespace genomeworks
+
+} // namespace claraparabricks

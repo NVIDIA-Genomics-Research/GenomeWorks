@@ -12,7 +12,10 @@
 
 #include <cstdint>
 
-namespace claragenomics
+namespace claraparabricks
+{
+
+namespace genomeworks
 {
 
 namespace cudaaligner
@@ -52,4 +55,7 @@ enum AlignmentState : int8_t
 StatusType Init();
 /// \}
 } // namespace cudaaligner
-} // namespace claragenomics
+
+} // namespace genomeworks
+
+} // namespace claraparabricks

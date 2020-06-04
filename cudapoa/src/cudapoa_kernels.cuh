@@ -26,9 +26,7 @@
 // Dimensions for Banded alignment score matrix
 #define WARP_SIZE 32
 #define CELLS_PER_THREAD 4
-#define CUDAPOA_BAND_WIDTH (CELLS_PER_THREAD * WARP_SIZE)
 #define CUDAPOA_BANDED_MATRIX_RIGHT_PADDING (CELLS_PER_THREAD * 2)
-#define CUDAPOA_BANDED_MAX_MATRIX_SEQUENCE_DIMENSION (CUDAPOA_BAND_WIDTH + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING)
 
 #define CUDAPOA_THREADS_PER_BLOCK 64
 #define CUDAPOA_BANDED_THREADS_PER_BLOCK WARP_SIZE
@@ -38,7 +36,10 @@
 #define CUDAPOA_KERNEL_ERROR_ENCOUNTERED UINT8_MAX
 #define CUDAPOA_KERNEL_NOERROR_ENCOUNTERED 0
 
-namespace claragenomics
+namespace claraparabricks
+{
+
+namespace genomeworks
 {
 
 namespace cudapoa
@@ -214,7 +215,7 @@ struct GraphDetails
  * @param[in] banded_alignment            Use banded alignment
  */
 
-void generatePOA(claragenomics::cudapoa::OutputDetails* output_details_d,
+void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
                  void* Input_details_d,
                  int32_t total_windows,
                  cudaStream_t stream,
@@ -309,4 +310,6 @@ bool use32bitSize(const BatchSize& batch_size, bool banded);
 
 } // namespace cudapoa
 
-} // namespace claragenomics
+} // namespace genomeworks
+
+} // namespace claraparabricks
