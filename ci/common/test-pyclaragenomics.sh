@@ -40,7 +40,7 @@ logger "Uninstall pyclaragenomics..."
 pip uninstall -y pyclaragenomics
 
 logger "Create pyclaragenomics Wheel package..."
-CUDA_VERSION=$(cat "$CUDA_HOME"/version.txt | cut -d" " -f3 | cut -d"." -f1-2 | sed -e "s/\./_/g")
+CUDA_VERSION_FOR_PACKAGE_NAME=$(echo "$CUDA_VERSION" | cut -d"." -f1-2 | sed -e "s/\./_/g")
 if [ "${COMMIT_HASH}" == "master" ]; then
   PYCGA_VERSION=$(cat ../VERSION)
 else
@@ -49,7 +49,7 @@ fi
 python setup_pyclaragenomics.py \
         --build_output_folder cga_build_wheel \
         --create_wheel_only \
-        --overwrite_package_name pyclaragenomics_cuda_"$CUDA_VERSION" \
+        --overwrite_package_name pyclaragenomics_cuda_"$CUDA_VERSION_FOR_PACKAGE_NAME" \
         --overwrite_package_version "$PYCGA_VERSION"
 
 logger "Install pyclaragenomics Wheel package..."
