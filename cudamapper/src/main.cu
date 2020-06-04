@@ -134,8 +134,8 @@ struct ApplicationParameteres
     std::int32_t target_index_size              = 30;    // t
     double filtering_parameter                  = 1.0;   // F
     std::int32_t alignment_engines              = 0;     // a
-    std::int32_t min_residues                   = 10;    // r
-    std::int32_t min_overlap_len                = 500;   // l
+    std::int32_t min_residues                   = 100;   // r
+    std::int32_t min_overlap_len                = 2000;  // l
     std::int32_t min_bases_per_residue          = 100;   // b
     float min_overlap_fraction                  = 0.95;  // z
     bool perform_overlap_end_rescue             = false; // R
