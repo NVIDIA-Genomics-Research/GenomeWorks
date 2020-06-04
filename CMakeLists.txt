@@ -67,6 +67,7 @@ include(cmake/Benchmarks.cmake)
 include(cmake/Format.cmake)
 include(cmake/Packaging.cmake)
 include(cmake/CondaEnv.cmake)
+include(cmake/GitVersion.cmake)
 
 # Add ClaraGenomicsAnalysis projects.
 add_subdirectory(common/base)
