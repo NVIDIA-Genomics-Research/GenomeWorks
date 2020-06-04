@@ -56,21 +56,23 @@ struct BatchSize
     int32_t max_sequence_size;
     /// Maximum size of final consensus
     int32_t max_concensus_size;
-    /// Maximum number of nodes in a graph, 1 graph per window
+    /// Maximum number of nodes in a POA graph, one graph per window
     int32_t max_nodes_per_window;
-    /// Maximum number of nodes in a graph, 1 graph per window in banded mode
+    /// Maximum number of nodes in a POA graph in banded alignment, one graph per window
     int32_t max_nodes_per_window_banded;
-    /// Maximum vertical dimension of scoring matrix, which stores graph
+    /// Maximum vertical dimension of scoring matrix, which stores POA graph
     int32_t max_matrix_graph_dimension = max_nodes_per_window;
-    /// Maximum vertical dimension of scoring matrix, which stores graph
+    /// Maximum vertical dimension of scoring matrix in banded alignment, which stores POA graph
     int32_t max_matrix_graph_dimension_banded = max_nodes_per_window_banded;
     /// Maximum horizontal dimension of scoring matrix, which stores sequences
     int32_t max_matrix_sequence_dimension = max_sequence_size;
+    /// Band-width used in banded alignment
+    int32_t alignment_band_width;
     /// Maximum number of equences per POA group
     int32_t max_sequences_per_poa;
 
     /// constructor- set upper limit parameters based on max_sequence_size
-    BatchSize(int32_t max_seq_sz = 1024, int32_t max_seq_per_poa = 100)
+    BatchSize(int32_t max_seq_sz = 1024, int32_t max_seq_per_poa = 100, int32_t band_width = 128)
         /// ensure a 4-byte boundary alignment for any allocated buffer
         : max_sequence_size(max_seq_sz)
         , max_concensus_size(2 * max_sequence_size)
@@ -79,16 +81,23 @@ struct BatchSize
         , max_matrix_graph_dimension(cudautils::align<int32_t, 4>(max_nodes_per_window))
         , max_matrix_graph_dimension_banded(cudautils::align<int32_t, 4>(max_nodes_per_window_banded))
         , max_matrix_sequence_dimension(cudautils::align<int32_t, 4>(max_sequence_size))
+        /// ensure 128-alignment for band_width size
+        , alignment_band_width(cudautils::align<int32_t, 128>(band_width))
         , max_sequences_per_poa(max_seq_per_poa)
 
     {
         throw_on_negative(max_seq_sz, "max_sequence_size cannot be negative.");
         throw_on_negative(max_seq_per_poa, "max_sequences_per_poa cannot be negative.");
+        throw_on_negative(band_width, "alignment_band_width cannot be negative.");
+        if (alignment_band_width != band_width)
+        {
+            std::cerr << "Band-width should be multiple of 128. The input was changed from " << band_width << " to " << alignment_band_width << std::endl;
+        }
     }
 
     /// constructor- set all parameters separately
     BatchSize(int32_t max_seq_sz, int32_t max_concensus_sz, int32_t max_nodes_per_w,
-              int32_t max_nodes_per_w_banded, int32_t max_seq_per_poa)
+              int32_t max_nodes_per_w_banded, int32_t band_width, int32_t max_seq_per_poa)
         /// ensure a 4-byte boundary alignment for any allocated buffer
         : max_sequence_size(max_seq_sz)
         , max_concensus_size(max_concensus_sz)
@@ -97,6 +106,8 @@ struct BatchSize
         , max_matrix_graph_dimension(cudautils::align<int32_t, 4>(max_nodes_per_window))
         , max_matrix_graph_dimension_banded(cudautils::align<int32_t, 4>(max_nodes_per_window_banded))
         , max_matrix_sequence_dimension(cudautils::align<int32_t, 4>(max_sequence_size))
+        /// ensure 128-alignment for band_width size
+        , alignment_band_width(cudautils::align<int32_t, 128>(band_width))
         , max_sequences_per_poa(max_seq_per_poa)
     {
         throw_on_negative(max_seq_sz, "max_sequence_size cannot be negative.");
@@ -104,6 +115,7 @@ struct BatchSize
         throw_on_negative(max_nodes_per_w, "max_nodes_per_window cannot be negative.");
         throw_on_negative(max_nodes_per_w_banded, "max_nodes_per_window_banded cannot be negative.");
         throw_on_negative(max_seq_per_poa, "max_sequences_per_poa cannot be negative.");
+        throw_on_negative(band_width, "alignment_band_width cannot be negative.");
 
         if (max_nodes_per_window < max_sequence_size)
             throw std::invalid_argument("max_nodes_per_window should be greater than or equal to max_sequence_size.");
@@ -111,6 +123,8 @@ struct BatchSize
             throw std::invalid_argument("max_nodes_per_window should be greater than or equal to max_sequence_size.");
         if (max_concensus_size < max_sequence_size)
             throw std::invalid_argument("max_concensus_size should be greater than or equal to max_sequence_size.");
+        if (max_sequence_size < alignment_band_width)
+            throw std::invalid_argument("alignment_band_width should not be greater than max_sequence_size.");
     }
 };
 
