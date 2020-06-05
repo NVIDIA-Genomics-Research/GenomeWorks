@@ -326,8 +326,8 @@ void postprocess_and_write_thread_function(const int32_t device_id,
     CGA_CU_CHECK_ERR(cudaSetDevice(device_id));
 
     // keep processing data as it arrives
-    cga_optional_t<OverlapsAndCigars> data_to_write = overlaps_and_cigars_to_process.get_next_element();
-    while (data_to_write) // if optional is empty that means that there will be no more overlaps to process and the thread can finish
+    cga_optional_t<OverlapsAndCigars> data_to_write;
+    while (data_to_write = overlaps_and_cigars_to_process.get_next_element()) // if optional is empty that means that there will be no more overlaps to process and the thread can finish
     {
         {
             CGA_NVTX_RANGE(profiler, "main::postprocess_and_write_thread::one_set");
@@ -362,8 +362,6 @@ void postprocess_and_write_thread_function(const int32_t device_id,
                           output_mutex);
             }
         }
-
-        data_to_write = overlaps_and_cigars_to_process.get_next_element();
     }
 }
 
@@ -427,8 +425,8 @@ void worker_thread_function(const int32_t device_id,
     }
 
     // keep processing batches of indices until there are none left
-    cga_optional_t<BatchOfIndices> batch_of_indices = batches_of_indices.get_next_element();
-    while (batch_of_indices) // if optional is empty that means that there are no more batches to process and the thread can finish
+    cga_optional_t<BatchOfIndices> batch_of_indices;
+    while (batch_of_indices = batches_of_indices.get_next_element()) // if optional is empty that means that there are no more batches to process and the thread can finish
     {
         const int64_t batch_number         = number_of_processed_batches.fetch_add(1); // as this is not called atomically with get_next_element() the value does not have to be completely accurate, but this is ok as the value is only use for displaying progress
         const std::string progress_message = "Device " + std::to_string(device_id) + " took batch " + std::to_string(batch_number + 1) + " out of " + std::to_string(number_of_total_batches) + " batches in total\n";
@@ -441,8 +439,6 @@ void worker_thread_function(const int32_t device_id,
                           device_cache,
                           overlaps_and_cigars_to_process,
                           cuda_stream);
-
-        batch_of_indices = batches_of_indices.get_next_element();
     }
 
     // tell writer thread that there will be no more overlaps and it can finish once it has written all overlaps
