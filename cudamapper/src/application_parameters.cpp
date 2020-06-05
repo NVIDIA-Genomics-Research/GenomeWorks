@@ -14,9 +14,10 @@
 #include <iostream>
 #include <string>
 
-#include <claragenomics/utils/signed_integer_utils.hpp>
 #include <claragenomics/cudamapper/index.hpp>
 #include <claragenomics/io/fasta_parser.hpp>
+#include <claragenomics/utils/signed_integer_utils.hpp>
+#include <claragenomics/version.hpp>
 
 namespace claraparabricks
 {
@@ -47,10 +48,11 @@ ApplicationParameters::ApplicationParameters(int argc, char* argv[])
         {"query-indices-in-device-memory", required_argument, 0, 'q'},
         {"target-indices-in-host-memory", required_argument, 0, 'C'},
         {"target-indices-in-device-memory", required_argument, 0, 'q'},
+        {"version", no_argument, 0, 'v'},
         {"help", no_argument, 0, 'h'},
     };
 
-    std::string optstring = "k:w:d:m:i:t:F:h:a:r:l:b:z:R:Q:q:C:c:";
+    std::string optstring = "k:w:d:m:i:t:F:a:r:l:b:z:RQ:q:C:c:vh";
 
     bool target_indices_in_host_memory_set   = false;
     bool target_indices_in_device_memory_set = false;
@@ -117,6 +119,8 @@ ApplicationParameters::ApplicationParameters(int argc, char* argv[])
             target_indices_in_device_memory     = std::stoi(optarg);
             target_indices_in_device_memory_set = true;
             break;
+        case 'v':
+            print_version();
         case 'h':
             help(0);
         default:
@@ -237,6 +241,16 @@ int64_t ApplicationParameters::get_max_cached_memory_bytes()
 #endif
 }
 
+void ApplicationParameters::print_version(const bool exit_on_completion)
+{
+    std::cerr << claraparabricks_genomeworks_version() << std::endl;
+
+    if (exit_on_completion)
+    {
+        exit(1);
+    }
+}
+
 void ApplicationParameters::help(int32_t exit_code)
 {
     std::cerr <<
@@ -296,6 +310,9 @@ void ApplicationParameters::help(int32_t exit_code)
               << R"(
         -c, --target-indices-in-device-memory
             number of target indices to keep in device memory [5])"
+              << R"(
+        -v, --version
+            Version information)"
               << std::endl;
 
     exit(exit_code);

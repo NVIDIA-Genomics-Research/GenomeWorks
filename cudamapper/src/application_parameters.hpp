@@ -74,8 +74,12 @@ private:
     /// \return max_cached_memory_bytes
     int64_t get_max_cached_memory_bytes();
 
-    /// @brief prints help message
-    /// @param exit_code
+    /// \brief prints cudamapper's version
+    /// \param exit_on_completion
+    void print_version(bool exit_on_completion = true);
+
+    /// \brief prints help message
+    /// \param exit_code
     [[noreturn]] void help(int32_t exit_code = 0);
 };
 
