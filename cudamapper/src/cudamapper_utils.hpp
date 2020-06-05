@@ -44,11 +44,6 @@ void print_paf(const std::vector<Overlap>& overlaps,
                int32_t kmer_size,
                std::mutex& write_output_mutex);
 
-/// \brief create a device allocator
-/// \param max_cached_memory_bytes
-/// \return device allocator
-DefaultDeviceAllocator get_device_allocator(const size_t max_cached_memory_bytes);
-
 /// \brief Given a string s, produce its kmers (length <kmer-length>) and return them as a vector of strings.
 /// \param s A string sequence to kmerize.
 /// \param kmer_size A kmer length to use for producing kmers.

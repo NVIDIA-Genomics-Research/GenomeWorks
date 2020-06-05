@@ -389,7 +389,7 @@ void worker_thread_function(const int32_t device_id,
     // This function is expected to run in a separate thread so set current device in order to avoid problems
     CGA_CU_CHECK_ERR(cudaSetDevice(device_id));
 
-    DefaultDeviceAllocator device_allocator = get_device_allocator(application_parameters.max_cached_memory_bytes);
+    DefaultDeviceAllocator device_allocator = create_default_device_allocator(application_parameters.max_cached_memory_bytes);
 
     // create host_cache, data is not loaded at this point but later as each batch gets processed
     auto host_cache = std::make_shared<IndexCacheHost>(application_parameters.all_to_all,

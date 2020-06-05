@@ -111,16 +111,6 @@ void print_paf(const std::vector<Overlap>& overlaps,
     }
 }
 
-DefaultDeviceAllocator get_device_allocator(const size_t max_cached_memory_bytes)
-{
-#ifdef CGA_ENABLE_CACHING_ALLOCATOR
-    return {max_cached_memory_bytes};
-#else
-    // uses CudaMallocAllocator
-    return {};
-#endif
-}
-
 std::vector<cga_string_view_t> split_into_kmers(const cga_string_view_t& s, const std::int32_t kmer_size, const std::int32_t stride)
 {
     const std::size_t kmer_count = s.length() - kmer_size + 1;
