@@ -60,11 +60,11 @@ public:
     int64_t max_cached_memory_bytes;
 
 private:
-    /// \brief gets query and target parsers
+    /// \brief creates query and target parsers
     /// \param query_parser nullptr on input, query parser on output
     /// \param target_parser nullptr on input, target parser on output
-    void get_input_parsers(std::shared_ptr<io::FastaParser>& query_parser,
-                           std::shared_ptr<io::FastaParser>& target_parser);
+    void create_input_parsers(std::shared_ptr<io::FastaParser>& query_parser,
+                              std::shared_ptr<io::FastaParser>& target_parser);
 
     /// \brief gets max number of bytes to cache by device allocator
     ///

@@ -182,13 +182,13 @@ ApplicationParameters::ApplicationParameters(int argc, char* argv[])
         std::cerr << "NOTE - Since query and target files are same, activating all_to_all mode. Query index size used for both files." << std::endl;
     }
 
-    get_input_parsers(query_parser, target_parser);
+    create_input_parsers(query_parser, target_parser);
 
     max_cached_memory_bytes = get_max_cached_memory_bytes();
 }
 
-void ApplicationParameters::get_input_parsers(std::shared_ptr<io::FastaParser>& query_parser,
-                                              std::shared_ptr<io::FastaParser>& target_parser)
+void ApplicationParameters::create_input_parsers(std::shared_ptr<io::FastaParser>& query_parser,
+                                                 std::shared_ptr<io::FastaParser>& target_parser)
 {
     assert(query_parser == nullptr);
     assert(target_parser == nullptr);
