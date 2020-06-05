@@ -12,6 +12,7 @@
 
 #include <getopt.h>
 #include <iostream>
+#include <string>
 
 #include <claragenomics/utils/signed_integer_utils.hpp>
 #include <claragenomics/cudamapper/index.hpp>
@@ -59,61 +60,61 @@ ApplicationParameters::ApplicationParameters(int argc, char* argv[])
         switch (argument)
         {
         case 'k':
-            kmer_size = atoi(optarg);
+            kmer_size = std::stoi(optarg);
             break;
         case 'w':
-            windows_size = atoi(optarg);
+            windows_size = std::stoi(optarg);
             break;
         case 'd':
-            num_devices = atoi(optarg);
+            num_devices = std::stoi(optarg);
             break;
         case 'm':
 #ifndef CGA_ENABLE_CACHING_ALLOCATOR
             std::cerr << "ERROR: Argument -m / --max-cached-memory cannot be used without caching allocator" << std::endl;
             exit(1);
 #endif
-            max_cached_memory = atoi(optarg);
+            max_cached_memory = std::stoi(optarg);
             break;
         case 'i':
-            index_size = atoi(optarg);
+            index_size = std::stoi(optarg);
             break;
         case 't':
-            target_index_size = atoi(optarg);
+            target_index_size = std::stoi(optarg);
             break;
         case 'F':
-            filtering_parameter = atof(optarg);
+            filtering_parameter = std::stod(optarg);
             break;
         case 'a':
-            alignment_engines = atoi(optarg);
+            alignment_engines = std::stoi(optarg);
             throw_on_negative(alignment_engines, "Number of alignment engines should be non-negative");
             break;
         case 'r':
-            min_residues = atoi(optarg);
+            min_residues = std::stoi(optarg);
             break;
         case 'l':
-            min_overlap_len = atoi(optarg);
+            min_overlap_len = std::stoi(optarg);
             break;
         case 'b':
-            min_bases_per_residue = atoi(optarg);
+            min_bases_per_residue = std::stoi(optarg);
             break;
         case 'z':
-            min_overlap_fraction = atof(optarg);
+            min_overlap_fraction = std::stof(optarg);
             break;
         case 'R':
             perform_overlap_end_rescue = true;
             break;
         case 'Q':
-            query_indices_in_host_memory = atoi(optarg);
+            query_indices_in_host_memory = std::stoi(optarg);
             break;
         case 'q':
-            query_indices_in_device_memory = atoi(optarg);
+            query_indices_in_device_memory = std::stoi(optarg);
             break;
         case 'C':
-            target_indices_in_host_memory     = atoi(optarg);
+            target_indices_in_host_memory     = std::stoi(optarg);
             target_indices_in_host_memory_set = true;
             break;
         case 'c':
-            target_indices_in_device_memory     = atoi(optarg);
+            target_indices_in_device_memory     = std::stoi(optarg);
             target_indices_in_device_memory_set = true;
             break;
         case 'h':
