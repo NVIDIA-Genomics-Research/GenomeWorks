@@ -76,7 +76,7 @@ private:
 
     /// @brief prints help message
     /// @param exit_code
-    void help(int32_t exit_code = 0);
+    [[noreturn]] void help(int32_t exit_code = 0);
 };
 
 } // namespace cudamapper
