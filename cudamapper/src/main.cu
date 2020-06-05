@@ -17,6 +17,7 @@
 #include <thread>
 
 #include <claragenomics/utils/cudautils.hpp>
+#include <claragenomics/utils/mathutils.hpp>
 #include <claragenomics/utils/signed_integer_utils.hpp>
 #include <claragenomics/utils/threadsafe_containers.hpp>
 
@@ -410,7 +411,9 @@ void worker_thread_function(const int32_t device_id,
 
     // There should be at least one postprocess_and_write_thread per worker_thread. If more threads are available one thread should be reserved for
     // worker_thread and all other threads should be postprocess_and_write_threads
-    const int32_t threads_per_device                       = (std::thread::hardware_concurrency() + application_parameters.num_devices - 1) / application_parameters.num_devices;
+    const int32_t threads_per_device = ceiling_divide(static_cast<int32_t>(std::thread::hardware_concurrency()),
+                                                      application_parameters.num_devices);
+
     const int32_t postprocess_and_write_threads_per_device = std::max(threads_per_device - 1, 1);
 
     // postprocess_and_write_threads run in the background and post-process and write overlaps and cigars to output as they become available in overlaps_and_cigars_to_process
