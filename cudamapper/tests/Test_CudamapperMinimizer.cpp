@@ -85,10 +85,10 @@ void test_function(const std::uint64_t number_of_reads_to_add,
         EXPECT_EQ(expected_rest_h[i].direction_, rest_h[i].direction_) << "index: " << i;
     }
 
-    merged_basepairs_d.free();
-    read_id_to_basepairs_section_d.free();
-    representations_d.free();
-    rest_d.free();
+    merged_basepairs_d.clear_and_free();
+    read_id_to_basepairs_section_d.clear_and_free();
+    representations_d.clear_and_free();
+    rest_d.clear_and_free();
 
     CGA_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
     CGA_CU_CHECK_ERR(cudaStreamDestroy(cuda_stream));

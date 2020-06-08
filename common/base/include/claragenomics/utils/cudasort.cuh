@@ -80,8 +80,7 @@ void perform_radix_sort(device_buffer<char>& temp_storage_vect_d,
     {
         // If directly calling resize new memory will be allocated before old is freed (beacause the data has to be copied from old to new memory)
         // For very large arrays this can lead to OOM, so manually deallocating old before allocating new memory
-        temp_storage_vect_d.free();
-        temp_storage_vect_d.resize(temp_storage_bytes);
+        temp_storage_vect_d.clear_and_resize(temp_storage_bytes);
     }
     temp_storage_d     = static_cast<void*>(temp_storage_vect_d.data());
     temp_storage_bytes = temp_storage_vect_d.size();
@@ -189,7 +188,7 @@ void sort_by_two_keys(device_buffer<MoreSignificantKeyT>& more_significant_keys,
 
     // deallocate helper array
     // TODO: This array can probably be reused, but waiting for more general reallocation-avoidance strategy before optimizing this
-    less_significant_key_sorted.free();
+    less_significant_key_sorted.clear_and_free();
 
     // *** move more significant keys to their position after less significant keys sort ***
     device_buffer<MoreSignificantKeyT> more_significant_keys_after_sort(number_of_elements, allocator, cuda_stream);
@@ -217,7 +216,7 @@ void sort_by_two_keys(device_buffer<MoreSignificantKeyT>& more_significant_keys,
     swap(move_to_index, move_to_index_sorted);
 
     // deallocate helper array
-    move_to_index_sorted.free();
+    move_to_index_sorted.clear_and_free();
 
     // *** move the values to their final position ***
     device_buffer<ValueT> values_after_sort(number_of_elements, allocator, cuda_stream);

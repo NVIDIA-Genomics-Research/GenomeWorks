@@ -46,7 +46,7 @@ public:
     buffer& operator=(const buffer& other) = delete;
 
     /// @brief This constructor creates \p buffer with the given size.
-    /// @param n The number of elements to initially create.
+    /// @param n The number of elements to create
     /// @param allocator The allocator to use by this buffer.
     /// @param stream The CUDA stream to be associated with this allocation. Default is stream 0.
     /// @tparam AllocatorIn Type of input allocator. If AllocatorIn::value_type is different than T AllocatorIn will be converted to Allocator<T> if possible, compilation will fail otherwise
@@ -56,16 +56,14 @@ public:
                     cudaStream_t stream   = 0)
         : _data(nullptr)
         , _size(n)
-        , _capacity(n)
         , _stream(stream)
         , _allocator(allocator)
     {
         static_assert(std::is_trivially_copyable<value_type>::value, "buffer only supports trivially copyable types and classes, because destructors will not be called.");
         assert(_size >= 0);
-        if (_capacity > 0)
+        if (_size > 0)
         {
-            _data = _allocator.allocate(_capacity, _stream);
-            CGA_CU_CHECK_ERR(cudaStreamSynchronize(_stream));
+            _data = _allocator.allocate(_size, _stream);
         }
     }
 
@@ -86,7 +84,6 @@ public:
     buffer(buffer&& rhs)
         : _data(std::exchange(rhs._data, nullptr))
         , _size(std::exchange(rhs._size, 0))
-        , _capacity(std::exchange(rhs._capacity, 0))
         , _stream(rhs._stream)
         , _allocator(rhs._allocator)
     {
@@ -100,7 +97,6 @@ public:
     {
         _data      = std::exchange(rhs._data, nullptr);
         _size      = std::exchange(rhs._size, 0);
-        _capacity  = std::exchange(rhs._capacity, 0);
         _stream    = rhs._stream;
         _allocator = rhs._allocator;
         return *this;
@@ -111,7 +107,7 @@ public:
     {
         if (nullptr != _data)
         {
-            _allocator.deallocate(_data, _capacity);
+            _allocator.deallocate(_data, _size);
         }
     }
 
@@ -125,12 +121,6 @@ public:
 
     /// @brief This method returns the number of elements in this buffer.
     size_type size() const { return _size; }
-
-    /// @brief This method returns the largest number of elements that can be stored in this buffer before a reallocation is needed.
-    size_type capacity() const { return _capacity; }
-
-    /// @brief This method resizes this buffer to 0.
-    void clear() { _size = 0; }
 
     /// @brief This method returns an iterator pointing to the beginning of this buffer.
     iterator begin() { return _data; }
@@ -146,61 +136,42 @@ public:
     /// @return begin() + size().
     const_iterator end() const { return _data + _size; }
 
+    /// @brief This method returns the associated stream.
+    /// @return associated stream.
+    cudaStream_t get_stream() const { return _stream; }
+
     /// @brief This method returns the allocator used to allocate memory for this buffer.
     /// @return allocator.
     allocator_type get_allocator() const { return _allocator; }
 
-    /// @brief This method reserves memory for the specified number of elements.
-    ///        If new_capacity is less than or equal to _capacity, this call has no effect.
-    ///        Otherwise, this method is a request for allocation of additional memory. If
-    ///        the request is successful, then _capacity is equal to the new_capacity;
-    ///        otherwise, _capacity is unchanged. In either case, size() is unchanged.
-    /// @param new_capacity The number of elements to reserve.
-    /// @param stream The CUDA stream to be associated with this method.
-    void reserve(const size_type new_capacity, cudaStream_t stream)
+    /// @brief This method releases the memory and resizes the buffer to 0.
+    void clear_and_free()
     {
-        assert(new_capacity >= 0);
-        set_stream(stream);
-        if (new_capacity > _capacity)
+        if (_size > 0)
         {
-            value_type* new_data = _allocator.allocate(new_capacity, _stream);
-            if (_size > 0)
-            {
-                CGA_CU_CHECK_ERR(cudaMemcpyAsync(new_data, _data, _size * sizeof(value_type),
-                                                 cudaMemcpyDefault, _stream));
-            }
-            if (nullptr != _data)
-            {
-                _allocator.deallocate(_data, _capacity);
-            }
-            _data     = new_data;
-            _capacity = new_capacity;
+            _allocator.deallocate(_data, _size);
+            _data = nullptr;
+            _size = 0;
         }
     }
 
-    /// @brief This method reserves memory for the specified number of elements. It is implicitly
-    ///        associated with the CUDA stream provided during the buffer creation.
-    /// @param new_capacity The number of elements to reserve.
-    void reserve(const size_type new_capacity)
+    /// @brief This method resizes buffer and discards old data
+    ///
+    /// If old data is still needed it is recommended to crete a new buffer and manually copy the data from the old buffer
+    ///
+    /// @param new_size Number of elements
+    void clear_and_resize(const size_type new_size)
     {
-        reserve(new_capacity, _stream);
-    }
+        assert(new_size >= 0);
 
-    /// @brief This method resizes this buffer to the specified number of elements.
-    /// @param new_size Number of elements this buffer should contain.
-    /// @param stream The CUDA stream to be associated with this method.
-    void resize(const size_type new_size, cudaStream_t stream)
-    {
-        reserve(new_size, stream);
+        if (new_size == _size)
+        {
+            return;
+        }
+
+        clear_and_free();
         _size = new_size;
-    }
-
-    /// @brief This method resizes this buffer to the specified number of elements. It is
-    ///        implicitly associated with the CUDA stream provided during the buffer creation.
-    /// @param new_size Number of elements this buffer should contain.
-    void resize(const size_type new_size)
-    {
-        resize(new_size, _stream);
+        _data = _size > 0 ? _allocator.allocate(_size, _stream) : nullptr;
     }
 
     /// @brief This method swaps the contents of two buffers.
@@ -211,80 +182,15 @@ public:
         using std::swap;
         swap(a._data, b._data);
         swap(a._size, b._size);
-        swap(a._capacity, b._capacity);
         swap(a._stream, b._stream);
         swap(a._allocator, b._allocator);
     }
 
-    /// @brief This method shrinks the capacity of this buffer to exactly fit its elements.
-    /// @param stream The CUDA stream to be associated with this method.
-    void shrink_to_fit(cudaStream_t stream)
-    {
-        set_stream(stream);
-        if (_capacity > _size)
-        {
-            value_type* new_data = _allocator.allocate(_size, _stream);
-            if (_size > 0)
-            {
-                CGA_CU_CHECK_ERR(cudaMemcpyAsync(new_data, _data, _size * sizeof(value_type),
-                                                 cudaMemcpyDefault, _stream));
-            }
-            if (nullptr != _data)
-            {
-                _allocator.deallocate(_data, _capacity);
-            }
-            _data     = new_data;
-            _capacity = _size;
-        }
-    }
-
-    /// @brief This method shrinks the capacity of this buffer to exactly fit its elements.
-    ///        It is implicitly associated with the CUDA stream provided during the buffer creation.
-    void shrink_to_fit()
-    {
-        shrink_to_fit(_stream);
-    }
-
-    /// @brief This method releases the memory allocated by this buffer, returning it to the allocator.
-    /// @param stream The CUDA stream to be associated with this method.
-    void free(cudaStream_t stream)
-    {
-        set_stream(stream);
-        if (nullptr != _data)
-        {
-            _allocator.deallocate(_data, _capacity);
-        }
-        _data     = nullptr;
-        _capacity = 0;
-        _size     = 0;
-    }
-
-    /// @brief This method releases the memory allocated by this buffer, returning it to the allocator.
-    ///        It is implicitly associated with the CUDA stream provided during the buffer creation.
-    void free()
-    {
-        free(_stream);
-    }
-
 private:
-    value_type* _data = nullptr;
+    value_type* _data;
     size_type _size;
-    size_type _capacity;
     cudaStream_t _stream;
     Allocator _allocator;
-
-    void set_stream(cudaStream_t stream)
-    {
-        if (_stream != stream)
-        {
-            cudaEvent_t event;
-            CGA_CU_CHECK_ERR(cudaEventCreateWithFlags(&event, cudaEventDisableTiming));
-            CGA_CU_CHECK_ERR(cudaEventRecord(event, _stream));
-            CGA_CU_CHECK_ERR(cudaStreamWaitEvent(stream, event, 0));
-            _stream = stream;
-            CGA_CU_CHECK_ERR(cudaEventDestroy(event));
-        }
-    }
 };
 
 } // namespace genomeworks

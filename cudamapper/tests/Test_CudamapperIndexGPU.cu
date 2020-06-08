@@ -220,9 +220,9 @@ void test_find_first_occurrences_of_representations(const thrust::host_vector<re
     }
     EXPECT_EQ(starting_index_of_each_representation_h.back(), expected_starting_index_of_each_representation_h.back()) << "index: " << expected_starting_index_of_each_representation_h.size() - 1;
 
-    representations_d.free();
-    starting_index_of_each_representation_d.free();
-    unique_representations_d.free();
+    representations_d.clear_and_free();
+    starting_index_of_each_representation_d.clear_and_free();
+    unique_representations_d.clear_and_free();
 
     CGA_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
     CGA_CU_CHECK_ERR(cudaStreamDestroy(cuda_stream));
@@ -1073,12 +1073,12 @@ void test_filter_out_most_common_representations(const double filtering_paramete
     }
     ASSERT_EQ(expected_output_first_occurrence_of_representations_h.back(), output_first_occurrence_of_representations_h.back());
 
-    representations_d.free();
-    read_ids_d.free();
-    positions_in_reads_d.free();
-    directions_of_representations_d.free();
-    unique_representations_d.free();
-    first_occurrence_of_representations_d.free();
+    representations_d.clear_and_free();
+    read_ids_d.clear_and_free();
+    positions_in_reads_d.clear_and_free();
+    directions_of_representations_d.clear_and_free();
+    unique_representations_d.clear_and_free();
+    first_occurrence_of_representations_d.clear_and_free();
 
     CGA_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
     CGA_CU_CHECK_ERR(cudaStreamDestroy(cuda_stream));
