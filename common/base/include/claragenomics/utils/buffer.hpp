@@ -54,16 +54,16 @@ public:
     explicit buffer(size_type n           = 0,
                     AllocatorIn allocator = AllocatorIn(),
                     cudaStream_t stream   = 0)
-        : _data(nullptr)
-        , _size(n)
-        , _stream(stream)
-        , _allocator(allocator)
+        : data_(nullptr)
+        , size_(n)
+        , stream_(stream)
+        , allocator_(allocator)
     {
         static_assert(std::is_trivially_copyable<value_type>::value, "buffer only supports trivially copyable types and classes, because destructors will not be called.");
-        assert(_size >= 0);
-        if (_size > 0)
+        assert(size_ >= 0);
+        if (size_ > 0)
         {
-            _data = _allocator.allocate(_size, _stream);
+            data_ = allocator_.allocate(size_, stream_);
         }
     }
 
@@ -82,10 +82,10 @@ public:
     /// Buffer to move from (rhs) is left in an empty state (size = capacity = 0), with the original stream and allocator.
     /// /param rhs The bufer to move.
     buffer(buffer&& rhs)
-        : _data(std::exchange(rhs._data, nullptr))
-        , _size(std::exchange(rhs._size, 0))
-        , _stream(rhs._stream)
-        , _allocator(rhs._allocator)
+        : data_(std::exchange(rhs.data_, nullptr))
+        , size_(std::exchange(rhs.size_, 0))
+        , stream_(rhs.stream_)
+        , allocator_(rhs.allocator_)
     {
     }
 
@@ -95,63 +95,63 @@ public:
     /// /return refrence to this buffer.
     buffer& operator=(buffer&& rhs)
     {
-        _data      = std::exchange(rhs._data, nullptr);
-        _size      = std::exchange(rhs._size, 0);
-        _stream    = rhs._stream;
-        _allocator = rhs._allocator;
+        data_      = std::exchange(rhs.data_, nullptr);
+        size_      = std::exchange(rhs.size_, 0);
+        stream_    = rhs.stream_;
+        allocator_ = rhs.allocator_;
         return *this;
     }
 
     /// /brief This destructor releases the buffer allocation, returning it to the allocator.
     ~buffer()
     {
-        if (nullptr != _data)
+        if (nullptr != data_)
         {
-            _allocator.deallocate(_data, _size);
+            allocator_.deallocate(data_, size_);
         }
     }
 
     /// /brief This method returns a pointer to this buffer's first element.
     /// /return A pointer to the first element of this buffer.
-    value_type* data() { return _data; }
+    value_type* data() { return data_; }
 
     /// /brief This method returns a const_pointer to this buffer's first element.
     /// /return A const pointer to the first element of this buffer.
-    const value_type* data() const { return _data; }
+    const value_type* data() const { return data_; }
 
     /// /brief This method returns the number of elements in this buffer.
-    size_type size() const { return _size; }
+    size_type size() const { return size_; }
 
     /// /brief This method returns an iterator pointing to the beginning of this buffer.
-    iterator begin() { return _data; }
+    iterator begin() { return data_; }
 
     /// /brief This method returns an const_iterator pointing to the beginning of this buffer.
-    const_iterator begin() const { return _data; }
+    const_iterator begin() const { return data_; }
 
     /// /brief This method returns a iterator pointing to one element past the last of this buffer.
     /// /return begin() + size().
-    iterator end() { return _data + _size; }
+    iterator end() { return data_ + size_; }
 
     /// /brief This method returns a const_iterator pointing to one element past the last of this buffer.
     /// /return begin() + size().
-    const_iterator end() const { return _data + _size; }
+    const_iterator end() const { return data_ + size_; }
 
     /// /brief This method returns the associated stream.
     /// /return associated stream.
-    cudaStream_t get_stream() const { return _stream; }
+    cudaStream_t get_stream() const { return stream_; }
 
     /// /brief This method returns the allocator used to allocate memory for this buffer.
     /// /return allocator.
-    allocator_type get_allocator() const { return _allocator; }
+    allocator_type get_allocator() const { return allocator_; }
 
     /// /brief This method releases the memory and resizes the buffer to 0.
     void clear_and_free()
     {
-        if (_size > 0)
+        if (size_ > 0)
         {
-            _allocator.deallocate(_data, _size);
-            _data = nullptr;
-            _size = 0;
+            allocator_.deallocate(data_, size_);
+            data_ = nullptr;
+            size_ = 0;
         }
     }
 
@@ -164,14 +164,14 @@ public:
     {
         assert(new_size >= 0);
 
-        if (new_size == _size)
+        if (new_size == size_)
         {
             return;
         }
 
         clear_and_free();
-        _size = new_size;
-        _data = _size > 0 ? _allocator.allocate(_size, _stream) : nullptr;
+        size_ = new_size;
+        data_ = size_ > 0 ? allocator_.allocate(size_, stream_) : nullptr;
     }
 
     /// /brief This method swaps the contents of two buffers.
@@ -180,17 +180,17 @@ public:
     friend void swap(buffer& a, buffer& b) noexcept
     {
         using std::swap;
-        swap(a._data, b._data);
-        swap(a._size, b._size);
-        swap(a._stream, b._stream);
-        swap(a._allocator, b._allocator);
+        swap(a.data_, b.data_);
+        swap(a.size_, b.size_);
+        swap(a.stream_, b.stream_);
+        swap(a.allocator_, b.allocator_);
     }
 
 private:
-    value_type* _data;
-    size_type _size;
-    cudaStream_t _stream;
-    Allocator _allocator;
+    value_type* data_;
+    size_type size_;
+    cudaStream_t stream_;
+    Allocator allocator_;
 };
 
 } // namespace genomeworks
