@@ -161,11 +161,11 @@ public:
 
         //Copy sequencecs, sequence lengths and window details to device
         CGA_CU_CHECK_ERR(cudaMemcpyAsync(input_details_d_->sequences, input_details_h_->sequences,
-                                         num_nucleotides_copied_ * sizeof(uint8_t), cudaMemcpyHostToDevice, stream_));
+                                         num_nucleotides_copied_ * sizeof(*input_details_h_->sequences), cudaMemcpyHostToDevice, stream_));
         CGA_CU_CHECK_ERR(cudaMemcpyAsync(input_details_d_->base_weights, input_details_h_->base_weights,
-                                         num_nucleotides_copied_ * sizeof(uint8_t), cudaMemcpyHostToDevice, stream_));
+                                         num_nucleotides_copied_ * sizeof(*input_details_h_->base_weights), cudaMemcpyHostToDevice, stream_));
         CGA_CU_CHECK_ERR(cudaMemcpyAsync(input_details_d_->window_details, input_details_h_->window_details,
-                                         poa_count_ * sizeof(genomeworks::cudapoa::WindowDetails), cudaMemcpyHostToDevice, stream_));
+                                         poa_count_ * sizeof(*input_details_h_->window_details), cudaMemcpyHostToDevice, stream_));
         /// ToDo may need to revise the following sizeof()
         CGA_CU_CHECK_ERR(cudaMemcpyAsync(input_details_d_->sequence_lengths, input_details_h_->sequence_lengths,
                                          global_sequence_idx_ * sizeof(*input_details_h_->sequence_lengths), cudaMemcpyHostToDevice, stream_));
@@ -207,12 +207,12 @@ public:
         print_batch_debug_message(msg);
         CGA_CU_CHECK_ERR(cudaMemcpyAsync(output_details_h_->consensus,
                                          output_details_d_->consensus,
-                                         batch_size_.max_concensus_size * max_poas_ * sizeof(uint8_t),
+                                         batch_size_.max_consensus_size * max_poas_ * sizeof(*output_details_h_->consensus),
                                          cudaMemcpyDeviceToHost,
                                          stream_));
         CGA_CU_CHECK_ERR(cudaMemcpyAsync(output_details_h_->coverage,
                                          output_details_d_->coverage,
-                                         batch_size_.max_concensus_size * max_poas_ * sizeof(uint16_t),
+                                         batch_size_.max_consensus_size * max_poas_ * sizeof(*output_details_h_->coverage),
                                          cudaMemcpyDeviceToHost,
                                          stream_));
         CGA_CU_CHECK_ERR(cudaStreamSynchronize(stream_));
@@ -224,7 +224,7 @@ public:
         {
             // Get the consensus string and reverse it since on GPU the
             // string is built backwards..
-            char* c = reinterpret_cast<char*>(&(output_details_h_->consensus[poa * batch_size_.max_concensus_size]));
+            char* c = reinterpret_cast<char*>(&(output_details_h_->consensus[poa * batch_size_.max_consensus_size]));
             // We use the first two entries in the consensus buffer to log error during kernel execution
             // c[0] == 0 means an error occured and when that happens the error type is saved in c[1]
             if (static_cast<uint8_t>(c[0]) == CUDAPOA_KERNEL_ERROR_ENCOUNTERED)
@@ -241,8 +241,8 @@ public:
                 std::reverse(consensus.back().begin(), consensus.back().end());
                 // Similarly, get the coverage and reverse it.
                 coverage.emplace_back(std::vector<uint16_t>(
-                    &(output_details_h_->coverage[poa * batch_size_.max_concensus_size]),
-                    &(output_details_h_->coverage[poa * batch_size_.max_concensus_size + get_size(consensus.back())])));
+                    &(output_details_h_->coverage[poa * batch_size_.max_consensus_size]),
+                    &(output_details_h_->coverage[poa * batch_size_.max_consensus_size + get_size(consensus.back())])));
                 std::reverse(coverage.back().begin(), coverage.back().end());
                 //std::cout << consensus.back() << std::endl;
             }
@@ -266,13 +266,13 @@ public:
 
         CGA_CU_CHECK_ERR(cudaMemcpyAsync(output_details_h_->multiple_sequence_alignments,
                                          output_details_d_->multiple_sequence_alignments,
-                                         max_poas_ * max_sequences_per_poa_ * batch_size_.max_concensus_size * sizeof(uint8_t),
+                                         max_poas_ * max_sequences_per_poa_ * batch_size_.max_consensus_size * sizeof(*output_details_h_->multiple_sequence_alignments),
                                          cudaMemcpyDeviceToHost,
                                          stream_));
 
         CGA_CU_CHECK_ERR(cudaMemcpyAsync(output_details_h_->consensus,
                                          output_details_d_->consensus,
-                                         batch_size_.max_concensus_size * max_poas_ * sizeof(uint8_t),
+                                         batch_size_.max_consensus_size * max_poas_ * sizeof(*output_details_h_->consensus),
                                          cudaMemcpyDeviceToHost,
                                          stream_));
 
@@ -284,7 +284,7 @@ public:
         for (int32_t poa = 0; poa < poa_count_; poa++)
         {
             msa.emplace_back(std::vector<std::string>());
-            char* c = reinterpret_cast<char*>(&(output_details_h_->consensus[poa * batch_size_.max_concensus_size]));
+            char* c = reinterpret_cast<char*>(&(output_details_h_->consensus[poa * batch_size_.max_consensus_size]));
             // We use the first two entries in the consensus buffer to log error during kernel execution
             // c[0] == 0 means an error occured and when that happens the error type is saved in c[1]
             if (static_cast<uint8_t>(c[0]) == CUDAPOA_KERNEL_ERROR_ENCOUNTERED)
@@ -297,7 +297,7 @@ public:
                 uint16_t num_seqs = input_details_h_->window_details[poa].num_seqs;
                 for (uint16_t i = 0; i < num_seqs; i++)
                 {
-                    char* c = reinterpret_cast<char*>(&(output_details_h_->multiple_sequence_alignments[(poa * max_sequences_per_poa_ + i) * batch_size_.max_concensus_size]));
+                    char* c = reinterpret_cast<char*>(&(output_details_h_->multiple_sequence_alignments[(poa * max_sequences_per_poa_ + i) * batch_size_.max_consensus_size]));
                     msa[poa].emplace_back(std::string(c));
                 }
             }
@@ -312,37 +312,37 @@ public:
         int32_t max_nodes_per_window_ = banded_alignment_ ? batch_size_.max_nodes_per_window_banded : batch_size_.max_nodes_per_window;
         CGA_CU_CHECK_ERR(cudaMemcpyAsync(graph_details_h_->nodes,
                                          graph_details_d_->nodes,
-                                         sizeof(uint8_t) * max_nodes_per_window_ * max_poas_,
+                                         sizeof(*graph_details_h_->nodes) * max_nodes_per_window_ * max_poas_,
                                          cudaMemcpyDeviceToHost,
                                          stream_));
 
         CGA_CU_CHECK_ERR(cudaMemcpyAsync(graph_details_h_->incoming_edges,
                                          graph_details_d_->incoming_edges,
-                                         sizeof(uint16_t) * max_nodes_per_window_ * CUDAPOA_MAX_NODE_EDGES * max_poas_,
+                                         sizeof(*graph_details_h_->incoming_edges) * max_nodes_per_window_ * CUDAPOA_MAX_NODE_EDGES * max_poas_,
                                          cudaMemcpyDeviceToHost,
                                          stream_));
 
         CGA_CU_CHECK_ERR(cudaMemcpyAsync(graph_details_h_->incoming_edge_weights,
                                          graph_details_d_->incoming_edge_weights,
-                                         sizeof(uint16_t) * max_nodes_per_window_ * CUDAPOA_MAX_NODE_EDGES * max_poas_,
+                                         sizeof(*graph_details_h_->incoming_edge_weights) * max_nodes_per_window_ * CUDAPOA_MAX_NODE_EDGES * max_poas_,
                                          cudaMemcpyDeviceToHost,
                                          stream_));
 
         CGA_CU_CHECK_ERR(cudaMemcpyAsync(graph_details_h_->incoming_edge_count,
                                          graph_details_d_->incoming_edge_count,
-                                         sizeof(uint16_t) * max_nodes_per_window_ * max_poas_,
+                                         sizeof(*graph_details_h_->incoming_edge_count) * max_nodes_per_window_ * max_poas_,
                                          cudaMemcpyDeviceToHost,
                                          stream_));
 
         CGA_CU_CHECK_ERR(cudaMemcpyAsync(input_details_h_->sequence_lengths,
                                          input_details_d_->sequence_lengths,
-                                         global_sequence_idx_ * sizeof(uint16_t),
+                                         global_sequence_idx_ * sizeof(*input_details_h_->sequence_lengths),
                                          cudaMemcpyDeviceToHost,
                                          stream_));
 
         CGA_CU_CHECK_ERR(cudaMemcpyAsync(output_details_h_->consensus,
                                          output_details_d_->consensus,
-                                         batch_size_.max_concensus_size * max_poas_ * sizeof(uint8_t),
+                                         batch_size_.max_consensus_size * max_poas_ * sizeof(*output_details_h_->consensus),
                                          cudaMemcpyDeviceToHost,
                                          stream_));
 
@@ -353,7 +353,7 @@ public:
 
         for (int32_t poa = 0; poa < poa_count_; poa++)
         {
-            char* c = reinterpret_cast<char*>(&(output_details_h_->consensus[poa * batch_size_.max_concensus_size]));
+            char* c = reinterpret_cast<char*>(&(output_details_h_->consensus[poa * batch_size_.max_consensus_size]));
             // We use the first two entries in the consensus buffer to log error during kernel execution
             // c[0] == 0 means an error occured and when that happens the error type is saved in c[1]
             if (static_cast<uint8_t>(c[0]) == CUDAPOA_KERNEL_ERROR_ENCOUNTERED)
