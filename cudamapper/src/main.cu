@@ -114,6 +114,9 @@ void help(int32_t exit_code = 0)
         -R, --rescue-overlap-ends
             Run a kmer-based procedure that attempts to extend overlaps at the ends of the query/target.)"
               << R"(
+        -D, --drop-fused-overlaps
+            Remove overlaps which are joined into larger overlaps during fusion.)"
+              << R"(
         -v, --version
             Version information)"
               << std::endl;
@@ -139,6 +142,7 @@ struct ApplicationParameteres
     std::int32_t min_bases_per_residue          = 100;   // b
     float min_overlap_fraction                  = 0.95;  // z
     bool perform_overlap_end_rescue             = false; // R
+    bool drop_fused_overlaps                    = false; // D
     bool all_to_all                             = false;
     std::string query_filepath;
     std::string target_filepath;
@@ -168,11 +172,12 @@ ApplicationParameteres read_input(int argc, char* argv[])
         {"min-bases-per-residue", required_argument, 0, 'b'},
         {"min-overlap-fraction", required_argument, 0, 'z'},
         {"rescue-overlap-ends", no_argument, 0, 'R'},
+        {"drop-fused-overlaps", no_argument, 0, 'D'},
         {"version", no_argument, 0, 'v'},
         {"help", no_argument, 0, 'h'},
     };
 
-    std::string optstring = "k:w:d:c:C:m:i:t:F:h:a:r:l:b:z:R:v";
+    std::string optstring = "k:w:d:c:C:m:i:t:F:h:a:r:l:b:z:RDv";
 
     int32_t argument = 0;
     while ((argument = getopt_long(argc, argv, optstring.c_str(), options, nullptr)) != -1)
@@ -228,6 +233,9 @@ ApplicationParameteres read_input(int argc, char* argv[])
             break;
         case 'R':
             parameters.perform_overlap_end_rescue = true;
+            break;
+        case 'D':
+            parameters.drop_fused_overlaps = true;
             break;
         case 'v':
             print_version();
@@ -427,6 +435,7 @@ void align_overlaps(DefaultDeviceAllocator allocator,
 /// \param number_of_device
 /// \param kmer_size
 /// \param perform_overlap_end_rescue If true, run rescue_overlap_ends
+/// \param drop_fused_overlaps If true, remove overlaps that are joined during fusion.
 /// (which extends overlaps using approximate sequence similarity) on all overlaps.
 void writer_thread_function(std::mutex& overlaps_writer_mtx,
                             std::atomic<int>& num_overlap_chunks_to_print,
@@ -437,7 +446,8 @@ void writer_thread_function(std::mutex& overlaps_writer_mtx,
                             const int32_t device_id,
                             const int32_t number_of_device,
                             const int32_t kmer_size,
-                            bool perform_overlap_end_rescue)
+                            bool perform_overlap_end_rescue,
+                            bool drop_fused_overlaps)
 
 {
     // This function is expected to run in a separate thread so set current device in order to avoid problems
@@ -447,7 +457,7 @@ void writer_thread_function(std::mutex& overlaps_writer_mtx,
     {
         CGA_NVTX_RANGE(profiler, "post_process_overlaps");
         // Overlap post processing - add overlaps which can be combined into longer ones.
-        Overlapper::post_process_overlaps(*filtered_overlaps, true);
+        Overlapper::post_process_overlaps(*filtered_overlaps, drop_fused_overlaps);
     }
 
     // Perform overlap-end rescue
@@ -741,7 +751,8 @@ int main(int argc, char* argv[])
                               device_id,
                               parameters.num_devices,
                               parameters.k,
-                              parameters.perform_overlap_end_rescue);
+                              parameters.perform_overlap_end_rescue,
+                              parameters.drop_fused_overlaps);
                 t.detach();
             }
 

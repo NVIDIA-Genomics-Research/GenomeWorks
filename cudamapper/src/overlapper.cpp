@@ -112,7 +112,11 @@ void Overlapper::post_process_overlaps(std::vector<Overlap>& overlaps, bool drop
     int fused_query_end;
     int num_residues = 0;
     Overlap prev_overlap;
-    std::vector<bool> drop_overlap_mask(overlaps.size());
+    std::vector<bool> drop_overlap_mask;
+    if (drop_fused_overlaps)
+    {
+        drop_overlap_mask.resize(overlaps.size());
+    }
 
     for (int i = 1; i < num_overlaps; i++)
     {
@@ -121,8 +125,12 @@ void Overlapper::post_process_overlaps(std::vector<Overlap>& overlaps, bool drop
         //Check if previous overlap can be merged into the current one
         if (overlaps_mergable(prev_overlap, current_overlap))
         {
-            drop_overlap_mask[i]     = true;
-            drop_overlap_mask[i - 1] = true;
+            if (drop_fused_overlaps)
+            {
+                drop_overlap_mask[i]     = true;
+                drop_overlap_mask[i - 1] = true;
+            }
+
             if (!in_fuse)
             { // Entering a new fuse
                 num_residues      = prev_overlap.num_residues_ + current_overlap.num_residues_;
