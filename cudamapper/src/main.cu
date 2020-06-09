@@ -447,7 +447,7 @@ void writer_thread_function(std::mutex& overlaps_writer_mtx,
     {
         CGA_NVTX_RANGE(profiler, "post_process_overlaps");
         // Overlap post processing - add overlaps which can be combined into longer ones.
-        Overlapper::post_process_overlaps(*filtered_overlaps);
+        Overlapper::post_process_overlaps(*filtered_overlaps, true);
     }
 
     // Perform overlap-end rescue

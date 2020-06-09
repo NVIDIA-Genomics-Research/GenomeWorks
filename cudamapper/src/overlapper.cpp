@@ -7,6 +7,8 @@
 * distribution of this software and related documentation without an express
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
+#include <bitset>
+
 #include <claragenomics/cudamapper/overlapper.hpp>
 #include <claragenomics/utils/cudautils.hpp>
 #include <claragenomics/utils/signed_integer_utils.hpp>
@@ -18,7 +20,7 @@ namespace
 bool overlaps_mergable(const claraparabricks::genomeworks::cudamapper::Overlap o1, const claraparabricks::genomeworks::cudamapper::Overlap o2)
 {
 
-    bool relative_strands_forward          = (o2.relative_strand == claraparabricks::genomeworks::cudamapper::RelativeStrand::Forward) && (o1.relative_strand == claraparabricks::genomeworks::cudamapper::RelativeStrand::Forward);
+    bool relative_strands_forward = (o2.relative_strand == claraparabricks::genomeworks::cudamapper::RelativeStrand::Forward) && (o1.relative_strand == claraparabricks::genomeworks::cudamapper::RelativeStrand::Forward);
     bool relative_strands_reverse = (o2.relative_strand == claraparabricks::genomeworks::cudamapper::RelativeStrand::Reverse) && (o1.relative_strand == claraparabricks::genomeworks::cudamapper::RelativeStrand::Reverse);
 
     if (!(relative_strands_forward || relative_strands_reverse))
@@ -48,21 +50,20 @@ bool overlaps_mergable(const claraparabricks::genomeworks::cudamapper::Overlap o
         target_gap = (o2.target_start_position_in_read_ - o1.target_end_position_in_read_);
     }
 
-    std::uint32_t o1_query_length = o1.query_end_position_in_read_ - o1.query_start_position_in_read_;
-    std::uint32_t o2_query_length = o2.query_end_position_in_read_ - o2.query_start_position_in_read_;
+    std::uint32_t o1_query_length  = o1.query_end_position_in_read_ - o1.query_start_position_in_read_;
+    std::uint32_t o2_query_length  = o2.query_end_position_in_read_ - o2.query_start_position_in_read_;
     std::uint32_t o1_target_length = o1.target_end_position_in_read_ - o1.target_start_position_in_read_;
     std::uint32_t o2_target_length = o2.target_end_position_in_read_ - o2.target_start_position_in_read_;
 
-    std::uint32_t total_query_length = o1_query_length + o2_query_length;
+    std::uint32_t total_query_length  = o1_query_length + o2_query_length;
     std::uint32_t total_target_length = o1_target_length + o2_target_length;
 
-    
-    float unadjusted_gap_ratio    = static_cast<float>(std::min(query_gap, target_gap)) / static_cast<float>(std::max(query_gap, target_gap));
-    float query_gap_length_proportion = static_cast<float>(query_gap) / static_cast<float>(total_query_length);
+    float unadjusted_gap_ratio         = static_cast<float>(std::min(query_gap, target_gap)) / static_cast<float>(std::max(query_gap, target_gap));
+    float query_gap_length_proportion  = static_cast<float>(query_gap) / static_cast<float>(total_query_length);
     float target_gap_length_proportion = static_cast<float>(target_gap) / static_cast<float>(total_target_length);
 
-    bool gap_ratio_ok = (unadjusted_gap_ratio > 0.8); //TODO make these user-configurable?
-    bool short_gap = (query_gap < 500 && target_gap < 500);
+    bool gap_ratio_ok                 = (unadjusted_gap_ratio > 0.8); //TODO make these user-configurable?
+    bool short_gap                    = (query_gap < 500 && target_gap < 500);
     bool short_gap_relative_to_length = (query_gap_length_proportion < 0.2 && target_gap_length_proportion < 0.2);
     return gap_ratio_ok || short_gap || short_gap_relative_to_length;
 }
@@ -101,7 +102,7 @@ namespace genomeworks
 namespace cudamapper
 {
 
-void Overlapper::post_process_overlaps(std::vector<Overlap>& overlaps)
+void Overlapper::post_process_overlaps(std::vector<Overlap>& overlaps, bool drop_fused_overlaps)
 {
     const auto num_overlaps = get_size(overlaps);
     bool in_fuse            = false;
@@ -111,6 +112,7 @@ void Overlapper::post_process_overlaps(std::vector<Overlap>& overlaps)
     int fused_query_end;
     int num_residues = 0;
     Overlap prev_overlap;
+    std::vector<bool> drop_overlap_mask(overlaps.size());
 
     for (int i = 1; i < num_overlaps; i++)
     {
@@ -119,6 +121,8 @@ void Overlapper::post_process_overlaps(std::vector<Overlap>& overlaps)
         //Check if previous overlap can be merged into the current one
         if (overlaps_mergable(prev_overlap, current_overlap))
         {
+            drop_overlap_mask[i]     = true;
+            drop_overlap_mask[i - 1] = true;
             if (!in_fuse)
             { // Entering a new fuse
                 num_residues      = prev_overlap.num_residues_ + current_overlap.num_residues_;
@@ -185,6 +189,24 @@ void Overlapper::post_process_overlaps(std::vector<Overlap>& overlaps)
         fused_overlap.target_end_position_in_read_   = fused_target_end;
         fused_overlap.num_residues_                  = num_residues;
         overlaps.push_back(fused_overlap);
+    }
+
+    if (drop_fused_overlaps)
+    {
+        std::size_t i                     = 0;
+        std::vector<Overlap>::iterator it = overlaps.begin();
+        while (it != end(overlaps) && i < drop_overlap_mask.size())
+        {
+            if (drop_overlap_mask[i])
+            {
+                it = overlaps.erase(it);
+            }
+            else
+            {
+                ++it;
+            }
+            ++i;
+        }
     }
 }
 
