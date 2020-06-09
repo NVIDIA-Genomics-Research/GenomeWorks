@@ -17,7 +17,8 @@ namespace
 {
 bool overlaps_mergable(const claraparabricks::genomeworks::cudamapper::Overlap o1, const claraparabricks::genomeworks::cudamapper::Overlap o2)
 {
-    bool relative_strands_forward = (o2.relative_strand == claraparabricks::genomeworks::cudamapper::RelativeStrand::Forward) && (o1.relative_strand == claraparabricks::genomeworks::cudamapper::RelativeStrand::Forward);
+
+    bool relative_strands_forward          = (o2.relative_strand == claraparabricks::genomeworks::cudamapper::RelativeStrand::Forward) && (o1.relative_strand == claraparabricks::genomeworks::cudamapper::RelativeStrand::Forward);
     bool relative_strands_reverse = (o2.relative_strand == claraparabricks::genomeworks::cudamapper::RelativeStrand::Reverse) && (o1.relative_strand == claraparabricks::genomeworks::cudamapper::RelativeStrand::Reverse);
 
     if (!(relative_strands_forward || relative_strands_reverse))
@@ -32,8 +33,8 @@ bool overlaps_mergable(const claraparabricks::genomeworks::cudamapper::Overlap o
         return false;
     }
 
-    int query_gap = (o2.query_start_position_in_read_ - o1.query_end_position_in_read_);
-    int target_gap;
+    std::uint32_t query_gap = (o2.query_start_position_in_read_ - o1.query_end_position_in_read_);
+    std::uint32_t target_gap;
 
     // If the strands are reverse strands, the coordinates of the target strand overlaps will be decreasing
     // as those of the query increase. We therefore need to know wether this is a forward or reverse match
@@ -47,9 +48,23 @@ bool overlaps_mergable(const claraparabricks::genomeworks::cudamapper::Overlap o
         target_gap = (o2.target_start_position_in_read_ - o1.target_end_position_in_read_);
     }
 
-    auto gap_ratio    = static_cast<float>(std::min(query_gap, target_gap)) / static_cast<float>(std::max(query_gap, target_gap));
-    bool gap_ratio_ok = (gap_ratio > 0.8) || ((query_gap < 500) && (target_gap < 500)); //TODO make these user-configurable?
-    return gap_ratio_ok;
+    std::uint32_t o1_query_length = o1.query_end_position_in_read_ - o1.query_start_position_in_read_;
+    std::uint32_t o2_query_length = o2.query_end_position_in_read_ - o2.query_start_position_in_read_;
+    std::uint32_t o1_target_length = o1.target_end_position_in_read_ - o1.target_start_position_in_read_;
+    std::uint32_t o2_target_length = o2.target_end_position_in_read_ - o2.target_start_position_in_read_;
+
+    std::uint32_t total_query_length = o1_query_length + o2_query_length;
+    std::uint32_t total_target_length = o1_target_length + o2_target_length;
+
+    
+    float unadjusted_gap_ratio    = static_cast<float>(std::min(query_gap, target_gap)) / static_cast<float>(std::max(query_gap, target_gap));
+    float query_gap_length_proportion = static_cast<float>(query_gap) / static_cast<float>(total_query_length);
+    float target_gap_length_proportion = static_cast<float>(target_gap) / static_cast<float>(total_target_length);
+
+    bool gap_ratio_ok = (unadjusted_gap_ratio > 0.8); //TODO make these user-configurable?
+    bool short_gap = (query_gap < 500 && target_gap < 500);
+    bool short_gap_relative_to_length = (query_gap_length_proportion < 0.2 && target_gap_length_proportion < 0.2);
+    return gap_ratio_ok || short_gap || short_gap_relative_to_length;
 }
 
 // Reverse complement lookup table
