@@ -172,8 +172,8 @@ int main(int argc, char** argv)
         std::exit(0);
     }
 
-    // Load input data. Each POA group is represented as a vector of strings. The sample
-    // data has many such POA groups to process, hence the data is loaded into a vector
+    // Load input data. Each window is represented as a vector of strings. The sample
+    // data has many such windows to process, hence the data is loaded into a vector
     // of vector of strings.
     std::vector<std::vector<std::string>> windows;
 
@@ -188,45 +188,50 @@ int main(int argc, char** argv)
         parse_window_data_file(windows, input_file, 1000);
     }
 
-    // analyze the windows and create a minimal set of batches to process them all
-    std::vector<BatchSize> list_of_batch_sizes;
-    std::vector<std::vector<int32_t>> list_of_windows_per_batch;
-    cudapoa::get_multi_batch_sizes(list_of_batch_sizes, list_of_windows_per_batch, windows, banded, msa);
+    // Create a vector of POA groups based on windows
+    std::vector<Group> groups(windows.size());
+    for (int32_t i = 0; i < get_size(windows); ++i)
+    {
+        Group& group = groups[i];
+        // Create a new entry for each sequence and add to the group.
+        for (const auto& seq : windows[i])
+        {
+            Entry poa_entry{};
+            poa_entry.seq     = seq.c_str();
+            poa_entry.length  = seq.length();
+            poa_entry.weights = nullptr;
+            group.push_back(poa_entry);
+        }
+    }
 
-    int32_t window_count_offset = 0;
+    // analyze the POA groups and create a minimal set of batches to process them all
+    std::vector<BatchSize> list_of_batch_sizes;
+    std::vector<std::vector<int32_t>> list_of_groups_per_batch;
+
+    cudapoa::get_multi_batch_sizes(list_of_batch_sizes, list_of_groups_per_batch, windows, banded, msa);
+
+    int32_t group_count_offset = 0;
 
     for (int32_t b = 0; b < get_size(list_of_batch_sizes); b++)
     {
-        auto& batch_size       = list_of_batch_sizes[b];
-        auto& batch_window_ids = list_of_windows_per_batch[b];
+        auto& batch_size      = list_of_batch_sizes[b];
+        auto& batch_group_ids = list_of_groups_per_batch[b];
 
         // Initialize batch.
         std::unique_ptr<Batch> batch = initialize_batch(msa, banded, batch_size);
 
         // Loop over all the POA groups for the current batch, add them to the batch and process them.
-        int32_t window_count = 0;
+        int32_t group_count = 0;
 
-        for (int32_t i = 0; i < get_size(batch_window_ids);)
+        for (int32_t i = 0; i < get_size(batch_group_ids);)
         {
-            const std::vector<std::string>& window = windows[batch_window_ids[i]];
-
-            Group poa_group;
-            // Create a new entry for each sequence and add to the group.
-            for (const auto& seq : window)
-            {
-                Entry poa_entry{};
-                poa_entry.seq     = seq.c_str();
-                poa_entry.length  = seq.length();
-                poa_entry.weights = nullptr;
-                poa_group.push_back(poa_entry);
-            }
-
+            Group& poa_group = groups[batch_group_ids[i]];
             std::vector<StatusType> seq_status;
             StatusType status = batch->add_poa_group(seq_status, poa_group);
 
-            // NOTE: If number of batch windows smaller than batch capacity, then run POA generation
-            // once last window is added to batch.
-            if (status == StatusType::exceeded_maximum_poas || (i == get_size(batch_window_ids) - 1))
+            // NOTE: If number of batch groups smaller than batch capacity, then run POA generation
+            // once last POA group is added to batch.
+            if (status == StatusType::exceeded_maximum_poas || (i == get_size(batch_group_ids) - 1))
             {
                 // at least one POA should have been added before processing the batch
                 if (batch->get_total_poas() > 0)
@@ -248,26 +253,26 @@ int main(int argc, char** argv)
                     // After MSA/consensus is generated for batch, reset batch to make room for next set of POA groups.
                     batch->reset();
 
-                    // In case that number of batch windows is more than the capacity available on GPU, the for loop breaks into smaller number of windows.
-                    // if adding window i in batch->add_poa_group is not successful, it wont be processed in this iteration, therefore we print i-1
-                    // to account for the fact that window i was excluded at this round.
+                    // In case that number of batch groups is more than the capacity available on GPU, the for loop breaks into smaller number of groups.
+                    // if adding group i in batch->add_poa_group is not successful, it wont be processed in this iteration, therefore we print i-1
+                    // to account for the fact that group i was excluded at this round.
                     if (status == StatusType::success)
                     {
-                        std::cout << "Processed windows " << window_count + window_count_offset << " - " << i + window_count_offset << " (batch " << b << ")" << std::endl;
+                        std::cout << "Processed groups " << group_count + group_count_offset << " - " << i + group_count_offset << " (batch " << b << ")" << std::endl;
                     }
                     else
                     {
-                        std::cout << "Processed windows " << window_count + window_count_offset << " - " << i - 1 + window_count_offset << " (batch " << b << ")" << std::endl;
+                        std::cout << "Processed groups " << group_count + group_count_offset << " - " << i - 1 + group_count_offset << " (batch " << b << ")" << std::endl;
                     }
                 }
                 else
                 {
                     // the POA was too large to be added to the GPU, skip and move on
-                    std::cout << "Could not add POA group " << batch_window_ids[i] << " to batch " << b << std::endl;
+                    std::cout << "Could not add POA group " << batch_group_ids[i] << " to batch " << b << std::endl;
                     i++;
                 }
 
-                window_count = i;
+                group_count = i;
             }
 
             if (status == StatusType::success)
@@ -285,12 +290,12 @@ int main(int argc, char** argv)
 
             if (status != StatusType::exceeded_maximum_poas && status != StatusType::success)
             {
-                std::cout << "Could not add POA group " << batch_window_ids[i] << " to batch " << b << ". Error code " << status << std::endl;
+                std::cout << "Could not add POA group " << batch_group_ids[i] << " to batch " << b << ". Error code " << status << std::endl;
                 i++;
             }
         }
 
-        window_count_offset += get_size(batch_window_ids);
+        group_count_offset += get_size(batch_group_ids);
     }
 
     return 0;
