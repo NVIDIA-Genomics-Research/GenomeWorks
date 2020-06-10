@@ -11,7 +11,7 @@
 #pragma once
 
 #include <memory>
-#include <type_traits>
+#include <vector>
 
 #include <cuda_runtime_api.h>
 #include <claragenomics/utils/device_preallocated_allocator.cuh>
@@ -104,11 +104,11 @@ public:
 
     /// @brief asynchronously allocates a device array with enough space for n elements of value_type
     /// @param n number of elements to allocate the array for
-    /// @param stream CUDA stream to be associated with this method
+    /// @param streams CUDA streams to be associated with this allocation, ignored in this case
     /// @return pointer to allocated array
-    pointer allocate(std::size_t n, cudaStream_t stream = 0)
+    pointer allocate(std::size_t n, const std::vector<cudaStream_t>& streams)
     {
-        static_cast<void>(stream);
+        static_cast<void>(streams);
         void* ptr       = nullptr;
         cudaError_t err = cudaMalloc(&ptr, n * sizeof(T));
         if (err == cudaErrorMemoryAllocation)
@@ -229,10 +229,12 @@ public:
 
     /// @brief asynchronously allocates a device array with enough space for n elements of value_type
     /// @param n number of elements to allocate the array for
-    /// @param stream CUDA stream to be associated with this method
+    /// @param streams CUDA streams to be associated with this allocation, when allocation is deallocated cudaStreamSynchronize is called on all of them
     /// @return pointer to allocated array
-    pointer allocate(std::size_t n, cudaStream_t stream = 0)
+    pointer allocate(std::size_t n, const std::vector<cudaStream_t>& streams = {{0}})
     {
+        assert(!streams.empty());
+
         if (!memory_resource_)
         {
             CGA_LOG_ERROR("{}\n", "ERROR:: Trying to allocate memory from an default-constructed CachingDeviceAllocator. Please assign a non-default-constructed CachingDeviceAllocator before performing any memory operations.");
@@ -240,7 +242,7 @@ public:
             std::abort();
         }
         void* ptr       = nullptr;
-        cudaError_t err = memory_resource_->DeviceAllocate(&ptr, n * sizeof(T), stream);
+        cudaError_t err = memory_resource_->DeviceAllocate(&ptr, n * sizeof(T), streams);
         if (err == cudaErrorMemoryAllocation)
         {
             throw device_memory_allocation_exception();
@@ -249,7 +251,7 @@ public:
         return static_cast<pointer>(ptr);
     }
 
-    /// @brief Asynchronously dealllocates allocated array
+    /// @brief Asynchronously dealllocates allocated array, calls cudaStreamSynchronize of associated streams
     /// @param p pointer to the array to deallocate
     /// @param n number of elements the array was allocated for
     void deallocate(pointer p, std::size_t n)
