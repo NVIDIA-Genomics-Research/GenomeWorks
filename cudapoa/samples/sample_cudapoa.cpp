@@ -189,10 +189,10 @@ int main(int argc, char** argv)
     }
 
     // Create a vector of POA groups based on windows
-    std::vector<Group> groups(windows.size());
+    std::vector<Group> poa_groups(windows.size());
     for (int32_t i = 0; i < get_size(windows); ++i)
     {
-        Group& group = groups[i];
+        Group& group = poa_groups[i];
         // Create a new entry for each sequence and add to the group.
         for (const auto& seq : windows[i])
         {
@@ -208,7 +208,7 @@ int main(int argc, char** argv)
     std::vector<BatchSize> list_of_batch_sizes;
     std::vector<std::vector<int32_t>> list_of_groups_per_batch;
 
-    cudapoa::get_multi_batch_sizes(list_of_batch_sizes, list_of_groups_per_batch, windows, banded, msa);
+    cudapoa::get_multi_batch_sizes(list_of_batch_sizes, list_of_groups_per_batch, poa_groups, banded, msa);
 
     int32_t group_count_offset = 0;
 
@@ -225,9 +225,9 @@ int main(int argc, char** argv)
 
         for (int32_t i = 0; i < get_size(batch_group_ids);)
         {
-            Group& poa_group = groups[batch_group_ids[i]];
+            Group& group = poa_groups[batch_group_ids[i]];
             std::vector<StatusType> seq_status;
-            StatusType status = batch->add_poa_group(seq_status, poa_group);
+            StatusType status = batch->add_poa_group(seq_status, group);
 
             // NOTE: If number of batch groups smaller than batch capacity, then run POA generation
             // once last POA group is added to batch.
