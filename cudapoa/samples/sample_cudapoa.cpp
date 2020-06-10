@@ -15,16 +15,14 @@
 #include <claragenomics/cudapoa/batch.hpp>
 #include <claragenomics/utils/signed_integer_utils.hpp>
 #include <claragenomics/utils/cudautils.hpp>
-#include <claragenomics/utils/genomeutils.hpp>
 
 #include <cuda_runtime_api.h>
 #include <vector>
 #include <string>
 #include <unistd.h>
-#include <random>
 
-using namespace claragenomics;
-using namespace claragenomics::cudapoa;
+using namespace claraparabricks::genomeworks;
+using namespace claraparabricks::genomeworks::cudapoa;
 
 std::unique_ptr<Batch> initialize_batch(bool msa, bool banded_alignment, const BatchSize& batch_size)
 {
@@ -135,7 +133,7 @@ void generate_window_data(const std::string& input_file, const int number_of_win
     {
         for (auto& seq : window)
         {
-            max_read_length = std::max(max_read_length, get_size<int>(seq) + 1);
+            max_read_length = std::max(max_read_length, get_size<int>(seq));
         }
     }
 
@@ -148,12 +146,12 @@ int main(int argc, char** argv)
     int c            = 0;
     bool msa         = false;
     bool long_read   = false;
-    bool banded      = false;
+    bool banded      = true;
     bool help        = false;
     bool print       = false;
     bool print_graph = false;
 
-    while ((c = getopt(argc, argv, "mlbpgh")) != -1)
+    while ((c = getopt(argc, argv, "mlfpgh")) != -1)
     {
         switch (c)
         {
@@ -163,8 +161,8 @@ int main(int argc, char** argv)
         case 'l':
             long_read = true;
             break;
-        case 'b':
-            banded = true;
+        case 'f':
+            banded = false;
             break;
         case 'p':
             print = true;
@@ -185,7 +183,7 @@ int main(int argc, char** argv)
         std::cout << "./sample_cudapoa [-m] [-h]" << std::endl;
         std::cout << "-m : Generate MSA (if not provided, generates consensus by default)" << std::endl;
         std::cout << "-l : Perform long-read sample (if not provided, will run short-read sample by default)" << std::endl;
-        std::cout << "-b : Perform banded alignment (if not provided, full alignment is used by default)" << std::endl;
+        std::cout << "-f : Perform full alignment (if not provided, banded alignment is used by default)" << std::endl;
         std::cout << "-p : Print the MSA or consensus output to stdout" << std::endl;
         std::cout << "-g : Print POA graph in dot format, this option is only for long-read sample" << std::endl;
         std::cout << "-h : Print help message" << std::endl;
@@ -203,7 +201,7 @@ int main(int argc, char** argv)
     if (long_read)
     {
         const std::string input_file = std::string(CUDAPOA_BENCHMARK_DATA_DIR) + "/sample-bonito.txt";
-        generate_window_data(input_file, 8, 6, windows, batch_size);
+        generate_window_data(input_file, -1, 6, windows, batch_size);
     }
     else
     {
@@ -216,8 +214,7 @@ int main(int argc, char** argv)
 
     // Loop over all the POA groups, add them to the batch and process them.
     int32_t window_count = 0;
-    // to avoid potential infinite loop
-    int32_t error_count = 0;
+
     for (int32_t i = 0; i < get_size(windows);)
     {
         const std::vector<std::string>& window = windows[i];
@@ -238,35 +235,45 @@ int main(int argc, char** argv)
 
         // NOTE: If number of windows smaller than batch capacity, then run POA generation
         // once last window is added to batch.
-        if (status == StatusType::exceeded_maximum_poas || status == StatusType::exceeded_batch_size || (i == get_size(windows) - 1))
+        if (status == StatusType::exceeded_maximum_poas || (i == get_size(windows) - 1))
         {
-            // No more POA groups can be added to batch. Now process batch.
-            process_batch(batch.get(), msa, print);
-
-            if (print_graph && long_read)
+            // at least one POA should have been added before processing the batch
+            if (batch->get_total_poas() > 0)
             {
-                std::vector<DirectedGraph> graph;
-                std::vector<StatusType> graph_status;
-                batch->get_graphs(graph, graph_status);
-                for (auto& g : graph)
+                // No more POA groups can be added to batch. Now process batch.
+                process_batch(batch.get(), msa, print);
+
+                if (print_graph && long_read)
                 {
-                    std::cout << g.serialize_to_dot() << std::endl;
+                    std::vector<DirectedGraph> graph;
+                    std::vector<StatusType> graph_status;
+                    batch->get_graphs(graph, graph_status);
+                    for (auto& g : graph)
+                    {
+                        std::cout << g.serialize_to_dot() << std::endl;
+                    }
                 }
-            }
 
-            // After MSA/consensus is generated for batch, reset batch to make room for next set of POA groups.
-            batch->reset();
+                // After MSA/consensus is generated for batch, reset batch to make room for next set of POA groups.
+                batch->reset();
 
-            // In case that number of windows is more than the capacity available on GPU, the for loop breaks into smaller number of windows.
-            // if adding window i in batch->add_poa_group is not successful, it wont be processed in this iteration, therefore we print i-1
-            // to account for the fact that window i was excluded at this round.
-            if (status == StatusType::success)
-            {
-                std::cout << "Processed windows " << window_count << " - " << i << std::endl;
+                // In case that number of windows is more than the capacity available on GPU, the for loop breaks into smaller number of windows.
+                // if adding window i in batch->add_poa_group is not successful, it wont be processed in this iteration, therefore we print i-1
+                // to account for the fact that window i was excluded at this round.
+                if (status == StatusType::success)
+                {
+                    std::cout << "Processed windows " << window_count << " - " << i << std::endl;
+                }
+                else
+                {
+                    std::cout << "Processed windows " << window_count << " - " << i - 1 << std::endl;
+                }
             }
             else
             {
-                std::cout << "Processed windows " << window_count << " - " << i - 1 << std::endl;
+                // the POA was too large to be added to the GPU, skip and move on
+                std::cout << "Could not add POA group " << i << " to batch. Error code " << status << std::endl;
+                i++;
             }
 
             window_count = i;
@@ -285,12 +292,10 @@ int main(int argc, char** argv)
             i++;
         }
 
-        if (status != StatusType::exceeded_maximum_poas && status != StatusType::exceeded_batch_size && status != StatusType::success)
+        if (status != StatusType::exceeded_maximum_poas && status != StatusType::success)
         {
-            std::cerr << "Could not add POA group to batch. Error code " << status << std::endl;
-            error_count++;
-            if (error_count > get_size(windows))
-                break;
+            std::cout << "Could not add POA group " << i << " to batch. Error code " << status << std::endl;
+            i++;
         }
     }
 

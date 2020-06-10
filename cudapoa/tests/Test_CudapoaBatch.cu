@@ -12,7 +12,10 @@
 
 #include "gtest/gtest.h"
 
-namespace claragenomics
+namespace claraparabricks
+{
+
+namespace genomeworks
 {
 
 namespace cudapoa
@@ -37,15 +40,15 @@ public:
                     int16_t match_score    = 8,
                     bool banded_alignment  = false)
     {
-        cudapoa_batch = claragenomics::cudapoa::create_batch(device_id,
-                                                             stream,
-                                                             mem_per_batch,
-                                                             output_mask,
-                                                             batch_size,
-                                                             gap_score,
-                                                             mismatch_score,
-                                                             match_score,
-                                                             banded_alignment);
+        cudapoa_batch = genomeworks::cudapoa::create_batch(device_id,
+                                                           stream,
+                                                           mem_per_batch,
+                                                           output_mask,
+                                                           batch_size,
+                                                           gap_score,
+                                                           mismatch_score,
+                                                           match_score,
+                                                           banded_alignment);
     }
 
     size_t get_free_device_mem(int32_t device_id)
@@ -57,7 +60,7 @@ public:
     }
 
 public:
-    std::unique_ptr<claragenomics::cudapoa::Batch> cudapoa_batch;
+    std::unique_ptr<genomeworks::cudapoa::Batch> cudapoa_batch;
 };
 
 TEST_F(TestCudapoaBatch, InitializeTest)
@@ -65,7 +68,6 @@ TEST_F(TestCudapoaBatch, InitializeTest)
     const int32_t device_id = 0;
     size_t free             = get_free_device_mem(device_id);
     initialize(0.9 * free, device_id, BatchSize(1024, 5));
-    EXPECT_EQ(cudapoa_batch->batch_id(), 0);
     EXPECT_EQ(cudapoa_batch->get_total_poas(), 0);
 }
 
@@ -124,7 +126,7 @@ TEST_F(TestCudapoaBatch, MaxSeqSizeTest)
     std::vector<StatusType> status;
     Entry e{};
 
-    int32_t seq_length = 1023;
+    int32_t seq_length = 1024;
     std::string seq(seq_length, 'A');
     std::vector<int8_t> weights(seq_length, 1);
     e.seq     = seq.c_str();
@@ -133,7 +135,7 @@ TEST_F(TestCudapoaBatch, MaxSeqSizeTest)
     poa_group.push_back(e);
 
     Entry e_2{};
-    seq_length        = 1024;
+    seq_length        = 1025;
     std::string seq_2 = std::string(seq_length, 'A');
     std::vector<int8_t> weights_2(seq_length, 1);
     e_2.seq     = seq_2.c_str();
@@ -186,16 +188,18 @@ TEST_F(TestCudapoaBatch, GeneratePoaTest)
     // Get consensus
     std::vector<std::string> consensus;
     std::vector<std::vector<uint16_t>> coverage;
-    std::vector<claragenomics::cudapoa::StatusType> output_status;
+    std::vector<genomeworks::cudapoa::StatusType> output_status;
     cudapoa_batch->generate_poa();
     cudapoa_batch->get_consensus(consensus, coverage, output_status);
 
     EXPECT_EQ(output_status[0], StatusType::success);
-    EXPECT_EQ(consensus.size(), 1);
+    EXPECT_EQ(consensus.size(), 1U);
     // Since all sequences are same, consensus is same as sequences.
     EXPECT_EQ(consensus[0], seq);
 }
 
 } // namespace cudapoa
 
-} // namespace claragenomics
+} // namespace genomeworks
+
+} // namespace claraparabricks

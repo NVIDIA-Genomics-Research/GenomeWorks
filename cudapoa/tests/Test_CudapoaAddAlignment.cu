@@ -8,16 +8,20 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-#include "../src/cudapoa_kernels.cuh" //addAlignment, CUDAPOA_MAX_NODE_EDGES, CUDAPOA_MAX_NODE_ALIGNMENTS
-#include "basic_graph.hpp"            //BasicGraph
+#include "../src/cudapoa_add_alignment.cuh" //addAlignment, CUDAPOA_MAX_NODE_EDGES, CUDAPOA_MAX_NODE_ALIGNMENTS
+#include "basic_graph.hpp"                  //BasicGraph
 
+#include <claragenomics/cudapoa/batch.hpp>
 #include <claragenomics/utils/cudautils.hpp>            //CGA_CU_CHECK_ERR
 #include <claragenomics/utils/stringutils.hpp>          //array_to_string
 #include <claragenomics/utils/signed_integer_utils.hpp> // get_size
 
 #include "gtest/gtest.h"
 
-namespace claragenomics
+namespace claraparabricks
+{
+
+namespace genomeworks
 {
 
 namespace cudapoa
@@ -37,7 +41,7 @@ public:
         //do nothing for now
     }
 
-    void get_alignments(SizeT* alignment_graph, SizeT* alignment_read, uint16_t* alignment_length) const
+    void get_alignments(SizeT* alignment_graph, SizeT* alignment_read, SizeT* alignment_length) const
     {
         for (int i = 0; i < get_size(alignment_graph_); i++)
         {
@@ -79,7 +83,7 @@ public:
         graph.get_node_coverage_counts(node_coverage_counts);
     }
 
-    void get_alignment_buffers(SizeT* alignment_graph, SizeT* alignment_read, uint16_t* alignment_length,
+    void get_alignment_buffers(SizeT* alignment_graph, SizeT* alignment_read, SizeT* alignment_length,
                                uint8_t* read, int8_t* base_weights) const
     {
         get_alignments(alignment_graph, alignment_read, alignment_length);
@@ -234,7 +238,7 @@ BasicGraph testAddAlignment(const BasicAlignment& obj)
     uint16_t* outgoing_edge_count;
     uint16_t* incoming_edge_w;
     uint16_t* outgoing_edge_w;
-    uint16_t* alignment_length;
+    SizeT* alignment_length;
     SizeT* graph;
     SizeT* alignment_graph;
     uint8_t* read;
@@ -258,7 +262,7 @@ BasicGraph testAddAlignment(const BasicAlignment& obj)
     CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&outgoing_edge_count, batch_size.max_nodes_per_window * sizeof(uint16_t)));
     CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&incoming_edge_w, batch_size.max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES * sizeof(uint16_t)));
     CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&outgoing_edge_w, batch_size.max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES * sizeof(uint16_t)));
-    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&alignment_length, sizeof(uint16_t)));
+    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&alignment_length, sizeof(SizeT)));
     CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&graph, batch_size.max_nodes_per_window * sizeof(SizeT)));
     CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&alignment_graph, batch_size.max_sequence_size * sizeof(SizeT)));
     CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&read, batch_size.max_sequence_size * sizeof(uint8_t)));
@@ -302,8 +306,7 @@ BasicGraph testAddAlignment(const BasicAlignment& obj)
                  outgoing_edges_coverage_count,
                  s,
                  batch_size.max_sequences_per_poa,
-                 batch_size.max_nodes_per_window,
-                 false, batch_size);
+                 batch_size.max_nodes_per_window);
 
     CGA_CU_CHECK_ERR(cudaDeviceSynchronize());
 
@@ -359,4 +362,6 @@ INSTANTIATE_TEST_SUITE_P(TestAddAlginment, AddAlignmentTest, ValuesIn(getAddAlig
 
 } // namespace cudapoa
 
-} // namespace claragenomics
+} // namespace genomeworks
+
+} // namespace claraparabricks

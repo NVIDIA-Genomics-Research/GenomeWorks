@@ -7,14 +7,18 @@
 * distribution of this software and related documentation without an express
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
+#pragma once
 
-#include "cudastructs.cuh"
+#include "cudapoastructs.cuh"
 
 #include <claragenomics/utils/cudautils.hpp>
 
 #include <stdio.h>
 
-namespace claragenomics
+namespace claraparabricks
+{
+
+namespace genomeworks
 {
 
 namespace cudapoa
@@ -34,7 +38,7 @@ namespace cudapoa
 template <typename SizeT>
 __device__ void topologicalSortDeviceUtil(SizeT* sorted_poa,
                                           SizeT* sorted_poa_node_map,
-                                          int32_t node_count,
+                                          SizeT node_count,
                                           uint16_t* incoming_edge_count,
                                           SizeT* outgoing_edges,
                                           uint16_t* outgoing_edge_count,
@@ -44,7 +48,7 @@ __device__ void topologicalSortDeviceUtil(SizeT* sorted_poa,
     // Clear the incoming edge count for each node.
     //__shared__ int16_t local_incoming_edge_count[CUDAPOA_MAX_NODES_PER_WINDOW];
     //memset(local_incoming_edge_count, -1, CUDAPOA_MAX_NODES_PER_WINDOW);
-    uint16_t sorted_poa_position = 0;
+    SizeT sorted_poa_position = 0;
 
     // Iterate through node IDs (since nodes are from 0
     // through node_count -1, a simple loop works) and fill
@@ -64,7 +68,7 @@ __device__ void topologicalSortDeviceUtil(SizeT* sorted_poa,
     // then iterate through their children. For each child decrement their
     // incoming edge count. If incoming edge count of child == 0,
     // add its node ID to the sorted order list.
-    for (uint16_t n = 0; n < sorted_poa_position; n++)
+    for (SizeT n = 0; n < sorted_poa_position; n++)
     {
         SizeT node = sorted_poa[n];
         for (uint16_t edge = 0; edge < outgoing_edge_count[node]; edge++)
@@ -90,7 +94,7 @@ __device__ void topologicalSortDeviceUtil(SizeT* sorted_poa,
 template <typename SizeT>
 __device__ void raconTopologicalSortDeviceUtil(SizeT* sorted_poa,
                                                SizeT* sorted_poa_node_map,
-                                               int32_t node_count,
+                                               SizeT node_count,
                                                uint16_t* incoming_edge_count,
                                                SizeT* incoming_edges,
                                                uint16_t* aligned_node_count,
@@ -99,12 +103,12 @@ __device__ void raconTopologicalSortDeviceUtil(SizeT* sorted_poa,
                                                bool* check_aligned_nodes,
                                                SizeT* nodes_to_visit,
                                                bool /*banded_alignment*/,
-                                               uint16_t max_nodes_per_window)
+                                               SizeT max_nodes_per_window)
 {
-    int16_t node_idx        = -1;
-    uint16_t sorted_poa_idx = 0;
+    SizeT node_idx       = -1;
+    SizeT sorted_poa_idx = 0;
 
-    for (uint16_t i = 0; i < max_nodes_per_window; i++)
+    for (SizeT i = 0; i < max_nodes_per_window; i++)
     {
         node_marks[i]          = 0;
         check_aligned_nodes[i] = true;
@@ -187,7 +191,7 @@ __device__ void raconTopologicalSortDeviceUtil(SizeT* sorted_poa,
 template <typename SizeT>
 __global__ void runTopSortKernel(SizeT* sorted_poa,
                                  SizeT* sorted_poa_node_map,
-                                 int32_t node_count,
+                                 SizeT node_count,
                                  uint16_t* incoming_edge_count,
                                  SizeT* outgoing_edges,
                                  uint16_t* outgoing_edge_count,
@@ -206,12 +210,12 @@ __global__ void runTopSortKernel(SizeT* sorted_poa,
 // host function that calls runTopSortKernel
 template <typename SizeT>
 void runTopSort(SizeT* sorted_poa,
-                         SizeT* sorted_poa_node_map,
-                         int32_t node_count,
-                         uint16_t* incoming_edge_count,
-                         SizeT* outgoing_edges,
-                         uint16_t* outgoing_edge_count,
-                         uint16_t* local_incoming_edge_count)
+                SizeT* sorted_poa_node_map,
+                SizeT node_count,
+                uint16_t* incoming_edge_count,
+                SizeT* outgoing_edges,
+                uint16_t* outgoing_edge_count,
+                uint16_t* local_incoming_edge_count)
 {
     // calls the topsort kernel on 1 thread
     runTopSortKernel<<<1, 1>>>(sorted_poa,
@@ -226,4 +230,6 @@ void runTopSort(SizeT* sorted_poa,
 
 } // namespace cudapoa
 
-} // namespace claragenomics
+} // namespace genomeworks
+
+} // namespace claraparabricks

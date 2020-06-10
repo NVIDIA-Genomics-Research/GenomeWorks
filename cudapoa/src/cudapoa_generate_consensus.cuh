@@ -7,14 +7,19 @@
 * distribution of this software and related documentation without an express
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
+#pragma once
 
-#include "cudastructs.cuh"
+#include "cudapoastructs.cuh"
 
+#include <claragenomics/cudapoa/cudapoa.hpp>
 #include <claragenomics/utils/cudautils.hpp>
 
 #include <stdio.h>
 
-namespace claragenomics
+namespace claraparabricks
+{
+
+namespace genomeworks
 {
 
 namespace cudapoa
@@ -23,9 +28,9 @@ namespace cudapoa
 template <typename SizeT>
 __device__
     SizeT
-    branchCompletion(uint16_t max_score_id_pos,
+    branchCompletion(SizeT max_score_id_pos,
                      uint8_t* nodes,
-                     int32_t node_count,
+                     SizeT node_count,
                      SizeT* graph,
                      SizeT* incoming_edges,
                      uint16_t* incoming_edge_count,
@@ -128,7 +133,7 @@ __device__
  */
 template <typename SizeT>
 __device__ void generateConsensus(uint8_t* nodes,
-                                  int32_t node_count,
+                                  SizeT node_count,
                                   SizeT* graph,
                                   SizeT* node_id_to_pos,
                                   SizeT* incoming_edges,
@@ -155,7 +160,7 @@ __device__ void generateConsensus(uint8_t* nodes,
     SizeT max_score_id = 0;
     int32_t max_score  = -1;
 
-    for (uint16_t graph_pos = 0; graph_pos < node_count; graph_pos++)
+    for (SizeT graph_pos = 0; graph_pos < node_count; graph_pos++)
     {
         SizeT node_id     = graph[graph_pos];
         uint16_t in_edges = incoming_edge_count[node_id];
@@ -200,7 +205,7 @@ __device__ void generateConsensus(uint8_t* nodes,
 
     // If the node with maximum score isn't a leaf of the graph
     // then run a special branch completion function.
-    uint16_t loop_count = 0;
+    SizeT loop_count = 0;
     if (outgoing_edge_count[max_score_id] != 0)
     {
         while (outgoing_edge_count[max_score_id] != 0 && loop_count < node_count)
@@ -232,7 +237,7 @@ __device__ void generateConsensus(uint8_t* nodes,
     SizeT consensus_pos = 0;
     // Use consensus_count to track how many elements are in consensus. If more than the maximum
     // size, then consensus cannot be properly represented. So throw error.
-    uint16_t consensus_count = 0;
+    SizeT consensus_count = 0;
 
     while (predecessors[max_score_id] != -1)
     {
@@ -274,7 +279,7 @@ template <bool cuda_banded_alignment = false, typename SizeT>
 __global__ void generateConsensusKernel(uint8_t* consensus_d,
                                         uint16_t* coverage_d,
                                         SizeT* sequence_lengths_d,
-                                        claragenomics::cudapoa::WindowDetails* window_details_d,
+                                        genomeworks::cudapoa::WindowDetails* window_details_d,
                                         int32_t total_windows,
                                         uint8_t* nodes_d,
                                         SizeT* incoming_edges_d,
@@ -289,8 +294,7 @@ __global__ void generateConsensusKernel(uint8_t* consensus_d,
                                         int32_t* consensus_scores_d,
                                         SizeT* consensus_predecessors_d,
                                         uint16_t* node_coverage_counts_d_,
-                                        uint32_t max_limit_nodes_per_window,
-                                        uint32_t max_limit_nodes_per_window_banded,
+                                        uint32_t max_nodes_per_window,
                                         uint32_t max_limit_consensus_size)
 {
     //each thread will operate on a window
@@ -303,8 +307,6 @@ __global__ void generateConsensusKernel(uint8_t* consensus_d,
 
     if (consensus[0] == CUDAPOA_KERNEL_ERROR_ENCOUNTERED) //error during graph generation
         return;
-
-    int32_t max_nodes_per_window = cuda_banded_alignment ? max_limit_nodes_per_window_banded : max_limit_nodes_per_window;
 
     // Find the buffer offsets for each thread within the global memory buffers.
     uint8_t* nodes                  = &nodes_d[max_nodes_per_window * window_idx];
@@ -346,7 +348,7 @@ __global__ void generateConsensusKernel(uint8_t* consensus_d,
 
 template <typename SizeT>
 __global__ void generateConsensusTestKernel(uint8_t* nodes,
-                                            int32_t node_count,
+                                            SizeT node_count,
                                             SizeT* graph,
                                             SizeT* node_id_to_pos,
                                             SizeT* incoming_edges,
@@ -384,43 +386,45 @@ __global__ void generateConsensusTestKernel(uint8_t* nodes,
 
 template <typename SizeT>
 void generateConsensusTestHost(uint8_t* nodes,
-                                int32_t node_count,
-                                SizeT* graph,
-                                SizeT* node_id_to_pos,
-                                SizeT* incoming_edges,
-                                uint16_t* incoming_edge_count,
-                                SizeT* outgoing_edges,
-                                uint16_t* outgoing_edge_count,
-                                uint16_t* incoming_edge_w,
-                                SizeT* predecessors,
-                                int32_t* scores,
-                                uint8_t* consensus,
-                                uint16_t* coverage,
-                                uint16_t* node_coverage_counts,
-                                SizeT* node_alignments,
-                                uint16_t* node_alignment_count,
-                                uint32_t max_limit_consensus_size)
+                               int32_t node_count,
+                               SizeT* graph,
+                               SizeT* node_id_to_pos,
+                               SizeT* incoming_edges,
+                               uint16_t* incoming_edge_count,
+                               SizeT* outgoing_edges,
+                               uint16_t* outgoing_edge_count,
+                               uint16_t* incoming_edge_w,
+                               SizeT* predecessors,
+                               int32_t* scores,
+                               uint8_t* consensus,
+                               uint16_t* coverage,
+                               uint16_t* node_coverage_counts,
+                               SizeT* node_alignments,
+                               uint16_t* node_alignment_count,
+                               uint32_t max_limit_consensus_size)
 {
-    generateConsensusTestKernel<<<1, 1>>>(nodes,
-                                          node_count,
-                                          graph,
-                                          node_id_to_pos,
-                                          incoming_edges,
-                                          incoming_edge_count,
-                                          outgoing_edges,
-                                          outgoing_edge_count,
-                                          incoming_edge_w,
-                                          predecessors,
-                                          scores,
-                                          consensus,
-                                          coverage,
-                                          node_coverage_counts,
-                                          node_alignments,
-                                          node_alignment_count,
-                                          max_limit_consensus_size);
+    generateConsensusTestKernel<SizeT><<<1, 1>>>(nodes,
+                                                 node_count,
+                                                 graph,
+                                                 node_id_to_pos,
+                                                 incoming_edges,
+                                                 incoming_edge_count,
+                                                 outgoing_edges,
+                                                 outgoing_edge_count,
+                                                 incoming_edge_w,
+                                                 predecessors,
+                                                 scores,
+                                                 consensus,
+                                                 coverage,
+                                                 node_coverage_counts,
+                                                 node_alignments,
+                                                 node_alignment_count,
+                                                 max_limit_consensus_size);
     CGA_CU_CHECK_ERR(cudaPeekAtLastError());
 };
 
 } // namespace cudapoa
 
-} // namespace claragenomics
+} // namespace genomeworks
+
+} // namespace claraparabricks

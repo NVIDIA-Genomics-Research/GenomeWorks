@@ -18,7 +18,10 @@
 #include <claragenomics/io/fasta_parser.hpp>
 #include <claragenomics/utils/device_buffer.hpp>
 
-namespace claragenomics
+namespace claraparabricks
+{
+
+namespace genomeworks
 {
 
 namespace cudamapper
@@ -112,7 +115,7 @@ public:
     /// \brief copy cached index vectors from the host and create an object of Index on GPU
     /// \param allocator asynchronous device allocator used for temporary buffer allocations
     /// \param cuda_stream H2D copy is done on this stream. Device arrays are also associated with this stream and will not be freed at least until all work issued on this stream before calling their destructor is done
-    /// \return a pointer to claragenomics::cudamapper::Index
+    /// \return a pointer to genomeworks::cudamapper::Index
     virtual std::unique_ptr<Index> copy_index_to_device(DefaultDeviceAllocator allocator,
                                                         const cudaStream_t cuda_stream = 0) const = 0;
 
@@ -180,4 +183,6 @@ public:
 
 } // namespace cudamapper
 
-} // namespace claragenomics
+} // namespace genomeworks
+
+} // namespace claraparabricks

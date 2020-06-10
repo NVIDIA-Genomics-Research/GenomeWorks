@@ -16,7 +16,10 @@
 #include <fstream>
 #include <cassert>
 
-namespace claragenomics
+namespace claraparabricks
+{
+
+namespace genomeworks
 {
 
 namespace cudapoa
@@ -91,4 +94,7 @@ inline std::string parse_golden_value_file(const std::string& filename)
     return line;
 }
 } // namespace cudapoa
-} // namespace claragenomics
+
+} // namespace genomeworks
+
+} // namespace claraparabricks

@@ -9,25 +9,23 @@
 */
 
 // Implementation file for CUDA POA kernels.
-
 #pragma once
 
-#include <stdint.h>
-#include <cuda_runtime_api.h>
-#include <stdio.h>
+#include "cudapoa_kernels.cuh"
+#include "cudapoa_nw.cuh"
+#include "cudapoa_nw_banded.cuh"
+#include "cudapoa_topsort.cuh"
+#include "cudapoa_add_alignment.cuh"
+#include "cudapoa_generate_consensus.cuh"
+#include "cudapoa_generate_msa.cuh"
 
 #include <claragenomics/utils/cudautils.hpp>
 #include <claragenomics/cudapoa/batch.hpp>
 
-#include "cudapoa_nw.cu"
-#include "cudapoa_nw_banded.cu"
-#include "cudapoa_topsort.cu"
-#include "cudapoa_add_alignment.cu"
-#include "cudapoa_generate_consensus.cu"
-#include "cudapoa_generate_msa.cu"
-#include "cudastructs.cuh"
+namespace claraparabricks
+{
 
-namespace claragenomics
+namespace genomeworks
 {
 
 namespace cudapoa
@@ -71,7 +69,7 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
                                   uint8_t* sequences_d,
                                   int8_t* base_weights_d,
                                   SizeT* sequence_lengths_d,
-                                  claragenomics::cudapoa::WindowDetails* window_details_d,
+                                  genomeworks::cudapoa::WindowDetails* window_details_d,
                                   int32_t total_windows,
                                   ScoreT* scores_d,
                                   SizeT* alignment_graph_d,
@@ -99,11 +97,10 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
                                   SizeT* sequence_begin_nodes_ids_d,
                                   uint16_t* outgoing_edges_coverage_d,
                                   uint16_t* outgoing_edges_coverage_count_d,
-                                  uint32_t max_limit_nodes_per_window,
-                                  uint32_t max_limit_nodes_per_window_banded,
-                                  uint32_t max_limit_matrix_graph_dimension,
-                                  uint32_t max_limit_matrix_graph_dimension_banded,
-                                  uint32_t max_limit_consensus_size)
+                                  uint32_t max_nodes_per_window,
+                                  uint32_t max_graph_dimension,
+                                  uint32_t max_limit_consensus_size,
+                                  uint32_t banded_alignment_band_width = 0)
 {
     // shared error indicator within a warp
     bool warp_error = false;
@@ -115,11 +112,6 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
 
     if (window_idx >= total_windows)
         return;
-
-    // These are not being changed to int32_t to make use of larger range
-    // without having to use 2 registers which would be needed for 64bit
-    uint32_t max_nodes_per_window = cuda_banded_alignment ? max_limit_nodes_per_window_banded : max_limit_nodes_per_window;
-    uint32_t max_graph_dimension  = cuda_banded_alignment ? max_limit_matrix_graph_dimension_banded : max_limit_matrix_graph_dimension;
 
     // Find the buffer offsets for each thread within the global memory buffers.
     uint8_t* nodes                        = &nodes_d[max_nodes_per_window * window_idx];
@@ -136,13 +128,17 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
     uint16_t* sorted_poa_local_edge_count = &sorted_poa_local_edge_count_d[window_idx * max_nodes_per_window];
 
     int32_t scores_width = window_details_d[window_idx].scores_width;
-    size_t scores_offset = window_details_d[window_idx].scores_offset * max_graph_dimension;
 
-    ScoreT* scores = 0;
+    int64_t scores_offset;
     if (cuda_banded_alignment)
-        scores = &scores_d[max_graph_dimension * CUDAPOA_BANDED_MAX_MATRIX_SEQUENCE_DIMENSION * window_idx];
+    {
+        scores_offset = static_cast<int64_t>(max_graph_dimension) * static_cast<int64_t>(banded_alignment_band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING) * static_cast<int64_t>(window_idx);
+    }
     else
-        scores = &scores_d[scores_offset];
+    {
+        scores_offset = static_cast<int64_t>(window_details_d[window_idx].scores_offset) * static_cast<int64_t>(max_graph_dimension);
+    }
+    ScoreT* scores = &scores_d[scores_offset];
 
     SizeT* alignment_graph         = &alignment_graph_d[max_graph_dimension * window_idx];
     SizeT* alignment_read          = &alignment_read_d[max_graph_dimension * window_idx];
@@ -216,7 +212,7 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
     __syncwarp();
 
     // Align each subsequent read, add alignment to graph, run topoligical sort.
-    for (uint16_t s = 1; s < num_sequences; s++)
+    for (SizeT s = 1; s < num_sequences; s++)
     {
         SizeT seq_len = sequence_lengths[s];
         sequence += sequence_lengths[s - 1];     // increment the pointer so it is pointing to correct sequence data
@@ -239,50 +235,51 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
         }
 
         // Run Needleman-Wunsch alignment between graph and new sequence.
-        uint16_t alignment_length;
+        SizeT alignment_length;
 
         if (cuda_banded_alignment)
         {
-            alignment_length = runNeedlemanWunschBanded<uint8_t, uint16_t, ScoreT>(nodes,
-                                                                                   sorted_poa,
-                                                                                   node_id_to_pos,
-                                                                                   sequence_lengths[0],
-                                                                                   incoming_edge_count,
-                                                                                   incoming_edges,
-                                                                                   outgoing_edge_count,
-                                                                                   sequence,
-                                                                                   seq_len,
-                                                                                   scores,
-                                                                                   alignment_graph,
-                                                                                   alignment_read,
-                                                                                   gap_score,
-                                                                                   mismatch_score,
-                                                                                   match_score);
+            alignment_length = runNeedlemanWunschBanded<uint8_t, ScoreT, SizeT>(nodes,
+                                                                                sorted_poa,
+                                                                                node_id_to_pos,
+                                                                                sequence_lengths[0],
+                                                                                incoming_edge_count,
+                                                                                incoming_edges,
+                                                                                outgoing_edge_count,
+                                                                                sequence,
+                                                                                seq_len,
+                                                                                scores,
+                                                                                alignment_graph,
+                                                                                alignment_read,
+                                                                                banded_alignment_band_width,
+                                                                                gap_score,
+                                                                                mismatch_score,
+                                                                                match_score);
         }
         else
         {
-            alignment_length = runNeedlemanWunsch<uint8_t, uint16_t, ScoreT, SizeT>(nodes,
-                                                                                    sorted_poa,
-                                                                                    node_id_to_pos,
-                                                                                    sequence_lengths[0],
-                                                                                    incoming_edge_count,
-                                                                                    incoming_edges,
-                                                                                    outgoing_edge_count,
-                                                                                    outoing_edges,
-                                                                                    sequence,
-                                                                                    seq_len,
-                                                                                    scores,
-                                                                                    scores_width,
-                                                                                    alignment_graph,
-                                                                                    alignment_read,
-                                                                                    gap_score,
-                                                                                    mismatch_score,
-                                                                                    match_score);
+            alignment_length = runNeedlemanWunsch<uint8_t, ScoreT, SizeT>(nodes,
+                                                                          sorted_poa,
+                                                                          node_id_to_pos,
+                                                                          sequence_lengths[0],
+                                                                          incoming_edge_count,
+                                                                          incoming_edges,
+                                                                          outgoing_edge_count,
+                                                                          outoing_edges,
+                                                                          sequence,
+                                                                          seq_len,
+                                                                          scores,
+                                                                          scores_width,
+                                                                          alignment_graph,
+                                                                          alignment_read,
+                                                                          gap_score,
+                                                                          mismatch_score,
+                                                                          match_score);
         }
 
         __syncwarp();
 
-        if (alignment_length == UINT16_MAX)
+        if (alignment_length == -1)
         {
             if (lane_idx == 0)
             {
@@ -363,19 +360,19 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
 }
 
 template <typename ScoreT, typename SizeT>
-void generatePOA(claragenomics::cudapoa::OutputDetails* output_details_d,
-                          claragenomics::cudapoa::InputDetails<SizeT>* input_details_d,
-                          int32_t total_windows,
-                          cudaStream_t stream,
-                          claragenomics::cudapoa::AlignmentDetails<ScoreT, SizeT>* alignment_details_d,
-                          claragenomics::cudapoa::GraphDetails<SizeT>* graph_details_d,
-                          ScoreT gap_score,
-                          ScoreT mismatch_score,
-                          ScoreT match_score,
-                          bool cuda_banded_alignment,
-                          uint32_t max_sequences_per_poa,
-                          int8_t output_mask,
-                          const BatchSize& batch_size)
+void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
+                 genomeworks::cudapoa::InputDetails<SizeT>* input_details_d,
+                 int32_t total_windows,
+                 cudaStream_t stream,
+                 genomeworks::cudapoa::AlignmentDetails<ScoreT, SizeT>* alignment_details_d,
+                 genomeworks::cudapoa::GraphDetails<SizeT>* graph_details_d,
+                 ScoreT gap_score,
+                 ScoreT mismatch_score,
+                 ScoreT match_score,
+                 bool cuda_banded_alignment,
+                 uint32_t max_sequences_per_poa,
+                 int8_t output_mask,
+                 const BatchSize& batch_size)
 {
     // unpack output details
     uint8_t* consensus_d                  = output_details_d->consensus;
@@ -393,6 +390,7 @@ void generatePOA(claragenomics::cudapoa::OutputDetails* output_details_d,
     ScoreT* scores         = alignment_details_d->scores;
     SizeT* alignment_graph = alignment_details_d->alignment_graph;
     SizeT* alignment_read  = alignment_details_d->alignment_read;
+
     // unpack graph details
     uint8_t* nodes                          = graph_details_d->nodes;
     SizeT* node_alignments                  = graph_details_d->node_alignments;
@@ -459,11 +457,10 @@ void generatePOA(claragenomics::cudapoa::OutputDetails* output_details_d,
                                                                                  sequence_begin_nodes_ids,
                                                                                  outgoing_edges_coverage,
                                                                                  outgoing_edges_coverage_count,
-                                                                                 batch_size.max_nodes_per_window,
                                                                                  batch_size.max_nodes_per_window_banded,
-                                                                                 batch_size.max_matrix_graph_dimension,
                                                                                  batch_size.max_matrix_graph_dimension_banded,
-                                                                                 batch_size.max_concensus_size);
+                                                                                 batch_size.max_consensus_size,
+                                                                                 batch_size.alignment_band_width);
             CGA_CU_CHECK_ERR(cudaPeekAtLastError());
 
             generateConsensusKernel<true, SizeT>
@@ -485,9 +482,8 @@ void generatePOA(claragenomics::cudapoa::OutputDetails* output_details_d,
                                                                                        consensus_scores,
                                                                                        consensus_predecessors,
                                                                                        node_coverage_counts,
-                                                                                       batch_size.max_nodes_per_window,
                                                                                        batch_size.max_nodes_per_window_banded,
-                                                                                       batch_size.max_concensus_size);
+                                                                                       batch_size.max_consensus_size);
             CGA_CU_CHECK_ERR(cudaPeekAtLastError());
         }
         if (output_mask & OutputType::msa)
@@ -525,11 +521,10 @@ void generatePOA(claragenomics::cudapoa::OutputDetails* output_details_d,
                                                                                  sequence_begin_nodes_ids,
                                                                                  outgoing_edges_coverage,
                                                                                  outgoing_edges_coverage_count,
-                                                                                 batch_size.max_nodes_per_window,
                                                                                  batch_size.max_nodes_per_window_banded,
-                                                                                 batch_size.max_matrix_graph_dimension,
                                                                                  batch_size.max_matrix_graph_dimension_banded,
-                                                                                 batch_size.max_concensus_size);
+                                                                                 batch_size.max_consensus_size,
+                                                                                 batch_size.alignment_band_width);
             CGA_CU_CHECK_ERR(cudaPeekAtLastError());
 
             generateMSAKernel<true, SizeT>
@@ -556,7 +551,7 @@ void generatePOA(claragenomics::cudapoa::OutputDetails* output_details_d,
                                                                       nodes_to_visit,
                                                                       batch_size.max_nodes_per_window,
                                                                       batch_size.max_nodes_per_window_banded,
-                                                                      batch_size.max_concensus_size);
+                                                                      batch_size.max_consensus_size);
             CGA_CU_CHECK_ERR(cudaPeekAtLastError());
         }
     }
@@ -598,10 +593,8 @@ void generatePOA(claragenomics::cudapoa::OutputDetails* output_details_d,
                                                                     outgoing_edges_coverage,
                                                                     outgoing_edges_coverage_count,
                                                                     batch_size.max_nodes_per_window,
-                                                                    batch_size.max_nodes_per_window_banded,
                                                                     batch_size.max_matrix_graph_dimension,
-                                                                    batch_size.max_matrix_graph_dimension_banded,
-                                                                    batch_size.max_concensus_size);
+                                                                    batch_size.max_consensus_size);
             CGA_CU_CHECK_ERR(cudaPeekAtLastError());
 
             generateConsensusKernel<false, SizeT>
@@ -624,8 +617,7 @@ void generatePOA(claragenomics::cudapoa::OutputDetails* output_details_d,
                                                                                        consensus_predecessors,
                                                                                        node_coverage_counts,
                                                                                        batch_size.max_nodes_per_window,
-                                                                                       batch_size.max_nodes_per_window_banded,
-                                                                                       batch_size.max_concensus_size);
+                                                                                       batch_size.max_consensus_size);
             CGA_CU_CHECK_ERR(cudaPeekAtLastError());
         }
         if (output_mask & OutputType::msa)
@@ -664,10 +656,8 @@ void generatePOA(claragenomics::cudapoa::OutputDetails* output_details_d,
                                                                     outgoing_edges_coverage,
                                                                     outgoing_edges_coverage_count,
                                                                     batch_size.max_nodes_per_window,
-                                                                    batch_size.max_nodes_per_window_banded,
                                                                     batch_size.max_matrix_graph_dimension,
-                                                                    batch_size.max_matrix_graph_dimension_banded,
-                                                                    batch_size.max_concensus_size);
+                                                                    batch_size.max_consensus_size);
             CGA_CU_CHECK_ERR(cudaPeekAtLastError());
 
             generateMSAKernel<false, SizeT>
@@ -694,7 +684,7 @@ void generatePOA(claragenomics::cudapoa::OutputDetails* output_details_d,
                                                                       nodes_to_visit,
                                                                       batch_size.max_nodes_per_window,
                                                                       batch_size.max_nodes_per_window_banded,
-                                                                      batch_size.max_concensus_size);
+                                                                      batch_size.max_consensus_size);
             CGA_CU_CHECK_ERR(cudaPeekAtLastError());
         }
     }
@@ -702,4 +692,6 @@ void generatePOA(claragenomics::cudapoa::OutputDetails* output_details_d,
 
 } // namespace cudapoa
 
-} // namespace claragenomics
+} // namespace genomeworks
+
+} // namespace claraparabricks

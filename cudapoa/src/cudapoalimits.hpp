@@ -6,7 +6,10 @@
 
 #include <claragenomics/cudapoa/batch.hpp>
 
-namespace claragenomics
+namespace claraparabricks
+{
+
+namespace genomeworks
 {
 
 namespace cudapoa
@@ -25,7 +28,7 @@ bool use32bitScore(const BatchSize& batch_size, const int16_t gap_score, const i
 
 bool use32bitSize(const BatchSize& batch_size, bool banded)
 {
-    int32_t max_length = batch_size.max_concensus_size;
+    int32_t max_length = batch_size.max_consensus_size;
     if (banded)
     {
         max_length = std::max(max_length, batch_size.max_matrix_graph_dimension_banded);
@@ -40,4 +43,5 @@ bool use32bitSize(const BatchSize& batch_size, bool banded)
 }
 
 } // namespace cudapoa
-} // namespace claragenomics
+} // namespace genomeworks
+} // namespace claraparabricks

@@ -10,8 +10,12 @@
 
 #pragma once
 
-namespace claragenomics
+namespace claraparabricks
 {
+
+namespace genomeworks
+{
+
 namespace cudapoa
 {
 /// \defgroup cudapoa CUDA POA package
@@ -25,7 +29,6 @@ enum StatusType
     exceeded_maximum_poas,
     exceeded_maximum_sequence_size,
     exceeded_maximum_sequences_per_poa,
-    exceeded_batch_size,
     node_count_exceeded_maximum_graph_size,
     edge_count_exceeded_maximum_graph_size,
     seq_len_exceeded_maximum_nodes_per_window,
@@ -46,4 +49,7 @@ enum OutputType
 
 /// \}
 } // namespace cudapoa
-} // namespace claragenomics
+
+} // namespace genomeworks
+
+} // namespace claraparabricks

@@ -13,6 +13,11 @@ project(cudamapper)
 # Process data subdirectory first
 add_subdirectory(data)
 
+GitVersion()
+
+configure_file(${CMAKE_SOURCE_DIR}/common/base/src/version.cpp.in
+                ${CMAKE_CURRENT_BINARY_DIR}/version.cpp)
+
 find_package(CUDA 9.0 QUIET REQUIRED)
 
 if(NOT ${CUDA_FOUND})
@@ -20,9 +25,19 @@ if(NOT ${CUDA_FOUND})
 else()
     message(STATUS "Using CUDA ${CUDA_VERSION} from ${CUDA_TOOLKIT_ROOT_DIR}")
     set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -lineinfo --expt-extended-lambda -use_fast_math -Xcompiler -Wall,-Wno-pedantic -std=c++14")
+    # Determine arch flags
+    validate_boolean(cga_cuda_gen_all_arch)
+    if (cga_cuda_gen_all_arch)
+        CUDA_SELECT_NVCC_ARCH_FLAGS(ARCH_FLAGS "Common")
+    else()
+        CUDA_SELECT_NVCC_ARCH_FLAGS(ARCH_FLAGS "Auto")
+    endif()
+    set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} ${ARCH_FLAGS}")
+    message(STATUS "nvcc flags for cudamapper: ${CUDA_NVCC_FLAGS}")
 endif()
 
 cuda_add_library(cudamapper
+        src/application_parameters.cpp
         src/cudamapper.cpp
         src/index_batcher.cu
         src/index_descriptor.cpp
@@ -35,7 +50,8 @@ cuda_add_library(cudamapper
         src/matcher_gpu.cu
         src/cudamapper_utils.cpp
         src/overlapper.cpp
-        src/overlapper_triggered.cu)
+        src/overlapper_triggered.cu
+        ${CMAKE_CURRENT_BINARY_DIR}/version.cpp)
 
 target_include_directories(cudamapper
     PUBLIC

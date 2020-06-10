@@ -8,7 +8,7 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-#include "../src/cudapoa_kernels.cuh" //runTopSort
+#include "../src/cudapoa_topsort.cuh" //runTopSort
 
 #include <claragenomics/cudapoa/batch.hpp>
 #include <claragenomics/utils/cudautils.hpp>            //CGA_CU_CHECK_ERR
@@ -18,7 +18,10 @@
 #include "gtest/gtest.h"
 #include "basic_graph.hpp"
 
-namespace claragenomics
+namespace claraparabricks
+{
+
+namespace genomeworks
 {
 
 namespace cudapoa
@@ -95,16 +98,16 @@ std::string testTopSortDeviceUtil(SizeT node_count, SizeTVec2D outgoing_edges_ve
 
     // call the host wrapper of topsort kernel
     runTopSort<SizeT>(sorted_poa,
-               sorted_poa_node_map,
-               node_count,
-               incoming_edge_count,
-               outgoing_edges,
-               outgoing_edge_count,
-               local_incoming_edge_count);
+                      sorted_poa_node_map,
+                      node_count,
+                      incoming_edge_count,
+                      outgoing_edges,
+                      outgoing_edge_count,
+                      local_incoming_edge_count);
 
     CGA_CU_CHECK_ERR(cudaDeviceSynchronize());
 
-    std::string res = claragenomics::stringutils::array_to_string<SizeT>(sorted_poa, node_count);
+    std::string res = genomeworks::stringutils::array_to_string<SizeT>(sorted_poa, node_count);
 
     CGA_CU_CHECK_ERR(cudaFree(sorted_poa));
     CGA_CU_CHECK_ERR(cudaFree(sorted_poa_node_map));
@@ -137,4 +140,6 @@ INSTANTIATE_TEST_SUITE_P(TestTopSort, TopSortDeviceUtilTest, ValuesIn(getTopSort
 
 } // namespace cudapoa
 
-} // namespace claragenomics
+} // namespace genomeworks
+
+} // namespace claraparabricks

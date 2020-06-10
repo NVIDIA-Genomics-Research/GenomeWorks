@@ -14,7 +14,6 @@
 
 #include <stdio.h>
 
-#include "limits.hpp"
 // Maximum number of edges per node.
 #define CUDAPOA_MAX_NODE_EDGES 50
 
@@ -36,7 +35,10 @@
 #define CUDAPOA_KERNEL_ERROR_ENCOUNTERED UINT8_MAX
 #define CUDAPOA_KERNEL_NOERROR_ENCOUNTERED 0
 
-namespace claragenomics
+namespace claraparabricks
+{
+
+namespace genomeworks
 {
 
 namespace cudapoa
@@ -183,4 +185,7 @@ struct __align__(4) ScoreT4<int16_t>
 };
 
 } // namespace cudapoa
-} // namespace claragenomics
+
+} // namespace genomeworks
+
+} // namespace claraparabricks

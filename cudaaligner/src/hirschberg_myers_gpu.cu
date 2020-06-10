@@ -17,7 +17,10 @@
 #include <claragenomics/utils/limits.cuh>
 #include <cstring>
 
-namespace claragenomics
+namespace claraparabricks
+{
+
+namespace genomeworks
 {
 
 namespace cudaaligner
@@ -692,4 +695,7 @@ void hirschberg_myers_gpu(device_buffer<hirschbergmyers::query_target_range>& st
 }
 
 } // namespace cudaaligner
-} // namespace claragenomics
+
+} // namespace genomeworks
+
+} // namespace claraparabricks

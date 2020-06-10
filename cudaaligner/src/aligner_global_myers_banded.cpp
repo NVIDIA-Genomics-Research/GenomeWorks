@@ -14,7 +14,10 @@
 
 #include <claragenomics/utils/mathutils.hpp>
 
-namespace claragenomics
+namespace claraparabricks
+{
+
+namespace genomeworks
 {
 
 namespace cudaaligner
@@ -60,4 +63,7 @@ void AlignerGlobalMyersBanded::run_alignment(int8_t* results_d, int32_t* result_
 }
 
 } // namespace cudaaligner
-} // namespace claragenomics
+
+} // namespace genomeworks
+
+} // namespace claraparabricks

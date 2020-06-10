@@ -10,12 +10,15 @@
 
 #include <memory>
 
-#include "limits.hpp"
+#include "cudapoalimits.hpp"
 #include "cudapoa_batch.cuh"
 
 #include <claragenomics/cudapoa/batch.hpp>
 
-namespace claragenomics
+namespace claraparabricks
+{
+
+namespace genomeworks
 {
 
 namespace cudapoa
@@ -75,4 +78,6 @@ std::unique_ptr<Batch> create_batch(int32_t device_id,
 
 } // namespace cudapoa
 
-} // namespace claragenomics
+} // namespace genomeworks
+
+} // namespace claraparabricks

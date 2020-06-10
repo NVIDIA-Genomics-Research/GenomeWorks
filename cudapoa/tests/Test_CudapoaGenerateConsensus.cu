@@ -8,15 +8,18 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-#include "../src/cudapoa_kernels.cuh" //generateConsensusHost, CUDAPOA_MAX_NODE_EDGES, CUDAPOA_MAX_NODE_ALIGNMENTS
-#include "sorted_graph.hpp"           //SortedGraph
+#include "../src/cudapoa_generate_consensus.cuh" //generateConsensusHost, CUDAPOA_MAX_NODE_EDGES, CUDAPOA_MAX_NODE_ALIGNMENTS
+#include "sorted_graph.hpp"                      //SortedGraph
 
 #include <claragenomics/utils/cudautils.hpp>            //CGA_CU_CHECK_ERR
 #include <claragenomics/utils/signed_integer_utils.hpp> //get_size
 
 #include "gtest/gtest.h"
 
-namespace claragenomics
+namespace claraparabricks
+{
+
+namespace genomeworks
 {
 
 namespace cudapoa
@@ -197,8 +200,8 @@ std::string testGenerateConsensus(const BasicGenerateConsensus& obj)
 
     CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&predecessors, batch_size.max_nodes_per_window * sizeof(SizeT)));
     CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&scores, batch_size.max_nodes_per_window * sizeof(int32_t)));
-    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&consensus, batch_size.max_concensus_size * sizeof(uint8_t)));
-    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&coverage, batch_size.max_concensus_size * sizeof(uint16_t)));
+    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&consensus, batch_size.max_consensus_size * sizeof(uint8_t)));
+    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&coverage, batch_size.max_consensus_size * sizeof(uint16_t)));
 
     //initialize all 'count' buffers
     memset((void**)incoming_edge_count, 0, batch_size.max_nodes_per_window * sizeof(uint16_t));
@@ -215,24 +218,23 @@ std::string testGenerateConsensus(const BasicGenerateConsensus& obj)
                           node_alignments, node_alignment_count);
 
     // call the host wrapper of topsort kernel
-    generateConsensusTestHost(nodes,
-                              *node_count,
-                              graph,
-                              node_id_to_pos,
-                              incoming_edges,
-                              incoming_edge_count,
-                              outgoing_edges,
-                              outgoing_edge_count,
-                              incoming_edge_w,
-                              predecessors,
-                              scores,
-                              consensus,
-                              coverage,
-                              node_coverage_counts,
-                              node_alignments,
-                              node_alignment_count,
-                              batch_size.max_concensus_size,
-                              false, batch_size);
+    generateConsensusTestHost<SizeT>(nodes,
+                                     *node_count,
+                                     graph,
+                                     node_id_to_pos,
+                                     incoming_edges,
+                                     incoming_edge_count,
+                                     outgoing_edges,
+                                     outgoing_edge_count,
+                                     incoming_edge_w,
+                                     predecessors,
+                                     scores,
+                                     consensus,
+                                     coverage,
+                                     node_coverage_counts,
+                                     node_alignments,
+                                     node_alignment_count,
+                                     batch_size.max_consensus_size);
 
     CGA_CU_CHECK_ERR(cudaDeviceSynchronize());
 
@@ -284,4 +286,6 @@ INSTANTIATE_TEST_SUITE_P(TestGenerateConsensus, GenerateConsensusTest, ValuesIn(
 
 } // namespace cudapoa
 
-} // namespace claragenomics
+} // namespace genomeworks
+
+} // namespace claraparabricks

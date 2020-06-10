@@ -18,8 +18,12 @@
 #include "../src/minimizer.hpp"
 #include "cudamapper_file_location.hpp"
 
-namespace claragenomics
+namespace claraparabricks
 {
+
+namespace genomeworks
+{
+
 namespace cudamapper
 {
 
@@ -28,7 +32,7 @@ class MockIndex : public IndexGPU<Minimizer>
 public:
     MockIndex(DefaultDeviceAllocator allocator)
         : IndexGPU(allocator,
-                   *claragenomics::io::create_kseq_fasta_parser(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/gatt.fasta"),
+                   *genomeworks::io::create_kseq_fasta_parser(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/gatt.fasta"),
                    0,
                    0,
                    0,
@@ -47,4 +51,7 @@ public:
 };
 
 } // namespace cudamapper
-} // namespace claragenomics
+
+} // namespace genomeworks
+
+} // namespace claraparabricks

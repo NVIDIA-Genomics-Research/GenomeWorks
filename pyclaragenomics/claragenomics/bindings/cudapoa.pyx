@@ -40,8 +40,6 @@ def status_to_str(status):
         return "exceeded_maximum_sequence_size"
     elif status == cudapoa.exceeded_maximum_sequences_per_poa:
         return "exceeded_maximum_sequences_per_poa"
-    elif status == cudapoa.exceeded_batch_size:
-        return "exceeded_batch_size"
     elif status == cudapoa.node_count_exceeded_maximum_graph_size:
         return "node_count_exceeded_maximum_graph_size"
     elif status == cudapoa.edge_count_exceeded_maximum_graph_size:
@@ -75,7 +73,8 @@ cdef class CudaPoaBatch:
             mismatch_score=-6,
             match_score=8,
             cuda_banded_alignment=False,
-            max_concensus_size=None,
+            alignment_band_width=128,
+            max_consensus_size=None,
             max_nodes_per_window=None,
             max_nodes_per_window_banded=None,
             *args,
@@ -94,7 +93,8 @@ cdef class CudaPoaBatch:
             mismatch_score : Penalty for mismatches
             match_score : Reward for match
             cuda_banded_alignment : Run POA using banded alignment
-            max_concensus_size : Maximum size of final consensus
+            alignment_band_width : Band-width size if using banded alignment
+            max_consensus_size : Maximum size of final consensus
             max_nodes_per_window : Maximum number of nodes in a graph, 1 graph per window
             max_nodes_per_window_banded : Maximum number of nodes in a graph, 1 graph per window in banded mode
         """
@@ -118,17 +118,18 @@ cdef class CudaPoaBatch:
         # Since cython make_unique doesn't accept python objects, need to
         # store it in a cdef and then pass into the make unique call
         cdef int32_t mx_seq_sz = max_sequence_size
+        cdef int32_t band_width_sz = alignment_band_width
         cdef int32_t mx_seq_per_poa = max_sequences_per_poa
-        cdef int32_t mx_concensus_sz = \
-            2 * max_sequence_size if max_concensus_size is None else max_concensus_size
+        cdef int32_t mx_consensus_sz = \
+            2 * max_sequence_size if max_consensus_size is None else max_consensus_size
         cdef int32_t mx_nodes_per_w = \
             3 * max_sequence_size if max_nodes_per_window is None else max_nodes_per_window
         cdef int32_t mx_nodes_per_w_banded = \
             4 * max_sequence_size if max_nodes_per_window_banded is None else max_nodes_per_window_banded
 
         self.batch_size = make_unique[cudapoa.BatchSize](
-            mx_seq_sz, mx_concensus_sz, mx_nodes_per_w,
-            mx_nodes_per_w_banded, mx_seq_per_poa)
+            mx_seq_sz, mx_consensus_sz, mx_nodes_per_w,
+            mx_nodes_per_w_banded, band_width_sz, mx_seq_per_poa)
 
         self.batch = cudapoa.create_batch(
             device_id,
@@ -153,7 +154,8 @@ cdef class CudaPoaBatch:
             mismatch_score=-6,
             match_score=8,
             cuda_banded_alignment=False,
-            max_concensus_size=None,
+            alignment_band_width=128,
+            max_consensus_size=None,
             max_nodes_per_window=None,
             max_nodes_per_window_banded=None,
             *args,
@@ -169,9 +171,9 @@ cdef class CudaPoaBatch:
         Args:
             poas : List of POA groups. Each group is a list of
                    sequences.
-                   e.g. [["ACTG", "ATCG"], <--- Group 1
-                         ["GCTA", "GACT", "ACGTC"] <--- Group 2
-                        ]
+                   e.g.
+                   [["ACTG", "ATCG"], <--- Group 1
+                   ["GCTA", "GACT", "ACGTC"]] <--- Group 2
                    Throws exception if error is encountered while
                    adding POA groups.
         """
@@ -192,8 +194,6 @@ cdef class CudaPoaBatch:
             entry.length = len(seq)
             poa_group.push_back(entry)
         status = deref(self.batch).add_poa_group(seq_status, poa_group)
-        if status != cudapoa.success and status != cudapoa.exceeded_maximum_poas:
-            raise RuntimeError("Could not add POA group: Error code " + status_to_str(status))
         return (status, seq_status)
 
     @property

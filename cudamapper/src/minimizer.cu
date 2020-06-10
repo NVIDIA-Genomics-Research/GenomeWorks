@@ -11,8 +11,12 @@
 #include <limits>
 #include "minimizer.hpp"
 
-namespace claragenomics
+namespace claraparabricks
 {
+
+namespace genomeworks
+{
+
 namespace cudamapper
 {
 
@@ -1063,4 +1067,7 @@ Minimizer::GeneratedSketchElements Minimizer::generate_sketch_elements(DefaultDe
 }
 
 } // namespace cudamapper
-} // namespace claragenomics
+
+} // namespace genomeworks
+
+} // namespace claraparabricks

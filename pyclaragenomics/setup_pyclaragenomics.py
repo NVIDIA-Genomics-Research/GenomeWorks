@@ -37,6 +37,14 @@ def parse_arguments():
                         required=False,
                         action='store_true',
                         help="Install using pip editble mode")
+    parser.add_argument("--overwrite_package_name",
+                        required=False,
+                        default=None,
+                        help="Overwrite package name")
+    parser.add_argument("--overwrite_package_version",
+                        required=False,
+                        default=None,
+                        help="Overwrite package version")
     return parser.parse_args()
 
 
@@ -65,7 +73,8 @@ class CMakeWrapper:
         """Build and call CMake command."""
         cmake_args = ['-DCMAKE_INSTALL_PREFIX=' + self.cga_install_dir,
                       '-DCMAKE_BUILD_TYPE=' + 'Release',
-                      '-DCMAKE_INSTALL_RPATH=' + os.path.join(self.cga_install_dir, "lib")]
+                      '-DCMAKE_INSTALL_RPATH=' + os.path.join(self.cga_install_dir, "lib"),
+                      '-Dcga_generate_docs=OFF']
         cmake_args += [self.cmake_extra_args] if self.cmake_extra_args else []
 
         if self.cuda_toolkit_root_dir:
@@ -87,7 +96,21 @@ class CMakeWrapper:
         self._run_build_cmd()
 
 
-def setup_python_binding(is_develop_mode, wheel_output_folder, cga_dir, pycga_dir, cga_install_dir):
+def get_package_version(overwritten_package_version, cga_dir):
+    """Returns the correct version for pyclaragenomics python package.
+
+    In case the user didn't overwrite the package name returns CGA version found in VERSION file otherwise,
+    returns the overwritten package name
+    """
+    if overwritten_package_version is not None:
+        return overwritten_package_version
+    # Get CGA version from VERSION file
+    with open(os.path.join(cga_dir, 'VERSION'), 'r') as f:
+        return f.read().replace('\n', '')
+
+
+def setup_python_binding(is_develop_mode, wheel_output_folder, cga_dir, pycga_dir, cga_install_dir,
+                         pyclaragenomics_rename, pyclaragenomics_version):
     """Setup python bindings and claragenomics modules for pyclaragenomics.
 
     Args:
@@ -96,11 +119,9 @@ def setup_python_binding(is_develop_mode, wheel_output_folder, cga_dir, pycga_di
         cga_dir : Root ClaraGenomicsAnalysis directory
         pycga_dir : Root pyclaragenomics directory
         cga_install_dir : Directory with ClaraGenomicsAnalysis SDK installation
+        pyclaragenomics_rename : rename pyclaragenomics package
+        pyclaragenomics_version : pyclaragenomics package version
     """
-    # Get CGA version
-    with open(os.path.join(os.path.dirname(pycga_dir), 'VERSION'), 'r') as f:
-        version_str = f.read().replace('\n', '')
-
     if wheel_output_folder:
         setup_command = [
             'python3', '-m',
@@ -116,14 +137,15 @@ def setup_python_binding(is_develop_mode, wheel_output_folder, cga_dir, pycga_di
             "pyclaragenomics was successfully setup in {} mode!".format(
                 "development" if args.develop else "installation")
 
-    subprocess.check_call(setup_command,
-                          env={
-                              **os.environ,
-                              'CGA_ROOT_DIR': cga_dir,
-                              'CGA_INSTALL_DIR': cga_install_dir,
-                              'CGA_VERSION': version_str
-                          },
-                          cwd=pycga_dir)
+    subprocess.check_call(setup_command, env={
+        **{
+            **os.environ,
+            'CGA_ROOT_DIR': cga_dir,
+            'CGA_INSTALL_DIR': cga_install_dir,
+            'CGA_VERSION': pyclaragenomics_version
+        },
+        **({} if pyclaragenomics_rename is None else {'PYCGA_RENAME': pyclaragenomics_rename})
+    }, cwd=pycga_dir)
     print(completion_message)
 
 
@@ -145,5 +167,7 @@ if __name__ == "__main__":
         wheel_output_folder='pyclaragenomics_wheel/' if args.create_wheel_only else None,
         cga_dir=cga_root_dir,
         pycga_dir=current_dir,
-        cga_install_dir=os.path.realpath(cga_installation_directory)
+        cga_install_dir=os.path.realpath(cga_installation_directory),
+        pyclaragenomics_rename=args.overwrite_package_name,
+        pyclaragenomics_version=get_package_version(args.overwrite_package_version, cga_root_dir)
     )

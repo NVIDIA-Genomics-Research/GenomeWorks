@@ -8,8 +8,8 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-#include "../src/cudapoa_kernels.cuh" //runNW, CUDAPOA_*
-#include "sorted_graph.hpp"           //SortedGraph
+#include "../src/cudapoa_nw.cuh" //runNW, CUDAPOA_*
+#include "sorted_graph.hpp"      //SortedGraph
 
 #include <claragenomics/utils/cudautils.hpp>            //CGA_CU_CHECK_ERR
 #include <claragenomics/utils/stringutils.hpp>          //array_to_string
@@ -17,7 +17,10 @@
 
 #include "gtest/gtest.h"
 
-namespace claragenomics
+namespace claraparabricks
+{
+
+namespace genomeworks
 {
 
 namespace cudapoa
@@ -232,32 +235,31 @@ NWAnswer testNW(const BasicNW& obj)
     match_score    = BasicNW::match_score_;
 
     //call the host wrapper of nw kernel
-    runNW(nodes,
-          graph,
-          node_id_to_pos,
-          graph_count,
-          incoming_edge_count,
-          incoming_edges,
-          outgoing_edge_count,
-          outgoing_edges,
-          read,
-          read_count,
-          scores,
-          BatchSize().max_matrix_sequence_dimension,
-          alignment_graph,
-          alignment_read,
-          gap_score,
-          mismatch_score,
-          match_score,
-          aligned_nodes,
-          false, batch_size);
+    runNW<SizeT>(nodes,
+                 graph,
+                 node_id_to_pos,
+                 graph_count,
+                 incoming_edge_count,
+                 incoming_edges,
+                 outgoing_edge_count,
+                 outgoing_edges,
+                 read,
+                 read_count,
+                 scores,
+                 BatchSize().max_matrix_sequence_dimension,
+                 alignment_graph,
+                 alignment_read,
+                 gap_score,
+                 mismatch_score,
+                 match_score,
+                 aligned_nodes);
 
     CGA_CU_CHECK_ERR(cudaDeviceSynchronize());
 
     //input and output buffers are the same ones in unified memory, so the results are updated in place
     //results are stored in alignment_graph and alignment_read; return string representation of those
-    auto res = std::make_pair(claragenomics::stringutils::array_to_string<SizeT>(alignment_graph, *aligned_nodes, ","),
-                              claragenomics::stringutils::array_to_string<SizeT>(alignment_read, *aligned_nodes, ","));
+    auto res = std::make_pair(genomeworks::stringutils::array_to_string<SizeT>(alignment_graph, *aligned_nodes, ","),
+                              genomeworks::stringutils::array_to_string<SizeT>(alignment_read, *aligned_nodes, ","));
 
     CGA_CU_CHECK_ERR(cudaFree(nodes));
     CGA_CU_CHECK_ERR(cudaFree(graph));
@@ -299,4 +301,6 @@ INSTANTIATE_TEST_SUITE_P(TestNW, NWTest, ValuesIn(getNWTestCases()));
 
 } // namespace cudapoa
 
-} // namespace claragenomics
+} // namespace genomeworks
+
+} // namespace claraparabricks

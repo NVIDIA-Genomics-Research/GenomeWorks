@@ -31,7 +31,6 @@ option(spoa_accurate "Run cudapoa code in mode that matches spoa" OFF)
 option(cga_enable_cudapoa_nw_print "Enable verbose prints within cudapoa NW kernel" OFF)
 option(cga_profiling "Compile a binary for profiling with NVTX markers." OFF)
 option(cga_enable_caching_allocator "Enable caching allocator." ON)
-option(cga_enable_preallocating_caching_allocator "Enable preallocating caching allocator." ON)
 option(cga_generate_docs "Generate Doxygen documentation" ON)
 option(cga_cuda_gen_all_arch "ON: Generate optimized CUDA code for all architectures | OFF: for detected architectures only" ON)
 
@@ -68,6 +67,7 @@ include(cmake/Benchmarks.cmake)
 include(cmake/Format.cmake)
 include(cmake/Packaging.cmake)
 include(cmake/CondaEnv.cmake)
+include(cmake/GitVersion.cmake)
 
 # Add ClaraGenomicsAnalysis projects.
 add_subdirectory(common/base)
@@ -89,6 +89,6 @@ endif()
 # Add auto formatting.
 cga_enable_formatting_targets()
 
-if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT  AND (${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR}))
     set (CMAKE_INSTALL_PREFIX ${CMAKE_BINARY_DIR}/install CACHE PATH "The default SDK install path is install" FORCE)
-endif (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+endif ()

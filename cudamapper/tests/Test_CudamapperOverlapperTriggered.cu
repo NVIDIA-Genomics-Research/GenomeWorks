@@ -11,143 +11,15 @@
 #include "gtest/gtest.h"
 
 #include "../src/overlapper_triggered.hpp"
-#include "../src/cudamapper_utils.hpp"
 
-#include "mock_fasta_parser.hpp"
-
-#include <algorithm>
-#include <numeric>
-#include <random>
-
-#include "cudamapper_file_location.hpp"
-
-namespace claragenomics
+namespace claraparabricks
 {
+
+namespace genomeworks
+{
+
 namespace cudamapper
 {
-
-TEST(TestCudamapperOverlapperTriggerred, FuseTwoOverlaps)
-{
-    std::vector<Overlap> unfused_overlaps;
-
-    Overlap overlap1;
-    overlap1.query_read_id_                 = 20;
-    overlap1.target_read_id_                = 22;
-    overlap1.query_start_position_in_read_  = 1000;
-    overlap1.query_end_position_in_read_    = 2000;
-    overlap1.target_start_position_in_read_ = 4000;
-    overlap1.target_end_position_in_read_   = 5000;
-    unfused_overlaps.push_back(overlap1);
-
-    Overlap overlap2;
-    overlap2.query_read_id_                 = 20;
-    overlap2.target_read_id_                = 22;
-    overlap2.query_start_position_in_read_  = 10000;
-    overlap2.query_end_position_in_read_    = 12000;
-    overlap2.target_start_position_in_read_ = 14000;
-    overlap2.target_end_position_in_read_   = 15000;
-
-    unfused_overlaps.push_back(overlap2);
-    std::vector<Overlap> fused_overlaps;
-    fuse_overlaps(fused_overlaps, unfused_overlaps);
-
-    ASSERT_EQ(fused_overlaps.size(), 1u);
-}
-
-TEST(TestCudamapperOverlapperTriggerred, DoNotuseTwoOverlaps)
-{
-    std::vector<Overlap> unfused_overlaps;
-
-    Overlap overlap1;
-    overlap1.query_read_id_                 = 20;
-    overlap1.target_read_id_                = 23;
-    overlap1.query_start_position_in_read_  = 1000;
-    overlap1.query_end_position_in_read_    = 2000;
-    overlap1.target_start_position_in_read_ = 4000;
-    overlap1.target_end_position_in_read_   = 5000;
-    unfused_overlaps.push_back(overlap1);
-
-    Overlap overlap2;
-    overlap2.query_read_id_                 = 20;
-    overlap2.target_read_id_                = 22;
-    overlap2.query_start_position_in_read_  = 10000;
-    overlap2.query_end_position_in_read_    = 12000;
-    overlap2.target_start_position_in_read_ = 14000;
-    overlap2.target_end_position_in_read_   = 15000;
-
-    unfused_overlaps.push_back(overlap2);
-    std::vector<Overlap> fused_overlaps;
-    fuse_overlaps(fused_overlaps, unfused_overlaps);
-
-    ASSERT_EQ(fused_overlaps.size(), 2u);
-}
-
-TEST(TestCudamapperOverlapperTriggerred, OneOverlap)
-{
-    std::vector<Overlap> unfused_overlaps;
-
-    Overlap overlap1;
-    overlap1.query_read_id_                 = 20;
-    overlap1.target_read_id_                = 23;
-    overlap1.query_start_position_in_read_  = 1000;
-    overlap1.query_end_position_in_read_    = 2000;
-    overlap1.target_start_position_in_read_ = 4000;
-    overlap1.target_end_position_in_read_   = 5000;
-    unfused_overlaps.push_back(overlap1);
-
-    std::vector<Overlap> fused_overlaps;
-    fuse_overlaps(fused_overlaps, unfused_overlaps);
-
-    ASSERT_EQ(fused_overlaps.size(), 1u);
-}
-
-TEST(TestCudamapperOverlapperTriggerred, NoOverlaps)
-{
-    std::vector<Overlap> unfused_overlaps;
-
-    std::vector<Overlap> fused_overlaps;
-    fuse_overlaps(fused_overlaps, unfused_overlaps);
-
-    ASSERT_EQ(fused_overlaps.size(), 0u);
-}
-
-TEST(TestCudamapperOverlapperTriggerred, Fusee3Overlapsto2)
-{
-    std::vector<Overlap> unfused_overlaps;
-
-    Overlap overlap1;
-    overlap1.query_read_id_                 = 20;
-    overlap1.target_read_id_                = 23;
-    overlap1.query_start_position_in_read_  = 1000;
-    overlap1.query_end_position_in_read_    = 2000;
-    overlap1.target_start_position_in_read_ = 4000;
-    overlap1.target_end_position_in_read_   = 5000;
-    unfused_overlaps.push_back(overlap1);
-
-    Overlap overlap2;
-    overlap2.query_read_id_                 = 20;
-    overlap2.target_read_id_                = 23;
-    overlap2.query_start_position_in_read_  = 10000;
-    overlap2.query_end_position_in_read_    = 12000;
-    overlap2.target_start_position_in_read_ = 14000;
-    overlap2.target_end_position_in_read_   = 15000;
-    unfused_overlaps.push_back(overlap2);
-
-    Overlap overlap3;
-    overlap3.query_read_id_                 = 27;
-    overlap3.target_read_id_                = 29;
-    overlap3.query_start_position_in_read_  = 10000;
-    overlap3.query_end_position_in_read_    = 12000;
-    overlap3.target_start_position_in_read_ = 14000;
-    overlap3.target_end_position_in_read_   = 15000;
-
-    unfused_overlaps.push_back(overlap3);
-
-    std::vector<Overlap> fused_overlaps;
-    fuse_overlaps(fused_overlaps, unfused_overlaps);
-
-    ASSERT_EQ(fused_overlaps.size(), 2u);
-}
 
 TEST(TestCudamapperOverlapperTriggerred, OneAchorNoOverlaps)
 {
@@ -191,17 +63,6 @@ TEST(TestCudamapperOverlapperTriggerred, FourAnchorsOneOverlap)
     std::vector<Overlap> unfused_overlaps;
     std::vector<Anchor> anchors;
 
-    MockFastaParser test_parser;
-    std::vector<io::FastaSequence> fasta_sequences;
-    fasta_sequences.push_back({"READ0", {}});
-    fasta_sequences.push_back({"READ1", {}});
-    fasta_sequences.push_back({"READ2", {}});
-
-    for (std::size_t i = 0; i < fasta_sequences.size(); ++i)
-    {
-        EXPECT_CALL(test_parser, get_sequence_by_id(i)).WillRepeatedly(testing::ReturnRef(fasta_sequences[i]));
-    }
-
     Anchor anchor1;
     anchor1.query_read_id_           = 1;
     anchor1.target_read_id_          = 2;
@@ -244,10 +105,6 @@ TEST(TestCudamapperOverlapperTriggerred, FourAnchorsOneOverlap)
     ASSERT_EQ(overlaps[0].query_end_position_in_read_, 400u);
     ASSERT_EQ(overlaps[0].target_start_position_in_read_, 1000u);
     ASSERT_EQ(overlaps[0].target_end_position_in_read_, 1300u);
-
-    overlapper.update_read_names(overlaps, test_parser, test_parser);
-    ASSERT_STREQ(overlaps[0].query_read_name_, fasta_sequences[1].name.c_str());
-    ASSERT_STREQ(overlaps[0].target_read_name_, fasta_sequences[2].name.c_str());
 
     anchors_d.free();
     CGA_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
@@ -368,17 +225,6 @@ TEST(TestCudamapperOverlapperTriggerred, FourAnchorsLastNotInOverlap)
     std::vector<Overlap> unfused_overlaps;
     std::vector<Anchor> anchors;
 
-    MockFastaParser test_parser;
-    std::vector<io::FastaSequence> fasta_sequences;
-    fasta_sequences.push_back({"READ0", {}});
-    fasta_sequences.push_back({"READ1", {}});
-    fasta_sequences.push_back({"READ2", {}});
-
-    for (std::size_t i = 0; i < fasta_sequences.size(); ++i)
-    {
-        EXPECT_CALL(test_parser, get_sequence_by_id(i)).WillRepeatedly(testing::ReturnRef(fasta_sequences[i]));
-    }
-
     Anchor anchor1;
     anchor1.query_read_id_           = 1;
     anchor1.target_read_id_          = 2;
@@ -422,10 +268,6 @@ TEST(TestCudamapperOverlapperTriggerred, FourAnchorsLastNotInOverlap)
     ASSERT_EQ(overlaps[0].target_start_position_in_read_, 1000u);
     ASSERT_EQ(overlaps[0].target_end_position_in_read_, 1200u);
 
-    overlapper.update_read_names(overlaps, test_parser, test_parser);
-    ASSERT_STREQ(overlaps[0].query_read_name_, fasta_sequences[1].name.c_str());
-    ASSERT_STREQ(overlaps[0].target_read_name_, fasta_sequences[2].name.c_str());
-
     anchors_d.free();
     CGA_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
     CGA_CU_CHECK_ERR(cudaStreamDestroy(cuda_stream));
@@ -440,17 +282,6 @@ TEST(TestCudamapperOverlapperTriggerred, ReverseStrand)
 
     std::vector<Overlap> unfused_overlaps;
     std::vector<Anchor> anchors;
-
-    MockFastaParser test_parser;
-    std::vector<io::FastaSequence> fasta_sequences;
-    fasta_sequences.push_back({"READ0", {}});
-    fasta_sequences.push_back({"READ1", {}});
-    fasta_sequences.push_back({"READ2", {}});
-
-    for (std::size_t i = 0; i < fasta_sequences.size(); ++i)
-    {
-        EXPECT_CALL(test_parser, get_sequence_by_id(i)).WillRepeatedly(testing::ReturnRef(fasta_sequences[i]));
-    }
 
     Anchor anchor1;
     anchor1.query_read_id_           = 1;
@@ -491,10 +322,6 @@ TEST(TestCudamapperOverlapperTriggerred, ReverseStrand)
     ASSERT_GT(overlaps[0].target_end_position_in_read_, overlaps[0].target_start_position_in_read_);
     ASSERT_EQ(overlaps[0].relative_strand, RelativeStrand::Reverse);
     ASSERT_EQ(char(overlaps[0].relative_strand), '-');
-
-    overlapper.update_read_names(overlaps, test_parser, test_parser);
-    ASSERT_STREQ(overlaps[0].query_read_name_, fasta_sequences[1].name.c_str());
-    ASSERT_STREQ(overlaps[0].target_read_name_, fasta_sequences[2].name.c_str());
 
     anchors_d.free();
     CGA_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
@@ -661,4 +488,7 @@ TEST(TestCudamapperOverlapperTriggerred, OverlapPostProcessingOneForwardOneRever
 }
 
 } // namespace cudamapper
-} // namespace claragenomics
+
+} // namespace genomeworks
+
+} // namespace claraparabricks

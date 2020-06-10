@@ -7,14 +7,18 @@
 * distribution of this software and related documentation without an express
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
+#pragma once
 
-#include "cudastructs.cuh"
+#include "cudapoastructs.cuh"
 
 #include <claragenomics/utils/cudautils.hpp>
 
 #include <stdio.h>
 
-namespace claragenomics
+namespace claraparabricks
+{
+
+namespace genomeworks
 {
 
 namespace cudapoa
@@ -116,7 +120,7 @@ __device__ void generateMSADevice(uint8_t* nodes,
 template <bool cuda_banded_alignment = false, typename SizeT>
 __global__ void generateMSAKernel(uint8_t* nodes_d,
                                   uint8_t* consensus_d,
-                                  claragenomics::cudapoa::WindowDetails* window_details_d,
+                                  genomeworks::cudapoa::WindowDetails* window_details_d,
                                   uint16_t* incoming_edge_count_d,
                                   SizeT* incoming_edges_d,
                                   uint16_t* outgoing_edge_count_d,
@@ -186,7 +190,7 @@ __global__ void generateMSAKernel(uint8_t* nodes_d,
                                        check_aligned_nodes,
                                        nodes_to_visit,
                                        cuda_banded_alignment,
-                                       (uint16_t)max_nodes_per_window);
+                                       static_cast<SizeT>(max_nodes_per_window));
 
         msa_length = getNodeIDToMSAPosDevice<SizeT>(sequence_lengths[0],
                                                     sorted_poa,
@@ -221,4 +225,6 @@ __global__ void generateMSAKernel(uint8_t* nodes_d,
 
 } // namespace cudapoa
 
-} // namespace claragenomics
+} // namespace genomeworks
+
+} // namespace claraparabricks

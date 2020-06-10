@@ -18,7 +18,10 @@
 #include <assert.h>
 #include <algorithm>
 
-namespace claragenomics
+namespace claraparabricks
+{
+
+namespace genomeworks
 {
 
 namespace cudapoa
@@ -46,7 +49,7 @@ public:
         cudaMemGetInfo(&free, &total);
         size_t mem_per_batch = 0.9 * free;
 
-        cudapoa_batch = claragenomics::cudapoa::create_batch(device_id, stream, mem_per_batch, output_mask, batch_size, gap_score, mismatch_score, match_score, banded_alignment);
+        cudapoa_batch = genomeworks::cudapoa::create_batch(device_id, stream, mem_per_batch, output_mask, batch_size, gap_score, mismatch_score, match_score, banded_alignment);
     }
 
     std::vector<std::string> spoa_generate_multiple_sequence_alignments(std::vector<std::string> sequences,
@@ -71,7 +74,7 @@ public:
     }
 
 public:
-    std::unique_ptr<claragenomics::cudapoa::Batch> cudapoa_batch;
+    std::unique_ptr<genomeworks::cudapoa::Batch> cudapoa_batch;
 };
 
 TEST_F(MSATest, CudapoaMSA)
@@ -80,8 +83,8 @@ TEST_F(MSATest, CudapoaMSA)
     int num_sequences = 500;
     BatchSize batch_size(1024, num_sequences);
 
-    std::string backbone = claragenomics::genomeutils::generate_random_genome(50, rng);
-    auto sequences       = claragenomics::genomeutils::generate_random_sequences(backbone, num_sequences, rng, 10, 5, 10);
+    std::string backbone = genomeworks::genomeutils::generate_random_genome(50, rng);
+    auto sequences       = genomeworks::genomeutils::generate_random_sequences(backbone, num_sequences, rng, 10, 5, 10);
 
     initialize(batch_size);
     Group poa_group;
@@ -109,7 +112,7 @@ TEST_F(MSATest, CudapoaMSA)
     auto spoa_msa = spoa_generate_multiple_sequence_alignments(sequences);
 
 #ifndef SPOA_ACCURATE
-    for (int i = 0; i < spoa_msa.size(); i++)
+    for (uint32_t i = 0; i < spoa_msa.size(); i++)
     {
 
         std::string msa = cudapoa_msa[0][i];
@@ -126,10 +129,10 @@ TEST_F(MSATest, CudapoaMSAFailure)
     std::minstd_rand rng(1);
     int num_sequences = 10;
     BatchSize batch_size(1024, num_sequences);
-    batch_size.max_concensus_size = batch_size.max_sequence_size;
+    batch_size.max_consensus_size = batch_size.max_sequence_size;
 
-    std::string backbone = claragenomics::genomeutils::generate_random_genome(batch_size.max_concensus_size - 1, rng);
-    auto sequences       = claragenomics::genomeutils::generate_random_sequences(backbone, num_sequences, rng, 10, 5, 10);
+    std::string backbone = genomeworks::genomeutils::generate_random_genome(batch_size.max_consensus_size - 1, rng);
+    auto sequences       = genomeworks::genomeutils::generate_random_sequences(backbone, num_sequences, rng, 10, 5, 10);
 
     initialize(batch_size);
     Group poa_group;
@@ -156,4 +159,6 @@ TEST_F(MSATest, CudapoaMSAFailure)
 
 } // namespace cudapoa
 
-} // namespace claragenomics
+} // namespace genomeworks
+
+} // namespace claraparabricks

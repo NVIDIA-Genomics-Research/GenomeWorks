@@ -93,8 +93,12 @@
 #include <spdlog/spdlog.h>
 #endif
 
-namespace claragenomics
+namespace claraparabricks
 {
+
+namespace genomeworks
+{
+
 namespace logging
 {
 /// \ingroup logging
@@ -176,6 +180,9 @@ LoggingStatus SetHeader(bool logTime, bool logLocation);
 #endif
 
 } // namespace logging
-} // namespace claragenomics
+
+} // namespace genomeworks
+
+} // namespace claraparabricks
 
 /// \}
