@@ -9,7 +9,7 @@
 */
 #pragma once
 
-#include "cudapoastructs.cuh"
+#include "cudapoa_structs.cuh"
 
 #include <claragenomics/cudapoa/cudapoa.hpp>
 #include <claragenomics/utils/cudautils.hpp>

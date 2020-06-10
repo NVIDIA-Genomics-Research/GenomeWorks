@@ -10,7 +10,7 @@
 
 #pragma once
 
-#include "cudapoastructs.cuh"
+#include "cudapoa_structs.cuh"
 #include "cudapoa_kernels.cuh"
 
 #include <memory>

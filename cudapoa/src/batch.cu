@@ -10,7 +10,7 @@
 
 #include <memory>
 
-#include "cudapoalimits.hpp"
+#include "cudapoa_limits.hpp"
 #include "cudapoa_batch.cuh"
 
 #include <claragenomics/cudapoa/batch.hpp>

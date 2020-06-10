@@ -20,7 +20,6 @@ message(STATUS "nvcc flags for cudapoa: ${CUDA_NVCC_FLAGS}")
 get_property(cga_library_type GLOBAL PROPERTY cga_library_type)
 cuda_add_library(cudapoa ${cga_library_type}
     src/cudapoa.cpp
-    #src/cudapoa_kernels.cu
     src/batch.cu
     )
 
