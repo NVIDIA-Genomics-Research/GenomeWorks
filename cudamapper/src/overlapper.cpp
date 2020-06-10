@@ -7,6 +7,8 @@
 * distribution of this software and related documentation without an express
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
+#include <cstdlib>
+
 #include <claragenomics/cudamapper/overlapper.hpp>
 #include <claragenomics/utils/cudautils.hpp>
 #include <claragenomics/utils/signed_integer_utils.hpp>
@@ -33,8 +35,8 @@ bool overlaps_mergable(const claraparabricks::genomeworks::cudamapper::Overlap o
         return false;
     }
 
-    std::uint32_t query_gap = (o2.query_start_position_in_read_ - o1.query_end_position_in_read_);
-    std::uint32_t target_gap;
+    std::int32_t query_gap = (o2.query_start_position_in_read_ - o1.query_end_position_in_read_);
+    std::int32_t target_gap;
 
     // If the strands are reverse strands, the coordinates of the target strand overlaps will be decreasing
     // as those of the query increase. We therefore need to know wether this is a forward or reverse match
@@ -47,6 +49,9 @@ bool overlaps_mergable(const claraparabricks::genomeworks::cudamapper::Overlap o
     {
         target_gap = (o2.target_start_position_in_read_ - o1.target_end_position_in_read_);
     }
+
+    query_gap  = abs(query_gap);
+    target_gap = abs(target_gap);
 
     std::uint32_t o1_query_length  = o1.query_end_position_in_read_ - o1.query_start_position_in_read_;
     std::uint32_t o2_query_length  = o2.query_end_position_in_read_ - o2.query_start_position_in_read_;
