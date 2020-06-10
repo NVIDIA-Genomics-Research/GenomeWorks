@@ -340,21 +340,21 @@ public:
         int32_t max_nodes_per_window = banded_alignment ? batch_size.max_nodes_per_window_banded : batch_size.max_nodes_per_window;
 
         // for output - host
-        host_size_per_poa += batch_size.max_consensus_size * sizeof(uint8_t);                                                     // output_details_h_->consensus
-        host_size_per_poa += (!msa_flag) ? batch_size.max_consensus_size * sizeof(uint16_t) : 0;                                  // output_details_h_->coverage
-        host_size_per_poa += (msa_flag) ? batch_size.max_consensus_size * batch_size.max_sequences_per_poa * sizeof(uint8_t) : 0; // output_details_h_->multiple_sequence_alignments
-        host_size_per_poa += sizeof(OutputDetails);                                                                               // output_details_d_
+        host_size_per_poa += batch_size.max_consensus_size * sizeof(*OutputDetails::consensus);                                                                        // output_details_h_->consensus
+        host_size_per_poa += (!msa_flag) ? batch_size.max_consensus_size * sizeof(*OutputDetails::coverage) : 0;                                                       // output_details_h_->coverage
+        host_size_per_poa += (msa_flag) ? batch_size.max_consensus_size * batch_size.max_sequences_per_poa * sizeof(*OutputDetails::multiple_sequence_alignments) : 0; // output_details_h_->multiple_sequence_alignments
+        host_size_per_poa += sizeof(OutputDetails);                                                                                                                    // output_details_d_
         // for input - host
-        host_size_per_poa += batch_size.max_sequences_per_poa * batch_size.max_sequence_size * sizeof(uint8_t); // input_details_h_->sequences
-        host_size_per_poa += batch_size.max_sequences_per_poa * batch_size.max_sequence_size * sizeof(int8_t);  // input_details_h_->base_weights
-        host_size_per_poa += batch_size.max_sequences_per_poa * sizeof(SizeT);                                  // input_details_h_->sequence_lengths
-        host_size_per_poa += sizeof(WindowDetails);                                                             // input_details_h_->window_details
-        host_size_per_poa += (msa_flag) ? batch_size.max_sequences_per_poa * sizeof(SizeT) : 0;                 // input_details_h_->sequence_begin_nodes_ids
+        host_size_per_poa += batch_size.max_sequences_per_poa * batch_size.max_sequence_size * sizeof(*InputDetails<SizeT>::sequences);    // input_details_h_->sequences
+        host_size_per_poa += batch_size.max_sequences_per_poa * batch_size.max_sequence_size * sizeof(*InputDetails<SizeT>::base_weights); // input_details_h_->base_weights
+        host_size_per_poa += batch_size.max_sequences_per_poa * sizeof(*InputDetails<SizeT>::sequence_lengths);                            // input_details_h_->sequence_lengths
+        host_size_per_poa += sizeof(*InputDetails<SizeT>::window_details);                                                                 // input_details_h_->window_details
+        host_size_per_poa += (msa_flag) ? batch_size.max_sequences_per_poa * sizeof(*InputDetails<SizeT>::sequence_begin_nodes_ids) : 0;   // input_details_h_->sequence_begin_nodes_ids
         // for graph - host
-        host_size_per_poa += sizeof(uint8_t) * max_nodes_per_window;                           // graph_details_h_->nodes
-        host_size_per_poa += sizeof(SizeT) * max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES;    // graph_details_d_->incoming_edges
-        host_size_per_poa += sizeof(uint16_t) * max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES; // graph_details_d_->incoming_edge_weights
-        host_size_per_poa += sizeof(uint16_t) * max_nodes_per_window;                          // graph_details_d_->incoming_edge_count
+        host_size_per_poa += sizeof(*GraphDetails<SizeT>::nodes) * max_nodes_per_window;                                          // graph_details_h_->nodes
+        host_size_per_poa += sizeof(*GraphDetails<SizeT>::incoming_edges) * max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES;        // graph_details_d_->incoming_edges
+        host_size_per_poa += sizeof(*GraphDetails<SizeT>::incoming_edge_weights) * max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES; // graph_details_d_->incoming_edge_weights
+        host_size_per_poa += sizeof(*GraphDetails<SizeT>::incoming_edge_count) * max_nodes_per_window;                            // graph_details_d_->incoming_edge_count
 
         return host_size_per_poa;
     }
