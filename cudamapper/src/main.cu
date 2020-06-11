@@ -45,7 +45,6 @@ namespace cudamapper
 namespace
 {
 
-
 void run_alignment_batch(DefaultDeviceAllocator allocator,
                          std::mutex& overlap_idx_mtx,
                          std::vector<Overlap>& overlaps,
@@ -183,7 +182,6 @@ void align_overlaps(DefaultDeviceAllocator allocator,
         f.get();
     }
 }
-
 
 /// OverlapsAndCigars - packs overlaps and cigars together so they can be passed to writer thread more easily
 struct OverlapsAndCigars
@@ -353,7 +351,6 @@ void postprocess_and_write_thread_function(const int32_t device_id,
                                                 50,
                                                 0.5);
             }
-
 
             // write to output
             {
