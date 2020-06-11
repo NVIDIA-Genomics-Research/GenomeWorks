@@ -174,8 +174,9 @@ public:
         }
 
         clear_and_free();
+        data_ = new_size > 0 ? allocator_.allocate(new_size, stream_) : nullptr;
+        assert(new_size == 0 || data_ != nullptr);
         size_ = new_size;
-        data_ = size_ > 0 ? allocator_.allocate(size_, stream_) : nullptr;
     }
 
     /// \brief This method swaps the contents of two buffers.
