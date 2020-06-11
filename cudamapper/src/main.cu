@@ -446,8 +446,8 @@ void writer_thread_function(std::mutex& overlaps_writer_mtx,
                             const int32_t device_id,
                             const int32_t number_of_device,
                             const int32_t kmer_size,
-                            bool perform_overlap_end_rescue,
-                            bool drop_fused_overlaps)
+                            const bool perform_overlap_end_rescue,
+                            const bool drop_fused_overlaps)
 
 {
     // This function is expected to run in a separate thread so set current device in order to avoid problems

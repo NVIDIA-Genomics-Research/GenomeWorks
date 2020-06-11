@@ -17,18 +17,26 @@
 
 namespace
 {
+
+/// Determines whether two overlaps can be fused into a single larger overlap based on aspects of
+/// their proximity to each other.
+/// To be merged, overlaps must be on the same query and target and the same strand.
+/// Condition one (gap_ratio_okay): The gap between the two queries and the two targets is of similar size (i.e., the two "gaps" between
+// the two queries / targets are at least 80% the same size)
+/// Condition two (short_gap): The two queries and two targets are within 500bp of each other.
+/// Condition three (short_gap_relative_to_length): Both the query and target gaps are less than 20% the size of the total query overlap / total
+/// target overlap.
 bool overlaps_mergable(const claraparabricks::genomeworks::cudamapper::Overlap o1, const claraparabricks::genomeworks::cudamapper::Overlap o2)
 {
-
-    bool relative_strands_forward = (o2.relative_strand == claraparabricks::genomeworks::cudamapper::RelativeStrand::Forward) && (o1.relative_strand == claraparabricks::genomeworks::cudamapper::RelativeStrand::Forward);
-    bool relative_strands_reverse = (o2.relative_strand == claraparabricks::genomeworks::cudamapper::RelativeStrand::Reverse) && (o1.relative_strand == claraparabricks::genomeworks::cudamapper::RelativeStrand::Reverse);
+    const bool relative_strands_forward = (o2.relative_strand == claraparabricks::genomeworks::cudamapper::RelativeStrand::Forward) && (o1.relative_strand == claraparabricks::genomeworks::cudamapper::RelativeStrand::Forward);
+    const bool relative_strands_reverse = (o2.relative_strand == claraparabricks::genomeworks::cudamapper::RelativeStrand::Reverse) && (o1.relative_strand == claraparabricks::genomeworks::cudamapper::RelativeStrand::Reverse);
 
     if (!(relative_strands_forward || relative_strands_reverse))
     {
         return false;
     }
 
-    bool ids_match = (o1.query_read_id_ == o2.query_read_id_) && (o1.target_read_id_ == o2.target_read_id_);
+    const bool ids_match = (o1.query_read_id_ == o2.query_read_id_) && (o1.target_read_id_ == o2.target_read_id_);
 
     if (!ids_match)
     {
@@ -53,22 +61,36 @@ bool overlaps_mergable(const claraparabricks::genomeworks::cudamapper::Overlap o
     query_gap  = abs(query_gap);
     target_gap = abs(target_gap);
 
-    std::uint32_t o1_query_length  = o1.query_end_position_in_read_ - o1.query_start_position_in_read_;
-    std::uint32_t o2_query_length  = o2.query_end_position_in_read_ - o2.query_start_position_in_read_;
-    std::uint32_t o1_target_length = o1.target_end_position_in_read_ - o1.target_start_position_in_read_;
-    std::uint32_t o2_target_length = o2.target_end_position_in_read_ - o2.target_start_position_in_read_;
+    /// The gaps between the queries / targets are less than 500bp.
+    const bool short_gap = (query_gap < 500 && target_gap < 500);
+    if (short_gap)
+    {
+        return true;
+    }
 
-    std::uint32_t total_query_length  = o1_query_length + o2_query_length;
-    std::uint32_t total_target_length = o1_target_length + o2_target_length;
+    /// The ratio of the number of basepairs in the smaller gap (i.e., distance between the two queries OR two targets)
+    /// is at least 80%, indicating the gaps are of similar size.
+    const float unadjusted_gap_ratio = static_cast<float>(std::min(query_gap, target_gap)) / static_cast<float>(std::max(query_gap, target_gap));
+    const bool gap_ratio_ok          = (unadjusted_gap_ratio > 0.8); //TODO make these user-configurable?
+    if (gap_ratio_ok)
+    {
+        return true;
+    }
 
-    float unadjusted_gap_ratio         = static_cast<float>(std::min(query_gap, target_gap)) / static_cast<float>(std::max(query_gap, target_gap));
-    float query_gap_length_proportion  = static_cast<float>(query_gap) / static_cast<float>(total_query_length);
-    float target_gap_length_proportion = static_cast<float>(target_gap) / static_cast<float>(total_target_length);
+    const std::uint32_t o1_query_length  = o1.query_end_position_in_read_ - o1.query_start_position_in_read_;
+    const std::uint32_t o2_query_length  = o2.query_end_position_in_read_ - o2.query_start_position_in_read_;
+    const std::uint32_t o1_target_length = o1.target_end_position_in_read_ - o1.target_start_position_in_read_;
+    const std::uint32_t o2_target_length = o2.target_end_position_in_read_ - o2.target_start_position_in_read_;
 
-    bool gap_ratio_ok                 = (unadjusted_gap_ratio > 0.8); //TODO make these user-configurable?
-    bool short_gap                    = (query_gap < 500 && target_gap < 500);
-    bool short_gap_relative_to_length = (query_gap_length_proportion < 0.2 && target_gap_length_proportion < 0.2);
-    return gap_ratio_ok || short_gap || short_gap_relative_to_length;
+    const std::uint32_t total_query_length  = o1_query_length + o2_query_length;
+    const std::uint32_t total_target_length = o1_target_length + o2_target_length;
+
+    const float query_gap_length_proportion  = static_cast<float>(query_gap) / static_cast<float>(total_query_length);
+    const float target_gap_length_proportion = static_cast<float>(target_gap) / static_cast<float>(total_target_length);
+
+    /// The gaps between the queries / targets are both less than 20% of the total length of the query OR target overlaps.
+    const bool short_gap_relative_to_length = (query_gap_length_proportion < 0.2 && target_gap_length_proportion < 0.2);
+    return short_gap_relative_to_length;
 }
 
 // Reverse complement lookup table
@@ -105,7 +127,7 @@ namespace genomeworks
 namespace cudamapper
 {
 
-void Overlapper::post_process_overlaps(std::vector<Overlap>& overlaps, bool drop_fused_overlaps)
+void Overlapper::post_process_overlaps(std::vector<Overlap>& overlaps, const bool drop_fused_overlaps)
 {
     const auto num_overlaps = get_size(overlaps);
     bool in_fuse            = false;
@@ -204,20 +226,25 @@ void Overlapper::post_process_overlaps(std::vector<Overlap>& overlaps, bool drop
 
     if (drop_fused_overlaps)
     {
-        std::size_t i                     = 0;
-        std::vector<Overlap>::iterator it = overlaps.begin();
-        while (it != end(overlaps) && i < drop_overlap_mask.size())
+        details::overlapper::drop_overlaps_by_mask(overlaps, drop_overlap_mask);
+    }
+}
+
+void details::overlapper::drop_overlaps_by_mask(std::vector<claraparabricks::genomeworks::cudamapper::Overlap>& overlaps, const std::vector<bool>& mask)
+{
+    std::size_t i                                                               = 0;
+    std::vector<claraparabricks::genomeworks::cudamapper::Overlap>::iterator it = overlaps.begin();
+    while (it != end(overlaps) && i < mask.size())
+    {
+        if (mask[i])
         {
-            if (drop_overlap_mask[i])
-            {
-                it = overlaps.erase(it);
-            }
-            else
-            {
-                ++it;
-            }
-            ++i;
+            it = overlaps.erase(it);
         }
+        else
+        {
+            ++it;
+        }
+        ++i;
     }
 }
 

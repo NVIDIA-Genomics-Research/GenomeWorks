@@ -45,6 +45,12 @@ void extend_overlap_by_sequence_similarity(Overlap& overlap,
                                            cga_string_view_t& target_sequence,
                                            std::int32_t extension,
                                            float required_similarity);
+///
+/// \brief Removes overlaps from a vector (modifying in place) based on a boolean mask.
+/// \param overlaps A vector (reference) of overlaps
+/// \param mask A vector of bools the same length as overlaps. If an index is true, the overlap at the corresponding index in overlaps is removed.
+///
+void drop_overlaps_by_mask(std::vector<claraparabricks::genomeworks::cudamapper::Overlap>& overlaps, const std::vector<bool>& mask);
 
 } // namespace overlapper
 } // namespace details
