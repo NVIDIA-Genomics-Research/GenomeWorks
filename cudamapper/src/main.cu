@@ -340,7 +340,7 @@ void postprocess_and_write_thread_function(const int32_t device_id,
             {
                 CGA_NVTX_RANGE(profiler, "main::postprocess_and_write_thread::postprocessing");
                 // Overlap post processing - add overlaps which can be combined into longer ones.
-                Overlapper::post_process_overlaps(data_to_write->overlaps);
+                Overlapper::post_process_overlaps(data_to_write->overlaps, application_parameters.drop_fused_overlaps);
             }
 
             if (application_parameters.perform_overlap_end_rescue)
