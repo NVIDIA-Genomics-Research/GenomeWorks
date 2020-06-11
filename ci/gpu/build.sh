@@ -45,7 +45,7 @@ cd "${WORKSPACE}"
 rm -rf "${WORKSPACE}"/build
 
 logger "Build SDK in Debug mode..."
-CMAKE_COMMON_VARIABLE=(-DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS_DEBUG="-g -O2")
+CMAKE_COMMON_VARIABLE=(-DCMAKE_BUILD_TYPE=Debug)
 source ci/common/build-test-sdk.sh "${WORKSPACE}" "${CMAKE_COMMON_VARIABLES[@]}" "${PARALLEL_LEVEL}" "${TEST_ON_GPU}"
 
 rm -rf "${WORKSPACE}"/build
