@@ -19,6 +19,8 @@ else()
 
     if (${CUDA_VERSION_MAJOR} VERSION_LESS "10")
         set(cga_cuda_before_10 TRUE)
+    else()
+        set(cga_cuda_before_10 FALSE)
     endif()
 endif()
 

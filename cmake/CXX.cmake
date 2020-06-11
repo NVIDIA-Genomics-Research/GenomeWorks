@@ -16,7 +16,9 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp")
 # Add -O2 optimization to debug builds to speed up runtime.
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O2")
 
-if(cga_cuda_before_10)
+if(NOT DEFINED cga_cuda_before_10)
+    message(FATAL_ERROR "variable cga_cuda_before_10 is not defined yet. Please make sure CUDA.cmake is loaded first.")
+elseif(cga_cuda_before_10)
     message(STATUS "Remove -O optimization when building for CUDA < 10 as it causes compilation issues.")
     string(REGEX REPLACE "-O[0-3]" "" CMAKE_CXX_FLAGS_RELEASE ${CMAKE_CXX_FLAGS_RELEASE})
     string(REGEX REPLACE "-O[0-3]" "" CMAKE_CXX_FLAGS_DEBUG ${CMAKE_CXX_FLAGS_DEBUG})
