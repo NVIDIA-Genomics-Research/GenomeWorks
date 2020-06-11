@@ -76,7 +76,7 @@ public:
 
     /// @brief allocates memory (assigns part of the buffer)
     /// Memory allocation is aligned by 256 bytes
-    /// @param ptr
+    /// @param ptr on return pointer to allocated memory, nullptr is allocation was not successful
     /// @param bytes_needed
     /// @param associated_stream on deallocation this block will be free only once all work in this stream has finished
     /// @return error status
@@ -133,7 +133,7 @@ private:
     }
 
     /// @brief finds a memory block of the given size
-    /// @param ptr
+    /// @param ptr on return pointer to allocated memory, nullptr is allocation was not successful
     /// @param bytes_needed
     /// @param associated_stream On deallocation this block will be free only once all work in this stream has finished
     /// @return error status
@@ -145,6 +145,8 @@ private:
         {
             return cudaErrorMemoryAllocation;
         }
+
+        *ptr = nullptr;
 
         // ** All allocations should be alligned with 256 bytes
         // The easiest way to do this is to make all allocation request sizes divisible by 256
