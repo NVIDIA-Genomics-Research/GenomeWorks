@@ -1007,7 +1007,7 @@ Minimizer::GeneratedSketchElements Minimizer::generate_sketch_elements(DefaultDe
                              read_id_to_minimizers_written_h.data(),
                              cuda_stream); // D2H
     CGA_LOG_INFO("Deallocating {} bytes from read_id_to_minimizers_written_d", read_id_to_minimizers_written_d.size() * sizeof(decltype(read_id_to_minimizers_written_d)::value_type));
-    read_id_to_minimizers_written_d.clear_and_free();
+    read_id_to_minimizers_written_d.free();
 
     // *** remove unused elemets from the window minimizers arrays ***
     // In window_minimizers_representation_d and other arrays enough space was allocated to support cases where each window has a different minimizers. In reality many neighboring windows share the same mininizer
@@ -1048,15 +1048,15 @@ Minimizer::GeneratedSketchElements Minimizer::generate_sketch_elements(DefaultDe
 
     // free these arrays as they are not needed anymore
     CGA_LOG_INFO("Deallocating {} bytes from window_minimizers_representation_d", window_minimizers_representation_d.size() * sizeof(decltype(window_minimizers_representation_d)::value_type));
-    window_minimizers_representation_d.clear_and_free();
+    window_minimizers_representation_d.free();
     CGA_LOG_INFO("Deallocating {} bytes from window_minimizers_direction_d", window_minimizers_direction_d.size() * sizeof(decltype(window_minimizers_direction_d)::value_type));
-    window_minimizers_direction_d.clear_and_free();
+    window_minimizers_direction_d.free();
     CGA_LOG_INFO("Deallocating {} bytes from window_minimizers_position_in_read_d", window_minimizers_position_in_read_d.size() * sizeof(decltype(window_minimizers_position_in_read_d)::value_type));
-    window_minimizers_position_in_read_d.clear_and_free();
+    window_minimizers_position_in_read_d.free();
     CGA_LOG_INFO("Deallocating {} bytes from read_id_to_compressed_minimizers_d", read_id_to_compressed_minimizers_d.size() * sizeof(decltype(read_id_to_compressed_minimizers_d)::value_type));
-    read_id_to_compressed_minimizers_d.clear_and_free();
+    read_id_to_compressed_minimizers_d.free();
     CGA_LOG_INFO("Deallocating {} bytes from read_id_to_windows_section_d", read_id_to_windows_section_d.size() * sizeof(decltype(read_id_to_windows_section_d)::value_type));
-    read_id_to_windows_section_d.clear_and_free();
+    read_id_to_windows_section_d.free();
 
     // This is not completely necessary, but if removed one has to make sure that the next step
     // uses the same stream or that sync is done in caller

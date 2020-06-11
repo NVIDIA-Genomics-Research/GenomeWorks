@@ -795,9 +795,9 @@ void IndexGPU<SketchElementImpl>::generate_index(const io::FastaParser& parser,
     //       would be no need for copy_rest_to_separate_arrays()
 
     CGA_LOG_INFO("Deallocating {} bytes from read_id_to_basepairs_section_d", read_id_to_basepairs_section_d.size() * sizeof(decltype(read_id_to_basepairs_section_d)::value_type));
-    read_id_to_basepairs_section_d.clear_and_free();
+    read_id_to_basepairs_section_d.free();
     CGA_LOG_INFO("Deallocating {} bytes from merged_basepairs_d", merged_basepairs_d.size() * sizeof(decltype(merged_basepairs_d)::value_type));
-    merged_basepairs_d.clear_and_free();
+    merged_basepairs_d.free();
 
     // *** sort sketch elements by representation ***
     // As this is a stable sort and the data was initailly grouper by read_id this means that the sketch elements within each representations are sorted by read_id
