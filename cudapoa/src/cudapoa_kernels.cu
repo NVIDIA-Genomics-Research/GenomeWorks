@@ -83,6 +83,7 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
                                   uint16_t* outgoing_edge_w_d,
                                   SizeT* sorted_poa_d,
                                   SizeT* node_id_to_pos_d,
+                                  SizeT* node_distance_d,
                                   SizeT* node_alignments_d,
                                   uint16_t* node_alignment_count_d,
                                   uint16_t* sorted_poa_local_edge_count_d,
@@ -123,6 +124,7 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
     uint16_t* outgoing_edge_weights       = &outgoing_edge_w_d[window_idx * max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES];
     SizeT* sorted_poa                     = &sorted_poa_d[window_idx * max_nodes_per_window];
     SizeT* node_id_to_pos                 = &node_id_to_pos_d[window_idx * max_nodes_per_window];
+    SizeT* node_distance                  = &node_distance_d[window_idx * max_nodes_per_window];
     SizeT* node_alignments                = &node_alignments_d[window_idx * max_nodes_per_window * CUDAPOA_MAX_NODE_ALIGNMENTS];
     uint16_t* node_alignment_count        = &node_alignment_count_d[window_idx * max_nodes_per_window];
     uint16_t* sorted_poa_local_edge_count = &sorted_poa_local_edge_count_d[window_idx * max_nodes_per_window];
@@ -227,13 +229,17 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
                 warp_error   = true;
             }
 
-            // compute R
-//            distanceToHeadNode(sorted_poa,
-//                               sequence_lengths[0],
-//                               incoming_edge_count,
-//                               sorted_poa_local_edge_count,
-//                               incoming_edges,
-//                               incoming_edge_weights);
+//            if (cuda_banded_alignment)
+//            {
+//                // compute R for abPOA
+//                distanceToHeadNode(sorted_poa,
+//                                   sequence_lengths[0],
+//                                   incoming_edge_count,
+//                                   sorted_poa_local_edge_count,
+//                                   incoming_edges,
+//                                   incoming_edge_weights,
+//                                   node_distance);
+//            }
         }
 
         warp_error = __shfl_sync(FULL_MASK, warp_error, 0);
@@ -411,6 +417,7 @@ void generatePOAtemplated(genomeworks::cudapoa::OutputDetails* output_details_d,
     uint16_t* outgoing_edge_w               = graph_details_d->outgoing_edge_weights;
     SizeT* sorted_poa                       = graph_details_d->sorted_poa;
     SizeT* node_id_to_pos                   = graph_details_d->sorted_poa_node_map;
+    SizeT* node_distance                    = graph_details_d->node_distance_to_head;
     uint16_t* sorted_poa_local_edge_count   = graph_details_d->sorted_poa_local_edge_count;
     int32_t* consensus_scores               = graph_details_d->consensus_scores;
     SizeT* consensus_predecessors           = graph_details_d->consensus_predecessors;
@@ -451,6 +458,7 @@ void generatePOAtemplated(genomeworks::cudapoa::OutputDetails* output_details_d,
                                                                                  outgoing_edge_w,
                                                                                  sorted_poa,
                                                                                  node_id_to_pos,
+                                                                                 node_distance,
                                                                                  node_alignments,
                                                                                  node_alignment_count,
                                                                                  sorted_poa_local_edge_count,
@@ -515,6 +523,7 @@ void generatePOAtemplated(genomeworks::cudapoa::OutputDetails* output_details_d,
                                                                                  outgoing_edge_w,
                                                                                  sorted_poa,
                                                                                  node_id_to_pos,
+                                                                                 node_distance,
                                                                                  node_alignments,
                                                                                  node_alignment_count,
                                                                                  sorted_poa_local_edge_count,
@@ -586,6 +595,7 @@ void generatePOAtemplated(genomeworks::cudapoa::OutputDetails* output_details_d,
                                                                     outgoing_edge_w,
                                                                     sorted_poa,
                                                                     node_id_to_pos,
+                                                                    node_distance,
                                                                     node_alignments,
                                                                     node_alignment_count,
                                                                     sorted_poa_local_edge_count,
@@ -649,6 +659,7 @@ void generatePOAtemplated(genomeworks::cudapoa::OutputDetails* output_details_d,
                                                                     outgoing_edge_w,
                                                                     sorted_poa,
                                                                     node_id_to_pos,
+                                                                    node_distance,
                                                                     node_alignments,
                                                                     node_alignment_count,
                                                                     sorted_poa_local_edge_count,
