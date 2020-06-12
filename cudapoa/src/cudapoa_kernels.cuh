@@ -138,6 +138,9 @@ struct GraphDetails
     // position in the topologically sorted graph.
     SizeT* sorted_poa_node_map;
 
+    // Device buffer to store distance of each graph node to the head node(s)
+    SizeT* node_distance_to_head;
+
     // Device buffer used during topological sort to store incoming
     // edge counts for nodes.
     uint16_t* sorted_poa_local_edge_count;
