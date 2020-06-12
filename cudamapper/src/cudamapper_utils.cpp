@@ -36,7 +36,7 @@ void print_paf(const std::vector<Overlap>& overlaps,
 {
     CGA_NVTX_RANGE(profiler, "print_paf");
 
-    assert(!cigar.empty() || (overlaps.size() == cigar.size()));
+    assert(cigar.empty() || (overlaps.size() == cigar.size()));
 
     const int64_t number_of_overlaps_to_print = get_size<int64_t>(overlaps);
 
