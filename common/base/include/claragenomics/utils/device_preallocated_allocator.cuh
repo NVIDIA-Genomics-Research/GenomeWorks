@@ -79,7 +79,7 @@ public:
     /// @param ptr on return pointer to allocated memory, nullptr is allocation was not successful
     /// @param bytes_needed
     /// @param associated_stream on deallocation this block will be free only once all work in this stream has finished
-    /// @return error status
+    /// @return cudaSuccess is allocation was successful, cudaErrorMemoryAllocation otherwise
     cudaError_t DeviceAllocate(void** ptr,
                                size_t bytes_needed,
                                cudaStream_t associated_stream = 0)
@@ -136,17 +136,17 @@ private:
     /// @param ptr on return pointer to allocated memory, nullptr is allocation was not successful
     /// @param bytes_needed
     /// @param associated_stream On deallocation this block will be free only once all work in this stream has finished
-    /// @return error status
+    /// @return cudaSuccess is allocation was successful, cudaErrorMemoryAllocation otherwise
     cudaError_t get_free_block(void** ptr,
                                size_t bytes_needed,
                                cudaStream_t associated_stream)
     {
+        *ptr = nullptr;
+
         if (free_blocks_.empty())
         {
             return cudaErrorMemoryAllocation;
         }
-
-        *ptr = nullptr;
 
         // ** All allocations should be alligned with 256 bytes
         // The easiest way to do this is to make all allocation request sizes divisible by 256

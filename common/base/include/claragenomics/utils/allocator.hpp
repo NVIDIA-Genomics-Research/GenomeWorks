@@ -105,7 +105,8 @@ public:
     /// @brief asynchronously allocates a device array with enough space for n elements of value_type
     /// @param n number of elements to allocate the array for
     /// @param stream CUDA stream to be associated with this method
-    /// @return pointer to allocated memory, nullptr is allocation was not successful
+    /// @return pointer to allocated memory
+    /// @throw device_memory_allocation_exception is allocation was not successful
     pointer allocate(std::size_t n, cudaStream_t stream = 0)
     {
         static_cast<void>(stream);
@@ -230,7 +231,8 @@ public:
     /// @brief asynchronously allocates a device array with enough space for n elements of value_type
     /// @param n number of elements to allocate the array for
     /// @param stream CUDA stream to be associated with this method
-    /// @return pointer to allocated memory, nullptr is allocation was not successful
+    /// @return pointer to allocated memory
+    /// @throw device_memory_allocation_exception is allocation was not successful
     pointer allocate(std::size_t n, cudaStream_t stream = 0)
     {
         if (!memory_resource_)
