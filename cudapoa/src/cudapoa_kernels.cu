@@ -229,17 +229,17 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
                 warp_error   = true;
             }
 
-//            if (cuda_banded_alignment)
-//            {
-//                // compute R for abPOA
-//                distanceToHeadNode(sorted_poa,
-//                                   sequence_lengths[0],
-//                                   incoming_edge_count,
-//                                   sorted_poa_local_edge_count,
-//                                   incoming_edges,
-//                                   incoming_edge_weights,
-//                                   node_distance);
-//            }
+            //            if (cuda_banded_alignment)
+            //            {
+            //                // compute R for abPOA
+            //                distanceToHeadNode(sorted_poa,
+            //                                   sequence_lengths[0],
+            //                                   incoming_edge_count,
+            //                                   sorted_poa_local_edge_count,
+            //                                   incoming_edges,
+            //                                   incoming_edge_weights,
+            //                                   node_distance);
+            //            }
         }
 
         warp_error = __shfl_sync(FULL_MASK, warp_error, 0);
