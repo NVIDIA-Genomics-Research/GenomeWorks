@@ -43,7 +43,7 @@ bool overlaps_mergable(const claraparabricks::genomeworks::cudamapper::Overlap o
         return false;
     }
 
-    std::int32_t query_gap = (o2.query_start_position_in_read_ - o1.query_end_position_in_read_);
+    std::int32_t query_gap = abs(o2.query_start_position_in_read_ - o1.query_end_position_in_read_);
     std::int32_t target_gap;
 
     // If the strands are reverse strands, the coordinates of the target strand overlaps will be decreasing
@@ -51,15 +51,12 @@ bool overlaps_mergable(const claraparabricks::genomeworks::cudamapper::Overlap o
     // before calculating the gap between overlaps.
     if (relative_strands_reverse)
     {
-        target_gap = (o1.target_start_position_in_read_ - o2.target_end_position_in_read_);
+        target_gap = abs(o1.target_start_position_in_read_ - o2.target_end_position_in_read_);
     }
     else
     {
-        target_gap = (o2.target_start_position_in_read_ - o1.target_end_position_in_read_);
+        target_gap = abs(o2.target_start_position_in_read_ - o1.target_end_position_in_read_);
     }
-
-    query_gap  = abs(query_gap);
-    target_gap = abs(target_gap);
 
     /// The gaps between the queries / targets are less than 500bp.
     const bool short_gap = (query_gap < 500 && target_gap < 500);
@@ -230,7 +227,11 @@ void Overlapper::post_process_overlaps(std::vector<Overlap>& overlaps, const boo
     }
 }
 
-void details::overlapper::drop_overlaps_by_mask(std::vector<claraparabricks::genomeworks::cudamapper::Overlap>& overlaps, const std::vector<bool>& mask)
+namespace details
+{
+namespace overlapper
+{
+void drop_overlaps_by_mask(std::vector<claraparabricks::genomeworks::cudamapper::Overlap>& overlaps, const std::vector<bool>& mask)
 {
     std::size_t i                                                               = 0;
     std::vector<claraparabricks::genomeworks::cudamapper::Overlap>::iterator it = overlaps.begin();
@@ -247,6 +248,8 @@ void details::overlapper::drop_overlaps_by_mask(std::vector<claraparabricks::gen
         ++i;
     }
 }
+} // namespace overlapper
+} // namespace details
 
 void details::overlapper::extend_overlap_by_sequence_similarity(Overlap& overlap,
                                                                 cga_string_view_t& query_sequence,
