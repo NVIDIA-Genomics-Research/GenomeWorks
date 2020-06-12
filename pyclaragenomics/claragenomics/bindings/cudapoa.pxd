@@ -60,7 +60,7 @@ cdef extern from "claragenomics/cudapoa/batch.hpp" namespace "claraparabricks::g
 
     cdef cppclass BatchSize:
         int32_t max_sequence_size
-        int32_t max_concensus_size
+        int32_t max_consensus_size
         int32_t max_nodes_per_window
         int32_t max_nodes_per_window_banded
         int32_t max_matrix_graph_dimension
