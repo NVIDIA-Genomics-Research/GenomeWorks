@@ -14,6 +14,7 @@
 #include "cudapoa_nw.cu"
 #include "cudapoa_nw_banded.cu"
 #include "cudapoa_topsort.cu"
+#include "cudapoa_adaptive_banding.cu"
 #include "cudapoa_add_alignment.cu"
 #include "cudapoa_generate_consensus.cu"
 #include "cudapoa_generate_msa.cu"
@@ -116,7 +117,7 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
     uint8_t* nodes                        = &nodes_d[max_nodes_per_window * window_idx];
     SizeT* incoming_edges                 = &incoming_edges_d[window_idx * max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES];
     uint16_t* incoming_edge_count         = &incoming_edge_count_d[window_idx * max_nodes_per_window];
-    SizeT* outoing_edges                  = &outgoing_edges_d[window_idx * max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES];
+    SizeT* outgoing_edges                 = &outgoing_edges_d[window_idx * max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES];
     uint16_t* outgoing_edge_count         = &outgoing_edge_count_d[window_idx * max_nodes_per_window];
     uint16_t* incoming_edge_weights       = &incoming_edge_w_d[window_idx * max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES];
     uint16_t* outgoing_edge_weights       = &outgoing_edge_w_d[window_idx * max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES];
@@ -189,7 +190,7 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
         {
             nodes[nucleotide_idx]                                          = sequence[nucleotide_idx];
             sorted_poa[nucleotide_idx]                                     = nucleotide_idx;
-            outoing_edges[(nucleotide_idx - 1) * CUDAPOA_MAX_NODE_EDGES]   = nucleotide_idx;
+            outgoing_edges[(nucleotide_idx - 1) * CUDAPOA_MAX_NODE_EDGES]  = nucleotide_idx;
             outgoing_edge_count[nucleotide_idx - 1]                        = 1;
             incoming_edges[nucleotide_idx * CUDAPOA_MAX_NODE_EDGES]        = nucleotide_idx - SizeT(1);
             incoming_edge_weights[nucleotide_idx * CUDAPOA_MAX_NODE_EDGES] = base_weights[nucleotide_idx - 1] + base_weights[nucleotide_idx];
@@ -225,6 +226,14 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
                 consensus[1] = static_cast<uint8_t>(StatusType::node_count_exceeded_maximum_graph_size);
                 warp_error   = true;
             }
+
+            // compute R
+//            distanceToHeadNode(sorted_poa,
+//                               sequence_lengths[0],
+//                               incoming_edge_count,
+//                               sorted_poa_local_edge_count,
+//                               incoming_edges,
+//                               incoming_edge_weights);
         }
 
         warp_error = __shfl_sync(FULL_MASK, warp_error, 0);
@@ -264,7 +273,7 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
                                                                           incoming_edge_count,
                                                                           incoming_edges,
                                                                           outgoing_edge_count,
-                                                                          outoing_edges,
+                                                                          outgoing_edges,
                                                                           sequence,
                                                                           seq_len,
                                                                           scores,
@@ -297,7 +306,7 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
                                                           nodes, sequence_lengths[0],
                                                           node_alignments, node_alignment_count,
                                                           incoming_edges, incoming_edge_count,
-                                                          outoing_edges, outgoing_edge_count,
+                                                          outgoing_edges, outgoing_edge_count,
                                                           incoming_edge_weights, outgoing_edge_weights,
                                                           alignment_length,
                                                           sorted_poa, alignment_graph,
@@ -341,7 +350,7 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
                                           node_id_to_pos,
                                           new_node_count,
                                           incoming_edge_count,
-                                          outoing_edges,
+                                          outgoing_edges,
                                           outgoing_edge_count,
                                           sorted_poa_local_edge_count);
 #endif
