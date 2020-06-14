@@ -11,7 +11,6 @@
 // Implementation file for CUDA POA kernels.
 #pragma once
 
-#include "cudapoa_kernels.cuh"
 #include "cudapoa_nw.cuh"
 #include "cudapoa_nw_banded.cuh"
 #include "cudapoa_topsort.cuh"
