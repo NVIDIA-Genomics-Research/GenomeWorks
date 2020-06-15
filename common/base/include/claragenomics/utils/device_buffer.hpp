@@ -54,7 +54,7 @@ public:
     /// \brief This constructor creates \p buffer with the given size.
     /// \param n The number of elements to create
     /// \param allocator The allocator to use by this buffer.
-    /// \param streams CUDA streams to be associated with this buffer. Freeing the memory (either through destructor, free() or clear_and_resize()) calls cudaStreamSynchronize() on all those streams. If no stream is specified default stream (0) is used.
+    /// \param streams The device memory provided by this buffer is guaranteed to live until all operations on these CUDA streams have completed. If no stream is specified default stream (0) is used.
     /// \tparam AllocatorIn Type of input allocator. If AllocatorIn::value_type is different than T AllocatorIn will be converted to Allocator<T> if possible, compilation will fail otherwise
     /// \tparam CudaStreamType All streams should be of type cudaStream_t
     template <typename AllocatorIn = Allocator, typename... CudaStreamType>
@@ -82,7 +82,7 @@ public:
 
     /// \brief This constructor creates an empty \p buffer.
     /// \param allocator The allocator to use by this buffer.
-    /// \param streams CUDA streams to be associated with this buffer. Freeing the memory (either through destructor, free() or clear_and_resize()) calls cudaStreamSynchronize() on all those streams. If no stream is specified default stream (0) is used.
+    /// \param streams The device memory provided by this buffer is guaranteed to live until all operations on these CUDA streams have completed. If no stream is specified default stream (0) is used.
     /// \tparam AllocatorIn Type of input allocator. If AllocatorIn::value_type is different than T AllocatorIn will be converted to Allocator<T> if possible, compilation will fail otherwise
     /// \tparam CudaStreamType All streams should be of type cudaStream_t
     template <typename AllocatorIn, typename... CudaStreamType, std::enable_if_t<std::is_class<AllocatorIn>::value, int> = 0> // for calls like buffer(5, stream) the other constructor should be used -> only enable if AllocatorIn is a class.

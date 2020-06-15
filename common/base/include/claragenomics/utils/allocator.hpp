@@ -231,7 +231,7 @@ public:
 
     /// \brief asynchronously allocates a device array with enough space for n elements of value_type
     /// \param n number of elements to allocate the array for
-    /// \param streams CUDA streams to be associated with this memory allocation, when memory allocation is deallocated cudaStreamSynchronize() is called on all of them
+    /// \param streams on deallocation this memory block is guaranteed to live at least until all previously scheduled work in these streams has finished, if no stream is specified default stream (0) is used
     /// \return pointer to allocated memory
     /// \throw device_memory_allocation_exception if allocation was not successful
     pointer allocate(std::size_t n,

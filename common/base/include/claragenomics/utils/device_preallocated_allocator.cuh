@@ -82,7 +82,7 @@ public:
     /// Memory allocation is aligned by 256 bytes
     /// \param ptr on return pointer to allocated memory, nullptr if allocation was not successful
     /// \param bytes_needed
-    /// \param associated_streams on deallocation this block will be freed only once all previosly scheduled work in these streams has finished, using default stream as default
+    /// \param associated_streams on deallocation this memory block is guaranteed to live at least until all previously scheduled work in these streams has finished
     /// \return cudaSuccess if allocation was successful, cudaErrorMemoryAllocation otherwise
     cudaError_t DeviceAllocate(void** ptr,
                                size_t bytes_needed,
@@ -141,7 +141,7 @@ private:
     /// \brief finds a memory block of the given size
     /// \param ptr on return pointer to allocated memory, nullptr if allocation was not successful
     /// \param bytes_needed
-    /// \param associated_streams on deallocation this block will be freed only once all previosly scheduled work in these streams has finished
+    /// \param associated_streams on deallocation this memory block is guaranteed to live at least until all previously scheduled work in these streams has finished
     /// \return cudaSuccess if allocation was successful, cudaErrorMemoryAllocation otherwise
     cudaError_t get_free_block(void** ptr,
                                size_t bytes_needed,
@@ -230,6 +230,10 @@ private:
         // ** wait for all work on associated_streams to finish before freeing up this memory block
         for (cudaStream_t associated_stream : block_to_be_freed_iter->associated_streams)
         {
+            // WARNING: The way and place this synchronization is done might change in the future, do not rely on this cudaStreamSynchronize() in the caller.
+            // Guarantee that the memory will not be deallocated before all previously scheduled work on these streams will remain, but actual deallocation
+            // (and synchronization) might happen for example only when this memory block is actually requested by another allocation, which would make any
+            // code relying on an implicit synchronization here incorrect
             CGA_CU_ABORT_ON_ERR(cudaStreamSynchronize(associated_stream));
         }
 
