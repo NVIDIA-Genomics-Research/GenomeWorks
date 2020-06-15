@@ -17,6 +17,7 @@
 
 #include <cuda_runtime_api.h>
 #include <cassert>
+#include <string>
 
 #ifdef CGA_PROFILING
 #include <nvToolsExt.h>

@@ -160,7 +160,7 @@ public:
     allocator_type get_allocator() const { return allocator_; }
 
     /// \brief This method releases the memory and resizes the buffer to 0.
-    void clear_and_free()
+    void free()
     {
         if (size_ > 0)
         {
@@ -184,9 +184,10 @@ public:
             return;
         }
 
-        clear_and_free();
+        free();
+        data_ = new_size > 0 ? allocator_.allocate(new_size, streams_) : nullptr;
+        assert(new_size == 0 || data_ != nullptr);
         size_ = new_size;
-        data_ = size_ > 0 ? allocator_.allocate(size_, streams_) : nullptr;
     }
 
     /// \brief This method swaps the contents of two buffers.

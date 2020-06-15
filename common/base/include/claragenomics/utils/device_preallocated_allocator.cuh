@@ -80,10 +80,10 @@ public:
 
     /// \brief allocates memory (assigns part of the buffer)
     /// Memory allocation is aligned by 256 bytes
-    /// \param ptr
+    /// \param ptr on return pointer to allocated memory, nullptr if allocation was not successful
     /// \param bytes_needed
-    /// \param associated_streams on deallocation this block will be freed only once all previosly scheduled work in these streams has finished, using default stream as default
-    /// \return error status
+    /// \param associated_stream on deallocation this block will be freed only once all previosly scheduled work in these streams has finished, using default stream as default
+    /// \return cudaSuccess if allocation was successful, cudaErrorMemoryAllocation otherwise
     cudaError_t DeviceAllocate(void** ptr,
                                size_t bytes_needed,
                                const std::vector<cudaStream_t>& associated_streams = {{0}})
@@ -139,14 +139,16 @@ private:
     }
 
     /// \brief finds a memory block of the given size
-    /// \param ptr
+    /// \param ptr on return pointer to allocated memory, nullptr if allocation was not successful
     /// \param bytes_needed
-    /// \param associated_streams on deallocation this block will be freed only once all previosly scheduled work in these streams has finished
-    /// \return error status
+    /// \param associated_stream on deallocation this block will be freed only once all previosly scheduled work in these streams has finished
+    /// \return cudaSuccess if allocation was successful, cudaErrorMemoryAllocation otherwise
     cudaError_t get_free_block(void** ptr,
                                size_t bytes_needed,
                                const std::vector<cudaStream_t>& associated_streams)
     {
+        *ptr = nullptr;
+
         if (free_blocks_.empty())
         {
             return cudaErrorMemoryAllocation;

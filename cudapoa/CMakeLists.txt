@@ -13,15 +13,28 @@ project(cudapoa)
 # Process data subdirectory first
 add_subdirectory(data)
 
-# Project specific NVCC flags, --expt-relaxed-constexpr is being added to allow using numeric_limits inside device kernels
-set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -std=c++11 --expt-relaxed-constexpr")
-message(STATUS "nvcc flags for cudapoa: ${CUDA_NVCC_FLAGS}")
+# Optimization flags interfere with nvcc and cause compilation issues with reworked
+# file structure.
+if(NOT DEFINED cga_cuda_before_10_0)
+    message(FATAL_ERROR "${PROJECT_NAME} : variable cga_cuda_before_10_0 is not defined yet. Please make sure CUDA.cmake is loaded first.")
+elseif(cga_cuda_before_10_0)
+    message(STATUS "${PROJECT_NAME} : Remove -O optimization when building for CUDA < 10 as it causes compilation issues.")
+    string(REGEX REPLACE "-O[0-3]" "" CMAKE_CXX_FLAGS_RELEASE ${CMAKE_CXX_FLAGS_RELEASE})
+    string(REGEX REPLACE "-O[0-3]" "" CMAKE_CXX_FLAGS_DEBUG ${CMAKE_CXX_FLAGS_DEBUG})
+endif()
+
+# Project specific NVCC flags, --expt-relaxed-constexpr is being added to allow using numeric_limits inside device kernels.
+# Using in CUDA 10.1+ to avoid compilation issues with CUDA <= 10.0.
+set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -std=c++14")
+if(cga_cuda_after_10_0)
+    set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} --expt-relaxed-constexpr")
+endif()
+message(STATUS "nvcc flags for ${PROJECT_NAME}: ${CUDA_NVCC_FLAGS}")
 
 get_property(cga_library_type GLOBAL PROPERTY cga_library_type)
 cuda_add_library(cudapoa ${cga_library_type}
     src/cudapoa.cpp
-    src/cudapoa_kernels.cu
-    src/batch.cpp
+    src/batch.cu
     )
 
 target_link_libraries(cudapoa cgabase)

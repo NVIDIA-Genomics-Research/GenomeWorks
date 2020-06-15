@@ -12,6 +12,9 @@ project(cgabase)
 
 find_package(CUDA 9.0 QUIET REQUIRED)
 
+set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -std=c++14")
+message(STATUS "nvcc flags for ${PROJECT_NAME}: ${CUDA_NVCC_FLAGS}")
+
 get_property(cga_library_type GLOBAL PROPERTY cga_library_type)
 add_library(${PROJECT_NAME} ${cga_library_type}
         src/cudautils.cpp

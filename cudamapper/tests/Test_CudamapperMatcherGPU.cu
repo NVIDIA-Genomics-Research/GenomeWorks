@@ -58,9 +58,9 @@ void test_find_query_target_matches(const thrust::host_vector<representation_t>&
         EXPECT_EQ(found_target_indices_h[i], expected_found_target_indices_h[i]) << "index: " << i;
     }
 
-    query_representations_d.clear_and_free();
-    target_representations_d.clear_and_free();
-    found_target_indices_d.clear_and_free();
+    query_representations_d.free();
+    target_representations_d.free();
+    found_target_indices_d.free();
 
     CGA_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
     CGA_CU_CHECK_ERR(cudaStreamDestroy(cuda_stream));
@@ -152,10 +152,10 @@ void test_compute_number_of_anchors(const thrust::host_vector<std::uint32_t>& qu
         EXPECT_EQ(anchor_starting_indices_h[i], expected_anchor_starting_indices_h[i]);
     }
 
-    query_starting_index_of_each_representation_d.clear_and_free();
-    target_starting_index_of_each_representation_d.clear_and_free();
-    found_target_indices_d.clear_and_free();
-    anchor_starting_indices_d.clear_and_free();
+    query_starting_index_of_each_representation_d.free();
+    target_starting_index_of_each_representation_d.free();
+    found_target_indices_d.free();
+    anchor_starting_indices_d.free();
 
     CGA_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
     CGA_CU_CHECK_ERR(cudaStreamDestroy(cuda_stream));
@@ -305,14 +305,14 @@ void test_generate_anchors(
         EXPECT_EQ(anchors_h[i].target_position_in_read_, expected_anchors_h[i].target_position_in_read_) << " index: " << i;
     }
 
-    anchor_starting_indices_d.clear_and_free();
-    query_starting_index_of_each_representation_d.clear_and_free();
-    found_target_indices_d.clear_and_free();
-    target_starting_index_of_each_representation_d.clear_and_free();
-    query_read_ids_d.clear_and_free();
-    query_positions_in_read_d.clear_and_free();
-    target_read_ids_d.clear_and_free();
-    target_positions_in_read_d.clear_and_free();
+    anchor_starting_indices_d.free();
+    query_starting_index_of_each_representation_d.free();
+    found_target_indices_d.free();
+    target_starting_index_of_each_representation_d.free();
+    query_read_ids_d.free();
+    query_positions_in_read_d.free();
+    target_read_ids_d.free();
+    target_positions_in_read_d.free();
 
     CGA_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
     CGA_CU_CHECK_ERR(cudaStreamDestroy(cuda_stream));

@@ -188,7 +188,7 @@ void sort_by_two_keys(device_buffer<MoreSignificantKeyT>& more_significant_keys,
 
     // deallocate helper array
     // TODO: This array can probably be reused, but waiting for more general reallocation-avoidance strategy before optimizing this
-    less_significant_key_sorted.clear_and_free();
+    less_significant_key_sorted.free();
 
     // *** move more significant keys to their position after less significant keys sort ***
     device_buffer<MoreSignificantKeyT> more_significant_keys_after_sort(number_of_elements, allocator, cuda_stream);
@@ -216,7 +216,7 @@ void sort_by_two_keys(device_buffer<MoreSignificantKeyT>& more_significant_keys,
     swap(move_to_index, move_to_index_sorted);
 
     // deallocate helper array
-    move_to_index_sorted.clear_and_free();
+    move_to_index_sorted.free();
 
     // *** move the values to their final position ***
     device_buffer<ValueT> values_after_sort(number_of_elements, allocator, cuda_stream);

@@ -7,9 +7,9 @@
 * distribution of this software and related documentation without an express
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
+#pragma once
 
-#include "cudapoa_kernels.cuh"
-#include "cudastructs.cuh"
+#include "cudapoa_structs.cuh"
 
 #include <claragenomics/utils/cudautils.hpp>
 #include <claragenomics/utils/limits.cuh>
@@ -506,24 +506,24 @@ __global__ void runNeedlemanWunschKernel(uint8_t* nodes,
 
 // Host function that calls the kernel
 template <typename SizeT>
-void runNWtemplated(uint8_t* nodes,
-                    SizeT* graph,
-                    SizeT* node_id_to_pos,
-                    SizeT graph_count,
-                    uint16_t* incoming_edge_count,
-                    SizeT* incoming_edges,
-                    uint16_t* outgoing_edge_count,
-                    SizeT* outgoing_edges,
-                    uint8_t* read,
-                    SizeT read_length,
-                    int16_t* scores,
-                    int32_t scores_width,
-                    SizeT* alignment_graph,
-                    SizeT* alignment_read,
-                    int16_t gap_score,
-                    int16_t mismatch_score,
-                    int16_t match_score,
-                    SizeT* aligned_nodes)
+void runNW(uint8_t* nodes,
+           SizeT* graph,
+           SizeT* node_id_to_pos,
+           SizeT graph_count,
+           uint16_t* incoming_edge_count,
+           SizeT* incoming_edges,
+           uint16_t* outgoing_edge_count,
+           SizeT* outgoing_edges,
+           uint8_t* read,
+           SizeT read_length,
+           int16_t* scores,
+           int32_t scores_width,
+           SizeT* alignment_graph,
+           SizeT* alignment_read,
+           int16_t gap_score,
+           int16_t mismatch_score,
+           int16_t match_score,
+           SizeT* aligned_nodes)
 {
     runNeedlemanWunschKernel<<<1, 64>>>(nodes,
                                         graph,

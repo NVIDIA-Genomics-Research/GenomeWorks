@@ -8,7 +8,7 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-#include "../src/cudapoa_kernels.cuh" //runTopSort
+#include "../src/cudapoa_topsort.cuh" //runTopSort
 
 #include <claragenomics/cudapoa/batch.hpp>
 #include <claragenomics/utils/cudautils.hpp>            //CGA_CU_CHECK_ERR
@@ -97,14 +97,13 @@ std::string testTopSortDeviceUtil(SizeT node_count, SizeTVec2D outgoing_edges_ve
     }
 
     // call the host wrapper of topsort kernel
-    runTopSort(sorted_poa,
-               sorted_poa_node_map,
-               node_count,
-               incoming_edge_count,
-               outgoing_edges,
-               outgoing_edge_count,
-               local_incoming_edge_count,
-               false, BatchSize(node_count));
+    runTopSort<SizeT>(sorted_poa,
+                      sorted_poa_node_map,
+                      node_count,
+                      incoming_edge_count,
+                      outgoing_edges,
+                      outgoing_edge_count,
+                      local_incoming_edge_count);
 
     CGA_CU_CHECK_ERR(cudaDeviceSynchronize());
 

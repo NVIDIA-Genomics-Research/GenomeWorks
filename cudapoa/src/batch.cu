@@ -8,8 +8,10 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-#include "cudapoa_kernels.cuh"
-#include "cudapoa_batch.hpp"
+#include <memory>
+
+#include "cudapoa_limits.hpp"
+#include "cudapoa_batch.cuh"
 
 #include <claragenomics/cudapoa/batch.hpp>
 
