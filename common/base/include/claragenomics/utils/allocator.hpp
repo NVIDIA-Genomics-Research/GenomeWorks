@@ -107,7 +107,8 @@ public:
     /// \param streams CUDA streams to be associated with this allocation, ignored in this allocator
     /// \return pointer to allocated memory
     /// \throw device_memory_allocation_exception if allocation was not successful
-    pointer allocate(std::size_t n, const std::vector<cudaStream_t>& streams)
+    pointer allocate(std::size_t n,
+                     const std::vector<cudaStream_t>& streams = {{0}})
     {
         static_cast<void>(streams);
         void* ptr       = nullptr;
@@ -233,7 +234,8 @@ public:
     /// \param streams CUDA streams to be associated with this memory allocation, when memory allocation is deallocated cudaStreamSynchronize() is called on all of them
     /// \return pointer to allocated memory
     /// \throw device_memory_allocation_exception if allocation was not successful
-    pointer allocate(std::size_t n, const std::vector<cudaStream_t>& streams = {{0}})
+    pointer allocate(std::size_t n,
+                     const std::vector<cudaStream_t>& streams = {{0}})
     {
         assert(!streams.empty());
 
