@@ -105,7 +105,7 @@ public:
     /// \brief asynchronously allocates a device array with enough space for n elements of value_type
     /// \param n number of elements to allocate the array for
     /// \param streams CUDA streams to be associated with this allocation, ignored in this case
-    /// \return pointer to allocated array
+    /// \return pointer to allocated memory
     /// \throw device_memory_allocation_exception if allocation was not successful
     pointer allocate(std::size_t n, const std::vector<cudaStream_t>& streams)
     {
@@ -231,7 +231,7 @@ public:
     /// \brief asynchronously allocates a device array with enough space for n elements of value_type
     /// \param n number of elements to allocate the array for
     /// \param streams CUDA streams to be associated with this allocation, when allocation is deallocated cudaStreamSynchronize is called on all of them
-    /// \return pointer to allocated array
+    /// \return pointer to allocated memory
     /// \throw device_memory_allocation_exception if allocation was not successful
     pointer allocate(std::size_t n, const std::vector<cudaStream_t>& streams = {{0}})
     {
