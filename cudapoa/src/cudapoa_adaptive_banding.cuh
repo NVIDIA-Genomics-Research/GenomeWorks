@@ -8,7 +8,9 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-#include "cudapoa_kernels.cuh"
+#pragma once
+
+#include "cudapoa_structs.cuh"
 
 #include <claragenomics/utils/cudautils.hpp>
 
@@ -78,9 +80,8 @@ __device__ void distanceToHeadNode(SizeT* sorted_poa,
                 successor_distance   = distance_to_head_node[successor_node];
             }
         }
-        //printf("> i %3d, sorted_i %3d, in_count %d, max_weight %3d, max_successor_node %3d, dist %3d \n", n, node, incoming_edge_count[node], max_successor_weight, successor_node, successor_distance+1);
         distance_to_head_node[node] = successor_distance + 1;
-        printf("> n %3d, sorted_n %3d, distance %3d \n", n, node, successor_distance + 1);
+        //printf("> n %3d, sorted_n %3d, distance %3d \n", n, node, successor_distance + 1);
     }
 }
 
