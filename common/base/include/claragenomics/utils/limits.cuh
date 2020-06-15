@@ -11,7 +11,6 @@
 #pragma once
 
 #include <claragenomics/cga_config.hpp>
-#include <limits>
 #include <cstdint>
 
 namespace claraparabricks
@@ -28,15 +27,15 @@ struct numeric_limits
 template <>
 struct numeric_limits<int16_t>
 {
-    CGA_CONSTEXPR static __device__ int16_t max() { return INT16_MAX; }
-    CGA_CONSTEXPR static __device__ int16_t min() { return INT16_MIN; }
+    static __device__ int16_t max() { return INT16_MAX; }
+    static __device__ int16_t min() { return INT16_MIN; }
 };
 
 template <>
 struct numeric_limits<int32_t>
 {
-    CGA_CONSTEXPR static __device__ int32_t max() { return INT32_MAX; }
-    CGA_CONSTEXPR static __device__ int32_t min() { return INT32_MIN; }
+    static __device__ int32_t max() { return INT32_MAX; }
+    static __device__ int32_t min() { return INT32_MIN; }
 };
 #else
 using std::numeric_limits;

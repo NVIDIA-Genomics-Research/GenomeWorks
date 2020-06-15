@@ -80,8 +80,7 @@ void perform_radix_sort(device_buffer<char>& temp_storage_vect_d,
     {
         // If directly calling resize new memory will be allocated before old is freed (beacause the data has to be copied from old to new memory)
         // For very large arrays this can lead to OOM, so manually deallocating old before allocating new memory
-        temp_storage_vect_d.free();
-        temp_storage_vect_d.resize(temp_storage_bytes);
+        temp_storage_vect_d.clear_and_resize(temp_storage_bytes);
     }
     temp_storage_d     = static_cast<void*>(temp_storage_vect_d.data());
     temp_storage_bytes = temp_storage_vect_d.size();

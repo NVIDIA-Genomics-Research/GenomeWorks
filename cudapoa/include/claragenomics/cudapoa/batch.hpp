@@ -13,6 +13,8 @@
 #include <claragenomics/cudapoa/cudapoa.hpp>
 
 #include <claragenomics/utils/graph.hpp>
+#include <claragenomics/utils/cudautils.hpp>
+#include <claragenomics/utils/signed_integer_utils.hpp>
 
 #include <memory>
 #include <vector>
@@ -20,8 +22,6 @@
 #include <string>
 #include <iostream>
 #include <cuda_runtime_api.h>
-#include <claragenomics/utils/cudautils.hpp>
-#include <claragenomics/utils/signed_integer_utils.hpp>
 
 namespace claraparabricks
 {

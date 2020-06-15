@@ -7,8 +7,9 @@
 * distribution of this software and related documentation without an express
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
+#pragma once
 
-#include "cudapoa_kernels.cuh"
+#include "cudapoa_structs.cuh"
 
 #include <claragenomics/utils/cudautils.hpp>
 
@@ -208,13 +209,13 @@ __global__ void runTopSortKernel(SizeT* sorted_poa,
 
 // host function that calls runTopSortKernel
 template <typename SizeT>
-void runTopSortTemplated(SizeT* sorted_poa,
-                         SizeT* sorted_poa_node_map,
-                         SizeT node_count,
-                         uint16_t* incoming_edge_count,
-                         SizeT* outgoing_edges,
-                         uint16_t* outgoing_edge_count,
-                         uint16_t* local_incoming_edge_count)
+void runTopSort(SizeT* sorted_poa,
+                SizeT* sorted_poa_node_map,
+                SizeT node_count,
+                uint16_t* incoming_edge_count,
+                SizeT* outgoing_edges,
+                uint16_t* outgoing_edge_count,
+                uint16_t* local_incoming_edge_count)
 {
     // calls the topsort kernel on 1 thread
     runTopSortKernel<<<1, 1>>>(sorted_poa,

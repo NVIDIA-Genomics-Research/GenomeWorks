@@ -7,9 +7,11 @@
 * distribution of this software and related documentation without an express
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
+#pragma once
 
-#include "cudapoa_kernels.cuh"
+#include "cudapoa_structs.cuh"
 
+#include <claragenomics/cudapoa/cudapoa.hpp>
 #include <claragenomics/utils/cudautils.hpp>
 
 #include <stdio.h>
@@ -383,41 +385,41 @@ __global__ void generateConsensusTestKernel(uint8_t* nodes,
 }
 
 template <typename SizeT>
-void generateConsensusTemplated(uint8_t* nodes,
-                                SizeT node_count,
-                                SizeT* graph,
-                                SizeT* node_id_to_pos,
-                                SizeT* incoming_edges,
-                                uint16_t* incoming_edge_count,
-                                SizeT* outgoing_edges,
-                                uint16_t* outgoing_edge_count,
-                                uint16_t* incoming_edge_w,
-                                SizeT* predecessors,
-                                int32_t* scores,
-                                uint8_t* consensus,
-                                uint16_t* coverage,
-                                uint16_t* node_coverage_counts,
-                                SizeT* node_alignments,
-                                uint16_t* node_alignment_count,
-                                uint32_t max_limit_consensus_size)
+void generateConsensusTestHost(uint8_t* nodes,
+                               int32_t node_count,
+                               SizeT* graph,
+                               SizeT* node_id_to_pos,
+                               SizeT* incoming_edges,
+                               uint16_t* incoming_edge_count,
+                               SizeT* outgoing_edges,
+                               uint16_t* outgoing_edge_count,
+                               uint16_t* incoming_edge_w,
+                               SizeT* predecessors,
+                               int32_t* scores,
+                               uint8_t* consensus,
+                               uint16_t* coverage,
+                               uint16_t* node_coverage_counts,
+                               SizeT* node_alignments,
+                               uint16_t* node_alignment_count,
+                               uint32_t max_limit_consensus_size)
 {
-    generateConsensusTestKernel<<<1, 1>>>(nodes,
-                                          node_count,
-                                          graph,
-                                          node_id_to_pos,
-                                          incoming_edges,
-                                          incoming_edge_count,
-                                          outgoing_edges,
-                                          outgoing_edge_count,
-                                          incoming_edge_w,
-                                          predecessors,
-                                          scores,
-                                          consensus,
-                                          coverage,
-                                          node_coverage_counts,
-                                          node_alignments,
-                                          node_alignment_count,
-                                          max_limit_consensus_size);
+    generateConsensusTestKernel<SizeT><<<1, 1>>>(nodes,
+                                                 node_count,
+                                                 graph,
+                                                 node_id_to_pos,
+                                                 incoming_edges,
+                                                 incoming_edge_count,
+                                                 outgoing_edges,
+                                                 outgoing_edge_count,
+                                                 incoming_edge_w,
+                                                 predecessors,
+                                                 scores,
+                                                 consensus,
+                                                 coverage,
+                                                 node_coverage_counts,
+                                                 node_alignments,
+                                                 node_alignment_count,
+                                                 max_limit_consensus_size);
     CGA_CU_CHECK_ERR(cudaPeekAtLastError());
 };
 

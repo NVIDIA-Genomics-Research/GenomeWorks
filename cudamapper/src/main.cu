@@ -52,7 +52,7 @@ void run_alignment_batch(DefaultDeviceAllocator allocator,
                          const io::FastaParser& target_parser,
                          int32_t& overlap_idx,
                          const int32_t max_query_size, const int32_t max_target_size,
-                         std::vector<std::string>& cigar, const int32_t batch_size)
+                         std::vector<std::string>& cigars, const int32_t batch_size)
 {
     int32_t device_id;
     CGA_CU_CHECK_ERR(cudaGetDevice(&device_id));
@@ -109,7 +109,7 @@ void run_alignment_batch(DefaultDeviceAllocator allocator,
             CGA_NVTX_RANGE(profiler, "copy_alignments");
             for (int32_t i = 0; i < get_size<int32_t>(alignments); i++)
             {
-                cigar[idx_start + i] = alignments[i]->convert_to_cigar();
+                cigars[idx_start + i] = alignments[i]->convert_to_cigar();
             }
         }
         // Reset batch to reuse memory for new alignments.
@@ -123,14 +123,14 @@ void run_alignment_batch(DefaultDeviceAllocator allocator,
 /// \param query_parser Parser for query reads
 /// \param target_parser Parser for target reads
 /// \param num_alignment_engines Number of parallel alignment engines to use for alignment
-/// \param cigar Output vector to store CIGAR string for alignments
+/// \param cigars Output vector to store CIGAR strings for alignments
 /// \param allocator The allocator to allocate memory on the device
 void align_overlaps(DefaultDeviceAllocator allocator,
                     std::vector<Overlap>& overlaps,
                     const io::FastaParser& query_parser,
                     const io::FastaParser& target_parser,
                     int32_t num_alignment_engines,
-                    std::vector<std::string>& cigar)
+                    std::vector<std::string>& cigars)
 {
     // Calculate max target/query size in overlaps
     int32_t max_query_size  = 0;
@@ -173,7 +173,7 @@ void align_overlaps(DefaultDeviceAllocator allocator,
                                            std::ref(overlap_idx),
                                            max_query_size,
                                            max_target_size,
-                                           std::ref(cigar),
+                                           std::ref(cigars),
                                            batch_size));
     }
 
@@ -243,21 +243,21 @@ void process_one_device_batch(const IndexBatch& device_batch,
                 matcher.reset(nullptr);
 
                 // Align overlaps
-                std::vector<std::string> cigar;
+                std::vector<std::string> cigars;
                 if (application_parameters.alignment_engines > 0)
                 {
-                    cigar.resize(overlaps.size());
+                    cigars.resize(overlaps.size());
                     CGA_NVTX_RANGE(profiler, "align_overlaps");
                     align_overlaps(device_allocator,
                                    overlaps,
                                    *application_parameters.query_parser,
                                    *application_parameters.target_parser,
                                    application_parameters.alignment_engines,
-                                   cigar);
+                                   cigars);
                 }
 
                 // pass overlaps and cigars to writer thread
-                overlaps_and_cigars_to_process.add_new_element({std::move(overlaps), std::move(cigar)});
+                overlaps_and_cigars_to_process.add_new_element({std::move(overlaps), std::move(cigars)});
             }
         }
     }
@@ -338,7 +338,7 @@ void postprocess_and_write_thread_function(const int32_t device_id,
             {
                 CGA_NVTX_RANGE(profiler, "main::postprocess_and_write_thread::postprocessing");
                 // Overlap post processing - add overlaps which can be combined into longer ones.
-                Overlapper::post_process_overlaps(data_to_write->overlaps);
+                Overlapper::post_process_overlaps(data_to_write->overlaps, application_parameters.drop_fused_overlaps);
             }
 
             if (application_parameters.perform_overlap_end_rescue)

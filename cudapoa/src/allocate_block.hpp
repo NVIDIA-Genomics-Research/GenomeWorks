@@ -10,7 +10,9 @@
 
 #pragma once
 
+#include "cudapoa_structs.cuh"
 #include "cudapoa_kernels.cuh"
+#include "cudapoa_limits.hpp"
 
 #include <memory>
 #include <vector>

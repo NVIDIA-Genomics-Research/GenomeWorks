@@ -45,6 +45,12 @@ void extend_overlap_by_sequence_similarity(Overlap& overlap,
                                            cga_string_view_t& target_sequence,
                                            std::int32_t extension,
                                            float required_similarity);
+///
+/// \brief Removes overlaps from a vector (modifying in place) based on a boolean mask.
+/// \param overlaps A vector (reference) of overlaps
+/// \param mask A vector of bools the same length as overlaps. If an index is true, the overlap at the corresponding index in overlaps is removed.
+///
+void drop_overlaps_by_mask(std::vector<claraparabricks::genomeworks::cudamapper::Overlap>& overlaps, const std::vector<bool>& mask);
 
 } // namespace overlapper
 } // namespace details
@@ -83,7 +89,8 @@ public:
 
     /// \brief Identified overlaps which can be combined into a larger overlap and add them to the input vector
     /// \param overlaps reference to vector of Overlaps. New overlaps (result of fusing) are added to this vector
-    static void post_process_overlaps(std::vector<Overlap>& overlaps);
+    /// \param drop_fused_overlaps If true, remove overlaps that are fused into larger overlaps in output.
+    static void post_process_overlaps(std::vector<Overlap>& overlaps, bool drop_fused_overlaps = false);
 
     /// \brief Given a vector of overlaps, extend the start/end of the overlaps based on the sequence similarity of the query and target.
     /// \param overlaps A vector of overlaps. This is modified in-place; query_start_position_in_read_, query_end_position_in_read_,
