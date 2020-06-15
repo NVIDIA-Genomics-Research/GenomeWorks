@@ -58,10 +58,8 @@ else()
     set_property(GLOBAL PROPERTY cga_library_type STATIC)
 endif()
 
-include(cmake/CUDA.cmake)
-# NOTE: Make sure CUDA.cmake is loaded before CXX.cmake as CXX.cmake
-# uses a variable from CUDA.cmake
 include(cmake/CXX.cmake)
+include(cmake/CUDA.cmake)
 include(cmake/Doxygen.cmake)
 include(cmake/3rdparty.cmake)
 include(cmake/Tests.cmake)

@@ -13,5 +13,3 @@ set(CMAKE_CXX_STANDARD 17)
 
 #Add OpenMP
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp")
-# Add -O2 optimization to debug builds to speed up runtime.
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O2")
