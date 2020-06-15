@@ -82,7 +82,7 @@ public:
     /// Memory allocation is aligned by 256 bytes
     /// \param ptr on return pointer to allocated memory, nullptr if allocation was not successful
     /// \param bytes_needed
-    /// \param associated_stream on deallocation this block will be freed only once all previosly scheduled work in these streams has finished, using default stream as default
+    /// \param associated_streams on deallocation this block will be freed only once all previosly scheduled work in these streams has finished, using default stream as default
     /// \return cudaSuccess if allocation was successful, cudaErrorMemoryAllocation otherwise
     cudaError_t DeviceAllocate(void** ptr,
                                size_t bytes_needed,
@@ -141,7 +141,7 @@ private:
     /// \brief finds a memory block of the given size
     /// \param ptr on return pointer to allocated memory, nullptr if allocation was not successful
     /// \param bytes_needed
-    /// \param associated_stream on deallocation this block will be freed only once all previosly scheduled work in these streams has finished
+    /// \param associated_streams on deallocation this block will be freed only once all previosly scheduled work in these streams has finished
     /// \return cudaSuccess if allocation was successful, cudaErrorMemoryAllocation otherwise
     cudaError_t get_free_block(void** ptr,
                                size_t bytes_needed,
