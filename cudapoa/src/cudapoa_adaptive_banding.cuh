@@ -26,43 +26,38 @@ namespace cudapoa
 {
 
 /**
- * @brief Device function for computing outgoing path length of each node to the end of the POA graph.
+ * @brief Device function for computing length of path (with heaviest weight) of each node to the head of the POA graph.
+ *        The output of this kernel is used in adaptive banding to compute band-width per graph node
  *
- * @param[out] sorted_poa                Device buffer with sorted graph
- * @param[out] distance_to_end           Device buffer to store computed node distances in graph
+ * @param[in] sorted_poa                 Device buffer with sorted graph
  * @param[in] node_count                 Number of graph nodes
  * @param[in] incoming_edge_count        Device buffer with number of incoming edges per node
+ * @param[in] local_incoming_edge_count  Device scratch space for maintaining edge counts during distance computation
  * @param[in] incoming_edges             Device buffer with incoming edges per node
- * @param[in] outgoing_edge_count        Device buffer with number of outgoing edges per node
- * @param[in] local_outgoing_edge_count  Device scratch space for maintaining edge counts during topological sort
- */
+ * @param[in] incoming_edge_weights      Device buffer with weights of incoming edges
+ * @param[out] node_distance             Device buffer to store computed node distances in the graph
+*/
 template <typename SizeT>
 __device__ void distanceToHeadNode(SizeT* sorted_poa,
                                    SizeT node_count,
                                    uint16_t* incoming_edge_count,
                                    uint16_t* local_incoming_edge_count,
-                                   SizeT* incoming_edges           = NULL,
-                                   uint16_t* incoming_edge_weights = NULL,
-                                   SizeT* distance_to_head_node0   = NULL)
+                                   SizeT* incoming_edges,
+                                   uint16_t* incoming_edge_weights,
+                                   SizeT* node_distance)
 {
-
-    //
-    SizeT distance_to_head_node[20];
-
-    // Iterate through node IDs (since nodes are from 0
-    // through node_count -1, a simple loop works) and fill
-    // out the incoming edge count.
+    // iterate through node IDs and fill out the local incoming edge count
     for (SizeT n = 0; n < node_count; n++)
     {
         local_incoming_edge_count[n] = incoming_edge_count[n];
-        // If we find a node ID has 0 incoming edges, set its distance to 0
+        // if a node ID has 0 incoming edges, set its distance to 0
         if (local_incoming_edge_count[n] == 0)
         {
-            distance_to_head_node[n] = 0;
+            node_distance[n] = 0;
         }
     }
 
-    // the following is to compute distance array used in adaptive banding, it works on a sorted graph
+    // the following loop works on a sorted graph
     for (SizeT n = 0; n < node_count; ++n)
     {
         SizeT node = sorted_poa[n];
@@ -77,10 +72,10 @@ __device__ void distanceToHeadNode(SizeT* sorted_poa,
             {
                 max_successor_weight = incoming_edge_weights[node * CUDAPOA_MAX_NODE_EDGES + in_edge];
                 successor_node       = incoming_edges[node * CUDAPOA_MAX_NODE_EDGES + in_edge];
-                successor_distance   = distance_to_head_node[successor_node];
+                successor_distance   = node_distance[successor_node];
             }
         }
-        distance_to_head_node[node] = successor_distance + 1;
+        node_distance[node] = successor_distance + 1;
         //printf("> n %3d, sorted_n %3d, distance %3d \n", n, node, successor_distance + 1);
     }
 }
