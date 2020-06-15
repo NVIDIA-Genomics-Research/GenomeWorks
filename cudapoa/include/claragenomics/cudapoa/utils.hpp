@@ -11,7 +11,7 @@
 #pragma once
 
 #include <vector>
-#include "batch.hpp"
+#include <claragenomics/cudapoa/batch.hpp>
 
 namespace claraparabricks
 {

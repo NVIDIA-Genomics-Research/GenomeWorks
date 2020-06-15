@@ -209,7 +209,7 @@ int main(int argc, char** argv)
     std::vector<BatchSize> list_of_batch_sizes;
     std::vector<std::vector<int32_t>> list_of_groups_per_batch;
 
-    cudapoa::get_multi_batch_sizes(list_of_batch_sizes, list_of_groups_per_batch, poa_groups, banded, msa);
+    get_multi_batch_sizes(list_of_batch_sizes, list_of_groups_per_batch, poa_groups, banded, msa);
 
     int32_t group_count_offset = 0;
 
