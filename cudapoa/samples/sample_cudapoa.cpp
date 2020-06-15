@@ -8,14 +8,14 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-#include "../include/claragenomics/cudapoa/utils.hpp" // for get_multi_batch_sizes()
-#include "../benchmarks/common/utils.hpp"             // for parse_window_data_file()
+#include "../benchmarks/common/utils.hpp" // for parse_window_data_file()
 
 #include <file_location.hpp>
 #include <claragenomics/cudapoa/cudapoa.hpp>
 #include <claragenomics/cudapoa/batch.hpp>
 #include <claragenomics/utils/signed_integer_utils.hpp>
 #include <claragenomics/utils/cudautils.hpp>
+#include <claragenomics/cudapoa/utils.hpp> // for get_multi_batch_sizes()
 
 #include <cuda_runtime_api.h>
 #include <vector>
