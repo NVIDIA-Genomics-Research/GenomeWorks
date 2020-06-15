@@ -228,7 +228,7 @@ private:
         assert(block_to_be_freed_iter != std::end(used_blocks_));
 
         // ** wait for all work on associated_streams to finish before freeing up this memory block
-        for (const cudaStream_t& associated_stream : block_to_be_freed_iter->associated_streams)
+        for (cudaStream_t associated_stream : block_to_be_freed_iter->associated_streams)
         {
             CGA_CU_ABORT_ON_ERR(cudaStreamSynchronize(associated_stream));
         }
