@@ -11,6 +11,7 @@
 #pragma once
 
 #include <claragenomics/cga_config.hpp>
+#include <limits>
 #include <cstdint>
 
 namespace claraparabricks
