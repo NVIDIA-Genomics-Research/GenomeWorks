@@ -8,8 +8,8 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-#include "../src/cudapoa_kernels.cuh" //runNW, CUDAPOA_*
-#include "sorted_graph.hpp"           //SortedGraph
+#include "../src/cudapoa_nw.cuh" //runNW, CUDAPOA_*
+#include "sorted_graph.hpp"      //SortedGraph
 
 #include <claragenomics/utils/cudautils.hpp>            //CGA_CU_CHECK_ERR
 #include <claragenomics/utils/stringutils.hpp>          //array_to_string
@@ -235,25 +235,24 @@ NWAnswer testNW(const BasicNW& obj)
     match_score    = BasicNW::match_score_;
 
     //call the host wrapper of nw kernel
-    runNW(nodes,
-          graph,
-          node_id_to_pos,
-          graph_count,
-          incoming_edge_count,
-          incoming_edges,
-          outgoing_edge_count,
-          outgoing_edges,
-          read,
-          read_count,
-          scores,
-          BatchSize().max_matrix_sequence_dimension,
-          alignment_graph,
-          alignment_read,
-          gap_score,
-          mismatch_score,
-          match_score,
-          aligned_nodes,
-          false, batch_size);
+    runNW<SizeT>(nodes,
+                 graph,
+                 node_id_to_pos,
+                 graph_count,
+                 incoming_edge_count,
+                 incoming_edges,
+                 outgoing_edge_count,
+                 outgoing_edges,
+                 read,
+                 read_count,
+                 scores,
+                 BatchSize().max_matrix_sequence_dimension,
+                 alignment_graph,
+                 alignment_read,
+                 gap_score,
+                 mismatch_score,
+                 match_score,
+                 aligned_nodes);
 
     CGA_CU_CHECK_ERR(cudaDeviceSynchronize());
 

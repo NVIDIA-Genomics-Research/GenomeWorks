@@ -8,9 +8,10 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-#include "../src/cudapoa_kernels.cuh" //addAlignment, CUDAPOA_MAX_NODE_EDGES, CUDAPOA_MAX_NODE_ALIGNMENTS
-#include "basic_graph.hpp"            //BasicGraph
+#include "../src/cudapoa_add_alignment.cuh" //addAlignment, CUDAPOA_MAX_NODE_EDGES, CUDAPOA_MAX_NODE_ALIGNMENTS
+#include "basic_graph.hpp"                  //BasicGraph
 
+#include <claragenomics/cudapoa/batch.hpp>
 #include <claragenomics/utils/cudautils.hpp>            //CGA_CU_CHECK_ERR
 #include <claragenomics/utils/stringutils.hpp>          //array_to_string
 #include <claragenomics/utils/signed_integer_utils.hpp> // get_size
@@ -305,8 +306,7 @@ BasicGraph testAddAlignment(const BasicAlignment& obj)
                  outgoing_edges_coverage_count,
                  s,
                  batch_size.max_sequences_per_poa,
-                 batch_size.max_nodes_per_window,
-                 false, batch_size);
+                 batch_size.max_nodes_per_window);
 
     CGA_CU_CHECK_ERR(cudaDeviceSynchronize());
 

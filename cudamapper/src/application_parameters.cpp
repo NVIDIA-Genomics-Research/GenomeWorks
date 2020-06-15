@@ -44,6 +44,7 @@ ApplicationParameters::ApplicationParameters(int argc, char* argv[])
         {"min-bases-per-residue", required_argument, 0, 'b'},
         {"min-overlap-fraction", required_argument, 0, 'z'},
         {"rescue-overlap-ends", no_argument, 0, 'R'},
+        {"drop-fused-overlaps", no_argument, 0, 'D'},
         {"query-indices-in-host-memory", required_argument, 0, 'Q'},
         {"query-indices-in-device-memory", required_argument, 0, 'q'},
         {"target-indices-in-host-memory", required_argument, 0, 'C'},
@@ -52,7 +53,7 @@ ApplicationParameters::ApplicationParameters(int argc, char* argv[])
         {"help", no_argument, 0, 'h'},
     };
 
-    std::string optstring = "k:w:d:m:i:t:F:a:r:l:b:z:RQ:q:C:c:vh";
+    std::string optstring = "k:w:d:m:i:t:F:a:r:l:b:z:RDQ:q:C:c:vh";
 
     bool target_indices_in_host_memory_set   = false;
     bool target_indices_in_device_memory_set = false;
@@ -104,6 +105,9 @@ ApplicationParameters::ApplicationParameters(int argc, char* argv[])
             break;
         case 'R':
             perform_overlap_end_rescue = true;
+            break;
+        case 'D':
+            drop_fused_overlaps = true;
             break;
         case 'Q':
             query_indices_in_host_memory = std::stoi(optarg);
@@ -298,6 +302,9 @@ void ApplicationParameters::help(int32_t exit_code)
               << R"(
         -R, --rescue-overlap-ends
             Run a kmer-based procedure that attempts to extend overlaps at the ends of the query/target.)"
+              << R"(
+        -D, --drop-fused-overlaps
+            Remove overlaps which are joined into larger overlaps during fusion.)"
               << R"(
         -Q, --query-indices-in-host-memory
             number of query indices to keep in host memory [10])"
