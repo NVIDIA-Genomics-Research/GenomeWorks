@@ -10,10 +10,10 @@
 
 #pragma once
 
-#include <claragenomics/cudapoa/batch.hpp>
 #include "allocate_block.hpp"
 #include "cudapoa_kernels.cuh"
 
+#include <claragenomics/cudapoa/batch.hpp>
 #include <claragenomics/utils/cudautils.hpp>
 #include <claragenomics/logging/logging.hpp>
 #include <claragenomics/utils/signed_integer_utils.hpp>
@@ -70,7 +70,7 @@ public:
         , match_score_(match_score)
         , banded_alignment_(cuda_banded_alignment)
         , batch_block_(new BatchBlock<ScoreT, SizeT>(device_id,
-                                                     throw_on_negative(max_mem, "Maximum memory per batch has to be non-negative"),
+                                                     max_mem,
                                                      output_mask,
                                                      batch_size_,
                                                      cuda_banded_alignment))
@@ -174,19 +174,19 @@ public:
         std::string msg = " Launching kernel for " + std::to_string(poa_count_) + " on device ";
         print_batch_debug_message(msg);
 
-        genomeworks::cudapoa::generatePOA(output_details_d_,
-                                          input_details_d_,
-                                          poa_count_,
-                                          stream_,
-                                          alignment_details_d_,
-                                          graph_details_d_,
-                                          gap_score_,
-                                          mismatch_score_,
-                                          match_score_,
-                                          banded_alignment_,
-                                          max_sequences_per_poa_,
-                                          output_mask_,
-                                          batch_size_);
+        generatePOA<ScoreT, SizeT>(output_details_d_,
+                                   input_details_d_,
+                                   poa_count_,
+                                   stream_,
+                                   alignment_details_d_,
+                                   graph_details_d_,
+                                   gap_score_,
+                                   mismatch_score_,
+                                   match_score_,
+                                   banded_alignment_,
+                                   max_sequences_per_poa_,
+                                   output_mask_,
+                                   batch_size_);
 
         msg = " Launched kernel on device ";
         print_batch_debug_message(msg);

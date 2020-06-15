@@ -8,8 +8,8 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-#include "../src/cudapoa_kernels.cuh" //generateConsensusHost, CUDAPOA_MAX_NODE_EDGES, CUDAPOA_MAX_NODE_ALIGNMENTS
-#include "sorted_graph.hpp"           //SortedGraph
+#include "../src/cudapoa_generate_consensus.cuh" //generateConsensusHost, CUDAPOA_MAX_NODE_EDGES, CUDAPOA_MAX_NODE_ALIGNMENTS
+#include "sorted_graph.hpp"                      //SortedGraph
 
 #include <claragenomics/utils/cudautils.hpp>            //CGA_CU_CHECK_ERR
 #include <claragenomics/utils/signed_integer_utils.hpp> //get_size
@@ -218,24 +218,23 @@ std::string testGenerateConsensus(const BasicGenerateConsensus& obj)
                           node_alignments, node_alignment_count);
 
     // call the host wrapper of topsort kernel
-    generateConsensusTestHost(nodes,
-                              *node_count,
-                              graph,
-                              node_id_to_pos,
-                              incoming_edges,
-                              incoming_edge_count,
-                              outgoing_edges,
-                              outgoing_edge_count,
-                              incoming_edge_w,
-                              predecessors,
-                              scores,
-                              consensus,
-                              coverage,
-                              node_coverage_counts,
-                              node_alignments,
-                              node_alignment_count,
-                              batch_size.max_consensus_size,
-                              false, batch_size);
+    generateConsensusTestHost<SizeT>(nodes,
+                                     *node_count,
+                                     graph,
+                                     node_id_to_pos,
+                                     incoming_edges,
+                                     incoming_edge_count,
+                                     outgoing_edges,
+                                     outgoing_edge_count,
+                                     incoming_edge_w,
+                                     predecessors,
+                                     scores,
+                                     consensus,
+                                     coverage,
+                                     node_coverage_counts,
+                                     node_alignments,
+                                     node_alignment_count,
+                                     batch_size.max_consensus_size);
 
     CGA_CU_CHECK_ERR(cudaDeviceSynchronize());
 
