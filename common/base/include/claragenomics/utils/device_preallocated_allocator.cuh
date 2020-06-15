@@ -24,7 +24,7 @@ namespace claraparabricks
 namespace genomeworks
 {
 
-/// @brief Allocator that preallocates one big buffer of device memory and assigns sections of it to allocation requests
+/// \brief Allocator that preallocates one big buffer of device memory and assigns sections of it to allocation requests
 /// Allocator allocates one big buffer of device memory during constructor and keeps it until destruction.
 /// For every allocation request it linearly scans the preallocated memory and assigns first buffer of it that is big enough.
 ///
@@ -54,9 +54,9 @@ namespace genomeworks
 class DevicePreallocatedAllocator
 {
 public:
-    /// @brief Constructor
+    /// \brief Constructor
     /// Allocates the buffer
-    /// @param buffer_size
+    /// \param buffer_size
     DevicePreallocatedAllocator(size_t buffer_size)
         : buffer_size_(buffer_size)
         , buffer_ptr_(create_buffer(buffer_size))
@@ -64,7 +64,7 @@ public:
         assert(buffer_size > 0);
         MemoryBlock whole_memory_block;
         whole_memory_block.begin = 0;
-        whole_memory_block.size = buffer_size;
+        whole_memory_block.size  = buffer_size;
         free_blocks_.push_back(whole_memory_block);
     }
 
@@ -78,12 +78,12 @@ public:
     ~DevicePreallocatedAllocator() = default;
     // ^^^^ buffer_'s destructor deallocates device memory
 
-    /// @brief allocates memory (assigns part of the buffer)
+    /// \brief allocates memory (assigns part of the buffer)
     /// Memory allocation is aligned by 256 bytes
-    /// @param ptr
-    /// @param bytes_needed
-    /// @param associated_streams on deallocation this block will be freed only once all previosly scheduled work in these streams has finished, using default stream as default
-    /// @return error status
+    /// \param ptr
+    /// \param bytes_needed
+    /// \param associated_streams on deallocation this block will be freed only once all previosly scheduled work in these streams has finished, using default stream as default
+    /// \return error status
     cudaError_t DeviceAllocate(void** ptr,
                                size_t bytes_needed,
                                const std::vector<cudaStream_t>& associated_streams = {{0}})
@@ -94,10 +94,10 @@ public:
         return get_free_block(ptr, bytes_needed, associated_streams);
     }
 
-    /// @brief deallocates memory (returns its part of buffer to the list of free parts)
+    /// \brief deallocates memory (returns its part of buffer to the list of free parts)
     /// This function blocks until all work on associated_stream is done
-    /// @param ptr
-    /// @return error status
+    /// \param ptr
+    /// \return error status
     cudaError_t DeviceFree(void* ptr)
     {
         cudaError_t status = cudaSuccess;
@@ -112,7 +112,7 @@ public:
     }
 
 private:
-    /// @brief represents one part of the buffer, free or available
+    /// \brief represents one part of the buffer, free or available
     struct MemoryBlock
     {
         // byte in buffer at which this block starts
@@ -123,9 +123,9 @@ private:
         std::vector<cudaStream_t> associated_streams;
     };
 
-    /// @brief allocates the underlying buffer
-    /// @param buffer_size
-    /// @return allocated shared_ptr
+    /// \brief allocates the underlying buffer
+    /// \param buffer_size
+    /// \return allocated shared_ptr
     static std::unique_ptr<char, void (*)(char*)> create_buffer(size_t buffer_size)
     {
         // shared_ptr creation packed in a function so it can be used in constructor's initilaization list
@@ -138,11 +138,11 @@ private:
         return ret_val;
     }
 
-    /// @brief finds a memory block of the given size
-    /// @param ptr
-    /// @param bytes_needed
-    /// @param associated_streams on deallocation this block will be freed only once all previosly scheduled work in these streams has finished
-    /// @return error status
+    /// \brief finds a memory block of the given size
+    /// \param ptr
+    /// \param bytes_needed
+    /// \param associated_streams on deallocation this block will be freed only once all previosly scheduled work in these streams has finished
+    /// \return error status
     cudaError_t get_free_block(void** ptr,
                                size_t bytes_needed,
                                const std::vector<cudaStream_t>& associated_streams)
@@ -207,10 +207,10 @@ private:
         return cudaSuccess;
     }
 
-    /// @brief returns the block starting at pointer
+    /// \brief returns the block starting at pointer
     /// This function blocks until all work on associated_streams is done
-    /// @param pointer pointer at the begining of the block to be freed
-    /// @return error status
+    /// \param pointer pointer at the begining of the block to be freed
+    /// \return error status
     cudaError_t free_block(void* pointer)
     {
         assert(static_cast<char*>(pointer) >= buffer_ptr_.get());
