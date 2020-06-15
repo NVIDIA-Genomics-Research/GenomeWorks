@@ -32,13 +32,13 @@ namespace cudamapper
 
 /// \brief prints overlaps to stdout in <a href="https://github.com/lh3/miniasm/blob/master/PAF.md">PAF format</a>
 /// \param overlaps vector of overlap objects
-/// \param cigar cigar strings
+/// \param cigars CIGAR strings
 /// \param query_parser needed for read names and lenghts
 /// \param target_parser needed for read names and lenghts
 /// \param kmer_size minimizer kmer size
 /// \param write_output_mutex mutex that enables exclusive access to output stream
 void print_paf(const std::vector<Overlap>& overlaps,
-               const std::vector<std::string>& cigar,
+               const std::vector<std::string>& cigars,
                const io::FastaParser& query_parser,
                const io::FastaParser& target_parser,
                int32_t kmer_size,

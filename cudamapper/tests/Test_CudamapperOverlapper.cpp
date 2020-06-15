@@ -77,6 +77,32 @@ TEST(TestOverlapExtension, short_forward_head_overlap_properly_extended)
     ASSERT_EQ(o.target_end_position_in_read_, 1000);
 }
 
+TEST(TestDropOverlaps, drop_overlaps_by_mask)
+{
+    Overlap o1;
+    o1.query_read_id_ = 1;
+    Overlap o2;
+    o2.query_read_id_ = 2;
+    Overlap o3;
+    o3.query_read_id_ = 3;
+    Overlap o4;
+    o4.query_read_id_ = 4;
+    Overlap o5;
+    o5.query_read_id_ = 5;
+
+    std::vector<Overlap> overlaps{o1, o2, o3, o4, o5};
+    std::vector<bool> mask{true, false, true, true, false};
+    details::overlapper::drop_overlaps_by_mask(overlaps, mask);
+    ASSERT_EQ(overlaps.size(), 2);
+    ASSERT_EQ(overlaps[0].query_read_id_, 2);
+    ASSERT_EQ(overlaps[1].query_read_id_, 5);
+
+    std::vector<Overlap> empty_overlaps;
+    std::vector<bool> empty_bools;
+    details::overlapper::drop_overlaps_by_mask(empty_overlaps, empty_bools);
+    ASSERT_EQ(empty_overlaps.size(), 0);
+}
+
 } // namespace cudamapper
 
 } // namespace genomeworks

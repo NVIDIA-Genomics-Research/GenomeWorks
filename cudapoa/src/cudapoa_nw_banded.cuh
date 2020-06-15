@@ -7,9 +7,9 @@
 * distribution of this software and related documentation without an express
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
+#pragma once
 
-#include "cudapoa_kernels.cuh"
-#include "cudastructs.cuh"
+#include "cudapoa_structs.cuh"
 
 #include <claragenomics/utils/cudautils.hpp>
 #include <claragenomics/utils/limits.cuh>

@@ -28,7 +28,7 @@ namespace cudamapper
 {
 
 void print_paf(const std::vector<Overlap>& overlaps,
-               const std::vector<std::string>& cigar,
+               const std::vector<std::string>& cigars,
                const io::FastaParser& query_parser,
                const io::FastaParser& target_parser,
                const int32_t kmer_size,
@@ -36,7 +36,7 @@ void print_paf(const std::vector<Overlap>& overlaps,
 {
     CGA_NVTX_RANGE(profiler, "print_paf");
 
-    assert(!cigar.empty() || (overlaps.size() == cigar.size()));
+    assert(cigars.empty() || (overlaps.size() == cigars.size()));
 
     const int64_t number_of_overlaps_to_print = get_size<int64_t>(overlaps);
 
@@ -63,9 +63,9 @@ void print_paf(const std::vector<Overlap>& overlaps,
             // (over)estimate the number of character that are going to be needed
             // 150 is an overestimate of number of characters that are going to be needed for non-string values
             int32_t expected_chars = 150 + get_size<int32_t>(query_read_name) + get_size<int32_t>(target_read_name);
-            if (!cigar.empty())
+            if (!cigars.empty())
             {
-                expected_chars += get_size<int32_t>(cigar[i]);
+                expected_chars += get_size<int32_t>(cigars[i]);
             }
             // if there is not enough space in buffer reallocate
             if (get_size<int64_t>(buffer) - chars_in_buffer < expected_chars)
@@ -89,13 +89,13 @@ void print_paf(const std::vector<Overlap>& overlaps,
                                                               std::abs(static_cast<int64_t>(overlaps[i].query_start_position_in_read_) - static_cast<int64_t>(overlaps[i].query_end_position_in_read_))), //Approximate alignment length
                                                      255);
             chars_in_buffer += added_chars;
-            // If CIGAR string is generated, output in PAF.
-            if (!cigar.empty())
+            // If CIGAR strings were generated, output in PAF.
+            if (!cigars.empty())
             {
-                const int32_t added_cigar_chars = std::sprintf(buffer.data() + chars_in_buffer,
-                                                               "\tcg:Z:%s",
-                                                               cigar[i].c_str());
-                chars_in_buffer += added_cigar_chars;
+                const int32_t added_cigars_chars = std::sprintf(buffer.data() + chars_in_buffer,
+                                                                "\tcg:Z:%s",
+                                                                cigars[i].c_str());
+                chars_in_buffer += added_cigars_chars;
             }
             // Add new line to demarcate new entry.
             buffer[chars_in_buffer] = '\n';
