@@ -91,7 +91,9 @@ public:
         assert(!associated_streams.empty());
 
         std::lock_guard<std::mutex> mutex_lock_guard(memory_operation_mutex_);
-        return get_free_block(ptr, bytes_needed, associated_streams);
+        return allocate_memory_block(ptr,
+                                     bytes_needed,
+                                     associated_streams);
     }
 
     /// \brief deallocates memory (returns its part of buffer to the list of free parts)
@@ -105,7 +107,7 @@ public:
         if (nullptr != ptr)
         {
             std::lock_guard<std::mutex> mutex_lock_guard(memory_operation_mutex_);
-            status = free_block(ptr);
+            status = free_memory_block(ptr);
         }
 
         return status;
@@ -143,9 +145,9 @@ private:
     /// \param bytes_needed
     /// \param associated_streams on deallocation this memory block is guaranteed to live at least until all previously scheduled work in these streams has finished
     /// \return cudaSuccess if allocation was successful, cudaErrorMemoryAllocation otherwise
-    cudaError_t get_free_block(void** ptr,
-                               size_t bytes_needed,
-                               const std::vector<cudaStream_t>& associated_streams)
+    cudaError_t allocate_memory_block(void** ptr,
+                                      size_t bytes_needed,
+                                      const std::vector<cudaStream_t>& associated_streams)
     {
         *ptr = nullptr;
 
@@ -213,7 +215,7 @@ private:
     /// This function blocks until all work on associated_streams is done
     /// \param pointer pointer at the begining of the block to be freed
     /// \return error status
-    cudaError_t free_block(void* pointer)
+    cudaError_t free_memory_block(void* pointer)
     {
         assert(static_cast<char*>(pointer) >= buffer_ptr_.get());
         const size_t block_start = static_cast<char*>(pointer) - buffer_ptr_.get();
