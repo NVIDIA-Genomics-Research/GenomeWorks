@@ -151,10 +151,6 @@ public:
     /// \return begin() + size().
     const_iterator end() const { return data_ + size_; }
 
-    /// \brief This method returns the associated streams.
-    /// \return associated stream.
-    const std::vector<cudaStream_t>& get_streams() const { return streams_; }
-
     /// \brief This method returns the allocator used to allocate memory for this buffer.
     /// \return allocator.
     allocator_type get_allocator() const { return allocator_; }
