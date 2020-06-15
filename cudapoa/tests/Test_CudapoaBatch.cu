@@ -68,7 +68,6 @@ TEST_F(TestCudapoaBatch, InitializeTest)
     const int32_t device_id = 0;
     size_t free             = get_free_device_mem(device_id);
     initialize(0.9 * free, device_id, BatchSize(1024, 5));
-    EXPECT_EQ(cudapoa_batch->batch_id(), 0);
     EXPECT_EQ(cudapoa_batch->get_total_poas(), 0);
 }
 
@@ -194,7 +193,7 @@ TEST_F(TestCudapoaBatch, GeneratePoaTest)
     cudapoa_batch->get_consensus(consensus, coverage, output_status);
 
     EXPECT_EQ(output_status[0], StatusType::success);
-    EXPECT_EQ(consensus.size(), 1);
+    EXPECT_EQ(consensus.size(), 1U);
     // Since all sequences are same, consensus is same as sequences.
     EXPECT_EQ(consensus[0], seq);
 }
