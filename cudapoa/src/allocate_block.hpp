@@ -19,11 +19,11 @@
 #include <stdint.h>
 #include <string>
 #include <cuda_runtime_api.h>
-#include <claragenomics/cudapoa/batch.hpp>
+#include <claraparabricks/genomeworks/cudapoa/batch.hpp>
 
-#include <claragenomics/utils/cudautils.hpp>
-#include <claragenomics/logging/logging.hpp>
-#include <claragenomics/utils/signed_integer_utils.hpp>
+#include <claraparabricks/genomeworks/utils/cudautils.hpp>
+#include <claraparabricks/genomeworks/logging/logging.hpp>
+#include <claraparabricks/genomeworks/utils/signed_integer_utils.hpp>
 
 #ifndef CGA_LOG_LEVEL
 #ifndef NDEBUG

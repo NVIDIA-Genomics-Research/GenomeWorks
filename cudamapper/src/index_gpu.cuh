@@ -20,13 +20,13 @@
 #include <thrust/transform.h>
 #include <thrust/transform_scan.h>
 
-#include <claragenomics/cudamapper/index.hpp>
-#include <claragenomics/cudamapper/types.hpp>
-#include <claragenomics/io/fasta_parser.hpp>
-#include <claragenomics/logging/logging.hpp>
-#include <claragenomics/utils/device_buffer.hpp>
-#include <claragenomics/utils/mathutils.hpp>
-#include <claragenomics/utils/signed_integer_utils.hpp>
+#include <claraparabricks/genomeworks/cudamapper/index.hpp>
+#include <claraparabricks/genomeworks/cudamapper/types.hpp>
+#include <claraparabricks/genomeworks/io/fasta_parser.hpp>
+#include <claraparabricks/genomeworks/logging/logging.hpp>
+#include <claraparabricks/genomeworks/utils/device_buffer.hpp>
+#include <claraparabricks/genomeworks/utils/mathutils.hpp>
+#include <claraparabricks/genomeworks/utils/signed_integer_utils.hpp>
 
 #include "index_host_copy.cuh"
 

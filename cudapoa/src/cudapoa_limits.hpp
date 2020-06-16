@@ -14,7 +14,7 @@
 
 #include <stdio.h>
 
-#include <claragenomics/cudapoa/batch.hpp>
+#include <claraparabricks/genomeworks/cudapoa/batch.hpp>
 
 namespace claraparabricks
 {

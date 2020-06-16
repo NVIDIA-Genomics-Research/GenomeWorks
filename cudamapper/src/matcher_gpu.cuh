@@ -10,9 +10,9 @@
 
 #pragma once
 
-#include <claragenomics/cudamapper/matcher.hpp>
-#include <claragenomics/cudamapper/types.hpp>
-#include <claragenomics/utils/device_buffer.hpp>
+#include <claraparabricks/genomeworks/cudamapper/matcher.hpp>
+#include <claraparabricks/genomeworks/cudamapper/types.hpp>
+#include <claraparabricks/genomeworks/utils/device_buffer.hpp>
 
 namespace claraparabricks
 {

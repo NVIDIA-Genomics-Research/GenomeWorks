@@ -13,7 +13,7 @@
 #include "cudapoa_limits.hpp"
 #include "cudapoa_batch.cuh"
 
-#include <claragenomics/cudapoa/batch.hpp>
+#include <claraparabricks/genomeworks/cudapoa/batch.hpp>
 
 namespace claraparabricks
 {

@@ -16,7 +16,7 @@
 #include <cub/cub.cuh>
 #include <thrust/execution_policy.h>
 
-#include <claragenomics/utils/cudautils.hpp>
+#include <claraparabricks/genomeworks/utils/cudautils.hpp>
 
 #ifndef NDEBUG // only needed to check if input is sorted in assert
 #include <algorithm>

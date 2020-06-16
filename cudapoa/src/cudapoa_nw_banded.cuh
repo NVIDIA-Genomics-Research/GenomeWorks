@@ -11,8 +11,8 @@
 
 #include "cudapoa_structs.cuh"
 
-#include <claragenomics/utils/cudautils.hpp>
-#include <claragenomics/utils/limits.cuh>
+#include <claraparabricks/genomeworks/utils/cudautils.hpp>
+#include <claraparabricks/genomeworks/utils/limits.cuh>
 
 #include <stdio.h>
 

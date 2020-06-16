@@ -10,7 +10,7 @@
 
 #include <memory>
 
-#include <claragenomics/utils/allocator.hpp>
+#include <claraparabricks/genomeworks/utils/allocator.hpp>
 
 namespace claraparabricks
 {

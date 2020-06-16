@@ -17,9 +17,9 @@
 
 #include <thrust/host_vector.h>
 
-#include <claragenomics/utils/cudasort.cuh>
-#include <claragenomics/utils/device_buffer.hpp>
-#include <claragenomics/utils/signed_integer_utils.hpp>
+#include <claraparabricks/genomeworks/utils/cudasort.cuh>
+#include <claraparabricks/genomeworks/utils/device_buffer.hpp>
+#include <claraparabricks/genomeworks/utils/signed_integer_utils.hpp>
 
 namespace claraparabricks
 {
