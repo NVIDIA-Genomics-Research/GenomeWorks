@@ -25,7 +25,7 @@ namespace genomeworks
 namespace cudapoa
 {
 
-bool use32bitScore(const BatchSize& batch_size, const int16_t gap_score, const int16_t mismatch_score, const int16_t match_score)
+static bool use32bitScore(const BatchSize& batch_size, const int16_t gap_score, const int16_t mismatch_score, const int16_t match_score)
 {
     // theoretical max score takes place when sequence and graph completely match with each other
     int32_t upper_bound = batch_size.max_sequence_size * match_score;
@@ -36,7 +36,7 @@ bool use32bitScore(const BatchSize& batch_size, const int16_t gap_score, const i
     return (upper_bound > INT16_MAX || (-lower_bound) > (INT16_MAX + 1));
 }
 
-bool use32bitSize(const BatchSize& batch_size, bool banded)
+static bool use32bitSize(const BatchSize& batch_size, bool banded)
 {
     int32_t max_length = batch_size.max_consensus_size;
     if (banded)
