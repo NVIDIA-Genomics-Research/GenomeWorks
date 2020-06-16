@@ -10,8 +10,6 @@
 
 LOCAL_BUILD_ROOT=$1
 CMAKE_OPTS=$2
-BUILD_THREADS=$3
-GPU_TEST=$4
 
 cd ${LOCAL_BUILD_ROOT}
 export LOCAL_BUILD_DIR=${LOCAL_BUILD_ROOT}/build
@@ -54,7 +52,7 @@ ln -s $UNPACK_ROOT/ClaraGenomicsAnalysis-* $CGA_SYMLINK_PATH
 CGA_LIB_DIR=${CGA_SYMLINK_PATH}/lib
 
 # Run tests
-if [ "$GPU_TEST" == '1' ]; then
+if [ "$TEST_ON_GPU" == '1' ]; then
   logger "GPU config..."
   nvidia-smi
 
