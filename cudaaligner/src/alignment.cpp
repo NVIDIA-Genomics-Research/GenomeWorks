@@ -8,7 +8,7 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-#include <claragenomics/cudaaligner/alignment.hpp>
+#include <claraparabricks/genomeworks/cudaaligner/alignment.hpp>
 
 #include <iostream>
 

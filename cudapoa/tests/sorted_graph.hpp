@@ -11,7 +11,7 @@
 #include "basic_graph.hpp"
 #include "../src/cudapoa_kernels.cuh" //CUDAPOA_MAX_NODE_EDGES, CUDAPOA_MAX_NODE_ALIGNMENTS
 
-#include <claragenomics/utils/signed_integer_utils.hpp> // get_size
+#include <claraparabricks/genomeworks/utils/signed_integer_utils.hpp> // get_size
 
 #include <string>
 #include <vector>

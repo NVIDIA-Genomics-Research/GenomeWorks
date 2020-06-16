@@ -13,10 +13,10 @@
 #include "allocate_block.hpp"
 #include "cudapoa_kernels.cuh"
 
-#include <claragenomics/cudapoa/batch.hpp>
-#include <claragenomics/utils/cudautils.hpp>
-#include <claragenomics/logging/logging.hpp>
-#include <claragenomics/utils/signed_integer_utils.hpp>
+#include <claraparabricks/genomeworks/cudapoa/batch.hpp>
+#include <claraparabricks/genomeworks/utils/cudautils.hpp>
+#include <claraparabricks/genomeworks/logging/logging.hpp>
+#include <claraparabricks/genomeworks/utils/signed_integer_utils.hpp>
 
 #include <memory>
 #include <vector>

@@ -11,7 +11,7 @@
 #include "gtest/gtest.h"
 #include "../src/minimizer.hpp"
 
-#include <claragenomics/utils/cudautils.hpp>
+#include <claraparabricks/genomeworks/utils/cudautils.hpp>
 
 namespace claraparabricks
 {

@@ -9,7 +9,7 @@
 */
 #pragma once
 
-#include "claragenomics/io/fasta_parser.hpp"
+#include <claraparabricks/genomeworks/io/fasta_parser.hpp>
 
 #include <string>
 #include <vector>

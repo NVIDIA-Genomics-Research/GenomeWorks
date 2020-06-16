@@ -8,8 +8,8 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-#include <claragenomics/cudamapper/cudamapper.hpp>
-#include <claragenomics/logging/logging.hpp>
+#include <claraparabricks/genomeworks/cudamapper/cudamapper.hpp>
+#include <claraparabricks/genomeworks/logging/logging.hpp>
 
 namespace claraparabricks
 {

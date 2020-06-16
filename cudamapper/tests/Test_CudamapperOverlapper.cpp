@@ -11,7 +11,7 @@
 #include "gtest/gtest.h"
 #include <string>
 #include <vector>
-#include "../include/claragenomics/cudamapper/overlapper.hpp"
+#include <claraparabricks/genomeworks/cudamapper/overlapper.hpp>
 
 namespace claraparabricks
 {

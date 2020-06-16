@@ -16,10 +16,10 @@
 #include <thrust/transform_scan.h>
 #include <thrust/execution_policy.h>
 
-#include <claragenomics/utils/cudasort.cuh>
-#include <claragenomics/utils/cudautils.hpp>
-#include <claragenomics/utils/mathutils.hpp>
-#include <claragenomics/utils/signed_integer_utils.hpp>
+#include <claraparabricks/genomeworks/utils/cudasort.cuh>
+#include <claraparabricks/genomeworks/utils/cudautils.hpp>
+#include <claraparabricks/genomeworks/utils/mathutils.hpp>
+#include <claraparabricks/genomeworks/utils/signed_integer_utils.hpp>
 
 namespace claraparabricks
 {

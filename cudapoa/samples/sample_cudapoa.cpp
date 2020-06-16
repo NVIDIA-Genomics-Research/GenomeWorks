@@ -11,11 +11,11 @@
 #include "../benchmarks/common/utils.hpp" // for parse_window_data_file()
 
 #include <file_location.hpp>
-#include <claragenomics/cudapoa/cudapoa.hpp>
-#include <claragenomics/cudapoa/batch.hpp>
-#include <claragenomics/utils/signed_integer_utils.hpp>
-#include <claragenomics/utils/cudautils.hpp>
-#include <claragenomics/cudapoa/utils.hpp> // for get_multi_batch_sizes()
+#include <claraparabricks/genomeworks/cudapoa/cudapoa.hpp>
+#include <claraparabricks/genomeworks/cudapoa/batch.hpp>
+#include <claraparabricks/genomeworks/utils/signed_integer_utils.hpp>
+#include <claraparabricks/genomeworks/utils/cudautils.hpp>
+#include <claraparabricks/genomeworks/cudapoa/utils.hpp> // for get_multi_batch_sizes()
 
 #include <cuda_runtime_api.h>
 #include <vector>

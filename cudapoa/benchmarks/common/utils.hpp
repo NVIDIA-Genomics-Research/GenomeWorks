@@ -10,7 +10,7 @@
 
 #pragma once
 
-#include <claragenomics/utils/signed_integer_utils.hpp>
+#include <claraparabricks/genomeworks/utils/signed_integer_utils.hpp>
 
 #include <string>
 #include <vector>

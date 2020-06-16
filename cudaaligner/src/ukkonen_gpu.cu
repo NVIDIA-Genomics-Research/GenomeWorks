@@ -10,8 +10,8 @@
 
 #include "ukkonen_gpu.cuh"
 #include "batched_device_matrices.cuh"
-#include <claragenomics/cudaaligner/cudaaligner.hpp>
-#include <claragenomics/utils/limits.cuh>
+#include <claraparabricks/genomeworks/cudaaligner/cudaaligner.hpp>
+#include <claraparabricks/genomeworks/utils/limits.cuh>
 
 #include <limits>
 #include <cstdint>

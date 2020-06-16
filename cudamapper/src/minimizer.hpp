@@ -12,9 +12,9 @@
 
 #include <cstdint>
 #include <vector>
-#include <claragenomics/cudamapper/sketch_element.hpp>
-#include <claragenomics/cudamapper/types.hpp>
-#include <claragenomics/utils/device_buffer.hpp>
+#include <claraparabricks/genomeworks/cudamapper/sketch_element.hpp>
+#include <claraparabricks/genomeworks/cudamapper/types.hpp>
+#include <claraparabricks/genomeworks/utils/device_buffer.hpp>
 
 namespace claraparabricks
 {

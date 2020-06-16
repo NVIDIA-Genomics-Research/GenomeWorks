@@ -10,8 +10,8 @@
 
 #include "needleman_wunsch_cpu.hpp"
 
-#include <claragenomics/cudaaligner/cudaaligner.hpp>
-#include <claragenomics/utils/mathutils.hpp>
+#include <claraparabricks/genomeworks/cudaaligner/cudaaligner.hpp>
+#include <claraparabricks/genomeworks/utils/mathutils.hpp>
 
 #include <tuple>
 #include <cassert>

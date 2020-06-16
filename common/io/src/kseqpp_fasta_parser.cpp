@@ -17,7 +17,7 @@
 #include <exception>
 #include <iostream>
 #include "seqio.h" //TODO add this to 3rdparty
-#include <claragenomics/utils/signed_integer_utils.hpp>
+#include <claraparabricks/genomeworks/utils/signed_integer_utils.hpp>
 
 namespace claraparabricks
 {

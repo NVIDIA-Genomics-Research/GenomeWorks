@@ -14,10 +14,10 @@
 #include <iostream>
 #include <string>
 
-#include <claragenomics/cudamapper/index.hpp>
-#include <claragenomics/io/fasta_parser.hpp>
-#include <claragenomics/utils/signed_integer_utils.hpp>
-#include <claragenomics/version.hpp>
+#include <claraparabricks/genomeworks/cudamapper/index.hpp>
+#include <claraparabricks/genomeworks/io/fasta_parser.hpp>
+#include <claraparabricks/genomeworks/utils/signed_integer_utils.hpp>
+#include <claraparabricks/genomeworks/version.hpp>
 
 namespace claraparabricks
 {

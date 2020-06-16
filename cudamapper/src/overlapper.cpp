@@ -9,9 +9,9 @@
 */
 #include <cstdlib>
 
-#include <claragenomics/cudamapper/overlapper.hpp>
-#include <claragenomics/utils/cudautils.hpp>
-#include <claragenomics/utils/signed_integer_utils.hpp>
+#include <claraparabricks/genomeworks/cudamapper/overlapper.hpp>
+#include <claraparabricks/genomeworks/utils/cudautils.hpp>
+#include <claraparabricks/genomeworks/utils/signed_integer_utils.hpp>
 
 #include "cudamapper_utils.hpp"
 

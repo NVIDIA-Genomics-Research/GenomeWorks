@@ -18,8 +18,8 @@
 #include "cudapoa_generate_consensus.cuh"
 #include "cudapoa_generate_msa.cuh"
 
-#include <claragenomics/utils/cudautils.hpp>
-#include <claragenomics/cudapoa/batch.hpp>
+#include <claraparabricks/genomeworks/utils/cudautils.hpp>
+#include <claraparabricks/genomeworks/cudapoa/batch.hpp>
 
 namespace claraparabricks
 {
