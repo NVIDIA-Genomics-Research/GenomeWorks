@@ -14,9 +14,9 @@
 #include <cassert>
 #include <vector>
 
-#include <claragenomics/io/fasta_parser.hpp>
-#include <claragenomics/utils/cudautils.hpp>
-#include <claragenomics/utils/signed_integer_utils.hpp>
+#include <claraparabricks/genomeworks/io/fasta_parser.hpp>
+#include <claraparabricks/genomeworks/utils/cudautils.hpp>
+#include <claraparabricks/genomeworks/utils/signed_integer_utils.hpp>
 
 namespace claraparabricks
 {

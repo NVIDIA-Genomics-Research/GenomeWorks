@@ -10,7 +10,7 @@
 
 #pragma once
 
-#include <claragenomics/utils/signed_integer_utils.hpp>
+#include <claraparabricks/genomeworks/utils/signed_integer_utils.hpp>
 
 #include <string>
 #include <vector>
@@ -95,6 +95,7 @@ inline std::string parse_golden_value_file(const std::string& filename)
     std::getline(infile, line);
     return line;
 }
+
 } // namespace cudapoa
 
 } // namespace genomeworks

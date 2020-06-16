@@ -13,9 +13,9 @@
 #include "../src/ukkonen_gpu.cuh"
 #include "../src/batched_device_matrices.cuh"
 
-#include <claragenomics/utils/signed_integer_utils.hpp>
-#include <claragenomics/utils/genomeutils.hpp>
-#include <claragenomics/utils/device_buffer.hpp>
+#include <claraparabricks/genomeworks/utils/signed_integer_utils.hpp>
+#include <claraparabricks/genomeworks/utils/genomeutils.hpp>
+#include <claraparabricks/genomeworks/utils/device_buffer.hpp>
 
 #include <cuda_runtime_api.h>
 #include <random>

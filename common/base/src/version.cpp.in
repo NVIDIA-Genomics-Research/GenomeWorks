@@ -8,7 +8,7 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-#include <claragenomics/version.hpp>
+#include <claraparabricks/genomeworks/version.hpp>
 
 const std::string claraparabricks_genomeworks_version() {
     return "@CLARA_PARABRICKS_GENOMEWORKS_VERSION@";

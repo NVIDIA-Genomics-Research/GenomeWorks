@@ -35,6 +35,7 @@ get_property(cga_library_type GLOBAL PROPERTY cga_library_type)
 cuda_add_library(cudapoa ${cga_library_type}
     src/cudapoa.cpp
     src/batch.cu
+    src/utils.cu
     )
 
 target_link_libraries(cudapoa cgabase)

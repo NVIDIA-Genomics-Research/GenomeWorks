@@ -13,7 +13,7 @@
 #include "single_batch.hpp"
 #include "file_location.hpp"
 
-#include <claragenomics/utils/cudautils.hpp>
+#include <claraparabricks/genomeworks/utils/cudautils.hpp>
 
 #include <benchmark/benchmark.h>
 #include <cuda_runtime_api.h>

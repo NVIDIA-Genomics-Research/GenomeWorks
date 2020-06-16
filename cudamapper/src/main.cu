@@ -16,17 +16,17 @@
 #include <string>
 #include <thread>
 
-#include <claragenomics/utils/cudautils.hpp>
-#include <claragenomics/utils/mathutils.hpp>
-#include <claragenomics/utils/signed_integer_utils.hpp>
-#include <claragenomics/utils/threadsafe_containers.hpp>
+#include <claraparabricks/genomeworks/utils/cudautils.hpp>
+#include <claraparabricks/genomeworks/utils/mathutils.hpp>
+#include <claraparabricks/genomeworks/utils/signed_integer_utils.hpp>
+#include <claraparabricks/genomeworks/utils/threadsafe_containers.hpp>
 
-#include <claragenomics/cudaaligner/aligner.hpp>
-#include <claragenomics/cudaaligner/alignment.hpp>
+#include <claraparabricks/genomeworks/cudaaligner/aligner.hpp>
+#include <claraparabricks/genomeworks/cudaaligner/alignment.hpp>
 
-#include <claragenomics/cudamapper/index.hpp>
-#include <claragenomics/cudamapper/matcher.hpp>
-#include <claragenomics/cudamapper/overlapper.hpp>
+#include <claraparabricks/genomeworks/cudamapper/index.hpp>
+#include <claraparabricks/genomeworks/cudamapper/matcher.hpp>
+#include <claraparabricks/genomeworks/cudamapper/overlapper.hpp>
 
 #include "application_parameters.hpp"
 #include "cudamapper_utils.hpp"

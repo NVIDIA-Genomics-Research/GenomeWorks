@@ -11,10 +11,10 @@
 #include "../src/cudapoa_add_alignment.cuh" //addAlignment, CUDAPOA_MAX_NODE_EDGES, CUDAPOA_MAX_NODE_ALIGNMENTS
 #include "basic_graph.hpp"                  //BasicGraph
 
-#include <claragenomics/cudapoa/batch.hpp>
-#include <claragenomics/utils/cudautils.hpp>            //CGA_CU_CHECK_ERR
-#include <claragenomics/utils/stringutils.hpp>          //array_to_string
-#include <claragenomics/utils/signed_integer_utils.hpp> // get_size
+#include <claraparabricks/genomeworks/cudapoa/batch.hpp>
+#include <claraparabricks/genomeworks/utils/cudautils.hpp>            //CGA_CU_CHECK_ERR
+#include <claraparabricks/genomeworks/utils/stringutils.hpp>          //array_to_string
+#include <claraparabricks/genomeworks/utils/signed_integer_utils.hpp> // get_size
 
 #include "gtest/gtest.h"
 

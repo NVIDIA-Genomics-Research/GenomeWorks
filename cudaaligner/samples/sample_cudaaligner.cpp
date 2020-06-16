@@ -8,11 +8,11 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-#include <claragenomics/cudaaligner/cudaaligner.hpp>
-#include <claragenomics/cudaaligner/aligner.hpp>
-#include <claragenomics/cudaaligner/alignment.hpp>
-#include <claragenomics/utils/cudautils.hpp>
-#include <claragenomics/utils/genomeutils.hpp>
+#include <claraparabricks/genomeworks/cudaaligner/cudaaligner.hpp>
+#include <claraparabricks/genomeworks/cudaaligner/aligner.hpp>
+#include <claraparabricks/genomeworks/cudaaligner/alignment.hpp>
+#include <claraparabricks/genomeworks/utils/cudautils.hpp>
+#include <claraparabricks/genomeworks/utils/genomeutils.hpp>
 
 #include <cuda_runtime_api.h>
 #include <vector>

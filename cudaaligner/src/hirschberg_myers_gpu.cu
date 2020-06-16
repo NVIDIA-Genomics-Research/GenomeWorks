@@ -11,10 +11,10 @@
 #include "hirschberg_myers_gpu.cuh"
 #include <cassert>
 #include "batched_device_matrices.cuh"
-#include <claragenomics/cudaaligner/aligner.hpp>
-#include <claragenomics/utils/cudautils.hpp>
-#include <claragenomics/utils/mathutils.hpp>
-#include <claragenomics/utils/limits.cuh>
+#include <claraparabricks/genomeworks/cudaaligner/aligner.hpp>
+#include <claraparabricks/genomeworks/utils/cudautils.hpp>
+#include <claraparabricks/genomeworks/utils/mathutils.hpp>
+#include <claraparabricks/genomeworks/utils/limits.cuh>
 #include <cstring>
 
 namespace claraparabricks

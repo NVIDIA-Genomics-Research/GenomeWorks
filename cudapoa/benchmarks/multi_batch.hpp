@@ -10,8 +10,8 @@
 
 #include "common/utils.hpp"
 
-#include <claragenomics/cudapoa/batch.hpp>
-#include <claragenomics/utils/signed_integer_utils.hpp>
+#include <claraparabricks/genomeworks/cudapoa/batch.hpp>
+#include <claraparabricks/genomeworks/utils/signed_integer_utils.hpp>
 
 #include <future>
 #include <numeric>
