@@ -167,7 +167,6 @@ setup(name=pycga_name,
           get_verified_absolute_path(os.path.join(current_dir, 'requirements.txt'))
       ),
       packages=find_packages(where=current_dir, include=['genomeworks*']),
-      #packages=['genomeworks'],
       python_requires='>=3.5',
       license='Apache License 2.0',
       long_description='Python libraries and utilities for manipulating genomics data',

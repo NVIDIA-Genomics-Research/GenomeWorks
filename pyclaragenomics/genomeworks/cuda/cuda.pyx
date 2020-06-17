@@ -15,7 +15,7 @@
 
 """Bindings for CUDA."""
 
-cimport cuda.cuda_runtime_api as cuda_runtime
+cimport genomeworks.cuda.cuda_runtime_api as cuda_runtime
 
 
 class CudaRuntimeError(Exception):

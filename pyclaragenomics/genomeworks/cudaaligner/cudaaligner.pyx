@@ -15,16 +15,16 @@
 
 """Bindings for CUDAALIGNER."""
 
+import genomeworks.cuda as cuda
+
 from cython.operator cimport dereference as deref
 from libcpp.vector cimport vector
 from libcpp.memory cimport unique_ptr, shared_ptr
 from libcpp.string cimport string
 from libc.stdint cimport uint16_t
 
-from cuda.cuda_runtime_api cimport _Stream
-cimport cudaaligner.cudaaligner as cudaaligner
-
-from genomeworks import cuda
+from genomeworks.cuda.cuda_runtime_api cimport _Stream
+cimport genomeworks.cudaaligner.cudaaligner as cudaaligner
 
 
 def status_to_str(status):

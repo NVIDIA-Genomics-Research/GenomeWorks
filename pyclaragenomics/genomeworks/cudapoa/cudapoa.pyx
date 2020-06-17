@@ -15,19 +15,20 @@
 
 """CUDAPOA binding module."""
 
+import networkx as nx
+
+import genomeworks.cuda as cuda
+
 from cython.operator cimport dereference as deref
 from libc.stdint cimport uint16_t, int8_t, int32_t
 from libcpp.memory cimport unique_ptr, make_unique
 from libcpp.pair cimport pair
 from libcpp.string cimport string
 from libcpp.vector cimport vector
-import networkx as nx
 
-from cuda.cuda_runtime_api cimport _Stream
-from cudapoa.graph cimport DirectedGraph
-cimport cudapoa.cudapoa as cudapoa
-
-from genomeworks import cuda
+from genomeworks.cuda.cuda_runtime_api cimport _Stream
+from genomeworks.cudapoa.graph cimport DirectedGraph
+cimport genomeworks.cudapoa.cudapoa as cudapoa
 
 
 def status_to_str(status):
