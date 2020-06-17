@@ -22,5 +22,5 @@ sphinx-quickstart -p "Clara Genomics Analysis SDK" -v "$VERSION" -a "NVIDIA Corp
 sed -i '1s@^@import sys \n@' source/conf.py
 sed -i '2s@^@sys.path.insert\(0, "'$PWD'/.."\) \n@' source/conf.py
 #####
-sphinx-apidoc --implicit-namespaces -f -o source/ ../claragenomics/ ../claragenomics/bindings/*cpython* ../claragenomics/shared_libs
+sphinx-apidoc -f -o source/ ../genomeworks/ ../genomeworks/**/*cpython* ../genomeworks/shared_libs
 make html
