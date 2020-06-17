@@ -14,9 +14,9 @@
 import argparse
 import os.path
 
-from claragenomics.bindings import cuda
-from claragenomics.bindings import cudapoa
-from claragenomics.io.utils import read_poa_group_file
+from genomeworks.bindings import cuda
+from genomeworks.bindings import cudapoa
+from genomeworks.io.utils import read_poa_group_file
 
 """
 Sample program for using CUDAPOA Python API for consensus generation.

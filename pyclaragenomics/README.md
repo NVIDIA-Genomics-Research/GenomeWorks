@@ -1,4 +1,4 @@
-# pyclaragenomics
+# genomeworks
 
 Python libraries and utilities for manipulating genomics data
 
@@ -6,22 +6,22 @@ Python libraries and utilities for manipulating genomics data
 
 ### Install from PyPI
 
-A stable release of pyclaragenomics can be installed from PyPI. Currently only CUDA 10.0 and CUDA 10.1 based packages are supported.
+A stable release of genomeworks can be installed from PyPI. Currently only CUDA 10.0 and CUDA 10.1 based packages are supported.
 Both of those packages are available for CPython 3.5 and 3.6.
 
 ```
-pip install pyclaragenomics-cuda10-0
+pip install genomeworks-cuda10-0
 ```
 
 or 
 
 ```
-pip install pyclaragenomics-cuda10-1
+pip install genomeworks-cuda10-1
 ```
 
 Details of the packages are available here -
-- https://pypi.org/project/pyclaragenomics-cuda-10-0
-- https://pypi.org/project/pyclaragenomics-cuda-10-1
+- https://pypi.org/project/genomeworks-cuda-10-0
+- https://pypi.org/project/genomeworks-cuda-10-1
 
 ### Testing installation
 
@@ -35,29 +35,29 @@ python -m pytest
 ### Install from source
 ```
 pip install -r requirements.txt
-python setup_pyclaragenomics.py --build_output_folder BUILD_FOLDER
+python setup_genomeworks.py --build_output_folder BUILD_FOLDER
 ```
 
-*Note* if you are developing pyclaragenomics you should do a develop build instead, changes you make to the source code will then be picked up on immediately:
+*Note* if you are developing genomeworks you should do a develop build instead, changes you make to the source code will then be picked up on immediately:
 
 ```
 pip install -r requirements.txt
-python setup_pyclaragenomics.py --build_output_folder BUILD_FOLDER --develop
+python setup_genomeworks.py --build_output_folder BUILD_FOLDER --develop
 ```
 
 ### Create a Wheel package
 
-Use the following command in order to package pyclaragenomics into a wheel. (without installing)
+Use the following command in order to package genomeworks into a wheel. (without installing)
 
 ```
 pip install -r requirements.txt
-python setup_pyclaragenomics.py --create_wheel_only
+python setup_genomeworks.py --create_wheel_only
 ```
 
 ### Enable Doc Generation
-`pyclaragenomics` documentation generation is managed through `Sphinx`.
+`genomeworks` documentation generation is managed through `Sphinx`.
 
-NOTE: `pyclaragenomics` needs to be built completely in order for the
+NOTE: `genomeworks` needs to be built completely in order for the
 documentation to pick up docstrings for bindings.
 
 ```
