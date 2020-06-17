@@ -49,11 +49,11 @@ fi
 python setup_pyclaragenomics.py \
         --build_output_folder cga_build_wheel \
         --create_wheel_only \
-        --overwrite_package_name pyclaragenomics_cuda_"$CUDA_VERSION_FOR_PACKAGE_NAME" \
+        --overwrite_package_name genomeworks_cuda_"$CUDA_VERSION_FOR_PACKAGE_NAME" \
         --overwrite_package_version "$PYCGA_VERSION"
 
 logger "Install pyclaragenomics Wheel package..."
-yes | pip install "$PYCLARAGENOMICS_DIR"/pyclaragenomics_wheel/pyclaragenomics*.whl
+yes | pip install "$PYCLARAGENOMICS_DIR"/genomeworks_wheel/genomeworks*.whl
 
 logger "Run Tests..."
 run_tests
