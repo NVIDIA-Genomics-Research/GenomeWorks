@@ -9,11 +9,11 @@
 # distribution of this software and related documentation without an express
 # license agreement from NVIDIA CORPORATION is strictly prohibited.
 #
-"""pyclaragenomics setup script.
+"""genomeworks setup script.
 
-A script to build and install pyclaragenomics from source. More information
+A script to build and install genomeworks from source. More information
 about usage can be found by running
-    python setp_pyclaragenomics.py -h
+    python setup_genomeworks.py -h
 
 """
 
@@ -32,7 +32,7 @@ def parse_arguments():
     parser.add_argument('--create_wheel_only',
                         required=False,
                         action='store_true',
-                        help="Creates a python wheel package from pyclaragenomics (no installation)")
+                        help="Creates a python wheel package from genomeworks (no installation)")
     parser.add_argument('--develop',
                         required=False,
                         action='store_true',
@@ -97,7 +97,7 @@ class CMakeWrapper:
 
 
 def get_package_version(overwritten_package_version, cga_dir):
-    """Returns the correct version for pyclaragenomics python package.
+    """Returns the correct version for genomeworks python package.
 
     In case the user didn't overwrite the package name returns CGA version found in VERSION file otherwise,
     returns the overwritten package name
@@ -110,17 +110,17 @@ def get_package_version(overwritten_package_version, cga_dir):
 
 
 def setup_python_binding(is_develop_mode, wheel_output_folder, cga_dir, pycga_dir, cga_install_dir,
-                         pyclaragenomics_rename, pyclaragenomics_version):
-    """Setup python bindings and claragenomics modules for pyclaragenomics.
+                         genomeworks_rename, genomeworks_version):
+    """Setup python bindings and genomeworks modules for genomeworks.
 
     Args:
         is_develop_mode : Develop or install mode for installation
-        wheel_output_folder : Output directory for pyclaragenomics wheel file
+        wheel_output_folder : Output directory for genomeworks wheel file
         cga_dir : Root ClaraGenomicsAnalysis directory
-        pycga_dir : Root pyclaragenomics directory
+        pycga_dir : Root genomeworks directory
         cga_install_dir : Directory with ClaraGenomicsAnalysis SDK installation
-        pyclaragenomics_rename : rename pyclaragenomics package
-        pyclaragenomics_version : pyclaragenomics package version
+        genomeworks_rename : rename genomeworks package
+        genomeworks_version : genomeworks package version
     """
     if wheel_output_folder:
         setup_command = [
@@ -130,11 +130,11 @@ def setup_python_binding(is_develop_mode, wheel_output_folder, cga_dir, pycga_di
             '--wheel-dir', wheel_output_folder, '--no-deps'
         ]
         completion_message = \
-            "A wheel file was create for pyclaragenomics under {}".format(wheel_output_folder)
+            "A wheel file was create for genomeworks under {}".format(wheel_output_folder)
     else:
         setup_command = ['python3', '-m', 'pip', 'install'] + (['-e'] if is_develop_mode else []) + ["."]
         completion_message = \
-            "pyclaragenomics was successfully setup in {} mode!".format(
+            "genomeworks was successfully setup in {} mode!".format(
                 "development" if args.develop else "installation")
 
     subprocess.check_call(setup_command, env={
@@ -142,9 +142,9 @@ def setup_python_binding(is_develop_mode, wheel_output_folder, cga_dir, pycga_di
             **os.environ,
             'CGA_ROOT_DIR': cga_dir,
             'CGA_INSTALL_DIR': cga_install_dir,
-            'CGA_VERSION': pyclaragenomics_version
+            'CGA_VERSION': genomeworks_version
         },
-        **({} if pyclaragenomics_rename is None else {'PYCGA_RENAME': pyclaragenomics_rename})
+        **({} if genomeworks_rename is None else {'PYCGA_RENAME': genomeworks_rename})
     }, cwd=pycga_dir)
     print(completion_message)
 
@@ -161,13 +161,13 @@ if __name__ == "__main__":
                               cga_install_dir=cga_installation_directory,
                               cmake_extra_args="-Dcga_build_shared=ON")
     cmake_proj.build()
-    # Setup pyclaragenomics
+    # Setup genomeworks
     setup_python_binding(
         is_develop_mode=args.develop,
-        wheel_output_folder='pyclaragenomics_wheel/' if args.create_wheel_only else None,
+        wheel_output_folder='genomeworks_wheel/' if args.create_wheel_only else None,
         cga_dir=cga_root_dir,
         pycga_dir=current_dir,
         cga_install_dir=os.path.realpath(cga_installation_directory),
-        pyclaragenomics_rename=args.overwrite_package_name,
-        pyclaragenomics_version=get_package_version(args.overwrite_package_version, cga_root_dir)
+        genomeworks_rename=args.overwrite_package_name,
+        genomeworks_version=get_package_version(args.overwrite_package_version, cga_root_dir)
     )

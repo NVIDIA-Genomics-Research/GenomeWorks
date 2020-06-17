@@ -14,7 +14,7 @@
 import glob
 import os
 import shutil
-from setuptools import setup, Extension, find_namespace_packages
+from setuptools import setup, Extension, find_packages
 
 from Cython.Build import cythonize
 
@@ -79,19 +79,19 @@ for envvar in ['CGA_INSTALL_DIR', 'CGA_VERSION', 'CGA_ROOT_DIR']:
 cga_root_dir = os.environ['CGA_ROOT_DIR']
 cga_install_dir = os.environ['CGA_INSTALL_DIR']
 cga_version = os.environ['CGA_VERSION']
-pycga_name = os.getenv('PYCGA_RENAME', 'pyclaragenomics')
+pycga_name = os.getenv('PYCGA_RENAME', 'genomeworks')
 cuda_root = os.getenv('CUDA_TOOLKIT_ROOT_DIR', '/usr/local/cuda')
 cuda_include_path = os.path.join(cuda_root, 'include')
 cuda_library_path = os.path.join(cuda_root, 'lib64')
 
-# Get current dir (pyclaragenomics folder is copied into a temp directory created by pip)
+# Get current dir (pygenomeworks folder is copied into a temp directory created by pip)
 current_dir = os.path.dirname(os.path.realpath(__file__))
 
 
 # Copies shared libraries into clargenomics package
 copy_all_files_in_directory(
     get_verified_absolute_path(os.path.join(cga_install_dir, "lib")),
-    os.path.join(current_dir, "claragenomics", "shared_libs/"),
+    os.path.join(current_dir, "genomeworks", "shared_libs/"),
 )
 
 # Classifiers for PyPI
@@ -111,8 +111,8 @@ pycga_classifiers = [
 
 extensions = [
     Extension(
-        "claragenomics.bindings.cuda",
-        sources=[os.path.join("claragenomics/**/cuda.pyx")],
+        "genomeworks.cuda.cuda",
+        sources=[os.path.join("genomeworks/cuda/cuda.pyx")],
         include_dirs=[
             cuda_include_path,
         ],
@@ -123,8 +123,8 @@ extensions = [
         extra_compile_args=["-std=c++14"],
     ),
     Extension(
-        "claragenomics.bindings.cudapoa",
-        sources=[os.path.join("claragenomics/**/cudapoa.pyx")],
+        "genomeworks.cudapoa.cudapoa",
+        sources=[os.path.join("genomeworks/cudapoa/cudapoa.pyx")],
         include_dirs=[
             cuda_include_path,
             get_verified_absolute_path(os.path.join(cga_install_dir, "include")),
@@ -137,8 +137,8 @@ extensions = [
         extra_compile_args=["-std=c++14"],
     ),
     Extension(
-        "claragenomics.bindings.cudaaligner",
-        sources=[os.path.join("claragenomics/**/cudaaligner.pyx")],
+        "genomeworks.cudaaligner.cudaaligner",
+        sources=[os.path.join("genomeworks/cudaaligner/cudaaligner.pyx")],
         include_dirs=[
             cuda_include_path,
             get_verified_absolute_path(os.path.join(cga_install_dir, "include")),
@@ -161,12 +161,13 @@ setup(name=pycga_name,
       url="https://github.com/clara-parabricks/ClaraGenomicsAnalysis",
       include_package_data=True,
       data_files=[
-          ('cga_shared_objects', glob.glob('claragenomics/shared_libs/*.so'))
+          ('cga_shared_objects', glob.glob('genomeworks/shared_libs/*.so'))
       ],
       install_requires=get_installation_requirments(
           get_verified_absolute_path(os.path.join(current_dir, 'requirements.txt'))
       ),
-      packages=find_namespace_packages(where=current_dir, include=['claragenomics.*']),
+      packages=find_packages(where=current_dir, include=['genomeworks*']),
+      #packages=['genomeworks'],
       python_requires='>=3.5',
       license='Apache License 2.0',
       long_description='Python libraries and utilities for manipulating genomics data',

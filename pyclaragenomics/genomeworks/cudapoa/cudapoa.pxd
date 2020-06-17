@@ -25,8 +25,8 @@ from libcpp.vector cimport vector
 # be used.
 from libcpp cimport bool as c_bool
 
-from bindings.cuda_runtime_api cimport _Stream
-from bindings.graph cimport DirectedGraph
+from cuda.cuda_runtime_api cimport _Stream
+from cudapoa.graph cimport DirectedGraph
 
 # This file declares public structs and API calls
 # from the ClaraGenomicsAnalysis `cudapoa` module.

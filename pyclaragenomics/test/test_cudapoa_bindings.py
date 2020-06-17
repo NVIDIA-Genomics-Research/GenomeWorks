@@ -12,8 +12,8 @@ from difflib import SequenceMatcher
 import pytest
 import random
 
-from claragenomics.bindings.cudapoa import CudaPoaBatch
-import claragenomics.bindings.cuda as cuda
+from genomeworks.cudapoa import CudaPoaBatch
+import genomeworks.cuda as cuda
 
 
 @pytest.mark.gpu

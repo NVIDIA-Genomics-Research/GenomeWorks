@@ -10,9 +10,9 @@
 
 import pytest
 
-from claragenomics.simulators import readsim
-from claragenomics.simulators import genomesim
-from claragenomics import simulators
+from genomeworks.simulators import readsim
+from genomeworks.simulators import genomesim
+from genomeworks import simulators
 
 
 num_reads_data = [

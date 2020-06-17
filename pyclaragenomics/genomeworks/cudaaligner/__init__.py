@@ -7,4 +7,7 @@
 # distribution of this software and related documentation without an express
 # license agreement from NVIDIA CORPORATION is strictly prohibited.
 #
-"""Init file for bindings folder."""
+
+"""Init file for cudaaligner package."""
+
+from genomeworks.cudaaligner.cudaaligner import *

@@ -21,10 +21,10 @@ from libcpp.memory cimport unique_ptr, shared_ptr
 from libcpp.string cimport string
 from libc.stdint cimport uint16_t
 
-from bindings.cuda_runtime_api cimport _Stream
-from bindings cimport cudaaligner
+from cuda.cuda_runtime_api cimport _Stream
+cimport cudaaligner.cudaaligner as cudaaligner
 
-from claragenomics.bindings import cuda
+from genomeworks import cuda
 
 
 def status_to_str(status):
