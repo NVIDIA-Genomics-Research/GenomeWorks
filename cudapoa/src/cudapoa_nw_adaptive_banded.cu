@@ -161,7 +161,7 @@ template <typename ScoreT, typename SizeT>
 __device__ ScoreT get_score_adaptive(ScoreT* scores, SizeT row, SizeT column, SizeT* band_starts, SizeT* band_widths, SizeT* band_locations, SizeT max_column, const ScoreT min_score_value)
 {
     SizeT band_start = band_starts[static_cast<int64_t>(row)];
-    SizeT band_end   = band_starts[static_cast<int64_t>(row)] + band_widths[static_cast<int64_t>(row)] + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING;
+    SizeT band_end   = band_starts[static_cast<int64_t>(row)] + band_widths[static_cast<int64_t>(row)];
 
     if (((column > band_end) || (column < band_start)) && column != 0)
     {
