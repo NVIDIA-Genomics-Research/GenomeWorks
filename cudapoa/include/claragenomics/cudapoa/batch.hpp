@@ -225,7 +225,8 @@ std::unique_ptr<Batch> create_batch(int32_t device_id,
                                     int16_t gap_score,
                                     int16_t mismatch_score,
                                     int16_t match_score,
-                                    bool cuda_banded_alignment);
+                                    bool cuda_banded_alignment,
+                                    bool adaptive_banded);
 
 /// \}
 

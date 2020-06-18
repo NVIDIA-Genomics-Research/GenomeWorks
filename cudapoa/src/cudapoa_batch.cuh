@@ -59,7 +59,7 @@ class CudapoaBatch : public Batch
 public:
     CudapoaBatch(int32_t device_id, cudaStream_t stream, size_t max_mem, int8_t output_mask,
                  const BatchSize& batch_size, ScoreT gap_score = -8, ScoreT mismatch_score = -6, ScoreT match_score = 8,
-                 bool cuda_banded_alignment = false)
+                 bool cuda_banded_alignment = false, bool cuda_adaptive_banding = false)
         : max_sequences_per_poa_(throw_on_negative(batch_size.max_sequences_per_poa, "Maximum sequences per POA has to be non-negative"))
         , device_id_(throw_on_negative(device_id, "Device ID has to be non-negative"))
         , stream_(stream)
@@ -69,6 +69,7 @@ public:
         , mismatch_score_(mismatch_score)
         , match_score_(match_score)
         , banded_alignment_(cuda_banded_alignment)
+        , adaptive_banding_(cuda_adaptive_banding)
         , batch_block_(new BatchBlock<ScoreT, SizeT>(device_id,
                                                      max_mem,
                                                      output_mask,
@@ -184,6 +185,7 @@ public:
                                    mismatch_score_,
                                    match_score_,
                                    banded_alignment_,
+                                   adaptive_banding_,
                                    max_sequences_per_poa_,
                                    output_mask_,
                                    batch_size_);
@@ -619,6 +621,7 @@ protected:
 
     // Use banded POA alignment
     bool banded_alignment_;
+    bool adaptive_banding_;
 
     // Pointer of a seperate class BatchBlock that implements details on calculating and allocating the memory for each batch
     std::unique_ptr<BatchBlock<ScoreT, SizeT>> batch_block_;

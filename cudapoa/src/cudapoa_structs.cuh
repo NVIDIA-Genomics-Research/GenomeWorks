@@ -64,6 +64,8 @@ typedef struct WindowDetails
 
     /// Max column width of the score matrix required for specific window
     int32_t scores_width;
+
+    
 } WindowDetails;
 
 typedef struct OutputDetails
@@ -96,6 +98,13 @@ struct AlignmentDetails
 {
     // Device buffer for the scoring matrix for all windows.
     ScoreT* scores;
+    /// Buffer for storing per row band start location in absolute score matrix for adaptive banding
+    SizeT* band_starts;
+    /// Buffer for storing per row band widths for adaptive banding
+    SizeT* band_widths;
+    /// Buffer for storing per row band start location in this score matrix for adaptive banding
+    SizeT* band_locations;
+    
 
     // preallocated size of scores buffer
     size_t scorebuf_alloc_size = 0;

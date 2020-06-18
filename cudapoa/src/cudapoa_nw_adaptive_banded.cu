@@ -26,6 +26,37 @@ namespace cudapoa
 {
 
 
+template <typename SizeT>
+__device__ void set_placeholder_band_values(float gradient, SizeT dummy_band_width, SizeT* band_starts, SizeT* band_widths, SizeT* band_locations, SizeT max_row, SizeT max_column)
+{
+    for(SizeT row_idx = static_cast<SizeT>(0); row_idx < max_row; row_idx++)
+    {
+        SizeT start_pos = SizeT(row_idx * gradient) - dummy_band_width / 2;
+
+        start_pos = max(start_pos, static_cast<SizeT>(0));
+
+        SizeT end_pos = start_pos + dummy_band_width;
+
+        if (end_pos > max_column)
+        {
+            start_pos = max_column - dummy_band_width + CELLS_PER_THREAD;
+        };
+
+        start_pos = max(start_pos, static_cast<SizeT>(0));
+
+        start_pos = start_pos - (start_pos % CELLS_PER_THREAD);
+        band_starts[static_cast<int64_t>(row_idx)] = start_pos;
+        band_widths[static_cast<int64_t>(row_idx)] = dummy_band_width;
+        if(row_idx == static_cast<SizeT>(0))
+            band_locations[static_cast<int64_t>(row_idx)] = 0;
+        else
+        {
+            band_locations[static_cast<int64_t>(row_idx)] = band_locations[static_cast<int64_t>(row_idx-1)] + dummy_band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING;
+        }
+        
+    }
+}
+
 
 /**
  * @brief Device function for getting the address of an element specified by (row, column) in the score matrix 
@@ -48,15 +79,15 @@ __device__ ScoreT* get_score_ptr_adaptive(ScoreT* scores, SizeT row, SizeT colum
 
     SizeT band_start = band_starts[static_cast<int64_t>(row)];
 
-    SizeT col_idx;
+    SizeT col_offset;
 
     if (column == 0)
     {
-        col_idx = 0;
+        col_offset = 0;
     }
     else
     {
-        col_idx = column - band_start;
+        col_offset = column - band_start;
     }
 
     int64_t score_index = static_cast<int64_t>(col_offset) + static_cast<int64_t>(band_locations[static_cast<int64_t>(row)]);
@@ -148,7 +179,6 @@ __device__ ScoreT4<ScoreT> get_scores_adaptive(SizeT read_pos,
                                       SizeT node,
                                       ScoreT gap_score,
                                       ScoreT4<ScoreT> char_profile,
-                                      float gradient,
                                       SizeT* band_starts,
                                       SizeT* band_widths,
                                       SizeT* band_locations,
@@ -174,7 +204,7 @@ __device__ ScoreT4<ScoreT> get_scores_adaptive(SizeT read_pos,
     }
     else
     {
-        ScoreT4<ScoreT>* pred_scores = (ScoreT4<ScoreT>*)get_score_ptr(scores, node, read_pos, band_starts, band_widths, band_locations, max_column);
+        ScoreT4<ScoreT>* pred_scores = (ScoreT4<ScoreT>*)get_score_ptr_adaptive(scores, node, read_pos, band_starts, band_widths, band_locations, max_column);
 
         // loads 8 consecutive bytes (4 shorts)
         ScoreT4<ScoreT> score4 = pred_scores[0];
@@ -202,7 +232,7 @@ template <typename SeqT,
           typename SizeT>
 __device__
     SizeT
-    runNeedlemanWunschBanded(SeqT* nodes,
+    runNeedlemanWunschAdaptiveBanded(SeqT* nodes,
                              SizeT* graph,
                              SizeT* node_id_to_pos,
                              SizeT graph_count,
@@ -219,7 +249,8 @@ __device__
                              SizeT* band_locations,
                              ScoreT gap_score,
                              ScoreT mismatch_score,
-                             ScoreT match_score)
+                             ScoreT match_score,
+                             SizeT dummy_band_width)
 {
 
     CGA_CONSTEXPR ScoreT score_type_min_limit = numeric_limits<ScoreT>::min();
@@ -235,6 +266,12 @@ __device__
 
     // SizeT max_matrix_sequence_dimension = band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING;
     SizeT max_matrix_sequence_dimension = max_column;
+    float gradient = float(read_length + 1) / float(graph_count + 1);
+    if(lane_idx == 0)
+    {
+        // dummy function to be replaced by bw calculator; Sets values per defined gradient
+        set_placeholder_band_values(gradient, dummy_band_width, band_starts, band_widths, band_locations, graph_count, max_column);
+    }
 
     // Initialise the horizontal boundary of the score matrix
     for (SizeT j = lane_idx; j < max_matrix_sequence_dimension; j += WARP_SIZE)

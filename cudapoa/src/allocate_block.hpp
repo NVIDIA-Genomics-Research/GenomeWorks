@@ -47,11 +47,12 @@ template <typename ScoreT, typename SizeT>
 class BatchBlock
 {
 public:
-    BatchBlock(int32_t device_id, size_t avail_mem, int8_t output_mask, const BatchSize& batch_size, bool banded_alignment = false)
+    BatchBlock(int32_t device_id, size_t avail_mem, int8_t output_mask, const BatchSize& batch_size, bool banded_alignment = false, bool adaptive_banded = true)
         : max_sequences_per_poa_(throw_on_negative(batch_size.max_sequences_per_poa, "Maximum sequences per POA has to be non-negative"))
         , banded_alignment_(banded_alignment)
         , device_id_(throw_on_negative(device_id, "Device ID has to be non-negative"))
         , output_mask_(output_mask)
+        , adaptive_banded_(adaptive_banded)
     {
         scoped_device_switch dev(device_id_);
 
@@ -194,6 +195,15 @@ public:
         offset_d_ += cudautils::align<int64_t, 8>(sizeof(*alignment_details_d->alignment_graph) * max_graph_dimension_ * max_poas_);
         alignment_details_d->alignment_read = reinterpret_cast<decltype(alignment_details_d->alignment_read)>(&block_data_d_[offset_d_]);
         offset_d_ += cudautils::align<int64_t, 8>(sizeof(*alignment_details_d->alignment_read) * max_graph_dimension_ * max_poas_);
+        if(adaptive_banded_){
+        alignment_details_d->band_starts = reinterpret_cast<decltype(alignment_details_d->band_starts)>(&block_data_d_[offset_d_]);
+        offset_d_ += cudautils::align<int64_t, 8>(sizeof(*alignment_details_d->band_starts) * max_nodes_per_window_ * max_poas_);
+        alignment_details_d->band_widths = reinterpret_cast<decltype(alignment_details_d->band_widths)>(&block_data_d_[offset_d_]);
+        offset_d_ += cudautils::align<int64_t, 8>(sizeof(*alignment_details_d->band_widths) * max_nodes_per_window_ * max_poas_);
+        alignment_details_d->band_locations = reinterpret_cast<decltype(alignment_details_d->band_locations)>(&block_data_d_[offset_d_]);
+        offset_d_ += cudautils::align<int64_t, 8>(sizeof(*alignment_details_d->band_locations) * max_nodes_per_window_ * max_poas_);
+        }
+        
 
         // rest of the available memory is assigned to scores buffer
         alignment_details_d->scorebuf_alloc_size = total_d_ - offset_d_;
@@ -370,6 +380,9 @@ protected:
         // for alignment - device
         device_size_per_poa += sizeof(*AlignmentDetails<ScoreT, SizeT>::alignment_graph) * max_graph_dimension_ * poa_count; // alignment_details_d_->alignment_graph
         device_size_per_poa += sizeof(*AlignmentDetails<ScoreT, SizeT>::alignment_read) * max_graph_dimension_ * poa_count;  // alignment_details_d_->alignment_read
+        device_size_per_poa += adaptive_banded_ ? sizeof(*AlignmentDetails<ScoreT,SizeT>::band_starts)*max_nodes_per_window_*poa_count:0; // alignment_details_d_->band_starts
+        device_size_per_poa += adaptive_banded_ ? sizeof(*AlignmentDetails<ScoreT,SizeT>::band_widths)*max_nodes_per_window_*poa_count:0; // alignment_details_d_->band_widths
+        device_size_per_poa += adaptive_banded_ ? sizeof(*AlignmentDetails<ScoreT,SizeT>::band_locations)*max_nodes_per_window_*poa_count:0; // alignment_details_d_->band_locations
 
         return std::make_tuple(host_size_fixed, device_size_fixed, host_size_per_poa, device_size_per_poa);
     }
@@ -383,6 +396,7 @@ protected:
 
     // Use banded POA alignment
     bool banded_alignment_;
+    bool adaptive_banded_;
 
     // Pointer for block data on host and device
     uint8_t* block_data_h_;

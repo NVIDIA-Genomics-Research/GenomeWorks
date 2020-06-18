@@ -52,7 +52,7 @@ std::unique_ptr<Batch> initialize_batch(bool msa, bool banded_alignment, const B
                                                 gap_score,
                                                 mismatch_score,
                                                 match_score,
-                                                banded_alignment);
+                                                banded_alignment, false);
 
     return std::move(batch);
 }
