@@ -24,7 +24,7 @@
 using namespace claraparabricks::genomeworks;
 using namespace claraparabricks::genomeworks::cudapoa;
 
-std::unique_ptr<Batch> initialize_batch(bool msa, bool banded_alignment, const BatchSize& batch_size)
+std::unique_ptr<Batch> initialize_batch(bool msa, bool banded_alignment, bool adaptive_banded,const BatchSize& batch_size)
 {
     // Get device information.
     int32_t device_count = 0;
@@ -52,7 +52,7 @@ std::unique_ptr<Batch> initialize_batch(bool msa, bool banded_alignment, const B
                                                 gap_score,
                                                 mismatch_score,
                                                 match_score,
-                                                banded_alignment, false);
+                                                banded_alignment, adaptive_banded);
 
     return std::move(batch);
 }
@@ -150,8 +150,9 @@ int main(int argc, char** argv)
     bool help        = false;
     bool print       = false;
     bool print_graph = false;
+    bool adaptive = false;
 
-    while ((c = getopt(argc, argv, "mlfpgh")) != -1)
+    while ((c = getopt(argc, argv, "mlfpgha")) != -1)
     {
         switch (c)
         {
@@ -173,6 +174,10 @@ int main(int argc, char** argv)
         case 'h':
             help = true;
             break;
+        case 'a':
+            adaptive = true;
+            break;
+        
         }
     }
 
@@ -206,11 +211,11 @@ int main(int argc, char** argv)
     else
     {
         const std::string input_file = std::string(CUDAPOA_BENCHMARK_DATA_DIR) + "/sample-windows.txt";
-        generate_window_data(input_file, 1000, 100, windows, batch_size);
+        generate_window_data(input_file, 1, 100, windows, batch_size);
     }
 
     // Initialize batch.
-    std::unique_ptr<Batch> batch = initialize_batch(msa, banded, batch_size);
+    std::unique_ptr<Batch> batch = initialize_batch(msa, banded, adaptive, batch_size);
 
     // Loop over all the POA groups, add them to the batch and process them.
     int32_t window_count = 0;

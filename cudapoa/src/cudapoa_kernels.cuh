@@ -658,6 +658,7 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
                                                                     band_starts,
                                                                     band_widths,
                                                                     band_locations);
+            //std::cout<<"HEAR YE: "<<cuda_adaptive_banding<<std::endl;
             CGA_CU_CHECK_ERR(cudaPeekAtLastError());
 
             generateConsensusKernel<false, SizeT>
