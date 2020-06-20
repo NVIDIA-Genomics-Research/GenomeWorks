@@ -55,6 +55,7 @@ void myers_banded_gpu(int8_t* paths_d, int32_t* path_lengths_d, int32_t max_path
                       int32_t const* sequence_lengths_d,
                       int32_t max_sequence_length,
                       int32_t n_alignments,
+                      int32_t max_bandwidth,
                       batched_device_matrices<myers::WordType>& pv,
                       batched_device_matrices<myers::WordType>& mv,
                       batched_device_matrices<int32_t>& score,

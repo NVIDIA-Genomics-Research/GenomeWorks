@@ -47,6 +47,10 @@ template <typename T>
 class device_matrix_view
 {
 public:
+    __device__ device_matrix_view()
+    {
+    }
+
     __device__ device_matrix_view(T* storage, int32_t n_rows, int32_t n_cols)
         : data_(storage)
         , n_rows_(n_rows)

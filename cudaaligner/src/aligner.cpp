@@ -17,6 +17,7 @@
 #include <claraparabricks/genomeworks/cudaaligner/aligner.hpp>
 
 #include "aligner_global_hirschberg_myers.hpp"
+#include "aligner_global_myers_banded.hpp"
 
 namespace claraparabricks
 {
@@ -68,6 +69,12 @@ std::unique_ptr<Aligner> create_aligner(
 #endif
     return create_aligner(max_query_length, max_target_length, max_alignments, type, allocator, stream, device_id);
 }
+
+int64_t calc_memory_requirement_per_alignment(int32_t max_sequence_length, int32_t max_bandwidth)
+{
+    return AlignerGlobalMyersBanded::calc_memory_requirement_per_alignment(max_sequence_length, max_bandwidth);
+}
+
 } // namespace cudaaligner
 
 } // namespace genomeworks
