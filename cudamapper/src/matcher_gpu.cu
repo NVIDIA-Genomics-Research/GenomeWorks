@@ -16,12 +16,15 @@
 #include <thrust/transform_scan.h>
 #include <thrust/execution_policy.h>
 
-#include <claragenomics/utils/cudasort.cuh>
-#include <claragenomics/utils/cudautils.hpp>
-#include <claragenomics/utils/mathutils.hpp>
-#include <claragenomics/utils/signed_integer_utils.hpp>
+#include <claraparabricks/genomeworks/utils/cudasort.cuh>
+#include <claraparabricks/genomeworks/utils/cudautils.hpp>
+#include <claraparabricks/genomeworks/utils/mathutils.hpp>
+#include <claraparabricks/genomeworks/utils/signed_integer_utils.hpp>
 
-namespace claragenomics
+namespace claraparabricks
+{
+
+namespace genomeworks
 {
 
 namespace cudamapper
@@ -71,7 +74,7 @@ MatcherGPU::MatcherGPU(DefaultDeviceAllocator allocator,
     const int64_t n_anchors = cudautils::get_value_from_device(anchor_starting_indices_d.end() - 1,
                                                                cuda_stream); // D2H transfer
 
-    anchors_d_.resize(n_anchors);
+    anchors_d_.clear_and_resize(n_anchors);
 
     // Generate the anchors
     // by computing the all-to-all combinations of the matching representations in query and target
@@ -213,7 +216,7 @@ __global__ void generate_anchors_kernel(
     assert(query_idx < query_starting_index_of_each_representation_d[representation_idx + 1]);
 
     // Generate and store the anchor
-    claragenomics::cudamapper::Anchor a;
+    genomeworks::cudamapper::Anchor a;
     a.query_read_id_           = query_read_ids[query_idx];
     a.target_read_id_          = target_read_ids[target_idx];
     a.query_position_in_read_  = query_positions_in_read[query_idx];
@@ -265,8 +268,8 @@ void generate_anchors(
     const device_buffer<position_in_read_t>& query_positions_in_read                  = query_index.positions_in_reads();
 
     const device_buffer<std::uint32_t>& target_starting_index_of_each_representation_d = target_index.first_occurrence_of_representations();
-    const device_buffer<claragenomics::read_id_t>& target_read_ids                     = target_index.read_ids();
-    const device_buffer<claragenomics::position_in_read_t>& target_positions_in_read   = target_index.positions_in_reads();
+    const device_buffer<genomeworks::read_id_t>& target_read_ids                       = target_index.read_ids();
+    const device_buffer<genomeworks::position_in_read_t>& target_positions_in_read     = target_index.positions_in_reads();
 
     assert(anchor_starting_indices_d.size() + 1 == query_starting_index_of_each_representation_d.size());
     assert(found_target_indices_d.size() + 1 == query_starting_index_of_each_representation_d.size());
@@ -282,7 +285,7 @@ void generate_anchors(
     {
         CGA_NVTX_RANGE(profile, "matcherGPU::generate_anchors_kernel");
         const int32_t n_threads = 256;
-        const int32_t n_blocks  = claragenomics::ceiling_divide<int64_t>(get_size(anchors), n_threads);
+        const int32_t n_blocks  = genomeworks::ceiling_divide<int64_t>(get_size(anchors), n_threads);
         generate_anchors_kernel<<<n_blocks, n_threads, 0, cuda_stream>>>(
             anchors.data(),
             compound_key_read_ids.data(),
@@ -475,6 +478,9 @@ __global__ void find_query_target_matches_kernel(
 } // namespace matcher_gpu
 
 } // namespace details
+
 } // namespace cudamapper
 
-} // namespace claragenomics
+} // namespace genomeworks
+
+} // namespace claraparabricks

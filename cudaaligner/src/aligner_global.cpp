@@ -11,17 +11,20 @@
 #include "aligner_global.hpp"
 #include "alignment_impl.hpp"
 
-#include <claragenomics/utils/signed_integer_utils.hpp>
-#include <claragenomics/utils/cudautils.hpp>
-#include <claragenomics/utils/mathutils.hpp>
-#include <claragenomics/utils/genomeutils.hpp>
-#include <claragenomics/logging/logging.hpp>
+#include <claraparabricks/genomeworks/utils/signed_integer_utils.hpp>
+#include <claraparabricks/genomeworks/utils/cudautils.hpp>
+#include <claraparabricks/genomeworks/utils/mathutils.hpp>
+#include <claraparabricks/genomeworks/utils/genomeutils.hpp>
+#include <claraparabricks/genomeworks/logging/logging.hpp>
 
 #include <cstring>
 #include <algorithm>
 #include <cuda_runtime_api.h>
 
-namespace claragenomics
+namespace claraparabricks
+{
+
+namespace genomeworks
 {
 
 namespace cudaaligner
@@ -192,4 +195,7 @@ void AlignerGlobal::reset()
     alignments_.clear();
 }
 } // namespace cudaaligner
-} // namespace claragenomics
+
+} // namespace genomeworks
+
+} // namespace claraparabricks

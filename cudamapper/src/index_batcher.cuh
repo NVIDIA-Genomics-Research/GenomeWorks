@@ -15,10 +15,14 @@
 #include "index_cache.cuh"
 #include "index_descriptor.hpp"
 
-#include <claragenomics/io/fasta_parser.hpp>
+#include <claraparabricks/genomeworks/io/fasta_parser.hpp>
 
-namespace claragenomics
+namespace claraparabricks
 {
+
+namespace genomeworks
+{
+
 namespace cudamapper
 {
 
@@ -99,14 +103,15 @@ std::vector<BatchOfIndices> generate_batches_of_indices(number_of_indices_t quer
                                                         number_of_indices_t query_indices_per_device_batch,
                                                         number_of_indices_t target_indices_per_host_batch,
                                                         number_of_indices_t target_indices_per_device_batch,
-                                                        const std::shared_ptr<const claragenomics::io::FastaParser> query_parser,
-                                                        const std::shared_ptr<const claragenomics::io::FastaParser> target_parser,
+                                                        const std::shared_ptr<const genomeworks::io::FastaParser> query_parser,
+                                                        const std::shared_ptr<const genomeworks::io::FastaParser> target_parser,
                                                         number_of_basepairs_t query_basepairs_per_index,
                                                         number_of_basepairs_t target_basepairs_per_index,
                                                         bool same_query_and_target);
 
 namespace details
 {
+
 namespace index_batcher
 {
 
@@ -127,7 +132,11 @@ std::vector<IndexBatch> group_into_batches(const std::vector<IndexDescriptor>& q
                                            bool same_query_and_target);
 
 } // namespace index_batcher
+
 } // namespace details
 
 } // namespace cudamapper
-} // namespace claragenomics
+
+} // namespace genomeworks
+
+} // namespace claraparabricks

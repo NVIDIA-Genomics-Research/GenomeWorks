@@ -8,11 +8,15 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-#include <claragenomics/cudamapper/matcher.hpp>
+#include <claraparabricks/genomeworks/cudamapper/matcher.hpp>
 #include "matcher_gpu.cuh"
 
-namespace claragenomics
+namespace claraparabricks
 {
+
+namespace genomeworks
+{
+
 namespace cudamapper
 {
 
@@ -28,4 +32,7 @@ std::unique_ptr<Matcher> Matcher::create_matcher(DefaultDeviceAllocator allocato
 }
 
 } // namespace cudamapper
-} // namespace claragenomics
+
+} // namespace genomeworks
+
+} // namespace claraparabricks

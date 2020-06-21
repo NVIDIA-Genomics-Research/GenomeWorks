@@ -20,18 +20,22 @@
 #include <thrust/transform.h>
 #include <thrust/transform_scan.h>
 
-#include <claragenomics/cudamapper/index.hpp>
-#include <claragenomics/cudamapper/types.hpp>
-#include <claragenomics/io/fasta_parser.hpp>
-#include <claragenomics/logging/logging.hpp>
-#include <claragenomics/utils/device_buffer.hpp>
-#include <claragenomics/utils/mathutils.hpp>
-#include <claragenomics/utils/signed_integer_utils.hpp>
+#include <claraparabricks/genomeworks/cudamapper/index.hpp>
+#include <claraparabricks/genomeworks/cudamapper/types.hpp>
+#include <claraparabricks/genomeworks/io/fasta_parser.hpp>
+#include <claraparabricks/genomeworks/logging/logging.hpp>
+#include <claraparabricks/genomeworks/utils/device_buffer.hpp>
+#include <claraparabricks/genomeworks/utils/mathutils.hpp>
+#include <claraparabricks/genomeworks/utils/signed_integer_utils.hpp>
 
 #include "index_host_copy.cuh"
 
-namespace claragenomics
+namespace claraparabricks
 {
+
+namespace genomeworks
+{
+
 namespace cudamapper
 {
 /// IndexGPU - Contains sketch elements grouped by representation and by read id within the representation
@@ -153,6 +157,7 @@ private:
 
 namespace details
 {
+
 namespace index_gpu
 {
 /// \brief Creates compressed representation of index
@@ -536,6 +541,7 @@ void filter_out_most_common_representations(DefaultDeviceAllocator allocator,
 }
 
 } // namespace index_gpu
+
 } // namespace details
 
 template <typename SketchElementImpl>
@@ -593,33 +599,27 @@ IndexGPU<SketchElementImpl>::IndexGPU(DefaultDeviceAllocator allocator,
     number_of_basepairs_in_longest_read_ = index_host_copy.number_of_basepairs_in_longest_read();
 
     //H2D- representations_d_ = index_host_copy.representations();
-    representations_d_.resize(index_host_copy.representations().size());
-    representations_d_.shrink_to_fit();
+    representations_d_.clear_and_resize(index_host_copy.representations().size());
     cudautils::device_copy_n(index_host_copy.representations().data(), index_host_copy.representations().size(), representations_d_.data(), cuda_stream);
 
     //H2D- read_ids_d_ = index_host_copy.read_ids();
-    read_ids_d_.resize(index_host_copy.read_ids().size());
-    read_ids_d_.shrink_to_fit();
+    read_ids_d_.clear_and_resize(index_host_copy.read_ids().size());
     cudautils::device_copy_n(index_host_copy.read_ids().data(), index_host_copy.read_ids().size(), read_ids_d_.data(), cuda_stream);
 
     //H2D- positions_in_reads_d_ = index_host_copy.positions_in_reads();
-    positions_in_reads_d_.resize(index_host_copy.positions_in_reads().size());
-    positions_in_reads_d_.shrink_to_fit();
+    positions_in_reads_d_.clear_and_resize(index_host_copy.positions_in_reads().size());
     cudautils::device_copy_n(index_host_copy.positions_in_reads().data(), index_host_copy.positions_in_reads().size(), positions_in_reads_d_.data(), cuda_stream);
 
     //H2D- directions_of_reads_d_ = index_host_copy.directions_of_reads();
-    directions_of_reads_d_.resize(index_host_copy.directions_of_reads().size());
-    directions_of_reads_d_.shrink_to_fit();
+    directions_of_reads_d_.clear_and_resize(index_host_copy.directions_of_reads().size());
     cudautils::device_copy_n(index_host_copy.directions_of_reads().data(), index_host_copy.directions_of_reads().size(), directions_of_reads_d_.data(), cuda_stream);
 
     //H2D- unique_representations_d_ = index_host_copy.unique_representations();
-    unique_representations_d_.resize(index_host_copy.unique_representations().size());
-    unique_representations_d_.shrink_to_fit();
+    unique_representations_d_.clear_and_resize(index_host_copy.unique_representations().size());
     cudautils::device_copy_n(index_host_copy.unique_representations().data(), index_host_copy.unique_representations().size(), unique_representations_d_.data(), cuda_stream);
 
     //H2D- first_occurrence_of_representations_d_ = index_host_copy.first_occurrence_of_representations();
-    first_occurrence_of_representations_d_.resize(index_host_copy.first_occurrence_of_representations().size());
-    first_occurrence_of_representations_d_.shrink_to_fit();
+    first_occurrence_of_representations_d_.clear_and_resize(index_host_copy.first_occurrence_of_representations().size());
     cudautils::device_copy_n(index_host_copy.first_occurrence_of_representations().data(), index_host_copy.first_occurrence_of_representations().size(), first_occurrence_of_representations_d_.data(), cuda_stream);
 
     // This is not completely necessary, but if removed one has to make sure that the next step
@@ -809,12 +809,9 @@ void IndexGPU<SketchElementImpl>::generate_index(const io::FastaParser& parser,
 
     representations_d_ = std::move(generated_representations_d);
 
-    read_ids_d_.resize(representations_d_.size());
-    read_ids_d_.shrink_to_fit();
-    positions_in_reads_d_.resize(representations_d_.size());
-    positions_in_reads_d_.shrink_to_fit();
-    directions_of_reads_d_.resize(representations_d_.size());
-    directions_of_reads_d_.shrink_to_fit();
+    read_ids_d_.clear_and_resize(representations_d_.size());
+    positions_in_reads_d_.clear_and_resize(representations_d_.size());
+    directions_of_reads_d_.clear_and_resize(representations_d_.size());
 
     const std::uint32_t threads = 256;
     const std::uint32_t blocks  = ceiling_divide<int64_t>(representations_d_.size(), threads);
@@ -847,4 +844,7 @@ void IndexGPU<SketchElementImpl>::generate_index(const io::FastaParser& parser,
 }
 
 } // namespace cudamapper
-} // namespace claragenomics
+
+} // namespace genomeworks
+
+} // namespace claraparabricks

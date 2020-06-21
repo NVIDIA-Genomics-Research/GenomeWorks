@@ -11,12 +11,18 @@
 #include "index_gpu.cuh"
 #include <thrust/transform_scan.h>
 
-namespace claragenomics
+namespace claraparabricks
 {
+
+namespace genomeworks
+{
+
 namespace cudamapper
 {
+
 namespace details
 {
+
 namespace index_gpu
 {
 void find_first_occurrences_of_representations(DefaultDeviceAllocator allocator,
@@ -56,10 +62,8 @@ void find_first_occurrences_of_representations(DefaultDeviceAllocator allocator,
 
     const std::uint64_t number_of_unique_representations = cudautils::get_value_from_device(representation_index_mask_d.end() - 1, cuda_stream); // D2H copy
 
-    first_occurrence_index_d.resize(number_of_unique_representations + 1); // <- +1 for the additional element
-    first_occurrence_index_d.shrink_to_fit();
-    unique_representations_d.resize(number_of_unique_representations);
-    unique_representations_d.shrink_to_fit();
+    first_occurrence_index_d.clear_and_resize(number_of_unique_representations + 1); // <- +1 for the additional element
+    unique_representations_d.clear_and_resize(number_of_unique_representations);
 
     find_first_occurrences_of_representations_kernel<<<number_of_blocks, number_of_threads, 0, cuda_stream>>>(representation_index_mask_d.data(),
                                                                                                               input_representations_d.data(),
@@ -134,7 +138,11 @@ __global__ void compress_unique_representations_after_filtering_kernel(const std
 }
 
 } // namespace index_gpu
+
 } // namespace details
 
 } // namespace cudamapper
-} // namespace claragenomics
+
+} // namespace genomeworks
+
+} // namespace claraparabricks

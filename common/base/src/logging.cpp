@@ -8,13 +8,17 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-#include <claragenomics/logging/logging.hpp>
+#include <claraparabricks/genomeworks/logging/logging.hpp>
 
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/sinks/stdout_sinks.h>
 
-namespace claragenomics
+namespace claraparabricks
 {
+
+namespace genomeworks
+{
+
 namespace logging
 {
 static std::shared_ptr<spdlog::logger> logger = nullptr;
@@ -78,4 +82,7 @@ LoggingStatus SetHeader(bool logTime, bool logLocation)
     return LoggingStatus::success;
 }
 } // namespace logging
-} // namespace claragenomics
+
+} // namespace genomeworks
+
+} // namespace claraparabricks

@@ -8,11 +8,14 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-#include <claragenomics/utils/graph.hpp>
+#include <claraparabricks/genomeworks/utils/graph.hpp>
 
 #include "gtest/gtest.h"
 
-namespace claragenomics
+namespace claraparabricks
+{
+
+namespace genomeworks
 {
 
 TEST(GraphTest, DirectedGraph)
@@ -74,4 +77,6 @@ TEST(GraphTest, UndirectedGraph)
     EXPECT_NE(std::find(adjacent_nodes_to_3.begin(), adjacent_nodes_to_3.end(), 2), adjacent_nodes_to_3.end());
 }
 
-} // namespace claragenomics
+} // namespace genomeworks
+
+} // namespace claraparabricks

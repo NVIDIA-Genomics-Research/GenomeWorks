@@ -8,11 +8,11 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-#include <claragenomics/cudaaligner/cudaaligner.hpp>
-#include <claragenomics/cudaaligner/aligner.hpp>
-#include <claragenomics/cudaaligner/alignment.hpp>
-#include <claragenomics/utils/cudautils.hpp>
-#include <claragenomics/utils/genomeutils.hpp>
+#include <claraparabricks/genomeworks/cudaaligner/cudaaligner.hpp>
+#include <claraparabricks/genomeworks/cudaaligner/aligner.hpp>
+#include <claraparabricks/genomeworks/cudaaligner/alignment.hpp>
+#include <claraparabricks/genomeworks/utils/cudautils.hpp>
+#include <claraparabricks/genomeworks/utils/genomeutils.hpp>
 
 #include <cuda_runtime_api.h>
 #include <vector>
@@ -21,14 +21,14 @@
 #include <iostream>
 #include <random>
 
-using namespace claragenomics;
-using namespace claragenomics::genomeutils;
-using namespace claragenomics::cudaaligner;
+using namespace claraparabricks::genomeworks;
+using namespace claraparabricks::genomeworks::genomeutils;
+using namespace claraparabricks::genomeworks::cudaaligner;
 
 std::unique_ptr<Aligner> initialize_batch(int32_t max_query_size,
                                           int32_t max_target_size,
                                           int32_t max_alignments_per_batch,
-                                          claragenomics::DefaultDeviceAllocator allocator)
+                                          DefaultDeviceAllocator allocator)
 {
     // Get device information.
     int32_t device_count = 0;
@@ -101,8 +101,8 @@ int main(int argc, char** argv)
     const int32_t target_length = 15000;
     const uint32_t num_entries  = 1000;
 
-    const std::size_t max_gpu_memory                = claragenomics::cudautils::find_largest_contiguous_device_memory_section();
-    claragenomics::DefaultDeviceAllocator allocator = create_default_device_allocator(max_gpu_memory);
+    const std::size_t max_gpu_memory = cudautils::find_largest_contiguous_device_memory_section();
+    DefaultDeviceAllocator allocator = create_default_device_allocator(max_gpu_memory);
 
     std::cout << "Running pairwise alignment for " << num_entries << " pairs..." << std::endl;
 

@@ -13,6 +13,11 @@ project(cudamapper)
 # Process data subdirectory first
 add_subdirectory(data)
 
+GitVersion()
+
+configure_file(${CMAKE_SOURCE_DIR}/common/base/src/version.cpp.in
+                ${CMAKE_CURRENT_BINARY_DIR}/version.cpp)
+
 find_package(CUDA 9.0 QUIET REQUIRED)
 
 if(NOT ${CUDA_FOUND})
@@ -32,6 +37,7 @@ else()
 endif()
 
 cuda_add_library(cudamapper
+        src/application_parameters.cpp
         src/cudamapper.cpp
         src/index_batcher.cu
         src/index_descriptor.cpp
@@ -44,7 +50,8 @@ cuda_add_library(cudamapper
         src/matcher_gpu.cu
         src/cudamapper_utils.cpp
         src/overlapper.cpp
-        src/overlapper_triggered.cu)
+        src/overlapper_triggered.cu
+        ${CMAKE_CURRENT_BINARY_DIR}/version.cpp)
 
 target_include_directories(cudamapper
     PUBLIC

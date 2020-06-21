@@ -12,14 +12,17 @@
 
 #include "ukkonen_gpu.cuh"
 
-#include <claragenomics/cudaaligner/aligner.hpp>
-#include <claragenomics/utils/allocator.hpp>
-#include <claragenomics/utils/signed_integer_utils.hpp>
-#include <claragenomics/utils/device_buffer.hpp>
+#include <claraparabricks/genomeworks/cudaaligner/aligner.hpp>
+#include <claraparabricks/genomeworks/utils/allocator.hpp>
+#include <claraparabricks/genomeworks/utils/signed_integer_utils.hpp>
+#include <claraparabricks/genomeworks/utils/device_buffer.hpp>
 
 #include <thrust/system/cuda/experimental/pinned_allocator.h>
 
-namespace claragenomics
+namespace claraparabricks
+{
+
+namespace genomeworks
 {
 
 namespace cudaaligner
@@ -88,4 +91,7 @@ private:
 };
 
 } // namespace cudaaligner
-} // namespace claragenomics
+
+} // namespace genomeworks
+
+} // namespace claraparabricks

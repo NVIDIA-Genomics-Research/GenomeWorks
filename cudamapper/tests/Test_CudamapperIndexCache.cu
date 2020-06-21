@@ -17,12 +17,16 @@
 
 #include "cudamapper_file_location.hpp"
 
-#include <claragenomics/utils/signed_integer_utils.hpp>
-#include <claragenomics/cudamapper/index.hpp>
-#include <claragenomics/io/fasta_parser.hpp>
+#include <claraparabricks/genomeworks/utils/signed_integer_utils.hpp>
+#include <claraparabricks/genomeworks/cudamapper/index.hpp>
+#include <claraparabricks/genomeworks/io/fasta_parser.hpp>
 
-namespace claragenomics
+namespace claraparabricks
 {
+
+namespace genomeworks
+{
+
 namespace cudamapper
 {
 
@@ -1291,4 +1295,7 @@ TEST(TestCudamapperIndexCaching, test_index_cache_device_not_the_same_query_and_
 }
 
 } // namespace cudamapper
-} // namespace claragenomics
+
+} // namespace genomeworks
+
+} // namespace claraparabricks

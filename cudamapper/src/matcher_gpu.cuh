@@ -10,11 +10,14 @@
 
 #pragma once
 
-#include <claragenomics/cudamapper/matcher.hpp>
-#include <claragenomics/cudamapper/types.hpp>
-#include <claragenomics/utils/device_buffer.hpp>
+#include <claraparabricks/genomeworks/cudamapper/matcher.hpp>
+#include <claraparabricks/genomeworks/cudamapper/types.hpp>
+#include <claraparabricks/genomeworks/utils/device_buffer.hpp>
 
-namespace claragenomics
+namespace claraparabricks
+{
+
+namespace genomeworks
 {
 
 namespace cudamapper
@@ -204,4 +207,6 @@ __global__ void find_query_target_matches_kernel(
 
 } // namespace cudamapper
 
-} // namespace claragenomics
+} // namespace genomeworks
+
+} // namespace claraparabricks

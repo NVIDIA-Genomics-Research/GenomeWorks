@@ -10,8 +10,8 @@
 
 #include "ukkonen_gpu.cuh"
 #include "batched_device_matrices.cuh"
-#include <claragenomics/cudaaligner/cudaaligner.hpp>
-#include <claragenomics/utils/limits.cuh>
+#include <claraparabricks/genomeworks/cudaaligner/cudaaligner.hpp>
+#include <claraparabricks/genomeworks/utils/limits.cuh>
 
 #include <limits>
 #include <cstdint>
@@ -21,10 +21,15 @@
 
 #define CGA_UKKONEN_MAX_THREADS_PER_BLOCK 1024
 
-namespace claragenomics
+namespace claraparabricks
 {
+
+namespace genomeworks
+{
+
 namespace cudaaligner
 {
+
 namespace kernels
 {
 
@@ -250,7 +255,7 @@ __launch_bounds__(CGA_UKKONEN_MAX_THREADS_PER_BLOCK) // Workaround for a registe
     }
 }
 
-} // end namespace kernels
+} // namespace kernels
 
 dim3 calc_blocks(dim3 const& n_threads, dim3 const& blocksize)
 {
@@ -323,5 +328,8 @@ size_t ukkonen_max_score_matrix_size(int32_t max_query_length, int32_t max_targe
     return bw * (n + m);
 }
 
-} // end namespace cudaaligner
-} // end namespace claragenomics
+} // namespace cudaaligner
+
+} // namespace genomeworks
+
+} // namespace claraparabricks

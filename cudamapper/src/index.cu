@@ -8,13 +8,17 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-#include <claragenomics/cudamapper/index.hpp>
-#include <claragenomics/utils/cudautils.hpp>
+#include <claraparabricks/genomeworks/cudamapper/index.hpp>
+#include <claraparabricks/genomeworks/utils/cudautils.hpp>
 #include "index_gpu.cuh"
 #include "minimizer.hpp"
 
-namespace claragenomics
+namespace claraparabricks
 {
+
+namespace genomeworks
+{
+
 namespace cudamapper
 {
 
@@ -55,4 +59,7 @@ std::unique_ptr<IndexHostCopyBase> IndexHostCopyBase::create_cache(const Index& 
 }
 
 } // namespace cudamapper
-} // namespace claragenomics
+
+} // namespace genomeworks
+
+} // namespace claraparabricks

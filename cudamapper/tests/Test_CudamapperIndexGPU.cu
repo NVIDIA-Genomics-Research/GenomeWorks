@@ -17,17 +17,22 @@
 #include "../src/index_gpu.cuh"
 #include "../src/minimizer.hpp"
 
-#include <claragenomics/utils/cudautils.hpp>
-#include <claragenomics/utils/mathutils.hpp>
-#include <claragenomics/utils/signed_integer_utils.hpp>
+#include <claraparabricks/genomeworks/utils/cudautils.hpp>
+#include <claraparabricks/genomeworks/utils/mathutils.hpp>
+#include <claraparabricks/genomeworks/utils/signed_integer_utils.hpp>
 
-namespace claragenomics
+namespace claraparabricks
 {
+
+namespace genomeworks
+{
+
 namespace cudamapper
 {
 
 namespace details
 {
+
 namespace index_gpu
 {
 
@@ -1329,6 +1334,7 @@ TEST(TestCudamapperIndexGPU, test_filter_out_most_common_representations_large_e
 }
 
 } // namespace index_gpu
+
 } // namespace details
 
 void test_function(const std::string& filename,
@@ -2348,4 +2354,7 @@ TEST(TestCudamapperIndexGPU, AAAACTGAA_GCCAAAG_2_3_filtering)
 }
 
 } // namespace cudamapper
-} // namespace claragenomics
+
+} // namespace genomeworks
+
+} // namespace claraparabricks

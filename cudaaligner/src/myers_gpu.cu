@@ -11,19 +11,22 @@
 #include "myers_gpu.cuh"
 #include "batched_device_matrices.cuh"
 
-#include <claragenomics/cudaaligner/aligner.hpp>
-#include <claragenomics/utils/signed_integer_utils.hpp>
-#include <claragenomics/utils/mathutils.hpp>
-#include <claragenomics/utils/cudautils.hpp>
-#include <claragenomics/utils/allocator.hpp>
-#include <claragenomics/utils/device_buffer.hpp>
+#include <claraparabricks/genomeworks/cudaaligner/aligner.hpp>
+#include <claraparabricks/genomeworks/utils/signed_integer_utils.hpp>
+#include <claraparabricks/genomeworks/utils/mathutils.hpp>
+#include <claraparabricks/genomeworks/utils/cudautils.hpp>
+#include <claraparabricks/genomeworks/utils/allocator.hpp>
+#include <claraparabricks/genomeworks/utils/device_buffer.hpp>
 
 #include <cassert>
 #include <climits>
 #include <vector>
 #include <numeric>
 
-namespace claragenomics
+namespace claraparabricks
+{
+
+namespace genomeworks
 {
 
 namespace cudaaligner
@@ -915,4 +918,7 @@ void myers_banded_gpu(int8_t* paths_d, int32_t* path_lengths_d, int32_t max_path
 }
 
 } // namespace cudaaligner
-} // namespace claragenomics
+
+} // namespace genomeworks
+
+} // namespace claraparabricks

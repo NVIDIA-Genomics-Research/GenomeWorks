@@ -11,13 +11,16 @@
 #include "basic_graph.hpp"
 #include "../src/cudapoa_kernels.cuh" //CUDAPOA_MAX_NODE_EDGES, CUDAPOA_MAX_NODE_ALIGNMENTS
 
-#include <claragenomics/utils/signed_integer_utils.hpp> // get_size
+#include <claraparabricks/genomeworks/utils/signed_integer_utils.hpp> // get_size
 
 #include <string>
 #include <vector>
 #include <stdint.h>
 
-namespace claragenomics
+namespace claraparabricks
+{
+
+namespace genomeworks
 {
 
 namespace cudapoa
@@ -67,4 +70,6 @@ protected:
 
 } // namespace cudapoa
 
-} // namespace claragenomics
+} // namespace genomeworks
+
+} // namespace claraparabricks

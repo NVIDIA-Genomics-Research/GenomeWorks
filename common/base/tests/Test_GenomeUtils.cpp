@@ -9,11 +9,14 @@
 */
 
 #include <vector>
-#include <claragenomics/utils/genomeutils.hpp>
+#include <claraparabricks/genomeworks/utils/genomeutils.hpp>
 
 #include "gtest/gtest.h"
 
-namespace claragenomics
+namespace claraparabricks
+{
+
+namespace genomeworks
 {
 
 namespace genomeutils
@@ -30,4 +33,6 @@ TEST(GenomeUtilsTest, ReverseComplement)
 
 } // namespace genomeutils
 
-} // namespace claragenomics
+} // namespace genomeworks
+
+} // namespace claraparabricks

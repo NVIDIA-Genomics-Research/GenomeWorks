@@ -12,14 +12,18 @@
 
 #include "gmock/gmock.h"
 
-#include <claragenomics/utils/cudautils.hpp>
-#include <claragenomics/utils/allocator.hpp>
+#include <claraparabricks/genomeworks/utils/cudautils.hpp>
+#include <claraparabricks/genomeworks/utils/allocator.hpp>
 #include "../src/index_gpu.cuh"
 #include "../src/minimizer.hpp"
 #include "cudamapper_file_location.hpp"
 
-namespace claragenomics
+namespace claraparabricks
 {
+
+namespace genomeworks
+{
+
 namespace cudamapper
 {
 
@@ -28,7 +32,7 @@ class MockIndex : public IndexGPU<Minimizer>
 public:
     MockIndex(DefaultDeviceAllocator allocator)
         : IndexGPU(allocator,
-                   *claragenomics::io::create_kseq_fasta_parser(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/gatt.fasta"),
+                   *genomeworks::io::create_kseq_fasta_parser(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/gatt.fasta"),
                    0,
                    0,
                    0,
@@ -47,4 +51,7 @@ public:
 };
 
 } // namespace cudamapper
-} // namespace claragenomics
+
+} // namespace genomeworks
+
+} // namespace claraparabricks

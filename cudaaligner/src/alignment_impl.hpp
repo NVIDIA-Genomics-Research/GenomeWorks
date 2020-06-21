@@ -10,9 +10,12 @@
 
 #pragma once
 
-#include <claragenomics/cudaaligner/alignment.hpp>
+#include <claraparabricks/genomeworks/cudaaligner/alignment.hpp>
 
-namespace claragenomics
+namespace claraparabricks
+{
+
+namespace genomeworks
 {
 
 namespace cudaaligner
@@ -100,4 +103,7 @@ private:
     char alignment_state_to_cigar_state(AlignmentState) const;
 };
 } // namespace cudaaligner
-} // namespace claragenomics
+
+} // namespace genomeworks
+
+} // namespace claraparabricks

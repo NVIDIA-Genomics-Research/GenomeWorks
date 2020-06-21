@@ -12,14 +12,18 @@
 
 #include "matrix_cpu.hpp"
 
-#include <claragenomics/utils/cudautils.hpp>
-#include <claragenomics/utils/device_buffer.hpp>
+#include <claraparabricks/genomeworks/utils/cudautils.hpp>
+#include <claraparabricks/genomeworks/utils/device_buffer.hpp>
 
 #include <tuple>
 #include <cassert>
 
-namespace claragenomics
+namespace claraparabricks
 {
+
+namespace genomeworks
+{
+
 namespace cudaaligner
 {
 
@@ -157,5 +161,8 @@ private:
     int32_t n_matrices_;
 };
 
-} // end namespace cudaaligner
-} // end namespace claragenomics
+} // namespace cudaaligner
+
+} // namespace genomeworks
+
+} // namespace claraparabricks

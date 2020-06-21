@@ -8,24 +8,27 @@
  * license agreement from NVIDIA CORPORATION is strictly prohibited.
  */
 
-#include <cub/cub.cuh>
+#include "overlapper_triggered.hpp"
 
 #include <fstream>
 #include <cstdlib>
-#include <omp.h>
 
-#include <claragenomics/utils/cudautils.hpp>
+#include <cub/cub.cuh>
+#include <thrust/execution_policy.h>
 
-#include "cudamapper_utils.hpp"
-#include "overlapper_triggered.hpp"
+#include <claraparabricks/genomeworks/utils/cudautils.hpp>
 
 #ifndef NDEBUG // only needed to check if input is sorted in assert
 #include <algorithm>
 #include <thrust/host_vector.h>
 #endif
 
-namespace claragenomics
+namespace claraparabricks
 {
+
+namespace genomeworks
+{
+
 namespace cudamapper
 {
 
@@ -286,7 +289,7 @@ void OverlapperTriggered::get_overlaps(std::vector<Overlap>& fused_overlaps,
         d_chain_length.data(), d_nchains.data(), n_anchors, _cuda_stream);
 
     // allocate temporary storage
-    d_temp_buf.resize(temp_storage_bytes, _cuda_stream);
+    d_temp_buf.clear_and_resize(temp_storage_bytes);
     d_temp_storage = d_temp_buf.data();
 
     // run encoding
@@ -311,7 +314,7 @@ void OverlapperTriggered::get_overlaps(std::vector<Overlap>& fused_overlaps,
                                   n_chains, _cuda_stream);
 
     // allocate temporary storage
-    d_temp_buf.resize(temp_storage_bytes, _cuda_stream);
+    d_temp_buf.clear_and_resize(temp_storage_bytes);
     d_temp_storage = d_temp_buf.data();
 
     cub::DeviceScan::ExclusiveSum(d_temp_storage, temp_storage_bytes,
@@ -377,7 +380,7 @@ void OverlapperTriggered::get_overlaps(std::vector<Overlap>& fused_overlaps,
                                    _cuda_stream);
 
     // allocate temporary storage
-    d_temp_buf.resize(temp_storage_bytes, _cuda_stream);
+    d_temp_buf.clear_and_resize(temp_storage_bytes);
     d_temp_storage = d_temp_buf.data();
 
     cub::DeviceReduce::ReduceByKey(d_temp_storage,
@@ -423,4 +426,7 @@ void OverlapperTriggered::get_overlaps(std::vector<Overlap>& fused_overlaps,
 }
 
 } // namespace cudamapper
-} // namespace claragenomics
+
+} // namespace genomeworks
+
+} // namespace claraparabricks

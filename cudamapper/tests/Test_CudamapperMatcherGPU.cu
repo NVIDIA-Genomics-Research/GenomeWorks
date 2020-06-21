@@ -18,12 +18,15 @@
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
 
-#include <claragenomics/utils/cudautils.hpp>
-#include <claragenomics/utils/signed_integer_utils.hpp>
+#include <claraparabricks/genomeworks/utils/cudautils.hpp>
+#include <claraparabricks/genomeworks/utils/signed_integer_utils.hpp>
 
 #include "../src/matcher_gpu.cuh"
 
-namespace claragenomics
+namespace claraparabricks
+{
+
+namespace genomeworks
 {
 
 namespace cudamapper
@@ -703,4 +706,7 @@ TEST(TestCudamapperMatcherGPU, AtLeastOneIndexEmpty)
 }
 
 } // namespace cudamapper
-} // namespace claragenomics
+
+} // namespace genomeworks
+
+} // namespace claraparabricks

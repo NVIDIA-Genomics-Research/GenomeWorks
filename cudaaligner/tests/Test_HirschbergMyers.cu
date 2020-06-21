@@ -10,11 +10,14 @@
 
 #include "../src/hirschberg_myers_gpu.cu"
 #include "../src/batched_device_matrices.cuh"
-#include <claragenomics/utils/signed_integer_utils.hpp>
+#include <claraparabricks/genomeworks/utils/signed_integer_utils.hpp>
 #include <vector>
 #include <gtest/gtest.h>
 
-namespace claragenomics
+namespace claraparabricks
+{
+
+namespace genomeworks
 {
 
 namespace cudaaligner
@@ -195,4 +198,7 @@ TEST(HirschbergMyers, myers_get_query_pattern_reverse)
 }
 
 } // namespace cudaaligner
-} // namespace claragenomics
+
+} // namespace genomeworks
+
+} // namespace claraparabricks

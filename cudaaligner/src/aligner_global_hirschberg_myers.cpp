@@ -12,9 +12,12 @@
 #include "hirschberg_myers_gpu.cuh"
 #include "batched_device_matrices.cuh"
 
-#include <claragenomics/utils/mathutils.hpp>
+#include <claraparabricks/genomeworks/utils/mathutils.hpp>
 
-namespace claragenomics
+namespace claraparabricks
+{
+
+namespace genomeworks
 {
 
 namespace cudaaligner
@@ -66,4 +69,7 @@ void AlignerGlobalHirschbergMyers::run_alignment(int8_t* results_d, int32_t* res
 }
 
 } // namespace cudaaligner
-} // namespace claragenomics
+
+} // namespace genomeworks
+
+} // namespace claraparabricks

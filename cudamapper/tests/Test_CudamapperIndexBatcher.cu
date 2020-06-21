@@ -16,10 +16,14 @@
 
 #include "cudamapper_file_location.hpp"
 
-#include <claragenomics/utils/signed_integer_utils.hpp>
+#include <claraparabricks/genomeworks/utils/signed_integer_utils.hpp>
 
-namespace claragenomics
+namespace claraparabricks
 {
+
+namespace genomeworks
+{
+
 namespace cudamapper
 {
 
@@ -88,8 +92,8 @@ void test_generate_batches_of_indices(const number_of_indices_t query_indices_pe
                                       const number_of_indices_t query_indices_per_device_batch,
                                       const number_of_indices_t target_indices_per_host_batch,
                                       const number_of_indices_t target_indices_per_device_batch,
-                                      const std::shared_ptr<const claragenomics::io::FastaParser> query_parser,
-                                      const std::shared_ptr<const claragenomics::io::FastaParser> target_parser,
+                                      const std::shared_ptr<const genomeworks::io::FastaParser> query_parser,
+                                      const std::shared_ptr<const genomeworks::io::FastaParser> target_parser,
                                       const number_of_basepairs_t query_basepairs_per_index,
                                       const number_of_basepairs_t target_basepairs_per_index,
                                       const bool same_query_and_target,
@@ -161,15 +165,15 @@ TEST(TestCudamapperIndexBatcher, test_generate_batches_of_indices_query_and_targ
     //                {{8, 2}, {10, 2}}, {{12, 3}, {15, 2}}, {{17, 2}}
     //                {{19, 1}}
 
-    const number_of_indices_t query_indices_per_host_batch                    = 2;
-    const number_of_indices_t query_indices_per_device_batch                  = 1;
-    const number_of_indices_t target_indices_per_host_batch                   = 5;
-    const number_of_indices_t target_indices_per_device_batch                 = 2;
-    const std::shared_ptr<const claragenomics::io::FastaParser> query_parser  = claragenomics::io::create_kseq_fasta_parser(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/10_reads.fasta", 1, false);
-    const std::shared_ptr<const claragenomics::io::FastaParser> target_parser = claragenomics::io::create_kseq_fasta_parser(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/20_reads.fasta", 1, false);
-    const number_of_basepairs_t query_basepairs_per_index                     = 10;
-    const number_of_basepairs_t target_basepairs_per_index                    = 10;
-    const bool same_query_and_target                                          = false;
+    const number_of_indices_t query_indices_per_host_batch                  = 2;
+    const number_of_indices_t query_indices_per_device_batch                = 1;
+    const number_of_indices_t target_indices_per_host_batch                 = 5;
+    const number_of_indices_t target_indices_per_device_batch               = 2;
+    const std::shared_ptr<const genomeworks::io::FastaParser> query_parser  = genomeworks::io::create_kseq_fasta_parser(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/10_reads.fasta", 1, false);
+    const std::shared_ptr<const genomeworks::io::FastaParser> target_parser = genomeworks::io::create_kseq_fasta_parser(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/20_reads.fasta", 1, false);
+    const number_of_basepairs_t query_basepairs_per_index                   = 10;
+    const number_of_basepairs_t target_basepairs_per_index                  = 10;
+    const bool same_query_and_target                                        = false;
 
     std::vector<BatchOfIndices> expected_batches;
     {
@@ -554,15 +558,15 @@ TEST(TestCudamapperIndexBatcher, test_generate_batches_of_indices_same_query_and
     //                {{8, 2}, {10, 2}}, {{12, 3}, {15, 2}}, {{17, 2}}
     //                {{19, 1}}
 
-    const number_of_indices_t query_indices_per_host_batch                    = 5;
-    const number_of_indices_t query_indices_per_device_batch                  = 2;
-    const number_of_indices_t target_indices_per_host_batch                   = 5;
-    const number_of_indices_t target_indices_per_device_batch                 = 2;
-    const std::shared_ptr<const claragenomics::io::FastaParser> query_parser  = claragenomics::io::create_kseq_fasta_parser(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/20_reads.fasta", 1, false);
-    const std::shared_ptr<const claragenomics::io::FastaParser> target_parser = query_parser;
-    const number_of_basepairs_t query_basepairs_per_index                     = 10;
-    const number_of_basepairs_t target_basepairs_per_index                    = 10;
-    const bool same_query_and_target                                          = true;
+    const number_of_indices_t query_indices_per_host_batch                  = 5;
+    const number_of_indices_t query_indices_per_device_batch                = 2;
+    const number_of_indices_t target_indices_per_host_batch                 = 5;
+    const number_of_indices_t target_indices_per_device_batch               = 2;
+    const std::shared_ptr<const genomeworks::io::FastaParser> query_parser  = genomeworks::io::create_kseq_fasta_parser(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/20_reads.fasta", 1, false);
+    const std::shared_ptr<const genomeworks::io::FastaParser> target_parser = query_parser;
+    const number_of_basepairs_t query_basepairs_per_index                   = 10;
+    const number_of_basepairs_t target_basepairs_per_index                  = 10;
+    const bool same_query_and_target                                        = true;
 
     std::vector<BatchOfIndices> expected_batches;
     {
@@ -845,15 +849,15 @@ TEST(TestCudamapperIndexBatcher, test_generate_batches_of_indices_same_query_and
 
 TEST(TestCudamapperIndexBatcher, test_generate_batches_of_indices_exceptions)
 {
-    const number_of_indices_t query_indices_per_host_batch                   = 5;
-    const number_of_indices_t query_indices_per_device_batch                 = 2;
-    const number_of_basepairs_t query_basepairs_per_index                    = 10;
-    const std::shared_ptr<const claragenomics::io::FastaParser> query_parser = claragenomics::io::create_kseq_fasta_parser(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/10_reads.fasta", 1, false);
+    const number_of_indices_t query_indices_per_host_batch                 = 5;
+    const number_of_indices_t query_indices_per_device_batch               = 2;
+    const number_of_basepairs_t query_basepairs_per_index                  = 10;
+    const std::shared_ptr<const genomeworks::io::FastaParser> query_parser = genomeworks::io::create_kseq_fasta_parser(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/10_reads.fasta", 1, false);
 
-    number_of_indices_t target_indices_per_host_batch                   = query_indices_per_host_batch;
-    number_of_indices_t target_indices_per_device_batch                 = query_indices_per_device_batch;
-    number_of_basepairs_t target_basepairs_per_index                    = query_basepairs_per_index;
-    std::shared_ptr<const claragenomics::io::FastaParser> target_parser = query_parser;
+    number_of_indices_t target_indices_per_host_batch                 = query_indices_per_host_batch;
+    number_of_indices_t target_indices_per_device_batch               = query_indices_per_device_batch;
+    number_of_basepairs_t target_basepairs_per_index                  = query_basepairs_per_index;
+    std::shared_ptr<const genomeworks::io::FastaParser> target_parser = query_parser;
 
     const bool same_query_and_target = true;
 
@@ -886,7 +890,7 @@ TEST(TestCudamapperIndexBatcher, test_generate_batches_of_indices_exceptions)
     target_indices_per_device_batch = query_indices_per_device_batch;
 
     // parser different
-    target_parser = claragenomics::io::create_kseq_fasta_parser(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/20_reads.fasta", 1, false);
+    target_parser = genomeworks::io::create_kseq_fasta_parser(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/20_reads.fasta", 1, false);
     ASSERT_THROW(generate_batches_of_indices(query_indices_per_host_batch,
                                              query_indices_per_device_batch,
                                              target_indices_per_host_batch,
@@ -915,4 +919,7 @@ TEST(TestCudamapperIndexBatcher, test_generate_batches_of_indices_exceptions)
 }
 
 } // namespace cudamapper
-} // namespace claragenomics
+
+} // namespace genomeworks
+
+} // namespace claraparabricks

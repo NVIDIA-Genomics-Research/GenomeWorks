@@ -8,15 +8,18 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-#include "../src/cudapoa_kernels.cuh" //CUDAPOA_MAX_NODE_EDGES, CUDAPOA_MAX_NODE_ALIGNMENTS
+#include "../src/cudapoa_structs.cuh" //CUDAPOA_MAX_NODE_EDGES, CUDAPOA_MAX_NODE_ALIGNMENTS
 
-#include <claragenomics/utils/signed_integer_utils.hpp> //get_size
+#include <claraparabricks/genomeworks/utils/signed_integer_utils.hpp> //get_size
 
 #include <string>
 #include <vector>
 #include <stdint.h>
 
-namespace claragenomics
+namespace claraparabricks
+{
+
+namespace genomeworks
 {
 
 namespace cudapoa
@@ -132,10 +135,9 @@ public:
     {
         if (outgoing_edges_coverage_.size() == 0)
             return;
-        uint16_t out_node;
-        for (int i = 0; i < outgoing_edges_coverage_.size(); i++) //from_node
+        for (uint32_t i = 0; i < outgoing_edges_coverage_.size(); i++) //from_node
         {
-            for (int j = 0; j < (int)outgoing_edges_coverage_[i].size(); j++) //to_node
+            for (uint32_t j = 0; j < outgoing_edges_coverage_[i].size(); j++) //to_node
             {
                 uint16_t edge_coverage_count                                  = outgoing_edges_coverage_[i][j].size();
                 outgoing_edges_coverage_count[i * CUDAPOA_MAX_NODE_EDGES + j] = edge_coverage_count;
@@ -171,4 +173,6 @@ protected:
 
 } // namespace cudapoa
 
-} // namespace claragenomics
+} // namespace genomeworks
+
+} // namespace claraparabricks

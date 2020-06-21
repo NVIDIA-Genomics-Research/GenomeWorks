@@ -12,9 +12,12 @@
 #include "myers_gpu.cuh"
 #include "batched_device_matrices.cuh"
 
-#include <claragenomics/utils/mathutils.hpp>
+#include <claraparabricks/genomeworks/utils/mathutils.hpp>
 
-namespace claragenomics
+namespace claraparabricks
+{
+
+namespace genomeworks
 {
 
 namespace cudaaligner
@@ -60,4 +63,7 @@ void AlignerGlobalMyersBanded::run_alignment(int8_t* results_d, int32_t* result_
 }
 
 } // namespace cudaaligner
-} // namespace claragenomics
+
+} // namespace genomeworks
+
+} // namespace claraparabricks

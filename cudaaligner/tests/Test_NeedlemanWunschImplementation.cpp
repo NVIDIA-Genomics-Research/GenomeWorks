@@ -13,16 +13,19 @@
 #include "../src/ukkonen_gpu.cuh"
 #include "../src/batched_device_matrices.cuh"
 
-#include <claragenomics/utils/signed_integer_utils.hpp>
-#include <claragenomics/utils/genomeutils.hpp>
-#include <claragenomics/utils/device_buffer.hpp>
+#include <claraparabricks/genomeworks/utils/signed_integer_utils.hpp>
+#include <claraparabricks/genomeworks/utils/genomeutils.hpp>
+#include <claraparabricks/genomeworks/utils/device_buffer.hpp>
 
 #include <cuda_runtime_api.h>
 #include <random>
 #include <algorithm>
 #include "gtest/gtest.h"
 
-namespace claragenomics
+namespace claraparabricks
+{
+
+namespace genomeworks
 {
 
 namespace cudaaligner
@@ -81,8 +84,8 @@ std::vector<TestAlignmentPair> getTestCases()
 
     // Test 7
     std::minstd_rand rng(1);
-    t.target = claragenomics::genomeutils::generate_random_genome(5000, rng);
-    t.query  = claragenomics::genomeutils::generate_random_genome(4800, rng);
+    t.target = genomeworks::genomeutils::generate_random_genome(5000, rng);
+    t.query  = genomeworks::genomeutils::generate_random_genome(4800, rng);
     t.p      = 5000;
     test_cases.push_back(t);
 
@@ -285,4 +288,7 @@ TEST_P(AlignerImplementation, UkkonenCpuFullVsUkkonenGpuFull)
 
 INSTANTIATE_TEST_SUITE_P(TestNeedlemanWunschImplementation, AlignerImplementation, ValuesIn(getTestCases()));
 } // namespace cudaaligner
-} // namespace claragenomics
+
+} // namespace genomeworks
+
+} // namespace claraparabricks

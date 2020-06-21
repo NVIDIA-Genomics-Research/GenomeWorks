@@ -10,22 +10,26 @@
 
 #include "index_cache.cuh"
 
-#include "index_host_copy.cu"
+#include "index_host_copy.cuh"
 
 #include <unordered_set>
 
-#include <claragenomics/cudamapper/index.hpp>
-#include <claragenomics/io/fasta_parser.hpp>
+#include <claraparabricks/genomeworks/cudamapper/index.hpp>
+#include <claraparabricks/genomeworks/io/fasta_parser.hpp>
 
-namespace claragenomics
+namespace claraparabricks
 {
+
+namespace genomeworks
+{
+
 namespace cudamapper
 {
 
 IndexCacheHost::IndexCacheHost(const bool same_query_and_target,
-                               claragenomics::DefaultDeviceAllocator allocator,
-                               std::shared_ptr<claragenomics::io::FastaParser> query_parser,
-                               std::shared_ptr<claragenomics::io::FastaParser> target_parser,
+                               genomeworks::DefaultDeviceAllocator allocator,
+                               std::shared_ptr<genomeworks::io::FastaParser> query_parser,
+                               std::shared_ptr<genomeworks::io::FastaParser> target_parser,
                                const std::uint64_t kmer_size,
                                const std::uint64_t window_size,
                                const bool hash_representations,
@@ -44,18 +48,22 @@ IndexCacheHost::IndexCacheHost(const bool same_query_and_target,
 }
 
 void IndexCacheHost::generate_query_cache_content(const std::vector<IndexDescriptor>& descriptors_of_indices_to_cache,
-                                                  const std::vector<IndexDescriptor>& descriptors_of_indices_to_keep_on_device)
+                                                  const std::vector<IndexDescriptor>& descriptors_of_indices_to_keep_on_device,
+                                                  const bool skip_copy_to_host)
 {
     generate_cache_content(descriptors_of_indices_to_cache,
                            descriptors_of_indices_to_keep_on_device,
+                           skip_copy_to_host,
                            CacheSelector::query_cache);
 }
 
 void IndexCacheHost::generate_target_cache_content(const std::vector<IndexDescriptor>& descriptors_of_indices_to_cache,
-                                                   const std::vector<IndexDescriptor>& descriptors_of_indices_to_keep_on_device)
+                                                   const std::vector<IndexDescriptor>& descriptors_of_indices_to_keep_on_device,
+                                                   const bool skip_copy_to_host)
 {
     generate_cache_content(descriptors_of_indices_to_cache,
                            descriptors_of_indices_to_keep_on_device,
+                           skip_copy_to_host,
                            CacheSelector::target_cache);
 }
 
@@ -73,13 +81,18 @@ std::shared_ptr<Index> IndexCacheHost::get_index_from_target_cache(const IndexDe
 
 void IndexCacheHost::generate_cache_content(const std::vector<IndexDescriptor>& descriptors_of_indices_to_cache,
                                             const std::vector<IndexDescriptor>& descriptors_of_indices_to_keep_on_device,
+                                            const bool skip_copy_to_host,
                                             const CacheSelector which_cache)
 {
+    // skip_copy_to_host only makes sense if descriptors_of_indices_to_cache and descriptors_of_indices_to_keep_on_device are the same
+    // otherwise some indices would be created and not saved on either host or device
+    assert(!skip_copy_to_host || (descriptors_of_indices_to_cache == descriptors_of_indices_to_keep_on_device));
+
     cache_type_t& cache_to_edit                           = (CacheSelector::query_cache == which_cache) ? query_cache_ : target_cache_;
     const cache_type_t& cache_to_check                    = (CacheSelector::query_cache == which_cache) ? target_cache_ : query_cache_;
     device_cache_type_t& temp_device_cache_to_edit        = (CacheSelector::query_cache == which_cache) ? query_temp_device_cache_ : target_temp_device_cache_;
     const device_cache_type_t& temp_device_cache_to_check = (CacheSelector::query_cache == which_cache) ? target_temp_device_cache_ : query_temp_device_cache_;
-    const claragenomics::io::FastaParser* parser          = (CacheSelector::query_cache == which_cache) ? query_parser_.get() : target_parser_.get();
+    const genomeworks::io::FastaParser* parser            = (CacheSelector::query_cache == which_cache) ? query_parser_.get() : target_parser_.get();
 
     // convert descriptors_of_indices_to_keep_on_device into set for faster search
     std::unordered_set<IndexDescriptor, IndexDescriptorHash> descriptors_of_indices_to_keep_on_device_set(begin(descriptors_of_indices_to_keep_on_device),
@@ -93,8 +106,8 @@ void IndexCacheHost::generate_cache_content(const std::vector<IndexDescriptor>& 
         // check if this index should be kept on device in addition to copying it to host
         const bool keep_on_device = descriptors_of_indices_to_keep_on_device_set.count(descriptor_of_index_to_cache) != 0;
 
-        std::shared_ptr<const IndexHostCopyBase> index_copy = nullptr;
-        std::shared_ptr<Index> index_on_device              = nullptr;
+        std::shared_ptr<const IndexHostCopyBase> index_on_host = nullptr;
+        std::shared_ptr<Index> index_on_device                 = nullptr;
 
         if (same_query_and_target_)
         {
@@ -102,7 +115,7 @@ void IndexCacheHost::generate_cache_content(const std::vector<IndexDescriptor>& 
             auto existing_cache = cache_to_check.find(descriptor_of_index_to_cache);
             if (existing_cache != cache_to_check.end())
             {
-                index_copy = existing_cache->second;
+                index_on_host = existing_cache->second;
                 if (keep_on_device)
                 {
                     auto existing_device_cache = temp_device_cache_to_check.find(descriptor_of_index_to_cache);
@@ -112,23 +125,23 @@ void IndexCacheHost::generate_cache_content(const std::vector<IndexDescriptor>& 
                     }
                     else
                     {
-                        index_on_device = index_copy->copy_index_to_device(allocator_, cuda_stream_);
+                        index_on_device = index_on_host->copy_index_to_device(allocator_, cuda_stream_);
                     }
                 }
             }
         }
 
-        if (nullptr == index_copy)
+        if (nullptr == index_on_host)
         {
             // check if this index is already cached in this cache
             auto existing_cache = cache_to_edit.find(descriptor_of_index_to_cache);
             if (existing_cache != cache_to_edit.end())
             {
                 // index already cached
-                index_copy = existing_cache->second;
+                index_on_host = existing_cache->second;
                 if (keep_on_device)
                 {
-                    index_on_device = index_copy->copy_index_to_device(allocator_, cuda_stream_);
+                    index_on_device = index_on_host->copy_index_to_device(allocator_, cuda_stream_);
                 }
             }
             else
@@ -144,18 +157,24 @@ void IndexCacheHost::generate_cache_content(const std::vector<IndexDescriptor>& 
                                                       filtering_parameter_,
                                                       cuda_stream_);
                 // copy it to host memory
-                index_copy = IndexHostCopy::create_cache(*index_on_device,
-                                                         descriptor_of_index_to_cache.first_read(),
-                                                         kmer_size_,
-                                                         window_size_,
-                                                         cuda_stream_);
+                if (!skip_copy_to_host)
+                {
+                    index_on_host = IndexHostCopy::create_cache(*index_on_device,
+                                                                descriptor_of_index_to_cache.first_read(),
+                                                                kmer_size_,
+                                                                window_size_,
+                                                                cuda_stream_);
+                }
             }
         }
 
-        assert(nullptr != index_copy);
-
         // save pointer to cached index
-        new_cache[descriptor_of_index_to_cache] = index_copy;
+        if (!skip_copy_to_host)
+        {
+            assert(nullptr != index_on_host);
+            new_cache[descriptor_of_index_to_cache] = index_on_host;
+        }
+
         if (keep_on_device)
         {
             temp_device_cache_to_edit[descriptor_of_index_to_cache] = index_on_device;
@@ -275,4 +294,7 @@ void IndexCacheDevice::generate_cache_content(const std::vector<IndexDescriptor>
 }
 
 } // namespace cudamapper
-} // namespace claragenomics
+
+} // namespace genomeworks
+
+} // namespace claraparabricks

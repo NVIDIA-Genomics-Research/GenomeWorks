@@ -12,12 +12,16 @@
 
 #include <vector>
 
-#include <claragenomics/cudamapper/types.hpp>
-#include <claragenomics/cudamapper/overlapper.hpp>
-#include <claragenomics/utils/device_buffer.hpp>
+#include <claraparabricks/genomeworks/cudamapper/types.hpp>
+#include <claraparabricks/genomeworks/cudamapper/overlapper.hpp>
+#include <claraparabricks/genomeworks/utils/device_buffer.hpp>
 
-namespace claragenomics
+namespace claraparabricks
 {
+
+namespace genomeworks
+{
+
 namespace cudamapper
 {
 
@@ -57,4 +61,7 @@ private:
     cudaStream_t _cuda_stream;
 };
 } // namespace cudamapper
-} // namespace claragenomics
+
+} // namespace genomeworks
+
+} // namespace claraparabricks

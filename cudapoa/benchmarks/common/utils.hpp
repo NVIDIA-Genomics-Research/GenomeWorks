@@ -10,13 +10,18 @@
 
 #pragma once
 
+#include <claraparabricks/genomeworks/utils/signed_integer_utils.hpp>
+
 #include <string>
 #include <vector>
 #include <sstream>
 #include <fstream>
 #include <cassert>
 
-namespace claragenomics
+namespace claraparabricks
+{
+
+namespace genomeworks
 {
 
 namespace cudapoa
@@ -56,14 +61,14 @@ inline void parse_window_data_file(std::vector<std::vector<std::string>>& window
 
     if (total_windows >= 0)
     {
-        if (windows.size() > total_windows)
+        if (get_size(windows) > total_windows)
         {
             windows.erase(windows.begin() + total_windows, windows.end());
         }
-        else if (windows.size() < total_windows)
+        else if (get_size(windows) < total_windows)
         {
             int32_t windows_read = windows.size();
-            while (windows.size() != total_windows)
+            while (get_size(windows) != total_windows)
             {
                 windows.push_back(windows[windows.size() - windows_read]);
             }
@@ -90,5 +95,9 @@ inline std::string parse_golden_value_file(const std::string& filename)
     std::getline(infile, line);
     return line;
 }
+
 } // namespace cudapoa
-} // namespace claragenomics
+
+} // namespace genomeworks
+
+} // namespace claraparabricks

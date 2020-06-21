@@ -10,7 +10,7 @@
 
 #include "gtest/gtest.h"
 
-#include <claragenomics/utils/threadsafe_containers.hpp>
+#include <claraparabricks/genomeworks/utils/threadsafe_containers.hpp>
 
 #include <algorithm>
 #include <mutex>
@@ -18,7 +18,10 @@
 #include <numeric>
 #include <thread>
 
-namespace claragenomics
+namespace claraparabricks
+{
+
+namespace genomeworks
 {
 
 // *** test ThreadsafeDataProvider ***
@@ -234,4 +237,6 @@ TEST(TestUtilsThreadsafeContainers, test_threadsafe_producer_consumer_signal_on_
     ASSERT_FALSE(val);
 }
 
-} // namespace claragenomics
+} // namespace genomeworks
+
+} // namespace claraparabricks

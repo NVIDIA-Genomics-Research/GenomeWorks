@@ -13,12 +13,15 @@
 #include <memory>
 #include <unordered_map>
 
-#include <claragenomics/cudamapper/types.hpp>
-#include <claragenomics/utils/allocator.hpp>
+#include <claraparabricks/genomeworks/cudamapper/types.hpp>
+#include <claraparabricks/genomeworks/utils/allocator.hpp>
 
 #include "index_descriptor.hpp"
 
-namespace claragenomics
+namespace claraparabricks
+{
+
+namespace genomeworks
 {
 
 namespace io
@@ -51,9 +54,9 @@ public:
     /// \param filtering_parameter // see Index
     /// \param cuda_stream // device memory used for Index copy will only we freed up once all previously scheduled work on this stream has finished
     IndexCacheHost(bool same_query_and_target,
-                   claragenomics::DefaultDeviceAllocator allocator,
-                   std::shared_ptr<claragenomics::io::FastaParser> query_parser,
-                   std::shared_ptr<claragenomics::io::FastaParser> target_parser,
+                   genomeworks::DefaultDeviceAllocator allocator,
+                   std::shared_ptr<genomeworks::io::FastaParser> query_parser,
+                   std::shared_ptr<genomeworks::io::FastaParser> target_parser,
                    std::uint64_t kmer_size,
                    std::uint64_t window_size,
                    bool hash_representations  = true,
@@ -74,8 +77,10 @@ public:
     ///
     /// \param descriptors_of_indices_to_cache descriptors on indices to keep in host memory
     /// \param descriptors_of_indices_to_keep_on_device descriptors of indices to keep in device memory in addition to host memory until retrieved for the first time
+    /// \param skip_copy_to_host this option should be used if descriptors_of_indices_to_cache == descriptors_of_indices_to_keep_on_device and if each index will be queried only once, it's usefull for small cases where host cache isn't actually needed
     void generate_query_cache_content(const std::vector<IndexDescriptor>& descriptors_of_indices_to_cache,
-                                      const std::vector<IndexDescriptor>& descriptors_of_indices_to_keep_on_device = {});
+                                      const std::vector<IndexDescriptor>& descriptors_of_indices_to_keep_on_device = {},
+                                      bool skip_copy_to_host                                                       = false);
 
     /// \brief Discards previously cached target Indices, creates new Indices and copies them to host memory
     ///
@@ -85,8 +90,10 @@ public:
     ///
     /// \param descriptors_of_indices_to_cache descriptors on indices to keep in host memory
     /// \param descriptors_of_indices_to_keep_on_device descriptors of indices to keep in device memory in addition to host memory until retrieved for the first time
+    /// \param skip_copy_to_host this option should be used if descriptors_of_indices_to_cache == descriptors_of_indices_to_keep_on_device and if each index will be queried only once, it's usefull for small cases where host cache isn't actually needed
     void generate_target_cache_content(const std::vector<IndexDescriptor>& descriptors_of_indices_to_cache,
-                                       const std::vector<IndexDescriptor>& descriptors_of_indices_to_keep_on_device = {});
+                                       const std::vector<IndexDescriptor>& descriptors_of_indices_to_keep_on_device = {},
+                                       bool skip_copy_to_host                                                       = false);
 
     /// \brief Copies request Index to device memory
     /// throws if that index is currently not in cache
@@ -117,6 +124,7 @@ private:
     /// If same_query_and_target_ is true function checks the other cache to see if that index is already in cache
     void generate_cache_content(const std::vector<IndexDescriptor>& descriptors_of_indices_to_cache,
                                 const std::vector<IndexDescriptor>& descriptors_of_indices_to_keep_on_device,
+                                bool skip_copy_to_host,
                                 CacheSelector which_cache);
 
     /// \brief Fetches requested index
@@ -133,9 +141,9 @@ private:
     device_cache_type_t target_temp_device_cache_;
 
     const bool same_query_and_target_;
-    claragenomics::DefaultDeviceAllocator allocator_;
-    std::shared_ptr<claragenomics::io::FastaParser> query_parser_;
-    std::shared_ptr<claragenomics::io::FastaParser> target_parser_;
+    genomeworks::DefaultDeviceAllocator allocator_;
+    std::shared_ptr<genomeworks::io::FastaParser> query_parser_;
+    std::shared_ptr<genomeworks::io::FastaParser> target_parser_;
     const std::uint64_t kmer_size_;
     const std::uint64_t window_size_;
     const bool hash_representations_;
@@ -205,4 +213,7 @@ private:
 };
 
 } // namespace cudamapper
-} // namespace claragenomics
+
+} // namespace genomeworks
+
+} // namespace claraparabricks

@@ -22,7 +22,7 @@ from libcpp.vector cimport vector
 # from the ClaraGenomicsAnalysis `graph` utility class.
 
 # Declare structs and APIs from graph.hpp.
-cdef extern from "claragenomics/utils/graph.hpp" namespace "claragenomics":
+cdef extern from "claraparabricks/genomeworks/utils/graph.hpp" namespace "claraparabricks::genomeworks":
     cdef cppclass Graph:
         ctypedef int32_t node_id_t
         ctypedef int32_t edge_weight_t

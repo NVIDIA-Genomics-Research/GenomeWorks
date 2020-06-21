@@ -9,13 +9,16 @@
 */
 
 #include "ukkonen_cpu.hpp"
-#include <claragenomics/utils/mathutils.hpp>
-#include <claragenomics/utils/signed_integer_utils.hpp>
+#include <claraparabricks/genomeworks/utils/mathutils.hpp>
+#include <claraparabricks/genomeworks/utils/signed_integer_utils.hpp>
 #include <limits>
 #include <cassert>
 #include <algorithm>
 
-namespace claragenomics
+namespace claraparabricks
+{
+
+namespace genomeworks
 {
 
 namespace cudaaligner
@@ -248,4 +251,7 @@ std::vector<int8_t> ukkonen_cpu(std::string const& target, std::string const& qu
 }
 
 } // namespace cudaaligner
-} // namespace claragenomics
+
+} // namespace genomeworks
+
+} // namespace claraparabricks

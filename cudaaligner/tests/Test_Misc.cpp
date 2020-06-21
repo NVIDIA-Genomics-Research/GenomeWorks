@@ -8,11 +8,14 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-#include <claragenomics/utils/mathutils.hpp>
+#include <claraparabricks/genomeworks/utils/mathutils.hpp>
 
 #include "gtest/gtest.h"
 
-namespace claragenomics
+namespace claraparabricks
+{
+
+namespace genomeworks
 {
 
 namespace cudaaligner
@@ -30,4 +33,7 @@ TEST(TestCudaAlignerMisc, CeilingDivide)
 }
 
 } // namespace cudaaligner
-} // namespace claragenomics
+
+} // namespace genomeworks
+
+} // namespace claraparabricks

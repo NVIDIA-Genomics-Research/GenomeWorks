@@ -10,13 +10,16 @@
 
 #pragma once
 
-#include <claragenomics/utils/signed_integer_utils.hpp>
+#include <claraparabricks/genomeworks/utils/signed_integer_utils.hpp>
 
 #include <cassert>
 #include <climits>
 #include <vector>
 
-namespace claragenomics
+namespace claraparabricks
+{
+
+namespace genomeworks
 {
 
 namespace cudaaligner
@@ -121,4 +124,7 @@ int32_t myers_compute_edit_distance(std::string const& target, std::string const
 }
 
 } // namespace cudaaligner
-} // namespace claragenomics
+
+} // namespace genomeworks
+
+} // namespace claraparabricks

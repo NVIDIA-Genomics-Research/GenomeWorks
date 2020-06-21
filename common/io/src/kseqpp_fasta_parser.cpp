@@ -17,10 +17,14 @@
 #include <exception>
 #include <iostream>
 #include "seqio.h" //TODO add this to 3rdparty
-#include <claragenomics/utils/signed_integer_utils.hpp>
+#include <claraparabricks/genomeworks/utils/signed_integer_utils.hpp>
 
-namespace claragenomics
+namespace claraparabricks
 {
+
+namespace genomeworks
+{
+
 namespace io
 {
 
@@ -70,4 +74,7 @@ const FastaSequence& FastaParserKseqpp::get_sequence_by_id(const read_id_t seque
 }
 
 } // namespace io
-} // namespace claragenomics
+
+} // namespace genomeworks
+
+} // namespace claraparabricks
