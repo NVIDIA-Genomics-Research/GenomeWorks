@@ -106,7 +106,7 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
                                   SizeT* band_starts_d,
                                   SizeT* band_widths_d,
                                   SizeT* band_locations_d,
-                                  uint32_t banded_alignment_band_width = 0)
+                                  uint32_t banded_alignment_band_width = 128)
 {
     // shared error indicator within a warp
     bool warp_error = false;

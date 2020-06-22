@@ -52,6 +52,7 @@ __device__ void set_placeholder_band_values(float gradient, SizeT dummy_band_wid
         else
         {
             band_locations[static_cast<int64_t>(row_idx)] = band_locations[static_cast<int64_t>(row_idx-1)] + dummy_band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING;
+            
         }
         
     }
@@ -91,6 +92,7 @@ __device__ ScoreT* get_score_ptr_adaptive(ScoreT* scores, SizeT row, SizeT colum
     }
 
     int64_t score_index = static_cast<int64_t>(col_offset) + static_cast<int64_t>(band_locations[static_cast<int64_t>(row)]);
+   
     return &scores[score_index];
 };
 
@@ -123,8 +125,13 @@ __device__ void set_score_adaptive(ScoreT* scores, SizeT row, SizeT column, Scor
     }
 
     int64_t score_index = static_cast<int64_t>(col_offset) + static_cast<int64_t>(band_locations[static_cast<int64_t>(row)]);
+    // if((threadIdx.x % WARP_SIZE) == 0)
+    // {
+    //     printf("row: %ld col: %ld score_index:%ld\n", static_cast<int64_t>(row), static_cast<int64_t>(column), score_index);
+    // }
     scores[score_index] = value;
 }
+
 
 template <typename ScoreT, typename SizeT>
 __device__ void initialize_band_adaptive(ScoreT* scores, SizeT row, ScoreT value, SizeT* band_starts, SizeT* band_widths, SizeT* band_locations, SizeT max_column)
@@ -174,6 +181,22 @@ __device__ ScoreT get_score_adaptive(ScoreT* scores, SizeT row, SizeT column, Si
 }
 
 template <typename ScoreT, typename SizeT>
+__device__ void print_matrix_adaptive(ScoreT* scores, SizeT max_rows, SizeT max_column, SizeT* band_starts, SizeT* band_widths, SizeT* band_locations)
+{
+    if(threadIdx.x == 0)
+    {
+        for(int64_t i=0; i < static_cast<int64_t>(max_rows); i++)
+        {
+            for(int64_t j=0; j < static_cast<int64_t>(max_column); j++)
+            {
+                printf("Row: %ld, Column: %ld, Score: %ld\n", i, j, static_cast<int64_t>(get_score_adaptive(scores, static_cast<SizeT>(i), static_cast<SizeT>(j), band_starts, band_widths, band_locations, max_column, static_cast<ScoreT>(0))));
+            }
+        }
+    }
+}
+
+
+template <typename ScoreT, typename SizeT>
 __device__ ScoreT4<ScoreT> get_scores_adaptive(SizeT read_pos,
                                       ScoreT* scores,
                                       SizeT node,
@@ -194,9 +217,9 @@ __device__ ScoreT4<ScoreT> get_scores_adaptive(SizeT read_pos,
     // using a single load inst, and then extracting necessary part of
     // of the data using bit arithmatic. Also reduces register count.
 
-    SizeT band_start = band_starts[static_cast<SizeT>(node)];
+    SizeT band_start = band_starts[static_cast<int64_t>(node)];
 
-    SizeT band_end = static_cast<SizeT>(band_start + band_widths[static_cast<SizeT>(node)] + CELLS_PER_THREAD);
+    SizeT band_end = static_cast<SizeT>(band_start + band_widths[static_cast<int64_t>(node)] + CELLS_PER_THREAD);
 
     if (((static_cast<SizeT>(read_pos + 1) > band_end) || (static_cast<SizeT>(read_pos + 1) < band_start)) && static_cast<SizeT>(read_pos + 1) != 0)
     {
@@ -270,7 +293,7 @@ __device__
     if(lane_idx == 0)
     {
         // dummy function to be replaced by bw calculator; Sets values per defined gradient
-        set_placeholder_band_values(gradient, dummy_band_width, band_starts, band_widths, band_locations, graph_count, max_column);
+        set_placeholder_band_values(gradient, dummy_band_width, band_starts, band_widths, band_locations,  static_cast<SizeT>(graph_count+1), max_column);
     }
 
     // Initialise the horizontal boundary of the score matrix
@@ -278,7 +301,8 @@ __device__
     {
         set_score_adaptive(scores, static_cast<SizeT>(0), j, static_cast<ScoreT>(j * gap_score), band_starts, band_widths, band_locations, max_column);
     }
-
+    // print_matrix_adaptive(scores, static_cast<SizeT>(graph_count+1), max_column, band_starts, band_widths, band_locations);
+   
     // Initialise the vertical boundary of the score matrix
     if (lane_idx == 0)
     {
@@ -289,6 +313,8 @@ __device__
         for (SizeT graph_pos = 0; graph_pos < graph_count; graph_pos++)
         {
 
+            
+            
             set_score_adaptive(scores, static_cast<SizeT>(0), static_cast<SizeT>(0), static_cast<ScoreT>(0), band_starts, band_widths, band_locations, max_column);
 
             SizeT node_id = graph[graph_pos];
@@ -298,6 +324,7 @@ __device__
             if (pred_count == 0)
             {
                 set_score_adaptive(scores, i, static_cast<SizeT>(0), gap_score,  band_starts, band_widths, band_locations, max_column);
+                printf("Node: %ld\n", static_cast<int64_t>(graph_pos));
             }
             else
             {
@@ -308,10 +335,18 @@ __device__
                     SizeT pred_node_graph_pos = node_id_to_pos[pred_node_id] + 1;
                     penalty                   = max(penalty, get_score_adaptive(scores, pred_node_graph_pos, static_cast<SizeT>(0),  band_starts, band_widths, band_locations, static_cast<SizeT>(read_length + 1), min_score_value));
                 }
+                printf("Node: %ld, Penalty: %ld\n", static_cast<int64_t>(graph_pos), static_cast<int64_t>(penalty));
                 set_score_adaptive(scores, i, static_cast<SizeT>(0), static_cast<ScoreT>(penalty + gap_score),  band_starts, band_widths, band_locations, max_column);
             }
+            // if(threadIdx.x==0)
+            //     printf("Graph pos: %ld-----\n",static_cast<int64_t>(graph_pos));
+            // print_matrix_adaptive(scores, static_cast<SizeT>(graph_count+1), max_column, band_starts, band_widths, band_locations);
         }
+         
+
     }
+    
+    // return;
 
     __syncwarp();
 
@@ -417,6 +452,10 @@ __device__
 
             // score_index = static_cast<int64_t>(read_pos + 1 - band_start) + static_cast<int64_t>(score_gIdx) * static_cast<int64_t>(max_matrix_sequence_dimension);
             score_index = static_cast<int64_t>(read_pos + 1 - band_start) +  static_cast<int64_t>(band_locations[static_cast<int64_t>(score_gIdx)]);
+            // if((threadIdx.x % WARP_SIZE) == 1)
+            // {
+            //     printf("score_index:%ld, score_gIdx:%ld, band_pos:%ld band_loc:%ld\n",  score_index, static_cast<int64_t>(score_gIdx),  static_cast<int64_t>(read_pos + 1 - band_start),  static_cast<int64_t>(band_locations[static_cast<int64_t>(score_gIdx)]));
+            // }
             scores[score_index]      = score.s0;
             scores[score_index + 1L] = score.s1;
             scores[score_index + 2L] = score.s2;
