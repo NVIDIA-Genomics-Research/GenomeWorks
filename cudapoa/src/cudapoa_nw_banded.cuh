@@ -527,9 +527,9 @@ __device__
             aligned_nodes = -1;
         }
 
-// #ifdef NW_VERBOSE_PRINT
+#ifdef NW_VERBOSE_PRINT
         printf("aligned nodes %d, loop count %d\n", aligned_nodes, loop_count);
-// #endif
+#endif
     }
     aligned_nodes = __shfl_sync(FULL_MASK, aligned_nodes, 0);
     return aligned_nodes;
