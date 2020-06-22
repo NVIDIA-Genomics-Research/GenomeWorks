@@ -288,13 +288,15 @@ __device__
     SizeT max_column                    = read_length + 1;
 
     // SizeT max_matrix_sequence_dimension = band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING;
-    SizeT max_matrix_sequence_dimension = max_column;
+    
     float gradient = float(read_length + 1) / float(graph_count + 1);
     if(lane_idx == 0)
     {
         // dummy function to be replaced by bw calculator; Sets values per defined gradient
         set_placeholder_band_values(gradient, dummy_band_width, band_starts, band_widths, band_locations,  static_cast<SizeT>(graph_count+1), max_column);
     }
+
+    SizeT max_matrix_sequence_dimension = band_widths[0] + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING;
 
     // Initialise the horizontal boundary of the score matrix
     for (SizeT j = lane_idx; j < max_matrix_sequence_dimension; j += WARP_SIZE)
