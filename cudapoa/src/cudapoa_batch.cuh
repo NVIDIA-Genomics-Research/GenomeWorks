@@ -74,7 +74,7 @@ public:
                                                      max_mem,
                                                      output_mask,
                                                      batch_size_,
-                                                     cuda_banded_alignment))
+                                                     cuda_banded_alignment, cuda_adaptive_banding))
         , max_poas_(batch_block_->get_max_poas())
     {
         // Set CUDA device

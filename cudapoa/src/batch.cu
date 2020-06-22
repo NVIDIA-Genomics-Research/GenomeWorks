@@ -35,6 +35,7 @@ std::unique_ptr<Batch> create_batch(int32_t device_id,
                                     bool cuda_banded_alignment,
                                     bool cuda_adaptive_banding)
 {
+    // std::cout<<cuda_adaptive_banding;
     if (use32bitScore(batch_size, gap_score, mismatch_score, match_score))
     {
         if (use32bitSize(batch_size, cuda_banded_alignment))

@@ -130,11 +130,14 @@ __device__ void print_matrix(ScoreT* scores, SizeT max_rows, SizeT max_column, f
 {
     if(threadIdx.x == 0)
     {
+        printf("Matrix Size: %ld x %ld\n", static_cast<int64_t>(max_rows), static_cast<int64_t>(max_column));
         for(int64_t i=0; i < static_cast<int64_t>(max_rows); i++)
         {
             for(int64_t j=0; j < static_cast<int64_t>(max_column); j++)
             {
-                printf("Row: %ld, Column: %ld, Score: %ld\n", i, j, static_cast<int64_t>(get_score(scores, static_cast<SizeT>(i), static_cast<SizeT>(j), gradient, band_width, max_column, static_cast<ScoreT>(0))));
+                int64_t score = static_cast<int64_t>(get_score(scores, static_cast<SizeT>(i), static_cast<SizeT>(j), gradient, band_width, max_column, static_cast<ScoreT>(0)));
+                if(score!=0)
+                printf("Row: %ld, Column: %ld, Score: %ld\n", i, j, score);
             }
         }
     }
@@ -227,14 +230,14 @@ __device__
 
     SizeT max_column                    = read_length + 1;
     SizeT max_matrix_sequence_dimension = band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING;
-
+    print_matrix(scores, static_cast<SizeT>(graph_count+1), max_column, gradient, band_width);
     // Initialise the horizontal boundary of the score matrix
     for (SizeT j = lane_idx; j < max_matrix_sequence_dimension; j += WARP_SIZE)
     {
         set_score(scores, static_cast<SizeT>(0), j, static_cast<ScoreT>(j * gap_score), gradient, band_width, max_column);
     }
-    // print_matrix(scores, static_cast<SizeT>(graph_count+1), max_column, gradient, band_width);
-
+    //print_matrix(scores, static_cast<SizeT>(graph_count+1), max_column, gradient, band_width);
+    return;
     // Initialise the vertical boundary of the score matrix
     if (lane_idx == 0)
     {
@@ -244,9 +247,6 @@ __device__
 
         for (SizeT graph_pos = 0; graph_pos < graph_count; graph_pos++)
         {
-
-            
-            
            
             set_score(scores, static_cast<SizeT>(0), static_cast<SizeT>(0), static_cast<ScoreT>(0), gradient, band_width, max_column);
              

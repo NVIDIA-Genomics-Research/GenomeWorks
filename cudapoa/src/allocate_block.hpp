@@ -47,7 +47,7 @@ template <typename ScoreT, typename SizeT>
 class BatchBlock
 {
 public:
-    BatchBlock(int32_t device_id, size_t avail_mem, int8_t output_mask, const BatchSize& batch_size, bool banded_alignment = false, bool adaptive_banded = true)
+    BatchBlock(int32_t device_id, size_t avail_mem, int8_t output_mask, const BatchSize& batch_size, bool banded_alignment = false, bool adaptive_banded = false)
         : max_sequences_per_poa_(throw_on_negative(batch_size.max_sequences_per_poa, "Maximum sequences per POA has to be non-negative"))
         , banded_alignment_(banded_alignment)
         , device_id_(throw_on_negative(device_id, "Device ID has to be non-negative"))
@@ -195,6 +195,7 @@ public:
         offset_d_ += cudautils::align<int64_t, 8>(sizeof(*alignment_details_d->alignment_graph) * max_graph_dimension_ * max_poas_);
         alignment_details_d->alignment_read = reinterpret_cast<decltype(alignment_details_d->alignment_read)>(&block_data_d_[offset_d_]);
         offset_d_ += cudautils::align<int64_t, 8>(sizeof(*alignment_details_d->alignment_read) * max_graph_dimension_ * max_poas_);
+        std::cout<<adaptive_banded_<<std::endl;
         if(adaptive_banded_){
         alignment_details_d->band_starts = reinterpret_cast<decltype(alignment_details_d->band_starts)>(&block_data_d_[offset_d_]);
         offset_d_ += cudautils::align<int64_t, 8>(sizeof(*alignment_details_d->band_starts) * max_nodes_per_window_ * max_poas_);
