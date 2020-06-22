@@ -159,7 +159,7 @@ if __name__ == "__main__":
     cmake_proj = CMakeWrapper(cmake_root_dir=gw_root_dir,
                               cmake_build_path=args.build_output_folder,
                               gw_install_dir=gw_installation_directory,
-                              cmake_extra_args="-Dgw_build_shared=ON")
+                              cmake_extra_args="-Dcga_build_shared=ON")
     cmake_proj.build()
     # Setup genomeworks
     setup_python_binding(
