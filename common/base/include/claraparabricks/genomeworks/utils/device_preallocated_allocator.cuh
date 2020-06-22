@@ -76,7 +76,7 @@ public:
     DevicePreallocatedAllocator operator=(DevicePreallocatedAllocator&&) = delete;
 
     ~DevicePreallocatedAllocator() = default;
-    // ^^^^ buffer_'s destructor deallocates device memory
+    // ^^^^ buffer_ptr_'s destructor deallocates device memory
 
     /// \brief allocates memory (assigns part of the buffer)
     /// Memory allocation is aligned by 256 bytes
@@ -86,7 +86,7 @@ public:
     /// \return cudaSuccess if allocation was successful, cudaErrorMemoryAllocation otherwise
     cudaError_t DeviceAllocate(void** ptr,
                                size_t bytes_needed,
-                               const std::vector<cudaStream_t>& associated_streams = {{0}})
+                               const std::vector<cudaStream_t>& associated_streams)
     {
         assert(!associated_streams.empty());
 
