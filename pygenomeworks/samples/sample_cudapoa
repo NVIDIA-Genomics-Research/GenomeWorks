@@ -120,8 +120,8 @@ if __name__ == "__main__":
 
     # Create input dataset.
     cwd = os.path.dirname(os.path.abspath(__file__))
-    cga_root = os.path.dirname(os.path.dirname(cwd))
-    cudapoa_data_dir = os.path.join(cga_root, "cudapoa", "data")
+    gw_root = os.path.dirname(os.path.dirname(cwd))
+    cudapoa_data_dir = os.path.join(gw_root, "cudapoa", "data")
     sample_windows = os.path.join(cudapoa_data_dir, "sample-bonito.txt" if args.l else "sample-windows.txt")
     groups = read_poa_group_file(sample_windows, 1000)
 

@@ -24,10 +24,10 @@ import subprocess
 
 def parse_arguments():
     """Parse command line arguments."""
-    parser = argparse.ArgumentParser(description='build & install Clara Genomics Analysis SDK.')
+    parser = argparse.ArgumentParser(description='build & install GenomeWorks SDK.')
     parser.add_argument('--build_output_folder',
                         required=False,
-                        default="cga_build",
+                        default="gw_build",
                         help="Choose an output folder for building")
     parser.add_argument('--create_wheel_only',
                         required=False,
@@ -53,28 +53,28 @@ class CMakeWrapper:
     def __init__(self,
                  cmake_root_dir,
                  cmake_build_path="cmake_build",
-                 cga_install_dir="cmake_build/install",
+                 gw_install_dir="cmake_build/install",
                  cmake_extra_args=""):
         """Class constructor.
 
         Args:
             cmake_root_dir : Root directory of CMake project
             cmake_build_path : cmake build output folder
-            cga_install_dir: Clara Genomics Analysis installation directory
+            gw_install_dir: GenomeWorks installation directory
             cmake_extra_args : Extra string arguments to be passed to CMake during setup
         """
         self.cmake_root_dir = os.path.abspath(cmake_root_dir)
         self.build_path = os.path.abspath(cmake_build_path)
-        self.cga_install_dir = os.path.abspath(cga_install_dir)
+        self.gw_install_dir = os.path.abspath(gw_install_dir)
         self.cmake_extra_args = cmake_extra_args
         self.cuda_toolkit_root_dir = os.environ.get("CUDA_TOOLKIT_ROOT_DIR")
 
     def _run_cmake_cmd(self):
         """Build and call CMake command."""
-        cmake_args = ['-DCMAKE_INSTALL_PREFIX=' + self.cga_install_dir,
+        cmake_args = ['-DCMAKE_INSTALL_PREFIX=' + self.gw_install_dir,
                       '-DCMAKE_BUILD_TYPE=' + 'Release',
-                      '-DCMAKE_INSTALL_RPATH=' + os.path.join(self.cga_install_dir, "lib"),
-                      '-Dcga_generate_docs=OFF']
+                      '-DCMAKE_INSTALL_RPATH=' + os.path.join(self.gw_install_dir, "lib"),
+                      '-Dgw_generate_docs=OFF']
         cmake_args += [self.cmake_extra_args] if self.cmake_extra_args else []
 
         if self.cuda_toolkit_root_dir:
@@ -96,29 +96,29 @@ class CMakeWrapper:
         self._run_build_cmd()
 
 
-def get_package_version(overwritten_package_version, cga_dir):
+def get_package_version(overwritten_package_version, gw_dir):
     """Returns the correct version for genomeworks python package.
 
-    In case the user didn't overwrite the package name returns CGA version found in VERSION file otherwise,
+    In case the user didn't overwrite the package name returns GW version found in VERSION file otherwise,
     returns the overwritten package name
     """
     if overwritten_package_version is not None:
         return overwritten_package_version
-    # Get CGA version from VERSION file
-    with open(os.path.join(cga_dir, 'VERSION'), 'r') as f:
+    # Get GW version from VERSION file
+    with open(os.path.join(gw_dir, 'VERSION'), 'r') as f:
         return f.read().replace('\n', '')
 
 
-def setup_python_binding(is_develop_mode, wheel_output_folder, cga_dir, pycga_dir, cga_install_dir,
+def setup_python_binding(is_develop_mode, wheel_output_folder, gw_dir, pygw_dir, gw_install_dir,
                          genomeworks_rename, genomeworks_version):
     """Setup python bindings and genomeworks modules for genomeworks.
 
     Args:
         is_develop_mode : Develop or install mode for installation
         wheel_output_folder : Output directory for genomeworks wheel file
-        cga_dir : Root ClaraGenomicsAnalysis directory
-        pycga_dir : Root genomeworks directory
-        cga_install_dir : Directory with ClaraGenomicsAnalysis SDK installation
+        gw_dir : Root GenomeWorks directory
+        pygw_dir : Root genomeworks directory
+        gw_install_dir : Directory with GenomeWorks SDK installation
         genomeworks_rename : rename genomeworks package
         genomeworks_version : genomeworks package version
     """
@@ -140,12 +140,12 @@ def setup_python_binding(is_develop_mode, wheel_output_folder, cga_dir, pycga_di
     subprocess.check_call(setup_command, env={
         **{
             **os.environ,
-            'CGA_ROOT_DIR': cga_dir,
-            'CGA_INSTALL_DIR': cga_install_dir,
-            'CGA_VERSION': genomeworks_version
+            'GW_ROOT_DIR': gw_dir,
+            'GW_INSTALL_DIR': gw_install_dir,
+            'GW_VERSION': genomeworks_version
         },
-        **({} if genomeworks_rename is None else {'PYCGA_RENAME': genomeworks_rename})
-    }, cwd=pycga_dir)
+        **({} if genomeworks_rename is None else {'PYGW_RENAME': genomeworks_rename})
+    }, cwd=pygw_dir)
     print(completion_message)
 
 
@@ -153,21 +153,21 @@ if __name__ == "__main__":
 
     args = parse_arguments()
     current_dir = os.path.dirname(os.path.realpath(__file__))
-    cga_root_dir = os.path.dirname(current_dir)
-    cga_installation_directory = os.path.join(args.build_output_folder, "install")
-    # Build & install Clara Genomics Analysis SDK
-    cmake_proj = CMakeWrapper(cmake_root_dir=cga_root_dir,
+    gw_root_dir = os.path.dirname(current_dir)
+    gw_installation_directory = os.path.join(args.build_output_folder, "install")
+    # Build & install GenomeWorks SDK
+    cmake_proj = CMakeWrapper(cmake_root_dir=gw_root_dir,
                               cmake_build_path=args.build_output_folder,
-                              cga_install_dir=cga_installation_directory,
-                              cmake_extra_args="-Dcga_build_shared=ON")
+                              gw_install_dir=gw_installation_directory,
+                              cmake_extra_args="-Dgw_build_shared=ON")
     cmake_proj.build()
     # Setup genomeworks
     setup_python_binding(
         is_develop_mode=args.develop,
         wheel_output_folder='genomeworks_wheel/' if args.create_wheel_only else None,
-        cga_dir=cga_root_dir,
-        pycga_dir=current_dir,
-        cga_install_dir=os.path.realpath(cga_installation_directory),
+        gw_dir=gw_root_dir,
+        pygw_dir=current_dir,
+        gw_install_dir=os.path.realpath(gw_installation_directory),
         genomeworks_rename=args.overwrite_package_name,
-        genomeworks_version=get_package_version(args.overwrite_package_version, cga_root_dir)
+        genomeworks_version=get_package_version(args.overwrite_package_version, gw_root_dir)
     )

@@ -74,8 +74,8 @@ pip install -r python-style-requirements.txt
 
 ### Code Formatting
 
-Clara Genomics Analysis follows the PEP-8 style guidelines for all its Python code. The automated
-CI system for Clara Genomics Analysis run `flake8` to check the style.
+GenomeWorks follows the PEP-8 style guidelines for all its Python code. The automated
+CI system for GenomeWorks run `flake8` to check the style.
 
 To run style check manually, simply run the following from the top level folder.
 

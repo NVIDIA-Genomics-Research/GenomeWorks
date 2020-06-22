@@ -71,15 +71,15 @@ def copy_all_files_in_directory(src, dest, file_ext="*.so"):
 
 
 # Must be set before calling pip
-for envvar in ['CGA_INSTALL_DIR', 'CGA_VERSION', 'CGA_ROOT_DIR']:
+for envvar in ['GW_INSTALL_DIR', 'GW_VERSION', 'GW_ROOT_DIR']:
     if envvar not in os.environ.keys():
         raise EnvironmentError(
             '{} environment variables must be set'.format(envvar))
 
-cga_root_dir = os.environ['CGA_ROOT_DIR']
-cga_install_dir = os.environ['CGA_INSTALL_DIR']
-cga_version = os.environ['CGA_VERSION']
-pycga_name = os.getenv('PYCGA_RENAME', 'genomeworks')
+gw_root_dir = os.environ['GW_ROOT_DIR']
+gw_install_dir = os.environ['GW_INSTALL_DIR']
+gw_version = os.environ['GW_VERSION']
+pygw_name = os.getenv('PYGW_RENAME', 'genomeworks')
 cuda_root = os.getenv('CUDA_TOOLKIT_ROOT_DIR', '/usr/local/cuda')
 cuda_include_path = os.path.join(cuda_root, 'include')
 cuda_library_path = os.path.join(cuda_root, 'lib64')
@@ -90,12 +90,12 @@ current_dir = os.path.dirname(os.path.realpath(__file__))
 
 # Copies shared libraries into clargenomics package
 copy_all_files_in_directory(
-    get_verified_absolute_path(os.path.join(cga_install_dir, "lib")),
+    get_verified_absolute_path(os.path.join(gw_install_dir, "lib")),
     os.path.join(current_dir, "genomeworks", "shared_libs/"),
 )
 
 # Classifiers for PyPI
-pycga_classifiers = [
+pygw_classifiers = [
         "Development Status :: 5 - Production/Stable",
         "Intended Audience :: Science/Research",
         "Topic :: Scientific/Engineering :: Bio-Informatics",
@@ -127,12 +127,12 @@ extensions = [
         sources=[os.path.join("genomeworks/cudapoa/cudapoa.pyx")],
         include_dirs=[
             cuda_include_path,
-            get_verified_absolute_path(os.path.join(cga_install_dir, "include")),
-            get_verified_absolute_path(os.path.join(cga_root_dir, "3rdparty", "spdlog", "include")),
+            get_verified_absolute_path(os.path.join(gw_install_dir, "include")),
+            get_verified_absolute_path(os.path.join(gw_root_dir, "3rdparty", "spdlog", "include")),
         ],
-        library_dirs=[cuda_library_path, get_verified_absolute_path(os.path.join(cga_install_dir, "lib"))],
+        library_dirs=[cuda_library_path, get_verified_absolute_path(os.path.join(gw_install_dir, "lib"))],
         runtime_library_dirs=[cuda_library_path, os.path.join('$ORIGIN', os.pardir, 'shared_libs')],
-        libraries=["cudapoa", "cudart", "cgabase"],
+        libraries=["cudapoa", "cudart", "gwbase"],
         language="c++",
         extra_compile_args=["-std=c++14"],
     ),
@@ -141,27 +141,27 @@ extensions = [
         sources=[os.path.join("genomeworks/cudaaligner/cudaaligner.pyx")],
         include_dirs=[
             cuda_include_path,
-            get_verified_absolute_path(os.path.join(cga_install_dir, "include")),
-            get_verified_absolute_path(os.path.join(cga_root_dir, "3rdparty", "cub")),
-            get_verified_absolute_path(os.path.join(cga_root_dir, "3rdparty", "spdlog", "include")),
+            get_verified_absolute_path(os.path.join(gw_install_dir, "include")),
+            get_verified_absolute_path(os.path.join(gw_root_dir, "3rdparty", "cub")),
+            get_verified_absolute_path(os.path.join(gw_root_dir, "3rdparty", "spdlog", "include")),
         ],
-        library_dirs=[cuda_library_path, get_verified_absolute_path(os.path.join(cga_install_dir, "lib"))],
+        library_dirs=[cuda_library_path, get_verified_absolute_path(os.path.join(gw_install_dir, "lib"))],
         runtime_library_dirs=[cuda_library_path, os.path.join('$ORIGIN', os.pardir, 'shared_libs')],
-        libraries=["cudaaligner", "cudart", "cgabase"],
+        libraries=["cudaaligner", "cudart", "gwbase"],
         language="c++",
         extra_compile_args=["-std=c++14"],
     )
 ]
 
 
-setup(name=pycga_name,
-      version=cga_version,
+setup(name=pygw_name,
+      version=gw_version,
       description='NVIDIA genomics python libraries and utiliites',
       author='NVIDIA Corporation',
-      url="https://github.com/clara-parabricks/ClaraGenomicsAnalysis",
+      url="https://github.com/clara-parabricks/GenomeWorks",
       include_package_data=True,
       data_files=[
-          ('cga_shared_objects', glob.glob('genomeworks/shared_libs/*.so'))
+          ('gw_shared_objects', glob.glob('genomeworks/shared_libs/*.so'))
       ],
       install_requires=get_installation_requirments(
           get_verified_absolute_path(os.path.join(current_dir, 'requirements.txt'))
@@ -171,7 +171,7 @@ setup(name=pycga_name,
       license='Apache License 2.0',
       long_description='Python libraries and utilities for manipulating genomics data',
       long_description_content_type='text/plain',
-      classifiers=pycga_classifiers,
+      classifiers=pygw_classifiers,
       platforms=['any'],
       ext_modules=cythonize(extensions, compiler_directives={'embedsignature': True}),
       scripts=[os.path.join('bin', 'genome_simulator')],

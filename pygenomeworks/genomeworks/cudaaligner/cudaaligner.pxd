@@ -21,7 +21,7 @@ from libcpp.memory cimport unique_ptr, shared_ptr
 from genomeworks.cuda.cuda_runtime_api cimport _Stream
 
 # This file declared public structs and API calls
-# from the ClaraGenomicsAnalysis `cudaaligner` module.
+# from the GenomeWorks `cudaaligner` module.
 
 # Declare structs and APIs from cudaaligner.hpp
 cdef extern from "claraparabricks/genomeworks/cudaaligner/cudaaligner.hpp" \

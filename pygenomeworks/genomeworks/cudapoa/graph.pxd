@@ -19,7 +19,7 @@ from libc.stdint cimport int32_t
 from libcpp.vector cimport vector
 
 # This file declares public structs and API calls
-# from the ClaraGenomicsAnalysis `graph` utility class.
+# from the GenomeWorks `graph` utility class.
 
 # Declare structs and APIs from graph.hpp.
 cdef extern from "claraparabricks/genomeworks/utils/graph.hpp" namespace "claraparabricks::genomeworks":
