@@ -126,7 +126,7 @@ __device__ ScoreT get_score(ScoreT* scores, SizeT row, SizeT column, float gradi
 }
 
 template <typename ScoreT, typename SizeT>
-__device__ void print_matrix(ScoreT* scores, SizeT max_rows, SizeT max_column, float gradient, SizeT band_width)
+__device__ void print_matrix(ScoreT* scores, SizeT max_rows, SizeT max_column, float gradient, SizeT band_width, ScoreT min_score_value)
 {
     if(threadIdx.x == 0)
     {
@@ -135,9 +135,22 @@ __device__ void print_matrix(ScoreT* scores, SizeT max_rows, SizeT max_column, f
         {
             for(int64_t j=0; j < static_cast<int64_t>(max_column); j++)
             {
-                int64_t score = static_cast<int64_t>(get_score(scores, static_cast<SizeT>(i), static_cast<SizeT>(j), gradient, band_width, max_column, static_cast<ScoreT>(0)));
-                if(score!=0)
-                printf("Row: %ld, Column: %ld, Score: %ld\n", i, j, score);
+                // int64_t score = static_cast<int64_t>(get_score(scores, static_cast<SizeT>(i), static_cast<SizeT>(j), gradient, band_width, max_column, min_score_value));
+                // if (score!=0 && score!=min_score_value)
+                // printf("Row: %ld, Column: %ld, Score: %ld\n", i, j, score);
+                SizeT band_start = get_band_start_for_row(static_cast<SizeT>(i), gradient, band_width, max_column);
+                SizeT col_idx;
+                if (j == 0)
+                {
+                    col_idx = band_start;
+                }
+                else
+                {
+                    col_idx = j - band_start;
+                }
+
+                int64_t score_index = static_cast<int64_t>(col_idx) + static_cast<int64_t>(i) * static_cast<int64_t>(band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING);
+                printf("Row: %ld Col: %ld BandStart: %ld ScoreIndex: %ld\n", i, j, static_cast<int64_t>(band_start), score_index );
             }
         }
     }
@@ -230,14 +243,14 @@ __device__
 
     SizeT max_column                    = read_length + 1;
     SizeT max_matrix_sequence_dimension = band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING;
-    print_matrix(scores, static_cast<SizeT>(graph_count+1), max_column, gradient, band_width);
+    //print_matrix(scores, static_cast<SizeT>(graph_count+1), max_column, gradient, band_width, min_score_value);
     // Initialise the horizontal boundary of the score matrix
     for (SizeT j = lane_idx; j < max_matrix_sequence_dimension; j += WARP_SIZE)
     {
         set_score(scores, static_cast<SizeT>(0), j, static_cast<ScoreT>(j * gap_score), gradient, band_width, max_column);
     }
-    //print_matrix(scores, static_cast<SizeT>(graph_count+1), max_column, gradient, band_width);
-    return;
+    //print_matrix(scores, static_cast<SizeT>(graph_count+1), max_column, gradient, band_width, min_score_value);
+    //return;
     // Initialise the vertical boundary of the score matrix
     if (lane_idx == 0)
     {
@@ -258,7 +271,7 @@ __device__
             if (pred_count == 0)
             {
                 set_score(scores, i, static_cast<SizeT>(0), gap_score, gradient, band_width, max_column);
-                printf("Node: %ld\n", static_cast<int64_t>(graph_pos));
+                //printf("Node: %ld\n", static_cast<int64_t>(graph_pos));
             }
             else
             {
@@ -269,7 +282,7 @@ __device__
                     SizeT pred_node_graph_pos = node_id_to_pos[pred_node_id] + 1;
                     penalty                   = max(penalty, get_score(scores, pred_node_graph_pos, static_cast<SizeT>(0), gradient, band_width, static_cast<SizeT>(read_length + 1), min_score_value));
                 }
-                printf("Node: %ld, Penalty: %ld\n", static_cast<int64_t>(graph_pos), static_cast<int64_t>(penalty));
+                //printf("Node: %ld, Penalty: %ld\n", static_cast<int64_t>(graph_pos), static_cast<int64_t>(penalty));
                 set_score(scores, i, static_cast<SizeT>(0), static_cast<ScoreT>(penalty + gap_score), gradient, band_width, max_column);
             }
             // if(threadIdx.x==0)
@@ -514,9 +527,9 @@ __device__
             aligned_nodes = -1;
         }
 
-#ifdef NW_VERBOSE_PRINT
+// #ifdef NW_VERBOSE_PRINT
         printf("aligned nodes %d, loop count %d\n", aligned_nodes, loop_count);
-#endif
+// #endif
     }
     aligned_nodes = __shfl_sync(FULL_MASK, aligned_nodes, 0);
     return aligned_nodes;

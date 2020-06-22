@@ -53,7 +53,7 @@ std::unique_ptr<Batch> create_batch(int32_t device_id,
         }
         else
         {
-            return std::make_unique<CudapoaBatch<int32_t, int16_t>>(device_id,
+            return std::make_unique<CudapoaBatch<int32_t, int32_t>>(device_id,
                                                                     stream,
                                                                     max_mem,
                                                                     output_mask,
@@ -68,7 +68,7 @@ std::unique_ptr<Batch> create_batch(int32_t device_id,
     else
     {
         // if ScoreT is 16-bit, then it's safe to assume SizeT is 16-bit
-        return std::make_unique<CudapoaBatch<int16_t, int16_t>>(device_id,
+        return std::make_unique<CudapoaBatch<int16_t, int32_t>>(device_id,
                                                                 stream,
                                                                 max_mem,
                                                                 output_mask,
