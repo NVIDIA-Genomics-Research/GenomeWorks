@@ -163,7 +163,8 @@ struct FilterOverlapOp
 
         return ((overlap.num_residues_ >= min_residues) &&
                 ((overlap_length / overlap.num_residues_) < min_bases_per_residue) &&
-                (query_overlap_length > min_overlap_len) &&
+                (query_overlap_length >= min_overlap_len) &&
+                (target_overlap_length >= min_overlap_len) &&
                 (overlap.query_read_id_ != overlap.target_read_id_) &&
                 ((static_cast<float>(target_overlap_length) / static_cast<float>(overlap_length)) > min_overlap_fraction) &&
                 ((static_cast<float>(query_overlap_length) / static_cast<float>(overlap_length)) > min_overlap_fraction));
