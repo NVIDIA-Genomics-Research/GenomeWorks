@@ -255,7 +255,7 @@ public:
         return static_cast<pointer>(ptr);
     }
 
-    /// \brief Asynchronously dealllocates allocated array, calls cudaStreamSynchronize() on associated streams
+    /// \brief Asynchronously deallocates allocated array, may call cudaStreamSynchronize() on associated streams or may defer that call to a later point
     /// \param p pointer to the array to deallocate
     /// \param n number of elements the array was allocated for
     void deallocate(pointer p, std::size_t n)
