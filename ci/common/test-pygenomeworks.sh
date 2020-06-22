@@ -23,37 +23,37 @@ run_tests() {
   fi
 }
 
-PYCLARAGENOMICS_DIR=$1
-cd "$PYCLARAGENOMICS_DIR"
+PYGENOMEWORKS_DIR=$1
+cd "$PYGENOMEWORKS_DIR"
 
-logger "Install pyclaragenomics external dependencies..."
+logger "Install pygenomeworks external dependencies..."
 python -m pip install -r requirements.txt
 
-logger "Install pyclaragenomics..."
-python setup_pyclaragenomics.py --build_output_folder cga_build
+logger "Install pygenomeworks..."
+python setup_pygenomeworks.py --build_output_folder cga_build
 
 logger "Run Tests..."
 run_tests
-cd "$PYCLARAGENOMICS_DIR"
+cd "$PYGENOMEWORKS_DIR"
 
-logger "Uninstall pyclaragenomics..."
-pip uninstall -y pyclaragenomics
+logger "Uninstall pygenomeworks..."
+pip uninstall -y pygenomeworks
 
-logger "Create pyclaragenomics Wheel package..."
+logger "Create pygenomeworks Wheel package..."
 CUDA_VERSION_FOR_PACKAGE_NAME=$(echo "$CUDA_VERSION" | cut -d"." -f1-2 | sed -e "s/\./_/g")
 if [ "${COMMIT_HASH}" == "master" ]; then
   PYCGA_VERSION=$(cat ../VERSION)
 else
   PYCGA_VERSION=$(cat ../VERSION | tr -d "\n")\.dev$(date +%y%m%d) # for nightly build
 fi
-python setup_pyclaragenomics.py \
+python setup_pygenomeworks.py \
         --build_output_folder cga_build_wheel \
         --create_wheel_only \
         --overwrite_package_name genomeworks_cuda_"$CUDA_VERSION_FOR_PACKAGE_NAME" \
         --overwrite_package_version "$PYCGA_VERSION"
 
-logger "Install pyclaragenomics Wheel package..."
-yes | pip install "$PYCLARAGENOMICS_DIR"/genomeworks_wheel/genomeworks*.whl
+logger "Install pygenomeworks Wheel package..."
+yes | pip install "$PYGENOMEWORKS_DIR"/genomeworks_wheel/genomeworks*.whl
 
 logger "Run Tests..."
 run_tests

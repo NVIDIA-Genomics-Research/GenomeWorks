@@ -9,6 +9,13 @@ Python libraries and utilities for manipulating genomics data
 A stable release of genomeworks can be installed from PyPI. Currently only CUDA 10.0 and CUDA 10.1 based packages are supported.
 Both of those packages are available for CPython 3.5 and 3.6.
 
+### Stable release (pre v0.5.0)
+
+NOTE - v0.5.0 onwards our package name is changing. Please refer to `master` branch documentation
+for details on python bindings for v0.4.0 and before.
+
+### v0.5.0 onwards
+
 ```
 pip install genomeworks-cuda10-0
 ```
@@ -51,7 +58,7 @@ Use the following command in order to package genomeworks into a wheel. (without
 
 ```
 pip install -r requirements.txt
-python setup_genomeworks.py --create_wheel_only
+python setup_pygenomeworks.py --create_wheel_only
 ```
 
 ### Enable Doc Generation
