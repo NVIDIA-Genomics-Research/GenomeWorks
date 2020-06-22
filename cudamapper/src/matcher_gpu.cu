@@ -16,10 +16,10 @@
 #include <thrust/transform_scan.h>
 #include <thrust/execution_policy.h>
 
-#include <claragenomics/utils/cudasort.cuh>
-#include <claragenomics/utils/cudautils.hpp>
-#include <claragenomics/utils/mathutils.hpp>
-#include <claragenomics/utils/signed_integer_utils.hpp>
+#include <claraparabricks/genomeworks/utils/cudasort.cuh>
+#include <claraparabricks/genomeworks/utils/cudautils.hpp>
+#include <claraparabricks/genomeworks/utils/mathutils.hpp>
+#include <claraparabricks/genomeworks/utils/signed_integer_utils.hpp>
 
 namespace claraparabricks
 {
@@ -74,7 +74,7 @@ MatcherGPU::MatcherGPU(DefaultDeviceAllocator allocator,
     const int64_t n_anchors = cudautils::get_value_from_device(anchor_starting_indices_d.end() - 1,
                                                                cuda_stream); // D2H transfer
 
-    anchors_d_.resize(n_anchors);
+    anchors_d_.clear_and_resize(n_anchors);
 
     // Generate the anchors
     // by computing the all-to-all combinations of the matching representations in query and target

@@ -10,7 +10,7 @@
 
 #include "gtest/gtest.h"
 
-#include <claragenomics/utils/threadsafe_containers.hpp>
+#include <claraparabricks/genomeworks/utils/threadsafe_containers.hpp>
 
 #include <algorithm>
 #include <mutex>

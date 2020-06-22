@@ -10,7 +10,7 @@
 
 #include <memory>
 
-#include <claragenomics/utils/allocator.hpp>
+#include <claraparabricks/genomeworks/utils/allocator.hpp>
 
 namespace claraparabricks
 {
@@ -48,6 +48,7 @@ public:
     int32_t min_bases_per_residue           = 100;   // b
     float min_overlap_fraction              = 0.95;  // z
     bool perform_overlap_end_rescue         = false; // R
+    bool drop_fused_overlaps                = false; // D
     int32_t query_indices_in_host_memory    = 10;    // Q
     int32_t query_indices_in_device_memory  = 5;     // q
     int32_t target_indices_in_host_memory   = 10;    // C

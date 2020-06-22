@@ -174,6 +174,5 @@ setup(name=pycga_name,
       classifiers=pycga_classifiers,
       platforms=['any'],
       ext_modules=cythonize(extensions, compiler_directives={'embedsignature': True}),
-      scripts=[os.path.join('bin', 'genome_simulator'),
-               os.path.join('bin', 'assembly_evaluator')],
+      scripts=[os.path.join('bin', 'genome_simulator')],
       )

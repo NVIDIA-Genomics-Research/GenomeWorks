@@ -43,7 +43,7 @@ This will clone the repo to the `master` branch, which contains code for latest 
 and hot-fixes.
 
 ```
-git clone --recursive -b master git@github.com:clara-genomics/ClaraGenomicsAnalysis.git
+git clone --recursive -b master https://github.com/clara-genomics/ClaraGenomicsAnalysis.git
 ```
 
 ### Latest development version
@@ -51,7 +51,7 @@ This will clone the repo to the default branch, which is set to be the latest de
 This branch is subject to change frequently as features and bug fixes are pushed.
 
 ```bash
-git clone --recursive git@github.com:clara-genomics/ClaraGenomicsAnalysis.git
+git clone --recursive https://github.com/clara-genomics/ClaraGenomicsAnalysis.git
 ```
 
 ## System Requirements
@@ -61,6 +61,7 @@ Minimum requirements -
 2. CUDA 9.0+ (official instructions for installing CUDA are available [here](https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html))
 3. gcc/g++ 5.4.0+
 4. Python 3.6.7+
+5. CMake (>= 3.0)
 
 ## Clara Genomics Analysis Setup
 

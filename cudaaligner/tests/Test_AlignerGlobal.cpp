@@ -13,9 +13,9 @@
 #include "../src/aligner_global_myers_banded.hpp"
 #include "../src/aligner_global_hirschberg_myers.hpp"
 
-#include <claragenomics/cudaaligner/alignment.hpp>
-#include <claragenomics/utils/signed_integer_utils.hpp>
-#include <claragenomics/utils/genomeutils.hpp>
+#include <claraparabricks/genomeworks/cudaaligner/alignment.hpp>
+#include <claraparabricks/genomeworks/utils/signed_integer_utils.hpp>
+#include <claraparabricks/genomeworks/utils/genomeutils.hpp>
 
 #include <random>
 #include "gtest/gtest.h"

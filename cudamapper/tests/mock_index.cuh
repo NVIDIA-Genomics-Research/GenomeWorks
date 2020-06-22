@@ -12,8 +12,8 @@
 
 #include "gmock/gmock.h"
 
-#include <claragenomics/utils/cudautils.hpp>
-#include <claragenomics/utils/allocator.hpp>
+#include <claraparabricks/genomeworks/utils/cudautils.hpp>
+#include <claraparabricks/genomeworks/utils/allocator.hpp>
 #include "../src/index_gpu.cuh"
 #include "../src/minimizer.hpp"
 #include "cudamapper_file_location.hpp"

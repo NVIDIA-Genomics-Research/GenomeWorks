@@ -16,7 +16,7 @@
 #include <cub/cub.cuh>
 #include <thrust/execution_policy.h>
 
-#include <claragenomics/utils/cudautils.hpp>
+#include <claraparabricks/genomeworks/utils/cudautils.hpp>
 
 #ifndef NDEBUG // only needed to check if input is sorted in assert
 #include <algorithm>
@@ -290,7 +290,7 @@ void OverlapperTriggered::get_overlaps(std::vector<Overlap>& fused_overlaps,
         d_chain_length.data(), d_nchains.data(), n_anchors, _cuda_stream);
 
     // allocate temporary storage
-    d_temp_buf.resize(temp_storage_bytes, _cuda_stream);
+    d_temp_buf.clear_and_resize(temp_storage_bytes);
     d_temp_storage = d_temp_buf.data();
 
     // run encoding
@@ -315,7 +315,7 @@ void OverlapperTriggered::get_overlaps(std::vector<Overlap>& fused_overlaps,
                                   n_chains, _cuda_stream);
 
     // allocate temporary storage
-    d_temp_buf.resize(temp_storage_bytes, _cuda_stream);
+    d_temp_buf.clear_and_resize(temp_storage_bytes);
     d_temp_storage = d_temp_buf.data();
 
     cub::DeviceScan::ExclusiveSum(d_temp_storage, temp_storage_bytes,
@@ -381,7 +381,7 @@ void OverlapperTriggered::get_overlaps(std::vector<Overlap>& fused_overlaps,
                                    _cuda_stream);
 
     // allocate temporary storage
-    d_temp_buf.resize(temp_storage_bytes, _cuda_stream);
+    d_temp_buf.clear_and_resize(temp_storage_bytes);
     d_temp_storage = d_temp_buf.data();
 
     cub::DeviceReduce::ReduceByKey(d_temp_storage,

@@ -48,9 +48,6 @@ conda install --override-channels -c sarcasm clang-format
 logger "Conda install ClaraGenomicsAnalysis custom packages - doxygen ninja cmake"
 conda install --override-channels -c conda-forge doxygen ninja cmake">=3.10.2"
 
-logger "Conda install ClaraGenomicsAnalysis custom packages - minimap2 miniasm racon htslib"
-conda install --override-channels -c bioconda minimap2 miniasm racon htslib
-
 logger "Update LD_LIBRARY_PATH"
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
 

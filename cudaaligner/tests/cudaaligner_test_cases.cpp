@@ -11,7 +11,7 @@
 #include "cudaaligner_test_cases.hpp"
 
 #include <random>
-#include <claragenomics/utils/genomeutils.hpp>
+#include <claraparabricks/genomeworks/utils/genomeutils.hpp>
 
 namespace
 {

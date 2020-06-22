@@ -12,7 +12,7 @@
 
 #include "gmock/gmock.h"
 
-#include <claragenomics/io/fasta_parser.hpp>
+#include <claraparabricks/genomeworks/io/fasta_parser.hpp>
 
 namespace claraparabricks
 {

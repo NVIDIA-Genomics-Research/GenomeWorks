@@ -10,12 +10,12 @@
 
 #include "index_cache.cuh"
 
-#include "index_host_copy.cu"
+#include "index_host_copy.cuh"
 
 #include <unordered_set>
 
-#include <claragenomics/cudamapper/index.hpp>
-#include <claragenomics/io/fasta_parser.hpp>
+#include <claraparabricks/genomeworks/cudamapper/index.hpp>
+#include <claraparabricks/genomeworks/io/fasta_parser.hpp>
 
 namespace claraparabricks
 {
@@ -106,8 +106,8 @@ void IndexCacheHost::generate_cache_content(const std::vector<IndexDescriptor>& 
         // check if this index should be kept on device in addition to copying it to host
         const bool keep_on_device = descriptors_of_indices_to_keep_on_device_set.count(descriptor_of_index_to_cache) != 0;
 
-        std::shared_ptr<const IndexHostCopyBase> index_copy = nullptr;
-        std::shared_ptr<Index> index_on_device              = nullptr;
+        std::shared_ptr<const IndexHostCopyBase> index_on_host = nullptr;
+        std::shared_ptr<Index> index_on_device                 = nullptr;
 
         if (same_query_and_target_)
         {
@@ -115,7 +115,7 @@ void IndexCacheHost::generate_cache_content(const std::vector<IndexDescriptor>& 
             auto existing_cache = cache_to_check.find(descriptor_of_index_to_cache);
             if (existing_cache != cache_to_check.end())
             {
-                index_copy = existing_cache->second;
+                index_on_host = existing_cache->second;
                 if (keep_on_device)
                 {
                     auto existing_device_cache = temp_device_cache_to_check.find(descriptor_of_index_to_cache);
@@ -125,23 +125,23 @@ void IndexCacheHost::generate_cache_content(const std::vector<IndexDescriptor>& 
                     }
                     else
                     {
-                        index_on_device = index_copy->copy_index_to_device(allocator_, cuda_stream_);
+                        index_on_device = index_on_host->copy_index_to_device(allocator_, cuda_stream_);
                     }
                 }
             }
         }
 
-        if (nullptr == index_copy)
+        if (nullptr == index_on_host)
         {
             // check if this index is already cached in this cache
             auto existing_cache = cache_to_edit.find(descriptor_of_index_to_cache);
             if (existing_cache != cache_to_edit.end())
             {
                 // index already cached
-                index_copy = existing_cache->second;
+                index_on_host = existing_cache->second;
                 if (keep_on_device)
                 {
-                    index_on_device = index_copy->copy_index_to_device(allocator_, cuda_stream_);
+                    index_on_device = index_on_host->copy_index_to_device(allocator_, cuda_stream_);
                 }
             }
             else
@@ -159,19 +159,22 @@ void IndexCacheHost::generate_cache_content(const std::vector<IndexDescriptor>& 
                 // copy it to host memory
                 if (!skip_copy_to_host)
                 {
-                    index_copy = IndexHostCopy::create_cache(*index_on_device,
-                                                             descriptor_of_index_to_cache.first_read(),
-                                                             kmer_size_,
-                                                             window_size_,
-                                                             cuda_stream_);
+                    index_on_host = IndexHostCopy::create_cache(*index_on_device,
+                                                                descriptor_of_index_to_cache.first_read(),
+                                                                kmer_size_,
+                                                                window_size_,
+                                                                cuda_stream_);
                 }
             }
         }
 
-        assert(nullptr != index_copy);
-
         // save pointer to cached index
-        new_cache[descriptor_of_index_to_cache] = index_copy;
+        if (!skip_copy_to_host)
+        {
+            assert(nullptr != index_on_host);
+            new_cache[descriptor_of_index_to_cache] = index_on_host;
+        }
+
         if (keep_on_device)
         {
             temp_device_cache_to_edit[descriptor_of_index_to_cache] = index_on_device;

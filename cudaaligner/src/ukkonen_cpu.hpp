@@ -12,7 +12,7 @@
 
 #include "matrix_cpu.hpp"
 
-#include <claragenomics/cudaaligner/cudaaligner.hpp>
+#include <claraparabricks/genomeworks/cudaaligner/cudaaligner.hpp>
 
 #include <vector>
 #include <tuple>

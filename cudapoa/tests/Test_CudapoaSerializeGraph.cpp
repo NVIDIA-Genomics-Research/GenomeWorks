@@ -8,9 +8,9 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-#include <claragenomics/cudapoa/batch.hpp>
-#include <claragenomics/utils/genomeutils.hpp>
-#include <claragenomics/utils/graph.hpp>
+#include <claraparabricks/genomeworks/cudapoa/batch.hpp>
+#include <claraparabricks/genomeworks/utils/genomeutils.hpp>
+#include <claraparabricks/genomeworks/utils/graph.hpp>
 
 #include "gtest/gtest.h"
 

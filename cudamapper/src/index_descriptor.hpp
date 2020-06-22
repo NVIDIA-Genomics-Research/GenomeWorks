@@ -10,8 +10,8 @@
 
 #pragma once
 
-#include <claragenomics/types.hpp>
-#include <claragenomics/io/fasta_parser.hpp>
+#include <claraparabricks/genomeworks/types.hpp>
+#include <claraparabricks/genomeworks/io/fasta_parser.hpp>
 
 namespace claraparabricks
 {
