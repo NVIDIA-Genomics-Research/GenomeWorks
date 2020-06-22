@@ -47,13 +47,7 @@ __device__ void set_placeholder_band_values(float gradient, SizeT dummy_band_wid
         start_pos = start_pos - (start_pos % CELLS_PER_THREAD);
         band_starts[static_cast<int64_t>(row_idx)] = start_pos;
         band_widths[static_cast<int64_t>(row_idx)] = dummy_band_width;
-        if(row_idx == static_cast<SizeT>(0))
-            band_locations[static_cast<int64_t>(row_idx)] = 0;
-        else
-        {
-            band_locations[static_cast<int64_t>(row_idx)] = band_locations[static_cast<int64_t>(row_idx-1)] + dummy_band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING;
-            
-        }
+        band_locations[static_cast<int64_t>(row_idx)] = row_idx*(dummy_band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING);
         
     }
 }
