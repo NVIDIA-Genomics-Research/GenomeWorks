@@ -40,7 +40,7 @@ void generate_window_data(bool all_fasta, std::vector<std::string>& input_paths,
         std::vector<int64_t> num_reads_per_file(num_input_files);
         for (int32_t i = 0; i < num_input_files; i++)
         {
-            fasta_parser_vec[i]   = claragenomics::io::create_kseq_fasta_parser(input_prefix + std::to_string(i) + file_extension, min_sequence_length, false);
+            fasta_parser_vec[i]   = claragenomics::io::create_kseq_fasta_parser(input_paths[i], min_sequence_length, false);
             num_reads_per_file[i] = fasta_parser_vec[i]->get_num_seqences();
         }
         const int64_t num_reads = num_reads_per_file[0];
