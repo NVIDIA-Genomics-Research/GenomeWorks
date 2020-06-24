@@ -74,7 +74,7 @@ std::vector<AlignmentTestData> create_alignment_test_cases()
     test_cases.push_back(data);
 
     // Test case 2
-    data.query     = "CGATAATG";
+    data.query     = "GWTAATG";
     data.target    = "CATAA";
     data.alignment = {
         AlignmentState::deletion,
@@ -85,7 +85,7 @@ std::vector<AlignmentTestData> create_alignment_test_cases()
         AlignmentState::match,
         AlignmentState::deletion,
         AlignmentState::deletion};
-    data.formatted_alignment = FormattedAlignment{"CGATAATG", " x||||  ", "-CATAA--"};
+    data.formatted_alignment = FormattedAlignment{"GWTAATG", " x||||  ", "-CATAA--"};
     data.cigar               = "1D5M2D";
     test_cases.push_back(data);
 

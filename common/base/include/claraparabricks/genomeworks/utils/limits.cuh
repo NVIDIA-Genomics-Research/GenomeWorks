@@ -10,7 +10,7 @@
 
 #pragma once
 
-#include <claraparabricks/genomeworks/cga_config.hpp>
+#include <claraparabricks/genomeworks/gw_config.hpp>
 #include <limits>
 #include <cstdint>
 
@@ -19,7 +19,7 @@ namespace claraparabricks
 
 namespace genomeworks
 {
-#ifdef CGA_CUDA_BEFORE_10_1
+#ifdef GW_CUDA_BEFORE_10_1
 template <typename T>
 struct numeric_limits
 {
@@ -28,15 +28,15 @@ struct numeric_limits
 template <>
 struct numeric_limits<int16_t>
 {
-    CGA_CONSTEXPR static __device__ int16_t max() { return INT16_MAX; }
-    CGA_CONSTEXPR static __device__ int16_t min() { return INT16_MIN; }
+    GW_CONSTEXPR static __device__ int16_t max() { return INT16_MAX; }
+    GW_CONSTEXPR static __device__ int16_t min() { return INT16_MIN; }
 };
 
 template <>
 struct numeric_limits<int32_t>
 {
-    CGA_CONSTEXPR static __device__ int32_t max() { return INT32_MAX; }
-    CGA_CONSTEXPR static __device__ int32_t min() { return INT32_MIN; }
+    GW_CONSTEXPR static __device__ int32_t max() { return INT32_MAX; }
+    GW_CONSTEXPR static __device__ int32_t min() { return INT32_MIN; }
 };
 #else
 using std::numeric_limits;

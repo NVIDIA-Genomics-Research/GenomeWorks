@@ -24,11 +24,11 @@ namespace genomeutils
 
 TEST(GenomeUtilsTest, ReverseComplement)
 {
-    std::string genome("ATCGAACGTATG");
+    std::string genome("ATGWACGTATG");
     std::vector<char> complement(genome.size() + 1);
     complement[genome.length()] = '\0';
     reverse_complement(genome.c_str(), genome.length(), complement.data());
-    ASSERT_STREQ(complement.data(), "CATACGTTCGAT");
+    ASSERT_STREQ(complement.data(), "CATACGTTGWT");
 }
 
 } // namespace genomeutils

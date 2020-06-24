@@ -70,8 +70,8 @@ TEST(TestCudaAligner, TestAlignmentAddition)
 
     ASSERT_EQ(3, aligner->num_alignments());
 
-    ASSERT_EQ(StatusType::exceeded_max_length, aligner->add_alignment("ATCGATTACGC", 11, "TACGTACGGA", 10, false, false));
-    ASSERT_EQ(StatusType::exceeded_max_length, aligner->add_alignment("ATCGATTACG", 10, "ATACGTAGCGA", 11, false, false));
+    ASSERT_EQ(StatusType::exceeded_max_length, aligner->add_alignment("ATGWTTACGC", 11, "TACGTACGGA", 10, false, false));
+    ASSERT_EQ(StatusType::exceeded_max_length, aligner->add_alignment("ATGWTTACG", 10, "ATACGTAGGW", 11, false, false));
 
     ASSERT_EQ(3, aligner->num_alignments());
 

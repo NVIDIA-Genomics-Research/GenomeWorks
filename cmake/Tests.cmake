@@ -12,7 +12,7 @@
 enable_testing()
 
 get_property(enable_tests GLOBAL PROPERTY enable_tests)
-function(cga_add_tests NAME SOURCES LIBS)
+function(gw_add_tests NAME SOURCES LIBS)
     # Add test executable
     if (enable_tests)
         CUDA_ADD_EXECUTABLE(${NAME} ${SOURCES})
@@ -26,4 +26,4 @@ function(cga_add_tests NAME SOURCES LIBS)
         install(TARGETS ${NAME}
             DESTINATION tests)
     endif()
-endfunction(cga_add_tests)
+endfunction(gw_add_tests)

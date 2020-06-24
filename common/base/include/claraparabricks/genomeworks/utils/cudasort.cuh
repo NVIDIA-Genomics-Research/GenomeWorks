@@ -137,7 +137,7 @@ void sort_by_two_keys(device_buffer<MoreSignificantKeyT>& more_significant_keys,
                       const LessSignificantKeyT max_value_of_less_significant_key = std::numeric_limits<LessSignificantKeyT>::max(),
                       const cudaStream_t cuda_stream                              = 0)
 {
-    CGA_NVTX_RANGE(profiler, "sort_by_two_keys");
+    GW_NVTX_RANGE(profiler, "sort_by_two_keys");
 
     // Radix sort is done in-place, meaning sorting by less significant and then more significant keys yields the wanted result
     //

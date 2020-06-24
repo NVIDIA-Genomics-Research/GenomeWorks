@@ -576,7 +576,7 @@ IndexGPU<SketchElementImpl>::IndexGPU(DefaultDeviceAllocator allocator,
 
     // This is not completely necessary, but if removed one has to make sure that the next step
     // uses the same stream or that sync is done in caller
-    CGA_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream_));
+    GW_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream_));
 }
 
 template <typename SketchElementImpl>
@@ -624,7 +624,7 @@ IndexGPU<SketchElementImpl>::IndexGPU(DefaultDeviceAllocator allocator,
 
     // This is not completely necessary, but if removed one has to make sure that the next step
     // uses the same stream or that sync is done in caller
-    CGA_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream_));
+    GW_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream_));
 }
 
 template <typename SketchElementImpl>
@@ -698,7 +698,7 @@ void IndexGPU<SketchElementImpl>::generate_index(const io::FastaParser& parser,
     // check if there are any reads to process
     if (first_read_id >= past_the_last_read_id)
     {
-        CGA_LOG_INFO("No Sketch Elements to be added to index");
+        GW_LOG_INFO("No Sketch Elements to be added to index");
         number_of_reads_ = 0;
         return;
     }
@@ -727,18 +727,18 @@ void IndexGPU<SketchElementImpl>::generate_index(const io::FastaParser& parser,
         else
         {
             // TODO: Implement this skipping in a correct manner
-            CGA_LOG_INFO("Skipping read {}. It has {} basepairs, one window covers {} basepairs",
-                         read_name,
-                         read_basepairs.length(),
-                         window_size_ + kmer_size_ - 1);
+            GW_LOG_INFO("Skipping read {}. It has {} basepairs, one window covers {} basepairs",
+                        read_name,
+                        read_basepairs.length(),
+                        window_size_ + kmer_size_ - 1);
         }
     }
 
     if (0 == total_basepairs)
     {
-        CGA_LOG_INFO("Index for reads {} to past {} is empty",
-                     first_read_id,
-                     past_the_last_read_id);
+        GW_LOG_INFO("Index for reads {} to past {} is empty",
+                    first_read_id,
+                    past_the_last_read_id);
         number_of_reads_                     = 0;
         number_of_basepairs_in_longest_read_ = 0;
         return;
@@ -759,14 +759,14 @@ void IndexGPU<SketchElementImpl>::generate_index(const io::FastaParser& parser,
     fasta_reads.shrink_to_fit();
 
     // move basepairs to the device
-    CGA_LOG_INFO("Allocating {} bytes for read_id_to_basepairs_section_d", read_id_to_basepairs_section_h.size() * sizeof(decltype(read_id_to_basepairs_section_h)::value_type));
+    GW_LOG_INFO("Allocating {} bytes for read_id_to_basepairs_section_d", read_id_to_basepairs_section_h.size() * sizeof(decltype(read_id_to_basepairs_section_h)::value_type));
     device_buffer<decltype(read_id_to_basepairs_section_h)::value_type> read_id_to_basepairs_section_d(read_id_to_basepairs_section_h.size(), allocator_, cuda_stream_);
     cudautils::device_copy_n(read_id_to_basepairs_section_h.data(),
                              read_id_to_basepairs_section_h.size(),
                              read_id_to_basepairs_section_d.data(),
                              cuda_stream_); // H2D
 
-    CGA_LOG_INFO("Allocating {} bytes for merged_basepairs_d", merged_basepairs_h.size() * sizeof(decltype(merged_basepairs_h)::value_type));
+    GW_LOG_INFO("Allocating {} bytes for merged_basepairs_d", merged_basepairs_h.size() * sizeof(decltype(merged_basepairs_h)::value_type));
     device_buffer<decltype(merged_basepairs_h)::value_type> merged_basepairs_d(merged_basepairs_h.size(), allocator_, cuda_stream_);
     cudautils::device_copy_n(merged_basepairs_h.data(),
                              merged_basepairs_h.size(),
@@ -794,9 +794,9 @@ void IndexGPU<SketchElementImpl>::generate_index(const io::FastaParser& parser,
     //       Consider implementing a move-to-index function for that sort. That way this interface would be more verbose and there
     //       would be no need for copy_rest_to_separate_arrays()
 
-    CGA_LOG_INFO("Deallocating {} bytes from read_id_to_basepairs_section_d", read_id_to_basepairs_section_d.size() * sizeof(decltype(read_id_to_basepairs_section_d)::value_type));
+    GW_LOG_INFO("Deallocating {} bytes from read_id_to_basepairs_section_d", read_id_to_basepairs_section_d.size() * sizeof(decltype(read_id_to_basepairs_section_d)::value_type));
     read_id_to_basepairs_section_d.free();
-    CGA_LOG_INFO("Deallocating {} bytes from merged_basepairs_d", merged_basepairs_d.size() * sizeof(decltype(merged_basepairs_d)::value_type));
+    GW_LOG_INFO("Deallocating {} bytes from merged_basepairs_d", merged_basepairs_d.size() * sizeof(decltype(merged_basepairs_d)::value_type));
     merged_basepairs_d.free();
 
     // *** sort sketch elements by representation ***

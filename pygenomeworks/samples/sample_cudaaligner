@@ -12,7 +12,7 @@
 
 import argparse
 
-from genomeworks.bindings import cudaaligner
+from genomeworks import cudaaligner
 from genomeworks.simulators.genomesim import PoissonGenomeSimulator
 
 """

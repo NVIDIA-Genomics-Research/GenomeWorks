@@ -11,7 +11,7 @@
 #include "../src/cudapoa_nw.cuh" //runNW, CUDAPOA_*
 #include "sorted_graph.hpp"      //SortedGraph
 
-#include <claraparabricks/genomeworks/utils/cudautils.hpp>            //CGA_CU_CHECK_ERR
+#include <claraparabricks/genomeworks/utils/cudautils.hpp>            //GW_CU_CHECK_ERR
 #include <claraparabricks/genomeworks/utils/stringutils.hpp>          //array_to_string
 #include <claraparabricks/genomeworks/utils/signed_integer_utils.hpp> //get_size
 
@@ -205,18 +205,18 @@ NWAnswer testNW(const BasicNW& obj)
     BatchSize batch_size; //default max_sequence_size = 1024, max_sequences_per_poa = 100
 
     //allocate unified memory so they can be accessed by both host and device.
-    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&nodes, batch_size.max_nodes_per_window * sizeof(uint8_t)));
-    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&graph, batch_size.max_nodes_per_window * sizeof(SizeT)));
-    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&node_id_to_pos, batch_size.max_nodes_per_window * sizeof(SizeT)));
-    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&incoming_edges, batch_size.max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES * sizeof(SizeT)));
-    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&incoming_edge_count, batch_size.max_nodes_per_window * sizeof(uint16_t)));
-    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&outgoing_edges, batch_size.max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES * sizeof(SizeT)));
-    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&outgoing_edge_count, batch_size.max_nodes_per_window * sizeof(uint16_t)));
-    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&scores, batch_size.max_matrix_graph_dimension * batch_size.max_matrix_sequence_dimension * sizeof(int16_t)));
-    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&alignment_graph, batch_size.max_matrix_graph_dimension * sizeof(SizeT)));
-    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&read, batch_size.max_sequence_size * sizeof(uint8_t)));
-    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&alignment_read, batch_size.max_matrix_graph_dimension * sizeof(SizeT)));
-    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&aligned_nodes, sizeof(SizeT)));
+    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&nodes, batch_size.max_nodes_per_window * sizeof(uint8_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&graph, batch_size.max_nodes_per_window * sizeof(SizeT)));
+    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&node_id_to_pos, batch_size.max_nodes_per_window * sizeof(SizeT)));
+    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&incoming_edges, batch_size.max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES * sizeof(SizeT)));
+    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&incoming_edge_count, batch_size.max_nodes_per_window * sizeof(uint16_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&outgoing_edges, batch_size.max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES * sizeof(SizeT)));
+    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&outgoing_edge_count, batch_size.max_nodes_per_window * sizeof(uint16_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&scores, batch_size.max_matrix_graph_dimension * batch_size.max_matrix_sequence_dimension * sizeof(int16_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&alignment_graph, batch_size.max_matrix_graph_dimension * sizeof(SizeT)));
+    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&read, batch_size.max_sequence_size * sizeof(uint8_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&alignment_read, batch_size.max_matrix_graph_dimension * sizeof(SizeT)));
+    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&aligned_nodes, sizeof(SizeT)));
 
     //initialize all 'count' buffers
     memset((void**)incoming_edge_count, 0, batch_size.max_nodes_per_window * sizeof(uint16_t));
@@ -254,25 +254,25 @@ NWAnswer testNW(const BasicNW& obj)
                  match_score,
                  aligned_nodes);
 
-    CGA_CU_CHECK_ERR(cudaDeviceSynchronize());
+    GW_CU_CHECK_ERR(cudaDeviceSynchronize());
 
     //input and output buffers are the same ones in unified memory, so the results are updated in place
     //results are stored in alignment_graph and alignment_read; return string representation of those
     auto res = std::make_pair(genomeworks::stringutils::array_to_string<SizeT>(alignment_graph, *aligned_nodes, ","),
                               genomeworks::stringutils::array_to_string<SizeT>(alignment_read, *aligned_nodes, ","));
 
-    CGA_CU_CHECK_ERR(cudaFree(nodes));
-    CGA_CU_CHECK_ERR(cudaFree(graph));
-    CGA_CU_CHECK_ERR(cudaFree(node_id_to_pos));
-    CGA_CU_CHECK_ERR(cudaFree(incoming_edges));
-    CGA_CU_CHECK_ERR(cudaFree(incoming_edge_count));
-    CGA_CU_CHECK_ERR(cudaFree(outgoing_edges));
-    CGA_CU_CHECK_ERR(cudaFree(outgoing_edge_count));
-    CGA_CU_CHECK_ERR(cudaFree(scores));
-    CGA_CU_CHECK_ERR(cudaFree(alignment_graph));
-    CGA_CU_CHECK_ERR(cudaFree(read));
-    CGA_CU_CHECK_ERR(cudaFree(alignment_read));
-    CGA_CU_CHECK_ERR(cudaFree(aligned_nodes));
+    GW_CU_CHECK_ERR(cudaFree(nodes));
+    GW_CU_CHECK_ERR(cudaFree(graph));
+    GW_CU_CHECK_ERR(cudaFree(node_id_to_pos));
+    GW_CU_CHECK_ERR(cudaFree(incoming_edges));
+    GW_CU_CHECK_ERR(cudaFree(incoming_edge_count));
+    GW_CU_CHECK_ERR(cudaFree(outgoing_edges));
+    GW_CU_CHECK_ERR(cudaFree(outgoing_edge_count));
+    GW_CU_CHECK_ERR(cudaFree(scores));
+    GW_CU_CHECK_ERR(cudaFree(alignment_graph));
+    GW_CU_CHECK_ERR(cudaFree(read));
+    GW_CU_CHECK_ERR(cudaFree(alignment_read));
+    GW_CU_CHECK_ERR(cudaFree(aligned_nodes));
 
     return res;
 }

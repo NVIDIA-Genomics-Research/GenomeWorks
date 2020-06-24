@@ -21,7 +21,7 @@ include_directories(${cudapoa_data_include_dir})
 set(LIBS
         cudapoa)
 
-cga_add_benchmarks(${PROJECT_NAME} "cudapoa" "${SOURCES}" "${LIBS}")
+gw_add_benchmarks(${PROJECT_NAME} "cudapoa" "${SOURCES}" "${LIBS}")
 
 install(FILES README.md
     DESTINATION benchmarks/cudapoa)

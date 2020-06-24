@@ -152,13 +152,15 @@ cdef class CudaAlignerBatch:
         cdef size_t st
         cdef _Stream temp_stream
         if (stream is None):
+            self.stream = None
             temp_stream = NULL
         elif (not isinstance(stream, cuda.CudaStream)):
             raise RuntimeError("Type for stream option must be CudaStream")
         else:
+            # keep a reference to the stream, such that it gets destroyed after the aligner.
+            self.stream = stream
             st = stream.stream
             temp_stream = <_Stream>st
-        self.stream = stream  # keep a reference to the stream, such that it gets destroyed after the aligner.
 
         cdef cudaaligner.AlignmentType alignment_type_enum
         if (alignment_type == "global"):
@@ -261,6 +263,8 @@ cdef class CudaAlignerBatch:
 
     def __dealloc__(self):
         self.aligner.reset()
+        if self.stream:
+            del self.stream
 
     def reset(self):
         """Reset the contents of the batch so the same GPU memory can be used to

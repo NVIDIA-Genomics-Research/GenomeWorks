@@ -236,7 +236,7 @@ void OverlapperTriggered::get_overlaps(std::vector<Overlap>& fused_overlaps,
                                        int64_t min_bases_per_residue,
                                        float min_overlap_fraction)
 {
-    CGA_NVTX_RANGE(profiler, "OverlapperTriggered::get_overlaps");
+    GW_NVTX_RANGE(profiler, "OverlapperTriggered::get_overlaps");
     const auto tail_length_for_chain = 3;
     auto n_anchors                   = d_anchors.size();
 
@@ -423,7 +423,7 @@ void OverlapperTriggered::get_overlaps(std::vector<Overlap>& fused_overlaps,
 
     // This is not completely necessary, but if removed one has to make sure that the next step
     // uses the same stream or that sync is done in caller
-    CGA_CU_CHECK_ERR(cudaStreamSynchronize(_cuda_stream));
+    GW_CU_CHECK_ERR(cudaStreamSynchronize(_cuda_stream));
 }
 
 } // namespace cudamapper

@@ -12,34 +12,34 @@
 /// \file
 /// \defgroup cudautils Internal CUDA utilities package
 
-#include <claraparabricks/genomeworks/cga_config.hpp>
+#include <claraparabricks/genomeworks/gw_config.hpp>
 #include <claraparabricks/genomeworks/logging/logging.hpp>
 
 #include <cuda_runtime_api.h>
 #include <cassert>
 #include <string>
 
-#ifdef CGA_PROFILING
+#ifdef GW_PROFILING
 #include <nvToolsExt.h>
-#endif // CGA_PROFILING
+#endif // GW_PROFILING
 
 /// \ingroup cudautils
 /// \{
 
 /// \ingroup cudautils
-/// \def CGA_CU_CHECK_ERR
+/// \def GW_CU_CHECK_ERR
 /// \brief Log on CUDA error in enclosed expression
-#define CGA_CU_CHECK_ERR(ans)                                                           \
+#define GW_CU_CHECK_ERR(ans)                                                            \
     {                                                                                   \
         claraparabricks::genomeworks::cudautils::gpu_assert((ans), __FILE__, __LINE__); \
     }
-// ^^^^ CGA_CU_CHECK_ERR currently has the same implementation as CGA_CU_ABORT_ON_ERR.
-//      The idea is that in the future CGA_CU_CHECK_ERR could have a "softer" error reporting (= not calling std::abort)
+// ^^^^ GW_CU_CHECK_ERR currently has the same implementation as GW_CU_ABORT_ON_ERR.
+//      The idea is that in the future GW_CU_CHECK_ERR could have a "softer" error reporting (= not calling std::abort)
 
 /// \ingroup cudautils
-/// \def CGA_CU_ABORT_ON_ERR
+/// \def GW_CU_ABORT_ON_ERR
 /// \brief Log on CUDA error in enclosed expression and termine in release mode, fail assertion in debug mode
-#define CGA_CU_ABORT_ON_ERR(ans)                                                        \
+#define GW_CU_ABORT_ON_ERR(ans)                                                         \
     {                                                                                   \
         claraparabricks::genomeworks::cudautils::gpu_assert((ans), __FILE__, __LINE__); \
     }
@@ -63,7 +63,7 @@ namespace cudautils
 /// \param line File line number of the calling function
 inline void gpu_assert(cudaError_t code, const char* file, int line)
 {
-#ifdef CGA_DEVICE_SYNCHRONIZE
+#ifdef GW_DEVICE_SYNCHRONIZE
     // This device synchronize forces the most recent CUDA call to fully
     // complete, increasing the chance of catching the CUDA error near the
     // offending function. Only run if existing code is success to avoid
@@ -80,7 +80,7 @@ inline void gpu_assert(cudaError_t code, const char* file, int line)
                           std::string(cudaGetErrorString(code)) +
                           " " + std::string(file) +
                           " " + std::to_string(line);
-        CGA_LOG_ERROR("{}\n", err);
+        GW_LOG_ERROR("{}\n", err);
         // In Debug mode, this assert will cause a debugger trap
         // which is beneficial when debugging errors.
         assert(false);
@@ -108,8 +108,8 @@ template <typename Type>
 Type get_value_from_device(const Type* d_ptr, cudaStream_t stream = 0)
 {
     Type val;
-    CGA_CU_CHECK_ERR(cudaMemcpyAsync(&val, d_ptr, sizeof(Type), cudaMemcpyDeviceToHost, stream));
-    CGA_CU_CHECK_ERR(cudaStreamSynchronize(stream));
+    GW_CU_CHECK_ERR(cudaMemcpyAsync(&val, d_ptr, sizeof(Type), cudaMemcpyDeviceToHost, stream));
+    GW_CU_CHECK_ERR(cudaStreamSynchronize(stream));
     return val;
 }
 
@@ -117,43 +117,43 @@ Type get_value_from_device(const Type* d_ptr, cudaStream_t stream = 0)
 template <typename Type>
 void set_device_value_async(Type* dst, const Type* src, cudaStream_t stream)
 {
-    CGA_CU_CHECK_ERR(cudaMemcpyAsync(dst, src, sizeof(Type), cudaMemcpyDefault, stream));
+    GW_CU_CHECK_ERR(cudaMemcpyAsync(dst, src, sizeof(Type), cudaMemcpyDefault, stream));
 }
 
 /// Copies the value 'src' to 'dst' address.
 template <typename Type>
 void set_device_value(Type* dst, const Type& src)
 {
-    CGA_CU_CHECK_ERR(cudaMemcpy(dst, &src, sizeof(Type), cudaMemcpyDefault));
+    GW_CU_CHECK_ERR(cudaMemcpy(dst, &src, sizeof(Type), cudaMemcpyDefault));
 }
 
 /// Copies elements from the range [src, src + n) to the range [dst, dst + n) asynchronously.
 template <typename Type>
 void device_copy_n(const Type* src, size_t n, Type* dst, cudaStream_t stream)
 {
-    CGA_CU_CHECK_ERR(cudaMemcpyAsync(dst, src, n * sizeof(Type), cudaMemcpyDefault, stream));
+    GW_CU_CHECK_ERR(cudaMemcpyAsync(dst, src, n * sizeof(Type), cudaMemcpyDefault, stream));
 }
 
 /// Copies elements from the range [src, src + n) to the range [dst, dst + n).
 template <typename Type>
 void device_copy_n(const Type* src, size_t n, Type* dst)
 {
-    CGA_CU_CHECK_ERR(cudaMemcpy(dst, src, n * sizeof(Type), cudaMemcpyDefault));
+    GW_CU_CHECK_ERR(cudaMemcpy(dst, src, n * sizeof(Type), cudaMemcpyDefault));
 }
 
 /// @brief finds largest section of contiguous memory on device
 /// @return number of bytes
 std::size_t find_largest_contiguous_device_memory_section();
 
-#ifdef CGA_PROFILING
+#ifdef GW_PROFILING
 /// \ingroup cudautils
-/// \def CGA_NVTX_RANGE
+/// \def GW_NVTX_RANGE
 /// \brief starts an NVTX range for profiling which stops automatically at the end of the scope
 /// \param varname an arbitrary variable name for the nvtx_range object, which doesn't conflict with other variables in the scope
 /// \param label the label/name of the NVTX range
-#define CGA_NVTX_RANGE(varname, label) ::claraparabricks::genomeworks::cudautils::nvtx_range varname(label)
+#define GW_NVTX_RANGE(varname, label) ::claraparabricks::genomeworks::cudautils::nvtx_range varname(label)
 /// nvtx_range
-/// implementation of CGA_NVTX_RANGE
+/// implementation of GW_NVTX_RANGE
 class nvtx_range
 {
 public:
@@ -169,12 +169,12 @@ public:
 };
 #else
 /// \ingroup cudautils
-/// \def CGA_NVTX_RANGE
-/// \brief Dummy implementation for CGA_NVTX_RANGE macro
+/// \def GW_NVTX_RANGE
+/// \brief Dummy implementation for GW_NVTX_RANGE macro
 /// \param varname Unused variable
 /// \param label Unused variable
-#define CGA_NVTX_RANGE(varname, label)
-#endif // CGA_PROFILING
+#define GW_NVTX_RANGE(varname, label)
+#endif // GW_PROFILING
 
 } // namespace cudautils
 
@@ -191,8 +191,8 @@ public:
     /// \param device_id ID of CUDA device to switch to while class is in scope
     explicit scoped_device_switch(int32_t device_id)
     {
-        CGA_CU_CHECK_ERR(cudaGetDevice(&device_id_before_));
-        CGA_CU_CHECK_ERR(cudaSetDevice(device_id));
+        GW_CU_CHECK_ERR(cudaGetDevice(&device_id_before_));
+        GW_CU_CHECK_ERR(cudaSetDevice(device_id));
     }
 
     /// \brief Destructor switches back to original device ID

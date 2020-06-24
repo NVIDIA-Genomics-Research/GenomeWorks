@@ -26,8 +26,8 @@ else()
     message(STATUS "Using CUDA ${CUDA_VERSION} from ${CUDA_TOOLKIT_ROOT_DIR}")
     set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -lineinfo --expt-extended-lambda -use_fast_math -Xcompiler -Wall,-Wno-pedantic -std=c++14")
     # Determine arch flags
-    validate_boolean(cga_cuda_gen_all_arch)
-    if (cga_cuda_gen_all_arch)
+    validate_boolean(gw_cuda_gen_all_arch)
+    if (gw_cuda_gen_all_arch)
         CUDA_SELECT_NVCC_ARCH_FLAGS(ARCH_FLAGS "Common")
     else()
         CUDA_SELECT_NVCC_ARCH_FLAGS(ARCH_FLAGS "Auto")
@@ -58,7 +58,7 @@ target_include_directories(cudamapper
         $<INSTALL_INTERFACE:include>
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 )
-target_link_libraries(cudamapper cgabase cgaio cub)
+target_link_libraries(cudamapper gwbase gwio cub)
 target_compile_options(cudamapper PRIVATE -Werror)
 
 add_doxygen_source_dir(${CMAKE_CURRENT_SOURCE_DIR}/include)
@@ -89,4 +89,4 @@ install(TARGETS cudamapper-bin
 )
 
 # Add auto formatting.
-cga_enable_auto_formatting("${CMAKE_CURRENT_SOURCE_DIR}")
+gw_enable_auto_formatting("${CMAKE_CURRENT_SOURCE_DIR}")

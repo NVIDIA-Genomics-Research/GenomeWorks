@@ -201,7 +201,7 @@ private:
 } // namespace details
 
 template <typename T>
-#ifdef CGA_ENABLE_CACHING_ALLOCATOR
+#ifdef GW_ENABLE_CACHING_ALLOCATOR
 using device_buffer = details::buffer<T, CachingDeviceAllocator<T, DevicePreallocatedAllocator>>;
 #else
 using device_buffer = details::buffer<T, CudaMallocAllocator<T>>;

@@ -36,7 +36,7 @@ MatcherGPU::MatcherGPU(DefaultDeviceAllocator allocator,
                        const cudaStream_t cuda_stream)
     : anchors_d_(allocator)
 {
-    CGA_NVTX_RANGE(profile, "matcherGPU");
+    GW_NVTX_RANGE(profile, "matcherGPU");
     if (query_index.unique_representations().size() == 0 || target_index.unique_representations().size() == 0)
         return;
 
@@ -87,7 +87,7 @@ MatcherGPU::MatcherGPU(DefaultDeviceAllocator allocator,
 
     // This is not completely necessary, but if removed one has to make sure that the next step
     // uses the same stream or that sync is done in caller
-    CGA_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
+    GW_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
 }
 
 device_buffer<Anchor>& MatcherGPU::anchors()
@@ -283,7 +283,7 @@ void generate_anchors(
     device_buffer<PositionsKeyT> compound_key_positions_in_reads(anchors.size(), allocator, cuda_stream);
 
     {
-        CGA_NVTX_RANGE(profile, "matcherGPU::generate_anchors_kernel");
+        GW_NVTX_RANGE(profile, "matcherGPU::generate_anchors_kernel");
         const int32_t n_threads = 256;
         const int32_t n_blocks  = genomeworks::ceiling_divide<int64_t>(get_size(anchors), n_threads);
         generate_anchors_kernel<<<n_blocks, n_threads, 0, cuda_stream>>>(
@@ -307,7 +307,7 @@ void generate_anchors(
     }
 
     {
-        CGA_NVTX_RANGE(profile, "matcherGPU::sort_anchors");
+        GW_NVTX_RANGE(profile, "matcherGPU::sort_anchors");
         // sort anchors by query_read_id -> target_read_id -> query_position_in_read -> target_position_in_read
         cudautils::sort_by_two_keys(compound_key_read_ids,
                                     compound_key_positions_in_reads,

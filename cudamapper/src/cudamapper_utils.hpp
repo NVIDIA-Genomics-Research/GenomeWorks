@@ -49,7 +49,7 @@ void print_paf(const std::vector<Overlap>& overlaps,
 /// \param kmer_size A kmer length to use for producing kmers.
 /// \param stride The number of bases to skip when selecting kmers (most often, this should be equal to 1).
 /// \return A vector of strings containing the kmers (of length kmer_length) of s. If s is shorter than the kmer size, return s.
-std::vector<cga_string_view_t> split_into_kmers(const cga_string_view_t& s, std::int32_t kmer_size, std::int32_t stride);
+std::vector<gw_string_view_t> split_into_kmers(const gw_string_view_t& s, std::int32_t kmer_size, std::int32_t stride);
 
 /// \brief Given two sorted vectors of comparable types, return a size_t count of the number of shared elements.
 /// Duplicates are counted the number of times they appear (i.e., two vectors of ten identical elements would
@@ -71,7 +71,7 @@ std::size_t count_shared_elements(const std::vector<T>& a, const std::vector<T>&
 /// \param kmer_size The kmer length to use for estimating similarity.
 /// \param stride The number of bases to stride between kmers.
 /// \return The estimated Jaccard index as a float.
-float sequence_jaccard_similarity(const cga_string_view_t& a, const cga_string_view_t& b, std::int32_t kmer_size, std::int32_t stride);
+float sequence_jaccard_similarity(const gw_string_view_t& a, const gw_string_view_t& b, std::int32_t kmer_size, std::int32_t stride);
 
 } // namespace cudamapper
 
