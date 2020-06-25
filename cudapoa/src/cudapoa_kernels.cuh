@@ -262,46 +262,49 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
         // Run Needleman-Wunsch alignment between graph and new sequence.
         SizeT alignment_length;
 
-        if (cuda_banded_alignment)
+        if (cuda_banded_alignment || adaptive_banded)
         {
-            alignment_length = runNeedlemanWunschBanded<uint8_t, ScoreT, SizeT>(nodes,
-                                                                                sorted_poa,
-                                                                                node_id_to_pos,
-                                                                                sequence_lengths[0],
-                                                                                incoming_edge_count,
-                                                                                incoming_edges,
-                                                                                outgoing_edge_count,
-                                                                                sequence,
-                                                                                seq_len,
-                                                                                scores,
-                                                                                alignment_graph,
-                                                                                alignment_read,
-                                                                                banded_alignment_band_width,
-                                                                                gap_score,
-                                                                                mismatch_score,
-                                                                                match_score);
-        }
-        else if (adaptive_banded)
-        {
-            alignment_length = runNeedlemanWunschAdaptiveBanded<uint8_t, ScoreT, SizeT>(nodes,
-                                                                                        sorted_poa,
-                                                                                        node_id_to_pos,
-                                                                                        sequence_lengths[0],
-                                                                                        incoming_edge_count,
-                                                                                        incoming_edges,
-                                                                                        outgoing_edge_count,
-                                                                                        sequence,
-                                                                                        seq_len,
-                                                                                        scores,
-                                                                                        alignment_graph,
-                                                                                        alignment_read,
-                                                                                        band_starts,
-                                                                                        band_widths,
-                                                                                        band_locations,
-                                                                                        gap_score,
-                                                                                        mismatch_score,
-                                                                                        match_score,
-                                                                                        banded_alignment_band_width);
+            if (adaptive_banded)
+            {
+                alignment_length = runNeedlemanWunschAdaptiveBanded<uint8_t, ScoreT, SizeT>(nodes,
+                                                                                            sorted_poa,
+                                                                                            node_id_to_pos,
+                                                                                            sequence_lengths[0],
+                                                                                            incoming_edge_count,
+                                                                                            incoming_edges,
+                                                                                            outgoing_edge_count,
+                                                                                            sequence,
+                                                                                            seq_len,
+                                                                                            scores,
+                                                                                            alignment_graph,
+                                                                                            alignment_read,
+                                                                                            band_starts,
+                                                                                            band_widths,
+                                                                                            band_locations,
+                                                                                            gap_score,
+                                                                                            mismatch_score,
+                                                                                            match_score,
+                                                                                            banded_alignment_band_width);
+            }
+            else
+            {
+                alignment_length = runNeedlemanWunschBanded<uint8_t, ScoreT, SizeT>(nodes,
+                                                                                    sorted_poa,
+                                                                                    node_id_to_pos,
+                                                                                    sequence_lengths[0],
+                                                                                    incoming_edge_count,
+                                                                                    incoming_edges,
+                                                                                    outgoing_edge_count,
+                                                                                    sequence,
+                                                                                    seq_len,
+                                                                                    scores,
+                                                                                    alignment_graph,
+                                                                                    alignment_read,
+                                                                                    banded_alignment_band_width,
+                                                                                    gap_score,
+                                                                                    mismatch_score,
+                                                                                    match_score);
+            }
         }
         else
         {
