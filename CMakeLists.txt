@@ -9,15 +9,15 @@
 #
 
 cmake_minimum_required(VERSION 3.10.2)
-set(GW_PROJECT_NAME ClaraGenomicsAnalysis)
+set(GW_PROJECT_NAME GenomeWorks)
 file(READ "${CMAKE_CURRENT_SOURCE_DIR}/VERSION" GW_VERSION)
 string(STRIP ${GW_VERSION} GW_VERSION)
 project(${GW_PROJECT_NAME})
 
 # Process options.
-option(gw_enable_tests "Build ClaraGenomicsAnalysis unit tests" OFF)
-option(gw_enable_benchmarks "Build ClaraGenomicsAnalysis benchmarks" OFF)
-option(gw_build_shared "Build ClaraGenomicsAnalysis libraries as shared objects" OFF)
+option(gw_enable_tests "Build GenomeWorks unit tests" OFF)
+option(gw_enable_benchmarks "Build GenomeWorks benchmarks" OFF)
+option(gw_build_shared "Build GenomeWorks libraries as shared objects" OFF)
 option(gw_device_synchronize_kernels "Run cudaDeviceSynchronize() in GW_CU_CHECK_ERR calls" OFF)
 option(gw_optimize_for_native_cpu "Build with march=native" ON)
 # The spoa_accurate option runs a different (and slower) version of
@@ -39,22 +39,22 @@ include(cmake/Utils.cmake)
 
 validate_boolean(gw_enable_tests)
 if (gw_enable_tests)
-    message(STATUS "Enabling ClaraGenomicsAnalysis unit tests")
+    message(STATUS "Enabling GenomeWorks unit tests")
     set_property(GLOBAL PROPERTY enable_tests ON)
 endif()
 
 validate_boolean(gw_enable_benchmarks)
 if (gw_enable_benchmarks)
-    message(STATUS "Enabling ClaraGenomicsAnalysis benchmarks")
+    message(STATUS "Enabling GenomeWorks benchmarks")
     set_property(GLOBAL PROPERTY enable_benchmarks ON)
 endif()
 
 validate_boolean(gw_build_shared)
 if (gw_build_shared)
-    message(STATUS "Building ClaraGenomicsAnalysis libraries as shared objects")
+    message(STATUS "Building GenomeWorks libraries as shared objects")
     set_property(GLOBAL PROPERTY gw_library_type SHARED)
 else()
-    message(STATUS "Building ClaraGenomicsAnalysis libraries as static objects")
+    message(STATUS "Building GenomeWorks libraries as static objects")
     set_property(GLOBAL PROPERTY gw_library_type STATIC)
 endif()
 
@@ -69,7 +69,7 @@ include(cmake/Packaging.cmake)
 include(cmake/CondaEnv.cmake)
 include(cmake/GitVersion.cmake)
 
-# Add ClaraGenomicsAnalysis projects.
+# Add GenomeWorks projects.
 add_subdirectory(common/base)
 add_subdirectory(common/io)
 add_subdirectory(cudapoa)
@@ -81,7 +81,7 @@ validate_boolean(gw_generate_docs)
 if (gw_generate_docs)
     message(STATUS "Enabling Doxygen documentation generation")
     set_doxygen_mainpage(${CMAKE_CURRENT_SOURCE_DIR}/README.md)
-    add_docs_target("ClaraGenomicsAnalysis" "${GW_VERSION}")
+    add_docs_target("GenomeWorks" "${GW_VERSION}")
 else()
     message(STATUS "Disabling Doxygen documentation generation")
 endif()

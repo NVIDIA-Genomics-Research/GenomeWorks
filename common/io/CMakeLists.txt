@@ -16,7 +16,7 @@ add_library(${PROJECT_NAME} ${gw_library_type}
         src/kseqpp_fasta_parser.cpp)
 target_link_libraries(${PROJECT_NAME} PUBLIC gwbase z)
 
-add_doxygen_source_dir(${CMAKE_CURRENT_SOURCE_DIR}/include/claragenomics/io)
+add_doxygen_source_dir(${CMAKE_CURRENT_SOURCE_DIR}/include/claraparabricks/genomeworks/io)
 
 target_include_directories(${PROJECT_NAME}
     PRIVATE
