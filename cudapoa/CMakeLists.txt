@@ -13,6 +13,11 @@ project(cudapoa)
 # Process data subdirectory first
 add_subdirectory(data)
 
+GitVersion()
+
+configure_file(${CMAKE_SOURCE_DIR}/common/base/src/version.cpp.in
+                ${CMAKE_CURRENT_BINARY_DIR}/version.cpp)
+
 # Optimization flags interfere with nvcc and cause compilation issues with reworked
 # file structure.
 if(NOT DEFINED cga_cuda_before_10_0)
@@ -36,9 +41,10 @@ cuda_add_library(cudapoa ${cga_library_type}
     src/cudapoa.cpp
     src/batch.cu
     src/utils.cu
+    ${CMAKE_CURRENT_BINARY_DIR}/version.cpp
     )
 
-target_link_libraries(cudapoa cgabase)
+target_link_libraries(cudapoa cgabase cgaio)
 
 target_compile_options(cudapoa PRIVATE -Werror -Wall -Wextra)
 if (cga_optimize_for_native_cpu)
@@ -61,6 +67,22 @@ target_include_directories(cudapoa
 
 add_doxygen_source_dir(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
+add_executable(cudapoa-bin
+        src/main.cpp
+        src/application_parameters.hpp
+        src/application_parameters.cpp
+)
+
+target_include_directories(cudapoa-bin
+    PUBLIC
+        $<INSTALL_INTERFACE:include>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+)
+
+target_compile_options(cudapoa-bin PRIVATE -Werror)
+target_link_libraries(cudapoa-bin cgaio cudapoa cgabase)
+set_target_properties(cudapoa-bin PROPERTIES OUTPUT_NAME cudapoa)
+
 install(TARGETS cudapoa
     COMPONENT cgalogging
     EXPORT cudapoa
@@ -69,6 +91,11 @@ install(TARGETS cudapoa
 )
 install(DIRECTORY include/ DESTINATION include)
 install(EXPORT cudapoa DESTINATION cmake)
+
+install(TARGETS cudapoa-bin
+    EXPORT cudapoa-bin
+    DESTINATION bin
+)
 
 # Add other folders.
 add_subdirectory(tests)

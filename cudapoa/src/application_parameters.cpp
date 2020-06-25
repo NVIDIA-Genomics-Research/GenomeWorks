@@ -35,14 +35,13 @@ ApplicationParameters::ApplicationParameters(int argc, char* argv[])
         {"full-alignment", no_argument, 0, 'f'},
         {"band-width", required_argument, 0, 'b'},
         {"graph-output", required_argument, 0, 'g'},
-        {"batch-size", required_argument, 0, 's'},
-        {"max-reads-per-window", required_argument, -0, 'n'},
+        {"max-windows", required_argument, 0, 'n'},
         {"gpu-mem-alloc", required_argument, 0, 'r'},
         {"version", no_argument, 0, 'v'},
         {"help", no_argument, 0, 'h'},
     };
 
-    std::string optstring = "m:fb:g:s:n:r:vh";
+    std::string optstring = "i:m:fb:g:s:n:r:vh";
 
     int32_t argument                         = 0;
     while ((argument = getopt_long(argc, argv, optstring.c_str(), options, nullptr)) != -1)
@@ -51,11 +50,12 @@ ApplicationParameters::ApplicationParameters(int argc, char* argv[])
         {
         case 'i':
             input_paths.push_back(std::string(optarg));
+            break;
         case 'm':
             consensus_mode = std::stoi(optarg);
             break;
         case 'f':
-            full_alignment = true;
+            banded = false;
             break;
         case 'b':
             band_width = std::stoi(optarg);
@@ -63,13 +63,10 @@ ApplicationParameters::ApplicationParameters(int argc, char* argv[])
         case 'g':
             graph_output_path = std::string(optarg);
             break;
-        case 's':
-            batch_size = std::stoi(optarg);
-            break;
         case 'n':
-            max_reads_per_window = std::stoi(optarg);
+            max_windows = std::stoi(optarg);
             break;
-        case 'd':
+        case 'r':
             gpu_mem_allocation = std::stod(optarg);
             break;
         case 'v':
@@ -79,6 +76,18 @@ ApplicationParameters::ApplicationParameters(int argc, char* argv[])
         default:
             exit(1);
         }
+    }
+
+    if (gpu_mem_allocation <= 0 || gpu_mem_allocation > 1.0)
+    {
+        std::cerr<<"gpu-mem-alloc should be greater than 0 and less than 1.0"<<std::endl;
+        exit(1);
+    }
+
+    if (consensus_mode < 0 || consensus_mode > 1)
+    {
+        std::cerr<<"consensus_mode can only be 0 (consensus) or 1 (msa)"<<std::endl;
+        exit(1);
     }
 
     verify_input_files(input_paths);
@@ -110,29 +119,8 @@ void ApplicationParameters::verify_input_files(std::vector<std::string>& input_p
     if(input_paths.size() == 0 || (!all_fasta && input_paths.size() > 1))
     {
         std::cerr<<"Invalid input. cudapoa needs input in either one cudapoa format file or in one/multiple fasta files."<<std::endl;
-        exit(1);
+        help(1);
     }
-}
-
-void ApplicationParameters::create_input_parsers(std::shared_ptr<io::FastaParser>& query_parser,
-                                                 std::shared_ptr<io::FastaParser>& target_parser)
-{
-    assert(query_parser == nullptr);
-    assert(target_parser == nullptr);
-
-    query_parser = io::create_kseq_fasta_parser(query_filepath, kmer_size + windows_size - 1);
-
-    if (all_to_all)
-    {
-        target_parser = query_parser;
-    }
-    else
-    {
-        target_parser = io::create_kseq_fasta_parser(target_filepath, kmer_size + windows_size - 1);
-    }
-
-    std::cerr << "Query file: " << query_filepath << ", number of reads: " << query_parser->get_num_seqences() << std::endl;
-    std::cerr << "Target file: " << target_filepath << ", number of reads: " << target_parser->get_num_seqences() << std::endl;
 }
 
 void ApplicationParameters::print_version(const bool exit_on_completion)
@@ -162,11 +150,8 @@ void ApplicationParameters::help(int32_t exit_code)
         -g, --graph-output
             output path for printing graph in DOT format [disabled])"
               << R"(
-        -b, --batch-size
-            length of batch size used for cudapoa batch [30])" // TODO - @atadkase
-              << R"(
-        -n, --max-reads-per-window
-            maximum number of reads to use per window)"
+        -n, --max-windows
+            maximum number of windows to use from file)"
               << R"(
         -r, --gpu-mem-alloc
             fraction of GPU memory to be used for cudapoa [0.9])"

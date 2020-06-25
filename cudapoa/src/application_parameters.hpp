@@ -7,6 +7,9 @@
 * distribution of this software and related documentation without an express
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
+#pragma once
+#include <vector>
+#include <string>
 
 
 namespace claraparabricks
@@ -31,10 +34,9 @@ public:
     std::string graph_output_path;
     bool all_fasta = true;
     int32_t consensus_mode = 0; //0 = consensus, 1 = msa
-    bool full_alignment = false;
+    bool banded = true;
     int32_t band_width = 256; // Band width for banded mode
-    int32_t batch_size = 256; // Band width for banded mode
-    int32_t max_reads_per_window = -1; // -1 => infinite
+    int32_t max_windows = -1; // -1 => infinite
     double gpu_mem_allocation = 0.9; 
 
 
@@ -42,7 +44,7 @@ public:
 private:
     /// \brief verifies input file formats
     /// \param input_paths input files to verify
-    void verify_input_files(std::vector<std::string>& input_paths;);
+    void verify_input_files(std::vector<std::string>& input_paths);
 
     /// \brief prints cudamapper's version
     /// \param exit_on_completion

@@ -8,8 +8,6 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-#include "../benchmarks/common/utils.hpp" // for parse_window_data_file()
-
 #include <file_location.hpp>
 #include <claraparabricks/genomeworks/cudapoa/cudapoa.hpp>
 #include <claraparabricks/genomeworks/cudapoa/batch.hpp>
