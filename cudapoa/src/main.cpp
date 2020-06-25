@@ -8,13 +8,11 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-
 #include <iostream>
 #include <fstream>
 #include <string>
 #include <claraparabricks/genomeworks/cudapoa/utils.hpp> // for get_multi_batch_sizes()
 #include "application_parameters.hpp"
-
 
 namespace claraparabricks
 {
@@ -127,12 +125,12 @@ int main(int argc, char* argv[])
 {
     // Parse input parameters
     const ApplicationParameters parameters(argc, argv);
-    
+
     // Load input data. Each window is represented as a vector of strings. The sample
     // data has many such windows to process, hence the data is loaded into a vector
     // of vector of strings.
     std::vector<std::vector<std::string>> windows;
-    if(parameters.all_fasta)
+    if (parameters.all_fasta)
     {
         parse_fasta_windows(windows, parameters.input_paths, parameters.max_windows);
     }
@@ -142,17 +140,17 @@ int main(int argc, char* argv[])
     }
 
     std::ofstream graph_output;
-    if(!parameters.graph_output_path.empty())
+    if (!parameters.graph_output_path.empty())
     {
         graph_output.open(parameters.graph_output_path);
-        if(!graph_output)
+        if (!graph_output)
         {
-            std::cerr<<"Error opening "<<parameters.graph_output_path<<" for graph output"<<std::endl;
+            std::cerr << "Error opening " << parameters.graph_output_path << " for graph output" << std::endl;
             return -1;
         }
     }
-    
-     // Create a vector of POA groups based on windows
+
+    // Create a vector of POA groups based on windows
     std::vector<Group> poa_groups(windows.size());
     for (int32_t i = 0; i < get_size(windows); ++i)
     {
@@ -172,7 +170,7 @@ int main(int argc, char* argv[])
     std::vector<BatchSize> list_of_batch_sizes;
     std::vector<std::vector<int32_t>> list_of_groups_per_batch;
 
-    get_multi_batch_sizes(list_of_batch_sizes, list_of_groups_per_batch, poa_groups, parameters.banded, parameters.consensus_mode==1);
+    get_multi_batch_sizes(list_of_batch_sizes, list_of_groups_per_batch, poa_groups, parameters.banded, parameters.consensus_mode == 1);
 
     int32_t group_count_offset = 0;
 
@@ -182,7 +180,7 @@ int main(int argc, char* argv[])
         auto& batch_group_ids = list_of_groups_per_batch[b];
 
         // Initialize batch.
-        std::unique_ptr<Batch> batch = initialize_batch(parameters.consensus_mode==1, parameters.banded, parameters.gpu_mem_allocation, batch_size);
+        std::unique_ptr<Batch> batch = initialize_batch(parameters.consensus_mode == 1, parameters.banded, parameters.gpu_mem_allocation, batch_size);
 
         // Loop over all the POA groups for the current batch, add them to the batch and process them.
         int32_t group_count = 0;
@@ -201,7 +199,7 @@ int main(int argc, char* argv[])
                 if (batch->get_total_poas() > 0)
                 {
                     // No more POA groups can be added to batch. Now process batch.
-                    process_batch(batch.get(), parameters.consensus_mode==1, true);
+                    process_batch(batch.get(), parameters.consensus_mode == 1, true);
 
                     if (graph_output.good())
                     {

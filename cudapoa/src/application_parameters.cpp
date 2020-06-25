@@ -43,7 +43,7 @@ ApplicationParameters::ApplicationParameters(int argc, char* argv[])
 
     std::string optstring = "i:m:fb:g:s:n:r:vh";
 
-    int32_t argument                         = 0;
+    int32_t argument = 0;
     while ((argument = getopt_long(argc, argv, optstring.c_str(), options, nullptr)) != -1)
     {
         switch (argument)
@@ -80,45 +80,43 @@ ApplicationParameters::ApplicationParameters(int argc, char* argv[])
 
     if (gpu_mem_allocation <= 0 || gpu_mem_allocation > 1.0)
     {
-        std::cerr<<"gpu-mem-alloc should be greater than 0 and less than 1.0"<<std::endl;
+        std::cerr << "gpu-mem-alloc should be greater than 0 and less than 1.0" << std::endl;
         exit(1);
     }
 
     if (consensus_mode < 0 || consensus_mode > 1)
     {
-        std::cerr<<"consensus_mode can only be 0 (consensus) or 1 (msa)"<<std::endl;
+        std::cerr << "consensus_mode can only be 0 (consensus) or 1 (msa)" << std::endl;
         exit(1);
     }
 
     verify_input_files(input_paths);
-
 }
 
 void ApplicationParameters::verify_input_files(std::vector<std::string>& input_paths)
 {
     // Checks if the files are either all fasta or if one file is provided, it needs to be fasta or cudapoa
     all_fasta = true;
-    for(auto & file_path: input_paths)
+    for (auto& file_path : input_paths)
     {
         std::ifstream infile(file_path.c_str());
-        if(infile.good())
+        if (infile.good())
         {
             std::string firstLine;
             std::getline(infile, firstLine);
             if (firstLine.at(0) != '>')
                 all_fasta = false;
-                //break; TODO- Break here or not? It also provides input filepath verification @atadkase
+            //break; TODO- Break here or not? It also provides input filepath verification @atadkase
         }
         else
         {
-            std::cerr << "Invalid input file: "<< file_path << std::endl;
+            std::cerr << "Invalid input file: " << file_path << std::endl;
             exit(1);
         }
-        
     }
-    if(input_paths.size() == 0 || (!all_fasta && input_paths.size() > 1))
+    if (input_paths.size() == 0 || (!all_fasta && input_paths.size() > 1))
     {
-        std::cerr<<"Invalid input. cudapoa needs input in either one cudapoa format file or in one/multiple fasta files."<<std::endl;
+        std::cerr << "Invalid input. cudapoa needs input in either one cudapoa format file or in one/multiple fasta files." << std::endl;
         help(1);
     }
 }
@@ -163,7 +161,7 @@ void ApplicationParameters::help(int32_t exit_code)
     exit(exit_code);
 }
 
-} // namespace cudamapper
+} // namespace cudapoa
 
 } // namespace genomeworks
 

@@ -57,7 +57,6 @@ void get_multi_batch_sizes(std::vector<BatchSize>& list_of_batch_sizes,
                            int32_t gap_score                   = -8,
                            int32_t match_score                 = 8);
 
-
 /// \brief Parses window data file
 ///
 /// \param[out] windows Reference to vector into which parsed window
@@ -119,8 +118,8 @@ inline void parse_window_data_file(std::vector<std::vector<std::string>>& window
 ///                          -1 ignored the total_windows arg and uses all windows in the file.
 inline void parse_fasta_windows(std::vector<std::vector<std::string>>& windows, const std::vector<std::string>& input_paths, const int32_t total_windows)
 {
-    const int32_t min_sequence_length    = 0;
-    const int32_t num_input_files        = input_paths.size();
+    const int32_t min_sequence_length = 0;
+    const int32_t num_input_files     = input_paths.size();
     std::vector<std::shared_ptr<io::FastaParser>> fasta_parser_vec(num_input_files);
     std::vector<int32_t> num_reads_per_file(num_input_files);
     for (int32_t i = 0; i < num_input_files; i++)
@@ -129,10 +128,10 @@ inline void parse_fasta_windows(std::vector<std::vector<std::string>>& windows, 
         num_reads_per_file[i] = fasta_parser_vec[i]->get_num_seqences();
     }
     const int32_t num_reads = num_reads_per_file[0];
-    
-    for(int32_t i = 1; i < num_input_files; i++)
+
+    for (int32_t i = 1; i < num_input_files; i++)
     {
-        if(num_reads_per_file[i] != num_reads)
+        if (num_reads_per_file[i] != num_reads)
         {
             std::cerr << "Failed to read input files." << std::endl;
             std::cerr << "Number of long-reads per input file do not match with each other." << std::endl;
@@ -143,9 +142,9 @@ inline void parse_fasta_windows(std::vector<std::vector<std::string>>& windows, 
     windows.resize(num_reads);
 
     int32_t idx = 0;
-    for (auto& window: windows)
+    for (auto& window : windows)
     {
-        for(int32_t i = 0; i < num_input_files; i++)
+        for (int32_t i = 0; i < num_input_files; i++)
         {
             window.push_back(fasta_parser_vec[i]->get_sequence_by_id(idx).seq);
         }

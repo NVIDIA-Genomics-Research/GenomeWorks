@@ -8,13 +8,12 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-
 #include "multi_batch.hpp"
 #include "single_batch.hpp"
 #include "file_location.hpp"
 
 #include <claraparabricks/genomeworks/utils/cudautils.hpp>
-#include <claraparabricks/genomeworks/cudapoa/utils.hpp> 
+#include <claraparabricks/genomeworks/cudapoa/utils.hpp>
 
 #include <benchmark/benchmark.h>
 #include <cuda_runtime_api.h>

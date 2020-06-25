@@ -11,7 +11,6 @@
 #include <vector>
 #include <string>
 
-
 namespace claraparabricks
 {
 
@@ -32,14 +31,12 @@ public:
 
     std::vector<std::string> input_paths;
     std::string graph_output_path;
-    bool all_fasta = true;
-    int32_t consensus_mode = 0; //0 = consensus, 1 = msa
-    bool banded = true;
-    int32_t band_width = 256; // Band width for banded mode
-    int32_t max_windows = -1; // -1 => infinite
-    double gpu_mem_allocation = 0.9; 
-
-
+    bool all_fasta            = true;
+    int32_t consensus_mode    = 0; //0 = consensus, 1 = msa
+    bool banded               = true;
+    int32_t band_width        = 256; // Band width for banded mode
+    int32_t max_windows       = -1;  // -1 => infinite
+    double gpu_mem_allocation = 0.9;
 
 private:
     /// \brief verifies input file formats
@@ -55,7 +52,7 @@ private:
     [[noreturn]] void help(int32_t exit_code = 0);
 };
 
-} // namespace cudamapper
+} // namespace cudapoa
 
 } // namespace genomeworks
 
