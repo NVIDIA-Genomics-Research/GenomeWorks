@@ -35,7 +35,7 @@ ApplicationParameters::ApplicationParameters(int argc, char* argv[])
         {"full-alignment", no_argument, 0, 'f'},
         {"band-width", required_argument, 0, 'b'},
         {"dot", required_argument, 0, 'd'},
-        {"max-windows", required_argument, 0, 'w'},
+        {"max-groups", required_argument, 0, 'M'},
         {"gpu-mem-alloc", required_argument, 0, 'R'},
         {"match", required_argument, 0, 'm'},
         {"mismatch", required_argument, 0, 'n'},
@@ -44,7 +44,7 @@ ApplicationParameters::ApplicationParameters(int argc, char* argv[])
         {"help", no_argument, 0, 'h'},
     };
 
-    std::string optstring = "i:r:fb:d:w:R:m:n:g:vh";
+    std::string optstring = "i:r:fb:d:M:R:m:n:g:vh";
 
     int32_t argument = 0;
     while ((argument = getopt_long(argc, argv, optstring.c_str(), options, nullptr)) != -1)
@@ -66,8 +66,8 @@ ApplicationParameters::ApplicationParameters(int argc, char* argv[])
         case 'd':
             graph_output_path = std::string(optarg);
             break;
-        case 'w':
-            max_windows = std::stoi(optarg);
+        case 'M':
+            max_groups = std::stoi(optarg);
             break;
         case 'R':
             gpu_mem_allocation = std::stod(optarg);
@@ -114,9 +114,9 @@ ApplicationParameters::ApplicationParameters(int argc, char* argv[])
         exit(1);
     }
 
-    if (max_windows == 0)
+    if (max_groups == 0)
     {
-        std::cerr << "max-windows cannot be 0" << std::endl;
+        std::cerr << "max-groups cannot be 0" << std::endl;
         exit(1);
     }
 
@@ -193,8 +193,8 @@ void ApplicationParameters::help(int32_t exit_code)
         -d, --dot <file>
             output path for printing graph in DOT format [disabled])"
               << R"(
-        -w, --max-windows  <int>
-            maximum number of windows to use from file (-1 for all and >0 for limited) [-1])"
+        -M, --max-groups  <int>
+            maximum number of POA groups to use from file (-1 for all, > 0 for limited) [-1])"
               << R"(
         -R, --gpu-mem-alloc <double>
             fraction of available GPU memory to be used for cudapoa [0.9])"

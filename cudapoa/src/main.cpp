@@ -131,11 +131,11 @@ int main(int argc, char* argv[])
     std::vector<std::vector<std::string>> windows;
     if (parameters.all_fasta)
     {
-        parse_fasta_windows(windows, parameters.input_paths, parameters.max_windows);
+        parse_fasta_windows(windows, parameters.input_paths, parameters.max_groups);
     }
     else
     {
-        parse_window_data_file(windows, parameters.input_paths[0], parameters.max_windows);
+        parse_window_data_file(windows, parameters.input_paths[0], parameters.max_groups);
     }
 
     std::ofstream graph_output;
@@ -169,7 +169,7 @@ int main(int argc, char* argv[])
     std::vector<BatchSize> list_of_batch_sizes;
     std::vector<std::vector<int32_t>> list_of_groups_per_batch;
 
-    get_multi_batch_sizes(list_of_batch_sizes, list_of_groups_per_batch, poa_groups, parameters.banded, parameters.result == 1);
+    get_multi_batch_sizes(list_of_batch_sizes, list_of_groups_per_batch, poa_groups, parameters.banded, parameters.result == 1, parameters.band_width, nullptr, parameters.gpu_mem_allocation, parameters.mismatch_score, parameters.gap_score, parameters.match_score);
 
     int32_t group_count_offset = 0;
 
