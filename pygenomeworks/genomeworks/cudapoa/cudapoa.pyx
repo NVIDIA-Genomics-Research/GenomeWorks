@@ -61,7 +61,6 @@ cdef class CudaPoaBatch:
     """Python API for CUDA-accelerated partial order alignment algorithm."""
     cdef unique_ptr[cudapoa.Batch] batch
     cdef unique_ptr[cudapoa.BatchSize] batch_size
-    cdef public object stream
 
     def __cinit__(
             self,
@@ -103,13 +102,10 @@ cdef class CudaPoaBatch:
         cdef size_t st
         cdef _Stream temp_stream
         if (stream is None):
-            self.stream = None
             temp_stream = NULL
         elif (not isinstance(stream, cuda.CudaStream)):
             raise RuntimeError("Type for stream option must be CudaStream")
         else:
-            # keep a reference to the stream, such that it gets destroyed after the aligner.
-            self.stream = stream
             st = stream.stream
             temp_stream = <_Stream>st
 
@@ -300,7 +296,3 @@ cdef class CudaPoaBatch:
         assigned to batch object.
         """
         deref(self.batch).reset()
-
-    def __dealloc__(self):
-        if self.stream:
-            del self.stream

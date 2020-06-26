@@ -46,7 +46,6 @@ def read_poa_group_file(file_path, num_windows=0):
                     first_seq = False
                 else:
                     group_list.append(current_seq_list)
-                    print("Adding to group")
                     current_seq_list = []
                 num_seqs_in_group = int(line)
             else:
