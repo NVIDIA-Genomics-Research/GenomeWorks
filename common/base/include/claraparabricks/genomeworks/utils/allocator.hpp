@@ -11,7 +11,7 @@
 #pragma once
 
 #include <memory>
-#include <type_traits>
+#include <vector>
 
 #include <cuda_runtime_api.h>
 #include <claraparabricks/genomeworks/utils/device_preallocated_allocator.cuh>
@@ -104,12 +104,13 @@ public:
 
     /// \brief asynchronously allocates a device array with enough space for n elements of value_type
     /// \param n number of elements to allocate the array for
-    /// \param stream CUDA stream to be associated with this method
+    /// \param streams CUDA streams to be associated with this allocation, ignored in this allocator
     /// \return pointer to allocated memory
     /// \throw device_memory_allocation_exception if allocation was not successful
-    pointer allocate(std::size_t n, cudaStream_t stream = 0)
+    pointer allocate(std::size_t n,
+                     const std::vector<cudaStream_t>& streams = {{0}})
     {
-        static_cast<void>(stream);
+        static_cast<void>(streams);
         void* ptr       = nullptr;
         cudaError_t err = cudaMalloc(&ptr, n * sizeof(T));
         if (err == cudaErrorMemoryAllocation)
@@ -230,11 +231,14 @@ public:
 
     /// \brief asynchronously allocates a device array with enough space for n elements of value_type
     /// \param n number of elements to allocate the array for
-    /// \param stream CUDA stream to be associated with this method
+    /// \param streams on deallocation this memory block is guaranteed to live at least until all previously scheduled work in these streams has finished, if no stream is specified default stream (0) is used
     /// \return pointer to allocated memory
     /// \throw device_memory_allocation_exception if allocation was not successful
-    pointer allocate(std::size_t n, cudaStream_t stream = 0)
+    pointer allocate(std::size_t n,
+                     const std::vector<cudaStream_t>& streams = {{0}})
     {
+        assert(!streams.empty());
+
         if (!memory_resource_)
         {
             GW_LOG_ERROR("{}\n", "ERROR:: Trying to allocate memory from an default-constructed CachingDeviceAllocator. Please assign a non-default-constructed CachingDeviceAllocator before performing any memory operations.");
@@ -242,7 +246,7 @@ public:
             std::abort();
         }
         void* ptr       = nullptr;
-        cudaError_t err = memory_resource_->DeviceAllocate(&ptr, n * sizeof(T), stream);
+        cudaError_t err = memory_resource_->DeviceAllocate(&ptr, n * sizeof(T), streams);
         if (err == cudaErrorMemoryAllocation)
         {
             throw device_memory_allocation_exception();
@@ -251,7 +255,7 @@ public:
         return static_cast<pointer>(ptr);
     }
 
-    /// \brief Asynchronously dealllocates allocated array
+    /// \brief Asynchronously deallocates allocated array, may call cudaStreamSynchronize() on associated streams or may defer that call to a later point
     /// \param p pointer to the array to deallocate
     /// \param n number of elements the array was allocated for
     void deallocate(pointer p, std::size_t n)

@@ -10,6 +10,8 @@
 
 #pragma once
 
+#include <vector>
+
 #include <claraparabricks/genomeworks/utils/allocator.hpp>
 #include <claraparabricks/genomeworks/utils/cudautils.hpp>
 
@@ -52,32 +54,41 @@ public:
     /// \brief This constructor creates \p buffer with the given size.
     /// \param n The number of elements to create
     /// \param allocator The allocator to use by this buffer.
-    /// \param stream The CUDA stream to be associated with this allocation. Default is stream 0.
+    /// \param streams The device memory provided by this buffer is guaranteed to live until all operations on these CUDA streams have completed. If no stream is specified default stream (0) is used.
     /// \tparam AllocatorIn Type of input allocator. If AllocatorIn::value_type is different than T AllocatorIn will be converted to Allocator<T> if possible, compilation will fail otherwise
-    template <typename AllocatorIn = Allocator>
+    /// \tparam CudaStreamType All streams should be of type cudaStream_t
+    template <typename AllocatorIn = Allocator, typename... CudaStreamType>
     explicit buffer(size_type n           = 0,
                     AllocatorIn allocator = AllocatorIn(),
-                    cudaStream_t stream   = 0)
+                    CudaStreamType... streams)
         : data_(nullptr)
         , size_(n)
-        , stream_(stream)
+        , streams_({streams...})
         , allocator_(allocator)
     {
+        // if no stream is passed use default stream
+        if (streams_.empty())
+        {
+            streams_.push_back(0);
+        }
+
         static_assert(std::is_trivially_copyable<value_type>::value, "buffer only supports trivially copyable types and classes, because destructors will not be called.");
         assert(size_ >= 0);
         if (size_ > 0)
         {
-            data_ = allocator_.allocate(size_, stream_);
+            data_ = allocator_.allocate(size_, streams_);
         }
     }
 
     /// \brief This constructor creates an empty \p buffer.
     /// \param allocator The allocator to use by this buffer.
-    /// \param stream The CUDA stream to be associated with this allocation. Default is stream 0.
+    /// \param streams The device memory provided by this buffer is guaranteed to live until all operations on these CUDA streams have completed. If no stream is specified default stream (0) is used.
     /// \tparam AllocatorIn Type of input allocator. If AllocatorIn::value_type is different than T AllocatorIn will be converted to Allocator<T> if possible, compilation will fail otherwise
-    template <typename AllocatorIn, std::enable_if_t<std::is_class<AllocatorIn>::value, int> = 0> // for calls like buffer(5, stream) the other constructor should be used -> only enable if AllocatorIn is a class.
-    explicit buffer(AllocatorIn allocator, cudaStream_t stream = 0)
-        : buffer(0, allocator, stream)
+    /// \tparam CudaStreamType All streams should be of type cudaStream_t
+    template <typename AllocatorIn, typename... CudaStreamType, std::enable_if_t<std::is_class<AllocatorIn>::value, int> = 0> // for calls like buffer(5, stream) the other constructor should be used -> only enable if AllocatorIn is a class.
+    explicit buffer(AllocatorIn allocator,
+                    CudaStreamType... streams)
+        : buffer(0, allocator, streams...)
     {
         static_assert(std::is_trivially_copyable<value_type>::value, "buffer only supports trivially copyable types and classes, because destructors will not be called.");
     }
@@ -88,7 +99,7 @@ public:
     buffer(buffer&& rhs)
         : data_(std::exchange(rhs.data_, nullptr))
         , size_(std::exchange(rhs.size_, 0))
-        , stream_(rhs.stream_)
+        , streams_(rhs.streams_)
         , allocator_(rhs.allocator_)
     {
     }
@@ -101,7 +112,7 @@ public:
     {
         data_      = std::exchange(rhs.data_, nullptr);
         size_      = std::exchange(rhs.size_, 0);
-        stream_    = rhs.stream_;
+        streams_   = rhs.streams_;
         allocator_ = rhs.allocator_;
         return *this;
     }
@@ -140,10 +151,6 @@ public:
     /// \return begin() + size().
     const_iterator end() const { return data_ + size_; }
 
-    /// \brief This method returns the associated stream.
-    /// \return associated stream.
-    cudaStream_t get_stream() const { return stream_; }
-
     /// \brief This method returns the allocator used to allocate memory for this buffer.
     /// \return allocator.
     allocator_type get_allocator() const { return allocator_; }
@@ -174,7 +181,7 @@ public:
         }
 
         free();
-        data_ = new_size > 0 ? allocator_.allocate(new_size, stream_) : nullptr;
+        data_ = new_size > 0 ? allocator_.allocate(new_size, streams_) : nullptr;
         assert(new_size == 0 || data_ != nullptr);
         size_ = new_size;
     }
@@ -187,14 +194,14 @@ public:
         using std::swap;
         swap(a.data_, b.data_);
         swap(a.size_, b.size_);
-        swap(a.stream_, b.stream_);
+        swap(a.streams_, b.streams_);
         swap(a.allocator_, b.allocator_);
     }
 
 private:
     value_type* data_;
     size_type size_;
-    cudaStream_t stream_;
+    std::vector<cudaStream_t> streams_;
     Allocator allocator_;
 };
 
