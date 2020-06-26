@@ -92,7 +92,7 @@ ApplicationParameters::ApplicationParameters(int argc, char* argv[])
 
     if (gpu_mem_allocation <= 0 || gpu_mem_allocation > 1.0)
     {
-        std::cerr << "gpu-mem-alloc should be greater than 0 and less than 1.0" << std::endl;
+        std::cerr << "gpu-mem-alloc should be greater than 0 and less than or equal to 1.0" << std::endl;
         exit(1);
     }
 
