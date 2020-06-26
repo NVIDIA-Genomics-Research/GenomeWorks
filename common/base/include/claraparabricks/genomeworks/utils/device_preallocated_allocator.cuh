@@ -132,10 +132,10 @@ private:
     {
         // shared_ptr creation packed in a function so it can be used in constructor's initilaization list
         void* ptr = nullptr;
-        CGA_CU_CHECK_ERR(cudaMalloc(&ptr, buffer_size));
+        GW_CU_CHECK_ERR(cudaMalloc(&ptr, buffer_size));
         auto ret_val = std::unique_ptr<char, void (*)(char*)>(static_cast<char*>(ptr),
                                                               [](char* ptr) {
-                                                                  CGA_CU_ABORT_ON_ERR(cudaFree(ptr));
+                                                                  GW_CU_ABORT_ON_ERR(cudaFree(ptr));
                                                               });
         return ret_val;
     }
@@ -236,7 +236,7 @@ private:
             // Guarantee that the memory will not be deallocated before all previously scheduled work on these streams will remain, but actual deallocation
             // (and synchronization) might happen for example only when this memory block is actually requested by another allocation, which would make any
             // code relying on an implicit synchronization here incorrect
-            CGA_CU_ABORT_ON_ERR(cudaStreamSynchronize(associated_stream));
+            GW_CU_ABORT_ON_ERR(cudaStreamSynchronize(associated_stream));
         }
 
         // ** remove memory block from the list of used memory blocks

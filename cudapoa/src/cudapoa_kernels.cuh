@@ -416,7 +416,7 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
     int32_t nwindows_per_block = CUDAPOA_THREADS_PER_BLOCK / WARP_SIZE;
     int32_t nblocks            = (total_windows + nwindows_per_block - 1) / nwindows_per_block;
 
-    CGA_CU_CHECK_ERR(cudaDeviceSetCacheConfig(cudaFuncCachePreferL1));
+    GW_CU_CHECK_ERR(cudaDeviceSetCacheConfig(cudaFuncCachePreferL1));
 
     int32_t consensus_num_blocks = (total_windows / CUDAPOA_MAX_CONSENSUS_PER_BLOCK) + 1;
     if (cuda_banded_alignment)
@@ -460,7 +460,7 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
                                                                                  batch_size.max_matrix_graph_dimension_banded,
                                                                                  batch_size.max_consensus_size,
                                                                                  batch_size.alignment_band_width);
-            CGA_CU_CHECK_ERR(cudaPeekAtLastError());
+            GW_CU_CHECK_ERR(cudaPeekAtLastError());
 
             generateConsensusKernel<true, SizeT>
                 <<<consensus_num_blocks, CUDAPOA_MAX_CONSENSUS_PER_BLOCK, 0, stream>>>(consensus_d,
@@ -483,7 +483,7 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
                                                                                        node_coverage_counts,
                                                                                        batch_size.max_nodes_per_window_banded,
                                                                                        batch_size.max_consensus_size);
-            CGA_CU_CHECK_ERR(cudaPeekAtLastError());
+            GW_CU_CHECK_ERR(cudaPeekAtLastError());
         }
         if (output_mask & OutputType::msa)
         {
@@ -524,7 +524,7 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
                                                                                  batch_size.max_matrix_graph_dimension_banded,
                                                                                  batch_size.max_consensus_size,
                                                                                  batch_size.alignment_band_width);
-            CGA_CU_CHECK_ERR(cudaPeekAtLastError());
+            GW_CU_CHECK_ERR(cudaPeekAtLastError());
 
             generateMSAKernel<true, SizeT>
                 <<<total_windows, max_sequences_per_poa, 0, stream>>>(nodes,
@@ -551,7 +551,7 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
                                                                       batch_size.max_nodes_per_window,
                                                                       batch_size.max_nodes_per_window_banded,
                                                                       batch_size.max_consensus_size);
-            CGA_CU_CHECK_ERR(cudaPeekAtLastError());
+            GW_CU_CHECK_ERR(cudaPeekAtLastError());
         }
     }
     else
@@ -594,7 +594,7 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
                                                                     batch_size.max_nodes_per_window,
                                                                     batch_size.max_matrix_graph_dimension,
                                                                     batch_size.max_consensus_size);
-            CGA_CU_CHECK_ERR(cudaPeekAtLastError());
+            GW_CU_CHECK_ERR(cudaPeekAtLastError());
 
             generateConsensusKernel<false, SizeT>
                 <<<consensus_num_blocks, CUDAPOA_MAX_CONSENSUS_PER_BLOCK, 0, stream>>>(consensus_d,
@@ -617,7 +617,7 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
                                                                                        node_coverage_counts,
                                                                                        batch_size.max_nodes_per_window,
                                                                                        batch_size.max_consensus_size);
-            CGA_CU_CHECK_ERR(cudaPeekAtLastError());
+            GW_CU_CHECK_ERR(cudaPeekAtLastError());
         }
         if (output_mask & OutputType::msa)
         {
@@ -657,7 +657,7 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
                                                                     batch_size.max_nodes_per_window,
                                                                     batch_size.max_matrix_graph_dimension,
                                                                     batch_size.max_consensus_size);
-            CGA_CU_CHECK_ERR(cudaPeekAtLastError());
+            GW_CU_CHECK_ERR(cudaPeekAtLastError());
 
             generateMSAKernel<false, SizeT>
                 <<<total_windows, max_sequences_per_poa, 0, stream>>>(nodes,
@@ -684,7 +684,7 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
                                                                       batch_size.max_nodes_per_window,
                                                                       batch_size.max_nodes_per_window_banded,
                                                                       batch_size.max_consensus_size);
-            CGA_CU_CHECK_ERR(cudaPeekAtLastError());
+            GW_CU_CHECK_ERR(cudaPeekAtLastError());
         }
     }
 }

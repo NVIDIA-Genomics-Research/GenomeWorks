@@ -31,7 +31,7 @@ IndexHostCopy::IndexHostCopy(const Index& index,
     , kmer_size_(kmer_size)
     , window_size_(window_size)
 {
-    CGA_NVTX_RANGE(profiler, "cache_index");
+    GW_NVTX_RANGE(profiler, "cache_index");
 
     representations_.resize(index.representations().size());
     cudautils::device_copy_n(index.representations().data(),
@@ -74,7 +74,7 @@ IndexHostCopy::IndexHostCopy(const Index& index,
 
     // This is not completely necessary, but if removed one has to make sure that the next step
     // uses the same stream or that sync is done in caller
-    CGA_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
+    GW_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
 }
 
 std::unique_ptr<Index> IndexHostCopy::copy_index_to_device(DefaultDeviceAllocator allocator,

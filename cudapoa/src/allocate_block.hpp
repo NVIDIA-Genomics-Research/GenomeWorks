@@ -25,15 +25,15 @@
 #include <claraparabricks/genomeworks/logging/logging.hpp>
 #include <claraparabricks/genomeworks/utils/signed_integer_utils.hpp>
 
-#ifndef CGA_LOG_LEVEL
+#ifndef GW_LOG_LEVEL
 #ifndef NDEBUG
 /// \brief Defines the logging level used in the current module
-#define CGA_LOG_LEVEL cga_log_level_debug
+#define GW_LOG_LEVEL gw_log_level_debug
 #else // NDEBUG
 /// \brief Defines the logging level used in the current module
-#define CGA_LOG_LEVEL cga_log_level_error
+#define GW_LOG_LEVEL gw_log_level_error
 #endif // NDEBUG
-#endif // CGA_LOG_LEVEL
+#endif // GW_LOG_LEVEL
 
 namespace claraparabricks
 {
@@ -86,14 +86,14 @@ public:
         total_d_     = avail_mem;
 
         // Allocate.
-        CGA_CU_CHECK_ERR(cudaHostAlloc((void**)&block_data_h_, total_h_, cudaHostAllocDefault));
-        CGA_CU_CHECK_ERR(cudaMalloc((void**)&block_data_d_, total_d_));
+        GW_CU_CHECK_ERR(cudaHostAlloc((void**)&block_data_h_, total_h_, cudaHostAllocDefault));
+        GW_CU_CHECK_ERR(cudaMalloc((void**)&block_data_d_, total_d_));
     }
 
     ~BatchBlock()
     {
-        CGA_CU_CHECK_ERR(cudaFree(block_data_d_));
-        CGA_CU_CHECK_ERR(cudaFreeHost(block_data_h_));
+        GW_CU_CHECK_ERR(cudaFree(block_data_d_));
+        GW_CU_CHECK_ERR(cudaFreeHost(block_data_h_));
     }
 
     void get_output_details(OutputDetails** output_details_h_p, OutputDetails** output_details_d_p)

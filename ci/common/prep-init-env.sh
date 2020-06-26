@@ -39,13 +39,13 @@ logger "Check Python version..."
 python --version
 
 
-# Conda add custom packages for ClaraGenomicsAnalysis CI
+# Conda add custom packages for GenomeWorks CI
 # Split setup into several steps to prevent the 15 minutes no
 # output to stdout timeout limit in CI jobs when solving environment
-logger "Conda install ClaraGenomicsAnalysis custom packages - clang-format"
+logger "Conda install GenomeWorks custom packages - clang-format"
 conda install --override-channels -c sarcasm clang-format
 
-logger "Conda install ClaraGenomicsAnalysis custom packages - doxygen ninja cmake"
+logger "Conda install GenomeWorks custom packages - doxygen ninja cmake"
 conda install --override-channels -c conda-forge doxygen ninja cmake">=3.10.2"
 
 logger "Update LD_LIBRARY_PATH"

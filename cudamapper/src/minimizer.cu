@@ -872,7 +872,7 @@ Minimizer::GeneratedSketchElements Minimizer::generate_sketch_elements(DefaultDe
                                                                        const bool hash_representations,
                                                                        const cudaStream_t cuda_stream)
 {
-    CGA_NVTX_RANGE(profiler, "generate_sketch_elements");
+    GW_NVTX_RANGE(profiler, "generate_sketch_elements");
 
     // for each read find the maximum number of minimizers (one per window), determine their section in the minimizer arrays and allocate the arrays
     std::uint64_t total_windows = 0;
@@ -887,24 +887,24 @@ Minimizer::GeneratedSketchElements Minimizer::generate_sketch_elements(DefaultDe
         total_windows += windows;
     }
 
-    CGA_LOG_INFO("Allocating {} bytes for read_id_to_windows_section_d", read_id_to_windows_section_h.size() * sizeof(decltype(read_id_to_windows_section_h)::value_type));
+    GW_LOG_INFO("Allocating {} bytes for read_id_to_windows_section_d", read_id_to_windows_section_h.size() * sizeof(decltype(read_id_to_windows_section_h)::value_type));
     device_buffer<decltype(read_id_to_windows_section_h)::value_type> read_id_to_windows_section_d(read_id_to_windows_section_h.size(), allocator, cuda_stream);
     cudautils::device_copy_n(read_id_to_windows_section_h.data(),
                              read_id_to_windows_section_h.size(),
                              read_id_to_windows_section_d.data(),
                              cuda_stream); // H2D
 
-    CGA_LOG_INFO("Allocating {} bytes for window_minimizers_representation_d", total_windows * sizeof(representation_t));
+    GW_LOG_INFO("Allocating {} bytes for window_minimizers_representation_d", total_windows * sizeof(representation_t));
     device_buffer<representation_t> window_minimizers_representation_d(total_windows, allocator, cuda_stream);
-    CGA_LOG_INFO("Allocating {} bytes for window_minimizers_direction_d", total_windows * sizeof(char));
+    GW_LOG_INFO("Allocating {} bytes for window_minimizers_direction_d", total_windows * sizeof(char));
     device_buffer<char> window_minimizers_direction_d(total_windows, allocator, cuda_stream);
-    CGA_LOG_INFO("Allocating {} bytes for window_minimizers_position_in_read_d", total_windows * sizeof(position_in_read_t));
+    GW_LOG_INFO("Allocating {} bytes for window_minimizers_position_in_read_d", total_windows * sizeof(position_in_read_t));
     device_buffer<position_in_read_t> window_minimizers_position_in_read_d(total_windows, allocator, cuda_stream);
-    CGA_LOG_INFO("Allocating {} bytes for read_id_to_minimizers_written_d", number_of_reads_to_add * sizeof(std::uint32_t));
+    GW_LOG_INFO("Allocating {} bytes for read_id_to_minimizers_written_d", number_of_reads_to_add * sizeof(std::uint32_t));
     device_buffer<std::uint32_t> read_id_to_minimizers_written_d(number_of_reads_to_add, allocator, cuda_stream);
     // initially there are no minimizers written to the output arrays
     // TODO: is this needed?
-    CGA_CU_CHECK_ERR(cudaMemsetAsync(read_id_to_minimizers_written_d.data(), 0, number_of_reads_to_add * sizeof(std::uint32_t), cuda_stream));
+    GW_CU_CHECK_ERR(cudaMemsetAsync(read_id_to_minimizers_written_d.data(), 0, number_of_reads_to_add * sizeof(std::uint32_t), cuda_stream));
 
     // *** front end minimizers ***
     std::uint32_t num_of_basepairs_for_front_minimizers = (window_size - 1) + minimizer_size - 1;
@@ -930,7 +930,7 @@ Minimizer::GeneratedSketchElements Minimizer::generate_sketch_elements(DefaultDe
 
     shared_memory_for_kernel *= 8; // before it the number of 8-byte values, now get the number of bytes
 
-    CGA_LOG_INFO("Launching find_front_end_minimizers with {} bytes of shared memory", shared_memory_for_kernel);
+    GW_LOG_INFO("Launching find_front_end_minimizers with {} bytes of shared memory", shared_memory_for_kernel);
     find_front_end_minimizers<<<number_of_reads_to_add, num_of_threads, shared_memory_for_kernel, cuda_stream>>>(minimizer_size,
                                                                                                                  window_size,
                                                                                                                  merged_basepairs_d.data(),
@@ -962,7 +962,7 @@ Minimizer::GeneratedSketchElements Minimizer::generate_sketch_elements(DefaultDe
 
     shared_memory_for_kernel *= 8; // before it the number of 8-byte values, now get the number of bytes
 
-    CGA_LOG_INFO("Launching find_central_minimizers with {} bytes of shared memory", shared_memory_for_kernel);
+    GW_LOG_INFO("Launching find_central_minimizers with {} bytes of shared memory", shared_memory_for_kernel);
     find_central_minimizers<<<number_of_reads_to_add, num_of_threads, shared_memory_for_kernel, cuda_stream>>>(minimizer_size,
                                                                                                                window_size,
                                                                                                                basepairs_per_thread,
@@ -989,7 +989,7 @@ Minimizer::GeneratedSketchElements Minimizer::generate_sketch_elements(DefaultDe
 
     shared_memory_for_kernel *= 8; // before it the number of 8-byte values, now get the number of bytes
 
-    CGA_LOG_INFO("Launching find_back_end_minimizers with {} bytes of shared memory", shared_memory_for_kernel);
+    GW_LOG_INFO("Launching find_back_end_minimizers with {} bytes of shared memory", shared_memory_for_kernel);
     find_back_end_minimizers<<<number_of_reads_to_add, num_of_threads, shared_memory_for_kernel, cuda_stream>>>(minimizer_size,
                                                                                                                 window_size,
                                                                                                                 merged_basepairs_d.data(),
@@ -1006,7 +1006,7 @@ Minimizer::GeneratedSketchElements Minimizer::generate_sketch_elements(DefaultDe
                              read_id_to_minimizers_written_h.size(),
                              read_id_to_minimizers_written_h.data(),
                              cuda_stream); // D2H
-    CGA_LOG_INFO("Deallocating {} bytes from read_id_to_minimizers_written_d", read_id_to_minimizers_written_d.size() * sizeof(decltype(read_id_to_minimizers_written_d)::value_type));
+    GW_LOG_INFO("Deallocating {} bytes from read_id_to_minimizers_written_d", read_id_to_minimizers_written_d.size() * sizeof(decltype(read_id_to_minimizers_written_d)::value_type));
     read_id_to_minimizers_written_d.free();
 
     // *** remove unused elemets from the window minimizers arrays ***
@@ -1023,20 +1023,20 @@ Minimizer::GeneratedSketchElements Minimizer::generate_sketch_elements(DefaultDe
         total_minimizers += read_id_to_minimizers_written_h[read_id];
     }
 
-    CGA_LOG_INFO("Allocating {} bytes for read_id_to_compressed_minimizers_d", read_id_to_compressed_minimizers_h.size() * sizeof(decltype(read_id_to_compressed_minimizers_h)::value_type));
+    GW_LOG_INFO("Allocating {} bytes for read_id_to_compressed_minimizers_d", read_id_to_compressed_minimizers_h.size() * sizeof(decltype(read_id_to_compressed_minimizers_h)::value_type));
     device_buffer<decltype(read_id_to_compressed_minimizers_h)::value_type> read_id_to_compressed_minimizers_d(read_id_to_compressed_minimizers_h.size(), allocator, cuda_stream);
     cudautils::device_copy_n(read_id_to_compressed_minimizers_h.data(),
                              read_id_to_compressed_minimizers_h.size(),
                              read_id_to_compressed_minimizers_d.data(),
                              cuda_stream); // H2D
 
-    CGA_LOG_INFO("Allocating {} bytes for representations_compressed_d", total_minimizers * sizeof(representation_t));
+    GW_LOG_INFO("Allocating {} bytes for representations_compressed_d", total_minimizers * sizeof(representation_t));
     device_buffer<representation_t> representations_compressed_d(total_minimizers, allocator, cuda_stream);
     // rest = position_in_read, direction and read_id
-    CGA_LOG_INFO("Allocating {} bytes for rest_compressed_d", total_minimizers * sizeof(ReadidPositionDirection));
+    GW_LOG_INFO("Allocating {} bytes for rest_compressed_d", total_minimizers * sizeof(ReadidPositionDirection));
     device_buffer<ReadidPositionDirection> rest_compressed_d(total_minimizers, allocator, cuda_stream);
 
-    CGA_LOG_INFO("Launching compress_minimizers with {} bytes of shared memory", 0);
+    GW_LOG_INFO("Launching compress_minimizers with {} bytes of shared memory", 0);
     compress_minimizers<<<number_of_reads_to_add, 128, 0, cuda_stream>>>(window_minimizers_representation_d.data(),
                                                                          window_minimizers_position_in_read_d.data(),
                                                                          window_minimizers_direction_d.data(),
@@ -1047,20 +1047,20 @@ Minimizer::GeneratedSketchElements Minimizer::generate_sketch_elements(DefaultDe
                                                                          read_id_of_first_read);
 
     // free these arrays as they are not needed anymore
-    CGA_LOG_INFO("Deallocating {} bytes from window_minimizers_representation_d", window_minimizers_representation_d.size() * sizeof(decltype(window_minimizers_representation_d)::value_type));
+    GW_LOG_INFO("Deallocating {} bytes from window_minimizers_representation_d", window_minimizers_representation_d.size() * sizeof(decltype(window_minimizers_representation_d)::value_type));
     window_minimizers_representation_d.free();
-    CGA_LOG_INFO("Deallocating {} bytes from window_minimizers_direction_d", window_minimizers_direction_d.size() * sizeof(decltype(window_minimizers_direction_d)::value_type));
+    GW_LOG_INFO("Deallocating {} bytes from window_minimizers_direction_d", window_minimizers_direction_d.size() * sizeof(decltype(window_minimizers_direction_d)::value_type));
     window_minimizers_direction_d.free();
-    CGA_LOG_INFO("Deallocating {} bytes from window_minimizers_position_in_read_d", window_minimizers_position_in_read_d.size() * sizeof(decltype(window_minimizers_position_in_read_d)::value_type));
+    GW_LOG_INFO("Deallocating {} bytes from window_minimizers_position_in_read_d", window_minimizers_position_in_read_d.size() * sizeof(decltype(window_minimizers_position_in_read_d)::value_type));
     window_minimizers_position_in_read_d.free();
-    CGA_LOG_INFO("Deallocating {} bytes from read_id_to_compressed_minimizers_d", read_id_to_compressed_minimizers_d.size() * sizeof(decltype(read_id_to_compressed_minimizers_d)::value_type));
+    GW_LOG_INFO("Deallocating {} bytes from read_id_to_compressed_minimizers_d", read_id_to_compressed_minimizers_d.size() * sizeof(decltype(read_id_to_compressed_minimizers_d)::value_type));
     read_id_to_compressed_minimizers_d.free();
-    CGA_LOG_INFO("Deallocating {} bytes from read_id_to_windows_section_d", read_id_to_windows_section_d.size() * sizeof(decltype(read_id_to_windows_section_d)::value_type));
+    GW_LOG_INFO("Deallocating {} bytes from read_id_to_windows_section_d", read_id_to_windows_section_d.size() * sizeof(decltype(read_id_to_windows_section_d)::value_type));
     read_id_to_windows_section_d.free();
 
     // This is not completely necessary, but if removed one has to make sure that the next step
     // uses the same stream or that sync is done in caller
-    CGA_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
+    GW_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
 
     return {std::move(representations_compressed_d),
             std::move(rest_compressed_d)};
