@@ -54,7 +54,7 @@ rm -rf "${WORKSPACE}"/build
 ################################################################################
 logger "Build Pyclaragenomics..."
 cd "${WORKSPACE}"
-source ci/common/test-pyclaragenomics.sh "${WORKSPACE}"/pyclaragenomics
+source ci/common/test-pygenomeworks.sh "${WORKSPACE}"/pygenomeworks
 
 logger "Upload Wheel to PyPI..."
 cd "${WORKSPACE}"
