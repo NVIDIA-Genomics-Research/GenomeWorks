@@ -365,7 +365,7 @@ void addAlignment(uint8_t* nodes,
                                         s,
                                         max_sequences_per_poa,
                                         max_limit_nodes_per_window);
-    CGA_CU_CHECK_ERR(cudaPeekAtLastError());
+    GW_CU_CHECK_ERR(cudaPeekAtLastError());
 }
 
 } // namespace cudapoa

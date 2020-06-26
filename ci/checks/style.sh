@@ -48,7 +48,7 @@ logger "Run C++ formatting check..."
 mkdir --parents ${WORKSPACE}/build
 cd ${WORKSPACE}/build
 
-cmake .. -DCMAKE_BUILD_TYPE=Release -Dcga_enable_tests=ON -Dcga_enable_benchmarks=ON
+cmake .. -DCMAKE_BUILD_TYPE=Release -Dgw_enable_tests=ON -Dgw_enable_benchmarks=ON
 make check-format
 
 logger "Run C++ documentation generation..."

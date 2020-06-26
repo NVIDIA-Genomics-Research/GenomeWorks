@@ -10,7 +10,7 @@
 #
 
 ######################################
-# ClaraGenomicsAnalysis CPU/GPU conda build script for CI #
+# GenomeWorks CPU/GPU conda build script for CI #
 ######################################
 set -e
 
@@ -37,7 +37,7 @@ source ci/common/prep-init-env.sh "${WORKSPACE}" "${CONDA_ENV_NAME}"
 ################################################################################
 
 logger "Build SDK in Release mode..."
-CMAKE_COMMON_VARIABLES=(-DCMAKE_BUILD_TYPE=Release -Dcga_profiling=ON)
+CMAKE_COMMON_VARIABLES=(-DCMAKE_BUILD_TYPE=Release -Dgw_profiling=ON)
 source ci/common/build-test-sdk.sh "${WORKSPACE}" "${CMAKE_COMMON_VARIABLES[@]}"
 
 cd "${WORKSPACE}"
@@ -50,9 +50,9 @@ source ci/common/build-test-sdk.sh "${WORKSPACE}" "${CMAKE_COMMON_VARIABLES[@]}"
 rm -rf "${WORKSPACE}"/build
 
 ################################################################################
-# Pyclaragenomics tests
+# Pygenomeworks tests
 ################################################################################
-logger "Build Pyclaragenomics..."
+logger "Build Pygenomeworks..."
 cd "${WORKSPACE}"
 source ci/common/test-pygenomeworks.sh "${WORKSPACE}"/pygenomeworks
 

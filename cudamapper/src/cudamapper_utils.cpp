@@ -34,7 +34,7 @@ void print_paf(const std::vector<Overlap>& overlaps,
                const int32_t kmer_size,
                std::mutex& write_output_mutex)
 {
-    CGA_NVTX_RANGE(profiler, "print_paf");
+    GW_NVTX_RANGE(profiler, "print_paf");
 
     assert(cigars.empty() || (overlaps.size() == cigars.size()));
 
@@ -55,7 +55,7 @@ void print_paf(const std::vector<Overlap>& overlaps,
     int64_t chars_in_buffer = 0;
 
     {
-        CGA_NVTX_RANGE(profiler, "print_paf::formatting_output");
+        GW_NVTX_RANGE(profiler, "print_paf::formatting_output");
         for (int64_t i = 0; i < number_of_overlaps_to_print; ++i)
         {
             const std::string& query_read_name  = query_parser.get_sequence_by_id(overlaps[i].query_read_id_).name;
@@ -105,16 +105,16 @@ void print_paf(const std::vector<Overlap>& overlaps,
     }
 
     {
-        CGA_NVTX_RANGE(profiler, "print_paf::writing_to_disk");
+        GW_NVTX_RANGE(profiler, "print_paf::writing_to_disk");
         std::lock_guard<std::mutex> lg(write_output_mutex);
         printf("%s", buffer.data());
     }
 }
 
-std::vector<cga_string_view_t> split_into_kmers(const cga_string_view_t& s, const std::int32_t kmer_size, const std::int32_t stride)
+std::vector<gw_string_view_t> split_into_kmers(const gw_string_view_t& s, const std::int32_t kmer_size, const std::int32_t stride)
 {
     const std::size_t kmer_count = s.length() - kmer_size + 1;
-    std::vector<cga_string_view_t> kmers;
+    std::vector<gw_string_view_t> kmers;
 
     if (s.length() < kmer_size)
     {
@@ -156,10 +156,10 @@ std::size_t count_shared_elements(const std::vector<T>& a, const std::vector<T>&
     return shared_count;
 }
 
-float sequence_jaccard_similarity(const cga_string_view_t& a, const cga_string_view_t& b, const std::int32_t kmer_size, const std::int32_t stride)
+float sequence_jaccard_similarity(const gw_string_view_t& a, const gw_string_view_t& b, const std::int32_t kmer_size, const std::int32_t stride)
 {
-    std::vector<cga_string_view_t> a_kmers = split_into_kmers(a, kmer_size, stride);
-    std::vector<cga_string_view_t> b_kmers = split_into_kmers(b, kmer_size, stride);
+    std::vector<gw_string_view_t> a_kmers = split_into_kmers(a, kmer_size, stride);
+    std::vector<gw_string_view_t> b_kmers = split_into_kmers(b, kmer_size, stride);
     std::sort(std::begin(a_kmers), std::end(a_kmers));
     std::sort(std::begin(b_kmers), std::end(b_kmers));
 

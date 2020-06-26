@@ -52,6 +52,9 @@ def read_poa_group_file(file_path, num_windows=0):
                 current_seq_list.append(line)
                 num_seqs_in_group = num_seqs_in_group - 1
 
+        if len(group_list) == 0:
+            group_list.append(current_seq_list)
+
         if (num_windows > 0):
             if (num_windows < len(group_list)):
                 group_list = group_list[:num_windows]

@@ -167,7 +167,7 @@ __device__
 
     static_assert(CPT == 4, "implementation currently supports only 4 cells per thread");
 
-    CGA_CONSTEXPR ScoreT score_type_min_limit = numeric_limits<ScoreT>::min();
+    GW_CONSTEXPR ScoreT score_type_min_limit = numeric_limits<ScoreT>::min();
 
     int16_t lane_idx = threadIdx.x % WARP_SIZE;
     int64_t score_index;
@@ -543,7 +543,7 @@ void runNW(uint8_t* nodes,
                                         mismatch_score,
                                         match_score,
                                         aligned_nodes);
-    CGA_CU_CHECK_ERR(cudaPeekAtLastError());
+    GW_CU_CHECK_ERR(cudaPeekAtLastError());
 }
 
 } // namespace cudapoa

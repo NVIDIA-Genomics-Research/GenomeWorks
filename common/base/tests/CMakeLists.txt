@@ -8,7 +8,7 @@
 # license agreement from NVIDIA CORPORATION is strictly prohibited.
 #
 
-set(TARGET_NAME cgabasetests)
+set(TARGET_NAME gwbasetests)
 
 set(SOURCES
     main.cpp
@@ -18,7 +18,7 @@ set(SOURCES
     Test_GenomeUtils.cpp)
 
 set(LIBS
-    cgabase
+    gwbase
     cub)
 
-cga_add_tests(${TARGET_NAME} "${SOURCES}" "${LIBS}")
+gw_add_tests(${TARGET_NAME} "${SOURCES}" "${LIBS}")

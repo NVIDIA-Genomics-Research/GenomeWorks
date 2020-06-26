@@ -41,8 +41,8 @@ namespace overlapper
 /// the function only tries to extend to the end of the read.
 /// \param required_similarity The minimum similarity to require to extend an overlap.
 void extend_overlap_by_sequence_similarity(Overlap& overlap,
-                                           cga_string_view_t& query_sequence,
-                                           cga_string_view_t& target_sequence,
+                                           gw_string_view_t& query_sequence,
+                                           gw_string_view_t& target_sequence,
                                            std::int32_t extension,
                                            float required_similarity);
 ///

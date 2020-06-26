@@ -18,9 +18,9 @@ set(SOURCES
 set(LIBS
     cudaaligner_internal
     cudaaligner
-    cgabase)
+    gwbase)
 
-cga_add_benchmarks(${PROJECT_NAME} "cudaaligner" "${SOURCES}" "${LIBS}")
+gw_add_benchmarks(${PROJECT_NAME} "cudaaligner" "${SOURCES}" "${LIBS}")
 
 install(FILES README.md
     DESTINATION benchmarks/cudaaligner)

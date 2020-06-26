@@ -691,7 +691,7 @@ void hirschberg_myers_gpu(device_buffer<hirschbergmyers::query_target_range>& st
     const dim3 threads(warp_size, 1, 1);
     const dim3 blocks(1, 1, ceiling_divide<int32_t>(n_alignments, threads.z));
     hirschbergmyers::hirschberg_myers_compute_alignment<<<blocks, threads, 0, stream>>>(stack_buffer.data(), stack_buffer_size_per_alignment, switch_to_myers_threshold, paths_d, path_lengths_d, max_path_length, pv.get_device_interface(), mv.get_device_interface(), score.get_device_interface(), query_patterns.get_device_interface(), sequences_d, sequence_lengths_d, max_sequence_length, n_alignments);
-    CGA_CU_CHECK_ERR(cudaPeekAtLastError());
+    GW_CU_CHECK_ERR(cudaPeekAtLastError());
 }
 
 } // namespace cudaaligner
