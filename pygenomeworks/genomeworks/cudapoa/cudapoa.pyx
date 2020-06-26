@@ -17,8 +17,6 @@
 
 import networkx as nx
 
-import genomeworks.cuda as cuda
-
 from cython.operator cimport dereference as deref
 from libc.stdint cimport uint16_t, int8_t, int32_t
 from libcpp.memory cimport unique_ptr, make_unique
@@ -26,7 +24,9 @@ from libcpp.pair cimport pair
 from libcpp.string cimport string
 from libcpp.vector cimport vector
 
+from cpython.ref cimport Py_INCREF, Py_DECREF
 from genomeworks.cuda.cuda_runtime_api cimport _Stream
+from genomeworks.cuda.cuda cimport CudaStream
 from genomeworks.cudapoa.graph cimport DirectedGraph
 cimport genomeworks.cudapoa.cudapoa as cudapoa
 
@@ -61,6 +61,7 @@ cdef class CudaPoaBatch:
     """Python API for CUDA-accelerated partial order alignment algorithm."""
     cdef unique_ptr[cudapoa.Batch] batch
     cdef unique_ptr[cudapoa.BatchSize] batch_size
+    cdef CudaStream stream
 
     def __cinit__(
             self,
@@ -103,11 +104,16 @@ cdef class CudaPoaBatch:
         cdef _Stream temp_stream
         if (stream is None):
             temp_stream = NULL
-        elif (not isinstance(stream, cuda.CudaStream)):
+        elif (not isinstance(stream, CudaStream)):
             raise RuntimeError("Type for stream option must be CudaStream")
         else:
             st = stream.stream
             temp_stream = <_Stream>st
+        # keep a reference to the stream, such that it gets destroyed after the batch.
+        self.stream = stream
+        # Increasing ref count of CudaStream object to ensure it doesn't get garbage
+        # collected before CudaPoaBatch object.
+        Py_INCREF(stream)
 
         if (output_type == "consensus"):
             output_mask = cudapoa.consensus
@@ -296,3 +302,9 @@ cdef class CudaPoaBatch:
         assigned to batch object.
         """
         deref(self.batch).reset()
+
+    def __dealloc__(self):
+        # Decreasing ref count for CudaStream object.
+        self.batch.reset()
+        self.batch_size.reset()
+        Py_DECREF(self.stream)

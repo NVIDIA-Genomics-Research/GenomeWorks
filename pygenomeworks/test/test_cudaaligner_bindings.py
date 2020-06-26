@@ -16,13 +16,6 @@ from genomeworks.simulators.genomesim import PoissonGenomeSimulator
 from genomeworks.simulators.readsim import NoisyReadSimulator
 
 
-@pytest.fixture
-def get_stream():
-    stream = cuda.CudaStream()
-    yield stream
-    del stream
-
-
 @pytest.mark.gpu
 @pytest.mark.parametrize("query, target, cigar", [
     ("AAAAAAA", "TTTTTTT", "7M"),
@@ -31,11 +24,11 @@ def get_stream():
     ("TGCA", "ATACGCT", "1I1M2I3M"),
     pytest.param("ACGT", "TCGA", "5M", marks=pytest.mark.xfail),
     ])
-def test_cudaaligner_simple_batch(query, target, cigar, get_stream):
+def test_cudaaligner_simple_batch(query, target, cigar):
     """Test valid calculation of alignments by checking cigar strings.
     """
     device = cuda.cuda_get_device()
-    stream = get_stream
+    stream = cuda.CudaStream()
     batch = CudaAlignerBatch(len(query), len(target), 1, alignment_type="global", stream=stream, device_id=device)
     batch.add_alignment(query, target)
     batch.align_all()
