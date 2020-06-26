@@ -32,10 +32,13 @@ public:
     std::vector<std::string> input_paths;
     std::string graph_output_path;
     bool all_fasta            = true;
-    int32_t consensus_mode    = 0; //0 = consensus, 1 = msa
+    int32_t result            = 0; //0 = consensus, 1 = msa
     bool banded               = true;
     int32_t band_width        = 256; // Band width for banded mode
     int32_t max_windows       = -1;  // -1 => infinite
+    int32_t mismatch_score    = -6;
+    int32_t gap_score         = -8;
+    int32_t match_score       = 8;
     double gpu_mem_allocation = 0.9;
 
 private:

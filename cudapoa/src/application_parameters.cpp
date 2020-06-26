@@ -31,17 +31,20 @@ ApplicationParameters::ApplicationParameters(int argc, char* argv[])
 {
     struct option options[] = {
         {"input", required_argument, 0, 'i'},
-        {"mode", required_argument, 0, 'm'},
+        {"result", required_argument, 0, 'r'},
         {"full-alignment", no_argument, 0, 'f'},
         {"band-width", required_argument, 0, 'b'},
-        {"graph-output", required_argument, 0, 'g'},
-        {"max-windows", required_argument, 0, 'n'},
-        {"gpu-mem-alloc", required_argument, 0, 'r'},
+        {"dot", required_argument, 0, 'd'},
+        {"max-windows", required_argument, 0, 'w'},
+        {"gpu-mem-alloc", required_argument, 0, 'R'},
+        {"match", required_argument, 0, 'm'},
+        {"mismatch", required_argument, 0, 'n'},
+        {"gap", required_argument, 0, 'g'},
         {"version", no_argument, 0, 'v'},
         {"help", no_argument, 0, 'h'},
     };
 
-    std::string optstring = "i:m:fb:g:s:n:r:vh";
+    std::string optstring = "i:r:fb:d:w:R:m:n:g:vh";
 
     int32_t argument = 0;
     while ((argument = getopt_long(argc, argv, optstring.c_str(), options, nullptr)) != -1)
@@ -51,8 +54,8 @@ ApplicationParameters::ApplicationParameters(int argc, char* argv[])
         case 'i':
             input_paths.push_back(std::string(optarg));
             break;
-        case 'm':
-            consensus_mode = std::stoi(optarg);
+        case 'r':
+            result = std::stoi(optarg);
             break;
         case 'f':
             banded = false;
@@ -60,14 +63,23 @@ ApplicationParameters::ApplicationParameters(int argc, char* argv[])
         case 'b':
             band_width = std::stoi(optarg);
             break;
-        case 'g':
+        case 'd':
             graph_output_path = std::string(optarg);
             break;
-        case 'n':
+        case 'w':
             max_windows = std::stoi(optarg);
             break;
-        case 'r':
+        case 'R':
             gpu_mem_allocation = std::stod(optarg);
+            break;
+        case 'm':
+            match_score = std::stoi(optarg);
+            break;
+        case 'g':
+            gap_score = std::stoi(optarg);
+            break;
+        case 'n':
+            mismatch_score = std::stoi(optarg);
             break;
         case 'v':
             print_version();
@@ -84,9 +96,39 @@ ApplicationParameters::ApplicationParameters(int argc, char* argv[])
         exit(1);
     }
 
-    if (consensus_mode < 0 || consensus_mode > 1)
+    if (banded && band_width < 1)
     {
-        std::cerr << "consensus_mode can only be 0 (consensus) or 1 (msa)" << std::endl;
+        std::cerr << "band-width must be positive" << std::endl;
+        exit(1);
+    }
+
+    if (result < 0 || result > 1)
+    {
+        std::cerr << "result can only be 0 (consensus) or 1 (msa)" << std::endl;
+        exit(1);
+    }
+
+    if (match_score < 0)
+    {
+        std::cerr << "match score must be positive" << std::endl;
+        exit(1);
+    }
+
+    if (max_windows == 0)
+    {
+        std::cerr << "max-windows cannot be 0" << std::endl;
+        exit(1);
+    }
+
+    if (mismatch_score > 0)
+    {
+        std::cerr << "mismatch score must be non-positive" << std::endl;
+        exit(1);
+    }
+
+    if (gap_score > 0)
+    {
+        std::cerr << "gap score must be non-positive" << std::endl;
         exit(1);
     }
 
@@ -136,26 +178,41 @@ void ApplicationParameters::help(int32_t exit_code)
     std::cerr <<
         R"(Usage: cudapoa [options ...]
      options:
-        -i, --input
+        -i, --input <file>
             input in fasta/cudapoa format, can be used multiple times for multiple fasta files, but supports only one cudapoa file)"
               << R"(
-        -m, --mode
+        -r, --result <int>
             consensus(0)/msa(1) [0])"
               << R"(
         -f, --full-alignment
             uses full alignment if this flag is passed [banded alignment])"
               << R"(
-        -g, --graph-output
+        -b, --band-width <int>
+            band-width for banded alignment (must be multiple of 128) [256])"
+              << R"(
+        -d, --dot <file>
             output path for printing graph in DOT format [disabled])"
               << R"(
-        -n, --max-windows
-            maximum number of windows to use from file)"
+        -w, --max-windows  <int>
+            maximum number of windows to use from file (-1 for all and >0 for limited) [-1])"
               << R"(
-        -r, --gpu-mem-alloc
-            fraction of GPU memory to be used for cudapoa [0.9])"
+        -R, --gpu-mem-alloc <double>
+            fraction of available GPU memory to be used for cudapoa [0.9])"
+              << R"(
+        -m, --match  <int>
+            score for matching bases (must be positive) [8])"
+              << R"(
+        -n, --mismatch  <int>
+            score for mismatching bases (must be non-positive) [-6])"
+              << R"(
+        -g, --gap  <int>
+            score for gaps (must be non-positive) [-8])"
               << R"(
         -v, --version
-            Version information)"
+            version information)"
+              << R"(
+        -h, --help
+            prints usage)"
               << std::endl;
 
     exit(exit_code);

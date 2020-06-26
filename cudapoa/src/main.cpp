@@ -23,7 +23,7 @@ namespace genomeworks
 namespace cudapoa
 {
 
-std::unique_ptr<Batch> initialize_batch(bool msa, bool banded_alignment, const double gpu_mem_allocation, const BatchSize& batch_size)
+std::unique_ptr<Batch> initialize_batch(int32_t mismatch_score, int32_t gap_score, int32_t match_score, bool msa, bool banded_alignment, const double gpu_mem_allocation, const BatchSize& batch_size)
 {
     // Get device information.
     int32_t device_count = 0;
@@ -38,10 +38,9 @@ std::unique_ptr<Batch> initialize_batch(bool msa, bool banded_alignment, const d
     Init();
 
     // Initialize CUDAPOA batch object for batched processing of POAs on the GPU.
-    const int32_t device_id      = 0;
-    cudaStream_t stream          = 0;
-    size_t mem_per_batch         = gpu_mem_allocation * free; // Using 90% of GPU available memory for CUDAPOA batch.
-    const int32_t mismatch_score = -6, gap_score = -8, match_score = 8;
+    const int32_t device_id = 0;
+    cudaStream_t stream     = 0;
+    size_t mem_per_batch    = gpu_mem_allocation * free; // Using 90% of GPU available memory for CUDAPOA batch.
 
     std::unique_ptr<Batch> batch = create_batch(device_id,
                                                 stream,
@@ -170,7 +169,7 @@ int main(int argc, char* argv[])
     std::vector<BatchSize> list_of_batch_sizes;
     std::vector<std::vector<int32_t>> list_of_groups_per_batch;
 
-    get_multi_batch_sizes(list_of_batch_sizes, list_of_groups_per_batch, poa_groups, parameters.banded, parameters.consensus_mode == 1);
+    get_multi_batch_sizes(list_of_batch_sizes, list_of_groups_per_batch, poa_groups, parameters.banded, parameters.result == 1);
 
     int32_t group_count_offset = 0;
 
@@ -180,7 +179,7 @@ int main(int argc, char* argv[])
         auto& batch_group_ids = list_of_groups_per_batch[b];
 
         // Initialize batch.
-        std::unique_ptr<Batch> batch = initialize_batch(parameters.consensus_mode == 1, parameters.banded, parameters.gpu_mem_allocation, batch_size);
+        std::unique_ptr<Batch> batch = initialize_batch(parameters.mismatch_score, parameters.gap_score, parameters.match_score, parameters.result == 1, parameters.banded, parameters.gpu_mem_allocation, batch_size);
 
         // Loop over all the POA groups for the current batch, add them to the batch and process them.
         int32_t group_count = 0;
@@ -199,7 +198,7 @@ int main(int argc, char* argv[])
                 if (batch->get_total_poas() > 0)
                 {
                     // No more POA groups can be added to batch. Now process batch.
-                    process_batch(batch.get(), parameters.consensus_mode == 1, true);
+                    process_batch(batch.get(), parameters.result == 1, true);
 
                     if (graph_output.good())
                     {
@@ -220,17 +219,17 @@ int main(int argc, char* argv[])
                     // to account for the fact that group i was excluded at this round.
                     if (status == StatusType::success)
                     {
-                        std::cout << "Processed groups " << group_count + group_count_offset << " - " << i + group_count_offset << " (batch " << b << ")" << std::endl;
+                        std::cerr << "Processed groups " << group_count + group_count_offset << " - " << i + group_count_offset << " (batch " << b << ")" << std::endl;
                     }
                     else
                     {
-                        std::cout << "Processed groups " << group_count + group_count_offset << " - " << i - 1 + group_count_offset << " (batch " << b << ")" << std::endl;
+                        std::cerr << "Processed groups " << group_count + group_count_offset << " - " << i - 1 + group_count_offset << " (batch " << b << ")" << std::endl;
                     }
                 }
                 else
                 {
                     // the POA was too large to be added to the GPU, skip and move on
-                    std::cout << "Could not add POA group " << batch_group_ids[i] << " to batch " << b << std::endl;
+                    std::cerr << "Could not add POA group " << batch_group_ids[i] << " to batch " << b << std::endl;
                     i++;
                 }
 
@@ -252,7 +251,7 @@ int main(int argc, char* argv[])
 
             if (status != StatusType::exceeded_maximum_poas && status != StatusType::success)
             {
-                std::cout << "Could not add POA group " << batch_group_ids[i] << " to batch " << b << ". Error code " << status << std::endl;
+                std::cerr << "Could not add POA group " << batch_group_ids[i] << " to batch " << b << ". Error code " << status << std::endl;
                 i++;
             }
         }
