@@ -29,26 +29,26 @@ template <typename SizeT>
 __device__ void set_adaptive_band_arrays(SizeT* node_distance, uint16_t* incoming_edge_count, SizeT* incoming_edges,
                                          SizeT* band_starts, SizeT* band_widths, SizeT* band_locations, SizeT max_row, SizeT max_column)
 {
-    //    // get M-start and M-end
-    //    for (SizeT row_idx = 0; row_idx < max_row; row_idx++)
-    //    {
-    //        SizeT node_id = graph[row_idx];
-    //
-    //        uint16_t pred_count = incoming_edge_count[node_id];
-    //        if (pred_count == 0)
-    //        {
-    //        }
-    //        else
-    //        {
-    //            for (uint16_t p = 0; p < pred_count; p++)
-    //            {
-    //                SizeT pred_node_id        = incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES + p];
-    //                SizeT pred_node_graph_pos = node_id_to_pos[pred_node_id] + 1;
-    //                penalty                   = max(penalty, get_score(scores, pred_node_graph_pos, static_cast<SizeT>(0), gradient, band_width, static_cast<SizeT>(read_length + 1), min_score_value));
-    //            }
-    //            set_score(scores, i, static_cast<SizeT>(0), static_cast<ScoreT>(penalty + gap_score), gradient, band_width, max_column);
-    //        }
-    //    }
+//    // get M-start and M-end
+//    for (SizeT row_idx = 0; row_idx < max_row; row_idx++)
+//    {
+//        SizeT node_id = graph[row_idx];
+//
+//        uint16_t pred_count = incoming_edge_count[node_id];
+//        if (pred_count == 0)
+//        {
+//        }
+//        else
+//        {
+//            for (uint16_t p = 0; p < pred_count; p++)
+//            {
+//                SizeT pred_node_id        = incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES + p];
+//                SizeT pred_node_graph_pos = node_id_to_pos[pred_node_id] + 1;
+//                penalty                   = max(penalty, get_score(scores, pred_node_graph_pos, static_cast<SizeT>(0), gradient, band_width, static_cast<SizeT>(read_length + 1), min_score_value));
+//            }
+//            set_score(scores, i, static_cast<SizeT>(0), static_cast<ScoreT>(penalty + gap_score), gradient, band_width, max_column);
+//        }
+//    }
 
     SizeT dummy_band_width = 256;
     float gradient = float(max_column) / float(max_row);
@@ -339,10 +339,10 @@ __device__
 
     SizeT max_column = read_length + 1;
 
-//    if (threadIdx.x == 0)
-//    {
-//        set_adaptive_band_arrays(node_distance, incoming_edge_count, incoming_edges, band_starts, band_widths, band_locations, static_cast<SizeT>(graph_count + 1), max_column);
-//    }
+    if (threadIdx.x == 0)
+    {
+        set_adaptive_band_arrays(node_distance, incoming_edge_count, incoming_edges, band_starts, band_widths, band_locations, static_cast<SizeT>(graph_count + 1), max_column);
+    }
 
     SizeT max_matrix_sequence_dimension = static_band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING;
     //print_matrix_adaptive(scores, static_cast<SizeT>(graph_count+1), max_column, band_starts, band_widths, band_locations, min_score_value);
