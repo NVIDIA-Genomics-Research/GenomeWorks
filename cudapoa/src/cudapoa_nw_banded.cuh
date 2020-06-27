@@ -85,10 +85,6 @@ __device__ void set_score(ScoreT* scores, SizeT row, SizeT column, ScoreT value,
     }
 
     int64_t score_index = static_cast<int64_t>(col_idx) + static_cast<int64_t>(row) * static_cast<int64_t>(band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING);
-    // if((threadIdx.x % WARP_SIZE) == 0)
-    // {
-    //     printf("row: %ld col: %ld score_index:%ld\n", static_cast<int64_t>(row), static_cast<int64_t>(column), score_index);
-    // }
     scores[score_index] = value;
 }
 
@@ -243,14 +239,12 @@ __device__
 
     SizeT max_column                    = read_length + 1;
     SizeT max_matrix_sequence_dimension = band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING;
-    //print_matrix(scores, static_cast<SizeT>(graph_count+1), max_column, gradient, band_width, min_score_value);
     // Initialise the horizontal boundary of the score matrix
     for (SizeT j = lane_idx; j < max_matrix_sequence_dimension; j += WARP_SIZE)
     {
         set_score(scores, static_cast<SizeT>(0), j, static_cast<ScoreT>(j * gap_score), gradient, band_width, max_column);
     }
-    //print_matrix(scores, static_cast<SizeT>(graph_count+1), max_column, gradient, band_width, min_score_value);
-    //return;
+
     // Initialise the vertical boundary of the score matrix
     if (lane_idx == 0)
     {
@@ -260,7 +254,6 @@ __device__
 
         for (SizeT graph_pos = 0; graph_pos < graph_count; graph_pos++)
         {
-
             set_score(scores, static_cast<SizeT>(0), static_cast<SizeT>(0), static_cast<ScoreT>(0), gradient, band_width, max_column);
 
             SizeT node_id = graph[graph_pos];
@@ -270,7 +263,6 @@ __device__
             if (pred_count == 0)
             {
                 set_score(scores, i, static_cast<SizeT>(0), gap_score, gradient, band_width, max_column);
-                //printf("Node: %ld\n", static_cast<int64_t>(graph_pos));
             }
             else
             {
@@ -281,12 +273,8 @@ __device__
                     SizeT pred_node_graph_pos = node_id_to_pos[pred_node_id] + 1;
                     penalty                   = max(penalty, get_score(scores, pred_node_graph_pos, static_cast<SizeT>(0), gradient, band_width, static_cast<SizeT>(read_length + 1), min_score_value));
                 }
-                //printf("Node: %ld, Penalty: %ld\n", static_cast<int64_t>(graph_pos), static_cast<int64_t>(penalty));
                 set_score(scores, i, static_cast<SizeT>(0), static_cast<ScoreT>(penalty + gap_score), gradient, band_width, max_column);
             }
-            // if(threadIdx.x==0)
-            //     printf("Graph pos: %ld-----\n",static_cast<int64_t>(graph_pos));
-            // print_matrix(scores, static_cast<SizeT>(graph_count+1), max_column, gradient, band_width);
         }
     }
 
@@ -394,10 +382,6 @@ __device__
             first_element_prev_score = __shfl_sync(FULL_MASK, score.s3, WARP_SIZE - 1);
 
             score_index = static_cast<int64_t>(read_pos + 1 - band_start) + static_cast<int64_t>(score_gIdx) * static_cast<int64_t>(max_matrix_sequence_dimension);
-            // if((threadIdx.x % WARP_SIZE) == 1)
-            // {
-            //     printf("score_index:%ld, score_gIdx:%ld, band_pos:%ld band_loc:%ld\n",  score_index, static_cast<int64_t>(score_gIdx),  static_cast<int64_t>(read_pos + 1 - band_start),  static_cast<int64_t>(score_gIdx*max_matrix_sequence_dimension));
-            // }
 
             scores[score_index]      = score.s0;
             scores[score_index + 1L] = score.s1;
