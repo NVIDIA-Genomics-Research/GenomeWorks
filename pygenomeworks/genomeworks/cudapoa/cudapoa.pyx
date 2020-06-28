@@ -113,6 +113,8 @@ cdef class CudaPoaBatch:
         self.stream = stream
         # Increasing ref count of CudaStream object to ensure it doesn't get garbage
         # collected before CudaPoaBatch object.
+        # NOTE: Ideally this is taken care of by just storing the reference
+        # in the line above, but that doesn't seem to be persistent.
         Py_INCREF(stream)
 
         if (output_type == "consensus"):
