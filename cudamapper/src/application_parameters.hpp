@@ -36,12 +36,12 @@ public:
     ApplicationParameters(int argc, char* argv[]);
 
     uint32_t kmer_size                      = 15;    // k
-    uint32_t windows_size                   = 15;    // w
+    uint32_t windows_size                   = 10;    // w
     int32_t num_devices                     = 1;     // d
     int32_t max_cached_memory               = 0;     // m
     int32_t index_size                      = 30;    // i
     int32_t target_index_size               = 30;    // t
-    double filtering_parameter              = 1.0;   // F
+    double filtering_parameter              = 2e-4;  // F
     int32_t alignment_engines               = 0;     // a
     int32_t min_residues                    = 100;   // r
     int32_t min_overlap_len                 = 2000;  // l
