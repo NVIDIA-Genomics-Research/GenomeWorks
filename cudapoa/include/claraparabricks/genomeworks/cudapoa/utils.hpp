@@ -57,14 +57,13 @@ void get_multi_batch_sizes(std::vector<BatchSize>& list_of_batch_sizes,
                            int32_t gap_score                   = -8,
                            int32_t match_score                 = 8);
 
-
 /// \brief Resizes input windows to specified size in total_windows if total_windows >= 0
 ///
 /// \param[out] windows      Reference to vector into which parsed window
 ///                          data is saved
 /// \param[in] total_windows Limit windows read to total windows, or
 ///                          loop over existing windows to fill remaining spots.
-///                          -1 ignored the total_windows arg and uses all windows in the file.
+///                          -1 ignores the total_windows arg and uses all windows in the file.
 inline void resize_windows(std::vector<std::vector<std::string>>& windows, const int32_t total_windows)
 {
     if (total_windows >= 0)
@@ -84,11 +83,21 @@ inline void resize_windows(std::vector<std::vector<std::string>>& windows, const
 
         assert(windows.size() == total_windows);
     }
-
 }
 
-/// \brief Parses window data file
-///
+/// \brief Parses window data file in the following format:
+///        <num_sequences_in_window_0>
+///        window0_seq0
+///        window0_seq1
+///        window0_seq2
+///        ...
+///        ...
+///        <num_sequences_in_window_1>
+///        window1_seq0
+///        window1_seq1
+///        window1_seq2
+///        ...
+///        ...
 /// \param[out] windows Reference to vector into which parsed window
 ///                     data is saved
 /// \param[in] filename Name of file with window data
@@ -141,7 +150,7 @@ inline void parse_fasta_windows(std::vector<std::vector<std::string>>& windows, 
     {
         fasta_parser_vec[i]   = io::create_kseq_fasta_parser(input_paths[i], min_sequence_length, false);
         num_reads_per_file[i] = fasta_parser_vec[i]->get_num_seqences();
-        max_num_reads = std::max(max_num_reads, num_reads_per_file[i]);
+        max_num_reads         = std::max(max_num_reads, num_reads_per_file[i]);
     }
 
     windows.resize(max_num_reads);
@@ -151,7 +160,7 @@ inline void parse_fasta_windows(std::vector<std::vector<std::string>>& windows, 
     {
         for (int32_t i = 0; i < num_input_files; i++)
         {
-            if(idx < num_reads_per_file[i])
+            if (idx < num_reads_per_file[i])
             {
                 window.push_back(fasta_parser_vec[i]->get_sequence_by_id(idx).seq);
             }
@@ -160,7 +169,6 @@ inline void parse_fasta_windows(std::vector<std::vector<std::string>>& windows, 
     }
 
     resize_windows(windows, total_windows);
-    
 }
 
 /// \brief Parses golden value file with genome

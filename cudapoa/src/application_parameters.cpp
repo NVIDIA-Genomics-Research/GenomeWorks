@@ -194,7 +194,8 @@ void ApplicationParameters::help(int32_t exit_code)
             output path for printing graph in DOT format [disabled])"
               << R"(
         -M, --max-groups  <int>
-            maximum number of POA groups to use from file (-1 for all, > 0 for limited) [-1])"
+            maximum number of POA groups to create from file (-1 for all, > 0 for limited) [-1]
+            repeats groups if less groups are present than specified)"
               << R"(
         -R, --gpu-mem-alloc <double>
             fraction of available GPU memory to be used for cudapoa [0.9])"
