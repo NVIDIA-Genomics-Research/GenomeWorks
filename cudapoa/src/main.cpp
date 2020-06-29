@@ -222,8 +222,12 @@ int main(int argc, char* argv[])
                     // No more POA groups can be added to batch. Now process batch.
                     process_batch(batch.get(), parameters.msa, true);
 
-                    if (graph_output.good())
+                    if (graph_output.is_open())
                     {
+                        if (!graph_output.good())
+                        {
+                            throw std::runtime_error("Error writing dot file");
+                        }
                         std::vector<DirectedGraph> graph;
                         std::vector<StatusType> graph_status;
                         batch->get_graphs(graph, graph_status);
