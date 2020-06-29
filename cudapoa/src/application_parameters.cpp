@@ -92,44 +92,32 @@ ApplicationParameters::ApplicationParameters(int argc, char* argv[])
 
     if (gpu_mem_allocation <= 0 || gpu_mem_allocation > 1.0)
     {
-        std::cerr << "gpu-mem-alloc should be greater than 0 and less than or equal to 1.0" << std::endl;
-        exit(1);
+        throw std::runtime_error("gpu-mem-alloc should be greater than 0 and less than or equal to 1.0");
     }
 
     if (banded && band_width < 1)
     {
-        std::cerr << "band-width must be positive" << std::endl;
-        exit(1);
-    }
-
-    if (result < 0 || result > 1)
-    {
-        std::cerr << "result can only be 0 (consensus) or 1 (msa)" << std::endl;
-        exit(1);
+        throw std::runtime_error("band-width must be positive");
     }
 
     if (match_score < 0)
     {
-        std::cerr << "match score must be positive" << std::endl;
-        exit(1);
+        throw std::runtime_error("match score must be positive");
     }
 
     if (max_groups == 0)
     {
-        std::cerr << "max-groups cannot be 0" << std::endl;
-        exit(1);
+        throw std::runtime_error("max-groups cannot be 0");
     }
 
     if (mismatch_score > 0)
     {
-        std::cerr << "mismatch score must be non-positive" << std::endl;
-        exit(1);
+        throw std::runtime_error("mismatch score must be non-positive");
     }
 
     if (gap_score > 0)
     {
-        std::cerr << "gap score must be non-positive" << std::endl;
-        exit(1);
+        throw std::runtime_error("gap score must be non-positive");
     }
 
     verify_input_files(input_paths);
@@ -152,8 +140,7 @@ void ApplicationParameters::verify_input_files(std::vector<std::string>& input_p
         }
         else
         {
-            std::cerr << "Invalid input file: " << file_path << std::endl;
-            exit(1);
+            throw std::runtime_error(std::string("Invalid input file: ") + file_path);
         }
     }
     if (input_paths.size() == 0 || (!all_fasta && input_paths.size() > 1))
