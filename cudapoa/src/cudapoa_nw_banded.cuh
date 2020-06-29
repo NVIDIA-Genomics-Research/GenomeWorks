@@ -99,6 +99,7 @@ __device__ void initialize_band(ScoreT* scores, SizeT row, ScoreT value, float g
 
     set_score(scores, row, initialization_offset, value, gradient, band_width, max_column);
 
+    // note: as long as CUDAPOA_BANDED_MATRIX_RIGHT_PADDING < WARP_SIZE, no need for a for loop
     for (SizeT j = lane_idx + band_end; j < band_end + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING; j += WARP_SIZE)
     {
         set_score(scores, row, j, value, gradient, band_width, max_column);

@@ -282,6 +282,7 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
                                                                                             band_starts,
                                                                                             band_widths,
                                                                                             band_locations,
+                                                                                            banded_alignment_band_width,
                                                                                             gap_score,
                                                                                             mismatch_score,
                                                                                             match_score);

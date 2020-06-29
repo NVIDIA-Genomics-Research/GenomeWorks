@@ -29,26 +29,26 @@ template <typename SizeT>
 __device__ void set_adaptive_band_arrays(SizeT* node_distance, uint16_t* incoming_edge_count, SizeT* incoming_edges,
                                          SizeT* band_starts, SizeT* band_widths, SizeT* band_locations, SizeT max_row, SizeT max_column)
 {
-//    // get M-start and M-end
-//    for (SizeT row_idx = 0; row_idx < max_row; row_idx++)
-//    {
-//        SizeT node_id = graph[row_idx];
-//
-//        uint16_t pred_count = incoming_edge_count[node_id];
-//        if (pred_count == 0)
-//        {
-//        }
-//        else
-//        {
-//            for (uint16_t p = 0; p < pred_count; p++)
-//            {
-//                SizeT pred_node_id        = incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES + p];
-//                SizeT pred_node_graph_pos = node_id_to_pos[pred_node_id] + 1;
-//                penalty                   = max(penalty, get_score(scores, pred_node_graph_pos, static_cast<SizeT>(0), gradient, band_width, static_cast<SizeT>(read_length + 1), min_score_value));
-//            }
-//            set_score(scores, i, static_cast<SizeT>(0), static_cast<ScoreT>(penalty + gap_score), gradient, band_width, max_column);
-//        }
-//    }
+    //    // get M-start and M-end
+    //    for (SizeT row_idx = 0; row_idx < max_row; row_idx++)
+    //    {
+    //        SizeT node_id = graph[row_idx];
+    //
+    //        uint16_t pred_count = incoming_edge_count[node_id];
+    //        if (pred_count == 0)
+    //        {
+    //        }
+    //        else
+    //        {
+    //            for (uint16_t p = 0; p < pred_count; p++)
+    //            {
+    //                SizeT pred_node_id        = incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES + p];
+    //                SizeT pred_node_graph_pos = node_id_to_pos[pred_node_id] + 1;
+    //                penalty                   = max(penalty, get_score(scores, pred_node_graph_pos, static_cast<SizeT>(0), gradient, band_width, static_cast<SizeT>(read_length + 1), min_score_value));
+    //            }
+    //            set_score(scores, i, static_cast<SizeT>(0), static_cast<ScoreT>(penalty + gap_score), gradient, band_width, max_column);
+    //        }
+    //    }
 
     SizeT dummy_band_width = 256;
     float gradient = float(max_column) / float(max_row);
@@ -68,7 +68,7 @@ __device__ void set_adaptive_band_arrays(SizeT* node_distance, uint16_t* incomin
 
         start_pos = max(start_pos, static_cast<SizeT>(0));
 
-        start_pos                                     = start_pos - (start_pos % CELLS_PER_THREAD);
+        start_pos               = start_pos - (start_pos % CELLS_PER_THREAD);
         band_starts[row_idx]    = start_pos;
         band_widths[row_idx]    = dummy_band_width;
         band_locations[row_idx] = static_cast<int64_t>(row_idx) * (static_cast<int64_t>(dummy_band_width) + static_cast<int64_t>(CUDAPOA_BANDED_MATRIX_RIGHT_PADDING));
@@ -275,6 +275,34 @@ __device__ ScoreT4<ScoreT> get_scores_adaptive(SizeT read_pos,
     }
 }
 
+template <typename ScoreT, typename SizeT>
+void get_predecessors_max_score_index(SizeT& pred_max_score_left, SizeT& pred_max_score_right,
+                                      SizeT node_id, uint16_t* incoming_edge_count, SizeT* incoming_edges, SizeT* node_id_to_pos)
+{
+    for (uint16_t p = 0; p < incoming_edge_count[node_id]; p++)
+    {
+        SizeT pred_node_id        = incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES + p];
+        SizeT pred_node_graph_pos = node_id_to_pos[pred_node_id] + 1;
+        // find max score index in pred_node_graph_pos
+
+        //ScoreT s = get_score_adaptive(scores, idx, j, band_starts, band_widths, band_locations, static_cast<SizeT>(read_length + 1), min_score_value);
+
+    }
+}
+
+template <typename ScoreT, typename SizeT>
+void get_band_parameters(SizeT node_distance_i, SizeT seq_length)
+{
+    SizeT pred_max_score_left  = seq_length;
+    SizeT pred_max_score_right = 0;
+    //get_predecessors_max_score_index(pred_max_score_left, pred_max_score_right);
+    SizeT band_start = min(node_distance_i, pred_max_score_left);
+    band_start = band_start < 0 ? 0 : band_start;
+    SizeT band_end = max(node_distance_i, pred_max_score_right);
+    band_end = band_end > seq_length ? seq_length : band_end;
+}
+
+
 template <typename SeqT,
           typename ScoreT,
           typename SizeT>
@@ -296,6 +324,7 @@ __device__
                                      SizeT* band_starts,
                                      SizeT* band_widths,
                                      SizeT* band_locations,
+                                     SizeT static_band_width,
                                      ScoreT gap_score,
                                      ScoreT mismatch_score,
                                      ScoreT match_score)
@@ -306,15 +335,16 @@ __device__
 
     int16_t lane_idx = threadIdx.x % WARP_SIZE;
     int64_t score_index;
+    int64_t score_start_index = 0L;
 
     SizeT max_column = read_length + 1;
 
-    if (threadIdx.x == 0)
-    {
-        set_adaptive_band_arrays(node_distance, incoming_edge_count, incoming_edges, band_starts, band_widths, band_locations, static_cast<SizeT>(graph_count + 1), max_column);
-    }
+//    if (threadIdx.x == 0)
+//    {
+//        set_adaptive_band_arrays(node_distance, incoming_edge_count, incoming_edges, band_starts, band_widths, band_locations, static_cast<SizeT>(graph_count + 1), max_column);
+//    }
 
-    SizeT max_matrix_sequence_dimension = band_widths[0] + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING;
+    SizeT max_matrix_sequence_dimension = static_band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING;
     //print_matrix_adaptive(scores, static_cast<SizeT>(graph_count+1), max_column, band_starts, band_widths, band_locations, min_score_value);
 
     // Initialise the horizontal boundary of the score matrix
@@ -322,6 +352,9 @@ __device__
     {
         set_score_adaptive(scores, static_cast<SizeT>(0), j, static_cast<ScoreT>(j * gap_score), band_starts, band_widths, band_locations, max_column);
     }
+
+
+    //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     // Initialise the vertical boundary of the score matrix
     if (lane_idx == 0)
@@ -356,9 +389,14 @@ __device__
         }
     }
 
+    //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+
     __syncwarp();
 
     SeqT4<SeqT>* d_read4 = (SeqT4<SeqT>*)read;
+
     // compute vertical and diagonal values in parallel.
     for (SizeT graph_pos = 0; graph_pos < graph_count; graph_pos++)
     {
