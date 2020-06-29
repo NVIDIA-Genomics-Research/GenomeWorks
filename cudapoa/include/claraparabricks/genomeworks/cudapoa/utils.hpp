@@ -57,6 +57,36 @@ void get_multi_batch_sizes(std::vector<BatchSize>& list_of_batch_sizes,
                            int32_t gap_score                   = -8,
                            int32_t match_score                 = 8);
 
+
+/// \brief Resizes input windows to specified size in total_windows if total_windows >= 0
+///
+/// \param[out] windows      Reference to vector into which parsed window
+///                          data is saved
+/// \param[in] total_windows Limit windows read to total windows, or
+///                          loop over existing windows to fill remaining spots.
+///                          -1 ignored the total_windows arg and uses all windows in the file.
+inline void resize_windows(std::vector<std::vector<std::string>>& windows, const int32_t total_windows)
+{
+    if (total_windows >= 0)
+    {
+        if (get_size(windows) > total_windows)
+        {
+            windows.erase(windows.begin() + total_windows, windows.end());
+        }
+        else if (get_size(windows) < total_windows)
+        {
+            int32_t windows_read = windows.size();
+            while (get_size(windows) != total_windows)
+            {
+                windows.push_back(windows[windows.size() - windows_read]);
+            }
+        }
+
+        assert(windows.size() == total_windows);
+    }
+
+}
+
 /// \brief Parses window data file
 ///
 /// \param[out] windows Reference to vector into which parsed window
@@ -89,23 +119,7 @@ inline void parse_window_data_file(std::vector<std::vector<std::string>>& window
         }
     }
 
-    if (total_windows >= 0)
-    {
-        if (get_size(windows) > total_windows)
-        {
-            windows.erase(windows.begin() + total_windows, windows.end());
-        }
-        else if (get_size(windows) < total_windows)
-        {
-            int32_t windows_read = windows.size();
-            while (get_size(windows) != total_windows)
-            {
-                windows.push_back(windows[windows.size() - windows_read]);
-            }
-        }
-
-        assert(windows.size() == total_windows);
-    }
+    resize_windows(windows, total_windows);
 }
 
 /// \brief Parses windows from 1 or more fasta files
@@ -122,51 +136,31 @@ inline void parse_fasta_windows(std::vector<std::vector<std::string>>& windows, 
     const int32_t num_input_files     = input_paths.size();
     std::vector<std::shared_ptr<io::FastaParser>> fasta_parser_vec(num_input_files);
     std::vector<int32_t> num_reads_per_file(num_input_files);
+    int32_t max_num_reads = 0;
     for (int32_t i = 0; i < num_input_files; i++)
     {
         fasta_parser_vec[i]   = io::create_kseq_fasta_parser(input_paths[i], min_sequence_length, false);
         num_reads_per_file[i] = fasta_parser_vec[i]->get_num_seqences();
+        max_num_reads = std::max(max_num_reads, num_reads_per_file[i]);
     }
-    const int32_t num_reads = num_reads_per_file[0];
 
-    for (int32_t i = 1; i < num_input_files; i++)
-    {
-        if (num_reads_per_file[i] != num_reads)
-        {
-            std::cerr << "Failed to read input files." << std::endl;
-            std::cerr << "Number of long-reads per input file do not match with each other." << std::endl;
-            assert(false);
-            return;
-        }
-    }
-    windows.resize(num_reads);
+    windows.resize(max_num_reads);
 
     int32_t idx = 0;
     for (auto& window : windows)
     {
         for (int32_t i = 0; i < num_input_files; i++)
         {
-            window.push_back(fasta_parser_vec[i]->get_sequence_by_id(idx).seq);
+            if(idx < num_reads_per_file[i])
+            {
+                window.push_back(fasta_parser_vec[i]->get_sequence_by_id(idx).seq);
+            }
         }
         idx++;
     }
-    if (total_windows >= 0)
-    {
-        if (get_size(windows) > total_windows)
-        {
-            windows.erase(windows.begin() + total_windows, windows.end());
-        }
-        else if (get_size(windows) < total_windows)
-        {
-            int32_t windows_read = windows.size();
-            while (get_size(windows) != total_windows)
-            {
-                windows.push_back(windows[windows.size() - windows_read]);
-            }
-        }
 
-        assert(windows.size() == total_windows);
-    }
+    resize_windows(windows, total_windows);
+    
 }
 
 /// \brief Parses golden value file with genome

@@ -23,7 +23,13 @@ namespace genomeworks
 namespace cudapoa
 {
 
-std::unique_ptr<Batch> initialize_batch(int32_t mismatch_score, int32_t gap_score, int32_t match_score, bool msa, bool banded_alignment, const double gpu_mem_allocation, const BatchSize& batch_size)
+std::unique_ptr<Batch> initialize_batch(int32_t mismatch_score, 
+                                        int32_t gap_score, 
+                                        int32_t match_score, 
+                                        bool msa, 
+                                        bool banded_alignment, 
+                                        const double gpu_mem_allocation, 
+                                        const BatchSize& batch_size)
 {
     // Get device information.
     int32_t device_count = 0;
@@ -169,7 +175,17 @@ int main(int argc, char* argv[])
     std::vector<BatchSize> list_of_batch_sizes;
     std::vector<std::vector<int32_t>> list_of_groups_per_batch;
 
-    get_multi_batch_sizes(list_of_batch_sizes, list_of_groups_per_batch, poa_groups, parameters.banded, parameters.result == 1, parameters.band_width, nullptr, parameters.gpu_mem_allocation, parameters.mismatch_score, parameters.gap_score, parameters.match_score);
+    get_multi_batch_sizes(list_of_batch_sizes, 
+                          list_of_groups_per_batch, 
+                          poa_groups, 
+                          parameters.banded, 
+                          parameters.result == 1, 
+                          parameters.band_width, 
+                          nullptr, 
+                          parameters.gpu_mem_allocation, 
+                          parameters.mismatch_score, 
+                          parameters.gap_score, 
+                          parameters.match_score);
 
     int32_t group_count_offset = 0;
 
@@ -179,7 +195,13 @@ int main(int argc, char* argv[])
         auto& batch_group_ids = list_of_groups_per_batch[b];
 
         // Initialize batch.
-        std::unique_ptr<Batch> batch = initialize_batch(parameters.mismatch_score, parameters.gap_score, parameters.match_score, parameters.result == 1, parameters.banded, parameters.gpu_mem_allocation, batch_size);
+        std::unique_ptr<Batch> batch = initialize_batch(parameters.mismatch_score, 
+                                                        parameters.gap_score, 
+                                                        parameters.match_score, 
+                                                        parameters.result == 1, 
+                                                        parameters.banded, 
+                                                        parameters.gpu_mem_allocation, 
+                                                        batch_size);
 
         // Loop over all the POA groups for the current batch, add them to the batch and process them.
         int32_t group_count = 0;
