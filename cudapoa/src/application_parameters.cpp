@@ -136,7 +136,6 @@ void ApplicationParameters::verify_input_files(std::vector<std::string>& input_p
             std::getline(infile, firstLine);
             if (firstLine.at(0) != '>')
                 all_fasta = false;
-            //break; TODO- Break here or not? It also provides input filepath verification @atadkase
         }
         else
         {
