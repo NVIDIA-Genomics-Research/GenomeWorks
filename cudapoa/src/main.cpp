@@ -33,7 +33,7 @@ std::unique_ptr<Batch> initialize_batch(int32_t mismatch_score,
 {
     // Get device information.
     int32_t device_count = 0;
-    CGA_CU_CHECK_ERR(cudaGetDeviceCount(&device_count));
+    GW_CU_CHECK_ERR(cudaGetDeviceCount(&device_count));
     assert(device_count > 0);
 
     size_t total = 0, free = 0;
