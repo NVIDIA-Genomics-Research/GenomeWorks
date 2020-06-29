@@ -10,7 +10,7 @@
 #
 
 ######################################
-# ClaraGenomicsAnalysis CPU build script for CI #
+# GenomeWorks CPU build script for CI #
 ######################################
 set -e
 
@@ -43,9 +43,9 @@ source ci/common/build-test-sdk.sh "${WORKSPACE}" "${CMAKE_COMMON_VARIABLES[@]}"
 rm -rf "${WORKSPACE}"/build
 
 ################################################################################
-# Pyclaragenomics tests
+# Pygenomeworks tests
 ################################################################################
-logger "Build Pyclaragenomics..."
+logger "Build ygenomeworks ..."
 cd "${WORKSPACE}"
 source ci/common/test-pygenomeworks.sh "${WORKSPACE}"/pygenomeworks
 

@@ -11,7 +11,7 @@
 #include "../src/cudapoa_topsort.cuh" //runTopSort
 
 #include <claraparabricks/genomeworks/cudapoa/batch.hpp>
-#include <claraparabricks/genomeworks/utils/cudautils.hpp>            //CGA_CU_CHECK_ERR
+#include <claraparabricks/genomeworks/utils/cudautils.hpp>            //GW_CU_CHECK_ERR
 #include <claraparabricks/genomeworks/utils/stringutils.hpp>          //array_to_string
 #include <claraparabricks/genomeworks/utils/signed_integer_utils.hpp> //get_size
 
@@ -70,12 +70,12 @@ std::string testTopSortDeviceUtil(SizeT node_count, SizeTVec2D outgoing_edges_ve
     size_t graph_size = node_count * sizeof(uint16_t);
 
     //allocate unified memory so they can be accessed by both host and device.
-    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&sorted_poa, node_count * sizeof(SizeT)));
-    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&sorted_poa_node_map, node_count * sizeof(SizeT)));
-    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&incoming_edge_count, graph_size));
-    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&outgoing_edges, node_count * sizeof(SizeT) * CUDAPOA_MAX_NODE_EDGES));
-    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&outgoing_edge_count, graph_size));
-    CGA_CU_CHECK_ERR(cudaMallocManaged((void**)&local_incoming_edge_count, graph_size));
+    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&sorted_poa, node_count * sizeof(SizeT)));
+    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&sorted_poa_node_map, node_count * sizeof(SizeT)));
+    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&incoming_edge_count, graph_size));
+    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&outgoing_edges, node_count * sizeof(SizeT) * CUDAPOA_MAX_NODE_EDGES));
+    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&outgoing_edge_count, graph_size));
+    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&local_incoming_edge_count, graph_size));
 
     //initialize incoming_edge_count & local_incoming_edge_count
     memset((void**)incoming_edge_count, 0, graph_size);
@@ -105,16 +105,16 @@ std::string testTopSortDeviceUtil(SizeT node_count, SizeTVec2D outgoing_edges_ve
                       outgoing_edge_count,
                       local_incoming_edge_count);
 
-    CGA_CU_CHECK_ERR(cudaDeviceSynchronize());
+    GW_CU_CHECK_ERR(cudaDeviceSynchronize());
 
     std::string res = genomeworks::stringutils::array_to_string<SizeT>(sorted_poa, node_count);
 
-    CGA_CU_CHECK_ERR(cudaFree(sorted_poa));
-    CGA_CU_CHECK_ERR(cudaFree(sorted_poa_node_map));
-    CGA_CU_CHECK_ERR(cudaFree(incoming_edge_count));
-    CGA_CU_CHECK_ERR(cudaFree(outgoing_edges));
-    CGA_CU_CHECK_ERR(cudaFree(outgoing_edge_count));
-    CGA_CU_CHECK_ERR(cudaFree(local_incoming_edge_count));
+    GW_CU_CHECK_ERR(cudaFree(sorted_poa));
+    GW_CU_CHECK_ERR(cudaFree(sorted_poa_node_map));
+    GW_CU_CHECK_ERR(cudaFree(incoming_edge_count));
+    GW_CU_CHECK_ERR(cudaFree(outgoing_edges));
+    GW_CU_CHECK_ERR(cudaFree(outgoing_edge_count));
+    GW_CU_CHECK_ERR(cudaFree(local_incoming_edge_count));
 
     return res;
 }

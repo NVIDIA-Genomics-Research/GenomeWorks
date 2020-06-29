@@ -28,4 +28,4 @@ include_directories(${cudamapper_data_include_dir})
 
 set(LIBS cudamapper)
 
-cga_add_tests(${TARGET_NAME} "${SOURCES}" "${LIBS}")
+gw_add_tests(${TARGET_NAME} "${SOURCES}" "${LIBS}")

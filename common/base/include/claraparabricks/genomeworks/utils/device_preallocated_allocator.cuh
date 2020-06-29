@@ -14,6 +14,7 @@
 #include <list>
 #include <memory>
 #include <mutex>
+#include <vector>
 
 #include <claraparabricks/genomeworks/utils/cudautils.hpp>
 
@@ -61,7 +62,10 @@ public:
         , buffer_ptr_(create_buffer(buffer_size))
     {
         assert(buffer_size > 0);
-        free_blocks_.push_back({0, buffer_size, 0});
+        MemoryBlock whole_memory_block;
+        whole_memory_block.begin = 0;
+        whole_memory_block.size  = buffer_size;
+        free_blocks_.push_back(whole_memory_block);
     }
 
     DevicePreallocatedAllocator()                                   = delete;
@@ -72,20 +76,24 @@ public:
     DevicePreallocatedAllocator operator=(DevicePreallocatedAllocator&&) = delete;
 
     ~DevicePreallocatedAllocator() = default;
-    // ^^^^ buffer_'s destructor deallocates device memory
+    // ^^^^ buffer_ptr_'s destructor deallocates device memory
 
     /// \brief allocates memory (assigns part of the buffer)
     /// Memory allocation is aligned by 256 bytes
     /// \param ptr on return pointer to allocated memory, nullptr if allocation was not successful
     /// \param bytes_needed
-    /// \param associated_stream on deallocation this block will be free only once all work in this stream has finished
+    /// \param associated_streams on deallocation this memory block is guaranteed to live at least until all previously scheduled work in these streams has finished
     /// \return cudaSuccess if allocation was successful, cudaErrorMemoryAllocation otherwise
     cudaError_t DeviceAllocate(void** ptr,
                                size_t bytes_needed,
-                               cudaStream_t associated_stream = 0)
+                               const std::vector<cudaStream_t>& associated_streams)
     {
+        assert(!associated_streams.empty());
+
         std::lock_guard<std::mutex> mutex_lock_guard(memory_operation_mutex_);
-        return get_free_block(ptr, bytes_needed, associated_stream);
+        return allocate_memory_block(ptr,
+                                     bytes_needed,
+                                     associated_streams);
     }
 
     /// \brief deallocates memory (returns its part of buffer to the list of free parts)
@@ -99,7 +107,7 @@ public:
         if (nullptr != ptr)
         {
             std::lock_guard<std::mutex> mutex_lock_guard(memory_operation_mutex_);
-            status = free_block(ptr);
+            status = free_memory_block(ptr);
         }
 
         return status;
@@ -113,8 +121,8 @@ private:
         size_t begin;
         // number of bytes in this block
         size_t size;
-        // this block will get freed only once all work on this stream has finished
-        cudaStream_t associated_stream;
+        // this block will get freed only once all previously scheduled work on these streams has finished
+        std::vector<cudaStream_t> associated_streams;
     };
 
     /// \brief allocates the underlying buffer
@@ -124,10 +132,10 @@ private:
     {
         // shared_ptr creation packed in a function so it can be used in constructor's initilaization list
         void* ptr = nullptr;
-        CGA_CU_CHECK_ERR(cudaMalloc(&ptr, buffer_size));
+        GW_CU_CHECK_ERR(cudaMalloc(&ptr, buffer_size));
         auto ret_val = std::unique_ptr<char, void (*)(char*)>(static_cast<char*>(ptr),
                                                               [](char* ptr) {
-                                                                  CGA_CU_ABORT_ON_ERR(cudaFree(ptr));
+                                                                  GW_CU_ABORT_ON_ERR(cudaFree(ptr));
                                                               });
         return ret_val;
     }
@@ -135,11 +143,11 @@ private:
     /// \brief finds a memory block of the given size
     /// \param ptr on return pointer to allocated memory, nullptr if allocation was not successful
     /// \param bytes_needed
-    /// \param associated_stream On deallocation this block will be free only once all work in this stream has finished
+    /// \param associated_streams on deallocation this memory block is guaranteed to live at least until all previously scheduled work in these streams has finished
     /// \return cudaSuccess if allocation was successful, cudaErrorMemoryAllocation otherwise
-    cudaError_t get_free_block(void** ptr,
-                               size_t bytes_needed,
-                               cudaStream_t associated_stream)
+    cudaError_t allocate_memory_block(void** ptr,
+                                      size_t bytes_needed,
+                                      const std::vector<cudaStream_t>& associated_streams)
     {
         *ptr = nullptr;
 
@@ -171,7 +179,7 @@ private:
 
         MemoryBlock new_memory_block{block_to_get_memory_from_iter->begin,
                                      bytes_needed,
-                                     associated_stream};
+                                     associated_streams};
 
         // ** reduce the size of the block the memory is going to be taken from
         if (block_to_get_memory_from_iter->size == bytes_needed)
@@ -204,10 +212,10 @@ private:
     }
 
     /// \brief returns the block starting at pointer
-    /// This function blocks until all work on associated_stream is done
+    /// This function blocks until all work on associated_streams is done
     /// \param pointer pointer at the begining of the block to be freed
     /// \return error status
-    cudaError_t free_block(void* pointer)
+    cudaError_t free_memory_block(void* pointer)
     {
         assert(static_cast<char*>(pointer) >= buffer_ptr_.get());
         const size_t block_start = static_cast<char*>(pointer) - buffer_ptr_.get();
@@ -221,8 +229,15 @@ private:
                                                    });
         assert(block_to_be_freed_iter != std::end(used_blocks_));
 
-        // ** wait for all work on associated_stream to finish before freeing up this memory block
-        CGA_CU_ABORT_ON_ERR(cudaStreamSynchronize(block_to_be_freed_iter->associated_stream));
+        // ** wait for all work on associated_streams to finish before freeing up this memory block
+        for (cudaStream_t associated_stream : block_to_be_freed_iter->associated_streams)
+        {
+            // WARNING: The way and place this synchronization is done might change in the future, do not rely on this cudaStreamSynchronize() in the caller.
+            // Guarantee that the memory will not be deallocated before all previously scheduled work on these streams will remain, but actual deallocation
+            // (and synchronization) might happen for example only when this memory block is actually requested by another allocation, which would make any
+            // code relying on an implicit synchronization here incorrect
+            GW_CU_ABORT_ON_ERR(cudaStreamSynchronize(associated_stream));
+        }
 
         // ** remove memory block from the list of used memory blocks
         const size_t number_of_bytes = block_to_be_freed_iter->size;

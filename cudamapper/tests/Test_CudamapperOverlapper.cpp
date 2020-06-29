@@ -59,8 +59,8 @@ TEST(TestOverlapExtension, short_forward_head_overlap_properly_extended)
                                 "TAGTGCCGCCATGGAAGAGGTAGTACGCGCTTTACAGGAGAATGGGACATGTTAGTTTGG"
                                 "CTGGCCGAACATTTGGTCAAATATTATTCCGGCTTTAACG");
 
-    claraparabricks::genomeworks::cga_string_view_t query_view(query_sequence);
-    cga_string_view_t target_view(target_sequence);
+    claraparabricks::genomeworks::gw_string_view_t query_view(query_sequence);
+    gw_string_view_t target_view(target_sequence);
 
     cudamapper::Overlap o;
     o.query_start_position_in_read_  = 1;

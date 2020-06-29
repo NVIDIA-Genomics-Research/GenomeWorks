@@ -72,7 +72,7 @@ ApplicationParameters::ApplicationParameters(int argc, char* argv[])
             num_devices = std::stoi(optarg);
             break;
         case 'm':
-#ifndef CGA_ENABLE_CACHING_ALLOCATOR
+#ifndef GW_ENABLE_CACHING_ALLOCATOR
             std::cerr << "ERROR: Argument -m / --max-cached-memory cannot be used without caching allocator" << std::endl;
             exit(1);
 #endif
@@ -219,7 +219,7 @@ void ApplicationParameters::create_input_parsers(std::shared_ptr<io::FastaParser
 
 int64_t ApplicationParameters::get_max_cached_memory_bytes()
 {
-#ifdef CGA_ENABLE_CACHING_ALLOCATOR
+#ifdef GW_ENABLE_CACHING_ALLOCATOR
     int64_t max_cached_bytes = 0;
     if (max_cached_memory == 0)
     {

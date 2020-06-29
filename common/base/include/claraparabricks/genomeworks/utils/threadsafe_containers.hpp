@@ -73,10 +73,10 @@ public:
     ~ThreadsafeDataProvider() = default;
 
     /// \brief returns next available element or empty optional object if there are no elements left
-    cga_optional_t<T> get_next_element()
+    gw_optional_t<T> get_next_element()
     {
         size_t my_counter = counter_++;
-        return my_counter < data_.size() ? cga_optional_t<T>(std::move(data_[my_counter])) : cga_nullopt;
+        return my_counter < data_.size() ? gw_optional_t<T>(std::move(data_[my_counter])) : gw_nullopt;
     }
 
 private:
@@ -186,7 +186,7 @@ public:
     /// If no element is available and signal_pushed_last_element() has already been called returns an empty optional
     ///
     /// \return optional, either with the value or empty if no element available and signal_pushed_last_element() has been called
-    cga_optional_t<T> get_next_element()
+    gw_optional_t<T> get_next_element()
     {
         std::unique_lock<std::mutex> ul(mutex_);
 
@@ -198,11 +198,11 @@ public:
         const bool no_elements_left = pushed_last_element_ && data_.empty();
         if (no_elements_left)
         {
-            return cga_nullopt;
+            return gw_nullopt;
         }
         else
         {
-            cga_optional_t<T> res = std::move(data_.back());
+            gw_optional_t<T> res = std::move(data_.back());
             data_.pop_back();
             return res;
         }

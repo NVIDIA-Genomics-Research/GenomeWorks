@@ -27,7 +27,7 @@ std::unique_ptr<Batch> initialize_batch(bool msa, bool banded_alignment, const B
 {
     // Get device information.
     int32_t device_count = 0;
-    CGA_CU_CHECK_ERR(cudaGetDeviceCount(&device_count));
+    GW_CU_CHECK_ERR(cudaGetDeviceCount(&device_count));
     assert(device_count > 0);
 
     size_t total = 0, free = 0;

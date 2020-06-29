@@ -70,7 +70,7 @@ private:
     /// \brief gets max number of bytes to cache by device allocator
     ///
     /// If max_cached_memory is set that value is used, finds almost complete amount of available memory otherwise
-    /// Returns 0 if CGA_ENABLE_CACHING_ALLOCATOR is not set
+    /// Returns 0 if GW_ENABLE_CACHING_ALLOCATOR is not set
     ///
     /// \return max_cached_memory_bytes
     int64_t get_max_cached_memory_bytes();

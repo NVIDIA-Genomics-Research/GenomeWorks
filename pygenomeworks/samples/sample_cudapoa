@@ -14,8 +14,8 @@
 import argparse
 import os.path
 
-from genomeworks.bindings import cuda
-from genomeworks.bindings import cudapoa
+from genomeworks import cuda
+from genomeworks import cudapoa
 from genomeworks.io.utils import read_poa_group_file
 
 """

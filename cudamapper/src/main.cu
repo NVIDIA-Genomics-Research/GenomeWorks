@@ -55,9 +55,9 @@ void run_alignment_batch(DefaultDeviceAllocator allocator,
                          std::vector<std::string>& cigars, const int32_t batch_size)
 {
     int32_t device_id;
-    CGA_CU_CHECK_ERR(cudaGetDevice(&device_id));
+    GW_CU_CHECK_ERR(cudaGetDevice(&device_id));
     cudaStream_t stream;
-    CGA_CU_CHECK_ERR(cudaStreamCreate(&stream));
+    GW_CU_CHECK_ERR(cudaStreamCreate(&stream));
     std::unique_ptr<cudaaligner::Aligner> batch =
         cudaaligner::create_aligner(
             max_query_size,
@@ -106,7 +106,7 @@ void run_alignment_batch(DefaultDeviceAllocator allocator,
         batch->sync_alignments();
         const std::vector<std::shared_ptr<cudaaligner::Alignment>>& alignments = batch->get_alignments();
         {
-            CGA_NVTX_RANGE(profiler, "copy_alignments");
+            GW_NVTX_RANGE(profiler, "copy_alignments");
             for (int32_t i = 0; i < get_size<int32_t>(alignments); i++)
             {
                 cigars[idx_start + i] = alignments[i]->convert_to_cigar();
@@ -115,7 +115,7 @@ void run_alignment_batch(DefaultDeviceAllocator allocator,
         // Reset batch to reuse memory for new alignments.
         batch->reset();
     }
-    CGA_CU_CHECK_ERR(cudaStreamDestroy(stream));
+    GW_CU_CHECK_ERR(cudaStreamDestroy(stream));
 }
 
 /// \brief performs gloval alignment between overlapped regions of reads
@@ -150,7 +150,7 @@ void align_overlaps(DefaultDeviceAllocator allocator,
     const float memory_per_base = 0.03f; // Estimation of space per base in bytes for alignment
     float memory_per_alignment  = memory_per_base * max_query_size * max_target_size;
     size_t free, total;
-    CGA_CU_CHECK_ERR(cudaMemGetInfo(&free, &total));
+    GW_CU_CHECK_ERR(cudaMemGetInfo(&free, &total));
     const size_t max_alignments = (static_cast<float>(free) * 85 / 100) / memory_per_alignment; // Using 85% of available memory
     int32_t batch_size          = std::min(get_size<int32_t>(overlaps), static_cast<int32_t>(max_alignments)) / num_alignment_engines;
     std::cerr << "Aligning " << overlaps.size() << " overlaps (" << max_query_size << "x" << max_target_size << ") with batch size " << batch_size << std::endl;
@@ -203,7 +203,7 @@ void process_one_device_batch(const IndexBatch& device_batch,
                               ThreadsafeProducerConsumer<OverlapsAndCigars>& overlaps_and_cigars_to_process,
                               cudaStream_t cuda_stream)
 {
-    CGA_NVTX_RANGE(profiler, "main::process_one_device_batch");
+    GW_NVTX_RANGE(profiler, "main::process_one_device_batch");
     const std::vector<IndexDescriptor>& query_index_descriptors  = device_batch.query_indices;
     const std::vector<IndexDescriptor>& target_index_descriptors = device_batch.target_indices;
 
@@ -247,7 +247,7 @@ void process_one_device_batch(const IndexBatch& device_batch,
                 if (application_parameters.alignment_engines > 0)
                 {
                     cigars.resize(overlaps.size());
-                    CGA_NVTX_RANGE(profiler, "align_overlaps");
+                    GW_NVTX_RANGE(profiler, "align_overlaps");
                     align_overlaps(device_allocator,
                                    overlaps,
                                    *application_parameters.query_parser,
@@ -278,7 +278,7 @@ void process_one_batch(const BatchOfIndices& batch,
                        ThreadsafeProducerConsumer<OverlapsAndCigars>& overlaps_and_cigars_to_process,
                        cudaStream_t cuda_stream)
 {
-    CGA_NVTX_RANGE(profiler, "main::process_one_batch");
+    GW_NVTX_RANGE(profiler, "main::process_one_batch");
     const IndexBatch& host_batch                  = batch.host_batch;
     const std::vector<IndexBatch>& device_batches = batch.device_batches;
 
@@ -291,7 +291,7 @@ void process_one_batch(const BatchOfIndices& batch,
     {
         assert(!host_batch.query_indices.empty() && !host_batch.target_indices.empty() && !device_batches.empty());
 
-        CGA_NVTX_RANGE(profiler, "main::process_one_batch::host_indices");
+        GW_NVTX_RANGE(profiler, "main::process_one_batch::host_indices");
         host_cache.generate_query_cache_content(host_batch.query_indices,
                                                 device_batches.front().query_indices,
                                                 skip_copy_to_host);
@@ -322,28 +322,28 @@ void postprocess_and_write_thread_function(const int32_t device_id,
                                            ThreadsafeProducerConsumer<OverlapsAndCigars>& overlaps_and_cigars_to_process,
                                            std::mutex& output_mutex)
 {
-    CGA_NVTX_RANGE(profiler, ("main::postprocess_and_write_thread_for_device_" + std::to_string(device_id)).c_str());
+    GW_NVTX_RANGE(profiler, ("main::postprocess_and_write_thread_for_device_" + std::to_string(device_id)).c_str());
     // This function is expected to run in a separate thread so set current device in order to avoid problems
-    CGA_CU_CHECK_ERR(cudaSetDevice(device_id));
+    GW_CU_CHECK_ERR(cudaSetDevice(device_id));
 
     // keep processing data as it arrives
-    cga_optional_t<OverlapsAndCigars> data_to_write;
+    gw_optional_t<OverlapsAndCigars> data_to_write;
     while (data_to_write = overlaps_and_cigars_to_process.get_next_element()) // if optional is empty that means that there will be no more overlaps to process and the thread can finish
     {
         {
-            CGA_NVTX_RANGE(profiler, "main::postprocess_and_write_thread::one_set");
+            GW_NVTX_RANGE(profiler, "main::postprocess_and_write_thread::one_set");
             std::vector<Overlap>& overlaps         = data_to_write->overlaps;
             const std::vector<std::string>& cigars = data_to_write->cigars;
 
             {
-                CGA_NVTX_RANGE(profiler, "main::postprocess_and_write_thread::postprocessing");
+                GW_NVTX_RANGE(profiler, "main::postprocess_and_write_thread::postprocessing");
                 // Overlap post processing - add overlaps which can be combined into longer ones.
                 Overlapper::post_process_overlaps(data_to_write->overlaps, application_parameters.drop_fused_overlaps);
             }
 
             if (application_parameters.perform_overlap_end_rescue)
             {
-                CGA_NVTX_RANGE(profiler, "main::postprocess_and_write_thread::rescue_overlap_end");
+                GW_NVTX_RANGE(profiler, "main::postprocess_and_write_thread::rescue_overlap_end");
                 // Perform overlap-end rescue
                 Overlapper::rescue_overlap_ends(data_to_write->overlaps,
                                                 *application_parameters.query_parser,
@@ -354,7 +354,7 @@ void postprocess_and_write_thread_function(const int32_t device_id,
 
             // write to output
             {
-                CGA_NVTX_RANGE(profiler, "main::postprocess_and_write_thread::print_paf");
+                GW_NVTX_RANGE(profiler, "main::postprocess_and_write_thread::print_paf");
                 print_paf(overlaps,
                           cigars,
                           *application_parameters.query_parser,
@@ -384,10 +384,10 @@ void worker_thread_function(const int32_t device_id,
                             const int64_t number_of_total_batches,
                             std::atomic<int64_t>& number_of_processed_batches)
 {
-    CGA_NVTX_RANGE(profiler, "main::worker_thread");
+    GW_NVTX_RANGE(profiler, "main::worker_thread");
 
     // This function is expected to run in a separate thread so set current device in order to avoid problems
-    CGA_CU_CHECK_ERR(cudaSetDevice(device_id));
+    GW_CU_CHECK_ERR(cudaSetDevice(device_id));
 
     DefaultDeviceAllocator device_allocator = create_default_device_allocator(application_parameters.max_cached_memory_bytes);
 
@@ -428,7 +428,7 @@ void worker_thread_function(const int32_t device_id,
     }
 
     // keep processing batches of indices until there are none left
-    cga_optional_t<BatchOfIndices> batch_of_indices;
+    gw_optional_t<BatchOfIndices> batch_of_indices;
     while (batch_of_indices = batches_of_indices.get_next_element()) // if optional is empty that means that there are no more batches to process and the thread can finish
     {
         const int64_t batch_number         = number_of_processed_batches.fetch_add(1); // as this is not called atomically with get_next_element() the value does not have to be completely accurate, but this is ok as the value is only use for displaying progress
@@ -453,7 +453,7 @@ void worker_thread_function(const int32_t device_id,
     }
 
     // by this point all GPU work should anyway be done as postprocess_and_write_thread also finished and all GPU work had to be done before last values could be written
-    CGA_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
+    GW_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
 }
 
 } // namespace
@@ -498,8 +498,8 @@ int main(int argc, char* argv[])
     std::vector<std::thread> worker_threads;
     for (int32_t device_id = 0; device_id < parameters.num_devices; ++device_id)
     {
-        CGA_CU_CHECK_ERR(cudaSetDevice(device_id));
-        CGA_CU_CHECK_ERR(cudaStreamCreate(&cuda_streams[device_id]));
+        GW_CU_CHECK_ERR(cudaSetDevice(device_id));
+        GW_CU_CHECK_ERR(cudaStreamCreate(&cuda_streams[device_id]));
         worker_threads.emplace_back(worker_thread_function,
                                     device_id,
                                     std::ref(batches_of_indices),
@@ -513,9 +513,9 @@ int main(int argc, char* argv[])
     // wait for all work to be done
     for (int32_t device_id = 0; device_id < parameters.num_devices; ++device_id)
     {
-        CGA_CU_CHECK_ERR(cudaSetDevice(device_id));
+        GW_CU_CHECK_ERR(cudaSetDevice(device_id));
         worker_threads[device_id].join();
-        CGA_CU_CHECK_ERR(cudaStreamDestroy(cuda_streams[device_id])); // no need to sync, it should be done at the end of worker_threads
+        GW_CU_CHECK_ERR(cudaStreamDestroy(cuda_streams[device_id])); // no need to sync, it should be done at the end of worker_threads
     }
 
     return 0;

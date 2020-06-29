@@ -18,8 +18,8 @@ set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -std=c++14")
 endif()
 message(STATUS "nvcc flags for cudaaligner: ${CUDA_NVCC_FLAGS}")
 
-get_property(cga_library_type GLOBAL PROPERTY cga_library_type)
-cuda_add_library(cudaaligner ${cga_library_type}
+get_property(gw_library_type GLOBAL PROPERTY gw_library_type)
+cuda_add_library(cudaaligner ${gw_library_type}
     src/cudaaligner.cpp
     src/aligner.cpp
     src/alignment.cpp
@@ -41,10 +41,10 @@ target_include_directories(cudaaligner_internal INTERFACE
         ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 
-target_link_libraries(cudaaligner cgabase cub)
+target_link_libraries(cudaaligner gwbase cub)
 
 target_compile_options(cudaaligner PRIVATE -Werror -Wall -Wextra)
-if (cga_optimize_for_native_cpu)
+if (gw_optimize_for_native_cpu)
     target_compile_options(cudapoa PRIVATE -march=native)
 endif()
 
@@ -73,4 +73,4 @@ install(DIRECTORY include/ DESTINATION include)
 install(EXPORT cudaaligner DESTINATION cmake)
 
 # Add auto formatting.
-cga_enable_auto_formatting("${CMAKE_CURRENT_SOURCE_DIR}")
+gw_enable_auto_formatting("${CMAKE_CURRENT_SOURCE_DIR}")

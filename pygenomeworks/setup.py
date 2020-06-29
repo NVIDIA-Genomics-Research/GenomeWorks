@@ -132,7 +132,7 @@ extensions = [
         ],
         library_dirs=[cuda_library_path, get_verified_absolute_path(os.path.join(gw_install_dir, "lib"))],
         runtime_library_dirs=[cuda_library_path, os.path.join('$ORIGIN', os.pardir, 'shared_libs')],
-        libraries=["cudapoa", "cudart", "cgabase"],
+        libraries=["cudapoa", "cudart", "gwbase"],
         language="c++",
         extra_compile_args=["-std=c++14"],
     ),
@@ -147,7 +147,7 @@ extensions = [
         ],
         library_dirs=[cuda_library_path, get_verified_absolute_path(os.path.join(gw_install_dir, "lib"))],
         runtime_library_dirs=[cuda_library_path, os.path.join('$ORIGIN', os.pardir, 'shared_libs')],
-        libraries=["cudaaligner", "cudart", "cgabase"],
+        libraries=["cudaaligner", "cudart", "gwbase"],
         language="c++",
         extra_compile_args=["-std=c++14"],
     )

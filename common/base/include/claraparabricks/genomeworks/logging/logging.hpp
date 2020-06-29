@@ -36,47 +36,47 @@
 /// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 /// THE SOFTWARE.
 
-#include <claraparabricks/genomeworks/cga_config.hpp>
+#include <claraparabricks/genomeworks/gw_config.hpp>
 
 /// \ingroup logging
 /// \{
 
 /// \brief DEBUG log level
-#define cga_log_level_debug 0
+#define gw_log_level_debug 0
 /// \brief INFO log level
-#define cga_log_level_info 1
+#define gw_log_level_info 1
 /// \brief WARN log level
-#define cga_log_level_warn 2
+#define gw_log_level_warn 2
 /// \brief ERROR log level
-#define cga_log_level_error 3
+#define gw_log_level_error 3
 /// \brief CRITICAL log level
-#define cga_log_level_critical 4
+#define gw_log_level_critical 4
 /// \brief No logging
-#define cga_log_level_off 5
+#define gw_log_level_off 5
 
-#ifndef CGA_LOG_LEVEL
+#ifndef GW_LOG_LEVEL
 #ifndef NDEBUG
 /// \brief Defines the logging level used in the current module
-#define CGA_LOG_LEVEL cga_log_level_debug
+#define GW_LOG_LEVEL gw_log_level_debug
 #else // NDEBUG
 /// \brief Defines the logging level used in the current module
-#define CGA_LOG_LEVEL cga_log_level_error
+#define GW_LOG_LEVEL gw_log_level_error
 #endif // NDEBUG
-#endif // CGA_LOG_LEVEL
+#endif // GW_LOG_LEVEL
 
-#if CGA_LOG_LEVEL == cga_log_level_info
+#if GW_LOG_LEVEL == gw_log_level_info
 /// \brief Set log level to INFO
 #define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_INFO
-#elif CGA_LOG_LEVEL == cga_log_level_debug
+#elif GW_LOG_LEVEL == gw_log_level_debug
 /// \brief Set log level to DEBUG
 #define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_DEBUG
-#elif CGA_LOG_LEVEL == cga_log_level_warn
+#elif GW_LOG_LEVEL == gw_log_level_warn
 /// \brief Set log level to WARN
 #define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_WARN
-#elif CGA_LOG_LEVEL == cga_log_level_error
+#elif GW_LOG_LEVEL == gw_log_level_error
 /// \brief Set log level to ERROR
 #define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_ERROR
-#elif CGA_LOG_LEVEL == cga_log_level_critical
+#elif GW_LOG_LEVEL == gw_log_level_critical
 /// \brief Set log level to CRITICAL
 #define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_CRITICAL
 #else
@@ -85,9 +85,9 @@
 #endif
 
 // MUST come after the defines of the logging level!
-#ifdef CGA_CUDA_BEFORE_9_2
+#ifdef GW_CUDA_BEFORE_9_2
 // Due to a header file incompatibility with nvcc in CUDA 9.0
-// logging through the logger class in CGA is disabled for any .cu files.
+// logging through the logger class in GW is disabled for any .cu files.
 #pragma message("Logging disabled for CUDA Toolkit < 9.2")
 #else
 #include <spdlog/spdlog.h>
@@ -125,58 +125,58 @@ LoggingStatus Init(const char* filename = nullptr);
 LoggingStatus SetHeader(bool logTime, bool logLocation);
 
 /// \ingroup logging
-/// \def CGA_LOG_DEBUG
+/// \def GW_LOG_DEBUG
 /// \brief Log at debug level
 ///
 /// parameters as per https://github.com/gabime/spdlog/blob/v1.x/README.md
-#ifdef CGA_CUDA_BEFORE_9_2
-#define CGA_LOG_DEBUG(...)
+#ifdef GW_CUDA_BEFORE_9_2
+#define GW_LOG_DEBUG(...)
 #else
-#define CGA_LOG_DEBUG(...) SPDLOG_DEBUG(__VA_ARGS__)
+#define GW_LOG_DEBUG(...) SPDLOG_DEBUG(__VA_ARGS__)
 #endif
 
 /// \ingroup logging
-/// \def CGA_LOG_INFO
+/// \def GW_LOG_INFO
 /// \brief Log at info level
 ///
 /// parameters as per https://github.com/gabime/spdlog/blob/v1.x/README.md
-#ifdef CGA_CUDA_BEFORE_9_2
-#define CGA_LOG_INFO(...)
+#ifdef GW_CUDA_BEFORE_9_2
+#define GW_LOG_INFO(...)
 #else
-#define CGA_LOG_INFO(...) SPDLOG_INFO(__VA_ARGS__)
+#define GW_LOG_INFO(...) SPDLOG_INFO(__VA_ARGS__)
 #endif
 
 /// \ingroup logging
-/// \def CGA_LOG_WARN
+/// \def GW_LOG_WARN
 /// \brief Log at warning level
 ///
 /// parameters as per https://github.com/gabime/spdlog/blob/v1.x/README.md
-#ifdef CGA_CUDA_BEFORE_9_2
-#define CGA_LOG_WARN(...)
+#ifdef GW_CUDA_BEFORE_9_2
+#define GW_LOG_WARN(...)
 #else
-#define CGA_LOG_WARN(...) SPDLOG_WARN(__VA_ARGS__)
+#define GW_LOG_WARN(...) SPDLOG_WARN(__VA_ARGS__)
 #endif
 
 /// \ingroup logging
-/// \def CGA_LOG_ERROR
+/// \def GW_LOG_ERROR
 /// \brief Log at error level
 ///
 /// parameters as per https://github.com/gabime/spdlog/blob/v1.x/README.md
-#ifdef CGA_CUDA_BEFORE_9_2
-#define CGA_LOG_ERROR(...)
+#ifdef GW_CUDA_BEFORE_9_2
+#define GW_LOG_ERROR(...)
 #else
-#define CGA_LOG_ERROR(...) SPDLOG_ERROR(__VA_ARGS__)
+#define GW_LOG_ERROR(...) SPDLOG_ERROR(__VA_ARGS__)
 #endif
 
 /// \ingroup logging
-/// \def CGA_LOG_CRITICAL
+/// \def GW_LOG_CRITICAL
 /// \brief Log at fatal/critical error level (does NOT exit)
 ///
 /// parameters as per https://github.com/gabime/spdlog/blob/v1.x/README.md
-#ifdef CGA_CUDA_BEFORE_9_2
-#define CGA_LOG_CRITICAL(...)
+#ifdef GW_CUDA_BEFORE_9_2
+#define GW_LOG_CRITICAL(...)
 #else
-#define CGA_LOG_CRITICAL(...) SPDLOG_CRITICAL(__VA_ARGS__)
+#define GW_LOG_CRITICAL(...) SPDLOG_CRITICAL(__VA_ARGS__)
 #endif
 
 } // namespace logging

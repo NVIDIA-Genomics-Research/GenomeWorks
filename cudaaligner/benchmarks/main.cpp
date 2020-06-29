@@ -64,12 +64,12 @@ class CudaStream
 public:
     CudaStream()
     {
-        CGA_CU_CHECK_ERR(cudaStreamCreate(&s_));
+        GW_CU_CHECK_ERR(cudaStreamCreate(&s_));
     }
 
     ~CudaStream()
     {
-        CGA_CU_CHECK_ERR(cudaStreamDestroy(s_));
+        GW_CU_CHECK_ERR(cudaStreamDestroy(s_));
     }
 
     inline cudaStream_t& get()

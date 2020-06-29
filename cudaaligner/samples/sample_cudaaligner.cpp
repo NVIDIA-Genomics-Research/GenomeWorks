@@ -32,7 +32,7 @@ std::unique_ptr<Aligner> initialize_batch(int32_t max_query_size,
 {
     // Get device information.
     int32_t device_count = 0;
-    CGA_CU_CHECK_ERR(cudaGetDeviceCount(&device_count));
+    GW_CU_CHECK_ERR(cudaGetDeviceCount(&device_count));
     assert(device_count > 0);
 
     // Initialize internal logging framework.

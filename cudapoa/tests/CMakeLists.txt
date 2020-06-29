@@ -28,4 +28,4 @@ set(LIBS
     cudapoa
     spoa)
 
-cga_add_tests(${TARGET_NAME} "${SOURCES}" "${LIBS}")
+gw_add_tests(${TARGET_NAME} "${SOURCES}" "${LIBS}")
