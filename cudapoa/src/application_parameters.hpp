@@ -32,7 +32,7 @@ public:
     std::vector<std::string> input_paths;
     std::string graph_output_path;
     bool all_fasta            = true;
-    int32_t result            = 0; //0 = consensus, 1 = msa
+    bool msa                  = false; // consensus by default
     bool banded               = true;
     int32_t band_width        = 256; // Band width for banded mode
     int32_t max_groups        = -1;  // -1 => infinite

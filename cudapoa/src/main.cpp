@@ -179,7 +179,7 @@ int main(int argc, char* argv[])
                           list_of_groups_per_batch,
                           poa_groups,
                           parameters.banded,
-                          parameters.result == 1,
+                          parameters.msa,
                           parameters.band_width,
                           nullptr,
                           parameters.gpu_mem_allocation,
@@ -198,7 +198,7 @@ int main(int argc, char* argv[])
         std::unique_ptr<Batch> batch = initialize_batch(parameters.mismatch_score,
                                                         parameters.gap_score,
                                                         parameters.match_score,
-                                                        parameters.result == 1,
+                                                        parameters.msa,
                                                         parameters.banded,
                                                         parameters.gpu_mem_allocation,
                                                         batch_size);
@@ -220,7 +220,7 @@ int main(int argc, char* argv[])
                 if (batch->get_total_poas() > 0)
                 {
                     // No more POA groups can be added to batch. Now process batch.
-                    process_batch(batch.get(), parameters.result == 1, true);
+                    process_batch(batch.get(), parameters.msa, true);
 
                     if (graph_output.good())
                     {

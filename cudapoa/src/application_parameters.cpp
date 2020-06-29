@@ -31,7 +31,7 @@ ApplicationParameters::ApplicationParameters(int argc, char* argv[])
 {
     struct option options[] = {
         {"input", required_argument, 0, 'i'},
-        {"result", required_argument, 0, 'r'},
+        {"msa", no_argument, 0, 'a'},
         {"full-alignment", no_argument, 0, 'f'},
         {"band-width", required_argument, 0, 'b'},
         {"dot", required_argument, 0, 'd'},
@@ -44,7 +44,7 @@ ApplicationParameters::ApplicationParameters(int argc, char* argv[])
         {"help", no_argument, 0, 'h'},
     };
 
-    std::string optstring = "i:r:fb:d:M:R:m:n:g:vh";
+    std::string optstring = "i:afb:d:M:R:m:n:g:vh";
 
     int32_t argument = 0;
     while ((argument = getopt_long(argc, argv, optstring.c_str(), options, nullptr)) != -1)
@@ -54,8 +54,8 @@ ApplicationParameters::ApplicationParameters(int argc, char* argv[])
         case 'i':
             input_paths.push_back(std::string(optarg));
             break;
-        case 'r':
-            result = std::stoi(optarg);
+        case 'a':
+            msa = true;
             break;
         case 'f':
             banded = false;
@@ -181,8 +181,8 @@ void ApplicationParameters::help(int32_t exit_code)
         -i, --input <file>
             input in fasta/cudapoa format, can be used multiple times for multiple fasta files, but supports only one cudapoa file)"
               << R"(
-        -r, --result <int>
-            consensus(0)/msa(1) [0])"
+        -a, --msa
+            generates msa if this flag is passed [default: consensus])"
               << R"(
         -f, --full-alignment
             uses full alignment if this flag is passed [banded alignment])"
