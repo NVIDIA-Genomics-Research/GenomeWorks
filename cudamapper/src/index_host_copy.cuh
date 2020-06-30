@@ -20,6 +20,12 @@ namespace genomeworks
 
 namespace cudamapper
 {
+
+namespace details
+{
+    class IndexHostMemoryPinner;
+}
+
 /// IndexHostCopy - Creates and maintains a copy of computed IndexGPU elements on the host
 ///
 ///
@@ -92,6 +98,9 @@ public:
     std::uint64_t window_size() const override;
 
 private:
+    // used to register host arrays as pinned memory when they are copied from
+    friend class details::IndexHostMemoryPinner;
+
     std::vector<representation_t> representations_;
     std::vector<read_id_t> read_ids_;
     std::vector<position_in_read_t> positions_in_reads_;

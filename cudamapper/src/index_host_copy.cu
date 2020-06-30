@@ -22,6 +22,60 @@ namespace genomeworks
 namespace cudamapper
 {
 
+namespace details
+{
+
+/// IndexHostMemoryPinner - registers all host arrays in given IndexHostCopy as pinned memory and unregisters it at the end
+class IndexHostMemoryPinner
+{
+public:
+    /// @brief Constructor - registers pinned memory
+    /// @param index_host_copy - IndexHostCopy whose arrays should be registered
+    IndexHostMemoryPinner(IndexHostCopy& index_host_copy)
+        : index_host_copy_(index_host_copy)
+    {
+        GW_CU_CHECK_ERR(cudaHostRegister(index_host_copy_.representations_.data(),
+                                         index_host_copy_.representations_.size() * sizeof(representation_t),
+                                         cudaHostRegisterDefault));
+
+        GW_CU_CHECK_ERR(cudaHostRegister(index_host_copy_.read_ids_.data(),
+                                         index_host_copy_.read_ids_.size() * sizeof(read_id_t),
+                                         cudaHostRegisterDefault));
+
+        GW_CU_CHECK_ERR(cudaHostRegister(index_host_copy_.positions_in_reads_.data(),
+                                         index_host_copy_.positions_in_reads_.size() * sizeof(position_in_read_t),
+                                         cudaHostRegisterDefault));
+
+        GW_CU_CHECK_ERR(cudaHostRegister(index_host_copy_.directions_of_reads_.data(),
+                                         index_host_copy_.directions_of_reads_.size() * sizeof(SketchElement::DirectionOfRepresentation),
+                                         cudaHostRegisterDefault));
+
+        GW_CU_CHECK_ERR(cudaHostRegister(index_host_copy_.unique_representations_.data(),
+                                         index_host_copy_.unique_representations_.size() * sizeof(representation_t),
+                                         cudaHostRegisterDefault));
+
+        GW_CU_CHECK_ERR(cudaHostRegister(index_host_copy_.first_occurrence_of_representations_.data(),
+                                         index_host_copy_.first_occurrence_of_representations_.size() * sizeof(std::uint32_t),
+                                         cudaHostRegisterDefault));
+    }
+
+    /// @brief Destructor - unregisters the arrays
+    ~IndexHostMemoryPinner()
+    {
+        GW_CU_CHECK_ERR(cudaHostUnregister(index_host_copy_.representations_.data()));
+        GW_CU_CHECK_ERR(cudaHostUnregister(index_host_copy_.read_ids_.data()));
+        GW_CU_CHECK_ERR(cudaHostUnregister(index_host_copy_.positions_in_reads_.data()));
+        GW_CU_CHECK_ERR(cudaHostUnregister(index_host_copy_.directions_of_reads_.data()));
+        GW_CU_CHECK_ERR(cudaHostUnregister(index_host_copy_.unique_representations_.data()));
+        GW_CU_CHECK_ERR(cudaHostUnregister(index_host_copy_.first_occurrence_of_representations_.data()));
+    }
+
+private:
+    IndexHostCopy& index_host_copy_;
+};
+
+} // namespace details
+
 IndexHostCopy::IndexHostCopy(const Index& index,
                              const read_id_t first_read_id,
                              const std::uint64_t kmer_size,
@@ -80,6 +134,9 @@ IndexHostCopy::IndexHostCopy(const Index& index,
 std::unique_ptr<Index> IndexHostCopy::copy_index_to_device(DefaultDeviceAllocator allocator,
                                                            const cudaStream_t cuda_stream) const
 {
+    // pin_memory_object registers all host arrays as pinned memory and unregisters them on its destruction (i.e. at the end of this function)
+    details::IndexHostMemoryPinner pin_memory_object(const_cast<IndexHostCopy&>(*this));
+
     return std::make_unique<IndexGPU<Minimizer>>(allocator,
                                                  *this,
                                                  cuda_stream);
