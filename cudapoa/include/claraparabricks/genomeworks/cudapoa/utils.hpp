@@ -10,8 +10,15 @@
 
 #pragma once
 
-#include <vector>
 #include <claraparabricks/genomeworks/cudapoa/batch.hpp>
+#include <claraparabricks/genomeworks/utils/signed_integer_utils.hpp>
+#include <claraparabricks/genomeworks/io/fasta_parser.hpp>
+
+#include <string>
+#include <vector>
+#include <sstream>
+#include <fstream>
+#include <cassert>
 
 namespace claraparabricks
 {
@@ -49,6 +56,138 @@ void get_multi_batch_sizes(std::vector<BatchSize>& list_of_batch_sizes,
                            int32_t mismatch_score              = -6,
                            int32_t gap_score                   = -8,
                            int32_t match_score                 = 8);
+
+/// \brief Resizes input windows to specified size in total_windows if total_windows >= 0
+///
+/// \param[out] windows      Reference to vector into which parsed window
+///                          data is saved
+/// \param[in] total_windows Limit windows read to total windows, or
+///                          loop over existing windows to fill remaining spots.
+///                          -1 ignores the total_windows arg and uses all windows in the file.
+inline void resize_windows(std::vector<std::vector<std::string>>& windows, const int32_t total_windows)
+{
+    if (total_windows >= 0)
+    {
+        if (get_size(windows) > total_windows)
+        {
+            windows.erase(windows.begin() + total_windows, windows.end());
+        }
+        else if (get_size(windows) < total_windows)
+        {
+            int32_t windows_read = windows.size();
+            while (get_size(windows) != total_windows)
+            {
+                windows.push_back(windows[windows.size() - windows_read]);
+            }
+        }
+
+        assert(windows.size() == total_windows);
+    }
+}
+
+/// \brief Parses window data file in the following format:
+///        <num_sequences_in_window_0>
+///        window0_seq0
+///        window0_seq1
+///        window0_seq2
+///        ...
+///        ...
+///        <num_sequences_in_window_1>
+///        window1_seq0
+///        window1_seq1
+///        window1_seq2
+///        ...
+///        ...
+/// \param[out] windows Reference to vector into which parsed window
+///                     data is saved
+/// \param[in] filename Name of file with window data
+/// \param[in] total_windows Limit windows read to total windows, or
+///                          loop over existing windows to fill remaining spots.
+///                          -1 ignored the total_windows arg and uses all windows in the file.
+inline void parse_window_data_file(std::vector<std::vector<std::string>>& windows, const std::string& filename, int32_t total_windows)
+{
+    std::ifstream infile(filename);
+    if (!infile.good())
+    {
+        throw std::runtime_error("Cannot read file " + filename);
+    }
+    std::string line;
+    int32_t num_sequences = 0;
+    while (std::getline(infile, line))
+    {
+        if (num_sequences == 0)
+        {
+            std::istringstream iss(line);
+            iss >> num_sequences;
+            windows.emplace_back(std::vector<std::string>());
+        }
+        else
+        {
+            windows.back().push_back(line);
+            num_sequences--;
+        }
+    }
+
+    resize_windows(windows, total_windows);
+}
+
+/// \brief Parses windows from 1 or more fasta files
+///
+/// \param[out] windows Reference to vector into which parsed window
+///                     data is saved
+/// \param[in] input_filepaths Reference to vector containing names of fasta files with window data
+/// \param[in] total_windows Limit windows read to total windows, or
+///                          loop over existing windows to fill remaining spots.
+///                          -1 ignored the total_windows arg and uses all windows in the file.
+inline void parse_fasta_windows(std::vector<std::vector<std::string>>& windows, const std::vector<std::string>& input_paths, const int32_t total_windows)
+{
+    const int32_t min_sequence_length = 0;
+    const int32_t num_input_files     = input_paths.size();
+    std::vector<std::shared_ptr<io::FastaParser>> fasta_parser_vec(num_input_files);
+    std::vector<int32_t> num_reads_per_file(num_input_files);
+    int32_t max_num_reads = 0;
+    for (int32_t i = 0; i < num_input_files; i++)
+    {
+        fasta_parser_vec[i]   = io::create_kseq_fasta_parser(input_paths[i], min_sequence_length, false);
+        num_reads_per_file[i] = fasta_parser_vec[i]->get_num_seqences();
+        max_num_reads         = std::max(max_num_reads, num_reads_per_file[i]);
+    }
+
+    windows.resize(max_num_reads);
+
+    int32_t idx = 0;
+    for (auto& window : windows)
+    {
+        for (int32_t i = 0; i < num_input_files; i++)
+        {
+            if (idx < num_reads_per_file[i])
+            {
+                window.push_back(fasta_parser_vec[i]->get_sequence_by_id(idx).seq);
+            }
+        }
+        idx++;
+    }
+
+    resize_windows(windows, total_windows);
+}
+
+/// \brief Parses golden value file with genome
+///
+/// \param[in] filename Name of file with reference genome
+///
+/// \return Genome string
+inline std::string parse_golden_value_file(const std::string& filename)
+{
+    std::ifstream infile(filename);
+    if (!infile.good())
+    {
+        throw std::runtime_error("Cannot read file " + filename);
+    }
+
+    std::string line;
+    std::getline(infile, line);
+    return line;
+}
 
 } // namespace cudapoa
 
