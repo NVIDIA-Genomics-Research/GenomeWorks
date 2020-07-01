@@ -112,6 +112,17 @@ public:
 class IndexHostCopyBase
 {
 public:
+    /// ArrayView - helper struct that provides a view of part of underlying array
+    /// \tparam T type of data in this view
+    template <typename T>
+    struct ArrayView
+    {
+        /// pointer to first element in view
+        T* data;
+        /// total elements of type T in view
+        std::ptrdiff_t size;
+    };
+
     /// \brief copy cached index vectors from the host and create an object of Index on GPU
     /// \param allocator asynchronous device allocator used for temporary buffer allocations
     /// \param cuda_stream H2D copy is done on this stream. Device arrays are also associated with this stream and will not be freed at least until all work issued on this stream before calling their destructor is done
@@ -124,27 +135,27 @@ public:
 
     /// \brief returns an array of representations of sketch elements (stored on host)
     /// \return an array of representations of sketch elements
-    virtual const std::vector<representation_t>& representations() const = 0;
+    virtual const ArrayView<representation_t> representations() const = 0;
 
     /// \brief returns an array of reads ids for sketch elements (stored on host)
     /// \return an array of reads ids for sketch elements
-    virtual const std::vector<read_id_t>& read_ids() const = 0;
+    virtual const ArrayView<read_id_t> read_ids() const = 0;
 
     /// \brief returns an array of starting positions of sketch elements in their reads (stored on host)
     /// \return an array of starting positions of sketch elements in their reads
-    virtual const std::vector<position_in_read_t>& positions_in_reads() const = 0;
+    virtual const ArrayView<position_in_read_t> positions_in_reads() const = 0;
 
     /// \brief returns an array of directions in which sketch elements were read (stored on host)
     /// \return an array of directions in which sketch elements were read
-    virtual const std::vector<SketchElement::DirectionOfRepresentation>& directions_of_reads() const = 0;
+    virtual const ArrayView<SketchElement::DirectionOfRepresentation> directions_of_reads() const = 0;
 
     /// \brief returns an array where each representation is recorded only once, sorted by representation (stored on host)
     /// \return an array where each representation is recorded only once, sorted by representation
-    virtual const std::vector<representation_t>& unique_representations() const = 0;
+    virtual const ArrayView<representation_t> unique_representations() const = 0;
 
     /// \brief returns first occurrence of corresponding representation from unique_representations(), plus one more element with the total number of sketch elements (stored on host)
     /// \return first occurrence of corresponding representation from unique_representations(), plus one more element with the total number of sketch elements
-    virtual const std::vector<std::uint32_t>& first_occurrence_of_representations() const = 0;
+    virtual const ArrayView<std::uint32_t> first_occurrence_of_representations() const = 0;
 
     /// \brief returns number of reads in input data
     /// \return number of reads in input data

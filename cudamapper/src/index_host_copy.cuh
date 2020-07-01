@@ -23,7 +23,7 @@ namespace cudamapper
 
 namespace details
 {
-    class IndexHostMemoryPinner;
+class IndexHostMemoryPinner;
 }
 
 /// IndexHostCopy - Creates and maintains a copy of computed IndexGPU elements on the host
@@ -55,27 +55,27 @@ public:
 
     /// \brief returns an array of representations of sketch elements (stored on host)
     /// \return an array of representations of sketch elements
-    const std::vector<representation_t>& representations() const override;
+    const ArrayView<representation_t> representations() const override;
 
     /// \brief returns an array of reads ids for sketch elements (stored on host)
     /// \return an array of reads ids for sketch elements
-    const std::vector<read_id_t>& read_ids() const override;
+    const ArrayView<read_id_t> read_ids() const override;
 
     /// \brief returns an array of starting positions of sketch elements in their reads (stored on host)
     /// \return an array of starting positions of sketch elements in their reads
-    const std::vector<position_in_read_t>& positions_in_reads() const override;
+    const ArrayView<position_in_read_t> positions_in_reads() const override;
 
     /// \brief returns an array of directions in which sketch elements were read (stored on host)
     /// \return an array of directions in which sketch elements were read
-    const std::vector<SketchElement::DirectionOfRepresentation>& directions_of_reads() const override;
+    const ArrayView<SketchElement::DirectionOfRepresentation> directions_of_reads() const override;
 
     /// \brief returns an array where each representation is recorded only once, sorted by representation (stored on host)
     /// \return an array where each representation is recorded only once, sorted by representation
-    const std::vector<representation_t>& unique_representations() const override;
+    const ArrayView<representation_t> unique_representations() const override;
 
     /// \brief returns first occurrence of corresponding representation from unique_representations(), plus one more element with the total number of sketch elements (stored on host)
     /// \return first occurrence of corresponding representation from unique_representations(), plus one more element with the total number of sketch elements
-    const std::vector<std::uint32_t>& first_occurrence_of_representations() const override;
+    const ArrayView<std::uint32_t> first_occurrence_of_representations() const override;
 
     /// \brief returns number of reads in input data
     /// \return number of reads in input data
@@ -101,13 +101,15 @@ private:
     // used to register host arrays as pinned memory when they are copied from
     friend class details::IndexHostMemoryPinner;
 
-    std::vector<representation_t> representations_;
-    std::vector<read_id_t> read_ids_;
-    std::vector<position_in_read_t> positions_in_reads_;
-    std::vector<SketchElement::DirectionOfRepresentation> directions_of_reads_;
+    // use a single underlying vector in order to reduce memory fragmentation when using pool allocators
+    std::vector<unsigned char> underlying_array_;
 
-    std::vector<representation_t> unique_representations_;
-    std::vector<std::uint32_t> first_occurrence_of_representations_;
+    ArrayView<representation_t> representations_;
+    ArrayView<read_id_t> read_ids_;
+    ArrayView<position_in_read_t> positions_in_reads_;
+    ArrayView<SketchElement::DirectionOfRepresentation> directions_of_reads_;
+    ArrayView<representation_t> unique_representations_;
+    ArrayView<std::uint32_t> first_occurrence_of_representations_;
 
     read_id_t number_of_reads_;
     position_in_read_t number_of_basepairs_in_longest_read_;
