@@ -41,12 +41,12 @@ public:
     int32_t max_cached_memory               = 0;     // m
     int32_t index_size                      = 30;    // i
     int32_t target_index_size               = 30;    // t
-    double filtering_parameter              = 2e-4;  // F
+    double filtering_parameter              = 1e-5;  // F
     int32_t alignment_engines               = 0;     // a
-    int32_t min_residues                    = 100;   // r
-    int32_t min_overlap_len                 = 2000;  // l
-    int32_t min_bases_per_residue           = 100;   // b
-    float min_overlap_fraction              = 0.95;  // z
+    int32_t min_residues                    = 3;     // r, recommended range: 1 - 10. Higher: more accurate. Lower: more sensitive
+    int32_t min_overlap_len                 = 250;   // l, recommended range: 100 - 1000
+    int32_t min_bases_per_residue           = 1000;  // b
+    float min_overlap_fraction              = 0.8;   // z
     bool perform_overlap_end_rescue         = false; // R
     bool drop_fused_overlaps                = false; // D
     int32_t query_indices_in_host_memory    = 10;    // Q
