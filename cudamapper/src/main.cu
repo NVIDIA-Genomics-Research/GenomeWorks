@@ -358,7 +358,7 @@ void postprocess_and_write_thread_function(const int32_t device_id,
                 print_paf(overlaps,
                           cigars,
                           *application_parameters.query_parser,
-                          *application_parameters.query_parser,
+                          *application_parameters.target_parser,
                           application_parameters.kmer_size,
                           output_mutex);
             }
