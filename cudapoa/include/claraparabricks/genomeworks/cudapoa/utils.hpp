@@ -153,20 +153,15 @@ inline void parse_fasta_windows(std::vector<std::vector<std::string>>& windows, 
         max_num_reads         = std::max(max_num_reads, num_reads_per_file[i]);
     }
 
-    windows.resize(max_num_reads);
-
-    int32_t idx = 0;
-    for (auto& window : windows)
+    windows.resize(num_input_files);
+    for (int32_t i = 0; i < num_input_files; i++)
     {
-        for (int32_t i = 0; i < num_input_files; i++)
+        for (int32_t idx = 0; idx < num_reads_per_file[i]; idx++)
         {
-            if (idx < num_reads_per_file[i])
-            {
-                window.push_back(fasta_parser_vec[i]->get_sequence_by_id(idx).seq);
-            }
+            windows[i].push_back(fasta_parser_vec[i]->get_sequence_by_id(idx).seq);
         }
-        idx++;
     }
+        
 
     resize_windows(windows, total_windows);
 }
