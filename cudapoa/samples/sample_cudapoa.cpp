@@ -179,12 +179,12 @@ int main(int argc, char** argv)
     if (long_read)
     {
         const std::string input_file = std::string(CUDAPOA_BENCHMARK_DATA_DIR) + "/sample-bonito.txt";
-        parse_window_data_file(windows, input_file, -1);
+        parse_cudapoa_file(windows, input_file, -1);
     }
     else
     {
         const std::string input_file = std::string(CUDAPOA_BENCHMARK_DATA_DIR) + "/sample-windows.txt";
-        parse_window_data_file(windows, input_file, 1000);
+        parse_cudapoa_file(windows, input_file, 1000);
     }
 
     // Create a vector of POA groups based on windows

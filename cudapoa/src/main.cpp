@@ -137,11 +137,11 @@ int main(int argc, char* argv[])
     std::vector<std::vector<std::string>> windows;
     if (parameters.all_fasta)
     {
-        parse_fasta_windows(windows, parameters.input_paths, parameters.max_groups);
+        parse_fasta_files(windows, parameters.input_paths, parameters.max_groups);
     }
     else
     {
-        parse_window_data_file(windows, parameters.input_paths[0], parameters.max_groups);
+        parse_cudapoa_file(windows, parameters.input_paths[0], parameters.max_groups);
     }
 
     std::ofstream graph_output;
