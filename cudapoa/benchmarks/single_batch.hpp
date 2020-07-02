@@ -33,7 +33,7 @@ public:
     SingleBatch(int32_t max_poas_per_batch, const std::string& filename, int32_t total_windows)
         : max_poas_per_batch_(max_poas_per_batch)
     {
-        parse_window_data_file(windows_, filename, total_windows);
+        parse_cudapoa_file(windows_, filename, total_windows);
 
         assert(get_size(windows_) > 0);
 
