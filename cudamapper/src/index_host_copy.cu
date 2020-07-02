@@ -36,6 +36,7 @@ public:
     IndexHostMemoryPinner(IndexHostCopy& index_host_copy)
         : index_host_copy_(index_host_copy)
     {
+        GW_NVTX_RANGE(profiler, "register_pinned_memory");
         GW_CU_CHECK_ERR(cudaHostRegister(index_host_copy_.underlying_array_.data(),
                                          index_host_copy_.underlying_array_.size() * sizeof(unsigned char),
                                          cudaHostRegisterDefault));
@@ -44,6 +45,7 @@ public:
     /// @brief Destructor - unregisters the arrays
     ~IndexHostMemoryPinner()
     {
+        GW_NVTX_RANGE(profiler, "unregister_pinned_memory");
         GW_CU_CHECK_ERR(cudaHostUnregister(index_host_copy_.underlying_array_.data()));
     }
 
@@ -62,7 +64,7 @@ IndexHostCopy::IndexHostCopy(const Index& index,
     , kmer_size_(kmer_size)
     , window_size_(window_size)
 {
-    GW_NVTX_RANGE(profiler, "cache_index");
+    GW_NVTX_RANGE(profiler, "index_host_copy");
 
     // Use only one large array to store all arrays in order to reduce fragmentation when using pool allocators
     // Align all arrays by 64 bits
@@ -79,10 +81,14 @@ IndexHostCopy::IndexHostCopy(const Index& index,
                                    directions_of_reads_bits +
                                    unique_representations_bits +
                                    first_occurrence_of_representations_bits;
-    underlying_array_.resize(total_bits);
+
+    {
+        GW_NVTX_RANGE(profiler, "index_host_copy::allocate_host_memory");
+        underlying_array_.resize(total_bits);
+    }
 
     std::size_t current_bit = 0;
-    representations_ = {reinterpret_cast<representation_t*>(underlying_array_.data() + current_bit), index.representations().size()};
+    representations_        = {reinterpret_cast<representation_t*>(underlying_array_.data() + current_bit), index.representations().size()};
     current_bit += representations_bits;
     read_ids_ = {reinterpret_cast<read_id_t*>(underlying_array_.data() + current_bit), index.read_ids().size()};
     current_bit += read_ids_bits;
@@ -93,6 +99,9 @@ IndexHostCopy::IndexHostCopy(const Index& index,
     unique_representations_ = {reinterpret_cast<representation_t*>(underlying_array_.data() + current_bit), index.unique_representations().size()};
     current_bit += unique_representations_bits;
     first_occurrence_of_representations_ = {reinterpret_cast<std::uint32_t*>(underlying_array_.data() + current_bit), index.first_occurrence_of_representations().size()};
+
+    // pin_memory_object registers host array as pinned memory and unregisters it on its destruction (i.e. at the end of this function)
+    details::IndexHostMemoryPinner pin_memory_object(const_cast<IndexHostCopy&>(*this));
 
     cudautils::device_copy_n(index.representations().data(),
                              index.representations().size(),
@@ -118,7 +127,7 @@ IndexHostCopy::IndexHostCopy(const Index& index,
                              index.unique_representations().size(),
                              unique_representations_.data,
                              cuda_stream);
-;
+
     cudautils::device_copy_n(index.first_occurrence_of_representations().data(),
                              index.first_occurrence_of_representations().size(),
                              first_occurrence_of_representations_.data,
@@ -135,7 +144,7 @@ IndexHostCopy::IndexHostCopy(const Index& index,
 std::unique_ptr<Index> IndexHostCopy::copy_index_to_device(DefaultDeviceAllocator allocator,
                                                            const cudaStream_t cuda_stream) const
 {
-    // pin_memory_object registers all host arrays as pinned memory and unregisters them on its destruction (i.e. at the end of this function)
+    // pin_memory_object registers host array as pinned memory and unregisters it on its destruction (i.e. at the end of this function)
     details::IndexHostMemoryPinner pin_memory_object(const_cast<IndexHostCopy&>(*this));
 
     return std::make_unique<IndexGPU<Minimizer>>(allocator,
