@@ -36,7 +36,7 @@ public:
     MultiBatch(int32_t num_batches, const std::string& filename, int32_t total_windows = -1)
         : num_batches_(num_batches)
     {
-        parse_window_data_file(windows_, filename, total_windows);
+        parse_cudapoa_file(windows_, filename, total_windows);
 
         assert(get_size(windows_) > 0);
 
