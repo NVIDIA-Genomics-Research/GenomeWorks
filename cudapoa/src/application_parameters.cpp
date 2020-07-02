@@ -44,7 +44,7 @@ ApplicationParameters::ApplicationParameters(int argc, char* argv[])
         {"help", no_argument, 0, 'h'},
     };
 
-    std::string optstring = "i:afb:d:M:R:m:n:g:vh";
+    std::string optstring = "i:afb:Ad:M:R:m:n:g:vh";
 
     int32_t argument = 0;
     while ((argument = getopt_long(argc, argv, optstring.c_str(), options, nullptr)) != -1)
@@ -62,6 +62,9 @@ ApplicationParameters::ApplicationParameters(int argc, char* argv[])
             break;
         case 'b':
             band_width = std::stoi(optarg);
+            break;
+        case 'A':
+            adaptive = true;
             break;
         case 'd':
             graph_output_path = std::string(optarg);
@@ -123,11 +126,11 @@ ApplicationParameters::ApplicationParameters(int argc, char* argv[])
     verify_input_files(input_paths);
 }
 
-void ApplicationParameters::verify_input_files(std::vector<std::string>& input_paths)
+void ApplicationParameters::verify_input_files(std::vector<std::string>& inputpaths)
 {
     // Checks if the files are either all fasta or if one file is provided, it needs to be fasta or cudapoa
     all_fasta = true;
-    for (auto& file_path : input_paths)
+    for (auto& file_path : inputpaths)
     {
         std::ifstream infile(file_path.c_str());
         if (infile.good())
@@ -142,7 +145,7 @@ void ApplicationParameters::verify_input_files(std::vector<std::string>& input_p
             throw std::runtime_error(std::string("Invalid input file: ") + file_path);
         }
     }
-    if (input_paths.size() == 0 || (!all_fasta && input_paths.size() > 1))
+    if (inputpaths.size() == 0 || (!all_fasta && inputpaths.size() > 1))
     {
         std::cerr << "Invalid input. cudapoa needs input in either one cudapoa format file or in one/multiple fasta files." << std::endl;
         help(1);
@@ -175,6 +178,9 @@ void ApplicationParameters::help(int32_t exit_code)
               << R"(
         -b, --band-width <int>
             band-width for banded alignment (must be multiple of 128) [256])"
+              << R"(
+        -A, --adaptive-alignment
+            uses adaptive alignment if this flag is passed [banded alignment])"
               << R"(
         -d, --dot <file>
             output path for printing graph in DOT format [disabled])"

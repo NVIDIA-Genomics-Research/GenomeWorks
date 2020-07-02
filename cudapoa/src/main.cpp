@@ -181,7 +181,7 @@ int main(int argc, char* argv[])
                           list_of_groups_per_batch,
                           poa_groups,
                           parameters.banded,
-                          true, /// ToDo temp....
+                          parameters.adaptive,
                           parameters.msa,
                           parameters.band_width,
                           nullptr,
@@ -203,7 +203,7 @@ int main(int argc, char* argv[])
                                                         parameters.match_score,
                                                         parameters.msa,
                                                         parameters.banded,
-                                                        true, // ToDo temp....
+                                                        parameters.adaptive,
                                                         parameters.gpu_mem_allocation,
                                                         batch_size);
 

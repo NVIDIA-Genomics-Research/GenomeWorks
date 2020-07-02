@@ -132,7 +132,7 @@ int main(int argc, char** argv)
     bool help        = false;
     bool print       = false;
     bool print_graph = false;
-    bool adaptive    = false; /// ToDo remove ...
+    bool adaptive    = false;
 
     while ((c = getopt(argc, argv, "mlfpgha")) != -1)
     {

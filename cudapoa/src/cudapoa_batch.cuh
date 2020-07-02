@@ -167,7 +167,6 @@ public:
                                         num_nucleotides_copied_ * sizeof(*input_details_h_->base_weights), cudaMemcpyHostToDevice, stream_));
         GW_CU_CHECK_ERR(cudaMemcpyAsync(input_details_d_->window_details, input_details_h_->window_details,
                                         poa_count_ * sizeof(*input_details_h_->window_details), cudaMemcpyHostToDevice, stream_));
-        /// ToDo may need to revise the following sizeof()
         GW_CU_CHECK_ERR(cudaMemcpyAsync(input_details_d_->sequence_lengths, input_details_h_->sequence_lengths,
                                         global_sequence_idx_ * sizeof(*input_details_h_->sequence_lengths), cudaMemcpyHostToDevice, stream_));
 
