@@ -85,7 +85,7 @@ inline void resize_windows(std::vector<std::vector<std::string>>& windows, const
     }
 }
 
-/// \brief Parses window data file in the following format:
+/// \brief Parses cudapoa data file in the following format:
 ///        <num_sequences_in_window_0>
 ///        window0_seq0
 ///        window0_seq1
@@ -104,7 +104,7 @@ inline void resize_windows(std::vector<std::vector<std::string>>& windows, const
 /// \param[in] total_windows Limit windows read to total windows, or
 ///                          loop over existing windows to fill remaining spots.
 ///                          -1 ignored the total_windows arg and uses all windows in the file.
-inline void parse_window_data_file(std::vector<std::vector<std::string>>& windows, const std::string& filename, int32_t total_windows)
+inline void parse_cudapoa_file(std::vector<std::vector<std::string>>& windows, const std::string& filename, int32_t total_windows)
 {
     std::ifstream infile(filename);
     if (!infile.good())
@@ -139,7 +139,7 @@ inline void parse_window_data_file(std::vector<std::vector<std::string>>& window
 /// \param[in] total_windows Limit windows read to total windows, or
 ///                          loop over existing windows to fill remaining spots.
 ///                          -1 ignored the total_windows arg and uses all windows in the file.
-inline void parse_fasta_windows(std::vector<std::vector<std::string>>& windows, const std::vector<std::string>& input_paths, const int32_t total_windows)
+inline void parse_fasta_files(std::vector<std::vector<std::string>>& windows, const std::vector<std::string>& input_paths, const int32_t total_windows)
 {
     const int32_t min_sequence_length = 0;
     const int32_t num_input_files     = input_paths.size();
