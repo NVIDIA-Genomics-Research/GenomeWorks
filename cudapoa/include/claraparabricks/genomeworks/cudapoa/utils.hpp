@@ -144,22 +144,16 @@ inline void parse_fasta_windows(std::vector<std::vector<std::string>>& windows, 
     const int32_t min_sequence_length = 0;
     const int32_t num_input_files     = input_paths.size();
     std::vector<std::shared_ptr<io::FastaParser>> fasta_parser_vec(num_input_files);
-    std::vector<int32_t> num_reads_per_file(num_input_files);
-    for (int32_t i = 0; i < num_input_files; i++)
-    {
-        fasta_parser_vec[i]   = io::create_kseq_fasta_parser(input_paths[i], min_sequence_length, false);
-        num_reads_per_file[i] = fasta_parser_vec[i]->get_num_seqences();
-    }
-
     windows.resize(num_input_files);
     for (int32_t i = 0; i < num_input_files; i++)
     {
-        for (int32_t idx = 0; idx < num_reads_per_file[i]; idx++)
+        fasta_parser_vec[i]   = io::create_kseq_fasta_parser(input_paths[i], min_sequence_length, false);
+        int32_t num_reads = fasta_parser_vec[i]->get_num_seqences();
+        for (int32_t idx = 0; idx < num_reads; idx++)
         {
             windows[i].push_back(fasta_parser_vec[i]->get_sequence_by_id(idx).seq);
         }
     }
-
     resize_windows(windows, total_windows);
 }
 
