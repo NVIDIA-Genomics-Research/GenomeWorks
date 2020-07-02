@@ -583,38 +583,32 @@ IndexGPU<SketchElementImpl>::IndexGPU(DefaultDeviceAllocator allocator,
     : first_read_id_(index_host_copy.first_read_id())
     , kmer_size_(index_host_copy.kmer_size())
     , window_size_(index_host_copy.window_size())
-    , representations_d_(allocator)
-    , read_ids_d_(allocator)
-    , positions_in_reads_d_(allocator)
-    , directions_of_reads_d_(allocator)
-    , unique_representations_d_(allocator)
-    , first_occurrence_of_representations_d_(allocator)
+    , representations_d_(index_host_copy.representations().size, allocator, cuda_stream)
+    , read_ids_d_(index_host_copy.read_ids().size, allocator, cuda_stream)
+    , positions_in_reads_d_(index_host_copy.positions_in_reads().size, allocator, cuda_stream)
+    , directions_of_reads_d_(index_host_copy.directions_of_reads().size, allocator, cuda_stream)
+    , unique_representations_d_(index_host_copy.unique_representations().size, allocator, cuda_stream)
+    , first_occurrence_of_representations_d_(index_host_copy.first_occurrence_of_representations().size, allocator, cuda_stream)
 {
     number_of_reads_                     = index_host_copy.number_of_reads();
     number_of_basepairs_in_longest_read_ = index_host_copy.number_of_basepairs_in_longest_read();
 
     //H2D- representations_d_ = index_host_copy.representations();
-    representations_d_.clear_and_resize(index_host_copy.representations().size);
     cudautils::device_copy_n(index_host_copy.representations().data, index_host_copy.representations().size, representations_d_.data(), cuda_stream);
 
     //H2D- read_ids_d_ = index_host_copy.read_ids();
-    read_ids_d_.clear_and_resize(index_host_copy.read_ids().size);
     cudautils::device_copy_n(index_host_copy.read_ids().data, index_host_copy.read_ids().size, read_ids_d_.data(), cuda_stream);
 
     //H2D- positions_in_reads_d_ = index_host_copy.positions_in_reads();
-    positions_in_reads_d_.clear_and_resize(index_host_copy.positions_in_reads().size);
     cudautils::device_copy_n(index_host_copy.positions_in_reads().data, index_host_copy.positions_in_reads().size, positions_in_reads_d_.data(), cuda_stream);
 
     //H2D- directions_of_reads_d_ = index_host_copy.directions_of_reads();
-    directions_of_reads_d_.clear_and_resize(index_host_copy.directions_of_reads().size);
     cudautils::device_copy_n(index_host_copy.directions_of_reads().data, index_host_copy.directions_of_reads().size, directions_of_reads_d_.data(), cuda_stream);
 
     //H2D- unique_representations_d_ = index_host_copy.unique_representations();
-    unique_representations_d_.clear_and_resize(index_host_copy.unique_representations().size);
     cudautils::device_copy_n(index_host_copy.unique_representations().data, index_host_copy.unique_representations().size, unique_representations_d_.data(), cuda_stream);
 
     //H2D- first_occurrence_of_representations_d_ = index_host_copy.first_occurrence_of_representations();
-    first_occurrence_of_representations_d_.clear_and_resize(index_host_copy.first_occurrence_of_representations().size);
     cudautils::device_copy_n(index_host_copy.first_occurrence_of_representations().data, index_host_copy.first_occurrence_of_representations().size, first_occurrence_of_representations_d_.data(), cuda_stream);
 
     // This is not completely necessary, but if removed one has to make sure that the next step
