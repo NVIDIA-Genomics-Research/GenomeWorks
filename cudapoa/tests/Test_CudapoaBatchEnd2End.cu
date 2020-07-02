@@ -9,7 +9,7 @@
 */
 
 #include "../benchmarks/multi_batch.hpp"
-#include "../benchmarks/common/utils.hpp"
+#include <claraparabricks/genomeworks/cudapoa/utils.hpp>
 #include "file_location.hpp"
 
 #include "gtest/gtest.h"

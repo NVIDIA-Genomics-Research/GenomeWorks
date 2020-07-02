@@ -8,22 +8,28 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-#include <file_location.hpp>
-#include <claraparabricks/genomeworks/cudapoa/cudapoa.hpp>
-#include <claraparabricks/genomeworks/cudapoa/batch.hpp>
-#include <claraparabricks/genomeworks/utils/signed_integer_utils.hpp>
-#include <claraparabricks/genomeworks/utils/cudautils.hpp>
-#include <claraparabricks/genomeworks/cudapoa/utils.hpp> // for get_multi_batch_sizes()
-
-#include <cuda_runtime_api.h>
-#include <vector>
+#include <iostream>
+#include <fstream>
 #include <string>
-#include <unistd.h>
+#include <claraparabricks/genomeworks/cudapoa/utils.hpp> // for get_multi_batch_sizes()
+#include "application_parameters.hpp"
 
-using namespace claraparabricks::genomeworks;
-using namespace claraparabricks::genomeworks::cudapoa;
+namespace claraparabricks
+{
 
-std::unique_ptr<Batch> initialize_batch(bool msa, bool banded_alignment, const BatchSize& batch_size)
+namespace genomeworks
+{
+
+namespace cudapoa
+{
+
+std::unique_ptr<Batch> initialize_batch(int32_t mismatch_score,
+                                        int32_t gap_score,
+                                        int32_t match_score,
+                                        bool msa,
+                                        bool banded_alignment,
+                                        const double gpu_mem_allocation,
+                                        const BatchSize& batch_size)
 {
     // Get device information.
     int32_t device_count = 0;
@@ -38,10 +44,9 @@ std::unique_ptr<Batch> initialize_batch(bool msa, bool banded_alignment, const B
     Init();
 
     // Initialize CUDAPOA batch object for batched processing of POAs on the GPU.
-    const int32_t device_id      = 0;
-    cudaStream_t stream          = 0;
-    size_t mem_per_batch         = 0.9 * free; // Using 90% of GPU available memory for CUDAPOA batch.
-    const int32_t mismatch_score = -6, gap_score = -8, match_score = 8;
+    const int32_t device_id = 0;
+    cudaStream_t stream     = 0;
+    size_t mem_per_batch    = gpu_mem_allocation * free; // Using 90% of GPU available memory for CUDAPOA batch.
 
     std::unique_ptr<Batch> batch = create_batch(device_id,
                                                 stream,
@@ -121,70 +126,33 @@ void process_batch(Batch* batch, bool msa, bool print)
     }
 }
 
-int main(int argc, char** argv)
+int main(int argc, char* argv[])
 {
-    // Process options
-    int c            = 0;
-    bool msa         = false;
-    bool long_read   = false;
-    bool banded      = true;
-    bool help        = false;
-    bool print       = false;
-    bool print_graph = false;
-
-    while ((c = getopt(argc, argv, "mlfpgh")) != -1)
-    {
-        switch (c)
-        {
-        case 'm':
-            msa = true;
-            break;
-        case 'l':
-            long_read = true;
-            break;
-        case 'f':
-            banded = false;
-            break;
-        case 'p':
-            print = true;
-            break;
-        case 'g':
-            print_graph = true;
-            break;
-        case 'h':
-            help = true;
-            break;
-        }
-    }
-
-    if (help)
-    {
-        std::cout << "CUDAPOA API sample program. Runs consensus or MSA generation on pre-canned data." << std::endl;
-        std::cout << "Usage:" << std::endl;
-        std::cout << "./sample_cudapoa [-m] [-h]" << std::endl;
-        std::cout << "-m : Generate MSA (if not provided, generates consensus by default)" << std::endl;
-        std::cout << "-l : Perform long-read sample (if not provided, will run short-read sample by default)" << std::endl;
-        std::cout << "-f : Perform full alignment (if not provided, banded alignment is used by default)" << std::endl;
-        std::cout << "-p : Print the MSA or consensus output to stdout" << std::endl;
-        std::cout << "-g : Print POA graph in dot format, this option is only for long-read sample" << std::endl;
-        std::cout << "-h : Print help message" << std::endl;
-        std::exit(0);
-    }
+    // Parse input parameters
+    const ApplicationParameters parameters(argc, argv);
 
     // Load input data. Each window is represented as a vector of strings. The sample
     // data has many such windows to process, hence the data is loaded into a vector
     // of vector of strings.
     std::vector<std::vector<std::string>> windows;
-
-    if (long_read)
+    if (parameters.all_fasta)
     {
-        const std::string input_file = std::string(CUDAPOA_BENCHMARK_DATA_DIR) + "/sample-bonito.txt";
-        parse_window_data_file(windows, input_file, -1);
+        parse_fasta_windows(windows, parameters.input_paths, parameters.max_groups);
     }
     else
     {
-        const std::string input_file = std::string(CUDAPOA_BENCHMARK_DATA_DIR) + "/sample-windows.txt";
-        parse_window_data_file(windows, input_file, 1000);
+        parse_window_data_file(windows, parameters.input_paths[0], parameters.max_groups);
+    }
+
+    std::ofstream graph_output;
+    if (!parameters.graph_output_path.empty())
+    {
+        graph_output.open(parameters.graph_output_path);
+        if (!graph_output)
+        {
+            std::cerr << "Error opening " << parameters.graph_output_path << " for graph output" << std::endl;
+            return -1;
+        }
     }
 
     // Create a vector of POA groups based on windows
@@ -207,7 +175,17 @@ int main(int argc, char** argv)
     std::vector<BatchSize> list_of_batch_sizes;
     std::vector<std::vector<int32_t>> list_of_groups_per_batch;
 
-    get_multi_batch_sizes(list_of_batch_sizes, list_of_groups_per_batch, poa_groups, banded, msa);
+    get_multi_batch_sizes(list_of_batch_sizes,
+                          list_of_groups_per_batch,
+                          poa_groups,
+                          parameters.banded,
+                          parameters.msa,
+                          parameters.band_width,
+                          nullptr,
+                          parameters.gpu_mem_allocation,
+                          parameters.mismatch_score,
+                          parameters.gap_score,
+                          parameters.match_score);
 
     int32_t group_count_offset = 0;
 
@@ -217,7 +195,13 @@ int main(int argc, char** argv)
         auto& batch_group_ids = list_of_groups_per_batch[b];
 
         // Initialize batch.
-        std::unique_ptr<Batch> batch = initialize_batch(msa, banded, batch_size);
+        std::unique_ptr<Batch> batch = initialize_batch(parameters.mismatch_score,
+                                                        parameters.gap_score,
+                                                        parameters.match_score,
+                                                        parameters.msa,
+                                                        parameters.banded,
+                                                        parameters.gpu_mem_allocation,
+                                                        batch_size);
 
         // Loop over all the POA groups for the current batch, add them to the batch and process them.
         int32_t group_count = 0;
@@ -236,16 +220,20 @@ int main(int argc, char** argv)
                 if (batch->get_total_poas() > 0)
                 {
                     // No more POA groups can be added to batch. Now process batch.
-                    process_batch(batch.get(), msa, print);
+                    process_batch(batch.get(), parameters.msa, true);
 
-                    if (print_graph && long_read)
+                    if (graph_output.is_open())
                     {
+                        if (!graph_output.good())
+                        {
+                            throw std::runtime_error("Error writing dot file");
+                        }
                         std::vector<DirectedGraph> graph;
                         std::vector<StatusType> graph_status;
                         batch->get_graphs(graph, graph_status);
                         for (auto& g : graph)
                         {
-                            std::cout << g.serialize_to_dot() << std::endl;
+                            graph_output << g.serialize_to_dot() << std::endl;
                         }
                     }
 
@@ -257,17 +245,17 @@ int main(int argc, char** argv)
                     // to account for the fact that group i was excluded at this round.
                     if (status == StatusType::success)
                     {
-                        std::cout << "Processed groups " << group_count + group_count_offset << " - " << i + group_count_offset << " (batch " << b << ")" << std::endl;
+                        std::cerr << "Processed groups " << group_count + group_count_offset << " - " << i + group_count_offset << " (batch " << b << ")" << std::endl;
                     }
                     else
                     {
-                        std::cout << "Processed groups " << group_count + group_count_offset << " - " << i - 1 + group_count_offset << " (batch " << b << ")" << std::endl;
+                        std::cerr << "Processed groups " << group_count + group_count_offset << " - " << i - 1 + group_count_offset << " (batch " << b << ")" << std::endl;
                     }
                 }
                 else
                 {
                     // the POA was too large to be added to the GPU, skip and move on
-                    std::cout << "Could not add POA group " << batch_group_ids[i] << " to batch " << b << std::endl;
+                    std::cerr << "Could not add POA group " << batch_group_ids[i] << " to batch " << b << std::endl;
                     i++;
                 }
 
@@ -289,7 +277,7 @@ int main(int argc, char** argv)
 
             if (status != StatusType::exceeded_maximum_poas && status != StatusType::success)
             {
-                std::cout << "Could not add POA group " << batch_group_ids[i] << " to batch " << b << ". Error code " << status << std::endl;
+                std::cerr << "Could not add POA group " << batch_group_ids[i] << " to batch " << b << ". Error code " << status << std::endl;
                 i++;
             }
         }
@@ -298,4 +286,17 @@ int main(int argc, char** argv)
     }
 
     return 0;
+}
+
+} // namespace cudapoa
+
+} // namespace genomeworks
+
+} // namespace claraparabricks
+
+/// \brief main function
+/// main function cannot be in a namespace so using this function to call actual main function
+int main(int argc, char* argv[])
+{
+    return claraparabricks::genomeworks::cudapoa::main(argc, argv);
 }
