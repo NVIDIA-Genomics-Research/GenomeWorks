@@ -161,7 +161,6 @@ inline void parse_fasta_windows(std::vector<std::vector<std::string>>& windows, 
             windows[i].push_back(fasta_parser_vec[i]->get_sequence_by_id(idx).seq);
         }
     }
-        
 
     resize_windows(windows, total_windows);
 }
