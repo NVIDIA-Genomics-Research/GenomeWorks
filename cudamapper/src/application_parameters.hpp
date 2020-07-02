@@ -10,7 +10,7 @@
 
 #include <memory>
 
-#include <claragenomics/utils/allocator.hpp>
+#include <claraparabricks/genomeworks/utils/allocator.hpp>
 
 namespace claraparabricks
 {
@@ -43,8 +43,8 @@ public:
     int32_t target_index_size               = 30;    // t
     double filtering_parameter              = 1.0;   // F
     int32_t alignment_engines               = 0;     // a
-    int32_t min_residues                    = 10;    // r
-    int32_t min_overlap_len                 = 500;   // l
+    int32_t min_residues                    = 100;   // r
+    int32_t min_overlap_len                 = 2000;  // l
     int32_t min_bases_per_residue           = 100;   // b
     float min_overlap_fraction              = 0.95;  // z
     bool perform_overlap_end_rescue         = false; // R
@@ -70,7 +70,7 @@ private:
     /// \brief gets max number of bytes to cache by device allocator
     ///
     /// If max_cached_memory is set that value is used, finds almost complete amount of available memory otherwise
-    /// Returns 0 if CGA_ENABLE_CACHING_ALLOCATOR is not set
+    /// Returns 0 if GW_ENABLE_CACHING_ALLOCATOR is not set
     ///
     /// \return max_cached_memory_bytes
     int64_t get_max_cached_memory_bytes();

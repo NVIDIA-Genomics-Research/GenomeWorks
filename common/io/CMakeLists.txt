@@ -8,15 +8,15 @@
 # license agreement from NVIDIA CORPORATION is strictly prohibited.
 #
 
-project(cgaio)
+project(gwio)
 
-get_property(cga_library_type GLOBAL PROPERTY cga_library_type)
-add_library(${PROJECT_NAME} ${cga_library_type}
+get_property(gw_library_type GLOBAL PROPERTY gw_library_type)
+add_library(${PROJECT_NAME} ${gw_library_type}
         src/fasta_parser.cpp
         src/kseqpp_fasta_parser.cpp)
-target_link_libraries(${PROJECT_NAME} PUBLIC cgabase z)
+target_link_libraries(${PROJECT_NAME} PUBLIC gwbase z)
 
-add_doxygen_source_dir(${CMAKE_CURRENT_SOURCE_DIR}/include/claragenomics/io)
+add_doxygen_source_dir(${CMAKE_CURRENT_SOURCE_DIR}/include/claraparabricks/genomeworks/io)
 
 target_include_directories(${PROJECT_NAME}
     PRIVATE
@@ -37,4 +37,4 @@ install(DIRECTORY include/ DESTINATION include)
 install(EXPORT ${PROJECT_NAME} DESTINATION cmake)
 
 # Add auto formatting.
-cga_enable_auto_formatting("${CMAKE_CURRENT_SOURCE_DIR}")
+gw_enable_auto_formatting("${CMAKE_CURRENT_SOURCE_DIR}")

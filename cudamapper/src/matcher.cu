@@ -8,7 +8,7 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-#include <claragenomics/cudamapper/matcher.hpp>
+#include <claraparabricks/genomeworks/cudamapper/matcher.hpp>
 #include "matcher_gpu.cuh"
 
 namespace claraparabricks

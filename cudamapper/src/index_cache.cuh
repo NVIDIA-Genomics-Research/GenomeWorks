@@ -13,8 +13,8 @@
 #include <memory>
 #include <unordered_map>
 
-#include <claragenomics/cudamapper/types.hpp>
-#include <claragenomics/utils/allocator.hpp>
+#include <claraparabricks/genomeworks/cudamapper/types.hpp>
+#include <claraparabricks/genomeworks/utils/allocator.hpp>
 
 #include "index_descriptor.hpp"
 

@@ -17,9 +17,9 @@
 #include "../src/index_gpu.cuh"
 #include "../src/minimizer.hpp"
 
-#include <claragenomics/utils/cudautils.hpp>
-#include <claragenomics/utils/mathutils.hpp>
-#include <claragenomics/utils/signed_integer_utils.hpp>
+#include <claraparabricks/genomeworks/utils/cudautils.hpp>
+#include <claraparabricks/genomeworks/utils/mathutils.hpp>
+#include <claraparabricks/genomeworks/utils/signed_integer_utils.hpp>
 
 namespace claraparabricks
 {
@@ -45,7 +45,7 @@ void test_find_first_occurrences_of_representations_kernel(const thrust::host_ve
                                                            const std::uint32_t number_of_threads)
 {
     cudaStream_t cuda_stream;
-    CGA_CU_CHECK_ERR(cudaStreamCreate(&cuda_stream));
+    GW_CU_CHECK_ERR(cudaStreamCreate(&cuda_stream));
 
     const thrust::device_vector<std::uint64_t> representation_index_mask_d(representation_index_mask_h);
     const thrust::device_vector<representation_t> input_representations_d(input_representations_h);
@@ -65,7 +65,7 @@ void test_find_first_occurrences_of_representations_kernel(const thrust::host_ve
                                                                                                               representation_index_mask_d.size(),
                                                                                                               starting_index_of_each_representation_d.data().get(),
                                                                                                               unique_representations_d.data().get());
-    CGA_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
+    GW_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
 
     const thrust::host_vector<std::uint32_t> starting_index_of_each_representation_h(starting_index_of_each_representation_d);
     const thrust::host_vector<representation_t> unique_representations_h(unique_representations_d);
@@ -78,7 +78,7 @@ void test_find_first_occurrences_of_representations_kernel(const thrust::host_ve
         EXPECT_EQ(unique_representations_h[i], expected_unique_representations_h[i]) << "index: " << i;
     }
 
-    CGA_CU_CHECK_ERR(cudaStreamDestroy(cuda_stream));
+    GW_CU_CHECK_ERR(cudaStreamDestroy(cuda_stream));
 }
 
 TEST(TestCudamapperIndexGPU, test_find_first_occurrences_of_representations_kernel_small_example)
@@ -180,7 +180,7 @@ void test_find_first_occurrences_of_representations(const thrust::host_vector<re
     DefaultDeviceAllocator allocator = create_default_device_allocator();
 
     cudaStream_t cuda_stream;
-    CGA_CU_CHECK_ERR(cudaStreamCreate(&cuda_stream));
+    GW_CU_CHECK_ERR(cudaStreamCreate(&cuda_stream));
 
     device_buffer<representation_t> representations_d(representations_h.size(), allocator, cuda_stream);
     cudautils::device_copy_n(representations_h.data(),
@@ -207,7 +207,7 @@ void test_find_first_occurrences_of_representations(const thrust::host_vector<re
                              unique_representations_d.size(),
                              unique_representations_h.data(),
                              cuda_stream); //D2H
-    CGA_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
+    GW_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
 
     ASSERT_EQ(starting_index_of_each_representation_h.size(), expected_starting_index_of_each_representation_h.size());
     ASSERT_EQ(unique_representations_h.size(), expected_unique_representations_h.size());
@@ -224,8 +224,8 @@ void test_find_first_occurrences_of_representations(const thrust::host_vector<re
     starting_index_of_each_representation_d.free();
     unique_representations_d.free();
 
-    CGA_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
-    CGA_CU_CHECK_ERR(cudaStreamDestroy(cuda_stream));
+    GW_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
+    GW_CU_CHECK_ERR(cudaStreamDestroy(cuda_stream));
 }
 
 TEST(TestCudamapperIndexGPU, test_find_first_occurrences_of_representations_small_example)
@@ -313,7 +313,7 @@ void test_function_copy_rest_to_separate_arrays(const thrust::host_vector<Readid
                                                 const std::uint32_t threads)
 {
     cudaStream_t cuda_stream;
-    CGA_CU_CHECK_ERR(cudaStreamCreate(&cuda_stream));
+    GW_CU_CHECK_ERR(cudaStreamCreate(&cuda_stream));
 
     ASSERT_EQ(rest_h.size(), expected_read_ids_h.size());
     ASSERT_EQ(rest_h.size(), expected_positions_in_reads_h.size());
@@ -331,7 +331,7 @@ void test_function_copy_rest_to_separate_arrays(const thrust::host_vector<Readid
                                                                       generated_positions_in_reads_d.data().get(),
                                                                       generated_directions_of_reads_d.data().get(),
                                                                       rest_h.size());
-    CGA_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
+    GW_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
 
     const thrust::host_vector<read_id_t>& generated_read_ids_h(generated_read_ids_d);
     const thrust::host_vector<position_in_read_t>& generated_positions_in_reads_h(generated_positions_in_reads_d);
@@ -344,7 +344,7 @@ void test_function_copy_rest_to_separate_arrays(const thrust::host_vector<Readid
         EXPECT_EQ(generated_directions_of_reads_h[i], expected_directions_of_reads_h[i]);
     }
 
-    CGA_CU_CHECK_ERR(cudaStreamDestroy(cuda_stream));
+    GW_CU_CHECK_ERR(cudaStreamDestroy(cuda_stream));
 }
 
 TEST(TestCudamapperIndexGPU, test_function_copy_rest_to_separate_arrays)
@@ -454,7 +454,7 @@ void test_compress_unique_representations_after_filtering_kernel(const thrust::h
                                                                  const std::int32_t number_of_threads)
 {
     cudaStream_t cuda_stream;
-    CGA_CU_CHECK_ERR(cudaStreamCreate(&cuda_stream));
+    GW_CU_CHECK_ERR(cudaStreamCreate(&cuda_stream));
 
     ASSERT_EQ(unique_representations_before_compression_h.size(), first_occurrence_of_representation_before_compression_h.size() - 1);
     ASSERT_EQ(first_occurrence_of_representation_before_compression_h.size(), new_unique_representation_index_h.size());
@@ -478,7 +478,7 @@ void test_compress_unique_representations_after_filtering_kernel(const thrust::h
                                                                                                                     new_unique_representation_index_d.data().get(),
                                                                                                                     unique_representations_after_compression_d.data().get(),
                                                                                                                     first_occurrence_of_representation_after_compression_d.data().get());
-    CGA_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
+    GW_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
 
     const thrust::host_vector<representation_t> unique_representations_after_compression_h(unique_representations_after_compression_d);
     const thrust::host_vector<std::uint32_t> first_occurrence_of_representation_after_compression_h(first_occurrence_of_representation_after_compression_d);
@@ -492,7 +492,7 @@ void test_compress_unique_representations_after_filtering_kernel(const thrust::h
     // first_occurrence_of_representation_after_compression_h has one more element
     EXPECT_EQ(first_occurrence_of_representation_after_compression_h.back(), expected_first_occurrence_of_representation_after_compression_h.back());
 
-    CGA_CU_CHECK_ERR(cudaStreamDestroy(cuda_stream));
+    GW_CU_CHECK_ERR(cudaStreamDestroy(cuda_stream));
 }
 
 TEST(TestCudamapperIndexGPU, test_compress_unique_representations_after_filtering_kernel_small_example)
@@ -645,7 +645,7 @@ void test_compress_data_arrays_after_filtering_kernel(const thrust::host_vector<
                                                       const std::int32_t number_of_threads)
 {
     cudaStream_t cuda_stream;
-    CGA_CU_CHECK_ERR(cudaStreamCreate(&cuda_stream));
+    GW_CU_CHECK_ERR(cudaStreamCreate(&cuda_stream));
 
     ASSERT_EQ(number_of_sketch_elements_with_representation_before_compression_h.size(), first_occurrence_of_representation_before_filtering_h.size());
     ASSERT_EQ(number_of_sketch_elements_with_representation_before_compression_h.size(), unique_representation_index_after_compression_h.size());
@@ -693,7 +693,7 @@ void test_compress_data_arrays_after_filtering_kernel(const thrust::host_vector<
                                                                                                          read_ids_after_compression_d.data().get(),
                                                                                                          positions_in_reads_after_compression_d.data().get(),
                                                                                                          directions_of_representations_after_compression_d.data().get());
-    CGA_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
+    GW_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
 
     thrust::host_vector<representation_t> representations_after_compression_h(representations_after_compression_d);
     thrust::host_vector<read_id_t> read_ids_after_compression_h(read_ids_after_compression_d);
@@ -713,7 +713,7 @@ void test_compress_data_arrays_after_filtering_kernel(const thrust::host_vector<
         EXPECT_EQ(expected_directions_of_representations_after_compression_h[i], directions_of_representations_after_compression_h[i]) << "index: " << i;
     }
 
-    CGA_CU_CHECK_ERR(cudaStreamDestroy(cuda_stream));
+    GW_CU_CHECK_ERR(cudaStreamDestroy(cuda_stream));
 }
 
 TEST(TestCudamapperIndexGPU, test_compress_data_arrays_after_filtering_kernel_small_example)
@@ -1009,7 +1009,7 @@ void test_filter_out_most_common_representations(const double filtering_paramete
     DefaultDeviceAllocator allocator = create_default_device_allocator();
 
     cudaStream_t cuda_stream;
-    CGA_CU_CHECK_ERR(cudaStreamCreate(&cuda_stream));
+    GW_CU_CHECK_ERR(cudaStreamCreate(&cuda_stream));
 
     device_buffer<representation_t> representations_d(input_representations_h.size(), allocator, cuda_stream);
     cudautils::device_copy_n(input_representations_h.data(), input_representations_h.size(), representations_d.data(), cuda_stream); // H2D
@@ -1046,7 +1046,7 @@ void test_filter_out_most_common_representations(const double filtering_paramete
     cudautils::device_copy_n(unique_representations_d.data(), unique_representations_d.size(), output_unique_representations_h.data(), cuda_stream); // D2H
     thrust::host_vector<std::uint32_t> output_first_occurrence_of_representations_h(first_occurrence_of_representations_d.size());
     cudautils::device_copy_n(first_occurrence_of_representations_d.data(), first_occurrence_of_representations_d.size(), output_first_occurrence_of_representations_h.data(), cuda_stream); // D2H
-    CGA_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
+    GW_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
 
     ASSERT_EQ(expected_output_representations_h.size(), output_representations_h.size());
     ASSERT_EQ(expected_output_representations_h.size(), output_read_ids_h.size());
@@ -1080,8 +1080,8 @@ void test_filter_out_most_common_representations(const double filtering_paramete
     unique_representations_d.free();
     first_occurrence_of_representations_d.free();
 
-    CGA_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
-    CGA_CU_CHECK_ERR(cudaStreamDestroy(cuda_stream));
+    GW_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
+    GW_CU_CHECK_ERR(cudaStreamDestroy(cuda_stream));
 }
 
 TEST(TestCudamapperIndexGPU, test_filter_out_most_common_representations_small_example)
@@ -1358,7 +1358,7 @@ void test_function(const std::string& filename,
     DefaultDeviceAllocator allocator        = create_default_device_allocator();
 
     cudaStream_t cuda_stream;
-    CGA_CU_CHECK_ERR(cudaStreamCreate(&cuda_stream));
+    GW_CU_CHECK_ERR(cudaStreamCreate(&cuda_stream));
 
     {
         IndexGPU<Minimizer> index(allocator,
@@ -1370,7 +1370,7 @@ void test_function(const std::string& filename,
                                   false,
                                   filtering_parameter,
                                   cuda_stream);
-        CGA_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
+        GW_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
 
         ASSERT_EQ(index.number_of_reads(), expected_number_of_reads);
         if (0 == expected_number_of_reads)
@@ -1396,7 +1396,7 @@ void test_function(const std::string& filename,
         cudautils::device_copy_n(read_ids_d.data(), read_ids_d.size(), read_ids_h.data(), cuda_stream); // D2H
         thrust::host_vector<SketchElement::DirectionOfRepresentation> directions_of_reads_h(directions_of_reads_d.size());
         cudautils::device_copy_n(directions_of_reads_d.data(), directions_of_reads_d.size(), directions_of_reads_h.data(), cuda_stream); // D2H
-        CGA_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
+        GW_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
         ASSERT_EQ(representations_h.size(), expected_representations.size());
         ASSERT_EQ(positions_in_reads_h.size(), expected_positions_in_reads.size());
         ASSERT_EQ(read_ids_h.size(), expected_read_ids.size());
@@ -1418,7 +1418,7 @@ void test_function(const std::string& filename,
         cudautils::device_copy_n(unique_representations_d.data(), unique_representations_d.size(), unique_representations_h.data(), cuda_stream); // D2H
         thrust::host_vector<std::uint32_t> first_occurrence_of_representations_h(first_occurrence_of_representations_d.size());
         cudautils::device_copy_n(first_occurrence_of_representations_d.data(), first_occurrence_of_representations_d.size(), first_occurrence_of_representations_h.data(), cuda_stream); // D2H
-        CGA_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
+        GW_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
         ASSERT_EQ(expected_unique_representations.size() + 1, expected_first_occurrence_of_representations.size());
         ASSERT_EQ(unique_representations_h.size(), expected_unique_representations.size());
         ASSERT_EQ(first_occurrence_of_representations_h.size(), expected_first_occurrence_of_representations.size());
@@ -1430,7 +1430,7 @@ void test_function(const std::string& filename,
         EXPECT_EQ(expected_first_occurrence_of_representations.back(), expected_representations.size());
     }
 
-    CGA_CU_CHECK_ERR(cudaStreamDestroy(cuda_stream));
+    GW_CU_CHECK_ERR(cudaStreamDestroy(cuda_stream));
 }
 
 TEST(TestCudamapperIndexGPU, GATT_4_1)

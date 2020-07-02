@@ -13,9 +13,9 @@
 #include "aligner_global_myers_banded.hpp"
 #include "aligner_global_hirschberg_myers.hpp"
 
-#include <claragenomics/utils/genomeutils.hpp>
-#include <claragenomics/utils/cudautils.hpp>
-#include <claragenomics/cudaaligner/aligner.hpp>
+#include <claraparabricks/genomeworks/utils/genomeutils.hpp>
+#include <claraparabricks/genomeworks/utils/cudautils.hpp>
+#include <claraparabricks/genomeworks/cudaaligner/aligner.hpp>
 
 #include <benchmark/benchmark.h>
 #include <cuda_runtime_api.h>
@@ -64,12 +64,12 @@ class CudaStream
 public:
     CudaStream()
     {
-        CGA_CU_CHECK_ERR(cudaStreamCreate(&s_));
+        GW_CU_CHECK_ERR(cudaStreamCreate(&s_));
     }
 
     ~CudaStream()
     {
-        CGA_CU_CHECK_ERR(cudaStreamDestroy(s_));
+        GW_CU_CHECK_ERR(cudaStreamDestroy(s_));
     }
 
     inline cudaStream_t& get()

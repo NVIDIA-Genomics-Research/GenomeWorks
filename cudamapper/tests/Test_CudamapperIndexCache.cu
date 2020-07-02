@@ -17,9 +17,9 @@
 
 #include "cudamapper_file_location.hpp"
 
-#include <claragenomics/utils/signed_integer_utils.hpp>
-#include <claragenomics/cudamapper/index.hpp>
-#include <claragenomics/io/fasta_parser.hpp>
+#include <claraparabricks/genomeworks/utils/signed_integer_utils.hpp>
+#include <claraparabricks/genomeworks/cudamapper/index.hpp>
+#include <claraparabricks/genomeworks/io/fasta_parser.hpp>
 
 namespace claraparabricks
 {
@@ -87,7 +87,7 @@ void check_if_index_is_correct(const std::shared_ptr<Index>& index,
 
     uint64_t index_maximum_kmer_size = index->maximum_kmer_size();
 
-    CGA_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
+    GW_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
 
     ASSERT_EQ(index_representations, expected_representations) << " test_uid: " << test_uid;
     ASSERT_EQ(index_read_ids, expected_read_ids) << " test_uid: " << test_uid;
@@ -159,7 +159,7 @@ TEST(TestCudamapperIndexCaching, test_index_cache_host_same_query_and_target)
     // All minimizers: AAG(4f0), AAG(0f1), AGC(2r1), ATC(1f0), ATG(0r0), CAA(3f0), CTA(3f1)
 
     cudaStream_t cuda_stream;
-    CGA_CU_CHECK_ERR(cudaStreamCreate(&cuda_stream));
+    GW_CU_CHECK_ERR(cudaStreamCreate(&cuda_stream));
 
     const bool same_query_and_target               = true;
     std::shared_ptr<io::FastaParser> query_parser  = io::create_kseq_fasta_parser(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/catcaag_aagcta.fasta");
@@ -540,8 +540,8 @@ TEST(TestCudamapperIndexCaching, test_index_cache_host_same_query_and_target)
                               cuda_stream,
                               "test_index_cache_host_same_query_and_target_11");
 
-    CGA_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
-    CGA_CU_CHECK_ERR(cudaStreamDestroy(cuda_stream));
+    GW_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
+    GW_CU_CHECK_ERR(cudaStreamDestroy(cuda_stream));
 }
 
 TEST(TestCudamapperIndexCaching, test_index_cache_host_not_the_same_query_and_target)
@@ -593,7 +593,7 @@ TEST(TestCudamapperIndexCaching, test_index_cache_host_not_the_same_query_and_ta
     // All minimizers: AAG(4f), ATC(1f), ATG(0r), CAA(3f)
 
     cudaStream_t cuda_stream;
-    CGA_CU_CHECK_ERR(cudaStreamCreate(&cuda_stream));
+    GW_CU_CHECK_ERR(cudaStreamCreate(&cuda_stream));
 
     const bool same_query_and_target               = false;
     std::shared_ptr<io::FastaParser> query_parser  = io::create_kseq_fasta_parser(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/aagcta.fasta");
@@ -757,8 +757,8 @@ TEST(TestCudamapperIndexCaching, test_index_cache_host_not_the_same_query_and_ta
                               cuda_stream,
                               "test_index_cache_host_not_the_same_query_and_target_3");
 
-    CGA_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
-    CGA_CU_CHECK_ERR(cudaStreamDestroy(cuda_stream));
+    GW_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
+    GW_CU_CHECK_ERR(cudaStreamDestroy(cuda_stream));
 }
 
 TEST(TestCudamapperIndexCaching, test_index_cache_host_keep_on_device)
@@ -766,7 +766,7 @@ TEST(TestCudamapperIndexCaching, test_index_cache_host_keep_on_device)
     // AAGCTA: AAG(0f), AGC(2r), CTA(3f)
 
     cudaStream_t cuda_stream;
-    CGA_CU_CHECK_ERR(cudaStreamCreate(&cuda_stream));
+    GW_CU_CHECK_ERR(cudaStreamCreate(&cuda_stream));
 
     const bool same_query_and_target               = true;
     std::shared_ptr<io::FastaParser> query_parser  = io::create_kseq_fasta_parser(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/aagcta.fasta");
@@ -917,7 +917,7 @@ TEST(TestCudamapperIndexCaching, test_index_cache_device_same_query_and_target)
     // AAGCTA minimizers: AAG(0f), AGC(2r), CTA(3f)
 
     cudaStream_t cuda_stream;
-    CGA_CU_CHECK_ERR(cudaStreamCreate(&cuda_stream));
+    GW_CU_CHECK_ERR(cudaStreamCreate(&cuda_stream));
 
     const bool same_query_and_target               = true;
     std::shared_ptr<io::FastaParser> query_parser  = io::create_kseq_fasta_parser(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/catcaag_aagcta.fasta");
@@ -1100,8 +1100,8 @@ TEST(TestCudamapperIndexCaching, test_index_cache_device_same_query_and_target)
     ASSERT_EQ(index_query_catcaag, index_query_catcaag_1);
     ASSERT_EQ(index_target_aagcta, index_target_aagcta_1);
 
-    CGA_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
-    CGA_CU_CHECK_ERR(cudaStreamDestroy(cuda_stream));
+    GW_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
+    GW_CU_CHECK_ERR(cudaStreamDestroy(cuda_stream));
 }
 
 TEST(TestCudamapperIndexCaching, test_index_cache_device_not_the_same_query_and_target)
@@ -1110,7 +1110,7 @@ TEST(TestCudamapperIndexCaching, test_index_cache_device_not_the_same_query_and_
     // CATCAAG: AAG(4f), ATC(1f), ATG(0r), CAA(3f)
 
     cudaStream_t cuda_stream;
-    CGA_CU_CHECK_ERR(cudaStreamCreate(&cuda_stream));
+    GW_CU_CHECK_ERR(cudaStreamCreate(&cuda_stream));
 
     const bool same_query_and_target               = false;
     std::shared_ptr<io::FastaParser> query_parser  = io::create_kseq_fasta_parser(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/aagcta.fasta");
@@ -1290,8 +1290,8 @@ TEST(TestCudamapperIndexCaching, test_index_cache_device_not_the_same_query_and_
     ASSERT_EQ(index_query, index_query_1);
     ASSERT_EQ(index_target, index_target_1);
 
-    CGA_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
-    CGA_CU_CHECK_ERR(cudaStreamDestroy(cuda_stream));
+    GW_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
+    GW_CU_CHECK_ERR(cudaStreamDestroy(cuda_stream));
 }
 
 } // namespace cudamapper

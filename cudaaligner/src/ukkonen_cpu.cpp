@@ -9,8 +9,8 @@
 */
 
 #include "ukkonen_cpu.hpp"
-#include <claragenomics/utils/mathutils.hpp>
-#include <claragenomics/utils/signed_integer_utils.hpp>
+#include <claraparabricks/genomeworks/utils/mathutils.hpp>
+#include <claraparabricks/genomeworks/utils/signed_integer_utils.hpp>
 #include <limits>
 #include <cassert>
 #include <algorithm>

@@ -20,8 +20,8 @@
 #include "cudapoa_generate_msa.cuh"
 #include "cudapoa_adaptive_banding.cuh"
 
-#include <claragenomics/utils/cudautils.hpp>
-#include <claragenomics/cudapoa/batch.hpp>
+#include <claraparabricks/genomeworks/utils/cudautils.hpp>
+#include <claraparabricks/genomeworks/cudapoa/batch.hpp>
 
 namespace claraparabricks
 {
@@ -153,9 +153,9 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
 
     SizeT* alignment_graph         = &alignment_graph_d[max_graph_dimension * window_idx];
     SizeT* alignment_read          = &alignment_read_d[max_graph_dimension * window_idx];
-    SizeT* band_starts = &band_starts_d[max_nodes_per_window*window_idx];
-    SizeT* band_widths = &band_widths_d[max_nodes_per_window*window_idx];
-    SizeT* band_locations = &band_locations_d[max_nodes_per_window*window_idx];
+    SizeT* band_starts             = &band_starts_d[max_nodes_per_window * window_idx];
+    SizeT* band_widths             = &band_widths_d[max_nodes_per_window * window_idx];
+    SizeT* band_locations          = &band_locations_d[max_nodes_per_window * window_idx];
     uint16_t* node_coverage_counts = &node_coverage_counts_d_[max_nodes_per_window * window_idx];
 
 #ifdef SPOA_ACCURATE
@@ -284,24 +284,24 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
         else if (adaptive_banded)
         {
             alignment_length = runNeedlemanWunschAdaptiveBanded<uint8_t, ScoreT, SizeT>(nodes,
-                                                                                sorted_poa,
-                                                                                node_id_to_pos,
-                                                                                sequence_lengths[0],
-                                                                                incoming_edge_count,
-                                                                                incoming_edges,
-                                                                                outgoing_edge_count,
-                                                                                sequence,
-                                                                                seq_len,
-                                                                                scores,
-                                                                                alignment_graph,
-                                                                                alignment_read,
-                                                                                band_starts,
-                                                                                band_widths,
-                                                                                band_locations,
-                                                                                gap_score,
-                                                                                mismatch_score,
-                                                                                match_score,
-                                                                                banded_alignment_band_width);
+                                                                                        sorted_poa,
+                                                                                        node_id_to_pos,
+                                                                                        sequence_lengths[0],
+                                                                                        incoming_edge_count,
+                                                                                        incoming_edges,
+                                                                                        outgoing_edge_count,
+                                                                                        sequence,
+                                                                                        seq_len,
+                                                                                        scores,
+                                                                                        alignment_graph,
+                                                                                        alignment_read,
+                                                                                        band_starts,
+                                                                                        band_widths,
+                                                                                        band_locations,
+                                                                                        gap_score,
+                                                                                        mismatch_score,
+                                                                                        match_score,
+                                                                                        banded_alignment_band_width);
         }
         else
         {
@@ -438,9 +438,9 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
     ScoreT* scores         = alignment_details_d->scores;
     SizeT* alignment_graph = alignment_details_d->alignment_graph;
     SizeT* alignment_read  = alignment_details_d->alignment_read;
-    SizeT* band_starts = alignment_details_d->band_starts;
-    SizeT* band_widths = alignment_details_d->band_widths;
-    SizeT* band_locations = alignment_details_d->band_locations;
+    SizeT* band_starts     = alignment_details_d->band_starts;
+    SizeT* band_widths     = alignment_details_d->band_widths;
+    SizeT* band_locations  = alignment_details_d->band_locations;
 
     // unpack graph details
     uint8_t* nodes                          = graph_details_d->nodes;
@@ -469,7 +469,7 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
     int32_t nwindows_per_block = CUDAPOA_THREADS_PER_BLOCK / WARP_SIZE;
     int32_t nblocks            = (total_windows + nwindows_per_block - 1) / nwindows_per_block;
 
-    CGA_CU_CHECK_ERR(cudaDeviceSetCacheConfig(cudaFuncCachePreferL1));
+    GW_CU_CHECK_ERR(cudaDeviceSetCacheConfig(cudaFuncCachePreferL1));
 
     int32_t consensus_num_blocks = (total_windows / CUDAPOA_MAX_CONSENSUS_PER_BLOCK) + 1;
     if (cuda_banded_alignment)
@@ -518,7 +518,7 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
                                                                                  band_widths,
                                                                                  band_locations,
                                                                                  batch_size.alignment_band_width);
-            CGA_CU_CHECK_ERR(cudaPeekAtLastError());
+            GW_CU_CHECK_ERR(cudaPeekAtLastError());
 
             generateConsensusKernel<true, SizeT>
                 <<<consensus_num_blocks, CUDAPOA_MAX_CONSENSUS_PER_BLOCK, 0, stream>>>(consensus_d,
@@ -541,7 +541,7 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
                                                                                        node_coverage_counts,
                                                                                        batch_size.max_nodes_per_window_banded,
                                                                                        batch_size.max_consensus_size);
-            CGA_CU_CHECK_ERR(cudaPeekAtLastError());
+            GW_CU_CHECK_ERR(cudaPeekAtLastError());
         }
         if (output_mask & OutputType::msa)
         {
@@ -587,7 +587,7 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
                                                                                  band_widths,
                                                                                  band_locations,
                                                                                  batch_size.alignment_band_width);
-            CGA_CU_CHECK_ERR(cudaPeekAtLastError());
+            GW_CU_CHECK_ERR(cudaPeekAtLastError());
 
             generateMSAKernel<true, SizeT>
                 <<<total_windows, max_sequences_per_poa, 0, stream>>>(nodes,
@@ -614,7 +614,7 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
                                                                       batch_size.max_nodes_per_window,
                                                                       batch_size.max_nodes_per_window_banded,
                                                                       batch_size.max_consensus_size);
-            CGA_CU_CHECK_ERR(cudaPeekAtLastError());
+            GW_CU_CHECK_ERR(cudaPeekAtLastError());
         }
     }
     else
@@ -663,7 +663,7 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
                                                                     band_widths,
                                                                     band_locations);
             //std::cout<<"HEAR YE: "<<cuda_adaptive_banding<<std::endl;
-            CGA_CU_CHECK_ERR(cudaPeekAtLastError());
+            GW_CU_CHECK_ERR(cudaPeekAtLastError());
 
             generateConsensusKernel<false, SizeT>
                 <<<consensus_num_blocks, CUDAPOA_MAX_CONSENSUS_PER_BLOCK, 0, stream>>>(consensus_d,
@@ -686,7 +686,7 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
                                                                                        node_coverage_counts,
                                                                                        batch_size.max_nodes_per_window,
                                                                                        batch_size.max_consensus_size);
-            CGA_CU_CHECK_ERR(cudaPeekAtLastError());
+            GW_CU_CHECK_ERR(cudaPeekAtLastError());
         }
         if (output_mask & OutputType::msa)
         {
@@ -731,7 +731,7 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
                                                                     band_starts,
                                                                     band_widths,
                                                                     band_locations);
-            CGA_CU_CHECK_ERR(cudaPeekAtLastError());
+            GW_CU_CHECK_ERR(cudaPeekAtLastError());
 
             generateMSAKernel<false, SizeT>
                 <<<total_windows, max_sequences_per_poa, 0, stream>>>(nodes,
@@ -758,7 +758,7 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
                                                                       batch_size.max_nodes_per_window,
                                                                       batch_size.max_nodes_per_window_banded,
                                                                       batch_size.max_consensus_size);
-            CGA_CU_CHECK_ERR(cudaPeekAtLastError());
+            GW_CU_CHECK_ERR(cudaPeekAtLastError());
         }
     }
 }

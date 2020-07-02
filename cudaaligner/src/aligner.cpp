@@ -8,7 +8,7 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-#include <claragenomics/cudaaligner/aligner.hpp>
+#include <claraparabricks/genomeworks/cudaaligner/aligner.hpp>
 
 #include "aligner_global_hirschberg_myers.hpp"
 
@@ -45,7 +45,7 @@ std::unique_ptr<Aligner> create_aligner(
     {
         throw std::invalid_argument("max_device_memory_allocator_caching_size has to be either -1 (=all available GPU memory) or greater or equal than 0.");
     }
-#ifdef CGA_ENABLE_CACHING_ALLOCATOR
+#ifdef GW_ENABLE_CACHING_ALLOCATOR
     // uses CachingDeviceAllocator
     if (max_device_memory_allocator_caching_size == -1)
     {

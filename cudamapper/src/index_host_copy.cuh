@@ -10,7 +10,7 @@
 
 #pragma once
 
-#include <claragenomics/cudamapper/index.hpp>
+#include <claraparabricks/genomeworks/cudamapper/index.hpp>
 
 namespace claraparabricks
 {

@@ -8,7 +8,7 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-#include <claragenomics/utils/cudautils.hpp>
+#include <claraparabricks/genomeworks/utils/cudautils.hpp>
 
 namespace claraparabricks
 {
@@ -24,7 +24,7 @@ std::size_t find_largest_contiguous_device_memory_section()
     // find the largest block of contiguous memory
     size_t free;
     size_t total;
-    CGA_CU_CHECK_ERR(cudaMemGetInfo(&free, &total));
+    GW_CU_CHECK_ERR(cudaMemGetInfo(&free, &total));
     const size_t memory_decrement = free / 100;              // decrease requested memory one by one percent
     size_t size_to_try            = free - memory_decrement; // do not go for all memory
     while (true)
@@ -48,21 +48,21 @@ std::size_t find_largest_contiguous_device_memory_section()
             }
             else
             { // a very small amount of memory left, report an error
-                CGA_CU_CHECK_ERR(cudaErrorMemoryAllocation);
+                GW_CU_CHECK_ERR(cudaErrorMemoryAllocation);
                 return 0;
             }
         }
         else
         {
             // if cudaMalloc failed because of error other than cudaErrorMemoryAllocation process the error
-            CGA_CU_CHECK_ERR(status);
+            GW_CU_CHECK_ERR(status);
             return 0;
         }
     }
 
     // this point should actually never be reached (loop either finds memory or causes an error)
     assert(false);
-    CGA_CU_CHECK_ERR(cudaErrorMemoryAllocation);
+    GW_CU_CHECK_ERR(cudaErrorMemoryAllocation);
     return 0;
 }
 } // namespace cudautils

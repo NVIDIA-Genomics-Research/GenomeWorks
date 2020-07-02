@@ -8,7 +8,7 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-#include <claragenomics/logging/logging.hpp>
+#include <claraparabricks/genomeworks/logging/logging.hpp>
 
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/sinks/stdout_sinks.h>
@@ -33,7 +33,7 @@ LoggingStatus Init(const char* filename)
     {
         try
         {
-            logger = spdlog::basic_logger_mt("CGALogger", filename);
+            logger = spdlog::basic_logger_mt("GWLogger", filename);
         }
         catch (const spdlog::spdlog_ex& ex)
         {
@@ -44,7 +44,7 @@ LoggingStatus Init(const char* filename)
     {
         try
         {
-            logger = spdlog::stderr_logger_mt("CGALogger");
+            logger = spdlog::stderr_logger_mt("GWLogger");
         }
         catch (const spdlog::spdlog_ex& ex)
         {

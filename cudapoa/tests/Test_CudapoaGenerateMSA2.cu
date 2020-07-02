@@ -10,8 +10,8 @@
 
 #include "../src/cudapoa_kernels.cuh"
 
-#include <claragenomics/cudapoa/batch.hpp>
-#include <claragenomics/utils/genomeutils.hpp>
+#include <claraparabricks/genomeworks/cudapoa/batch.hpp>
+#include <claraparabricks/genomeworks/utils/genomeutils.hpp>
 
 #include "gtest/gtest.h"
 #include "spoa/spoa.hpp"

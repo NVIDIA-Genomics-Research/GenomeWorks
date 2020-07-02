@@ -23,9 +23,9 @@ if [ "${COMMIT_HASH}" != "master" ] && [[ ! "${COMMIT_HASH}" =~ ^dev-.+ ]]; then
     return 0
 fi
 
-for f in "${WORKSPACE}"/pyclaragenomics/pyclaragenomics_wheel/*.whl; do
+for f in "${WORKSPACE}"/pygenomeworks/genomeworks_wheel/*.whl; do
     if [ ! -e "${f}" ]; then
-        echo "pyclaragenomics Whl file does not exist"
+        echo "genomeworks Whl file does not exist"
         exit 1
     else
         conda install -c conda-forge twine
@@ -35,6 +35,6 @@ for f in "${WORKSPACE}"/pyclaragenomics/pyclaragenomics_wheel/*.whl; do
         mv "${f}" "${MODIFIED_WHL_NAME}"
         echo "File name ${f} was changed into ${MODIFIED_WHL_NAME}"
         # Perform Upload
-        python3 -m twine upload --skip-existing --repository-url https://test.pypi.org/legacy/ "${WORKSPACE}"/pyclaragenomics/pyclaragenomics_wheel/*
+        python3 -m twine upload --skip-existing -u clara-omics-nvidia "${WORKSPACE}"/pygenomeworks/genomeworks_wheel/*
     fi
 done

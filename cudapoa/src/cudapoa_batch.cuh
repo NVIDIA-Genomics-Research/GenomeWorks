@@ -13,10 +13,10 @@
 #include "allocate_block.hpp"
 #include "cudapoa_kernels.cuh"
 
-#include <claragenomics/cudapoa/batch.hpp>
-#include <claragenomics/utils/cudautils.hpp>
-#include <claragenomics/logging/logging.hpp>
-#include <claragenomics/utils/signed_integer_utils.hpp>
+#include <claraparabricks/genomeworks/cudapoa/batch.hpp>
+#include <claraparabricks/genomeworks/utils/cudautils.hpp>
+#include <claraparabricks/genomeworks/logging/logging.hpp>
+#include <claraparabricks/genomeworks/utils/signed_integer_utils.hpp>
 
 #include <memory>
 #include <vector>
@@ -161,15 +161,15 @@ public:
         }
 
         //Copy sequencecs, sequence lengths and window details to device
-        CGA_CU_CHECK_ERR(cudaMemcpyAsync(input_details_d_->sequences, input_details_h_->sequences,
-                                         num_nucleotides_copied_ * sizeof(*input_details_h_->sequences), cudaMemcpyHostToDevice, stream_));
-        CGA_CU_CHECK_ERR(cudaMemcpyAsync(input_details_d_->base_weights, input_details_h_->base_weights,
-                                         num_nucleotides_copied_ * sizeof(*input_details_h_->base_weights), cudaMemcpyHostToDevice, stream_));
-        CGA_CU_CHECK_ERR(cudaMemcpyAsync(input_details_d_->window_details, input_details_h_->window_details,
-                                         poa_count_ * sizeof(*input_details_h_->window_details), cudaMemcpyHostToDevice, stream_));
+        GW_CU_CHECK_ERR(cudaMemcpyAsync(input_details_d_->sequences, input_details_h_->sequences,
+                                        num_nucleotides_copied_ * sizeof(*input_details_h_->sequences), cudaMemcpyHostToDevice, stream_));
+        GW_CU_CHECK_ERR(cudaMemcpyAsync(input_details_d_->base_weights, input_details_h_->base_weights,
+                                        num_nucleotides_copied_ * sizeof(*input_details_h_->base_weights), cudaMemcpyHostToDevice, stream_));
+        GW_CU_CHECK_ERR(cudaMemcpyAsync(input_details_d_->window_details, input_details_h_->window_details,
+                                        poa_count_ * sizeof(*input_details_h_->window_details), cudaMemcpyHostToDevice, stream_));
         /// ToDo may need to revise the following sizeof()
-        CGA_CU_CHECK_ERR(cudaMemcpyAsync(input_details_d_->sequence_lengths, input_details_h_->sequence_lengths,
-                                         global_sequence_idx_ * sizeof(*input_details_h_->sequence_lengths), cudaMemcpyHostToDevice, stream_));
+        GW_CU_CHECK_ERR(cudaMemcpyAsync(input_details_d_->sequence_lengths, input_details_h_->sequence_lengths,
+                                        global_sequence_idx_ * sizeof(*input_details_h_->sequence_lengths), cudaMemcpyHostToDevice, stream_));
 
         // Launch kernel to run 1 POA per thread in thread block.
         std::string msg = " Launching kernel for " + std::to_string(poa_count_) + " on device ";
@@ -207,17 +207,17 @@ public:
 
         std::string msg = " Launching memcpy D2H on device ";
         print_batch_debug_message(msg);
-        CGA_CU_CHECK_ERR(cudaMemcpyAsync(output_details_h_->consensus,
-                                         output_details_d_->consensus,
-                                         batch_size_.max_consensus_size * max_poas_ * sizeof(*output_details_h_->consensus),
-                                         cudaMemcpyDeviceToHost,
-                                         stream_));
-        CGA_CU_CHECK_ERR(cudaMemcpyAsync(output_details_h_->coverage,
-                                         output_details_d_->coverage,
-                                         batch_size_.max_consensus_size * max_poas_ * sizeof(*output_details_h_->coverage),
-                                         cudaMemcpyDeviceToHost,
-                                         stream_));
-        CGA_CU_CHECK_ERR(cudaStreamSynchronize(stream_));
+        GW_CU_CHECK_ERR(cudaMemcpyAsync(output_details_h_->consensus,
+                                        output_details_d_->consensus,
+                                        batch_size_.max_consensus_size * max_poas_ * sizeof(*output_details_h_->consensus),
+                                        cudaMemcpyDeviceToHost,
+                                        stream_));
+        GW_CU_CHECK_ERR(cudaMemcpyAsync(output_details_h_->coverage,
+                                        output_details_d_->coverage,
+                                        batch_size_.max_consensus_size * max_poas_ * sizeof(*output_details_h_->coverage),
+                                        cudaMemcpyDeviceToHost,
+                                        stream_));
+        GW_CU_CHECK_ERR(cudaStreamSynchronize(stream_));
 
         msg = " Finished memcpy D2H on device ";
         print_batch_debug_message(msg);
@@ -266,19 +266,19 @@ public:
         std::string msg = " Launching memcpy D2H on device for msa ";
         print_batch_debug_message(msg);
 
-        CGA_CU_CHECK_ERR(cudaMemcpyAsync(output_details_h_->multiple_sequence_alignments,
-                                         output_details_d_->multiple_sequence_alignments,
-                                         max_poas_ * max_sequences_per_poa_ * batch_size_.max_consensus_size * sizeof(*output_details_h_->multiple_sequence_alignments),
-                                         cudaMemcpyDeviceToHost,
-                                         stream_));
+        GW_CU_CHECK_ERR(cudaMemcpyAsync(output_details_h_->multiple_sequence_alignments,
+                                        output_details_d_->multiple_sequence_alignments,
+                                        max_poas_ * max_sequences_per_poa_ * batch_size_.max_consensus_size * sizeof(*output_details_h_->multiple_sequence_alignments),
+                                        cudaMemcpyDeviceToHost,
+                                        stream_));
 
-        CGA_CU_CHECK_ERR(cudaMemcpyAsync(output_details_h_->consensus,
-                                         output_details_d_->consensus,
-                                         batch_size_.max_consensus_size * max_poas_ * sizeof(*output_details_h_->consensus),
-                                         cudaMemcpyDeviceToHost,
-                                         stream_));
+        GW_CU_CHECK_ERR(cudaMemcpyAsync(output_details_h_->consensus,
+                                        output_details_d_->consensus,
+                                        batch_size_.max_consensus_size * max_poas_ * sizeof(*output_details_h_->consensus),
+                                        cudaMemcpyDeviceToHost,
+                                        stream_));
 
-        CGA_CU_CHECK_ERR(cudaStreamSynchronize(stream_));
+        GW_CU_CHECK_ERR(cudaStreamSynchronize(stream_));
 
         msg = " Finished memcpy D2H on device for msa";
         print_batch_debug_message(msg);
@@ -312,46 +312,46 @@ public:
                     std::vector<StatusType>& output_status)
     {
         int32_t max_nodes_per_window_ = banded_alignment_ ? batch_size_.max_nodes_per_window_banded : batch_size_.max_nodes_per_window;
-        CGA_CU_CHECK_ERR(cudaMemcpyAsync(graph_details_h_->nodes,
-                                         graph_details_d_->nodes,
-                                         sizeof(*graph_details_h_->nodes) * max_nodes_per_window_ * max_poas_,
-                                         cudaMemcpyDeviceToHost,
-                                         stream_));
+        GW_CU_CHECK_ERR(cudaMemcpyAsync(graph_details_h_->nodes,
+                                        graph_details_d_->nodes,
+                                        sizeof(*graph_details_h_->nodes) * max_nodes_per_window_ * max_poas_,
+                                        cudaMemcpyDeviceToHost,
+                                        stream_));
 
-        CGA_CU_CHECK_ERR(cudaMemcpyAsync(graph_details_h_->incoming_edges,
-                                         graph_details_d_->incoming_edges,
-                                         sizeof(*graph_details_h_->incoming_edges) * max_nodes_per_window_ * CUDAPOA_MAX_NODE_EDGES * max_poas_,
-                                         cudaMemcpyDeviceToHost,
-                                         stream_));
+        GW_CU_CHECK_ERR(cudaMemcpyAsync(graph_details_h_->incoming_edges,
+                                        graph_details_d_->incoming_edges,
+                                        sizeof(*graph_details_h_->incoming_edges) * max_nodes_per_window_ * CUDAPOA_MAX_NODE_EDGES * max_poas_,
+                                        cudaMemcpyDeviceToHost,
+                                        stream_));
 
-        CGA_CU_CHECK_ERR(cudaMemcpyAsync(graph_details_h_->incoming_edge_weights,
-                                         graph_details_d_->incoming_edge_weights,
-                                         sizeof(*graph_details_h_->incoming_edge_weights) * max_nodes_per_window_ * CUDAPOA_MAX_NODE_EDGES * max_poas_,
-                                         cudaMemcpyDeviceToHost,
-                                         stream_));
+        GW_CU_CHECK_ERR(cudaMemcpyAsync(graph_details_h_->incoming_edge_weights,
+                                        graph_details_d_->incoming_edge_weights,
+                                        sizeof(*graph_details_h_->incoming_edge_weights) * max_nodes_per_window_ * CUDAPOA_MAX_NODE_EDGES * max_poas_,
+                                        cudaMemcpyDeviceToHost,
+                                        stream_));
 
-        CGA_CU_CHECK_ERR(cudaMemcpyAsync(graph_details_h_->incoming_edge_count,
-                                         graph_details_d_->incoming_edge_count,
-                                         sizeof(*graph_details_h_->incoming_edge_count) * max_nodes_per_window_ * max_poas_,
-                                         cudaMemcpyDeviceToHost,
-                                         stream_));
+        GW_CU_CHECK_ERR(cudaMemcpyAsync(graph_details_h_->incoming_edge_count,
+                                        graph_details_d_->incoming_edge_count,
+                                        sizeof(*graph_details_h_->incoming_edge_count) * max_nodes_per_window_ * max_poas_,
+                                        cudaMemcpyDeviceToHost,
+                                        stream_));
 
-        CGA_CU_CHECK_ERR(cudaMemcpyAsync(input_details_h_->sequence_lengths,
-                                         input_details_d_->sequence_lengths,
-                                         global_sequence_idx_ * sizeof(*input_details_h_->sequence_lengths),
-                                         cudaMemcpyDeviceToHost,
-                                         stream_));
+        GW_CU_CHECK_ERR(cudaMemcpyAsync(input_details_h_->sequence_lengths,
+                                        input_details_d_->sequence_lengths,
+                                        global_sequence_idx_ * sizeof(*input_details_h_->sequence_lengths),
+                                        cudaMemcpyDeviceToHost,
+                                        stream_));
 
-        CGA_CU_CHECK_ERR(cudaMemcpyAsync(output_details_h_->consensus,
-                                         output_details_d_->consensus,
-                                         batch_size_.max_consensus_size * max_poas_ * sizeof(*output_details_h_->consensus),
-                                         cudaMemcpyDeviceToHost,
-                                         stream_));
+        GW_CU_CHECK_ERR(cudaMemcpyAsync(output_details_h_->consensus,
+                                        output_details_d_->consensus,
+                                        batch_size_.max_consensus_size * max_poas_ * sizeof(*output_details_h_->consensus),
+                                        cudaMemcpyDeviceToHost,
+                                        stream_));
 
         // Reservet host space for graphs
         graphs.resize(poa_count_);
 
-        CGA_CU_CHECK_ERR(cudaStreamSynchronize(stream_));
+        GW_CU_CHECK_ERR(cudaStreamSynchronize(stream_));
 
         for (int32_t poa = 0; poa < poa_count_; poa++)
         {
@@ -409,7 +409,7 @@ protected:
     void print_batch_debug_message(const std::string& message)
     {
         (void)message;
-        CGA_LOG_DEBUG("{}{}{}{}", TABS, bid_, message, device_id_);
+        GW_LOG_DEBUG("{}{}{}{}", TABS, bid_, message, device_id_);
     }
 
     // Allocate buffers for output details
@@ -443,27 +443,27 @@ protected:
         switch (error_type)
         {
         case genomeworks::cudapoa::StatusType::node_count_exceeded_maximum_graph_size:
-            CGA_LOG_WARN("Kernel Error:: Node count exceeded maximum nodes per graph in batch {}\n", bid_);
+            GW_LOG_WARN("Kernel Error:: Node count exceeded maximum nodes per graph in batch {}\n", bid_);
             output_status.emplace_back(error_type);
             break;
         case genomeworks::cudapoa::StatusType::edge_count_exceeded_maximum_graph_size:
-            CGA_LOG_WARN("Kernel Error:: Edge count exceeded maximum edges per graph in batch {}\n", bid_);
+            GW_LOG_WARN("Kernel Error:: Edge count exceeded maximum edges per graph in batch {}\n", bid_);
             output_status.emplace_back(error_type);
             break;
         case genomeworks::cudapoa::StatusType::seq_len_exceeded_maximum_nodes_per_window:
-            CGA_LOG_WARN("Kernel Error:: Sequence length exceeded maximum nodes per window in batch {}\n", bid_);
+            GW_LOG_WARN("Kernel Error:: Sequence length exceeded maximum nodes per window in batch {}\n", bid_);
             output_status.emplace_back(error_type);
             break;
         case genomeworks::cudapoa::StatusType::loop_count_exceeded_upper_bound:
-            CGA_LOG_WARN("Kernel Error:: Loop count exceeded upper bound in nw algorithm in batch {}\n", bid_);
+            GW_LOG_WARN("Kernel Error:: Loop count exceeded upper bound in nw algorithm in batch {}\n", bid_);
             output_status.emplace_back(error_type);
             break;
         case genomeworks::cudapoa::StatusType::exceeded_maximum_sequence_size:
-            CGA_LOG_WARN("Kernel Error:: Consensus/MSA sequence size exceeded max sequence size in batch {}\n", bid_);
+            GW_LOG_WARN("Kernel Error:: Consensus/MSA sequence size exceeded max sequence size in batch {}\n", bid_);
             output_status.emplace_back(error_type);
             break;
         default:
-            CGA_LOG_WARN("Kernel Error:: Unknown error in batch {}\n", bid_);
+            GW_LOG_WARN("Kernel Error:: Unknown error in batch {}\n", bid_);
             output_status.emplace_back(error_type);
             break;
         }

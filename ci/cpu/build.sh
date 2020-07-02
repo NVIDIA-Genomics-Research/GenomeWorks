@@ -10,14 +10,13 @@
 #
 
 ######################################
-# ClaraGenomicsAnalysis CPU build script for CI #
+# GenomeWorks CPU build script for CI #
 ######################################
 set -e
 
 START_TIME=$(date +%s)
 
 export PATH=/conda/bin:/usr/local/cuda/bin:$PATH
-PARALLEL_LEVEL=4
 
 # Set home to the job's workspace
 export HOME=$WORKSPACE
@@ -39,16 +38,16 @@ source ci/common/prep-init-env.sh "${WORKSPACE}" "${CONDA_ENV_NAME}"
 
 logger "Build SDK..."
 CMAKE_COMMON_VARIABLES=(-DCMAKE_BUILD_TYPE=Release)
-source ci/common/build-test-sdk.sh "${WORKSPACE}" "${CMAKE_COMMON_VARIABLES[@]}" "${PARALLEL_LEVEL}" 0
+source ci/common/build-test-sdk.sh "${WORKSPACE}" "${CMAKE_COMMON_VARIABLES[@]}"
 
 rm -rf "${WORKSPACE}"/build
 
 ################################################################################
-# Pyclaragenomics tests
+# Pygenomeworks tests
 ################################################################################
-logger "Build Pyclaragenomics..."
+logger "Build ygenomeworks ..."
 cd "${WORKSPACE}"
-source ci/common/test-pyclaragenomics.sh "${WORKSPACE}"/pyclaragenomics
+source ci/common/test-pygenomeworks.sh "${WORKSPACE}"/pygenomeworks
 
 logger "Upload Wheel to PyPI..."
 cd "${WORKSPACE}"

@@ -8,13 +8,12 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-#include "../benchmarks/common/utils.hpp"
-
 #include <file_location.hpp>
-#include <claragenomics/cudapoa/cudapoa.hpp>
-#include <claragenomics/cudapoa/batch.hpp>
-#include <claragenomics/utils/signed_integer_utils.hpp>
-#include <claragenomics/utils/cudautils.hpp>
+#include <claraparabricks/genomeworks/cudapoa/cudapoa.hpp>
+#include <claraparabricks/genomeworks/cudapoa/batch.hpp>
+#include <claraparabricks/genomeworks/utils/signed_integer_utils.hpp>
+#include <claraparabricks/genomeworks/utils/cudautils.hpp>
+#include <claraparabricks/genomeworks/cudapoa/utils.hpp> // for get_multi_batch_sizes()
 
 #include <cuda_runtime_api.h>
 #include <vector>
@@ -24,11 +23,11 @@
 using namespace claraparabricks::genomeworks;
 using namespace claraparabricks::genomeworks::cudapoa;
 
-std::unique_ptr<Batch> initialize_batch(bool msa, bool banded_alignment, bool adaptive_banded,const BatchSize& batch_size)
+std::unique_ptr<Batch> initialize_batch(bool msa, bool banded_alignment, bool adaptive_banded, const BatchSize& batch_size)
 {
     // Get device information.
     int32_t device_count = 0;
-    CGA_CU_CHECK_ERR(cudaGetDeviceCount(&device_count));
+    GW_CU_CHECK_ERR(cudaGetDeviceCount(&device_count));
     assert(device_count > 0);
 
     size_t total = 0, free = 0;
@@ -43,7 +42,7 @@ std::unique_ptr<Batch> initialize_batch(bool msa, bool banded_alignment, bool ad
     cudaStream_t stream          = 0;
     size_t mem_per_batch         = 0.9 * free; // Using 90% of GPU available memory for CUDAPOA batch.
     const int32_t mismatch_score = -6, gap_score = -8, match_score = 8;
-    std::cout<<adaptive_banded;
+    std::cout << adaptive_banded;
     std::unique_ptr<Batch> batch = create_batch(device_id,
                                                 stream,
                                                 mem_per_batch,
@@ -52,9 +51,8 @@ std::unique_ptr<Batch> initialize_batch(bool msa, bool banded_alignment, bool ad
                                                 gap_score,
                                                 mismatch_score,
                                                 match_score,
-                                                banded_alignment, 
+                                                banded_alignment,
                                                 adaptive_banded);
-
 
     return std::move(batch);
 }
@@ -124,24 +122,6 @@ void process_batch(Batch* batch, bool msa, bool print)
     }
 }
 
-void generate_window_data(const std::string& input_file, const int number_of_windows, const int max_sequences_per_poa,
-                          std::vector<std::vector<std::string>>& windows, BatchSize& batch_size)
-{
-    parse_window_data_file(windows, input_file, number_of_windows); // Generate windows.
-    assert(get_size(windows) > 0);
-
-    int32_t max_read_length = 0;
-    for (auto& window : windows)
-    {
-        for (auto& seq : window)
-        {
-            max_read_length = std::max(max_read_length, get_size<int>(seq));
-        }
-    }
-
-    batch_size = BatchSize(max_read_length, max_sequences_per_poa);
-}
-
 int main(int argc, char** argv)
 {
     // Process options
@@ -152,7 +132,7 @@ int main(int argc, char** argv)
     bool help        = false;
     bool print       = false;
     bool print_graph = false;
-    bool adaptive = false;
+    bool adaptive    = false;       /// ToDo remove ...
 
     while ((c = getopt(argc, argv, "mlfpgha")) != -1)
     {
@@ -179,7 +159,6 @@ int main(int argc, char** argv)
         case 'a':
             adaptive = true;
             break;
-        
         }
     }
 
@@ -197,113 +176,130 @@ int main(int argc, char** argv)
         std::exit(0);
     }
 
-    // Load input data. Each POA group is represented as a vector of strings. The sample
-    // data for short reads has many such POA groups to process, hence the data is loaded into a vector
-    // of vector of strings. Long read sample creates one POA group.
+    // Load input data. Each window is represented as a vector of strings. The sample
+    // data has many such windows to process, hence the data is loaded into a vector
+    // of vector of strings.
     std::vector<std::vector<std::string>> windows;
-
-    // Define upper limits for sequence size, graph size ....
-    BatchSize batch_size;
 
     if (long_read)
     {
         const std::string input_file = std::string(CUDAPOA_BENCHMARK_DATA_DIR) + "/sample-bonito.txt";
-        generate_window_data(input_file, -1, 6, windows, batch_size);
+        parse_window_data_file(windows, input_file, -1);
     }
     else
     {
         const std::string input_file = std::string(CUDAPOA_BENCHMARK_DATA_DIR) + "/sample-windows.txt";
-        generate_window_data(input_file, 1, 100, windows, batch_size);
+        parse_window_data_file(windows, input_file, 1000);
     }
 
-    // Initialize batch.
-    std::unique_ptr<Batch> batch = initialize_batch(msa, banded, adaptive, batch_size);
-
-    // Loop over all the POA groups, add them to the batch and process them.
-    int32_t window_count = 0;
-
-    for (int32_t i = 0; i < get_size(windows);)
+    // Create a vector of POA groups based on windows
+    std::vector<Group> poa_groups(windows.size());
+    for (int32_t i = 0; i < get_size(windows); ++i)
     {
-        const std::vector<std::string>& window = windows[i];
-
-        Group poa_group;
+        Group& group = poa_groups[i];
         // Create a new entry for each sequence and add to the group.
-        for (const auto& seq : window)
+        for (const auto& seq : windows[i])
         {
             Entry poa_entry{};
             poa_entry.seq     = seq.c_str();
             poa_entry.length  = seq.length();
             poa_entry.weights = nullptr;
-            poa_group.push_back(poa_entry);
+            group.push_back(poa_entry);
         }
+    }
 
-        std::vector<StatusType> seq_status;
-        StatusType status = batch->add_poa_group(seq_status, poa_group);
+    // analyze the POA groups and create a minimal set of batches to process them all
+    std::vector<BatchSize> list_of_batch_sizes;
+    std::vector<std::vector<int32_t>> list_of_groups_per_batch;
 
-        // NOTE: If number of windows smaller than batch capacity, then run POA generation
-        // once last window is added to batch.
-        if (status == StatusType::exceeded_maximum_poas || (i == get_size(windows) - 1))
+    get_multi_batch_sizes(list_of_batch_sizes, list_of_groups_per_batch, poa_groups, banded, adaptive, msa);
+
+    int32_t group_count_offset = 0;
+
+    for (int32_t b = 0; b < get_size(list_of_batch_sizes); b++)
+    {
+        auto& batch_size      = list_of_batch_sizes[b];
+        auto& batch_group_ids = list_of_groups_per_batch[b];
+
+        // Initialize batch.
+        std::unique_ptr<Batch> batch = initialize_batch(msa, banded, adaptive, batch_size);
+
+        // Loop over all the POA groups for the current batch, add them to the batch and process them.
+        int32_t group_count = 0;
+
+        for (int32_t i = 0; i < get_size(batch_group_ids);)
         {
-            // at least one POA should have been added before processing the batch
-            if (batch->get_total_poas() > 0)
+            Group& group = poa_groups[batch_group_ids[i]];
+            std::vector<StatusType> seq_status;
+            StatusType status = batch->add_poa_group(seq_status, group);
+
+            // NOTE: If number of batch groups smaller than batch capacity, then run POA generation
+            // once last POA group is added to batch.
+            if (status == StatusType::exceeded_maximum_poas || (i == get_size(batch_group_ids) - 1))
             {
-                // No more POA groups can be added to batch. Now process batch.
-                process_batch(batch.get(), msa, print);
-
-                if (print_graph && long_read)
+                // at least one POA should have been added before processing the batch
+                if (batch->get_total_poas() > 0)
                 {
-                    std::vector<DirectedGraph> graph;
-                    std::vector<StatusType> graph_status;
-                    batch->get_graphs(graph, graph_status);
-                    for (auto& g : graph)
+                    // No more POA groups can be added to batch. Now process batch.
+                    process_batch(batch.get(), msa, print);
+
+                    if (print_graph && long_read)
                     {
-                        std::cout << g.serialize_to_dot() << std::endl;
+                        std::vector<DirectedGraph> graph;
+                        std::vector<StatusType> graph_status;
+                        batch->get_graphs(graph, graph_status);
+                        for (auto& g : graph)
+                        {
+                            std::cout << g.serialize_to_dot() << std::endl;
+                        }
                     }
-                }
 
-                // After MSA/consensus is generated for batch, reset batch to make room for next set of POA groups.
-                batch->reset();
+                    // After MSA/consensus is generated for batch, reset batch to make room for next set of POA groups.
+                    batch->reset();
 
-                // In case that number of windows is more than the capacity available on GPU, the for loop breaks into smaller number of windows.
-                // if adding window i in batch->add_poa_group is not successful, it wont be processed in this iteration, therefore we print i-1
-                // to account for the fact that window i was excluded at this round.
-                if (status == StatusType::success)
-                {
-                    std::cout << "Processed windows " << window_count << " - " << i << std::endl;
+                    // In case that number of batch groups is more than the capacity available on GPU, the for loop breaks into smaller number of groups.
+                    // if adding group i in batch->add_poa_group is not successful, it wont be processed in this iteration, therefore we print i-1
+                    // to account for the fact that group i was excluded at this round.
+                    if (status == StatusType::success)
+                    {
+                        std::cout << "Processed groups " << group_count + group_count_offset << " - " << i + group_count_offset << " (batch " << b << ")" << std::endl;
+                    }
+                    else
+                    {
+                        std::cout << "Processed groups " << group_count + group_count_offset << " - " << i - 1 + group_count_offset << " (batch " << b << ")" << std::endl;
+                    }
                 }
                 else
                 {
-                    std::cout << "Processed windows " << window_count << " - " << i - 1 << std::endl;
+                    // the POA was too large to be added to the GPU, skip and move on
+                    std::cout << "Could not add POA group " << batch_group_ids[i] << " to batch " << b << std::endl;
+                    i++;
                 }
+
+                group_count = i;
             }
-            else
+
+            if (status == StatusType::success)
             {
-                // the POA was too large to be added to the GPU, skip and move on
-                std::cout << "Could not add POA group " << i << " to batch. Error code " << status << std::endl;
+                // Check if all sequences in POA group wre added successfully.
+                for (const auto& s : seq_status)
+                {
+                    if (s == StatusType::exceeded_maximum_sequence_size)
+                    {
+                        std::cerr << "Dropping sequence because sequence exceeded maximum size" << std::endl;
+                    }
+                }
                 i++;
             }
 
-            window_count = i;
-        }
-
-        if (status == StatusType::success)
-        {
-            // Check if all sequences in POA group wre added successfully.
-            for (const auto& s : seq_status)
+            if (status != StatusType::exceeded_maximum_poas && status != StatusType::success)
             {
-                if (s == StatusType::exceeded_maximum_sequence_size)
-                {
-                    std::cerr << "Dropping sequence because sequence exceeded maximum size" << std::endl;
-                }
+                std::cout << "Could not add POA group " << batch_group_ids[i] << " to batch " << b << ". Error code " << status << std::endl;
+                i++;
             }
-            i++;
         }
 
-        if (status != StatusType::exceeded_maximum_poas && status != StatusType::success)
-        {
-            std::cout << "Could not add POA group " << i << " to batch. Error code " << status << std::endl;
-            i++;
-        }
+        group_count_offset += get_size(batch_group_ids);
     }
 
     return 0;

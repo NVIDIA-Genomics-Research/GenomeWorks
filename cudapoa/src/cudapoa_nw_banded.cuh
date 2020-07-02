@@ -11,8 +11,8 @@
 
 #include "cudapoa_structs.cuh"
 
-#include <claragenomics/utils/cudautils.hpp>
-#include <claragenomics/utils/limits.cuh>
+#include <claraparabricks/genomeworks/utils/cudautils.hpp>
+#include <claraparabricks/genomeworks/utils/limits.cuh>
 
 #include <stdio.h>
 
@@ -65,7 +65,7 @@ __device__ ScoreT* get_score_ptr(ScoreT* scores, SizeT row, SizeT column, float 
     }
 
     int64_t score_index = static_cast<int64_t>(col_idx) + static_cast<int64_t>(row) * static_cast<int64_t>(band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING);
-    
+
     return &scores[score_index];
 };
 
@@ -128,12 +128,12 @@ __device__ ScoreT get_score(ScoreT* scores, SizeT row, SizeT column, float gradi
 template <typename ScoreT, typename SizeT>
 __device__ void print_matrix(ScoreT* scores, SizeT max_rows, SizeT max_column, float gradient, SizeT band_width, ScoreT min_score_value)
 {
-    if(threadIdx.x == 0)
+    if (threadIdx.x == 0)
     {
         printf("Matrix Size: %ld x %ld\n", static_cast<int64_t>(max_rows), static_cast<int64_t>(max_column));
-        for(int64_t i=0; i < static_cast<int64_t>(max_rows); i++)
+        for (int64_t i = 0; i < static_cast<int64_t>(max_rows); i++)
         {
-            for(int64_t j=0; j < static_cast<int64_t>(max_column); j++)
+            for (int64_t j = 0; j < static_cast<int64_t>(max_column); j++)
             {
                 // int64_t score = static_cast<int64_t>(get_score(scores, static_cast<SizeT>(i), static_cast<SizeT>(j), gradient, band_width, max_column, min_score_value));
                 // if (score!=0 && score!=min_score_value)
@@ -150,7 +150,7 @@ __device__ void print_matrix(ScoreT* scores, SizeT max_rows, SizeT max_column, f
                 }
 
                 int64_t score_index = static_cast<int64_t>(col_idx) + static_cast<int64_t>(i) * static_cast<int64_t>(band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING);
-                printf("Row: %ld Col: %ld BandStart: %ld ScoreIndex: %ld\n", i, j, static_cast<int64_t>(band_start), score_index );
+                printf("Row: %ld Col: %ld BandStart: %ld ScoreIndex: %ld\n", i, j, static_cast<int64_t>(band_start), score_index);
             }
         }
     }
@@ -232,8 +232,8 @@ __device__
                              ScoreT match_score)
 {
 
-    CGA_CONSTEXPR ScoreT score_type_min_limit = numeric_limits<ScoreT>::min();
-    const ScoreT min_score_value              = 2 * abs(min(min(gap_score, mismatch_score), -match_score) - 1) + score_type_min_limit;
+    GW_CONSTEXPR ScoreT score_type_min_limit = numeric_limits<ScoreT>::min();
+    const ScoreT min_score_value             = 2 * abs(min(min(gap_score, mismatch_score), -match_score) - 1) + score_type_min_limit;
 
     int16_t lane_idx = threadIdx.x % WARP_SIZE;
     int64_t score_index;
@@ -260,9 +260,8 @@ __device__
 
         for (SizeT graph_pos = 0; graph_pos < graph_count; graph_pos++)
         {
-           
+
             set_score(scores, static_cast<SizeT>(0), static_cast<SizeT>(0), static_cast<ScoreT>(0), gradient, band_width, max_column);
-             
 
             SizeT node_id = graph[graph_pos];
             SizeT i       = graph_pos + 1;
@@ -289,9 +288,8 @@ __device__
             //     printf("Graph pos: %ld-----\n",static_cast<int64_t>(graph_pos));
             // print_matrix(scores, static_cast<SizeT>(graph_count+1), max_column, gradient, band_width);
         }
-        
     }
-   
+
     // return;
     __syncwarp();
 

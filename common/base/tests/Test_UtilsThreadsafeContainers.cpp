@@ -10,7 +10,7 @@
 
 #include "gtest/gtest.h"
 
-#include <claragenomics/utils/threadsafe_containers.hpp>
+#include <claraparabricks/genomeworks/utils/threadsafe_containers.hpp>
 
 #include <algorithm>
 #include <mutex>
@@ -46,7 +46,7 @@ void test_threadsafe_data_provider(const std::int32_t number_of_elements,
         threads.push_back(std::thread([&data_provider, &occurrences_per_element, &occurrences_per_element_mutex]() {
             while (true)
             {
-                cga_optional_t<std::int32_t> val = data_provider.get_next_element();
+                gw_optional_t<std::int32_t> val = data_provider.get_next_element();
 
                 if (!val) // reached the end
                 {
@@ -132,7 +132,7 @@ void test_test_threadsafe_producer_consumer(const std::int32_t number_of_element
         consumer_threads.push_back(std::thread([&producer_consumer, &occurrences_per_element, &occurrences_per_element_mutex]() {
             while (true)
             {
-                cga_optional_t<std::int32_t> val = producer_consumer.get_next_element();
+                gw_optional_t<std::int32_t> val = producer_consumer.get_next_element();
                 if (!val) // reached the end
                 {
                     break;

@@ -9,7 +9,7 @@
 #
 
 get_property(enable_benchmarks GLOBAL PROPERTY enable_benchmarks)
-function(cga_add_benchmarks NAME MODULE SOURCES LIBS)
+function(gw_add_benchmarks NAME MODULE SOURCES LIBS)
     # Add test executable
     if (enable_benchmarks)
         cuda_add_executable(${NAME} ${SOURCES})
@@ -22,4 +22,4 @@ function(cga_add_benchmarks NAME MODULE SOURCES LIBS)
         install(TARGETS ${NAME}
             DESTINATION benchmarks/${MODULE})
     endif()
-endfunction(cga_add_benchmarks)
+endfunction(gw_add_benchmarks)

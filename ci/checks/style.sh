@@ -40,15 +40,15 @@ logger "Run Copyright header check..."
 
 # Python
 logger "Run Python/Cython formatting check..."
-python -m pip install -r ./pyclaragenomics/python-style-requirements.txt
-source pyclaragenomics/style_check
+python -m pip install -r ./pygenomeworks/python-style-requirements.txt
+source pygenomeworks/style_check
 
 # C++
 logger "Run C++ formatting check..."
 mkdir --parents ${WORKSPACE}/build
 cd ${WORKSPACE}/build
 
-cmake .. -DCMAKE_BUILD_TYPE=Release -Dcga_enable_tests=ON -Dcga_enable_benchmarks=ON
+cmake .. -DCMAKE_BUILD_TYPE=Release -Dgw_enable_tests=ON -Dgw_enable_benchmarks=ON
 make check-format
 
 logger "Run C++ documentation generation..."

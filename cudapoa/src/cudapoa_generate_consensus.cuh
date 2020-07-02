@@ -11,8 +11,8 @@
 
 #include "cudapoa_structs.cuh"
 
-#include <claragenomics/cudapoa/cudapoa.hpp>
-#include <claragenomics/utils/cudautils.hpp>
+#include <claraparabricks/genomeworks/cudapoa/cudapoa.hpp>
+#include <claraparabricks/genomeworks/utils/cudautils.hpp>
 
 #include <stdio.h>
 
@@ -420,7 +420,7 @@ void generateConsensusTestHost(uint8_t* nodes,
                                                  node_alignments,
                                                  node_alignment_count,
                                                  max_limit_consensus_size);
-    CGA_CU_CHECK_ERR(cudaPeekAtLastError());
+    GW_CU_CHECK_ERR(cudaPeekAtLastError());
 };
 
 } // namespace cudapoa

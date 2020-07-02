@@ -8,11 +8,11 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-#include <claragenomics/cudaaligner/cudaaligner.hpp>
-#include <claragenomics/cudaaligner/aligner.hpp>
-#include <claragenomics/cudaaligner/alignment.hpp>
-#include <claragenomics/utils/cudautils.hpp>
-#include <claragenomics/utils/genomeutils.hpp>
+#include <claraparabricks/genomeworks/cudaaligner/cudaaligner.hpp>
+#include <claraparabricks/genomeworks/cudaaligner/aligner.hpp>
+#include <claraparabricks/genomeworks/cudaaligner/alignment.hpp>
+#include <claraparabricks/genomeworks/utils/cudautils.hpp>
+#include <claraparabricks/genomeworks/utils/genomeutils.hpp>
 
 #include <cuda_runtime_api.h>
 #include <vector>
@@ -32,7 +32,7 @@ std::unique_ptr<Aligner> initialize_batch(int32_t max_query_size,
 {
     // Get device information.
     int32_t device_count = 0;
-    CGA_CU_CHECK_ERR(cudaGetDeviceCount(&device_count));
+    GW_CU_CHECK_ERR(cudaGetDeviceCount(&device_count));
     assert(device_count > 0);
 
     // Initialize internal logging framework.

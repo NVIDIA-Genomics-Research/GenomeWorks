@@ -8,8 +8,8 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-#include <claragenomics/cudamapper/index.hpp>
-#include <claragenomics/utils/cudautils.hpp>
+#include <claraparabricks/genomeworks/cudamapper/index.hpp>
+#include <claraparabricks/genomeworks/utils/cudautils.hpp>
 #include "index_gpu.cuh"
 #include "minimizer.hpp"
 
@@ -32,7 +32,7 @@ std::unique_ptr<Index> Index::create_index(DefaultDeviceAllocator allocator,
                                            const double filtering_parameter,
                                            const cudaStream_t cuda_stream)
 {
-    CGA_NVTX_RANGE(profiler, "create_index");
+    GW_NVTX_RANGE(profiler, "create_index");
     return std::make_unique<IndexGPU<Minimizer>>(allocator,
                                                  parser,
                                                  first_read_id,
@@ -50,7 +50,7 @@ std::unique_ptr<IndexHostCopyBase> IndexHostCopyBase::create_cache(const Index& 
                                                                    const std::uint64_t window_size,
                                                                    const cudaStream_t cuda_stream)
 {
-    CGA_NVTX_RANGE(profiler, "cache_D2H");
+    GW_NVTX_RANGE(profiler, "cache_D2H");
     return std::make_unique<IndexHostCopy>(index,
                                            first_read_id,
                                            kmer_size,

@@ -11,7 +11,7 @@
 
 #include "cudapoa_structs.cuh"
 
-#include <claragenomics/utils/cudautils.hpp>
+#include <claraparabricks/genomeworks/utils/cudautils.hpp>
 
 #include <stdio.h>
 
@@ -225,7 +225,7 @@ void runTopSort(SizeT* sorted_poa,
                                outgoing_edges,
                                outgoing_edge_count,
                                local_incoming_edge_count);
-    CGA_CU_CHECK_ERR(cudaPeekAtLastError());
+    GW_CU_CHECK_ERR(cudaPeekAtLastError());
 }
 
 } // namespace cudapoa

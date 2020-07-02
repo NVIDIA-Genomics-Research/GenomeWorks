@@ -8,7 +8,7 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-#include <claragenomics/utils/graph.hpp>
+#include <claraparabricks/genomeworks/utils/graph.hpp>
 
 #include "gtest/gtest.h"
 

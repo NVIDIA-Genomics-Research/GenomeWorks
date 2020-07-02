@@ -1,8 +1,8 @@
-# Clara Genomics Analysis
+# GenomeWorks 
 
 ## Overview
 
-Clara Genomics Analysis is a GPU-accelerated library for biological sequence analysis. This section provides a brief overview of the different components of ClaraGenomicsAnalysis.
+GenomeWorks is a GPU-accelerated library for biological sequence analysis. This section provides a brief overview of the different components of GenomeWorks.
 For more detailed API documentation please refer to the [documentation](#enable-doc-generation).
 
 ### cudapoa
@@ -36,14 +36,14 @@ A query fasta can be mapped to a reference as follows:
 
 To access more information about running cudamapper, run `cudamapper --help`.
 
-## Clone Clara Genomics Analysis
+## Clone GenomeWorks 
 
 ### Latest released version
 This will clone the repo to the `master` branch, which contains code for latest released version
 and hot-fixes.
 
 ```
-git clone --recursive -b master git@github.com:clara-genomics/ClaraGenomicsAnalysis.git
+git clone --recursive -b master https://github.com/clara-parabricks/GenomeWorks.git
 ```
 
 ### Latest development version
@@ -51,7 +51,7 @@ This will clone the repo to the default branch, which is set to be the latest de
 This branch is subject to change frequently as features and bug fixes are pushed.
 
 ```bash
-git clone --recursive git@github.com:clara-genomics/ClaraGenomicsAnalysis.git
+git clone --recursive https://github.com/clara-parabricks/GenomeWorks.git
 ```
 
 ## System Requirements
@@ -61,20 +61,21 @@ Minimum requirements -
 2. CUDA 9.0+ (official instructions for installing CUDA are available [here](https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html))
 3. gcc/g++ 5.4.0+
 4. Python 3.6.7+
+5. CMake (>= 3.0)
 
-## Clara Genomics Analysis Setup
+## GenomeWorks Setup
 
 ### Build
-To build Clara Genomics Analysis -
+To build GenomeWorks -
 
 ```bash
 mkdir build
 cd build
-cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=install -Dcga_cuda_gen_all_arch=OFF
+cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=install -Dgw_cuda_gen_all_arch=OFF
 make -j install
 ```
 
-NOTE : The `cga_cuda_gen_all_arch=OFF` option pre-generates optimized code only for the GPU(s) on your system.
+NOTE : The `gw_cuda_gen_all_arch=OFF` option pre-generates optimized code only for the GPU(s) on your system.
 For building a binary that pre-generates opimized code for all common GPU architectures, please remove the option
 or set it to `ON`.
 
@@ -101,7 +102,7 @@ make package
 ```
 
 ## Enable Unit Tests
-To enable unit tests, add `-Dcga_enable_tests=ON` to the `cmake` command in the build step.
+To enable unit tests, add `-Dgw_enable_tests=ON` to the `cmake` command in the build step.
 
 This builds GTest based unit tests for all applicable modules, and installs them under
 `${CMAKE_INSTALL_PREFIX}/tests`. These tests are standalone binaries and can be executed
@@ -114,7 +115,7 @@ cd $INSTALL_DIR
 ```
 
 ## Enable Benchmarks
-To enable benchmarks, add `-Dcga_enable_benchmarks=ON` to the `cmake` command in the build step.
+To enable benchmarks, add `-Dgw_enable_benchmarks=ON` to the `cmake` command in the build step.
 
 This builds Google Benchmark based microbenchmarks for applicable modules. The built benchmarks
 are installed under `${CMAKE_INSTALL_PREFIX}/benchmarks/<module>` and can be run directly.
@@ -127,7 +128,7 @@ e.g.
 A description of each of the benchmarks is present in a README under the module's benchmark folder.
 
 ## Enable Doc Generation
-To enable document generation for Clara Genomics Analysis, please install `Doxygen` on your system.
+To enable document generation for GenomeWorks, please install `Doxygen` on your system.
 Once`Doxygen` has been installed, run the following to build documents.
 
 ```bash
@@ -136,17 +137,17 @@ make docs
 
 Docs are also generated as part of the default `all` target when `Doxygen` is available on the system.
 
-To disable documentation generation add `-Dcga_generate_docs=OFF` to the `cmake` command in the [build step](#build).
+To disable documentation generation add `-Dgw_generate_docs=OFF` to the `cmake` command in the [build step](#build).
 
 ## Code Formatting
 
-Clara Genomics Analysis makes use of `clang-format` to format it's source and header files. To make use of
+GenomeWorks makes use of `clang-format` to format it's source and header files. To make use of
 auto-formatting, `clang-format` would have to be installed from the LLVM package (for latest builds,
 best to refer to http://releases.llvm.org/download.html).
 
 Once `clang-format` has been installed, make sure the binary is in your path.
 
-To add a folder to the auto-formatting list, use the macro `cga_enable_auto_formatting(FOLDER)`. This
+To add a folder to the auto-formatting list, use the macro `gw_enable_auto_formatting(FOLDER)`. This
 will add all cpp source/header files to the formatting list.
 
 To auto-format, run the following in your build directory.
@@ -172,16 +173,16 @@ Requirements:
 
 Run the following command to execute the CI build steps inside a container locally:
 ```bash
-bash ci/local/build.sh -r <ClaraGenomicsAnalysis repo path>
+bash ci/local/build.sh -r <GenomeWorks repo path>
 ```
 ci/local/build.sh script was adapted from [rapidsai/cudf](https://github.com/rapidsai/cudf/tree/branch-0.11/ci/local)
 
 The default docker image is **clara-genomics-base:cuda10.0-ubuntu16.04-gcc5-py3.7**.
 Other images from [gpuci/clara-genomics-base](https://hub.docker.com/r/gpuci/clara-genomics-base/tags) repository can be used instead, by using -i argument
 ```bash
-bash ci/local/build.sh -r <ClaraGenomicsAnalysis repo path> -i gpuci/clara-genomics-base:cuda10.0-ubuntu18.04-gcc7-py3.6
+bash ci/local/build.sh -r <GenomeWorks repo path> -i gpuci/clara-genomics-base:cuda10.0-ubuntu18.04-gcc7-py3.6
 ```
 
-## pyclaragenomics 
-The python API for the Clara Genomics Analysis SDK is available through the `pyclaragenomics` package. More details
-on how to use and develop `pyclaragenomics` can be found in the README under `pyclaragenomics` folder.
+## genomework Python API 
+The python API for the GenomeWorks SDK is available through the `genomeworks` python package. More details
+on how to use and develop `genomeworks` can be found in the README under `pygenomeworks` folder.

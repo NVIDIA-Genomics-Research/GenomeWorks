@@ -9,7 +9,7 @@
 */
 
 #include <vector>
-#include <claragenomics/utils/genomeutils.hpp>
+#include <claraparabricks/genomeworks/utils/genomeutils.hpp>
 
 #include "gtest/gtest.h"
 
