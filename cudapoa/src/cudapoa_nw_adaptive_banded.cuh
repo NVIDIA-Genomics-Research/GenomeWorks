@@ -192,16 +192,44 @@ __device__ void warp_reduce_max(ScoreT& val, SizeT& idx)
 }
 
 template <typename ScoreT, typename SizeT>
-__device__ void get_predecessors_max_score_index(SizeT& pred_max_score_left, SizeT& pred_max_score_right,
-                                                 SizeT node_id, uint16_t* incoming_edge_count, SizeT* incoming_edges, SizeT* node_id_to_pos)
+__device__ void get_predecessors_max_score_index(SizeT& pred_max_score_left,
+                                                 SizeT& pred_max_score_right,
+                                                 SizeT node,
+                                                 ScoreT* scores,
+                                                 SizeT* max_indices,
+                                                 SizeT* band_widths,
+                                                 uint16_t* incoming_edge_count,
+                                                 SizeT* incoming_edges,
+                                                 int64_t head_index,
+                                                 ScoreT min_score_value)
 {
-    for (uint16_t p = 0; p < incoming_edge_count[node_id]; p++)
+    for (uint16_t p = 0; p < incoming_edge_count[node]; p++)
     {
-        SizeT pred_node_id        = incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES + p];
-        SizeT pred_node_graph_pos = node_id_to_pos[pred_node_id] + 1;
-        // find max score index in pred_node_graph_pos
+        SizeT pred_node      = incoming_edges[node * CUDAPOA_MAX_NODE_EDGES + p];
+        SizeT max_score_idx  = max_indices[pred_node];
+        ScoreT max_score_val = min_score_value;
 
-        //ScoreT s = get_score_adaptive(scores, idx, j, band_starts, band_widths, band_head_indices, static_cast<SizeT>(read_length + 1), min_score_value);
+        if (max_score_idx == -1)
+        {
+            SizeT lane_idx = threadIdx.x % WARP_SIZE;
+            // max score index for this (predecessor) node is not computed yet
+            for (SizeT index = lane_idx; index < band_widths[pred_node]; index += WARP_SIZE)
+            {
+                ScoreT score_val = scores[static_cast<int64_t>(index) + head_index];
+                SizeT score_idx  = index;
+                warp_reduce_max(score_val, score_idx);
+                score_val = __shfl_sync(FULL_MASK, score_val, 0);
+                if (score_val > max_score_val)
+                {
+                    max_score_val = score_val;
+                    max_score_idx = __shfl_sync(FULL_MASK, score_idx, 0);
+                }
+            }
+            max_indices[pred_node] = max_score_idx;
+        }
+
+        pred_max_score_left  = max_score_idx < pred_max_score_left ? max_score_idx : pred_max_score_left;
+        pred_max_score_right = max_score_idx > pred_max_score_right ? max_score_idx : pred_max_score_right;
     }
 }
 
@@ -245,12 +273,26 @@ __device__
     return first_column_score;
 }
 
-template <typename SizeT>
-__device__ void set_band_parameters(SizeT* band_starts, SizeT* band_widths, int64_t* head_indices, SizeT row, SizeT node_distance_i, SizeT seq_length, SizeT graph_length)
+template <typename SizeT, typename ScoreT>
+__device__ void set_band_parameters(ScoreT* scores,
+                                    SizeT* band_starts,
+                                    SizeT* band_widths,
+                                    int64_t* head_indices,
+                                    SizeT* max_indices,
+                                    uint16_t* incoming_edge_count,
+                                    SizeT* incoming_edges,
+                                    SizeT row,
+                                    SizeT node_distance_i,
+                                    SizeT seq_length,
+                                    SizeT graph_length,
+                                    ScoreT min_score_value)
 {
-    //SizeT pred_max_score_left  = seq_length;
-    //SizeT pred_max_score_right = 0;
-    //    get_predecessors_max_score_index(pred_max_score_left, pred_max_score_right);
+    SizeT pred_max_score_left  = seq_length;
+    SizeT pred_max_score_right = 0;
+    get_predecessors_max_score_index(pred_max_score_left, pred_max_score_right, row, scores, max_indices, band_widths, incoming_edge_count, incoming_edges,
+                                     head_indices[row], min_score_value);
+
+    //get_predecessors_max_score_index(pred_max_score_left, pred_max_score_right);
     //    SizeT band_start = min(node_distance_i, pred_max_score_left);
     //    band_start       = band_start < 0 ? 0 : band_start;
     //    SizeT band_end   = max(node_distance_i, pred_max_score_right);
@@ -319,6 +361,7 @@ __device__
                                      SizeT* band_starts,
                                      SizeT* band_widths,
                                      int64_t* head_indices,
+                                     SizeT* max_indices,
                                      SizeT static_band_width,
                                      ScoreT gap_score,
                                      ScoreT mismatch_score,
@@ -336,12 +379,19 @@ __device__
     SizeT max_matrix_sequence_dimension = static_band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING;
 
     // set parameters for node 0 (row 0)
-    set_band_parameters(band_starts, band_widths, head_indices, SizeT{0}, SizeT{0}, max_column, graph_count);
+    set_band_parameters(scores, band_starts, band_widths, head_indices, max_indices, incoming_edge_count, incoming_edges,
+                        SizeT{0}, SizeT{0}, max_column, graph_count, min_score_value);
 
     // Initialise the horizontal boundary of the score matrix, initialising of the vertical boundary is done within the main for loop
     for (SizeT j = lane_idx; j < max_matrix_sequence_dimension; j += WARP_SIZE)
     {
         set_score_adaptive(scores, SizeT{0}, j, static_cast<ScoreT>(j * gap_score), band_starts, band_widths, head_indices, max_column);
+    }
+
+    // reset max score indices per node
+    for (SizeT i = lane_idx; i < graph_count; i += WARP_SIZE)
+    {
+        max_indices[i] = -1;
     }
 
 #ifdef NW_VERBOSE_PRINT
@@ -362,7 +412,8 @@ __device__
         SizeT node_id    = graph[graph_pos];
         SizeT score_gIdx = graph_pos + 1;
 
-        set_band_parameters(band_starts, band_widths, head_indices, score_gIdx, SizeT{0}, max_column, graph_count);
+        set_band_parameters(scores, band_starts, band_widths, head_indices, max_indices, incoming_edge_count,
+                            incoming_edges, score_gIdx, SizeT{0}, max_column, graph_count, min_score_value);
 
         SizeT band_start = band_starts[score_gIdx];
 
@@ -474,6 +525,8 @@ __device__
     SizeT aligned_nodes = 0;
     if (lane_idx == 0)
     {
+        //for(SizeT i = 0; i < graph_count; i++)  { printf("%3d  %3d\n", i, max_indices[i]); }
+
         // Find location of the maximum score in the matrix.
         SizeT i       = 0;
         SizeT j       = read_length;
