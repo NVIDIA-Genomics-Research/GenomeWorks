@@ -26,9 +26,11 @@ namespace cudapoa
 {
 
 template <typename SizeT>
-__device__ void set_placeholder_band_values(float gradient, SizeT dummy_band_width, SizeT* band_starts, SizeT* band_widths, SizeT* band_locations, SizeT max_row, SizeT max_column)
+__device__ void set_adaptive_band_arrays(SizeT*, SizeT* band_starts, SizeT* band_widths, SizeT* band_locations, SizeT max_row, SizeT max_column)
 {
-    // printf("Gradient: %f Maxrows: %ld\n ", gradient, static_cast<int64_t>(max_row));
+    SizeT dummy_band_width = 256;
+    float gradient = float(max_column) / float(max_row);
+
     for (SizeT row_idx = static_cast<SizeT>(0); row_idx < max_row; row_idx++)
     {
         SizeT start_pos = SizeT(row_idx * gradient) - dummy_band_width / 2;
@@ -48,7 +50,8 @@ __device__ void set_placeholder_band_values(float gradient, SizeT dummy_band_wid
         band_starts[static_cast<int64_t>(row_idx)]    = start_pos;
         band_widths[static_cast<int64_t>(row_idx)]    = dummy_band_width;
         band_locations[static_cast<int64_t>(row_idx)] = static_cast<SizeT>(static_cast<int64_t>(row_idx) * (static_cast<int64_t>(dummy_band_width) + static_cast<int64_t>(CUDAPOA_BANDED_MATRIX_RIGHT_PADDING)));
-        // printf("Row: %ld Band Start: %ld BandWidth: %ld Band Location: %ld\n ", static_cast<int64_t>(row_idx), static_cast<int64_t>(start_pos), static_cast<int64_t>(dummy_band_width), static_cast<int64_t>(band_locations[static_cast<int64_t>(row_idx)]));
+        // printf("Row: %d Band Start: %d BandWidth: %d Band Location: %d\n ", row_idx, start_pos, dummy_band_width, band_locations[row_idx]);
+        //printf("BandWidth: %d\n ", dummy_band_width);
     }
 }
 
@@ -272,13 +275,13 @@ __device__
                                      ScoreT* scores,
                                      SizeT* alignment_graph,
                                      SizeT* alignment_read,
+                                     SizeT* node_distance,
                                      SizeT* band_starts,
                                      SizeT* band_widths,
                                      SizeT* band_locations,
                                      ScoreT gap_score,
                                      ScoreT mismatch_score,
-                                     ScoreT match_score,
-                                     SizeT dummy_band_width)
+                                     ScoreT match_score)
 {
 
     GW_CONSTEXPR ScoreT score_type_min_limit = numeric_limits<ScoreT>::min();
@@ -287,18 +290,12 @@ __device__
     int16_t lane_idx = threadIdx.x % WARP_SIZE;
     int64_t score_index;
 
-    //Calculate gradient for the scores matrix
-    // float gradient = float(read_length + 1) / float(graph_count + 1);
-
     SizeT max_column = read_length + 1;
 
-    // SizeT max_matrix_sequence_dimension = band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING;
-
-    float gradient = float(read_length + 1) / float(graph_count + 1);
     if (threadIdx.x == 0)
     {
-        // dummy function to be replaced by bw calculator; Sets values per defined gradient
-        set_placeholder_band_values(gradient, dummy_band_width, band_starts, band_widths, band_locations, static_cast<SizeT>(graph_count + 1), max_column);
+        // dummy function to be replaced by bw calculator
+        set_adaptive_band_arrays(node_distance, band_starts, band_widths, band_locations, static_cast<SizeT>(graph_count + 1), max_column);
     }
 
     SizeT max_matrix_sequence_dimension = band_widths[0] + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING;

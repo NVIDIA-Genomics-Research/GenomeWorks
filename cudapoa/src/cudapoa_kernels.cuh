@@ -13,7 +13,7 @@
 
 #include "cudapoa_nw.cuh"
 #include "cudapoa_nw_banded.cuh"
-#include "cudapoa_nw_adaptive_banded.cu"
+#include "cudapoa_nw_adaptive_banded.cuh"
 #include "cudapoa_topsort.cuh"
 #include "cudapoa_add_alignment.cuh"
 #include "cudapoa_generate_consensus.cuh"
@@ -106,7 +106,7 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
                                   SizeT* band_starts_d,
                                   SizeT* band_widths_d,
                                   SizeT* band_locations_d,
-                                  uint32_t banded_alignment_band_width = 128)
+                                  uint32_t banded_alignment_band_width = 256)
 {
     // shared error indicator within a warp
     bool warp_error = false;
@@ -240,7 +240,7 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
                 consensus[1] = static_cast<uint8_t>(StatusType::node_count_exceeded_maximum_graph_size);
                 warp_error   = true;
             }
-            if (cuda_banded_alignment)
+            if (adaptive_banded)
             {
                 // compute R for abPOA
                 distanceToHeadNode(sorted_poa,
@@ -278,13 +278,13 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
                                                                                             scores,
                                                                                             alignment_graph,
                                                                                             alignment_read,
+                                                                                            node_distance,
                                                                                             band_starts,
                                                                                             band_widths,
                                                                                             band_locations,
                                                                                             gap_score,
                                                                                             mismatch_score,
-                                                                                            match_score,
-                                                                                            banded_alignment_band_width);
+                                                                                            match_score);
             }
             else
             {
