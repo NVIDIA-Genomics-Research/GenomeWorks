@@ -109,15 +109,15 @@ __device__ ScoreT get_score(ScoreT* scores, SizeT row, SizeT column, float gradi
 }
 
 template <typename ScoreT, typename SizeT>
-__device__ ScoreT4<ScoreT> get_scores(SizeT read_pos,
-                                      ScoreT* scores,
+__device__ ScoreT4<ScoreT> get_scores(ScoreT* scores,
                                       SizeT node,
-                                      ScoreT gap_score,
-                                      ScoreT4<ScoreT> char_profile,
+                                      SizeT read_pos,
                                       float gradient,
                                       SizeT band_width,
+                                      SizeT max_column,
                                       ScoreT default_value,
-                                      SizeT max_column)
+                                      ScoreT gap_score,
+                                      ScoreT4<ScoreT>& char_profile)
 {
 
     // The load instructions typically load data in 4B or 8B chunks.
@@ -132,7 +132,7 @@ __device__ ScoreT4<ScoreT> get_scores(SizeT read_pos,
 
     SizeT band_end = static_cast<SizeT>(band_start + band_width + CELLS_PER_THREAD);
 
-    if (((static_cast<SizeT>(read_pos + 1) > band_end) || (static_cast<SizeT>(read_pos + 1) < band_start)) && static_cast<SizeT>(read_pos + 1) != 0)
+    if ((read_pos > band_end || read_pos < band_start) && read_pos != 0)
     {
         return ScoreT4<ScoreT>{default_value, default_value, default_value, default_value};
     }
@@ -268,13 +268,13 @@ __device__
             char_profile.s2 = (graph_base == read4.r2 ? match_score : mismatch_score);
             char_profile.s3 = (graph_base == read4.r3 ? match_score : mismatch_score);
 
-            ScoreT4<ScoreT> score = get_scores(read_pos, scores, pred_idx, gap_score, char_profile, gradient, band_width, min_score_value, max_column);
+            ScoreT4<ScoreT> score = get_scores(scores, pred_idx, read_pos, gradient, band_width, max_column, min_score_value, gap_score, char_profile);
 
             // Perform same score updates as above, but for rest of predecessors.
             for (uint16_t p = 1; p < pred_count; p++)
             {
                 SizeT pred_idx2          = node_id_to_pos[incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES + p]] + 1;
-                ScoreT4<ScoreT> scores_4 = get_scores(read_pos, scores, pred_idx2, gap_score, char_profile, gradient, band_width, min_score_value, max_column);
+                ScoreT4<ScoreT> scores_4 = get_scores(scores, pred_idx2, read_pos, gradient, band_width, max_column, min_score_value, gap_score, char_profile);
 
                 score.s0 = max(score.s0, scores_4.s0);
                 score.s1 = max(score.s1, scores_4.s1);

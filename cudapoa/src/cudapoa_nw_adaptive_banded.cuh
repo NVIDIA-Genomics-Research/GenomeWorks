@@ -163,7 +163,7 @@ __device__ ScoreT get_score_adaptive(ScoreT* scores, SizeT row, SizeT column, Si
     SizeT band_start = band_starts[row];
     SizeT band_end   = band_start + band_widths[row];
 
-    if (((column > band_end) || (column < band_start)) && column != 0)
+    if ((column > band_end || column < band_start) && column != 0)
     {
         return min_score_value;
     }
@@ -174,16 +174,16 @@ __device__ ScoreT get_score_adaptive(ScoreT* scores, SizeT row, SizeT column, Si
 }
 
 template <typename ScoreT, typename SizeT>
-__device__ ScoreT4<ScoreT> get_scores_adaptive(SizeT read_pos,
-                                               ScoreT* scores,
-                                               SizeT node,
-                                               ScoreT gap_score,
-                                               ScoreT4<ScoreT> char_profile,
+__device__ ScoreT4<ScoreT> get_scores_adaptive(ScoreT* scores,
+                                               SizeT row,
+                                               SizeT column,
                                                SizeT* band_starts,
                                                SizeT* band_widths,
                                                int64_t* head_indices,
+                                               SizeT max_column,
                                                ScoreT default_value,
-                                               SizeT max_column)
+                                               ScoreT gap_score,
+                                               ScoreT4<ScoreT>& char_profile)
 {
 
     // The load instructions typically load data in 4B or 8B chunks.
@@ -194,17 +194,17 @@ __device__ ScoreT4<ScoreT> get_scores_adaptive(SizeT read_pos,
     // using a single load inst, and then extracting necessary part of
     // of the data using bit arithmatic. Also reduces register count.
 
-    SizeT band_start = band_starts[node];
+    SizeT band_start = band_starts[row];
 
-    SizeT band_end = static_cast<SizeT>(band_start + band_widths[node] + CELLS_PER_THREAD);
+    SizeT band_end = static_cast<SizeT>(band_start + band_widths[row] + CELLS_PER_THREAD);
 
-    if (((static_cast<SizeT>(read_pos + 1) > band_end) || (static_cast<SizeT>(read_pos + 1) < band_start)) && static_cast<SizeT>(read_pos + 1) != 0)
+    if ((column > band_end || column < band_start) && column != 0)
     {
         return ScoreT4<ScoreT>{default_value, default_value, default_value, default_value};
     }
     else
     {
-        ScoreT4<ScoreT>* pred_scores = (ScoreT4<ScoreT>*)get_score_ptr_adaptive(scores, node, read_pos, band_start, head_indices);
+        ScoreT4<ScoreT>* pred_scores = (ScoreT4<ScoreT>*)get_score_ptr_adaptive(scores, row, column, band_start, head_indices);
 
         // loads 8 consecutive bytes (4 shorts)
         ScoreT4<ScoreT> score4 = pred_scores[0];
@@ -387,13 +387,13 @@ __device__
             char_profile.s2 = (graph_base == read4.r2 ? match_score : mismatch_score);
             char_profile.s3 = (graph_base == read4.r3 ? match_score : mismatch_score);
 
-            ScoreT4<ScoreT> score = get_scores_adaptive(read_pos, scores, pred_idx, gap_score, char_profile, band_starts, band_widths, head_indices, min_score_value, max_column);
+            ScoreT4<ScoreT> score = get_scores_adaptive(scores, pred_idx, read_pos, band_starts, band_widths, head_indices, max_column, min_score_value, gap_score, char_profile);
 
             // Perform same score updates as above, but for rest of predecessors.
             for (uint16_t p = 1; p < pred_count; p++)
             {
                 SizeT pred_idx2          = node_id_to_pos[incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES + p]] + 1;
-                ScoreT4<ScoreT> scores_4 = get_scores_adaptive(read_pos, scores, pred_idx2, gap_score, char_profile, band_starts, band_widths, head_indices, min_score_value, max_column);
+                ScoreT4<ScoreT> scores_4 = get_scores_adaptive(scores, pred_idx2, read_pos, band_starts, band_widths, head_indices, max_column, min_score_value, gap_score, char_profile);
 
                 score.s0 = max(score.s0, scores_4.s0);
                 score.s1 = max(score.s1, scores_4.s1);
