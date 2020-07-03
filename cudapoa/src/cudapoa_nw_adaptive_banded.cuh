@@ -78,19 +78,18 @@ __device__ void set_score_adaptive(ScoreT* scores, SizeT row, SizeT column, Scor
 }
 
 template <typename ScoreT, typename SizeT>
-__device__ void initialize_band_adaptive(ScoreT* scores, SizeT row, ScoreT value, SizeT* band_starts, SizeT* band_widths, int64_t* head_indices, SizeT max_column)
+__device__ void initialize_band_adaptive(ScoreT* scores, SizeT row, ScoreT min_score_value, SizeT* band_starts, SizeT* band_widths, int64_t* head_indices, SizeT max_column)
 {
-    int16_t lane_idx = threadIdx.x % WARP_SIZE;
+    SizeT lane_idx   = threadIdx.x % WARP_SIZE;
     SizeT band_start = band_starts[row];
-    SizeT band_end   = band_start + band_widths[row];
 
-    SizeT initialization_offset = (band_start == 0) ? 1 : band_start;
+    SizeT band_end = band_start + band_widths[row];
+    band_start     = max(1, band_starts[row]);
 
-    set_score_adaptive(scores, row, initialization_offset, value, band_starts, band_widths, head_indices, max_column);
-
-    for (SizeT j = lane_idx + band_end; j < band_end + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING; j += WARP_SIZE)
+    set_score_adaptive(scores, row, band_start, min_score_value, band_starts, band_widths, head_indices, max_column);
+    if (lane_idx < CUDAPOA_BANDED_MATRIX_RIGHT_PADDING)
     {
-        set_score_adaptive(scores, row, j, value, band_starts, band_widths, head_indices, max_column);
+        set_score_adaptive(scores, row, lane_idx + band_end, min_score_value, band_starts, band_widths, head_indices, max_column);
     }
 };
 
