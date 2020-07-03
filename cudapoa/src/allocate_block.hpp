@@ -202,8 +202,8 @@ public:
             offset_d_ += cudautils::align<int64_t, 8>(sizeof(*alignment_details_d->band_starts) * max_nodes_per_window_ * max_poas_);
             alignment_details_d->band_widths = reinterpret_cast<decltype(alignment_details_d->band_widths)>(&block_data_d_[offset_d_]);
             offset_d_ += cudautils::align<int64_t, 8>(sizeof(*alignment_details_d->band_widths) * max_nodes_per_window_ * max_poas_);
-            alignment_details_d->band_locations = reinterpret_cast<decltype(alignment_details_d->band_locations)>(&block_data_d_[offset_d_]);
-            offset_d_ += cudautils::align<int64_t, 8>(sizeof(*alignment_details_d->band_locations) * max_nodes_per_window_ * max_poas_);
+            alignment_details_d->band_head_indices = reinterpret_cast<decltype(alignment_details_d->band_head_indices)>(&block_data_d_[offset_d_]);
+            offset_d_ += cudautils::align<int64_t, 8>(sizeof(*alignment_details_d->band_head_indices) * max_nodes_per_window_ * max_poas_);
         }
 
         // rest of the available memory is assigned to scores buffer
@@ -342,11 +342,11 @@ public:
         device_size_per_poa += (msa_flag) ? sizeof(*GraphDetails<SizeT>::outgoing_edges_coverage_count) * max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES : 0;                              // graph_details_d_->outgoing_edges_coverage_count
         device_size_per_poa += (msa_flag) ? sizeof(*GraphDetails<SizeT>::node_id_to_msa_pos) * max_nodes_per_window : 0;                                                                  // graph_details_d_->node_id_to_msa_pos
         // for alignment - device
-        device_size_per_poa += sizeof(*AlignmentDetails<ScoreT, SizeT>::alignment_graph) * matrix_graph_dimension;                    // alignment_details_d_->alignment_graph
-        device_size_per_poa += sizeof(*AlignmentDetails<ScoreT, SizeT>::alignment_read) * matrix_graph_dimension;                     // alignment_details_d_->alignment_read
-        device_size_per_poa += adaptive_banded ? sizeof(*AlignmentDetails<ScoreT, SizeT>::band_starts) * max_nodes_per_window : 0;    // alignment_details_d_->band_starts
-        device_size_per_poa += adaptive_banded ? sizeof(*AlignmentDetails<ScoreT, SizeT>::band_widths) * max_nodes_per_window : 0;    // alignment_details_d_->band_widths
-        device_size_per_poa += adaptive_banded ? sizeof(*AlignmentDetails<ScoreT, SizeT>::band_locations) * max_nodes_per_window : 0; // alignment_details_d_->band_locations
+        device_size_per_poa += sizeof(*AlignmentDetails<ScoreT, SizeT>::alignment_graph) * matrix_graph_dimension;                       // alignment_details_d_->alignment_graph
+        device_size_per_poa += sizeof(*AlignmentDetails<ScoreT, SizeT>::alignment_read) * matrix_graph_dimension;                        // alignment_details_d_->alignment_read
+        device_size_per_poa += adaptive_banded ? sizeof(*AlignmentDetails<ScoreT, SizeT>::band_starts) * max_nodes_per_window : 0;       // alignment_details_d_->band_starts
+        device_size_per_poa += adaptive_banded ? sizeof(*AlignmentDetails<ScoreT, SizeT>::band_widths) * max_nodes_per_window : 0;       // alignment_details_d_->band_widths
+        device_size_per_poa += adaptive_banded ? sizeof(*AlignmentDetails<ScoreT, SizeT>::band_head_indices) * max_nodes_per_window : 0; // alignment_details_d_->band_head_indices
 
         return device_size_per_poa;
     }

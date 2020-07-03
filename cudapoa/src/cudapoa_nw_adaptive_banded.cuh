@@ -27,31 +27,31 @@ namespace cudapoa
 
 template <typename SizeT>
 __device__ void set_adaptive_band_arrays(SizeT* node_distance, uint16_t* incoming_edge_count, SizeT* incoming_edges,
-                                         SizeT* band_starts, SizeT* band_widths, SizeT* band_locations, SizeT max_row, SizeT max_column)
+                                         SizeT* band_starts, SizeT* band_widths, SizeT* head_indices, SizeT max_row, SizeT max_column)
 {
-//    // get M-start and M-end
-//    for (SizeT row_idx = 0; row_idx < max_row; row_idx++)
-//    {
-//        SizeT node_id = graph[row_idx];
-//
-//        uint16_t pred_count = incoming_edge_count[node_id];
-//        if (pred_count == 0)
-//        {
-//        }
-//        else
-//        {
-//            for (uint16_t p = 0; p < pred_count; p++)
-//            {
-//                SizeT pred_node_id        = incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES + p];
-//                SizeT pred_node_graph_pos = node_id_to_pos[pred_node_id] + 1;
-//                penalty                   = max(penalty, get_score(scores, pred_node_graph_pos, static_cast<SizeT>(0), gradient, band_width, static_cast<SizeT>(read_length + 1), min_score_value));
-//            }
-//            set_score(scores, i, static_cast<SizeT>(0), static_cast<ScoreT>(penalty + gap_score), gradient, band_width, max_column);
-//        }
-//    }
+    //    // get M-start and M-end
+    //    for (SizeT row_idx = 0; row_idx < max_row; row_idx++)
+    //    {
+    //        SizeT node_id = graph[row_idx];
+    //
+    //        uint16_t pred_count = incoming_edge_count[node_id];
+    //        if (pred_count == 0)
+    //        {
+    //        }
+    //        else
+    //        {
+    //            for (uint16_t p = 0; p < pred_count; p++)
+    //            {
+    //                SizeT pred_node_id        = incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES + p];
+    //                SizeT pred_node_graph_pos = node_id_to_pos[pred_node_id] + 1;
+    //                penalty                   = max(penalty, get_score(scores, pred_node_graph_pos, static_cast<SizeT>(0), gradient, band_width, static_cast<SizeT>(read_length + 1), min_score_value));
+    //            }
+    //            set_score(scores, i, static_cast<SizeT>(0), static_cast<ScoreT>(penalty + gap_score), gradient, band_width, max_column);
+    //        }
+    //    }
 
     SizeT dummy_band_width = 256;
-    float gradient = float(max_column) / float(max_row);
+    float gradient         = float(max_column) / float(max_row);
 
     for (SizeT row_idx = static_cast<SizeT>(0); row_idx < max_row; row_idx++)
     {
@@ -68,10 +68,10 @@ __device__ void set_adaptive_band_arrays(SizeT* node_distance, uint16_t* incomin
 
         start_pos = max(start_pos, static_cast<SizeT>(0));
 
-        start_pos               = start_pos - (start_pos % CELLS_PER_THREAD);
-        band_starts[row_idx]    = start_pos;
-        band_widths[row_idx]    = dummy_band_width;
-        band_locations[row_idx] = static_cast<int64_t>(row_idx) * (static_cast<int64_t>(dummy_band_width) + static_cast<int64_t>(CUDAPOA_BANDED_MATRIX_RIGHT_PADDING));
+        start_pos             = start_pos - (start_pos % CELLS_PER_THREAD);
+        band_starts[row_idx]  = start_pos;
+        band_widths[row_idx]  = dummy_band_width;
+        head_indices[row_idx] = static_cast<int64_t>(row_idx) * (static_cast<int64_t>(dummy_band_width) + static_cast<int64_t>(CUDAPOA_BANDED_MATRIX_RIGHT_PADDING));
     }
 }
 
@@ -85,13 +85,13 @@ __device__ void set_adaptive_band_arrays(SizeT* node_distance, uint16_t* incomin
  * @param[in] value               Value to set
  * @param[in] band_starts         Array of band_starts per row
  * @param[in] band_widths         Array of band_widths per row
- * @param[in] band_locations      Array of indexes in score that map to band_start per row
+ * @param[in] head_indices      Array of indexes in score that map to band_start per row
  * @param[in] max_column          Last column # in the score matrix
  * @param[out] score_address      Address of the element indicated by the (row, col) tuple
 */
 
 template <typename ScoreT, typename SizeT>
-__device__ ScoreT* get_score_ptr_adaptive(ScoreT* scores, SizeT row, SizeT column, SizeT* band_starts, SizeT* band_widths, SizeT* band_locations, SizeT max_column)
+__device__ ScoreT* get_score_ptr_adaptive(ScoreT* scores, SizeT row, SizeT column, SizeT* band_starts, SizeT* band_widths, SizeT* head_indices, SizeT max_column)
 {
 
     SizeT band_start = band_starts[row];
@@ -107,7 +107,7 @@ __device__ ScoreT* get_score_ptr_adaptive(ScoreT* scores, SizeT row, SizeT colum
         col_offset = column - band_start;
     }
 
-    int64_t score_index = static_cast<int64_t>(col_offset) + static_cast<int64_t>(band_locations[row]);
+    int64_t score_index = static_cast<int64_t>(col_offset) + static_cast<int64_t>(head_indices[row]);
 
     return &scores[score_index];
 };
@@ -121,11 +121,11 @@ __device__ ScoreT* get_score_ptr_adaptive(ScoreT* scores, SizeT row, SizeT colum
  * @param[in] value               Value to set
  * @param[in] band_starts         Array of band_starts per row
  * @param[in] band_widths         Array of band_widths per row
- * @param[in] band_locations      Array of indexes in score that map to band_start per row
+ * @param[in] head_indices      Array of indexes in score that map to band_start per row
  * @param[in] max_column          Last column # in the score matrix
 */
 template <typename ScoreT, typename SizeT>
-__device__ void set_score_adaptive(ScoreT* scores, SizeT row, SizeT column, ScoreT value, SizeT* band_starts, SizeT* band_widths, SizeT* band_locations, SizeT max_column)
+__device__ void set_score_adaptive(ScoreT* scores, SizeT row, SizeT column, ScoreT value, SizeT* band_starts, SizeT* band_widths, SizeT* head_indices, SizeT max_column)
 {
     SizeT band_start = band_starts[row];
 
@@ -139,13 +139,13 @@ __device__ void set_score_adaptive(ScoreT* scores, SizeT row, SizeT column, Scor
         col_offset = column - band_start;
     }
 
-    int64_t score_index = static_cast<int64_t>(col_offset) + static_cast<int64_t>(band_locations[row]);
+    int64_t score_index = static_cast<int64_t>(col_offset) + static_cast<int64_t>(head_indices[row]);
 
     scores[score_index] = value;
 }
 
 template <typename ScoreT, typename SizeT>
-__device__ void initialize_band_adaptive(ScoreT* scores, SizeT row, ScoreT value, SizeT* band_starts, SizeT* band_widths, SizeT* band_locations, SizeT max_column)
+__device__ void initialize_band_adaptive(ScoreT* scores, SizeT row, ScoreT value, SizeT* band_starts, SizeT* band_widths, SizeT* head_indices, SizeT max_column)
 {
     int16_t lane_idx = threadIdx.x % WARP_SIZE;
     SizeT band_start = band_starts[row];
@@ -153,11 +153,11 @@ __device__ void initialize_band_adaptive(ScoreT* scores, SizeT row, ScoreT value
 
     SizeT initialization_offset = (band_start == 0) ? static_cast<SizeT>(1) : band_start;
 
-    set_score_adaptive(scores, row, initialization_offset, value, band_starts, band_widths, band_locations, max_column);
+    set_score_adaptive(scores, row, initialization_offset, value, band_starts, band_widths, head_indices, max_column);
 
     for (SizeT j = lane_idx + band_end; j < band_end + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING; j += WARP_SIZE)
     {
-        set_score_adaptive(scores, row, j, value, band_starts, band_widths, band_locations, max_column);
+        set_score_adaptive(scores, row, j, value, band_starts, band_widths, head_indices, max_column);
     }
 };
 
@@ -170,12 +170,12 @@ __device__ void initialize_band_adaptive(ScoreT* scores, SizeT row, ScoreT value
  * @param[in] value               Value to set
  * @param[in] band_starts         Array of band_starts per row
  * @param[in] band_widths         Array of band_widths per row
- * @param[in] band_locations      Array of indexes in score that map to band_start per row
+ * @param[in] head_indices      Array of indexes in score that map to band_start per row
  * @param[in] max_column          Last column # in the score matrix
  * @param[out] score              Score at the specified row and column
 */
 template <typename ScoreT, typename SizeT>
-__device__ ScoreT get_score_adaptive(ScoreT* scores, SizeT row, SizeT column, SizeT* band_starts, SizeT* band_widths, SizeT* band_locations, SizeT max_column, const ScoreT min_score_value)
+__device__ ScoreT get_score_adaptive(ScoreT* scores, SizeT row, SizeT column, SizeT* band_starts, SizeT* band_widths, SizeT* head_indices, SizeT max_column, const ScoreT min_score_value)
 {
     SizeT band_start = band_starts[row];
     SizeT band_end   = band_start + band_widths[row];
@@ -186,38 +186,7 @@ __device__ ScoreT get_score_adaptive(ScoreT* scores, SizeT row, SizeT column, Si
     }
     else
     {
-        return *get_score_ptr_adaptive(scores, row, column, band_starts, band_widths, band_locations, max_column);
-    }
-}
-
-template <typename ScoreT, typename SizeT>
-__device__ void print_matrix_adaptive(ScoreT* scores, SizeT max_rows, SizeT max_column, SizeT* band_starts, SizeT* band_widths, SizeT* band_locations, ScoreT min_score_value)
-{
-    if (threadIdx.x == 0)
-    {
-        printf("Matrix Size: %ld x %ld\n", static_cast<int64_t>(max_rows), static_cast<int64_t>(max_column));
-        for (int64_t i = 0; i < static_cast<int64_t>(max_rows); i++)
-        {
-            for (int64_t j = 0; j < static_cast<int64_t>(max_column); j++)
-            {
-                SizeT band_start = band_starts[i];
-                SizeT col_offset;
-                if (j == 0)
-                {
-                    col_offset = band_start;
-                }
-                else
-                {
-                    col_offset = j - band_start;
-                }
-
-                int64_t score_index = static_cast<int64_t>(col_offset) + static_cast<int64_t>(band_locations[i]);
-                printf("Row: %ld Col: %ld BandStart: %ld ScoreIndex: %ld\n", i, j, static_cast<int64_t>(band_starts[i]), score_index);
-                // int64_t score = static_cast<int64_t>(get_score_adaptive(scores, static_cast<SizeT>(i), static_cast<SizeT>(j), band_starts, band_widths, band_locations, max_column, min_score_value));
-                // if (score!=0 && score!=min_score_value)
-                //     printf("Row: %ld, Column: %ld, Score: %ld\n", i, j, score);
-            }
-        }
+        return *get_score_ptr_adaptive(scores, row, column, band_starts, band_widths, head_indices, max_column);
     }
 }
 
@@ -229,7 +198,7 @@ __device__ ScoreT4<ScoreT> get_scores_adaptive(SizeT read_pos,
                                                ScoreT4<ScoreT> char_profile,
                                                SizeT* band_starts,
                                                SizeT* band_widths,
-                                               SizeT* band_locations,
+                                               SizeT* head_indices,
                                                ScoreT default_value,
                                                SizeT max_column)
 {
@@ -252,7 +221,7 @@ __device__ ScoreT4<ScoreT> get_scores_adaptive(SizeT read_pos,
     }
     else
     {
-        ScoreT4<ScoreT>* pred_scores = (ScoreT4<ScoreT>*)get_score_ptr_adaptive(scores, node, read_pos, band_starts, band_widths, band_locations, max_column);
+        ScoreT4<ScoreT>* pred_scores = (ScoreT4<ScoreT>*)get_score_ptr_adaptive(scores, node, read_pos, band_starts, band_widths, head_indices, max_column);
 
         // loads 8 consecutive bytes (4 shorts)
         ScoreT4<ScoreT> score4 = pred_scores[0];
@@ -285,8 +254,7 @@ void get_predecessors_max_score_index(SizeT& pred_max_score_left, SizeT& pred_ma
         SizeT pred_node_graph_pos = node_id_to_pos[pred_node_id] + 1;
         // find max score index in pred_node_graph_pos
 
-        //ScoreT s = get_score_adaptive(scores, idx, j, band_starts, band_widths, band_locations, static_cast<SizeT>(read_length + 1), min_score_value);
-
+        //ScoreT s = get_score_adaptive(scores, idx, j, band_starts, band_widths, band_head_indices, static_cast<SizeT>(read_length + 1), min_score_value);
     }
 }
 
@@ -297,11 +265,10 @@ void get_band_parameters(SizeT node_distance_i, SizeT seq_length)
     SizeT pred_max_score_right = 0;
     //get_predecessors_max_score_index(pred_max_score_left, pred_max_score_right);
     SizeT band_start = min(node_distance_i, pred_max_score_left);
-    band_start = band_start < 0 ? 0 : band_start;
-    SizeT band_end = max(node_distance_i, pred_max_score_right);
-    band_end = band_end > seq_length ? seq_length : band_end;
+    band_start       = band_start < 0 ? 0 : band_start;
+    SizeT band_end   = max(node_distance_i, pred_max_score_right);
+    band_end         = band_end > seq_length ? seq_length : band_end;
 }
-
 
 template <typename SeqT,
           typename ScoreT,
@@ -323,7 +290,7 @@ __device__
                                      SizeT* node_distance,
                                      SizeT* band_starts,
                                      SizeT* band_widths,
-                                     SizeT* band_locations,
+                                     SizeT* head_indices,
                                      SizeT static_band_width,
                                      ScoreT gap_score,
                                      ScoreT mismatch_score,
@@ -335,24 +302,21 @@ __device__
 
     int16_t lane_idx = threadIdx.x % WARP_SIZE;
     int64_t score_index;
-    int64_t score_start_index = 0L;
 
     SizeT max_column = read_length + 1;
 
     if (threadIdx.x == 0)
     {
-        set_adaptive_band_arrays(node_distance, incoming_edge_count, incoming_edges, band_starts, band_widths, band_locations, static_cast<SizeT>(graph_count + 1), max_column);
+        set_adaptive_band_arrays(node_distance, incoming_edge_count, incoming_edges, band_starts, band_widths, head_indices, static_cast<SizeT>(graph_count + 1), max_column);
     }
 
     SizeT max_matrix_sequence_dimension = static_band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING;
-    //print_matrix_adaptive(scores, static_cast<SizeT>(graph_count+1), max_column, band_starts, band_widths, band_locations, min_score_value);
 
     // Initialise the horizontal boundary of the score matrix
     for (SizeT j = lane_idx; j < max_matrix_sequence_dimension; j += WARP_SIZE)
     {
-        set_score_adaptive(scores, static_cast<SizeT>(0), j, static_cast<ScoreT>(j * gap_score), band_starts, band_widths, band_locations, max_column);
+        set_score_adaptive(scores, static_cast<SizeT>(0), j, static_cast<ScoreT>(j * gap_score), band_starts, band_widths, head_indices, max_column);
     }
-
 
     //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -365,7 +329,7 @@ __device__
 
         for (SizeT graph_pos = 0; graph_pos < graph_count; graph_pos++)
         {
-            set_score_adaptive(scores, static_cast<SizeT>(0), static_cast<SizeT>(0), static_cast<ScoreT>(0), band_starts, band_widths, band_locations, max_column);
+            set_score_adaptive(scores, static_cast<SizeT>(0), static_cast<SizeT>(0), static_cast<ScoreT>(0), band_starts, band_widths, head_indices, max_column);
 
             SizeT node_id = graph[graph_pos];
             SizeT i       = graph_pos + 1;
@@ -373,7 +337,7 @@ __device__
             uint16_t pred_count = incoming_edge_count[node_id];
             if (pred_count == 0)
             {
-                set_score_adaptive(scores, i, static_cast<SizeT>(0), gap_score, band_starts, band_widths, band_locations, max_column);
+                set_score_adaptive(scores, i, static_cast<SizeT>(0), gap_score, band_starts, band_widths, head_indices, max_column);
             }
             else
             {
@@ -382,16 +346,14 @@ __device__
                 {
                     SizeT pred_node_id        = incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES + p];
                     SizeT pred_node_graph_pos = node_id_to_pos[pred_node_id] + 1;
-                    penalty                   = max(penalty, get_score_adaptive(scores, pred_node_graph_pos, static_cast<SizeT>(0), band_starts, band_widths, band_locations, static_cast<SizeT>(read_length + 1), min_score_value));
+                    penalty                   = max(penalty, get_score_adaptive(scores, pred_node_graph_pos, static_cast<SizeT>(0), band_starts, band_widths, head_indices, static_cast<SizeT>(read_length + 1), min_score_value));
                 }
-                set_score_adaptive(scores, i, static_cast<SizeT>(0), static_cast<ScoreT>(penalty + gap_score), band_starts, band_widths, band_locations, max_column);
+                set_score_adaptive(scores, i, static_cast<SizeT>(0), static_cast<ScoreT>(penalty + gap_score), band_starts, band_widths, head_indices, max_column);
             }
         }
     }
 
     //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-
 
     __syncwarp();
 
@@ -406,9 +368,9 @@ __device__
 
         SizeT band_start = band_starts[score_gIdx];
 
-        initialize_band_adaptive(scores, score_gIdx, min_score_value, band_starts, band_widths, band_locations, static_cast<SizeT>(read_length + 1));
+        initialize_band_adaptive(scores, score_gIdx, min_score_value, band_starts, band_widths, head_indices, static_cast<SizeT>(read_length + 1));
 
-        ScoreT first_element_prev_score = get_score_adaptive(scores, score_gIdx, static_cast<SizeT>(0), band_starts, band_widths, band_locations, static_cast<SizeT>(read_length + 1), min_score_value);
+        ScoreT first_element_prev_score = get_score_adaptive(scores, score_gIdx, static_cast<SizeT>(0), band_starts, band_widths, head_indices, static_cast<SizeT>(read_length + 1), min_score_value);
 
         uint16_t pred_count = incoming_edge_count[node_id];
 
@@ -427,13 +389,13 @@ __device__
             char_profile.s2 = (graph_base == read4.r2 ? match_score : mismatch_score);
             char_profile.s3 = (graph_base == read4.r3 ? match_score : mismatch_score);
 
-            ScoreT4<ScoreT> score = get_scores_adaptive(read_pos, scores, pred_idx, gap_score, char_profile, band_starts, band_widths, band_locations, min_score_value, static_cast<SizeT>(read_length + 1));
+            ScoreT4<ScoreT> score = get_scores_adaptive(read_pos, scores, pred_idx, gap_score, char_profile, band_starts, band_widths, head_indices, min_score_value, static_cast<SizeT>(read_length + 1));
 
             // Perform same score updates as above, but for rest of predecessors.
             for (uint16_t p = 1; p < pred_count; p++)
             {
                 SizeT pred_idx2          = node_id_to_pos[incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES + p]] + 1;
-                ScoreT4<ScoreT> scores_4 = get_scores_adaptive(read_pos, scores, pred_idx2, gap_score, char_profile, band_starts, band_widths, band_locations, min_score_value, static_cast<SizeT>(read_length + 1));
+                ScoreT4<ScoreT> scores_4 = get_scores_adaptive(read_pos, scores, pred_idx2, gap_score, char_profile, band_starts, band_widths, head_indices, min_score_value, static_cast<SizeT>(read_length + 1));
 
                 score.s0 = max(score.s0, scores_4.s0);
                 score.s1 = max(score.s1, scores_4.s1);
@@ -497,7 +459,7 @@ __device__
             first_element_prev_score = __shfl_sync(FULL_MASK, score.s3, WARP_SIZE - 1);
 
             // score_index = static_cast<int64_t>(read_pos + 1 - band_start) + static_cast<int64_t>(score_gIdx) * static_cast<int64_t>(max_matrix_sequence_dimension);
-            score_index = static_cast<int64_t>(read_pos + 1 - band_start) + static_cast<int64_t>(band_locations[score_gIdx]);
+            score_index = static_cast<int64_t>(read_pos + 1 - band_start) + static_cast<int64_t>(head_indices[score_gIdx]);
 
             scores[score_index]      = score.s0;
             scores[score_index + 1L] = score.s1;
@@ -520,7 +482,7 @@ __device__
         {
             if (outgoing_edge_count[graph[idx - 1]] == 0)
             {
-                ScoreT s = get_score_adaptive(scores, idx, j, band_starts, band_widths, band_locations, static_cast<SizeT>(read_length + 1), min_score_value);
+                ScoreT s = get_score_adaptive(scores, idx, j, band_starts, band_widths, head_indices, static_cast<SizeT>(read_length + 1), min_score_value);
                 if (mscore < s)
                 {
                     mscore = s;
@@ -537,7 +499,7 @@ __device__
         while (!(i == 0 && j == 0) && loop_count < static_cast<int32_t>(read_length + graph_count + 2))
         {
             loop_count++;
-            ScoreT scores_ij = get_score_adaptive(scores, i, j, band_starts, band_widths, band_locations, static_cast<SizeT>(read_length + 1), min_score_value);
+            ScoreT scores_ij = get_score_adaptive(scores, i, j, band_starts, band_widths, head_indices, static_cast<SizeT>(read_length + 1), min_score_value);
             bool pred_found  = false;
             // Check if move is diagonal.
             if (i != 0 && j != 0)
@@ -549,7 +511,7 @@ __device__
                 uint16_t pred_count = incoming_edge_count[node_id];
                 SizeT pred_i        = (pred_count == 0 ? 0 : (node_id_to_pos[incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES]] + 1));
 
-                if (scores_ij == (get_score_adaptive(scores, pred_i, static_cast<SizeT>(j - 1), band_starts, band_widths, band_locations, static_cast<SizeT>(read_length + 1), min_score_value) + match_cost))
+                if (scores_ij == (get_score_adaptive(scores, pred_i, static_cast<SizeT>(j - 1), band_starts, band_widths, head_indices, static_cast<SizeT>(read_length + 1), min_score_value) + match_cost))
                 {
                     prev_i     = pred_i;
                     prev_j     = j - 1;
@@ -562,7 +524,7 @@ __device__
                     {
                         pred_i = (node_id_to_pos[incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES + p]] + 1);
 
-                        if (scores_ij == (get_score_adaptive(scores, pred_i, static_cast<SizeT>(j - 1), band_starts, band_widths, band_locations, static_cast<SizeT>(read_length + 1), min_score_value) + match_cost))
+                        if (scores_ij == (get_score_adaptive(scores, pred_i, static_cast<SizeT>(j - 1), band_starts, band_widths, head_indices, static_cast<SizeT>(read_length + 1), min_score_value) + match_cost))
                         {
                             prev_i     = pred_i;
                             prev_j     = j - 1;
@@ -580,7 +542,7 @@ __device__
                 uint16_t pred_count = incoming_edge_count[node_id];
                 SizeT pred_i        = (pred_count == 0 ? 0 : node_id_to_pos[incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES]] + 1);
 
-                if (scores_ij == get_score_adaptive(scores, pred_i, j, band_starts, band_widths, band_locations, static_cast<SizeT>(read_length + 1), min_score_value) + gap_score)
+                if (scores_ij == get_score_adaptive(scores, pred_i, j, band_starts, band_widths, head_indices, static_cast<SizeT>(read_length + 1), min_score_value) + gap_score)
                 {
                     prev_i     = pred_i;
                     prev_j     = j;
@@ -593,7 +555,7 @@ __device__
                     {
                         pred_i = node_id_to_pos[incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES + p]] + 1;
 
-                        if (scores_ij == get_score_adaptive(scores, pred_i, j, band_starts, band_widths, band_locations, static_cast<SizeT>(read_length + 1), min_score_value) + gap_score)
+                        if (scores_ij == get_score_adaptive(scores, pred_i, j, band_starts, band_widths, head_indices, static_cast<SizeT>(read_length + 1), min_score_value) + gap_score)
                         {
                             prev_i     = pred_i;
                             prev_j     = j;
@@ -605,7 +567,7 @@ __device__
             }
 
             // Check if move is horizontal.
-            if (!pred_found && scores_ij == get_score_adaptive(scores, i, static_cast<SizeT>(j - 1), band_starts, band_widths, band_locations, static_cast<SizeT>(read_length + 1), min_score_value) + gap_score)
+            if (!pred_found && scores_ij == get_score_adaptive(scores, i, static_cast<SizeT>(j - 1), band_starts, band_widths, head_indices, static_cast<SizeT>(read_length + 1), min_score_value) + gap_score)
             {
                 prev_i     = i;
                 prev_j     = j - 1;

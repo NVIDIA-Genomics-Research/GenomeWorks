@@ -123,37 +123,6 @@ __device__ ScoreT get_score(ScoreT* scores, SizeT row, SizeT column, float gradi
 }
 
 template <typename ScoreT, typename SizeT>
-__device__ void print_matrix(ScoreT* scores, SizeT max_rows, SizeT max_column, float gradient, SizeT band_width, ScoreT min_score_value)
-{
-    if (threadIdx.x == 0)
-    {
-        printf("Matrix Size: %ld x %ld\n", static_cast<int64_t>(max_rows), static_cast<int64_t>(max_column));
-        for (int64_t i = 0; i < static_cast<int64_t>(max_rows); i++)
-        {
-            for (int64_t j = 0; j < static_cast<int64_t>(max_column); j++)
-            {
-                // int64_t score = static_cast<int64_t>(get_score(scores, static_cast<SizeT>(i), static_cast<SizeT>(j), gradient, band_width, max_column, min_score_value));
-                // if (score!=0 && score!=min_score_value)
-                // printf("Row: %ld, Column: %ld, Score: %ld\n", i, j, score);
-                SizeT band_start = get_band_start_for_row(static_cast<SizeT>(i), gradient, band_width, max_column);
-                SizeT col_idx;
-                if (j == 0)
-                {
-                    col_idx = band_start;
-                }
-                else
-                {
-                    col_idx = j - band_start;
-                }
-
-                int64_t score_index = static_cast<int64_t>(col_idx) + static_cast<int64_t>(i) * static_cast<int64_t>(band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING);
-                printf("Row: %ld Col: %ld BandStart: %ld ScoreIndex: %ld\n", i, j, static_cast<int64_t>(band_start), score_index);
-            }
-        }
-    }
-}
-
-template <typename ScoreT, typename SizeT>
 __device__ ScoreT4<ScoreT> get_scores(SizeT read_pos,
                                       ScoreT* scores,
                                       SizeT node,
