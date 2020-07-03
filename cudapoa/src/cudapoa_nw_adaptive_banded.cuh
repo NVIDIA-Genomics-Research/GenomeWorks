@@ -27,7 +27,7 @@ namespace cudapoa
 
 template <typename SizeT>
 __device__ void set_adaptive_band_arrays(SizeT* node_distance, uint16_t* incoming_edge_count, SizeT* incoming_edges,
-                                         SizeT* band_starts, SizeT* band_widths, SizeT* head_indices, SizeT max_row, SizeT max_column)
+                                         SizeT* band_starts, SizeT* band_widths, int64_t* head_indices, SizeT max_row, SizeT max_column)
 {
     //    // get M-start and M-end
     //    for (SizeT row_idx = 0; row_idx < max_row; row_idx++)
@@ -91,7 +91,7 @@ __device__ void set_adaptive_band_arrays(SizeT* node_distance, uint16_t* incomin
 */
 
 template <typename ScoreT, typename SizeT>
-__device__ ScoreT* get_score_ptr_adaptive(ScoreT* scores, SizeT row, SizeT column, SizeT* band_starts, SizeT* band_widths, SizeT* head_indices, SizeT max_column)
+__device__ ScoreT* get_score_ptr_adaptive(ScoreT* scores, SizeT row, SizeT column, SizeT* band_starts, SizeT* band_widths, int64_t* head_indices, SizeT max_column)
 {
 
     SizeT band_start = band_starts[row];
@@ -107,7 +107,7 @@ __device__ ScoreT* get_score_ptr_adaptive(ScoreT* scores, SizeT row, SizeT colum
         col_offset = column - band_start;
     }
 
-    int64_t score_index = static_cast<int64_t>(col_offset) + static_cast<int64_t>(head_indices[row]);
+    int64_t score_index = static_cast<int64_t>(col_offset) + head_indices[row];
 
     return &scores[score_index];
 };
@@ -125,7 +125,7 @@ __device__ ScoreT* get_score_ptr_adaptive(ScoreT* scores, SizeT row, SizeT colum
  * @param[in] max_column          Last column # in the score matrix
 */
 template <typename ScoreT, typename SizeT>
-__device__ void set_score_adaptive(ScoreT* scores, SizeT row, SizeT column, ScoreT value, SizeT* band_starts, SizeT* band_widths, SizeT* head_indices, SizeT max_column)
+__device__ void set_score_adaptive(ScoreT* scores, SizeT row, SizeT column, ScoreT value, SizeT* band_starts, SizeT* band_widths, int64_t* head_indices, SizeT max_column)
 {
     SizeT band_start = band_starts[row];
 
@@ -139,13 +139,13 @@ __device__ void set_score_adaptive(ScoreT* scores, SizeT row, SizeT column, Scor
         col_offset = column - band_start;
     }
 
-    int64_t score_index = static_cast<int64_t>(col_offset) + static_cast<int64_t>(head_indices[row]);
+    int64_t score_index = static_cast<int64_t>(col_offset) + head_indices[row];
 
     scores[score_index] = value;
 }
 
 template <typename ScoreT, typename SizeT>
-__device__ void initialize_band_adaptive(ScoreT* scores, SizeT row, ScoreT value, SizeT* band_starts, SizeT* band_widths, SizeT* head_indices, SizeT max_column)
+__device__ void initialize_band_adaptive(ScoreT* scores, SizeT row, ScoreT value, SizeT* band_starts, SizeT* band_widths, int64_t* head_indices, SizeT max_column)
 {
     int16_t lane_idx = threadIdx.x % WARP_SIZE;
     SizeT band_start = band_starts[row];
@@ -175,7 +175,7 @@ __device__ void initialize_band_adaptive(ScoreT* scores, SizeT row, ScoreT value
  * @param[out] score              Score at the specified row and column
 */
 template <typename ScoreT, typename SizeT>
-__device__ ScoreT get_score_adaptive(ScoreT* scores, SizeT row, SizeT column, SizeT* band_starts, SizeT* band_widths, SizeT* head_indices, SizeT max_column, const ScoreT min_score_value)
+__device__ ScoreT get_score_adaptive(ScoreT* scores, SizeT row, SizeT column, SizeT* band_starts, SizeT* band_widths, int64_t* head_indices, SizeT max_column, const ScoreT min_score_value)
 {
     SizeT band_start = band_starts[row];
     SizeT band_end   = band_start + band_widths[row];
@@ -198,7 +198,7 @@ __device__ ScoreT4<ScoreT> get_scores_adaptive(SizeT read_pos,
                                                ScoreT4<ScoreT> char_profile,
                                                SizeT* band_starts,
                                                SizeT* band_widths,
-                                               SizeT* head_indices,
+                                               int64_t* head_indices,
                                                ScoreT default_value,
                                                SizeT max_column)
 {
@@ -290,7 +290,7 @@ __device__
                                      SizeT* node_distance,
                                      SizeT* band_starts,
                                      SizeT* band_widths,
-                                     SizeT* head_indices,
+                                     int64_t* head_indices,
                                      SizeT static_band_width,
                                      ScoreT gap_score,
                                      ScoreT mismatch_score,
@@ -459,7 +459,7 @@ __device__
             first_element_prev_score = __shfl_sync(FULL_MASK, score.s3, WARP_SIZE - 1);
 
             // score_index = static_cast<int64_t>(read_pos + 1 - band_start) + static_cast<int64_t>(score_gIdx) * static_cast<int64_t>(max_matrix_sequence_dimension);
-            score_index = static_cast<int64_t>(read_pos + 1 - band_start) + static_cast<int64_t>(head_indices[score_gIdx]);
+            score_index = static_cast<int64_t>(read_pos + 1 - band_start) + head_indices[score_gIdx];
 
             scores[score_index]      = score.s0;
             scores[score_index + 1L] = score.s1;

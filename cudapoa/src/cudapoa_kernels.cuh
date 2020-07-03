@@ -105,7 +105,7 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
                                   bool adaptive_banded,
                                   SizeT* band_starts_d,
                                   SizeT* band_widths_d,
-                                  SizeT* band_head_indices_d,
+                                  int64_t* band_head_indices_d,
                                   uint32_t banded_alignment_band_width = 256)
 {
     // shared error indicator within a warp
@@ -155,7 +155,7 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
     SizeT* alignment_read          = &alignment_read_d[max_graph_dimension * window_idx];
     SizeT* band_starts             = &band_starts_d[max_nodes_per_window * window_idx];
     SizeT* band_widths             = &band_widths_d[max_nodes_per_window * window_idx];
-    SizeT* head_indices            = &band_head_indices_d[max_nodes_per_window * window_idx];
+    int64_t* head_indices          = &band_head_indices_d[max_nodes_per_window * window_idx];
     uint16_t* node_coverage_counts = &node_coverage_counts_d_[max_nodes_per_window * window_idx];
 
 #ifdef SPOA_ACCURATE
@@ -444,7 +444,7 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
     SizeT* alignment_read  = alignment_details_d->alignment_read;
     SizeT* band_starts     = alignment_details_d->band_starts;
     SizeT* band_widths     = alignment_details_d->band_widths;
-    SizeT* head_indices    = alignment_details_d->band_head_indices;
+    int64_t* head_indices  = alignment_details_d->band_head_indices;
 
     // unpack graph details
     uint8_t* nodes                          = graph_details_d->nodes;
