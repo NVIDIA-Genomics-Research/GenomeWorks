@@ -84,31 +84,15 @@ __device__ void set_adaptive_band_arrays(SizeT* node_distance, uint16_t* incomin
  * @param[in] column              Column # of the element
  * @param[in] value               Value to set
  * @param[in] band_starts         Array of band_starts per row
- * @param[in] band_widths         Array of band_widths per row
- * @param[in] head_indices      Array of indexes in score that map to band_start per row
- * @param[in] max_column          Last column # in the score matrix
+ * @param[in] head_indices        Array of indexes in score that map to band_start per row
  * @param[out] score_address      Address of the element indicated by the (row, col) tuple
 */
 
 template <typename ScoreT, typename SizeT>
-__device__ ScoreT* get_score_ptr_adaptive(ScoreT* scores, SizeT row, SizeT column, SizeT* band_starts, SizeT* band_widths, int64_t* head_indices, SizeT max_column)
+__device__ ScoreT* get_score_ptr_adaptive(ScoreT* scores, SizeT row, SizeT column, SizeT band_start, int64_t* head_indices)
 {
-
-    SizeT band_start = band_starts[row];
-
-    SizeT col_offset;
-
-    if (column == 0)
-    {
-        col_offset = 0;
-    }
-    else
-    {
-        col_offset = column - band_start;
-    }
-
-    int64_t score_index = static_cast<int64_t>(col_offset) + head_indices[row];
-
+    column              = column == 0 ? 0 : column - band_start;
+    int64_t score_index = static_cast<int64_t>(column) + head_indices[row];
     return &scores[score_index];
 };
 
@@ -121,7 +105,7 @@ __device__ ScoreT* get_score_ptr_adaptive(ScoreT* scores, SizeT row, SizeT colum
  * @param[in] value               Value to set
  * @param[in] band_starts         Array of band_starts per row
  * @param[in] band_widths         Array of band_widths per row
- * @param[in] head_indices      Array of indexes in score that map to band_start per row
+ * @param[in] head_indices        Array of indexes in score that map to band_start per row
  * @param[in] max_column          Last column # in the score matrix
 */
 template <typename ScoreT, typename SizeT>
@@ -170,7 +154,7 @@ __device__ void initialize_band_adaptive(ScoreT* scores, SizeT row, ScoreT value
  * @param[in] value               Value to set
  * @param[in] band_starts         Array of band_starts per row
  * @param[in] band_widths         Array of band_widths per row
- * @param[in] head_indices      Array of indexes in score that map to band_start per row
+ * @param[in] head_indices        Array of indexes in score that map to band_start per row
  * @param[in] max_column          Last column # in the score matrix
  * @param[out] score              Score at the specified row and column
 */
@@ -186,7 +170,7 @@ __device__ ScoreT get_score_adaptive(ScoreT* scores, SizeT row, SizeT column, Si
     }
     else
     {
-        return *get_score_ptr_adaptive(scores, row, column, band_starts, band_widths, head_indices, max_column);
+        return *get_score_ptr_adaptive(scores, row, column, band_start, head_indices);
     }
 }
 
@@ -221,7 +205,7 @@ __device__ ScoreT4<ScoreT> get_scores_adaptive(SizeT read_pos,
     }
     else
     {
-        ScoreT4<ScoreT>* pred_scores = (ScoreT4<ScoreT>*)get_score_ptr_adaptive(scores, node, read_pos, band_starts, band_widths, head_indices, max_column);
+        ScoreT4<ScoreT>* pred_scores = (ScoreT4<ScoreT>*)get_score_ptr_adaptive(scores, node, read_pos, band_start, head_indices);
 
         // loads 8 consecutive bytes (4 shorts)
         ScoreT4<ScoreT> score4 = pred_scores[0];
@@ -238,7 +222,7 @@ __device__ ScoreT4<ScoreT> get_scores_adaptive(SizeT read_pos,
         score.s2 = max(score4.s2 + char_profile.s2,
                        score4.s3 + gap_score);
         score.s3 = max(score4.s3 + char_profile.s3,
-                       score4_next.s0 + gap_score); // TODO - Do we need to compensate here? @atadkase
+                       score4_next.s0 + gap_score);
 
         return score;
     }

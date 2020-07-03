@@ -48,24 +48,10 @@ __device__ SizeT get_band_start_for_row(SizeT row_idx, float gradient, SizeT ban
 }
 
 template <typename ScoreT, typename SizeT>
-__device__ ScoreT* get_score_ptr(ScoreT* scores, SizeT row, SizeT column, float gradient, SizeT band_width, SizeT max_column)
+__device__ ScoreT* get_score_ptr(ScoreT* scores, SizeT row, SizeT column, SizeT band_start, SizeT band_width)
 {
-
-    SizeT band_start = get_band_start_for_row(row, gradient, band_width, max_column);
-
-    SizeT col_idx;
-
-    if (column == 0)
-    {
-        col_idx = 0;
-    }
-    else
-    {
-        col_idx = column - band_start;
-    }
-
-    int64_t score_index = static_cast<int64_t>(col_idx) + static_cast<int64_t>(row) * static_cast<int64_t>(band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING);
-
+    column              = column == 0 ? 0 : column - band_start;
+    int64_t score_index = static_cast<int64_t>(column) + static_cast<int64_t>(row) * static_cast<int64_t>(band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING);
     return &scores[score_index];
 };
 
@@ -118,7 +104,7 @@ __device__ ScoreT get_score(ScoreT* scores, SizeT row, SizeT column, float gradi
     }
     else
     {
-        return *get_score_ptr(scores, row, column, gradient, band_width, max_column);
+        return *get_score_ptr(scores, row, column, band_start, band_width);
     }
 }
 
@@ -152,7 +138,7 @@ __device__ ScoreT4<ScoreT> get_scores(SizeT read_pos,
     }
     else
     {
-        ScoreT4<ScoreT>* pred_scores = (ScoreT4<ScoreT>*)get_score_ptr(scores, node, read_pos, gradient, band_width, max_column);
+        ScoreT4<ScoreT>* pred_scores = (ScoreT4<ScoreT>*)get_score_ptr(scores, node, read_pos, band_start, band_width);
 
         // loads 8 consecutive bytes (4 shorts)
         ScoreT4<ScoreT> score4 = pred_scores[0];
