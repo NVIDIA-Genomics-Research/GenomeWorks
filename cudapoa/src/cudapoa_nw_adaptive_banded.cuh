@@ -177,8 +177,23 @@ __device__ ScoreT4<ScoreT> get_scores_adaptive(ScoreT* scores,
 }
 
 template <typename ScoreT, typename SizeT>
-void get_predecessors_max_score_index(SizeT& pred_max_score_left, SizeT& pred_max_score_right,
-                                      SizeT node_id, uint16_t* incoming_edge_count, SizeT* incoming_edges, SizeT* node_id_to_pos)
+__device__ void warp_reduce_max(ScoreT& val, SizeT& idx)
+{
+    for (int16_t offset = WARP_SIZE / 2; offset > 0; offset /= 2)
+    {
+        ScoreT tmp_val = __shfl_down_sync(FULL_MASK, val, offset);
+        SizeT tmp_idx  = __shfl_down_sync(FULL_MASK, idx, offset);
+        if (tmp_val > val)
+        {
+            val = tmp_val;
+            idx = tmp_idx;
+        }
+    }
+}
+
+template <typename ScoreT, typename SizeT>
+__device__ void get_predecessors_max_score_index(SizeT& pred_max_score_left, SizeT& pred_max_score_right,
+                                                 SizeT node_id, uint16_t* incoming_edge_count, SizeT* incoming_edges, SizeT* node_id_to_pos)
 {
     for (uint16_t p = 0; p < incoming_edge_count[node_id]; p++)
     {
@@ -233,34 +248,31 @@ __device__
 template <typename SizeT>
 __device__ void set_band_parameters(SizeT* band_starts, SizeT* band_widths, int64_t* head_indices, SizeT row, SizeT node_distance_i, SizeT seq_length, SizeT graph_length)
 {
-    //    SizeT pred_max_score_left  = seq_length;
-    //    SizeT pred_max_score_right = 0;
-    //    //get_predecessors_max_score_index(pred_max_score_left, pred_max_score_right);
+    //SizeT pred_max_score_left  = seq_length;
+    //SizeT pred_max_score_right = 0;
+    //    get_predecessors_max_score_index(pred_max_score_left, pred_max_score_right);
     //    SizeT band_start = min(node_distance_i, pred_max_score_left);
     //    band_start       = band_start < 0 ? 0 : band_start;
     //    SizeT band_end   = max(node_distance_i, pred_max_score_right);
     //    band_end         = band_end > seq_length ? seq_length : band_end;
 
     // get M-start and M-end
-    //    for (SizeT row_idx = 0; row_idx < max_row; row_idx++)
-    //    {
-    //        SizeT node_id = graph[row_idx];
+    // SizeT node_id = graph[row_idx];
     //
-    //        uint16_t pred_count = incoming_edge_count[node_id];
-    //        if (pred_count == 0)
-    //        {
-    //        }
-    //        else
-    //        {
-    //            for (uint16_t p = 0; p < pred_count; p++)
-    //            {
-    //                SizeT pred_node_id        = incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES + p];
-    //                SizeT pred_node_graph_pos = node_id_to_pos[pred_node_id] + 1;
-    //                penalty                   = max(penalty, get_score(scores, pred_node_graph_pos, static_cast<SizeT>(0), gradient, band_width, static_cast<SizeT>(read_length + 1), min_score_value));
-    //            }
-    //            set_score(scores, i, static_cast<SizeT>(0), static_cast<ScoreT>(penalty + gap_score), gradient, band_width, max_column);
-    //        }
-    //    }
+    // uint16_t pred_count = incoming_edge_count[node_id];
+    // if (pred_count == 0)
+    // {
+    // }
+    // else
+    // {
+    //     for (uint16_t p = 0; p < pred_count; p++)
+    //     {
+    //         SizeT pred_node_id        = incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES + p];
+    //         SizeT pred_node_graph_pos = node_id_to_pos[pred_node_id] + 1;
+    //         penalty                   = max(penalty, get_score(scores, pred_node_graph_pos, static_cast<SizeT>(0), gradient, band_width, static_cast<SizeT>(read_length + 1), min_score_value));
+    //     }
+    //     set_score(scores, i, static_cast<SizeT>(0), static_cast<ScoreT>(penalty + gap_score), gradient, band_width, max_column);
+    //s}
 
     // temporary ...
 

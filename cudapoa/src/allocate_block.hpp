@@ -204,6 +204,8 @@ public:
             offset_d_ += cudautils::align<int64_t, 8>(sizeof(*alignment_details_d->band_widths) * max_nodes_per_window_ * max_poas_);
             alignment_details_d->band_head_indices = reinterpret_cast<decltype(alignment_details_d->band_head_indices)>(&block_data_d_[offset_d_]);
             offset_d_ += cudautils::align<int64_t, 8>(sizeof(*alignment_details_d->band_head_indices) * max_nodes_per_window_ * max_poas_);
+            alignment_details_d->band_max_indices = reinterpret_cast<decltype(alignment_details_d->band_max_indices)>(&block_data_d_[offset_d_]);
+            offset_d_ += cudautils::align<int64_t, 8>(sizeof(*alignment_details_d->band_max_indices) * max_nodes_per_window_ * max_poas_);
         }
 
         // rest of the available memory is assigned to scores buffer
@@ -347,6 +349,7 @@ public:
         device_size_per_poa += adaptive_banded ? sizeof(*AlignmentDetails<ScoreT, SizeT>::band_starts) * max_nodes_per_window : 0;       // alignment_details_d_->band_starts
         device_size_per_poa += adaptive_banded ? sizeof(*AlignmentDetails<ScoreT, SizeT>::band_widths) * max_nodes_per_window : 0;       // alignment_details_d_->band_widths
         device_size_per_poa += adaptive_banded ? sizeof(*AlignmentDetails<ScoreT, SizeT>::band_head_indices) * max_nodes_per_window : 0; // alignment_details_d_->band_head_indices
+        device_size_per_poa += adaptive_banded ? sizeof(*AlignmentDetails<ScoreT, SizeT>::band_max_indices) * max_nodes_per_window : 0;  // alignment_details_d_->band_max_indices
 
         return device_size_per_poa;
     }

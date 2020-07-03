@@ -103,6 +103,8 @@ struct AlignmentDetails
     SizeT* band_widths;
     /// Buffer for storing per row band start location in this score matrix for adaptive banding
     int64_t* band_head_indices;
+    /// Buffer for storing max score index per row
+    SizeT* band_max_indices;
 
     // preallocated size of scores buffer
     size_t scorebuf_alloc_size = 0;

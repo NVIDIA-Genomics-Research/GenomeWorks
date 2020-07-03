@@ -106,6 +106,7 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
                                   SizeT* band_starts_d,
                                   SizeT* band_widths_d,
                                   int64_t* band_head_indices_d,
+                                  SizeT* band_max_indices_d,
                                   uint32_t banded_alignment_band_width = 256)
 {
     // shared error indicator within a warp
@@ -156,6 +157,7 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
     SizeT* band_starts             = &band_starts_d[max_nodes_per_window * window_idx];
     SizeT* band_widths             = &band_widths_d[max_nodes_per_window * window_idx];
     int64_t* head_indices          = &band_head_indices_d[max_nodes_per_window * window_idx];
+    SizeT* max_indices             = &band_max_indices_d[max_nodes_per_window * window_idx];
     uint16_t* node_coverage_counts = &node_coverage_counts_d_[max_nodes_per_window * window_idx];
 
 #ifdef SPOA_ACCURATE
@@ -445,6 +447,7 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
     SizeT* band_starts     = alignment_details_d->band_starts;
     SizeT* band_widths     = alignment_details_d->band_widths;
     int64_t* head_indices  = alignment_details_d->band_head_indices;
+    SizeT* max_indices     = alignment_details_d->band_max_indices;
 
     // unpack graph details
     uint8_t* nodes                          = graph_details_d->nodes;
@@ -521,6 +524,7 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
                                                                                  band_starts,
                                                                                  band_widths,
                                                                                  head_indices,
+                                                                                 max_indices,
                                                                                  batch_size.alignment_band_width);
             GW_CU_CHECK_ERR(cudaPeekAtLastError());
 
@@ -590,6 +594,7 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
                                                                                  band_starts,
                                                                                  band_widths,
                                                                                  head_indices,
+                                                                                 max_indices,
                                                                                  batch_size.alignment_band_width);
             GW_CU_CHECK_ERR(cudaPeekAtLastError());
 
@@ -665,7 +670,8 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
                                                                     cuda_adaptive_banding,
                                                                     band_starts,
                                                                     band_widths,
-                                                                    head_indices);
+                                                                    head_indices,
+                                                                    max_indices);
             //std::cout<<"HEAR YE: "<<cuda_adaptive_banding<<std::endl;
             GW_CU_CHECK_ERR(cudaPeekAtLastError());
 
@@ -734,7 +740,8 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
                                                                     cuda_adaptive_banding,
                                                                     band_starts,
                                                                     band_widths,
-                                                                    head_indices);
+                                                                    head_indices,
+                                                                    max_indices);
             GW_CU_CHECK_ERR(cudaPeekAtLastError());
 
             generateMSAKernel<false, SizeT>
