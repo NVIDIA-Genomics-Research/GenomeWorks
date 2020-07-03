@@ -25,56 +25,6 @@ namespace genomeworks
 namespace cudapoa
 {
 
-template <typename SizeT>
-__device__ void set_adaptive_band_arrays(SizeT* node_distance, uint16_t* incoming_edge_count, SizeT* incoming_edges,
-                                         SizeT* band_starts, SizeT* band_widths, int64_t* head_indices, SizeT max_row, SizeT max_column)
-{
-    //    // get M-start and M-end
-    //    for (SizeT row_idx = 0; row_idx < max_row; row_idx++)
-    //    {
-    //        SizeT node_id = graph[row_idx];
-    //
-    //        uint16_t pred_count = incoming_edge_count[node_id];
-    //        if (pred_count == 0)
-    //        {
-    //        }
-    //        else
-    //        {
-    //            for (uint16_t p = 0; p < pred_count; p++)
-    //            {
-    //                SizeT pred_node_id        = incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES + p];
-    //                SizeT pred_node_graph_pos = node_id_to_pos[pred_node_id] + 1;
-    //                penalty                   = max(penalty, get_score(scores, pred_node_graph_pos, static_cast<SizeT>(0), gradient, band_width, static_cast<SizeT>(read_length + 1), min_score_value));
-    //            }
-    //            set_score(scores, i, static_cast<SizeT>(0), static_cast<ScoreT>(penalty + gap_score), gradient, band_width, max_column);
-    //        }
-    //    }
-
-    SizeT dummy_band_width = 256;
-    float gradient         = float(max_column) / float(max_row);
-
-    for (SizeT row_idx = 0; row_idx < max_row; row_idx++)
-    {
-        SizeT start_pos = SizeT(row_idx * gradient) - dummy_band_width / 2;
-
-        start_pos = max(start_pos, 0);
-
-        SizeT end_pos = start_pos + dummy_band_width;
-
-        if (end_pos > max_column)
-        {
-            start_pos = max_column - dummy_band_width + CELLS_PER_THREAD;
-        };
-
-        start_pos = max(start_pos, 0);
-
-        start_pos             = start_pos - (start_pos % CELLS_PER_THREAD);
-        band_starts[row_idx]  = start_pos;
-        band_widths[row_idx]  = dummy_band_width;
-        head_indices[row_idx] = static_cast<int64_t>(row_idx) * (static_cast<int64_t>(dummy_band_width) + static_cast<int64_t>(CUDAPOA_BANDED_MATRIX_RIGHT_PADDING));
-    }
-}
-
 /**
  * @brief Device function for getting the address of an element specified by (row, column) in the score matrix 
  *        taking adaptive band-width into consideration.
@@ -281,16 +231,60 @@ __device__
     return first_column_score;
 }
 
-template <typename ScoreT, typename SizeT>
-__device__ void get_band_parameters(SizeT node_distance_i, SizeT seq_length)
+template <typename SizeT>
+__device__ void set_band_parameters(SizeT* band_starts, SizeT* band_widths, int64_t* head_indices, SizeT row, SizeT node_distance_i, SizeT seq_length, SizeT graph_length)
 {
-    SizeT pred_max_score_left  = seq_length;
-    SizeT pred_max_score_right = 0;
-    //get_predecessors_max_score_index(pred_max_score_left, pred_max_score_right);
-    SizeT band_start = min(node_distance_i, pred_max_score_left);
-    band_start       = band_start < 0 ? 0 : band_start;
-    SizeT band_end   = max(node_distance_i, pred_max_score_right);
-    band_end         = band_end > seq_length ? seq_length : band_end;
+    //    SizeT pred_max_score_left  = seq_length;
+    //    SizeT pred_max_score_right = 0;
+    //    //get_predecessors_max_score_index(pred_max_score_left, pred_max_score_right);
+    //    SizeT band_start = min(node_distance_i, pred_max_score_left);
+    //    band_start       = band_start < 0 ? 0 : band_start;
+    //    SizeT band_end   = max(node_distance_i, pred_max_score_right);
+    //    band_end         = band_end > seq_length ? seq_length : band_end;
+
+    // get M-start and M-end
+    //    for (SizeT row_idx = 0; row_idx < max_row; row_idx++)
+    //    {
+    //        SizeT node_id = graph[row_idx];
+    //
+    //        uint16_t pred_count = incoming_edge_count[node_id];
+    //        if (pred_count == 0)
+    //        {
+    //        }
+    //        else
+    //        {
+    //            for (uint16_t p = 0; p < pred_count; p++)
+    //            {
+    //                SizeT pred_node_id        = incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES + p];
+    //                SizeT pred_node_graph_pos = node_id_to_pos[pred_node_id] + 1;
+    //                penalty                   = max(penalty, get_score(scores, pred_node_graph_pos, static_cast<SizeT>(0), gradient, band_width, static_cast<SizeT>(read_length + 1), min_score_value));
+    //            }
+    //            set_score(scores, i, static_cast<SizeT>(0), static_cast<ScoreT>(penalty + gap_score), gradient, band_width, max_column);
+    //        }
+    //    }
+
+    // temporary ...
+
+    SizeT dummy_band_width = 256;
+    float gradient         = float(seq_length) / float(graph_length);
+
+    SizeT start_pos = SizeT(row * gradient) - dummy_band_width / 2;
+
+    start_pos = max(start_pos, 0);
+
+    SizeT end_pos = start_pos + dummy_band_width;
+
+    if (end_pos > seq_length)
+    {
+        start_pos = seq_length - dummy_band_width + CELLS_PER_THREAD;
+    }
+
+    start_pos = max(start_pos, 0);
+
+    start_pos         = start_pos - (start_pos % CELLS_PER_THREAD);
+    band_starts[row]  = start_pos;
+    band_widths[row]  = dummy_band_width;
+    head_indices[row] = static_cast<int64_t>(row) * (static_cast<int64_t>(dummy_band_width) + static_cast<int64_t>(CUDAPOA_BANDED_MATRIX_RIGHT_PADDING));
 }
 
 template <typename SeqT,
@@ -328,12 +322,10 @@ __device__
 
     SizeT max_column = read_length + 1;
 
-    if (threadIdx.x == 0)
-    {
-        set_adaptive_band_arrays(node_distance, incoming_edge_count, incoming_edges, band_starts, band_widths, head_indices, static_cast<SizeT>(graph_count + 1), max_column);
-    }
-
     SizeT max_matrix_sequence_dimension = static_band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING;
+
+    // set parameters for node 0 (row 0)
+    set_band_parameters(band_starts, band_widths, head_indices, SizeT{0}, SizeT{0}, max_column, graph_count);
 
     // Initialise the horizontal boundary of the score matrix, initialising of the vertical boundary is done within the main for loop
     for (SizeT j = lane_idx; j < max_matrix_sequence_dimension; j += WARP_SIZE)
@@ -341,12 +333,12 @@ __device__
         set_score_adaptive(scores, SizeT{0}, j, static_cast<ScoreT>(j * gap_score), band_starts, band_widths, head_indices, max_column);
     }
 
+#ifdef NW_VERBOSE_PRINT
     if (lane_idx == 0)
     {
-#ifdef NW_VERBOSE_PRINT
         printf("graph %d, read %d\n", graph_count, read_length);
-#endif
     }
+#endif
 
     __syncwarp();
 
@@ -358,6 +350,8 @@ __device__
 
         SizeT node_id    = graph[graph_pos];
         SizeT score_gIdx = graph_pos + 1;
+
+        set_band_parameters(band_starts, band_widths, head_indices, score_gIdx, SizeT{0}, max_column, graph_count);
 
         SizeT band_start = band_starts[score_gIdx];
 
