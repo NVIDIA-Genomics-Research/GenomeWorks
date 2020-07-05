@@ -283,13 +283,13 @@ void ApplicationParameters::help(int32_t exit_code)
             length of batch sized used for target in MB [30])"
               << R"(
         -F, --filtering-parameter
-            Remove representations with frequency (sketch_elements_with_that_representation/total_sketch_elements) >= filtering_parameter. Filtering is disabled if filtering_parameter == 1.0 [1'000'000'001] (Min = 0.0, Max = 1.0, default=1e-5))"
+            Remove representations with frequency (sketch_elements_with_that_representation/total_sketch_elements) >= filtering_parameter. Filtering is disabled if filtering_parameter == 1.0 (Min = 0.0, Max = 1.0) [1e-5])"
               << R"(
         -a, --alignment-engines
             Number of alignment engines to use (per device) for generating CIGAR strings for overlap alignments. Default value 0 = no alignment to be performed. Typically 2-4 engines per device gives best perf.)"
               << R"(
         -r, --min-residues
-            Minimum number of matching residues in an overlap [3])"
+            Minimum number of matching residues in an overlap (recommended: 1 - 10) [3])"
               << R"(
         -l, --min-overlap-length
             Minimum length for an overlap [250].)"
