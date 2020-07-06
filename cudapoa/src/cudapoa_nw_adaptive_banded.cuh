@@ -284,11 +284,11 @@ __device__ void set_band_parameters(ScoreT* scores,
                                     SizeT* incoming_edges,
                                     SizeT* node_distances,
                                     SizeT row,
-                                    SizeT seq_length,
+                                    SizeT max_column,
                                     SizeT graph_length,
                                     ScoreT min_score_value)
 {
-    SizeT pred_max_score_left  = seq_length;
+    SizeT pred_max_score_left  = max_column;
     SizeT pred_max_score_right = 0;
     get_predecessors_max_score_index(pred_max_score_left, pred_max_score_right, row, scores, max_indices, band_widths, incoming_edge_count, incoming_edges,
                                      head_indices, min_score_value);
@@ -298,7 +298,7 @@ __device__ void set_band_parameters(ScoreT* scores,
     SizeT b_start = min(node_distance_i, pred_max_score_left);
     b_start       = b_start < 0 ? 0 : b_start;
     SizeT b_end   = max(node_distance_i, pred_max_score_right);
-    b_end         = b_end > seq_length ? seq_length : b_end;
+    b_end         = b_end > max_column ? max_column : b_end;
 
     //bandwidth should be multiple of CUDAPOA_MIN_BAND_WIDTH
     SizeT bw             = (b_end - b_start) > 0 ? b_end - b_start : 1;
@@ -307,7 +307,16 @@ __device__ void set_band_parameters(ScoreT* scores,
 
     SizeT start_pos = b_start - extended_width / 2;
     start_pos       = max(start_pos, 0);
-    start_pos       = start_pos - (start_pos % CELLS_PER_THREAD);
+
+    SizeT end_pos = start_pos + band_width;
+
+    if (end_pos > max_column)
+    {
+        start_pos = max_column - band_width + CELLS_PER_THREAD;
+    };
+
+    start_pos = max(start_pos, 0);
+    start_pos = start_pos - (start_pos % CELLS_PER_THREAD);
 
     //    if (threadIdx.x == 0)
     //    {
@@ -316,7 +325,7 @@ __device__ void set_band_parameters(ScoreT* scores,
 
     band_starts[row]  = start_pos;
     band_widths[row]  = band_width;
-    head_indices[row] = static_cast<int64_t>(row) * (static_cast<int64_t>(band_width) + static_cast<int64_t>(CUDAPOA_BANDED_MATRIX_RIGHT_PADDING));
+    head_indices[row] = static_cast<int64_t>(row) * static_cast<int64_t>(band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING);
 }
 
 template <typename SeqT,
