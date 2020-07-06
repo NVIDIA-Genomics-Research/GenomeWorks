@@ -200,7 +200,7 @@ __device__ void get_predecessors_max_score_index(SizeT& pred_max_score_left,
                                                  SizeT* band_widths,
                                                  uint16_t* incoming_edge_count,
                                                  SizeT* incoming_edges,
-                                                 int64_t head_index,
+                                                 int64_t* head_indices,
                                                  ScoreT min_score_value)
 {
     for (uint16_t p = 0; p < incoming_edge_count[node]; p++)
@@ -208,6 +208,7 @@ __device__ void get_predecessors_max_score_index(SizeT& pred_max_score_left,
         SizeT pred_node      = incoming_edges[node * CUDAPOA_MAX_NODE_EDGES + p];
         SizeT max_score_idx  = max_indices[pred_node];
         ScoreT max_score_val = min_score_value;
+        int64_t head_index   = head_indices[pred_node];
 
         if (max_score_idx == -1)
         {
@@ -281,43 +282,13 @@ __device__ void set_band_parameters(ScoreT* scores,
                                     SizeT* max_indices,
                                     uint16_t* incoming_edge_count,
                                     SizeT* incoming_edges,
+                                    SizeT* node_distances,
                                     SizeT row,
-                                    SizeT node_distance_i,
                                     SizeT seq_length,
                                     SizeT graph_length,
                                     ScoreT min_score_value)
 {
-    SizeT pred_max_score_left  = seq_length;
-    SizeT pred_max_score_right = 0;
-    get_predecessors_max_score_index(pred_max_score_left, pred_max_score_right, row, scores, max_indices, band_widths, incoming_edge_count, incoming_edges,
-                                     head_indices[row], min_score_value);
-
-    //get_predecessors_max_score_index(pred_max_score_left, pred_max_score_right);
-    //    SizeT band_start = min(node_distance_i, pred_max_score_left);
-    //    band_start       = band_start < 0 ? 0 : band_start;
-    //    SizeT band_end   = max(node_distance_i, pred_max_score_right);
-    //    band_end         = band_end > seq_length ? seq_length : band_end;
-
-    // get M-start and M-end
-    // SizeT node_id = graph[row_idx];
-    //
-    // uint16_t pred_count = incoming_edge_count[node_id];
-    // if (pred_count == 0)
-    // {
-    // }
-    // else
-    // {
-    //     for (uint16_t p = 0; p < pred_count; p++)
-    //     {
-    //         SizeT pred_node_id        = incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES + p];
-    //         SizeT pred_node_graph_pos = node_id_to_pos[pred_node_id] + 1;
-    //         penalty                   = max(penalty, get_score(scores, pred_node_graph_pos, static_cast<SizeT>(0), gradient, band_width, static_cast<SizeT>(read_length + 1), min_score_value));
-    //     }
-    //     set_score(scores, i, static_cast<SizeT>(0), static_cast<ScoreT>(penalty + gap_score), gradient, band_width, max_column);
-    //s}
-
-    // temporary ...
-
+    // temporary ...................................................................................
     SizeT dummy_band_width = 256;
     float gradient         = float(seq_length) / float(graph_length);
 
@@ -338,6 +309,25 @@ __device__ void set_band_parameters(ScoreT* scores,
     band_starts[row]  = start_pos;
     band_widths[row]  = dummy_band_width;
     head_indices[row] = static_cast<int64_t>(row) * (static_cast<int64_t>(dummy_band_width) + static_cast<int64_t>(CUDAPOA_BANDED_MATRIX_RIGHT_PADDING));
+    //...................................................................................................
+
+    SizeT pred_max_score_left  = seq_length;
+    SizeT pred_max_score_right = 0;
+    get_predecessors_max_score_index(pred_max_score_left, pred_max_score_right, row, scores, max_indices, band_widths, incoming_edge_count, incoming_edges,
+                                     head_indices, min_score_value);
+
+    SizeT node_distance_i = node_distances[row];
+
+    SizeT b_start = min(node_distance_i, pred_max_score_left);
+    b_start       = b_start < 0 ? 0 : b_start;
+    SizeT b_end   = max(node_distance_i, pred_max_score_right);
+    b_end         = b_end > seq_length ? seq_length : b_end;
+
+//    if (threadIdx.x == 0)
+//    {
+//        printf("(pl %3d, pr %3d) , (bl %3d, br %3d) , bw %3d,   dist %3d\n", pred_max_score_left, pred_max_score_right, b_start, b_end, b_end - b_start, node_distance_i);
+//    }
+
 }
 
 template <typename SeqT,
@@ -357,7 +347,7 @@ __device__
                                      ScoreT* scores,
                                      SizeT* alignment_graph,
                                      SizeT* alignment_read,
-                                     SizeT* node_distance,
+                                     SizeT* node_distances,
                                      SizeT* band_starts,
                                      SizeT* band_widths,
                                      int64_t* head_indices,
@@ -380,7 +370,7 @@ __device__
 
     // set parameters for node 0 (row 0)
     set_band_parameters(scores, band_starts, band_widths, head_indices, max_indices, incoming_edge_count, incoming_edges,
-                        SizeT{0}, SizeT{0}, max_column, graph_count, min_score_value);
+                        node_distances, SizeT{0}, max_column, graph_count, min_score_value);
 
     // Initialise the horizontal boundary of the score matrix, initialising of the vertical boundary is done within the main for loop
     for (SizeT j = lane_idx; j < max_matrix_sequence_dimension; j += WARP_SIZE)
@@ -413,7 +403,7 @@ __device__
         SizeT score_gIdx = graph_pos + 1;
 
         set_band_parameters(scores, band_starts, band_widths, head_indices, max_indices, incoming_edge_count,
-                            incoming_edges, score_gIdx, SizeT{0}, max_column, graph_count, min_score_value);
+                            incoming_edges, node_distances, score_gIdx, max_column, graph_count, min_score_value);
 
         SizeT band_start = band_starts[score_gIdx];
 
