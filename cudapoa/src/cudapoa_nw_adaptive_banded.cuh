@@ -288,29 +288,6 @@ __device__ void set_band_parameters(ScoreT* scores,
                                     SizeT graph_length,
                                     ScoreT min_score_value)
 {
-    // temporary ...................................................................................
-    SizeT dummy_band_width = 256;
-    float gradient         = float(seq_length) / float(graph_length);
-
-    SizeT start_pos = SizeT(row * gradient) - dummy_band_width / 2;
-
-    start_pos = max(start_pos, 0);
-
-    SizeT end_pos = start_pos + dummy_band_width;
-
-    if (end_pos > seq_length)
-    {
-        start_pos = seq_length - dummy_band_width + CELLS_PER_THREAD;
-    }
-
-    start_pos = max(start_pos, 0);
-
-    start_pos         = start_pos - (start_pos % CELLS_PER_THREAD);
-    band_starts[row]  = start_pos;
-    band_widths[row]  = dummy_band_width;
-    head_indices[row] = static_cast<int64_t>(row) * (static_cast<int64_t>(dummy_band_width) + static_cast<int64_t>(CUDAPOA_BANDED_MATRIX_RIGHT_PADDING));
-    //...................................................................................................
-
     SizeT pred_max_score_left  = seq_length;
     SizeT pred_max_score_right = 0;
     get_predecessors_max_score_index(pred_max_score_left, pred_max_score_right, row, scores, max_indices, band_widths, incoming_edge_count, incoming_edges,
@@ -323,11 +300,23 @@ __device__ void set_band_parameters(ScoreT* scores,
     SizeT b_end   = max(node_distance_i, pred_max_score_right);
     b_end         = b_end > seq_length ? seq_length : b_end;
 
-//    if (threadIdx.x == 0)
-//    {
-//        printf("(pl %3d, pr %3d) , (bl %3d, br %3d) , bw %3d,   dist %3d\n", pred_max_score_left, pred_max_score_right, b_start, b_end, b_end - b_start, node_distance_i);
-//    }
+    //bandwidth should be multiple of CUDAPOA_MIN_BAND_WIDTH
+    SizeT bw             = (b_end - b_start) > 0 ? b_end - b_start : 1;
+    SizeT band_width     = cudautils::align<SizeT, CUDAPOA_MIN_BAND_WIDTH>(bw);
+    SizeT extended_width = band_width - bw;
 
+    SizeT start_pos = b_start - extended_width / 2;
+    start_pos       = max(start_pos, 0);
+    start_pos       = start_pos - (start_pos % CELLS_PER_THREAD);
+
+    //    if (threadIdx.x == 0)
+    //    {
+    //        printf("(pl %3d, pr %3d) , (bl %3d, br %3d) , bw %3d,   dist %3d\n", pred_max_score_left, pred_max_score_right, start_pos, end_pos, band_width, node_distance_i);
+    //    }
+
+    band_starts[row]  = start_pos;
+    band_widths[row]  = band_width;
+    head_indices[row] = static_cast<int64_t>(row) * (static_cast<int64_t>(band_width) + static_cast<int64_t>(CUDAPOA_BANDED_MATRIX_RIGHT_PADDING));
 }
 
 template <typename SeqT,
