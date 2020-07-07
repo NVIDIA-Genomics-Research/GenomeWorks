@@ -65,8 +65,8 @@ Minimum requirements -
 
 ## GenomeWorks Setup
 
-### Build
-To build GenomeWorks -
+### Build and Install
+To build and install GenomeWorks -
 
 ```bash
 mkdir build
@@ -78,13 +78,6 @@ make -j install
 NOTE : The `gw_cuda_gen_all_arch=OFF` option pre-generates optimized code only for the GPU(s) on your system.
 For building a binary that pre-generates opimized code for all common GPU architectures, please remove the option
 or set it to `ON`.
-
-### Install
-To install the SDK -
-
-```bash
-make install
-```
 
 ### Package generation
 Package generation puts the libraries, headers and binaries built by the `make` command above
