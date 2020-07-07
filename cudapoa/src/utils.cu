@@ -114,7 +114,7 @@ void get_multi_batch_sizes(std::vector<BatchSize>& list_of_batch_sizes,
     {
         if (bins_frequency[j] > 0)
         {
-            list_of_batch_sizes.emplace_back(bins_max_length[j], bins_num_reads[j]);
+            list_of_batch_sizes.emplace_back(bins_max_length[j], bins_num_reads[j], band_width);
             list_of_groups_per_batch.push_back(bins_group_list[j]);
             // check if poa_groups in the following bins can be merged into the current bin
             for (int32_t k = j + 1; k < num_bins; k++)
