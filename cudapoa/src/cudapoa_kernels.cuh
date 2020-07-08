@@ -634,8 +634,7 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
                                                                   node_marks,
                                                                   check_aligned_nodes,
                                                                   nodes_to_visit,
-                                                                  batch_size.max_nodes_per_window,
-                                                                  batch_size.max_nodes_per_window_banded,
+                                                                  max_nodes_per_window,
                                                                   batch_size.max_consensus_size,
                                                                   cuda_banded_alignment);
         GW_CU_CHECK_ERR(cudaPeekAtLastError());
