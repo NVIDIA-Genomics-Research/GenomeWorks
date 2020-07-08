@@ -65,7 +65,7 @@ namespace cudapoa
  * @param[in] mismatch_score                Score for finding a mismatch in alignment
  * @param[in] match_score                   Score for finding a match in alignment
  */
-template <int32_t TPB = 64, bool cuda_banded_alignment = false, bool msa = false, typename ScoreT, typename SizeT>
+template <typename ScoreT, typename SizeT>
 __global__ void generatePOAKernel(uint8_t* consensus_d,
                                   uint8_t* sequences_d,
                                   int8_t* base_weights_d,
@@ -102,11 +102,14 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
                                   uint32_t max_nodes_per_window,
                                   uint32_t max_graph_dimension,
                                   uint32_t max_limit_consensus_size,
-                                  bool adaptive_banded,
                                   SizeT* band_starts_d,
                                   SizeT* band_widths_d,
                                   int64_t* band_head_indices_d,
                                   SizeT* band_max_indices_d,
+                                  int32_t TPB                          = 64,
+                                  bool cuda_adaptive_banded            = false,
+                                  bool cuda_banded_alignment           = false,
+                                  bool msa                             = false,
                                   uint32_t banded_alignment_band_width = 256)
 {
     // shared error indicator within a warp
@@ -242,7 +245,7 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
                 consensus[1] = static_cast<uint8_t>(StatusType::node_count_exceeded_maximum_graph_size);
                 warp_error   = true;
             }
-            if (adaptive_banded)
+            if (cuda_adaptive_banded)
             {
                 // compute R for abPOA
                 distanceToHeadNode(sorted_poa,
@@ -264,9 +267,9 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
         // Run Needleman-Wunsch alignment between graph and new sequence.
         SizeT alignment_length;
 
-        if (cuda_banded_alignment || adaptive_banded)
+        if (cuda_banded_alignment || cuda_adaptive_banded)
         {
-            if (adaptive_banded)
+            if (cuda_adaptive_banded)
             {
                 alignment_length = runNeedlemanWunschAdaptiveBanded<uint8_t, ScoreT, SizeT>(nodes,
                                                                                             sorted_poa,
@@ -348,23 +351,24 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
 
             // Add alignment to graph.
             SizeT new_node_count;
-            uint8_t error_code = addAlignmentToGraph<msa>(new_node_count,
-                                                          nodes, sequence_lengths[0],
-                                                          node_alignments, node_alignment_count,
-                                                          incoming_edges, incoming_edge_count,
-                                                          outgoing_edges, outgoing_edge_count,
-                                                          incoming_edge_weights, outgoing_edge_weights,
-                                                          alignment_length,
-                                                          sorted_poa, alignment_graph,
-                                                          sequence, alignment_read,
-                                                          node_coverage_counts,
-                                                          base_weights,
-                                                          (sequence_begin_nodes_ids + s),
-                                                          outgoing_edges_coverage,
-                                                          outgoing_edges_coverage_count,
-                                                          s,
-                                                          max_sequences_per_poa,
-                                                          max_nodes_per_window);
+            uint8_t error_code = addAlignmentToGraph(new_node_count,
+                                                     nodes, sequence_lengths[0],
+                                                     node_alignments, node_alignment_count,
+                                                     incoming_edges, incoming_edge_count,
+                                                     outgoing_edges, outgoing_edge_count,
+                                                     incoming_edge_weights, outgoing_edge_weights,
+                                                     alignment_length,
+                                                     sorted_poa, alignment_graph,
+                                                     sequence, alignment_read,
+                                                     node_coverage_counts,
+                                                     base_weights,
+                                                     (sequence_begin_nodes_ids + s),
+                                                     outgoing_edges_coverage,
+                                                     outgoing_edges_coverage_count,
+                                                     s,
+                                                     max_sequences_per_poa,
+                                                     max_nodes_per_window,
+                                                     msa);
 
             if (error_code != 0)
             {
@@ -474,304 +478,167 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
     uint16_t* outgoing_edges_coverage_count = graph_details_d->outgoing_edges_coverage_count;
     SizeT* node_id_to_msa_pos               = graph_details_d->node_id_to_msa_pos;
 
-    int32_t nwindows_per_block = CUDAPOA_THREADS_PER_BLOCK / WARP_SIZE;
-    int32_t nblocks            = (total_windows + nwindows_per_block - 1) / nwindows_per_block;
+    int32_t nwindows_per_block         = CUDAPOA_THREADS_PER_BLOCK / WARP_SIZE;
+    int32_t nblocks                    = (cuda_banded_alignment || cuda_adaptive_banding) ? total_windows : (total_windows + nwindows_per_block - 1) / nwindows_per_block;
+    int32_t TPB                        = (cuda_banded_alignment || cuda_adaptive_banding) ? CUDAPOA_BANDED_THREADS_PER_BLOCK : CUDAPOA_THREADS_PER_BLOCK;
+    int32_t max_nodes_per_window       = cuda_banded_alignment ? batch_size.max_nodes_per_window_banded : batch_size.max_nodes_per_window;
+    int32_t max_matrix_graph_dimension = cuda_banded_alignment ? batch_size.max_matrix_graph_dimension_banded : batch_size.max_matrix_graph_dimension;
 
     GW_CU_CHECK_ERR(cudaDeviceSetCacheConfig(cudaFuncCachePreferL1));
 
     int32_t consensus_num_blocks = (total_windows / CUDAPOA_MAX_CONSENSUS_PER_BLOCK) + 1;
-    if (cuda_banded_alignment)
+
+    if (output_mask & OutputType::consensus)
     {
-        if (output_mask & OutputType::consensus)
-        {
-            generatePOAKernel<CUDAPOA_BANDED_THREADS_PER_BLOCK, true, false, ScoreT, SizeT>
-                <<<total_windows, CUDAPOA_BANDED_THREADS_PER_BLOCK, 0, stream>>>(consensus_d,
-                                                                                 sequences_d,
-                                                                                 base_weights_d,
-                                                                                 sequence_lengths_d,
-                                                                                 window_details_d,
-                                                                                 total_windows,
-                                                                                 scores,
-                                                                                 alignment_graph,
-                                                                                 alignment_read,
-                                                                                 nodes,
-                                                                                 incoming_edges,
-                                                                                 incoming_edge_count,
-                                                                                 outgoing_edges,
-                                                                                 outgoing_edge_count,
-                                                                                 incoming_edge_w,
-                                                                                 outgoing_edge_w,
-                                                                                 sorted_poa,
-                                                                                 node_id_to_pos,
-                                                                                 node_distance,
-                                                                                 node_alignments,
-                                                                                 node_alignment_count,
-                                                                                 sorted_poa_local_edge_count,
-                                                                                 node_marks,
-                                                                                 check_aligned_nodes,
-                                                                                 nodes_to_visit,
-                                                                                 node_coverage_counts,
-                                                                                 gap_score,
-                                                                                 mismatch_score,
-                                                                                 match_score,
-                                                                                 max_sequences_per_poa,
-                                                                                 sequence_begin_nodes_ids,
-                                                                                 outgoing_edges_coverage,
-                                                                                 outgoing_edges_coverage_count,
-                                                                                 batch_size.max_nodes_per_window_banded,
-                                                                                 batch_size.max_matrix_graph_dimension_banded,
-                                                                                 batch_size.max_consensus_size,
-                                                                                 cuda_adaptive_banding,
-                                                                                 band_starts,
-                                                                                 band_widths,
-                                                                                 head_indices,
-                                                                                 max_indices,
-                                                                                 batch_size.alignment_band_width);
-            GW_CU_CHECK_ERR(cudaPeekAtLastError());
+        generatePOAKernel<ScoreT, SizeT>
+            <<<nblocks, TPB, 0, stream>>>(consensus_d,
+                                          sequences_d,
+                                          base_weights_d,
+                                          sequence_lengths_d,
+                                          window_details_d,
+                                          total_windows,
+                                          scores,
+                                          alignment_graph,
+                                          alignment_read,
+                                          nodes,
+                                          incoming_edges,
+                                          incoming_edge_count,
+                                          outgoing_edges,
+                                          outgoing_edge_count,
+                                          incoming_edge_w,
+                                          outgoing_edge_w,
+                                          sorted_poa,
+                                          node_id_to_pos,
+                                          node_distance,
+                                          node_alignments,
+                                          node_alignment_count,
+                                          sorted_poa_local_edge_count,
+                                          node_marks,
+                                          check_aligned_nodes,
+                                          nodes_to_visit,
+                                          node_coverage_counts,
+                                          gap_score,
+                                          mismatch_score,
+                                          match_score,
+                                          max_sequences_per_poa,
+                                          sequence_begin_nodes_ids,
+                                          outgoing_edges_coverage,
+                                          outgoing_edges_coverage_count,
+                                          max_nodes_per_window,
+                                          max_matrix_graph_dimension,
+                                          batch_size.max_consensus_size,
+                                          band_starts,
+                                          band_widths,
+                                          head_indices,
+                                          max_indices,
+                                          TPB,
+                                          cuda_adaptive_banding,
+                                          cuda_banded_alignment,
+                                          false,
+                                          batch_size.alignment_band_width);
+        GW_CU_CHECK_ERR(cudaPeekAtLastError());
 
-            generateConsensusKernel<true, SizeT>
-                <<<consensus_num_blocks, CUDAPOA_MAX_CONSENSUS_PER_BLOCK, 0, stream>>>(consensus_d,
-                                                                                       coverage_d,
-                                                                                       sequence_lengths_d,
-                                                                                       window_details_d,
-                                                                                       total_windows,
-                                                                                       nodes,
-                                                                                       incoming_edges,
-                                                                                       incoming_edge_count,
-                                                                                       outgoing_edges,
-                                                                                       outgoing_edge_count,
-                                                                                       incoming_edge_w,
-                                                                                       sorted_poa,
-                                                                                       node_id_to_pos,
-                                                                                       node_alignments,
-                                                                                       node_alignment_count,
-                                                                                       consensus_scores,
-                                                                                       consensus_predecessors,
-                                                                                       node_coverage_counts,
-                                                                                       batch_size.max_nodes_per_window_banded,
-                                                                                       batch_size.max_consensus_size);
-            GW_CU_CHECK_ERR(cudaPeekAtLastError());
-        }
-        if (output_mask & OutputType::msa)
-        {
-            generatePOAKernel<CUDAPOA_BANDED_THREADS_PER_BLOCK, true, true, ScoreT, SizeT>
-                <<<total_windows, CUDAPOA_BANDED_THREADS_PER_BLOCK, 0, stream>>>(consensus_d,
-                                                                                 sequences_d,
-                                                                                 base_weights_d,
-                                                                                 sequence_lengths_d,
-                                                                                 window_details_d,
-                                                                                 total_windows,
-                                                                                 scores,
-                                                                                 alignment_graph,
-                                                                                 alignment_read,
-                                                                                 nodes,
-                                                                                 incoming_edges,
-                                                                                 incoming_edge_count,
-                                                                                 outgoing_edges,
-                                                                                 outgoing_edge_count,
-                                                                                 incoming_edge_w,
-                                                                                 outgoing_edge_w,
-                                                                                 sorted_poa,
-                                                                                 node_id_to_pos,
-                                                                                 node_distance,
-                                                                                 node_alignments,
-                                                                                 node_alignment_count,
-                                                                                 sorted_poa_local_edge_count,
-                                                                                 node_marks,
-                                                                                 check_aligned_nodes,
-                                                                                 nodes_to_visit,
-                                                                                 node_coverage_counts,
-                                                                                 gap_score,
-                                                                                 mismatch_score,
-                                                                                 match_score,
-                                                                                 max_sequences_per_poa,
-                                                                                 sequence_begin_nodes_ids,
-                                                                                 outgoing_edges_coverage,
-                                                                                 outgoing_edges_coverage_count,
-                                                                                 batch_size.max_nodes_per_window_banded,
-                                                                                 batch_size.max_matrix_graph_dimension_banded,
-                                                                                 batch_size.max_consensus_size,
-                                                                                 cuda_adaptive_banding,
-                                                                                 band_starts,
-                                                                                 band_widths,
-                                                                                 head_indices,
-                                                                                 max_indices,
-                                                                                 batch_size.alignment_band_width);
-            GW_CU_CHECK_ERR(cudaPeekAtLastError());
-
-            generateMSAKernel<true, SizeT>
-                <<<total_windows, max_sequences_per_poa, 0, stream>>>(nodes,
-                                                                      consensus_d,
-                                                                      window_details_d,
-                                                                      incoming_edge_count,
-                                                                      incoming_edges,
-                                                                      outgoing_edge_count,
-                                                                      outgoing_edges,
-                                                                      outgoing_edges_coverage,
-                                                                      outgoing_edges_coverage_count,
-                                                                      node_id_to_msa_pos,
-                                                                      sequence_begin_nodes_ids,
-                                                                      multiple_sequence_alignments,
-                                                                      sequence_lengths_d,
-                                                                      sorted_poa,
-                                                                      node_alignments,
-                                                                      node_alignment_count,
-                                                                      max_sequences_per_poa,
-                                                                      node_id_to_pos,
-                                                                      node_marks,
-                                                                      check_aligned_nodes,
-                                                                      nodes_to_visit,
-                                                                      batch_size.max_nodes_per_window,
-                                                                      batch_size.max_nodes_per_window_banded,
-                                                                      batch_size.max_consensus_size);
-            GW_CU_CHECK_ERR(cudaPeekAtLastError());
-        }
+        generateConsensusKernel<SizeT>
+            <<<consensus_num_blocks, CUDAPOA_MAX_CONSENSUS_PER_BLOCK, 0, stream>>>(consensus_d,
+                                                                                   coverage_d,
+                                                                                   sequence_lengths_d,
+                                                                                   window_details_d,
+                                                                                   total_windows,
+                                                                                   nodes,
+                                                                                   incoming_edges,
+                                                                                   incoming_edge_count,
+                                                                                   outgoing_edges,
+                                                                                   outgoing_edge_count,
+                                                                                   incoming_edge_w,
+                                                                                   sorted_poa,
+                                                                                   node_id_to_pos,
+                                                                                   node_alignments,
+                                                                                   node_alignment_count,
+                                                                                   consensus_scores,
+                                                                                   consensus_predecessors,
+                                                                                   node_coverage_counts,
+                                                                                   max_nodes_per_window,
+                                                                                   batch_size.max_consensus_size,
+                                                                                   cuda_banded_alignment);
+        GW_CU_CHECK_ERR(cudaPeekAtLastError());
     }
-    else
+    if (output_mask & OutputType::msa)
     {
-        if (output_mask & OutputType::consensus)
-        {
-            generatePOAKernel<CUDAPOA_THREADS_PER_BLOCK, false, false, ScoreT, SizeT>
-                <<<nblocks, CUDAPOA_THREADS_PER_BLOCK, 0, stream>>>(consensus_d,
-                                                                    sequences_d,
-                                                                    base_weights_d,
-                                                                    sequence_lengths_d,
-                                                                    window_details_d,
-                                                                    total_windows,
-                                                                    scores,
-                                                                    alignment_graph,
-                                                                    alignment_read,
-                                                                    nodes,
-                                                                    incoming_edges,
-                                                                    incoming_edge_count,
-                                                                    outgoing_edges,
-                                                                    outgoing_edge_count,
-                                                                    incoming_edge_w,
-                                                                    outgoing_edge_w,
-                                                                    sorted_poa,
-                                                                    node_id_to_pos,
-                                                                    node_distance,
-                                                                    node_alignments,
-                                                                    node_alignment_count,
-                                                                    sorted_poa_local_edge_count,
-                                                                    node_marks,
-                                                                    check_aligned_nodes,
-                                                                    nodes_to_visit,
-                                                                    node_coverage_counts,
-                                                                    gap_score,
-                                                                    mismatch_score,
-                                                                    match_score,
-                                                                    max_sequences_per_poa,
-                                                                    sequence_begin_nodes_ids,
-                                                                    outgoing_edges_coverage,
-                                                                    outgoing_edges_coverage_count,
-                                                                    batch_size.max_nodes_per_window,
-                                                                    batch_size.max_matrix_graph_dimension,
-                                                                    batch_size.max_consensus_size,
-                                                                    cuda_adaptive_banding,
-                                                                    band_starts,
-                                                                    band_widths,
-                                                                    head_indices,
-                                                                    max_indices);
-            //std::cout<<"HEAR YE: "<<cuda_adaptive_banding<<std::endl;
-            GW_CU_CHECK_ERR(cudaPeekAtLastError());
+        generatePOAKernel<ScoreT, SizeT>
+            <<<nblocks, TPB, 0, stream>>>(consensus_d,
+                                          sequences_d,
+                                          base_weights_d,
+                                          sequence_lengths_d,
+                                          window_details_d,
+                                          total_windows,
+                                          scores,
+                                          alignment_graph,
+                                          alignment_read,
+                                          nodes,
+                                          incoming_edges,
+                                          incoming_edge_count,
+                                          outgoing_edges,
+                                          outgoing_edge_count,
+                                          incoming_edge_w,
+                                          outgoing_edge_w,
+                                          sorted_poa,
+                                          node_id_to_pos,
+                                          node_distance,
+                                          node_alignments,
+                                          node_alignment_count,
+                                          sorted_poa_local_edge_count,
+                                          node_marks,
+                                          check_aligned_nodes,
+                                          nodes_to_visit,
+                                          node_coverage_counts,
+                                          gap_score,
+                                          mismatch_score,
+                                          match_score,
+                                          max_sequences_per_poa,
+                                          sequence_begin_nodes_ids,
+                                          outgoing_edges_coverage,
+                                          outgoing_edges_coverage_count,
+                                          max_nodes_per_window,
+                                          max_matrix_graph_dimension,
+                                          batch_size.max_consensus_size,
+                                          band_starts,
+                                          band_widths,
+                                          head_indices,
+                                          max_indices,
+                                          TPB,
+                                          cuda_adaptive_banding,
+                                          cuda_banded_alignment,
+                                          true,
+                                          batch_size.alignment_band_width);
+        GW_CU_CHECK_ERR(cudaPeekAtLastError());
 
-            generateConsensusKernel<false, SizeT>
-                <<<consensus_num_blocks, CUDAPOA_MAX_CONSENSUS_PER_BLOCK, 0, stream>>>(consensus_d,
-                                                                                       coverage_d,
-                                                                                       sequence_lengths_d,
-                                                                                       window_details_d,
-                                                                                       total_windows,
-                                                                                       nodes,
-                                                                                       incoming_edges,
-                                                                                       incoming_edge_count,
-                                                                                       outgoing_edges,
-                                                                                       outgoing_edge_count,
-                                                                                       incoming_edge_w,
-                                                                                       sorted_poa,
-                                                                                       node_id_to_pos,
-                                                                                       node_alignments,
-                                                                                       node_alignment_count,
-                                                                                       consensus_scores,
-                                                                                       consensus_predecessors,
-                                                                                       node_coverage_counts,
-                                                                                       batch_size.max_nodes_per_window,
-                                                                                       batch_size.max_consensus_size);
-            GW_CU_CHECK_ERR(cudaPeekAtLastError());
-        }
-        if (output_mask & OutputType::msa)
-        {
-            generatePOAKernel<CUDAPOA_THREADS_PER_BLOCK, false, true, ScoreT, SizeT>
-                <<<nblocks, CUDAPOA_THREADS_PER_BLOCK, 0, stream>>>(consensus_d,
-                                                                    sequences_d,
-                                                                    base_weights_d,
-                                                                    sequence_lengths_d,
-                                                                    window_details_d,
-                                                                    total_windows,
-                                                                    scores,
-                                                                    alignment_graph,
-                                                                    alignment_read,
-                                                                    nodes,
-                                                                    incoming_edges,
-                                                                    incoming_edge_count,
-                                                                    outgoing_edges,
-                                                                    outgoing_edge_count,
-                                                                    incoming_edge_w,
-                                                                    outgoing_edge_w,
-                                                                    sorted_poa,
-                                                                    node_id_to_pos,
-                                                                    node_distance,
-                                                                    node_alignments,
-                                                                    node_alignment_count,
-                                                                    sorted_poa_local_edge_count,
-                                                                    node_marks,
-                                                                    check_aligned_nodes,
-                                                                    nodes_to_visit,
-                                                                    node_coverage_counts,
-                                                                    gap_score,
-                                                                    mismatch_score,
-                                                                    match_score,
-                                                                    max_sequences_per_poa,
-                                                                    sequence_begin_nodes_ids,
-                                                                    outgoing_edges_coverage,
-                                                                    outgoing_edges_coverage_count,
-                                                                    batch_size.max_nodes_per_window,
-                                                                    batch_size.max_matrix_graph_dimension,
-                                                                    batch_size.max_consensus_size,
-                                                                    cuda_adaptive_banding,
-                                                                    band_starts,
-                                                                    band_widths,
-                                                                    head_indices,
-                                                                    max_indices);
-            GW_CU_CHECK_ERR(cudaPeekAtLastError());
-
-            generateMSAKernel<false, SizeT>
-                <<<total_windows, max_sequences_per_poa, 0, stream>>>(nodes,
-                                                                      consensus_d,
-                                                                      window_details_d,
-                                                                      incoming_edge_count,
-                                                                      incoming_edges,
-                                                                      outgoing_edge_count,
-                                                                      outgoing_edges,
-                                                                      outgoing_edges_coverage,
-                                                                      outgoing_edges_coverage_count,
-                                                                      node_id_to_msa_pos,
-                                                                      sequence_begin_nodes_ids,
-                                                                      multiple_sequence_alignments,
-                                                                      sequence_lengths_d,
-                                                                      sorted_poa,
-                                                                      node_alignments,
-                                                                      node_alignment_count,
-                                                                      max_sequences_per_poa,
-                                                                      node_id_to_pos,
-                                                                      node_marks,
-                                                                      check_aligned_nodes,
-                                                                      nodes_to_visit,
-                                                                      batch_size.max_nodes_per_window,
-                                                                      batch_size.max_nodes_per_window_banded,
-                                                                      batch_size.max_consensus_size);
-            GW_CU_CHECK_ERR(cudaPeekAtLastError());
-        }
+        generateMSAKernel<SizeT>
+            <<<total_windows, max_sequences_per_poa, 0, stream>>>(nodes,
+                                                                  consensus_d,
+                                                                  window_details_d,
+                                                                  incoming_edge_count,
+                                                                  incoming_edges,
+                                                                  outgoing_edge_count,
+                                                                  outgoing_edges,
+                                                                  outgoing_edges_coverage,
+                                                                  outgoing_edges_coverage_count,
+                                                                  node_id_to_msa_pos,
+                                                                  sequence_begin_nodes_ids,
+                                                                  multiple_sequence_alignments,
+                                                                  sequence_lengths_d,
+                                                                  sorted_poa,
+                                                                  node_alignments,
+                                                                  node_alignment_count,
+                                                                  max_sequences_per_poa,
+                                                                  node_id_to_pos,
+                                                                  node_marks,
+                                                                  check_aligned_nodes,
+                                                                  nodes_to_visit,
+                                                                  batch_size.max_nodes_per_window,
+                                                                  batch_size.max_nodes_per_window_banded,
+                                                                  batch_size.max_consensus_size,
+                                                                  cuda_banded_alignment);
+        GW_CU_CHECK_ERR(cudaPeekAtLastError());
     }
 }
 

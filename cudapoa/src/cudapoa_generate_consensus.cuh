@@ -275,7 +275,7 @@ __device__ void generateConsensus(uint8_t* nodes,
     consensus[consensus_pos] = '\0';
 }
 
-template <bool cuda_banded_alignment = false, typename SizeT>
+template <typename SizeT>
 __global__ void generateConsensusKernel(uint8_t* consensus_d,
                                         uint16_t* coverage_d,
                                         SizeT* sequence_lengths_d,
@@ -295,7 +295,8 @@ __global__ void generateConsensusKernel(uint8_t* consensus_d,
                                         SizeT* consensus_predecessors_d,
                                         uint16_t* node_coverage_counts_d_,
                                         uint32_t max_nodes_per_window,
-                                        uint32_t max_limit_consensus_size)
+                                        uint32_t max_limit_consensus_size,
+                                        bool cuda_banded_alignment = false)
 {
     //each thread will operate on a window
     int32_t window_idx = blockIdx.x * CUDAPOA_MAX_CONSENSUS_PER_BLOCK + threadIdx.x;

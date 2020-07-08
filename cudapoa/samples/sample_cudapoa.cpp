@@ -158,6 +158,7 @@ int main(int argc, char** argv)
             break;
         case 'a':
             adaptive = true;
+            banded = false;
             break;
         }
     }

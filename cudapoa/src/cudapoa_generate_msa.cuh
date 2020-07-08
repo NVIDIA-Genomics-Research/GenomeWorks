@@ -117,7 +117,7 @@ __device__ void generateMSADevice(uint8_t* nodes,
     multiple_sequence_alignments[s * max_limit_consensus_size + msa_length] = '\0';
 }
 
-template <bool cuda_banded_alignment = false, typename SizeT>
+template <typename SizeT>
 __global__ void generateMSAKernel(uint8_t* nodes_d,
                                   uint8_t* consensus_d,
                                   genomeworks::cudapoa::WindowDetails* window_details_d,
@@ -141,7 +141,8 @@ __global__ void generateMSAKernel(uint8_t* nodes_d,
                                   SizeT* nodes_to_visit_d,
                                   uint32_t max_limit_nodes_per_window,
                                   uint32_t max_limit_nodes_per_window_banded,
-                                  uint32_t max_limit_consensus_size)
+                                  uint32_t max_limit_consensus_size,
+                                  bool cuda_banded_alignment = false)
 {
     //each block of threads will operate on a window
     uint32_t window_idx = blockIdx.x;
