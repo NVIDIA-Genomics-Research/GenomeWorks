@@ -44,6 +44,6 @@ for f in "${WORKSPACE}"/pygenomeworks/genomeworks_wheel/*.whl; do
         mv "${f}" "${MODIFIED_WHL_NAME}"
         echo "File name ${f} was changed into ${MODIFIED_WHL_NAME}"
         # Perform Upload
-        python3 -m twine upload --skip-existing -u clara-omics-nvidia "${WORKSPACE}"/pygenomeworks/genomeworks_wheel/*
+        python3 -m twine upload --skip-existing "${WORKSPACE}"/pygenomeworks/genomeworks_wheel/*
     fi
 done
