@@ -207,6 +207,7 @@ void process_one_device_batch(const IndexBatch& device_batch,
                               const ApplicationParameters& application_parameters,
                               DefaultDeviceAllocator device_allocator,
                               ThreadsafeProducerConsumer<OverlapsAndCigars>& overlaps_and_cigars_to_process,
+                              std::atomic<int32_t>& number_of_skipped_pairs_of_indices,
                               cudaStream_t cuda_stream)
 {
     GW_NVTX_RANGE(profiler, "main::process_one_device_batch");
@@ -268,8 +269,8 @@ void process_one_device_batch(const IndexBatch& device_batch,
                 }
                 catch (device_memory_allocation_exception& oom_exception)
                 {
-                    // if the application ran out of memory skip this pair of indices and print a message
-                    std::cerr << "Pair of indices skipped due to a device out of memory error" << std::endl;
+                    // if the application ran out of memory skip this pair of indices
+                    ++(number_of_skipped_pairs_of_indices);
                 }
             }
         }
@@ -282,6 +283,7 @@ void process_one_device_batch(const IndexBatch& device_batch,
 /// \param host_cache data will be loaded into cache within the function
 /// \param device_cache data will be loaded into cache within the function
 /// \param overlaps_and_cigars_to_process overlaps and cigars are output to this structure and the then consumed by another thread
+/// \param number_of_skipped_pairs_of_indices
 /// \param cuda_stream
 void process_one_batch(const BatchOfIndices& batch,
                        const ApplicationParameters& application_parameters,
@@ -289,6 +291,7 @@ void process_one_batch(const BatchOfIndices& batch,
                        IndexCacheHost& host_cache,
                        IndexCacheDevice& device_cache,
                        ThreadsafeProducerConsumer<OverlapsAndCigars>& overlaps_and_cigars_to_process,
+                       std::atomic<int32_t>& number_of_skipped_pairs_of_indices,
                        cudaStream_t cuda_stream)
 {
     GW_NVTX_RANGE(profiler, "main::process_one_batch");
@@ -321,6 +324,7 @@ void process_one_batch(const BatchOfIndices& batch,
                                  application_parameters,
                                  device_allocator,
                                  overlaps_and_cigars_to_process,
+                                 number_of_skipped_pairs_of_indices,
                                  cuda_stream);
     }
 }
@@ -389,12 +393,16 @@ void postprocess_and_write_thread_function(const int32_t device_id,
 /// \param application_parameters
 /// \param output_mutex
 /// \param cuda_stream
+/// \param number_of_total_batches
+/// \param number_of_skipped_pairs_of_indices
+/// \param number_of_processed_batches
 void worker_thread_function(const int32_t device_id,
                             ThreadsafeDataProvider<BatchOfIndices>& batches_of_indices,
                             const ApplicationParameters& application_parameters,
                             std::mutex& output_mutex,
                             cudaStream_t cuda_stream,
                             const int64_t number_of_total_batches,
+                            std::atomic<int32_t>& number_of_skipped_pairs_of_indices,
                             std::atomic<int64_t>& number_of_processed_batches)
 {
     GW_NVTX_RANGE(profiler, "main::worker_thread");
@@ -454,6 +462,7 @@ void worker_thread_function(const int32_t device_id,
                           *host_cache,
                           device_cache,
                           overlaps_and_cigars_to_process,
+                          number_of_skipped_pairs_of_indices,
                           cuda_stream);
     }
 
@@ -503,6 +512,9 @@ int main(int argc, char* argv[])
     std::atomic<int64_t> number_of_processed_batches(0);
     ThreadsafeDataProvider<BatchOfIndices> batches_of_indices(std::move(batches_of_indices_vect));
 
+    // pairs of indices might be skipped if they cause out of memory errors
+    std::atomic<int32_t> number_of_skipped_pairs_of_indices{0};
+
     // explicitly assign one stream to each GPU
     std::vector<cudaStream_t> cuda_streams(parameters.num_devices);
 
@@ -520,6 +532,7 @@ int main(int argc, char* argv[])
                                     std::ref(output_mutex),
                                     cuda_streams[device_id],
                                     number_of_total_batches,
+                                    std::ref(number_of_skipped_pairs_of_indices),
                                     std::ref(number_of_processed_batches));
     }
 
@@ -529,6 +542,11 @@ int main(int argc, char* argv[])
         GW_CU_CHECK_ERR(cudaSetDevice(device_id));
         worker_threads[device_id].join();
         GW_CU_CHECK_ERR(cudaStreamDestroy(cuda_streams[device_id])); // no need to sync, it should be done at the end of worker_threads
+    }
+
+    if (number_of_skipped_pairs_of_indices != 0)
+    {
+        std::cerr << "NOTE: Skipped " << number_of_skipped_pairs_of_indices << " pairs of indices due to device out of memory error" << std::endl;
     }
 
     return 0;
