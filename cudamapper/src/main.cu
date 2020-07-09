@@ -228,42 +228,49 @@ void process_one_device_batch(const IndexBatch& device_batch,
             {
                 std::shared_ptr<Index> query_index  = device_cache.get_index_from_query_cache(query_index_descriptor);
                 std::shared_ptr<Index> target_index = device_cache.get_index_from_target_cache(target_index_descriptor);
-
-                // find anchors and overlaps
-                auto matcher = Matcher::create_matcher(device_allocator,
-                                                       *query_index,
-                                                       *target_index,
-                                                       cuda_stream);
-
-                std::vector<Overlap> overlaps;
-                OverlapperTriggered overlapper(device_allocator,
-                                               cuda_stream);
-                overlapper.get_overlaps(overlaps,
-                                        matcher->anchors(),
-                                        application_parameters.min_residues,
-                                        application_parameters.min_overlap_len,
-                                        application_parameters.min_bases_per_residue,
-                                        application_parameters.min_overlap_fraction);
-
-                // free up memory taken by matcher
-                matcher.reset(nullptr);
-
-                // Align overlaps
-                std::vector<std::string> cigars;
-                if (application_parameters.alignment_engines > 0)
+                try
                 {
-                    cigars.resize(overlaps.size());
-                    GW_NVTX_RANGE(profiler, "align_overlaps");
-                    align_overlaps(device_allocator,
-                                   overlaps,
-                                   *application_parameters.query_parser,
-                                   *application_parameters.target_parser,
-                                   application_parameters.alignment_engines,
-                                   cigars);
-                }
+                    // find anchors and overlaps
+                    auto matcher = Matcher::create_matcher(device_allocator,
+                                                           *query_index,
+                                                           *target_index,
+                                                           cuda_stream);
 
-                // pass overlaps and cigars to writer thread
-                overlaps_and_cigars_to_process.add_new_element({std::move(overlaps), std::move(cigars)});
+                    std::vector<Overlap> overlaps;
+                    OverlapperTriggered overlapper(device_allocator,
+                                                   cuda_stream);
+                    overlapper.get_overlaps(overlaps,
+                                            matcher->anchors(),
+                                            application_parameters.min_residues,
+                                            application_parameters.min_overlap_len,
+                                            application_parameters.min_bases_per_residue,
+                                            application_parameters.min_overlap_fraction);
+
+                    // free up memory taken by matcher
+                    matcher.reset(nullptr);
+
+                    // Align overlaps
+                    std::vector<std::string> cigars;
+                    if (application_parameters.alignment_engines > 0)
+                    {
+                        cigars.resize(overlaps.size());
+                        GW_NVTX_RANGE(profiler, "align_overlaps");
+                        align_overlaps(device_allocator,
+                                       overlaps,
+                                       *application_parameters.query_parser,
+                                       *application_parameters.target_parser,
+                                       application_parameters.alignment_engines,
+                                       cigars);
+                    }
+
+                    // pass overlaps and cigars to writer thread
+                    overlaps_and_cigars_to_process.add_new_element({std::move(overlaps), std::move(cigars)});
+                }
+                catch (device_memory_allocation_exception& oom_exception)
+                {
+                    // if the application ran out of memory skip this pair of indices and print a message
+                    std::cerr << "Pair of indices skipped due to a device out of memory error" << std::endl;
+                }
             }
         }
     }
