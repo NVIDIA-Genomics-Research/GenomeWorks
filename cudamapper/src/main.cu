@@ -292,12 +292,14 @@ void process_one_batch(const BatchOfIndices& batch,
         assert(!host_batch.query_indices.empty() && !host_batch.target_indices.empty() && !device_batches.empty());
 
         GW_NVTX_RANGE(profiler, "main::process_one_batch::host_indices");
-        host_cache.generate_query_cache_content(host_batch.query_indices,
-                                                device_batches.front().query_indices,
-                                                skip_copy_to_host);
-        host_cache.generate_target_cache_content(host_batch.target_indices,
-                                                 device_batches.front().target_indices,
-                                                 skip_copy_to_host);
+        host_cache.start_generating_query_cache_content(host_batch.query_indices,
+                                                        device_batches.front().query_indices,
+                                                        skip_copy_to_host);
+        host_cache.start_generating_target_cache_content(host_batch.target_indices,
+                                                         device_batches.front().target_indices,
+                                                         skip_copy_to_host);
+        host_cache.finish_generating_query_cache_content();
+        host_cache.finish_generating_target_cache_content();
     }
 
     // process device batches one by one
@@ -375,12 +377,16 @@ void postprocess_and_write_thread_function(const int32_t device_id,
 /// \param batches_of_indices
 /// \param application_parameters
 /// \param output_mutex
-/// \param cuda_stream
+/// \param cuda_stream_computation
+/// \param cuda_stream_copy
+/// \param number_of_total_batches
+/// \param number_of_processed_batches
 void worker_thread_function(const int32_t device_id,
                             ThreadsafeDataProvider<BatchOfIndices>& batches_of_indices,
                             const ApplicationParameters& application_parameters,
                             std::mutex& output_mutex,
-                            cudaStream_t cuda_stream,
+                            cudaStream_t cuda_stream_computation,
+                            cudaStream_t cuda_stream_copy,
                             const int64_t number_of_total_batches,
                             std::atomic<int64_t>& number_of_processed_batches)
 {
@@ -400,7 +406,8 @@ void worker_thread_function(const int32_t device_id,
                                                        application_parameters.windows_size,
                                                        true, // hash_representations
                                                        application_parameters.filtering_parameter,
-                                                       cuda_stream);
+                                                       cuda_stream_computation,
+                                                       cuda_stream_copy);
 
     // create host_cache, data is not loaded at this point but later as each batch gets processed
     IndexCacheDevice device_cache(application_parameters.all_to_all,
@@ -441,7 +448,7 @@ void worker_thread_function(const int32_t device_id,
                           *host_cache,
                           device_cache,
                           overlaps_and_cigars_to_process,
-                          cuda_stream);
+                          cuda_stream_computation);
     }
 
     // tell writer thread that there will be no more overlaps and it can finish once it has written all overlaps
@@ -453,7 +460,7 @@ void worker_thread_function(const int32_t device_id,
     }
 
     // by this point all GPU work should anyway be done as postprocess_and_write_thread also finished and all GPU work had to be done before last values could be written
-    GW_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
+    GW_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream_computation));
 }
 
 } // namespace
@@ -490,8 +497,9 @@ int main(int argc, char* argv[])
     std::atomic<int64_t> number_of_processed_batches(0);
     ThreadsafeDataProvider<BatchOfIndices> batches_of_indices(std::move(batches_of_indices_vect));
 
-    // explicitly assign one stream to each GPU
-    std::vector<cudaStream_t> cuda_streams(parameters.num_devices);
+    // explicitly assign one stream for computations and one for D2H and H2D copies of indices to each GPU
+    std::vector<cudaStream_t> cuda_streams_computation(parameters.num_devices);
+    std::vector<cudaStream_t> cuda_streams_copy(parameters.num_devices);
 
     // create worker threads (one thread per device)
     // these thread process batches_of_indices one by one
@@ -499,13 +507,15 @@ int main(int argc, char* argv[])
     for (int32_t device_id = 0; device_id < parameters.num_devices; ++device_id)
     {
         GW_CU_CHECK_ERR(cudaSetDevice(device_id));
-        GW_CU_CHECK_ERR(cudaStreamCreate(&cuda_streams[device_id]));
+        GW_CU_CHECK_ERR(cudaStreamCreate(&cuda_streams_computation[device_id]));
+        GW_CU_CHECK_ERR(cudaStreamCreate(&cuda_streams_copy[device_id]));
         worker_threads.emplace_back(worker_thread_function,
                                     device_id,
                                     std::ref(batches_of_indices),
                                     std::ref(parameters),
                                     std::ref(output_mutex),
-                                    cuda_streams[device_id],
+                                    cuda_streams_computation[device_id],
+                                    cuda_streams_copy[device_id],
                                     number_of_total_batches,
                                     std::ref(number_of_processed_batches));
     }
@@ -515,7 +525,8 @@ int main(int argc, char* argv[])
     {
         GW_CU_CHECK_ERR(cudaSetDevice(device_id));
         worker_threads[device_id].join();
-        GW_CU_CHECK_ERR(cudaStreamDestroy(cuda_streams[device_id])); // no need to sync, it should be done at the end of worker_threads
+        GW_CU_CHECK_ERR(cudaStreamDestroy(cuda_streams_computation[device_id])); // no need to sync, it should be done at the end of worker_threads
+        GW_CU_CHECK_ERR(cudaStreamDestroy(cuda_streams_copy[device_id]));
     }
 
     return 0;

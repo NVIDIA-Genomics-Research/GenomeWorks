@@ -65,16 +65,18 @@ public:
     /// \param window_size w - the length of the sliding window used to find sketch elements (i.e. the number of adjacent k-mers in a window, adjacent = shifted by one basepair)
     /// \param hash_representations - if true, hash kmer representations
     /// \param filtering_parameter - filter out all representations for which number_of_sketch_elements_with_that_representation/total_skech_elements >= filtering_parameter, filtering_parameter == 1.0 disables filtering
-    /// \param cuda_stream CUDA stream on which the work is to be done. Device arrays are also associated with this stream and will not be freed at least until all work issued on this stream before calling their destructor is done
+    /// \param cuda_stream_generation CUDA stream on which index is generated. Device arrays are associated with this stream and will not be freed at least until all work issued on this stream before calling their destructor has been done
+    /// \param cuda_stream_copy CUDA stream on which the index is copied to host if needed. Device arrays are associated with this stream and will not be freed at least until all work issued on this stream before calling their destructor has been done
     IndexGPU(DefaultDeviceAllocator allocator,
              const io::FastaParser& parser,
              const read_id_t first_read_id,
              const read_id_t past_the_last_read_id,
              const std::uint64_t kmer_size,
              const std::uint64_t window_size,
-             const bool hash_representations  = true,
-             const double filtering_parameter = 1.0,
-             const cudaStream_t cuda_stream   = 0);
+             const bool hash_representations           = true,
+             const double filtering_parameter          = 1.0,
+             const cudaStream_t cuda_stream_generation = 0,
+             const cudaStream_t cuda_stream_copy       = 0);
 
     /// \brief Constructor which copies the index from host copy
     ///
@@ -550,7 +552,8 @@ IndexGPU<SketchElementImpl>::IndexGPU(DefaultDeviceAllocator allocator,
                                       const std::uint64_t window_size,
                                       const bool hash_representations,
                                       const double filtering_parameter,
-                                      const cudaStream_t cuda_stream)
+                                      const cudaStream_t cuda_stream_generation,
+                                      const cudaStream_t cuda_stream_copy)
     : first_read_id_(first_read_id)
     , kmer_size_(kmer_size)
     , window_size_(window_size)
@@ -569,11 +572,11 @@ IndexGPU<SketchElementImpl>::IndexGPU(DefaultDeviceAllocator allocator,
                    hash_representations,
                    filtering_parameter,
                    allocator,
-                   cuda_stream);
+                   cuda_stream_generation);
 
     // This is not completely necessary, but if removed one has to make sure that the next step
     // uses the same stream or that sync is done in caller
-    GW_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
+    GW_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream_generation));
 }
 
 template <typename SketchElementImpl>

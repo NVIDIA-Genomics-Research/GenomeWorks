@@ -30,7 +30,8 @@ std::unique_ptr<Index> Index::create_index(DefaultDeviceAllocator allocator,
                                            const std::uint64_t window_size,
                                            const bool hash_representations,
                                            const double filtering_parameter,
-                                           const cudaStream_t cuda_stream)
+                                           const cudaStream_t cuda_stream_generation,
+                                           const cudaStream_t cuda_stream_copy)
 {
     GW_NVTX_RANGE(profiler, "create_index");
     return std::make_unique<IndexGPU<Minimizer>>(allocator,
@@ -41,7 +42,8 @@ std::unique_ptr<Index> Index::create_index(DefaultDeviceAllocator allocator,
                                                  window_size,
                                                  hash_representations,
                                                  filtering_parameter,
-                                                 cuda_stream);
+                                                 cuda_stream_generation,
+                                                 cuda_stream_copy);
 }
 
 std::unique_ptr<IndexHostCopyBase> IndexHostCopyBase::create_cache(const Index& index,

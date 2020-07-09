@@ -8,7 +8,6 @@
 * license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-#include <thrust/copy.h>
 #include "index_host_copy.cuh"
 #include "index_gpu.cuh"
 #include "minimizer.hpp"
@@ -24,37 +23,6 @@ namespace genomeworks
 namespace cudamapper
 {
 
-namespace details
-{
-
-/// IndexHostMemoryPinner - registers all host arrays in given IndexHostCopy as pinned memory and unregisters it at the end
-class IndexHostMemoryPinner
-{
-public:
-    /// @brief Constructor - registers pinned memory
-    /// @param index_host_copy - IndexHostCopy whose arrays should be registered
-    IndexHostMemoryPinner(IndexHostCopy& index_host_copy)
-        : index_host_copy_(index_host_copy)
-    {
-        GW_NVTX_RANGE(profiler, "register_pinned_memory");
-        GW_CU_CHECK_ERR(cudaHostRegister(index_host_copy_.underlying_array_.data(),
-                                         index_host_copy_.underlying_array_.size() * sizeof(unsigned char),
-                                         cudaHostRegisterDefault));
-    }
-
-    /// @brief Destructor - unregisters the arrays
-    ~IndexHostMemoryPinner()
-    {
-        GW_NVTX_RANGE(profiler, "unregister_pinned_memory");
-        GW_CU_CHECK_ERR(cudaHostUnregister(index_host_copy_.underlying_array_.data()));
-    }
-
-private:
-    IndexHostCopy& index_host_copy_;
-};
-
-} // namespace details
-
 IndexHostCopy::IndexHostCopy(const Index& index,
                              const read_id_t first_read_id,
                              const std::uint64_t kmer_size,
@@ -63,6 +31,8 @@ IndexHostCopy::IndexHostCopy(const Index& index,
     : first_read_id_(first_read_id)
     , kmer_size_(kmer_size)
     , window_size_(window_size)
+    , memory_pinner_(*this)
+    , cuda_stream_(cuda_stream)
 {
     GW_NVTX_RANGE(profiler, "index_host_copy");
 
@@ -100,52 +70,56 @@ IndexHostCopy::IndexHostCopy(const Index& index,
     current_bit += unique_representations_bits;
     first_occurrence_of_representations_ = {reinterpret_cast<std::uint32_t*>(underlying_array_.data() + current_bit), index.first_occurrence_of_representations().size()};
 
-    // pin_memory_object registers host array as pinned memory and unregisters it on its destruction (i.e. at the end of this function)
-    details::IndexHostMemoryPinner pin_memory_object(const_cast<IndexHostCopy&>(*this));
+    // register pinned memory, memory gets unpinned in finish_copying_to_host()
+    memory_pinner_.register_pinned_memory();
 
     cudautils::device_copy_n(index.representations().data(),
                              index.representations().size(),
                              representations_.data,
-                             cuda_stream);
+                             cuda_stream_);
 
     cudautils::device_copy_n(index.read_ids().data(),
                              index.read_ids().size(),
                              read_ids_.data,
-                             cuda_stream);
+                             cuda_stream_);
 
     cudautils::device_copy_n(index.positions_in_reads().data(),
                              index.positions_in_reads().size(),
                              positions_in_reads_.data,
-                             cuda_stream);
+                             cuda_stream_);
 
     cudautils::device_copy_n(index.directions_of_reads().data(),
                              index.directions_of_reads().size(),
                              directions_of_reads_.data,
-                             cuda_stream);
+                             cuda_stream_);
 
     cudautils::device_copy_n(index.unique_representations().data(),
                              index.unique_representations().size(),
                              unique_representations_.data,
-                             cuda_stream);
+                             cuda_stream_);
 
     cudautils::device_copy_n(index.first_occurrence_of_representations().data(),
                              index.first_occurrence_of_representations().size(),
                              first_occurrence_of_representations_.data,
-                             cuda_stream);
+                             cuda_stream_);
 
     number_of_reads_                     = index.number_of_reads();
     number_of_basepairs_in_longest_read_ = index.number_of_basepairs_in_longest_read();
 
-    // This is not completely necessary, but if removed one has to make sure that the next step
-    // uses the same stream or that sync is done in caller
-    GW_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
+    // no stream synchronization, synchronization done in finish_copying_to_host()
+}
+
+void IndexHostCopy::finish_copying_to_host() const
+{
+    GW_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream_));
+    memory_pinner_.unregister_pinned_memory();
 }
 
 std::unique_ptr<Index> IndexHostCopy::copy_index_to_device(DefaultDeviceAllocator allocator,
                                                            const cudaStream_t cuda_stream) const
 {
     // pin_memory_object registers host array as pinned memory and unregisters it on its destruction (i.e. at the end of this function)
-    details::IndexHostMemoryPinner pin_memory_object(const_cast<IndexHostCopy&>(*this));
+    IndexHostMemoryPinner pin_memory_object(const_cast<IndexHostCopy&>(*this));
 
     return std::make_unique<IndexGPU<Minimizer>>(allocator,
                                                  *this,
@@ -205,6 +179,40 @@ std::uint64_t IndexHostCopy::kmer_size() const
 std::uint64_t IndexHostCopy::window_size() const
 {
     return window_size_;
+}
+
+IndexHostCopy::IndexHostMemoryPinner::IndexHostMemoryPinner(IndexHostCopy& index_host_copy)
+    : index_host_copy_(index_host_copy)
+    , memory_pinned_(false)
+{
+}
+
+IndexHostCopy::IndexHostMemoryPinner::~IndexHostMemoryPinner()
+{
+    // if memory was not unregistered (due to either a bug or an expection) unregister it
+    if (memory_pinned_)
+    {
+        assert(!"memory should always be unregistered by unregister_pinned_memory()");
+        GW_NVTX_RANGE(profiler, "unregister_pinned_memory");
+        GW_CU_CHECK_ERR(cudaHostUnregister(index_host_copy_.underlying_array_.data()));
+    }
+}
+
+void IndexHostCopy::IndexHostMemoryPinner::register_pinned_memory()
+{
+    GW_NVTX_RANGE(profiler, "register_pinned_memory");
+    GW_CU_CHECK_ERR(cudaHostRegister(index_host_copy_.underlying_array_.data(),
+                                     index_host_copy_.underlying_array_.size() * sizeof(unsigned char),
+                                     cudaHostRegisterDefault));
+    memory_pinned_ = true;
+}
+
+void IndexHostCopy::IndexHostMemoryPinner::unregister_pinned_memory()
+{
+    assert(memory_pinned_);
+    GW_NVTX_RANGE(profiler, "unregister_pinned_memory");
+    GW_CU_CHECK_ERR(cudaHostUnregister(index_host_copy_.underlying_array_.data()));
+    memory_pinned_ = false;
 }
 
 } // namespace cudamapper

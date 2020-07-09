@@ -24,7 +24,7 @@ namespace cudamapper
 namespace details
 {
 class IndexHostMemoryPinner;
-}
+} // namespace details
 
 /// IndexHostCopy - Creates and maintains a copy of computed IndexGPU elements on the host
 ///
@@ -32,8 +32,8 @@ class IndexHostMemoryPinner;
 class IndexHostCopy : public IndexHostCopyBase
 {
 public:
-    /// \brief Constructor
-    /// \brief cache the computed index to host
+    /// \brief Constructor - Starts creating a copy of index on the host
+    /// Copy is done asynchronously and one should wait for it to finish with finish_copying_to_host()
     /// \param index - pointer to computed index parameters (vectors of sketch elements) on GPU
     /// \param first_read_id - representing smallest read_id in index
     /// \param kmer_size - number of basepairs in a k-mer
@@ -52,6 +52,9 @@ public:
     /// \return a pointer to genomeworks::cudamapper::Index
     std::unique_ptr<Index> copy_index_to_device(DefaultDeviceAllocator allocator,
                                                 const cudaStream_t cuda_stream = 0) const override;
+
+    /// \brief waits for copy to host to be done
+    void finish_copying_to_host() const override;
 
     /// \brief returns an array of representations of sketch elements (stored on host)
     /// \return an array of representations of sketch elements
@@ -98,8 +101,33 @@ public:
     std::uint64_t window_size() const override;
 
 private:
-    // used to register host arrays as pinned memory when they are copied from
-    friend class details::IndexHostMemoryPinner;
+    /// IndexHostMemoryPinner - registers and unregisters host array in given IndexHostCopy as pinned memory
+    class IndexHostMemoryPinner
+    {
+    public:
+        /// \brief Constructor - registers pinned memory
+        /// \param index_host_copy - IndexHostCopy whose arrays should be registered
+        IndexHostMemoryPinner(IndexHostCopy& index_host_copy);
+
+        IndexHostMemoryPinner(const IndexHostMemoryPinner&) = delete;
+        IndexHostMemoryPinner& operator=(const IndexHostMemoryPinner&) = delete;
+        IndexHostMemoryPinner(IndexHostMemoryPinner&&)                 = delete;
+        IndexHostMemoryPinner& operator=(IndexHostMemoryPinner&&) = delete;
+
+        /// \brief Destructor - unregisters pinned memory if it hasn't been unregistered yet
+        ~IndexHostMemoryPinner();
+
+        /// \brief registers pinned memory
+        void register_pinned_memory();
+
+        /// \brief unregisteres pinned memory
+        void unregister_pinned_memory();
+
+    private:
+        IndexHostCopy& index_host_copy_;
+        // is memory currently pinned
+        bool memory_pinned_;
+    };
 
     // use a single underlying vector in order to reduce memory fragmentation when using pool allocators
     std::vector<unsigned char> underlying_array_;
@@ -110,6 +138,10 @@ private:
     ArrayView<SketchElement::DirectionOfRepresentation> directions_of_reads_;
     ArrayView<representation_t> unique_representations_;
     ArrayView<std::uint32_t> first_occurrence_of_representations_;
+
+    mutable IndexHostMemoryPinner memory_pinner_;
+
+    cudaStream_t cuda_stream_;
 
     read_id_t number_of_reads_;
     position_in_read_t number_of_basepairs_in_longest_read_;

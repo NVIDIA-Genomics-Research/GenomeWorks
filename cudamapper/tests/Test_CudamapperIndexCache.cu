@@ -158,8 +158,10 @@ TEST(TestCudamapperIndexCaching, test_index_cache_host_same_query_and_target)
     // CATCAAG_AAGCTA
     // All minimizers: AAG(4f0), AAG(0f1), AGC(2r1), ATC(1f0), ATG(0r0), CAA(3f0), CTA(3f1)
 
-    cudaStream_t cuda_stream;
-    GW_CU_CHECK_ERR(cudaStreamCreate(&cuda_stream));
+    cudaStream_t cuda_stream_generate;
+    cudaStream_t cuda_stream_copy;
+    GW_CU_CHECK_ERR(cudaStreamCreate(&cuda_stream_generate));
+    GW_CU_CHECK_ERR(cudaStreamCreate(&cuda_stream_copy));
 
     { // create and destroy stream outside of current scope
         const bool same_query_and_target               = true;
@@ -340,9 +342,11 @@ TEST(TestCudamapperIndexCaching, test_index_cache_host_same_query_and_target)
                                         w,
                                         hash_representations,
                                         filtering_parameter,
-                                        cuda_stream);
+                                        cuda_stream_generate,
+                                        cuda_stream_copy);
 
-        index_host_cache.generate_query_cache_content(catcaag_index_descriptors);
+        index_host_cache.start_generating_query_cache_content(catcaag_index_descriptors);
+        index_host_cache.finish_generating_query_cache_content();
 
         auto index_query_catcaag = index_host_cache.get_index_from_query_cache(catcaag_index_descriptor);
         check_if_index_is_correct(index_query_catcaag,
@@ -357,7 +361,7 @@ TEST(TestCudamapperIndexCaching, test_index_cache_host_same_query_and_target)
                                   catcaag_largest_read_id,
                                   catcaag_number_of_basepairs_in_longest_read,
                                   catcaag_maximum_kmer_size,
-                                  cuda_stream,
+                                  cuda_stream_generate,
                                   "test_index_cache_host_same_query_and_target_1");
         ASSERT_ANY_THROW(index_host_cache.get_index_from_query_cache(aagcta_index_descriptor));
         ASSERT_ANY_THROW(index_host_cache.get_index_from_query_cache(catcaag_aagcta_index_descriptor));
@@ -365,7 +369,8 @@ TEST(TestCudamapperIndexCaching, test_index_cache_host_same_query_and_target)
         ASSERT_ANY_THROW(index_host_cache.get_index_from_target_cache(aagcta_index_descriptor));
         ASSERT_ANY_THROW(index_host_cache.get_index_from_query_cache(catcaag_aagcta_index_descriptor));
 
-        index_host_cache.generate_target_cache_content(aagcta_index_descriptors);
+        index_host_cache.start_generating_target_cache_content(aagcta_index_descriptors);
+        index_host_cache.finish_generating_target_cache_content();
 
         index_query_catcaag = index_host_cache.get_index_from_query_cache(catcaag_index_descriptor);
         check_if_index_is_correct(index_query_catcaag,
@@ -380,7 +385,7 @@ TEST(TestCudamapperIndexCaching, test_index_cache_host_same_query_and_target)
                                   catcaag_largest_read_id,
                                   catcaag_number_of_basepairs_in_longest_read,
                                   catcaag_maximum_kmer_size,
-                                  cuda_stream,
+                                  cuda_stream_generate,
                                   "test_index_cache_host_same_query_and_target_2");
         ASSERT_ANY_THROW(index_host_cache.get_index_from_query_cache(aagcta_index_descriptor));
         ASSERT_ANY_THROW(index_host_cache.get_index_from_query_cache(catcaag_aagcta_index_descriptor));
@@ -398,11 +403,12 @@ TEST(TestCudamapperIndexCaching, test_index_cache_host_same_query_and_target)
                                   aagcta_largest_read_id,
                                   aagcta_number_of_basepairs_in_longest_read,
                                   aagcta_maximum_kmer_size,
-                                  cuda_stream,
+                                  cuda_stream_generate,
                                   "test_index_cache_host_same_query_and_target_3");
         ASSERT_ANY_THROW(index_host_cache.get_index_from_query_cache(catcaag_aagcta_index_descriptor));
 
-        index_host_cache.generate_query_cache_content(aagcta_index_descriptors);
+        index_host_cache.start_generating_query_cache_content(aagcta_index_descriptors);
+        index_host_cache.finish_generating_target_cache_content();
 
         ASSERT_ANY_THROW(index_host_cache.get_index_from_query_cache(catcaag_index_descriptor));
         auto index_query_aagcta = index_host_cache.get_index_from_query_cache(aagcta_index_descriptor);
@@ -418,7 +424,7 @@ TEST(TestCudamapperIndexCaching, test_index_cache_host_same_query_and_target)
                                   aagcta_largest_read_id,
                                   aagcta_number_of_basepairs_in_longest_read,
                                   aagcta_maximum_kmer_size,
-                                  cuda_stream,
+                                  cuda_stream_generate,
                                   "test_index_cache_host_same_query_and_target_4");
         ASSERT_ANY_THROW(index_host_cache.get_index_from_query_cache(catcaag_aagcta_index_descriptor));
         ASSERT_ANY_THROW(index_host_cache.get_index_from_target_cache(catcaag_index_descriptor));
@@ -435,11 +441,12 @@ TEST(TestCudamapperIndexCaching, test_index_cache_host_same_query_and_target)
                                   aagcta_largest_read_id,
                                   aagcta_number_of_basepairs_in_longest_read,
                                   aagcta_maximum_kmer_size,
-                                  cuda_stream,
+                                  cuda_stream_generate,
                                   "test_index_cache_host_same_query_and_target_5");
         ASSERT_ANY_THROW(index_host_cache.get_index_from_query_cache(catcaag_aagcta_index_descriptor));
 
-        index_host_cache.generate_query_cache_content(catcaag_aagcta_separate_index_descriptors);
+        index_host_cache.start_generating_query_cache_content(catcaag_aagcta_separate_index_descriptors);
+        index_host_cache.finish_generating_target_cache_content();
 
         auto index_query_catcaag_separate = index_host_cache.get_index_from_query_cache(catcaag_index_descriptor);
         check_if_index_is_correct(index_query_catcaag_separate,
@@ -454,7 +461,7 @@ TEST(TestCudamapperIndexCaching, test_index_cache_host_same_query_and_target)
                                   catcaag_largest_read_id,
                                   catcaag_number_of_basepairs_in_longest_read,
                                   catcaag_maximum_kmer_size,
-                                  cuda_stream,
+                                  cuda_stream_generate,
                                   "test_index_cache_host_same_query_and_target_6");
         auto index_query_aagcta_separate = index_host_cache.get_index_from_query_cache(aagcta_index_descriptor);
         check_if_index_is_correct(index_query_aagcta_separate,
@@ -469,7 +476,7 @@ TEST(TestCudamapperIndexCaching, test_index_cache_host_same_query_and_target)
                                   aagcta_largest_read_id,
                                   aagcta_number_of_basepairs_in_longest_read,
                                   aagcta_maximum_kmer_size,
-                                  cuda_stream,
+                                  cuda_stream_generate,
                                   "test_index_cache_host_same_query_and_target_7");
         ASSERT_ANY_THROW(index_host_cache.get_index_from_query_cache(catcaag_aagcta_index_descriptor));
         ASSERT_ANY_THROW(index_host_cache.get_index_from_target_cache(catcaag_index_descriptor));
@@ -486,11 +493,12 @@ TEST(TestCudamapperIndexCaching, test_index_cache_host_same_query_and_target)
                                   aagcta_largest_read_id,
                                   aagcta_number_of_basepairs_in_longest_read,
                                   aagcta_maximum_kmer_size,
-                                  cuda_stream,
+                                  cuda_stream_generate,
                                   "test_index_cache_host_same_query_and_target_8");
         ASSERT_ANY_THROW(index_host_cache.get_index_from_query_cache(catcaag_aagcta_index_descriptor));
 
-        index_host_cache.generate_target_cache_content(catcaag_aagcta_one_index_descriptors);
+        index_host_cache.start_generating_target_cache_content(catcaag_aagcta_one_index_descriptors);
+        index_host_cache.finish_generating_target_cache_content();
 
         index_query_catcaag_separate = index_host_cache.get_index_from_query_cache(catcaag_index_descriptor);
         check_if_index_is_correct(index_query_catcaag_separate,
@@ -505,7 +513,7 @@ TEST(TestCudamapperIndexCaching, test_index_cache_host_same_query_and_target)
                                   catcaag_largest_read_id,
                                   catcaag_number_of_basepairs_in_longest_read,
                                   catcaag_maximum_kmer_size,
-                                  cuda_stream,
+                                  cuda_stream_generate,
                                   "test_index_cache_host_same_query_and_target_9");
         index_query_aagcta_separate = index_host_cache.get_index_from_query_cache(aagcta_index_descriptor);
         check_if_index_is_correct(index_query_aagcta_separate,
@@ -520,7 +528,7 @@ TEST(TestCudamapperIndexCaching, test_index_cache_host_same_query_and_target)
                                   aagcta_largest_read_id,
                                   aagcta_number_of_basepairs_in_longest_read,
                                   aagcta_maximum_kmer_size,
-                                  cuda_stream,
+                                  cuda_stream_generate,
                                   "test_index_cache_host_same_query_and_target_10");
         ASSERT_ANY_THROW(index_host_cache.get_index_from_query_cache(catcaag_aagcta_index_descriptor));
         ASSERT_ANY_THROW(index_host_cache.get_index_from_target_cache(catcaag_index_descriptor));
@@ -538,12 +546,13 @@ TEST(TestCudamapperIndexCaching, test_index_cache_host_same_query_and_target)
                                   catcaag_aagcta_largest_read_id,
                                   catcaag_aagcta_number_of_basepairs_in_longest_read,
                                   catcaag_aagcta_maximum_kmer_size,
-                                  cuda_stream,
+                                  cuda_stream_generate,
                                   "test_index_cache_host_same_query_and_target_11");
     }
 
-    GW_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
-    GW_CU_CHECK_ERR(cudaStreamDestroy(cuda_stream));
+    GW_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream_generate));
+    GW_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream_copy));
+    GW_CU_CHECK_ERR(cudaStreamDestroy(cuda_stream_generate));
 }
 
 TEST(TestCudamapperIndexCaching, test_index_cache_host_not_the_same_query_and_target)
@@ -594,8 +603,10 @@ TEST(TestCudamapperIndexCaching, test_index_cache_host_not_the_same_query_and_ta
 
     // All minimizers: AAG(4f), ATC(1f), ATG(0r), CAA(3f)
 
-    cudaStream_t cuda_stream;
-    GW_CU_CHECK_ERR(cudaStreamCreate(&cuda_stream));
+    cudaStream_t cuda_stream_generate;
+    cudaStream_t cuda_stream_copy;
+    GW_CU_CHECK_ERR(cudaStreamCreate(&cuda_stream_generate));
+    GW_CU_CHECK_ERR(cudaStreamCreate(&cuda_stream_copy));
 
     { // create and destroy stream outside of current scope
         const bool same_query_and_target               = false;
@@ -706,9 +717,11 @@ TEST(TestCudamapperIndexCaching, test_index_cache_host_not_the_same_query_and_ta
                                         w,
                                         hash_representations,
                                         filtering_parameter,
-                                        cuda_stream);
+                                        cuda_stream_generate,
+                                        cuda_stream_copy);
 
-        index_host_cache.generate_query_cache_content(index_descriptors);
+        index_host_cache.start_generating_query_cache_content(index_descriptors);
+        index_host_cache.finish_generating_query_cache_content();
 
         auto index_query_aagcta = index_host_cache.get_index_from_query_cache(index_descriptor);
         check_if_index_is_correct(index_query_aagcta,
@@ -723,11 +736,12 @@ TEST(TestCudamapperIndexCaching, test_index_cache_host_not_the_same_query_and_ta
                                   aagcta_largest_read_id,
                                   aagcta_number_of_basepairs_in_longest_read,
                                   aagcta_maximum_kmer_size,
-                                  cuda_stream,
+                                  cuda_stream_generate,
                                   "test_index_cache_host_not_the_same_query_and_target_1");
         ASSERT_ANY_THROW(index_host_cache.get_index_from_target_cache(index_descriptor));
 
-        index_host_cache.generate_target_cache_content(index_descriptors);
+        index_host_cache.start_generating_target_cache_content(index_descriptors);
+        index_host_cache.finish_generating_target_cache_content();
 
         index_query_aagcta = index_host_cache.get_index_from_query_cache(index_descriptor);
         check_if_index_is_correct(index_query_aagcta,
@@ -742,7 +756,7 @@ TEST(TestCudamapperIndexCaching, test_index_cache_host_not_the_same_query_and_ta
                                   aagcta_largest_read_id,
                                   aagcta_number_of_basepairs_in_longest_read,
                                   aagcta_maximum_kmer_size,
-                                  cuda_stream,
+                                  cuda_stream_generate,
                                   "test_index_cache_host_not_the_same_query_and_target_2");
         auto index_target_catcaag = index_host_cache.get_index_from_target_cache(index_descriptor);
         check_if_index_is_correct(index_target_catcaag,
@@ -757,20 +771,23 @@ TEST(TestCudamapperIndexCaching, test_index_cache_host_not_the_same_query_and_ta
                                   catcaag_largest_read_id,
                                   catcaag_number_of_basepairs_in_longest_read,
                                   catcaag_maximum_kmer_size,
-                                  cuda_stream,
+                                  cuda_stream_generate,
                                   "test_index_cache_host_not_the_same_query_and_target_3");
     }
 
-    GW_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
-    GW_CU_CHECK_ERR(cudaStreamDestroy(cuda_stream));
+    GW_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream_generate));
+    GW_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream_copy));
+    GW_CU_CHECK_ERR(cudaStreamDestroy(cuda_stream_generate));
 }
 
 TEST(TestCudamapperIndexCaching, test_index_cache_host_keep_on_device)
 {
     // AAGCTA: AAG(0f), AGC(2r), CTA(3f)
 
-    cudaStream_t cuda_stream;
-    GW_CU_CHECK_ERR(cudaStreamCreate(&cuda_stream));
+    cudaStream_t cuda_stream_generate;
+    cudaStream_t cuda_stream_copy;
+    GW_CU_CHECK_ERR(cudaStreamCreate(&cuda_stream_generate));
+    GW_CU_CHECK_ERR(cudaStreamCreate(&cuda_stream_copy));
 
     { // create and destroy stream outside of current scope
         const bool same_query_and_target               = true;
@@ -835,12 +852,13 @@ TEST(TestCudamapperIndexCaching, test_index_cache_host_keep_on_device)
                                                                  w,
                                                                  hash_representations,
                                                                  filtering_parameter,
-                                                                 cuda_stream);
+                                                                 cuda_stream_generate,
+                                                                 cuda_stream_copy);
 
-        index_cache_host->generate_query_cache_content(index_descriptors,
-                                                       index_descriptors);
-        index_cache_host->generate_target_cache_content(index_descriptors,
-                                                        index_descriptors);
+        index_cache_host->start_generating_query_cache_content(index_descriptors, index_descriptors);
+        index_cache_host->start_generating_target_cache_content(index_descriptors, index_descriptors);
+        index_cache_host->finish_generating_query_cache_content();
+        index_cache_host->finish_generating_target_cache_content();
 
         auto index_query_temp_device_cache  = index_cache_host->get_index_from_query_cache(index_descriptor);
         auto index_query_copy_from_host     = index_cache_host->get_index_from_query_cache(index_descriptor);
@@ -863,7 +881,7 @@ TEST(TestCudamapperIndexCaching, test_index_cache_host_keep_on_device)
                                   aagcta_largest_read_id,
                                   aagcta_number_of_basepairs_in_longest_read,
                                   aagcta_maximum_kmer_size,
-                                  cuda_stream,
+                                  cuda_stream_generate,
                                   "test_index_cache_host_keep_on_device_1");
         check_if_index_is_correct(index_query_copy_from_host,
                                   aagcta_representations,
@@ -877,7 +895,7 @@ TEST(TestCudamapperIndexCaching, test_index_cache_host_keep_on_device)
                                   aagcta_largest_read_id,
                                   aagcta_number_of_basepairs_in_longest_read,
                                   aagcta_maximum_kmer_size,
-                                  cuda_stream,
+                                  cuda_stream_generate,
                                   "test_index_cache_host_keep_on_device_2");
         check_if_index_is_correct(index_target_temp_device_cache,
                                   aagcta_representations,
@@ -891,7 +909,7 @@ TEST(TestCudamapperIndexCaching, test_index_cache_host_keep_on_device)
                                   aagcta_largest_read_id,
                                   aagcta_number_of_basepairs_in_longest_read,
                                   aagcta_maximum_kmer_size,
-                                  cuda_stream,
+                                  cuda_stream_generate,
                                   "test_index_cache_host_keep_on_device_3");
         check_if_index_is_correct(index_target_copy_from_host,
                                   aagcta_representations,
@@ -905,12 +923,13 @@ TEST(TestCudamapperIndexCaching, test_index_cache_host_keep_on_device)
                                   aagcta_largest_read_id,
                                   aagcta_number_of_basepairs_in_longest_read,
                                   aagcta_maximum_kmer_size,
-                                  cuda_stream,
+                                  cuda_stream_generate,
                                   "test_index_cache_host_keep_on_device_4");
     }
 
-    GW_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
-    GW_CU_CHECK_ERR(cudaStreamDestroy(cuda_stream));
+    GW_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream_generate));
+    GW_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream_copy));
+    GW_CU_CHECK_ERR(cudaStreamDestroy(cuda_stream_generate));
 }
 
 // *** Test IndexCacheDevice ***
@@ -925,8 +944,10 @@ TEST(TestCudamapperIndexCaching, test_index_cache_device_same_query_and_target)
     // CATCAAG minimizers: AAG(4f), ATC(1f), ATG(0r), CAA(3f)
     // AAGCTA minimizers: AAG(0f), AGC(2r), CTA(3f)
 
-    cudaStream_t cuda_stream;
-    GW_CU_CHECK_ERR(cudaStreamCreate(&cuda_stream));
+    cudaStream_t cuda_stream_generate;
+    cudaStream_t cuda_stream_copy;
+    GW_CU_CHECK_ERR(cudaStreamCreate(&cuda_stream_generate));
+    GW_CU_CHECK_ERR(cudaStreamCreate(&cuda_stream_copy));
 
     { // create and destroy stream outside of current scope
         const bool same_query_and_target               = true;
@@ -1039,12 +1060,14 @@ TEST(TestCudamapperIndexCaching, test_index_cache_device_same_query_and_target)
                                                                  w,
                                                                  hash_representations,
                                                                  filtering_parameter,
-                                                                 cuda_stream);
+                                                                 cuda_stream_generate,
+                                                                 cuda_stream_copy);
 
         IndexCacheDevice index_cache_device(same_query_and_target,
                                             index_cache_host);
 
-        index_cache_host->generate_query_cache_content(catcaag_index_descriptors);
+        index_cache_host->start_generating_query_cache_content(catcaag_index_descriptors);
+        index_cache_host->finish_generating_query_cache_content();
         ASSERT_ANY_THROW(index_cache_device.get_index_from_query_cache(catcaag_index_descriptor));
         index_cache_device.generate_query_cache_content(catcaag_index_descriptors);
         auto index_query_catcaag = index_cache_device.get_index_from_query_cache(catcaag_index_descriptor);
@@ -1060,13 +1083,14 @@ TEST(TestCudamapperIndexCaching, test_index_cache_device_same_query_and_target)
                                   catcaag_largest_read_id,
                                   catcaag_number_of_basepairs_in_longest_read,
                                   catcaag_maximum_kmer_size,
-                                  cuda_stream,
+                                  cuda_stream_generate,
                                   "test_index_cache_device_same_query_and_target_1");
         ASSERT_ANY_THROW(index_cache_device.get_index_from_query_cache(aagcta_index_descriptor));
         ASSERT_ANY_THROW(index_cache_device.get_index_from_target_cache(catcaag_index_descriptor));
         ASSERT_ANY_THROW(index_cache_device.get_index_from_target_cache(aagcta_index_descriptor));
 
-        index_cache_host->generate_target_cache_content(catcaag_aagcta_index_descriptors);
+        index_cache_host->start_generating_target_cache_content(catcaag_aagcta_index_descriptors);
+        index_cache_host->finish_generating_target_cache_content();
         ASSERT_ANY_THROW(index_cache_device.get_index_from_target_cache(catcaag_index_descriptor));
         ASSERT_ANY_THROW(index_cache_device.get_index_from_target_cache(aagcta_index_descriptor));
         index_cache_device.generate_target_cache_content(catcaag_aagcta_index_descriptors);
@@ -1085,7 +1109,7 @@ TEST(TestCudamapperIndexCaching, test_index_cache_device_same_query_and_target)
                                   catcaag_largest_read_id,
                                   catcaag_number_of_basepairs_in_longest_read,
                                   catcaag_maximum_kmer_size,
-                                  cuda_stream,
+                                  cuda_stream_generate,
                                   "test_index_cache_device_same_query_and_target_2");
 
         auto index_target_aagcta = index_cache_device.get_index_from_target_cache(aagcta_index_descriptor);
@@ -1101,7 +1125,7 @@ TEST(TestCudamapperIndexCaching, test_index_cache_device_same_query_and_target)
                                   aagcta_largest_read_id,
                                   aagcta_number_of_basepairs_in_longest_read,
                                   aagcta_maximum_kmer_size,
-                                  cuda_stream,
+                                  cuda_stream_generate,
                                   "test_index_cache_device_same_query_and_target_3");
 
         // get the same query and target indices again and make sure they point to the same objects as the last time
@@ -1111,8 +1135,9 @@ TEST(TestCudamapperIndexCaching, test_index_cache_device_same_query_and_target)
         ASSERT_EQ(index_target_aagcta, index_target_aagcta_1);
     }
 
-    GW_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
-    GW_CU_CHECK_ERR(cudaStreamDestroy(cuda_stream));
+    GW_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream_generate));
+    GW_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream_copy));
+    GW_CU_CHECK_ERR(cudaStreamDestroy(cuda_stream_generate));
 }
 
 TEST(TestCudamapperIndexCaching, test_index_cache_device_not_the_same_query_and_target)
@@ -1120,8 +1145,10 @@ TEST(TestCudamapperIndexCaching, test_index_cache_device_not_the_same_query_and_
     // AAGCTA: AAG(0f), AGC(2r), CTA(3f)
     // CATCAAG: AAG(4f), ATC(1f), ATG(0r), CAA(3f)
 
-    cudaStream_t cuda_stream;
-    GW_CU_CHECK_ERR(cudaStreamCreate(&cuda_stream));
+    cudaStream_t cuda_stream_generate;
+    cudaStream_t cuda_stream_copy;
+    GW_CU_CHECK_ERR(cudaStreamCreate(&cuda_stream_generate));
+    GW_CU_CHECK_ERR(cudaStreamCreate(&cuda_stream_copy));
 
     { // create and destroy stream outside of current scope
         const bool same_query_and_target               = false;
@@ -1232,12 +1259,14 @@ TEST(TestCudamapperIndexCaching, test_index_cache_device_not_the_same_query_and_
                                                                  w,
                                                                  hash_representations,
                                                                  filtering_parameter,
-                                                                 cuda_stream);
+                                                                 cuda_stream_generate,
+                                                                 cuda_stream_copy);
 
         IndexCacheDevice index_cache_device(same_query_and_target,
                                             index_cache_host);
 
-        index_cache_host->generate_query_cache_content(index_descriptors);
+        index_cache_host->start_generating_query_cache_content(index_descriptors);
+        index_cache_host->finish_generating_query_cache_content();
         ASSERT_ANY_THROW(index_cache_device.get_index_from_query_cache(index_descriptor));
         ASSERT_ANY_THROW(index_cache_device.get_index_from_target_cache(index_descriptor));
 
@@ -1255,13 +1284,14 @@ TEST(TestCudamapperIndexCaching, test_index_cache_device_not_the_same_query_and_
                                   aagcta_largest_read_id,
                                   aagcta_number_of_basepairs_in_longest_read,
                                   aagcta_maximum_kmer_size,
-                                  cuda_stream,
+                                  cuda_stream_generate,
                                   "test_index_cache_device_not_the_same_query_and_target_1");
         ASSERT_ANY_THROW(index_cache_device.get_index_from_target_cache(index_descriptor));
 
         ASSERT_ANY_THROW(index_cache_device.generate_target_cache_content(index_descriptors));
 
-        index_cache_host->generate_target_cache_content(index_descriptors);
+        index_cache_host->start_generating_target_cache_content(index_descriptors);
+        index_cache_host->finish_generating_target_cache_content();
         index_cache_device.generate_target_cache_content(index_descriptors);
 
         index_query       = index_cache_device.get_index_from_query_cache(index_descriptor);
@@ -1279,7 +1309,7 @@ TEST(TestCudamapperIndexCaching, test_index_cache_device_not_the_same_query_and_
                                   aagcta_largest_read_id,
                                   aagcta_number_of_basepairs_in_longest_read,
                                   aagcta_maximum_kmer_size,
-                                  cuda_stream,
+                                  cuda_stream_generate,
                                   "test_index_cache_device_not_the_same_query_and_target_2");
         check_if_index_is_correct(index_target,
                                   catcaag_representations,
@@ -1293,7 +1323,7 @@ TEST(TestCudamapperIndexCaching, test_index_cache_device_not_the_same_query_and_
                                   catcaag_largest_read_id,
                                   catcaag_number_of_basepairs_in_longest_read,
                                   catcaag_maximum_kmer_size,
-                                  cuda_stream,
+                                  cuda_stream_generate,
                                   "test_index_cache_device_not_the_same_query_and_target_3");
 
         // get the same query and target indices again and make sure they point to the same objects as the last time
@@ -1303,8 +1333,9 @@ TEST(TestCudamapperIndexCaching, test_index_cache_device_not_the_same_query_and_
         ASSERT_EQ(index_target, index_target_1);
     }
 
-    GW_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
-    GW_CU_CHECK_ERR(cudaStreamDestroy(cuda_stream));
+    GW_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream_generate));
+    GW_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream_copy));
+    GW_CU_CHECK_ERR(cudaStreamDestroy(cuda_stream_generate));
 }
 
 } // namespace cudamapper
