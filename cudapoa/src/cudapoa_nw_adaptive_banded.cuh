@@ -302,7 +302,7 @@ __device__ void set_band_parameters(ScoreT* scores,
     get_predecessors_max_score_index(pred_max_score_left, pred_max_score_right, row, node_id, scores, node_id_to_pos, max_indices, band_widths,
                                      band_starts, incoming_edge_count, incoming_edges, head_indices, min_score_value);
 
-    SizeT node_distance_i = node_distances[row];
+    SizeT node_distance_i = node_distances[node_id];
 
     SizeT b_start = min(node_distance_i, pred_max_score_left);
     b_start       = b_start < 0 ? 0 : b_start;
