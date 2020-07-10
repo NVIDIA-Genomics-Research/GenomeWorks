@@ -53,12 +53,10 @@ __device__ ScoreT* get_score_ptr_adaptive(ScoreT* scores, SizeT row, SizeT colum
  * @param[in] column              Column # of the element
  * @param[in] value               Value to set
  * @param[in] band_starts         Array of band_starts per row
- * @param[in] band_widths         Array of band_widths per row
  * @param[in] head_indices        Array of indexes in score that map to band_start per row
- * @param[in] max_column          Last column # in the score matrix
 */
 template <typename ScoreT, typename SizeT>
-__device__ void set_score_adaptive(ScoreT* scores, SizeT row, SizeT column, ScoreT value, SizeT* band_starts, SizeT* band_widths, int64_t* head_indices, SizeT max_column)
+__device__ void set_score_adaptive(ScoreT* scores, SizeT row, SizeT column, ScoreT value, SizeT* band_starts, int64_t* head_indices)
 {
     SizeT band_start = band_starts[row];
 
@@ -86,10 +84,10 @@ __device__ void initialize_band_adaptive(ScoreT* scores, SizeT row, ScoreT min_s
     SizeT band_end = band_start + band_widths[row];
     band_start     = max(1, band_starts[row]);
 
-    set_score_adaptive(scores, row, band_start, min_score_value, band_starts, band_widths, head_indices, max_column);
+    set_score_adaptive(scores, row, band_start, min_score_value, band_starts, head_indices);
     if (lane_idx < CUDAPOA_BANDED_MATRIX_RIGHT_PADDING)
     {
-        set_score_adaptive(scores, row, lane_idx + band_end, min_score_value, band_starts, band_widths, head_indices, max_column);
+        set_score_adaptive(scores, row, lane_idx + band_end, min_score_value, band_starts, head_indices);
     }
 };
 
@@ -104,6 +102,7 @@ __device__ void initialize_band_adaptive(ScoreT* scores, SizeT row, ScoreT min_s
  * @param[in] band_widths         Array of band_widths per row
  * @param[in] head_indices        Array of indexes in score that map to band_start per row
  * @param[in] max_column          Last column # in the score matrix
+ * @param[in] min_score_value     Minimum score value
  * @param[out] score              Score at the specified row and column
 */
 template <typename ScoreT, typename SizeT>
@@ -176,6 +175,8 @@ __device__ ScoreT4<ScoreT> get_scores_adaptive(ScoreT* scores,
     }
 }
 
+// The following kernel finds index and value of the maximum score in 32 consequtive cells in a given row
+// if two or more scores are equal to the maximum value, the left most index will be output
 template <typename ScoreT, typename SizeT>
 __device__ void warp_reduce_max(ScoreT& val, SizeT& idx)
 {
@@ -216,7 +217,7 @@ __device__ void get_predecessors_max_score_index(SizeT& pred_max_score_left,
         // max score index for this (predecessor) node_id is not computed yet
         if (max_score_idx == -1)
         {
-            SizeT lane_idx = threadIdx.x % WARP_SIZE;
+            SizeT lane_idx   = threadIdx.x % WARP_SIZE;
             SizeT band_width = band_widths[pred_idx];
             SizeT band_start = band_starts[pred_idx];
 
@@ -262,7 +263,7 @@ __device__
     if (pred_count == 0)
     {
         first_column_score = gap_score;
-        set_score_adaptive(scores, row, SizeT{0}, first_column_score, band_starts, band_widths, head_indices, max_column);
+        set_score_adaptive(scores, row, SizeT{0}, first_column_score, band_starts, head_indices);
     }
     else
     {
@@ -274,7 +275,7 @@ __device__
             penalty                   = max(penalty, get_score_adaptive(scores, pred_node_graph_pos, SizeT{0}, band_starts, band_widths, head_indices, max_column, min_score_value));
         }
         first_column_score = penalty + gap_score;
-        set_score_adaptive(scores, row, SizeT{0}, first_column_score, band_starts, band_widths, head_indices, max_column);
+        set_score_adaptive(scores, row, SizeT{0}, first_column_score, band_starts, head_indices);
     }
 
     return first_column_score;
@@ -336,7 +337,6 @@ __device__ void set_band_parameters(ScoreT* scores,
     band_starts[row]  = start_pos;
     band_widths[row]  = band_width;
     head_indices[row] = static_cast<int64_t>(row) * static_cast<int64_t>(band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING);
-
 }
 
 template <typename SeqT,
@@ -368,7 +368,7 @@ __device__
 {
 
     GW_CONSTEXPR ScoreT score_type_min_limit = numeric_limits<ScoreT>::min();
-    const ScoreT min_score_value             = score_type_min_limit/2;
+    const ScoreT min_score_value             = score_type_min_limit / 2;
 
     int16_t lane_idx = threadIdx.x % WARP_SIZE;
     int64_t score_index;
@@ -384,7 +384,7 @@ __device__
     // Initialise the horizontal boundary of the score matrix, initialising of the vertical boundary is done within the main for loop
     for (SizeT j = lane_idx; j < max_matrix_sequence_dimension; j += WARP_SIZE)
     {
-        set_score_adaptive(scores, SizeT{0}, j, static_cast<ScoreT>(j * gap_score), band_starts, band_widths, head_indices, max_column);
+        set_score_adaptive(scores, SizeT{0}, j, static_cast<ScoreT>(j * gap_score), band_starts, head_indices);
     }
 
     // reset max score indices per row
