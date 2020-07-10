@@ -56,7 +56,7 @@ namespace cudapoa
  * @return Status code for any errors encountered.
  */
 
-template <bool msa = false, typename SizeT>
+template <typename SizeT>
 __device__
     uint8_t
     addAlignmentToGraph(SizeT& new_node_count,
@@ -78,7 +78,8 @@ __device__
                         uint16_t* outgoing_edges_coverage_count,
                         uint16_t s,
                         uint32_t max_sequences_per_poa,
-                        uint32_t max_limit_nodes_per_window)
+                        uint32_t max_limit_nodes_per_window,
+                        bool msa = false)
 {
     //printf("Running addition for alignment %d\n", alignment_length);
     SizeT head_node_id   = -1;
