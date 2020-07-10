@@ -194,31 +194,36 @@ __device__ void warp_reduce_max(ScoreT& val, SizeT& idx)
 template <typename ScoreT, typename SizeT>
 __device__ void get_predecessors_max_score_index(SizeT& pred_max_score_left,
                                                  SizeT& pred_max_score_right,
-                                                 SizeT node,
+                                                 SizeT row,
+                                                 SizeT node_id,
                                                  ScoreT* scores,
                                                  SizeT* node_id_to_pos,
                                                  SizeT* max_indices,
                                                  SizeT* band_widths,
+                                                 SizeT* band_starts,
                                                  uint16_t* incoming_edge_count,
                                                  SizeT* incoming_edges,
                                                  int64_t* head_indices,
                                                  ScoreT min_score_value)
 {
-    for (uint16_t p = 0; p < incoming_edge_count[node]; p++)
+    for (uint16_t p = 0; p < incoming_edge_count[node_id]; p++)
     {
-        SizeT pred_idx       = node_id_to_pos[incoming_edges[node * CUDAPOA_MAX_NODE_EDGES + p]] + 1;
+        SizeT pred_idx       = node_id_to_pos[incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES + p]];
         SizeT max_score_idx  = max_indices[pred_idx];
         ScoreT max_score_val = min_score_value;
         int64_t head_index   = head_indices[pred_idx];
 
+        // max score index for this (predecessor) node_id is not computed yet
         if (max_score_idx == -1)
         {
             SizeT lane_idx = threadIdx.x % WARP_SIZE;
-            // max score index for this (predecessor) node is not computed yet
-            for (SizeT index = lane_idx; index < band_widths[pred_idx]; index += WARP_SIZE)
+            SizeT band_width = band_widths[pred_idx];
+            SizeT band_start = band_starts[pred_idx];
+
+            for (SizeT index = lane_idx; index < band_width; index += WARP_SIZE)
             {
                 ScoreT score_val = scores[static_cast<int64_t>(index) + head_index];
-                SizeT score_idx  = index;
+                SizeT score_idx  = index + band_start;
                 warp_reduce_max(score_val, score_idx);
                 score_val = __shfl_sync(FULL_MASK, score_val, 0);
                 if (score_val > max_score_val)
@@ -285,6 +290,7 @@ __device__ void set_band_parameters(ScoreT* scores,
                                     SizeT* incoming_edges,
                                     SizeT* node_distances,
                                     SizeT* node_id_to_pos,
+                                    SizeT node_id,
                                     SizeT row,
                                     SizeT max_column,
                                     SizeT graph_length,
@@ -295,8 +301,8 @@ __device__ void set_band_parameters(ScoreT* scores,
 
     if(row < graph_length)
     {
-        get_predecessors_max_score_index(pred_max_score_left, pred_max_score_right, row, scores, node_id_to_pos, max_indices, band_widths,
-                                         incoming_edge_count, incoming_edges, head_indices, min_score_value);
+        get_predecessors_max_score_index(pred_max_score_left, pred_max_score_right, row, node_id, scores, node_id_to_pos, max_indices, band_widths,
+                                         band_starts, incoming_edge_count, incoming_edges, head_indices, min_score_value);
 
         SizeT node_distance_i = node_distances[row];
 
@@ -323,10 +329,11 @@ __device__ void set_band_parameters(ScoreT* scores,
         start_pos = max(start_pos, 0);
         start_pos = start_pos - (start_pos % CELLS_PER_THREAD);
 
-        //    if (threadIdx.x == 0)
-        //    {
-        //        printf("(pl %3d, pr %3d) , (bl %3d, br %3d) , bw %3d,   dist %3d\n", pred_max_score_left, pred_max_score_right, start_pos, end_pos, band_width, node_distance_i);
-        //    }
+        //if (threadIdx.x == 0)
+        //{
+        //    printf("-> %3d %3d (pl %3d, pr %3d) , (bl %3d, br %3d) , bw %3d,   dist %3d\n", row, node_id,
+        //    pred_max_score_left, pred_max_score_right, start_pos, end_pos, band_width, node_distance_i);
+        //}
 
         band_starts[row]  = start_pos;
         band_widths[row]  = band_width;
@@ -340,7 +347,6 @@ __device__ void set_band_parameters(ScoreT* scores,
         band_widths[row]  = band_width;
         head_indices[row] = static_cast<int64_t>(row) * static_cast<int64_t>(band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING);
     }
-
 
 }
 
@@ -382,9 +388,9 @@ __device__
 
     SizeT max_matrix_sequence_dimension = static_band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING;
 
-    // set parameters for node 0 (row 0)
+    // set parameters for node_id 0 (row 0)
     set_band_parameters(scores, band_starts, band_widths, head_indices, max_indices, incoming_edge_count, incoming_edges,
-                        node_distances, node_id_to_pos, SizeT{0}, max_column, graph_count, min_score_value);
+                        node_distances, node_id_to_pos, SizeT{0}, SizeT{0}, max_column, graph_count, min_score_value);
 
     // Initialise the horizontal boundary of the score matrix, initialising of the vertical boundary is done within the main for loop
     for (SizeT j = lane_idx; j < max_matrix_sequence_dimension; j += WARP_SIZE)
@@ -392,7 +398,7 @@ __device__
         set_score_adaptive(scores, SizeT{0}, j, static_cast<ScoreT>(j * gap_score), band_starts, band_widths, head_indices, max_column);
     }
 
-    // reset max score indices per node
+    // reset max score indices per row
     for (SizeT i = lane_idx; i < graph_count; i += WARP_SIZE)
     {
         max_indices[i] = -1;
@@ -417,7 +423,7 @@ __device__
         SizeT score_gIdx = graph_pos + 1;
 
         set_band_parameters(scores, band_starts, band_widths, head_indices, max_indices, incoming_edge_count,
-                            incoming_edges, node_distances, node_id_to_pos, score_gIdx, max_column, graph_count, min_score_value);
+                            incoming_edges, node_distances, node_id_to_pos, node_id, score_gIdx, max_column, graph_count, min_score_value);
 
         SizeT band_start = band_starts[score_gIdx];
 
