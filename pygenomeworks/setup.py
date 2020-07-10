@@ -38,7 +38,7 @@ def get_verified_absolute_path(path):
     """
     installed_path = os.path.abspath(path)
     if not os.path.exists(installed_path):
-        raise RuntimeError("No valid path for requested component exists")
+        raise RuntimeError("The requested path does not exist:{}".format(installed_path))
     return installed_path
 
 
@@ -96,10 +96,17 @@ cuda_library_path = os.path.join(cuda_root, 'lib64')
 current_dir = os.path.dirname(os.path.realpath(__file__))
 
 
-# Copies shared libraries into clargenomics package
+# Copies shared libraries into genomeworks package
 copy_all_files_in_directory(
     get_verified_absolute_path(os.path.join(gw_install_dir, "lib")),
     os.path.join(current_dir, "genomeworks", "shared_libs/"),
+)
+
+# Copies license from genomeworks root dir for packaging
+copy_all_files_in_directory(
+    get_verified_absolute_path(gw_root_dir),
+    get_verified_absolute_path(current_dir),
+    file_ext="LICENSE"
 )
 
 # Classifiers for PyPI
