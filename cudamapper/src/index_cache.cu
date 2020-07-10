@@ -216,7 +216,7 @@ void IndexCacheHost::finish_generating_cache_content(CacheSelector which_cache)
     // wait for all indices to finish being copied to host memory
     for (auto& index_in_progress : indices_in_progress)
     {
-        index_in_progress->finish_copying_to_host();
+        index_in_progress->finish_copying();
     }
     indices_in_progress.clear();
 }

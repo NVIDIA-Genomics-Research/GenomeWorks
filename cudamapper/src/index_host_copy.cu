@@ -70,7 +70,7 @@ IndexHostCopy::IndexHostCopy(const Index& index,
     current_bit += unique_representations_bits;
     first_occurrence_of_representations_ = {reinterpret_cast<std::uint32_t*>(underlying_array_.data() + current_bit), index.first_occurrence_of_representations().size()};
 
-    // register pinned memory, memory gets unpinned in finish_copying_to_host()
+    // register pinned memory, memory gets unpinned in finish_copying()
     memory_pinner_.register_pinned_memory();
 
     cudautils::device_copy_n(index.representations().data(),
@@ -106,10 +106,10 @@ IndexHostCopy::IndexHostCopy(const Index& index,
     number_of_reads_                     = index.number_of_reads();
     number_of_basepairs_in_longest_read_ = index.number_of_basepairs_in_longest_read();
 
-    // no stream synchronization, synchronization done in finish_copying_to_host()
+    // no stream synchronization, synchronization done in finish_copying()
 }
 
-void IndexHostCopy::finish_copying_to_host() const
+void IndexHostCopy::finish_copying() const
 {
     GW_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream_));
     memory_pinner_.unregister_pinned_memory();

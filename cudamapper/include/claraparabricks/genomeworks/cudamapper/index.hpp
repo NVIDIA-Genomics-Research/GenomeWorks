@@ -136,7 +136,7 @@ public:
     virtual ~IndexHostCopyBase() = default;
 
     /// \brief waits for copy to host to be done
-    virtual void finish_copying_to_host() const = 0;
+    virtual void finish_copying() const = 0;
 
     /// \brief returns an array of representations of sketch elements (stored on host)
     /// \return an array of representations of sketch elements
@@ -183,7 +183,7 @@ public:
     virtual std::uint64_t window_size() const = 0;
 
     /// \brief Starts creating a copy of index on the host
-    /// Copy is done asynchronously and one should wait for it to finish with finish_copying_to_host()
+    /// Copy is done asynchronously and one should wait for it to finish with finish_copying()
     /// \param index - pointer to computed index parameters (vectors of sketch elements) on GPU
     /// \param first_read_id - representing smallest read_id in index
     /// \param kmer_size - number of basepairs in a k-mer

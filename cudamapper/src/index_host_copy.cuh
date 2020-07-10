@@ -33,7 +33,7 @@ class IndexHostCopy : public IndexHostCopyBase
 {
 public:
     /// \brief Constructor - Starts creating a copy of index on the host
-    /// Copy is done asynchronously and one should wait for it to finish with finish_copying_to_host()
+    /// Copy is done asynchronously and one should wait for it to finish with finish_copying()
     /// \param index - pointer to computed index parameters (vectors of sketch elements) on GPU
     /// \param first_read_id - representing smallest read_id in index
     /// \param kmer_size - number of basepairs in a k-mer
@@ -53,8 +53,8 @@ public:
     std::unique_ptr<Index> copy_index_to_device(DefaultDeviceAllocator allocator,
                                                 const cudaStream_t cuda_stream = 0) const override;
 
-    /// \brief waits for copy to host to be done
-    void finish_copying_to_host() const override;
+    /// \brief waits for copy to be done
+    void finish_copying() const override;
 
     /// \brief returns an array of representations of sketch elements (stored on host)
     /// \return an array of representations of sketch elements
