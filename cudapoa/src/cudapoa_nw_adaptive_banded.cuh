@@ -295,6 +295,7 @@ __device__ void set_band_parameters(ScoreT* scores,
                                     SizeT row,
                                     SizeT max_column,
                                     SizeT graph_length,
+                                    float gradient,
                                     ScoreT min_score_value)
 {
     SizeT pred_max_score_left  = max_column;
@@ -322,8 +323,21 @@ __device__ void set_band_parameters(ScoreT* scores,
 
     if (end_pos > max_column)
     {
-        start_pos = max_column - band_width + CELLS_PER_THREAD;
-    };
+        start_pos  = max_column - band_width + CELLS_PER_THREAD;
+        band_width = cudautils::align<SizeT, CUDAPOA_MIN_BAND_WIDTH>(bw);
+    }
+
+    // there is no guarantee that start_pos does not fall on the left side of the main diagonal, therefore in some cases
+    // for the last node, adaptive band may not be covering right bottom corner of the score matrix, i.e.
+    // for the last node, end_pos < max_column. For global alignment, this should be avoided, therefore we add the following modification
+    SizeT diagonal_index = SizeT(row * gradient) + 1;
+    if (end_pos < diagonal_index)
+    {
+        bw             = diagonal_index - b_start;
+        band_width     = cudautils::align<SizeT, CUDAPOA_MIN_BAND_WIDTH>(bw);
+        extended_width = band_width - bw;
+        start_pos      = b_start - extended_width / 2;
+    }
 
     start_pos = max(start_pos, 0);
     start_pos = start_pos - (start_pos % CELLS_PER_THREAD);
@@ -373,13 +387,16 @@ __device__
     int16_t lane_idx = threadIdx.x % WARP_SIZE;
     int64_t score_index;
 
+    //Calculate gradient for the scores matrix
+    float gradient = float(read_length + 1) / float(graph_count + 1);
+
     SizeT max_column = read_length + 1;
 
     SizeT max_matrix_sequence_dimension = static_band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING;
 
     // set parameters for node_id 0 (row 0)
     set_band_parameters(scores, band_starts, band_widths, head_indices, max_indices, incoming_edge_count, incoming_edges,
-                        node_distances, node_id_to_pos, SizeT{0}, SizeT{0}, max_column, graph_count, min_score_value);
+                        node_distances, node_id_to_pos, SizeT{0}, SizeT{0}, max_column, graph_count, gradient, min_score_value);
 
     // Initialise the horizontal boundary of the score matrix, initialising of the vertical boundary is done within the main for loop
     for (SizeT j = lane_idx; j < max_matrix_sequence_dimension; j += WARP_SIZE)
@@ -411,8 +428,8 @@ __device__
         SizeT node_id    = graph[graph_pos];
         SizeT score_gIdx = graph_pos + 1;
 
-        set_band_parameters(scores, band_starts, band_widths, head_indices, max_indices, incoming_edge_count,
-                            incoming_edges, node_distances, node_id_to_pos, node_id, score_gIdx, max_column, graph_count, min_score_value);
+        set_band_parameters(scores, band_starts, band_widths, head_indices, max_indices, incoming_edge_count, incoming_edges,
+                            node_distances, node_id_to_pos, node_id, score_gIdx, max_column, graph_count, gradient, min_score_value);
 
         SizeT band_start = band_starts[score_gIdx];
 
