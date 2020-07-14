@@ -1,17 +1,23 @@
 /*
-* Copyright (c) 2019, NVIDIA CORPORATION.  All rights reserved.
+* Copyright 2019-2020 NVIDIA CORPORATION.
 *
-* NVIDIA CORPORATION and its licensors retain all intellectual property
-* and proprietary rights in and to this software, related documentation
-* and any modifications thereto.  Any use, reproduction, disclosure or
-* distribution of this software and related documentation without an express
-* license agreement from NVIDIA CORPORATION is strictly prohibited.
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
 */
 
-#include <claragenomics/cudaaligner/cudaaligner.hpp>
-#include <claragenomics/utils/cudautils.hpp>
-#include <claragenomics/utils/signed_integer_utils.hpp>
-#include <claragenomics/utils/mathutils.hpp>
+#include <claraparabricks/genomeworks/cudaaligner/cudaaligner.hpp>
+#include <claraparabricks/genomeworks/utils/cudautils.hpp>
+#include <claraparabricks/genomeworks/utils/signed_integer_utils.hpp>
+#include <claraparabricks/genomeworks/utils/mathutils.hpp>
 #include "../src/myers_gpu.cu"
 #include "../src/needleman_wunsch_cpu.hpp"
 #include "cudaaligner_test_cases.hpp"
@@ -20,7 +26,10 @@
 
 #include <gtest/gtest.h>
 
-namespace claragenomics
+namespace claraparabricks
+{
+
+namespace genomeworks
 {
 
 namespace cudaaligner
@@ -183,7 +192,7 @@ TEST_P(TestMyersBandedMatrixDeltas, TestCases)
         return;
 
     cudaStream_t stream;
-    CGA_CU_CHECK_ERR(cudaStreamCreate(&stream));
+    GW_CU_CHECK_ERR(cudaStreamCreate(&stream));
     {
         DefaultDeviceAllocator allocator = create_default_device_allocator();
 
@@ -194,7 +203,7 @@ TEST_P(TestMyersBandedMatrixDeltas, TestCases)
         device_copy_n(t.query.c_str(), query_size, query_d.data(), stream);
         device_copy_n(t.target.c_str(), target_size, target_d.data(), stream);
 
-        CGA_CU_CHECK_ERR(cudaStreamSynchronize(stream));
+        GW_CU_CHECK_ERR(cudaStreamSynchronize(stream));
 
         const int32_t max_distance_estimate = std::max(target_size, query_size) / 4;
 
@@ -260,7 +269,7 @@ TEST_P(TestMyersBandedMatrixDeltas, TestCases)
             }
         }
     }
-    CGA_CU_CHECK_ERR(cudaStreamDestroy(stream));
+    GW_CU_CHECK_ERR(cudaStreamDestroy(stream));
 }
 
 INSTANTIATE_TEST_SUITE_P(TestMyersAlgorithm, TestMyersEditDistance, ::testing::ValuesIn(create_cudaaligner_test_cases()));
@@ -268,4 +277,7 @@ INSTANTIATE_TEST_SUITE_P(TestMyersAlgorithm, TestMyersScoreMatrix, ::testing::Va
 INSTANTIATE_TEST_SUITE_P(TestMyersAlgorithm, TestMyersBandedMatrixDeltas, ::testing::ValuesIn(create_cudaaligner_test_cases()));
 
 } // namespace cudaaligner
-} // namespace claragenomics
+
+} // namespace genomeworks
+
+} // namespace claraparabricks

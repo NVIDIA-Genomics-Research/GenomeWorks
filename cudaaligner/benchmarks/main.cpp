@@ -1,11 +1,17 @@
 /*
-* Copyright (c) 2019, NVIDIA CORPORATION.  All rights reserved.
+* Copyright 2019-2020 NVIDIA CORPORATION.
 *
-* NVIDIA CORPORATION and its licensors retain all intellectual property
-* and proprietary rights in and to this software, related documentation
-* and any modifications thereto.  Any use, reproduction, disclosure or
-* distribution of this software and related documentation without an express
-* license agreement from NVIDIA CORPORATION is strictly prohibited.
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
 */
 
 #include "aligner_global_ukkonen.hpp"
@@ -13,15 +19,18 @@
 #include "aligner_global_myers_banded.hpp"
 #include "aligner_global_hirschberg_myers.hpp"
 
-#include <claragenomics/utils/genomeutils.hpp>
-#include <claragenomics/utils/cudautils.hpp>
-#include <claragenomics/cudaaligner/aligner.hpp>
+#include <claraparabricks/genomeworks/utils/genomeutils.hpp>
+#include <claraparabricks/genomeworks/utils/cudautils.hpp>
+#include <claraparabricks/genomeworks/cudaaligner/aligner.hpp>
 
 #include <benchmark/benchmark.h>
 #include <cuda_runtime_api.h>
 #include <random>
 
-namespace claragenomics
+namespace claraparabricks
+{
+
+namespace genomeworks
 {
 
 namespace cudaaligner
@@ -34,8 +43,8 @@ static void BM_SingleAlignment(benchmark::State& state)
 
     // Generate random sequences
     std::minstd_rand rng(1);
-    std::string genome_1 = claragenomics::genomeutils::generate_random_genome(genome_size, rng);
-    std::string genome_2 = claragenomics::genomeutils::generate_random_sequence(genome_1, rng, genome_size / 30, genome_size / 30, genome_size / 30); // 3*x/30 = 10% difference
+    std::string genome_1 = genomeworks::genomeutils::generate_random_genome(genome_size, rng);
+    std::string genome_2 = genomeworks::genomeutils::generate_random_sequence(genome_1, rng, genome_size / 30, genome_size / 30, genome_size / 30); // 3*x/30 = 10% difference
 
     // Create aligner object
     std::unique_ptr<Aligner> aligner = create_aligner(get_size(genome_1),
@@ -61,12 +70,12 @@ class CudaStream
 public:
     CudaStream()
     {
-        CGA_CU_CHECK_ERR(cudaStreamCreate(&s_));
+        GW_CU_CHECK_ERR(cudaStreamCreate(&s_));
     }
 
     ~CudaStream()
     {
-        CGA_CU_CHECK_ERR(cudaStreamDestroy(s_));
+        GW_CU_CHECK_ERR(cudaStreamDestroy(s_));
     }
 
     inline cudaStream_t& get()
@@ -104,8 +113,8 @@ static void BM_SingleBatchAlignment(benchmark::State& state)
         for (int32_t i = 0; i < alignments_per_batch; i++)
         {
             // TODO: generate genomes with indels as well
-            std::string genome_1 = claragenomics::genomeutils::generate_random_genome(genome_size, rng);
-            std::string genome_2 = claragenomics::genomeutils::generate_random_sequence(genome_1, rng, genome_size / 30, genome_size / 30, genome_size / 30); // 3*x/30 = 10% difference
+            std::string genome_1 = genomeworks::genomeutils::generate_random_genome(genome_size, rng);
+            std::string genome_2 = genomeworks::genomeutils::generate_random_sequence(genome_1, rng, genome_size / 30, genome_size / 30, genome_size / 30); // 3*x/30 = 10% difference
             if (get_size(genome_2) > genome_size)
             {
                 genome_2.resize(genome_size);
@@ -155,6 +164,9 @@ BENCHMARK_TEMPLATE(BM_SingleBatchAlignment, AlignerGlobalHirschbergMyers)
     ->Ranges({{32, 1024}, {512, 65536}});
 
 } // namespace cudaaligner
-} // namespace claragenomics
+
+} // namespace genomeworks
+
+} // namespace claraparabricks
 
 BENCHMARK_MAIN();

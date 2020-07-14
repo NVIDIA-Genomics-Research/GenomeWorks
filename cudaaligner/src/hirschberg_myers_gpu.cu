@@ -1,23 +1,32 @@
 /*
-* Copyright (c) 2019, NVIDIA CORPORATION.  All rights reserved.
+* Copyright 2019-2020 NVIDIA CORPORATION.
 *
-* NVIDIA CORPORATION and its licensors retain all intellectual property
-* and proprietary rights in and to this software, related documentation
-* and any modifications thereto.  Any use, reproduction, disclosure or
-* distribution of this software and related documentation without an express
-* license agreement from NVIDIA CORPORATION is strictly prohibited.
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
 */
 
 #include "hirschberg_myers_gpu.cuh"
 #include <cassert>
 #include "batched_device_matrices.cuh"
-#include <claragenomics/cudaaligner/aligner.hpp>
-#include <claragenomics/utils/cudautils.hpp>
-#include <claragenomics/utils/mathutils.hpp>
-#include <claragenomics/utils/limits.cuh>
+#include <claraparabricks/genomeworks/cudaaligner/aligner.hpp>
+#include <claraparabricks/genomeworks/utils/cudautils.hpp>
+#include <claraparabricks/genomeworks/utils/mathutils.hpp>
+#include <claraparabricks/genomeworks/utils/limits.cuh>
 #include <cstring>
 
-namespace claragenomics
+namespace claraparabricks
+{
+
+namespace genomeworks
 {
 
 namespace cudaaligner
@@ -688,8 +697,11 @@ void hirschberg_myers_gpu(device_buffer<hirschbergmyers::query_target_range>& st
     const dim3 threads(warp_size, 1, 1);
     const dim3 blocks(1, 1, ceiling_divide<int32_t>(n_alignments, threads.z));
     hirschbergmyers::hirschberg_myers_compute_alignment<<<blocks, threads, 0, stream>>>(stack_buffer.data(), stack_buffer_size_per_alignment, switch_to_myers_threshold, paths_d, path_lengths_d, max_path_length, pv.get_device_interface(), mv.get_device_interface(), score.get_device_interface(), query_patterns.get_device_interface(), sequences_d, sequence_lengths_d, max_sequence_length, n_alignments);
-    CGA_CU_CHECK_ERR(cudaPeekAtLastError());
+    GW_CU_CHECK_ERR(cudaPeekAtLastError());
 }
 
 } // namespace cudaaligner
-} // namespace claragenomics
+
+} // namespace genomeworks
+
+} // namespace claraparabricks

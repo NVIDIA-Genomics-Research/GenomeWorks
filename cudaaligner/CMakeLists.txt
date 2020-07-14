@@ -1,12 +1,20 @@
 #
-# Copyright (c) 2019, NVIDIA CORPORATION.  All rights reserved.
+# Copyright 2019-2020 NVIDIA CORPORATION.
 #
-# NVIDIA CORPORATION and its licensors retain all intellectual property
-# and proprietary rights in and to this software, related documentation
-# and any modifications thereto.  Any use, reproduction, disclosure or
-# distribution of this software and related documentation without an express
-# license agreement from NVIDIA CORPORATION is strictly prohibited.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+
 
 project(cudaaligner)
 
@@ -16,9 +24,10 @@ set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -std=c++14 --expt-relaxed-constexpr")
 else()
 set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -std=c++14")
 endif()
+message(STATUS "nvcc flags for cudaaligner: ${CUDA_NVCC_FLAGS}")
 
-get_property(cga_library_type GLOBAL PROPERTY cga_library_type)
-cuda_add_library(cudaaligner ${cga_library_type}
+get_property(gw_library_type GLOBAL PROPERTY gw_library_type)
+cuda_add_library(cudaaligner ${gw_library_type}
     src/cudaaligner.cpp
     src/aligner.cpp
     src/alignment.cpp
@@ -40,10 +49,10 @@ target_include_directories(cudaaligner_internal INTERFACE
         ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 
-target_link_libraries(cudaaligner cgabase cub)
+target_link_libraries(cudaaligner gwbase cub)
 
 target_compile_options(cudaaligner PRIVATE -Werror -Wall -Wextra)
-if (cga_optimize_for_native_cpu)
+if (gw_optimize_for_native_cpu)
     target_compile_options(cudapoa PRIVATE -march=native)
 endif()
 
@@ -72,4 +81,4 @@ install(DIRECTORY include/ DESTINATION include)
 install(EXPORT cudaaligner DESTINATION cmake)
 
 # Add auto formatting.
-cga_enable_auto_formatting("${CMAKE_CURRENT_SOURCE_DIR}")
+gw_enable_auto_formatting("${CMAKE_CURRENT_SOURCE_DIR}")

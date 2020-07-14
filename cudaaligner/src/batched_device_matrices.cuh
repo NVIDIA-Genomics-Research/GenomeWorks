@@ -1,25 +1,35 @@
 /*
-* Copyright (c) 2019, NVIDIA CORPORATION.  All rights reserved.
+* Copyright 2019-2020 NVIDIA CORPORATION.
 *
-* NVIDIA CORPORATION and its licensors retain all intellectual property
-* and proprietary rights in and to this software, related documentation
-* and any modifications thereto.  Any use, reproduction, disclosure or
-* distribution of this software and related documentation without an express
-* license agreement from NVIDIA CORPORATION is strictly prohibited.
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
 */
 
 #pragma once
 
 #include "matrix_cpu.hpp"
 
-#include <claragenomics/utils/cudautils.hpp>
-#include <claragenomics/utils/device_buffer.hpp>
+#include <claraparabricks/genomeworks/utils/cudautils.hpp>
+#include <claraparabricks/genomeworks/utils/device_buffer.hpp>
 
 #include <tuple>
 #include <cassert>
 
-namespace claragenomics
+namespace claraparabricks
 {
+
+namespace genomeworks
+{
+
 namespace cudaaligner
 {
 
@@ -116,16 +126,16 @@ public:
         , max_elements_per_matrix_(max_elements_per_matrix)
         , n_matrices_(n_matrices)
     {
-        CGA_CU_CHECK_ERR(cudaMalloc(reinterpret_cast<void**>(&dev_), sizeof(device_interface)));
-        CGA_CU_CHECK_ERR(cudaMemsetAsync(storage_.data(), 0, storage_.size() * sizeof(T), stream));
+        GW_CU_CHECK_ERR(cudaMalloc(reinterpret_cast<void**>(&dev_), sizeof(device_interface)));
+        GW_CU_CHECK_ERR(cudaMemsetAsync(storage_.data(), 0, storage_.size() * sizeof(T), stream));
         device_interface tmp(storage_.data(), n_matrices_, max_elements_per_matrix_);
-        CGA_CU_CHECK_ERR(cudaMemcpyAsync(dev_, &tmp, sizeof(device_interface), cudaMemcpyHostToDevice, stream));
-        CGA_CU_CHECK_ERR(cudaStreamSynchronize(stream)); // sync because tmp will be destroyed.
+        GW_CU_CHECK_ERR(cudaMemcpyAsync(dev_, &tmp, sizeof(device_interface), cudaMemcpyHostToDevice, stream));
+        GW_CU_CHECK_ERR(cudaStreamSynchronize(stream)); // sync because tmp will be destroyed.
     }
 
     ~batched_device_matrices()
     {
-        CGA_CU_ABORT_ON_ERR(cudaFree(dev_));
+        GW_CU_ABORT_ON_ERR(cudaFree(dev_));
     }
 
     device_interface* get_device_interface()
@@ -145,8 +155,8 @@ public:
         if (n_rows * n_cols > max_elements_per_matrix_)
             throw std::runtime_error("Requested matrix size is larger than batched_device_matrices::max_elements_per_matrix_.");
         matrix<T> m(n_rows, n_cols);
-        CGA_CU_CHECK_ERR(cudaMemcpyAsync(m.data(), storage_.data() + id * static_cast<ptrdiff_t>(max_elements_per_matrix_), sizeof(T) * n_rows * n_cols, cudaMemcpyDeviceToHost, stream));
-        CGA_CU_CHECK_ERR(cudaStreamSynchronize(stream));
+        GW_CU_CHECK_ERR(cudaMemcpyAsync(m.data(), storage_.data() + id * static_cast<ptrdiff_t>(max_elements_per_matrix_), sizeof(T) * n_rows * n_cols, cudaMemcpyDeviceToHost, stream));
+        GW_CU_CHECK_ERR(cudaStreamSynchronize(stream));
         return m;
     }
 
@@ -157,5 +167,8 @@ private:
     int32_t n_matrices_;
 };
 
-} // end namespace cudaaligner
-} // end namespace claragenomics
+} // namespace cudaaligner
+
+} // namespace genomeworks
+
+} // namespace claraparabricks

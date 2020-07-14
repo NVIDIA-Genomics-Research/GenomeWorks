@@ -1,11 +1,17 @@
 /*
-* Copyright (c) 2019, NVIDIA CORPORATION.  All rights reserved.
+* Copyright 2019-2020 NVIDIA CORPORATION.
 *
-* NVIDIA CORPORATION and its licensors retain all intellectual property
-* and proprietary rights in and to this software, related documentation
-* and any modifications thereto.  Any use, reproduction, disclosure or
-* distribution of this software and related documentation without an express
-* license agreement from NVIDIA CORPORATION is strictly prohibited.
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
 */
 
 #pragma once
@@ -20,18 +26,22 @@
 #include <thrust/transform.h>
 #include <thrust/transform_scan.h>
 
-#include <claragenomics/cudamapper/index.hpp>
-#include <claragenomics/cudamapper/types.hpp>
-#include <claragenomics/io/fasta_parser.hpp>
-#include <claragenomics/logging/logging.hpp>
-#include <claragenomics/utils/device_buffer.hpp>
-#include <claragenomics/utils/mathutils.hpp>
-#include <claragenomics/utils/signed_integer_utils.hpp>
+#include <claraparabricks/genomeworks/cudamapper/index.hpp>
+#include <claraparabricks/genomeworks/cudamapper/types.hpp>
+#include <claraparabricks/genomeworks/io/fasta_parser.hpp>
+#include <claraparabricks/genomeworks/logging/logging.hpp>
+#include <claraparabricks/genomeworks/utils/device_buffer.hpp>
+#include <claraparabricks/genomeworks/utils/mathutils.hpp>
+#include <claraparabricks/genomeworks/utils/signed_integer_utils.hpp>
 
 #include "index_host_copy.cuh"
 
-namespace claragenomics
+namespace claraparabricks
 {
+
+namespace genomeworks
+{
+
 namespace cudamapper
 {
 /// IndexGPU - Contains sketch elements grouped by representation and by read id within the representation
@@ -105,23 +115,6 @@ public:
     /// \return first occurrence of corresponding representation from unique_representations() in data arrays, plus one more element with the total number of sketch elements
     const device_buffer<std::uint32_t>& first_occurrence_of_representations() const override;
 
-    /// \brief returns read name of read with the given read_id
-    /// \param read_id
-    /// \return read name of read with the given read_id
-    const std::string& read_id_to_read_name(const read_id_t read_id) const override;
-
-    /// \brief returns read length for the read with the gived read_id
-    /// \param read_id
-    /// \return read length for the read with the gived read_id
-    const std::uint32_t& read_id_to_read_length(const read_id_t read_id) const override;
-
-    /// \brief returns look up table array mapping read id to read name
-    /// \return the array mapping read id to read name
-    const std::vector<std::string>& read_ids_to_read_names() const override;
-    /// \brief returns an array used for mapping read id to the length of the read
-    /// \return the array used for mapping read ids to their lengths
-    const std::vector<std::uint32_t>& read_ids_to_read_lengths() const override;
-
     /// \brief returns number of reads in input data
     /// \return number of reads in input data
     read_id_t number_of_reads() const override;
@@ -154,9 +147,6 @@ private:
     device_buffer<representation_t> unique_representations_d_;
     device_buffer<std::uint32_t> first_occurrence_of_representations_d_;
 
-    std::vector<std::string> read_id_to_read_name_;
-    std::vector<std::uint32_t> read_id_to_read_length_;
-
     const read_id_t first_read_id_ = 0;
     // number of basepairs in a k-mer
     const std::uint64_t kmer_size_ = 0;
@@ -173,6 +163,7 @@ private:
 
 namespace details
 {
+
 namespace index_gpu
 {
 /// \brief Creates compressed representation of index
@@ -556,6 +547,7 @@ void filter_out_most_common_representations(DefaultDeviceAllocator allocator,
 }
 
 } // namespace index_gpu
+
 } // namespace details
 
 template <typename SketchElementImpl>
@@ -590,7 +582,7 @@ IndexGPU<SketchElementImpl>::IndexGPU(DefaultDeviceAllocator allocator,
 
     // This is not completely necessary, but if removed one has to make sure that the next step
     // uses the same stream or that sync is done in caller
-    CGA_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream_));
+    GW_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream_));
 }
 
 template <typename SketchElementImpl>
@@ -613,41 +605,32 @@ IndexGPU<SketchElementImpl>::IndexGPU(DefaultDeviceAllocator allocator,
     number_of_basepairs_in_longest_read_ = index_host_copy.number_of_basepairs_in_longest_read();
 
     //H2D- representations_d_ = index_host_copy.representations();
-    representations_d_.resize(index_host_copy.representations().size());
-    representations_d_.shrink_to_fit();
+    representations_d_.clear_and_resize(index_host_copy.representations().size());
     cudautils::device_copy_n(index_host_copy.representations().data(), index_host_copy.representations().size(), representations_d_.data(), cuda_stream);
 
     //H2D- read_ids_d_ = index_host_copy.read_ids();
-    read_ids_d_.resize(index_host_copy.read_ids().size());
-    read_ids_d_.shrink_to_fit();
+    read_ids_d_.clear_and_resize(index_host_copy.read_ids().size());
     cudautils::device_copy_n(index_host_copy.read_ids().data(), index_host_copy.read_ids().size(), read_ids_d_.data(), cuda_stream);
 
     //H2D- positions_in_reads_d_ = index_host_copy.positions_in_reads();
-    positions_in_reads_d_.resize(index_host_copy.positions_in_reads().size());
-    positions_in_reads_d_.shrink_to_fit();
+    positions_in_reads_d_.clear_and_resize(index_host_copy.positions_in_reads().size());
     cudautils::device_copy_n(index_host_copy.positions_in_reads().data(), index_host_copy.positions_in_reads().size(), positions_in_reads_d_.data(), cuda_stream);
 
     //H2D- directions_of_reads_d_ = index_host_copy.directions_of_reads();
-    directions_of_reads_d_.resize(index_host_copy.directions_of_reads().size());
-    directions_of_reads_d_.shrink_to_fit();
+    directions_of_reads_d_.clear_and_resize(index_host_copy.directions_of_reads().size());
     cudautils::device_copy_n(index_host_copy.directions_of_reads().data(), index_host_copy.directions_of_reads().size(), directions_of_reads_d_.data(), cuda_stream);
 
     //H2D- unique_representations_d_ = index_host_copy.unique_representations();
-    unique_representations_d_.resize(index_host_copy.unique_representations().size());
-    unique_representations_d_.shrink_to_fit();
+    unique_representations_d_.clear_and_resize(index_host_copy.unique_representations().size());
     cudautils::device_copy_n(index_host_copy.unique_representations().data(), index_host_copy.unique_representations().size(), unique_representations_d_.data(), cuda_stream);
 
     //H2D- first_occurrence_of_representations_d_ = index_host_copy.first_occurrence_of_representations();
-    first_occurrence_of_representations_d_.resize(index_host_copy.first_occurrence_of_representations().size());
-    first_occurrence_of_representations_d_.shrink_to_fit();
+    first_occurrence_of_representations_d_.clear_and_resize(index_host_copy.first_occurrence_of_representations().size());
     cudautils::device_copy_n(index_host_copy.first_occurrence_of_representations().data(), index_host_copy.first_occurrence_of_representations().size(), first_occurrence_of_representations_d_.data(), cuda_stream);
-
-    read_id_to_read_name_   = index_host_copy.read_id_to_read_names();   //H2H
-    read_id_to_read_length_ = index_host_copy.read_id_to_read_lengths(); //H2H
 
     // This is not completely necessary, but if removed one has to make sure that the next step
     // uses the same stream or that sync is done in caller
-    CGA_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream_));
+    GW_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream_));
 }
 
 template <typename SketchElementImpl>
@@ -687,30 +670,6 @@ const device_buffer<std::uint32_t>& IndexGPU<SketchElementImpl>::first_occurrenc
 }
 
 template <typename SketchElementImpl>
-const std::string& IndexGPU<SketchElementImpl>::read_id_to_read_name(const read_id_t read_id) const
-{
-    return read_id_to_read_name_[read_id - first_read_id_];
-}
-
-template <typename SketchElementImpl>
-const std::uint32_t& IndexGPU<SketchElementImpl>::read_id_to_read_length(const read_id_t read_id) const
-{
-    return read_id_to_read_length_[read_id - first_read_id_];
-}
-
-template <typename SketchElementImpl>
-const std::vector<std::string>& IndexGPU<SketchElementImpl>::read_ids_to_read_names() const
-{
-    return read_id_to_read_name_;
-}
-
-template <typename SketchElementImpl>
-const std::vector<std::uint32_t>& IndexGPU<SketchElementImpl>::read_ids_to_read_lengths() const
-{
-    return read_id_to_read_length_;
-}
-
-template <typename SketchElementImpl>
 read_id_t IndexGPU<SketchElementImpl>::number_of_reads() const
 {
     return number_of_reads_;
@@ -745,7 +704,7 @@ void IndexGPU<SketchElementImpl>::generate_index(const io::FastaParser& parser,
     // check if there are any reads to process
     if (first_read_id >= past_the_last_read_id)
     {
-        CGA_LOG_INFO("No Sketch Elements to be added to index");
+        GW_LOG_INFO("No Sketch Elements to be added to index");
         number_of_reads_ = 0;
         return;
     }
@@ -769,25 +728,23 @@ void IndexGPU<SketchElementImpl>::generate_index(const io::FastaParser& parser,
             // TODO: make sure that no read is longer than what fits into position_in_read_t
             read_id_to_basepairs_section_h.emplace_back(ArrayBlock{total_basepairs, static_cast<std::uint32_t>(read_basepairs.length())});
             total_basepairs += read_basepairs.length();
-            read_id_to_read_name_.push_back(read_name);
-            read_id_to_read_length_.push_back(read_basepairs.length());
             number_of_basepairs_in_longest_read_ = std::max(number_of_basepairs_in_longest_read_, static_cast<position_in_read_t>(read_basepairs.length()));
         }
         else
         {
             // TODO: Implement this skipping in a correct manner
-            CGA_LOG_INFO("Skipping read {}. It has {} basepairs, one window covers {} basepairs",
-                         read_name,
-                         read_basepairs.length(),
-                         window_size_ + kmer_size_ - 1);
+            GW_LOG_INFO("Skipping read {}. It has {} basepairs, one window covers {} basepairs",
+                        read_name,
+                        read_basepairs.length(),
+                        window_size_ + kmer_size_ - 1);
         }
     }
 
     if (0 == total_basepairs)
     {
-        CGA_LOG_INFO("Index for reads {} to past {} is empty",
-                     first_read_id,
-                     past_the_last_read_id);
+        GW_LOG_INFO("Index for reads {} to past {} is empty",
+                    first_read_id,
+                    past_the_last_read_id);
         number_of_reads_                     = 0;
         number_of_basepairs_in_longest_read_ = 0;
         return;
@@ -808,14 +765,14 @@ void IndexGPU<SketchElementImpl>::generate_index(const io::FastaParser& parser,
     fasta_reads.shrink_to_fit();
 
     // move basepairs to the device
-    CGA_LOG_INFO("Allocating {} bytes for read_id_to_basepairs_section_d", read_id_to_basepairs_section_h.size() * sizeof(decltype(read_id_to_basepairs_section_h)::value_type));
+    GW_LOG_INFO("Allocating {} bytes for read_id_to_basepairs_section_d", read_id_to_basepairs_section_h.size() * sizeof(decltype(read_id_to_basepairs_section_h)::value_type));
     device_buffer<decltype(read_id_to_basepairs_section_h)::value_type> read_id_to_basepairs_section_d(read_id_to_basepairs_section_h.size(), allocator_, cuda_stream_);
     cudautils::device_copy_n(read_id_to_basepairs_section_h.data(),
                              read_id_to_basepairs_section_h.size(),
                              read_id_to_basepairs_section_d.data(),
                              cuda_stream_); // H2D
 
-    CGA_LOG_INFO("Allocating {} bytes for merged_basepairs_d", merged_basepairs_h.size() * sizeof(decltype(merged_basepairs_h)::value_type));
+    GW_LOG_INFO("Allocating {} bytes for merged_basepairs_d", merged_basepairs_h.size() * sizeof(decltype(merged_basepairs_h)::value_type));
     device_buffer<decltype(merged_basepairs_h)::value_type> merged_basepairs_d(merged_basepairs_h.size(), allocator_, cuda_stream_);
     cudautils::device_copy_n(merged_basepairs_h.data(),
                              merged_basepairs_h.size(),
@@ -843,9 +800,9 @@ void IndexGPU<SketchElementImpl>::generate_index(const io::FastaParser& parser,
     //       Consider implementing a move-to-index function for that sort. That way this interface would be more verbose and there
     //       would be no need for copy_rest_to_separate_arrays()
 
-    CGA_LOG_INFO("Deallocating {} bytes from read_id_to_basepairs_section_d", read_id_to_basepairs_section_d.size() * sizeof(decltype(read_id_to_basepairs_section_d)::value_type));
+    GW_LOG_INFO("Deallocating {} bytes from read_id_to_basepairs_section_d", read_id_to_basepairs_section_d.size() * sizeof(decltype(read_id_to_basepairs_section_d)::value_type));
     read_id_to_basepairs_section_d.free();
-    CGA_LOG_INFO("Deallocating {} bytes from merged_basepairs_d", merged_basepairs_d.size() * sizeof(decltype(merged_basepairs_d)::value_type));
+    GW_LOG_INFO("Deallocating {} bytes from merged_basepairs_d", merged_basepairs_d.size() * sizeof(decltype(merged_basepairs_d)::value_type));
     merged_basepairs_d.free();
 
     // *** sort sketch elements by representation ***
@@ -858,12 +815,9 @@ void IndexGPU<SketchElementImpl>::generate_index(const io::FastaParser& parser,
 
     representations_d_ = std::move(generated_representations_d);
 
-    read_ids_d_.resize(representations_d_.size());
-    read_ids_d_.shrink_to_fit();
-    positions_in_reads_d_.resize(representations_d_.size());
-    positions_in_reads_d_.shrink_to_fit();
-    directions_of_reads_d_.resize(representations_d_.size());
-    directions_of_reads_d_.shrink_to_fit();
+    read_ids_d_.clear_and_resize(representations_d_.size());
+    positions_in_reads_d_.clear_and_resize(representations_d_.size());
+    directions_of_reads_d_.clear_and_resize(representations_d_.size());
 
     const std::uint32_t threads = 256;
     const std::uint32_t blocks  = ceiling_divide<int64_t>(representations_d_.size(), threads);
@@ -896,4 +850,7 @@ void IndexGPU<SketchElementImpl>::generate_index(const io::FastaParser& parser,
 }
 
 } // namespace cudamapper
-} // namespace claragenomics
+
+} // namespace genomeworks
+
+} // namespace claraparabricks

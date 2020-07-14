@@ -1,16 +1,25 @@
 /*
-* Copyright (c) 2020, NVIDIA CORPORATION.  All rights reserved.
+* Copyright 2019-2020 NVIDIA CORPORATION.
 *
-* NVIDIA CORPORATION and its licensors retain all intellectual property
-* and proprietary rights in and to this software, related documentation
-* and any modifications thereto.  Any use, reproduction, disclosure or
-* distribution of this software and related documentation without an express
-* license agreement from NVIDIA CORPORATION is strictly prohibited.
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
 */
 
-#include <claragenomics/utils/cudautils.hpp>
+#include <claraparabricks/genomeworks/utils/cudautils.hpp>
 
-namespace claragenomics
+namespace claraparabricks
+{
+
+namespace genomeworks
 {
 
 namespace cudautils
@@ -21,7 +30,7 @@ std::size_t find_largest_contiguous_device_memory_section()
     // find the largest block of contiguous memory
     size_t free;
     size_t total;
-    CGA_CU_CHECK_ERR(cudaMemGetInfo(&free, &total));
+    GW_CU_CHECK_ERR(cudaMemGetInfo(&free, &total));
     const size_t memory_decrement = free / 100;              // decrease requested memory one by one percent
     size_t size_to_try            = free - memory_decrement; // do not go for all memory
     while (true)
@@ -45,22 +54,25 @@ std::size_t find_largest_contiguous_device_memory_section()
             }
             else
             { // a very small amount of memory left, report an error
-                CGA_CU_CHECK_ERR(cudaErrorMemoryAllocation);
+                GW_CU_CHECK_ERR(cudaErrorMemoryAllocation);
                 return 0;
             }
         }
         else
         {
             // if cudaMalloc failed because of error other than cudaErrorMemoryAllocation process the error
-            CGA_CU_CHECK_ERR(status);
+            GW_CU_CHECK_ERR(status);
             return 0;
         }
     }
 
     // this point should actually never be reached (loop either finds memory or causes an error)
     assert(false);
-    CGA_CU_CHECK_ERR(cudaErrorMemoryAllocation);
+    GW_CU_CHECK_ERR(cudaErrorMemoryAllocation);
     return 0;
 }
 } // namespace cudautils
-} // namespace claragenomics
+
+} // namespace genomeworks
+
+} // namespace claraparabricks

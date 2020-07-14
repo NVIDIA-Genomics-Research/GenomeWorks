@@ -1,18 +1,27 @@
 /*
-* Copyright (c) 2019, NVIDIA CORPORATION.  All rights reserved.
+* Copyright 2019-2020 NVIDIA CORPORATION.
 *
-* NVIDIA CORPORATION and its licensors retain all intellectual property
-* and proprietary rights in and to this software, related documentation
-* and any modifications thereto.  Any use, reproduction, disclosure or
-* distribution of this software and related documentation without an express
-* license agreement from NVIDIA CORPORATION is strictly prohibited.
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
 */
 
-#include <claragenomics/cudaaligner/aligner.hpp>
+#include <claraparabricks/genomeworks/cudaaligner/aligner.hpp>
 
 #include "aligner_global_hirschberg_myers.hpp"
 
-namespace claragenomics
+namespace claraparabricks
+{
+
+namespace genomeworks
 {
 
 namespace cudaaligner
@@ -42,22 +51,25 @@ std::unique_ptr<Aligner> create_aligner(
     {
         throw std::invalid_argument("max_device_memory_allocator_caching_size has to be either -1 (=all available GPU memory) or greater or equal than 0.");
     }
-#ifdef CGA_ENABLE_CACHING_ALLOCATOR
+#ifdef GW_ENABLE_CACHING_ALLOCATOR
     // uses CachingDeviceAllocator
     if (max_device_memory_allocator_caching_size == -1)
     {
-        max_device_memory_allocator_caching_size = claragenomics::cudautils::find_largest_contiguous_device_memory_section();
+        max_device_memory_allocator_caching_size = genomeworks::cudautils::find_largest_contiguous_device_memory_section();
         if (max_device_memory_allocator_caching_size == 0)
         {
             throw std::runtime_error("No memory available for caching");
         }
     }
-    claragenomics::DefaultDeviceAllocator allocator(max_device_memory_allocator_caching_size);
+    genomeworks::DefaultDeviceAllocator allocator(max_device_memory_allocator_caching_size);
 #else
     // uses CudaMallocAllocator
-    claragenomics::DefaultDeviceAllocator allocator;
+    genomeworks::DefaultDeviceAllocator allocator;
 #endif
     return create_aligner(max_query_length, max_target_length, max_alignments, type, allocator, stream, device_id);
 }
 } // namespace cudaaligner
-} // namespace claragenomics
+
+} // namespace genomeworks
+
+} // namespace claraparabricks

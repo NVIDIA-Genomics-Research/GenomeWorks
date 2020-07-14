@@ -1,17 +1,30 @@
 #
-# Copyright (c) 2019, NVIDIA CORPORATION.  All rights reserved.
+# Copyright 2019-2020 NVIDIA CORPORATION.
 #
-# NVIDIA CORPORATION and its licensors retain all intellectual property
-# and proprietary rights in and to this software, related documentation
-# and any modifications thereto.  Any use, reproduction, disclosure or
-# distribution of this software and related documentation without an express
-# license agreement from NVIDIA CORPORATION is strictly prohibited.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+
 
 project(cudamapper)
 
 # Process data subdirectory first
 add_subdirectory(data)
+
+GitVersion()
+
+configure_file(${CMAKE_SOURCE_DIR}/common/base/src/version.cpp.in
+                ${CMAKE_CURRENT_BINARY_DIR}/version.cpp)
 
 find_package(CUDA 9.0 QUIET REQUIRED)
 
@@ -20,10 +33,21 @@ if(NOT ${CUDA_FOUND})
 else()
     message(STATUS "Using CUDA ${CUDA_VERSION} from ${CUDA_TOOLKIT_ROOT_DIR}")
     set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -lineinfo --expt-extended-lambda -use_fast_math -Xcompiler -Wall,-Wno-pedantic -std=c++14")
+    # Determine arch flags
+    validate_boolean(gw_cuda_gen_all_arch)
+    if (gw_cuda_gen_all_arch)
+        CUDA_SELECT_NVCC_ARCH_FLAGS(ARCH_FLAGS "Common")
+    else()
+        CUDA_SELECT_NVCC_ARCH_FLAGS(ARCH_FLAGS "Auto")
+    endif()
+    set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} ${ARCH_FLAGS}")
+    message(STATUS "nvcc flags for cudamapper: ${CUDA_NVCC_FLAGS}")
 endif()
 
 cuda_add_library(cudamapper
+        src/application_parameters.cpp
         src/cudamapper.cpp
+        src/index_batcher.cu
         src/index_descriptor.cpp
         src/index.cu
         src/index_cache.cu
@@ -34,14 +58,15 @@ cuda_add_library(cudamapper
         src/matcher_gpu.cu
         src/cudamapper_utils.cpp
         src/overlapper.cpp
-        src/overlapper_triggered.cu)
+        src/overlapper_triggered.cu
+        ${CMAKE_CURRENT_BINARY_DIR}/version.cpp)
 
 target_include_directories(cudamapper
     PUBLIC
         $<INSTALL_INTERFACE:include>
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 )
-target_link_libraries(cudamapper cgabase cgaio cub)
+target_link_libraries(cudamapper gwbase gwio cub)
 target_compile_options(cudamapper PRIVATE -Werror)
 
 add_doxygen_source_dir(${CMAKE_CURRENT_SOURCE_DIR}/include)
@@ -72,4 +97,4 @@ install(TARGETS cudamapper-bin
 )
 
 # Add auto formatting.
-cga_enable_auto_formatting("${CMAKE_CURRENT_SOURCE_DIR}")
+gw_enable_auto_formatting("${CMAKE_CURRENT_SOURCE_DIR}")

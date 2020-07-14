@@ -1,0 +1,35 @@
+#!/bin/bash
+
+#
+# Copyright 2019-2020 NVIDIA CORPORATION.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+
+
+set -e
+
+PYGW_DIR=$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")
+VERSION=`cat $PYGW_DIR/../VERSION`
+echo "Run Python doc generation..."
+rm -rf $PYGW_DIR/docs
+mkdir $PYGW_DIR/docs
+cd $PYGW_DIR/docs
+sphinx-quickstart -p "GenomeWorks SDK" -v "$VERSION" -a "NVIDIA Corportation" -q --ext-autodoc --sep
+##### Update sphinx conf.py with path for modules
+sed -i '1s@^@import sys \n@' source/conf.py
+sed -i '2s@^@sys.path.insert\(0, "'$PWD'/.."\) \n@' source/conf.py
+#####
+sphinx-apidoc -f -o source/ ../genomeworks/ ../genomeworks/**/*cpython* ../genomeworks/shared_libs
+make html

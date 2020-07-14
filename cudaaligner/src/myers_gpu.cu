@@ -1,30 +1,39 @@
 /*
-* Copyright (c) 2019, NVIDIA CORPORATION.  All rights reserved.
+* Copyright 2019-2020 NVIDIA CORPORATION.
 *
-* NVIDIA CORPORATION and its licensors retain all intellectual property
-* and proprietary rights in and to this software, related documentation
-* and any modifications thereto.  Any use, reproduction, disclosure or
-* distribution of this software and related documentation without an express
-* license agreement from NVIDIA CORPORATION is strictly prohibited.
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
 */
 
 #include "myers_gpu.cuh"
 #include "batched_device_matrices.cuh"
 
-#include <claragenomics/cudaaligner/aligner.hpp>
-#include <claragenomics/utils/signed_integer_utils.hpp>
-#include <claragenomics/utils/limits.cuh>
-#include <claragenomics/utils/mathutils.hpp>
-#include <claragenomics/utils/cudautils.hpp>
-#include <claragenomics/utils/allocator.hpp>
-#include <claragenomics/utils/device_buffer.hpp>
+#include <claraparabricks/genomeworks/cudaaligner/aligner.hpp>
+#include <claraparabricks/genomeworks/utils/signed_integer_utils.hpp>
+#include <claraparabricks/genomeworks/utils/limits.cuh>
+#include <claraparabricks/genomeworks/utils/mathutils.hpp>
+#include <claraparabricks/genomeworks/utils/cudautils.hpp>
+#include <claraparabricks/genomeworks/utils/allocator.hpp>
+#include <claraparabricks/genomeworks/utils/device_buffer.hpp>
 
 #include <cassert>
 #include <climits>
 #include <vector>
 #include <numeric>
 
-namespace claragenomics
+namespace claraparabricks
+{
+
+namespace genomeworks
 {
 
 namespace cudaaligner
@@ -286,7 +295,7 @@ __global__ void myers_backtrace_kernel(int8_t* paths_base, int32_t* lengths, int
     const int32_t idx = blockIdx.x * blockDim.x + threadIdx.x;
     if (idx >= n_alignments)
         return;
-    CGA_CONSTEXPR int32_t word_size         = sizeof(WordType) * CHAR_BIT;
+    GW_CONSTEXPR int32_t word_size          = sizeof(WordType) * CHAR_BIT;
     const int32_t query_size                = sequence_lengths_d[2 * idx];
     const int32_t target_size               = sequence_lengths_d[2 * idx + 1];
     const int32_t n_words                   = (query_size + word_size - 1) / word_size;
@@ -303,10 +312,10 @@ __global__ void myers_convert_to_full_score_matrix_kernel(batched_device_matrice
                                                           int32_t const* sequence_lengths_d,
                                                           int32_t alignment)
 {
-    CGA_CONSTEXPR int32_t word_size = sizeof(WordType) * CHAR_BIT;
-    const int32_t query_size        = sequence_lengths_d[2 * alignment];
-    const int32_t target_size       = sequence_lengths_d[2 * alignment + 1];
-    const int32_t n_words           = (query_size + word_size - 1) / word_size;
+    GW_CONSTEXPR int32_t word_size = sizeof(WordType) * CHAR_BIT;
+    const int32_t query_size       = sequence_lengths_d[2 * alignment];
+    const int32_t target_size      = sequence_lengths_d[2 * alignment + 1];
+    const int32_t n_words          = (query_size + word_size - 1) / word_size;
 
     assert(query_size > 0);
 
@@ -338,8 +347,8 @@ __global__ void myers_compute_score_matrix_kernel(
     int32_t max_sequence_length,
     int32_t n_alignments)
 {
-    CGA_CONSTEXPR int32_t word_size = sizeof(WordType) * CHAR_BIT;
-    CGA_CONSTEXPR int32_t warp_size = 32;
+    GW_CONSTEXPR int32_t word_size = sizeof(WordType) * CHAR_BIT;
+    GW_CONSTEXPR int32_t warp_size = 32;
     assert(warpSize == warp_size);
     assert(threadIdx.x < warp_size);
     assert(blockIdx.x == 0);
@@ -824,7 +833,7 @@ int32_t myers_compute_edit_distance(std::string const& target, std::string const
     matrix<int32_t> score_host;
 
     cudaStream_t stream;
-    CGA_CU_CHECK_ERR(cudaStreamCreate(&stream));
+    GW_CU_CHECK_ERR(cudaStreamCreate(&stream));
     {
         DefaultDeviceAllocator allocator = create_default_device_allocator();
 
@@ -838,16 +847,16 @@ int32_t myers_compute_edit_distance(std::string const& target, std::string const
         batched_device_matrices<myers::WordType> query_patterns(1, n_words * 4, allocator, stream);
 
         std::array<int32_t, 2> lengths = {static_cast<int32_t>(get_size(query)), static_cast<int32_t>(get_size(target))};
-        CGA_CU_CHECK_ERR(cudaMemcpyAsync(sequences_d.data(), query.data(), sizeof(char) * get_size(query), cudaMemcpyHostToDevice, stream));
-        CGA_CU_CHECK_ERR(cudaMemcpyAsync(sequences_d.data() + max_sequence_length, target.data(), sizeof(char) * get_size(target), cudaMemcpyHostToDevice, stream));
-        CGA_CU_CHECK_ERR(cudaMemcpyAsync(sequence_lengths_d.data(), lengths.data(), sizeof(int32_t) * 2, cudaMemcpyHostToDevice, stream));
+        GW_CU_CHECK_ERR(cudaMemcpyAsync(sequences_d.data(), query.data(), sizeof(char) * get_size(query), cudaMemcpyHostToDevice, stream));
+        GW_CU_CHECK_ERR(cudaMemcpyAsync(sequences_d.data() + max_sequence_length, target.data(), sizeof(char) * get_size(target), cudaMemcpyHostToDevice, stream));
+        GW_CU_CHECK_ERR(cudaMemcpyAsync(sequence_lengths_d.data(), lengths.data(), sizeof(int32_t) * 2, cudaMemcpyHostToDevice, stream));
 
         myers::myers_compute_score_matrix_kernel<<<1, warp_size, 0, stream>>>(pv.get_device_interface(), mv.get_device_interface(), score.get_device_interface(), query_patterns.get_device_interface(), sequences_d.data(), sequence_lengths_d.data(), max_sequence_length, 1);
 
         score_host = score.get_matrix(0, n_words, get_size(target) + 1, stream);
-        CGA_CU_CHECK_ERR(cudaStreamSynchronize(stream));
+        GW_CU_CHECK_ERR(cudaStreamSynchronize(stream));
     }
-    CGA_CU_CHECK_ERR(cudaStreamDestroy(stream));
+    GW_CU_CHECK_ERR(cudaStreamDestroy(stream));
     return score_host(n_words - 1, get_size(target));
 }
 
@@ -872,7 +881,7 @@ matrix<int32_t> myers_get_full_score_matrix(std::string const& target, std::stri
     matrix<int32_t> fullscore_host;
 
     cudaStream_t stream;
-    CGA_CU_CHECK_ERR(cudaStreamCreate(&stream));
+    GW_CU_CHECK_ERR(cudaStreamCreate(&stream));
 
     {
         DefaultDeviceAllocator allocator = create_default_device_allocator();
@@ -889,9 +898,9 @@ matrix<int32_t> myers_get_full_score_matrix(std::string const& target, std::stri
         batched_device_matrices<int32_t> fullscore(1, (get_size(query) + 1) * (get_size(target) + 1), allocator, stream);
 
         std::array<int32_t, 2> lengths = {static_cast<int32_t>(get_size(query)), static_cast<int32_t>(get_size(target))};
-        CGA_CU_CHECK_ERR(cudaMemcpyAsync(sequences_d.data(), query.data(), sizeof(char) * get_size(query), cudaMemcpyHostToDevice, stream));
-        CGA_CU_CHECK_ERR(cudaMemcpyAsync(sequences_d.data() + max_sequence_length, target.data(), sizeof(char) * get_size(target), cudaMemcpyHostToDevice, stream));
-        CGA_CU_CHECK_ERR(cudaMemcpyAsync(sequence_lengths_d.data(), lengths.data(), sizeof(int32_t) * 2, cudaMemcpyHostToDevice, stream));
+        GW_CU_CHECK_ERR(cudaMemcpyAsync(sequences_d.data(), query.data(), sizeof(char) * get_size(query), cudaMemcpyHostToDevice, stream));
+        GW_CU_CHECK_ERR(cudaMemcpyAsync(sequences_d.data() + max_sequence_length, target.data(), sizeof(char) * get_size(target), cudaMemcpyHostToDevice, stream));
+        GW_CU_CHECK_ERR(cudaMemcpyAsync(sequence_lengths_d.data(), lengths.data(), sizeof(int32_t) * 2, cudaMemcpyHostToDevice, stream));
 
         myers::myers_compute_score_matrix_kernel<<<1, warp_size, 0, stream>>>(pv.get_device_interface(), mv.get_device_interface(), score.get_device_interface(), query_patterns.get_device_interface(), sequences_d.data(), sequence_lengths_d.data(), max_sequence_length, 1);
         {
@@ -905,8 +914,8 @@ matrix<int32_t> myers_get_full_score_matrix(std::string const& target, std::stri
         fullscore_host = fullscore.get_matrix(0, get_size(query) + 1, get_size(target) + 1, stream);
     }
 
-    CGA_CU_CHECK_ERR(cudaStreamSynchronize(stream));
-    CGA_CU_CHECK_ERR(cudaStreamDestroy(stream));
+    GW_CU_CHECK_ERR(cudaStreamSynchronize(stream));
+    GW_CU_CHECK_ERR(cudaStreamDestroy(stream));
     return fullscore_host;
 }
 
@@ -950,4 +959,7 @@ void myers_banded_gpu(int8_t* paths_d, int32_t* path_lengths_d, int32_t max_path
 }
 
 } // namespace cudaaligner
-} // namespace claragenomics
+
+} // namespace genomeworks
+
+} // namespace claraparabricks

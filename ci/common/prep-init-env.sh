@@ -1,12 +1,20 @@
 #
-# Copyright (c) 2019, NVIDIA CORPORATION.  All rights reserved.
+# Copyright 2019-2020 NVIDIA CORPORATION.
 #
-# NVIDIA CORPORATION and its licensors retain all intellectual property
-# and proprietary rights in and to this software, related documentation
-# and any modifications thereto.  Any use, reproduction, disclosure or
-# distribution of this software and related documentation without an express
-# license agreement from NVIDIA CORPORATION is strictly prohibited.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+
 
 ################################################################################
 # SETUP - Check environment
@@ -39,17 +47,14 @@ logger "Check Python version..."
 python --version
 
 
-# Conda add custom packages for ClaraGenomicsAnalysis CI
+# Conda add custom packages for GenomeWorks CI
 # Split setup into several steps to prevent the 15 minutes no
 # output to stdout timeout limit in CI jobs when solving environment
-logger "Conda install ClaraGenomicsAnalysis custom packages - clang-format"
+logger "Conda install GenomeWorks custom packages - clang-format"
 conda install --override-channels -c sarcasm clang-format
 
-logger "Conda install ClaraGenomicsAnalysis custom packages - doxygen ninja cmake"
+logger "Conda install GenomeWorks custom packages - doxygen ninja cmake"
 conda install --override-channels -c conda-forge doxygen ninja cmake">=3.10.2"
-
-logger "Conda install ClaraGenomicsAnalysis custom packages - minimap2 miniasm racon htslib"
-conda install --override-channels -c bioconda minimap2 miniasm racon htslib
 
 logger "Update LD_LIBRARY_PATH"
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
