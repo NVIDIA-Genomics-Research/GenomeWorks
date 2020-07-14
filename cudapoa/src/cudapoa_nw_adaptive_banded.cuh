@@ -390,7 +390,10 @@ __device__
 {
 
     GW_CONSTEXPR ScoreT score_type_min_limit = numeric_limits<ScoreT>::min();
-    const ScoreT min_score_value             = score_type_min_limit / 2;
+    // in adaptive bands, there are cases where multiple rows happen to have a band with start index
+    // smaller than band-start index of a row above. If min_value is too close to score_type_min_limit,
+    // this can cause overflow, therefore min_score_value is selected far enough
+    const ScoreT min_score_value = score_type_min_limit / 2;
 
     int16_t lane_idx = threadIdx.x % WARP_SIZE;
     int64_t score_index;
@@ -549,8 +552,6 @@ __device__
     SizeT aligned_nodes = 0;
     if (lane_idx == 0)
     {
-        //for(SizeT i = 0; i < graph_count; i++)  { printf("%3d  %3d\n", i, max_indices[i]); }
-
         // Find location of the maximum score in the matrix.
         SizeT i       = 0;
         SizeT j       = read_length;

@@ -48,7 +48,6 @@ std::unique_ptr<Batch> initialize_batch(bool msa, bool banded_alignment, bool ad
     cudaStream_t stream          = 0;
     size_t mem_per_batch         = 0.9 * free; // Using 90% of GPU available memory for CUDAPOA batch.
     const int32_t mismatch_score = -6, gap_score = -8, match_score = 8;
-    std::cout << adaptive_alignment;
     std::unique_ptr<Batch> batch = create_batch(device_id,
                                                 stream,
                                                 mem_per_batch,

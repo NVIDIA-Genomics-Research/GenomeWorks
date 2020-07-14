@@ -155,10 +155,7 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
     {
         scores_offset = static_cast<int64_t>(window_details_d[window_idx].scores_offset) * static_cast<int64_t>(max_graph_dimension);
     }
-    // if(threadIdx.x ==0)
-    // {
-    //     printf("Scores_offset: %ld\n", scores_offset);
-    // }
+
     ScoreT* scores = &scores_d[scores_offset];
 
     SizeT* alignment_graph         = &alignment_graph_d[max_graph_dimension * window_idx];
