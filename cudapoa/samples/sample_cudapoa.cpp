@@ -29,7 +29,7 @@
 using namespace claraparabricks::genomeworks;
 using namespace claraparabricks::genomeworks::cudapoa;
 
-std::unique_ptr<Batch> initialize_batch(bool msa, bool banded_alignment, bool adaptive_banded, const BatchSize& batch_size)
+std::unique_ptr<Batch> initialize_batch(bool msa, bool banded_alignment, bool adaptive_alignment, const BatchSize& batch_size)
 {
     // Get device information.
     int32_t device_count = 0;
@@ -48,7 +48,7 @@ std::unique_ptr<Batch> initialize_batch(bool msa, bool banded_alignment, bool ad
     cudaStream_t stream          = 0;
     size_t mem_per_batch         = 0.9 * free; // Using 90% of GPU available memory for CUDAPOA batch.
     const int32_t mismatch_score = -6, gap_score = -8, match_score = 8;
-    std::cout << adaptive_banded;
+    std::cout << adaptive_alignment;
     std::unique_ptr<Batch> batch = create_batch(device_id,
                                                 stream,
                                                 mem_per_batch,
@@ -58,7 +58,7 @@ std::unique_ptr<Batch> initialize_batch(bool msa, bool banded_alignment, bool ad
                                                 mismatch_score,
                                                 match_score,
                                                 banded_alignment,
-                                                adaptive_banded);
+                                                adaptive_alignment);
 
     return std::move(batch);
 }
