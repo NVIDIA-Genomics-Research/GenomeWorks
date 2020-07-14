@@ -130,7 +130,8 @@ __device__ ScoreT4<ScoreT> get_scores(ScoreT* scores,
 
     SizeT band_start = get_band_start_for_row(node, gradient, band_width, max_column);
 
-    SizeT band_end = static_cast<SizeT>(band_start + band_width + CELLS_PER_THREAD);
+    // subtract by CELLS_PER_THREAD to ensure score4_next is not pointing out of the corresponding band bounds
+    SizeT band_end = static_cast<SizeT>(band_start + band_width - CELLS_PER_THREAD);
 
     if ((read_pos > band_end || read_pos < band_start) && read_pos != 0)
     {

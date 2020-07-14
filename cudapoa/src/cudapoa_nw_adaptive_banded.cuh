@@ -144,7 +144,8 @@ __device__ ScoreT4<ScoreT> get_scores_adaptive(ScoreT* scores,
 
     SizeT band_start = band_starts[row];
 
-    SizeT band_end = static_cast<SizeT>(band_start + band_widths[row] + CELLS_PER_THREAD);
+    // subtract by CELLS_PER_THREAD to ensure score4_next is not pointing out of the corresponding band bounds
+    SizeT band_end = static_cast<SizeT>(band_start + band_widths[row] - CELLS_PER_THREAD);
 
     if ((column > band_end || column < band_start) && column != -1)
     {
