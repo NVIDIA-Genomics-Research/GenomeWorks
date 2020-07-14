@@ -201,6 +201,7 @@ struct OverlapsAndCigars
 /// \param device_cache data will be loaded into cache within the function
 /// \param application_parameters
 /// \param overlaps_and_cigars_to_process overlaps and cigars are output here and the then consumed by another thread
+/// \param number_of_skipped_pairs_of_indices number of pairs of indices skipped due to OOM error, variable shared between all threads, each call increases the number by the number of skipped pairs
 /// \param cuda_stream
 void process_one_device_batch(const IndexBatch& device_batch,
                               IndexCacheDevice& device_cache,
@@ -283,7 +284,7 @@ void process_one_device_batch(const IndexBatch& device_batch,
 /// \param host_cache data will be loaded into cache within the function
 /// \param device_cache data will be loaded into cache within the function
 /// \param overlaps_and_cigars_to_process overlaps and cigars are output to this structure and the then consumed by another thread
-/// \param number_of_skipped_pairs_of_indices
+/// \param number_of_skipped_pairs_of_indices number of pairs of indices skipped due to OOM error, variable shared between all threads, each call increases the number by the number of skipped pairs
 /// \param cuda_stream
 void process_one_batch(const BatchOfIndices& batch,
                        const ApplicationParameters& application_parameters,
