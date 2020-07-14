@@ -71,12 +71,12 @@ function(gw_enable_formatting_targets)
 
             # Check / show format differences (check will terminate on error)
             add_custom_command(OUTPUT ${CMAKE_BINARY_DIR}/formatting/${RELATIVE_PATH}-format-checked
-                COMMAND ${GW_CLANGFORMAT_EXECUTABLE} ${source} | diff -u ${source} - | cat -A
+                COMMAND ${GW_CLANGFORMAT_EXECUTABLE} ${source} | diff ${source} -
                 && touch ${CMAKE_BINARY_DIR}/formatting/${RELATIVE_PATH}-format-checked
                 DEPENDS ${source}
                 COMMENT "Checking format of ${source}")
             add_custom_command(OUTPUT ${CMAKE_BINARY_DIR}/formatting/${RELATIVE_PATH}-format-shown
-                COMMAND if ${GW_CLANGFORMAT_EXECUTABLE} ${source} | diff -u ${source} - | cat -A \; then
+                COMMAND if ${GW_CLANGFORMAT_EXECUTABLE} ${source} | diff ${source} - \; then
                 touch ${CMAKE_BINARY_DIR}/formatting/${RELATIVE_PATH}-format-checked\;
                 fi
                 DEPENDS ${source}
