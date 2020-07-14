@@ -22,8 +22,9 @@ namespace cudaaligner
 
 namespace myers
 {
-using WordType = uint32_t;
-}
+using WordType              = uint32_t;
+constexpr int32_t word_size = sizeof(WordType) * CHAR_BIT;
+} // namespace myers
 
 int32_t myers_compute_edit_distance(std::string const& target, std::string const& query);
 matrix<int32_t> myers_get_full_score_matrix(std::string const& target, std::string const& query);

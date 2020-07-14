@@ -35,7 +35,6 @@ constexpr int32_t warp_size = 32;
 namespace myers
 {
 
-constexpr int32_t word_size                     = sizeof(WordType) * CHAR_BIT;
 constexpr int32_t initial_distance_guess_factor = 20;
 
 inline __device__ WordType warp_leftshift_sync(uint32_t warp_mask, WordType v)
