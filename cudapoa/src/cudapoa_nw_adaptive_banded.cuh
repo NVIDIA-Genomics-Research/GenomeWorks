@@ -40,7 +40,7 @@ namespace cudapoa
 template <typename ScoreT, typename SizeT>
 __device__ ScoreT* get_score_ptr_adaptive(ScoreT* scores, SizeT row, SizeT column, SizeT band_start, int64_t* head_indices)
 {
-    column              = column == 0 ? 0 : column - band_start;
+    column              = column == -1 ? 0 : column - band_start;
     int64_t score_index = static_cast<int64_t>(column) + head_indices[row];
     return &scores[score_index];
 };
@@ -61,7 +61,7 @@ __device__ void set_score_adaptive(ScoreT* scores, SizeT row, SizeT column, Scor
     SizeT band_start = band_starts[row];
 
     SizeT col_offset;
-    if (column == 0)
+    if (column == -1)
     {
         col_offset = band_start;
     }
@@ -111,7 +111,7 @@ __device__ ScoreT get_score_adaptive(ScoreT* scores, SizeT row, SizeT column, Si
     SizeT band_start = band_starts[row];
     SizeT band_end   = band_start + band_widths[row];
 
-    if ((column > band_end || column < band_start) && column != 0)
+    if ((column > band_end || column < band_start) && column != -1)
     {
         return min_score_value;
     }
@@ -146,7 +146,7 @@ __device__ ScoreT4<ScoreT> get_scores_adaptive(ScoreT* scores,
 
     SizeT band_end = static_cast<SizeT>(band_start + band_widths[row] + CELLS_PER_THREAD);
 
-    if ((column > band_end || column < band_start) && column != 0)
+    if ((column > band_end || column < band_start) && column != -1)
     {
         return ScoreT4<ScoreT>{default_value, default_value, default_value, default_value};
     }
@@ -263,7 +263,7 @@ __device__
     if (pred_count == 0)
     {
         first_column_score = gap_score;
-        set_score_adaptive(scores, row, SizeT{0}, first_column_score, band_starts, head_indices);
+        set_score_adaptive(scores, row, SizeT{-1}, first_column_score, band_starts, head_indices);
     }
     else
     {
@@ -272,10 +272,10 @@ __device__
         {
             SizeT pred_node_id        = incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES + p];
             SizeT pred_node_graph_pos = node_id_to_pos[pred_node_id] + 1;
-            penalty                   = max(penalty, get_score_adaptive(scores, pred_node_graph_pos, SizeT{0}, band_starts, band_widths, head_indices, max_column, min_score_value));
+            penalty                   = max(penalty, get_score_adaptive(scores, pred_node_graph_pos, SizeT{-1}, band_starts, band_widths, head_indices, max_column, min_score_value));
         }
         first_column_score = penalty + gap_score;
-        set_score_adaptive(scores, row, SizeT{0}, first_column_score, band_starts, head_indices);
+        set_score_adaptive(scores, row, SizeT{-1}, first_column_score, band_starts, head_indices);
     }
 
     return first_column_score;
@@ -327,7 +327,7 @@ __device__ void set_band_parameters(ScoreT* scores,
         band_width = cudautils::align<SizeT, CUDAPOA_MIN_BAND_WIDTH>(bw);
     }
 
-    // there is no guarantee that start_pos does not fall on the left side of the main diagonal, therefore in some cases
+    // there is no guarantee that end_pos does not fall on the left side of the main diagonal, therefore in some cases
     // for the last node, adaptive band may not be covering right bottom corner of the score matrix, i.e.
     // for the last node, end_pos < max_column. For global alignment, this should be avoided, therefore we add the following modification
     SizeT diagonal_index = SizeT(row * gradient) + 1;
