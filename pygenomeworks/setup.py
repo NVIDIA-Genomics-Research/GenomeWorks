@@ -1,14 +1,22 @@
 #!/usr/bin/env python3
 
 #
-# Copyright (c) 2019, NVIDIA CORPORATION.  All rights reserved.
+# Copyright 2019-2020 NVIDIA CORPORATION.
 #
-# NVIDIA CORPORATION and its licensors retain all intellectual property
-# and proprietary rights in and to this software, related documentation
-# and any modifications thereto.  Any use, reproduction, disclosure or
-# distribution of this software and related documentation without an express
-# license agreement from NVIDIA CORPORATION is strictly prohibited.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+
 """Python setuptools setup."""
 
 import glob
@@ -30,7 +38,7 @@ def get_verified_absolute_path(path):
     """
     installed_path = os.path.abspath(path)
     if not os.path.exists(installed_path):
-        raise RuntimeError("No valid path for requested component exists")
+        raise RuntimeError("The requested path does not exist:{}".format(installed_path))
     return installed_path
 
 
@@ -88,25 +96,32 @@ cuda_library_path = os.path.join(cuda_root, 'lib64')
 current_dir = os.path.dirname(os.path.realpath(__file__))
 
 
-# Copies shared libraries into clargenomics package
+# Copies shared libraries into genomeworks package
 copy_all_files_in_directory(
     get_verified_absolute_path(os.path.join(gw_install_dir, "lib")),
     os.path.join(current_dir, "genomeworks", "shared_libs/"),
 )
 
+# Copies license from genomeworks root dir for packaging
+copy_all_files_in_directory(
+    get_verified_absolute_path(gw_root_dir),
+    get_verified_absolute_path(current_dir),
+    file_ext="LICENSE"
+)
+
 # Classifiers for PyPI
 pygw_classifiers = [
-        "Development Status :: 5 - Production/Stable",
-        "Intended Audience :: Science/Research",
-        "Topic :: Scientific/Engineering :: Bio-Informatics",
-        "License :: OSI Approved :: Apache Software License",
-        "Natural Language :: English",
-        "Operating System :: POSIX :: Linux",
-        "Programming Language :: Python :: 3.5",
-        "Programming Language :: Python :: 3.6",
-        "Programming Language :: Python :: 3.7",
-        "Programming Language :: Python :: 3.8",
-        "Programming Language :: Python :: 3.9"
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Bio-Informatics",
+    "License :: OSI Approved :: Apache Software License",
+    "Natural Language :: English",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3.5",
+    "Programming Language :: Python :: 3.6",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9"
 ]
 
 extensions = [

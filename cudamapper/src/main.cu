@@ -1,11 +1,17 @@
 /*
-* Copyright (c) 2019, NVIDIA CORPORATION.  All rights reserved.
+* Copyright 2019-2020 NVIDIA CORPORATION.
 *
-* NVIDIA CORPORATION and its licensors retain all intellectual property
-* and proprietary rights in and to this software, related documentation
-* and any modifications thereto.  Any use, reproduction, disclosure or
-* distribution of this software and related documentation without an express
-* license agreement from NVIDIA CORPORATION is strictly prohibited.
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
 */
 
 #include <atomic>
@@ -195,12 +201,14 @@ struct OverlapsAndCigars
 /// \param device_cache data will be loaded into cache within the function
 /// \param application_parameters
 /// \param overlaps_and_cigars_to_process overlaps and cigars are output here and the then consumed by another thread
+/// \param number_of_skipped_pairs_of_indices number of pairs of indices skipped due to OOM error, variable shared between all threads, each call increases the number by the number of skipped pairs
 /// \param cuda_stream
 void process_one_device_batch(const IndexBatch& device_batch,
                               IndexCacheDevice& device_cache,
                               const ApplicationParameters& application_parameters,
                               DefaultDeviceAllocator device_allocator,
                               ThreadsafeProducerConsumer<OverlapsAndCigars>& overlaps_and_cigars_to_process,
+                              std::atomic<int32_t>& number_of_skipped_pairs_of_indices,
                               cudaStream_t cuda_stream)
 {
     GW_NVTX_RANGE(profiler, "main::process_one_device_batch");
@@ -222,42 +230,49 @@ void process_one_device_batch(const IndexBatch& device_batch,
             {
                 std::shared_ptr<Index> query_index  = device_cache.get_index_from_query_cache(query_index_descriptor);
                 std::shared_ptr<Index> target_index = device_cache.get_index_from_target_cache(target_index_descriptor);
-
-                // find anchors and overlaps
-                auto matcher = Matcher::create_matcher(device_allocator,
-                                                       *query_index,
-                                                       *target_index,
-                                                       cuda_stream);
-
-                std::vector<Overlap> overlaps;
-                OverlapperTriggered overlapper(device_allocator,
-                                               cuda_stream);
-                overlapper.get_overlaps(overlaps,
-                                        matcher->anchors(),
-                                        application_parameters.min_residues,
-                                        application_parameters.min_overlap_len,
-                                        application_parameters.min_bases_per_residue,
-                                        application_parameters.min_overlap_fraction);
-
-                // free up memory taken by matcher
-                matcher.reset(nullptr);
-
-                // Align overlaps
-                std::vector<std::string> cigars;
-                if (application_parameters.alignment_engines > 0)
+                try
                 {
-                    cigars.resize(overlaps.size());
-                    GW_NVTX_RANGE(profiler, "align_overlaps");
-                    align_overlaps(device_allocator,
-                                   overlaps,
-                                   *application_parameters.query_parser,
-                                   *application_parameters.target_parser,
-                                   application_parameters.alignment_engines,
-                                   cigars);
-                }
+                    // find anchors and overlaps
+                    auto matcher = Matcher::create_matcher(device_allocator,
+                                                           *query_index,
+                                                           *target_index,
+                                                           cuda_stream);
 
-                // pass overlaps and cigars to writer thread
-                overlaps_and_cigars_to_process.add_new_element({std::move(overlaps), std::move(cigars)});
+                    std::vector<Overlap> overlaps;
+                    OverlapperTriggered overlapper(device_allocator,
+                                                   cuda_stream);
+                    overlapper.get_overlaps(overlaps,
+                                            matcher->anchors(),
+                                            application_parameters.min_residues,
+                                            application_parameters.min_overlap_len,
+                                            application_parameters.min_bases_per_residue,
+                                            application_parameters.min_overlap_fraction);
+
+                    // free up memory taken by matcher
+                    matcher.reset(nullptr);
+
+                    // Align overlaps
+                    std::vector<std::string> cigars;
+                    if (application_parameters.alignment_engines > 0)
+                    {
+                        cigars.resize(overlaps.size());
+                        GW_NVTX_RANGE(profiler, "align_overlaps");
+                        align_overlaps(device_allocator,
+                                       overlaps,
+                                       *application_parameters.query_parser,
+                                       *application_parameters.target_parser,
+                                       application_parameters.alignment_engines,
+                                       cigars);
+                    }
+
+                    // pass overlaps and cigars to writer thread
+                    overlaps_and_cigars_to_process.add_new_element({std::move(overlaps), std::move(cigars)});
+                }
+                catch (device_memory_allocation_exception& oom_exception)
+                {
+                    // if the application ran out of memory skip this pair of indices
+                    ++(number_of_skipped_pairs_of_indices);
+                }
             }
         }
     }
@@ -269,6 +284,7 @@ void process_one_device_batch(const IndexBatch& device_batch,
 /// \param host_cache data will be loaded into cache within the function
 /// \param device_cache data will be loaded into cache within the function
 /// \param overlaps_and_cigars_to_process overlaps and cigars are output to this structure and the then consumed by another thread
+/// \param number_of_skipped_pairs_of_indices number of pairs of indices skipped due to OOM error, variable shared between all threads, each call increases the number by the number of skipped pairs
 /// \param cuda_stream
 void process_one_batch(const BatchOfIndices& batch,
                        const ApplicationParameters& application_parameters,
@@ -276,6 +292,7 @@ void process_one_batch(const BatchOfIndices& batch,
                        IndexCacheHost& host_cache,
                        IndexCacheDevice& device_cache,
                        ThreadsafeProducerConsumer<OverlapsAndCigars>& overlaps_and_cigars_to_process,
+                       std::atomic<int32_t>& number_of_skipped_pairs_of_indices,
                        cudaStream_t cuda_stream)
 {
     GW_NVTX_RANGE(profiler, "main::process_one_batch");
@@ -308,6 +325,7 @@ void process_one_batch(const BatchOfIndices& batch,
                                  application_parameters,
                                  device_allocator,
                                  overlaps_and_cigars_to_process,
+                                 number_of_skipped_pairs_of_indices,
                                  cuda_stream);
     }
 }
@@ -376,12 +394,16 @@ void postprocess_and_write_thread_function(const int32_t device_id,
 /// \param application_parameters
 /// \param output_mutex
 /// \param cuda_stream
+/// \param number_of_total_batches
+/// \param number_of_skipped_pairs_of_indices
+/// \param number_of_processed_batches
 void worker_thread_function(const int32_t device_id,
                             ThreadsafeDataProvider<BatchOfIndices>& batches_of_indices,
                             const ApplicationParameters& application_parameters,
                             std::mutex& output_mutex,
                             cudaStream_t cuda_stream,
                             const int64_t number_of_total_batches,
+                            std::atomic<int32_t>& number_of_skipped_pairs_of_indices,
                             std::atomic<int64_t>& number_of_processed_batches)
 {
     GW_NVTX_RANGE(profiler, "main::worker_thread");
@@ -441,6 +463,7 @@ void worker_thread_function(const int32_t device_id,
                           *host_cache,
                           device_cache,
                           overlaps_and_cigars_to_process,
+                          number_of_skipped_pairs_of_indices,
                           cuda_stream);
     }
 
@@ -490,6 +513,9 @@ int main(int argc, char* argv[])
     std::atomic<int64_t> number_of_processed_batches(0);
     ThreadsafeDataProvider<BatchOfIndices> batches_of_indices(std::move(batches_of_indices_vect));
 
+    // pairs of indices might be skipped if they cause out of memory errors
+    std::atomic<int32_t> number_of_skipped_pairs_of_indices{0};
+
     // explicitly assign one stream to each GPU
     std::vector<cudaStream_t> cuda_streams(parameters.num_devices);
 
@@ -507,6 +533,7 @@ int main(int argc, char* argv[])
                                     std::ref(output_mutex),
                                     cuda_streams[device_id],
                                     number_of_total_batches,
+                                    std::ref(number_of_skipped_pairs_of_indices),
                                     std::ref(number_of_processed_batches));
     }
 
@@ -516,6 +543,11 @@ int main(int argc, char* argv[])
         GW_CU_CHECK_ERR(cudaSetDevice(device_id));
         worker_threads[device_id].join();
         GW_CU_CHECK_ERR(cudaStreamDestroy(cuda_streams[device_id])); // no need to sync, it should be done at the end of worker_threads
+    }
+
+    if (number_of_skipped_pairs_of_indices != 0)
+    {
+        std::cerr << "NOTE: Skipped " << number_of_skipped_pairs_of_indices << " pairs of indices due to device out of memory error" << std::endl;
     }
 
     return 0;
