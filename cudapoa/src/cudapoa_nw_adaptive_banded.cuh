@@ -94,7 +94,7 @@ __device__ void initialize_band_adaptive(ScoreT* scores, SizeT row, ScoreT min_s
     set_score_adaptive(scores, row, band_start, min_score_value, band_starts, head_indices);
     if (lane_idx < CUDAPOA_BANDED_MATRIX_RIGHT_PADDING)
     {
-        set_score_adaptive(scores, row, lane_idx + band_end, min_score_value, band_starts, head_indices);
+        set_score_adaptive(scores, row, static_cast<SizeT>(lane_idx + band_end), min_score_value, band_starts, head_indices);
     }
 };
 
