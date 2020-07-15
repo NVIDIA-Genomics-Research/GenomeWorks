@@ -419,7 +419,7 @@ __device__ int32_t myers_backtrace_banded(int8_t* path, device_matrix_view<WordT
 {
     assert(threadIdx.x == 0);
     using nw_score_t                    = int32_t;
-    GW_CONSTEXPR nw_score_t out_of_band = numeric_limits<nw_score_t>::max() - 1;
+    GW_CONSTEXPR nw_score_t out_of_band = numeric_limits<nw_score_t>::max() - 1; // -1 to avoid integer overflow further down.
     assert(pv.num_rows() == score.num_rows());
     assert(mv.num_rows() == score.num_rows());
     assert(pv.num_cols() == score.num_cols());
@@ -623,25 +623,33 @@ __device__ void myers_compute_scores_diagonal_band_impl(
 
                 const WordType eq = get_query_pattern(query_patterns, idx, pattern_idx_offset + t - t_begin + 1, target_begin[t - 1], false);
 
-                const WordType carry_right_bit = WordType(1) << (idx == (n_words_band - 1) ? band_width - (n_words_band - 1) * word_size - 2 : word_size - 2);
-                const WordType carry_down_bit  = carry_right_bit << 1;
-                assert(carry_down_bit != 0);
+                const WordType delta_right_bit = WordType(1) << (idx == (n_words_band - 1) ? band_width - (n_words_band - 1) * word_size - 2 : word_size - 2);
+                const WordType delta_down_bit  = delta_right_bit << 1;
+                assert(delta_down_bit != 0);
                 if (idx == n_words_band - 1)
                 {
                     // bits who have no left neighbor -> assume worst case: +1
-                    pv_local |= carry_down_bit;
-                    mv_local &= ~carry_down_bit;
+                    pv_local |= delta_down_bit;
+                    mv_local &= ~delta_down_bit;
                 }
 
-                const int2 carry_right   = myers_advance_block2(warp_mask, carry_right_bit, eq, pv_local, mv_local, carry);
-                const int32_t carry_down = ((pv_local & carry_down_bit) == WordType(0) ? 0 : 1) - ((mv_local & carry_down_bit) == WordType(0) ? 0 : 1);
-                score(idx, t)            = score(idx, t - 1) + carry_right.x + carry_down;
+                const int2 delta_right   = myers_advance_block2(warp_mask, delta_right_bit, eq, pv_local, mv_local, carry);
+                const int32_t delta_down = ((pv_local & delta_down_bit) == WordType(0) ? 0 : 1) - ((mv_local & delta_down_bit) == WordType(0) ? 0 : 1);
+                // Since idx is relative to diagonal band, (idx, t-1) -> (idx,t)
+                // corresponds to (n-1,t-1) -> (n,t) in the NW matrix.
+                // To get from score'(n-1, t-1) -> score'(n, t-1)
+                // add horizontal delta in row n-1 (delta_right.x)
+                // and the vertical delta in column t (delta_down).
+                score(idx, t) = score(idx, t - 1) + delta_right.x + delta_down;
+
+                // Carry horizontal delta in row n (= delta_right.y) to next warp iteration
                 if (threadIdx.x == 0)
                     carry = 0;
                 if (warp_mask == 0xffff'ffffu && (threadIdx.x == 0 || threadIdx.x == 31))
-                    carry = __shfl_down_sync(0x8000'0001u, carry_right.y, warp_size - 1);
+                    carry = __shfl_down_sync(0x8000'0001u, delta_right.y, warp_size - 1);
                 if (threadIdx.x != 0)
                     carry = 0;
+
                 pv(idx, t) = pv_local;
                 mv(idx, t) = mv_local;
             }
