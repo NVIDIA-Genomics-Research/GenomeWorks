@@ -69,7 +69,7 @@ std::unique_ptr<Batch> initialize_batch(int32_t mismatch_score,
     return std::move(batch);
 }
 
-void process_batch(Batch* batch, bool msa_flag, bool print, std::vector<int32_t>& list_of_group_ids)
+void process_batch(Batch* batch, bool msa_flag, bool print, std::vector<int32_t>& list_of_group_ids, int id_offset)
 {
     batch->generate_poa();
 
@@ -90,7 +90,7 @@ void process_batch(Batch* batch, bool msa_flag, bool print, std::vector<int32_t>
         {
             if (output_status[g] != StatusType::success)
             {
-                std::cerr << "Error generating  MSA for POA group " << list_of_group_ids[g] << ". Error type " << output_status[g] << std::endl;
+                std::cerr << "Error generating  MSA for POA group " << list_of_group_ids[g + id_offset] << ". Error type " << output_status[g] << std::endl;
             }
             else
             {
@@ -121,7 +121,7 @@ void process_batch(Batch* batch, bool msa_flag, bool print, std::vector<int32_t>
         {
             if (output_status[g] != StatusType::success)
             {
-                std::cerr << "Error generating consensus for POA group " << list_of_group_ids[g] << ". Error type " << output_status[g] << std::endl;
+                std::cerr << "Error generating consensus for POA group " << list_of_group_ids[g + id_offset] << ". Error type " << output_status[g] << std::endl;
             }
             else
             {
@@ -230,7 +230,7 @@ int main(int argc, char* argv[])
                 if (batch->get_total_poas() > 0)
                 {
                     // No more POA groups can be added to batch. Now process batch.
-                    process_batch(batch.get(), parameters.msa, true, batch_group_ids);
+                    process_batch(batch.get(), parameters.msa, true, batch_group_ids, group_count);
 
                     if (graph_output.is_open())
                     {
