@@ -94,6 +94,7 @@ PenaltyReturnTypeOnItsOwnLine: 1001
 PointerAlignment: Left
 ReflowComments:  true
 SortIncludes:    false
+SortUsingDeclarations: false
 SpaceAfterCStyleCast: false
 SpaceBeforeAssignmentOperators: true
 SpaceBeforeParens: ControlStatements
