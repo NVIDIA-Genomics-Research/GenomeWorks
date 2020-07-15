@@ -152,7 +152,8 @@ struct FilterOverlapOp
     __host__ __device__ __forceinline__ FilterOverlapOp(size_t min_residues,
                                                         size_t min_overlap_len,
                                                         size_t min_bases_per_residue,
-                                                        float min_overlap_fraction)
+                                                        float min_overlap_fraction
+                                                    )
         : min_residues(min_residues)
         , min_overlap_len(min_overlap_len)
         , min_bases_per_residue(min_bases_per_residue)
@@ -237,6 +238,8 @@ OverlapperTriggered::OverlapperTriggered(DefaultDeviceAllocator allocator,
 
 void OverlapperTriggered::get_overlaps(std::vector<Overlap>& fused_overlaps,
                                        const device_buffer<Anchor>& d_anchors,
+                                       const Index& query_index,
+                                       const Index& target_index,
                                        int64_t min_residues,
                                        int64_t min_overlap_len,
                                        int64_t min_bases_per_residue,
@@ -414,6 +417,8 @@ void OverlapperTriggered::get_overlaps(std::vector<Overlap>& fused_overlaps,
 
     device_buffer<Overlap> d_filtered_overlaps(n_fused_overlap, _allocator, _cuda_stream);
 
+    std::cerr << "Number fused overlaps  " << n_fused_overlap << std::endl;
+
     FilterOverlapOp filterOp(min_residues, min_overlap_len, min_bases_per_residue, min_overlap_fraction);
     auto filtered_overlaps_end =
         thrust::copy_if(thrust_exec_policy,
@@ -426,6 +431,9 @@ void OverlapperTriggered::get_overlaps(std::vector<Overlap>& fused_overlaps,
     // memcpyD2H - move fused and filtered overlaps to host
     fused_overlaps.resize(n_filtered_overlaps);
     cudautils::device_copy_n(d_filtered_overlaps.data(), n_filtered_overlaps, fused_overlaps.data(), _cuda_stream);
+
+        std::cerr << "Number filtered overlaps  " << n_filtered_overlaps << std::endl;
+
 
     // This is not completely necessary, but if removed one has to make sure that the next step
     // uses the same stream or that sync is done in caller

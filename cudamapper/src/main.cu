@@ -240,6 +240,8 @@ void process_one_device_batch(const IndexBatch& device_batch,
                                                cuda_stream);
                 overlapper.get_overlaps(overlaps,
                                         matcher->anchors(),
+                                        *query_index,
+                                        *target_index,
                                         application_parameters.min_residues,
                                         application_parameters.min_overlap_len,
                                         application_parameters.min_bases_per_residue,
