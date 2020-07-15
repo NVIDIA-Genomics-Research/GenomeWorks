@@ -103,7 +103,7 @@ namespace
 
 int32_t popc(const myers::WordType x)
 {
-    static_assert(sizeof(myers::WordType) == 4);
+    static_assert(sizeof(myers::WordType) == 4, "This function assumes sizeof(myers::WordType) == 4");
     constexpr int32_t nbits[16] = {0, 1, 1, 2,
                                    1, 2, 2, 3,
                                    1, 2, 2, 3,

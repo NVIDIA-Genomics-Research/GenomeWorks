@@ -418,8 +418,8 @@ __global__ void myers_compute_score_matrix_kernel(
 __device__ int32_t myers_backtrace_banded(int8_t* path, device_matrix_view<WordType> const& pv, device_matrix_view<WordType> const& mv, device_matrix_view<int32_t> const& score, int32_t diagonal_begin, int32_t diagonal_end, int32_t band_width, int32_t target_size, int32_t query_size)
 {
     assert(threadIdx.x == 0);
-    using nw_score_t                 = int32_t;
-    constexpr nw_score_t out_of_band = numeric_limits<nw_score_t>::max() - 1;
+    using nw_score_t                    = int32_t;
+    GW_CONSTEXPR nw_score_t out_of_band = numeric_limits<nw_score_t>::max() - 1;
     assert(pv.num_rows() == score.num_rows());
     assert(mv.num_rows() == score.num_rows());
     assert(pv.num_cols() == score.num_cols());
