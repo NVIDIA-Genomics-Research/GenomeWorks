@@ -169,7 +169,7 @@ struct FilterOverlapOp
         const auto target_overlap_length = overlap.target_end_position_in_read_ - overlap.target_start_position_in_read_;
         const auto query_overlap_length  = overlap.query_end_position_in_read_ - overlap.query_start_position_in_read_;
         const auto overlap_length        = max(target_overlap_length, query_overlap_length);
-        const bool self_mapping          = overlap.query_read_id_ == overlap.target_read_id_ && indexes_identical;
+        const bool self_mapping          = (overlap.query_read_id_ == overlap.target_read_id_) && indexes_identical;
 
         return ((overlap.num_residues_ >= min_residues) &&
                 ((overlap_length / overlap.num_residues_) < min_bases_per_residue) &&
