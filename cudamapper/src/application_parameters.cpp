@@ -91,7 +91,8 @@ ApplicationParameters::ApplicationParameters(int argc, char* argv[])
             target_index_size = std::stoi(optarg);
             break;
         case 'F':
-            filtering_parameter = std::stod(optarg);
+            filtering_parameter        = std::stod(optarg);
+            custom_filtering_parameter = true;
             break;
         case 'a':
             alignment_engines = std::stoi(optarg);
@@ -217,6 +218,11 @@ void ApplicationParameters::create_input_parsers(std::shared_ptr<io::FastaParser
     else
     {
         target_parser = io::create_kseq_fasta_parser(target_filepath, kmer_size + windows_size - 1);
+    }
+
+    if ((query_parser->get_num_seqences() < 5 || target_parser->get_num_seqences() < 5) && !custom_filtering_parameter)
+    {
+        filtering_parameter = 1.0;
     }
 
     std::cerr << "Query file: " << query_filepath << ", number of reads: " << query_parser->get_num_seqences() << std::endl;

@@ -48,6 +48,7 @@ public:
     int32_t index_size                      = 30;    // i
     int32_t target_index_size               = 30;    // t
     double filtering_parameter              = 1e-5;  // F
+    bool custom_filtering_parameter         = false; // Enables override of the adaptive default for -F (i.e., -F can be set even on small readsets)
     int32_t alignment_engines               = 0;     // a
     int32_t min_residues                    = 3;     // r, recommended range: 1 - 10. Higher: more accurate. Lower: more sensitive
     int32_t min_overlap_len                 = 250;   // l, recommended range: 100 - 1000
