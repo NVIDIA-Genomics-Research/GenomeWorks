@@ -154,8 +154,7 @@ struct FilterOverlapOp
                                                         size_t min_overlap_len,
                                                         size_t min_bases_per_residue,
                                                         float min_overlap_fraction,
-                                                        bool indexes_identical
-                                                    )
+                                                        bool indexes_identical)
         : min_residues(min_residues)
         , min_overlap_len(min_overlap_len)
         , min_bases_per_residue(min_bases_per_residue)
@@ -170,7 +169,7 @@ struct FilterOverlapOp
         const auto target_overlap_length = overlap.target_end_position_in_read_ - overlap.target_start_position_in_read_;
         const auto query_overlap_length  = overlap.query_end_position_in_read_ - overlap.query_start_position_in_read_;
         const auto overlap_length        = max(target_overlap_length, query_overlap_length);
-        const bool self_mapping = overlap.query_read_id_ == overlap.target_read_id_ && indexes_identical;
+        const bool self_mapping          = overlap.query_read_id_ == overlap.target_read_id_ && indexes_identical;
 
         return ((overlap.num_residues_ >= min_residues) &&
                 ((overlap_length / overlap.num_residues_) < min_bases_per_residue) &&
@@ -436,8 +435,7 @@ void OverlapperTriggered::get_overlaps(std::vector<Overlap>& fused_overlaps,
     fused_overlaps.resize(n_filtered_overlaps);
     cudautils::device_copy_n(d_filtered_overlaps.data(), n_filtered_overlaps, fused_overlaps.data(), _cuda_stream);
 
-        std::cerr << "Number filtered overlaps  " << n_filtered_overlaps << std::endl;
-
+    std::cerr << "Number filtered overlaps  " << n_filtered_overlaps << std::endl;
 
     // This is not completely necessary, but if removed one has to make sure that the next step
     // uses the same stream or that sync is done in caller
