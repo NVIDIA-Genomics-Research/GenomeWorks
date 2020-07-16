@@ -79,8 +79,8 @@ public:
     /// \param min_overlap_fraction the minimum ratio between the shortest and longest of the target and query components of an overlap. e.g if Query range is (150,1000) and target range is (1000,2000) then overlap fraction is 0.85
     virtual void get_overlaps(std::vector<Overlap>& fused_overlaps,
                               const device_buffer<Anchor>& d_anchors,
-                              const Index& query_index,
-                              const Index& target_index,
+                              std::shared_ptr<Index> query_index,
+                              std::shared_ptr<Index> target_index,
                               int64_t min_residues,
                               int64_t min_overlap_len,
                               int64_t min_bases_per_residue,
