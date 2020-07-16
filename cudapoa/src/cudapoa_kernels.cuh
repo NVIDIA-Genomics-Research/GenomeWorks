@@ -147,9 +147,11 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
     int32_t scores_width = window_details_d[window_idx].scores_width;
 
     int64_t scores_offset;
+    int64_t banded_window_scores_size; 
     if (cuda_banded_alignment)
     {
-        scores_offset = static_cast<int64_t>(max_graph_dimension) * static_cast<int64_t>(banded_alignment_band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING) * static_cast<int64_t>(window_idx);
+        banded_window_scores_size = static_cast<int64_t>(max_graph_dimension) * static_cast<int64_t>(banded_alignment_band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING);
+        scores_offset = banded_window_scores_size * static_cast<int64_t>(window_idx);
     }
     else
     {
@@ -157,7 +159,7 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
     }
 
     ScoreT* scores = &scores_d[scores_offset];
-
+    
     SizeT* alignment_graph         = &alignment_graph_d[max_graph_dimension * window_idx];
     SizeT* alignment_read          = &alignment_read_d[max_graph_dimension * window_idx];
     SizeT* band_starts             = &band_starts_d[max_nodes_per_window * window_idx];
@@ -284,6 +286,7 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
                                                                                             sequence,
                                                                                             seq_len,
                                                                                             scores,
+                                                                                            banded_window_scores_size,
                                                                                             alignment_graph,
                                                                                             alignment_read,
                                                                                             node_distance,
@@ -345,6 +348,15 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
             {
                 consensus[0] = CUDAPOA_KERNEL_ERROR_ENCOUNTERED;
                 consensus[1] = static_cast<uint8_t>(StatusType::loop_count_exceeded_upper_bound);
+            }
+            return;
+        }
+        else if (alignment_length == -2)
+        {
+            if(lane_idx == 0)
+            {
+                consensus[0] = CUDAPOA_KERNEL_ERROR_ENCOUNTERED;
+                consensus[1] = static_cast<uint8_t>(StatusType::exceeded_adaptive_banded_matrix_size);
             }
             return;
         }

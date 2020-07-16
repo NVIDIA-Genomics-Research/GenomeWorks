@@ -37,6 +37,7 @@ enum StatusType
     exceeded_maximum_sequences_per_poa,
     node_count_exceeded_maximum_graph_size,
     edge_count_exceeded_maximum_graph_size,
+    exceeded_adaptive_banded_matrix_size,
     seq_len_exceeded_maximum_nodes_per_window,
     loop_count_exceeded_upper_bound,
     output_type_unavailable,

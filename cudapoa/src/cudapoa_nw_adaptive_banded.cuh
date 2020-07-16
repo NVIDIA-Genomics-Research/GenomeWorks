@@ -290,7 +290,8 @@ __device__
 }
 
 template <typename SizeT, typename ScoreT>
-__device__ void set_band_parameters(ScoreT* scores,
+__device__ SizeT set_band_parameters(ScoreT* scores,
+                                    int64_t scores_size,
                                     SizeT* band_starts,
                                     SizeT* band_widths,
                                     int64_t* head_indices,
@@ -307,6 +308,7 @@ __device__ void set_band_parameters(ScoreT* scores,
                                     float gradient,
                                     ScoreT min_score_value)
 {
+    SizeT err = 0;
     SizeT pred_max_score_left  = max_column;
     SizeT pred_max_score_right = 0;
 
@@ -360,9 +362,16 @@ __device__ void set_band_parameters(ScoreT* scores,
     band_starts[row]  = start_pos;
     band_widths[row]  = band_width;
     head_indices[row] = head_index;
+    
 
     // update head_index for the nex row
     head_index += static_cast<int64_t>(band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING);
+    if (head_index > scores_size)
+    {
+        // If current end of band is greater than allocated scores' size, return error
+        err = -2;
+    }
+    return err;
 }
 
 template <typename SeqT,
@@ -380,6 +389,7 @@ __device__
                                      SeqT* read,
                                      SizeT read_length,
                                      ScoreT* scores,
+                                     int64_t scores_size,
                                      SizeT* alignment_graph,
                                      SizeT* alignment_read,
                                      SizeT* node_distances,
@@ -445,9 +455,13 @@ __device__
 
         SizeT node_id    = graph[graph_pos];
         SizeT score_gIdx = graph_pos + 1;
-
-        set_band_parameters(scores, band_starts, band_widths, head_indices, max_indices, incoming_edge_count, incoming_edges, node_distances,
-                            node_id_to_pos, head_index_of_next_row, node_id, score_gIdx, max_column, graph_count, gradient, min_score_value);
+        
+        SizeT err = set_band_parameters(scores, scores_size, band_starts, band_widths, head_indices, max_indices, incoming_edge_count, incoming_edges, node_distances,
+                                        node_id_to_pos, head_index_of_next_row, node_id, score_gIdx, max_column, graph_count, gradient, min_score_value);
+        if(err)
+        {
+            return err;
+        }
 
         SizeT band_start = band_starts[score_gIdx];
 
