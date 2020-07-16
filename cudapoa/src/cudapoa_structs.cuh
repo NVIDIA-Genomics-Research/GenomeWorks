@@ -151,7 +151,7 @@ struct GraphDetails
     // position in the topologically sorted graph.
     SizeT* sorted_poa_node_map;
 
-    // Device buffer to store distance of each graph node to the head node(s)
+    // Device buffer to store distance of each graph node to the head node(s), used in adaptive-banding alignment
     SizeT* node_distance_to_head;
 
     // Device buffer used during topological sort to store incoming
