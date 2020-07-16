@@ -420,8 +420,6 @@ void OverlapperTriggered::get_overlaps(std::vector<Overlap>& fused_overlaps,
 
     device_buffer<Overlap> d_filtered_overlaps(n_fused_overlap, _allocator, _cuda_stream);
 
-    std::cerr << "Number fused overlaps  " << n_fused_overlap << std::endl;
-
     FilterOverlapOp filterOp(min_residues, min_overlap_len, min_bases_per_residue, min_overlap_fraction, query_index == target_index);
     auto filtered_overlaps_end =
         thrust::copy_if(thrust_exec_policy,
@@ -434,8 +432,6 @@ void OverlapperTriggered::get_overlaps(std::vector<Overlap>& fused_overlaps,
     // memcpyD2H - move fused and filtered overlaps to host
     fused_overlaps.resize(n_filtered_overlaps);
     cudautils::device_copy_n(d_filtered_overlaps.data(), n_filtered_overlaps, fused_overlaps.data(), _cuda_stream);
-
-    std::cerr << "Number filtered overlaps  " << n_filtered_overlaps << std::endl;
 
     // This is not completely necessary, but if removed one has to make sure that the next step
     // uses the same stream or that sync is done in caller
