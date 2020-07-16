@@ -299,6 +299,7 @@ __device__ void set_band_parameters(ScoreT* scores,
                                     SizeT* incoming_edges,
                                     SizeT* node_distances,
                                     SizeT* node_id_to_pos,
+                                    int64_t& head_index,
                                     SizeT node_id,
                                     SizeT row,
                                     SizeT max_column,
@@ -358,7 +359,10 @@ __device__ void set_band_parameters(ScoreT* scores,
 
     band_starts[row]  = start_pos;
     band_widths[row]  = band_width;
-    head_indices[row] = static_cast<int64_t>(row) * static_cast<int64_t>(band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING);
+    head_indices[row] = head_index;
+
+    // update head_index for the nex row
+    head_index += static_cast<int64_t>(band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING);
 }
 
 template <typename SeqT,
@@ -405,9 +409,12 @@ __device__
 
     SizeT max_matrix_sequence_dimension = static_band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING;
 
-    // set parameters for node_id 0 (row 0)
-    set_band_parameters(scores, band_starts, band_widths, head_indices, max_indices, incoming_edge_count, incoming_edges,
-                        node_distances, node_id_to_pos, SizeT{0}, SizeT{0}, max_column, graph_count, gradient, min_score_value);
+    // set band parameters for node_id 0 (row 0)
+    band_starts[0]  = 0;
+    band_widths[0]  = static_band_width;
+    head_indices[0] = 0;
+    // will be used in set_band_parameters() to update head_indices array
+    int64_t head_index_of_next_row = max_matrix_sequence_dimension;
 
     // Initialise the horizontal boundary of the score matrix, initialising of the vertical boundary is done within the main for loop
     for (SizeT j = lane_idx; j < max_matrix_sequence_dimension; j += WARP_SIZE)
@@ -439,8 +446,8 @@ __device__
         SizeT node_id    = graph[graph_pos];
         SizeT score_gIdx = graph_pos + 1;
 
-        set_band_parameters(scores, band_starts, band_widths, head_indices, max_indices, incoming_edge_count, incoming_edges,
-                            node_distances, node_id_to_pos, node_id, score_gIdx, max_column, graph_count, gradient, min_score_value);
+        set_band_parameters(scores, band_starts, band_widths, head_indices, max_indices, incoming_edge_count, incoming_edges, node_distances,
+                            node_id_to_pos, head_index_of_next_row, node_id, score_gIdx, max_column, graph_count, gradient, min_score_value);
 
         SizeT band_start = band_starts[score_gIdx];
 
