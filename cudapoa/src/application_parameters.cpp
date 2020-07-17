@@ -52,7 +52,7 @@ ApplicationParameters::ApplicationParameters(int argc, char* argv[])
 
     std::string optstring = "i:afb:Ad:M:R:m:n:g:vh";
 
-    int32_t argument = 0;
+    int32_t argument       = 0;
     bool default_bandwidth = true;
     while ((argument = getopt_long(argc, argv, optstring.c_str(), options, nullptr)) != -1)
     {
@@ -68,7 +68,7 @@ ApplicationParameters::ApplicationParameters(int argc, char* argv[])
             banded = false;
             break;
         case 'b':
-            band_width = std::stoi(optarg);
+            band_width        = std::stoi(optarg);
             default_bandwidth = false;
             break;
         case 'A':

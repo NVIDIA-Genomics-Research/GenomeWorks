@@ -291,24 +291,24 @@ __device__
 
 template <typename SizeT, typename ScoreT>
 __device__ SizeT set_band_parameters(ScoreT* scores,
-                                    int64_t scores_size,
-                                    SizeT* band_starts,
-                                    SizeT* band_widths,
-                                    int64_t* head_indices,
-                                    SizeT* max_indices,
-                                    uint16_t* incoming_edge_count,
-                                    SizeT* incoming_edges,
-                                    SizeT* node_distances,
-                                    SizeT* node_id_to_pos,
-                                    int64_t& head_index,
-                                    SizeT node_id,
-                                    SizeT row,
-                                    SizeT max_column,
-                                    SizeT graph_length,
-                                    float gradient,
-                                    ScoreT min_score_value)
+                                     int64_t scores_size,
+                                     SizeT* band_starts,
+                                     SizeT* band_widths,
+                                     int64_t* head_indices,
+                                     SizeT* max_indices,
+                                     uint16_t* incoming_edge_count,
+                                     SizeT* incoming_edges,
+                                     SizeT* node_distances,
+                                     SizeT* node_id_to_pos,
+                                     int64_t& head_index,
+                                     SizeT node_id,
+                                     SizeT row,
+                                     SizeT max_column,
+                                     SizeT graph_length,
+                                     float gradient,
+                                     ScoreT min_score_value)
 {
-    SizeT err = 0;
+    SizeT err                  = 0;
     SizeT pred_max_score_left  = max_column;
     SizeT pred_max_score_right = 0;
 
@@ -362,7 +362,6 @@ __device__ SizeT set_band_parameters(ScoreT* scores,
     band_starts[row]  = start_pos;
     band_widths[row]  = band_width;
     head_indices[row] = head_index;
-    
 
     // update head_index for the nex row
     head_index += static_cast<int64_t>(band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING);
@@ -455,10 +454,10 @@ __device__
 
         SizeT node_id    = graph[graph_pos];
         SizeT score_gIdx = graph_pos + 1;
-        
+
         SizeT err = set_band_parameters(scores, scores_size, band_starts, band_widths, head_indices, max_indices, incoming_edge_count, incoming_edges, node_distances,
                                         node_id_to_pos, head_index_of_next_row, node_id, score_gIdx, max_column, graph_count, gradient, min_score_value);
-        if(err)
+        if (err)
         {
             return err;
         }
