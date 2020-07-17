@@ -118,7 +118,7 @@ ApplicationParameters::ApplicationParameters(int argc, char* argv[])
 
     if (adaptive && default_bandwidth)
     {
-        // Bump up the default bandwidth as it is 256 for static banded which is too low
+        // this is used to determine total score matrix size in adaptive-banded alignment
         band_width = 2048;
     }
 

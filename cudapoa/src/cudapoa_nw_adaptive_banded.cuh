@@ -365,7 +365,7 @@ __device__ SizeT set_band_parameters(ScoreT* scores,
 
     // update head_index for the nex row
     head_index += static_cast<int64_t>(band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING);
-    if (head_index > scores_size)
+    if (head_index >= scores_size)
     {
         // If current end of band is greater than allocated scores' size, return error
         err = -2;

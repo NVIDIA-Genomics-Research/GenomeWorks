@@ -147,11 +147,11 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
     int32_t scores_width = window_details_d[window_idx].scores_width;
 
     int64_t scores_offset;
-    int64_t banded_window_scores_size;
+    int64_t banded_score_matrix_size;
     if (cuda_banded_alignment)
     {
-        banded_window_scores_size = static_cast<int64_t>(max_graph_dimension) * static_cast<int64_t>(banded_alignment_band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING);
-        scores_offset             = banded_window_scores_size * static_cast<int64_t>(window_idx);
+        banded_score_matrix_size = static_cast<int64_t>(max_graph_dimension) * static_cast<int64_t>(banded_alignment_band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING);
+        scores_offset            = banded_score_matrix_size * static_cast<int64_t>(window_idx);
     }
     else
     {
@@ -286,7 +286,7 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
                                                                                             sequence,
                                                                                             seq_len,
                                                                                             scores,
-                                                                                            banded_window_scores_size,
+                                                                                            banded_score_matrix_size,
                                                                                             alignment_graph,
                                                                                             alignment_read,
                                                                                             node_distance,
