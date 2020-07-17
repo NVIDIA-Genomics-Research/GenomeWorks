@@ -463,6 +463,10 @@ protected:
             GW_LOG_WARN("Kernel Error:: Loop count exceeded upper bound in nw algorithm in batch {}\n", bid_);
             output_status.emplace_back(error_type);
             break;
+        case genomeworks::cudapoa::StatusType::exceeded_adaptive_banded_matrix_size:
+            GW_LOG_WARN("Kernel Error:: Band width set for adaptive matrix allocation is too small in batch {}\n", bid_);
+            output_status.emplace_back(error_type);
+            break;
         case genomeworks::cudapoa::StatusType::exceeded_maximum_sequence_size:
             GW_LOG_WARN("Kernel Error:: Consensus/MSA sequence size exceeded max sequence size in batch {}\n", bid_);
             output_status.emplace_back(error_type);

@@ -163,7 +163,6 @@ int main(int argc, char** argv)
             break;
         case 'a':
             adaptive = true;
-            banded   = false;
             break;
         }
     }
@@ -176,6 +175,7 @@ int main(int argc, char** argv)
         std::cout << "-m : Generate MSA (if not provided, generates consensus by default)" << std::endl;
         std::cout << "-l : Perform long-read sample (if not provided, will run short-read sample by default)" << std::endl;
         std::cout << "-f : Perform full alignment (if not provided, banded alignment is used by default)" << std::endl;
+        std::cout << "-a : Perform adaptive alignment (if not provided, static banded alignment is used by default)" << std::endl;
         std::cout << "-p : Print the MSA or consensus output to stdout" << std::endl;
         std::cout << "-g : Print POA graph in dot format, this option is only for long-read sample" << std::endl;
         std::cout << "-h : Print help message" << std::endl;
