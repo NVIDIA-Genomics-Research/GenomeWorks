@@ -21,7 +21,6 @@
 
 #include <thrust/execution_policy.h>
 #include <claraparabricks/genomeworks/utils/device_buffer.hpp>
-#include <claraparabricks/genomeworks/cudamapper/index.hpp>
 
 namespace claraparabricks
 {
