@@ -241,8 +241,7 @@ OverlapperTriggered::OverlapperTriggered(DefaultDeviceAllocator allocator,
 
 void OverlapperTriggered::get_overlaps(std::vector<Overlap>& fused_overlaps,
                                        const device_buffer<Anchor>& d_anchors,
-                                       std::shared_ptr<Index> query_index,
-                                       std::shared_ptr<Index> target_index,
+                                       bool all_to_all,
                                        int64_t min_residues,
                                        int64_t min_overlap_len,
                                        int64_t min_bases_per_residue,
@@ -420,7 +419,7 @@ void OverlapperTriggered::get_overlaps(std::vector<Overlap>& fused_overlaps,
 
     device_buffer<Overlap> d_filtered_overlaps(n_fused_overlap, _allocator, _cuda_stream);
 
-    FilterOverlapOp filterOp(min_residues, min_overlap_len, min_bases_per_residue, min_overlap_fraction, query_index == target_index);
+    FilterOverlapOp filterOp(min_residues, min_overlap_len, min_bases_per_residue, min_overlap_fraction, all_to_all);
     auto filtered_overlaps_end =
         thrust::copy_if(thrust_exec_policy,
                         d_fused_overlaps.data(), d_fused_overlaps.data() + n_fused_overlap,

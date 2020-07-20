@@ -73,16 +73,14 @@ public:
     /// \brief returns overlaps for a set of reads
     /// \param fused_overlaps Output vector into which generated overlaps will be placed
     /// \param d_anchors vector of anchors sorted by query_read_id -> target_read_id -> query_position_in_read -> target_position_in_read (meaning sorted by query_read_id, then within a group of anchors with the same value of query_read_id sorted by target_read_id and so on)
-    /// \param query_index A shared pointer to an index of sketch elements for the queries.
-    /// \param target_index A shared pointer to an index of sketch elements for the targets.
+    /// \param all_to_all True if the target and query indexes are of the same FASTx file. If true, ignore self-self mappings when retrieving overlaps.
     /// \param min_residues smallest number of residues (anchors) for an overlap to be accepted
     /// \param min_overlap_len the smallest overlap distance which is accepted
     /// \param min_bases_per_residue the minimum number of nucleotides per residue (e.g minimizer) in an overlap
     /// \param min_overlap_fraction the minimum ratio between the shortest and longest of the target and query components of an overlap. e.g if Query range is (150,1000) and target range is (1000,2000) then overlap fraction is 0.85
     virtual void get_overlaps(std::vector<Overlap>& fused_overlaps,
                               const device_buffer<Anchor>& d_anchors,
-                              std::shared_ptr<Index> query_index,
-                              std::shared_ptr<Index> target_index,
+                              bool all_to_all,
                               int64_t min_residues,
                               int64_t min_overlap_len,
                               int64_t min_bases_per_residue,
