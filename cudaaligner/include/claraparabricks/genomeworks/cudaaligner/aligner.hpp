@@ -108,13 +108,28 @@ std::unique_ptr<Aligner> create_aligner(int32_t max_query_length, int32_t max_ta
 /// \return Unique pointer to Aligner object
 std::unique_ptr<Aligner> create_aligner(int32_t max_query_length, int32_t max_target_length, int32_t max_alignments, AlignmentType type, cudaStream_t stream, int32_t device_id, int64_t max_device_memory_allocator_caching_size = -1);
 
-/// \brief Returns an estimate for the memory requirements per alignment
+/// \brief Created Aligner object - NEW API
 ///
-/// \param max_query_length Maximum length of query string
-/// \param max_target_length Maximum length of target string
-/// \return Required memory in bytes
-int64_t calc_memory_requirement_per_alignment(int32_t max_query_length, int32_t max_target_length);
+/// \param type Type of aligner to construct
+/// \param max_bandwidth Maximum bandwidth for the Ukkonen band
+/// \param stream CUDA Stream used for GPU interaction of the object
+/// \param device_id GPU device ID to run all CUDA operations on
+/// \param allocator Allocator to use for internal device memory allocations
+/// \param max_device_memory Maximum amount of device memory to use from passed in allocator in bytes (-1 for all available memory)
+///
+/// \return Unique pointer to Aligner object
+std::unique_ptr<Aligner> create_aligner(AlignmentType type, int32_t max_bandwidth, cudaStream_t stream, int32_t device_id, DefaultDeviceAllocator allocator, int64_t max_device_memory);
 
+/// \brief Created Aligner object - NEW API
+///
+/// \param type Type of aligner to construct
+/// \param max_bandwidth Maximum bandwidth for the Ukkonen band
+/// \param stream CUDA Stream used for GPU interaction of the object
+/// \param device_id GPU device ID to run all CUDA operations on
+/// \param max_device_memory Maximum amount of device memory used in bytes (-1 (default) for all available memory).
+///
+/// \return Unique pointer to Aligner object
+std::unique_ptr<Aligner> create_aligner(AlignmentType type, int32_t max_bandwidth, cudaStream_t stream, int32_t device_id, int64_t max_device_memory = -1);
 /// \}
 } // namespace cudaaligner
 

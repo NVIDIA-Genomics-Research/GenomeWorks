@@ -45,7 +45,7 @@ constexpr int32_t calc_max_result_length(int32_t max_query_length, int32_t max_t
     return ceiling_divide(max_length, alignment_bytes) * alignment_bytes;
 }
 
-}
+} // namespace
 
 AlignerGlobal::AlignerGlobal(int32_t max_query_length, int32_t max_target_length, int32_t max_alignments, DefaultDeviceAllocator allocator, cudaStream_t stream, int32_t device_id)
     : max_query_length_(throw_on_negative(max_query_length, "max_query_length must be non-negative."))

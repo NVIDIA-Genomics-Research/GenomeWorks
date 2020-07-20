@@ -233,9 +233,8 @@ TEST_P(TestAlignerGlobal, TestAlignmentKernel)
                                                          0);
         break;
     case AlignmentAlgorithm::MyersBanded:
-        aligner = std::make_unique<AlignerGlobalMyersBanded>(max_string_size,
-                                                             max_string_size,
-                                                             param.inputs.size(),
+        aligner = std::make_unique<AlignerGlobalMyersBanded>(-1,
+                                                             1024,
                                                              allocator,
                                                              nullptr,
                                                              0);

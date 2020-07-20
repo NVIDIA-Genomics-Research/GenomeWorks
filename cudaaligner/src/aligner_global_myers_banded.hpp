@@ -27,23 +27,32 @@ namespace genomeworks
 namespace cudaaligner
 {
 
-class AlignerGlobalMyersBanded : public AlignerGlobal
+class AlignerGlobalMyersBanded : public Aligner
 {
 public:
-    AlignerGlobalMyersBanded(int32_t max_sequence_length, int32_t max_bandwidth, int32_t max_alignments, DefaultDeviceAllocator allocator, cudaStream_t stream, int32_t device_id);
-    virtual ~AlignerGlobalMyersBanded();
+    AlignerGlobalMyersBanded(int64_t max_device_memory, int32_t max_bandwidth, DefaultDeviceAllocator allocator, cudaStream_t stream, int32_t device_id);
+    ~AlignerGlobalMyersBanded() override;
 
-    static int64_t calc_memory_requirement_per_alignment(int32_t max_sequence_length, int32_t max_bandwidth);
+    StatusType align_all() override;
+    StatusType sync_alignments() override;
+    void reset() override;
+
+    StatusType add_alignment(const char* query, int32_t query_length, const char* target, int32_t target_length, bool reverse_complement_query, bool reverse_complement_target) override;
+
+    const std::vector<std::shared_ptr<Alignment>>& get_alignments() const override
+    {
+        return alignments_;
+    }
 
 private:
-    struct Workspace;
+    void reset_data();
 
-    virtual void run_alignment(int8_t* results_d, int32_t* result_lengths_d, int32_t max_result_length,
-                               const char* sequences_d, int32_t* sequence_lengths_d, int32_t* sequence_lengths_h, int32_t max_sequence_length,
-                               int32_t num_alignments, cudaStream_t stream) override;
-
-    std::unique_ptr<Workspace> workspace_;
+    struct InternalData;
+    std::unique_ptr<InternalData> data_;
+    cudaStream_t stream_;
+    int32_t device_id_;
     int32_t max_bandwidth_;
+    std::vector<std::shared_ptr<Alignment>> alignments_;
 };
 
 } // namespace cudaaligner

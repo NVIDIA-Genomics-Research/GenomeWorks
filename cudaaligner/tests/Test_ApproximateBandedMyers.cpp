@@ -68,16 +68,15 @@ TEST_P(TestApproximateBandedMyers, EditDistanceGrowsWithBand)
 
     const int32_t max_string_size = std::max(get_size<int32_t>(t.query), get_size<int32_t>(t.target));
 
-    int32_t last_edit_distance = std::numeric_limits<int32_t>::max();
-    int32_t last_bw            = -1;
+    int32_t last_edit_distance      = std::numeric_limits<int32_t>::max();
+    int32_t last_bw                 = -1;
     std::vector<int32_t> bandwidths = {2, 4, 16, 31, 32, 34, 63, 64, 66, 255, 256, 258, 1023, 1024, 1026, 2048};
-    for(const int32_t max_bw : bandwidths)
+    for (const int32_t max_bw : bandwidths)
     {
         if (max_bw % word_size == 1)
             continue; // not supported
-        std::unique_ptr<Aligner> aligner = std::make_unique<AlignerGlobalMyersBanded>(max_string_size,
+        std::unique_ptr<Aligner> aligner = std::make_unique<AlignerGlobalMyersBanded>(-1,
                                                                                       max_bw,
-                                                                                      1,
                                                                                       allocator,
                                                                                       nullptr,
                                                                                       0);
