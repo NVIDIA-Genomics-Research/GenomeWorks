@@ -69,8 +69,9 @@ TEST_P(TestApproximateBandedMyers, EditDistanceGrowsWithBand)
     const int32_t max_string_size = std::max(get_size<int32_t>(t.query), get_size<int32_t>(t.target));
 
     int32_t last_edit_distance = std::numeric_limits<int32_t>::max();
-    int32_t last_bw = -1;
-    for (int32_t max_bw = 2; max_bw < 2048; ++max_bw)
+    int32_t last_bw            = -1;
+    std::vector<int32_t> bandwidths = {2, 4, 16, 31, 32, 34, 63, 64, 66, 255, 256, 258, 1023, 1024, 1026, 2048};
+    for(const int32_t max_bw : bandwidths)
     {
         if (max_bw % word_size == 1)
             continue; // not supported
@@ -89,12 +90,12 @@ TEST_P(TestApproximateBandedMyers, EditDistanceGrowsWithBand)
         const std::vector<std::shared_ptr<Alignment>>& alignments = aligner->get_alignments();
         ASSERT_EQ(get_size(alignments), 1);
         std::vector<AlignmentState> operations = alignments[0]->get_alignment();
-        if(!operations.empty())
+        if (!operations.empty())
         {
             int32_t edit_distance = std::count_if(begin(operations), end(operations), [](AlignmentState x) { return x != AlignmentState::match; });
             ASSERT_LE(edit_distance, last_edit_distance) << "for max bandwidth = " << max_bw << " vs. max bandwidth = " << last_bw;
             last_edit_distance = edit_distance;
-            last_bw = max_bw;
+            last_bw            = max_bw;
         }
     }
 };
