@@ -134,6 +134,13 @@ public:
         static_cast<void>(stream);
         CGA_CU_ABORT_ON_ERR(cudaFree(p));
     }
+
+    /// @brief Get the size of the largest free memory block
+    /// @return returns the size in bytes
+    int64_t get_size_of_largest_free_memory_block() const
+    {
+        return cudautils::find_largest_contiguous_device_memory_section();
+    }
 };
 
 /// @brief A simple caching allocator for device memory allocations
@@ -267,6 +274,13 @@ public:
         CGA_CU_ABORT_ON_ERR(memory_resource_->DeviceFree(p));
     }
 
+    /// @brief Get the size of the largest free memory block
+    /// @return returns the size in bytes
+    int64_t get_size_of_largest_free_memory_block() const
+    {
+        return memory_resource_->get_size_of_largest_free_memory_block();
+    }
+
     /// @brief returns a shared pointer to memory_resource
     /// @return a shared pointer to memory_resource
     std::shared_ptr<MemoryResource> memory_resource() const { return memory_resource_; }
@@ -315,6 +329,14 @@ using DefaultDeviceAllocator = CudaMallocAllocator<char>;
 #endif
 
 #endif
+
+/// Gets the size of the largest free memory block in the allocator
+///
+/// @return returns the size in bytes
+inline int64_t get_size_of_largest_free_memory_block(DefaultDeviceAllocator const& allocator)
+{
+    return allocator.get_size_of_largest_free_memory_block();
+}
 
 /// Constructs a DefaultDeviceAllocator
 ///

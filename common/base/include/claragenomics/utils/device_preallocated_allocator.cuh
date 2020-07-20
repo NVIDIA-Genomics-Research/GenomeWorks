@@ -102,6 +102,17 @@ public:
         return status;
     }
 
+    /// @brief returns the size of the largest free memory block
+    int64_t get_size_of_largest_free_memory_block() const
+    {
+        size_t size = 0;
+        for (auto& block : free_blocks_)
+        {
+            size = std::max(size, block.size);
+        }
+        return static_cast<int64_t>(size);
+    }
+
 private:
     /// @brief represents one part of the buffer, free or available
     struct MemoryBlock
