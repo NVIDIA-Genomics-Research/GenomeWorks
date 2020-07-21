@@ -37,7 +37,6 @@
 #include "application_parameters.hpp"
 #include "cudamapper_utils.hpp"
 #include "index_batcher.cuh"
-#include "overlapper_triggered.hpp"
 
 namespace claraparabricks
 {
@@ -239,14 +238,14 @@ void process_one_device_batch(const IndexBatch& device_batch,
                                                            cuda_stream);
 
                     std::vector<Overlap> overlaps;
-                    OverlapperTriggered overlapper(device_allocator,
-                                                   cuda_stream);
-                    overlapper.get_overlaps(overlaps,
-                                            matcher->anchors(),
-                                            application_parameters.min_residues,
-                                            application_parameters.min_overlap_len,
-                                            application_parameters.min_bases_per_residue,
-                                            application_parameters.min_overlap_fraction);
+                    auto overlapper = Overlapper::create_overlapper(device_allocator,
+                                                                    cuda_stream);
+                    overlapper->get_overlaps(overlaps,
+                                             matcher->anchors(),
+                                             application_parameters.min_residues,
+                                             application_parameters.min_overlap_len,
+                                             application_parameters.min_bases_per_residue,
+                                             application_parameters.min_overlap_fraction);
 
                     // free up memory taken by matcher
                     matcher.reset(nullptr);
