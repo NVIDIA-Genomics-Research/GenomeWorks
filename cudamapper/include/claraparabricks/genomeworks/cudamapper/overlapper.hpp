@@ -112,6 +112,13 @@ public:
                                     const io::FastaParser& target_parser,
                                     std::int32_t extension,
                                     float required_similarity);
+
+    /// \brief Creates a Overlapper object
+    /// \param allocator The device memory allocator to use for buffer allocations
+    /// \param cuda_stream CUDA stream on which the work is to be done. Device arrays are also associated with this stream and will not be freed at least until all work issued on this stream before calling their destructor is done
+    /// \return Instance of Overlapper
+    static std::unique_ptr<Overlapper> create_overlapper(DefaultDeviceAllocator allocator,
+                                                         const cudaStream_t cuda_stream = 0);
 };
 //}
 } // namespace cudamapper
