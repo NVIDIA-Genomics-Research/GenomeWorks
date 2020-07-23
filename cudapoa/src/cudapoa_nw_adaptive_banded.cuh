@@ -117,6 +117,7 @@ __device__ ScoreT get_score_adaptive(ScoreT* scores, SizeT row, SizeT column, Si
 {
     SizeT band_start = band_starts[row];
     SizeT band_end   = band_start + band_widths[row];
+    band_end = min(band_end, max_column);
 
     if ((column > band_end || column < band_start) && column != -1)
     {
@@ -153,6 +154,7 @@ __device__ ScoreT4<ScoreT> get_scores_adaptive(ScoreT* scores,
 
     // subtract by CELLS_PER_THREAD to ensure score4_next is not pointing out of the corresponding band bounds
     SizeT band_end = static_cast<SizeT>(band_start + band_widths[row] - CELLS_PER_THREAD);
+    band_end = min(band_end, max_column);
 
     if ((column > band_end || column < band_start) && column != -1)
     {
@@ -203,7 +205,6 @@ __device__ void warp_reduce_max(ScoreT& val, SizeT& idx)
 template <typename ScoreT, typename SizeT>
 __device__ void get_predecessors_max_score_index(SizeT& pred_max_score_left,
                                                  SizeT& pred_max_score_right,
-                                                 SizeT row,
                                                  SizeT node_id,
                                                  ScoreT* scores,
                                                  SizeT* node_id_to_pos,
@@ -213,6 +214,7 @@ __device__ void get_predecessors_max_score_index(SizeT& pred_max_score_left,
                                                  uint16_t* incoming_edge_count,
                                                  SizeT* incoming_edges,
                                                  int64_t* head_indices,
+                                                 SizeT max_column,
                                                  ScoreT min_score_value)
 {
     for (uint16_t p = 0; p < incoming_edge_count[node_id]; p++)
@@ -231,7 +233,7 @@ __device__ void get_predecessors_max_score_index(SizeT& pred_max_score_left,
 
             for (SizeT index = lane_idx; index < band_width; index += WARP_SIZE)
             {
-                ScoreT score_val = scores[static_cast<int64_t>(index) + head_index];
+                ScoreT score_val = index > max_column? min_score_value : scores[static_cast<int64_t>(index) + head_index];
                 SizeT score_idx  = index + band_start;
                 warp_reduce_max(score_val, score_idx);
                 score_val = __shfl_sync(FULL_MASK, score_val, 0);
@@ -312,8 +314,8 @@ __device__ SizeT set_band_parameters(ScoreT* scores,
     SizeT pred_max_score_left  = max_column;
     SizeT pred_max_score_right = 0;
 
-    get_predecessors_max_score_index(pred_max_score_left, pred_max_score_right, row, node_id, scores, node_id_to_pos, max_indices, band_widths,
-                                     band_starts, incoming_edge_count, incoming_edges, head_indices, min_score_value);
+    get_predecessors_max_score_index(pred_max_score_left, pred_max_score_right, node_id, scores, node_id_to_pos, max_indices, band_widths,
+                                     band_starts, incoming_edge_count, incoming_edges, head_indices, max_column, min_score_value);
 
     SizeT node_distance_i = node_distances[node_id];
 
