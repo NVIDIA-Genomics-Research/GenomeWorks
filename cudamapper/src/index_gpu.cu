@@ -1,22 +1,34 @@
 /*
-* Copyright (c) 2019, NVIDIA CORPORATION.  All rights reserved.
+* Copyright 2019-2020 NVIDIA CORPORATION.
 *
-* NVIDIA CORPORATION and its licensors retain all intellectual property
-* and proprietary rights in and to this software, related documentation
-* and any modifications thereto.  Any use, reproduction, disclosure or
-* distribution of this software and related documentation without an express
-* license agreement from NVIDIA CORPORATION is strictly prohibited.
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
 */
 
 #include "index_gpu.cuh"
 #include <thrust/transform_scan.h>
 
-namespace claragenomics
+namespace claraparabricks
 {
+
+namespace genomeworks
+{
+
 namespace cudamapper
 {
+
 namespace details
 {
+
 namespace index_gpu
 {
 void find_first_occurrences_of_representations(DefaultDeviceAllocator allocator,
@@ -56,10 +68,8 @@ void find_first_occurrences_of_representations(DefaultDeviceAllocator allocator,
 
     const std::uint64_t number_of_unique_representations = cudautils::get_value_from_device(representation_index_mask_d.end() - 1, cuda_stream); // D2H copy
 
-    first_occurrence_index_d.resize(number_of_unique_representations + 1); // <- +1 for the additional element
-    first_occurrence_index_d.shrink_to_fit();
-    unique_representations_d.resize(number_of_unique_representations);
-    unique_representations_d.shrink_to_fit();
+    first_occurrence_index_d.clear_and_resize(number_of_unique_representations + 1); // <- +1 for the additional element
+    unique_representations_d.clear_and_resize(number_of_unique_representations);
 
     find_first_occurrences_of_representations_kernel<<<number_of_blocks, number_of_threads, 0, cuda_stream>>>(representation_index_mask_d.data(),
                                                                                                               input_representations_d.data(),
@@ -134,7 +144,11 @@ __global__ void compress_unique_representations_after_filtering_kernel(const std
 }
 
 } // namespace index_gpu
+
 } // namespace details
 
 } // namespace cudamapper
-} // namespace claragenomics
+
+} // namespace genomeworks
+
+} // namespace claraparabricks

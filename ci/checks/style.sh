@@ -1,13 +1,22 @@
 #!/bin/bash
+
 #
-# Copyright (c) 2019, NVIDIA CORPORATION.  All rights reserved.
+# Copyright 2019-2020 NVIDIA CORPORATION.
 #
-# NVIDIA CORPORATION and its licensors retain all intellectual property
-# and proprietary rights in and to this software, related documentation
-# and any modifications thereto.  Any use, reproduction, disclosure or
-# distribution of this software and related documentation without an express
-# license agreement from NVIDIA CORPORATION is strictly prohibited.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+
 
 # Ignore errors and set path
 set -e
@@ -40,25 +49,15 @@ logger "Run Copyright header check..."
 
 # Python
 logger "Run Python/Cython formatting check..."
-python -m pip install -r ./ci/checks/python-style-requirements.txt
-source pyclaragenomics/style_check
-
-logger "Run Python documentation generation..."
-mkdir -p pyclaragenomics/docs; cd pyclaragenomics/docs
-sphinx-quickstart -p "Clara Genomics Analysis SDK" -v "x.y.z" -a "NVIDIA Corportation" -q --ext-autodoc --sep
-##### Update sphinx conf.py with path for modules
-sed -i '1s@^@import sys \n@' source/conf.py
-sed -i '2s@^@sys.path.insert\(0, "'$PWD'/.."\) \n@' source/conf.py
-#####
-sphinx-apidoc -f -o source/ ../claragenomics/ ../claragenomics/bindings/*cpython*
-make html
+python -m pip install -r ./pygenomeworks/python-style-requirements.txt
+source pygenomeworks/style_check
 
 # C++
 logger "Run C++ formatting check..."
 mkdir --parents ${WORKSPACE}/build
 cd ${WORKSPACE}/build
 
-cmake .. -DCMAKE_BUILD_TYPE=Release -Dcga_enable_tests=ON -Dcga_enable_benchmarks=ON
+cmake .. -DCMAKE_BUILD_TYPE=Release -Dgw_enable_tests=ON -Dgw_enable_benchmarks=ON
 make check-format
 
 logger "Run C++ documentation generation..."

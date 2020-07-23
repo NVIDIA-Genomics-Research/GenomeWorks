@@ -1,11 +1,17 @@
 /*
-* Copyright (c) 2019, NVIDIA CORPORATION.  All rights reserved.
+* Copyright 2019-2020 NVIDIA CORPORATION.
 *
-* NVIDIA CORPORATION and its licensors retain all intellectual property
-* and proprietary rights in and to this software, related documentation
-* and any modifications thereto.  Any use, reproduction, disclosure or
-* distribution of this software and related documentation without an express
-* license agreement from NVIDIA CORPORATION is strictly prohibited.
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
 */
 
 #include "gtest/gtest.h"
@@ -18,12 +24,15 @@
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
 
-#include <claragenomics/utils/cudautils.hpp>
-#include <claragenomics/utils/signed_integer_utils.hpp>
+#include <claraparabricks/genomeworks/utils/cudautils.hpp>
+#include <claraparabricks/genomeworks/utils/signed_integer_utils.hpp>
 
 #include "../src/matcher_gpu.cuh"
 
-namespace claragenomics
+namespace claraparabricks
+{
+
+namespace genomeworks
 {
 
 namespace cudamapper
@@ -35,7 +44,7 @@ void test_find_query_target_matches(const thrust::host_vector<representation_t>&
     DefaultDeviceAllocator allocator = create_default_device_allocator();
 
     cudaStream_t cuda_stream;
-    CGA_CU_CHECK_ERR(cudaStreamCreate(&cuda_stream));
+    GW_CU_CHECK_ERR(cudaStreamCreate(&cuda_stream));
 
     device_buffer<representation_t> query_representations_d(query_representations_h.size(), allocator, cuda_stream);
     cudautils::device_copy_n(query_representations_h.data(), query_representations_h.size(), query_representations_d.data(), cuda_stream); // H2D
@@ -47,7 +56,7 @@ void test_find_query_target_matches(const thrust::host_vector<representation_t>&
 
     thrust::host_vector<int64_t> found_target_indices_h(found_target_indices_d.size());
     cudautils::device_copy_n(found_target_indices_d.data(), found_target_indices_d.size(), found_target_indices_h.data()); // D2H
-    CGA_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
+    GW_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
     ASSERT_EQ(found_target_indices_h.size(), expected_found_target_indices_h.size());
 
     for (int32_t i = 0; i < get_size(found_target_indices_h); ++i)
@@ -59,8 +68,8 @@ void test_find_query_target_matches(const thrust::host_vector<representation_t>&
     target_representations_d.free();
     found_target_indices_d.free();
 
-    CGA_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
-    CGA_CU_CHECK_ERR(cudaStreamDestroy(cuda_stream));
+    GW_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
+    GW_CU_CHECK_ERR(cudaStreamDestroy(cuda_stream));
 }
 
 TEST(TestCudamapperMatcherGPU, test_find_query_target_matches_small_example)
@@ -128,7 +137,7 @@ void test_compute_number_of_anchors(const thrust::host_vector<std::uint32_t>& qu
     DefaultDeviceAllocator allocator = create_default_device_allocator();
 
     cudaStream_t cuda_stream;
-    CGA_CU_CHECK_ERR(cudaStreamCreate(&cuda_stream));
+    GW_CU_CHECK_ERR(cudaStreamCreate(&cuda_stream));
 
     device_buffer<std::uint32_t> query_starting_index_of_each_representation_d(query_starting_index_of_each_representation_h.size(), allocator, cuda_stream);
     cudautils::device_copy_n(query_starting_index_of_each_representation_h.data(), query_starting_index_of_each_representation_h.size(), query_starting_index_of_each_representation_d.data(), cuda_stream); //H2D
@@ -143,7 +152,7 @@ void test_compute_number_of_anchors(const thrust::host_vector<std::uint32_t>& qu
 
     thrust::host_vector<std::int64_t> anchor_starting_indices_h(anchor_starting_indices_d.size());
     cudautils::device_copy_n(anchor_starting_indices_d.data(), anchor_starting_indices_d.size(), anchor_starting_indices_h.data(), cuda_stream); // D2H
-    CGA_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
+    GW_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
     for (int32_t i = 0; i < get_size(found_target_indices_h); ++i)
     {
         EXPECT_EQ(anchor_starting_indices_h[i], expected_anchor_starting_indices_h[i]);
@@ -154,8 +163,8 @@ void test_compute_number_of_anchors(const thrust::host_vector<std::uint32_t>& qu
     found_target_indices_d.free();
     anchor_starting_indices_d.free();
 
-    CGA_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
-    CGA_CU_CHECK_ERR(cudaStreamDestroy(cuda_stream));
+    GW_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
+    GW_CU_CHECK_ERR(cudaStreamDestroy(cuda_stream));
 }
 
 TEST(TestCudamapperMatcherGPU, test_compute_number_of_anchors_small_example)
@@ -246,7 +255,7 @@ void test_generate_anchors(
     DefaultDeviceAllocator allocator = create_default_device_allocator();
 
     cudaStream_t cuda_stream;
-    CGA_CU_CHECK_ERR(cudaStreamCreate(&cuda_stream));
+    GW_CU_CHECK_ERR(cudaStreamCreate(&cuda_stream));
 
     device_buffer<std::int64_t> anchor_starting_indices_d(anchor_starting_indices_h.size(), allocator, cuda_stream);
     cudautils::device_copy_n(anchor_starting_indices_h.data(), anchor_starting_indices_h.size(), anchor_starting_indices_d.data(), cuda_stream); // H2D
@@ -291,7 +300,7 @@ void test_generate_anchors(
 
     thrust::host_vector<Anchor> anchors_h(anchors_d.size());
     cudautils::device_copy_n(anchors_d.data(), anchors_d.size(), anchors_h.data()); // D2H
-    CGA_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
+    GW_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
     ASSERT_EQ(anchors_h.size(), expected_anchors_h.size());
 
     for (int64_t i = 0; i < get_size(anchors_h); ++i)
@@ -311,8 +320,8 @@ void test_generate_anchors(
     target_read_ids_d.free();
     target_positions_in_read_d.free();
 
-    CGA_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
-    CGA_CU_CHECK_ERR(cudaStreamDestroy(cuda_stream));
+    GW_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
+    GW_CU_CHECK_ERR(cudaStreamDestroy(cuda_stream));
 }
 
 TEST(TestCudamapperMatcherGPU, test_generate_anchors_small_example_32_bit_positions)
@@ -703,4 +712,7 @@ TEST(TestCudamapperMatcherGPU, AtLeastOneIndexEmpty)
 }
 
 } // namespace cudamapper
-} // namespace claragenomics
+
+} // namespace genomeworks
+
+} // namespace claraparabricks

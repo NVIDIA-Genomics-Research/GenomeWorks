@@ -1,21 +1,32 @@
 /*
-* Copyright (c) 2019, NVIDIA CORPORATION.  All rights reserved.
+* Copyright 2019-2020 NVIDIA CORPORATION.
 *
-* NVIDIA CORPORATION and its licensors retain all intellectual property
-* and proprietary rights in and to this software, related documentation
-* and any modifications thereto.  Any use, reproduction, disclosure or
-* distribution of this software and related documentation without an express
-* license agreement from NVIDIA CORPORATION is strictly prohibited.
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
 */
+
 #pragma once
 
-#include "claragenomics/io/fasta_parser.hpp"
+#include <claraparabricks/genomeworks/io/fasta_parser.hpp>
 
 #include <string>
 #include <vector>
 
-namespace claragenomics
+namespace claraparabricks
 {
+
+namespace genomeworks
+{
+
 namespace io
 {
 
@@ -36,8 +47,8 @@ public:
 
     /// \brief Fetch an entry from the FASTA file by index position in file.
     /// \param sequence_id Position of sequence in file. If sequence_id is invalid an error is thrown.
-    /// \return A FastaSequence object describing the entry.
-    FastaSequence get_sequence_by_id(read_id_t sequence_id) const override;
+    /// \return A reference to FastaSequence describing the entry.
+    const FastaSequence& get_sequence_by_id(read_id_t sequence_id) const override;
 
 private:
     /// All the reads from the FASTA file are stored in host RAM
@@ -47,4 +58,7 @@ private:
 };
 
 } // namespace io
-} // namespace claragenomics
+
+} // namespace genomeworks
+
+} // namespace claraparabricks

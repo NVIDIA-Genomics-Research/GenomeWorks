@@ -1,11 +1,17 @@
 /*
-* Copyright (c) 2019, NVIDIA CORPORATION.  All rights reserved.
+* Copyright 2019-2020 NVIDIA CORPORATION.
 *
-* NVIDIA CORPORATION and its licensors retain all intellectual property
-* and proprietary rights in and to this software, related documentation
-* and any modifications thereto.  Any use, reproduction, disclosure or
-* distribution of this software and related documentation without an express
-* license agreement from NVIDIA CORPORATION is strictly prohibited.
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
 */
 
 #include "../src/aligner_global_ukkonen.hpp"
@@ -13,14 +19,17 @@
 #include "../src/aligner_global_myers_banded.hpp"
 #include "../src/aligner_global_hirschberg_myers.hpp"
 
-#include <claragenomics/cudaaligner/alignment.hpp>
-#include <claragenomics/utils/signed_integer_utils.hpp>
-#include <claragenomics/utils/genomeutils.hpp>
+#include <claraparabricks/genomeworks/cudaaligner/alignment.hpp>
+#include <claraparabricks/genomeworks/utils/signed_integer_utils.hpp>
+#include <claraparabricks/genomeworks/utils/genomeutils.hpp>
 
 #include <random>
 #include "gtest/gtest.h"
 
-namespace claragenomics
+namespace claraparabricks
+{
+
+namespace genomeworks
 {
 
 namespace cudaaligner
@@ -130,7 +139,7 @@ std::vector<AlignerTestData> create_aligner_test_cases()
     test_cases.push_back(data);
 
     std::minstd_rand rng(1);
-    data.inputs    = {{claragenomics::genomeutils::generate_random_genome(4800, rng), claragenomics::genomeutils::generate_random_genome(5000, rng)}};
+    data.inputs    = {{genomeworks::genomeutils::generate_random_genome(4800, rng), genomeworks::genomeutils::generate_random_genome(5000, rng)}};
     data.cigars    = {}; // do not test cigars
     data.algorithm = AlignmentAlgorithm::Default;
     test_cases.push_back(data);
@@ -211,13 +220,13 @@ TEST_P(TestAlignerGlobal, TestAlignmentKernel)
         break;
     case AlignmentAlgorithm::Default:
     default:
-        aligner = claragenomics::cudaaligner::create_aligner(max_string_size,
-                                                             max_string_size,
-                                                             param.inputs.size(),
-                                                             claragenomics::cudaaligner::AlignmentType::global_alignment,
-                                                             allocator,
-                                                             nullptr,
-                                                             0);
+        aligner = genomeworks::cudaaligner::create_aligner(max_string_size,
+                                                           max_string_size,
+                                                           param.inputs.size(),
+                                                           genomeworks::cudaaligner::AlignmentType::global_alignment,
+                                                           allocator,
+                                                           nullptr,
+                                                           0);
     }
     for (auto& pair : inputs)
     {
@@ -260,14 +269,14 @@ std::vector<AlignerTestData> create_aligner_perf_test_cases()
 
     // Test case 1
     std::minstd_rand rng(1);
-    data.inputs = {{claragenomics::genomeutils::generate_random_genome(1000, rng), claragenomics::genomeutils::generate_random_genome(1000, rng)}};
+    data.inputs = {{genomeworks::genomeutils::generate_random_genome(1000, rng), genomeworks::genomeutils::generate_random_genome(1000, rng)}};
     test_cases.push_back(data);
 
     // Test case 2
-    data.inputs = {{claragenomics::genomeutils::generate_random_genome(9500, rng), claragenomics::genomeutils::generate_random_genome(9000, rng)},
-                   {claragenomics::genomeutils::generate_random_genome(3456, rng), claragenomics::genomeutils::generate_random_genome(3213, rng)},
-                   {claragenomics::genomeutils::generate_random_genome(20000, rng), claragenomics::genomeutils::generate_random_genome(20000, rng)},
-                   {claragenomics::genomeutils::generate_random_genome(15000, rng), claragenomics::genomeutils::generate_random_genome(14000, rng)}};
+    data.inputs = {{genomeworks::genomeutils::generate_random_genome(9500, rng), genomeworks::genomeutils::generate_random_genome(9000, rng)},
+                   {genomeworks::genomeutils::generate_random_genome(3456, rng), genomeworks::genomeutils::generate_random_genome(3213, rng)},
+                   {genomeworks::genomeutils::generate_random_genome(20000, rng), genomeworks::genomeutils::generate_random_genome(20000, rng)},
+                   {genomeworks::genomeutils::generate_random_genome(15000, rng), genomeworks::genomeutils::generate_random_genome(14000, rng)}};
     test_cases.push_back(data);
 
     return test_cases;
@@ -307,4 +316,7 @@ TEST_P(TestAlignerGlobalImplPerf, TestAlignmentKernelPerf)
 
 INSTANTIATE_TEST_SUITE_P(TestCudaAligner, TestAlignerGlobalImplPerf, ::testing::ValuesIn(create_aligner_perf_test_cases()));
 } // namespace cudaaligner
-} // namespace claragenomics
+
+} // namespace genomeworks
+
+} // namespace claraparabricks

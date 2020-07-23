@@ -1,11 +1,17 @@
 /*
-* Copyright (c) 2019, NVIDIA CORPORATION.  All rights reserved.
+* Copyright 2019-2020 NVIDIA CORPORATION.
 *
-* NVIDIA CORPORATION and its licensors retain all intellectual property
-* and proprietary rights in and to this software, related documentation
-* and any modifications thereto.  Any use, reproduction, disclosure or
-* distribution of this software and related documentation without an express
-* license agreement from NVIDIA CORPORATION is strictly prohibited.
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
 */
 
 #include <thrust/copy.h>
@@ -13,8 +19,12 @@
 #include "index_gpu.cuh"
 #include "minimizer.hpp"
 
-namespace claragenomics
+namespace claraparabricks
 {
+
+namespace genomeworks
+{
+
 namespace cudamapper
 {
 
@@ -27,7 +37,7 @@ IndexHostCopy::IndexHostCopy(const Index& index,
     , kmer_size_(kmer_size)
     , window_size_(window_size)
 {
-    CGA_NVTX_RANGE(profiler, "cache_index");
+    GW_NVTX_RANGE(profiler, "cache_index");
 
     representations_.resize(index.representations().size());
     cudautils::device_copy_n(index.representations().data(),
@@ -65,15 +75,12 @@ IndexHostCopy::IndexHostCopy(const Index& index,
                              first_occurrence_of_representations_.data(),
                              cuda_stream);
 
-    read_id_to_read_name_   = index.read_ids_to_read_names();
-    read_id_to_read_length_ = index.read_ids_to_read_lengths();
-
     number_of_reads_                     = index.number_of_reads();
     number_of_basepairs_in_longest_read_ = index.number_of_basepairs_in_longest_read();
 
     // This is not completely necessary, but if removed one has to make sure that the next step
     // uses the same stream or that sync is done in caller
-    CGA_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
+    GW_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
 }
 
 std::unique_ptr<Index> IndexHostCopy::copy_index_to_device(DefaultDeviceAllocator allocator,
@@ -114,16 +121,6 @@ const std::vector<std::uint32_t>& IndexHostCopy::first_occurrence_of_representat
     return first_occurrence_of_representations_;
 }
 
-const std::vector<std::string>& IndexHostCopy::read_id_to_read_names() const
-{
-    return read_id_to_read_name_;
-}
-
-const std::vector<std::uint32_t>& IndexHostCopy::read_id_to_read_lengths() const
-{
-    return read_id_to_read_length_;
-}
-
 read_id_t IndexHostCopy::number_of_reads() const
 {
     return number_of_reads_;
@@ -150,4 +147,7 @@ std::uint64_t IndexHostCopy::window_size() const
 }
 
 } // namespace cudamapper
-} // namespace claragenomics
+
+} // namespace genomeworks
+
+} // namespace claraparabricks

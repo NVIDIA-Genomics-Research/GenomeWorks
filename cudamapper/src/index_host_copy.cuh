@@ -1,19 +1,29 @@
 /*
-* Copyright (c) 2019, NVIDIA CORPORATION.  All rights reserved.
+* Copyright 2019-2020 NVIDIA CORPORATION.
 *
-* NVIDIA CORPORATION and its licensors retain all intellectual property
-* and proprietary rights in and to this software, related documentation
-* and any modifications thereto.  Any use, reproduction, disclosure or
-* distribution of this software and related documentation without an express
-* license agreement from NVIDIA CORPORATION is strictly prohibited.
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
 */
 
 #pragma once
 
-#include <claragenomics/cudamapper/index.hpp>
+#include <claraparabricks/genomeworks/cudamapper/index.hpp>
 
-namespace claragenomics
+namespace claraparabricks
 {
+
+namespace genomeworks
+{
+
 namespace cudamapper
 {
 /// IndexHostCopy - Creates and maintains a copy of computed IndexGPU elements on the host
@@ -29,7 +39,7 @@ public:
     /// \param kmer_size - number of basepairs in a k-mer
     /// \param window_size the number of adjacent k-mers in a window, adjacent = shifted by one basepair
     /// \param cuda_stream D2H copy is done on this stream
-    /// \return - pointer to claragenomics::cudamapper::IndexCache
+    /// \return - pointer to genomeworks::cudamapper::IndexCache
     IndexHostCopy(const Index& index,
                   const read_id_t first_read_id,
                   const std::uint64_t kmer_size,
@@ -39,7 +49,7 @@ public:
     /// \brief copy cached index vectors from the host and create an object of Index on GPU
     /// \param allocator pointer to asynchronous device allocator
     /// \param cuda_stream H2D copy is done on this stream. Device arrays are also associated with this stream and will not be freed at least until all work issued on this stream before calling their destructor is done
-    /// \return a pointer to claragenomics::cudamapper::Index
+    /// \return a pointer to genomeworks::cudamapper::Index
     std::unique_ptr<Index> copy_index_to_device(DefaultDeviceAllocator allocator,
                                                 const cudaStream_t cuda_stream = 0) const override;
 
@@ -66,14 +76,6 @@ public:
     /// \brief returns first occurrence of corresponding representation from unique_representations(), plus one more element with the total number of sketch elements (stored on host)
     /// \return first occurrence of corresponding representation from unique_representations(), plus one more element with the total number of sketch elements
     const std::vector<std::uint32_t>& first_occurrence_of_representations() const override;
-
-    /// \brief returns look up table array mapping read id to read name
-    /// \return the array mapping read id to read name
-    const std::vector<std::string>& read_id_to_read_names() const override;
-
-    /// \brief returns an array used for mapping read id to the length of the read
-    /// \return the array used for mapping read ids to their lengths
-    const std::vector<std::uint32_t>& read_id_to_read_lengths() const override;
 
     /// \brief returns number of reads in input data
     /// \return number of reads in input data
@@ -104,9 +106,6 @@ private:
     std::vector<representation_t> unique_representations_;
     std::vector<std::uint32_t> first_occurrence_of_representations_;
 
-    std::vector<std::string> read_id_to_read_name_;
-    std::vector<std::uint32_t> read_id_to_read_length_;
-
     read_id_t number_of_reads_;
     position_in_read_t number_of_basepairs_in_longest_read_;
 
@@ -116,4 +115,7 @@ private:
 };
 
 } // namespace cudamapper
-} // namespace claragenomics
+
+} // namespace genomeworks
+
+} // namespace claraparabricks

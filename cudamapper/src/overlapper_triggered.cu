@@ -1,31 +1,40 @@
 /*
- * Copyright (c) 2019, NVIDIA CORPORATION.  All rights reserved.
- *
- * NVIDIA CORPORATION and its licensors retain all intellectual property
- * and proprietary rights in and to this software, related documentation
- * and any modifications thereto.  Any use, reproduction, disclosure or
- * distribution of this software and related documentation without an express
- * license agreement from NVIDIA CORPORATION is strictly prohibited.
- */
+* Copyright 2019-2020 NVIDIA CORPORATION.
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
 
-#include <cub/cub.cuh>
+#include "overlapper_triggered.hpp"
 
 #include <fstream>
 #include <cstdlib>
-#include <omp.h>
 
-#include <claragenomics/utils/cudautils.hpp>
+#include <cub/cub.cuh>
+#include <thrust/execution_policy.h>
 
-#include "cudamapper_utils.hpp"
-#include "overlapper_triggered.hpp"
+#include <claraparabricks/genomeworks/utils/cudautils.hpp>
 
 #ifndef NDEBUG // only needed to check if input is sorted in assert
 #include <algorithm>
 #include <thrust/host_vector.h>
 #endif
 
-namespace claragenomics
+namespace claraparabricks
 {
+
+namespace genomeworks
+{
+
 namespace cudamapper
 {
 
@@ -160,7 +169,8 @@ struct FilterOverlapOp
 
         return ((overlap.num_residues_ >= min_residues) &&
                 ((overlap_length / overlap.num_residues_) < min_bases_per_residue) &&
-                (query_overlap_length > min_overlap_len) &&
+                (query_overlap_length >= min_overlap_len) &&
+                (target_overlap_length >= min_overlap_len) &&
                 (overlap.query_read_id_ != overlap.target_read_id_) &&
                 ((static_cast<float>(target_overlap_length) / static_cast<float>(overlap_length)) > min_overlap_fraction) &&
                 ((static_cast<float>(query_overlap_length) / static_cast<float>(overlap_length)) > min_overlap_fraction));
@@ -232,7 +242,7 @@ void OverlapperTriggered::get_overlaps(std::vector<Overlap>& fused_overlaps,
                                        int64_t min_bases_per_residue,
                                        float min_overlap_fraction)
 {
-    CGA_NVTX_RANGE(profiler, "OverlapperTriggered::get_overlaps");
+    GW_NVTX_RANGE(profiler, "OverlapperTriggered::get_overlaps");
     const auto tail_length_for_chain = 3;
     auto n_anchors                   = d_anchors.size();
 
@@ -286,7 +296,7 @@ void OverlapperTriggered::get_overlaps(std::vector<Overlap>& fused_overlaps,
         d_chain_length.data(), d_nchains.data(), n_anchors, _cuda_stream);
 
     // allocate temporary storage
-    d_temp_buf.resize(temp_storage_bytes, _cuda_stream);
+    d_temp_buf.clear_and_resize(temp_storage_bytes);
     d_temp_storage = d_temp_buf.data();
 
     // run encoding
@@ -311,7 +321,7 @@ void OverlapperTriggered::get_overlaps(std::vector<Overlap>& fused_overlaps,
                                   n_chains, _cuda_stream);
 
     // allocate temporary storage
-    d_temp_buf.resize(temp_storage_bytes, _cuda_stream);
+    d_temp_buf.clear_and_resize(temp_storage_bytes);
     d_temp_storage = d_temp_buf.data();
 
     cub::DeviceScan::ExclusiveSum(d_temp_storage, temp_storage_bytes,
@@ -377,7 +387,7 @@ void OverlapperTriggered::get_overlaps(std::vector<Overlap>& fused_overlaps,
                                    _cuda_stream);
 
     // allocate temporary storage
-    d_temp_buf.resize(temp_storage_bytes, _cuda_stream);
+    d_temp_buf.clear_and_resize(temp_storage_bytes);
     d_temp_storage = d_temp_buf.data();
 
     cub::DeviceReduce::ReduceByKey(d_temp_storage,
@@ -419,8 +429,11 @@ void OverlapperTriggered::get_overlaps(std::vector<Overlap>& fused_overlaps,
 
     // This is not completely necessary, but if removed one has to make sure that the next step
     // uses the same stream or that sync is done in caller
-    CGA_CU_CHECK_ERR(cudaStreamSynchronize(_cuda_stream));
+    GW_CU_CHECK_ERR(cudaStreamSynchronize(_cuda_stream));
 }
 
 } // namespace cudamapper
-} // namespace claragenomics
+
+} // namespace genomeworks
+
+} // namespace claraparabricks

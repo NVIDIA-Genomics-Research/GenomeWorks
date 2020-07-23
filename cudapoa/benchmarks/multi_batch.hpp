@@ -1,23 +1,32 @@
 /*
-* Copyright (c) 2019, NVIDIA CORPORATION.  All rights reserved.
+* Copyright 2019-2020 NVIDIA CORPORATION.
 *
-* NVIDIA CORPORATION and its licensors retain all intellectual property
-* and proprietary rights in and to this software, related documentation
-* and any modifications thereto.  Any use, reproduction, disclosure or
-* distribution of this software and related documentation without an express
-* license agreement from NVIDIA CORPORATION is strictly prohibited.
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
 */
 
-#include "common/utils.hpp"
-
-#include <claragenomics/cudapoa/batch.hpp>
-#include <claragenomics/utils/signed_integer_utils.hpp>
+#include <claraparabricks/genomeworks/cudapoa/utils.hpp>
+#include <claraparabricks/genomeworks/cudapoa/batch.hpp>
+#include <claraparabricks/genomeworks/utils/signed_integer_utils.hpp>
 
 #include <future>
 #include <numeric>
 
-namespace claragenomics
+namespace claraparabricks
 {
+
+namespace genomeworks
+{
+
 namespace cudapoa
 {
 
@@ -33,7 +42,7 @@ public:
     MultiBatch(int32_t num_batches, const std::string& filename, int32_t total_windows = -1)
         : num_batches_(num_batches)
     {
-        parse_window_data_file(windows_, filename, total_windows);
+        parse_cudapoa_file(windows_, filename, total_windows);
 
         assert(get_size(windows_) > 0);
 
@@ -120,7 +129,7 @@ public:
                 {
                     std::vector<std::string> consensus_temp;
                     std::vector<std::vector<uint16_t>> coverages_temp;
-                    std::vector<claragenomics::cudapoa::StatusType> output_status;
+                    std::vector<genomeworks::cudapoa::StatusType> output_status;
 
                     // Launch workload.
                     batch->generate_poa();
@@ -211,4 +220,7 @@ private:
     std::vector<std::vector<uint16_t>> coverages_;
 };
 } // namespace cudapoa
-} // namespace claragenomics
+
+} // namespace genomeworks
+
+} // namespace claraparabricks

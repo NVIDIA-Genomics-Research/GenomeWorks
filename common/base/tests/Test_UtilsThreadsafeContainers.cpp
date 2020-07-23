@@ -1,16 +1,22 @@
 /*
-* Copyright (c) 2020, NVIDIA CORPORATION.  All rights reserved.
+* Copyright 2019-2020 NVIDIA CORPORATION.
 *
-* NVIDIA CORPORATION and its licensors retain all intellectual property
-* and proprietary rights in and to this software, related documentation
-* and any modifications thereto.  Any use, reproduction, disclosure or
-* distribution of this software and related documentation without an express
-* license agreement from NVIDIA CORPORATION is strictly prohibited.
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
 */
 
 #include "gtest/gtest.h"
 
-#include <claragenomics/utils/threadsafe_containers.hpp>
+#include <claraparabricks/genomeworks/utils/threadsafe_containers.hpp>
 
 #include <algorithm>
 #include <mutex>
@@ -18,7 +24,10 @@
 #include <numeric>
 #include <thread>
 
-namespace claragenomics
+namespace claraparabricks
+{
+
+namespace genomeworks
 {
 
 // *** test ThreadsafeDataProvider ***
@@ -43,7 +52,7 @@ void test_threadsafe_data_provider(const std::int32_t number_of_elements,
         threads.push_back(std::thread([&data_provider, &occurrences_per_element, &occurrences_per_element_mutex]() {
             while (true)
             {
-                cga_optional_t<std::int32_t> val = data_provider.get_next_element();
+                gw_optional_t<std::int32_t> val = data_provider.get_next_element();
 
                 if (!val) // reached the end
                 {
@@ -129,7 +138,7 @@ void test_test_threadsafe_producer_consumer(const std::int32_t number_of_element
         consumer_threads.push_back(std::thread([&producer_consumer, &occurrences_per_element, &occurrences_per_element_mutex]() {
             while (true)
             {
-                cga_optional_t<std::int32_t> val = producer_consumer.get_next_element();
+                gw_optional_t<std::int32_t> val = producer_consumer.get_next_element();
                 if (!val) // reached the end
                 {
                     break;
@@ -234,4 +243,6 @@ TEST(TestUtilsThreadsafeContainers, test_threadsafe_producer_consumer_signal_on_
     ASSERT_FALSE(val);
 }
 
-} // namespace claragenomics
+} // namespace genomeworks
+
+} // namespace claraparabricks

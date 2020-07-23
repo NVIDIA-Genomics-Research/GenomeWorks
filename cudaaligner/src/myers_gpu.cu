@@ -1,29 +1,39 @@
 /*
-* Copyright (c) 2019, NVIDIA CORPORATION.  All rights reserved.
+* Copyright 2019-2020 NVIDIA CORPORATION.
 *
-* NVIDIA CORPORATION and its licensors retain all intellectual property
-* and proprietary rights in and to this software, related documentation
-* and any modifications thereto.  Any use, reproduction, disclosure or
-* distribution of this software and related documentation without an express
-* license agreement from NVIDIA CORPORATION is strictly prohibited.
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
 */
 
 #include "myers_gpu.cuh"
 #include "batched_device_matrices.cuh"
 
-#include <claragenomics/cudaaligner/aligner.hpp>
-#include <claragenomics/utils/signed_integer_utils.hpp>
-#include <claragenomics/utils/mathutils.hpp>
-#include <claragenomics/utils/cudautils.hpp>
-#include <claragenomics/utils/allocator.hpp>
-#include <claragenomics/utils/device_buffer.hpp>
+#include <claraparabricks/genomeworks/cudaaligner/aligner.hpp>
+#include <claraparabricks/genomeworks/utils/signed_integer_utils.hpp>
+#include <claraparabricks/genomeworks/utils/limits.cuh>
+#include <claraparabricks/genomeworks/utils/mathutils.hpp>
+#include <claraparabricks/genomeworks/utils/cudautils.hpp>
+#include <claraparabricks/genomeworks/utils/allocator.hpp>
+#include <claraparabricks/genomeworks/utils/device_buffer.hpp>
 
 #include <cassert>
 #include <climits>
 #include <vector>
 #include <numeric>
 
-namespace claragenomics
+namespace claraparabricks
+{
+
+namespace genomeworks
 {
 
 namespace cudaaligner
@@ -34,7 +44,6 @@ constexpr int32_t warp_size = 32;
 namespace myers
 {
 
-constexpr int32_t word_size                     = sizeof(WordType) * CHAR_BIT;
 constexpr int32_t initial_distance_guess_factor = 20;
 
 inline __device__ WordType warp_leftshift_sync(uint32_t warp_mask, WordType v)
@@ -43,18 +52,20 @@ inline __device__ WordType warp_leftshift_sync(uint32_t warp_mask, WordType v)
     // 4 threads, word_size = 4 example: thread 0  | thread 1 | thread 2 | thread 3
     // v = 0101 | 0111 | 0011 | 1101 -> 1010 | 1110 | 0111 | 1010
     const WordType x = __shfl_up_sync(warp_mask, v >> (word_size - 1), 1);
+    assert((x & ~WordType(1)) == 0);
     v <<= 1;
     if (threadIdx.x != 0)
         v |= x;
     return v;
 }
 
-inline __device__ WordType warp_rightshift_sync(int32_t t, int32_t i, uint32_t warp_mask, WordType v)
+inline __device__ WordType warp_rightshift_sync(uint32_t warp_mask, WordType v)
 {
     assert(((warp_mask >> (threadIdx.x % warp_size)) & 1u) == 1u);
     // 4 threads, word_size = 4 example: thread 0  | thread 1 | thread 2 | thread 3
     // v = 0101 | 0111 | 0011 | 1101 -> 0010 | 1011 | 1001 | 1110
     const WordType x = __shfl_down_sync(warp_mask, v << (word_size - 1), 1);
+    assert((x & ~(WordType(1) << (word_size - 1))) == 0);
     v >>= 1;
     if ((warp_mask >> threadIdx.x) > 1u)
         v |= x;
@@ -103,6 +114,39 @@ __device__ int32_t myers_advance_block(uint32_t warp_mask, WordType highest_bit,
     WordType mh = pv & xh;
 
     int32_t carry_out = ((ph & highest_bit) == WordType(0) ? 0 : 1) - ((mh & highest_bit) == WordType(0) ? 0 : 1);
+
+    ph = warp_leftshift_sync(warp_mask, ph);
+    mh = warp_leftshift_sync(warp_mask, mh);
+
+    if (carry_in < 0)
+        mh |= WordType(1);
+
+    if (carry_in > 0)
+        ph |= WordType(1);
+
+    // Stage 2
+    pv = mh | (~(xv | ph));
+    mv = ph & xv;
+
+    return carry_out;
+}
+
+__device__ int2 myers_advance_block2(uint32_t warp_mask, WordType highest_bit, WordType eq, WordType& pv, WordType& mv, int32_t carry_in)
+{
+    assert((pv & mv) == WordType(0));
+
+    // Stage 1
+    WordType xv = eq | mv;
+    if (carry_in < 0)
+        eq |= WordType(1);
+    WordType xh = warp_add_sync(warp_mask, eq & pv, pv);
+    xh          = (xh ^ pv) | eq;
+    WordType ph = mv | (~(xh | pv));
+    WordType mh = pv & xh;
+
+    int2 carry_out;
+    carry_out.x = ((ph & highest_bit) == WordType(0) ? 0 : 1) - ((mh & highest_bit) == WordType(0) ? 0 : 1);
+    carry_out.y = ((ph & (highest_bit << 1)) == WordType(0) ? 0 : 1) - ((mh & (highest_bit << 1)) == WordType(0) ? 0 : 1);
 
     ph = warp_leftshift_sync(warp_mask, ph);
     mh = warp_leftshift_sync(warp_mask, mh);
@@ -196,7 +240,7 @@ __device__ void myers_backtrace(int8_t* paths_base, int32_t* lengths, int32_t ma
 
     const WordType last_entry_mask = query_size % word_size != 0 ? (WordType(1) << (query_size % word_size)) - 1 : ~WordType(0);
 
-    nw_score_t myscore = score((i - 1) / word_size, j);
+    nw_score_t myscore = score((i - 1) / word_size, j); // row 0 is implicit, NW matrix is shifted by i -> i-1 (see get_myers_score)
     int32_t pos        = 0;
     while (i > 0 && j > 0)
     {
@@ -251,7 +295,7 @@ __global__ void myers_backtrace_kernel(int8_t* paths_base, int32_t* lengths, int
     const int32_t idx = blockIdx.x * blockDim.x + threadIdx.x;
     if (idx >= n_alignments)
         return;
-    CGA_CONSTEXPR int32_t word_size         = sizeof(WordType) * CHAR_BIT;
+    GW_CONSTEXPR int32_t word_size          = sizeof(WordType) * CHAR_BIT;
     const int32_t query_size                = sequence_lengths_d[2 * idx];
     const int32_t target_size               = sequence_lengths_d[2 * idx + 1];
     const int32_t n_words                   = (query_size + word_size - 1) / word_size;
@@ -268,10 +312,10 @@ __global__ void myers_convert_to_full_score_matrix_kernel(batched_device_matrice
                                                           int32_t const* sequence_lengths_d,
                                                           int32_t alignment)
 {
-    CGA_CONSTEXPR int32_t word_size = sizeof(WordType) * CHAR_BIT;
-    const int32_t query_size        = sequence_lengths_d[2 * alignment];
-    const int32_t target_size       = sequence_lengths_d[2 * alignment + 1];
-    const int32_t n_words           = (query_size + word_size - 1) / word_size;
+    GW_CONSTEXPR int32_t word_size = sizeof(WordType) * CHAR_BIT;
+    const int32_t query_size       = sequence_lengths_d[2 * alignment];
+    const int32_t target_size      = sequence_lengths_d[2 * alignment + 1];
+    const int32_t n_words          = (query_size + word_size - 1) / word_size;
 
     assert(query_size > 0);
 
@@ -303,8 +347,8 @@ __global__ void myers_compute_score_matrix_kernel(
     int32_t max_sequence_length,
     int32_t n_alignments)
 {
-    CGA_CONSTEXPR int32_t word_size = sizeof(WordType) * CHAR_BIT;
-    CGA_CONSTEXPR int32_t warp_size = 32;
+    GW_CONSTEXPR int32_t word_size = sizeof(WordType) * CHAR_BIT;
+    GW_CONSTEXPR int32_t warp_size = 32;
     assert(warpSize == warp_size);
     assert(threadIdx.x < warp_size);
     assert(blockIdx.x == 0);
@@ -374,7 +418,8 @@ __global__ void myers_compute_score_matrix_kernel(
 __device__ int32_t myers_backtrace_banded(int8_t* path, device_matrix_view<WordType> const& pv, device_matrix_view<WordType> const& mv, device_matrix_view<int32_t> const& score, int32_t diagonal_begin, int32_t diagonal_end, int32_t band_width, int32_t target_size, int32_t query_size)
 {
     assert(threadIdx.x == 0);
-    using nw_score_t = int32_t;
+    using nw_score_t                    = int32_t;
+    GW_CONSTEXPR nw_score_t out_of_band = numeric_limits<nw_score_t>::max() - 1; // -1 to avoid integer overflow further down.
     assert(pv.num_rows() == score.num_rows());
     assert(mv.num_rows() == score.num_rows());
     assert(pv.num_cols() == score.num_cols());
@@ -385,7 +430,7 @@ __device__ int32_t myers_backtrace_banded(int8_t* path, device_matrix_view<WordT
 
     const WordType last_entry_mask = band_width % word_size != 0 ? (WordType(1) << (band_width % word_size)) - 1 : ~WordType(0);
 
-    nw_score_t myscore = score(i / word_size, j);
+    nw_score_t myscore = score((i - 1) / word_size, j); // row 0 is implicit, NW matrix is shifted by i -> i-1 (see get_myers_score)
     int32_t pos        = 0;
     while (j >= diagonal_end)
     {
@@ -420,7 +465,7 @@ __device__ int32_t myers_backtrace_banded(int8_t* path, device_matrix_view<WordT
         int8_t r               = 0;
         nw_score_t const above = i <= 1 ? j : get_myers_score(i - 1, j, pv, mv, score, last_entry_mask);
         nw_score_t const diag  = i <= 0 ? j - 1 : get_myers_score(i, j - 1, pv, mv, score, last_entry_mask);
-        nw_score_t const left  = get_myers_score(i + 1, j - 1, pv, mv, score, last_entry_mask);
+        nw_score_t const left  = i >= band_width ? out_of_band : get_myers_score(i + 1, j - 1, pv, mv, score, last_entry_mask);
         if (left + 1 == myscore)
         {
             r       = static_cast<int8_t>(AlignmentState::insertion);
@@ -448,7 +493,7 @@ __device__ int32_t myers_backtrace_banded(int8_t* path, device_matrix_view<WordT
         int8_t r               = 0;
         nw_score_t const above = i == 1 ? j : get_myers_score(i - 1, j, pv, mv, score, last_entry_mask);
         nw_score_t const diag  = i == 1 ? j - 1 : get_myers_score(i - 1, j - 1, pv, mv, score, last_entry_mask);
-        nw_score_t const left  = get_myers_score(i, j - 1, pv, mv, score, last_entry_mask);
+        nw_score_t const left  = i > band_width ? out_of_band : get_myers_score(i, j - 1, pv, mv, score, last_entry_mask);
         if (left + 1 == myscore)
         {
             r       = static_cast<int8_t>(AlignmentState::insertion);
@@ -554,10 +599,9 @@ __device__ void myers_compute_scores_diagonal_band_impl(
     const int32_t n_warp_iterations = ceiling_divide(n_words_band, warp_size) * warp_size;
     for (int32_t t = t_begin; t < t_end; ++t)
     {
-        int32_t itcnt      = 0;
-        int32_t carry_down = 0;
+        int32_t carry = 0;
         if (threadIdx.x == 0)
-            carry_down = 1; // worst case for the top boarder of the band
+            carry = 1; // worst case for the top boarder of the band
         for (int32_t idx = threadIdx.x; idx < n_warp_iterations; idx += warp_size)
         {
             // idx within band column
@@ -566,8 +610,8 @@ __device__ void myers_compute_scores_diagonal_band_impl(
             if (idx < n_words_band)
             {
                 // data from the previous column
-                WordType pv_local = warp_rightshift_sync(t, ++itcnt, warp_mask, pv(idx, t - 1));
-                WordType mv_local = warp_rightshift_sync(t, ++itcnt, warp_mask, mv(idx, t - 1));
+                WordType pv_local = warp_rightshift_sync(warp_mask, pv(idx, t - 1));
+                WordType mv_local = warp_rightshift_sync(warp_mask, mv(idx, t - 1));
                 if (threadIdx.x == 31 && warp_mask == 0xffff'ffffu)
                 {
                     if (idx < n_words_band - 1)
@@ -577,27 +621,35 @@ __device__ void myers_compute_scores_diagonal_band_impl(
                     }
                 }
 
-                const WordType carry_right_bit = WordType(1) << (idx == (n_words_band - 1) ? band_width - (n_words_band - 1) * word_size - 2 : word_size - 2);
-                const WordType carry_down_bit  = carry_right_bit << 1;
-                assert(carry_down_bit != 0);
-
                 const WordType eq = get_query_pattern(query_patterns, idx, pattern_idx_offset + t - t_begin + 1, target_begin[t - 1], false);
+
+                const WordType delta_right_bit = WordType(1) << (idx == (n_words_band - 1) ? band_width - (n_words_band - 1) * word_size - 2 : word_size - 2);
+                const WordType delta_down_bit  = delta_right_bit << 1;
+                assert(delta_down_bit != 0);
                 if (idx == n_words_band - 1)
                 {
                     // bits who have no left neighbor -> assume worst case: +1
-                    pv_local |= carry_down_bit;
-                    mv_local &= ~carry_down_bit;
+                    pv_local |= delta_down_bit;
+                    mv_local &= ~delta_down_bit;
                 }
 
-                const int32_t carry_right = myers_advance_block(warp_mask, carry_right_bit, eq, pv_local, mv_local, carry_down);
-                carry_down                = ((pv_local & carry_down_bit) == WordType(0) ? 0 : 1) - ((mv_local & carry_down_bit) == WordType(0) ? 0 : 1);
-                score(idx, t)             = score(idx, t - 1) + carry_right + carry_down;
+                const int2 delta_right   = myers_advance_block2(warp_mask, delta_right_bit, eq, pv_local, mv_local, carry);
+                const int32_t delta_down = ((pv_local & delta_down_bit) == WordType(0) ? 0 : 1) - ((mv_local & delta_down_bit) == WordType(0) ? 0 : 1);
+                // Since idx is relative to diagonal band, (idx, t-1) -> (idx,t)
+                // corresponds to (n-1,t-1) -> (n,t) in the NW matrix.
+                // To get from score'(n-1, t-1) -> score'(n, t-1)
+                // add horizontal delta in row n-1 (delta_right.x)
+                // and the vertical delta in column t (delta_down).
+                score(idx, t) = score(idx, t - 1) + delta_right.x + delta_down;
+
+                // Carry horizontal delta in row n (= delta_right.y) to next warp iteration
                 if (threadIdx.x == 0)
-                    carry_down = 0;
+                    carry = 0;
                 if (warp_mask == 0xffff'ffffu && (threadIdx.x == 0 || threadIdx.x == 31))
-                    carry_down = __shfl_down_sync(0x8000'0001u, carry_down, warp_size - 1);
+                    carry = __shfl_down_sync(0x8000'0001u, delta_right.y, warp_size - 1);
                 if (threadIdx.x != 0)
-                    carry_down = 0;
+                    carry = 0;
+
                 pv(idx, t) = pv_local;
                 mv(idx, t) = mv_local;
             }
@@ -789,7 +841,7 @@ int32_t myers_compute_edit_distance(std::string const& target, std::string const
     matrix<int32_t> score_host;
 
     cudaStream_t stream;
-    CGA_CU_CHECK_ERR(cudaStreamCreate(&stream));
+    GW_CU_CHECK_ERR(cudaStreamCreate(&stream));
     {
         DefaultDeviceAllocator allocator = create_default_device_allocator();
 
@@ -803,16 +855,16 @@ int32_t myers_compute_edit_distance(std::string const& target, std::string const
         batched_device_matrices<myers::WordType> query_patterns(1, n_words * 4, allocator, stream);
 
         std::array<int32_t, 2> lengths = {static_cast<int32_t>(get_size(query)), static_cast<int32_t>(get_size(target))};
-        CGA_CU_CHECK_ERR(cudaMemcpyAsync(sequences_d.data(), query.data(), sizeof(char) * get_size(query), cudaMemcpyHostToDevice, stream));
-        CGA_CU_CHECK_ERR(cudaMemcpyAsync(sequences_d.data() + max_sequence_length, target.data(), sizeof(char) * get_size(target), cudaMemcpyHostToDevice, stream));
-        CGA_CU_CHECK_ERR(cudaMemcpyAsync(sequence_lengths_d.data(), lengths.data(), sizeof(int32_t) * 2, cudaMemcpyHostToDevice, stream));
+        GW_CU_CHECK_ERR(cudaMemcpyAsync(sequences_d.data(), query.data(), sizeof(char) * get_size(query), cudaMemcpyHostToDevice, stream));
+        GW_CU_CHECK_ERR(cudaMemcpyAsync(sequences_d.data() + max_sequence_length, target.data(), sizeof(char) * get_size(target), cudaMemcpyHostToDevice, stream));
+        GW_CU_CHECK_ERR(cudaMemcpyAsync(sequence_lengths_d.data(), lengths.data(), sizeof(int32_t) * 2, cudaMemcpyHostToDevice, stream));
 
         myers::myers_compute_score_matrix_kernel<<<1, warp_size, 0, stream>>>(pv.get_device_interface(), mv.get_device_interface(), score.get_device_interface(), query_patterns.get_device_interface(), sequences_d.data(), sequence_lengths_d.data(), max_sequence_length, 1);
 
         score_host = score.get_matrix(0, n_words, get_size(target) + 1, stream);
-        CGA_CU_CHECK_ERR(cudaStreamSynchronize(stream));
+        GW_CU_CHECK_ERR(cudaStreamSynchronize(stream));
     }
-    CGA_CU_CHECK_ERR(cudaStreamDestroy(stream));
+    GW_CU_CHECK_ERR(cudaStreamDestroy(stream));
     return score_host(n_words - 1, get_size(target));
 }
 
@@ -837,7 +889,7 @@ matrix<int32_t> myers_get_full_score_matrix(std::string const& target, std::stri
     matrix<int32_t> fullscore_host;
 
     cudaStream_t stream;
-    CGA_CU_CHECK_ERR(cudaStreamCreate(&stream));
+    GW_CU_CHECK_ERR(cudaStreamCreate(&stream));
 
     {
         DefaultDeviceAllocator allocator = create_default_device_allocator();
@@ -854,9 +906,9 @@ matrix<int32_t> myers_get_full_score_matrix(std::string const& target, std::stri
         batched_device_matrices<int32_t> fullscore(1, (get_size(query) + 1) * (get_size(target) + 1), allocator, stream);
 
         std::array<int32_t, 2> lengths = {static_cast<int32_t>(get_size(query)), static_cast<int32_t>(get_size(target))};
-        CGA_CU_CHECK_ERR(cudaMemcpyAsync(sequences_d.data(), query.data(), sizeof(char) * get_size(query), cudaMemcpyHostToDevice, stream));
-        CGA_CU_CHECK_ERR(cudaMemcpyAsync(sequences_d.data() + max_sequence_length, target.data(), sizeof(char) * get_size(target), cudaMemcpyHostToDevice, stream));
-        CGA_CU_CHECK_ERR(cudaMemcpyAsync(sequence_lengths_d.data(), lengths.data(), sizeof(int32_t) * 2, cudaMemcpyHostToDevice, stream));
+        GW_CU_CHECK_ERR(cudaMemcpyAsync(sequences_d.data(), query.data(), sizeof(char) * get_size(query), cudaMemcpyHostToDevice, stream));
+        GW_CU_CHECK_ERR(cudaMemcpyAsync(sequences_d.data() + max_sequence_length, target.data(), sizeof(char) * get_size(target), cudaMemcpyHostToDevice, stream));
+        GW_CU_CHECK_ERR(cudaMemcpyAsync(sequence_lengths_d.data(), lengths.data(), sizeof(int32_t) * 2, cudaMemcpyHostToDevice, stream));
 
         myers::myers_compute_score_matrix_kernel<<<1, warp_size, 0, stream>>>(pv.get_device_interface(), mv.get_device_interface(), score.get_device_interface(), query_patterns.get_device_interface(), sequences_d.data(), sequence_lengths_d.data(), max_sequence_length, 1);
         {
@@ -870,8 +922,8 @@ matrix<int32_t> myers_get_full_score_matrix(std::string const& target, std::stri
         fullscore_host = fullscore.get_matrix(0, get_size(query) + 1, get_size(target) + 1, stream);
     }
 
-    CGA_CU_CHECK_ERR(cudaStreamSynchronize(stream));
-    CGA_CU_CHECK_ERR(cudaStreamDestroy(stream));
+    GW_CU_CHECK_ERR(cudaStreamSynchronize(stream));
+    GW_CU_CHECK_ERR(cudaStreamDestroy(stream));
     return fullscore_host;
 }
 
@@ -915,4 +967,7 @@ void myers_banded_gpu(int8_t* paths_d, int32_t* path_lengths_d, int32_t max_path
 }
 
 } // namespace cudaaligner
-} // namespace claragenomics
+
+} // namespace genomeworks
+
+} // namespace claraparabricks

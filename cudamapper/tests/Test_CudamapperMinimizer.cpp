@@ -1,20 +1,30 @@
 /*
-* Copyright (c) 2019, NVIDIA CORPORATION.  All rights reserved.
+* Copyright 2019-2020 NVIDIA CORPORATION.
 *
-* NVIDIA CORPORATION and its licensors retain all intellectual property
-* and proprietary rights in and to this software, related documentation
-* and any modifications thereto.  Any use, reproduction, disclosure or
-* distribution of this software and related documentation without an express
-* license agreement from NVIDIA CORPORATION is strictly prohibited.
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
 */
 
 #include "gtest/gtest.h"
 #include "../src/minimizer.hpp"
 
-#include <claragenomics/utils/cudautils.hpp>
+#include <claraparabricks/genomeworks/utils/cudautils.hpp>
 
-namespace claragenomics
+namespace claraparabricks
 {
+
+namespace genomeworks
+{
+
 namespace cudamapper
 {
 
@@ -31,7 +41,7 @@ void test_function(const std::uint64_t number_of_reads_to_add,
     DefaultDeviceAllocator allocator = create_default_device_allocator();
 
     cudaStream_t cuda_stream;
-    CGA_CU_CHECK_ERR(cudaStreamCreate(&cuda_stream));
+    GW_CU_CHECK_ERR(cudaStreamCreate(&cuda_stream));
 
     device_buffer<char> merged_basepairs_d(merged_basepairs_h.size(), allocator, cuda_stream);
     cudautils::device_copy_n(merged_basepairs_h.data(),
@@ -67,7 +77,7 @@ void test_function(const std::uint64_t number_of_reads_to_add,
     cudautils::device_copy_n(rest_d.data(),
                              rest_d.size(),
                              rest_h.data(), cuda_stream);
-    CGA_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
+    GW_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
 
     ASSERT_EQ(expected_representations_h.size(), expected_rest_h.size());
     ASSERT_EQ(expected_representations_h.size(), representations_h.size());
@@ -86,8 +96,8 @@ void test_function(const std::uint64_t number_of_reads_to_add,
     representations_d.free();
     rest_d.free();
 
-    CGA_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
-    CGA_CU_CHECK_ERR(cudaStreamDestroy(cuda_stream));
+    GW_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
+    GW_CU_CHECK_ERR(cudaStreamDestroy(cuda_stream));
 }
 
 TEST(TestCudamappperMinimizer, GATT_4_1)
@@ -516,4 +526,7 @@ TEST(TestCudamappperMinimizer, CATCAAG_AAGCTA_3_2_read_id_offset_5)
     // Test with minimizer hashing enabled
 }
 } // namespace cudamapper
-} // namespace claragenomics
+
+} // namespace genomeworks
+
+} // namespace claraparabricks

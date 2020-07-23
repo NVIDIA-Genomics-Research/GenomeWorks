@@ -1,20 +1,29 @@
 /*
-* Copyright (c) 2019, NVIDIA CORPORATION.  All rights reserved.
+* Copyright 2019-2020 NVIDIA CORPORATION.
 *
-* NVIDIA CORPORATION and its licensors retain all intellectual property
-* and proprietary rights in and to this software, related documentation
-* and any modifications thereto.  Any use, reproduction, disclosure or
-* distribution of this software and related documentation without an express
-* license agreement from NVIDIA CORPORATION is strictly prohibited.
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
 */
 
 #include "../src/hirschberg_myers_gpu.cu"
 #include "../src/batched_device_matrices.cuh"
-#include <claragenomics/utils/signed_integer_utils.hpp>
+#include <claraparabricks/genomeworks/utils/signed_integer_utils.hpp>
 #include <vector>
 #include <gtest/gtest.h>
 
-namespace claragenomics
+namespace claraparabricks
+{
+
+namespace genomeworks
 {
 
 namespace cudaaligner
@@ -27,7 +36,7 @@ namespace test
 
 __global__ void myers_preprocess_kernel(batched_device_matrices<WordType>::device_interface* batched_query_pattern, char const* query, int32_t query_size)
 {
-    CGA_CONSTEXPR int32_t word_size            = sizeof(WordType) * CHAR_BIT;
+    GW_CONSTEXPR int32_t word_size             = sizeof(WordType) * CHAR_BIT;
     const int32_t n_words                      = ceiling_divide<int32_t>(query_size, word_size);
     device_matrix_view<WordType> query_pattern = batched_query_pattern->get_matrix_view(0, n_words, 8);
     hirschbergmyers::myers_preprocess(query_pattern, query, query_size);
@@ -46,12 +55,12 @@ __global__ void myers_get_query_pattern_test_kernel(int32_t n_words, WordType* r
 matrix<WordType> compute_myers_preprocess_matrix(std::string query_host)
 {
     DefaultDeviceAllocator allocator = create_default_device_allocator();
-    CGA_CONSTEXPR int32_t word_size  = sizeof(WordType) * CHAR_BIT;
+    GW_CONSTEXPR int32_t word_size   = sizeof(WordType) * CHAR_BIT;
     cudaStream_t stream              = nullptr;
     const int32_t n_words            = ceiling_divide<int32_t>(query_host.size(), word_size);
 
     device_buffer<char> query(query_host.size(), allocator);
-    CGA_CU_CHECK_ERR(cudaMemcpy(query.data(), query_host.data(), sizeof(char) * query.size(), cudaMemcpyHostToDevice));
+    GW_CU_CHECK_ERR(cudaMemcpy(query.data(), query_host.data(), sizeof(char) * query.size(), cudaMemcpyHostToDevice));
 
     batched_device_matrices<WordType> query_pattern(1, 8 * n_words, allocator, stream);
     myers_preprocess_kernel<<<1, 32>>>(query_pattern.get_device_interface(), query.data(), query.size());
@@ -61,11 +70,11 @@ matrix<WordType> compute_myers_preprocess_matrix(std::string query_host)
 std::vector<WordType> myers_get_query_pattern_test(std::string query_host, int32_t idx, char x, bool reverse)
 {
     DefaultDeviceAllocator allocator = create_default_device_allocator();
-    CGA_CONSTEXPR int32_t word_size  = sizeof(WordType) * CHAR_BIT;
+    GW_CONSTEXPR int32_t word_size   = sizeof(WordType) * CHAR_BIT;
     cudaStream_t stream              = nullptr;
     const int32_t n_words            = ceiling_divide<int32_t>(query_host.size(), word_size);
     device_buffer<char> query(query_host.size(), allocator);
-    CGA_CU_CHECK_ERR(cudaMemcpy(query.data(), query_host.data(), sizeof(char) * query.size(), cudaMemcpyHostToDevice));
+    GW_CU_CHECK_ERR(cudaMemcpy(query.data(), query_host.data(), sizeof(char) * query.size(), cudaMemcpyHostToDevice));
     batched_device_matrices<WordType> query_pattern(1, 8 * n_words, allocator, stream);
     myers_preprocess_kernel<<<1, 32>>>(query_pattern.get_device_interface(), query.data(), query.size());
 
@@ -81,7 +90,7 @@ std::vector<WordType> myers_get_query_pattern_test(std::string query_host, int32
 
 TEST(HirschbergMyers, myers_preprocess_test)
 {
-    CGA_CONSTEXPR int32_t word_size = sizeof(WordType) * CHAR_BIT;
+    GW_CONSTEXPR int32_t word_size = sizeof(WordType) * CHAR_BIT;
     static_assert(word_size == 32, "This test assumes word_size = 32bit.");
     using test::compute_myers_preprocess_matrix;
     std::string query =
@@ -134,7 +143,7 @@ TEST(HirschbergMyers, myers_preprocess_test)
 
 TEST(HirschbergMyers, myers_get_query_pattern)
 {
-    CGA_CONSTEXPR int32_t word_size = sizeof(WordType) * CHAR_BIT;
+    GW_CONSTEXPR int32_t word_size = sizeof(WordType) * CHAR_BIT;
     static_assert(word_size == 32, "This test assumes word_size = 32bit.");
     using test::compute_myers_preprocess_matrix;
     using test::myers_get_query_pattern_test;
@@ -165,7 +174,7 @@ TEST(HirschbergMyers, myers_get_query_pattern)
 
 TEST(HirschbergMyers, myers_get_query_pattern_reverse)
 {
-    CGA_CONSTEXPR int32_t word_size = sizeof(WordType) * CHAR_BIT;
+    GW_CONSTEXPR int32_t word_size = sizeof(WordType) * CHAR_BIT;
     static_assert(word_size == 32, "This test assumes word_size = 32bit.");
     using test::compute_myers_preprocess_matrix;
     using test::myers_get_query_pattern_test;
@@ -195,4 +204,7 @@ TEST(HirschbergMyers, myers_get_query_pattern_reverse)
 }
 
 } // namespace cudaaligner
-} // namespace claragenomics
+
+} // namespace genomeworks
+
+} // namespace claraparabricks

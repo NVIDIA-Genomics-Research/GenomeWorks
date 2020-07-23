@@ -1,27 +1,36 @@
 /*
-* Copyright (c) 2019, NVIDIA CORPORATION.  All rights reserved.
+* Copyright 2019-2020 NVIDIA CORPORATION.
 *
-* NVIDIA CORPORATION and its licensors retain all intellectual property
-* and proprietary rights in and to this software, related documentation
-* and any modifications thereto.  Any use, reproduction, disclosure or
-* distribution of this software and related documentation without an express
-* license agreement from NVIDIA CORPORATION is strictly prohibited.
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
 */
 
 #include "aligner_global.hpp"
 #include "alignment_impl.hpp"
 
-#include <claragenomics/utils/signed_integer_utils.hpp>
-#include <claragenomics/utils/cudautils.hpp>
-#include <claragenomics/utils/mathutils.hpp>
-#include <claragenomics/utils/genomeutils.hpp>
-#include <claragenomics/logging/logging.hpp>
+#include <claraparabricks/genomeworks/utils/signed_integer_utils.hpp>
+#include <claraparabricks/genomeworks/utils/cudautils.hpp>
+#include <claraparabricks/genomeworks/utils/mathutils.hpp>
+#include <claraparabricks/genomeworks/utils/genomeutils.hpp>
+#include <claraparabricks/genomeworks/logging/logging.hpp>
 
 #include <cstring>
 #include <algorithm>
 #include <cuda_runtime_api.h>
 
-namespace claragenomics
+namespace claraparabricks
+{
+
+namespace genomeworks
 {
 
 namespace cudaaligner
@@ -56,17 +65,17 @@ AlignerGlobal::AlignerGlobal(int32_t max_query_length, int32_t max_target_length
     results_d_          = device_buffer<int8_t>(results_h_.size(), allocator, stream);
     result_lengths_d_   = device_buffer<int32_t>(result_lengths_h_.size(), allocator, stream);
 
-    CGA_CU_CHECK_ERR(cudaMemsetAsync(sequences_d_.data(), 0, sizeof(char) * sequences_d_.size(), stream));
-    CGA_CU_CHECK_ERR(cudaMemsetAsync(sequence_lengths_d_.data(), 0, sizeof(char) * sequence_lengths_d_.size(), stream));
-    CGA_CU_CHECK_ERR(cudaMemsetAsync(results_d_.data(), 0, sizeof(char) * results_d_.size(), stream));
-    CGA_CU_CHECK_ERR(cudaMemsetAsync(result_lengths_d_.data(), 0, sizeof(char) * result_lengths_d_.size(), stream));
+    GW_CU_CHECK_ERR(cudaMemsetAsync(sequences_d_.data(), 0, sizeof(char) * sequences_d_.size(), stream));
+    GW_CU_CHECK_ERR(cudaMemsetAsync(sequence_lengths_d_.data(), 0, sizeof(char) * sequence_lengths_d_.size(), stream));
+    GW_CU_CHECK_ERR(cudaMemsetAsync(results_d_.data(), 0, sizeof(char) * results_d_.size(), stream));
+    GW_CU_CHECK_ERR(cudaMemsetAsync(result_lengths_d_.data(), 0, sizeof(char) * result_lengths_d_.size(), stream));
 }
 
 StatusType AlignerGlobal::add_alignment(const char* query, int32_t query_length, const char* target, int32_t target_length, bool reverse_complement_query, bool reverse_complement_target)
 {
     if (query_length < 0 || target_length < 0)
     {
-        CGA_LOG_DEBUG("{} {}", "Negative target or query length is not allowed.");
+        GW_LOG_DEBUG("{} {}", "Negative target or query length is not allowed.");
         return StatusType::generic_error;
     }
 
@@ -74,19 +83,19 @@ StatusType AlignerGlobal::add_alignment(const char* query, int32_t query_length,
     int32_t const num_alignments       = get_size(alignments_);
     if (num_alignments >= max_alignments_)
     {
-        CGA_LOG_DEBUG("{} {}", "Exceeded maximum number of alignments allowed : ", max_alignments_);
+        GW_LOG_DEBUG("{} {}", "Exceeded maximum number of alignments allowed : ", max_alignments_);
         return StatusType::exceeded_max_alignments;
     }
 
     if (query_length > max_query_length_)
     {
-        CGA_LOG_DEBUG("{} {}", "Exceeded maximum length of query allowed : ", max_query_length_);
+        GW_LOG_DEBUG("{} {}", "Exceeded maximum length of query allowed : ", max_query_length_);
         return StatusType::exceeded_max_length;
     }
 
     if (target_length > max_target_length_)
     {
-        CGA_LOG_DEBUG("{} {}", "Exceeded maximum length of target allowed : ", max_target_length_);
+        GW_LOG_DEBUG("{} {}", "Exceeded maximum length of target allowed : ", max_target_length_);
         return StatusType::exceeded_max_length;
     }
 
@@ -133,16 +142,16 @@ StatusType AlignerGlobal::align_all()
     scoped_device_switch dev(device_id_);
     const int32_t max_alignment_length = std::max(max_query_length_, max_target_length_);
     const int32_t max_result_length    = calc_max_result_length(max_query_length_, max_target_length_);
-    CGA_CU_CHECK_ERR(cudaMemcpyAsync(sequence_lengths_d_.data(),
-                                     sequence_lengths_h_.data(),
-                                     2 * sizeof(int32_t) * num_alignments,
-                                     cudaMemcpyHostToDevice,
-                                     stream_));
-    CGA_CU_CHECK_ERR(cudaMemcpyAsync(sequences_d_.data(),
-                                     sequences_h_.data(),
-                                     2 * sizeof(char) * max_alignment_length * num_alignments,
-                                     cudaMemcpyHostToDevice,
-                                     stream_));
+    GW_CU_CHECK_ERR(cudaMemcpyAsync(sequence_lengths_d_.data(),
+                                    sequence_lengths_h_.data(),
+                                    2 * sizeof(int32_t) * num_alignments,
+                                    cudaMemcpyHostToDevice,
+                                    stream_));
+    GW_CU_CHECK_ERR(cudaMemcpyAsync(sequences_d_.data(),
+                                    sequences_h_.data(),
+                                    2 * sizeof(char) * max_alignment_length * num_alignments,
+                                    cudaMemcpyHostToDevice,
+                                    stream_));
 
     // Run kernel
     run_alignment(results_d_.data(), result_lengths_d_.data(),
@@ -151,23 +160,23 @@ StatusType AlignerGlobal::align_all()
                   num_alignments,
                   stream_);
 
-    CGA_CU_CHECK_ERR(cudaMemcpyAsync(results_h_.data(),
-                                     results_d_.data(),
-                                     sizeof(int8_t) * max_result_length * num_alignments,
-                                     cudaMemcpyDeviceToHost,
-                                     stream_));
-    CGA_CU_CHECK_ERR(cudaMemcpyAsync(result_lengths_h_.data(),
-                                     result_lengths_d_.data(),
-                                     sizeof(int32_t) * num_alignments,
-                                     cudaMemcpyDeviceToHost,
-                                     stream_));
+    GW_CU_CHECK_ERR(cudaMemcpyAsync(results_h_.data(),
+                                    results_d_.data(),
+                                    sizeof(int8_t) * max_result_length * num_alignments,
+                                    cudaMemcpyDeviceToHost,
+                                    stream_));
+    GW_CU_CHECK_ERR(cudaMemcpyAsync(result_lengths_h_.data(),
+                                    result_lengths_d_.data(),
+                                    sizeof(int32_t) * num_alignments,
+                                    cudaMemcpyDeviceToHost,
+                                    stream_));
     return StatusType::success;
 }
 
 StatusType AlignerGlobal::sync_alignments()
 {
     scoped_device_switch dev(device_id_);
-    CGA_CU_CHECK_ERR(cudaStreamSynchronize(stream_));
+    GW_CU_CHECK_ERR(cudaStreamSynchronize(stream_));
 
     const int32_t n_alignments      = get_size(alignments_);
     const int32_t max_result_length = calc_max_result_length(max_query_length_, max_target_length_);
@@ -192,4 +201,7 @@ void AlignerGlobal::reset()
     alignments_.clear();
 }
 } // namespace cudaaligner
-} // namespace claragenomics
+
+} // namespace genomeworks
+
+} // namespace claraparabricks
