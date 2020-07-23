@@ -19,6 +19,7 @@
 #include <random>
 #include <stdexcept>
 #include <claraparabricks/genomeworks/utils/signed_integer_utils.hpp>
+#include <algorithm>
 
 namespace claraparabricks
 {
@@ -152,6 +153,24 @@ inline void reverse_complement(const char* src, const int32_t length, char* dest
         case 'G': dest[pos] = 'C'; break;
         default: dest[pos] = nucleotide;
         }
+    }
+}
+
+/// @brief Either copies a sequence from src to dest or stores src's reverse complement in dest.
+///
+/// @param src pointer to the sequence to copy
+/// @param length length of the sequence to be copied
+/// @param dest pointer to where the copy or reverse complement will be stored. The result is undefined if this buffer is smaller than the passed in length.
+/// @param do_reverse_complement if true the function will store the reverse complement of src in dest, otherwise it will store an identical copy of src.
+inline void copy_sequence(const char* const src, const int32_t length, char* const dest, const bool do_reverse_complement)
+{
+    if (do_reverse_complement)
+    {
+        genomeutils::reverse_complement(src, length, dest);
+    }
+    else
+    {
+        std::copy_n(src, length, dest);
     }
 }
 
