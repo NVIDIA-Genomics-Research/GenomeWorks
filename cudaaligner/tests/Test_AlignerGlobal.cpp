@@ -26,6 +26,9 @@ namespace claragenomics
 namespace cudaaligner
 {
 
+namespace
+{
+
 enum class AlignmentAlgorithm
 {
     Default = 0,
@@ -55,32 +58,6 @@ struct AlignerTestData
     std::vector<std::string> cigars;
     AlignmentAlgorithm algorithm = AlignmentAlgorithm::Ukkonen;
 };
-
-// Test adding alignments to Aligner objects
-TEST(TestCudaAligner, TestAlignmentAddition)
-{
-    DefaultDeviceAllocator allocator       = create_default_device_allocator();
-    std::unique_ptr<AlignerGlobal> aligner = std::make_unique<AlignerGlobalUkkonen>(10, 10, 5, allocator, nullptr, 0);
-    ASSERT_EQ(StatusType::success, aligner->add_alignment("ATCG", 4, "TACG", 4, false, false));
-    ASSERT_EQ(StatusType::success, aligner->add_alignment("ATCG", 4, "TACG", 4, false, false));
-    ASSERT_EQ(StatusType::success, aligner->add_alignment("ATCG", 4, "TACG", 4, false, false));
-
-    ASSERT_EQ(3, aligner->num_alignments());
-
-    ASSERT_EQ(StatusType::exceeded_max_length, aligner->add_alignment("ATCGATTACGC", 11, "TACGTACGGA", 10, false, false));
-    ASSERT_EQ(StatusType::exceeded_max_length, aligner->add_alignment("ATCGATTACG", 10, "ATACGTAGCGA", 11, false, false));
-
-    ASSERT_EQ(3, aligner->num_alignments());
-
-    ASSERT_EQ(StatusType::success, aligner->add_alignment("ATCG", 4, "TACG", 4, false, false));
-    ASSERT_EQ(StatusType::success, aligner->add_alignment("ATCG", 4, "TACG", 4, false, false));
-
-    ASSERT_EQ(5, aligner->num_alignments());
-
-    ASSERT_EQ(StatusType::exceeded_max_alignments, aligner->add_alignment("ATCG", 4, "TACG", 4, false, false));
-
-    ASSERT_EQ(5, aligner->num_alignments());
-}
 
 // Test correctness of genome alignment.
 std::vector<AlignerTestData> create_aligner_test_cases()
@@ -159,6 +136,59 @@ int32_t get_max_sequence_length(std::vector<std::pair<std::string, std::string>>
         max_string_size = std::max(max_string_size, get_size(pair.second));
     }
     return static_cast<int32_t>(max_string_size);
+}
+
+// Test performance of kernel for large genomes
+std::vector<AlignerTestData> create_aligner_perf_test_cases()
+{
+    std::vector<AlignerTestData> test_cases;
+    AlignerTestData data;
+
+    // Test case 1
+    std::minstd_rand rng(1);
+    data.inputs = {{claragenomics::genomeutils::generate_random_genome(1000, rng), claragenomics::genomeutils::generate_random_genome(1000, rng)}};
+    test_cases.push_back(data);
+
+    // Test case 2
+    data.inputs = {{claragenomics::genomeutils::generate_random_genome(9500, rng), claragenomics::genomeutils::generate_random_genome(9000, rng)},
+                   {claragenomics::genomeutils::generate_random_genome(3456, rng), claragenomics::genomeutils::generate_random_genome(3213, rng)},
+                   {claragenomics::genomeutils::generate_random_genome(20000, rng), claragenomics::genomeutils::generate_random_genome(20000, rng)},
+                   {claragenomics::genomeutils::generate_random_genome(15000, rng), claragenomics::genomeutils::generate_random_genome(14000, rng)}};
+    test_cases.push_back(data);
+
+    return test_cases;
+};
+
+class TestAlignerGlobalImplPerf : public TestAlignerGlobal
+{
+};
+
+} // namespace
+
+// Test adding alignments to Aligner objects
+TEST(TestCudaAligner, TestAlignmentAddition)
+{
+    DefaultDeviceAllocator allocator       = create_default_device_allocator();
+    std::unique_ptr<AlignerGlobal> aligner = std::make_unique<AlignerGlobalUkkonen>(10, 10, 5, allocator, nullptr, 0);
+    ASSERT_EQ(StatusType::success, aligner->add_alignment("ATCG", 4, "TACG", 4, false, false));
+    ASSERT_EQ(StatusType::success, aligner->add_alignment("ATCG", 4, "TACG", 4, false, false));
+    ASSERT_EQ(StatusType::success, aligner->add_alignment("ATCG", 4, "TACG", 4, false, false));
+
+    ASSERT_EQ(3, aligner->num_alignments());
+
+    ASSERT_EQ(StatusType::exceeded_max_length, aligner->add_alignment("ATCGATTACGC", 11, "TACGTACGGA", 10, false, false));
+    ASSERT_EQ(StatusType::exceeded_max_length, aligner->add_alignment("ATCGATTACG", 10, "ATACGTAGCGA", 11, false, false));
+
+    ASSERT_EQ(3, aligner->num_alignments());
+
+    ASSERT_EQ(StatusType::success, aligner->add_alignment("ATCG", 4, "TACG", 4, false, false));
+    ASSERT_EQ(StatusType::success, aligner->add_alignment("ATCG", 4, "TACG", 4, false, false));
+
+    ASSERT_EQ(5, aligner->num_alignments());
+
+    ASSERT_EQ(StatusType::exceeded_max_alignments, aligner->add_alignment("ATCG", 4, "TACG", 4, false, false));
+
+    ASSERT_EQ(5, aligner->num_alignments());
 }
 
 TEST_P(TestAlignerGlobal, TestAlignmentKernel)
@@ -251,31 +281,6 @@ TEST_P(TestAlignerGlobal, TestAlignmentKernel)
 }
 
 INSTANTIATE_TEST_SUITE_P(TestCudaAligner, TestAlignerGlobal, ::testing::ValuesIn(create_aligner_test_cases()));
-
-// Test performance of kernel for large genomes
-std::vector<AlignerTestData> create_aligner_perf_test_cases()
-{
-    std::vector<AlignerTestData> test_cases;
-    AlignerTestData data;
-
-    // Test case 1
-    std::minstd_rand rng(1);
-    data.inputs = {{claragenomics::genomeutils::generate_random_genome(1000, rng), claragenomics::genomeutils::generate_random_genome(1000, rng)}};
-    test_cases.push_back(data);
-
-    // Test case 2
-    data.inputs = {{claragenomics::genomeutils::generate_random_genome(9500, rng), claragenomics::genomeutils::generate_random_genome(9000, rng)},
-                   {claragenomics::genomeutils::generate_random_genome(3456, rng), claragenomics::genomeutils::generate_random_genome(3213, rng)},
-                   {claragenomics::genomeutils::generate_random_genome(20000, rng), claragenomics::genomeutils::generate_random_genome(20000, rng)},
-                   {claragenomics::genomeutils::generate_random_genome(15000, rng), claragenomics::genomeutils::generate_random_genome(14000, rng)}};
-    test_cases.push_back(data);
-
-    return test_cases;
-};
-
-class TestAlignerGlobalImplPerf : public TestAlignerGlobal
-{
-};
 
 TEST_P(TestAlignerGlobalImplPerf, TestAlignmentKernelPerf)
 {
