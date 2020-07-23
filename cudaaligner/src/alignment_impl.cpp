@@ -27,16 +27,10 @@ namespace genomeworks
 namespace cudaaligner
 {
 
-AlignmentImpl::AlignmentImpl(const char* query, int32_t query_length, const char* target, int32_t target_length)
-    : query_(query, query + throw_on_negative(query_length, "query_length has to be non-negative."))
-    , target_(target, target + throw_on_negative(target_length, "target_length has to be non-negative."))
-    , status_(StatusType::uninitialized)
-    , type_(AlignmentType::unset)
+namespace
 {
-    // Initialize Alignment object.
-}
 
-char AlignmentImpl::alignment_state_to_cigar_state(AlignmentState s) const
+char alignment_state_to_cigar_state(AlignmentState s)
 {
     // CIGAR string format from http://bioinformatics.cvr.ac.uk/blog/tag/cigar-string/
     // Implementing a reduced set of CIGAR states, covering only the M, D and I characters.
@@ -48,6 +42,19 @@ char AlignmentImpl::alignment_state_to_cigar_state(AlignmentState s) const
     case AlignmentState::deletion: return 'D';
     default: throw std::runtime_error("Unrecognized alignment state.");
     }
+}
+
+} // namespace
+
+AlignmentImpl::AlignmentImpl(const char* query, int32_t query_length, const char* target, int32_t target_length)
+    : query_(query, query + throw_on_negative(query_length, "query_length has to be non-negative."))
+    , target_(target, target + throw_on_negative(target_length, "target_length has to be non-negative."))
+    , status_(StatusType::uninitialized)
+    , type_(AlignmentType::unset)
+    , alignment_()
+    , is_optimal_(false)
+{
+    // Initialize Alignment object.
 }
 
 std::string AlignmentImpl::convert_to_cigar() const

@@ -76,6 +76,11 @@ public:
     /// \return Type of alignment
     virtual AlignmentType get_alignment_type() const = 0;
 
+    /// \brief Returns if the alignment is optimal
+    ///
+    /// \return true if the alignment is optimal, false if it is an approximation
+    virtual bool is_optimal() const = 0;
+
     /// \brief Return status of alignment
     ///
     /// \return Status of alignment
