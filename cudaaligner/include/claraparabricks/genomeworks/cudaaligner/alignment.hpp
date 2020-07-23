@@ -92,6 +92,14 @@ public:
     ///         mistmatch and insertions in alignment.
     virtual const std::vector<AlignmentState>& get_alignment() const = 0;
 
+    /// \brief Get the edit distance corrsponding to the alignment
+    ///
+    /// Returns the number of edits of the found alignment.
+    /// If is_optimal() returns true, this is the edit distance of the two sequences.
+    /// Otherwise, this number is an upper bound of the (optimal) edit distance of the two sequences.
+    /// \return the number of edits of the found alignment
+    virtual int32_t get_edit_distance() const = 0;
+
     /// \brief Print formatted alignment to stderr.
     virtual FormattedAlignment format_alignment(int32_t maximal_line_length = 80) const = 0;
 };

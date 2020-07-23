@@ -17,6 +17,7 @@
 #include "alignment_impl.hpp"
 
 #include <claraparabricks/genomeworks/utils/signed_integer_utils.hpp>
+#include <algorithm>
 
 namespace claraparabricks
 {
@@ -83,6 +84,11 @@ std::string AlignmentImpl::convert_to_cigar() const
     }
     cigar += std::to_string(count_last_state) + last_cigar_state;
     return cigar;
+}
+
+int32_t AlignmentImpl::get_edit_distance() const
+{
+    return std::count_if(begin(alignment_), end(alignment_), [](AlignmentState s) { return s != AlignmentState::match; });
 }
 
 FormattedAlignment AlignmentImpl::format_alignment(int32_t maximal_line_length) const

@@ -65,6 +65,7 @@ struct AlignerTestData
 {
     std::vector<std::pair<std::string, std::string>> inputs;
     std::vector<std::string> cigars;
+    std::vector<int32_t> edit_dist;
     AlignmentAlgorithm algorithm = AlignmentAlgorithm::Ukkonen;
 };
 
@@ -77,30 +78,35 @@ std::vector<AlignerTestData> create_aligner_test_cases()
     // Test case 1
     data.inputs    = {{"AAAA", "TTAT"}};
     data.cigars    = {"4M"};
+    data.edit_dist = {3};
     data.algorithm = AlignmentAlgorithm::Default;
     test_cases.push_back(data);
 
     // Test case 2
     data.inputs    = {{"ATAAAAAAAA", "AAAAAAAAA"}};
     data.cigars    = {"1M1D8M"};
+    data.edit_dist = {1};
     data.algorithm = AlignmentAlgorithm::Default;
     test_cases.push_back(data);
 
     // Test case 3
     data.inputs    = {{"AAAAAAAAA", "ATAAAAAAAA"}};
     data.cigars    = {"1M1I8M"};
+    data.edit_dist = {1};
     data.algorithm = AlignmentAlgorithm::Default;
     test_cases.push_back(data);
 
     // Test case 4
     data.inputs    = {{"ACTGA", "GCTAG"}};
     data.cigars    = {"3M1D1M1I"};
+    data.edit_dist = {3};
     data.algorithm = AlignmentAlgorithm::Default;
     test_cases.push_back(data);
 
     // Test case 5
     data.inputs    = {{"ACTGA", "GCTAG"}, {"ACTG", "ACTG"}, {"A", "T"}};
     data.cigars    = {"3M1D1M1I", "4M", "1M"};
+    data.edit_dist = {3, 0, 1};
     data.algorithm = AlignmentAlgorithm::Default;
     test_cases.push_back(data);
 
@@ -112,12 +118,18 @@ std::vector<AlignerTestData> create_aligner_test_cases()
         "4M", "1M1D8M", "1M1I8M", "3M1D1M1I", "3M1D1M1I", "4M", "1M",
         "4M", "1M1D8M", "1M1I8M", "3M1D1M1I", "3M1D1M1I", "4M", "1M",
         "4M", "1M1D8M", "1M1I8M", "3M1D1M1I", "3M1D1M1I", "4M", "1M"};
+    data.edit_dist = {
+        3, 1, 1, 3, 3, 0, 1,
+        3, 1, 1, 3, 3, 0, 1,
+        3, 1, 1, 3, 3, 0, 1,
+        3, 1, 1, 3, 3, 0, 1};
     data.algorithm = AlignmentAlgorithm::Default;
     test_cases.push_back(data);
 
     std::minstd_rand rng(1);
     data.inputs    = {{genomeworks::genomeutils::generate_random_genome(4800, rng), genomeworks::genomeutils::generate_random_genome(5000, rng)}};
     data.cigars    = {}; // do not test cigars
+    data.edit_dist = {}; // do not test edit distance
     data.algorithm = AlignmentAlgorithm::Default;
     test_cases.push_back(data);
 
@@ -205,11 +217,16 @@ TEST_P(TestAlignerGlobal, TestAlignmentKernel)
     AlignerTestData param                                          = GetParam();
     const std::vector<std::pair<std::string, std::string>>& inputs = param.inputs;
     const std::vector<std::string>& cigars                         = param.cigars;
+    const std::vector<int32_t>& edit_distances                     = param.edit_dist;
     DefaultDeviceAllocator allocator                               = create_default_device_allocator();
 
     if (!cigars.empty())
     {
         ASSERT_EQ(inputs.size(), cigars.size()) << "Input data length mismatch";
+    }
+    if (!edit_distances.empty())
+    {
+        ASSERT_EQ(inputs.size(), edit_distances.size()) << "Input data length mismatch";
     }
 
     const int32_t max_string_size = get_max_sequence_length(inputs) + 1;
@@ -284,6 +301,15 @@ TEST_P(TestAlignerGlobal, TestAlignmentKernel)
                                                                 << alignment->get_target_sequence()
                                                                 << "\nindex: " << a
                                                                 << "\nusing " << get_algorithm_name(param.algorithm);
+        }
+        if (!edit_distances.empty())
+        {
+            EXPECT_EQ(edit_distances[a], alignment->get_edit_distance()) << "edit distance doesn't match for alignment of\n"
+                                                                         << alignment->get_query_sequence()
+                                                                         << "\nand\n"
+                                                                         << alignment->get_target_sequence()
+                                                                         << "\nindex: " << a
+                                                                         << "\nusing " << get_algorithm_name(param.algorithm);
         }
     }
 }
