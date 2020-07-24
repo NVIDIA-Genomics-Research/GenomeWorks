@@ -148,7 +148,7 @@ __global__ void generateMSAKernel(uint8_t* nodes_d,
                                   SizeT* nodes_to_visit_d,
                                   uint32_t max_nodes_per_window,
                                   uint32_t max_limit_consensus_size,
-                                  bool cuda_banded_alignment = false)
+                                  bool banded_alignment = false)
 {
     //each block of threads will operate on a window
     uint32_t window_idx = blockIdx.x;
@@ -194,7 +194,7 @@ __global__ void generateMSAKernel(uint8_t* nodes_d,
                                        node_marks,
                                        check_aligned_nodes,
                                        nodes_to_visit,
-                                       cuda_banded_alignment,
+                                       banded_alignment,
                                        static_cast<SizeT>(max_nodes_per_window));
 
         msa_length = getNodeIDToMSAPosDevice<SizeT>(sequence_lengths[0],

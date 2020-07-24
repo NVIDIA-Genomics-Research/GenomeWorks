@@ -220,8 +220,8 @@ public:
 /// \param gap_score                score to be assigned to a gap
 /// \param mismatch_score           score to be assigned to a mismatch
 /// \param match_score              score to be assigned for a match
-/// \param cuda_banded_alignment    whether to use banded alignment
-/// \param cuda_adaptive_alignment  flag to enable adaptive banded alignment
+/// \param banded_alignment    whether to use banded alignment
+/// \param adaptive_banded  flag to enable adaptive banded alignment
 ///
 /// \return Returns a unique pointer to a new Batch object
 std::unique_ptr<Batch> create_batch(int32_t device_id,
@@ -232,8 +232,8 @@ std::unique_ptr<Batch> create_batch(int32_t device_id,
                                     int16_t gap_score,
                                     int16_t mismatch_score,
                                     int16_t match_score,
-                                    bool cuda_banded_alignment,
-                                    bool cuda_adaptive_alignment);
+                                    bool banded_alignment,
+                                    bool adaptive_banded);
 
 /// \}
 

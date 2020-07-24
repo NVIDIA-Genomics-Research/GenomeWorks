@@ -303,7 +303,7 @@ __global__ void generateConsensusKernel(uint8_t* consensus_d,
                                         uint16_t* node_coverage_counts_d_,
                                         uint32_t max_nodes_per_window,
                                         uint32_t max_limit_consensus_size,
-                                        bool cuda_banded_alignment = false)
+                                        bool banded_alignment = false)
 {
     //each thread will operate on a window
     int32_t window_idx = blockIdx.x * CUDAPOA_MAX_CONSENSUS_PER_BLOCK + threadIdx.x;
