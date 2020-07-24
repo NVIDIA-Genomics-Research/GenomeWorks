@@ -83,7 +83,7 @@ __device__ void set_score_adaptive(ScoreT* scores, SizeT row, SizeT column, Scor
 }
 
 template <typename ScoreT, typename SizeT>
-__device__ void initialize_band_adaptive(ScoreT* scores, SizeT row, ScoreT min_score_value, SizeT* band_starts, SizeT* band_widths, int64_t* head_indices, SizeT max_column)
+__device__ void initialize_band_adaptive(ScoreT* scores, SizeT row, ScoreT min_score_value, SizeT* band_starts, SizeT* band_widths, int64_t* head_indices)
 {
     SizeT lane_idx   = threadIdx.x % WARP_SIZE;
     SizeT band_start = band_starts[row];
@@ -117,7 +117,7 @@ __device__ ScoreT get_score_adaptive(ScoreT* scores, SizeT row, SizeT column, Si
 {
     SizeT band_start = band_starts[row];
     SizeT band_end   = band_start + band_widths[row];
-    band_end = min(band_end, max_column);
+    band_end         = min(band_end, max_column);
 
     if ((column > band_end || column < band_start) && column != -1)
     {
@@ -154,7 +154,7 @@ __device__ ScoreT4<ScoreT> get_scores_adaptive(ScoreT* scores,
 
     // subtract by CELLS_PER_THREAD to ensure score4_next is not pointing out of the corresponding band bounds
     SizeT band_end = static_cast<SizeT>(band_start + band_widths[row] - CELLS_PER_THREAD);
-    band_end = min(band_end, max_column);
+    band_end       = min(band_end, max_column);
 
     if ((column > band_end || column < band_start) && column != -1)
     {
@@ -233,7 +233,7 @@ __device__ void get_predecessors_max_score_index(SizeT& pred_max_score_left,
 
             for (SizeT index = lane_idx; index < band_width; index += WARP_SIZE)
             {
-                ScoreT score_val = index > max_column? min_score_value : scores[static_cast<int64_t>(index) + head_index];
+                ScoreT score_val = index > max_column ? min_score_value : scores[static_cast<int64_t>(index) + head_index];
                 SizeT score_idx  = index + band_start;
                 warp_reduce_max(score_val, score_idx);
                 score_val = __shfl_sync(FULL_MASK, score_val, 0);
@@ -466,7 +466,7 @@ __device__
 
         SizeT band_start = band_starts[score_gIdx];
 
-        initialize_band_adaptive(scores, score_gIdx, min_score_value, band_starts, band_widths, head_indices, max_column);
+        initialize_band_adaptive(scores, score_gIdx, min_score_value, band_starts, band_widths, head_indices);
 
         ScoreT first_element_prev_score = 0;
         if (lane_idx == 0)

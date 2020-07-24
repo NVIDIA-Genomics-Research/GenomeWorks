@@ -20,7 +20,6 @@
 #include <iostream>
 #include <string>
 
-#include <claraparabricks/genomeworks/io/fasta_parser.hpp>
 #include <claraparabricks/genomeworks/utils/signed_integer_utils.hpp>
 #include <claraparabricks/genomeworks/version.hpp>
 

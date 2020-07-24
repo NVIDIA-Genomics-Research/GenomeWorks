@@ -15,7 +15,6 @@
 */
 
 #include <iostream>
-#include <fstream>
 #include <string>
 #include <claraparabricks/genomeworks/cudapoa/utils.hpp> // for get_multi_batch_sizes()
 #include "application_parameters.hpp"
