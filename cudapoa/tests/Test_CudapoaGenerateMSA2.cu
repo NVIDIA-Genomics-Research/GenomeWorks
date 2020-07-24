@@ -42,21 +42,21 @@ public:
     void SetUp() {}
 
     void initialize(const BatchSize& batch_size,
-                    uint32_t device_id      = 0,
-                    cudaStream_t stream     = 0,
-                    int8_t output_mask      = OutputType::msa,
-                    int16_t gap_score       = -8,
-                    int16_t mismatch_score  = -6,
-                    int16_t match_score     = 8,
-                    bool banded_alignment   = false,
-                    bool adaptive_alignment = false)
+                    uint32_t device_id     = 0,
+                    cudaStream_t stream    = 0,
+                    int8_t output_mask     = OutputType::msa,
+                    int16_t gap_score      = -8,
+                    int16_t mismatch_score = -6,
+                    int16_t match_score    = 8,
+                    bool banded_alignment  = false,
+                    bool adaptive_banded   = false)
     {
         size_t total = 0, free = 0;
         cudaSetDevice(device_id);
         cudaMemGetInfo(&free, &total);
         size_t mem_per_batch = 0.9 * free;
 
-        cudapoa_batch = genomeworks::cudapoa::create_batch(device_id, stream, mem_per_batch, output_mask, batch_size, gap_score, mismatch_score, match_score, banded_alignment, adaptive_alignment);
+        cudapoa_batch = genomeworks::cudapoa::create_batch(device_id, stream, mem_per_batch, output_mask, batch_size, gap_score, mismatch_score, match_score, banded_alignment, adaptive_banded);
     }
 
     std::vector<std::string> spoa_generate_multiple_sequence_alignments(std::vector<std::string> sequences,
