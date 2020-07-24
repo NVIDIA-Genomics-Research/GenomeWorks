@@ -22,8 +22,7 @@
 #include <claraparabricks/genomeworks/utils/limits.cuh>
 #include <claraparabricks/genomeworks/utils/signed_integer_utils.hpp>
 #include <claraparabricks/genomeworks/utils/device_buffer.hpp>
-
-#include <thrust/system/cuda/experimental/pinned_allocator.h>
+#include <claraparabricks/genomeworks/utils/pinned_host_vector.hpp>
 
 #include <tuple>
 #include <cassert>
@@ -238,9 +237,6 @@ public:
     }
 
 private:
-    template <typename U>
-    using pinned_host_vector = std::vector<U, thrust::system::cuda::experimental::pinned_allocator<U>>;
-
     device_buffer<T> storage_;
     device_buffer<ptrdiff_t> offsets_;
     device_buffer<device_interface> dev_;

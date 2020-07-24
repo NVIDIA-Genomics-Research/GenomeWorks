@@ -23,6 +23,7 @@
 #include <claraparabricks/genomeworks/utils/cudautils.hpp>
 #include <claraparabricks/genomeworks/utils/genomeutils.hpp>
 #include <claraparabricks/genomeworks/utils/mathutils.hpp>
+#include <claraparabricks/genomeworks/utils/pinned_host_vector.hpp>
 
 namespace claraparabricks
 {
@@ -40,9 +41,6 @@ constexpr int32_t n_alignments_initial_parameter = 1000; // for initial allocati
 
 using myers::WordType;
 constexpr int32_t word_size = sizeof(myers::WordType) * CHAR_BIT;
-
-template <typename T>
-using pinned_host_vector = std::vector<T, thrust::system::cuda::experimental::pinned_allocator<T>>;
 
 int64_t compute_matrix_size_for_alignment(const int32_t query_size, const int32_t target_size, const int32_t max_bandwidth)
 {
