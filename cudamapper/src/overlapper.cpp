@@ -21,6 +21,7 @@
 #include <claraparabricks/genomeworks/utils/signed_integer_utils.hpp>
 
 #include "cudamapper_utils.hpp"
+#include "overlapper_triggered.hpp"
 
 namespace
 {
@@ -369,6 +370,13 @@ void Overlapper::rescue_overlap_ends(std::vector<Overlap>& overlaps,
             reverse_overlap(overlap, static_cast<uint32_t>(target_sequence.length()));
         }
     }
+}
+
+std::unique_ptr<Overlapper> Overlapper::create_overlapper(DefaultDeviceAllocator allocator,
+                                                          const cudaStream_t cuda_stream)
+{
+    return std::make_unique<OverlapperTriggered>(allocator,
+                                                 cuda_stream);
 }
 
 } // namespace cudamapper

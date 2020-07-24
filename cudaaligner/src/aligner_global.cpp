@@ -35,6 +35,8 @@ namespace genomeworks
 
 namespace cudaaligner
 {
+namespace
+{
 
 constexpr int32_t calc_max_result_length(int32_t max_query_length, int32_t max_target_length)
 {
@@ -42,6 +44,8 @@ constexpr int32_t calc_max_result_length(int32_t max_query_length, int32_t max_t
     const int32_t max_length          = max_query_length + max_target_length;
     return ceiling_divide(max_length, alignment_bytes) * alignment_bytes;
 }
+
+} // namespace
 
 AlignerGlobal::AlignerGlobal(int32_t max_query_length, int32_t max_target_length, int32_t max_alignments, DefaultDeviceAllocator allocator, cudaStream_t stream, int32_t device_id)
     : max_query_length_(throw_on_negative(max_query_length, "max_query_length must be non-negative."))
@@ -184,14 +188,18 @@ StatusType AlignerGlobal::sync_alignments()
     for (int32_t i = 0; i < n_alignments; ++i)
     {
         al_state.clear();
-        assert(result_lengths_h_[i] < max_result_length);
+        assert(std::abs(result_lengths_h_[i]) < max_result_length);
         const int8_t* r_begin = results_h_.data() + i * max_result_length;
-        const int8_t* r_end   = r_begin + result_lengths_h_[i];
+        const int8_t* r_end   = r_begin + std::abs(result_lengths_h_[i]);
         std::transform(r_begin, r_end, std::back_inserter(al_state), [](int8_t x) { return static_cast<AlignmentState>(x); });
         std::reverse(begin(al_state), end(al_state));
-        AlignmentImpl* alignment = dynamic_cast<AlignmentImpl*>(alignments_[i].get());
-        alignment->set_alignment(al_state);
-        alignment->set_status(StatusType::success);
+        if (!al_state.empty() || (alignments_[i]->get_query_sequence().empty() && alignments_[i]->get_target_sequence().empty()))
+        {
+            const bool is_optimal    = (result_lengths_h_[i] >= 0);
+            AlignmentImpl* alignment = dynamic_cast<AlignmentImpl*>(alignments_[i].get());
+            alignment->set_alignment(al_state, is_optimal);
+            alignment->set_status(StatusType::success);
+        }
     }
     return StatusType::success;
 }

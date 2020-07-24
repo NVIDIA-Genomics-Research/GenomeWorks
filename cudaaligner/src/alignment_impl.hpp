@@ -33,13 +33,13 @@ public:
     AlignmentImpl(const char* query, int32_t query_length, const char* target, int32_t target_length);
 
     /// \brief Returns query sequence
-    virtual const std::string& get_query_sequence() const override
+    const std::string& get_query_sequence() const override
     {
         return query_;
     }
 
     /// \brief Returns target sequence
-    virtual const std::string& get_target_sequence() const override
+    const std::string& get_target_sequence() const override
     {
         return target_;
     }
@@ -47,7 +47,7 @@ public:
     /// \brief Converts an alignment to CIGAR format
     ///
     /// \return CIGAR string
-    virtual std::string convert_to_cigar() const override;
+    std::string convert_to_cigar() const override;
 
     /// \brief Set alignment type.
     /// \param type Alignment type.
@@ -59,9 +59,17 @@ public:
     /// \brief Returns type of alignment
     ///
     /// \return Type of alignment
-    virtual AlignmentType get_alignment_type() const override
+    AlignmentType get_alignment_type() const override
     {
         return type_;
+    }
+
+    /// \brief Returns if the alignment is optimal
+    ///
+    /// \return true if the alignment is optimal, false if it is an approximation
+    bool is_optimal() const override
+    {
+        return is_optimal_;
     }
 
     /// \brief Set status of alignment
@@ -74,7 +82,7 @@ public:
     /// \brief Return status of alignment
     ///
     /// \return Status of alignment
-    virtual StatusType get_status() const override
+    StatusType get_status() const override
     {
         return status_;
     }
@@ -82,22 +90,32 @@ public:
     /// \brief Set alignment between sequences.
     ///
     /// \param alignment Alignment between sequences
-    virtual void set_alignment(const std::vector<AlignmentState>& alignment)
+    /// \param is_optimal true if the alignment is optimal, false if it is an approximation
+    virtual void set_alignment(const std::vector<AlignmentState>& alignment, bool is_optimal)
     {
-        alignment_ = alignment;
+        alignment_  = alignment;
+        is_optimal_ = is_optimal;
     }
 
     /// \brief Get the alignment between sequences
     ///
     /// \return Vector of AlignmentState encoding sequence of match,
     ///         mistmatch and insertions in alignment.
-    virtual const std::vector<AlignmentState>& get_alignment() const override
+    const std::vector<AlignmentState>& get_alignment() const override
     {
         return alignment_;
     }
 
+    /// \brief Get the edit distance corrsponding to the alignment
+    ///
+    /// Returns the number of edits of the found alignment.
+    /// If is_optimal() returns true, this is the edit distance of the two sequences.
+    /// Otherwise, this number is an upper bound of the (optimal) edit distance of the two sequences.
+    /// \return the number of edits of the found alignment
+    int32_t get_edit_distance() const override;
+
     /// \brief Print formatted alignment to stderr.
-    virtual FormattedAlignment format_alignment(int32_t maximal_line_length = 80) const override;
+    FormattedAlignment format_alignment(int32_t maximal_line_length = 80) const override;
 
 private:
     std::string query_;
@@ -105,8 +123,7 @@ private:
     StatusType status_;
     AlignmentType type_;
     std::vector<AlignmentState> alignment_;
-
-    char alignment_state_to_cigar_state(AlignmentState) const;
+    bool is_optimal_;
 };
 } // namespace cudaaligner
 
