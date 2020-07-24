@@ -113,7 +113,7 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
                                   int64_t* band_head_indices_d,
                                   SizeT* band_max_indices_d,
                                   int32_t TPB                          = 64,
-                                  bool cuda_adaptive_banded            = false,
+                                  bool adaptive_banded                 = false,
                                   bool banded_alignment                = false,
                                   bool msa                             = false,
                                   uint32_t banded_alignment_band_width = 256)
@@ -250,7 +250,7 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
                 consensus[1] = static_cast<uint8_t>(StatusType::node_count_exceeded_maximum_graph_size);
                 warp_error   = true;
             }
-            if (cuda_adaptive_banded)
+            if (adaptive_banded)
             {
                 // compute R for abPOA
                 distanceToHeadNode(sorted_poa,
@@ -272,9 +272,9 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
         // Run Needleman-Wunsch alignment between graph and new sequence.
         SizeT alignment_length;
 
-        if (banded_alignment || cuda_adaptive_banded)
+        if (banded_alignment || adaptive_banded)
         {
-            if (cuda_adaptive_banded)
+            if (adaptive_banded)
             {
                 alignment_length = runNeedlemanWunschAdaptiveBanded<uint8_t, ScoreT, SizeT>(nodes,
                                                                                             sorted_poa,
