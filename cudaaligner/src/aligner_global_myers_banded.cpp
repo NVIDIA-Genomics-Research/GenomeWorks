@@ -310,9 +310,13 @@ StatusType AlignerGlobalMyersBanded::sync_alignments()
         const int8_t* r_end   = r_begin + std::abs(data_->result_lengths_h[i]);
         std::transform(r_begin, r_end, std::back_inserter(al_state), [](int8_t x) { return static_cast<AlignmentState>(x); });
         std::reverse(begin(al_state), end(al_state));
-        AlignmentImpl* alignment = dynamic_cast<AlignmentImpl*>(alignments_[i].get());
-        alignment->set_alignment(al_state);
-        alignment->set_status(StatusType::success);
+        if (!al_state.empty() || (alignments_[i]->get_query_sequence().empty() && alignments_[i]->get_target_sequence().empty()))
+        {
+            AlignmentImpl* alignment = dynamic_cast<AlignmentImpl*>(alignments_[i].get());
+            const bool is_optimal    = (data_->result_lengths_h[i] >= 0);
+            alignment->set_alignment(al_state, is_optimal);
+            alignment->set_status(StatusType::success);
+        }
     }
     reset_data();
     return StatusType::success;

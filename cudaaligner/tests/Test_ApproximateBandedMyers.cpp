@@ -88,10 +88,9 @@ TEST_P(TestApproximateBandedMyers, EditDistanceGrowsWithBand)
         aligner->sync_alignments();
         const std::vector<std::shared_ptr<Alignment>>& alignments = aligner->get_alignments();
         ASSERT_EQ(get_size(alignments), 1);
-        std::vector<AlignmentState> operations = alignments[0]->get_alignment();
-        if (!operations.empty())
+        if (alignments[0]->get_status() == StatusType::success)
         {
-            int32_t edit_distance = std::count_if(begin(operations), end(operations), [](AlignmentState x) { return x != AlignmentState::match; });
+            int32_t edit_distance = alignments[0]->get_edit_distance();
             ASSERT_LE(edit_distance, last_edit_distance) << "for max bandwidth = " << max_bw << " vs. max bandwidth = " << last_bw;
             last_edit_distance = edit_distance;
             last_bw            = max_bw;

@@ -193,9 +193,13 @@ StatusType AlignerGlobal::sync_alignments()
         const int8_t* r_end   = r_begin + std::abs(result_lengths_h_[i]);
         std::transform(r_begin, r_end, std::back_inserter(al_state), [](int8_t x) { return static_cast<AlignmentState>(x); });
         std::reverse(begin(al_state), end(al_state));
-        AlignmentImpl* alignment = dynamic_cast<AlignmentImpl*>(alignments_[i].get());
-        alignment->set_alignment(al_state);
-        alignment->set_status(StatusType::success);
+        if (!al_state.empty() || (alignments_[i]->get_query_sequence().empty() && alignments_[i]->get_target_sequence().empty()))
+        {
+            const bool is_optimal    = (result_lengths_h_[i] >= 0);
+            AlignmentImpl* alignment = dynamic_cast<AlignmentImpl*>(alignments_[i].get());
+            alignment->set_alignment(al_state, is_optimal);
+            alignment->set_status(StatusType::success);
+        }
     }
     return StatusType::success;
 }
