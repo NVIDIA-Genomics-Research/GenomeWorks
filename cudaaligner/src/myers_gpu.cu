@@ -845,8 +845,13 @@ __global__ void myers_banded_kernel(
         myers_compute_scores_edit_dist_banded(diagonal_begin, diagonal_end, pv, mv, score, query_pattern, target, query, target_size, query_size, band_width, n_words_band, p, alignment_idx);
         __syncwarp();
         const int32_t cur_edit_distance = score(n_words_band - 1, target_size);
-        if (cur_edit_distance <= max_distance_estimate || band_width == query_size || band_width == max_bandwidth)
+        if (cur_edit_distance <= max_distance_estimate || band_width == query_size)
         {
+            break;
+        }
+        if (band_width == max_bandwidth)
+        {
+            band_width = -band_width;
             break;
         }
         max_distance_estimate *= 2;
