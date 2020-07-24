@@ -82,7 +82,7 @@ public:
     virtual void reset() = 0;
 };
 
-/// \brief Created Aligner object
+/// \brief Created Aligner object - DEPRECATED API
 ///
 /// \param max_query_length Maximum length of query string
 /// \param max_target_length Maximum length of target string
@@ -95,7 +95,7 @@ public:
 /// \return Unique pointer to Aligner object
 std::unique_ptr<Aligner> create_aligner(int32_t max_query_length, int32_t max_target_length, int32_t max_alignments, AlignmentType type, DefaultDeviceAllocator allocator, cudaStream_t stream, int32_t device_id);
 
-/// \brief Created Aligner object
+/// \brief Created Aligner object - DEPRECATED API
 ///
 /// \param max_query_length Maximum length of query string
 /// \param max_target_length Maximum length of target string
@@ -108,7 +108,7 @@ std::unique_ptr<Aligner> create_aligner(int32_t max_query_length, int32_t max_ta
 /// \return Unique pointer to Aligner object
 std::unique_ptr<Aligner> create_aligner(int32_t max_query_length, int32_t max_target_length, int32_t max_alignments, AlignmentType type, cudaStream_t stream, int32_t device_id, int64_t max_device_memory_allocator_caching_size = -1);
 
-/// \brief Created Aligner object - NEW API
+/// \brief Created Aligner object
 ///
 /// \param type Type of aligner to construct
 /// \param max_bandwidth Maximum bandwidth for the Ukkonen band
@@ -120,7 +120,7 @@ std::unique_ptr<Aligner> create_aligner(int32_t max_query_length, int32_t max_ta
 /// \return Unique pointer to Aligner object
 std::unique_ptr<Aligner> create_aligner(AlignmentType type, int32_t max_bandwidth, cudaStream_t stream, int32_t device_id, DefaultDeviceAllocator allocator, int64_t max_device_memory);
 
-/// \brief Created Aligner object - NEW API
+/// \brief Created Aligner object
 ///
 /// \param type Type of aligner to construct
 /// \param max_bandwidth Maximum bandwidth for the Ukkonen band
