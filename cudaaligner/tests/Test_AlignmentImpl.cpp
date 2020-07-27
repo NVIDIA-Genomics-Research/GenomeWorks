@@ -57,6 +57,7 @@ typedef struct AlignmentTestData
     std::string query;
     std::string target;
     std::vector<AlignmentState> alignment;
+    bool is_optimal;
     FormattedAlignment formatted_alignment;
     std::string cigar;
 } AlignmentTestData;
@@ -75,6 +76,7 @@ std::vector<AlignmentTestData> create_alignment_test_cases()
         AlignmentState::match,
         AlignmentState::mismatch,
         AlignmentState::insertion};
+    data.is_optimal          = true;
     data.formatted_alignment = FormattedAlignment{"AAAA-", "xx|x ", "TTATG"};
     data.cigar               = "4M1I";
     test_cases.push_back(data);
@@ -91,6 +93,7 @@ std::vector<AlignmentTestData> create_alignment_test_cases()
         AlignmentState::match,
         AlignmentState::deletion,
         AlignmentState::deletion};
+    data.is_optimal          = true;
     data.formatted_alignment = FormattedAlignment{"CGATAATG", " x||||  ", "-CATAA--"};
     data.cigar               = "1D5M2D";
     test_cases.push_back(data);
@@ -110,6 +113,7 @@ std::vector<AlignmentTestData> create_alignment_test_cases()
         AlignmentState::insertion,
         AlignmentState::insertion,
     };
+    data.is_optimal          = true;
     data.formatted_alignment = FormattedAlignment{"--GT-TAG--", "  || |||  ", "AAGTCTAGAA"};
     data.cigar               = "2I2M1I3M2I";
     test_cases.push_back(data);
@@ -125,6 +129,7 @@ std::vector<AlignmentTestData> create_alignment_test_cases()
         AlignmentState::deletion,
         AlignmentState::match,
         AlignmentState::match};
+    data.is_optimal          = false; // this example is optimal, but is_optimal = false does only mean it is an upper bound
     data.formatted_alignment = FormattedAlignment{"G-TTACA", "| || ||", "GATT-CA"};
     data.cigar               = "1M1I2M1D2M";
     test_cases.push_back(data);
@@ -142,7 +147,7 @@ public:
                                                      param_.query.size(),
                                                      param_.target.c_str(),
                                                      param_.target.size());
-        alignment_->set_alignment(param_.alignment);
+        alignment_->set_alignment(param_.alignment, param_.is_optimal);
     }
 
 protected:
@@ -164,6 +169,11 @@ TEST_P(TestAlignmentImpl, AlignmentState)
     {
         ASSERT_EQ(param_.alignment[i], al_read[i]);
     }
+}
+
+TEST_P(TestAlignmentImpl, AlignmentIsOptimal)
+{
+    ASSERT_EQ(param_.is_optimal, alignment_->is_optimal());
 }
 
 TEST_P(TestAlignmentImpl, AlignmentFormatting)

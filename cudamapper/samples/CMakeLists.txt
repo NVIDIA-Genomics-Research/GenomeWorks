@@ -14,24 +14,18 @@
 # limitations under the License.
 #
 
+project(sample_cudamapper)
 
+get_property(cudamapper_data_include_dir GLOBAL PROPERTY cudamapper_data_include_dir)
+include_directories(${cudamapper_data_include_dir})
 
-set(TARGET_NAME cudaalignertests)
+add_executable(${PROJECT_NAME}
+               sample_cudamapper.cpp
+               )
 
-set(SOURCES
-    main.cpp
-    cudaaligner_test_cases.cpp
-    Test_Misc.cpp
-    Test_AlignmentImpl.cpp
-    Test_AlignerGlobal.cpp
-    Test_ApproximateBandedMyers.cpp
-    Test_MyersAlgorithm.cu
-    Test_HirschbergMyers.cu
-    Test_NeedlemanWunschImplementation.cpp
-    )
+target_link_libraries(${PROJECT_NAME}
+                      cudamapper
+                      )
 
-set(LIBS
-    cudaaligner
-    gwbase)
-
-gw_add_tests(${TARGET_NAME} "${SOURCES}" "${LIBS}")
+install(TARGETS ${PROJECT_NAME}
+            DESTINATION samples)

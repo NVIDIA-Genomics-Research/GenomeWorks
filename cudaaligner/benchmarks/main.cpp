@@ -88,6 +88,31 @@ private:
 };
 
 template <typename AlignerT>
+typename std::enable_if<!std::is_same<AlignerT, AlignerGlobalMyersBanded>::value, std::unique_ptr<Aligner>>::type create_aligner_tmp_dispatch(int32_t genome_size, int32_t alignments_per_batch, DefaultDeviceAllocator allocator, cudaStream_t stream, int32_t device_id)
+{
+    return std::make_unique<AlignerT>(
+        genome_size,
+        genome_size,
+        alignments_per_batch,
+        allocator,
+        stream,
+        device_id);
+}
+
+template <typename AlignerT>
+typename std::enable_if<std::is_same<AlignerT, AlignerGlobalMyersBanded>::value, std::unique_ptr<Aligner>>::type create_aligner_tmp_dispatch(int32_t genome_size, int32_t alignments_per_batch, DefaultDeviceAllocator allocator, cudaStream_t stream, int32_t device_id)
+{
+    const int64_t max_device_memory = -1;
+    const int32_t max_bandwidth     = 1024;
+    return std::make_unique<AlignerT>(
+        max_device_memory,
+        max_bandwidth,
+        allocator,
+        stream,
+        device_id);
+}
+
+template <typename AlignerT>
 static void BM_SingleBatchAlignment(benchmark::State& state)
 {
     const std::size_t max_gpu_memory = cudautils::find_largest_contiguous_device_memory_section();
@@ -100,8 +125,7 @@ static void BM_SingleBatchAlignment(benchmark::State& state)
     // Create aligner object
     try
     {
-        aligner = std::make_unique<AlignerT>(
-            genome_size,
+        aligner = create_aligner_tmp_dispatch<AlignerT>(
             genome_size,
             alignments_per_batch,
             allocator,

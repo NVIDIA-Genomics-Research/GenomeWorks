@@ -148,15 +148,18 @@ struct FilterOverlapOp
     size_t min_overlap_len;
     size_t min_bases_per_residue;
     float min_overlap_fraction;
+    bool indexes_identical;
 
     __host__ __device__ __forceinline__ FilterOverlapOp(size_t min_residues,
                                                         size_t min_overlap_len,
                                                         size_t min_bases_per_residue,
-                                                        float min_overlap_fraction)
+                                                        float min_overlap_fraction,
+                                                        bool indexes_identical)
         : min_residues(min_residues)
         , min_overlap_len(min_overlap_len)
         , min_bases_per_residue(min_bases_per_residue)
         , min_overlap_fraction(min_overlap_fraction)
+        , indexes_identical(indexes_identical)
     {
     }
 
@@ -166,12 +169,13 @@ struct FilterOverlapOp
         const auto target_overlap_length = overlap.target_end_position_in_read_ - overlap.target_start_position_in_read_;
         const auto query_overlap_length  = overlap.query_end_position_in_read_ - overlap.query_start_position_in_read_;
         const auto overlap_length        = max(target_overlap_length, query_overlap_length);
+        const bool self_mapping          = (overlap.query_read_id_ == overlap.target_read_id_) && indexes_identical;
 
         return ((overlap.num_residues_ >= min_residues) &&
                 ((overlap_length / overlap.num_residues_) < min_bases_per_residue) &&
                 (query_overlap_length >= min_overlap_len) &&
                 (target_overlap_length >= min_overlap_len) &&
-                (overlap.query_read_id_ != overlap.target_read_id_) &&
+                (!self_mapping) &&
                 ((static_cast<float>(target_overlap_length) / static_cast<float>(overlap_length)) > min_overlap_fraction) &&
                 ((static_cast<float>(query_overlap_length) / static_cast<float>(overlap_length)) > min_overlap_fraction));
     }
@@ -237,6 +241,7 @@ OverlapperTriggered::OverlapperTriggered(DefaultDeviceAllocator allocator,
 
 void OverlapperTriggered::get_overlaps(std::vector<Overlap>& fused_overlaps,
                                        const device_buffer<Anchor>& d_anchors,
+                                       bool all_to_all,
                                        int64_t min_residues,
                                        int64_t min_overlap_len,
                                        int64_t min_bases_per_residue,
@@ -414,7 +419,7 @@ void OverlapperTriggered::get_overlaps(std::vector<Overlap>& fused_overlaps,
 
     device_buffer<Overlap> d_filtered_overlaps(n_fused_overlap, _allocator, _cuda_stream);
 
-    FilterOverlapOp filterOp(min_residues, min_overlap_len, min_bases_per_residue, min_overlap_fraction);
+    FilterOverlapOp filterOp(min_residues, min_overlap_len, min_bases_per_residue, min_overlap_fraction, all_to_all);
     auto filtered_overlaps_end =
         thrust::copy_if(thrust_exec_policy,
                         d_fused_overlaps.data(), d_fused_overlaps.data() + n_fused_overlap,
