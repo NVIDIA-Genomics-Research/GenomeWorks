@@ -297,7 +297,39 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
                                                                                             banded_alignment_band_width,
                                                                                             gap_score,
                                                                                             mismatch_score,
-                                                                                            match_score);
+                                                                                            match_score,
+                                                                                            int8_t{0});
+
+                __syncwarp();
+
+                if (alignment_length < -2)
+                {
+                    // rerun with extended band-width
+                    alignment_length = runNeedlemanWunschAdaptiveBanded<uint8_t, ScoreT, SizeT>(nodes,
+                                                                                                sorted_poa,
+                                                                                                node_id_to_pos,
+                                                                                                sequence_lengths[0],
+                                                                                                incoming_edge_count,
+                                                                                                incoming_edges,
+                                                                                                outgoing_edge_count,
+                                                                                                sequence,
+                                                                                                seq_len,
+                                                                                                scores,
+                                                                                                banded_score_matrix_size,
+                                                                                                alignment_graph,
+                                                                                                alignment_read,
+                                                                                                node_distance,
+                                                                                                band_starts,
+                                                                                                band_widths,
+                                                                                                head_indices,
+                                                                                                max_indices,
+                                                                                                banded_alignment_band_width,
+                                                                                                gap_score,
+                                                                                                mismatch_score,
+                                                                                                match_score,
+                                                                                                static_cast<int8_t>(alignment_length));
+                    __syncwarp();
+                }
             }
             else
             {
@@ -317,6 +349,7 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
                                                                                     gap_score,
                                                                                     mismatch_score,
                                                                                     match_score);
+                __syncwarp();
             }
         }
         else
@@ -338,9 +371,8 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
                                                                           gap_score,
                                                                           mismatch_score,
                                                                           match_score);
+            __syncwarp();
         }
-
-        __syncwarp();
 
         if (alignment_length == -1)
         {

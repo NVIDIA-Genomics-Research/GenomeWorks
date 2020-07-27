@@ -355,7 +355,8 @@ __device__
                                      SizeT static_band_width,
                                      ScoreT gap_score,
                                      ScoreT mismatch_score,
-                                     ScoreT match_score)
+                                     ScoreT match_score,
+                                     int8_t rerun)
 {
 
     GW_CONSTEXPR ScoreT score_type_min_limit = numeric_limits<ScoreT>::min();
@@ -394,16 +395,18 @@ __device__
     // band_shift defines distance of band_start from the scores matrix diagonal, ad-hoc rule 4
     SizeT band_shift = band_width / 2;
 
-    //    if (rerun == -3)
-    //    {
-    //        band_width *= 2;
-    //        shift *= 2.5;
-    //    }
-    //    if (rerun == -4)
-    //    {
-    //        band_width *= 2;
-    //        shift *= 1.5;
-    //    }
+    if (rerun == -3)
+    {
+        // ad-hoc rule 5
+        band_width *= 2;
+        band_shift *= 2.5;
+    }
+    if (rerun == -4)
+    {
+        // ad-hoc rule 6
+        band_width *= 2;
+        band_shift *= 1.5;
+    }
     //---------------------------------------------------------
 
     // set band parameters for node_id 0 (row 0)
@@ -590,6 +593,24 @@ __device__
             // Check if move is diagonal.
             if (i != 0 && j != 0)
             {
+
+                if (rerun == 0)
+                {
+                    // check if traceback path hits the band limits, if so stop and rerun with extended band-width
+                    if (j > 1 && j < read_length)
+                    {
+                        if (j <= band_starts[i] + 1) // ad-hoc rule 7-a
+                        {
+                            aligned_nodes = -3;
+                            break;
+                        }
+                        if (j >= (band_starts[i] + band_widths[i] - 1)) // ad-hoc rule 7-b
+                        {
+                            aligned_nodes = -4;
+                            break;
+                        }
+                    }
+                }
 
                 SizeT node_id     = graph[i - 1];
                 ScoreT match_cost = (nodes[node_id] == read[j - 1] ? match_score : mismatch_score);
