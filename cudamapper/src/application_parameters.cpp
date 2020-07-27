@@ -63,6 +63,7 @@ ApplicationParameters::ApplicationParameters(int argc, char* argv[])
 
     bool target_indices_in_host_memory_set   = false;
     bool target_indices_in_device_memory_set = false;
+    bool custom_filtering_parameter          = false;
     int32_t argument                         = 0;
     while ((argument = getopt_long(argc, argv, optstring.c_str(), options, nullptr)) != -1)
     {
@@ -198,13 +199,14 @@ ApplicationParameters::ApplicationParameters(int argc, char* argv[])
         std::cerr << "NOTE - Since query and target files are same, activating all_to_all mode. Query index size used for both files." << std::endl;
     }
 
-    create_input_parsers(query_parser, target_parser);
+    create_input_parsers(query_parser, target_parser, custom_filtering_parameter);
 
     max_cached_memory_bytes = get_max_cached_memory_bytes();
 }
 
 void ApplicationParameters::create_input_parsers(std::shared_ptr<io::FastaParser>& query_parser,
-                                                 std::shared_ptr<io::FastaParser>& target_parser)
+                                                 std::shared_ptr<io::FastaParser>& target_parser,
+                                                 const bool custom_filtering_parameter = true)
 {
     assert(query_parser == nullptr);
     assert(target_parser == nullptr);
@@ -220,7 +222,20 @@ void ApplicationParameters::create_input_parsers(std::shared_ptr<io::FastaParser
         target_parser = io::create_kseq_fasta_parser(target_filepath, kmer_size + windows_size - 1);
     }
 
-    if ((query_parser->get_num_seqences() < 5 || target_parser->get_num_seqences() < 5) && !custom_filtering_parameter)
+    number_of_basepairs_t total_sequence_length           = 0;
+    number_of_basepairs_t minimum_for_automatic_filtering = 500000; // Require at least 0.5Mbp of sequence for filtering by default
+    number_of_reads_t current_index                       = 0;
+    while (total_sequence_length < minimum_for_automatic_filtering && current_index < query_parser->get_num_seqences())
+    {
+        total_sequence_length += get_size<number_of_basepairs_t>(query_parser->get_sequence_by_id(current_index).seq);
+    }
+
+    while (total_sequence_length < minimum_for_automatic_filtering && current_index < target_parser->get_num_seqences())
+    {
+        total_sequence_length += get_size<number_of_basepairs_t>(target_parser->get_sequence_by_id(current_index).seq);
+    }
+
+    if (total_sequence_length < minimum_for_automatic_filtering && !custom_filtering_parameter)
     {
         filtering_parameter = 1.0;
     }

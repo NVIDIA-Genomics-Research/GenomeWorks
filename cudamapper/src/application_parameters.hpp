@@ -67,12 +67,13 @@ public:
     int64_t max_cached_memory_bytes;
 
 private:
-    bool custom_filtering_parameter = false; // Enables override of the adaptive default for -F (i.e., -F can be set even on small readsets)
     /// \brief creates query and target parsers
     /// \param query_parser nullptr on input, query parser on output
     /// \param target_parser nullptr on input, target parser on output
+    /// \param custom_filtering_parameter A boolean signifying whether or not to use the default value of -F for small sequence sets.
     void create_input_parsers(std::shared_ptr<io::FastaParser>& query_parser,
-                              std::shared_ptr<io::FastaParser>& target_parser);
+                              std::shared_ptr<io::FastaParser>& target_parser,
+                              bool custom_filtering_parameter);
 
     /// \brief gets max number of bytes to cache by device allocator
     ///
