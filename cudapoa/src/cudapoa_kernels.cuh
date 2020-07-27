@@ -250,17 +250,7 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
                 consensus[1] = static_cast<uint8_t>(StatusType::node_count_exceeded_maximum_graph_size);
                 warp_error   = true;
             }
-            if (adaptive_banded)
-            {
-                // compute R for abPOA
-                distanceToHeadNode(sorted_poa,
-                                   sequence_lengths[0],
-                                   incoming_edge_count,
-                                   sorted_poa_local_edge_count,
-                                   incoming_edges,
-                                   incoming_edge_weights,
-                                   node_distance);
-            }
+            /// ToDo clean all instances of node_distance
         }
 
         warp_error = __shfl_sync(FULL_MASK, warp_error, 0);

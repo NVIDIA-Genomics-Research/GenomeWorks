@@ -358,7 +358,6 @@ __device__
                                      ScoreT match_score,
                                      int8_t rerun)
 {
-
     GW_CONSTEXPR ScoreT score_type_min_limit = numeric_limits<ScoreT>::min();
     // in adaptive bands, there are cases where multiple rows happen to have a band with start index
     // smaller than band-start index of a row above. If min_value is too close to score_type_min_limit,
@@ -375,6 +374,7 @@ __device__
 
     SizeT max_matrix_sequence_dimension = static_band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING;
 
+    /// ToDo remove band_widths, replace global memory read/write with registers
     // Set band-width based on scores matrix aspect ratio
     //---------------------------------------------------------
     SizeT band_width = static_band_width;
