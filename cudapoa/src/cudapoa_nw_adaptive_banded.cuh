@@ -291,75 +291,27 @@ __device__
     return first_column_score;
 }
 
-template <typename SizeT, typename ScoreT>
-__device__ SizeT set_band_parameters(ScoreT* scores,
-                                     int64_t scores_size,
+template <typename SizeT>
+__device__ SizeT set_band_parameters(int64_t scores_size,
                                      SizeT* band_starts,
                                      SizeT* band_widths,
                                      int64_t* head_indices,
-                                     SizeT* max_indices,
-                                     uint16_t* incoming_edge_count,
-                                     SizeT* incoming_edges,
-                                     SizeT* node_distances,
-                                     SizeT* node_id_to_pos,
                                      int64_t& head_index,
                                      SizeT node_id,
                                      SizeT row,
                                      SizeT max_column,
-                                     SizeT graph_length,
-                                     float gradient,
-                                     ScoreT min_score_value)
+                                     SizeT band_width,
+                                     SizeT band_shift,
+                                     float gradient)
 {
-    SizeT err                  = 0;
-    SizeT pred_max_score_left  = max_column;
-    SizeT pred_max_score_right = 0;
 
-    get_predecessors_max_score_index(pred_max_score_left, pred_max_score_right, node_id, scores, node_id_to_pos, max_indices, band_widths,
-                                     band_starts, incoming_edge_count, incoming_edges, head_indices, max_column, min_score_value);
-
-    SizeT node_distance_i = node_distances[node_id];
-
-    SizeT b_start = min(node_distance_i, pred_max_score_left);
-    b_start       = b_start < 0 ? 0 : b_start;
-    SizeT b_end   = max(node_distance_i, pred_max_score_right);
-    b_end         = b_end > max_column ? max_column : b_end;
-
-    //bandwidth should be multiple of CUDAPOA_MIN_BAND_WIDTH
-    SizeT bw             = (b_end - b_start) > 0 ? b_end - b_start : 1;
-    SizeT band_width     = cudautils::align<SizeT, CUDAPOA_MIN_BAND_WIDTH>(bw);
-    SizeT extended_width = band_width - bw;
-
-    SizeT start_pos = b_start - extended_width / 2;
-    start_pos       = max(start_pos, 0);
-
-    SizeT end_pos = start_pos + band_width;
-
-    if (end_pos > max_column)
+    SizeT diagonal_index = SizeT(row * gradient);
+    SizeT start_pos      = max(0, diagonal_index - band_shift);
+    if (max_column < start_pos + band_width)
     {
-        start_pos  = max_column - band_width + CELLS_PER_THREAD;
-        band_width = cudautils::align<SizeT, CUDAPOA_MIN_BAND_WIDTH>(bw);
+        start_pos = max(0, max_column - band_width + CELLS_PER_THREAD);
     }
-
-    // there is no guarantee that end_pos does not fall on the left side of the main diagonal, therefore in some cases
-    // for the last node, adaptive band may not be covering right bottom corner of the score matrix, i.e.
-    // for the last node, end_pos < max_column. For global alignment, this should be avoided, therefore we add the following modification
-    SizeT diagonal_index = SizeT(row * gradient) + 1;
-    if (end_pos < diagonal_index)
-    {
-        bw             = diagonal_index - b_start;
-        band_width     = cudautils::align<SizeT, CUDAPOA_MIN_BAND_WIDTH>(bw);
-        extended_width = band_width - bw;
-        start_pos      = b_start - extended_width / 2;
-    }
-
-    start_pos = max(start_pos, 0);
     start_pos = start_pos - (start_pos % CELLS_PER_THREAD);
-
-    //if (threadIdx.x == 0)
-    //{
-    //    printf("-> %3d %3d (pl %3d, pr %3d) , (bl %3d, br %3d) , bw %3d,   dist %3d\n", row, node_id,
-    //    pred_max_score_left, pred_max_score_right, start_pos, end_pos, band_width, node_distance_i);
-    //}
 
     band_starts[row]  = start_pos;
     band_widths[row]  = band_width;
@@ -367,11 +319,13 @@ __device__ SizeT set_band_parameters(ScoreT* scores,
 
     // update head_index for the nex row
     head_index += static_cast<int64_t>(band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING);
-    if (head_index >= scores_size)
+    // If next head_index is greater than allocated scores' size, return error
+    SizeT err = 0;
+    if (head_index > scores_size)
     {
-        // If current end of band is greater than allocated scores' size, return error
         err = -2;
     }
+
     return err;
 }
 
@@ -413,12 +367,44 @@ __device__
     int16_t lane_idx = threadIdx.x % WARP_SIZE;
     int64_t score_index;
 
-    //Calculate gradient for the scores matrix
+    // Calculate aspect ratio for the scores matrix
     float gradient = float(read_length + 1) / float(graph_count + 1);
 
     SizeT max_column = read_length + 1;
 
     SizeT max_matrix_sequence_dimension = static_band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING;
+
+    // Set band-width based on scores matrix aspect ratio
+    //---------------------------------------------------------
+    SizeT band_width = static_band_width;
+
+    if (gradient > 1.1) // ad-hoc rule 1.a
+    {
+        //                                                                            ad-hoc rule 1.b
+        band_width = max(band_width, cudautils::align<SizeT, CUDAPOA_MIN_BAND_WIDTH>(max_column * 0.08 * gradient));
+    }
+    if (gradient < 0.8) // ad-hoc rule 1.a
+    {
+        //                                                                            ad-hoc rule 2.b
+        band_width = max(band_width, cudautils::align<SizeT, CUDAPOA_MIN_BAND_WIDTH>(max_column * 0.1 / gradient));
+    }
+
+    // limit band-width for very large reads, ad-hoc rule 3
+    band_width = min(band_width, 1536);
+    // band_shift defines distance of band_start from the scores matrix diagonal, ad-hoc rule 4
+    SizeT band_shift = band_width / 2;
+
+    //    if (rerun == -3)
+    //    {
+    //        band_width *= 2;
+    //        shift *= 2.5;
+    //    }
+    //    if (rerun == -4)
+    //    {
+    //        band_width *= 2;
+    //        shift *= 1.5;
+    //    }
+    //---------------------------------------------------------
 
     // set band parameters for node_id 0 (row 0)
     band_starts[0]  = 0;
@@ -457,8 +443,7 @@ __device__
         SizeT node_id    = graph[graph_pos];
         SizeT score_gIdx = graph_pos + 1;
 
-        SizeT err = set_band_parameters(scores, scores_size, band_starts, band_widths, head_indices, max_indices, incoming_edge_count, incoming_edges, node_distances,
-                                        node_id_to_pos, head_index_of_next_row, node_id, score_gIdx, max_column, graph_count, gradient, min_score_value);
+        SizeT err = set_band_parameters(scores_size, band_starts, band_widths, head_indices, head_index_of_next_row, node_id, score_gIdx, max_column, band_width, band_shift, gradient);
         if (err)
         {
             return err;
