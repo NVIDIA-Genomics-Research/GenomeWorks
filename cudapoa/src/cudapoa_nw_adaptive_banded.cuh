@@ -597,14 +597,15 @@ __device__
                 if (rerun == 0)
                 {
                     // check if traceback path hits the band limits, if so stop and rerun with extended band-width
-                    if (j > 1 && j < read_length)
+                    SizeT threshold = max(1, max_column / (4 * static_band_width)); // ad-hoc rule 7
+                    if (j > threshold && j < max_column - threshold)
                     {
-                        if (j <= band_starts[i] + 1) // ad-hoc rule 7-a
+                        if (j <= band_starts[i] + threshold) // ad-hoc rule 8-a
                         {
                             aligned_nodes = -3;
                             break;
                         }
-                        if (j >= (band_starts[i] + band_widths[i] - 1)) // ad-hoc rule 7-b
+                        if (j >= (band_starts[i] + band_widths[i] - threshold)) // ad-hoc rule 8-b
                         {
                             aligned_nodes = -4;
                             break;
