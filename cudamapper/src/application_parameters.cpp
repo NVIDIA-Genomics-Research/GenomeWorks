@@ -206,7 +206,7 @@ ApplicationParameters::ApplicationParameters(int argc, char* argv[])
 
 void ApplicationParameters::create_input_parsers(std::shared_ptr<io::FastaParser>& query_parser,
                                                  std::shared_ptr<io::FastaParser>& target_parser,
-                                                 const bool custom_filtering_parameter = true)
+                                                 const bool custom_filtering_parameter = false)
 {
     assert(query_parser == nullptr);
     assert(target_parser == nullptr);
@@ -222,17 +222,20 @@ void ApplicationParameters::create_input_parsers(std::shared_ptr<io::FastaParser
         target_parser = io::create_kseq_fasta_parser(target_filepath, kmer_size + windows_size - 1);
     }
 
-    number_of_basepairs_t total_sequence_length           = 0;
-    number_of_basepairs_t minimum_for_automatic_filtering = 500000; // Require at least 0.5Mbp of sequence for filtering by default
-    number_of_reads_t current_index                       = 0;
-    while (total_sequence_length < minimum_for_automatic_filtering && current_index < query_parser->get_num_seqences())
+    number_of_basepairs_t total_sequence_length                 = 0;
+    const number_of_basepairs_t minimum_for_automatic_filtering = 500000; // Require at least 0.5Mbp of sequence for filtering by default
+    number_of_reads_t query_index                               = 0;
+    number_of_reads_t target_index                              = 0;
+    while (total_sequence_length < minimum_for_automatic_filtering && query_index < query_parser->get_num_seqences())
     {
-        total_sequence_length += get_size<number_of_basepairs_t>(query_parser->get_sequence_by_id(current_index).seq);
+        total_sequence_length += get_size<number_of_basepairs_t>(query_parser->get_sequence_by_id(query_index).seq);
+        ++query_index;
     }
 
-    while (total_sequence_length < minimum_for_automatic_filtering && current_index < target_parser->get_num_seqences())
+    while (total_sequence_length < minimum_for_automatic_filtering && target_index < target_parser->get_num_seqences())
     {
-        total_sequence_length += get_size<number_of_basepairs_t>(target_parser->get_sequence_by_id(current_index).seq);
+        total_sequence_length += get_size<number_of_basepairs_t>(target_parser->get_sequence_by_id(target_index).seq);
+        ++target_index;
     }
 
     if (total_sequence_length < minimum_for_automatic_filtering && !custom_filtering_parameter)
