@@ -199,28 +199,17 @@ ApplicationParameters::ApplicationParameters(int argc, char* argv[])
         std::cerr << "NOTE - Since query and target files are same, activating all_to_all mode. Query index size used for both files." << std::endl;
     }
 
-    create_input_parsers(query_parser, target_parser, custom_filtering_parameter);
+    create_input_parsers(query_parser, target_parser);
+
+    set_filtering_parameter(query_parser, target_parser, custom_filtering_parameter);
 
     max_cached_memory_bytes = get_max_cached_memory_bytes();
 }
 
-void ApplicationParameters::create_input_parsers(std::shared_ptr<io::FastaParser>& query_parser,
-                                                 std::shared_ptr<io::FastaParser>& target_parser,
-                                                 const bool custom_filtering_parameter = false)
+void ApplicationParameters::set_filtering_parameter(std::shared_ptr<io::FastaParser>& query_parser,
+                                                    std::shared_ptr<io::FastaParser>& target_parser,
+                                                    const bool custom_filtering_parameter = false)
 {
-    assert(query_parser == nullptr);
-    assert(target_parser == nullptr);
-
-    query_parser = io::create_kseq_fasta_parser(query_filepath, kmer_size + windows_size - 1);
-
-    if (all_to_all)
-    {
-        target_parser = query_parser;
-    }
-    else
-    {
-        target_parser = io::create_kseq_fasta_parser(target_filepath, kmer_size + windows_size - 1);
-    }
 
     number_of_basepairs_t total_sequence_length                 = 0;
     const number_of_basepairs_t minimum_for_automatic_filtering = 500000; // Require at least 0.5Mbp of sequence for filtering by default
@@ -241,6 +230,24 @@ void ApplicationParameters::create_input_parsers(std::shared_ptr<io::FastaParser
     if (total_sequence_length < minimum_for_automatic_filtering && !custom_filtering_parameter)
     {
         filtering_parameter = 1.0;
+    }
+}
+
+void ApplicationParameters::create_input_parsers(std::shared_ptr<io::FastaParser>& query_parser,
+                                                 std::shared_ptr<io::FastaParser>& target_parser)
+{
+    assert(query_parser == nullptr);
+    assert(target_parser == nullptr);
+
+    query_parser = io::create_kseq_fasta_parser(query_filepath, kmer_size + windows_size - 1);
+
+    if (all_to_all)
+    {
+        target_parser = query_parser;
+    }
+    else
+    {
+        target_parser = io::create_kseq_fasta_parser(target_filepath, kmer_size + windows_size - 1);
     }
 
     std::cerr << "Query file: " << query_filepath << ", number of reads: " << query_parser->get_num_seqences() << std::endl;
