@@ -73,6 +73,14 @@ private:
     void create_input_parsers(std::shared_ptr<io::FastaParser>& query_parser,
                               std::shared_ptr<io::FastaParser>& target_parser);
 
+    /// \brief Determines if filtering should be run and sets the filtering level parameter accordingly.
+    /// \param query_parser A FAST(x) file parser for query sequences
+    /// \param target_parser A FAST(x) file parser for target sequences
+    /// \param custom_filtering_parameter A boolean signifying whether the user passed an argument for <-F>.
+    void set_filtering_parameter(std::shared_ptr<io::FastaParser>& query_parser,
+                                 std::shared_ptr<io::FastaParser>& target_parser,
+                                 bool custom_filtering_parameter);
+
     /// \brief gets max number of bytes to cache by device allocator
     ///
     /// If max_cached_memory is set that value is used, finds almost complete amount of available memory otherwise
