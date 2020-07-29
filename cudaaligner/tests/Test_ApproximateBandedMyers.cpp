@@ -42,12 +42,13 @@ struct TestCase
 {
     std::string query;
     std::string target;
+    int32_t edit_distance;
 };
 
 std::vector<TestCase> create_band_test_cases()
 {
     std::vector<TestCase> data;
-    data.push_back({"AGGGCGAATATCGCCTCCCGCATTAAGCTGTACCTTCCAGCCCCGCCGGTAATTCCAGCCGGTTGAAGCCACGTCTGCCACGGCACAATGTTTTCGCTTTGCCCGGTGACGGATTTAATCCACCACAG", "AGGGCGAATATCGCCTCCGCATTAAACTGTACTTCCCAGCCCCGCCAGTATTCCAGCGGGTTGAAGCCGCGTCTGCCACAGCGCAATGTTTTCTTTGCCCACGGTGACCGGTTTAGTCACTACAGTTGC"});
+    data.push_back({"AGGGCGAATATCGCCTCCCGCATTAAGCTGTACCTTCCAGCCCCGCCGGTAATTCCAGCCGGTTGAAGCCACGTCTGCCACGGCACAATGTTTTCGCTTTGCCCGGTGACGGATTTAATCCACCACAG", "AGGGCGAATATCGCCTCCGCATTAAACTGTACTTCCCAGCCCCGCCAGTATTCCAGCGGGTTGAAGCCGCGTCTGCCACAGCGCAATGTTTTCTTTGCCCACGGTGACCGGTTTAGTCACTACAGTTGC", 23});
     return data;
 }
 
@@ -57,7 +58,7 @@ class TestApproximateBandedMyers : public ::testing::TestWithParam<TestCase>
 
 } // namespace
 
-TEST_P(TestApproximateBandedMyers, EditDistanceGrowsWithBand)
+TEST_P(TestApproximateBandedMyers, EditDistanceMonotonicallyDecreasesWithBandWidth)
 {
     using namespace claraparabricks::genomeworks::cudaaligner;
     using namespace claraparabricks::genomeworks;
@@ -90,8 +91,19 @@ TEST_P(TestApproximateBandedMyers, EditDistanceGrowsWithBand)
         ASSERT_EQ(get_size(alignments), 1);
         if (alignments[0]->get_status() == StatusType::success)
         {
-            int32_t edit_distance = alignments[0]->get_edit_distance();
+            const int32_t edit_distance = alignments[0]->get_edit_distance();
             ASSERT_LE(edit_distance, last_edit_distance) << "for max bandwidth = " << max_bw << " vs. max bandwidth = " << last_bw;
+
+            if (edit_distance > t.edit_distance)
+            {
+                ASSERT_EQ(alignments[0]->is_optimal(), false) << "for max bandwidth = " << max_bw << " the alignment should be approximate.";
+            }
+
+            if (max_bw == bandwidths.back())
+            {
+                ASSERT_EQ(alignments[0]->is_optimal(), true) << "for max bandwidth = " << max_bw << " the alignment should be optimal.";
+            }
+
             last_edit_distance = edit_distance;
             last_bw            = max_bw;
         }

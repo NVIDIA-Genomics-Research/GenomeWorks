@@ -123,7 +123,7 @@ void run_alignment_batch(DefaultDeviceAllocator allocator,
     GW_CU_CHECK_ERR(cudaStreamDestroy(stream));
 }
 
-/// \brief performs gloval alignment between overlapped regions of reads
+/// \brief performs global alignment between overlapped regions of reads
 /// \param overlaps List of overlaps to align
 /// \param query_parser Parser for query reads
 /// \param target_parser Parser for target reads
@@ -429,7 +429,7 @@ void worker_thread_function(const int32_t device_id,
     IndexCacheDevice device_cache(application_parameters.all_to_all,
                                   host_cache);
 
-    // data structure used to exchnage data with postprocess_and_write_thread
+    // data structure used to exchange data with postprocess_and_write_thread
     ThreadsafeProducerConsumer<OverlapsAndCigars> overlaps_and_cigars_to_process;
 
     // There should be at least one postprocess_and_write_thread per worker_thread. If more threads are available one thread should be reserved for
