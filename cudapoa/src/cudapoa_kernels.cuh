@@ -24,7 +24,6 @@
 #include "cudapoa_add_alignment.cuh"
 #include "cudapoa_generate_consensus.cuh"
 #include "cudapoa_generate_msa.cuh"
-#include "cudapoa_adaptive_banded.cuh"
 
 #include <claraparabricks/genomeworks/utils/cudautils.hpp>
 #include <claraparabricks/genomeworks/cudapoa/batch.hpp>
@@ -90,7 +89,6 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
                                   uint16_t* outgoing_edge_w_d,
                                   SizeT* sorted_poa_d,
                                   SizeT* node_id_to_pos_d,
-                                  SizeT* node_distance_d,
                                   SizeT* node_alignments_d,
                                   uint16_t* node_alignment_count_d,
                                   uint16_t* sorted_poa_local_edge_count_d,
@@ -108,8 +106,6 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
                                   uint32_t max_nodes_per_window,
                                   uint32_t max_graph_dimension,
                                   uint32_t max_limit_consensus_size,
-                                  SizeT* band_starts_d,
-                                  SizeT* band_widths_d,
                                   int64_t* band_head_indices_d,
                                   SizeT* band_max_indices_d,
                                   int32_t TPB                          = 64,
@@ -139,7 +135,6 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
     uint16_t* outgoing_edge_weights       = &outgoing_edge_w_d[window_idx * max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES];
     SizeT* sorted_poa                     = &sorted_poa_d[window_idx * max_nodes_per_window];
     SizeT* node_id_to_pos                 = &node_id_to_pos_d[window_idx * max_nodes_per_window];
-    SizeT* node_distance                  = &node_distance_d[window_idx * max_nodes_per_window];
     SizeT* node_alignments                = &node_alignments_d[window_idx * max_nodes_per_window * CUDAPOA_MAX_NODE_ALIGNMENTS];
     uint16_t* node_alignment_count        = &node_alignment_count_d[window_idx * max_nodes_per_window];
     uint16_t* sorted_poa_local_edge_count = &sorted_poa_local_edge_count_d[window_idx * max_nodes_per_window];
@@ -162,8 +157,6 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
 
     SizeT* alignment_graph         = &alignment_graph_d[max_graph_dimension * window_idx];
     SizeT* alignment_read          = &alignment_read_d[max_graph_dimension * window_idx];
-    SizeT* band_starts             = &band_starts_d[max_nodes_per_window * window_idx];
-    SizeT* band_widths             = &band_widths_d[max_nodes_per_window * window_idx];
     int64_t* head_indices          = &band_head_indices_d[max_nodes_per_window * window_idx];
     SizeT* max_indices             = &band_max_indices_d[max_nodes_per_window * window_idx];
     uint16_t* node_coverage_counts = &node_coverage_counts_d_[max_nodes_per_window * window_idx];
@@ -279,9 +272,6 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
                                                                                             banded_score_matrix_size,
                                                                                             alignment_graph,
                                                                                             alignment_read,
-                                                                                            node_distance,
-                                                                                            band_starts,
-                                                                                            band_widths,
                                                                                             head_indices,
                                                                                             max_indices,
                                                                                             banded_alignment_band_width,
@@ -308,9 +298,6 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
                                                                                                 banded_score_matrix_size,
                                                                                                 alignment_graph,
                                                                                                 alignment_read,
-                                                                                                node_distance,
-                                                                                                band_starts,
-                                                                                                band_widths,
                                                                                                 head_indices,
                                                                                                 max_indices,
                                                                                                 banded_alignment_band_width,
@@ -486,8 +473,6 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
     ScoreT* scores         = alignment_details_d->scores;
     SizeT* alignment_graph = alignment_details_d->alignment_graph;
     SizeT* alignment_read  = alignment_details_d->alignment_read;
-    SizeT* band_starts     = alignment_details_d->band_starts;
-    SizeT* band_widths     = alignment_details_d->band_widths;
     int64_t* head_indices  = alignment_details_d->band_head_indices;
     SizeT* max_indices     = alignment_details_d->band_max_indices;
 
@@ -503,7 +488,6 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
     uint16_t* outgoing_edge_w               = graph_details_d->outgoing_edge_weights;
     SizeT* sorted_poa                       = graph_details_d->sorted_poa;
     SizeT* node_id_to_pos                   = graph_details_d->sorted_poa_node_map;
-    SizeT* node_distance                    = graph_details_d->node_distance_to_head;
     uint16_t* sorted_poa_local_edge_count   = graph_details_d->sorted_poa_local_edge_count;
     int32_t* consensus_scores               = graph_details_d->consensus_scores;
     SizeT* consensus_predecessors           = graph_details_d->consensus_predecessors;
@@ -545,7 +529,6 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
                                       outgoing_edge_w,
                                       sorted_poa,
                                       node_id_to_pos,
-                                      node_distance,
                                       node_alignments,
                                       node_alignment_count,
                                       sorted_poa_local_edge_count,
@@ -563,8 +546,6 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
                                       max_nodes_per_window,
                                       max_matrix_graph_dimension,
                                       batch_size.max_consensus_size,
-                                      band_starts,
-                                      band_widths,
                                       head_indices,
                                       max_indices,
                                       TPB,

@@ -59,7 +59,7 @@ __device__ ScoreT* get_score_ptr_adaptive(ScoreT* scores, SizeT row, SizeT colum
  * @param[in] row                 Row # of the element
  * @param[in] column              Column # of the element
  * @param[in] value               Value to set
- * @param[in] band_start          band_start of the row, make sure band_start = get_band_start_adaptive(row,...)
+ * @param[in] band_start          band_start of the row, make sure band_start = get_band_start_for_row_adaptive(row,...)
  * @param[in] head_indices        Array of indexes in score that map to band_start per row
 */
 template <typename ScoreT, typename SizeT>
@@ -81,7 +81,7 @@ __device__ void set_score_adaptive(ScoreT* scores, SizeT row, SizeT column, Scor
 }
 
 template <typename SizeT>
-__device__ SizeT get_band_start_adaptive(SizeT row, float gradient, SizeT band_width, SizeT band_shift, SizeT max_column)
+__device__ SizeT get_band_start_for_row_adaptive(SizeT row, float gradient, SizeT band_width, SizeT band_shift, SizeT max_column)
 {
 
     SizeT diagonal_index = SizeT(row * gradient);
@@ -114,7 +114,7 @@ __device__ ScoreT get_score_adaptive(ScoreT* scores, SizeT row, SizeT column,
                                      SizeT band_width, SizeT band_shift, float gradient,
                                      int64_t* head_indices, SizeT max_column, const ScoreT min_score_value)
 {
-    SizeT band_start = get_band_start_adaptive(row, gradient, band_width, band_shift, max_column);
+    SizeT band_start = get_band_start_for_row_adaptive(row, gradient, band_width, band_shift, max_column);
     SizeT band_end   = band_start + band_width;
     band_end         = min(band_end, max_column);
 
@@ -151,7 +151,7 @@ __device__ ScoreT4<ScoreT> get_scores_adaptive(ScoreT* scores,
     // of the data using bit arithmatic. Also reduces register count.
 
     // subtract by CELLS_PER_THREAD to ensure score4_next is not pointing out of the corresponding band bounds
-    SizeT band_start = get_band_start_adaptive(row, gradient, band_width, band_shift, max_column);
+    SizeT band_start = get_band_start_for_row_adaptive(row, gradient, band_width, band_shift, max_column);
     SizeT band_end   = static_cast<SizeT>(band_start + band_width - CELLS_PER_THREAD);
     band_end         = min(band_end, max_column);
 
@@ -242,72 +242,6 @@ __device__
     return first_column_score;
 }
 
-// The following kernel finds index and value of the maximum score in 32 consequtive cells in a given row
-// if two or more scores are equal to the maximum value, the left most index will be output
-template <typename ScoreT, typename SizeT>
-__device__ void warp_reduce_max(ScoreT& val, SizeT& idx)
-{
-    for (int16_t offset = WARP_SIZE / 2; offset > 0; offset /= 2)
-    {
-        ScoreT tmp_val = __shfl_down_sync(FULL_MASK, val, offset);
-        SizeT tmp_idx  = __shfl_down_sync(FULL_MASK, idx, offset);
-        if (tmp_val > val)
-        {
-            val = tmp_val;
-            idx = tmp_idx;
-        }
-    }
-}
-
-template <typename ScoreT, typename SizeT>
-__device__ void get_predecessors_max_score_index(SizeT& pred_max_score_left,
-                                                 SizeT& pred_max_score_right,
-                                                 SizeT node_id,
-                                                 ScoreT* scores,
-                                                 SizeT* node_id_to_pos,
-                                                 SizeT* max_indices,
-                                                 SizeT* band_widths,
-                                                 SizeT* band_starts,
-                                                 uint16_t* incoming_edge_count,
-                                                 SizeT* incoming_edges,
-                                                 int64_t* head_indices,
-                                                 SizeT max_column,
-                                                 ScoreT min_score_value)
-{
-    for (uint16_t p = 0; p < incoming_edge_count[node_id]; p++)
-    {
-        SizeT pred_idx       = node_id_to_pos[incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES + p]];
-        SizeT max_score_idx  = max_indices[pred_idx];
-        ScoreT max_score_val = min_score_value;
-        int64_t head_index   = head_indices[pred_idx];
-
-        // max score index for this (predecessor) node_id is not computed yet
-        if (max_score_idx == -1)
-        {
-            SizeT lane_idx   = threadIdx.x % WARP_SIZE;
-            SizeT band_width = band_widths[pred_idx];
-            SizeT band_start = band_starts[pred_idx];
-
-            for (SizeT index = lane_idx; index < band_width; index += WARP_SIZE)
-            {
-                ScoreT score_val = index > max_column ? min_score_value : scores[static_cast<int64_t>(index) + head_index];
-                SizeT score_idx  = index + band_start;
-                warp_reduce_max(score_val, score_idx);
-                score_val = __shfl_sync(FULL_MASK, score_val, 0);
-                if (score_val > max_score_val)
-                {
-                    max_score_val = score_val;
-                    max_score_idx = __shfl_sync(FULL_MASK, score_idx, 0);
-                }
-            }
-            max_indices[pred_idx] = max_score_idx;
-        }
-
-        pred_max_score_left  = max_score_idx < pred_max_score_left ? max_score_idx : pred_max_score_left;
-        pred_max_score_right = max_score_idx > pred_max_score_right ? max_score_idx : pred_max_score_right;
-    }
-}
-
 template <typename SizeT>
 __device__ SizeT set_band_parameters(int64_t scores_size,
                                      SizeT& band_start,
@@ -319,7 +253,7 @@ __device__ SizeT set_band_parameters(int64_t scores_size,
                                      SizeT band_shift,
                                      float gradient)
 {
-    band_start        = get_band_start_adaptive(row, gradient, band_width, band_shift, max_column);
+    band_start        = get_band_start_for_row_adaptive(row, gradient, band_width, band_shift, max_column);
     head_indices[row] = head_index;
 
     // update head_index for the nex row
@@ -352,9 +286,6 @@ __device__
                                      int64_t scores_size,
                                      SizeT* alignment_graph,
                                      SizeT* alignment_read,
-                                     SizeT* node_distances,
-                                     SizeT* band_starts,
-                                     SizeT* band_widths,
                                      int64_t* head_indices,
                                      SizeT* max_indices,
                                      SizeT static_band_width,
@@ -603,7 +534,7 @@ __device__
                     SizeT threshold = max(1, max_column / (4 * static_band_width)); // ad-hoc rule 7
                     if (j > threshold && j < max_column - threshold)
                     {
-                        band_start = get_band_start_adaptive(i, gradient, band_width, band_shift, max_column);
+                        band_start = get_band_start_for_row_adaptive(i, gradient, band_width, band_shift, max_column);
                         if (j <= band_start + threshold) // ad-hoc rule 8-a
                         {
                             aligned_nodes = -3;
