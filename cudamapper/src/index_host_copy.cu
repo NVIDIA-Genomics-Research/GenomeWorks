@@ -118,12 +118,14 @@ void IndexHostCopy::finish_copying() const
 std::unique_ptr<Index> IndexHostCopy::copy_index_to_device(DefaultDeviceAllocator allocator,
                                                            const cudaStream_t cuda_stream) const
 {
-    // pin_memory_object registers host array as pinned memory and unregisters it on its destruction (i.e. at the end of this function)
-    IndexHostMemoryPinner pin_memory_object(const_cast<IndexHostCopy&>(*this));
+    // register pinned memory, memory gets unpinned in finish_copying()
+    memory_pinner_.register_pinned_memory();
 
     return std::make_unique<IndexGPU<Minimizer>>(allocator,
-                                                 *this,
+                                                 this,
                                                  cuda_stream);
+
+    // no stream synchronization, synchronization done in finish_copying()
 }
 
 const IndexHostCopyBase::ArrayView<representation_t> IndexHostCopy::representations() const
@@ -183,14 +185,14 @@ std::uint64_t IndexHostCopy::window_size() const
 
 IndexHostCopy::IndexHostMemoryPinner::IndexHostMemoryPinner(IndexHostCopy& index_host_copy)
     : index_host_copy_(index_host_copy)
-    , memory_pinned_(false)
+    , times_memory_pinned_(0)
 {
 }
 
 IndexHostCopy::IndexHostMemoryPinner::~IndexHostMemoryPinner()
 {
     // if memory was not unregistered (due to either a bug or an expection) unregister it
-    if (memory_pinned_)
+    if (times_memory_pinned_ != 0)
     {
         assert(!"memory should always be unregistered by unregister_pinned_memory()");
         GW_NVTX_RANGE(profiler, "unregister_pinned_memory");
@@ -200,19 +202,27 @@ IndexHostCopy::IndexHostMemoryPinner::~IndexHostMemoryPinner()
 
 void IndexHostCopy::IndexHostMemoryPinner::register_pinned_memory()
 {
-    GW_NVTX_RANGE(profiler, "register_pinned_memory");
-    GW_CU_CHECK_ERR(cudaHostRegister(index_host_copy_.underlying_array_.data(),
-                                     index_host_copy_.underlying_array_.size() * sizeof(unsigned char),
-                                     cudaHostRegisterDefault));
-    memory_pinned_ = true;
+    // only pin memory if it hasn't been pinned yet
+    if (0 == times_memory_pinned_)
+    {
+        GW_NVTX_RANGE(profiler, "register_pinned_memory");
+        GW_CU_CHECK_ERR(cudaHostRegister(index_host_copy_.underlying_array_.data(),
+                                         index_host_copy_.underlying_array_.size() * sizeof(unsigned char),
+                                         cudaHostRegisterDefault));
+    }
+    ++times_memory_pinned_;
 }
 
 void IndexHostCopy::IndexHostMemoryPinner::unregister_pinned_memory()
 {
-    assert(memory_pinned_);
-    GW_NVTX_RANGE(profiler, "unregister_pinned_memory");
-    GW_CU_CHECK_ERR(cudaHostUnregister(index_host_copy_.underlying_array_.data()));
-    memory_pinned_ = false;
+    assert(times_memory_pinned_ > 0);
+    // only unpin memory if this is the last unpinning
+    if (1 == times_memory_pinned_)
+    {
+        GW_NVTX_RANGE(profiler, "unregister_pinned_memory");
+        GW_CU_CHECK_ERR(cudaHostUnregister(index_host_copy_.underlying_array_.data()));
+    }
+    --times_memory_pinned_;
 }
 
 } // namespace cudamapper

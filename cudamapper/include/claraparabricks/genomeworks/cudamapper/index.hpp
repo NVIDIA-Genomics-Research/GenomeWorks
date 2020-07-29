@@ -83,6 +83,13 @@ public:
         return sizeof(representation_t) * CHAR_BIT / 2;
     }
 
+    /// \brief checks if index is ready to be used, index might not be ready if its creation is asynchronous
+    /// \return whether the index is ready to be used
+    virtual bool is_ready() const = 0;
+
+    /// \brief if is_ready() is true returns immediately, blocks until it becomes ready otherwise
+    virtual void wait_to_be_ready() const = 0;
+
     /// \brief generates a mapping of (k,w)-kmer-representation to all of its occurrences for one or more sequences
     /// \param allocator The device memory allocator to use for temporary buffer allocations
     /// \param parser parser for the whole input file (part that goes into this index is determined by first_read_id and past_the_last_read_id)

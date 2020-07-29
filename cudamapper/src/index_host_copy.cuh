@@ -125,8 +125,10 @@ private:
 
     private:
         IndexHostCopy& index_host_copy_;
-        // is memory currently pinned
-        bool memory_pinned_;
+        // Theoretically speaking it could happen that the same IndexHostCopy gets copied multiple time in a row. In that case
+        // memory should be unpinned only once the last copy has finished (i.e. the caller waits for it to be finished).
+        // This counter is increased every time new copy have started and decreased every time the user waits for the copy to finish.
+        int32_t times_memory_pinned_;
     };
 
     // use a single underlying vector in order to reduce memory fragmentation when using pool allocators
