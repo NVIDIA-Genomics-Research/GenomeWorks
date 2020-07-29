@@ -81,7 +81,7 @@ cdef class CudaPoaBatch:
             mismatch_score=-6,
             match_score=8,
             cuda_banded_alignment=False,
-            cuda_adaptive_alignment=False,
+            cuda_corrective_alignment=False,
             alignment_band_width=256,
             max_consensus_size=None,
             max_nodes_per_window=None,
@@ -102,7 +102,7 @@ cdef class CudaPoaBatch:
             mismatch_score : Penalty for mismatches
             match_score : Reward for match
             cuda_banded_alignment : Run POA using banded alignment
-            cuda_adaptive_alignment : Run POA using adaptive alignment
+            cuda_corrective_alignment : Run POA using corrective banded alignment
             alignment_band_width : Band-width size if using banded alignment
             max_consensus_size : Maximum size of final consensus
             max_nodes_per_window : Maximum number of nodes in a graph, 1 graph per window
@@ -151,7 +151,7 @@ cdef class CudaPoaBatch:
             mismatch_score,
             match_score,
             cuda_banded_alignment,
-            cuda_adaptive_alignment)
+            cuda_corrective_alignment)
 
     def __init__(
             self,
@@ -165,7 +165,7 @@ cdef class CudaPoaBatch:
             mismatch_score=-6,
             match_score=8,
             cuda_banded_alignment=False,
-            cuda_adaptive_alignment=False,
+            cuda_corrective_alignment=False,
             alignment_band_width=256,
             max_consensus_size=None,
             max_nodes_per_window=None,

@@ -49,10 +49,9 @@ ApplicationParameters::ApplicationParameters(int argc, char* argv[])
         {"help", no_argument, 0, 'h'},
     };
 
-    std::string optstring = "i:afb:Ad:M:R:m:n:g:vh";
+    std::string optstring = "i:afb:cd:M:R:m:n:g:vh";
 
-    int32_t argument       = 0;
-    bool default_bandwidth = true;
+    int32_t argument = 0;
     while ((argument = getopt_long(argc, argv, optstring.c_str(), options, nullptr)) != -1)
     {
         switch (argument)
@@ -67,11 +66,10 @@ ApplicationParameters::ApplicationParameters(int argc, char* argv[])
             banded = false;
             break;
         case 'b':
-            band_width        = std::stoi(optarg);
-            default_bandwidth = false;
+            band_width = std::stoi(optarg);
             break;
-        case 'A':
-            adaptive = true;
+        case 'c':
+            corrective = true;
             break;
         case 'd':
             graph_output_path = std::string(optarg);
@@ -110,15 +108,9 @@ ApplicationParameters::ApplicationParameters(int argc, char* argv[])
         throw std::runtime_error("band-width must be positive");
     }
 
-    if (!banded && adaptive)
+    if (!banded && corrective)
     {
-        throw std::runtime_error("adaptive alignment cannot run with full alignment");
-    }
-
-    if (adaptive && default_bandwidth)
-    {
-        // this is used to determine total score matrix size in adaptive-banded alignment
-        band_width = 2048;
+        throw std::runtime_error("corrective banded alignment cannot run with full alignment");
     }
 
     if (match_score < 0)
@@ -197,8 +189,8 @@ void ApplicationParameters::help(int32_t exit_code)
         -b, --band-width <int>
             band-width for banded alignment (must be multiple of 128) [256])"
               << R"(
-        -A, --adaptive-alignment
-            uses adaptive alignment if this flag is passed [banded alignment])"
+        -c, --corrective-alignment
+            uses corrective banded alignment if this flag is passed [banded alignment])"
               << R"(
         -d, --dot <file>
             output path for printing graph in DOT format [disabled])"

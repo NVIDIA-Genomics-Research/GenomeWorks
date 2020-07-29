@@ -389,8 +389,8 @@ public:
         return host_size_per_poa;
     }
 
-    static int64_t estimate_max_poas(const BatchSize& batch_size, bool banded_alignment, bool adaptive_banded, bool msa_flag, float memory_usage_quota,
-                                     int32_t mismatch_score, int32_t gap_score, int32_t match_score)
+    static int64_t estimate_max_poas(const BatchSize& batch_size, bool banded_alignment, bool adaptive_banded, bool msa_flag,
+                                     float memory_usage_quota, int32_t mismatch_score, int32_t gap_score, int32_t match_score)
     {
         size_t total = 0, free = 0;
         cudaMemGetInfo(&free, &total);

@@ -65,7 +65,7 @@ class CudapoaBatch : public Batch
 public:
     CudapoaBatch(int32_t device_id, cudaStream_t stream, size_t max_mem, int8_t output_mask,
                  const BatchSize& batch_size, ScoreT gap_score = -8, ScoreT mismatch_score = -6, ScoreT match_score = 8,
-                 bool banded_alignment = false, bool adaptive_banded = false)
+                 bool banded_alignment = false, bool corrective_banded = false, bool adaptive_banded = false)
         : max_sequences_per_poa_(throw_on_negative(batch_size.max_sequences_per_poa, "Maximum sequences per POA has to be non-negative"))
         , device_id_(throw_on_negative(device_id, "Device ID has to be non-negative"))
         , stream_(stream)
@@ -75,12 +75,13 @@ public:
         , mismatch_score_(mismatch_score)
         , match_score_(match_score)
         , banded_alignment_(banded_alignment)
+        , corrective_banded_(corrective_banded)
         , adaptive_banded_(adaptive_banded)
         , batch_block_(new BatchBlock<ScoreT, SizeT>(device_id,
                                                      max_mem,
                                                      output_mask,
                                                      batch_size_,
-                                                     banded_alignment, adaptive_banded))
+                                                     banded_alignment))
         , max_poas_(batch_block_->get_max_poas())
     {
         // Set CUDA device
@@ -190,7 +191,7 @@ public:
                                    mismatch_score_,
                                    match_score_,
                                    banded_alignment_,
-                                   adaptive_banded_,
+                                   corrective_banded_,
                                    max_sequences_per_poa_,
                                    output_mask_,
                                    batch_size_);
@@ -630,6 +631,7 @@ protected:
 
     // Use banded POA alignment
     bool banded_alignment_;
+    bool corrective_banded_;
     bool adaptive_banded_;
 
     // Pointer of a seperate class BatchBlock that implements details on calculating and allocating the memory for each batch

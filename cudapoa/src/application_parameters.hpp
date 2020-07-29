@@ -41,7 +41,7 @@ public:
     bool all_fasta            = true;
     bool msa                  = false; // consensus by default
     bool banded               = true;
-    bool adaptive             = false;
+    bool corrective           = false;
     int32_t band_width        = 256; // Band width for banded mode
     int32_t max_groups        = -1;  // -1 => infinite
     int32_t mismatch_score    = -6;

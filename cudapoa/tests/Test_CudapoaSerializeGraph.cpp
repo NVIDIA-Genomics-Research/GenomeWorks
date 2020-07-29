@@ -45,7 +45,7 @@ public:
                     int16_t mismatch_score = -6,
                     int16_t match_score    = 8,
                     bool banded_alignment  = false,
-                    bool adaptive_banded   = false)
+                    bool corrective_banded = false)
     {
         size_t total = 0, free = 0;
         cudaSetDevice(device_id);
@@ -53,7 +53,8 @@ public:
         size_t mem_per_batch = 0.9 * free;
         BatchSize batch_size(1024, max_sequences_per_poa);
 
-        cudapoa_batch = genomeworks::cudapoa::create_batch(device_id, stream, mem_per_batch, output_mask, batch_size, gap_score, mismatch_score, match_score, banded_alignment, adaptive_banded);
+        cudapoa_batch = genomeworks::cudapoa::create_batch(device_id, stream, mem_per_batch, output_mask, batch_size, gap_score, mismatch_score, match_score,
+                                                           banded_alignment, corrective_banded);
     }
 
 public:
