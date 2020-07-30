@@ -33,7 +33,7 @@ std::unique_ptr<Batch> initialize_batch(int32_t mismatch_score,
                                         int32_t match_score,
                                         bool msa,
                                         bool banded_alignment,
-                                        bool corrective_banded,
+                                        bool adaptive_banded,
                                         const double gpu_mem_allocation,
                                         const BatchSize& batch_size)
 {
@@ -63,7 +63,7 @@ std::unique_ptr<Batch> initialize_batch(int32_t mismatch_score,
                                                 mismatch_score,
                                                 match_score,
                                                 banded_alignment,
-                                                corrective_banded);
+                                                adaptive_banded);
 
     return std::move(batch);
 }
@@ -207,7 +207,7 @@ int main(int argc, char* argv[])
                                                         parameters.match_score,
                                                         parameters.msa,
                                                         parameters.banded,
-                                                        parameters.corrective,
+                                                        parameters.adaptive,
                                                         parameters.gpu_mem_allocation,
                                                         batch_size);
 

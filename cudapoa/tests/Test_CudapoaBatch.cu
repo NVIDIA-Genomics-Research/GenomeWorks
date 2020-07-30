@@ -45,7 +45,7 @@ public:
                     int16_t mismatch_score = -6,
                     int16_t match_score    = 8,
                     bool banded_alignment  = false,
-                    bool corrective_banded = false)
+                    bool adaptive_banded   = false)
     {
         cudapoa_batch = genomeworks::cudapoa::create_batch(device_id,
                                                            stream,
@@ -56,7 +56,7 @@ public:
                                                            mismatch_score,
                                                            match_score,
                                                            banded_alignment,
-                                                           corrective_banded);
+                                                           adaptive_banded);
     }
 
     size_t get_free_device_mem(int32_t device_id)

@@ -29,7 +29,7 @@
 using namespace claraparabricks::genomeworks;
 using namespace claraparabricks::genomeworks::cudapoa;
 
-std::unique_ptr<Batch> initialize_batch(bool msa, bool banded_alignment, bool corrective_banded, const BatchSize& batch_size)
+std::unique_ptr<Batch> initialize_batch(bool msa, bool banded_alignment, bool adaptive_banded, const BatchSize& batch_size)
 {
     // Get device information.
     int32_t device_count = 0;
@@ -57,7 +57,7 @@ std::unique_ptr<Batch> initialize_batch(bool msa, bool banded_alignment, bool co
                                                 mismatch_score,
                                                 match_score,
                                                 banded_alignment,
-                                                corrective_banded);
+                                                adaptive_banded);
 
     return std::move(batch);
 }
@@ -137,7 +137,7 @@ int main(int argc, char** argv)
     bool help        = false;
     bool print       = false;
     bool print_graph = false;
-    bool corrective  = false;
+    bool adaptive    = false;
 
     while ((c = getopt(argc, argv, "mlfpghc")) != -1)
     {
@@ -162,7 +162,7 @@ int main(int argc, char** argv)
             help = true;
             break;
         case 'a':
-            corrective = true;
+            adaptive = true;
             break;
         }
     }
@@ -175,7 +175,7 @@ int main(int argc, char** argv)
         std::cout << "-m : Generate MSA (if not provided, generates consensus by default)" << std::endl;
         std::cout << "-l : Perform long-read sample (if not provided, will run short-read sample by default)" << std::endl;
         std::cout << "-f : Perform full alignment (if not provided, banded alignment is used by default)" << std::endl;
-        std::cout << "-a : Perform corrective banded alignment (if not provided, static banded alignment is used by default)" << std::endl;
+        std::cout << "-a : Perform adaptive banded alignment (if not provided, static banded alignment is used by default)" << std::endl;
         std::cout << "-p : Print the MSA or consensus output to stdout" << std::endl;
         std::cout << "-g : Print POA graph in dot format, this option is only for long-read sample" << std::endl;
         std::cout << "-h : Print help message" << std::endl;
@@ -228,7 +228,7 @@ int main(int argc, char** argv)
         auto& batch_group_ids = list_of_groups_per_batch[b];
 
         // Initialize batch.
-        std::unique_ptr<Batch> batch = initialize_batch(msa, banded, corrective, batch_size);
+        std::unique_ptr<Batch> batch = initialize_batch(msa, banded, adaptive, batch_size);
 
         // Loop over all the POA groups for the current batch, add them to the batch and process them.
         int32_t group_count = 0;
