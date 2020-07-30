@@ -16,11 +16,9 @@
 
 #pragma once
 
-#include <mutex>
 #include <vector>
 
 #include <claraparabricks/genomeworks/cudamapper/types.hpp>
-#include <claraparabricks/genomeworks/utils/allocator.hpp>
 
 namespace claraparabricks
 {
@@ -28,27 +26,8 @@ namespace claraparabricks
 namespace genomeworks
 {
 
-namespace io
-{
-class FastaParser;
-}; // namespace io
-
 namespace cudamapper
 {
-
-/// \brief prints overlaps to stdout in <a href="https://github.com/lh3/miniasm/blob/master/PAF.md">PAF format</a>
-/// \param overlaps vector of overlap objects
-/// \param cigars CIGAR strings
-/// \param query_parser needed for read names and lenghts
-/// \param target_parser needed for read names and lenghts
-/// \param kmer_size minimizer kmer size
-/// \param write_output_mutex mutex that enables exclusive access to output stream
-void print_paf(const std::vector<Overlap>& overlaps,
-               const std::vector<std::string>& cigars,
-               const io::FastaParser& query_parser,
-               const io::FastaParser& target_parser,
-               int32_t kmer_size,
-               std::mutex& write_output_mutex);
 
 /// \brief Given a string s, produce its kmers (length <kmer-length>) and return them as a vector of strings.
 /// \param s A string sequence to kmerize.
