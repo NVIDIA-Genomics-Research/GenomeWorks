@@ -52,6 +52,11 @@ cdef extern from "claraparabricks/genomeworks/cudapoa/cudapoa.hpp" namespace "cl
         output_type_unavailable
         generic_error
 
+    cdef enum BandMode:
+        full_band = 0
+        static_band
+        adaptive_band
+
     cdef enum OutputType:
         consensus = 0x1
         msa = 0x1 << 1

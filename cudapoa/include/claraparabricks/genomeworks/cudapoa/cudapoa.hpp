@@ -44,6 +44,13 @@ enum StatusType
     generic_error
 };
 
+enum BandMode
+{
+    full_band = 0,
+    static_band,
+    adaptive_band
+};
+
 /// Initialize CUDA POA context.
 StatusType Init();
 
