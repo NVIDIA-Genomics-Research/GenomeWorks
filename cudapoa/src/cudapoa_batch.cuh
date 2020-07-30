@@ -64,7 +64,7 @@ class CudapoaBatch : public Batch
 {
 public:
     CudapoaBatch(int32_t device_id, cudaStream_t stream, size_t max_mem, int8_t output_mask,
-                 const BatchSize& batch_size, ScoreT gap_score = -8, ScoreT mismatch_score = -6, ScoreT match_score = 8,
+                 const BatchConfig& batch_size, ScoreT gap_score = -8, ScoreT mismatch_score = -6, ScoreT match_score = 8,
                  bool banded_alignment = false, bool adaptive_banded = false)
         : max_sequences_per_poa_(throw_on_negative(batch_size.max_sequences_per_poa, "Maximum sequences per POA has to be non-negative"))
         , device_id_(throw_on_negative(device_id, "Device ID has to be non-negative"))
@@ -316,7 +316,7 @@ public:
     void get_graphs(std::vector<DirectedGraph>& graphs,
                     std::vector<StatusType>& output_status)
     {
-        int32_t max_nodes_per_window_ = banded_alignment_ ? batch_size_.max_nodes_per_window_banded : batch_size_.max_nodes_per_window;
+        int32_t max_nodes_per_window_ = banded_alignment_ ? batch_size_.max_nodes_per_graph_banded : batch_size_.max_nodes_per_graph;
         GW_CU_CHECK_ERR(cudaMemcpyAsync(graph_details_h_->nodes,
                                         graph_details_d_->nodes,
                                         sizeof(*graph_details_h_->nodes) * max_nodes_per_window_ * max_poas_,
@@ -588,7 +588,7 @@ protected:
     int8_t output_mask_;
 
     // Upper limits for data size
-    BatchSize batch_size_;
+    BatchConfig batch_size_;
 
     // Gap, mismatch and match scores for NW dynamic programming loop.
     ScoreT gap_score_;

@@ -110,12 +110,12 @@ __device__ void raconTopologicalSortDeviceUtil(SizeT* sorted_poa,
                                                bool* check_aligned_nodes,
                                                SizeT* nodes_to_visit,
                                                bool /*banded_alignment*/,
-                                               SizeT max_nodes_per_window)
+                                               SizeT max_nodes_per_graph)
 {
     SizeT node_idx       = -1;
     SizeT sorted_poa_idx = 0;
 
-    for (SizeT i = 0; i < max_nodes_per_window; i++)
+    for (SizeT i = 0; i < max_nodes_per_graph; i++)
     {
         node_marks[i]          = 0;
         check_aligned_nodes[i] = true;

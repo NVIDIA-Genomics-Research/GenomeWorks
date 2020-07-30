@@ -29,7 +29,7 @@
 using namespace claraparabricks::genomeworks;
 using namespace claraparabricks::genomeworks::cudapoa;
 
-std::unique_ptr<Batch> initialize_batch(bool msa, bool banded_alignment, bool adaptive_banded, const BatchSize& batch_size)
+std::unique_ptr<Batch> initialize_batch(bool msa, bool banded_alignment, bool adaptive_banded, const BatchConfig& batch_size)
 {
     // Get device information.
     int32_t device_count = 0;
@@ -215,7 +215,7 @@ int main(int argc, char** argv)
     }
 
     // analyze the POA groups and create a minimal set of batches to process them all
-    std::vector<BatchSize> list_of_batch_sizes;
+    std::vector<BatchConfig> list_of_batch_sizes;
     std::vector<std::vector<int32_t>> list_of_groups_per_batch;
 
     get_multi_batch_sizes(list_of_batch_sizes, list_of_groups_per_batch, poa_groups, banded, msa);

@@ -52,7 +52,7 @@ namespace cudapoa
 /// \param mismatch_score [in]              mismatch score, default -6
 /// \param gap_score [in]                   gap score, default -8
 /// \param match_score [in]                 match core, default 8
-void get_multi_batch_sizes(std::vector<BatchSize>& list_of_batch_sizes,
+void get_multi_batch_sizes(std::vector<BatchConfig>& list_of_batch_sizes,
                            std::vector<std::vector<int32_t>>& list_of_groups_per_batch,
                            const std::vector<Group>& poa_groups,
                            bool banded_alignment               = true,

@@ -51,7 +51,7 @@ public:
         cudaSetDevice(device_id);
         cudaMemGetInfo(&free, &total);
         size_t mem_per_batch = 0.9 * free;
-        BatchSize batch_size(1024, max_sequences_per_poa);
+        BatchConfig batch_size(1024, max_sequences_per_poa);
 
         cudapoa_batch = genomeworks::cudapoa::create_batch(device_id, stream, mem_per_batch, output_mask, batch_size, gap_score, mismatch_score, match_score,
                                                            banded_alignment, adaptive_banded);

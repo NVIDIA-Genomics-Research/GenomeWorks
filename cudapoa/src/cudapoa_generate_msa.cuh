@@ -146,7 +146,7 @@ __global__ void generateMSAKernel(uint8_t* nodes_d,
                                   uint8_t* node_marks_d,
                                   bool* check_aligned_nodes_d,
                                   SizeT* nodes_to_visit_d,
-                                  uint32_t max_nodes_per_window,
+                                  uint32_t max_nodes_per_graph,
                                   uint32_t max_limit_consensus_size,
                                   bool banded_alignment = false)
 {
@@ -159,25 +159,25 @@ __global__ void generateMSAKernel(uint8_t* nodes_d,
         return;
 
     // Find the buffer offsets for each thread within the global memory buffers.
-    uint8_t* nodes                          = &nodes_d[max_nodes_per_window * window_idx];
-    uint16_t* outgoing_edge_count           = &outgoing_edge_count_d[window_idx * max_nodes_per_window];
-    SizeT* outgoing_edges                   = &outgoing_edges_d[window_idx * max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES];
-    uint16_t* outgoing_edges_coverage       = &outgoing_edges_coverage_d[window_idx * max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES * max_sequences_per_poa];
-    uint16_t* outgoing_edges_coverage_count = &outgoing_edges_coverage_count_d[window_idx * max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES];
-    SizeT* node_id_to_msa_pos               = &node_id_to_msa_pos_d[window_idx * max_nodes_per_window];
+    uint8_t* nodes                          = &nodes_d[max_nodes_per_graph * window_idx];
+    uint16_t* outgoing_edge_count           = &outgoing_edge_count_d[window_idx * max_nodes_per_graph];
+    SizeT* outgoing_edges                   = &outgoing_edges_d[window_idx * max_nodes_per_graph * CUDAPOA_MAX_NODE_EDGES];
+    uint16_t* outgoing_edges_coverage       = &outgoing_edges_coverage_d[window_idx * max_nodes_per_graph * CUDAPOA_MAX_NODE_EDGES * max_sequences_per_poa];
+    uint16_t* outgoing_edges_coverage_count = &outgoing_edges_coverage_count_d[window_idx * max_nodes_per_graph * CUDAPOA_MAX_NODE_EDGES];
+    SizeT* node_id_to_msa_pos               = &node_id_to_msa_pos_d[window_idx * max_nodes_per_graph];
     SizeT* sequence_begin_nodes_ids         = &sequence_begin_nodes_ids_d[window_idx * max_sequences_per_poa];
     uint8_t* multiple_sequence_alignments   = &multiple_sequence_alignments_d[window_idx * max_sequences_per_poa * max_limit_consensus_size];
-    SizeT* sorted_poa                       = &sorted_poa_d[window_idx * max_nodes_per_window];
-    uint16_t* node_alignment_counts         = &node_alignment_counts_d[window_idx * max_nodes_per_window];
+    SizeT* sorted_poa                       = &sorted_poa_d[window_idx * max_nodes_per_graph];
+    uint16_t* node_alignment_counts         = &node_alignment_counts_d[window_idx * max_nodes_per_graph];
     uint32_t num_sequences                  = window_details_d[window_idx].num_seqs;
     SizeT* sequence_lengths                 = &sequence_lengths_d[window_details_d[window_idx].seq_len_buffer_offset];
-    SizeT* incoming_edges                   = &incoming_edges_d[window_idx * max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES];
-    uint16_t* incoming_edge_count           = &incoming_edge_count_d[window_idx * max_nodes_per_window];
-    SizeT* node_alignments                  = &node_alignments_d[window_idx * max_nodes_per_window * CUDAPOA_MAX_NODE_ALIGNMENTS];
-    uint8_t* node_marks                     = &node_marks_d[max_nodes_per_window * window_idx];
-    bool* check_aligned_nodes               = &check_aligned_nodes_d[max_nodes_per_window * window_idx];
-    SizeT* nodes_to_visit                   = &nodes_to_visit_d[max_nodes_per_window * window_idx];
-    SizeT* node_id_to_pos                   = &node_id_to_pos_d[window_idx * max_nodes_per_window];
+    SizeT* incoming_edges                   = &incoming_edges_d[window_idx * max_nodes_per_graph * CUDAPOA_MAX_NODE_EDGES];
+    uint16_t* incoming_edge_count           = &incoming_edge_count_d[window_idx * max_nodes_per_graph];
+    SizeT* node_alignments                  = &node_alignments_d[window_idx * max_nodes_per_graph * CUDAPOA_MAX_NODE_ALIGNMENTS];
+    uint8_t* node_marks                     = &node_marks_d[max_nodes_per_graph * window_idx];
+    bool* check_aligned_nodes               = &check_aligned_nodes_d[max_nodes_per_graph * window_idx];
+    SizeT* nodes_to_visit                   = &nodes_to_visit_d[max_nodes_per_graph * window_idx];
+    SizeT* node_id_to_pos                   = &node_id_to_pos_d[window_idx * max_nodes_per_graph];
 
     __shared__ SizeT msa_length;
 
@@ -195,7 +195,7 @@ __global__ void generateMSAKernel(uint8_t* nodes_d,
                                        check_aligned_nodes,
                                        nodes_to_visit,
                                        banded_alignment,
-                                       static_cast<SizeT>(max_nodes_per_window));
+                                       static_cast<SizeT>(max_nodes_per_graph));
 
         msa_length = getNodeIDToMSAPosDevice<SizeT>(sequence_lengths[0],
                                                     sorted_poa,

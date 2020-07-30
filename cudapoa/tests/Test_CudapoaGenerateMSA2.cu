@@ -41,7 +41,7 @@ class MSATest : public ::testing::Test
 public:
     void SetUp() {}
 
-    void initialize(const BatchSize& batch_size,
+    void initialize(const BatchConfig& batch_size,
                     uint32_t device_id     = 0,
                     cudaStream_t stream    = 0,
                     int8_t output_mask     = OutputType::msa,
@@ -89,7 +89,7 @@ TEST_F(MSATest, CudapoaMSA)
 {
     std::minstd_rand rng(1);
     int num_sequences = 500;
-    BatchSize batch_size(1024, num_sequences);
+    BatchConfig batch_size(1024, num_sequences);
 
     std::string backbone = genomeworks::genomeutils::generate_random_genome(50, rng);
     auto sequences       = genomeworks::genomeutils::generate_random_sequences(backbone, num_sequences, rng, 10, 5, 10);
@@ -136,7 +136,7 @@ TEST_F(MSATest, CudapoaMSAFailure)
 {
     std::minstd_rand rng(1);
     int num_sequences = 10;
-    BatchSize batch_size(1024, num_sequences);
+    BatchConfig batch_size(1024, num_sequences);
     batch_size.max_consensus_size = batch_size.max_sequence_size;
 
     std::string backbone = genomeworks::genomeutils::generate_random_genome(batch_size.max_consensus_size - 1, rng);

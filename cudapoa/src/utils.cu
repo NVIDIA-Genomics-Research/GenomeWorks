@@ -27,7 +27,7 @@ namespace genomeworks
 namespace cudapoa
 {
 
-void get_multi_batch_sizes(std::vector<BatchSize>& list_of_batch_sizes,
+void get_multi_batch_sizes(std::vector<BatchConfig>& list_of_batch_sizes,
                            std::vector<std::vector<int32_t>>& list_of_groups_per_batch,
                            const std::vector<Group>& poa_groups,
                            bool banded_alignment /*= true*/,
@@ -51,7 +51,7 @@ void get_multi_batch_sizes(std::vector<BatchSize>& list_of_batch_sizes,
         {
             max_read_length = std::max(max_read_length, entry.length);
         }
-        max_poas[i]    = BatchBlock<int32_t, int32_t>::estimate_max_poas(BatchSize(max_read_length, get_size<int32_t>(poa_groups[i]), band_width),
+        max_poas[i]    = BatchBlock<int32_t, int32_t>::estimate_max_poas(BatchConfig(max_read_length, get_size<int32_t>(poa_groups[i]), band_width),
                                                                       banded_alignment, msa_flag, gpu_memory_usage_quota,
                                                                       mismatch_score, gap_score, match_score);
         max_lengths[i] = max_read_length;

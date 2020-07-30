@@ -207,27 +207,27 @@ NWAnswer testNW(const BasicNW& obj)
     int16_t gap_score;
     int16_t mismatch_score;
     int16_t match_score;
-    SizeT* aligned_nodes; //local; to store num of nodes aligned (length of alignment_graph and alignment_read)
-    BatchSize batch_size; //default max_sequence_size = 1024, max_sequences_per_poa = 100
+    SizeT* aligned_nodes;   //local; to store num of nodes aligned (length of alignment_graph and alignment_read)
+    BatchConfig batch_size; //default max_sequence_size = 1024, max_sequences_per_poa = 100
 
     //allocate unified memory so they can be accessed by both host and device.
-    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&nodes, batch_size.max_nodes_per_window * sizeof(uint8_t)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&graph, batch_size.max_nodes_per_window * sizeof(SizeT)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&node_id_to_pos, batch_size.max_nodes_per_window * sizeof(SizeT)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&incoming_edges, batch_size.max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES * sizeof(SizeT)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&incoming_edge_count, batch_size.max_nodes_per_window * sizeof(uint16_t)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&outgoing_edges, batch_size.max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES * sizeof(SizeT)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&outgoing_edge_count, batch_size.max_nodes_per_window * sizeof(uint16_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&nodes, batch_size.max_nodes_per_graph * sizeof(uint8_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&graph, batch_size.max_nodes_per_graph * sizeof(SizeT)));
+    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&node_id_to_pos, batch_size.max_nodes_per_graph * sizeof(SizeT)));
+    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&incoming_edges, batch_size.max_nodes_per_graph * CUDAPOA_MAX_NODE_EDGES * sizeof(SizeT)));
+    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&incoming_edge_count, batch_size.max_nodes_per_graph * sizeof(uint16_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&outgoing_edges, batch_size.max_nodes_per_graph * CUDAPOA_MAX_NODE_EDGES * sizeof(SizeT)));
+    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&outgoing_edge_count, batch_size.max_nodes_per_graph * sizeof(uint16_t)));
     GW_CU_CHECK_ERR(cudaMallocManaged((void**)&scores, batch_size.max_matrix_graph_dimension * batch_size.max_matrix_sequence_dimension * sizeof(int16_t)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&alignment_graph, batch_size.max_nodes_per_window * sizeof(SizeT)));
+    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&alignment_graph, batch_size.max_nodes_per_graph * sizeof(SizeT)));
     GW_CU_CHECK_ERR(cudaMallocManaged((void**)&read, batch_size.max_sequence_size * sizeof(uint8_t)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&alignment_read, batch_size.max_nodes_per_window * sizeof(SizeT)));
+    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&alignment_read, batch_size.max_nodes_per_graph * sizeof(SizeT)));
     GW_CU_CHECK_ERR(cudaMallocManaged((void**)&aligned_nodes, sizeof(SizeT)));
 
     //initialize all 'count' buffers
-    memset((void**)incoming_edge_count, 0, batch_size.max_nodes_per_window * sizeof(uint16_t));
-    memset((void**)outgoing_edge_count, 0, batch_size.max_nodes_per_window * sizeof(uint16_t));
-    memset((void**)node_id_to_pos, 0, batch_size.max_nodes_per_window * sizeof(SizeT));
+    memset((void**)incoming_edge_count, 0, batch_size.max_nodes_per_graph * sizeof(uint16_t));
+    memset((void**)outgoing_edge_count, 0, batch_size.max_nodes_per_graph * sizeof(uint16_t));
+    memset((void**)node_id_to_pos, 0, batch_size.max_nodes_per_graph * sizeof(SizeT));
     memset((void**)scores, 0, batch_size.max_matrix_graph_dimension * batch_size.max_matrix_sequence_dimension * sizeof(int16_t));
 
     //calculate edge counts on host
@@ -252,7 +252,7 @@ NWAnswer testNW(const BasicNW& obj)
                  read,
                  read_count,
                  scores,
-                 BatchSize().max_matrix_sequence_dimension,
+                 BatchConfig().max_matrix_sequence_dimension,
                  alignment_graph,
                  alignment_read,
                  gap_score,
