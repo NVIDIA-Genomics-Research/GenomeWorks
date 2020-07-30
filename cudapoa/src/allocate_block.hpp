@@ -198,9 +198,9 @@ public:
 
         // on device;
         alignment_details_d->alignment_graph = reinterpret_cast<decltype(alignment_details_d->alignment_graph)>(&block_data_d_[offset_d_]);
-        offset_d_ += cudautils::align<int64_t, 8>(sizeof(*alignment_details_d->alignment_graph) * max_graph_dimension_ * max_poas_);
+        offset_d_ += cudautils::align<int64_t, 8>(sizeof(*alignment_details_d->alignment_graph) * max_nodes_per_window_ * max_poas_);
         alignment_details_d->alignment_read = reinterpret_cast<decltype(alignment_details_d->alignment_read)>(&block_data_d_[offset_d_]);
-        offset_d_ += cudautils::align<int64_t, 8>(sizeof(*alignment_details_d->alignment_read) * max_graph_dimension_ * max_poas_);
+        offset_d_ += cudautils::align<int64_t, 8>(sizeof(*alignment_details_d->alignment_read) * max_nodes_per_window_ * max_poas_);
         if (variable_bands_)
         {
             alignment_details_d->band_starts = reinterpret_cast<decltype(alignment_details_d->band_starts)>(&block_data_d_[offset_d_]);
@@ -313,10 +313,8 @@ public:
 
     static int64_t compute_device_memory_per_poa(const BatchSize& batch_size, const bool banded_alignment, const bool msa_flag, const bool variable_bands = false)
     {
-        int64_t device_size_per_poa = 0;
-
-        int32_t matrix_graph_dimension = banded_alignment ? batch_size.max_matrix_graph_dimension_banded : batch_size.max_matrix_graph_dimension;
-        int32_t max_nodes_per_window   = banded_alignment ? batch_size.max_nodes_per_window_banded : batch_size.max_nodes_per_window;
+        int64_t device_size_per_poa  = 0;
+        int32_t max_nodes_per_window = banded_alignment ? batch_size.max_nodes_per_window_banded : batch_size.max_nodes_per_window;
 
         // for output - device
         device_size_per_poa += batch_size.max_consensus_size * sizeof(*OutputDetails::consensus);                                                                        // output_details_d_->consensus
@@ -352,8 +350,8 @@ public:
         device_size_per_poa += (msa_flag) ? sizeof(*GraphDetails<SizeT>::outgoing_edges_coverage_count) * max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES : 0;                              // graph_details_d_->outgoing_edges_coverage_count
         device_size_per_poa += (msa_flag) ? sizeof(*GraphDetails<SizeT>::node_id_to_msa_pos) * max_nodes_per_window : 0;                                                                  // graph_details_d_->node_id_to_msa_pos
         // for alignment - device
-        device_size_per_poa += sizeof(*AlignmentDetails<ScoreT, SizeT>::alignment_graph) * matrix_graph_dimension;                      // alignment_details_d_->alignment_graph
-        device_size_per_poa += sizeof(*AlignmentDetails<ScoreT, SizeT>::alignment_read) * matrix_graph_dimension;                       // alignment_details_d_->alignment_read
+        device_size_per_poa += sizeof(*AlignmentDetails<ScoreT, SizeT>::alignment_graph) * max_nodes_per_window;                        // alignment_details_d_->alignment_graph
+        device_size_per_poa += sizeof(*AlignmentDetails<ScoreT, SizeT>::alignment_read) * max_nodes_per_window;                         // alignment_details_d_->alignment_read
         device_size_per_poa += variable_bands ? sizeof(*AlignmentDetails<ScoreT, SizeT>::band_starts) * max_nodes_per_window : 0;       // alignment_details_d_->band_starts
         device_size_per_poa += variable_bands ? sizeof(*AlignmentDetails<ScoreT, SizeT>::band_widths) * max_nodes_per_window : 0;       // alignment_details_d_->band_widths
         device_size_per_poa += variable_bands ? sizeof(*AlignmentDetails<ScoreT, SizeT>::band_head_indices) * max_nodes_per_window : 0; // alignment_details_d_->band_head_indices
@@ -398,7 +396,7 @@ public:
         int64_t sizeof_ScoreT       = 2;
         int64_t device_size_per_poa = 0;
 
-        if (use32bitScore(batch_size, gap_score, mismatch_score, match_score))
+        if (use32bitScore(batch_size, banded_alignment, gap_score, mismatch_score, match_score))
         {
             sizeof_ScoreT = 4;
             if (use32bitSize(batch_size, banded_alignment))

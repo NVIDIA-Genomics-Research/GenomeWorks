@@ -84,6 +84,7 @@ struct BatchSize
         , max_consensus_size(2 * max_sequence_size)
         , max_nodes_per_window(cudautils::align<int32_t, 4>(3 * max_sequence_size))
         , max_nodes_per_window_banded(cudautils::align<int32_t, 4>(4 * max_sequence_size))
+        /// max_matrix_ parameters define buffer size for scores matrix
         , max_matrix_graph_dimension(cudautils::align<int32_t, 4>(max_nodes_per_window))
         , max_matrix_graph_dimension_banded(cudautils::align<int32_t, 4>(max_nodes_per_window_banded))
         , max_matrix_sequence_dimension(cudautils::align<int32_t, 4>(max_sequence_size))

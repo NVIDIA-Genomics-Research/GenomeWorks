@@ -219,9 +219,9 @@ NWAnswer testNW(const BasicNW& obj)
     GW_CU_CHECK_ERR(cudaMallocManaged((void**)&outgoing_edges, batch_size.max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES * sizeof(SizeT)));
     GW_CU_CHECK_ERR(cudaMallocManaged((void**)&outgoing_edge_count, batch_size.max_nodes_per_window * sizeof(uint16_t)));
     GW_CU_CHECK_ERR(cudaMallocManaged((void**)&scores, batch_size.max_matrix_graph_dimension * batch_size.max_matrix_sequence_dimension * sizeof(int16_t)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&alignment_graph, batch_size.max_matrix_graph_dimension * sizeof(SizeT)));
+    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&alignment_graph, batch_size.max_nodes_per_window * sizeof(SizeT)));
     GW_CU_CHECK_ERR(cudaMallocManaged((void**)&read, batch_size.max_sequence_size * sizeof(uint8_t)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&alignment_read, batch_size.max_matrix_graph_dimension * sizeof(SizeT)));
+    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&alignment_read, batch_size.max_nodes_per_window * sizeof(SizeT)));
     GW_CU_CHECK_ERR(cudaMallocManaged((void**)&aligned_nodes, sizeof(SizeT)));
 
     //initialize all 'count' buffers

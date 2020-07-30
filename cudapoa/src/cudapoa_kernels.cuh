@@ -104,7 +104,7 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
                                   uint16_t* outgoing_edges_coverage_d,
                                   uint16_t* outgoing_edges_coverage_count_d,
                                   uint32_t max_nodes_per_window,
-                                  uint32_t max_graph_dimension,
+                                  uint32_t max_scores_matrix_height,
                                   uint32_t max_limit_consensus_size,
                                   int32_t TPB                          = 64,
                                   bool adaptive_banded                 = false,
@@ -143,18 +143,18 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
     int64_t banded_score_matrix_size;
     if (banded_alignment)
     {
-        banded_score_matrix_size = static_cast<int64_t>(max_graph_dimension) * static_cast<int64_t>(banded_alignment_band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING);
+        banded_score_matrix_size = static_cast<int64_t>(max_scores_matrix_height) * static_cast<int64_t>(banded_alignment_band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING);
         scores_offset            = banded_score_matrix_size * static_cast<int64_t>(window_idx);
     }
     else
     {
-        scores_offset = static_cast<int64_t>(window_details_d[window_idx].scores_offset) * static_cast<int64_t>(max_graph_dimension);
+        scores_offset = static_cast<int64_t>(window_details_d[window_idx].scores_offset) * static_cast<int64_t>(max_scores_matrix_height);
     }
 
     ScoreT* scores = &scores_d[scores_offset];
 
-    SizeT* alignment_graph         = &alignment_graph_d[max_graph_dimension * window_idx];
-    SizeT* alignment_read          = &alignment_read_d[max_graph_dimension * window_idx];
+    SizeT* alignment_graph         = &alignment_graph_d[max_nodes_per_window * window_idx];
+    SizeT* alignment_read          = &alignment_read_d[max_nodes_per_window * window_idx];
     uint16_t* node_coverage_counts = &node_coverage_counts_d_[max_nodes_per_window * window_idx];
 
 #ifdef SPOA_ACCURATE
@@ -239,7 +239,6 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
                 consensus[1] = static_cast<uint8_t>(StatusType::node_count_exceeded_maximum_graph_size);
                 warp_error   = true;
             }
-            /// ToDo clean all instances of node_distance
         }
 
         warp_error = __shfl_sync(FULL_MASK, warp_error, 0);
@@ -489,12 +488,11 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
     uint16_t* outgoing_edges_coverage_count = graph_details_d->outgoing_edges_coverage_count;
     SizeT* node_id_to_msa_pos               = graph_details_d->node_id_to_msa_pos;
 
-    int32_t nwindows_per_block         = CUDAPOA_THREADS_PER_BLOCK / WARP_SIZE;
-    int32_t nblocks                    = (banded_alignment || adaptive_banded) ? total_windows : (total_windows + nwindows_per_block - 1) / nwindows_per_block;
-    int32_t TPB                        = (banded_alignment || adaptive_banded) ? CUDAPOA_BANDED_THREADS_PER_BLOCK : CUDAPOA_THREADS_PER_BLOCK;
-    int32_t max_nodes_per_window       = (banded_alignment || adaptive_banded) ? batch_size.max_nodes_per_window_banded : batch_size.max_nodes_per_window;
-    int32_t max_matrix_graph_dimension = (banded_alignment || adaptive_banded) ? batch_size.max_matrix_graph_dimension_banded : batch_size.max_matrix_graph_dimension;
-    bool msa                           = output_mask & OutputType::msa;
+    int32_t nwindows_per_block   = CUDAPOA_THREADS_PER_BLOCK / WARP_SIZE;
+    int32_t nblocks              = (banded_alignment || adaptive_banded) ? total_windows : (total_windows + nwindows_per_block - 1) / nwindows_per_block;
+    int32_t TPB                  = (banded_alignment || adaptive_banded) ? CUDAPOA_BANDED_THREADS_PER_BLOCK : CUDAPOA_THREADS_PER_BLOCK;
+    int32_t max_nodes_per_window = (banded_alignment || adaptive_banded) ? batch_size.max_nodes_per_window_banded : batch_size.max_nodes_per_window;
+    bool msa                     = output_mask & OutputType::msa;
 
     GW_CU_CHECK_ERR(cudaDeviceSetCacheConfig(cudaFuncCachePreferL1));
 
@@ -533,8 +531,6 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
                                       sequence_begin_nodes_ids,
                                       outgoing_edges_coverage,
                                       outgoing_edges_coverage_count,
-                                      max_nodes_per_window,
-                                      max_matrix_graph_dimension,
                                       batch_size.max_consensus_size,
                                       TPB,
                                       adaptive_banded,
