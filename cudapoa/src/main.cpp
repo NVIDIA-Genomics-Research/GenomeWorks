@@ -186,7 +186,6 @@ int main(int argc, char* argv[])
                           list_of_groups_per_batch,
                           poa_groups,
                           parameters.banded,
-                          parameters.corrective,
                           parameters.msa,
                           parameters.band_width,
                           nullptr,

@@ -54,12 +54,11 @@ template <typename ScoreT, typename SizeT>
 class BatchBlock
 {
 public:
-    BatchBlock(int32_t device_id, size_t avail_mem, int8_t output_mask, const BatchSize& batch_size, bool banded_alignment = false, bool adaptive_banded = false)
+    BatchBlock(int32_t device_id, size_t avail_mem, int8_t output_mask, const BatchSize& batch_size, bool banded_alignment = false)
         : max_sequences_per_poa_(throw_on_negative(batch_size.max_sequences_per_poa, "Maximum sequences per POA has to be non-negative"))
         , banded_alignment_(banded_alignment)
         , device_id_(throw_on_negative(device_id, "Device ID has to be non-negative"))
         , output_mask_(output_mask)
-        , adaptive_banded_(adaptive_banded)
     {
         scoped_device_switch dev(device_id_);
 
@@ -202,7 +201,7 @@ public:
         offset_d_ += cudautils::align<int64_t, 8>(sizeof(*alignment_details_d->alignment_graph) * max_graph_dimension_ * max_poas_);
         alignment_details_d->alignment_read = reinterpret_cast<decltype(alignment_details_d->alignment_read)>(&block_data_d_[offset_d_]);
         offset_d_ += cudautils::align<int64_t, 8>(sizeof(*alignment_details_d->alignment_read) * max_graph_dimension_ * max_poas_);
-        if (adaptive_banded_)
+        if (variable_bands_)
         {
             alignment_details_d->band_starts = reinterpret_cast<decltype(alignment_details_d->band_starts)>(&block_data_d_[offset_d_]);
             offset_d_ += cudautils::align<int64_t, 8>(sizeof(*alignment_details_d->band_starts) * max_nodes_per_window_ * max_poas_);
@@ -263,7 +262,7 @@ public:
         offset_d_ += cudautils::align<int64_t, 8>(sizeof(*graph_details_d->sorted_poa) * max_nodes_per_window_ * max_poas_);
         graph_details_d->sorted_poa_node_map = reinterpret_cast<decltype(graph_details_d->sorted_poa_node_map)>(&block_data_d_[offset_d_]);
         offset_d_ += cudautils::align<int64_t, 8>(sizeof(*graph_details_d->sorted_poa_node_map) * max_nodes_per_window_ * max_poas_);
-        if (adaptive_banded_)
+        if (variable_bands_)
         {
             graph_details_d->node_distance_to_head = reinterpret_cast<decltype(graph_details_d->node_distance_to_head)>(&block_data_d_[offset_d_]);
             offset_d_ += cudautils::align<int64_t, 8>(sizeof(*graph_details_d->node_distance_to_head) * max_nodes_per_window_ * max_poas_);
@@ -312,7 +311,7 @@ public:
 
     int32_t get_max_poas() const { return max_poas_; };
 
-    static int64_t compute_device_memory_per_poa(const BatchSize& batch_size, const bool banded_alignment, const bool adaptive_banded, const bool msa_flag)
+    static int64_t compute_device_memory_per_poa(const BatchSize& batch_size, const bool banded_alignment, const bool msa_flag, const bool variable_bands = false)
     {
         int64_t device_size_per_poa = 0;
 
@@ -341,7 +340,7 @@ public:
         device_size_per_poa += sizeof(*GraphDetails<SizeT>::outgoing_edge_weights) * max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES;                                                       // graph_details_d_->outgoing_edge_weights
         device_size_per_poa += sizeof(*GraphDetails<SizeT>::sorted_poa) * max_nodes_per_window;                                                                                           // graph_details_d_->sorted_poa
         device_size_per_poa += sizeof(*GraphDetails<SizeT>::sorted_poa_node_map) * max_nodes_per_window;                                                                                  // graph_details_d_->sorted_poa_node_map
-        device_size_per_poa += adaptive_banded ? sizeof(*GraphDetails<SizeT>::node_distance_to_head) * max_nodes_per_window : 0;                                                          // graph_details_d_->node_distance_to_head
+        device_size_per_poa += variable_bands ? sizeof(*GraphDetails<SizeT>::node_distance_to_head) * max_nodes_per_window : 0;                                                           // graph_details_d_->node_distance_to_head
         device_size_per_poa += sizeof(*GraphDetails<SizeT>::sorted_poa_local_edge_count) * max_nodes_per_window;                                                                          // graph_details_d_->sorted_poa_local_edge_count
         device_size_per_poa += (!msa_flag) ? sizeof(*GraphDetails<SizeT>::consensus_scores) * max_nodes_per_window : 0;                                                                   // graph_details_d_->consensus_scores
         device_size_per_poa += (!msa_flag) ? sizeof(*GraphDetails<SizeT>::consensus_predecessors) * max_nodes_per_window : 0;                                                             // graph_details_d_->consensus_predecessors
@@ -353,12 +352,12 @@ public:
         device_size_per_poa += (msa_flag) ? sizeof(*GraphDetails<SizeT>::outgoing_edges_coverage_count) * max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES : 0;                              // graph_details_d_->outgoing_edges_coverage_count
         device_size_per_poa += (msa_flag) ? sizeof(*GraphDetails<SizeT>::node_id_to_msa_pos) * max_nodes_per_window : 0;                                                                  // graph_details_d_->node_id_to_msa_pos
         // for alignment - device
-        device_size_per_poa += sizeof(*AlignmentDetails<ScoreT, SizeT>::alignment_graph) * matrix_graph_dimension;                       // alignment_details_d_->alignment_graph
-        device_size_per_poa += sizeof(*AlignmentDetails<ScoreT, SizeT>::alignment_read) * matrix_graph_dimension;                        // alignment_details_d_->alignment_read
-        device_size_per_poa += adaptive_banded ? sizeof(*AlignmentDetails<ScoreT, SizeT>::band_starts) * max_nodes_per_window : 0;       // alignment_details_d_->band_starts
-        device_size_per_poa += adaptive_banded ? sizeof(*AlignmentDetails<ScoreT, SizeT>::band_widths) * max_nodes_per_window : 0;       // alignment_details_d_->band_widths
-        device_size_per_poa += adaptive_banded ? sizeof(*AlignmentDetails<ScoreT, SizeT>::band_head_indices) * max_nodes_per_window : 0; // alignment_details_d_->band_head_indices
-        device_size_per_poa += adaptive_banded ? sizeof(*AlignmentDetails<ScoreT, SizeT>::band_max_indices) * max_nodes_per_window : 0;  // alignment_details_d_->band_max_indices
+        device_size_per_poa += sizeof(*AlignmentDetails<ScoreT, SizeT>::alignment_graph) * matrix_graph_dimension;                      // alignment_details_d_->alignment_graph
+        device_size_per_poa += sizeof(*AlignmentDetails<ScoreT, SizeT>::alignment_read) * matrix_graph_dimension;                       // alignment_details_d_->alignment_read
+        device_size_per_poa += variable_bands ? sizeof(*AlignmentDetails<ScoreT, SizeT>::band_starts) * max_nodes_per_window : 0;       // alignment_details_d_->band_starts
+        device_size_per_poa += variable_bands ? sizeof(*AlignmentDetails<ScoreT, SizeT>::band_widths) * max_nodes_per_window : 0;       // alignment_details_d_->band_widths
+        device_size_per_poa += variable_bands ? sizeof(*AlignmentDetails<ScoreT, SizeT>::band_head_indices) * max_nodes_per_window : 0; // alignment_details_d_->band_head_indices
+        device_size_per_poa += variable_bands ? sizeof(*AlignmentDetails<ScoreT, SizeT>::band_max_indices) * max_nodes_per_window : 0;  // alignment_details_d_->band_max_indices
 
         return device_size_per_poa;
     }
@@ -389,8 +388,8 @@ public:
         return host_size_per_poa;
     }
 
-    static int64_t estimate_max_poas(const BatchSize& batch_size, bool banded_alignment, bool adaptive_banded, bool msa_flag,
-                                     float memory_usage_quota, int32_t mismatch_score, int32_t gap_score, int32_t match_score)
+    static int64_t estimate_max_poas(const BatchSize& batch_size, bool banded_alignment, bool msa_flag, float memory_usage_quota,
+                                     int32_t mismatch_score, int32_t gap_score, int32_t match_score)
     {
         size_t total = 0, free = 0;
         cudaMemGetInfo(&free, &total);
@@ -404,17 +403,17 @@ public:
             sizeof_ScoreT = 4;
             if (use32bitSize(batch_size, banded_alignment))
             {
-                device_size_per_poa = BatchBlock<int32_t, int32_t>::compute_device_memory_per_poa(batch_size, banded_alignment, adaptive_banded, msa_flag);
+                device_size_per_poa = BatchBlock<int32_t, int32_t>::compute_device_memory_per_poa(batch_size, banded_alignment, msa_flag);
             }
             else
             {
-                device_size_per_poa = BatchBlock<int32_t, int16_t>::compute_device_memory_per_poa(batch_size, banded_alignment, adaptive_banded, msa_flag);
+                device_size_per_poa = BatchBlock<int32_t, int16_t>::compute_device_memory_per_poa(batch_size, banded_alignment, msa_flag);
             }
         }
         else
         {
             // if ScoreT is 16-bit, it's safe to assume SizeT is also 16-bit
-            device_size_per_poa = BatchBlock<int16_t, int16_t>::compute_device_memory_per_poa(batch_size, banded_alignment, adaptive_banded, msa_flag);
+            device_size_per_poa = BatchBlock<int16_t, int16_t>::compute_device_memory_per_poa(batch_size, banded_alignment, msa_flag);
         }
 
         // Compute required memory for score matrix
@@ -437,7 +436,7 @@ protected:
     std::tuple<int64_t, int64_t, int64_t, int64_t> calculate_space_per_poa(const BatchSize& batch_size)
     {
         int64_t host_size_per_poa   = compute_host_memory_per_poa(batch_size, banded_alignment_, (output_mask_ & OutputType::msa));
-        int64_t device_size_per_poa = compute_device_memory_per_poa(batch_size, banded_alignment_, adaptive_banded_, (output_mask_ & OutputType::msa));
+        int64_t device_size_per_poa = compute_device_memory_per_poa(batch_size, banded_alignment_, (output_mask_ & OutputType::msa), variable_bands_);
         int64_t device_size_fixed   = 0;
         int64_t host_size_fixed     = 0;
         // for output - host
@@ -463,7 +462,10 @@ protected:
 
     // Use banded POA alignment
     bool banded_alignment_;
-    bool adaptive_banded_;
+
+    // flag that enables some extra buffers to accommodate fully adaptive bands with variable width and arbitrary location
+    // disabled for current implementation, can be enabled for possible future variants of adaptive alignment algorithm
+    bool variable_bands_ = false;
 
     // Pointer for block data on host and device
     uint8_t* block_data_h_;
