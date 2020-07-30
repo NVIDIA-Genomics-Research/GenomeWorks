@@ -488,11 +488,12 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
     uint16_t* outgoing_edges_coverage_count = graph_details_d->outgoing_edges_coverage_count;
     SizeT* node_id_to_msa_pos               = graph_details_d->node_id_to_msa_pos;
 
-    int32_t nwindows_per_block   = CUDAPOA_THREADS_PER_BLOCK / WARP_SIZE;
-    int32_t nblocks              = (banded_alignment || adaptive_banded) ? total_windows : (total_windows + nwindows_per_block - 1) / nwindows_per_block;
-    int32_t TPB                  = (banded_alignment || adaptive_banded) ? CUDAPOA_BANDED_THREADS_PER_BLOCK : CUDAPOA_THREADS_PER_BLOCK;
-    int32_t max_nodes_per_window = (banded_alignment || adaptive_banded) ? batch_size.max_nodes_per_window_banded : batch_size.max_nodes_per_window;
-    bool msa                     = output_mask & OutputType::msa;
+    int32_t nwindows_per_block         = CUDAPOA_THREADS_PER_BLOCK / WARP_SIZE;
+    int32_t nblocks                    = (banded_alignment || adaptive_banded) ? total_windows : (total_windows + nwindows_per_block - 1) / nwindows_per_block;
+    int32_t TPB                        = (banded_alignment || adaptive_banded) ? CUDAPOA_BANDED_THREADS_PER_BLOCK : CUDAPOA_THREADS_PER_BLOCK;
+    int32_t max_nodes_per_window       = (banded_alignment || adaptive_banded) ? batch_size.max_nodes_per_window_banded : batch_size.max_nodes_per_window;
+    int32_t max_matrix_graph_dimension = (banded_alignment || adaptive_banded) ? batch_size.max_matrix_graph_dimension_banded : batch_size.max_matrix_graph_dimension;
+    bool msa                           = output_mask & OutputType::msa;
 
     GW_CU_CHECK_ERR(cudaDeviceSetCacheConfig(cudaFuncCachePreferL1));
 
@@ -531,6 +532,8 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
                                       sequence_begin_nodes_ids,
                                       outgoing_edges_coverage,
                                       outgoing_edges_coverage_count,
+                                      max_nodes_per_window,
+                                      max_matrix_graph_dimension,
                                       batch_size.max_consensus_size,
                                       TPB,
                                       adaptive_banded,
