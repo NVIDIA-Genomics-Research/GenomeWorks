@@ -75,8 +75,8 @@ struct BatchConfig
     /// Banding mode: full, static, adaptive
     BandMode band_mode;
 
-    /// constructor- set upper limit parameters based on max_sequence_size
-    BatchConfig(int32_t max_seq_sz = 1024, int32_t max_seq_per_poa = 100, int32_t band_width = 256, BandMode banding = BandMode::static_band)
+    /// constructor- set upper limit parameters based on max_seq_sz and band_width
+    BatchConfig(int32_t max_seq_sz = 1024, int32_t max_seq_per_poa = 100, int32_t band_width = 256, BandMode banding = BandMode::full_band)
         /// ensure a 4-byte boundary alignment for any allocated buffer
         : max_sequence_size(max_seq_sz)
         , max_consensus_size(2 * max_sequence_size)

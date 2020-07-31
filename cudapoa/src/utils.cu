@@ -30,9 +30,9 @@ namespace cudapoa
 void get_multi_batch_sizes(std::vector<BatchConfig>& list_of_batch_sizes,
                            std::vector<std::vector<int32_t>>& list_of_groups_per_batch,
                            const std::vector<Group>& poa_groups,
-                           bool banded_alignment /*= true*/,
                            bool msa_flag /*= false*/,
                            int32_t band_width /*= 256*/,
+                           BandMode band_mode /*= static_band*/,
                            std::vector<int32_t>* bins_capacity /*= nullptr*/,
                            float gpu_memory_usage_quota /*= 0.9*/,
                            int32_t mismatch_score /*= -6*/,
@@ -51,7 +51,7 @@ void get_multi_batch_sizes(std::vector<BatchConfig>& list_of_batch_sizes,
         {
             max_read_length = std::max(max_read_length, entry.length);
         }
-        max_poas[i]    = BatchBlock<int32_t, int32_t>::estimate_max_poas(BatchConfig(max_read_length, get_size<int32_t>(poa_groups[i]), band_width),
+        max_poas[i]    = BatchBlock<int32_t, int32_t>::estimate_max_poas(BatchConfig(max_read_length, get_size<int32_t>(poa_groups[i]), band_width, band_mode),
                                                                       msa_flag, gpu_memory_usage_quota,
                                                                       mismatch_score, gap_score, match_score);
         max_lengths[i] = max_read_length;

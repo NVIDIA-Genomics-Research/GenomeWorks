@@ -40,6 +40,7 @@ public:
     std::string graph_output_path;
     bool all_fasta            = true;
     bool msa                  = false; // consensus by default
+    int32_t band_mode         = 1;     // 0 : full, 1 : static, 2 : adaptive
     bool banded               = true;
     bool adaptive             = false;
     int32_t band_width        = 256; // Band width for banded mode

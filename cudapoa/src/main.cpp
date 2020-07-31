@@ -32,8 +32,6 @@ std::unique_ptr<Batch> initialize_batch(int32_t mismatch_score,
                                         int32_t gap_score,
                                         int32_t match_score,
                                         bool msa,
-                                        bool banded_alignment,
-                                        bool adaptive_banded,
                                         const double gpu_mem_allocation,
                                         const BatchConfig& batch_size)
 {
@@ -62,8 +60,8 @@ std::unique_ptr<Batch> initialize_batch(int32_t mismatch_score,
                                                 gap_score,
                                                 mismatch_score,
                                                 match_score,
-                                                banded_alignment,
-                                                adaptive_banded);
+                                                batch_size.band_mode == BandMode::static_band,
+                                                batch_size.band_mode == BandMode::adaptive_band);
 
     return std::move(batch);
 }
@@ -185,9 +183,9 @@ int main(int argc, char* argv[])
     get_multi_batch_sizes(list_of_batch_sizes,
                           list_of_groups_per_batch,
                           poa_groups,
-                          parameters.banded,
                           parameters.msa,
                           parameters.band_width,
+                          static_cast<BandMode>(parameters.band_mode),
                           nullptr,
                           parameters.gpu_mem_allocation,
                           parameters.mismatch_score,
@@ -206,8 +204,6 @@ int main(int argc, char* argv[])
                                                         parameters.gap_score,
                                                         parameters.match_score,
                                                         parameters.msa,
-                                                        parameters.banded,
-                                                        parameters.adaptive,
                                                         parameters.gpu_mem_allocation,
                                                         batch_size);
 
