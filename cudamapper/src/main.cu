@@ -414,7 +414,9 @@ void worker_thread_function(const int32_t device_id,
     // This function is expected to run in a separate thread so set current device in order to avoid problems
     GW_CU_CHECK_ERR(cudaSetDevice(device_id));
 
-    DefaultDeviceAllocator device_allocator = create_default_device_allocator(application_parameters.max_cached_memory_bytes);
+    // Whenever device_allocator is used directly (e.g. in Thrust library) it will be associated with cuda_stream_computation
+    DefaultDeviceAllocator device_allocator = create_default_device_allocator(application_parameters.max_cached_memory_bytes,
+                                                                              {cuda_stream_computation});
 
     // create index_cache, indices are not created at this point but later as each batch gets processed
     IndexCache index_cache(application_parameters.all_to_all,
