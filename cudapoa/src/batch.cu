@@ -37,9 +37,7 @@ std::unique_ptr<Batch> create_batch(int32_t device_id,
                                     const BatchConfig& batch_size,
                                     int16_t gap_score,
                                     int16_t mismatch_score,
-                                    int16_t match_score,
-                                    bool banded_alignment,
-                                    bool adaptive_banded)
+                                    int16_t match_score)
 {
     if (use32bitScore(batch_size, gap_score, mismatch_score, match_score))
     {
@@ -52,9 +50,7 @@ std::unique_ptr<Batch> create_batch(int32_t device_id,
                                                                     batch_size,
                                                                     (int32_t)gap_score,
                                                                     (int32_t)mismatch_score,
-                                                                    (int32_t)match_score,
-                                                                    banded_alignment,
-                                                                    adaptive_banded);
+                                                                    (int32_t)match_score);
         }
         else
         {
@@ -65,9 +61,7 @@ std::unique_ptr<Batch> create_batch(int32_t device_id,
                                                                     batch_size,
                                                                     (int32_t)gap_score,
                                                                     (int32_t)mismatch_score,
-                                                                    (int32_t)match_score,
-                                                                    banded_alignment,
-                                                                    adaptive_banded);
+                                                                    (int32_t)match_score);
         }
     }
     else
@@ -80,9 +74,7 @@ std::unique_ptr<Batch> create_batch(int32_t device_id,
                                                                 batch_size,
                                                                 gap_score,
                                                                 mismatch_score,
-                                                                match_score,
-                                                                banded_alignment,
-                                                                adaptive_banded);
+                                                                match_score);
     }
 }
 

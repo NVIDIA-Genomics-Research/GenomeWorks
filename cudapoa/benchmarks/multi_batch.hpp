@@ -59,7 +59,7 @@ public:
             batches_.emplace_back(create_batch(0, stream, mem_per_batch,
                                                OutputType::consensus,
                                                batch_size,
-                                               -8, -6, 8, false, false));
+                                               -8, -6, 8));
         }
     }
 

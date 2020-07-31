@@ -100,4 +100,4 @@ cdef extern from "claraparabricks/genomeworks/cudapoa/batch.hpp" namespace "clar
 
     cdef unique_ptr[Batch] create_batch(int32_t, _Stream, size_t, int8_t,
                                         const BatchConfig&, int16_t, int16_t,
-                                        int16_t, c_bool, c_bool)
+                                        int16_t)

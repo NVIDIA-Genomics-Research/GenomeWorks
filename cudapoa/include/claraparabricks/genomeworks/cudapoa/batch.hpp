@@ -245,9 +245,7 @@ std::unique_ptr<Batch> create_batch(int32_t device_id,
                                     const BatchConfig& batch_size,
                                     int16_t gap_score,
                                     int16_t mismatch_score,
-                                    int16_t match_score,
-                                    bool banded_alignment,
-                                    bool adaptive_banded);
+                                    int16_t match_score);
 
 /// \}
 

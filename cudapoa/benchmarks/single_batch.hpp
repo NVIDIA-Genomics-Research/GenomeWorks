@@ -53,7 +53,7 @@ public:
 
         BatchConfig batch_size(1024, 200);
 
-        batch_ = create_batch(0, stream, mem_per_batch, OutputType::consensus, batch_size, -8, -6, 8, false, false);
+        batch_ = create_batch(0, stream, mem_per_batch, OutputType::consensus, batch_size, -8, -6, 8);
     }
 
     ~SingleBatch()

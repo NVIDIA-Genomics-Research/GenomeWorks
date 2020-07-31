@@ -149,9 +149,7 @@ cdef class CudaPoaBatch:
             deref(self.batch_size),
             gap_score,
             mismatch_score,
-            match_score,
-            cuda_banded_alignment,
-            cuda_adaptive_alignment)
+            match_score)
 
     def __init__(
             self,

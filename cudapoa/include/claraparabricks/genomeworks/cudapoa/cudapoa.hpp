@@ -44,6 +44,11 @@ enum StatusType
     generic_error
 };
 
+/// Banding mode used in Needleman-Wunch algorithm
+/// full_band performs computations on full scores matrix, highest accuracy
+/// static_band performs computations on a fixed band along scores matrix diagonal, fastest implementation
+/// adaptive_band, similar to static_band performs computations on a band along diagonal, but the band-width
+/// can vary per alignment's score matrix, faster than full_band and more accurate than static_band
 enum BandMode
 {
     full_band = 0,

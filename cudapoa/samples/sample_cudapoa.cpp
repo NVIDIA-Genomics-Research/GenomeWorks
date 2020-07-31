@@ -55,9 +55,7 @@ std::unique_ptr<Batch> initialize_batch(bool msa, const BatchConfig& batch_size)
                                                 batch_size,
                                                 gap_score,
                                                 mismatch_score,
-                                                match_score,
-                                                batch_size.band_mode == BandMode::static_band,
-                                                batch_size.band_mode == BandMode::adaptive_band);
+                                                match_score);
 
     return std::move(batch);
 }

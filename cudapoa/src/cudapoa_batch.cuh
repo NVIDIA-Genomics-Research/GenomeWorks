@@ -64,8 +64,7 @@ class CudapoaBatch : public Batch
 {
 public:
     CudapoaBatch(int32_t device_id, cudaStream_t stream, size_t max_mem, int8_t output_mask,
-                 const BatchConfig& batch_size, ScoreT gap_score = -8, ScoreT mismatch_score = -6, ScoreT match_score = 8,
-                 bool banded_alignment = false, bool adaptive_banded = false)
+                 const BatchConfig& batch_size, ScoreT gap_score = -8, ScoreT mismatch_score = -6, ScoreT match_score = 8)
         : max_sequences_per_poa_(throw_on_negative(batch_size.max_sequences_per_poa, "Maximum sequences per POA has to be non-negative"))
         , device_id_(throw_on_negative(device_id, "Device ID has to be non-negative"))
         , stream_(stream)
@@ -74,8 +73,8 @@ public:
         , gap_score_(gap_score)
         , mismatch_score_(mismatch_score)
         , match_score_(match_score)
-        , banded_alignment_(banded_alignment)
-        , adaptive_banded_(adaptive_banded)
+        , banded_alignment_(batch_size.band_mode == BandMode::static_band)
+        , adaptive_banded_(batch_size.band_mode == BandMode::adaptive_band)
         , batch_block_(new BatchBlock<ScoreT, SizeT>(device_id,
                                                      max_mem,
                                                      output_mask,
@@ -553,7 +552,7 @@ protected:
     {
         int32_t max_graph_dimension = batch_size_.matrix_graph_dimension;
 
-        int32_t scores_width = banded_alignment_ ? (batch_size_.alignment_band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING) : cudautils::align<int32_t, 4>(max_seq_length + 1 + CELLS_PER_THREAD);
+        int32_t scores_width = banded_alignment_ ? batch_size_.matrix_sequence_dimension : cudautils::align<int32_t, 4>(max_seq_length + 1 + CELLS_PER_THREAD);
         size_t scores_size   = static_cast<size_t>(scores_width) * static_cast<size_t>(max_graph_dimension) * sizeof(ScoreT);
 
         if (scores_size > avail_scorebuf_mem_)
