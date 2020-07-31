@@ -306,7 +306,7 @@ using DefaultDeviceAllocator = CudaMallocAllocator<char>;
 /// which cannot allocate memory.
 /// \param max_cached_bytes max bytes used by memory resource used by CachingDeviceAllocator (default: 2GiB, unused for CudaMallocAllocator)
 /// \param default_streams if a call to allocate() does not specify any streams these streams will be used instead (unused for CudaMallocAllocator)
-inline DefaultDeviceAllocator create_default_device_allocator(std::size_t max_caching_size = 2ull * 1024 * 1024 * 1024,
+inline DefaultDeviceAllocator create_default_device_allocator(std::size_t max_caching_size                     = 2ull * 1024 * 1024 * 1024,
                                                               const std::vector<cudaStream_t>& default_streams = {})
 {
 #ifdef GW_ENABLE_CACHING_ALLOCATOR
