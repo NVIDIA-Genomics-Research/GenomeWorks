@@ -101,7 +101,7 @@ struct BatchConfig
         else // BandMode::adaptive_band
         {
             max_nodes_per_graph    = cudautils::align<int32_t, 4>(4 * max_sequence_size);
-            matrix_graph_dimension = cudautils::align<int32_t, 4>(2 * max_nodes_per_graph);
+            matrix_graph_dimension = cudautils::align<int32_t, 4>(max_nodes_per_graph);
             // 8 = CUDAPOA_BANDED_MATRIX_RIGHT_PADDING, *2 is to reserve extra memory for cases with extended band-width
             matrix_sequence_dimension = cudautils::align<int32_t, 4>(2 * (alignment_band_width + 8));
         }
