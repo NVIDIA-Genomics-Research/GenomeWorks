@@ -105,6 +105,7 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
                                   uint16_t* outgoing_edges_coverage_count_d,
                                   uint32_t max_nodes_per_graph,
                                   uint32_t scores_matrix_height,
+                                  uint32_t scores_matrix_width,
                                   uint32_t max_limit_consensus_size,
                                   int32_t TPB                = 64,
                                   bool adaptive_banded       = false,
@@ -142,9 +143,9 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
 
     int64_t scores_offset;
     int64_t banded_score_matrix_size;
-    if (banded_alignment)
+    if (banded_alignment || adaptive_banded)
     {
-        banded_score_matrix_size = static_cast<int64_t>(scores_matrix_height) * static_cast<int64_t>(static_band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING);
+        banded_score_matrix_size = static_cast<int64_t>(scores_matrix_height) * static_cast<int64_t>(scores_matrix_width);
         scores_offset            = banded_score_matrix_size * static_cast<int64_t>(window_idx);
     }
     else
@@ -493,6 +494,7 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
     int32_t TPB                    = (banded_alignment || adaptive_banded) ? CUDAPOA_BANDED_THREADS_PER_BLOCK : CUDAPOA_THREADS_PER_BLOCK;
     int32_t max_nodes_per_graph    = batch_size.max_nodes_per_graph;
     int32_t matrix_graph_dimension = batch_size.matrix_graph_dimension;
+    int32_t matrix_seq_dimension   = batch_size.matrix_sequence_dimension;
     bool msa                       = output_mask & OutputType::msa;
 
     GW_CU_CHECK_ERR(cudaDeviceSetCacheConfig(cudaFuncCachePreferL1));
@@ -534,6 +536,7 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
                                       outgoing_edges_coverage_count,
                                       max_nodes_per_graph,
                                       matrix_graph_dimension,
+                                      matrix_seq_dimension,
                                       batch_size.max_consensus_size,
                                       TPB,
                                       adaptive_banded,
