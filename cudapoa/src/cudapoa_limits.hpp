@@ -47,7 +47,7 @@ static bool use32bitSize(const BatchConfig& batch_size)
 {
     int32_t max_length = batch_size.max_consensus_size;
     max_length         = std::max(max_length, batch_size.max_nodes_per_graph);
-    max_length         = std::max(max_length, batch_size.max_matrix_sequence_dimension);
+    max_length         = std::max(max_length, batch_size.matrix_sequence_dimension);
     //if max array length in POA analysis exceeds the range represented by int16_t, then int32_t should be used
     return (max_length > INT16_MAX);
 }

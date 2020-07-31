@@ -78,8 +78,8 @@ public:
         }
 
         // Calculate max POAs possible based on available memory.
-        int64_t device_size_per_score_matrix = static_cast<int64_t>(batch_size.max_matrix_sequence_dimension) *
-                                               static_cast<int64_t>(batch_size.max_matrix_graph_dimension) * sizeof(ScoreT);
+        int64_t device_size_per_score_matrix = static_cast<int64_t>(batch_size.matrix_sequence_dimension) *
+                                               static_cast<int64_t>(batch_size.matrix_graph_dimension) * sizeof(ScoreT);
         max_poas_ = avail_mem / (device_size_per_poa + device_size_per_score_matrix);
 
         // Update final sizes for block based on calculated maximum POAs.
@@ -411,8 +411,8 @@ public:
         }
 
         // Compute required memory for score matrix
-        int64_t device_size_per_score_matrix = static_cast<int64_t>(batch_size.max_matrix_sequence_dimension) *
-                                               static_cast<int64_t>(batch_size.max_matrix_graph_dimension) * sizeof_ScoreT;
+        int64_t device_size_per_score_matrix = static_cast<int64_t>(batch_size.matrix_sequence_dimension) *
+                                               static_cast<int64_t>(batch_size.matrix_graph_dimension) * sizeof_ScoreT;
 
         // Calculate max POAs possible based on available memory.
         int64_t max_poas = mem_per_batch / (device_size_per_poa + device_size_per_score_matrix);

@@ -551,7 +551,7 @@ protected:
     // Check if seq length can fit in available scoring matrix memory.
     bool reserve_buf(int32_t max_seq_length)
     {
-        int32_t max_graph_dimension = batch_size_.max_matrix_graph_dimension;
+        int32_t max_graph_dimension = batch_size_.matrix_graph_dimension;
 
         int32_t scores_width = banded_alignment_ ? (batch_size_.alignment_band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING) : cudautils::align<int32_t, 4>(max_seq_length + 1 + CELLS_PER_THREAD);
         size_t scores_size   = static_cast<size_t>(scores_width) * static_cast<size_t>(max_graph_dimension) * sizeof(ScoreT);

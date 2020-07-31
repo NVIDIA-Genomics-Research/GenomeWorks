@@ -218,7 +218,7 @@ NWAnswer testNW(const BasicNW& obj)
     GW_CU_CHECK_ERR(cudaMallocManaged((void**)&incoming_edge_count, batch_size.max_nodes_per_graph * sizeof(uint16_t)));
     GW_CU_CHECK_ERR(cudaMallocManaged((void**)&outgoing_edges, batch_size.max_nodes_per_graph * CUDAPOA_MAX_NODE_EDGES * sizeof(SizeT)));
     GW_CU_CHECK_ERR(cudaMallocManaged((void**)&outgoing_edge_count, batch_size.max_nodes_per_graph * sizeof(uint16_t)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&scores, batch_size.max_matrix_graph_dimension * batch_size.max_matrix_sequence_dimension * sizeof(int16_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&scores, batch_size.matrix_graph_dimension * batch_size.matrix_sequence_dimension * sizeof(int16_t)));
     GW_CU_CHECK_ERR(cudaMallocManaged((void**)&alignment_graph, batch_size.max_nodes_per_graph * sizeof(SizeT)));
     GW_CU_CHECK_ERR(cudaMallocManaged((void**)&read, batch_size.max_sequence_size * sizeof(uint8_t)));
     GW_CU_CHECK_ERR(cudaMallocManaged((void**)&alignment_read, batch_size.max_nodes_per_graph * sizeof(SizeT)));
@@ -228,7 +228,7 @@ NWAnswer testNW(const BasicNW& obj)
     memset((void**)incoming_edge_count, 0, batch_size.max_nodes_per_graph * sizeof(uint16_t));
     memset((void**)outgoing_edge_count, 0, batch_size.max_nodes_per_graph * sizeof(uint16_t));
     memset((void**)node_id_to_pos, 0, batch_size.max_nodes_per_graph * sizeof(SizeT));
-    memset((void**)scores, 0, batch_size.max_matrix_graph_dimension * batch_size.max_matrix_sequence_dimension * sizeof(int16_t));
+    memset((void**)scores, 0, batch_size.matrix_graph_dimension * batch_size.matrix_sequence_dimension * sizeof(int16_t));
 
     //calculate edge counts on host
     obj.get_graph_buffers(incoming_edges, incoming_edge_count,
@@ -252,7 +252,7 @@ NWAnswer testNW(const BasicNW& obj)
                  read,
                  read_count,
                  scores,
-                 BatchConfig().max_matrix_sequence_dimension,
+                 BatchConfig().matrix_sequence_dimension,
                  alignment_graph,
                  alignment_read,
                  gap_score,
