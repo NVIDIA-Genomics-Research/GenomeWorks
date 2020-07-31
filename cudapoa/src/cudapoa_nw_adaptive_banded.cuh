@@ -262,7 +262,11 @@ __device__
     band_width = min(band_width, 1536);
     // band_shift defines distance of band_start from the scores matrix diagonal, ad-hoc rule 4
     SizeT band_shift = band_width / 2;
-
+    // rerun code is defined in backtracking loop from previous alignment try
+    // -3 means backtrace path was too close to the left bound of band
+    // -4 means backtrace path was too close to the right bound of band
+    // Therefore we rerun alignment of the same read, but this time with double band-width and band_shift
+    // further to the left for rerun == -3, and further to the right for rerun == -4.
     if (rerun == -3)
     {
         // ad-hoc rule 5
@@ -458,16 +462,16 @@ __device__
                 if (rerun == 0)
                 {
                     // check if backtrace gets too close or hits the band limits, if so stop and rerun with extended band-width
-                    SizeT threshold = max(1, max_column / (4 * static_band_width)); // ad-hoc rule 7
+                    SizeT threshold = max(1, max_column / 1024); // ad-hoc rule 7
                     if (j > threshold && j < max_column - threshold)
                     {
                         band_start = get_band_start_for_row_adaptive(i, gradient, band_width, band_shift, max_column);
-                        if (j <= band_start + threshold) // ad-hoc rule 8-a
+                        if (j <= band_start + threshold) // ad-hoc rule 8-a, too close to left bound
                         {
                             aligned_nodes = -3;
                             break;
                         }
-                        if (j >= (band_start + band_width - threshold)) // ad-hoc rule 8-b
+                        if (j >= (band_start + band_width - threshold)) // ad-hoc rule 8-b, too close to right bound
                         {
                             aligned_nodes = -4;
                             break;
