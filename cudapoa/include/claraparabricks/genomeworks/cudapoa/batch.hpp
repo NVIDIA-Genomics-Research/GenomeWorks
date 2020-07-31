@@ -234,8 +234,6 @@ public:
 /// \param gap_score                score to be assigned to a gap
 /// \param mismatch_score           score to be assigned to a mismatch
 /// \param match_score              score to be assigned for a match
-/// \param banded_alignment         whether to use banded alignment
-/// \param adaptive_banded          flag to enable adaptive banded alignment
 ///
 /// \return Returns a unique pointer to a new Batch object
 std::unique_ptr<Batch> create_batch(int32_t device_id,
