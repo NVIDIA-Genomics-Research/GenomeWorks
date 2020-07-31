@@ -54,17 +54,13 @@ template <typename ScoreT, typename SizeT>
 class BatchBlock
 {
 public:
-    BatchBlock(int32_t device_id, size_t avail_mem, int8_t output_mask, const BatchConfig& batch_size, bool banded_alignment = false)
+    BatchBlock(int32_t device_id, size_t avail_mem, int8_t output_mask, const BatchConfig& batch_size)
         : max_sequences_per_poa_(throw_on_negative(batch_size.max_sequences_per_poa, "Maximum sequences per POA has to be non-negative"))
-        , banded_alignment_(banded_alignment)
         , device_id_(throw_on_negative(device_id, "Device ID has to be non-negative"))
         , output_mask_(output_mask)
     {
         scoped_device_switch dev(device_id_);
-
-        matrix_sequence_dimension_ = banded_alignment_ ? (batch_size.alignment_band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING) : batch_size.max_matrix_sequence_dimension;
-        max_graph_dimension_       = banded_alignment_ ? batch_size.max_matrix_graph_dimension_banded : batch_size.max_matrix_graph_dimension;
-        max_nodes_per_window_      = banded_alignment_ ? batch_size.max_nodes_per_graph_banded : batch_size.max_nodes_per_graph;
+        max_nodes_per_window_ = batch_size.max_nodes_per_graph;
 
         // calculate static and dynamic sizes of buffers needed per POA entry.
         int64_t host_size_fixed, device_size_fixed;
@@ -82,8 +78,9 @@ public:
         }
 
         // Calculate max POAs possible based on available memory.
-        int64_t device_size_per_score_matrix = static_cast<int64_t>(matrix_sequence_dimension_) * static_cast<int64_t>(max_graph_dimension_) * sizeof(ScoreT);
-        max_poas_                            = avail_mem / (device_size_per_poa + device_size_per_score_matrix);
+        int64_t device_size_per_score_matrix = static_cast<int64_t>(batch_size.max_matrix_sequence_dimension) *
+                                               static_cast<int64_t>(batch_size.max_matrix_graph_dimension) * sizeof(ScoreT);
+        max_poas_ = avail_mem / (device_size_per_poa + device_size_per_score_matrix);
 
         // Update final sizes for block based on calculated maximum POAs.
         output_size_ = max_poas_ * static_cast<int64_t>(batch_size.max_consensus_size);
@@ -311,10 +308,10 @@ public:
 
     int32_t get_max_poas() const { return max_poas_; };
 
-    static int64_t compute_device_memory_per_poa(const BatchConfig& batch_size, const bool banded_alignment, const bool msa_flag, const bool variable_bands = false)
+    static int64_t compute_device_memory_per_poa(const BatchConfig& batch_size, const bool msa_flag, const bool variable_bands = false)
     {
         int64_t device_size_per_poa = 0;
-        int32_t max_nodes_per_graph = banded_alignment ? batch_size.max_nodes_per_graph_banded : batch_size.max_nodes_per_graph;
+        int32_t max_nodes_per_graph = batch_size.max_nodes_per_graph;
 
         // for output - device
         device_size_per_poa += batch_size.max_consensus_size * sizeof(*OutputDetails::consensus);                                                                        // output_details_d_->consensus
@@ -360,11 +357,10 @@ public:
         return device_size_per_poa;
     }
 
-    static int64_t compute_host_memory_per_poa(const BatchConfig& batch_size, const bool banded_alignment, const bool msa_flag)
+    static int64_t compute_host_memory_per_poa(const BatchConfig& batch_size, const bool msa_flag)
     {
-        int64_t host_size_per_poa = 0;
-
-        int32_t max_nodes_per_graph = banded_alignment ? batch_size.max_nodes_per_graph_banded : batch_size.max_nodes_per_graph;
+        int64_t host_size_per_poa   = 0;
+        int32_t max_nodes_per_graph = batch_size.max_nodes_per_graph;
 
         // for output - host
         host_size_per_poa += batch_size.max_consensus_size * sizeof(*OutputDetails::consensus);                                                                        // output_details_h_->consensus
@@ -386,7 +382,7 @@ public:
         return host_size_per_poa;
     }
 
-    static int64_t estimate_max_poas(const BatchConfig& batch_size, bool banded_alignment, bool msa_flag, float memory_usage_quota,
+    static int64_t estimate_max_poas(const BatchConfig& batch_size, bool msa_flag, float memory_usage_quota,
                                      int32_t mismatch_score, int32_t gap_score, int32_t match_score)
     {
         size_t total = 0, free = 0;
@@ -396,28 +392,27 @@ public:
         int64_t sizeof_ScoreT       = 2;
         int64_t device_size_per_poa = 0;
 
-        if (use32bitScore(batch_size, banded_alignment, gap_score, mismatch_score, match_score))
+        if (use32bitScore(batch_size, gap_score, mismatch_score, match_score))
         {
             sizeof_ScoreT = 4;
-            if (use32bitSize(batch_size, banded_alignment))
+            if (use32bitSize(batch_size))
             {
-                device_size_per_poa = BatchBlock<int32_t, int32_t>::compute_device_memory_per_poa(batch_size, banded_alignment, msa_flag);
+                device_size_per_poa = BatchBlock<int32_t, int32_t>::compute_device_memory_per_poa(batch_size, msa_flag);
             }
             else
             {
-                device_size_per_poa = BatchBlock<int32_t, int16_t>::compute_device_memory_per_poa(batch_size, banded_alignment, msa_flag);
+                device_size_per_poa = BatchBlock<int32_t, int16_t>::compute_device_memory_per_poa(batch_size, msa_flag);
             }
         }
         else
         {
             // if ScoreT is 16-bit, it's safe to assume SizeT is also 16-bit
-            device_size_per_poa = BatchBlock<int16_t, int16_t>::compute_device_memory_per_poa(batch_size, banded_alignment, msa_flag);
+            device_size_per_poa = BatchBlock<int16_t, int16_t>::compute_device_memory_per_poa(batch_size, msa_flag);
         }
 
         // Compute required memory for score matrix
-        int32_t matrix_sequence_dimension    = banded_alignment ? batch_size.alignment_band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING : batch_size.max_matrix_sequence_dimension;
-        int32_t matrix_graph_dimension       = banded_alignment ? batch_size.max_matrix_graph_dimension_banded : batch_size.max_matrix_graph_dimension;
-        int64_t device_size_per_score_matrix = (int64_t)matrix_sequence_dimension * (int64_t)matrix_graph_dimension * sizeof_ScoreT;
+        int64_t device_size_per_score_matrix = static_cast<int64_t>(batch_size.max_matrix_sequence_dimension) *
+                                               static_cast<int64_t>(batch_size.max_matrix_graph_dimension) * sizeof_ScoreT;
 
         // Calculate max POAs possible based on available memory.
         int64_t max_poas = mem_per_batch / (device_size_per_poa + device_size_per_score_matrix);
@@ -433,8 +428,8 @@ protected:
     // not include the scoring matrix needs for POA processing.
     std::tuple<int64_t, int64_t, int64_t, int64_t> calculate_space_per_poa(const BatchConfig& batch_size)
     {
-        int64_t host_size_per_poa   = compute_host_memory_per_poa(batch_size, banded_alignment_, (output_mask_ & OutputType::msa));
-        int64_t device_size_per_poa = compute_device_memory_per_poa(batch_size, banded_alignment_, (output_mask_ & OutputType::msa), variable_bands_);
+        int64_t host_size_per_poa   = compute_host_memory_per_poa(batch_size, (output_mask_ & OutputType::msa));
+        int64_t device_size_per_poa = compute_device_memory_per_poa(batch_size, (output_mask_ & OutputType::msa), variable_bands_);
         int64_t device_size_fixed   = 0;
         int64_t host_size_fixed     = 0;
         // for output - host
@@ -458,9 +453,6 @@ protected:
     // Maximum sequences per POA.
     int32_t max_sequences_per_poa_ = 0;
 
-    // Use banded POA alignment
-    bool banded_alignment_;
-
     // flag that enables some extra buffers to accommodate fully adaptive bands with variable width and arbitrary location
     // disabled for current implementation, can be enabled for possible future variants of adaptive alignment algorithm
     bool variable_bands_ = false;
@@ -477,11 +469,9 @@ protected:
     int64_t offset_h_ = 0;
     int64_t offset_d_ = 0;
 
-    int64_t input_size_                = 0;
-    int64_t output_size_               = 0;
-    int32_t matrix_sequence_dimension_ = 0;
-    int32_t max_graph_dimension_       = 0;
-    int32_t max_nodes_per_window_      = 0;
+    int64_t input_size_           = 0;
+    int64_t output_size_          = 0;
+    int32_t max_nodes_per_window_ = 0;
     int32_t device_id_;
 
     // Bit field for output type

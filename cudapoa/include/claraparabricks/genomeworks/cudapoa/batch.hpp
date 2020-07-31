@@ -64,34 +64,47 @@ struct BatchConfig
     int32_t max_consensus_size;
     /// Maximum number of nodes in a POA graph, one graph per window
     int32_t max_nodes_per_graph;
-    /// Maximum number of nodes in a POA graph in banded alignment, one graph per window
-    int32_t max_nodes_per_graph_banded;
     /// Maximum vertical dimension of scoring matrix, which stores POA graph
-    int32_t max_matrix_graph_dimension = max_nodes_per_graph;
-    /// Maximum vertical dimension of scoring matrix in banded alignment, which stores POA graph
-    int32_t max_matrix_graph_dimension_banded = max_nodes_per_graph_banded;
+    int32_t max_matrix_graph_dimension;
     /// Maximum horizontal dimension of scoring matrix, which stores sequences
-    int32_t max_matrix_sequence_dimension = max_sequence_size;
+    int32_t max_matrix_sequence_dimension;
     /// Band-width used in banded alignment
     int32_t alignment_band_width;
     /// Maximum number of equences per POA group
     int32_t max_sequences_per_poa;
+    /// Banding mode: full, static, adaptive
+    BandMode band_mode;
 
     /// constructor- set upper limit parameters based on max_sequence_size
-    BatchConfig(int32_t max_seq_sz = 1024, int32_t max_seq_per_poa = 100, int32_t band_width = 256)
+    BatchConfig(int32_t max_seq_sz = 1024, int32_t max_seq_per_poa = 100, int32_t band_width = 256, BandMode banding = BandMode::static_band)
         /// ensure a 4-byte boundary alignment for any allocated buffer
         : max_sequence_size(max_seq_sz)
         , max_consensus_size(2 * max_sequence_size)
-        , max_nodes_per_graph(cudautils::align<int32_t, 4>(3 * max_sequence_size))
-        , max_nodes_per_graph_banded(cudautils::align<int32_t, 4>(4 * max_sequence_size))
-        /// max_matrix_ parameters define buffer size for scores matrix
-        , max_matrix_graph_dimension(cudautils::align<int32_t, 4>(max_nodes_per_graph))
-        , max_matrix_graph_dimension_banded(cudautils::align<int32_t, 4>(max_nodes_per_graph_banded))
-        , max_matrix_sequence_dimension(cudautils::align<int32_t, 4>(max_sequence_size))
-        /// ensure 128-alignment for band_width size
+        /// ensure 128-alignment for band_width size, 128 = CUDAPOA_MIN_BAND_WIDTH
         , alignment_band_width(cudautils::align<int32_t, 128>(band_width))
         , max_sequences_per_poa(max_seq_per_poa)
     {
+        if (banding == BandMode::full_band)
+        {
+            max_nodes_per_graph           = cudautils::align<int32_t, 4>(3 * max_sequence_size);
+            max_matrix_graph_dimension    = cudautils::align<int32_t, 4>(max_nodes_per_graph);
+            max_matrix_sequence_dimension = cudautils::align<int32_t, 4>(max_sequence_size);
+        }
+        else if (banding == BandMode::static_band)
+        {
+            max_nodes_per_graph        = cudautils::align<int32_t, 4>(4 * max_sequence_size);
+            max_matrix_graph_dimension = cudautils::align<int32_t, 4>(max_nodes_per_graph);
+            // 8 = CUDAPOA_BANDED_MATRIX_RIGHT_PADDING
+            max_matrix_sequence_dimension = cudautils::align<int32_t, 4>(alignment_band_width + 8);
+        }
+        else // BandMode::adaptive_band
+        {
+            max_nodes_per_graph        = cudautils::align<int32_t, 4>(4 * max_sequence_size);
+            max_matrix_graph_dimension = cudautils::align<int32_t, 4>(2 * max_nodes_per_graph);
+            // 8 = CUDAPOA_BANDED_MATRIX_RIGHT_PADDING, *2 is to reserve extra memory for cases with extended band-width
+            max_matrix_sequence_dimension = cudautils::align<int32_t, 4>(2 * (alignment_band_width + 8));
+        }
+
         throw_on_negative(max_seq_sz, "max_sequence_size cannot be negative.");
         throw_on_negative(max_seq_per_poa, "max_sequences_per_poa cannot be negative.");
         throw_on_negative(band_width, "alignment_band_width cannot be negative.");
@@ -103,29 +116,24 @@ struct BatchConfig
 
     /// constructor- set all parameters separately
     BatchConfig(int32_t max_seq_sz, int32_t max_consensus_sz, int32_t max_nodes_per_w,
-                int32_t max_nodes_per_w_banded, int32_t band_width, int32_t max_seq_per_poa)
+                int32_t band_width, int32_t max_seq_per_poa)
         /// ensure a 4-byte boundary alignment for any allocated buffer
         : max_sequence_size(max_seq_sz)
         , max_consensus_size(max_consensus_sz)
         , max_nodes_per_graph(cudautils::align<int32_t, 4>(max_nodes_per_w))
-        , max_nodes_per_graph_banded(cudautils::align<int32_t, 4>(max_nodes_per_w_banded))
         , max_matrix_graph_dimension(cudautils::align<int32_t, 4>(max_nodes_per_graph))
-        , max_matrix_graph_dimension_banded(cudautils::align<int32_t, 4>(max_nodes_per_graph_banded))
         , max_matrix_sequence_dimension(cudautils::align<int32_t, 4>(max_sequence_size))
-        /// ensure 128-alignment for band_width size
+        /// ensure 128-alignment for band_width size, 128 = CUDAPOA_MIN_BAND_WIDTH
         , alignment_band_width(cudautils::align<int32_t, 128>(band_width))
         , max_sequences_per_poa(max_seq_per_poa)
     {
         throw_on_negative(max_seq_sz, "max_sequence_size cannot be negative.");
         throw_on_negative(max_consensus_sz, "max_consensus_size cannot be negative.");
         throw_on_negative(max_nodes_per_w, "max_nodes_per_graph cannot be negative.");
-        throw_on_negative(max_nodes_per_w_banded, "max_nodes_per_graph_banded cannot be negative.");
         throw_on_negative(max_seq_per_poa, "max_sequences_per_poa cannot be negative.");
         throw_on_negative(band_width, "alignment_band_width cannot be negative.");
 
         if (max_nodes_per_graph < max_sequence_size)
-            throw std::invalid_argument("max_nodes_per_graph should be greater than or equal to max_sequence_size.");
-        if (max_nodes_per_graph_banded < max_sequence_size)
             throw std::invalid_argument("max_nodes_per_graph should be greater than or equal to max_sequence_size.");
         if (max_consensus_size < max_sequence_size)
             throw std::invalid_argument("max_consensus_size should be greater than or equal to max_sequence_size.");

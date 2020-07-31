@@ -79,8 +79,7 @@ public:
         , batch_block_(new BatchBlock<ScoreT, SizeT>(device_id,
                                                      max_mem,
                                                      output_mask,
-                                                     batch_size_,
-                                                     banded_alignment))
+                                                     batch_size_))
         , max_poas_(batch_block_->get_max_poas())
     {
         // Set CUDA device
@@ -316,7 +315,7 @@ public:
     void get_graphs(std::vector<DirectedGraph>& graphs,
                     std::vector<StatusType>& output_status)
     {
-        int32_t max_nodes_per_window_ = banded_alignment_ ? batch_size_.max_nodes_per_graph_banded : batch_size_.max_nodes_per_graph;
+        int32_t max_nodes_per_window_ = batch_size_.max_nodes_per_graph;
         GW_CU_CHECK_ERR(cudaMemcpyAsync(graph_details_h_->nodes,
                                         graph_details_d_->nodes,
                                         sizeof(*graph_details_h_->nodes) * max_nodes_per_window_ * max_poas_,
@@ -552,7 +551,7 @@ protected:
     // Check if seq length can fit in available scoring matrix memory.
     bool reserve_buf(int32_t max_seq_length)
     {
-        int32_t max_graph_dimension = banded_alignment_ ? batch_size_.max_matrix_graph_dimension_banded : batch_size_.max_matrix_graph_dimension;
+        int32_t max_graph_dimension = batch_size_.max_matrix_graph_dimension;
 
         int32_t scores_width = banded_alignment_ ? (batch_size_.alignment_band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING) : cudautils::align<int32_t, 4>(max_seq_length + 1 + CELLS_PER_THREAD);
         size_t scores_size   = static_cast<size_t>(scores_width) * static_cast<size_t>(max_graph_dimension) * sizeof(ScoreT);

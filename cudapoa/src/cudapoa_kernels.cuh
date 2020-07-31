@@ -106,11 +106,12 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
                                   uint32_t max_nodes_per_graph,
                                   uint32_t max_scores_matrix_height,
                                   uint32_t max_limit_consensus_size,
-                                  int32_t TPB                          = 64,
-                                  bool adaptive_banded                 = false,
-                                  bool banded_alignment                = false,
-                                  bool msa                             = false,
-                                  uint32_t banded_alignment_band_width = 256)
+                                  int32_t TPB                = 64,
+                                  bool adaptive_banded       = false,
+                                  bool banded_alignment      = false,
+                                  bool msa                   = false,
+                                  uint32_t static_band_width = 256,
+                                  BandMode band_mode         = BandMode::full_band)
 {
     // shared error indicator within a warp
     bool warp_error = false;
@@ -143,7 +144,7 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
     int64_t banded_score_matrix_size;
     if (banded_alignment)
     {
-        banded_score_matrix_size = static_cast<int64_t>(max_scores_matrix_height) * static_cast<int64_t>(banded_alignment_band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING);
+        banded_score_matrix_size = static_cast<int64_t>(max_scores_matrix_height) * static_cast<int64_t>(static_band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING);
         scores_offset            = banded_score_matrix_size * static_cast<int64_t>(window_idx);
     }
     else
@@ -267,7 +268,7 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
                                                                                             banded_score_matrix_size,
                                                                                             alignment_graph,
                                                                                             alignment_read,
-                                                                                            banded_alignment_band_width,
+                                                                                            static_band_width,
                                                                                             gap_score,
                                                                                             mismatch_score,
                                                                                             match_score,
@@ -291,7 +292,7 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
                                                                                                 banded_score_matrix_size,
                                                                                                 alignment_graph,
                                                                                                 alignment_read,
-                                                                                                banded_alignment_band_width,
+                                                                                                static_band_width,
                                                                                                 gap_score,
                                                                                                 mismatch_score,
                                                                                                 match_score,
@@ -313,7 +314,7 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
                                                                                     scores,
                                                                                     alignment_graph,
                                                                                     alignment_read,
-                                                                                    banded_alignment_band_width,
+                                                                                    static_band_width,
                                                                                     gap_score,
                                                                                     mismatch_score,
                                                                                     match_score);
@@ -407,7 +408,6 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
                                                node_marks,
                                                check_aligned_nodes,
                                                nodes_to_visit,
-                                               banded_alignment,
                                                (uint16_t)max_nodes_per_graph);
 #else
                 // Faster top sort
@@ -491,8 +491,8 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
     int32_t nwindows_per_block         = CUDAPOA_THREADS_PER_BLOCK / WARP_SIZE;
     int32_t nblocks                    = (banded_alignment || adaptive_banded) ? total_windows : (total_windows + nwindows_per_block - 1) / nwindows_per_block;
     int32_t TPB                        = (banded_alignment || adaptive_banded) ? CUDAPOA_BANDED_THREADS_PER_BLOCK : CUDAPOA_THREADS_PER_BLOCK;
-    int32_t max_nodes_per_graph        = (banded_alignment || adaptive_banded) ? batch_size.max_nodes_per_graph_banded : batch_size.max_nodes_per_graph;
-    int32_t max_matrix_graph_dimension = (banded_alignment || adaptive_banded) ? batch_size.max_matrix_graph_dimension_banded : batch_size.max_matrix_graph_dimension;
+    int32_t max_nodes_per_graph        = batch_size.max_nodes_per_graph;
+    int32_t max_matrix_graph_dimension = batch_size.max_matrix_graph_dimension;
     bool msa                           = output_mask & OutputType::msa;
 
     GW_CU_CHECK_ERR(cudaDeviceSetCacheConfig(cudaFuncCachePreferL1));

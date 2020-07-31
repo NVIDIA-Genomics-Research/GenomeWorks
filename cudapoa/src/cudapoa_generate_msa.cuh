@@ -194,7 +194,6 @@ __global__ void generateMSAKernel(uint8_t* nodes_d,
                                        node_marks,
                                        check_aligned_nodes,
                                        nodes_to_visit,
-                                       banded_alignment,
                                        static_cast<SizeT>(max_nodes_per_graph));
 
         msa_length = getNodeIDToMSAPosDevice<SizeT>(sequence_lengths[0],

@@ -109,7 +109,6 @@ __device__ void raconTopologicalSortDeviceUtil(SizeT* sorted_poa,
                                                uint8_t* node_marks,
                                                bool* check_aligned_nodes,
                                                SizeT* nodes_to_visit,
-                                               bool /*banded_alignment*/,
                                                SizeT max_nodes_per_graph)
 {
     SizeT node_idx       = -1;
