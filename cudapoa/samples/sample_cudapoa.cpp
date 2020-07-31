@@ -131,7 +131,7 @@ int main(int argc, char** argv)
     int c              = 0;
     bool msa           = false;
     bool long_read     = false;
-    int8_t band_mode   = 1; // 0: full, 1: static-band, 2: adaptive-band
+    int8_t band_mode   = 2; // 0: full, 1: static-band, 2: adaptive-band
     bool help          = false;
     bool print         = false;
     bool print_graph   = false;
@@ -169,7 +169,7 @@ int main(int argc, char** argv)
         std::cout << "./sample_cudapoa [-m] [-h]" << std::endl;
         std::cout << "-m : Generate MSA (if not provided, generates consensus by default)" << std::endl;
         std::cout << "-l : Perform long-read sample (if not provided, will run short-read sample by default)" << std::endl;
-        std::cout << "-b : Sets band mode 0: full-alignment, 1: static band, 2: adaptive band , will run static band by default)" << std::endl;
+        std::cout << "-b : Sets band mode 0: full-alignment, 1: static band, 2: adaptive band , will run adaptive band by default)" << std::endl;
         std::cout << "-p : Print the MSA or consensus output to stdout" << std::endl;
         std::cout << "-g : Print POA graph in dot format, this option is only for long-read sample" << std::endl;
         std::cout << "-h : Print help message" << std::endl;
