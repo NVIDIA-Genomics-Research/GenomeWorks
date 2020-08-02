@@ -1,11 +1,17 @@
 /*
-* Copyright (c) 2020, NVIDIA CORPORATION.  All rights reserved.
+* Copyright 2019-2020 NVIDIA CORPORATION.
 *
-* NVIDIA CORPORATION and its licensors retain all intellectual property
-* and proprietary rights in and to this software, related documentation
-* and any modifications thereto.  Any use, reproduction, disclosure or
-* distribution of this software and related documentation without an express
-* license agreement from NVIDIA CORPORATION is strictly prohibited.
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
 */
 
 #include "application_parameters.hpp"
@@ -57,6 +63,7 @@ ApplicationParameters::ApplicationParameters(int argc, char* argv[])
 
     bool target_indices_in_host_memory_set   = false;
     bool target_indices_in_device_memory_set = false;
+    bool custom_filtering_parameter          = false;
     int32_t argument                         = 0;
     while ((argument = getopt_long(argc, argv, optstring.c_str(), options, nullptr)) != -1)
     {
@@ -85,7 +92,8 @@ ApplicationParameters::ApplicationParameters(int argc, char* argv[])
             target_index_size = std::stoi(optarg);
             break;
         case 'F':
-            filtering_parameter = std::stod(optarg);
+            filtering_parameter        = std::stod(optarg);
+            custom_filtering_parameter = true;
             break;
         case 'a':
             alignment_engines = std::stoi(optarg);
@@ -193,7 +201,36 @@ ApplicationParameters::ApplicationParameters(int argc, char* argv[])
 
     create_input_parsers(query_parser, target_parser);
 
+    set_filtering_parameter(query_parser, target_parser, custom_filtering_parameter);
+
     max_cached_memory_bytes = get_max_cached_memory_bytes();
+}
+
+void ApplicationParameters::set_filtering_parameter(std::shared_ptr<io::FastaParser>& query_parser,
+                                                    std::shared_ptr<io::FastaParser>& target_parser,
+                                                    const bool custom_filtering_parameter = false)
+{
+
+    number_of_basepairs_t total_sequence_length                 = 0;
+    const number_of_basepairs_t minimum_for_automatic_filtering = 500000; // Require at least 0.5Mbp of sequence for filtering by default
+    number_of_reads_t query_index                               = 0;
+    number_of_reads_t target_index                              = 0;
+    while (total_sequence_length < minimum_for_automatic_filtering && query_index < query_parser->get_num_seqences())
+    {
+        total_sequence_length += get_size<number_of_basepairs_t>(query_parser->get_sequence_by_id(query_index).seq);
+        ++query_index;
+    }
+
+    while (total_sequence_length < minimum_for_automatic_filtering && target_index < target_parser->get_num_seqences())
+    {
+        total_sequence_length += get_size<number_of_basepairs_t>(target_parser->get_sequence_by_id(target_index).seq);
+        ++target_index;
+    }
+
+    if (total_sequence_length < minimum_for_automatic_filtering && !custom_filtering_parameter)
+    {
+        filtering_parameter = 1.0;
+    }
 }
 
 void ApplicationParameters::create_input_parsers(std::shared_ptr<io::FastaParser>& query_parser,
@@ -268,7 +305,7 @@ void ApplicationParameters::help(int32_t exit_code)
               << Index::maximum_kmer_size() << ")"
               << R"(
         -w, --window-size
-            length of window to use for minimizers [15])"
+            length of window to use for minimizers [10])"
               << R"(
         -d, --num-devices
             number of GPUs to use [1])"
@@ -283,22 +320,22 @@ void ApplicationParameters::help(int32_t exit_code)
             length of batch sized used for target in MB [30])"
               << R"(
         -F, --filtering-parameter
-            filter all representations for which sketch_elements_with_that_representation/total_sketch_elements >= filtering_parameter), filtering disabled if filtering_parameter == 1.0 [1'000'000'001] (Min = 0.0, Max = 1.0))"
+            Remove representations with frequency (sketch_elements_with_that_representation/total_sketch_elements) >= filtering_parameter. Filtering is disabled if filtering_parameter == 1.0 (Min = 0.0, Max = 1.0) [1e-5])"
               << R"(
         -a, --alignment-engines
             Number of alignment engines to use (per device) for generating CIGAR strings for overlap alignments. Default value 0 = no alignment to be performed. Typically 2-4 engines per device gives best perf.)"
               << R"(
         -r, --min-residues
-            Minimum number of matching residues in an overlap [10])"
+            Minimum number of matching residues in an overlap (recommended: 1 - 10) [3])"
               << R"(
         -l, --min-overlap-length
-            Minimum length for an overlap [500].)"
+            Minimum length for an overlap [250].)"
               << R"(
         -b, --min-bases-per-residue
-            Minimum number of bases in overlap per match [100].)"
+            Minimum number of bases in overlap per match [1000].)"
               << R"(
         -z, --min-overlap-fraction
-            Minimum ratio of overlap length to alignment length [0.95].)"
+            Minimum ratio of overlap length to alignment length [0.8].)"
               << R"(
         -R, --rescue-overlap-ends
             Run a kmer-based procedure that attempts to extend overlaps at the ends of the query/target.)"

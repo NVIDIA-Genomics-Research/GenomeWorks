@@ -1,11 +1,17 @@
 /*
-* Copyright (c) 2019, NVIDIA CORPORATION.  All rights reserved.
+* Copyright 2019-2020 NVIDIA CORPORATION.
 *
-* NVIDIA CORPORATION and its licensors retain all intellectual property
-* and proprietary rights in and to this software, related documentation
-* and any modifications thereto.  Any use, reproduction, disclosure or
-* distribution of this software and related documentation without an express
-* license agreement from NVIDIA CORPORATION is strictly prohibited.
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
 */
 
 #pragma once
@@ -70,6 +76,11 @@ public:
     /// \return Type of alignment
     virtual AlignmentType get_alignment_type() const = 0;
 
+    /// \brief Returns if the alignment is optimal
+    ///
+    /// \return true if the alignment is optimal, false if it is an approximation
+    virtual bool is_optimal() const = 0;
+
     /// \brief Return status of alignment
     ///
     /// \return Status of alignment
@@ -80,6 +91,14 @@ public:
     /// \return Vector of AlignmentState encoding sequence of match,
     ///         mistmatch and insertions in alignment.
     virtual const std::vector<AlignmentState>& get_alignment() const = 0;
+
+    /// \brief Get the edit distance corrsponding to the alignment
+    ///
+    /// Returns the number of edits of the found alignment.
+    /// If is_optimal() returns true, this is the edit distance of the two sequences.
+    /// Otherwise, this number is an upper bound of the (optimal) edit distance of the two sequences.
+    /// \return the number of edits of the found alignment
+    virtual int32_t get_edit_distance() const = 0;
 
     /// \brief Print formatted alignment to stderr.
     virtual FormattedAlignment format_alignment(int32_t maximal_line_length = 80) const = 0;

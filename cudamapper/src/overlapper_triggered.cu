@@ -1,12 +1,18 @@
 /*
- * Copyright (c) 2019, NVIDIA CORPORATION.  All rights reserved.
- *
- * NVIDIA CORPORATION and its licensors retain all intellectual property
- * and proprietary rights in and to this software, related documentation
- * and any modifications thereto.  Any use, reproduction, disclosure or
- * distribution of this software and related documentation without an express
- * license agreement from NVIDIA CORPORATION is strictly prohibited.
- */
+* Copyright 2019-2020 NVIDIA CORPORATION.
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
 
 #include "overlapper_triggered.hpp"
 
@@ -142,15 +148,18 @@ struct FilterOverlapOp
     size_t min_overlap_len;
     size_t min_bases_per_residue;
     float min_overlap_fraction;
+    bool indexes_identical;
 
     __host__ __device__ __forceinline__ FilterOverlapOp(size_t min_residues,
                                                         size_t min_overlap_len,
                                                         size_t min_bases_per_residue,
-                                                        float min_overlap_fraction)
+                                                        float min_overlap_fraction,
+                                                        bool indexes_identical)
         : min_residues(min_residues)
         , min_overlap_len(min_overlap_len)
         , min_bases_per_residue(min_bases_per_residue)
         , min_overlap_fraction(min_overlap_fraction)
+        , indexes_identical(indexes_identical)
     {
     }
 
@@ -160,12 +169,13 @@ struct FilterOverlapOp
         const auto target_overlap_length = overlap.target_end_position_in_read_ - overlap.target_start_position_in_read_;
         const auto query_overlap_length  = overlap.query_end_position_in_read_ - overlap.query_start_position_in_read_;
         const auto overlap_length        = max(target_overlap_length, query_overlap_length);
+        const bool self_mapping          = (overlap.query_read_id_ == overlap.target_read_id_) && indexes_identical;
 
         return ((overlap.num_residues_ >= min_residues) &&
                 ((overlap_length / overlap.num_residues_) < min_bases_per_residue) &&
                 (query_overlap_length >= min_overlap_len) &&
                 (target_overlap_length >= min_overlap_len) &&
-                (overlap.query_read_id_ != overlap.target_read_id_) &&
+                (!self_mapping) &&
                 ((static_cast<float>(target_overlap_length) / static_cast<float>(overlap_length)) > min_overlap_fraction) &&
                 ((static_cast<float>(query_overlap_length) / static_cast<float>(overlap_length)) > min_overlap_fraction));
     }
@@ -231,6 +241,7 @@ OverlapperTriggered::OverlapperTriggered(DefaultDeviceAllocator allocator,
 
 void OverlapperTriggered::get_overlaps(std::vector<Overlap>& fused_overlaps,
                                        const device_buffer<Anchor>& d_anchors,
+                                       bool all_to_all,
                                        int64_t min_residues,
                                        int64_t min_overlap_len,
                                        int64_t min_bases_per_residue,
@@ -408,7 +419,7 @@ void OverlapperTriggered::get_overlaps(std::vector<Overlap>& fused_overlaps,
 
     device_buffer<Overlap> d_filtered_overlaps(n_fused_overlap, _allocator, _cuda_stream);
 
-    FilterOverlapOp filterOp(min_residues, min_overlap_len, min_bases_per_residue, min_overlap_fraction);
+    FilterOverlapOp filterOp(min_residues, min_overlap_len, min_bases_per_residue, min_overlap_fraction, all_to_all);
     auto filtered_overlaps_end =
         thrust::copy_if(thrust_exec_policy,
                         d_fused_overlaps.data(), d_fused_overlaps.data() + n_fused_overlap,

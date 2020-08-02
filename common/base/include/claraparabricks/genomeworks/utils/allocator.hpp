@@ -1,12 +1,18 @@
 /*
- * Copyright (c) 2020, NVIDIA CORPORATION.  All rights reserved.
- *
- * NVIDIA CORPORATION and its licensors retain all intellectual property
- * and proprietary rights in and to this software, related documentation
- * and any modifications thereto.  Any use, reproduction, disclosure or
- * distribution of this software and related documentation without an express
- * license agreement from NVIDIA CORPORATION is strictly prohibited.
- */
+* Copyright 2019-2020 NVIDIA CORPORATION.
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
 
 #pragma once
 
@@ -139,6 +145,13 @@ public:
     {
         static_cast<void>(n);
         GW_CU_ABORT_ON_ERR(cudaFree(p));
+    }
+
+    /// \brief Get the size of the largest free memory block
+    /// \return returns the size in bytes
+    int64_t get_size_of_largest_free_memory_block() const
+    {
+        return cudautils::find_largest_contiguous_device_memory_section();
     }
 };
 
@@ -280,6 +293,13 @@ public:
         GW_CU_ABORT_ON_ERR(memory_resource_->DeviceFree(p));
     }
 
+    /// \brief Get the size of the largest free memory block
+    /// \return returns the size in bytes
+    int64_t get_size_of_largest_free_memory_block() const
+    {
+        return memory_resource_->get_size_of_largest_free_memory_block();
+    }
+
     /// \brief returns a shared pointer to memory_resource
     /// \return a shared pointer to memory_resource
     std::shared_ptr<MemoryResource> memory_resource() const { return memory_resource_; }
@@ -294,6 +314,14 @@ using DefaultDeviceAllocator = CachingDeviceAllocator<char, DevicePreallocatedAl
 #else
 using DefaultDeviceAllocator = CudaMallocAllocator<char>;
 #endif
+
+/// Gets the size of the largest free memory block in the allocator
+///
+/// \return returns the size in bytes
+inline int64_t get_size_of_largest_free_memory_block(DefaultDeviceAllocator const& allocator)
+{
+    return allocator.get_size_of_largest_free_memory_block();
+}
 
 /// Constructs a DefaultDeviceAllocator
 ///
