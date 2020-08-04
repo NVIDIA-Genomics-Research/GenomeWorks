@@ -297,9 +297,13 @@ void IndexCache::start_generating_content_device(const std::vector<IndexDescript
         // if index has not been found on device copy it from host
         if (!device_index)
         {
-            // TODO: Throw a custom exception if index not found instead of std::out_of_range
-            std::shared_ptr<const IndexHostCopyBase> index_on_host = host_cache.at(index_descriptor);
-            device_index                                           = index_on_host->copy_index_to_device(allocator_, cuda_stream_copy_);
+            const auto index_on_host_iter = host_cache.find(index_descriptor);
+            if (index_on_host_iter == host_cache.end())
+            {
+                throw IndexNotFoundException(index_descriptor,
+                                             IndexNotFoundException::IndexType::host_cache);
+            }
+            device_index = index_on_host_iter->second->copy_index_to_device(allocator_, cuda_stream_copy_);
         }
 
         assert(device_index);
@@ -325,8 +329,24 @@ std::shared_ptr<const Index> IndexCache::get_index_from_cache(const IndexDescrip
                                                               const CacheSelector which_cache) const
 {
     const device_cache_t& this_device_cache = (CacheSelector::query_cache == which_cache) ? query_device_cache_ : target_device_cache_;
-    // TODO: Throw a custom exception if index not found instead of std::out_of_range
-    return this_device_cache.at(index_descriptor);
+    const auto index_iter                   = this_device_cache.find(index_descriptor);
+    if (index_iter == this_device_cache.end())
+    {
+        throw IndexNotFoundException(index_descriptor,
+                                     IndexNotFoundException::IndexType::device_cache);
+    }
+    return index_iter->second;
+}
+
+IndexNotFoundException::IndexNotFoundException(IndexDescriptor index_descriptor,
+                                               IndexType index_type)
+    : error_message_("Index not found in " + std::string(index_type == IndexType::host_cache ? "host" : "device") + " cache. First read: " + std::to_string(index_descriptor.first_read()) + ", number of reads: " + std::to_string(index_descriptor.number_of_reads()))
+{
+}
+
+const char* IndexNotFoundException::what() const noexcept
+{
+    return error_message_.c_str();
 }
 
 } // namespace cudamapper

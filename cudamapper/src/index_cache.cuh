@@ -16,7 +16,9 @@
 
 #pragma once
 
+#include <exception>
 #include <memory>
+#include <string>
 #include <unordered_map>
 
 #include <claraparabricks/genomeworks/cudamapper/types.hpp>
@@ -223,6 +225,36 @@ private:
     const double filtering_parameter_;
     const cudaStream_t cuda_stream_generation_;
     const cudaStream_t cuda_stream_copy_;
+};
+
+/// IndexNotFoundException - Exception to be thrown if Index is reuqsted, but not found
+class IndexNotFoundException : public std::exception
+{
+public:
+    /// IndexType - Was the Index requested from host or device cache
+    enum class IndexType
+    {
+        host_cache,
+        device_cache
+    };
+
+    /// \brief constructor
+    /// \param index_descriptor
+    /// \param index_type was Index equested from host or device cache
+    IndexNotFoundException(IndexDescriptor index_descriptor,
+                           IndexType index_type);
+
+    IndexNotFoundException(const IndexNotFoundException&) = default;
+    IndexNotFoundException& operator=(const IndexNotFoundException&) = default;
+    IndexNotFoundException(IndexNotFoundException&&)                 = default;
+    IndexNotFoundException& operator=(IndexNotFoundException&&) = default;
+    virtual ~IndexNotFoundException()                           = default;
+
+    /// Returns the error message of the exception
+    virtual const char* what() const noexcept;
+
+private:
+    const std::string error_message_;
 };
 
 } // namespace cudamapper

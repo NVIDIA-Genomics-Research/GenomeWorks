@@ -368,11 +368,11 @@ TEST(TestCudamapperIndexCaching, test_index_cache_same_query_and_target)
                                   catcaag_maximum_kmer_size,
                                   cuda_stream_generate,
                                   "test_index_cache_same_query_and_target_1");
-        ASSERT_ANY_THROW(index_cache.get_index_from_query_cache(aagcta_index_descriptor));
-        ASSERT_ANY_THROW(index_cache.get_index_from_query_cache(catcaag_aagcta_index_descriptor));
-        ASSERT_ANY_THROW(index_cache.get_index_from_target_cache(catcaag_index_descriptor));
-        ASSERT_ANY_THROW(index_cache.get_index_from_target_cache(aagcta_index_descriptor));
-        ASSERT_ANY_THROW(index_cache.get_index_from_query_cache(catcaag_aagcta_index_descriptor));
+        ASSERT_THROW(index_cache.get_index_from_query_cache(aagcta_index_descriptor), IndexNotFoundException);
+        ASSERT_THROW(index_cache.get_index_from_query_cache(catcaag_aagcta_index_descriptor), IndexNotFoundException);
+        ASSERT_THROW(index_cache.get_index_from_target_cache(catcaag_index_descriptor), IndexNotFoundException);
+        ASSERT_THROW(index_cache.get_index_from_target_cache(aagcta_index_descriptor), IndexNotFoundException);
+        ASSERT_THROW(index_cache.get_index_from_query_cache(catcaag_aagcta_index_descriptor), IndexNotFoundException);
 
         index_cache.generate_content_target_host(aagcta_index_descriptors);
         index_cache.start_generating_content_target_device(aagcta_index_descriptors);
@@ -393,9 +393,9 @@ TEST(TestCudamapperIndexCaching, test_index_cache_same_query_and_target)
                                   catcaag_maximum_kmer_size,
                                   cuda_stream_generate,
                                   "test_index_cache_same_query_and_target_2");
-        ASSERT_ANY_THROW(index_cache.get_index_from_query_cache(aagcta_index_descriptor));
-        ASSERT_ANY_THROW(index_cache.get_index_from_query_cache(catcaag_aagcta_index_descriptor));
-        ASSERT_ANY_THROW(index_cache.get_index_from_target_cache(catcaag_index_descriptor));
+        ASSERT_THROW(index_cache.get_index_from_query_cache(aagcta_index_descriptor), IndexNotFoundException);
+        ASSERT_THROW(index_cache.get_index_from_query_cache(catcaag_aagcta_index_descriptor), IndexNotFoundException);
+        ASSERT_THROW(index_cache.get_index_from_target_cache(catcaag_index_descriptor), IndexNotFoundException);
         auto index_target_aagcta = index_cache.get_index_from_target_cache(aagcta_index_descriptor);
         check_if_index_is_correct(index_target_aagcta,
                                   aagcta_representations,
@@ -411,13 +411,13 @@ TEST(TestCudamapperIndexCaching, test_index_cache_same_query_and_target)
                                   aagcta_maximum_kmer_size,
                                   cuda_stream_generate,
                                   "test_index_cache_same_query_and_target_3");
-        ASSERT_ANY_THROW(index_cache.get_index_from_query_cache(catcaag_aagcta_index_descriptor));
+        ASSERT_THROW(index_cache.get_index_from_query_cache(catcaag_aagcta_index_descriptor), IndexNotFoundException);
 
         index_cache.generate_content_query_host(aagcta_index_descriptors);
         index_cache.start_generating_content_query_device(aagcta_index_descriptors);
         index_cache.finish_generating_content_query_device();
 
-        ASSERT_ANY_THROW(index_cache.get_index_from_query_cache(catcaag_index_descriptor));
+        ASSERT_THROW(index_cache.get_index_from_query_cache(catcaag_index_descriptor), IndexNotFoundException);
         auto index_query_aagcta = index_cache.get_index_from_query_cache(aagcta_index_descriptor);
         check_if_index_is_correct(index_query_aagcta,
                                   aagcta_representations,
@@ -433,8 +433,8 @@ TEST(TestCudamapperIndexCaching, test_index_cache_same_query_and_target)
                                   aagcta_maximum_kmer_size,
                                   cuda_stream_generate,
                                   "test_index_cache_same_query_and_target_4");
-        ASSERT_ANY_THROW(index_cache.get_index_from_query_cache(catcaag_aagcta_index_descriptor));
-        ASSERT_ANY_THROW(index_cache.get_index_from_target_cache(catcaag_index_descriptor));
+        ASSERT_THROW(index_cache.get_index_from_query_cache(catcaag_aagcta_index_descriptor), IndexNotFoundException);
+        ASSERT_THROW(index_cache.get_index_from_target_cache(catcaag_index_descriptor), IndexNotFoundException);
         index_target_aagcta = index_cache.get_index_from_target_cache(aagcta_index_descriptor);
         check_if_index_is_correct(index_target_aagcta,
                                   aagcta_representations,
@@ -450,7 +450,7 @@ TEST(TestCudamapperIndexCaching, test_index_cache_same_query_and_target)
                                   aagcta_maximum_kmer_size,
                                   cuda_stream_generate,
                                   "test_index_cache_same_query_and_target_5");
-        ASSERT_ANY_THROW(index_cache.get_index_from_query_cache(catcaag_aagcta_index_descriptor));
+        ASSERT_THROW(index_cache.get_index_from_query_cache(catcaag_aagcta_index_descriptor), IndexNotFoundException);
 
         index_cache.generate_content_query_host(catcaag_aagcta_separate_index_descriptors);
         index_cache.start_generating_content_query_device(catcaag_aagcta_separate_index_descriptors);
@@ -486,8 +486,8 @@ TEST(TestCudamapperIndexCaching, test_index_cache_same_query_and_target)
                                   aagcta_maximum_kmer_size,
                                   cuda_stream_generate,
                                   "test_index_cache_same_query_and_target_7");
-        ASSERT_ANY_THROW(index_cache.get_index_from_query_cache(catcaag_aagcta_index_descriptor));
-        ASSERT_ANY_THROW(index_cache.get_index_from_target_cache(catcaag_index_descriptor));
+        ASSERT_THROW(index_cache.get_index_from_query_cache(catcaag_aagcta_index_descriptor), IndexNotFoundException);
+        ASSERT_THROW(index_cache.get_index_from_target_cache(catcaag_index_descriptor), IndexNotFoundException);
         index_target_aagcta = index_cache.get_index_from_target_cache(aagcta_index_descriptor);
         check_if_index_is_correct(index_target_aagcta,
                                   aagcta_representations,
@@ -503,7 +503,7 @@ TEST(TestCudamapperIndexCaching, test_index_cache_same_query_and_target)
                                   aagcta_maximum_kmer_size,
                                   cuda_stream_generate,
                                   "test_index_cache_same_query_and_target_8");
-        ASSERT_ANY_THROW(index_cache.get_index_from_query_cache(catcaag_aagcta_index_descriptor));
+        ASSERT_THROW(index_cache.get_index_from_query_cache(catcaag_aagcta_index_descriptor), IndexNotFoundException);
 
         index_cache.generate_content_target_host(catcaag_aagcta_one_index_descriptors);
         index_cache.start_generating_content_target_device(catcaag_aagcta_one_index_descriptors);
@@ -539,9 +539,9 @@ TEST(TestCudamapperIndexCaching, test_index_cache_same_query_and_target)
                                   aagcta_maximum_kmer_size,
                                   cuda_stream_generate,
                                   "test_index_cache_same_query_and_target_10");
-        ASSERT_ANY_THROW(index_cache.get_index_from_query_cache(catcaag_aagcta_index_descriptor));
-        ASSERT_ANY_THROW(index_cache.get_index_from_target_cache(catcaag_index_descriptor));
-        ASSERT_ANY_THROW(index_cache.get_index_from_target_cache(aagcta_index_descriptor));
+        ASSERT_THROW(index_cache.get_index_from_query_cache(catcaag_aagcta_index_descriptor), IndexNotFoundException);
+        ASSERT_THROW(index_cache.get_index_from_target_cache(catcaag_index_descriptor), IndexNotFoundException);
+        ASSERT_THROW(index_cache.get_index_from_target_cache(aagcta_index_descriptor), IndexNotFoundException);
         auto catcaag_aagcta_target_aagcta = index_cache.get_index_from_target_cache(catcaag_aagcta_index_descriptor);
         check_if_index_is_correct(catcaag_aagcta_target_aagcta,
                                   catcaag_aagcta_representations,
@@ -748,7 +748,7 @@ TEST(TestCudamapperIndexCaching, test_index_cache_not_the_same_query_and_target)
                                   aagcta_maximum_kmer_size,
                                   cuda_stream_generate,
                                   "test_index_cache_not_the_same_query_and_target_1");
-        ASSERT_ANY_THROW(index_cache.get_index_from_target_cache(index_descriptor));
+        ASSERT_THROW(index_cache.get_index_from_target_cache(index_descriptor), IndexNotFoundException);
 
         index_cache.generate_content_target_host(index_descriptors);
         index_cache.start_generating_content_target_device(index_descriptors);
@@ -1077,7 +1077,7 @@ TEST(TestCudamapperIndexCaching, test_index_cache_same_query_and_target_2)
                                cuda_stream_copy);
 
         index_cache.generate_content_query_host(catcaag_index_descriptors);
-        ASSERT_ANY_THROW(index_cache.get_index_from_query_cache(catcaag_index_descriptor));
+        ASSERT_THROW(index_cache.get_index_from_query_cache(catcaag_index_descriptor), IndexNotFoundException);
         index_cache.start_generating_content_query_device(catcaag_index_descriptors);
         index_cache.finish_generating_content_query_device();
         auto index_query_catcaag = index_cache.get_index_from_query_cache(catcaag_index_descriptor);
@@ -1095,13 +1095,13 @@ TEST(TestCudamapperIndexCaching, test_index_cache_same_query_and_target_2)
                                   catcaag_maximum_kmer_size,
                                   cuda_stream_generate,
                                   "test_index_cache_same_query_and_target_2_1");
-        ASSERT_ANY_THROW(index_cache.get_index_from_query_cache(aagcta_index_descriptor));
-        ASSERT_ANY_THROW(index_cache.get_index_from_target_cache(catcaag_index_descriptor));
-        ASSERT_ANY_THROW(index_cache.get_index_from_target_cache(aagcta_index_descriptor));
+        ASSERT_THROW(index_cache.get_index_from_query_cache(aagcta_index_descriptor), IndexNotFoundException);
+        ASSERT_THROW(index_cache.get_index_from_target_cache(catcaag_index_descriptor), IndexNotFoundException);
+        ASSERT_THROW(index_cache.get_index_from_target_cache(aagcta_index_descriptor), IndexNotFoundException);
 
         index_cache.generate_content_target_host(catcaag_aagcta_index_descriptors);
-        ASSERT_ANY_THROW(index_cache.get_index_from_target_cache(catcaag_index_descriptor));
-        ASSERT_ANY_THROW(index_cache.get_index_from_target_cache(aagcta_index_descriptor));
+        ASSERT_THROW(index_cache.get_index_from_target_cache(catcaag_index_descriptor), IndexNotFoundException);
+        ASSERT_THROW(index_cache.get_index_from_target_cache(aagcta_index_descriptor), IndexNotFoundException);
         index_cache.start_generating_content_target_device(catcaag_aagcta_index_descriptors);
         index_cache.finish_generating_content_target_device();
 
@@ -1273,8 +1273,8 @@ TEST(TestCudamapperIndexCaching, test_index_cache_not_the_same_query_and_target_
                                cuda_stream_copy);
 
         index_cache.generate_content_query_host(index_descriptors);
-        ASSERT_ANY_THROW(index_cache.get_index_from_query_cache(index_descriptor));
-        ASSERT_ANY_THROW(index_cache.get_index_from_target_cache(index_descriptor));
+        ASSERT_THROW(index_cache.get_index_from_query_cache(index_descriptor), IndexNotFoundException);
+        ASSERT_THROW(index_cache.get_index_from_target_cache(index_descriptor), IndexNotFoundException);
 
         index_cache.start_generating_content_query_device(index_descriptors);
         index_cache.finish_generating_content_query_device();
@@ -1293,7 +1293,7 @@ TEST(TestCudamapperIndexCaching, test_index_cache_not_the_same_query_and_target_
                                   aagcta_maximum_kmer_size,
                                   cuda_stream_generate,
                                   "test_index_cache_not_the_same_query_and_target_2_1");
-        ASSERT_ANY_THROW(index_cache.get_index_from_target_cache(index_descriptor));
+        ASSERT_THROW(index_cache.get_index_from_target_cache(index_descriptor), IndexNotFoundException);
 
         index_cache.generate_content_target_host(index_descriptors);
         index_cache.start_generating_content_target_device(index_descriptors);
