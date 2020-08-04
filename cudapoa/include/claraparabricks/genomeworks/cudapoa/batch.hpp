@@ -117,13 +117,13 @@ struct BatchConfig
 
     /// constructor- set all parameters separately
     BatchConfig(int32_t max_seq_sz, int32_t max_consensus_sz, int32_t max_nodes_per_w,
-                int32_t band_width, int32_t max_seq_per_poa, BandMode banding)
+                int32_t band_width, int32_t max_seq_per_poa, int32_t matrix_sequence_dimension, BandMode banding)
         /// ensure a 4-byte boundary alignment for any allocated buffer
         : max_sequence_size(max_seq_sz)
         , max_consensus_size(max_consensus_sz)
         , max_nodes_per_graph(cudautils::align<int32_t, 4>(max_nodes_per_w))
         , matrix_graph_dimension(cudautils::align<int32_t, 4>(max_nodes_per_graph))
-        , matrix_sequence_dimension(cudautils::align<int32_t, 4>(max_sequence_size))
+        , matrix_sequence_dimension(cudautils::align<int32_t, 4>(matrix_sequence_dimension))
         /// ensure 128-alignment for band_width size, 128 = CUDAPOA_MIN_BAND_WIDTH
         , alignment_band_width(cudautils::align<int32_t, 128>(band_width))
         , max_sequences_per_poa(max_seq_per_poa)
@@ -134,7 +134,6 @@ struct BatchConfig
         throw_on_negative(max_nodes_per_w, "max_nodes_per_graph cannot be negative.");
         throw_on_negative(max_seq_per_poa, "max_sequences_per_poa cannot be negative.");
         throw_on_negative(band_width, "alignment_band_width cannot be negative.");
-
         if (max_nodes_per_graph < max_sequence_size)
             throw std::invalid_argument("max_nodes_per_graph should be greater than or equal to max_sequence_size.");
         if (max_consensus_size < max_sequence_size)
@@ -238,7 +237,7 @@ public:
 /// \return Returns a unique pointer to a new Batch object
 std::unique_ptr<Batch> create_batch(int32_t device_id,
                                     cudaStream_t stream,
-                                    size_t max_mem,
+                                    size_t max_gpu_mem,
                                     int8_t output_mask,
                                     const BatchConfig& batch_size,
                                     int16_t gap_score,
