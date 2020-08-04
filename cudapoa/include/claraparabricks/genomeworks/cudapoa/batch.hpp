@@ -134,7 +134,6 @@ struct BatchConfig
         throw_on_negative(max_nodes_per_w, "max_nodes_per_graph cannot be negative.");
         throw_on_negative(max_seq_per_poa, "max_sequences_per_poa cannot be negative.");
         throw_on_negative(band_width, "alignment_band_width cannot be negative.");
-
         if (max_nodes_per_graph < max_sequence_size)
             throw std::invalid_argument("max_nodes_per_graph should be greater than or equal to max_sequence_size.");
         if (max_consensus_size < max_sequence_size)
@@ -238,7 +237,7 @@ public:
 /// \return Returns a unique pointer to a new Batch object
 std::unique_ptr<Batch> create_batch(int32_t device_id,
                                     cudaStream_t stream,
-                                    size_t max_mem,
+                                    size_t max_gpu_mem,
                                     int8_t output_mask,
                                     const BatchConfig& batch_size,
                                     int16_t gap_score,

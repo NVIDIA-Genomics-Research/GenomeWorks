@@ -42,14 +42,14 @@ python -m pytest
 ### Install from source
 ```
 pip install -r requirements.txt
-python setup_genomeworks.py --build_output_folder BUILD_FOLDER
+python setup_pygenomeworks.py --build_output_folder BUILD_FOLDER
 ```
 
 *Note* if you are developing genomeworks you should do a develop build instead, changes you make to the source code will then be picked up on immediately:
 
 ```
 pip install -r requirements.txt
-python setup_genomeworks.py --build_output_folder BUILD_FOLDER --develop
+python setup_pygenomeworks.py --build_output_folder BUILD_FOLDER --develop
 ```
 
 ### Create a Wheel package

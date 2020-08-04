@@ -75,17 +75,15 @@ cdef class CudaPoaBatch:
             max_sequence_size,
             max_gpu_mem,
             output_type="consensus",
+            band_mode="static_band",
             device_id=0,
             stream=None,
             gap_score=-8,
             mismatch_score=-6,
             match_score=8,
-            cuda_banded_alignment=False,
-            cuda_adaptive_alignment=False,
             alignment_band_width=256,
             max_consensus_size=None,
             max_nodes_per_graph=None,
-            max_nodes_per_graph_banded=None,
             *args,
             **kwargs):
         """Construct a CUDAPOA Batch object to run CUDA-accelerated
@@ -96,17 +94,15 @@ cdef class CudaPoaBatch:
             max_sequence_size : Maximum number of elements in a sequence
             max_gpu_mem : Maximum GPU memory to use for this batch
             output_type : Types of outputs to generate (consensus, msa)
+            band_mode : Operation mode (full_band, static_band, adaptive_band)
             device_id : ID of GPU device to use
             stream : CudaStream to use for GPU execution
             gap_score : Penalty for gaps
             mismatch_score : Penalty for mismatches
             match_score : Reward for match
-            cuda_banded_alignment : Run POA using banded alignment
-            cuda_adaptive_alignment : Run POA using adaptive banded alignment
             alignment_band_width : Band-width size if using banded alignment
             max_consensus_size : Maximum size of final consensus
             max_nodes_per_graph : Maximum number of nodes in a graph, 1 graph per window
-            max_nodes_per_graph_banded : Maximum number of nodes in a graph, 1 graph per window in banded mode
         """
         cdef size_t st
         cdef _Stream temp_stream
@@ -132,14 +128,22 @@ cdef class CudaPoaBatch:
         cdef int32_t mx_seq_per_poa = max_sequences_per_poa
         cdef int32_t mx_consensus_sz = \
             2 * max_sequence_size if max_consensus_size is None else max_consensus_size
-        cdef int32_t mx_nodes_per_w = \
-            3 * max_sequence_size if max_nodes_per_graph is None else max_nodes_per_graph
-        cdef int32_t mx_nodes_per_w_banded = \
-            4 * max_sequence_size if max_nodes_per_graph_banded is None else max_nodes_per_graph_banded
+        cdef int32_t mx_nodes_per_w
+        cdef BandMode batch_band_mode
+        if (band_mode == "full_band"):
+            batch_band_mode = BandMode.full_band
+            mx_nodes_per_w = 3 * max_sequence_size if max_nodes_per_graph is None else max_nodes_per_graph
+        elif (band_mode == "static_band"):
+            batch_band_mode = BandMode.static_band
+            mx_nodes_per_w = 4 * max_sequence_size if max_nodes_per_graph is None else max_nodes_per_graph
+        elif (band_mode == "adaptive_band"):
+            batch_band_mode = BandMode.adaptive_band
+            mx_nodes_per_w = 4 * max_sequence_size if max_nodes_per_graph is None else max_nodes_per_graph
+        else:
+            raise RuntimeError("Unknown band_mode provided. Must be full_band/static_band/adaptive_band.")
 
         self.batch_size = make_unique[cudapoa.BatchConfig](
-            mx_seq_sz, mx_consensus_sz, mx_nodes_per_w,
-            mx_nodes_per_w_banded, band_width_sz, mx_seq_per_poa)
+            mx_seq_sz, mx_consensus_sz, mx_nodes_per_w, band_width_sz, mx_seq_per_poa, batch_band_mode)
 
         self.batch = cudapoa.create_batch(
             device_id,
@@ -157,17 +161,15 @@ cdef class CudaPoaBatch:
             max_sequence_size,
             max_gpu_mem,
             output_type="consensus",
+            band_mode="static_band",
             device_id=0,
             stream=None,
             gap_score=-8,
             mismatch_score=-6,
             match_score=8,
-            cuda_banded_alignment=False,
-            cuda_adaptive_alignment=False,
             alignment_band_width=256,
             max_consensus_size=None,
             max_nodes_per_graph=None,
-            max_nodes_per_graph_banded=None,
             *args,
             **kwargs):
         """Dummy implementation of __init__ function to allow
