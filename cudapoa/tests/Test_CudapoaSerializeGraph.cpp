@@ -43,9 +43,7 @@ public:
                     int8_t output_mask     = OutputType::msa,
                     int16_t gap_score      = -8,
                     int16_t mismatch_score = -6,
-                    int16_t match_score    = 8,
-                    bool banded_alignment  = false,
-                    bool adaptive_banded   = false)
+                    int16_t match_score    = 8)
     {
         size_t total = 0, free = 0;
         cudaSetDevice(device_id);

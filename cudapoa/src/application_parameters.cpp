@@ -63,7 +63,11 @@ ApplicationParameters::ApplicationParameters(int argc, char* argv[])
             msa = true;
             break;
         case 'b':
-            band_mode = std::stoi(optarg);
+            if (std::stoi(optarg) < 0 || std::stoi(optarg) > 2)
+            {
+                throw std::runtime_error("band-mode must be either 0 for full bands, 1 for static bands or 2 for adaptive bands");
+            }
+            band_mode = static_cast<BandMode>(std::stoi(optarg));
             break;
         case 'w':
             band_width = std::stoi(optarg);
@@ -100,12 +104,7 @@ ApplicationParameters::ApplicationParameters(int argc, char* argv[])
         throw std::runtime_error("gpu-mem-alloc must be greater than 0 and less than or equal to 1.0");
     }
 
-    if (band_mode < 0 || band_mode > 2)
-    {
-        throw std::runtime_error("band-mode must be either 0 for full bands, 1 for static bands or 2 for adaptive bands");
-    }
-
-    if (band_mode != 2 && band_width < 1)
+    if (band_mode != BandMode::adaptive_band && band_width < 1)
     {
         throw std::runtime_error("band-width must be positive");
     }

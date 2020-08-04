@@ -183,7 +183,7 @@ int main(int argc, char* argv[])
                           poa_groups,
                           parameters.msa,
                           parameters.band_width,
-                          static_cast<BandMode>(parameters.band_mode),
+                          parameters.band_mode,
                           nullptr,
                           parameters.gpu_mem_allocation,
                           parameters.mismatch_score,

@@ -109,7 +109,7 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
                                   uint32_t max_limit_consensus_size,
                                   int32_t TPB                = 64,
                                   bool adaptive_banded       = false,
-                                  bool banded_alignment      = false,
+                                  bool static_banded         = false,
                                   bool msa                   = false,
                                   uint32_t static_band_width = 256,
                                   BandMode band_mode         = BandMode::full_band)
@@ -143,7 +143,7 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
 
     int64_t scores_offset;
     int64_t banded_score_matrix_size;
-    if (banded_alignment || adaptive_banded)
+    if (static_banded || adaptive_banded)
     {
         banded_score_matrix_size = static_cast<int64_t>(scores_matrix_height) * static_cast<int64_t>(scores_matrix_width);
         scores_offset            = banded_score_matrix_size * static_cast<int64_t>(window_idx);
@@ -252,7 +252,7 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
         // Run Needleman-Wunsch alignment between graph and new sequence.
         SizeT alignment_length;
 
-        if (banded_alignment || adaptive_banded)
+        if (static_banded || adaptive_banded)
         {
             if (adaptive_banded)
             {
@@ -443,7 +443,7 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
                  ScoreT gap_score,
                  ScoreT mismatch_score,
                  ScoreT match_score,
-                 bool banded_alignment,
+                 bool static_banded,
                  bool adaptive_banded,
                  uint32_t max_sequences_per_poa,
                  int8_t output_mask,
@@ -490,8 +490,8 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
     SizeT* node_id_to_msa_pos               = graph_details_d->node_id_to_msa_pos;
 
     int32_t nwindows_per_block     = CUDAPOA_THREADS_PER_BLOCK / WARP_SIZE;
-    int32_t nblocks                = (banded_alignment || adaptive_banded) ? total_windows : (total_windows + nwindows_per_block - 1) / nwindows_per_block;
-    int32_t TPB                    = (banded_alignment || adaptive_banded) ? CUDAPOA_BANDED_THREADS_PER_BLOCK : CUDAPOA_THREADS_PER_BLOCK;
+    int32_t nblocks                = (static_banded || adaptive_banded) ? total_windows : (total_windows + nwindows_per_block - 1) / nwindows_per_block;
+    int32_t TPB                    = (static_banded || adaptive_banded) ? CUDAPOA_BANDED_THREADS_PER_BLOCK : CUDAPOA_THREADS_PER_BLOCK;
     int32_t max_nodes_per_graph    = batch_size.max_nodes_per_graph;
     int32_t matrix_graph_dimension = batch_size.matrix_graph_dimension;
     int32_t matrix_seq_dimension   = batch_size.matrix_sequence_dimension;
@@ -540,7 +540,7 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
                                       batch_size.max_consensus_size,
                                       TPB,
                                       adaptive_banded,
-                                      banded_alignment,
+                                      static_banded,
                                       msa,
                                       batch_size.alignment_band_width);
     GW_CU_CHECK_ERR(cudaPeekAtLastError());
@@ -571,7 +571,7 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
                                                                   nodes_to_visit,
                                                                   max_nodes_per_graph,
                                                                   batch_size.max_consensus_size,
-                                                                  banded_alignment);
+                                                                  static_banded);
         GW_CU_CHECK_ERR(cudaPeekAtLastError());
     }
     else
@@ -597,7 +597,7 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
                                                                                    node_coverage_counts,
                                                                                    max_nodes_per_graph,
                                                                                    batch_size.max_consensus_size,
-                                                                                   banded_alignment);
+                                                                                   static_banded);
         GW_CU_CHECK_ERR(cudaPeekAtLastError());
     }
 }

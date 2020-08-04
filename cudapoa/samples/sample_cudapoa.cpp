@@ -131,7 +131,7 @@ int main(int argc, char** argv)
     int c              = 0;
     bool msa           = false;
     bool long_read     = false;
-    int8_t band_mode   = 2; // 0: full, 1: static-band, 2: adaptive-band
+    BandMode band_mode = BandMode::adaptive_band; // 0: full, 1: static-band, 2: adaptive-band
     bool help          = false;
     bool print         = false;
     bool print_graph   = false;
@@ -148,7 +148,11 @@ int main(int argc, char** argv)
             long_read = true;
             break;
         case 'b':
-            band_mode = std::stoi(optarg);
+            if (std::stoi(optarg) < 0 || std::stoi(optarg) > 2)
+            {
+                throw std::runtime_error("band-mode must be either 0 for full bands, 1 for static bands or 2 for adaptive bands");
+            }
+            band_mode = static_cast<BandMode>(std::stoi(optarg));
             break;
         case 'p':
             print = true;
@@ -174,11 +178,6 @@ int main(int argc, char** argv)
         std::cout << "-g : Print POA graph in dot format, this option is only for long-read sample" << std::endl;
         std::cout << "-h : Print help message" << std::endl;
         std::exit(0);
-    }
-
-    if (band_mode < 0 || band_mode > 2)
-    {
-        throw std::runtime_error("band-mode must be either 0 for full bands, 1 for static bands or 2 for adaptive bands");
     }
 
     // Load input data. Each window is represented as a vector of strings. The sample
@@ -217,7 +216,7 @@ int main(int argc, char** argv)
     std::vector<BatchConfig> list_of_batch_sizes;
     std::vector<std::vector<int32_t>> list_of_groups_per_batch;
 
-    get_multi_batch_sizes(list_of_batch_sizes, list_of_groups_per_batch, poa_groups, msa, band_width, static_cast<BandMode>(band_mode));
+    get_multi_batch_sizes(list_of_batch_sizes, list_of_groups_per_batch, poa_groups, msa, band_width, band_mode);
 
     int32_t group_count_offset = 0;
 

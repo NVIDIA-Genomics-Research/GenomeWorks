@@ -17,6 +17,7 @@
 #pragma once
 #include <vector>
 #include <string>
+#include <claraparabricks/genomeworks/cudapoa/cudapoa.hpp>
 
 namespace claraparabricks
 {
@@ -40,9 +41,9 @@ public:
     std::string graph_output_path;
     bool all_fasta            = true;
     bool msa                  = false; // consensus by default
-    int32_t band_mode         = 2;     // 0 : full, 1 : static, 2 : adaptive
-    int32_t band_width        = 256;   // Band width for banded mode
-    int32_t max_groups        = -1;    // -1 => infinite
+    BandMode band_mode        = BandMode::adaptive_band;
+    int32_t band_width        = 256; // Band width for banded mode
+    int32_t max_groups        = -1;  // -1 => infinite
     int32_t mismatch_score    = -6;
     int32_t gap_score         = -8;
     int32_t match_score       = 8;

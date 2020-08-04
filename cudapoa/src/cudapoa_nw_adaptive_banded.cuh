@@ -462,6 +462,7 @@ __device__
                 if (rerun == 0)
                 {
                     // check if backtrace gets too close or hits the band limits, if so stop and rerun with extended band-width
+                    // threshold for proximity to band limits works better if defined proportionate to the sequence length
                     SizeT threshold = max(1, max_column / 1024); // ad-hoc rule 7
                     if (j > threshold && j < max_column - threshold)
                     {
