@@ -163,7 +163,7 @@ public:
 ///
 /// \param device_id                GPU device on which to run CUDA POA algorithm
 /// \param stream                   CUDA stream to use on GPU
-/// \param max_mem                  Maximum GPU memory to use for this batch.
+/// \param max_gpu_mem              Maximum GPU memory to use for this batch.
 /// \param output_mask              which outputs to produce from POA (msa, consensus)
 /// \param batch_size               defines upper limits for size of a POA batch, i.e. sequence length and other related parameters
 /// \param gap_score                score to be assigned to a gap
