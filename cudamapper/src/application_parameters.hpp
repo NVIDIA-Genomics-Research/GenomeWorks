@@ -1,11 +1,17 @@
 /*
-* Copyright (c) 2020, NVIDIA CORPORATION.  All rights reserved.
+* Copyright 2019-2020 NVIDIA CORPORATION.
 *
-* NVIDIA CORPORATION and its licensors retain all intellectual property
-* and proprietary rights in and to this software, related documentation
-* and any modifications thereto.  Any use, reproduction, disclosure or
-* distribution of this software and related documentation without an express
-* license agreement from NVIDIA CORPORATION is strictly prohibited.
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
 */
 
 #include <memory>
@@ -36,17 +42,17 @@ public:
     ApplicationParameters(int argc, char* argv[]);
 
     uint32_t kmer_size                      = 15;    // k
-    uint32_t windows_size                   = 15;    // w
+    uint32_t windows_size                   = 10;    // w
     int32_t num_devices                     = 1;     // d
     int32_t max_cached_memory               = 0;     // m
     int32_t index_size                      = 30;    // i
     int32_t target_index_size               = 30;    // t
-    double filtering_parameter              = 1.0;   // F
+    double filtering_parameter              = 1e-5;  // F
     int32_t alignment_engines               = 0;     // a
-    int32_t min_residues                    = 100;   // r
-    int32_t min_overlap_len                 = 2000;  // l
-    int32_t min_bases_per_residue           = 100;   // b
-    float min_overlap_fraction              = 0.95;  // z
+    int32_t min_residues                    = 3;     // r, recommended range: 1 - 10. Higher: more accurate. Lower: more sensitive
+    int32_t min_overlap_len                 = 250;   // l, recommended range: 100 - 1000
+    int32_t min_bases_per_residue           = 1000;  // b
+    float min_overlap_fraction              = 0.8;   // z
     bool perform_overlap_end_rescue         = false; // R
     bool drop_fused_overlaps                = false; // D
     int32_t query_indices_in_host_memory    = 10;    // Q
@@ -66,6 +72,14 @@ private:
     /// \param target_parser nullptr on input, target parser on output
     void create_input_parsers(std::shared_ptr<io::FastaParser>& query_parser,
                               std::shared_ptr<io::FastaParser>& target_parser);
+
+    /// \brief Determines if filtering should be run and sets the filtering level parameter accordingly.
+    /// \param query_parser A FAST(x) file parser for query sequences
+    /// \param target_parser A FAST(x) file parser for target sequences
+    /// \param custom_filtering_parameter A boolean signifying whether the user passed an argument for <-F>.
+    void set_filtering_parameter(std::shared_ptr<io::FastaParser>& query_parser,
+                                 std::shared_ptr<io::FastaParser>& target_parser,
+                                 bool custom_filtering_parameter);
 
     /// \brief gets max number of bytes to cache by device allocator
     ///

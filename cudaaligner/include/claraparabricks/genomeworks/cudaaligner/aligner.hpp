@@ -1,11 +1,17 @@
 /*
-* Copyright (c) 2019, NVIDIA CORPORATION.  All rights reserved.
+* Copyright 2019-2020 NVIDIA CORPORATION.
 *
-* NVIDIA CORPORATION and its licensors retain all intellectual property
-* and proprietary rights in and to this software, related documentation
-* and any modifications thereto.  Any use, reproduction, disclosure or
-* distribution of this software and related documentation without an express
-* license agreement from NVIDIA CORPORATION is strictly prohibited.
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
 */
 
 #pragma once
@@ -76,7 +82,7 @@ public:
     virtual void reset() = 0;
 };
 
-/// \brief Created Aligner object
+/// \brief Created Aligner object - DEPRECATED API
 ///
 /// \param max_query_length Maximum length of query string
 /// \param max_target_length Maximum length of target string
@@ -89,7 +95,7 @@ public:
 /// \return Unique pointer to Aligner object
 std::unique_ptr<Aligner> create_aligner(int32_t max_query_length, int32_t max_target_length, int32_t max_alignments, AlignmentType type, DefaultDeviceAllocator allocator, cudaStream_t stream, int32_t device_id);
 
-/// \brief Created Aligner object
+/// \brief Created Aligner object - DEPRECATED API
 ///
 /// \param max_query_length Maximum length of query string
 /// \param max_target_length Maximum length of target string
@@ -102,6 +108,28 @@ std::unique_ptr<Aligner> create_aligner(int32_t max_query_length, int32_t max_ta
 /// \return Unique pointer to Aligner object
 std::unique_ptr<Aligner> create_aligner(int32_t max_query_length, int32_t max_target_length, int32_t max_alignments, AlignmentType type, cudaStream_t stream, int32_t device_id, int64_t max_device_memory_allocator_caching_size = -1);
 
+/// \brief Created Aligner object
+///
+/// \param type Type of aligner to construct
+/// \param max_bandwidth Maximum bandwidth for the Ukkonen band
+/// \param stream CUDA Stream used for GPU interaction of the object
+/// \param device_id GPU device ID to run all CUDA operations on
+/// \param allocator Allocator to use for internal device memory allocations
+/// \param max_device_memory Maximum amount of device memory to use from passed in allocator in bytes (-1 for all available memory)
+///
+/// \return Unique pointer to Aligner object
+std::unique_ptr<Aligner> create_aligner(AlignmentType type, int32_t max_bandwidth, cudaStream_t stream, int32_t device_id, DefaultDeviceAllocator allocator, int64_t max_device_memory);
+
+/// \brief Created Aligner object
+///
+/// \param type Type of aligner to construct
+/// \param max_bandwidth Maximum bandwidth for the Ukkonen band
+/// \param stream CUDA Stream used for GPU interaction of the object
+/// \param device_id GPU device ID to run all CUDA operations on
+/// \param max_device_memory Maximum amount of device memory used in bytes (-1 (default) for all available memory).
+///
+/// \return Unique pointer to Aligner object
+std::unique_ptr<Aligner> create_aligner(AlignmentType type, int32_t max_bandwidth, cudaStream_t stream, int32_t device_id, int64_t max_device_memory = -1);
 /// \}
 } // namespace cudaaligner
 

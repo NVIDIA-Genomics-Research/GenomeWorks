@@ -1,11 +1,17 @@
 /*
-* Copyright (c) 2019, NVIDIA CORPORATION.  All rights reserved.
+* Copyright 2019-2020 NVIDIA CORPORATION.
 *
-* NVIDIA CORPORATION and its licensors retain all intellectual property
-* and proprietary rights in and to this software, related documentation
-* and any modifications thereto.  Any use, reproduction, disclosure or
-* distribution of this software and related documentation without an express
-* license agreement from NVIDIA CORPORATION is strictly prohibited.
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
 */
 
 #include "hirschberg_myers_gpu.cuh"
@@ -590,8 +596,8 @@ __device__ void hirschberg_myers(
     warp_shared_stack<query_target_range> stack(stack_buffer_begin, stack_buffer_end);
     stack.push({query_begin_absolute, query_end_absolute, target_begin_absolute, target_end_absolute});
 
-    assert(pvi->get_max_elements_per_matrix() == mvi->get_max_elements_per_matrix());
-    assert(scorei->get_max_elements_per_matrix() >= pvi->get_max_elements_per_matrix());
+    assert(pvi->get_max_elements_per_matrix(alignment_idx) == mvi->get_max_elements_per_matrix(alignment_idx));
+    assert(scorei->get_max_elements_per_matrix(alignment_idx) >= pvi->get_max_elements_per_matrix(alignment_idx));
 
     bool success   = true;
     int32_t length = 0;
@@ -618,7 +624,7 @@ __device__ void hirschberg_myers(
             if (e.query_end - e.query_begin < full_myers_threshold && e.query_end != e.query_begin)
             {
                 const int32_t n_words = ceiling_divide<int32_t>(e.query_end - e.query_begin, word_size);
-                if ((e.target_end - e.target_begin + 1) * n_words <= pvi->get_max_elements_per_matrix())
+                if ((e.target_end - e.target_begin + 1) * n_words <= pvi->get_max_elements_per_matrix(alignment_idx))
                 {
                     hirschberg_myers_compute_path(path, &length, pvi, mvi, scorei, query_patterns, e.target_begin, e.target_end, e.query_begin, e.query_end, query_begin_absolute, alignment_idx);
                     continue;

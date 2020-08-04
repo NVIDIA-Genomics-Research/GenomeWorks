@@ -1,11 +1,17 @@
 /*
-* Copyright (c) 2019, NVIDIA CORPORATION.  All rights reserved.
+* Copyright 2019-2020 NVIDIA CORPORATION.
 *
-* NVIDIA CORPORATION and its licensors retain all intellectual property
-* and proprietary rights in and to this software, related documentation
-* and any modifications thereto.  Any use, reproduction, disclosure or
-* distribution of this software and related documentation without an express
-* license agreement from NVIDIA CORPORATION is strictly prohibited.
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
 */
 
 #pragma once
@@ -66,12 +72,14 @@ public:
     /// \brief returns overlaps for a set of reads
     /// \param fused_overlaps Output vector into which generated overlaps will be placed
     /// \param d_anchors vector of anchors sorted by query_read_id -> target_read_id -> query_position_in_read -> target_position_in_read (meaning sorted by query_read_id, then within a group of anchors with the same value of query_read_id sorted by target_read_id and so on)
+    /// \param all_to_all True if the target and query indexes are of the same FASTx file. If true, ignore self-self mappings when retrieving overlaps.
     /// \param min_residues smallest number of residues (anchors) for an overlap to be accepted
     /// \param min_overlap_len the smallest overlap distance which is accepted
     /// \param min_bases_per_residue the minimum number of nucleotides per residue (e.g minimizer) in an overlap
     /// \param min_overlap_fraction the minimum ratio between the shortest and longest of the target and query components of an overlap. e.g if Query range is (150,1000) and target range is (1000,2000) then overlap fraction is 0.85
     virtual void get_overlaps(std::vector<Overlap>& fused_overlaps,
                               const device_buffer<Anchor>& d_anchors,
+                              bool all_to_all,
                               int64_t min_residues,
                               int64_t min_overlap_len,
                               int64_t min_bases_per_residue,
@@ -104,6 +112,13 @@ public:
                                     const io::FastaParser& target_parser,
                                     std::int32_t extension,
                                     float required_similarity);
+
+    /// \brief Creates a Overlapper object
+    /// \param allocator The device memory allocator to use for buffer allocations
+    /// \param cuda_stream CUDA stream on which the work is to be done. Device arrays are also associated with this stream and will not be freed at least until all work issued on this stream before calling their destructor is done
+    /// \return Instance of Overlapper
+    static std::unique_ptr<Overlapper> create_overlapper(DefaultDeviceAllocator allocator,
+                                                         const cudaStream_t cuda_stream = 0);
 };
 //}
 } // namespace cudamapper

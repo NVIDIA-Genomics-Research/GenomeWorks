@@ -1,11 +1,17 @@
 /*
-* Copyright (c) 2019, NVIDIA CORPORATION.  All rights reserved.
+* Copyright 2019-2020 NVIDIA CORPORATION.
 *
-* NVIDIA CORPORATION and its licensors retain all intellectual property
-* and proprietary rights in and to this software, related documentation
-* and any modifications thereto.  Any use, reproduction, disclosure or
-* distribution of this software and related documentation without an express
-* license agreement from NVIDIA CORPORATION is strictly prohibited.
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
 */
 
 #include "aligner_global.hpp"
@@ -29,6 +35,8 @@ namespace genomeworks
 
 namespace cudaaligner
 {
+namespace
+{
 
 constexpr int32_t calc_max_result_length(int32_t max_query_length, int32_t max_target_length)
 {
@@ -36,6 +44,8 @@ constexpr int32_t calc_max_result_length(int32_t max_query_length, int32_t max_t
     const int32_t max_length          = max_query_length + max_target_length;
     return ceiling_divide(max_length, alignment_bytes) * alignment_bytes;
 }
+
+} // namespace
 
 AlignerGlobal::AlignerGlobal(int32_t max_query_length, int32_t max_target_length, int32_t max_alignments, DefaultDeviceAllocator allocator, cudaStream_t stream, int32_t device_id)
     : max_query_length_(throw_on_negative(max_query_length, "max_query_length must be non-negative."))
@@ -178,14 +188,18 @@ StatusType AlignerGlobal::sync_alignments()
     for (int32_t i = 0; i < n_alignments; ++i)
     {
         al_state.clear();
-        assert(result_lengths_h_[i] < max_result_length);
+        assert(std::abs(result_lengths_h_[i]) < max_result_length);
         const int8_t* r_begin = results_h_.data() + i * max_result_length;
-        const int8_t* r_end   = r_begin + result_lengths_h_[i];
+        const int8_t* r_end   = r_begin + std::abs(result_lengths_h_[i]);
         std::transform(r_begin, r_end, std::back_inserter(al_state), [](int8_t x) { return static_cast<AlignmentState>(x); });
         std::reverse(begin(al_state), end(al_state));
-        AlignmentImpl* alignment = dynamic_cast<AlignmentImpl*>(alignments_[i].get());
-        alignment->set_alignment(al_state);
-        alignment->set_status(StatusType::success);
+        if (!al_state.empty() || (alignments_[i]->get_query_sequence().empty() && alignments_[i]->get_target_sequence().empty()))
+        {
+            const bool is_optimal    = (result_lengths_h_[i] >= 0);
+            AlignmentImpl* alignment = dynamic_cast<AlignmentImpl*>(alignments_[i].get());
+            alignment->set_alignment(al_state, is_optimal);
+            alignment->set_status(StatusType::success);
+        }
     }
     return StatusType::success;
 }

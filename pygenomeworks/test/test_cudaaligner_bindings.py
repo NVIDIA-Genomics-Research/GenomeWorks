@@ -1,12 +1,19 @@
 #
-# Copyright (c) 2019, NVIDIA CORPORATION.  All rights reserved.
+# Copyright 2019-2020 NVIDIA CORPORATION.
 #
-# NVIDIA CORPORATION and its licensors retain all intellectual property
-# and proprietary rights in and to this software, related documentation
-# and any modifications thereto.  Any use, reproduction, disclosure or
-# distribution of this software and related documentation without an express
-# license agreement from NVIDIA CORPORATION is strictly prohibited.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
 
 import pytest
 
@@ -23,7 +30,7 @@ from genomeworks.simulators.readsim import NoisyReadSimulator
     ("TACGTA", "ACATAC", "1D5M1I"),
     ("TGCA", "ATACGCT", "1I1M2I3M"),
     pytest.param("ACGT", "TCGA", "5M", marks=pytest.mark.xfail),
-    ])
+])
 def test_cudaaligner_simple_batch(query, target, cigar):
     """Test valid calculation of alignments by checking cigar strings.
     """
@@ -43,7 +50,7 @@ def test_cudaaligner_simple_batch(query, target, cigar):
     (5000, 30),
     (10000, 10),
     (500, 100)
-    ])
+])
 def test_cudaaligner_long_alignments(ref_length, num_alignments):
     """Test varying batches of long and short alignments and check for successful
     completion of alignment.
@@ -75,7 +82,7 @@ def test_cudaaligner_long_alignments(ref_length, num_alignments):
     (1000, 100, 100, 10, True),
     (1000, 100, 1000, 100, True),
     (100, 10, 100, 1000, False),
-    ])
+])
 def test_cudaaligner_various_arguments(max_seq_len, max_alignments, seq_len, num_alignments, should_succeed):
     """
     Pass legal and illegal arguments, and test for correct exception throwing behavior.

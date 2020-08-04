@@ -1,20 +1,24 @@
 /*
-* Copyright (c) 2019, NVIDIA CORPORATION.  All rights reserved.
+* Copyright 2019-2020 NVIDIA CORPORATION.
 *
-* NVIDIA CORPORATION and its licensors retain all intellectual property
-* and proprietary rights in and to this software, related documentation
-* and any modifications thereto.  Any use, reproduction, disclosure or
-* distribution of this software and related documentation without an express
-* license agreement from NVIDIA CORPORATION is strictly prohibited.
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
 */
 
 #pragma once
 
-#include <mutex>
 #include <vector>
 
 #include <claraparabricks/genomeworks/cudamapper/types.hpp>
-#include <claraparabricks/genomeworks/utils/allocator.hpp>
 
 namespace claraparabricks
 {
@@ -22,27 +26,8 @@ namespace claraparabricks
 namespace genomeworks
 {
 
-namespace io
-{
-class FastaParser;
-}; // namespace io
-
 namespace cudamapper
 {
-
-/// \brief prints overlaps to stdout in <a href="https://github.com/lh3/miniasm/blob/master/PAF.md">PAF format</a>
-/// \param overlaps vector of overlap objects
-/// \param cigars CIGAR strings
-/// \param query_parser needed for read names and lenghts
-/// \param target_parser needed for read names and lenghts
-/// \param kmer_size minimizer kmer size
-/// \param write_output_mutex mutex that enables exclusive access to output stream
-void print_paf(const std::vector<Overlap>& overlaps,
-               const std::vector<std::string>& cigars,
-               const io::FastaParser& query_parser,
-               const io::FastaParser& target_parser,
-               int32_t kmer_size,
-               std::mutex& write_output_mutex);
 
 /// \brief Given a string s, produce its kmers (length <kmer-length>) and return them as a vector of strings.
 /// \param s A string sequence to kmerize.
