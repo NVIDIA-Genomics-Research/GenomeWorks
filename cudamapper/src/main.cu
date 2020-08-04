@@ -33,6 +33,7 @@
 #include <claraparabricks/genomeworks/cudamapper/index.hpp>
 #include <claraparabricks/genomeworks/cudamapper/matcher.hpp>
 #include <claraparabricks/genomeworks/cudamapper/overlapper.hpp>
+#include <claraparabricks/genomeworks/cudamapper/utils.hpp>
 
 #include "application_parameters.hpp"
 #include "cudamapper_utils.hpp"
