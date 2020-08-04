@@ -19,12 +19,12 @@
 #include <claraparabricks/genomeworks/utils/cudautils.hpp>
 #include <claraparabricks/genomeworks/utils/signed_integer_utils.hpp>
 #include "../src/index_descriptor.hpp"
-#include "../src/cudamapper_utils.hpp"
 #include <cudamapper_file_location.hpp>
 
 #include <claraparabricks/genomeworks/cudamapper/index.hpp>
 #include <claraparabricks/genomeworks/cudamapper/matcher.hpp>
 #include <claraparabricks/genomeworks/cudamapper/overlapper.hpp>
+#include <claraparabricks/genomeworks/cudamapper/utils.hpp>
 
 #include <cuda_runtime_api.h>
 #include <iostream>
