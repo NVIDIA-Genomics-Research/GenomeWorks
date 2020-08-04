@@ -75,7 +75,7 @@ cdef class CudaPoaBatch:
             max_sequence_size,
             max_gpu_mem,
             output_type="consensus",
-            band_mode="static_band",
+            band_mode="adaptive_band",
             device_id=0,
             stream=None,
             gap_score=-8,
@@ -84,6 +84,7 @@ cdef class CudaPoaBatch:
             alignment_band_width=256,
             max_consensus_size=None,
             max_nodes_per_graph=None,
+            matrix_sequence_dimension=None,
             *args,
             **kwargs):
         """Construct a CUDAPOA Batch object to run CUDA-accelerated
@@ -129,21 +130,27 @@ cdef class CudaPoaBatch:
         cdef int32_t mx_consensus_sz = \
             2 * max_sequence_size if max_consensus_size is None else max_consensus_size
         cdef int32_t mx_nodes_per_w
+        cdef int32_t matrix_seq_dim
         cdef BandMode batch_band_mode
         if (band_mode == "full_band"):
             batch_band_mode = BandMode.full_band
             mx_nodes_per_w = 3 * max_sequence_size if max_nodes_per_graph is None else max_nodes_per_graph
+            matrix_seq_dim = max_sequence_size if matrix_sequence_dimension is None else matrix_sequence_dimension
         elif (band_mode == "static_band"):
             batch_band_mode = BandMode.static_band
             mx_nodes_per_w = 4 * max_sequence_size if max_nodes_per_graph is None else max_nodes_per_graph
+            matrix_seq_dim = ((alignment_band_width + 8) if matrix_sequence_dimension is None
+                              else matrix_sequence_dimension)
         elif (band_mode == "adaptive_band"):
             batch_band_mode = BandMode.adaptive_band
             mx_nodes_per_w = 4 * max_sequence_size if max_nodes_per_graph is None else max_nodes_per_graph
+            matrix_seq_dim = (2*(alignment_band_width + 8) if matrix_sequence_dimension is None
+                              else matrix_sequence_dimension)
         else:
             raise RuntimeError("Unknown band_mode provided. Must be full_band/static_band/adaptive_band.")
 
         self.batch_size = make_unique[cudapoa.BatchConfig](
-            mx_seq_sz, mx_consensus_sz, mx_nodes_per_w, band_width_sz, mx_seq_per_poa, batch_band_mode)
+            mx_seq_sz, mx_consensus_sz, mx_nodes_per_w, band_width_sz, mx_seq_per_poa, matrix_seq_dim, batch_band_mode)
 
         self.batch = cudapoa.create_batch(
             device_id,

@@ -117,13 +117,13 @@ struct BatchConfig
 
     /// constructor- set all parameters separately
     BatchConfig(int32_t max_seq_sz, int32_t max_consensus_sz, int32_t max_nodes_per_w,
-                int32_t band_width, int32_t max_seq_per_poa, BandMode banding)
+                int32_t band_width, int32_t max_seq_per_poa, int32_t matrix_sequence_dimension, BandMode banding)
         /// ensure a 4-byte boundary alignment for any allocated buffer
         : max_sequence_size(max_seq_sz)
         , max_consensus_size(max_consensus_sz)
         , max_nodes_per_graph(cudautils::align<int32_t, 4>(max_nodes_per_w))
         , matrix_graph_dimension(cudautils::align<int32_t, 4>(max_nodes_per_graph))
-        , matrix_sequence_dimension(cudautils::align<int32_t, 4>(max_sequence_size))
+        , matrix_sequence_dimension(cudautils::align<int32_t, 4>(matrix_sequence_dimension))
         /// ensure 128-alignment for band_width size, 128 = CUDAPOA_MIN_BAND_WIDTH
         , alignment_band_width(cudautils::align<int32_t, 128>(band_width))
         , max_sequences_per_poa(max_seq_per_poa)
