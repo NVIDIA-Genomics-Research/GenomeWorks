@@ -46,7 +46,7 @@ else
   PYCGA_VERSION=$(cat ../VERSION | tr -d "\n")\.dev$(date +%y%m%d) # for nightly build
 fi
 python setup_pyclaragenomics.py \
-        --build_output_folder gw_build_wheel \
+        --build_output_folder cga_build_wheel \
         --create_wheel_only \
         --overwrite_package_name pyclaragenomics_cuda_"$CUDA_VERSION_FOR_PACKAGE_NAME" \
         --overwrite_package_version "$PYCGA_VERSION"

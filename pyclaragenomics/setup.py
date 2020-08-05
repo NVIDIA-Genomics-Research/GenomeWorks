@@ -10,22 +10,41 @@
 # license agreement from NVIDIA CORPORATION is strictly prohibited.
 #
 
+
+"""Python setuptools setup."""
+
 import glob
 import os
 import shutil
-from setuptools import setup, find_packages, Extension
+from setuptools import setup, Extension, find_packages
 
 from Cython.Build import cythonize
 
 
 def get_verified_absolute_path(path):
+    """Verify and return absolute path of argument.
+
+    Args:
+        path : Relative/absolute path
+
+    Returns:
+        Absolute path
+    """
     installed_path = os.path.abspath(path)
     if not os.path.exists(installed_path):
-        raise RuntimeError("No valid path for requested component exists")
+        raise RuntimeError("The requested path does not exist:{}".format(installed_path))
     return installed_path
 
 
 def get_installation_requirments(file_path):
+    """Parse pip requirements file.
+
+    Args:
+        file_path : path to pip requirements file
+
+    Returns:
+        list of requirement strings
+    """
     with open(file_path, 'r') as file:
         requirements_file_content = \
             [line.strip() for line in file if line.strip() and not line.lstrip().startswith('#')]
@@ -33,6 +52,13 @@ def get_installation_requirments(file_path):
 
 
 def copy_all_files_in_directory(src, dest, file_ext="*.so"):
+    """Copy files with given extension from source to destination directories.
+
+    Args:
+        src : source directory
+        dest : destination directory
+        file_ext : a regular expression string capturing relevant files
+    """
     files_to_copy = glob.glob(os.path.join(src, file_ext))
     if not files_to_copy:
         raise RuntimeError("No {} files under {}".format(src, file_ext))
@@ -47,35 +73,49 @@ def copy_all_files_in_directory(src, dest, file_ext="*.so"):
 
 
 # Must be set before calling pip
-try:
-    cga_install_dir = os.environ['CGA_INSTALL_DIR']
-except KeyError as e:
-    raise EnvironmentError(
-        'CGA_INSTALL_DIR environment variables must be set').with_traceback(e.__traceback__)
+for envvar in ['CGA_INSTALL_DIR', 'CGA_VERSION', 'CGA_ROOT_DIR']:
+    if envvar not in os.environ.keys():
+        raise EnvironmentError(
+            '{} environment variables must be set'.format(envvar))
+
+cga_root_dir = os.environ['CGA_ROOT_DIR']
+cga_install_dir = os.environ['CGA_INSTALL_DIR']
+pycga_version = os.environ['CGA_VERSION']
+pycga_name = os.getenv('PYCGA_RENAME', 'genomeworks')
+cuda_root = os.getenv('CUDA_TOOLKIT_ROOT_DIR', '/usr/local/cuda')
+cuda_include_path = os.path.join(cuda_root, 'include')
+cuda_library_path = os.path.join(cuda_root, 'lib64')
 
 # Get current dir (pyclaragenomics folder is copied into a temp directory created by pip)
 current_dir = os.path.dirname(os.path.realpath(__file__))
 
 
-# Copies shared libraries into clargenomics package
+# Copies shared libraries into claragenomics package
 copy_all_files_in_directory(
     get_verified_absolute_path(os.path.join(cga_install_dir, "lib")),
-    os.path.join(current_dir, "claragenomics/shared_libs/"),
+    os.path.join(current_dir, "claragenomics", "shared_libs/"),
+)
+
+# Copies license from genomeworks root dir for packaging
+copy_all_files_in_directory(
+    get_verified_absolute_path(cga_root_dir),
+    get_verified_absolute_path(current_dir),
+    file_ext="LICENSE"
 )
 
 # Classifiers for PyPI
 pycga_classifiers = [
-        "Development Status :: 5 - Production/Stable",
-        "Intended Audience :: Science/Research",
-        "Topic :: Scientific/Engineering :: Bio-Informatics",
-        "License :: OSI Approved :: Apache Software License",
-        "Natural Language :: English",
-        "Operating System :: POSIX :: Linux",
-        "Programming Language :: Python :: 3.5",
-        "Programming Language :: Python :: 3.6",
-        "Programming Language :: Python :: 3.7",
-        "Programming Language :: Python :: 3.8",
-        "Programming Language :: Python :: 3.9"
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Bio-Informatics",
+    "License :: OSI Approved :: Apache Software License",
+    "Natural Language :: English",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3.5",
+    "Programming Language :: Python :: 3.6",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9"
 ]
 
 extensions = [
@@ -94,25 +134,26 @@ extensions = [
     )
 ]
 
-setup(name='pyclaragenomics',
-      version='0.4.4',
+
+setup(name=pycga_name,
+      version=pycga_version,
       description='NVIDIA genomics python libraries and utiliites',
       author='NVIDIA Corporation',
-      url="https://github.com/clara-genomics/ClaraGenomicsAnalysis",
+      url="https://github.com/clara-parabricks/ClaraGenomicsAnalysis",
       include_package_data=True,
       data_files=[
-          ('cga_shared_objects', glob.glob('claragenomics/shared_libs/*.so'))
+          ('gw_shared_objects', glob.glob('claragenomics/shared_libs/*.so'))
       ],
       install_requires=get_installation_requirments(
           get_verified_absolute_path(os.path.join(current_dir, 'requirements.txt'))
       ),
-      packages=find_packages(where=current_dir),
+      packages=find_packages(where=current_dir, include=['genomeworks*']),
       python_requires='>=3.5',
       license='Apache License 2.0',
       long_description='Python libraries and utilities for manipulating genomics data',
+      long_description_content_type='text/plain',
       classifiers=pycga_classifiers,
       platforms=['any'],
       ext_modules=cythonize(extensions, compiler_directives={'embedsignature': True}),
-      scripts=[os.path.join('bin', 'genome_simulator'),
-               os.path.join('bin', 'assembly_evaluator')],
+      scripts=[os.path.join('bin', 'genome_simulator')],
       )
