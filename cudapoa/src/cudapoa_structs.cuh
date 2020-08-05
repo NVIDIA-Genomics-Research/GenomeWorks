@@ -29,9 +29,8 @@
 // Dimensions for Banded alignment score matrix
 #define WARP_SIZE 32
 #define CELLS_PER_THREAD 4
-#define CUDAPOA_BAND_WIDTH (CELLS_PER_THREAD * WARP_SIZE)
+#define CUDAPOA_MIN_BAND_WIDTH (CELLS_PER_THREAD * WARP_SIZE)
 #define CUDAPOA_BANDED_MATRIX_RIGHT_PADDING (CELLS_PER_THREAD * 2)
-#define CUDAPOA_BANDED_MAX_MATRIX_SEQUENCE_DIMENSION (CUDAPOA_BAND_WIDTH + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING)
 
 #define CUDAPOA_THREADS_PER_BLOCK 64
 #define CUDAPOA_BANDED_THREADS_PER_BLOCK WARP_SIZE
@@ -70,6 +69,7 @@ typedef struct WindowDetails
 
     /// Max column width of the score matrix required for specific window
     int32_t scores_width;
+
 } WindowDetails;
 
 typedef struct OutputDetails
@@ -102,6 +102,14 @@ struct AlignmentDetails
 {
     // Device buffer for the scoring matrix for all windows.
     ScoreT* scores;
+    /// Buffer for storing per row band start location in absolute score matrix for adaptive banding
+    SizeT* band_starts;
+    /// Buffer for storing per row band widths for adaptive banding
+    SizeT* band_widths;
+    /// Buffer for storing per row band start location in this score matrix for adaptive banding
+    int64_t* band_head_indices;
+    /// Buffer for storing max score index per row
+    SizeT* band_max_indices;
 
     // preallocated size of scores buffer
     size_t scorebuf_alloc_size = 0;
@@ -142,6 +150,9 @@ struct GraphDetails
     // Device buffer that maintains a mapping between the node ID and its
     // position in the topologically sorted graph.
     SizeT* sorted_poa_node_map;
+
+    // Device buffer to store distance of each graph node to the head node(s), used in adaptive-banding alignment
+    SizeT* node_distance_to_head;
 
     // Device buffer used during topological sort to store incoming
     // edge counts for nodes.

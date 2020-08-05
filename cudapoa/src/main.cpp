@@ -15,7 +15,6 @@
 */
 
 #include <iostream>
-#include <fstream>
 #include <string>
 #include <claraparabricks/genomeworks/cudapoa/utils.hpp> // for get_multi_batch_sizes()
 #include "application_parameters.hpp"
@@ -33,9 +32,8 @@ std::unique_ptr<Batch> initialize_batch(int32_t mismatch_score,
                                         int32_t gap_score,
                                         int32_t match_score,
                                         bool msa,
-                                        bool banded_alignment,
                                         const double gpu_mem_allocation,
-                                        const BatchSize& batch_size)
+                                        const BatchConfig& batch_size)
 {
     // Get device information.
     int32_t device_count = 0;
@@ -61,18 +59,17 @@ std::unique_ptr<Batch> initialize_batch(int32_t mismatch_score,
                                                 batch_size,
                                                 gap_score,
                                                 mismatch_score,
-                                                match_score,
-                                                banded_alignment);
+                                                match_score);
 
     return std::move(batch);
 }
 
-void process_batch(Batch* batch, bool msa, bool print)
+void process_batch(Batch* batch, bool msa_flag, bool print, std::vector<int32_t>& list_of_group_ids, int id_offset)
 {
     batch->generate_poa();
 
     StatusType status = StatusType::success;
-    if (msa)
+    if (msa_flag)
     {
         // Grab MSA results for all POA groups in batch.
         std::vector<std::vector<std::string>> msa; // MSA per group
@@ -88,7 +85,7 @@ void process_batch(Batch* batch, bool msa, bool print)
         {
             if (output_status[g] != StatusType::success)
             {
-                std::cerr << "Error generating  MSA for POA group " << g << ". Error type " << output_status[g] << std::endl;
+                std::cerr << "Error generating  MSA for POA group " << list_of_group_ids[g + id_offset] << ". Error type " << output_status[g] << std::endl;
             }
             else
             {
@@ -119,7 +116,7 @@ void process_batch(Batch* batch, bool msa, bool print)
         {
             if (output_status[g] != StatusType::success)
             {
-                std::cerr << "Error generating consensus for POA group " << g << ". Error type " << output_status[g] << std::endl;
+                std::cerr << "Error generating consensus for POA group " << list_of_group_ids[g + id_offset] << ". Error type " << output_status[g] << std::endl;
             }
             else
             {
@@ -178,15 +175,15 @@ int main(int argc, char* argv[])
     }
 
     // analyze the POA groups and create a minimal set of batches to process them all
-    std::vector<BatchSize> list_of_batch_sizes;
+    std::vector<BatchConfig> list_of_batch_sizes;
     std::vector<std::vector<int32_t>> list_of_groups_per_batch;
 
     get_multi_batch_sizes(list_of_batch_sizes,
                           list_of_groups_per_batch,
                           poa_groups,
-                          parameters.banded,
                           parameters.msa,
                           parameters.band_width,
+                          parameters.band_mode,
                           nullptr,
                           parameters.gpu_mem_allocation,
                           parameters.mismatch_score,
@@ -205,7 +202,6 @@ int main(int argc, char* argv[])
                                                         parameters.gap_score,
                                                         parameters.match_score,
                                                         parameters.msa,
-                                                        parameters.banded,
                                                         parameters.gpu_mem_allocation,
                                                         batch_size);
 
@@ -226,7 +222,7 @@ int main(int argc, char* argv[])
                 if (batch->get_total_poas() > 0)
                 {
                     // No more POA groups can be added to batch. Now process batch.
-                    process_batch(batch.get(), parameters.msa, true);
+                    process_batch(batch.get(), parameters.msa, true, batch_group_ids, group_count);
 
                     if (graph_output.is_open())
                     {

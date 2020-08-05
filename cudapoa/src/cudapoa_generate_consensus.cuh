@@ -282,7 +282,7 @@ __device__ void generateConsensus(uint8_t* nodes,
     consensus[consensus_pos] = '\0';
 }
 
-template <bool cuda_banded_alignment = false, typename SizeT>
+template <typename SizeT>
 __global__ void generateConsensusKernel(uint8_t* consensus_d,
                                         uint16_t* coverage_d,
                                         SizeT* sequence_lengths_d,
@@ -301,7 +301,7 @@ __global__ void generateConsensusKernel(uint8_t* consensus_d,
                                         int32_t* consensus_scores_d,
                                         SizeT* consensus_predecessors_d,
                                         uint16_t* node_coverage_counts_d_,
-                                        uint32_t max_nodes_per_window,
+                                        uint32_t max_nodes_per_graph,
                                         uint32_t max_limit_consensus_size)
 {
     //each thread will operate on a window
@@ -316,23 +316,23 @@ __global__ void generateConsensusKernel(uint8_t* consensus_d,
         return;
 
     // Find the buffer offsets for each thread within the global memory buffers.
-    uint8_t* nodes                  = &nodes_d[max_nodes_per_window * window_idx];
-    SizeT* incoming_edges           = &incoming_edges_d[window_idx * max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES];
-    uint16_t* incoming_edge_count   = &incoming_edge_count_d[window_idx * max_nodes_per_window];
-    SizeT* outgoing_edges           = &outgoing_edges_d[window_idx * max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES];
-    uint16_t* outgoing_edge_count   = &outgoing_edge_count_d[window_idx * max_nodes_per_window];
-    uint16_t* incoming_edge_weights = &incoming_edge_w_d[window_idx * max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES];
-    SizeT* sorted_poa               = &sorted_poa_d[window_idx * max_nodes_per_window];
-    SizeT* node_id_to_pos           = &node_id_to_pos_d[window_idx * max_nodes_per_window];
-    SizeT* node_alignments          = &node_alignments_d[window_idx * max_nodes_per_window * CUDAPOA_MAX_NODE_ALIGNMENTS];
-    uint16_t* node_alignment_count  = &node_alignment_count_d[window_idx * max_nodes_per_window];
-    uint16_t* node_coverage_counts  = &node_coverage_counts_d_[max_nodes_per_window * window_idx];
+    uint8_t* nodes                  = &nodes_d[max_nodes_per_graph * window_idx];
+    SizeT* incoming_edges           = &incoming_edges_d[window_idx * max_nodes_per_graph * CUDAPOA_MAX_NODE_EDGES];
+    uint16_t* incoming_edge_count   = &incoming_edge_count_d[window_idx * max_nodes_per_graph];
+    SizeT* outgoing_edges           = &outgoing_edges_d[window_idx * max_nodes_per_graph * CUDAPOA_MAX_NODE_EDGES];
+    uint16_t* outgoing_edge_count   = &outgoing_edge_count_d[window_idx * max_nodes_per_graph];
+    uint16_t* incoming_edge_weights = &incoming_edge_w_d[window_idx * max_nodes_per_graph * CUDAPOA_MAX_NODE_EDGES];
+    SizeT* sorted_poa               = &sorted_poa_d[window_idx * max_nodes_per_graph];
+    SizeT* node_id_to_pos           = &node_id_to_pos_d[window_idx * max_nodes_per_graph];
+    SizeT* node_alignments          = &node_alignments_d[window_idx * max_nodes_per_graph * CUDAPOA_MAX_NODE_ALIGNMENTS];
+    uint16_t* node_alignment_count  = &node_alignment_count_d[window_idx * max_nodes_per_graph];
+    uint16_t* node_coverage_counts  = &node_coverage_counts_d_[max_nodes_per_graph * window_idx];
     SizeT* sequence_lengths         = &sequence_lengths_d[window_details_d[window_idx].seq_len_buffer_offset];
 
     //generate consensus
     uint16_t* coverage            = &coverage_d[window_idx * max_limit_consensus_size];
-    int32_t* consensus_scores     = &consensus_scores_d[window_idx * max_nodes_per_window];
-    SizeT* consensus_predecessors = &consensus_predecessors_d[window_idx * max_nodes_per_window];
+    int32_t* consensus_scores     = &consensus_scores_d[window_idx * max_nodes_per_graph];
+    SizeT* consensus_predecessors = &consensus_predecessors_d[window_idx * max_nodes_per_graph];
 
     generateConsensus(nodes,
                       sequence_lengths[0],
