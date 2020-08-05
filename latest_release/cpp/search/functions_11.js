@@ -1,6 +1,5 @@
 var searchData=
 [
-  ['unique_5frepresentations_342',['unique_representations',['../group__cudamapper.html#ga9c0fe1c2988d7c9f0c652909b0f0f6e7',1,'claragenomics::cudamapper::Index::unique_representations()'],['../group__cudamapper.html#ga58f1203dd96fbbaaa5bdb0bd041f1457',1,'claragenomics::cudamapper::IndexHostCopyBase::unique_representations()']]],
-  ['update_5fadject_5fnodes_343',['update_adject_nodes',['../classclaragenomics_1_1Graph.html#a0043ec8f35f7491c06915c887d31ea77',1,'claragenomics::Graph']]],
-  ['update_5fread_5fnames_344',['update_read_names',['../group__cudamapper.html#ga56522be7d76cf6333feaa7a311448e1f',1,'claragenomics::cudamapper::Overlapper']]]
+  ['unique_5frepresentations_342',['unique_representations',['../group__cudamapper.html#ga9012be3598ec4d979289fa5954c1bb7d',1,'claraparabricks::genomeworks::cudamapper::Index::unique_representations()'],['../group__cudamapper.html#ga30f0292e61c1f6d1062c73f7043e91a6',1,'claraparabricks::genomeworks::cudamapper::IndexHostCopyBase::unique_representations()']]],
+  ['update_5fadject_5fnodes_343',['update_adject_nodes',['../classclaraparabricks_1_1genomeworks_1_1Graph.html#a9b7f9261998a5908d6950643bf799522',1,'claraparabricks::genomeworks::Graph']]]
 ];

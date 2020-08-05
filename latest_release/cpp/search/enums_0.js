@@ -1,5 +1,5 @@
 var searchData=
 [
-  ['alignmentstate_411',['AlignmentState',['../group__cudaaligner.html#ga8ee40da066dcb49eb0516b6a763ec45d',1,'claragenomics::cudaaligner']]],
-  ['alignmenttype_412',['AlignmentType',['../group__cudaaligner.html#gafcccbe51c86f9772ccf837fc433f518b',1,'claragenomics::cudaaligner']]]
+  ['alignmentstate_406',['AlignmentState',['../group__cudaaligner.html#ga9756f3421ad567e89cf2be8b6d0ac334',1,'claraparabricks::genomeworks::cudaaligner']]],
+  ['alignmenttype_407',['AlignmentType',['../group__cudaaligner.html#gaa509caecb2faca905ab8fd05368b6605',1,'claraparabricks::genomeworks::cudaaligner']]]
 ];

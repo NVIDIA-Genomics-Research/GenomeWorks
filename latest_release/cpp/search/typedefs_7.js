@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['pointer_408',['pointer',['../classclaragenomics_1_1CudaMallocAllocator.html#a825042b2f620fdf6e9b845748757f062',1,'claragenomics::CudaMallocAllocator::pointer()'],['../classclaragenomics_1_1CachingDeviceAllocator.html#a7030bf6716ba037e6b2fe4715b112f02',1,'claragenomics::CachingDeviceAllocator::pointer()']]]
+  ['pointer_403',['pointer',['../classclaraparabricks_1_1genomeworks_1_1CudaMallocAllocator.html#a55840e01a320b7f86903d1c2b747bad5',1,'claraparabricks::genomeworks::CudaMallocAllocator::pointer()'],['../classclaraparabricks_1_1genomeworks_1_1CachingDeviceAllocator.html#aafafa3d9c6c02d251c68c042b7ffbae4',1,'claraparabricks::genomeworks::CachingDeviceAllocator::pointer()']]]
 ];

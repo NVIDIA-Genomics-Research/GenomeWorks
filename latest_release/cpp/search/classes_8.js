@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['matcher_235',['Matcher',['../classclaragenomics_1_1cudamapper_1_1Matcher.html',1,'claragenomics::cudamapper']]]
+  ['matcher_233',['Matcher',['../classclaraparabricks_1_1genomeworks_1_1cudamapper_1_1Matcher.html',1,'claraparabricks::genomeworks::cudamapper']]]
 ];

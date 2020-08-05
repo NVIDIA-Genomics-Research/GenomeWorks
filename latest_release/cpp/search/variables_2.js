@@ -1,5 +1,5 @@
 var searchData=
 [
-  ['edges_5f_365',['edges_',['../classclaragenomics_1_1Graph.html#a4089c636086324cae1f2a2bde56c8b33',1,'claragenomics::Graph']]],
-  ['empty_5f_366',['empty_',['../classclaragenomics_1_1Graph.html#ada271fc17a3a6e86f5dcc78c4caa729c',1,'claragenomics::Graph']]]
+  ['edges_5f_366',['edges_',['../classclaraparabricks_1_1genomeworks_1_1Graph.html#a5bf87645c5d84f352a453052d78e3587',1,'claraparabricks::genomeworks::Graph']]],
+  ['empty_5f_367',['empty_',['../classclaraparabricks_1_1genomeworks_1_1Graph.html#acc9fd17124e3c457be0c7b8127838eef',1,'claraparabricks::genomeworks::Graph']]]
 ];

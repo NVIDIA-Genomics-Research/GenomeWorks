@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['directionofrepresentation_413',['DirectionOfRepresentation',['../classclaragenomics_1_1cudamapper_1_1SketchElement.html#a83beb5c091c4b0bfec99c04b6bc8777a',1,'claragenomics::cudamapper::SketchElement']]]
+  ['bandmode_408',['BandMode',['../group__cudapoa.html#ga152b74ddff14647e3a7bfc9916f8b517',1,'claraparabricks::genomeworks::cudapoa']]]
 ];

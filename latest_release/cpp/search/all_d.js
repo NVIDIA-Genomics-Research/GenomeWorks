@@ -1,10 +1,9 @@
 var searchData=
 [
-  ['pairhash_144',['PairHash',['../structclaragenomics_1_1PairHash.html',1,'claragenomics']]],
-  ['pairing_145',['pairing',['../structclaragenomics_1_1cudaaligner_1_1FormattedAlignment.html#ac7443ebf7ad56aac976103d140fb2fe9',1,'claragenomics::cudaaligner::FormattedAlignment']]],
-  ['pointer_146',['pointer',['../classclaragenomics_1_1CudaMallocAllocator.html#a825042b2f620fdf6e9b845748757f062',1,'claragenomics::CudaMallocAllocator::pointer()'],['../classclaragenomics_1_1CachingDeviceAllocator.html#a7030bf6716ba037e6b2fe4715b112f02',1,'claragenomics::CachingDeviceAllocator::pointer()']]],
-  ['position_5fin_5fread_147',['position_in_read',['../classclaragenomics_1_1cudamapper_1_1SketchElement.html#a0ddea36eed82ea3a9d1fa7ace61051bc',1,'claragenomics::cudamapper::SketchElement']]],
-  ['positions_5fin_5freads_148',['positions_in_reads',['../group__cudamapper.html#ga6ea546f53cd32cf6ebf1ce02fbaf8fce',1,'claragenomics::cudamapper::Index::positions_in_reads()'],['../group__cudamapper.html#ga6e305008b43cecb83f9996d53a7c8441',1,'claragenomics::cudamapper::IndexHostCopyBase::positions_in_reads()']]],
-  ['post_5fprocess_5foverlaps_149',['post_process_overlaps',['../group__cudamapper.html#ga01239ec382156e8b5a7ae1a98ad6afb4',1,'claragenomics::cudamapper::Overlapper']]],
-  ['print_5fpaf_150',['print_paf',['../group__cudamapper.html#gaa345b5474fb44bed4592785ee51d08c6',1,'claragenomics::cudamapper::Overlapper']]]
+  ['pairhash_150',['PairHash',['../structclaraparabricks_1_1genomeworks_1_1PairHash.html',1,'claraparabricks::genomeworks']]],
+  ['pairing_151',['pairing',['../structclaraparabricks_1_1genomeworks_1_1cudaaligner_1_1FormattedAlignment.html#ade90257cb8b5a98cc9e74a7cc58906d0',1,'claraparabricks::genomeworks::cudaaligner::FormattedAlignment']]],
+  ['pointer_152',['pointer',['../classclaraparabricks_1_1genomeworks_1_1CudaMallocAllocator.html#a55840e01a320b7f86903d1c2b747bad5',1,'claraparabricks::genomeworks::CudaMallocAllocator::pointer()'],['../classclaraparabricks_1_1genomeworks_1_1CachingDeviceAllocator.html#aafafa3d9c6c02d251c68c042b7ffbae4',1,'claraparabricks::genomeworks::CachingDeviceAllocator::pointer()']]],
+  ['position_5fin_5fread_153',['position_in_read',['../classclaraparabricks_1_1genomeworks_1_1cudamapper_1_1SketchElement.html#a95c6b0f37438495044e9b10cc526f21f',1,'claraparabricks::genomeworks::cudamapper::SketchElement']]],
+  ['positions_5fin_5freads_154',['positions_in_reads',['../group__cudamapper.html#ga29cef625e1b5bfcac9937dd06a3d5452',1,'claraparabricks::genomeworks::cudamapper::Index::positions_in_reads()'],['../group__cudamapper.html#ga9b833e24986c9d3371ab4e5028e7330c',1,'claraparabricks::genomeworks::cudamapper::IndexHostCopyBase::positions_in_reads()']]],
+  ['post_5fprocess_5foverlaps_155',['post_process_overlaps',['../group__cudamapper.html#ga500dcb7e3d7039724435ff0c9935a2b4',1,'claraparabricks::genomeworks::cudamapper::Overlapper']]]
 ];

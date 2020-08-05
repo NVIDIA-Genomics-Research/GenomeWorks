@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.8.16"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>ClaraGenomicsAnalysis: cudamapper/include/claragenomics/cudamapper/overlapper.hpp Source File</title>
+<title>GenomeWorks: cudamapper/include/claraparabricks/genomeworks/cudamapper/overlapper.hpp Source File</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -21,7 +21,7 @@
  <tbody>
  <tr style="height: 56px;">
   <td id="projectalign" style="padding-left: 0.5em;">
-   <div id="projectname">ClaraGenomicsAnalysis
+   <div id="projectname">GenomeWorks
    &#160;<span id="projectnumber">0.5.0</span>
    </div>
   </td>
@@ -62,7 +62,7 @@ $(function() {
 
 <div id="nav-path" class="navpath">
   <ul>
-<li class="navelem"><a class="el" href="dir_2312589fb962dec58b1579fafe6a300a.html">cudamapper</a></li><li class="navelem"><a class="el" href="dir_46ada5e69ffe047ce1b425fcb02bc946.html">include</a></li><li class="navelem"><a class="el" href="dir_00faf102fbd78ece25aa2d8f2597f59b.html">claragenomics</a></li><li class="navelem"><a class="el" href="dir_5d9177f36fbce0c085b11d352d248d8a.html">cudamapper</a></li>  </ul>
+<li class="navelem"><a class="el" href="dir_2312589fb962dec58b1579fafe6a300a.html">cudamapper</a></li><li class="navelem"><a class="el" href="dir_46ada5e69ffe047ce1b425fcb02bc946.html">include</a></li><li class="navelem"><a class="el" href="dir_6b9944cba08287418dc72a6bc1452010.html">claraparabricks</a></li><li class="navelem"><a class="el" href="dir_ac95339e566245492f26ed3bc0fe8fe7.html">genomeworks</a></li><li class="navelem"><a class="el" href="dir_81a3ae21c241e579c7e89865935ce682.html">cudamapper</a></li>  </ul>
 </div>
 </div><!-- top -->
 <div class="header">
@@ -71,68 +71,101 @@ $(function() {
 </div><!--header-->
 <div class="contents">
 <div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;<span class="comment">/*</span></div>
-<div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160;<span class="comment">* Copyright (c) 2019, NVIDIA CORPORATION.  All rights reserved.</span></div>
+<div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160;<span class="comment">* Copyright 2019-2020 NVIDIA CORPORATION.</span></div>
 <div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;<span class="comment">*</span></div>
-<div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;<span class="comment">* NVIDIA CORPORATION and its licensors retain all intellectual property</span></div>
-<div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;<span class="comment">* and proprietary rights in and to this software, related documentation</span></div>
-<div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;<span class="comment">* and any modifications thereto.  Any use, reproduction, disclosure or</span></div>
-<div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;<span class="comment">* distribution of this software and related documentation without an express</span></div>
-<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;<span class="comment">* license agreement from NVIDIA CORPORATION is strictly prohibited.</span></div>
-<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;<span class="comment">*/</span></div>
-<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160; </div>
-<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;<span class="preprocessor">#pragma once</span></div>
-<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160; </div>
-<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;<span class="preprocessor">#include &lt;claragenomics/cudamapper/index.hpp&gt;</span></div>
-<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;<span class="preprocessor">#include &lt;claragenomics/cudamapper/types.hpp&gt;</span></div>
-<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;<span class="preprocessor">#include &lt;claragenomics/io/fasta_parser.hpp&gt;</span></div>
+<div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;<span class="comment">* Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span></div>
+<div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;<span class="comment">* you may not use this file except in compliance with the License.</span></div>
+<div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;<span class="comment">* You may obtain a copy of the License at</span></div>
+<div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;<span class="comment">*</span></div>
+<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;<span class="comment">*     http://www.apache.org/licenses/LICENSE-2.0</span></div>
+<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;<span class="comment">*</span></div>
+<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;<span class="comment">* Unless required by applicable law or agreed to in writing, software</span></div>
+<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;<span class="comment">* distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span></div>
+<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;<span class="comment">* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span></div>
+<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;<span class="comment">* See the License for the specific language governing permissions and</span></div>
+<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;<span class="comment">* limitations under the License.</span></div>
+<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;<span class="comment">*/</span></div>
 <div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160; </div>
-<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;<span class="preprocessor">#include &lt;thrust/execution_policy.h&gt;</span></div>
+<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;<span class="preprocessor">#pragma once</span></div>
 <div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160; </div>
-<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;<span class="keyword">namespace </span>claragenomics</div>
-<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;{</div>
+<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;<span class="preprocessor">#include &lt;claraparabricks/genomeworks/cudamapper/types.hpp&gt;</span></div>
+<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;<span class="preprocessor">#include &lt;claraparabricks/genomeworks/io/fasta_parser.hpp&gt;</span></div>
 <div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160; </div>
-<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;<span class="keyword">namespace </span>cudamapper</div>
-<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;{</div>
-<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160; </div>
-<div class="line"><a name="l00029"></a><span class="lineno"><a class="line" href="classclaragenomics_1_1cudamapper_1_1Overlapper.html">   29</a></span>&#160;<span class="keyword">class </span><a class="code" href="classclaragenomics_1_1cudamapper_1_1Overlapper.html">Overlapper</a></div>
-<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;{</div>
-<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;<span class="keyword">public</span>:</div>
-<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;    <span class="keyword">virtual</span> <a class="code" href="group__cudamapper.html#ga569c8855bdf9806d3747b26fc7e98975">~Overlapper</a>() = <span class="keywordflow">default</span>;</div>
-<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160; </div>
-<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span> <a class="code" href="group__cudamapper.html#ga8a91e2620221bc43709c3de1f3f10631">get_overlaps</a>(std::vector&lt;Overlap&gt;&amp; fused_overlaps,</div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;                              <span class="keyword">const</span> <a class="code" href="classclaragenomics_1_1buffer.html">device_buffer&lt;Anchor&gt;</a>&amp; d_anchors,</div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;                              int64_t min_residues,</div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;                              int64_t min_overlap_len,</div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;                              int64_t min_bases_per_residue,</div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;                              <span class="keywordtype">float</span> min_overlap_fraction) = 0;</div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160; </div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;    <span class="keyword">static</span> <span class="keywordtype">void</span> <a class="code" href="group__cudamapper.html#gaa345b5474fb44bed4592785ee51d08c6">print_paf</a>(<span class="keyword">const</span> std::vector&lt;Overlap&gt;&amp; overlaps, <span class="keyword">const</span> std::vector&lt;std::string&gt;&amp; cigar, <span class="keyword">const</span> <span class="keywordtype">int</span> k);</div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160; </div>
-<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;    <span class="keyword">static</span> <span class="keywordtype">void</span> <a class="code" href="group__cudamapper.html#gac3c81669522c2642ba340d10da5be336">filter_overlaps</a>(std::vector&lt;Overlap&gt;&amp; filtered_overlaps,</div>
-<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;                                <span class="keyword">const</span> std::vector&lt;Overlap&gt;&amp; overlaps,</div>
-<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;                                int64_t min_residues    = 20,</div>
-<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;                                int64_t min_overlap_len = 50);</div>
-<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160; </div>
-<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;    <span class="keyword">static</span> <span class="keywordtype">void</span> <a class="code" href="group__cudamapper.html#ga56522be7d76cf6333feaa7a311448e1f">update_read_names</a>(std::vector&lt;Overlap&gt;&amp; overlaps,</div>
-<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;                                  <span class="keyword">const</span> <a class="code" href="classclaragenomics_1_1io_1_1FastaParser.html">io::FastaParser</a>&amp; query_parser,</div>
-<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;                                  <span class="keyword">const</span> <a class="code" href="classclaragenomics_1_1io_1_1FastaParser.html">io::FastaParser</a>&amp; target_parser);</div>
-<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160; </div>
-<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;    <span class="keyword">static</span> <span class="keywordtype">void</span> <a class="code" href="group__cudamapper.html#ga01239ec382156e8b5a7ae1a98ad6afb4">post_process_overlaps</a>(std::vector&lt;Overlap&gt;&amp; overlaps);</div>
-<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;};</div>
-<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;<span class="comment">//}</span></div>
-<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;} <span class="comment">// namespace cudamapper</span></div>
-<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160; </div>
-<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;} <span class="comment">// namespace claragenomics</span></div>
+<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;<span class="preprocessor">#include &lt;thrust/execution_policy.h&gt;</span></div>
+<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="preprocessor">#include &lt;claraparabricks/genomeworks/utils/device_buffer.hpp&gt;</span></div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160; </div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="keyword">namespace </span>claraparabricks</div>
+<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;{</div>
+<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160; </div>
+<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;<span class="keyword">namespace </span>genomeworks</div>
+<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;{</div>
+<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160; </div>
+<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;<span class="keyword">namespace </span>cudamapper</div>
+<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;{</div>
+<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160; </div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;<span class="keyword">namespace </span>details</div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;{</div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;<span class="keyword">namespace </span>overlapper</div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;{</div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160; </div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;<span class="keywordtype">void</span> <a class="code" href="group__cudamapper.html#gafc80bdb4453ae4843b11a8c36cc590a5">extend_overlap_by_sequence_similarity</a>(Overlap&amp; overlap,</div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;                                           gw_string_view_t&amp; query_sequence,</div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;                                           gw_string_view_t&amp; target_sequence,</div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;                                           std::int32_t extension,</div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;                                           <span class="keywordtype">float</span> required_similarity);</div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;<span class="keywordtype">void</span> <a class="code" href="group__cudamapper.html#ga4d08506eb6dc5176a89410f4dc0f148f">drop_overlaps_by_mask</a>(std::vector&lt;claraparabricks::genomeworks::cudamapper::Overlap&gt;&amp; overlaps, <span class="keyword">const</span> std::vector&lt;bool&gt;&amp; mask);</div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160; </div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;} <span class="comment">// namespace overlapper</span></div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;} <span class="comment">// namespace details</span></div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160; </div>
+<div class="line"><a name="l00066"></a><span class="lineno"><a class="line" href="classclaraparabricks_1_1genomeworks_1_1cudamapper_1_1Overlapper.html">   66</a></span>&#160;<span class="keyword">class </span><a class="code" href="classclaraparabricks_1_1genomeworks_1_1cudamapper_1_1Overlapper.html">Overlapper</a></div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;{</div>
+<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;<span class="keyword">public</span>:</div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;    <span class="keyword">virtual</span> <a class="code" href="group__cudamapper.html#gaa6ae5c9f620e64267d7f8ccbd66e60ec">~Overlapper</a>() = <span class="keywordflow">default</span>;</div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160; </div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span> <a class="code" href="group__cudamapper.html#ga72ada16ceb1580cf61b0ff5eb85d177a">get_overlaps</a>(std::vector&lt;Overlap&gt;&amp; fused_overlaps,</div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;                              <span class="keyword">const</span> <a class="code" href="classclaraparabricks_1_1genomeworks_1_1details_1_1buffer.html">device_buffer&lt;Anchor&gt;</a>&amp; d_anchors,</div>
+<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;                              <span class="keywordtype">bool</span> all_to_all,</div>
+<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;                              int64_t min_residues,</div>
+<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;                              int64_t min_overlap_len,</div>
+<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;                              int64_t min_bases_per_residue,</div>
+<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;                              <span class="keywordtype">float</span> min_overlap_fraction) = 0;</div>
+<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160; </div>
+<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;    <span class="keyword">static</span> <span class="keywordtype">void</span> <a class="code" href="group__cudamapper.html#gac6ef2c14780103891dbb3c0c6bb94376">filter_overlaps</a>(std::vector&lt;Overlap&gt;&amp; filtered_overlaps,</div>
+<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;                                <span class="keyword">const</span> std::vector&lt;Overlap&gt;&amp; overlaps,</div>
+<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;                                int64_t min_residues    = 20,</div>
+<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;                                int64_t min_overlap_len = 50);</div>
+<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160; </div>
+<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;    <span class="keyword">static</span> <span class="keywordtype">void</span> <a class="code" href="group__cudamapper.html#ga500dcb7e3d7039724435ff0c9935a2b4">post_process_overlaps</a>(std::vector&lt;Overlap&gt;&amp; overlaps, <span class="keywordtype">bool</span> drop_fused_overlaps = <span class="keyword">false</span>);</div>
+<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160; </div>
+<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;    <span class="keyword">static</span> <span class="keywordtype">void</span> <a class="code" href="group__cudamapper.html#ga630b7b0606473be8892473c47a948d9b">rescue_overlap_ends</a>(std::vector&lt;Overlap&gt;&amp; overlaps,</div>
+<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;                                    <span class="keyword">const</span> <a class="code" href="classclaraparabricks_1_1genomeworks_1_1io_1_1FastaParser.html">io::FastaParser</a>&amp; query_parser,</div>
+<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;                                    <span class="keyword">const</span> <a class="code" href="classclaraparabricks_1_1genomeworks_1_1io_1_1FastaParser.html">io::FastaParser</a>&amp; target_parser,</div>
+<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;                                    std::int32_t extension,</div>
+<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;                                    <span class="keywordtype">float</span> required_similarity);</div>
+<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160; </div>
+<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;    <span class="keyword">static</span> std::unique_ptr&lt;Overlapper&gt; <a class="code" href="group__cudamapper.html#ga1f892094edd0cd13458a9af45da42713">create_overlapper</a>(<a class="code" href="classclaraparabricks_1_1genomeworks_1_1CudaMallocAllocator.html">DefaultDeviceAllocator</a> allocator,</div>
+<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;                                                         <span class="keyword">const</span> cudaStream_t cuda_stream = 0);</div>
+<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;};</div>
+<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;<span class="comment">//}</span></div>
+<div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160;} <span class="comment">// namespace cudamapper</span></div>
+<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160; </div>
+<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;} <span class="comment">// namespace genomeworks</span></div>
+<div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160; </div>
+<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160;} <span class="comment">// namespace claraparabricks</span></div>
 </div><!-- fragment --></div><!-- contents -->
-<div class="ttc" id="aclassclaragenomics_1_1buffer_html"><div class="ttname"><a href="classclaragenomics_1_1buffer.html">claragenomics::buffer</a></div><div class="ttdoc">Container for an array of elements of type T in host or device memory. T must be trivially copyable.</div><div class="ttdef"><b>Definition:</b> buffer.hpp:23</div></div>
-<div class="ttc" id="agroup__cudamapper_html_ga8a91e2620221bc43709c3de1f3f10631"><div class="ttname"><a href="group__cudamapper.html#ga8a91e2620221bc43709c3de1f3f10631">claragenomics::cudamapper::Overlapper::get_overlaps</a></div><div class="ttdeci">virtual void get_overlaps(std::vector&lt; Overlap &gt; &amp;fused_overlaps, const device_buffer&lt; Anchor &gt; &amp;d_anchors, int64_t min_residues, int64_t min_overlap_len, int64_t min_bases_per_residue, float min_overlap_fraction)=0</div><div class="ttdoc">returns overlaps for a set of reads</div></div>
-<div class="ttc" id="agroup__cudamapper_html_ga56522be7d76cf6333feaa7a311448e1f"><div class="ttname"><a href="group__cudamapper.html#ga56522be7d76cf6333feaa7a311448e1f">claragenomics::cudamapper::Overlapper::update_read_names</a></div><div class="ttdeci">static void update_read_names(std::vector&lt; Overlap &gt; &amp;overlaps, const io::FastaParser &amp;query_parser, const io::FastaParser &amp;target_parser)</div><div class="ttdoc">updates read names for vector of overlaps output from get_overlaps</div></div>
-<div class="ttc" id="aclassclaragenomics_1_1cudamapper_1_1Overlapper_html"><div class="ttname"><a href="classclaragenomics_1_1cudamapper_1_1Overlapper.html">claragenomics::cudamapper::Overlapper</a></div><div class="ttdef"><b>Definition:</b> overlapper.hpp:29</div></div>
-<div class="ttc" id="aclassclaragenomics_1_1io_1_1FastaParser_html"><div class="ttname"><a href="classclaragenomics_1_1io_1_1FastaParser.html">claragenomics::io::FastaParser</a></div><div class="ttdef"><b>Definition:</b> fasta_parser.hpp:34</div></div>
-<div class="ttc" id="agroup__cudamapper_html_gac3c81669522c2642ba340d10da5be336"><div class="ttname"><a href="group__cudamapper.html#gac3c81669522c2642ba340d10da5be336">claragenomics::cudamapper::Overlapper::filter_overlaps</a></div><div class="ttdeci">static void filter_overlaps(std::vector&lt; Overlap &gt; &amp;filtered_overlaps, const std::vector&lt; Overlap &gt; &amp;overlaps, int64_t min_residues=20, int64_t min_overlap_len=50)</div><div class="ttdoc">removes overlaps which are unlikely to be true overlaps</div></div>
-<div class="ttc" id="agroup__cudamapper_html_gaa345b5474fb44bed4592785ee51d08c6"><div class="ttname"><a href="group__cudamapper.html#gaa345b5474fb44bed4592785ee51d08c6">claragenomics::cudamapper::Overlapper::print_paf</a></div><div class="ttdeci">static void print_paf(const std::vector&lt; Overlap &gt; &amp;overlaps, const std::vector&lt; std::string &gt; &amp;cigar, const int k)</div><div class="ttdoc">prints overlaps to stdout in PAF format</div></div>
-<div class="ttc" id="agroup__cudamapper_html_ga01239ec382156e8b5a7ae1a98ad6afb4"><div class="ttname"><a href="group__cudamapper.html#ga01239ec382156e8b5a7ae1a98ad6afb4">claragenomics::cudamapper::Overlapper::post_process_overlaps</a></div><div class="ttdeci">static void post_process_overlaps(std::vector&lt; Overlap &gt; &amp;overlaps)</div><div class="ttdoc">Identified overlaps which can be combined into a larger overlap and add them to the input vector.</div></div>
-<div class="ttc" id="agroup__cudamapper_html_ga569c8855bdf9806d3747b26fc7e98975"><div class="ttname"><a href="group__cudamapper.html#ga569c8855bdf9806d3747b26fc7e98975">claragenomics::cudamapper::Overlapper::~Overlapper</a></div><div class="ttdeci">virtual ~Overlapper()=default</div><div class="ttdoc">Virtual destructor for Overlapper.</div></div>
+<div class="ttc" id="agroup__cudamapper_html_ga500dcb7e3d7039724435ff0c9935a2b4"><div class="ttname"><a href="group__cudamapper.html#ga500dcb7e3d7039724435ff0c9935a2b4">claraparabricks::genomeworks::cudamapper::Overlapper::post_process_overlaps</a></div><div class="ttdeci">static void post_process_overlaps(std::vector&lt; Overlap &gt; &amp;overlaps, bool drop_fused_overlaps=false)</div><div class="ttdoc">Identified overlaps which can be combined into a larger overlap and add them to the input vector.</div></div>
+<div class="ttc" id="aclassclaraparabricks_1_1genomeworks_1_1details_1_1buffer_html"><div class="ttname"><a href="classclaraparabricks_1_1genomeworks_1_1details_1_1buffer.html">claraparabricks::genomeworks::details::buffer</a></div><div class="ttdoc">Container for an array of elements of type T in host or device memory. T must be trivially copyable.</div><div class="ttdef"><b>Definition:</b> device_buffer.hpp:38</div></div>
+<div class="ttc" id="agroup__cudamapper_html_ga1f892094edd0cd13458a9af45da42713"><div class="ttname"><a href="group__cudamapper.html#ga1f892094edd0cd13458a9af45da42713">claraparabricks::genomeworks::cudamapper::Overlapper::create_overlapper</a></div><div class="ttdeci">static std::unique_ptr&lt; Overlapper &gt; create_overlapper(DefaultDeviceAllocator allocator, const cudaStream_t cuda_stream=0)</div><div class="ttdoc">Creates a Overlapper object.</div></div>
+<div class="ttc" id="agroup__cudamapper_html_ga4d08506eb6dc5176a89410f4dc0f148f"><div class="ttname"><a href="group__cudamapper.html#ga4d08506eb6dc5176a89410f4dc0f148f">claraparabricks::genomeworks::cudamapper::details::overlapper::drop_overlaps_by_mask</a></div><div class="ttdeci">void drop_overlaps_by_mask(std::vector&lt; claraparabricks::genomeworks::cudamapper::Overlap &gt; &amp;overlaps, const std::vector&lt; bool &gt; &amp;mask)</div><div class="ttdoc">Removes overlaps from a vector (modifying in place) based on a boolean mask.</div></div>
+<div class="ttc" id="aclassclaraparabricks_1_1genomeworks_1_1CudaMallocAllocator_html"><div class="ttname"><a href="classclaraparabricks_1_1genomeworks_1_1CudaMallocAllocator.html">claraparabricks::genomeworks::CudaMallocAllocator</a></div><div class="ttdoc">Allocator that allocates device memory using cudaMalloc/cudaFree.</div><div class="ttdef"><b>Definition:</b> allocator.hpp:37</div></div>
+<div class="ttc" id="agroup__cudamapper_html_ga72ada16ceb1580cf61b0ff5eb85d177a"><div class="ttname"><a href="group__cudamapper.html#ga72ada16ceb1580cf61b0ff5eb85d177a">claraparabricks::genomeworks::cudamapper::Overlapper::get_overlaps</a></div><div class="ttdeci">virtual void get_overlaps(std::vector&lt; Overlap &gt; &amp;fused_overlaps, const device_buffer&lt; Anchor &gt; &amp;d_anchors, bool all_to_all, int64_t min_residues, int64_t min_overlap_len, int64_t min_bases_per_residue, float min_overlap_fraction)=0</div><div class="ttdoc">returns overlaps for a set of reads</div></div>
+<div class="ttc" id="agroup__cudamapper_html_gac6ef2c14780103891dbb3c0c6bb94376"><div class="ttname"><a href="group__cudamapper.html#gac6ef2c14780103891dbb3c0c6bb94376">claraparabricks::genomeworks::cudamapper::Overlapper::filter_overlaps</a></div><div class="ttdeci">static void filter_overlaps(std::vector&lt; Overlap &gt; &amp;filtered_overlaps, const std::vector&lt; Overlap &gt; &amp;overlaps, int64_t min_residues=20, int64_t min_overlap_len=50)</div><div class="ttdoc">removes overlaps which are unlikely to be true overlaps</div></div>
+<div class="ttc" id="agroup__cudamapper_html_gaa6ae5c9f620e64267d7f8ccbd66e60ec"><div class="ttname"><a href="group__cudamapper.html#gaa6ae5c9f620e64267d7f8ccbd66e60ec">claraparabricks::genomeworks::cudamapper::Overlapper::~Overlapper</a></div><div class="ttdeci">virtual ~Overlapper()=default</div><div class="ttdoc">Virtual destructor for Overlapper.</div></div>
+<div class="ttc" id="agroup__cudamapper_html_gafc80bdb4453ae4843b11a8c36cc590a5"><div class="ttname"><a href="group__cudamapper.html#gafc80bdb4453ae4843b11a8c36cc590a5">claraparabricks::genomeworks::cudamapper::details::overlapper::extend_overlap_by_sequence_similarity</a></div><div class="ttdeci">void extend_overlap_by_sequence_similarity(Overlap &amp;overlap, gw_string_view_t &amp;query_sequence, gw_string_view_t &amp;target_sequence, std::int32_t extension, float required_similarity)</div><div class="ttdoc">Extends a single overlap at its ends if the similarity of the query and target sequences is above a s...</div></div>
+<div class="ttc" id="aclassclaraparabricks_1_1genomeworks_1_1cudamapper_1_1Overlapper_html"><div class="ttname"><a href="classclaraparabricks_1_1genomeworks_1_1cudamapper_1_1Overlapper.html">claraparabricks::genomeworks::cudamapper::Overlapper</a></div><div class="ttdef"><b>Definition:</b> overlapper.hpp:66</div></div>
+<div class="ttc" id="agroup__cudamapper_html_ga630b7b0606473be8892473c47a948d9b"><div class="ttname"><a href="group__cudamapper.html#ga630b7b0606473be8892473c47a948d9b">claraparabricks::genomeworks::cudamapper::Overlapper::rescue_overlap_ends</a></div><div class="ttdeci">static void rescue_overlap_ends(std::vector&lt; Overlap &gt; &amp;overlaps, const io::FastaParser &amp;query_parser, const io::FastaParser &amp;target_parser, std::int32_t extension, float required_similarity)</div><div class="ttdoc">Given a vector of overlaps, extend the start/end of the overlaps based on the sequence similarity of ...</div></div>
+<div class="ttc" id="aclassclaraparabricks_1_1genomeworks_1_1io_1_1FastaParser_html"><div class="ttname"><a href="classclaraparabricks_1_1genomeworks_1_1io_1_1FastaParser.html">claraparabricks::genomeworks::io::FastaParser</a></div><div class="ttdef"><b>Definition:</b> fasta_parser.hpp:45</div></div>
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
 Generated by &#160;<a href="http://www.doxygen.org/index.html">

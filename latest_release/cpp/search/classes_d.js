@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['undirectedgraph_243',['UndirectedGraph',['../classclaragenomics_1_1UndirectedGraph.html',1,'claragenomics']]]
+  ['undirectedgraph_241',['UndirectedGraph',['../classclaraparabricks_1_1genomeworks_1_1UndirectedGraph.html',1,'claraparabricks::genomeworks']]]
 ];

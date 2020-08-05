@@ -1,5 +1,5 @@
 var searchData=
 [
-  ['cachingdeviceallocator_224',['CachingDeviceAllocator',['../classclaragenomics_1_1CachingDeviceAllocator.html',1,'claragenomics']]],
-  ['cudamallocallocator_225',['CudaMallocAllocator',['../classclaragenomics_1_1CudaMallocAllocator.html',1,'claragenomics']]]
+  ['cachingdeviceallocator_222',['CachingDeviceAllocator',['../classclaraparabricks_1_1genomeworks_1_1CachingDeviceAllocator.html',1,'claraparabricks::genomeworks']]],
+  ['cudamallocallocator_223',['CudaMallocAllocator',['../classclaraparabricks_1_1genomeworks_1_1CudaMallocAllocator.html',1,'claraparabricks::genomeworks']]]
 ];

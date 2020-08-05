@@ -1,8 +1,9 @@
-<map id="common/base/include/claragenomics/utils/cudautils.hpp" name="common/base/include/claragenomics/utils/cudautils.hpp">
-<area shape="rect" id="node1" title=" " alt="" coords="226,5,375,61"/>
-<area shape="rect" id="node2" href="$cga__config_8hpp_source.html" title=" " alt="" coords="5,199,204,225"/>
-<area shape="rect" id="node3" href="$logging_8hpp.html" title=" " alt="" coords="143,109,293,151"/>
-<area shape="rect" id="node5" title=" " alt="" coords="317,117,452,143"/>
-<area shape="rect" id="node6" title=" " alt="" coords="476,117,541,143"/>
-<area shape="rect" id="node4" title=" " alt="" coords="228,199,341,225"/>
+<map id="common/base/include/claraparabricks/genomeworks/utils/cudautils.hpp" name="common/base/include/claraparabricks/genomeworks/utils/cudautils.hpp">
+<area shape="rect" id="node1" title=" " alt="" coords="327,5,526,61"/>
+<area shape="rect" id="node2" href="$gw__config_8hpp_source.html" title=" " alt="" coords="5,199,200,240"/>
+<area shape="rect" id="node3" href="$logging_8hpp.html" title=" " alt="" coords="140,109,335,151"/>
+<area shape="rect" id="node5" title=" " alt="" coords="359,117,494,143"/>
+<area shape="rect" id="node6" title=" " alt="" coords="518,117,583,143"/>
+<area shape="rect" id="node7" title=" " alt="" coords="607,117,662,143"/>
+<area shape="rect" id="node4" title=" " alt="" coords="225,206,338,233"/>
 </map>

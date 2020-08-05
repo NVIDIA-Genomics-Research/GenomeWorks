@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['outputtype_415',['OutputType',['../group__cudapoa.html#ga303d3df3e0053351dc95efab320bd037',1,'claragenomics::cudapoa']]]
+  ['loggingstatus_410',['LoggingStatus',['../group__logging.html#ga6265654f187a061e12681bdc00cee57b',1,'claraparabricks::genomeworks::logging']]]
 ];

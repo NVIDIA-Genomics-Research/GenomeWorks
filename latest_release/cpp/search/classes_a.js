@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['pairhash_238',['PairHash',['../structclaragenomics_1_1PairHash.html',1,'claragenomics']]]
+  ['pairhash_236',['PairHash',['../structclaraparabricks_1_1genomeworks_1_1PairHash.html',1,'claraparabricks::genomeworks']]]
 ];

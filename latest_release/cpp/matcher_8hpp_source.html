@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.8.16"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>ClaraGenomicsAnalysis: cudamapper/include/claragenomics/cudamapper/matcher.hpp Source File</title>
+<title>GenomeWorks: cudamapper/include/claraparabricks/genomeworks/cudamapper/matcher.hpp Source File</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -21,7 +21,7 @@
  <tbody>
  <tr style="height: 56px;">
   <td id="projectalign" style="padding-left: 0.5em;">
-   <div id="projectname">ClaraGenomicsAnalysis
+   <div id="projectname">GenomeWorks
    &#160;<span id="projectnumber">0.5.0</span>
    </div>
   </td>
@@ -62,7 +62,7 @@ $(function() {
 
 <div id="nav-path" class="navpath">
   <ul>
-<li class="navelem"><a class="el" href="dir_2312589fb962dec58b1579fafe6a300a.html">cudamapper</a></li><li class="navelem"><a class="el" href="dir_46ada5e69ffe047ce1b425fcb02bc946.html">include</a></li><li class="navelem"><a class="el" href="dir_00faf102fbd78ece25aa2d8f2597f59b.html">claragenomics</a></li><li class="navelem"><a class="el" href="dir_5d9177f36fbce0c085b11d352d248d8a.html">cudamapper</a></li>  </ul>
+<li class="navelem"><a class="el" href="dir_2312589fb962dec58b1579fafe6a300a.html">cudamapper</a></li><li class="navelem"><a class="el" href="dir_46ada5e69ffe047ce1b425fcb02bc946.html">include</a></li><li class="navelem"><a class="el" href="dir_6b9944cba08287418dc72a6bc1452010.html">claraparabricks</a></li><li class="navelem"><a class="el" href="dir_ac95339e566245492f26ed3bc0fe8fe7.html">genomeworks</a></li><li class="navelem"><a class="el" href="dir_81a3ae21c241e579c7e89865935ce682.html">cudamapper</a></li>  </ul>
 </div>
 </div><!-- top -->
 <div class="header">
@@ -71,52 +71,63 @@ $(function() {
 </div><!--header-->
 <div class="contents">
 <div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;<span class="comment">/*</span></div>
-<div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160;<span class="comment">* Copyright (c) 2019, NVIDIA CORPORATION.  All rights reserved.</span></div>
+<div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160;<span class="comment">* Copyright 2019-2020 NVIDIA CORPORATION.</span></div>
 <div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;<span class="comment">*</span></div>
-<div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;<span class="comment">* NVIDIA CORPORATION and its licensors retain all intellectual property</span></div>
-<div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;<span class="comment">* and proprietary rights in and to this software, related documentation</span></div>
-<div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;<span class="comment">* and any modifications thereto.  Any use, reproduction, disclosure or</span></div>
-<div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;<span class="comment">* distribution of this software and related documentation without an express</span></div>
-<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;<span class="comment">* license agreement from NVIDIA CORPORATION is strictly prohibited.</span></div>
-<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;<span class="comment">*/</span></div>
-<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160; </div>
-<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;<span class="preprocessor">#pragma once</span></div>
-<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160; </div>
-<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;<span class="preprocessor">#include &lt;memory&gt;</span></div>
-<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;<span class="preprocessor">#include &lt;claragenomics/cudamapper/index.hpp&gt;</span></div>
-<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;<span class="preprocessor">#include &lt;claragenomics/utils/device_buffer.hpp&gt;</span></div>
+<div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;<span class="comment">* Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span></div>
+<div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;<span class="comment">* you may not use this file except in compliance with the License.</span></div>
+<div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;<span class="comment">* You may obtain a copy of the License at</span></div>
+<div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;<span class="comment">*</span></div>
+<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;<span class="comment">*     http://www.apache.org/licenses/LICENSE-2.0</span></div>
+<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;<span class="comment">*</span></div>
+<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;<span class="comment">* Unless required by applicable law or agreed to in writing, software</span></div>
+<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;<span class="comment">* distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span></div>
+<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;<span class="comment">* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span></div>
+<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;<span class="comment">* See the License for the specific language governing permissions and</span></div>
+<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;<span class="comment">* limitations under the License.</span></div>
+<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;<span class="comment">*/</span></div>
 <div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160; </div>
-<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;<span class="keyword">namespace </span>claragenomics</div>
-<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;{</div>
-<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160; </div>
-<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;<span class="keyword">namespace </span>cudamapper</div>
-<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;{</div>
-<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160; </div>
-<div class="line"><a name="l00026"></a><span class="lineno"><a class="line" href="classclaragenomics_1_1cudamapper_1_1Matcher.html">   26</a></span>&#160;<span class="keyword">class </span><a class="code" href="classclaragenomics_1_1cudamapper_1_1Matcher.html">Matcher</a></div>
+<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;<span class="preprocessor">#pragma once</span></div>
+<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160; </div>
+<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;<span class="preprocessor">#include &lt;memory&gt;</span></div>
+<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;<span class="preprocessor">#include &lt;claraparabricks/genomeworks/cudamapper/index.hpp&gt;</span></div>
+<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="preprocessor">#include &lt;claraparabricks/genomeworks/utils/device_buffer.hpp&gt;</span></div>
+<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160; </div>
+<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="keyword">namespace </span>claraparabricks</div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;{</div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160; </div>
+<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;<span class="keyword">namespace </span>genomeworks</div>
 <div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;{</div>
-<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;<span class="keyword">public</span>:</div>
-<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;    <span class="keyword">virtual</span> <a class="code" href="classclaragenomics_1_1cudamapper_1_1Matcher.html#ac2f70fb6b1876d0fa81fd8c0189191ab">~Matcher</a>() = <span class="keywordflow">default</span>;</div>
-<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160; </div>
-<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;    <span class="keyword">virtual</span> <a class="code" href="classclaragenomics_1_1buffer.html">device_buffer&lt;Anchor&gt;</a>&amp; <a class="code" href="classclaragenomics_1_1cudamapper_1_1Matcher.html#a4135d0bd05a41555e6f5c0eb43adde3b">anchors</a>() = 0;</div>
-<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160; </div>
-<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;    <span class="keyword">static</span> std::unique_ptr&lt;Matcher&gt; <a class="code" href="classclaragenomics_1_1cudamapper_1_1Matcher.html#aeba0dad0a9e76b62efba2781dfae08c1">create_matcher</a>(<a class="code" href="classclaragenomics_1_1CudaMallocAllocator.html">DefaultDeviceAllocator</a> allocator,</div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;                                                   <span class="keyword">const</span> <a class="code" href="classclaragenomics_1_1cudamapper_1_1Index.html">Index</a>&amp; query_index,</div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;                                                   <span class="keyword">const</span> <a class="code" href="classclaragenomics_1_1cudamapper_1_1Index.html">Index</a>&amp; target_index,</div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;                                                   <span class="keyword">const</span> cudaStream_t cuda_stream = 0);</div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;};</div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160; </div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160; </div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;} <span class="comment">// namespace cudamapper</span></div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160; </div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;} <span class="comment">// namespace claragenomics</span></div>
+<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160; </div>
+<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;<span class="keyword">namespace </span>cudamapper</div>
+<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;{</div>
+<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160; </div>
+<div class="line"><a name="l00035"></a><span class="lineno"><a class="line" href="classclaraparabricks_1_1genomeworks_1_1cudamapper_1_1Matcher.html">   35</a></span>&#160;<span class="keyword">class </span><a class="code" href="classclaraparabricks_1_1genomeworks_1_1cudamapper_1_1Matcher.html">Matcher</a></div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;{</div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;<span class="keyword">public</span>:</div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;    <span class="keyword">virtual</span> <a class="code" href="classclaraparabricks_1_1genomeworks_1_1cudamapper_1_1Matcher.html#a440bd5cfe9d166d6b3f4c249dc80c459">~Matcher</a>() = <span class="keywordflow">default</span>;</div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160; </div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;    <span class="keyword">virtual</span> <a class="code" href="classclaraparabricks_1_1genomeworks_1_1details_1_1buffer.html">device_buffer&lt;Anchor&gt;</a>&amp; <a class="code" href="classclaraparabricks_1_1genomeworks_1_1cudamapper_1_1Matcher.html#aefaf8b103473fbbfff34c2139082e75c">anchors</a>() = 0;</div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160; </div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;    <span class="keyword">static</span> std::unique_ptr&lt;Matcher&gt; <a class="code" href="classclaraparabricks_1_1genomeworks_1_1cudamapper_1_1Matcher.html#ab65a6a53177293f442a5e6a0d8662cb6">create_matcher</a>(<a class="code" href="classclaraparabricks_1_1genomeworks_1_1CudaMallocAllocator.html">DefaultDeviceAllocator</a> allocator,</div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;                                                   <span class="keyword">const</span> <a class="code" href="classclaraparabricks_1_1genomeworks_1_1cudamapper_1_1Index.html">Index</a>&amp; query_index,</div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;                                                   <span class="keyword">const</span> <a class="code" href="classclaraparabricks_1_1genomeworks_1_1cudamapper_1_1Index.html">Index</a>&amp; target_index,</div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;                                                   <span class="keyword">const</span> cudaStream_t cuda_stream = 0);</div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;};</div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160; </div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160; </div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;} <span class="comment">// namespace cudamapper</span></div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160; </div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;} <span class="comment">// namespace genomeworks</span></div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160; </div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;} <span class="comment">// namespace claraparabricks</span></div>
 </div><!-- fragment --></div><!-- contents -->
-<div class="ttc" id="aclassclaragenomics_1_1buffer_html"><div class="ttname"><a href="classclaragenomics_1_1buffer.html">claragenomics::buffer</a></div><div class="ttdoc">Container for an array of elements of type T in host or device memory. T must be trivially copyable.</div><div class="ttdef"><b>Definition:</b> buffer.hpp:23</div></div>
-<div class="ttc" id="aclassclaragenomics_1_1cudamapper_1_1Index_html"><div class="ttname"><a href="classclaragenomics_1_1cudamapper_1_1Index.html">claragenomics::cudamapper::Index</a></div><div class="ttdoc">Index - manages mapping of (k,w)-kmer-representation and all its occurences.</div><div class="ttdef"><b>Definition:</b> index.hpp:30</div></div>
-<div class="ttc" id="aclassclaragenomics_1_1cudamapper_1_1Matcher_html_a4135d0bd05a41555e6f5c0eb43adde3b"><div class="ttname"><a href="classclaragenomics_1_1cudamapper_1_1Matcher.html#a4135d0bd05a41555e6f5c0eb43adde3b">claragenomics::cudamapper::Matcher::anchors</a></div><div class="ttdeci">virtual device_buffer&lt; Anchor &gt; &amp; anchors()=0</div><div class="ttdoc">returns anchors</div></div>
-<div class="ttc" id="aclassclaragenomics_1_1cudamapper_1_1Matcher_html_ac2f70fb6b1876d0fa81fd8c0189191ab"><div class="ttname"><a href="classclaragenomics_1_1cudamapper_1_1Matcher.html#ac2f70fb6b1876d0fa81fd8c0189191ab">claragenomics::cudamapper::Matcher::~Matcher</a></div><div class="ttdeci">virtual ~Matcher()=default</div><div class="ttdoc">Virtual destructor.</div></div>
-<div class="ttc" id="aclassclaragenomics_1_1cudamapper_1_1Matcher_html_aeba0dad0a9e76b62efba2781dfae08c1"><div class="ttname"><a href="classclaragenomics_1_1cudamapper_1_1Matcher.html#aeba0dad0a9e76b62efba2781dfae08c1">claragenomics::cudamapper::Matcher::create_matcher</a></div><div class="ttdeci">static std::unique_ptr&lt; Matcher &gt; create_matcher(DefaultDeviceAllocator allocator, const Index &amp;query_index, const Index &amp;target_index, const cudaStream_t cuda_stream=0)</div><div class="ttdoc">Creates a Matcher object.</div></div>
-<div class="ttc" id="aclassclaragenomics_1_1cudamapper_1_1Matcher_html"><div class="ttname"><a href="classclaragenomics_1_1cudamapper_1_1Matcher.html">claragenomics::cudamapper::Matcher</a></div><div class="ttdoc">Matcher - base matcher.</div><div class="ttdef"><b>Definition:</b> matcher.hpp:26</div></div>
-<div class="ttc" id="aclassclaragenomics_1_1CudaMallocAllocator_html"><div class="ttname"><a href="classclaragenomics_1_1CudaMallocAllocator.html">claragenomics::CudaMallocAllocator</a></div><div class="ttdoc">Allocator that allocates device memory using cudaMalloc/cudaFree.</div><div class="ttdef"><b>Definition:</b> allocator.hpp:28</div></div>
+<div class="ttc" id="aclassclaraparabricks_1_1genomeworks_1_1cudamapper_1_1Matcher_html_aefaf8b103473fbbfff34c2139082e75c"><div class="ttname"><a href="classclaraparabricks_1_1genomeworks_1_1cudamapper_1_1Matcher.html#aefaf8b103473fbbfff34c2139082e75c">claraparabricks::genomeworks::cudamapper::Matcher::anchors</a></div><div class="ttdeci">virtual device_buffer&lt; Anchor &gt; &amp; anchors()=0</div><div class="ttdoc">returns anchors</div></div>
+<div class="ttc" id="aclassclaraparabricks_1_1genomeworks_1_1details_1_1buffer_html"><div class="ttname"><a href="classclaraparabricks_1_1genomeworks_1_1details_1_1buffer.html">claraparabricks::genomeworks::details::buffer</a></div><div class="ttdoc">Container for an array of elements of type T in host or device memory. T must be trivially copyable.</div><div class="ttdef"><b>Definition:</b> device_buffer.hpp:38</div></div>
+<div class="ttc" id="aclassclaraparabricks_1_1genomeworks_1_1CudaMallocAllocator_html"><div class="ttname"><a href="classclaraparabricks_1_1genomeworks_1_1CudaMallocAllocator.html">claraparabricks::genomeworks::CudaMallocAllocator</a></div><div class="ttdoc">Allocator that allocates device memory using cudaMalloc/cudaFree.</div><div class="ttdef"><b>Definition:</b> allocator.hpp:37</div></div>
+<div class="ttc" id="aclassclaraparabricks_1_1genomeworks_1_1cudamapper_1_1Matcher_html_ab65a6a53177293f442a5e6a0d8662cb6"><div class="ttname"><a href="classclaraparabricks_1_1genomeworks_1_1cudamapper_1_1Matcher.html#ab65a6a53177293f442a5e6a0d8662cb6">claraparabricks::genomeworks::cudamapper::Matcher::create_matcher</a></div><div class="ttdeci">static std::unique_ptr&lt; Matcher &gt; create_matcher(DefaultDeviceAllocator allocator, const Index &amp;query_index, const Index &amp;target_index, const cudaStream_t cuda_stream=0)</div><div class="ttdoc">Creates a Matcher object.</div></div>
+<div class="ttc" id="aclassclaraparabricks_1_1genomeworks_1_1cudamapper_1_1Matcher_html_a440bd5cfe9d166d6b3f4c249dc80c459"><div class="ttname"><a href="classclaraparabricks_1_1genomeworks_1_1cudamapper_1_1Matcher.html#a440bd5cfe9d166d6b3f4c249dc80c459">claraparabricks::genomeworks::cudamapper::Matcher::~Matcher</a></div><div class="ttdeci">virtual ~Matcher()=default</div><div class="ttdoc">Virtual destructor.</div></div>
+<div class="ttc" id="aclassclaraparabricks_1_1genomeworks_1_1cudamapper_1_1Index_html"><div class="ttname"><a href="classclaraparabricks_1_1genomeworks_1_1cudamapper_1_1Index.html">claraparabricks::genomeworks::cudamapper::Index</a></div><div class="ttdoc">Index - manages mapping of (k,w)-kmer-representation and all its occurences.</div><div class="ttdef"><b>Definition:</b> index.hpp:39</div></div>
+<div class="ttc" id="aclassclaraparabricks_1_1genomeworks_1_1cudamapper_1_1Matcher_html"><div class="ttname"><a href="classclaraparabricks_1_1genomeworks_1_1cudamapper_1_1Matcher.html">claraparabricks::genomeworks::cudamapper::Matcher</a></div><div class="ttdoc">Matcher - base matcher.</div><div class="ttdef"><b>Definition:</b> matcher.hpp:35</div></div>
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
 Generated by &#160;<a href="http://www.doxygen.org/index.html">

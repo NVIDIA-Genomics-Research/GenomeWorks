@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.8.16"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>ClaraGenomicsAnalysis: cudapoa/include/claragenomics/cudapoa/cudapoa.hpp Source File</title>
+<title>GenomeWorks: cudapoa/include/claraparabricks/genomeworks/cudapoa/cudapoa.hpp Source File</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -21,7 +21,7 @@
  <tbody>
  <tr style="height: 56px;">
   <td id="projectalign" style="padding-left: 0.5em;">
-   <div id="projectname">ClaraGenomicsAnalysis
+   <div id="projectname">GenomeWorks
    &#160;<span id="projectnumber">0.5.0</span>
    </div>
   </td>
@@ -62,7 +62,7 @@ $(function() {
 
 <div id="nav-path" class="navpath">
   <ul>
-<li class="navelem"><a class="el" href="dir_8d2f594888f36d792a9b4a212d391f7f.html">cudapoa</a></li><li class="navelem"><a class="el" href="dir_8613eb7afdfdd11650d28f82119ab8e9.html">include</a></li><li class="navelem"><a class="el" href="dir_1f71e23d64293220a8931e396f64ac18.html">claragenomics</a></li><li class="navelem"><a class="el" href="dir_f76c88603f4782e2554e1f696f75813e.html">cudapoa</a></li>  </ul>
+<li class="navelem"><a class="el" href="dir_8d2f594888f36d792a9b4a212d391f7f.html">cudapoa</a></li><li class="navelem"><a class="el" href="dir_8613eb7afdfdd11650d28f82119ab8e9.html">include</a></li><li class="navelem"><a class="el" href="dir_579d007d49bd88e1a48df740f09764df.html">claraparabricks</a></li><li class="navelem"><a class="el" href="dir_51901071ff5af62068c5aecde6e55ae1.html">genomeworks</a></li><li class="navelem"><a class="el" href="dir_403d8010c953124e2ab07f6585f29c6f.html">cudapoa</a></li>  </ul>
 </div>
 </div><!-- top -->
 <div class="header">
@@ -71,50 +71,72 @@ $(function() {
 </div><!--header-->
 <div class="contents">
 <div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;<span class="comment">/*</span></div>
-<div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160;<span class="comment">* Copyright (c) 2019, NVIDIA CORPORATION.  All rights reserved.</span></div>
+<div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160;<span class="comment">* Copyright 2019-2020 NVIDIA CORPORATION.</span></div>
 <div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;<span class="comment">*</span></div>
-<div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;<span class="comment">* NVIDIA CORPORATION and its licensors retain all intellectual property</span></div>
-<div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;<span class="comment">* and proprietary rights in and to this software, related documentation</span></div>
-<div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;<span class="comment">* and any modifications thereto.  Any use, reproduction, disclosure or</span></div>
-<div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;<span class="comment">* distribution of this software and related documentation without an express</span></div>
-<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;<span class="comment">* license agreement from NVIDIA CORPORATION is strictly prohibited.</span></div>
-<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;<span class="comment">*/</span></div>
-<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160; </div>
-<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;<span class="preprocessor">#pragma once</span></div>
-<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160; </div>
-<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;<span class="keyword">namespace </span>claragenomics</div>
-<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;{</div>
-<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;<span class="keyword">namespace </span>cudapoa</div>
-<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;{</div>
-<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160; </div>
-<div class="line"><a name="l00022"></a><span class="lineno"><a class="line" href="group__cudapoa.html#ga8ece5291074f6e07073b797d34ec24d0">   22</a></span>&#160;<span class="keyword">enum</span> <a class="code" href="group__cudapoa.html#ga8ece5291074f6e07073b797d34ec24d0">StatusType</a></div>
+<div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;<span class="comment">* Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span></div>
+<div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;<span class="comment">* you may not use this file except in compliance with the License.</span></div>
+<div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;<span class="comment">* You may obtain a copy of the License at</span></div>
+<div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;<span class="comment">*</span></div>
+<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;<span class="comment">*     http://www.apache.org/licenses/LICENSE-2.0</span></div>
+<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;<span class="comment">*</span></div>
+<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;<span class="comment">* Unless required by applicable law or agreed to in writing, software</span></div>
+<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;<span class="comment">* distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span></div>
+<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;<span class="comment">* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span></div>
+<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;<span class="comment">* See the License for the specific language governing permissions and</span></div>
+<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;<span class="comment">* limitations under the License.</span></div>
+<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;<span class="comment">*/</span></div>
+<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160; </div>
+<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;<span class="preprocessor">#pragma once</span></div>
+<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160; </div>
+<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;<span class="keyword">namespace </span>claraparabricks</div>
+<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;{</div>
+<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160; </div>
+<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;<span class="keyword">namespace </span>genomeworks</div>
 <div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;{</div>
-<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;    success = 0,</div>
-<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;    exceeded_maximum_poas,</div>
-<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;    exceeded_maximum_sequence_size,</div>
-<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;    exceeded_maximum_sequences_per_poa,</div>
-<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;    node_count_exceeded_maximum_graph_size,</div>
-<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;    edge_count_exceeded_maximum_graph_size,</div>
-<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;    seq_len_exceeded_maximum_nodes_per_window,</div>
-<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;    loop_count_exceeded_upper_bound,</div>
-<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;    output_type_unavailable,</div>
-<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;    generic_error</div>
-<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;};</div>
-<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160; </div>
-<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;<a class="code" href="group__cudapoa.html#ga8ece5291074f6e07073b797d34ec24d0">StatusType</a> <a class="code" href="group__cudapoa.html#ga20324a870a7cad68e1b02dcc1d5b02a1">Init</a>();</div>
-<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160; </div>
-<div class="line"><a name="l00040"></a><span class="lineno"><a class="line" href="group__cudapoa.html#ga303d3df3e0053351dc95efab320bd037">   40</a></span>&#160;<span class="keyword">enum</span> <a class="code" href="group__cudapoa.html#ga303d3df3e0053351dc95efab320bd037">OutputType</a></div>
-<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;{</div>
-<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;    consensus = 0x1,</div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;    msa       = 0x1 &lt;&lt; 1</div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;};</div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160; </div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;} <span class="comment">// namespace cudapoa</span></div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;} <span class="comment">// namespace claragenomics</span></div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160; </div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="keyword">namespace </span>cudapoa</div>
+<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;{</div>
+<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160; </div>
+<div class="line"><a name="l00032"></a><span class="lineno"><a class="line" href="group__cudapoa.html#ga873fdb2ce83798420ac849b8b75c20c5">   32</a></span>&#160;<span class="keyword">enum</span> <a class="code" href="group__cudapoa.html#ga873fdb2ce83798420ac849b8b75c20c5">StatusType</a></div>
+<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;{</div>
+<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;    success = 0,</div>
+<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;    exceeded_maximum_poas,</div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;    exceeded_maximum_sequence_size,</div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;    exceeded_maximum_sequences_per_poa,</div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;    node_count_exceeded_maximum_graph_size,</div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;    edge_count_exceeded_maximum_graph_size,</div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;    exceeded_adaptive_banded_matrix_size,</div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;    seq_len_exceeded_maximum_nodes_per_window,</div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;    loop_count_exceeded_upper_bound,</div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;    output_type_unavailable,</div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;    generic_error</div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;};</div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160; </div>
+<div class="line"><a name="l00052"></a><span class="lineno"><a class="line" href="group__cudapoa.html#ga152b74ddff14647e3a7bfc9916f8b517">   52</a></span>&#160;<span class="keyword">enum</span> <a class="code" href="group__cudapoa.html#ga152b74ddff14647e3a7bfc9916f8b517">BandMode</a></div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;{</div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;    full_band = 0,</div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;    static_band,</div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;    adaptive_band</div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;};</div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160; </div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;<a class="code" href="group__cudapoa.html#ga873fdb2ce83798420ac849b8b75c20c5">StatusType</a> <a class="code" href="group__cudapoa.html#ga87bd469ff68d3315e7de26e2314a4703">Init</a>();</div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160; </div>
+<div class="line"><a name="l00063"></a><span class="lineno"><a class="line" href="group__cudapoa.html#ga67b1c509ed482b27a8394d68cbcd4c08">   63</a></span>&#160;<span class="keyword">enum</span> <a class="code" href="group__cudapoa.html#ga67b1c509ed482b27a8394d68cbcd4c08">OutputType</a></div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;{</div>
+<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;    consensus = 0x1,</div>
+<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;    msa       = 0x1 &lt;&lt; 1</div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;};</div>
+<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160; </div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;} <span class="comment">// namespace cudapoa</span></div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160; </div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;} <span class="comment">// namespace genomeworks</span></div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160; </div>
+<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;} <span class="comment">// namespace claraparabricks</span></div>
 </div><!-- fragment --></div><!-- contents -->
-<div class="ttc" id="agroup__cudapoa_html_ga20324a870a7cad68e1b02dcc1d5b02a1"><div class="ttname"><a href="group__cudapoa.html#ga20324a870a7cad68e1b02dcc1d5b02a1">claragenomics::cudapoa::Init</a></div><div class="ttdeci">StatusType Init()</div><div class="ttdoc">Initialize CUDA POA context.</div></div>
-<div class="ttc" id="agroup__cudapoa_html_ga8ece5291074f6e07073b797d34ec24d0"><div class="ttname"><a href="group__cudapoa.html#ga8ece5291074f6e07073b797d34ec24d0">claragenomics::cudapoa::StatusType</a></div><div class="ttdeci">StatusType</div><div class="ttdoc">CUDA POA error type.</div><div class="ttdef"><b>Definition:</b> cudapoa.hpp:22</div></div>
-<div class="ttc" id="agroup__cudapoa_html_ga303d3df3e0053351dc95efab320bd037"><div class="ttname"><a href="group__cudapoa.html#ga303d3df3e0053351dc95efab320bd037">claragenomics::cudapoa::OutputType</a></div><div class="ttdeci">OutputType</div><div class="ttdoc">OutputType - Enum for encoding type of output.</div><div class="ttdef"><b>Definition:</b> cudapoa.hpp:40</div></div>
+<div class="ttc" id="agroup__cudapoa_html_ga87bd469ff68d3315e7de26e2314a4703"><div class="ttname"><a href="group__cudapoa.html#ga87bd469ff68d3315e7de26e2314a4703">claraparabricks::genomeworks::cudapoa::Init</a></div><div class="ttdeci">StatusType Init()</div><div class="ttdoc">Initialize CUDA POA context.</div></div>
+<div class="ttc" id="agroup__cudapoa_html_ga67b1c509ed482b27a8394d68cbcd4c08"><div class="ttname"><a href="group__cudapoa.html#ga67b1c509ed482b27a8394d68cbcd4c08">claraparabricks::genomeworks::cudapoa::OutputType</a></div><div class="ttdeci">OutputType</div><div class="ttdoc">OutputType - Enum for encoding type of output.</div><div class="ttdef"><b>Definition:</b> cudapoa.hpp:63</div></div>
+<div class="ttc" id="agroup__cudapoa_html_ga873fdb2ce83798420ac849b8b75c20c5"><div class="ttname"><a href="group__cudapoa.html#ga873fdb2ce83798420ac849b8b75c20c5">claraparabricks::genomeworks::cudapoa::StatusType</a></div><div class="ttdeci">StatusType</div><div class="ttdoc">CUDA POA error type.</div><div class="ttdef"><b>Definition:</b> cudapoa.hpp:32</div></div>
+<div class="ttc" id="agroup__cudapoa_html_ga152b74ddff14647e3a7bfc9916f8b517"><div class="ttname"><a href="group__cudapoa.html#ga152b74ddff14647e3a7bfc9916f8b517">claraparabricks::genomeworks::cudapoa::BandMode</a></div><div class="ttdeci">BandMode</div><div class="ttdef"><b>Definition:</b> cudapoa.hpp:52</div></div>
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
 Generated by &#160;<a href="http://www.doxygen.org/index.html">

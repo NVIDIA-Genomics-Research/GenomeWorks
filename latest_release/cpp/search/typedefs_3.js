@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['formattedalignment_404',['FormattedAlignment',['../group__cudaaligner.html#ga748e96dfb9c6accd301847c0918e6bd6',1,'claragenomics::cudaaligner']]]
+  ['formattedalignment_399',['FormattedAlignment',['../group__cudaaligner.html#ga874ec0147fb4a4d4611656a33a1f1553',1,'claraparabricks::genomeworks::cudaaligner']]]
 ];

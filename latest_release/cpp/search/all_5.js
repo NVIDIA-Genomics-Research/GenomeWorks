@@ -1,13 +1,13 @@
 var searchData=
 [
-  ['fastaparser_72',['FastaParser',['../classclaragenomics_1_1io_1_1FastaParser.html',1,'claragenomics::io']]],
-  ['fastasequence_73',['FastaSequence',['../structclaragenomics_1_1io_1_1FastaSequence.html',1,'claragenomics::io']]],
-  ['filter_5foverlaps_74',['filter_overlaps',['../group__cudamapper.html#gac3c81669522c2642ba340d10da5be336',1,'claragenomics::cudamapper::Overlapper']]],
-  ['find_5flargest_5fcontiguous_5fdevice_5fmemory_5fsection_75',['find_largest_contiguous_device_memory_section',['../cudautils_8hpp.html#ab716877a62945826f1f6a3a6fb394c64',1,'claragenomics::cudautils']]],
-  ['first_5felement_5f_76',['first_element_',['../structclaragenomics_1_1cudamapper_1_1ArrayBlock.html#a3fca81e893b35e0648977b00f21b7e7e',1,'claragenomics::cudamapper::ArrayBlock']]],
-  ['first_5foccurrence_5fof_5frepresentations_77',['first_occurrence_of_representations',['../group__cudamapper.html#ga23503e693b8c804a14e6f773a2a8f6e4',1,'claragenomics::cudamapper::Index::first_occurrence_of_representations()'],['../group__cudamapper.html#ga999355e025c242924f7a15a21242f78b',1,'claragenomics::cudamapper::IndexHostCopyBase::first_occurrence_of_representations()']]],
-  ['first_5fread_5fid_78',['first_read_id',['../group__cudamapper.html#gaade347383d4c647517f4269d5ae6ca1f',1,'claragenomics::cudamapper::IndexHostCopyBase']]],
-  ['format_5falignment_79',['format_alignment',['../classclaragenomics_1_1cudaaligner_1_1Alignment.html#a363ef90d08a2d3477c2fc689ab5fe7e7',1,'claragenomics::cudaaligner::Alignment']]],
-  ['formattedalignment_80',['FormattedAlignment',['../structclaragenomics_1_1cudaaligner_1_1FormattedAlignment.html',1,'claragenomics::cudaaligner::FormattedAlignment'],['../group__cudaaligner.html#ga748e96dfb9c6accd301847c0918e6bd6',1,'claragenomics::cudaaligner::FormattedAlignment()']]],
-  ['free_81',['free',['../classclaragenomics_1_1buffer.html#a6be2c25a232d330bec983df4f642bf3b',1,'claragenomics::buffer::free(cudaStream_t stream)'],['../classclaragenomics_1_1buffer.html#a893b1cdfbb230ed61178fb21c34bf027',1,'claragenomics::buffer::free()']]]
+  ['fastaparser_61',['FastaParser',['../classclaraparabricks_1_1genomeworks_1_1io_1_1FastaParser.html',1,'claraparabricks::genomeworks::io']]],
+  ['fastasequence_62',['FastaSequence',['../structclaraparabricks_1_1genomeworks_1_1io_1_1FastaSequence.html',1,'claraparabricks::genomeworks::io']]],
+  ['filter_5foverlaps_63',['filter_overlaps',['../group__cudamapper.html#gac6ef2c14780103891dbb3c0c6bb94376',1,'claraparabricks::genomeworks::cudamapper::Overlapper']]],
+  ['find_5flargest_5fcontiguous_5fdevice_5fmemory_5fsection_64',['find_largest_contiguous_device_memory_section',['../cudautils_8hpp.html#a438e20048d3be9338bf0f107604263c1',1,'claraparabricks::genomeworks::cudautils']]],
+  ['first_5felement_5f_65',['first_element_',['../structclaraparabricks_1_1genomeworks_1_1cudamapper_1_1ArrayBlock.html#aac8806e5fcf75bc864ce46d267462ac8',1,'claraparabricks::genomeworks::cudamapper::ArrayBlock']]],
+  ['first_5foccurrence_5fof_5frepresentations_66',['first_occurrence_of_representations',['../group__cudamapper.html#gaf6e120ef97a1c4af963008b5fcc82403',1,'claraparabricks::genomeworks::cudamapper::Index::first_occurrence_of_representations()'],['../group__cudamapper.html#gae0141760d12af38d0c6daea48222f8b8',1,'claraparabricks::genomeworks::cudamapper::IndexHostCopyBase::first_occurrence_of_representations()']]],
+  ['first_5fread_5fid_67',['first_read_id',['../group__cudamapper.html#gaf451b16843bfce7ccfc7c63934030e00',1,'claraparabricks::genomeworks::cudamapper::IndexHostCopyBase']]],
+  ['format_5falignment_68',['format_alignment',['../classclaraparabricks_1_1genomeworks_1_1cudaaligner_1_1Alignment.html#a9db540be6992d1480eecf34ebb2e241c',1,'claraparabricks::genomeworks::cudaaligner::Alignment']]],
+  ['formattedalignment_69',['FormattedAlignment',['../structclaraparabricks_1_1genomeworks_1_1cudaaligner_1_1FormattedAlignment.html',1,'claraparabricks::genomeworks::cudaaligner::FormattedAlignment'],['../group__cudaaligner.html#ga874ec0147fb4a4d4611656a33a1f1553',1,'claraparabricks::genomeworks::cudaaligner::FormattedAlignment()']]],
+  ['free_70',['free',['../classclaraparabricks_1_1genomeworks_1_1details_1_1buffer.html#adcfe7c5677e5895e9c73a498019b8486',1,'claraparabricks::genomeworks::details::buffer']]]
 ];

@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['seq_391',['seq',['../structclaragenomics_1_1io_1_1FastaSequence.html#a9ac5e894fc08745c47b326a7038aa488',1,'claragenomics::io::FastaSequence::seq()'],['../structclaragenomics_1_1cudapoa_1_1Entry.html#a4ada5ced9af7930c95d7a49fb5ecdac4',1,'claragenomics::cudapoa::Entry::seq()']]]
+  ['seq_388',['seq',['../structclaraparabricks_1_1genomeworks_1_1io_1_1FastaSequence.html#ae60de4a4debf8b9c85ec711a948228fa',1,'claraparabricks::genomeworks::io::FastaSequence::seq()'],['../structclaraparabricks_1_1genomeworks_1_1cudapoa_1_1Entry.html#a973de56bcce8b1d9732600bb2e6ada82',1,'claraparabricks::genomeworks::cudapoa::Entry::seq()']]]
 ];

@@ -1,12 +1,11 @@
-<map id="common/base/include/claragenomics/utils/cudautils.hpp" name="common/base/include/claragenomics/utils/cudautils.hpp">
-<area shape="rect" id="node1" title=" " alt="" coords="179,5,328,61"/>
-<area shape="rect" id="node2" href="$allocator_8hpp_source.html" title=" " alt="" coords="179,109,328,165"/>
-<area shape="rect" id="node9" href="$buffer_8hpp_source.html" title=" " alt="" coords="5,109,155,165"/>
-<area shape="rect" id="node10" href="$batch_8hpp_source.html" title=" " alt="" coords="353,117,557,158"/>
-<area shape="rect" id="node3" href="$device__buffer_8hpp_source.html" title=" " alt="" coords="179,213,328,269"/>
-<area shape="rect" id="node7" href="$host__buffer_8hpp_source.html" title=" " alt="" coords="5,213,155,269"/>
-<area shape="rect" id="node8" href="$aligner_8hpp_source.html" title=" " alt="" coords="353,213,533,269"/>
-<area shape="rect" id="node4" href="$index_8hpp_source.html" title=" " alt="" coords="226,317,411,373"/>
-<area shape="rect" id="node5" href="$matcher_8hpp_source.html" title=" " alt="" coords="95,421,281,477"/>
-<area shape="rect" id="node6" href="$overlapper_8hpp_source.html" title=" " alt="" coords="305,421,490,477"/>
+<map id="common/base/include/claraparabricks/genomeworks/utils/cudautils.hpp" name="common/base/include/claraparabricks/genomeworks/utils/cudautils.hpp">
+<area shape="rect" id="node1" title=" " alt="" coords="339,5,537,61"/>
+<area shape="rect" id="node2" href="$allocator_8hpp_source.html" title=" " alt="" coords="339,109,537,165"/>
+<area shape="rect" id="node3" href="$device__buffer_8hpp_source.html" title=" " alt="" coords="141,213,340,269"/>
+<area shape="rect" id="node8" href="$batch_8hpp_source.html" title=" " alt="" coords="573,117,794,158"/>
+<area shape="rect" id="node7" href="$aligner_8hpp_source.html" title=" " alt="" coords="364,213,563,269"/>
+<area shape="rect" id="node4" href="$index_8hpp_source.html" title=" " alt="" coords="5,317,204,373"/>
+<area shape="rect" id="node5" href="$matcher_8hpp_source.html" title=" " alt="" coords="73,421,272,477"/>
+<area shape="rect" id="node6" href="$overlapper_8hpp_source.html" title=" " alt="" coords="277,317,476,373"/>
+<area shape="rect" id="node9" href="$cudapoa_2include_2claraparabricks_2genomeworks_2cudapoa_2utils_8hpp_source.html" title=" " alt="" coords="587,221,801,262"/>
 </map>

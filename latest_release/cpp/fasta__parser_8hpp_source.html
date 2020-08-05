@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.8.16"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>ClaraGenomicsAnalysis: common/io/include/claragenomics/io/fasta_parser.hpp Source File</title>
+<title>GenomeWorks: common/io/include/claraparabricks/genomeworks/io/fasta_parser.hpp Source File</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -21,7 +21,7 @@
  <tbody>
  <tr style="height: 56px;">
   <td id="projectalign" style="padding-left: 0.5em;">
-   <div id="projectname">ClaraGenomicsAnalysis
+   <div id="projectname">GenomeWorks
    &#160;<span id="projectnumber">0.5.0</span>
    </div>
   </td>
@@ -62,7 +62,7 @@ $(function() {
 
 <div id="nav-path" class="navpath">
   <ul>
-<li class="navelem"><a class="el" href="dir_bdd9a5d540de89e9fe90efdfc6973a4f.html">common</a></li><li class="navelem"><a class="el" href="dir_e48b4a17d37f1148862a6ed3f83bdb40.html">io</a></li><li class="navelem"><a class="el" href="dir_496653a55fb037d863eb64e0cef0e330.html">include</a></li><li class="navelem"><a class="el" href="dir_5e4218589a49834876e69d5129e12742.html">claragenomics</a></li><li class="navelem"><a class="el" href="dir_9d5ac01351caa32cb63ccb42b8477d37.html">io</a></li>  </ul>
+<li class="navelem"><a class="el" href="dir_bdd9a5d540de89e9fe90efdfc6973a4f.html">common</a></li><li class="navelem"><a class="el" href="dir_e48b4a17d37f1148862a6ed3f83bdb40.html">io</a></li><li class="navelem"><a class="el" href="dir_496653a55fb037d863eb64e0cef0e330.html">include</a></li><li class="navelem"><a class="el" href="dir_7b33c3db346533b4f1e3f888d03fa0d2.html">claraparabricks</a></li><li class="navelem"><a class="el" href="dir_7293b5f2d77d5a69e08eec3e9c547af2.html">genomeworks</a></li><li class="navelem"><a class="el" href="dir_34a72fef572b80c64767804318302bf6.html">io</a></li>  </ul>
 </div>
 </div><!-- top -->
 <div class="header">
@@ -71,57 +71,71 @@ $(function() {
 </div><!--header-->
 <div class="contents">
 <div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;<span class="comment">/*</span></div>
-<div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160;<span class="comment">* Copyright (c) 2019, NVIDIA CORPORATION.  All rights reserved.</span></div>
+<div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160;<span class="comment">* Copyright 2019-2020 NVIDIA CORPORATION.</span></div>
 <div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;<span class="comment">*</span></div>
-<div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;<span class="comment">* NVIDIA CORPORATION and its licensors retain all intellectual property</span></div>
-<div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;<span class="comment">* and proprietary rights in and to this software, related documentation</span></div>
-<div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;<span class="comment">* and any modifications thereto.  Any use, reproduction, disclosure or</span></div>
-<div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;<span class="comment">* distribution of this software and related documentation without an express</span></div>
-<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;<span class="comment">* license agreement from NVIDIA CORPORATION is strictly prohibited.</span></div>
-<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;<span class="comment">*/</span></div>
-<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;<span class="preprocessor">#pragma once</span></div>
-<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160; </div>
-<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;<span class="preprocessor">#include &lt;string&gt;</span></div>
-<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;<span class="preprocessor">#include &lt;memory&gt;</span></div>
-<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;<span class="preprocessor">#include &lt;vector&gt;</span></div>
-<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160; </div>
-<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;<span class="preprocessor">#include &lt;claragenomics/types.hpp&gt;</span></div>
-<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160; </div>
-<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;<span class="keyword">namespace </span>claragenomics</div>
-<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;{</div>
-<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;<span class="keyword">namespace </span>io</div>
-<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;{</div>
+<div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;<span class="comment">* Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span></div>
+<div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;<span class="comment">* you may not use this file except in compliance with the License.</span></div>
+<div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;<span class="comment">* You may obtain a copy of the License at</span></div>
+<div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;<span class="comment">*</span></div>
+<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;<span class="comment">*     http://www.apache.org/licenses/LICENSE-2.0</span></div>
+<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;<span class="comment">*</span></div>
+<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;<span class="comment">* Unless required by applicable law or agreed to in writing, software</span></div>
+<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;<span class="comment">* distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span></div>
+<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;<span class="comment">* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span></div>
+<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;<span class="comment">* See the License for the specific language governing permissions and</span></div>
+<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;<span class="comment">* limitations under the License.</span></div>
+<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;<span class="comment">*/</span></div>
+<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160; </div>
+<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;<span class="preprocessor">#pragma once</span></div>
+<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160; </div>
+<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;<span class="preprocessor">#include &lt;string&gt;</span></div>
+<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;<span class="preprocessor">#include &lt;memory&gt;</span></div>
+<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="preprocessor">#include &lt;vector&gt;</span></div>
 <div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160; </div>
-<div class="line"><a name="l00024"></a><span class="lineno"><a class="line" href="structclaragenomics_1_1io_1_1FastaSequence.html">   24</a></span>&#160;<span class="keyword">typedef</span> <span class="keyword">struct</span></div>
-<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;{</div>
-<div class="line"><a name="l00027"></a><span class="lineno"><a class="line" href="structclaragenomics_1_1io_1_1FastaSequence.html#aea0664ca6e856203c4b954b519183bec">   27</a></span>&#160;    std::string <a class="code" href="structclaragenomics_1_1io_1_1FastaSequence.html#aea0664ca6e856203c4b954b519183bec">name</a>;</div>
-<div class="line"><a name="l00029"></a><span class="lineno"><a class="line" href="structclaragenomics_1_1io_1_1FastaSequence.html#a9ac5e894fc08745c47b326a7038aa488">   29</a></span>&#160;    std::string <a class="code" href="structclaragenomics_1_1io_1_1FastaSequence.html#a9ac5e894fc08745c47b326a7038aa488">seq</a>;</div>
-<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;} <a class="code" href="structclaragenomics_1_1io_1_1FastaSequence.html">FastaSequence</a>;</div>
-<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160; </div>
-<div class="line"><a name="l00034"></a><span class="lineno"><a class="line" href="classclaragenomics_1_1io_1_1FastaParser.html">   34</a></span>&#160;<span class="keyword">class </span><a class="code" href="classclaragenomics_1_1io_1_1FastaParser.html">FastaParser</a></div>
-<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;{</div>
-<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;<span class="keyword">public</span>:</div>
-<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;    <span class="keyword">virtual</span> <a class="code" href="classclaragenomics_1_1io_1_1FastaParser.html#a213af5341107ea254176add6dd1dfd2d">~FastaParser</a>() = <span class="keywordflow">default</span>;</div>
-<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160; </div>
-<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;    <span class="keyword">virtual</span> number_of_reads_t <a class="code" href="classclaragenomics_1_1io_1_1FastaParser.html#a9a52da6550556480d3c0925366c80a75">get_num_seqences</a>() <span class="keyword">const</span> = 0;</div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160; </div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;    <span class="keyword">virtual</span> <span class="keyword">const</span> <a class="code" href="structclaragenomics_1_1io_1_1FastaSequence.html">FastaSequence</a>&amp; <a class="code" href="classclaragenomics_1_1io_1_1FastaParser.html#a2a3956e6ac93b4bc1e47c40a9c7d90cb">get_sequence_by_id</a>(read_id_t sequence_id) <span class="keyword">const</span> = 0;</div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;};</div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160; </div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;std::unique_ptr&lt;FastaParser&gt; create_kseq_fasta_parser(<span class="keyword">const</span> std::string&amp; fasta_file,</div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;                                                      number_of_basepairs_t min_sequence_length = 0,</div>
-<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;                                                      <span class="keywordtype">bool</span> shuffle                              = <span class="keyword">true</span>);</div>
+<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="preprocessor">#include &lt;claraparabricks/genomeworks/types.hpp&gt;</span></div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160; </div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="keyword">namespace </span>claraparabricks</div>
+<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;{</div>
+<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160; </div>
+<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;<span class="keyword">namespace </span>genomeworks</div>
+<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;{</div>
+<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160; </div>
+<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;<span class="keyword">namespace </span>io</div>
+<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;{</div>
+<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160; </div>
+<div class="line"><a name="l00035"></a><span class="lineno"><a class="line" href="structclaraparabricks_1_1genomeworks_1_1io_1_1FastaSequence.html">   35</a></span>&#160;<span class="keyword">typedef</span> <span class="keyword">struct</span></div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;{</div>
+<div class="line"><a name="l00038"></a><span class="lineno"><a class="line" href="structclaraparabricks_1_1genomeworks_1_1io_1_1FastaSequence.html#a66144497779a291bcb7ae7aa21fe80b5">   38</a></span>&#160;    std::string <a class="code" href="structclaraparabricks_1_1genomeworks_1_1io_1_1FastaSequence.html#a66144497779a291bcb7ae7aa21fe80b5">name</a>;</div>
+<div class="line"><a name="l00040"></a><span class="lineno"><a class="line" href="structclaraparabricks_1_1genomeworks_1_1io_1_1FastaSequence.html#ae60de4a4debf8b9c85ec711a948228fa">   40</a></span>&#160;    std::string <a class="code" href="structclaraparabricks_1_1genomeworks_1_1io_1_1FastaSequence.html#ae60de4a4debf8b9c85ec711a948228fa">seq</a>;</div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;} <a class="code" href="structclaraparabricks_1_1genomeworks_1_1io_1_1FastaSequence.html">FastaSequence</a>;</div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160; </div>
+<div class="line"><a name="l00045"></a><span class="lineno"><a class="line" href="classclaraparabricks_1_1genomeworks_1_1io_1_1FastaParser.html">   45</a></span>&#160;<span class="keyword">class </span><a class="code" href="classclaraparabricks_1_1genomeworks_1_1io_1_1FastaParser.html">FastaParser</a></div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;{</div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;<span class="keyword">public</span>:</div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;    <span class="keyword">virtual</span> <a class="code" href="classclaraparabricks_1_1genomeworks_1_1io_1_1FastaParser.html#a8c3a643c6b5abf10b7a6d9eee0f306f1">~FastaParser</a>() = <span class="keywordflow">default</span>;</div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160; </div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;    <span class="keyword">virtual</span> number_of_reads_t <a class="code" href="classclaraparabricks_1_1genomeworks_1_1io_1_1FastaParser.html#a49a2841d842ccbc7564d89e1c37c7d57">get_num_seqences</a>() <span class="keyword">const</span> = 0;</div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160; </div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;    <span class="keyword">virtual</span> <span class="keyword">const</span> <a class="code" href="structclaraparabricks_1_1genomeworks_1_1io_1_1FastaSequence.html">FastaSequence</a>&amp; <a class="code" href="classclaraparabricks_1_1genomeworks_1_1io_1_1FastaParser.html#abf77fe535b19cf5de990d1c0ea9a6848">get_sequence_by_id</a>(read_id_t sequence_id) <span class="keyword">const</span> = 0;</div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;};</div>
 <div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160; </div>
-<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;} <span class="comment">// namespace io</span></div>
-<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;} <span class="comment">// namespace claragenomics</span></div>
+<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;std::unique_ptr&lt;FastaParser&gt; create_kseq_fasta_parser(<span class="keyword">const</span> std::string&amp; fasta_file,</div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;                                                      number_of_basepairs_t min_sequence_length = 0,</div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;                                                      <span class="keywordtype">bool</span> shuffle                              = <span class="keyword">true</span>);</div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160; </div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;} <span class="comment">// namespace io</span></div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160; </div>
+<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;} <span class="comment">// namespace genomeworks</span></div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160; </div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;} <span class="comment">// namespace claraparabricks</span></div>
 </div><!-- fragment --></div><!-- contents -->
-<div class="ttc" id="astructclaragenomics_1_1io_1_1FastaSequence_html"><div class="ttname"><a href="structclaragenomics_1_1io_1_1FastaSequence.html">claragenomics::io::FastaSequence</a></div><div class="ttdoc">A structure to hold details of a single FASTA entry.</div><div class="ttdef"><b>Definition:</b> fasta_parser.hpp:24</div></div>
-<div class="ttc" id="aclassclaragenomics_1_1io_1_1FastaParser_html_a213af5341107ea254176add6dd1dfd2d"><div class="ttname"><a href="classclaragenomics_1_1io_1_1FastaParser.html#a213af5341107ea254176add6dd1dfd2d">claragenomics::io::FastaParser::~FastaParser</a></div><div class="ttdeci">virtual ~FastaParser()=default</div><div class="ttdoc">FastaParser implementations can have custom destructors, so delcare the abstract dtor as default.</div></div>
-<div class="ttc" id="astructclaragenomics_1_1io_1_1FastaSequence_html_aea0664ca6e856203c4b954b519183bec"><div class="ttname"><a href="structclaragenomics_1_1io_1_1FastaSequence.html#aea0664ca6e856203c4b954b519183bec">claragenomics::io::FastaSequence::name</a></div><div class="ttdeci">std::string name</div><div class="ttdoc">Name of sequence.</div><div class="ttdef"><b>Definition:</b> fasta_parser.hpp:27</div></div>
-<div class="ttc" id="aclassclaragenomics_1_1io_1_1FastaParser_html_a2a3956e6ac93b4bc1e47c40a9c7d90cb"><div class="ttname"><a href="classclaragenomics_1_1io_1_1FastaParser.html#a2a3956e6ac93b4bc1e47c40a9c7d90cb">claragenomics::io::FastaParser::get_sequence_by_id</a></div><div class="ttdeci">virtual const FastaSequence &amp; get_sequence_by_id(read_id_t sequence_id) const =0</div><div class="ttdoc">Fetch an entry from the FASTA file by index position in file.</div></div>
-<div class="ttc" id="aclassclaragenomics_1_1io_1_1FastaParser_html"><div class="ttname"><a href="classclaragenomics_1_1io_1_1FastaParser.html">claragenomics::io::FastaParser</a></div><div class="ttdef"><b>Definition:</b> fasta_parser.hpp:34</div></div>
-<div class="ttc" id="aclassclaragenomics_1_1io_1_1FastaParser_html_a9a52da6550556480d3c0925366c80a75"><div class="ttname"><a href="classclaragenomics_1_1io_1_1FastaParser.html#a9a52da6550556480d3c0925366c80a75">claragenomics::io::FastaParser::get_num_seqences</a></div><div class="ttdeci">virtual number_of_reads_t get_num_seqences() const =0</div><div class="ttdoc">Return number of sequences in FASTA file.</div></div>
-<div class="ttc" id="astructclaragenomics_1_1io_1_1FastaSequence_html_a9ac5e894fc08745c47b326a7038aa488"><div class="ttname"><a href="structclaragenomics_1_1io_1_1FastaSequence.html#a9ac5e894fc08745c47b326a7038aa488">claragenomics::io::FastaSequence::seq</a></div><div class="ttdeci">std::string seq</div><div class="ttdoc">Base pair representation of sequence.</div><div class="ttdef"><b>Definition:</b> fasta_parser.hpp:29</div></div>
+<div class="ttc" id="astructclaraparabricks_1_1genomeworks_1_1io_1_1FastaSequence_html_a66144497779a291bcb7ae7aa21fe80b5"><div class="ttname"><a href="structclaraparabricks_1_1genomeworks_1_1io_1_1FastaSequence.html#a66144497779a291bcb7ae7aa21fe80b5">claraparabricks::genomeworks::io::FastaSequence::name</a></div><div class="ttdeci">std::string name</div><div class="ttdoc">Name of sequence.</div><div class="ttdef"><b>Definition:</b> fasta_parser.hpp:38</div></div>
+<div class="ttc" id="aclassclaraparabricks_1_1genomeworks_1_1io_1_1FastaParser_html_abf77fe535b19cf5de990d1c0ea9a6848"><div class="ttname"><a href="classclaraparabricks_1_1genomeworks_1_1io_1_1FastaParser.html#abf77fe535b19cf5de990d1c0ea9a6848">claraparabricks::genomeworks::io::FastaParser::get_sequence_by_id</a></div><div class="ttdeci">virtual const FastaSequence &amp; get_sequence_by_id(read_id_t sequence_id) const =0</div><div class="ttdoc">Fetch an entry from the FASTA file by index position in file.</div></div>
+<div class="ttc" id="astructclaraparabricks_1_1genomeworks_1_1io_1_1FastaSequence_html"><div class="ttname"><a href="structclaraparabricks_1_1genomeworks_1_1io_1_1FastaSequence.html">claraparabricks::genomeworks::io::FastaSequence</a></div><div class="ttdoc">A structure to hold details of a single FASTA entry.</div><div class="ttdef"><b>Definition:</b> fasta_parser.hpp:35</div></div>
+<div class="ttc" id="astructclaraparabricks_1_1genomeworks_1_1io_1_1FastaSequence_html_ae60de4a4debf8b9c85ec711a948228fa"><div class="ttname"><a href="structclaraparabricks_1_1genomeworks_1_1io_1_1FastaSequence.html#ae60de4a4debf8b9c85ec711a948228fa">claraparabricks::genomeworks::io::FastaSequence::seq</a></div><div class="ttdeci">std::string seq</div><div class="ttdoc">Base pair representation of sequence.</div><div class="ttdef"><b>Definition:</b> fasta_parser.hpp:40</div></div>
+<div class="ttc" id="aclassclaraparabricks_1_1genomeworks_1_1io_1_1FastaParser_html_a8c3a643c6b5abf10b7a6d9eee0f306f1"><div class="ttname"><a href="classclaraparabricks_1_1genomeworks_1_1io_1_1FastaParser.html#a8c3a643c6b5abf10b7a6d9eee0f306f1">claraparabricks::genomeworks::io::FastaParser::~FastaParser</a></div><div class="ttdeci">virtual ~FastaParser()=default</div><div class="ttdoc">FastaParser implementations can have custom destructors, so delcare the abstract dtor as default.</div></div>
+<div class="ttc" id="aclassclaraparabricks_1_1genomeworks_1_1io_1_1FastaParser_html"><div class="ttname"><a href="classclaraparabricks_1_1genomeworks_1_1io_1_1FastaParser.html">claraparabricks::genomeworks::io::FastaParser</a></div><div class="ttdef"><b>Definition:</b> fasta_parser.hpp:45</div></div>
+<div class="ttc" id="aclassclaraparabricks_1_1genomeworks_1_1io_1_1FastaParser_html_a49a2841d842ccbc7564d89e1c37c7d57"><div class="ttname"><a href="classclaraparabricks_1_1genomeworks_1_1io_1_1FastaParser.html#a49a2841d842ccbc7564d89e1c37c7d57">claraparabricks::genomeworks::io::FastaParser::get_num_seqences</a></div><div class="ttdeci">virtual number_of_reads_t get_num_seqences() const =0</div><div class="ttdoc">Return number of sequences in FASTA file.</div></div>
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
 Generated by &#160;<a href="http://www.doxygen.org/index.html">

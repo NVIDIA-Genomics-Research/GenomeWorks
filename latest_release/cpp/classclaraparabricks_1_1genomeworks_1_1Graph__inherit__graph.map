@@ -1,0 +1,5 @@
+<map id="claraparabricks::genomeworks::Graph" name="claraparabricks::genomeworks::Graph">
+<area shape="rect" id="node1" title="Object representing a generic graph structure." alt="" coords="5,39,204,80"/>
+<area shape="rect" id="node2" href="$classclaraparabricks_1_1genomeworks_1_1DirectedGraph.html" title="DirectedGraph Object representing a directed graph structure." alt="" coords="252,5,451,47"/>
+<area shape="rect" id="node3" href="$classclaraparabricks_1_1genomeworks_1_1UndirectedGraph.html" title="UndirectedGraph Object representing an undirected graph structure." alt="" coords="252,71,451,112"/>
+</map>

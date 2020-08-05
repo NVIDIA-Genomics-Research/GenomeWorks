@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.8.16"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>ClaraGenomicsAnalysis: common/base/include/claragenomics/utils/cudautils.hpp File Reference</title>
+<title>GenomeWorks: common/base/include/claraparabricks/genomeworks/utils/cudautils.hpp File Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -21,7 +21,7 @@
  <tbody>
  <tr style="height: 56px;">
   <td id="projectalign" style="padding-left: 0.5em;">
-   <div id="projectname">ClaraGenomicsAnalysis
+   <div id="projectname">GenomeWorks
    &#160;<span id="projectnumber">0.5.0</span>
    </div>
   </td>
@@ -62,7 +62,7 @@ $(function() {
 
 <div id="nav-path" class="navpath">
   <ul>
-<li class="navelem"><a class="el" href="dir_bdd9a5d540de89e9fe90efdfc6973a4f.html">common</a></li><li class="navelem"><a class="el" href="dir_eff7fafaa7ac3a3371e3dd04b3b9a5c9.html">base</a></li><li class="navelem"><a class="el" href="dir_80c8142769b38b25e7dcafb17d041e26.html">include</a></li><li class="navelem"><a class="el" href="dir_14231f146d50d42ff07c9583576b7e3b.html">claragenomics</a></li><li class="navelem"><a class="el" href="dir_8b1ad171d523abdc0c7b1d05272707ce.html">utils</a></li>  </ul>
+<li class="navelem"><a class="el" href="dir_bdd9a5d540de89e9fe90efdfc6973a4f.html">common</a></li><li class="navelem"><a class="el" href="dir_eff7fafaa7ac3a3371e3dd04b3b9a5c9.html">base</a></li><li class="navelem"><a class="el" href="dir_80c8142769b38b25e7dcafb17d041e26.html">include</a></li><li class="navelem"><a class="el" href="dir_9ac6015b68507e8ebbce7aadc08f8fec.html">claraparabricks</a></li><li class="navelem"><a class="el" href="dir_a0853b1b091f2789be384343ff9958b2.html">genomeworks</a></li><li class="navelem"><a class="el" href="dir_54b01b4ac3e778b7fdcab1426c75a6a6.html">utils</a></li>  </ul>
 </div>
 </div><!-- top -->
 <div class="header">
@@ -74,38 +74,39 @@ $(function() {
 <div class="title">cudautils.hpp File Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
-<div class="textblock"><code>#include &lt;claragenomics/cga_config.hpp&gt;</code><br />
-<code>#include &lt;<a class="el" href="logging_8hpp_source.html">claragenomics/logging/logging.hpp</a>&gt;</code><br />
+<div class="textblock"><code>#include &lt;claraparabricks/genomeworks/gw_config.hpp&gt;</code><br />
+<code>#include &lt;<a class="el" href="logging_8hpp_source.html">claraparabricks/genomeworks/logging/logging.hpp</a>&gt;</code><br />
 <code>#include &lt;cuda_runtime_api.h&gt;</code><br />
 <code>#include &lt;cassert&gt;</code><br />
+<code>#include &lt;string&gt;</code><br />
 </div><div class="textblock"><div class="dynheader">
 Include dependency graph for cudautils.hpp:</div>
 <div class="dyncontent">
-<div class="center"><img src="cudautils_8hpp__incl.png" border="0" usemap="#common_2base_2include_2claragenomics_2utils_2cudautils_8hpp" alt=""/></div>
-<map name="common_2base_2include_2claragenomics_2utils_2cudautils_8hpp" id="common_2base_2include_2claragenomics_2utils_2cudautils_8hpp">
-<area shape="rect" title=" " alt="" coords="226,5,375,61"/>
-<area shape="rect" href="cga__config_8hpp_source.html" title=" " alt="" coords="5,199,204,225"/>
-<area shape="rect" href="logging_8hpp.html" title=" " alt="" coords="143,109,293,151"/>
-<area shape="rect" title=" " alt="" coords="317,117,452,143"/>
-<area shape="rect" title=" " alt="" coords="476,117,541,143"/>
-<area shape="rect" title=" " alt="" coords="228,199,341,225"/>
+<div class="center"><img src="cudautils_8hpp__incl.png" border="0" usemap="#common_2base_2include_2claraparabricks_2genomeworks_2utils_2cudautils_8hpp" alt=""/></div>
+<map name="common_2base_2include_2claraparabricks_2genomeworks_2utils_2cudautils_8hpp" id="common_2base_2include_2claraparabricks_2genomeworks_2utils_2cudautils_8hpp">
+<area shape="rect" title=" " alt="" coords="327,5,526,61"/>
+<area shape="rect" href="gw__config_8hpp_source.html" title=" " alt="" coords="5,199,200,240"/>
+<area shape="rect" href="logging_8hpp.html" title=" " alt="" coords="140,109,335,151"/>
+<area shape="rect" title=" " alt="" coords="359,117,494,143"/>
+<area shape="rect" title=" " alt="" coords="518,117,583,143"/>
+<area shape="rect" title=" " alt="" coords="607,117,662,143"/>
+<area shape="rect" title=" " alt="" coords="225,206,338,233"/>
 </map>
 </div>
 </div><div class="textblock"><div class="dynheader">
 This graph shows which files directly or indirectly include this file:</div>
 <div class="dyncontent">
-<div class="center"><img src="cudautils_8hpp__dep__incl.png" border="0" usemap="#common_2base_2include_2claragenomics_2utils_2cudautils_8hppdep" alt=""/></div>
-<map name="common_2base_2include_2claragenomics_2utils_2cudautils_8hppdep" id="common_2base_2include_2claragenomics_2utils_2cudautils_8hppdep">
-<area shape="rect" title=" " alt="" coords="179,5,328,61"/>
-<area shape="rect" href="allocator_8hpp_source.html" title=" " alt="" coords="179,109,328,165"/>
-<area shape="rect" href="buffer_8hpp_source.html" title=" " alt="" coords="5,109,155,165"/>
-<area shape="rect" href="batch_8hpp_source.html" title=" " alt="" coords="353,117,557,158"/>
-<area shape="rect" href="device__buffer_8hpp_source.html" title=" " alt="" coords="179,213,328,269"/>
-<area shape="rect" href="host__buffer_8hpp_source.html" title=" " alt="" coords="5,213,155,269"/>
-<area shape="rect" href="aligner_8hpp_source.html" title=" " alt="" coords="353,213,533,269"/>
-<area shape="rect" href="index_8hpp_source.html" title=" " alt="" coords="226,317,411,373"/>
-<area shape="rect" href="matcher_8hpp_source.html" title=" " alt="" coords="95,421,281,477"/>
-<area shape="rect" href="overlapper_8hpp_source.html" title=" " alt="" coords="305,421,490,477"/>
+<div class="center"><img src="cudautils_8hpp__dep__incl.png" border="0" usemap="#common_2base_2include_2claraparabricks_2genomeworks_2utils_2cudautils_8hppdep" alt=""/></div>
+<map name="common_2base_2include_2claraparabricks_2genomeworks_2utils_2cudautils_8hppdep" id="common_2base_2include_2claraparabricks_2genomeworks_2utils_2cudautils_8hppdep">
+<area shape="rect" title=" " alt="" coords="339,5,537,61"/>
+<area shape="rect" href="allocator_8hpp_source.html" title=" " alt="" coords="339,109,537,165"/>
+<area shape="rect" href="device__buffer_8hpp_source.html" title=" " alt="" coords="141,213,340,269"/>
+<area shape="rect" href="batch_8hpp_source.html" title=" " alt="" coords="573,117,794,158"/>
+<area shape="rect" href="aligner_8hpp_source.html" title=" " alt="" coords="364,213,563,269"/>
+<area shape="rect" href="index_8hpp_source.html" title=" " alt="" coords="5,317,204,373"/>
+<area shape="rect" href="matcher_8hpp_source.html" title=" " alt="" coords="73,421,272,477"/>
+<area shape="rect" href="overlapper_8hpp_source.html" title=" " alt="" coords="277,317,476,373"/>
+<area shape="rect" href="cudapoa_2include_2claraparabricks_2genomeworks_2cudapoa_2utils_8hpp_source.html" title=" " alt="" coords="587,221,801,262"/>
 </map>
 </div>
 </div>
@@ -113,62 +114,62 @@ This graph shows which files directly or indirectly include this file:</div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
 Classes</h2></td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classclaragenomics_1_1scoped__device__switch.html">claragenomics::scoped_device_switch</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">A class to switch the CUDA device for the current scope using RAII.  <a href="classclaragenomics_1_1scoped__device__switch.html#details">More...</a><br /></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classclaraparabricks_1_1genomeworks_1_1scoped__device__switch.html">claraparabricks::genomeworks::scoped_device_switch</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">A class to switch the CUDA device for the current scope using RAII.  <a href="classclaraparabricks_1_1genomeworks_1_1scoped__device__switch.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="define-members"></a>
 Macros</h2></td></tr>
-<tr class="memitem:gaded61355db08f1d76bc24edc008d4224"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__cudautils.html#gaded61355db08f1d76bc24edc008d4224">CGA_NVTX_RANGE</a>(varname,  label)</td></tr>
-<tr class="memdesc:gaded61355db08f1d76bc24edc008d4224"><td class="mdescLeft">&#160;</td><td class="mdescRight">Dummy implementation for CGA_NVTX_RANGE macro.  <a href="group__cudautils.html#gaded61355db08f1d76bc24edc008d4224">More...</a><br /></td></tr>
-<tr class="separator:gaded61355db08f1d76bc24edc008d4224"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gae6ef7ab424442330e7b6b59015923ef5"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__cudautils.html#gae6ef7ab424442330e7b6b59015923ef5">GW_NVTX_RANGE</a>(varname,  label)</td></tr>
+<tr class="memdesc:gae6ef7ab424442330e7b6b59015923ef5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Dummy implementation for GW_NVTX_RANGE macro.  <a href="group__cudautils.html#gae6ef7ab424442330e7b6b59015923ef5">More...</a><br /></td></tr>
+<tr class="separator:gae6ef7ab424442330e7b6b59015923ef5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr><td colspan="2"><div class="groupHeader"></div></td></tr>
-<tr class="memitem:ga161535c48fe399e086ac6277b527fb41"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__cudautils.html#ga161535c48fe399e086ac6277b527fb41">CGA_CU_CHECK_ERR</a>(ans)</td></tr>
-<tr class="memdesc:ga161535c48fe399e086ac6277b527fb41"><td class="mdescLeft">&#160;</td><td class="mdescRight">Log on CUDA error in enclosed expression.  <a href="group__cudautils.html#ga161535c48fe399e086ac6277b527fb41">More...</a><br /></td></tr>
-<tr class="separator:ga161535c48fe399e086ac6277b527fb41"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga4f68b0cb1bbbc3f8ccc5523a0521ac4f"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__cudautils.html#ga4f68b0cb1bbbc3f8ccc5523a0521ac4f">CGA_CU_ABORT_ON_ERR</a>(ans)</td></tr>
-<tr class="memdesc:ga4f68b0cb1bbbc3f8ccc5523a0521ac4f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Log on CUDA error in enclosed expression and termine in release mode, fail assertion in debug mode.  <a href="group__cudautils.html#ga4f68b0cb1bbbc3f8ccc5523a0521ac4f">More...</a><br /></td></tr>
-<tr class="separator:ga4f68b0cb1bbbc3f8ccc5523a0521ac4f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gacea9193a923d7b06f00d02e97afb5b64"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__cudautils.html#gacea9193a923d7b06f00d02e97afb5b64">GW_CU_CHECK_ERR</a>(ans)</td></tr>
+<tr class="memdesc:gacea9193a923d7b06f00d02e97afb5b64"><td class="mdescLeft">&#160;</td><td class="mdescRight">Log on CUDA error in enclosed expression.  <a href="group__cudautils.html#gacea9193a923d7b06f00d02e97afb5b64">More...</a><br /></td></tr>
+<tr class="separator:gacea9193a923d7b06f00d02e97afb5b64"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga5df85761f39ff5dbf04ff38bcaeea2d8"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__cudautils.html#ga5df85761f39ff5dbf04ff38bcaeea2d8">GW_CU_ABORT_ON_ERR</a>(ans)</td></tr>
+<tr class="memdesc:ga5df85761f39ff5dbf04ff38bcaeea2d8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Log on CUDA error in enclosed expression and termine in release mode, fail assertion in debug mode.  <a href="group__cudautils.html#ga5df85761f39ff5dbf04ff38bcaeea2d8">More...</a><br /></td></tr>
+<tr class="separator:ga5df85761f39ff5dbf04ff38bcaeea2d8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:ga3769a812992df47886894f48f26edf6f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__cudautils.html#ga3769a812992df47886894f48f26edf6f">claragenomics::cudautils::gpu_assert</a> (cudaError_t code, const char *file, int line)</td></tr>
-<tr class="separator:ga3769a812992df47886894f48f26edf6f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9ace0fde2c5420f52b40ca77276943ca"><td class="memTemplParams" colspan="2">template&lt;typename IntType , int32_t boundary&gt; </td></tr>
-<tr class="memitem:a9ace0fde2c5420f52b40ca77276943ca"><td class="memTemplItemLeft" align="right" valign="top">__host__ __device__ __forceinline__ IntType&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="cudautils_8hpp.html#a9ace0fde2c5420f52b40ca77276943ca">claragenomics::cudautils::align</a> (const IntType &amp;value)</td></tr>
-<tr class="separator:a9ace0fde2c5420f52b40ca77276943ca"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af7b49c4dae93b38c51f64b9fee01edd6"><td class="memTemplParams" colspan="2"><a id="af7b49c4dae93b38c51f64b9fee01edd6"></a>
+<tr class="memitem:ga681adfae5e59d60223b6f2827f1bec5e"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__cudautils.html#ga681adfae5e59d60223b6f2827f1bec5e">claraparabricks::genomeworks::cudautils::gpu_assert</a> (cudaError_t code, const char *file, int line)</td></tr>
+<tr class="separator:ga681adfae5e59d60223b6f2827f1bec5e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae7f2adbb133a1e7e1d1a246d51894929"><td class="memTemplParams" colspan="2">template&lt;typename IntType , int32_t boundary&gt; </td></tr>
+<tr class="memitem:ae7f2adbb133a1e7e1d1a246d51894929"><td class="memTemplItemLeft" align="right" valign="top">__host__ __device__ __forceinline__ IntType&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="cudautils_8hpp.html#ae7f2adbb133a1e7e1d1a246d51894929">claraparabricks::genomeworks::cudautils::align</a> (const IntType &amp;value)</td></tr>
+<tr class="separator:ae7f2adbb133a1e7e1d1a246d51894929"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa3384f8dd7eaa627c41ee25de9a2a939"><td class="memTemplParams" colspan="2"><a id="aa3384f8dd7eaa627c41ee25de9a2a939"></a>
 template&lt;typename Type &gt; </td></tr>
-<tr class="memitem:af7b49c4dae93b38c51f64b9fee01edd6"><td class="memTemplItemLeft" align="right" valign="top">Type&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="cudautils_8hpp.html#af7b49c4dae93b38c51f64b9fee01edd6">claragenomics::cudautils::get_value_from_device</a> (const Type *d_ptr, cudaStream_t stream=0)</td></tr>
-<tr class="memdesc:af7b49c4dae93b38c51f64b9fee01edd6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Copy and return value from a device memory location with implicit synchronization. <br /></td></tr>
-<tr class="separator:af7b49c4dae93b38c51f64b9fee01edd6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aaae5a5731d5d696edc89d55de4af039d"><td class="memTemplParams" colspan="2"><a id="aaae5a5731d5d696edc89d55de4af039d"></a>
+<tr class="memitem:aa3384f8dd7eaa627c41ee25de9a2a939"><td class="memTemplItemLeft" align="right" valign="top">Type&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="cudautils_8hpp.html#aa3384f8dd7eaa627c41ee25de9a2a939">claraparabricks::genomeworks::cudautils::get_value_from_device</a> (const Type *d_ptr, cudaStream_t stream=0)</td></tr>
+<tr class="memdesc:aa3384f8dd7eaa627c41ee25de9a2a939"><td class="mdescLeft">&#160;</td><td class="mdescRight">Copy and return value from a device memory location with implicit synchronization. <br /></td></tr>
+<tr class="separator:aa3384f8dd7eaa627c41ee25de9a2a939"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acb599e2c8d9add6192ac9bcc29d30d9a"><td class="memTemplParams" colspan="2"><a id="acb599e2c8d9add6192ac9bcc29d30d9a"></a>
 template&lt;typename Type &gt; </td></tr>
-<tr class="memitem:aaae5a5731d5d696edc89d55de4af039d"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="cudautils_8hpp.html#aaae5a5731d5d696edc89d55de4af039d">claragenomics::cudautils::set_device_value_async</a> (Type *dst, const Type *src, cudaStream_t stream)</td></tr>
-<tr class="memdesc:aaae5a5731d5d696edc89d55de4af039d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Copies value from 'src' address to 'dst' address asynchronously. <br /></td></tr>
-<tr class="separator:aaae5a5731d5d696edc89d55de4af039d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8183a628f9f6e1031ce9c16489173be3"><td class="memTemplParams" colspan="2"><a id="a8183a628f9f6e1031ce9c16489173be3"></a>
+<tr class="memitem:acb599e2c8d9add6192ac9bcc29d30d9a"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="cudautils_8hpp.html#acb599e2c8d9add6192ac9bcc29d30d9a">claraparabricks::genomeworks::cudautils::set_device_value_async</a> (Type *dst, const Type *src, cudaStream_t stream)</td></tr>
+<tr class="memdesc:acb599e2c8d9add6192ac9bcc29d30d9a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Copies value from 'src' address to 'dst' address asynchronously. <br /></td></tr>
+<tr class="separator:acb599e2c8d9add6192ac9bcc29d30d9a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5f8cc0d9104da3c88885675a5f1cd180"><td class="memTemplParams" colspan="2"><a id="a5f8cc0d9104da3c88885675a5f1cd180"></a>
 template&lt;typename Type &gt; </td></tr>
-<tr class="memitem:a8183a628f9f6e1031ce9c16489173be3"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="cudautils_8hpp.html#a8183a628f9f6e1031ce9c16489173be3">claragenomics::cudautils::set_device_value</a> (Type *dst, const Type &amp;src)</td></tr>
-<tr class="memdesc:a8183a628f9f6e1031ce9c16489173be3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Copies the value 'src' to 'dst' address. <br /></td></tr>
-<tr class="separator:a8183a628f9f6e1031ce9c16489173be3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4ffe88fbad9c9a817ac19a35f84657ae"><td class="memTemplParams" colspan="2"><a id="a4ffe88fbad9c9a817ac19a35f84657ae"></a>
+<tr class="memitem:a5f8cc0d9104da3c88885675a5f1cd180"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="cudautils_8hpp.html#a5f8cc0d9104da3c88885675a5f1cd180">claraparabricks::genomeworks::cudautils::set_device_value</a> (Type *dst, const Type &amp;src)</td></tr>
+<tr class="memdesc:a5f8cc0d9104da3c88885675a5f1cd180"><td class="mdescLeft">&#160;</td><td class="mdescRight">Copies the value 'src' to 'dst' address. <br /></td></tr>
+<tr class="separator:a5f8cc0d9104da3c88885675a5f1cd180"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8b3de8bb38bfa06bc752487bcc280c5c"><td class="memTemplParams" colspan="2"><a id="a8b3de8bb38bfa06bc752487bcc280c5c"></a>
 template&lt;typename Type &gt; </td></tr>
-<tr class="memitem:a4ffe88fbad9c9a817ac19a35f84657ae"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="cudautils_8hpp.html#a4ffe88fbad9c9a817ac19a35f84657ae">claragenomics::cudautils::device_copy_n</a> (const Type *src, size_t n, Type *dst, cudaStream_t stream)</td></tr>
-<tr class="memdesc:a4ffe88fbad9c9a817ac19a35f84657ae"><td class="mdescLeft">&#160;</td><td class="mdescRight">Copies elements from the range [src, src + n) to the range [dst, dst + n) asynchronously. <br /></td></tr>
-<tr class="separator:a4ffe88fbad9c9a817ac19a35f84657ae"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1387ce97f15eaeedd03dea511098b89c"><td class="memTemplParams" colspan="2"><a id="a1387ce97f15eaeedd03dea511098b89c"></a>
+<tr class="memitem:a8b3de8bb38bfa06bc752487bcc280c5c"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="cudautils_8hpp.html#a8b3de8bb38bfa06bc752487bcc280c5c">claraparabricks::genomeworks::cudautils::device_copy_n</a> (const Type *src, size_t n, Type *dst, cudaStream_t stream)</td></tr>
+<tr class="memdesc:a8b3de8bb38bfa06bc752487bcc280c5c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Copies elements from the range [src, src + n) to the range [dst, dst + n) asynchronously. <br /></td></tr>
+<tr class="separator:a8b3de8bb38bfa06bc752487bcc280c5c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a18376d50270cf3cc184d6adced8d56c1"><td class="memTemplParams" colspan="2"><a id="a18376d50270cf3cc184d6adced8d56c1"></a>
 template&lt;typename Type &gt; </td></tr>
-<tr class="memitem:a1387ce97f15eaeedd03dea511098b89c"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="cudautils_8hpp.html#a1387ce97f15eaeedd03dea511098b89c">claragenomics::cudautils::device_copy_n</a> (const Type *src, size_t n, Type *dst)</td></tr>
-<tr class="memdesc:a1387ce97f15eaeedd03dea511098b89c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Copies elements from the range [src, src + n) to the range [dst, dst + n). <br /></td></tr>
-<tr class="separator:a1387ce97f15eaeedd03dea511098b89c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab716877a62945826f1f6a3a6fb394c64"><td class="memItemLeft" align="right" valign="top">std::size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cudautils_8hpp.html#ab716877a62945826f1f6a3a6fb394c64">claragenomics::cudautils::find_largest_contiguous_device_memory_section</a> ()</td></tr>
-<tr class="memdesc:ab716877a62945826f1f6a3a6fb394c64"><td class="mdescLeft">&#160;</td><td class="mdescRight">finds largest section of contiguous memory on device  <a href="cudautils_8hpp.html#ab716877a62945826f1f6a3a6fb394c64">More...</a><br /></td></tr>
-<tr class="separator:ab716877a62945826f1f6a3a6fb394c64"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a18376d50270cf3cc184d6adced8d56c1"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="cudautils_8hpp.html#a18376d50270cf3cc184d6adced8d56c1">claraparabricks::genomeworks::cudautils::device_copy_n</a> (const Type *src, size_t n, Type *dst)</td></tr>
+<tr class="memdesc:a18376d50270cf3cc184d6adced8d56c1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Copies elements from the range [src, src + n) to the range [dst, dst + n). <br /></td></tr>
+<tr class="separator:a18376d50270cf3cc184d6adced8d56c1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a438e20048d3be9338bf0f107604263c1"><td class="memItemLeft" align="right" valign="top">std::size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cudautils_8hpp.html#a438e20048d3be9338bf0f107604263c1">claraparabricks::genomeworks::cudautils::find_largest_contiguous_device_memory_section</a> ()</td></tr>
+<tr class="memdesc:a438e20048d3be9338bf0f107604263c1"><td class="mdescLeft">&#160;</td><td class="mdescRight">finds largest section of contiguous memory on device  <a href="cudautils_8hpp.html#a438e20048d3be9338bf0f107604263c1">More...</a><br /></td></tr>
+<tr class="separator:a438e20048d3be9338bf0f107604263c1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Function Documentation</h2>
-<a id="file_a9ace0fde2c5420f52b40ca77276943ca"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#file_a9ace0fde2c5420f52b40ca77276943ca">&#9670;&nbsp;</a></span>align()</h2>
+<a id="file_ae7f2adbb133a1e7e1d1a246d51894929"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#file_ae7f2adbb133a1e7e1d1a246d51894929">&#9670;&nbsp;</a></span>align()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -176,7 +177,7 @@ template&lt;typename Type &gt; </td></tr>
 template&lt;typename IntType , int32_t boundary&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">__host__ __device__ __forceinline__ IntType claragenomics::cudautils::align </td>
+          <td class="memname">__host__ __device__ __forceinline__ IntType claraparabricks::genomeworks::cudautils::align </td>
           <td>(</td>
           <td class="paramtype">const IntType &amp;&#160;</td>
           <td class="paramname"><em>value</em></td><td>)</td>
@@ -201,14 +202,14 @@ template&lt;typename IntType , int32_t boundary&gt; </div>
 
 </div>
 </div>
-<a id="file_ab716877a62945826f1f6a3a6fb394c64"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#file_ab716877a62945826f1f6a3a6fb394c64">&#9670;&nbsp;</a></span>find_largest_contiguous_device_memory_section()</h2>
+<a id="file_a438e20048d3be9338bf0f107604263c1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#file_a438e20048d3be9338bf0f107604263c1">&#9670;&nbsp;</a></span>find_largest_contiguous_device_memory_section()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">std::size_t claragenomics::cudautils::find_largest_contiguous_device_memory_section </td>
+          <td class="memname">std::size_t claraparabricks::genomeworks::cudautils::find_largest_contiguous_device_memory_section </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td></td>

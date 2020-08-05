@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.8.16"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>ClaraGenomicsAnalysis: common/base/include/claragenomics/utils/exceptions.hpp Source File</title>
+<title>GenomeWorks: common/base/include/claraparabricks/genomeworks/utils/exceptions.hpp Source File</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -21,7 +21,7 @@
  <tbody>
  <tr style="height: 56px;">
   <td id="projectalign" style="padding-left: 0.5em;">
-   <div id="projectname">ClaraGenomicsAnalysis
+   <div id="projectname">GenomeWorks
    &#160;<span id="projectnumber">0.5.0</span>
    </div>
   </td>
@@ -62,7 +62,7 @@ $(function() {
 
 <div id="nav-path" class="navpath">
   <ul>
-<li class="navelem"><a class="el" href="dir_bdd9a5d540de89e9fe90efdfc6973a4f.html">common</a></li><li class="navelem"><a class="el" href="dir_eff7fafaa7ac3a3371e3dd04b3b9a5c9.html">base</a></li><li class="navelem"><a class="el" href="dir_80c8142769b38b25e7dcafb17d041e26.html">include</a></li><li class="navelem"><a class="el" href="dir_14231f146d50d42ff07c9583576b7e3b.html">claragenomics</a></li><li class="navelem"><a class="el" href="dir_8b1ad171d523abdc0c7b1d05272707ce.html">utils</a></li>  </ul>
+<li class="navelem"><a class="el" href="dir_bdd9a5d540de89e9fe90efdfc6973a4f.html">common</a></li><li class="navelem"><a class="el" href="dir_eff7fafaa7ac3a3371e3dd04b3b9a5c9.html">base</a></li><li class="navelem"><a class="el" href="dir_80c8142769b38b25e7dcafb17d041e26.html">include</a></li><li class="navelem"><a class="el" href="dir_9ac6015b68507e8ebbce7aadc08f8fec.html">claraparabricks</a></li><li class="navelem"><a class="el" href="dir_a0853b1b091f2789be384343ff9958b2.html">genomeworks</a></li><li class="navelem"><a class="el" href="dir_54b01b4ac3e778b7fdcab1426c75a6a6.html">utils</a></li>  </ul>
 </div>
 </div><!-- top -->
 <div class="header">
@@ -71,44 +71,55 @@ $(function() {
 </div><!--header-->
 <div class="contents">
 <div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;<span class="comment">/*</span></div>
-<div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160;<span class="comment">* Copyright (c) 2020, NVIDIA CORPORATION.  All rights reserved.</span></div>
+<div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160;<span class="comment">* Copyright 2019-2020 NVIDIA CORPORATION.</span></div>
 <div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;<span class="comment">*</span></div>
-<div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;<span class="comment">* NVIDIA CORPORATION and its licensors retain all intellectual property</span></div>
-<div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;<span class="comment">* and proprietary rights in and to this software, related documentation</span></div>
-<div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;<span class="comment">* and any modifications thereto.  Any use, reproduction, disclosure or</span></div>
-<div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;<span class="comment">* distribution of this software and related documentation without an express</span></div>
-<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;<span class="comment">* license agreement from NVIDIA CORPORATION is strictly prohibited.</span></div>
-<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;<span class="comment">*/</span></div>
-<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160; </div>
-<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;<span class="preprocessor">#pragma once</span></div>
-<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160; </div>
-<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;<span class="preprocessor">#include &lt;exception&gt;</span></div>
-<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160; </div>
-<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;<span class="keyword">namespace </span>claragenomics</div>
-<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;{</div>
-<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160; </div>
-<div class="line"><a name="l00021"></a><span class="lineno"><a class="line" href="classclaragenomics_1_1device__memory__allocation__exception.html">   21</a></span>&#160;<span class="keyword">class </span><a class="code" href="classclaragenomics_1_1device__memory__allocation__exception.html">device_memory_allocation_exception</a> : <span class="keyword">public</span> std::exception</div>
+<div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;<span class="comment">* Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span></div>
+<div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;<span class="comment">* you may not use this file except in compliance with the License.</span></div>
+<div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;<span class="comment">* You may obtain a copy of the License at</span></div>
+<div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;<span class="comment">*</span></div>
+<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;<span class="comment">*     http://www.apache.org/licenses/LICENSE-2.0</span></div>
+<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;<span class="comment">*</span></div>
+<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;<span class="comment">* Unless required by applicable law or agreed to in writing, software</span></div>
+<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;<span class="comment">* distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span></div>
+<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;<span class="comment">* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span></div>
+<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;<span class="comment">* See the License for the specific language governing permissions and</span></div>
+<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;<span class="comment">* limitations under the License.</span></div>
+<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;<span class="comment">*/</span></div>
+<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160; </div>
+<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;<span class="preprocessor">#pragma once</span></div>
+<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160; </div>
+<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;<span class="preprocessor">#include &lt;exception&gt;</span></div>
+<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160; </div>
+<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="keyword">namespace </span>claraparabricks</div>
 <div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;{</div>
-<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="keyword">public</span>:</div>
-<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;    <a class="code" href="classclaragenomics_1_1device__memory__allocation__exception.html">device_memory_allocation_exception</a>() = <span class="keywordflow">default</span>;</div>
-<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;    <a class="code" href="classclaragenomics_1_1device__memory__allocation__exception.html">device_memory_allocation_exception</a>(<a class="code" href="classclaragenomics_1_1device__memory__allocation__exception.html">device_memory_allocation_exception</a> <span class="keyword">const</span>&amp;) = <span class="keywordflow">default</span>;</div>
-<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;    <a class="code" href="classclaragenomics_1_1device__memory__allocation__exception.html">device_memory_allocation_exception</a>(<a class="code" href="classclaragenomics_1_1device__memory__allocation__exception.html">device_memory_allocation_exception</a>&amp;&amp;) = <span class="keywordflow">default</span>;</div>
-<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;    <a class="code" href="classclaragenomics_1_1device__memory__allocation__exception.html">device_memory_allocation_exception</a>&amp; <a class="code" href="classclaragenomics_1_1device__memory__allocation__exception.html#a9880eb9551f9d57fbe446c15aa1b9e8d">operator=</a>(<a class="code" href="classclaragenomics_1_1device__memory__allocation__exception.html">device_memory_allocation_exception</a> <span class="keyword">const</span>&amp;) = <span class="keywordflow">default</span>;</div>
-<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;    <a class="code" href="classclaragenomics_1_1device__memory__allocation__exception.html">device_memory_allocation_exception</a>&amp; <a class="code" href="classclaragenomics_1_1device__memory__allocation__exception.html#a9880eb9551f9d57fbe446c15aa1b9e8d">operator=</a>(<a class="code" href="classclaragenomics_1_1device__memory__allocation__exception.html">device_memory_allocation_exception</a>&amp;&amp;) = <span class="keywordflow">default</span>;</div>
-<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;    <span class="keyword">virtual</span> <a class="code" href="classclaragenomics_1_1device__memory__allocation__exception.html#a260ebc4a7a6a1294e521ff5cb1ecaa7a">~device_memory_allocation_exception</a>() = <span class="keywordflow">default</span>;</div>
-<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160; </div>
-<div class="line"><a name="l00037"></a><span class="lineno"><a class="line" href="classclaragenomics_1_1device__memory__allocation__exception.html#a3bdee953c6f834b31db0e70a685821fb">   37</a></span>&#160;    <span class="keyword">virtual</span> <span class="keyword">const</span> <span class="keywordtype">char</span>* <a class="code" href="classclaragenomics_1_1device__memory__allocation__exception.html#a3bdee953c6f834b31db0e70a685821fb">what</a>() const noexcept</div>
-<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;    {</div>
-<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;        <span class="keywordflow">return</span> <span class="stringliteral">&quot;Could not allocate device memory!&quot;</span>;</div>
-<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;    }</div>
-<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;};</div>
-<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160; </div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;} <span class="comment">// namespace claragenomics</span></div>
+<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160; </div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="keyword">namespace </span>genomeworks</div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;{</div>
+<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160; </div>
+<div class="line"><a name="l00030"></a><span class="lineno"><a class="line" href="classclaraparabricks_1_1genomeworks_1_1device__memory__allocation__exception.html">   30</a></span>&#160;<span class="keyword">class </span><a class="code" href="classclaraparabricks_1_1genomeworks_1_1device__memory__allocation__exception.html">device_memory_allocation_exception</a> : <span class="keyword">public</span> std::exception</div>
+<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;{</div>
+<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;<span class="keyword">public</span>:</div>
+<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;    <a class="code" href="classclaraparabricks_1_1genomeworks_1_1device__memory__allocation__exception.html">device_memory_allocation_exception</a>() = <span class="keywordflow">default</span>;</div>
+<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;    <a class="code" href="classclaraparabricks_1_1genomeworks_1_1device__memory__allocation__exception.html">device_memory_allocation_exception</a>(<a class="code" href="classclaraparabricks_1_1genomeworks_1_1device__memory__allocation__exception.html">device_memory_allocation_exception</a> <span class="keyword">const</span>&amp;) = <span class="keywordflow">default</span>;</div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;    <a class="code" href="classclaraparabricks_1_1genomeworks_1_1device__memory__allocation__exception.html">device_memory_allocation_exception</a>(<a class="code" href="classclaraparabricks_1_1genomeworks_1_1device__memory__allocation__exception.html">device_memory_allocation_exception</a>&amp;&amp;) = <span class="keywordflow">default</span>;</div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;    <a class="code" href="classclaraparabricks_1_1genomeworks_1_1device__memory__allocation__exception.html">device_memory_allocation_exception</a>&amp; <a class="code" href="classclaraparabricks_1_1genomeworks_1_1device__memory__allocation__exception.html#a7bc34d8801138059def1e81f25fd50d2">operator=</a>(<a class="code" href="classclaraparabricks_1_1genomeworks_1_1device__memory__allocation__exception.html">device_memory_allocation_exception</a> <span class="keyword">const</span>&amp;) = <span class="keywordflow">default</span>;</div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;    <a class="code" href="classclaraparabricks_1_1genomeworks_1_1device__memory__allocation__exception.html">device_memory_allocation_exception</a>&amp; <a class="code" href="classclaraparabricks_1_1genomeworks_1_1device__memory__allocation__exception.html#a7bc34d8801138059def1e81f25fd50d2">operator=</a>(<a class="code" href="classclaraparabricks_1_1genomeworks_1_1device__memory__allocation__exception.html">device_memory_allocation_exception</a>&amp;&amp;) = <span class="keywordflow">default</span>;</div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;    <span class="keyword">virtual</span> <a class="code" href="classclaraparabricks_1_1genomeworks_1_1device__memory__allocation__exception.html#aca9405da179f10f229cccb7ba92491a8">~device_memory_allocation_exception</a>() = <span class="keywordflow">default</span>;</div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160; </div>
+<div class="line"><a name="l00046"></a><span class="lineno"><a class="line" href="classclaraparabricks_1_1genomeworks_1_1device__memory__allocation__exception.html#a91fdb9a9103f1d1425e0fde8efe02748">   46</a></span>&#160;    <span class="keyword">virtual</span> <span class="keyword">const</span> <span class="keywordtype">char</span>* <a class="code" href="classclaraparabricks_1_1genomeworks_1_1device__memory__allocation__exception.html#a91fdb9a9103f1d1425e0fde8efe02748">what</a>() const noexcept</div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;    {</div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;        <span class="keywordflow">return</span> <span class="stringliteral">&quot;Could not allocate device memory!&quot;</span>;</div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;    }</div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;};</div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160; </div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;} <span class="comment">// namespace genomeworks</span></div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160; </div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;} <span class="comment">// namespace claraparabricks</span></div>
 </div><!-- fragment --></div><!-- contents -->
-<div class="ttc" id="aclassclaragenomics_1_1device__memory__allocation__exception_html_a260ebc4a7a6a1294e521ff5cb1ecaa7a"><div class="ttname"><a href="classclaragenomics_1_1device__memory__allocation__exception.html#a260ebc4a7a6a1294e521ff5cb1ecaa7a">claragenomics::device_memory_allocation_exception::~device_memory_allocation_exception</a></div><div class="ttdeci">virtual ~device_memory_allocation_exception()=default</div><div class="ttdoc">Destructor.</div></div>
-<div class="ttc" id="aclassclaragenomics_1_1device__memory__allocation__exception_html_a3bdee953c6f834b31db0e70a685821fb"><div class="ttname"><a href="classclaragenomics_1_1device__memory__allocation__exception.html#a3bdee953c6f834b31db0e70a685821fb">claragenomics::device_memory_allocation_exception::what</a></div><div class="ttdeci">virtual const char * what() const noexcept</div><div class="ttdoc">Returns the error message of the exception.</div><div class="ttdef"><b>Definition:</b> exceptions.hpp:37</div></div>
-<div class="ttc" id="aclassclaragenomics_1_1device__memory__allocation__exception_html"><div class="ttname"><a href="classclaragenomics_1_1device__memory__allocation__exception.html">claragenomics::device_memory_allocation_exception</a></div><div class="ttdoc">Exception class for out-of-(device-)memory errors.</div><div class="ttdef"><b>Definition:</b> exceptions.hpp:21</div></div>
-<div class="ttc" id="aclassclaragenomics_1_1device__memory__allocation__exception_html_a9880eb9551f9d57fbe446c15aa1b9e8d"><div class="ttname"><a href="classclaragenomics_1_1device__memory__allocation__exception.html#a9880eb9551f9d57fbe446c15aa1b9e8d">claragenomics::device_memory_allocation_exception::operator=</a></div><div class="ttdeci">device_memory_allocation_exception &amp; operator=(device_memory_allocation_exception const &amp;)=default</div><div class="ttdoc">Assignment.</div></div>
+<div class="ttc" id="aclassclaraparabricks_1_1genomeworks_1_1device__memory__allocation__exception_html_a91fdb9a9103f1d1425e0fde8efe02748"><div class="ttname"><a href="classclaraparabricks_1_1genomeworks_1_1device__memory__allocation__exception.html#a91fdb9a9103f1d1425e0fde8efe02748">claraparabricks::genomeworks::device_memory_allocation_exception::what</a></div><div class="ttdeci">virtual const char * what() const noexcept</div><div class="ttdoc">Returns the error message of the exception.</div><div class="ttdef"><b>Definition:</b> exceptions.hpp:46</div></div>
+<div class="ttc" id="aclassclaraparabricks_1_1genomeworks_1_1device__memory__allocation__exception_html_a7bc34d8801138059def1e81f25fd50d2"><div class="ttname"><a href="classclaraparabricks_1_1genomeworks_1_1device__memory__allocation__exception.html#a7bc34d8801138059def1e81f25fd50d2">claraparabricks::genomeworks::device_memory_allocation_exception::operator=</a></div><div class="ttdeci">device_memory_allocation_exception &amp; operator=(device_memory_allocation_exception const &amp;)=default</div><div class="ttdoc">Assignment.</div></div>
+<div class="ttc" id="aclassclaraparabricks_1_1genomeworks_1_1device__memory__allocation__exception_html"><div class="ttname"><a href="classclaraparabricks_1_1genomeworks_1_1device__memory__allocation__exception.html">claraparabricks::genomeworks::device_memory_allocation_exception</a></div><div class="ttdoc">Exception class for out-of-(device-)memory errors.</div><div class="ttdef"><b>Definition:</b> exceptions.hpp:30</div></div>
+<div class="ttc" id="aclassclaraparabricks_1_1genomeworks_1_1device__memory__allocation__exception_html_aca9405da179f10f229cccb7ba92491a8"><div class="ttname"><a href="classclaraparabricks_1_1genomeworks_1_1device__memory__allocation__exception.html#aca9405da179f10f229cccb7ba92491a8">claraparabricks::genomeworks::device_memory_allocation_exception::~device_memory_allocation_exception</a></div><div class="ttdeci">virtual ~device_memory_allocation_exception()=default</div><div class="ttdoc">Destructor.</div></div>
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
 Generated by &#160;<a href="http://www.doxygen.org/index.html">

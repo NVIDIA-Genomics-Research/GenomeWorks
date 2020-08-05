@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['group_405',['Group',['../group__cudapoa.html#ga6b301a3a6ac7edccc403ec75e7497d32',1,'claragenomics::cudapoa']]]
+  ['group_400',['Group',['../group__cudapoa.html#gaaf04c9f3fd44c5f9653fa8030794cc47',1,'claraparabricks::genomeworks::cudapoa']]]
 ];
