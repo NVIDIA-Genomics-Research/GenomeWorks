@@ -19,24 +19,36 @@ logger "Check versions..."
 gcc --version
 g++ --version
 
+logger "Activate anaconda enviroment..."
+CONDA_NEW_ACTIVATION_CMD_VERSION="4.4"
+CONDA_VERSION=$(conda --version | awk '{print $2}')
+if [ "$CONDA_NEW_ACTIVATION_CMD_VERSION" == "$(echo -e "$CONDA_VERSION\n$CONDA_NEW_ACTIVATION_CMD_VERSION" | sort -V | head -1)" ]; then
+  logger "Version is higer than ${CONDA_NEW_ACTIVATION_CMD_VERSION}, using conda activate"
+  source /conda/etc/profile.d/conda.sh
+  conda activate "${2}"
+else
+  logger "Version is lower than ${CONDA_NEW_ACTIVATION_CMD_VERSION}, using source activate"
+  source activate "${2}"
+fi
+conda info --envs
+
 # FIX Added to deal with Anancoda SSL verification issues during conda builds
 conda config --set ssl_verify False
 
-# Conda add custom packages for ClaraGenomicsAnalysis CI
-logger "Conda install ClaraGenomicsAnalysis custom packages"
-conda install \
-    -c conda-forge \
-    -c sarcasm \
-    -c bioconda \
-    doxygen \
-    clang-format \
-    ninja \
-    minimap2 \
-    miniasm \
-    racon \
-    cmake
+logger "Check Python version..."
+python --version
 
-# Update LD_LIBRARY_PATH
+
+# Conda add custom packages for ClaraGenomicsAnalysis CI
+# Split setup into several steps to prevent the 15 minutes no
+# output to stdout timeout limit in CI jobs when solving environment
+logger "Conda install ClaraGenomicsAnalysis custom packages - clang-format"
+conda install --override-channels -c sarcasm clang-format
+
+logger "Conda install ClaraGenomicsAnalysis custom packages - doxygen ninja cmake"
+conda install --override-channels -c conda-forge doxygen ninja cmake">=3.10.2"
+
+logger "Update LD_LIBRARY_PATH"
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
 
 # Show currentl installed paths
@@ -46,7 +58,7 @@ ls /usr/local/lib
 set +x
 
 ################################################################################
-# BUILD - Conda package builds 
+# BUILD - Conda package builds
 ################################################################################
 
 CUDA_REL=${CUDA:0:3}
@@ -58,4 +70,3 @@ fi
 # Cleanup local git
 cd "$1"
 git clean -xdf
-

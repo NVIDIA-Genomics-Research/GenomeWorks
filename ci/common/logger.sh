@@ -1,4 +1,5 @@
-#!/usr/bin/env bash
+#!/bin/bash
+
 #
 # Copyright (c) 2019, NVIDIA CORPORATION.  All rights reserved.
 #
@@ -10,7 +11,10 @@
 #
 
 
-# Note we still _BUILD_ for GPU, we just don't (can't) test on it
-export BUILD_FOR_GPU=1
-export TEST_ON_GPU=0
-export CONDA_ENV_NAME="gdf"
+
+# Logger function for build status output
+function logger() {
+  ELAPSED_TIME=$(( $(date +%s)-START_TIME ));
+  PRINT_TIME=$(printf '%dh:%dm:%ds\n' $((ELAPSED_TIME/3600)) $((ELAPSED_TIME%3600/60)) $((ELAPSED_TIME%60)));
+  echo -e "\n${PRINT_TIME} >>>> $* <<<<\n"
+}

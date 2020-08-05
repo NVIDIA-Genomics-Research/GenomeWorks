@@ -12,7 +12,6 @@
 ######################################
 # ClaraGenomicsAnalysis CPU/GPU conda build script for CI #
 ######################################
-set -e
 
 run_tests() {
   cd test/
@@ -24,17 +23,36 @@ run_tests() {
 }
 
 PYCLARAGENOMICS_DIR=$1
-cd $PYCLARAGENOMICS_DIR
+cd "$PYCLARAGENOMICS_DIR"
 
-# Install external dependencies.
+logger "Install pyclaragenomics external dependencies..."
 python -m pip install -r requirements.txt
-python setup_pyclaragenomics.py --build_output_folder cga_build
-run_tests
 
-cd $PYCLARAGENOMICS_DIR
-# Uninstall pyclaragenomics
+logger "Install pyclaragenomics..."
+python setup_pyclaragenomics.py --build_output_folder cga_build
+
+logger "Run Tests..."
+run_tests
+cd "$PYCLARAGENOMICS_DIR"
+
+logger "Uninstall pyclaragenomics..."
 pip uninstall -y pyclaragenomics
-# Test wheel package creation
-python setup_pyclaragenomics.py --build_output_folder cga_build_wheel --create_wheel_only
-yes | pip install $PYCLARAGENOMICS_DIR/pyclaragenomics_wheel/pyclaragenomics-*.whl
+
+logger "Create pyclaragenomics Wheel package..."
+CUDA_VERSION_FOR_PACKAGE_NAME=$(echo "$CUDA_VERSION" | cut -d"." -f1-2 | sed -e "s/\./_/g")
+if [ "${COMMIT_HASH}" == "master" ]; then
+  PYCGA_VERSION=$(cat ../VERSION)
+else
+  PYCGA_VERSION=$(cat ../VERSION | tr -d "\n")\.dev$(date +%y%m%d) # for nightly build
+fi
+python setup_pyclaragenomics.py \
+        --build_output_folder gw_build_wheel \
+        --create_wheel_only \
+        --overwrite_package_name pyclaragenomics_cuda_"$CUDA_VERSION_FOR_PACKAGE_NAME" \
+        --overwrite_package_version "$PYCGA_VERSION"
+
+logger "Install pyclaragenomics Wheel package..."
+yes | pip install "$PYCLARAGENOMICS_DIR"/pyclaragenomics_wheel/pyclaragenomics*.whl
+
+logger "Run Tests..."
 run_tests
