@@ -1,0 +1,22 @@
+genomeworks.cudapoa package
+===========================
+
+Submodules
+----------
+
+genomeworks.cudapoa.cudapoa module
+----------------------------------
+
+.. automodule:: genomeworks.cudapoa.cudapoa
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+Module contents
+---------------
+
+.. automodule:: genomeworks.cudapoa
+   :members:
+   :undoc-members:
+   :show-inheritance:

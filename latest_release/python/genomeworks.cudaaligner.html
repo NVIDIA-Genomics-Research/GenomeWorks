@@ -1,0 +1,233 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>genomeworks.cudaaligner package &#8212; GenomeWorks SDK 0.5.0 documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="genomeworks-cudaaligner-package">
+<h1>genomeworks.cudaaligner package<a class="headerlink" href="#genomeworks-cudaaligner-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-genomeworks.cudaaligner.cudaaligner">
+<span id="genomeworks-cudaaligner-cudaaligner-module"></span><h2>genomeworks.cudaaligner.cudaaligner module<a class="headerlink" href="#module-genomeworks.cudaaligner.cudaaligner" title="Permalink to this headline">¶</a></h2>
+<p>Bindings for CUDAALIGNER.</p>
+<dl class="class">
+<dt id="genomeworks.cudaaligner.cudaaligner.CudaAlignerBatch">
+<em class="property">class </em><code class="sig-prename descclassname">genomeworks.cudaaligner.cudaaligner.</code><code class="sig-name descname">CudaAlignerBatch</code><span class="sig-paren">(</span><em class="sig-param">max_query_length</em>, <em class="sig-param">max_target_length</em>, <em class="sig-param">max_alignments</em>, <em class="sig-param">alignment_type=u'global'</em>, <em class="sig-param">stream=None</em>, <em class="sig-param">device_id=0</em>, <em class="sig-param">max_device_memory_allocator_caching_size=-1</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#genomeworks.cudaaligner.cudaaligner.CudaAlignerBatch" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Python API for CUDA-accelerated sequence to sequence alignment.</p>
+<dl class="method">
+<dt id="genomeworks.cudaaligner.cudaaligner.CudaAlignerBatch.add_alignment">
+<code class="sig-name descname">add_alignment</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">query</em>, <em class="sig-param">target</em><span class="sig-paren">)</span><a class="headerlink" href="#genomeworks.cudaaligner.cudaaligner.CudaAlignerBatch.add_alignment" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add new pair of sequences to the batch for alignment.
+The characters in the string must be from the set [ACGT] for
+correct alignment results.</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>query - query string
+target - target string</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="genomeworks.cudaaligner.cudaaligner.CudaAlignerBatch.align_all">
+<code class="sig-name descname">align_all</code><span class="sig-paren">(</span><em class="sig-param">self</em><span class="sig-paren">)</span><a class="headerlink" href="#genomeworks.cudaaligner.cudaaligner.CudaAlignerBatch.align_all" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initiate CUDA-accelerated alignment on the batch.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="genomeworks.cudaaligner.cudaaligner.CudaAlignerBatch.get_alignments">
+<code class="sig-name descname">get_alignments</code><span class="sig-paren">(</span><em class="sig-param">self</em><span class="sig-paren">)</span><a class="headerlink" href="#genomeworks.cudaaligner.cudaaligner.CudaAlignerBatch.get_alignments" title="Permalink to this definition">¶</a></dt>
+<dd><p>Retrieve the results of all alignments in the batch.</p>
+<p>Returns:
+A list of CudaAlignment objects, each of which holds details of the alignment in the same
+order as they were inserted into the batch.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="genomeworks.cudaaligner.cudaaligner.CudaAlignerBatch.reset">
+<code class="sig-name descname">reset</code><span class="sig-paren">(</span><em class="sig-param">self</em><span class="sig-paren">)</span><a class="headerlink" href="#genomeworks.cudaaligner.cudaaligner.CudaAlignerBatch.reset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reset the contents of the batch so the same GPU memory can be used to
+align a new set of sequences.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="genomeworks.cudaaligner.cudaaligner.CudaAlignerBatch.stream">
+<code class="sig-name descname">stream</code><a class="headerlink" href="#genomeworks.cudaaligner.cudaaligner.CudaAlignerBatch.stream" title="Permalink to this definition">¶</a></dt>
+<dd><p>stream: object</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="genomeworks.cudaaligner.cudaaligner.CudaAlignment">
+<em class="property">class </em><code class="sig-prename descclassname">genomeworks.cudaaligner.cudaaligner.</code><code class="sig-name descname">CudaAlignment</code><a class="headerlink" href="#genomeworks.cudaaligner.cudaaligner.CudaAlignment" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Class encompassing an Alignment between two sequences.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="genomeworks.cudaaligner.cudaaligner.status_to_str">
+<code class="sig-prename descclassname">genomeworks.cudaaligner.cudaaligner.</code><code class="sig-name descname">status_to_str</code><span class="sig-paren">(</span><em class="sig-param">status</em><span class="sig-paren">)</span><a class="headerlink" href="#genomeworks.cudaaligner.cudaaligner.status_to_str" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert status to their string representations.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-genomeworks.cudaaligner">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-genomeworks.cudaaligner" title="Permalink to this headline">¶</a></h2>
+<p>Init file for cudaaligner package.</p>
+<dl class="function">
+<dt id="genomeworks.cudaaligner.status_to_str">
+<code class="sig-prename descclassname">genomeworks.cudaaligner.</code><code class="sig-name descname">status_to_str</code><span class="sig-paren">(</span><em class="sig-param">status</em><span class="sig-paren">)</span><a class="headerlink" href="#genomeworks.cudaaligner.status_to_str" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert status to their string representations.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="genomeworks.cudaaligner.CudaAlignment">
+<em class="property">class </em><code class="sig-prename descclassname">genomeworks.cudaaligner.</code><code class="sig-name descname">CudaAlignment</code><a class="headerlink" href="#genomeworks.cudaaligner.CudaAlignment" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Class encompassing an Alignment between two sequences.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="genomeworks.cudaaligner.CudaAlignerBatch">
+<em class="property">class </em><code class="sig-prename descclassname">genomeworks.cudaaligner.</code><code class="sig-name descname">CudaAlignerBatch</code><span class="sig-paren">(</span><em class="sig-param">max_query_length</em>, <em class="sig-param">max_target_length</em>, <em class="sig-param">max_alignments</em>, <em class="sig-param">alignment_type=u'global'</em>, <em class="sig-param">stream=None</em>, <em class="sig-param">device_id=0</em>, <em class="sig-param">max_device_memory_allocator_caching_size=-1</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#genomeworks.cudaaligner.CudaAlignerBatch" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Python API for CUDA-accelerated sequence to sequence alignment.</p>
+<dl class="method">
+<dt id="genomeworks.cudaaligner.CudaAlignerBatch.add_alignment">
+<code class="sig-name descname">add_alignment</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">query</em>, <em class="sig-param">target</em><span class="sig-paren">)</span><a class="headerlink" href="#genomeworks.cudaaligner.CudaAlignerBatch.add_alignment" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add new pair of sequences to the batch for alignment.
+The characters in the string must be from the set [ACGT] for
+correct alignment results.</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>query - query string
+target - target string</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="genomeworks.cudaaligner.CudaAlignerBatch.align_all">
+<code class="sig-name descname">align_all</code><span class="sig-paren">(</span><em class="sig-param">self</em><span class="sig-paren">)</span><a class="headerlink" href="#genomeworks.cudaaligner.CudaAlignerBatch.align_all" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initiate CUDA-accelerated alignment on the batch.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="genomeworks.cudaaligner.CudaAlignerBatch.get_alignments">
+<code class="sig-name descname">get_alignments</code><span class="sig-paren">(</span><em class="sig-param">self</em><span class="sig-paren">)</span><a class="headerlink" href="#genomeworks.cudaaligner.CudaAlignerBatch.get_alignments" title="Permalink to this definition">¶</a></dt>
+<dd><p>Retrieve the results of all alignments in the batch.</p>
+<p>Returns:
+A list of CudaAlignment objects, each of which holds details of the alignment in the same
+order as they were inserted into the batch.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="genomeworks.cudaaligner.CudaAlignerBatch.reset">
+<code class="sig-name descname">reset</code><span class="sig-paren">(</span><em class="sig-param">self</em><span class="sig-paren">)</span><a class="headerlink" href="#genomeworks.cudaaligner.CudaAlignerBatch.reset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reset the contents of the batch so the same GPU memory can be used to
+align a new set of sequences.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="genomeworks.cudaaligner.CudaAlignerBatch.stream">
+<code class="sig-name descname">stream</code><a class="headerlink" href="#genomeworks.cudaaligner.CudaAlignerBatch.stream" title="Permalink to this definition">¶</a></dt>
+<dd><p>stream: object</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">GenomeWorks SDK</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2020, NVIDIA Corportation.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/genomeworks.cudaaligner.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

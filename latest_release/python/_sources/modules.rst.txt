@@ -1,12 +1,7 @@
-claragenomics
-=============
+genomeworks
+===========
 
 .. toctree::
    :maxdepth: 4
 
-   claragenomics.bindings
-   claragenomics.io
-   claragenomics.shared_libs
-   claragenomics.simulators
-   claragenomics.utilities
-   claragenomics.wrappers
+   genomeworks

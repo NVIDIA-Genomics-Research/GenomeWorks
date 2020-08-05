@@ -1,0 +1,234 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>genomeworks.simulators package &#8212; GenomeWorks SDK 0.5.0 documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="genomeworks-simulators-package">
+<h1>genomeworks.simulators package<a class="headerlink" href="#genomeworks-simulators-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-genomeworks.simulators.genomesim">
+<span id="genomeworks-simulators-genomesim-module"></span><h2>genomeworks.simulators.genomesim module<a class="headerlink" href="#module-genomeworks.simulators.genomesim" title="Permalink to this headline">¶</a></h2>
+<p>Classes to simulate genomes.</p>
+<dl class="class">
+<dt id="genomeworks.simulators.genomesim.GenomeSimulator">
+<em class="property">class </em><code class="sig-prename descclassname">genomeworks.simulators.genomesim.</code><code class="sig-name descname">GenomeSimulator</code><a class="headerlink" href="#genomeworks.simulators.genomesim.GenomeSimulator" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code></p>
+<p>Base class for genome simulators.</p>
+<dl class="method">
+<dt id="genomeworks.simulators.genomesim.GenomeSimulator.build_reference">
+<em class="property">abstract </em><code class="sig-name descname">build_reference</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#genomeworks.simulators.genomesim.GenomeSimulator.build_reference" title="Permalink to this definition">¶</a></dt>
+<dd><p>Abstract method for reference generation.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="genomeworks.simulators.genomesim.MarkovGenomeSimulator">
+<em class="property">class </em><code class="sig-prename descclassname">genomeworks.simulators.genomesim.</code><code class="sig-name descname">MarkovGenomeSimulator</code><a class="headerlink" href="#genomeworks.simulators.genomesim.MarkovGenomeSimulator" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#genomeworks.simulators.genomesim.GenomeSimulator" title="genomeworks.simulators.genomesim.GenomeSimulator"><code class="xref py py-class docutils literal notranslate"><span class="pre">genomeworks.simulators.genomesim.GenomeSimulator</span></code></a></p>
+<p>Simulates genome with a Markovian process.</p>
+<dl class="method">
+<dt id="genomeworks.simulators.genomesim.MarkovGenomeSimulator.build_reference">
+<code class="sig-name descname">build_reference</code><span class="sig-paren">(</span><em class="sig-param">reference_length</em>, <em class="sig-param">transitions</em>, <em class="sig-param">num_threads=None</em><span class="sig-paren">)</span><a class="headerlink" href="#genomeworks.simulators.genomesim.MarkovGenomeSimulator.build_reference" title="Permalink to this definition">¶</a></dt>
+<dd><p>Simulates genome with a Markovian process.</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>reference_length (int): The desired genome length
+transitions: dict of dict with all transition probabilities
+e.g {‘A’: {‘A’:0.1,’C’:0.3’,…}, ‘C’:{‘A’:0.3,…}…}
+num_threads: number of threads to use when computing reference</p>
+</dd>
+<dt>Returns:</dt><dd><p>String corresponding to reference genome. Each character is a
+nucleotide radnomly selected from a uniform, flat distribution.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="genomeworks.simulators.genomesim.PoissonGenomeSimulator">
+<em class="property">class </em><code class="sig-prename descclassname">genomeworks.simulators.genomesim.</code><code class="sig-name descname">PoissonGenomeSimulator</code><a class="headerlink" href="#genomeworks.simulators.genomesim.PoissonGenomeSimulator" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#genomeworks.simulators.genomesim.GenomeSimulator" title="genomeworks.simulators.genomesim.GenomeSimulator"><code class="xref py py-class docutils literal notranslate"><span class="pre">genomeworks.simulators.genomesim.GenomeSimulator</span></code></a></p>
+<p>Simulates genome with poisson process.</p>
+<dl class="method">
+<dt id="genomeworks.simulators.genomesim.PoissonGenomeSimulator.build_reference">
+<code class="sig-name descname">build_reference</code><span class="sig-paren">(</span><em class="sig-param">reference_length</em><span class="sig-paren">)</span><a class="headerlink" href="#genomeworks.simulators.genomesim.PoissonGenomeSimulator.build_reference" title="Permalink to this definition">¶</a></dt>
+<dd><p>Simulates genome with poisson process.</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>reference_length: The desired genome length</p>
+</dd>
+<dt>Returns:</dt><dd><p>String corresponding to reference genome. Each character is a
+nucleotide radnomly selected from a uniform, flat distribution.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-genomeworks.simulators.readsim">
+<span id="genomeworks-simulators-readsim-module"></span><h2>genomeworks.simulators.readsim module<a class="headerlink" href="#module-genomeworks.simulators.readsim" title="Permalink to this headline">¶</a></h2>
+<p>Classes to simulate reads from a known reference, mimicking sequencing errors.</p>
+<dl class="class">
+<dt id="genomeworks.simulators.readsim.NoisyReadSimulator">
+<em class="property">class </em><code class="sig-prename descclassname">genomeworks.simulators.readsim.</code><code class="sig-name descname">NoisyReadSimulator</code><a class="headerlink" href="#genomeworks.simulators.readsim.NoisyReadSimulator" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#genomeworks.simulators.readsim.ReadSimulator" title="genomeworks.simulators.readsim.ReadSimulator"><code class="xref py py-class docutils literal notranslate"><span class="pre">genomeworks.simulators.readsim.ReadSimulator</span></code></a></p>
+<p>Simulate sequencing errors in reads.</p>
+<dl class="method">
+<dt id="genomeworks.simulators.readsim.NoisyReadSimulator.generate_read">
+<code class="sig-name descname">generate_read</code><span class="sig-paren">(</span><em class="sig-param">reference</em>, <em class="sig-param">median_length</em>, <em class="sig-param">snv_error_rate=0.025</em>, <em class="sig-param">insertion_error_rate=0.0125</em>, <em class="sig-param">deletion_error_rate=0.0125</em>, <em class="sig-param">homopolymer_survival_length=4</em>, <em class="sig-param">homopolymer_clip_rate=0.5</em><span class="sig-paren">)</span><a class="headerlink" href="#genomeworks.simulators.readsim.NoisyReadSimulator.generate_read" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate reads.</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>reference (str): The reference nucleotides from which the read is generated
+median_length (int): Median length of generated read
+snv_error_rate (int): the ratio of bases which will be converted to SNVs
+insertion_error_rate (int): the ratio of bases which will be reference insertions in the read
+deletion_error_rate (int): the ratio of bases from the reference which will be deleted
+homopolymer_survival_length: Homopolymers with this length will not be clipped
+homopolymer_clip_rate: bases above this length in a homopolymer will be removed with this probability</p>
+</dd>
+</dl>
+<p>Returns: A read randomly generated from the reference, with noise applied</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="genomeworks.simulators.readsim.ReadSimulator">
+<em class="property">class </em><code class="sig-prename descclassname">genomeworks.simulators.readsim.</code><code class="sig-name descname">ReadSimulator</code><a class="headerlink" href="#genomeworks.simulators.readsim.ReadSimulator" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Base class for read simulator.</p>
+<dl class="method">
+<dt id="genomeworks.simulators.readsim.ReadSimulator.generate_read">
+<em class="property">abstract </em><code class="sig-name descname">generate_read</code><span class="sig-paren">(</span><em class="sig-param">reference</em>, <em class="sig-param">median_length</em>, <em class="sig-param">error_rate</em><span class="sig-paren">)</span><a class="headerlink" href="#genomeworks.simulators.readsim.ReadSimulator.generate_read" title="Permalink to this definition">¶</a></dt>
+<dd><p>Abstract method for read generation.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="genomeworks.simulators.readsim.generate_overlaps">
+<code class="sig-prename descclassname">genomeworks.simulators.readsim.</code><code class="sig-name descname">generate_overlaps</code><span class="sig-paren">(</span><em class="sig-param">seqs</em>, <em class="sig-param">gzip_compressed=True</em><span class="sig-paren">)</span><a class="headerlink" href="#genomeworks.simulators.readsim.generate_overlaps" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a list of overlaps.</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>seqs: list of Seq objects (4-tuple (read_id, sequence, reference_start, reference_end)
+gzip_compressed (bool): True if sequence field in seqs tuples is compressed</p>
+</dd>
+<dt>Returns: list of overlap objects. Overlaps are named tuples with the follwing fields:</dt><dd><ul class="simple">
+<li><p>query_sequence_name</p></li>
+<li><p>query_sequence_length</p></li>
+<li><p>query_start</p></li>
+<li><p>query_end</p></li>
+<li><p>relative_strand</p></li>
+<li><p>target_sequence_name</p></li>
+<li><p>target_sequence_length</p></li>
+<li><p>target_start</p></li>
+<li><p>target_end</p></li>
+<li><p>num_residue_matches</p></li>
+<li><p>alignment_block_length</p></li>
+<li><p>mapping_quality</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="module-genomeworks.simulators">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-genomeworks.simulators" title="Permalink to this headline">¶</a></h2>
+<p>simulator submodule wide initialization.</p>
+</div>
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">GenomeWorks SDK</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2020, NVIDIA Corportation.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/genomeworks.simulators.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

@@ -1,0 +1,268 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>genomeworks.io package &#8212; GenomeWorks SDK 0.5.0 documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="genomeworks-io-package">
+<h1>genomeworks.io package<a class="headerlink" href="#genomeworks-io-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-genomeworks.io.fastaio">
+<span id="genomeworks-io-fastaio-module"></span><h2>genomeworks.io.fastaio module<a class="headerlink" href="#module-genomeworks.io.fastaio" title="Permalink to this headline">¶</a></h2>
+<p>Functions for FASTA file I/O.</p>
+<dl class="function">
+<dt id="genomeworks.io.fastaio.write_fasta">
+<code class="sig-prename descclassname">genomeworks.io.fastaio.</code><code class="sig-name descname">write_fasta</code><span class="sig-paren">(</span><em class="sig-param">seqs</em>, <em class="sig-param">filepath</em>, <em class="sig-param">gzip_compressed=False</em><span class="sig-paren">)</span><a class="headerlink" href="#genomeworks.io.fastaio.write_fasta" title="Permalink to this definition">¶</a></dt>
+<dd><p>Writes a fasta file for sequences.</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>seqs: list of 2-tuples containnig sequnces and their names, e.g [(‘seq1’, ‘ACGTC…’), (‘seq2’, ‘TTGGC…’), …]]
+filepath: path to file for writing out FASTA.
+gzip_compressed bool: If True then the read component of the sequence has been compressed with gzip</p>
+</dd>
+<dt>Returns:</dt><dd><p>None.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="module-genomeworks.io.pafio">
+<span id="genomeworks-io-pafio-module"></span><h2>genomeworks.io.pafio module<a class="headerlink" href="#module-genomeworks.io.pafio" title="Permalink to this headline">¶</a></h2>
+<p>Functions for PAF I/O.</p>
+<dl class="function">
+<dt id="genomeworks.io.pafio.read_paf">
+<code class="sig-prename descclassname">genomeworks.io.pafio.</code><code class="sig-name descname">read_paf</code><span class="sig-paren">(</span><em class="sig-param">filepath</em><span class="sig-paren">)</span><a class="headerlink" href="#genomeworks.io.pafio.read_paf" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read a minimap2 PAF file into a list.</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>filepath (str): Path to read PAF file from</p>
+</dd>
+<dt>Returns:</dt><dd><p>list: List of namedtuples</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="genomeworks.io.pafio.write_paf">
+<code class="sig-prename descclassname">genomeworks.io.pafio.</code><code class="sig-name descname">write_paf</code><span class="sig-paren">(</span><em class="sig-param">records</em>, <em class="sig-param">filepath</em><span class="sig-paren">)</span><a class="headerlink" href="#genomeworks.io.pafio.write_paf" title="Permalink to this definition">¶</a></dt>
+<dd><p>Write a PAF file.</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>records (list): List of PAF namedtuples from read_paf.
+filepath (str): Path to write PAF file to.</p>
+</dd>
+<dt>Returns:</dt><dd><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="class">
+<dt id="genomeworks.io.pafio.Overlap">
+<em class="property">class </em><code class="sig-prename descclassname">genomeworks.io.pafio.</code><code class="sig-name descname">Overlap</code><span class="sig-paren">(</span><em class="sig-param">query_sequence_name</em>, <em class="sig-param">query_sequence_length</em>, <em class="sig-param">query_start</em>, <em class="sig-param">query_end</em>, <em class="sig-param">relative_strand</em>, <em class="sig-param">target_sequence_name</em>, <em class="sig-param">target_sequence_length</em>, <em class="sig-param">target_start</em>, <em class="sig-param">target_end</em>, <em class="sig-param">num_residue_matches</em>, <em class="sig-param">alignment_block_length</em>, <em class="sig-param">mapping_quality</em>, <em class="sig-param">tags</em><span class="sig-paren">)</span><a class="headerlink" href="#genomeworks.io.pafio.Overlap" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></p>
+<dl class="method">
+<dt id="genomeworks.io.pafio.Overlap.alignment_block_length">
+<em class="property">property </em><code class="sig-name descname">alignment_block_length</code><a class="headerlink" href="#genomeworks.io.pafio.Overlap.alignment_block_length" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 10</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="genomeworks.io.pafio.Overlap.mapping_quality">
+<em class="property">property </em><code class="sig-name descname">mapping_quality</code><a class="headerlink" href="#genomeworks.io.pafio.Overlap.mapping_quality" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 11</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="genomeworks.io.pafio.Overlap.num_residue_matches">
+<em class="property">property </em><code class="sig-name descname">num_residue_matches</code><a class="headerlink" href="#genomeworks.io.pafio.Overlap.num_residue_matches" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 9</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="genomeworks.io.pafio.Overlap.query_end">
+<em class="property">property </em><code class="sig-name descname">query_end</code><a class="headerlink" href="#genomeworks.io.pafio.Overlap.query_end" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 3</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="genomeworks.io.pafio.Overlap.query_sequence_length">
+<em class="property">property </em><code class="sig-name descname">query_sequence_length</code><a class="headerlink" href="#genomeworks.io.pafio.Overlap.query_sequence_length" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 1</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="genomeworks.io.pafio.Overlap.query_sequence_name">
+<em class="property">property </em><code class="sig-name descname">query_sequence_name</code><a class="headerlink" href="#genomeworks.io.pafio.Overlap.query_sequence_name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 0</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="genomeworks.io.pafio.Overlap.query_start">
+<em class="property">property </em><code class="sig-name descname">query_start</code><a class="headerlink" href="#genomeworks.io.pafio.Overlap.query_start" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 2</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="genomeworks.io.pafio.Overlap.relative_strand">
+<em class="property">property </em><code class="sig-name descname">relative_strand</code><a class="headerlink" href="#genomeworks.io.pafio.Overlap.relative_strand" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 4</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="genomeworks.io.pafio.Overlap.tags">
+<em class="property">property </em><code class="sig-name descname">tags</code><a class="headerlink" href="#genomeworks.io.pafio.Overlap.tags" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 12</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="genomeworks.io.pafio.Overlap.target_end">
+<em class="property">property </em><code class="sig-name descname">target_end</code><a class="headerlink" href="#genomeworks.io.pafio.Overlap.target_end" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 8</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="genomeworks.io.pafio.Overlap.target_sequence_length">
+<em class="property">property </em><code class="sig-name descname">target_sequence_length</code><a class="headerlink" href="#genomeworks.io.pafio.Overlap.target_sequence_length" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 6</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="genomeworks.io.pafio.Overlap.target_sequence_name">
+<em class="property">property </em><code class="sig-name descname">target_sequence_name</code><a class="headerlink" href="#genomeworks.io.pafio.Overlap.target_sequence_name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 5</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="genomeworks.io.pafio.Overlap.target_start">
+<em class="property">property </em><code class="sig-name descname">target_start</code><a class="headerlink" href="#genomeworks.io.pafio.Overlap.target_start" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 7</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-genomeworks.io.utils">
+<span id="genomeworks-io-utils-module"></span><h2>genomeworks.io.utils module<a class="headerlink" href="#module-genomeworks.io.utils" title="Permalink to this headline">¶</a></h2>
+<p>Utility functions for I/O of custom files.</p>
+<dl class="function">
+<dt id="genomeworks.io.utils.read_poa_group_file">
+<code class="sig-prename descclassname">genomeworks.io.utils.</code><code class="sig-name descname">read_poa_group_file</code><span class="sig-paren">(</span><em class="sig-param">file_path</em>, <em class="sig-param">num_windows=0</em><span class="sig-paren">)</span><a class="headerlink" href="#genomeworks.io.utils.read_poa_group_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Parses data file containing POA groups.</p>
+<dl class="simple">
+<dt>Args:</dt><dd><dl class="simple">
+<dt>file_path<span class="classifier">Path to POA group file.</span></dt><dd><p>File format is as follows -
+&lt;num sequences&gt;
+seq 1…
+seq 2…
+&lt;num sequences&gt;
+seq 1…
+seq 2…
+seq 3…</p>
+</dd>
+<dt>num_windows<span class="classifier">Number of windows to extract from</span></dt><dd><p>file. If requested is more than available
+in file, windows are repoeated in a circular
+loop like fashion.
+0 (default) implies using only those windows
+available in file.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="module-genomeworks.io">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-genomeworks.io" title="Permalink to this headline">¶</a></h2>
+<p>Init file for I/O module.</p>
+</div>
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">GenomeWorks SDK</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2020, NVIDIA Corportation.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/genomeworks.io.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

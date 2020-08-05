@@ -1,0 +1,30 @@
+genomeworks.simulators package
+==============================
+
+Submodules
+----------
+
+genomeworks.simulators.genomesim module
+---------------------------------------
+
+.. automodule:: genomeworks.simulators.genomesim
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+genomeworks.simulators.readsim module
+-------------------------------------
+
+.. automodule:: genomeworks.simulators.readsim
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+Module contents
+---------------
+
+.. automodule:: genomeworks.simulators
+   :members:
+   :undoc-members:
+   :show-inheritance:

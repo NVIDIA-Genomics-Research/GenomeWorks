@@ -1,0 +1,22 @@
+genomeworks package
+===================
+
+Subpackages
+-----------
+
+.. toctree::
+
+   genomeworks.cuda
+   genomeworks.cudaaligner
+   genomeworks.cudapoa
+   genomeworks.io
+   genomeworks.simulators
+   genomeworks.utilities
+
+Module contents
+---------------
+
+.. automodule:: genomeworks
+   :members:
+   :undoc-members:
+   :show-inheritance:

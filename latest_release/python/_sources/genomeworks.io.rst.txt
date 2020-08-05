@@ -1,0 +1,38 @@
+genomeworks.io package
+======================
+
+Submodules
+----------
+
+genomeworks.io.fastaio module
+-----------------------------
+
+.. automodule:: genomeworks.io.fastaio
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+genomeworks.io.pafio module
+---------------------------
+
+.. automodule:: genomeworks.io.pafio
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+genomeworks.io.utils module
+---------------------------
+
+.. automodule:: genomeworks.io.utils
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+Module contents
+---------------
+
+.. automodule:: genomeworks.io
+   :members:
+   :undoc-members:
+   :show-inheritance:

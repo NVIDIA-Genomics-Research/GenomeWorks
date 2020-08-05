@@ -1,0 +1,251 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>genomeworks.cuda package &#8212; GenomeWorks SDK 0.5.0 documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="genomeworks-cuda-package">
+<h1>genomeworks.cuda package<a class="headerlink" href="#genomeworks-cuda-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-genomeworks.cuda.cuda">
+<span id="genomeworks-cuda-cuda-module"></span><h2>genomeworks.cuda.cuda module<a class="headerlink" href="#module-genomeworks.cuda.cuda" title="Permalink to this headline">¶</a></h2>
+<p>Bindings for CUDA.</p>
+<dl class="exception">
+<dt id="genomeworks.cuda.cuda.CudaRuntimeError">
+<em class="property">exception </em><code class="sig-prename descclassname">genomeworks.cuda.cuda.</code><code class="sig-name descname">CudaRuntimeError</code><a class="headerlink" href="#genomeworks.cuda.cuda.CudaRuntimeError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></p>
+<p>Wrapper class for CUDA error handling.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="genomeworks.cuda.cuda.CudaStream">
+<em class="property">class </em><code class="sig-prename descclassname">genomeworks.cuda.cuda.</code><code class="sig-name descname">CudaStream</code><a class="headerlink" href="#genomeworks.cuda.cuda.CudaStream" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Class to abstract the usage of CUDA streams which enable
+easy asynchronous execution of CUDA kernels.</p>
+<dl class="attribute">
+<dt id="genomeworks.cuda.cuda.CudaStream.stream">
+<code class="sig-name descname">stream</code><a class="headerlink" href="#genomeworks.cuda.cuda.CudaStream.stream" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the raw stream representation.</p>
+<dl class="simple">
+<dt>Returns:</dt><dd><p>Raw stream encoded as size_t type</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="genomeworks.cuda.cuda.CudaStream.sync">
+<code class="sig-name descname">sync</code><span class="sig-paren">(</span><em class="sig-param">self</em><span class="sig-paren">)</span><a class="headerlink" href="#genomeworks.cuda.cuda.CudaStream.sync" title="Permalink to this definition">¶</a></dt>
+<dd><p>Synchronize the CUDA stream.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="genomeworks.cuda.cuda.cuda_get_device">
+<code class="sig-prename descclassname">genomeworks.cuda.cuda.</code><code class="sig-name descname">cuda_get_device</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#genomeworks.cuda.cuda.cuda_get_device" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the device for the current CUDA context.</p>
+<dl class="simple">
+<dt>Returns:</dt><dd><p>Device ID for current context.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="genomeworks.cuda.cuda.cuda_get_device_count">
+<code class="sig-prename descclassname">genomeworks.cuda.cuda.</code><code class="sig-name descname">cuda_get_device_count</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#genomeworks.cuda.cuda.cuda_get_device_count" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get total number of CUDA-capable devices available.</p>
+<dl class="simple">
+<dt>Returns:</dt><dd><p>Number of CUDA-capable devices.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="genomeworks.cuda.cuda.cuda_get_mem_info">
+<code class="sig-prename descclassname">genomeworks.cuda.cuda.</code><code class="sig-name descname">cuda_get_mem_info</code><span class="sig-paren">(</span><em class="sig-param">device_id</em><span class="sig-paren">)</span><a class="headerlink" href="#genomeworks.cuda.cuda.cuda_get_mem_info" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get memory information for a specific CUDA-capable device.</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>device_id : ID of CUDA-capable device</p>
+</dd>
+<dt>Returns:</dt><dd><p>A tuple with first element showing available memory and second
+element showing total memory (both in bytes).</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="genomeworks.cuda.cuda.cuda_set_device">
+<code class="sig-prename descclassname">genomeworks.cuda.cuda.</code><code class="sig-name descname">cuda_set_device</code><span class="sig-paren">(</span><em class="sig-param">device_id</em><span class="sig-paren">)</span><a class="headerlink" href="#genomeworks.cuda.cuda.cuda_set_device" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set current CUDA context to a specific device.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-genomeworks.cuda">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-genomeworks.cuda" title="Permalink to this headline">¶</a></h2>
+<p>Init file for cuda package.</p>
+<dl class="exception">
+<dt id="genomeworks.cuda.CudaRuntimeError">
+<em class="property">exception </em><code class="sig-prename descclassname">genomeworks.cuda.</code><code class="sig-name descname">CudaRuntimeError</code><a class="headerlink" href="#genomeworks.cuda.CudaRuntimeError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></p>
+<p>Wrapper class for CUDA error handling.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="genomeworks.cuda.CudaStream">
+<em class="property">class </em><code class="sig-prename descclassname">genomeworks.cuda.</code><code class="sig-name descname">CudaStream</code><a class="headerlink" href="#genomeworks.cuda.CudaStream" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Class to abstract the usage of CUDA streams which enable
+easy asynchronous execution of CUDA kernels.</p>
+<dl class="attribute">
+<dt id="genomeworks.cuda.CudaStream.stream">
+<code class="sig-name descname">stream</code><a class="headerlink" href="#genomeworks.cuda.CudaStream.stream" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the raw stream representation.</p>
+<dl class="simple">
+<dt>Returns:</dt><dd><p>Raw stream encoded as size_t type</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="genomeworks.cuda.CudaStream.sync">
+<code class="sig-name descname">sync</code><span class="sig-paren">(</span><em class="sig-param">self</em><span class="sig-paren">)</span><a class="headerlink" href="#genomeworks.cuda.CudaStream.sync" title="Permalink to this definition">¶</a></dt>
+<dd><p>Synchronize the CUDA stream.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="genomeworks.cuda.cuda_get_device_count">
+<code class="sig-prename descclassname">genomeworks.cuda.</code><code class="sig-name descname">cuda_get_device_count</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#genomeworks.cuda.cuda_get_device_count" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get total number of CUDA-capable devices available.</p>
+<dl class="simple">
+<dt>Returns:</dt><dd><p>Number of CUDA-capable devices.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="genomeworks.cuda.cuda_set_device">
+<code class="sig-prename descclassname">genomeworks.cuda.</code><code class="sig-name descname">cuda_set_device</code><span class="sig-paren">(</span><em class="sig-param">device_id</em><span class="sig-paren">)</span><a class="headerlink" href="#genomeworks.cuda.cuda_set_device" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set current CUDA context to a specific device.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="genomeworks.cuda.cuda_get_device">
+<code class="sig-prename descclassname">genomeworks.cuda.</code><code class="sig-name descname">cuda_get_device</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#genomeworks.cuda.cuda_get_device" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the device for the current CUDA context.</p>
+<dl class="simple">
+<dt>Returns:</dt><dd><p>Device ID for current context.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="genomeworks.cuda.cuda_get_mem_info">
+<code class="sig-prename descclassname">genomeworks.cuda.</code><code class="sig-name descname">cuda_get_mem_info</code><span class="sig-paren">(</span><em class="sig-param">device_id</em><span class="sig-paren">)</span><a class="headerlink" href="#genomeworks.cuda.cuda_get_mem_info" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get memory information for a specific CUDA-capable device.</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>device_id : ID of CUDA-capable device</p>
+</dd>
+<dt>Returns:</dt><dd><p>A tuple with first element showing available memory and second
+element showing total memory (both in bytes).</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">GenomeWorks SDK</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2020, NVIDIA Corportation.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/genomeworks.cuda.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

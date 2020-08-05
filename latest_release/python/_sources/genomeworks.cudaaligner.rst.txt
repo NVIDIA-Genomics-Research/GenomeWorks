@@ -1,0 +1,22 @@
+genomeworks.cudaaligner package
+===============================
+
+Submodules
+----------
+
+genomeworks.cudaaligner.cudaaligner module
+------------------------------------------
+
+.. automodule:: genomeworks.cudaaligner.cudaaligner
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+Module contents
+---------------
+
+.. automodule:: genomeworks.cudaaligner
+   :members:
+   :undoc-members:
+   :show-inheritance:

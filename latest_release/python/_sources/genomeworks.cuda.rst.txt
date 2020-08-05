@@ -1,0 +1,22 @@
+genomeworks.cuda package
+========================
+
+Submodules
+----------
+
+genomeworks.cuda.cuda module
+----------------------------
+
+.. automodule:: genomeworks.cuda.cuda
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+Module contents
+---------------
+
+.. automodule:: genomeworks.cuda
+   :members:
+   :undoc-members:
+   :show-inheritance:
