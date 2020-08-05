@@ -1,24 +1,33 @@
 /*
-* Copyright (c) 2019, NVIDIA CORPORATION.  All rights reserved.
+* Copyright 2019-2020 NVIDIA CORPORATION.
 *
-* NVIDIA CORPORATION and its licensors retain all intellectual property
-* and proprietary rights in and to this software, related documentation
-* and any modifications thereto.  Any use, reproduction, disclosure or
-* distribution of this software and related documentation without an express
-* license agreement from NVIDIA CORPORATION is strictly prohibited.
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
 */
 
 #pragma once
 
 #include <cstdint>
 #include <vector>
-#include <claragenomics/cudamapper/sketch_element.hpp>
-#include <claragenomics/cudamapper/types.hpp>
+#include <claraparabricks/genomeworks/cudamapper/sketch_element.hpp>
+#include <claraparabricks/genomeworks/cudamapper/types.hpp>
+#include <claraparabricks/genomeworks/utils/device_buffer.hpp>
 
-#include <claragenomics/utils/device_buffer.cuh>
-
-namespace claragenomics
+namespace claraparabricks
 {
+
+namespace genomeworks
+{
+
 namespace cudamapper
 {
 
@@ -81,14 +90,17 @@ public:
     /// \param read_id_to_basepairs_section_h for each read_id points to the section of merged_basepairs_d that belong to that read_id (host memory)
     /// \param read_id_to_basepairs_section_h for each read_id points to the section of merged_basepairs_d that belong to that read_id (device memory)
     /// \param hash_minimizers if true, apply a hash function to the representations
-    static GeneratedSketchElements generate_sketch_elements(const std::uint64_t number_of_reads_to_add,
+    /// \param cuda_stream CUDA stream on which the work is to be done
+    static GeneratedSketchElements generate_sketch_elements(DefaultDeviceAllocator allocator,
+                                                            const std::uint64_t number_of_reads_to_add,
                                                             const std::uint64_t minimizer_size,
                                                             const std::uint64_t window_size,
                                                             const std::uint64_t read_id_of_first_read,
                                                             const device_buffer<char>& merged_basepairs_d,
                                                             const std::vector<ArrayBlock>& read_id_to_basepairs_section_h,
                                                             const device_buffer<ArrayBlock>& read_id_to_basepairs_section_d,
-                                                            const bool hash_representations = true);
+                                                            const bool hash_representations = true,
+                                                            const cudaStream_t cuda_stream  = 0);
 
 private:
     representation_t representation_;
@@ -98,4 +110,7 @@ private:
 };
 
 } // namespace cudamapper
-} // namespace claragenomics
+
+} // namespace genomeworks
+
+} // namespace claraparabricks

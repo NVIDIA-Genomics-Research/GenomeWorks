@@ -1,13 +1,22 @@
 #!/bin/bash
+
 #
-# Copyright (c) 2019, NVIDIA CORPORATION.  All rights reserved.
+# Copyright 2019-2020 NVIDIA CORPORATION.
 #
-# NVIDIA CORPORATION and its licensors retain all intellectual property
-# and proprietary rights in and to this software, related documentation
-# and any modifications thereto.  Any use, reproduction, disclosure or
-# distribution of this software and related documentation without an express
-# license agreement from NVIDIA CORPORATION is strictly prohibited.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+
 
 DOCKER_IMAGE="gpuci/clara-genomics-base:cuda10.0-ubuntu16.04-gcc5-py3.7"
 REPO_PATH=${PWD}
@@ -78,10 +87,12 @@ BUILD_SCRIPT="#!/bin/bash
 set -e
 WORKSPACE=${REPO_PATH_IN_CONTAINER}
 PREBUILD_SCRIPT=${REPO_PATH_IN_CONTAINER}/ci/gpu/prebuild.sh
+PREBUILD_LOCAL=${REPO_PATH_IN_CONTAINER}/ci/local/prebuild.sh
 BUILD_SCRIPT=${REPO_PATH_IN_CONTAINER}/ci/gpu/build.sh
 if [ -f \${PREBUILD_SCRIPT} ]; then
     source \${PREBUILD_SCRIPT}
 fi
+[ -f \${PREBUILD_LOCAL} ] && source \${PREBUILD_LOCAL}
 yes | source \${BUILD_SCRIPT}
 "
 
@@ -125,10 +136,25 @@ fi
 
 # Run the generated build script in a container
 sudo docker pull "${DOCKER_IMAGE}"
-sudo docker run --runtime=nvidia --rm -it -e NVIDIA_VISIBLE_DEVICES="${NVIDIA_VISIBLE_DEVICES}" \
-       -u "$(id -u)":"$(id -g)" \
-       -v "${REPO_PATH}":"${REPO_PATH_IN_CONTAINER}" \
-       -v "$PASSWD_FILE":/etc/passwd:ro \
-       -v "$GROUP_FILE":/etc/group:ro \
-       --cap-add=SYS_PTRACE \
-       "${DOCKER_IMAGE}" bash -c "${COMMAND}"
+
+
+# Compare Docker version to find Nvidia Container Toolkit support.
+# Please refer https://github.com/NVIDIA/nvidia-docker
+DOCKER_VERSION_WITH_GPU_SUPPORT="19.03.0"
+DOCKER_VERSION=$(docker version | grep -i version | head -1 | awk '{print $2'})
+
+PARAM_RUNTIME="--runtime=nvidia"
+PARAM_GPUS="-e NVIDIA_VISIBLE_DEVICES=${NVIDIA_VISIBLE_DEVICES}"
+
+if [ "$DOCKER_VERSION_WITH_GPU_SUPPORT" == "$(echo -e "$DOCKER_VERSION\n$DOCKER_VERSION_WITH_GPU_SUPPORT" | sort -V | head -1)" ]; then
+    PARAM_RUNTIME=""
+    PARAM_GPUS="--gpus ${NVIDIA_VISIBLE_DEVICES}"
+fi
+
+sudo docker run $PARAM_RUNTIME --rm -it $PARAM_GPUS \
+    -u "$(id -u)":"$(id -g)" \
+    -v "${REPO_PATH}":"${REPO_PATH_IN_CONTAINER}" \
+    -v "$PASSWD_FILE":/etc/passwd:ro \
+    -v "$GROUP_FILE":/etc/group:ro \
+    --cap-add=SYS_PTRACE \
+    "${DOCKER_IMAGE}" bash -c "${COMMAND}"

@@ -1,18 +1,22 @@
 #
-# Copyright (c) 2019, NVIDIA CORPORATION.  All rights reserved.
+# Copyright 2019-2020 NVIDIA CORPORATION.
 #
-# NVIDIA CORPORATION and its licensors retain all intellectual property
-# and proprietary rights in and to this software, related documentation
-# and any modifications thereto.  Any use, reproduction, disclosure or
-# distribution of this software and related documentation without an express
-# license agreement from NVIDIA CORPORATION is strictly prohibited.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+
 
 # Add 3rd party build dependencies.
-if (NOT TARGET bioparser)
-    add_subdirectory(3rdparty/bioparser EXCLUDE_FROM_ALL)
-endif()
-
 get_property(enable_tests GLOBAL PROPERTY enable_tests)
 if (enable_tests AND NOT TARGET gtest)
     add_subdirectory(3rdparty/googletest EXCLUDE_FROM_ALL)
@@ -38,5 +42,11 @@ if (NOT TARGET spoa)
 endif()
 
 set(CUB_DIR ${PROJECT_SOURCE_DIR}/3rdparty/cub CACHE STRING
-	  "Path to cub repo")
+    "Path to cub repo")
+add_library(cub INTERFACE IMPORTED)
+#target_include_directories(cub INTERFACE ${CUB_DIR}>) does not work with
+#cmake before 3.11, use the following for now:
+set_property(TARGET cub APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES "${CUB_DIR}")
 
+set(KSEQPP_DIR ${PROJECT_SOURCE_DIR}/3rdparty/kseqpp/src CACHE STRING
+    "Path to kseqpp repo")

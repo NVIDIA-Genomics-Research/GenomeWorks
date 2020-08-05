@@ -1,20 +1,29 @@
 /*
-* Copyright (c) 2019, NVIDIA CORPORATION.  All rights reserved.
+* Copyright 2019-2020 NVIDIA CORPORATION.
 *
-* NVIDIA CORPORATION and its licensors retain all intellectual property
-* and proprietary rights in and to this software, related documentation
-* and any modifications thereto.  Any use, reproduction, disclosure or
-* distribution of this software and related documentation without an express
-* license agreement from NVIDIA CORPORATION is strictly prohibited.
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
 */
 
 #include "aligner_global_hirschberg_myers.hpp"
 #include "hirschberg_myers_gpu.cuh"
 #include "batched_device_matrices.cuh"
 
-#include <claragenomics/utils/mathutils.hpp>
+#include <claraparabricks/genomeworks/utils/mathutils.hpp>
 
-namespace claragenomics
+namespace claraparabricks
+{
+
+namespace genomeworks
 {
 
 namespace cudaaligner
@@ -25,12 +34,12 @@ static constexpr int32_t hirschberg_myers_switch_to_myers_size = 63; // ideally 
 
 struct AlignerGlobalHirschbergMyers::Workspace
 {
-    Workspace(int32_t max_alignments, int32_t max_n_words, int32_t max_target_length, int32_t switch_to_myers_size, cudaStream_t stream)
-        : stackbuffer(max_alignments * hirschberg_myers_stackbuffer_size)
-        , pvs(max_alignments, max_n_words * (switch_to_myers_size + 1), stream)
-        , mvs(max_alignments, max_n_words * (switch_to_myers_size + 1), stream)
-        , scores(max_alignments, std::max(max_n_words * (switch_to_myers_size + 1), (max_target_length + 1) * 2), stream)
-        , query_patterns(max_alignments, max_n_words * 8, stream)
+    Workspace(int32_t max_alignments, int32_t max_n_words, int32_t max_target_length, int32_t switch_to_myers_size, DefaultDeviceAllocator allocator, cudaStream_t stream)
+        : stackbuffer(max_alignments * hirschberg_myers_stackbuffer_size, allocator, stream)
+        , pvs(max_alignments, max_n_words * (switch_to_myers_size + 1), allocator, stream)
+        , mvs(max_alignments, max_n_words * (switch_to_myers_size + 1), allocator, stream)
+        , scores(max_alignments, std::max(max_n_words * (switch_to_myers_size + 1), (max_target_length + 1) * 2), allocator, stream)
+        , query_patterns(max_alignments, max_n_words * 8, allocator, stream)
     {
         assert(switch_to_myers_size >= 1);
     }
@@ -41,11 +50,11 @@ struct AlignerGlobalHirschbergMyers::Workspace
     batched_device_matrices<hirschbergmyers::WordType> query_patterns;
 };
 
-AlignerGlobalHirschbergMyers::AlignerGlobalHirschbergMyers(int32_t max_query_length, int32_t max_target_length, int32_t max_alignments, cudaStream_t stream, int32_t device_id)
-    : AlignerGlobal(max_query_length, max_target_length, max_alignments, stream, device_id)
+AlignerGlobalHirschbergMyers::AlignerGlobalHirschbergMyers(int32_t max_query_length, int32_t max_target_length, int32_t max_alignments, DefaultDeviceAllocator allocator, cudaStream_t stream, int32_t device_id)
+    : AlignerGlobal(max_query_length, max_target_length, max_alignments, allocator, stream, device_id)
 {
     scoped_device_switch dev(device_id);
-    workspace_ = std::make_unique<Workspace>(max_alignments, ceiling_divide<int32_t>(max_query_length, sizeof(hirschbergmyers::WordType)), max_target_length, hirschberg_myers_switch_to_myers_size, stream);
+    workspace_ = std::make_unique<Workspace>(max_alignments, ceiling_divide<int32_t>(max_query_length, sizeof(hirschbergmyers::WordType)), max_target_length, hirschberg_myers_switch_to_myers_size, allocator, stream);
 }
 
 AlignerGlobalHirschbergMyers::~AlignerGlobalHirschbergMyers()
@@ -66,4 +75,7 @@ void AlignerGlobalHirschbergMyers::run_alignment(int8_t* results_d, int32_t* res
 }
 
 } // namespace cudaaligner
-} // namespace claragenomics
+
+} // namespace genomeworks
+
+} // namespace claraparabricks

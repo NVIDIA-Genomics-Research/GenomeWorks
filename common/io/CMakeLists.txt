@@ -1,24 +1,34 @@
 #
-# Copyright (c) 2019, NVIDIA CORPORATION.  All rights reserved.
+# Copyright 2019-2020 NVIDIA CORPORATION.
 #
-# NVIDIA CORPORATION and its licensors retain all intellectual property
-# and proprietary rights in and to this software, related documentation
-# and any modifications thereto.  Any use, reproduction, disclosure or
-# distribution of this software and related documentation without an express
-# license agreement from NVIDIA CORPORATION is strictly prohibited.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 #
 
-project(cgaio)
 
-get_property(cga_library_type GLOBAL PROPERTY cga_library_type)
-add_library(${PROJECT_NAME} ${cga_library_type}
+
+project(gwio)
+
+get_property(gw_library_type GLOBAL PROPERTY gw_library_type)
+add_library(${PROJECT_NAME} ${gw_library_type}
         src/fasta_parser.cpp
-        src/hts_fasta_parser.cpp)
-target_link_libraries(${PROJECT_NAME} PUBLIC hts)
+        src/kseqpp_fasta_parser.cpp)
+target_link_libraries(${PROJECT_NAME} PUBLIC gwbase z)
 
-add_doxygen_source_dir(${CMAKE_CURRENT_SOURCE_DIR}/include/claragenomics/io)
+add_doxygen_source_dir(${CMAKE_CURRENT_SOURCE_DIR}/include/claraparabricks/genomeworks/io)
 
 target_include_directories(${PROJECT_NAME}
+    PRIVATE
+        ${KSEQPP_DIR}
     PUBLIC 
         $<INSTALL_INTERFACE:include>    
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
@@ -35,4 +45,4 @@ install(DIRECTORY include/ DESTINATION include)
 install(EXPORT ${PROJECT_NAME} DESTINATION cmake)
 
 # Add auto formatting.
-cga_enable_auto_formatting("${CMAKE_CURRENT_SOURCE_DIR}")
+gw_enable_auto_formatting("${CMAKE_CURRENT_SOURCE_DIR}")

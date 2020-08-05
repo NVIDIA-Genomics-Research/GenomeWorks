@@ -1,20 +1,29 @@
 /*
-* Copyright (c) 2019, NVIDIA CORPORATION.  All rights reserved.
+* Copyright 2019-2020 NVIDIA CORPORATION.
 *
-* NVIDIA CORPORATION and its licensors retain all intellectual property
-* and proprietary rights in and to this software, related documentation
-* and any modifications thereto.  Any use, reproduction, disclosure or
-* distribution of this software and related documentation without an express
-* license agreement from NVIDIA CORPORATION is strictly prohibited.
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
 */
 
 #include "aligner_global_myers.hpp"
 #include "myers_gpu.cuh"
 #include "batched_device_matrices.cuh"
 
-#include <claragenomics/utils/mathutils.hpp>
+#include <claraparabricks/genomeworks/utils/mathutils.hpp>
 
-namespace claragenomics
+namespace claraparabricks
+{
+
+namespace genomeworks
 {
 
 namespace cudaaligner
@@ -22,11 +31,11 @@ namespace cudaaligner
 
 struct AlignerGlobalMyers::Workspace
 {
-    Workspace(int32_t max_alignments, int32_t max_n_words, int32_t max_target_length, cudaStream_t stream)
-        : pvs(max_alignments, max_n_words * (max_target_length + 1), stream)
-        , mvs(max_alignments, max_n_words * (max_target_length + 1), stream)
-        , scores(max_alignments, max_n_words * (max_target_length + 1), stream)
-        , query_patterns(max_alignments, max_n_words * 4, stream)
+    Workspace(int32_t max_alignments, int32_t max_n_words, int32_t max_target_length, DefaultDeviceAllocator allocator, cudaStream_t stream)
+        : pvs(max_alignments, max_n_words * (max_target_length + 1), allocator, stream)
+        , mvs(max_alignments, max_n_words * (max_target_length + 1), allocator, stream)
+        , scores(max_alignments, max_n_words * (max_target_length + 1), allocator, stream)
+        , query_patterns(max_alignments, max_n_words * 4, allocator, stream)
     {
     }
     batched_device_matrices<myers::WordType> pvs;
@@ -35,12 +44,12 @@ struct AlignerGlobalMyers::Workspace
     batched_device_matrices<myers::WordType> query_patterns;
 };
 
-AlignerGlobalMyers::AlignerGlobalMyers(int32_t max_query_length, int32_t max_target_length, int32_t max_alignments, cudaStream_t stream, int32_t device_id)
-    : AlignerGlobal(max_query_length, max_target_length, max_alignments, stream, device_id)
+AlignerGlobalMyers::AlignerGlobalMyers(int32_t max_query_length, int32_t max_target_length, int32_t max_alignments, DefaultDeviceAllocator allocator, cudaStream_t stream, int32_t device_id)
+    : AlignerGlobal(max_query_length, max_target_length, max_alignments, allocator, stream, device_id)
     , workspace_()
 {
     scoped_device_switch dev(device_id);
-    workspace_ = std::make_unique<Workspace>(max_alignments, ceiling_divide<int32_t>(max_query_length, sizeof(myers::WordType)), max_target_length, stream);
+    workspace_ = std::make_unique<Workspace>(max_alignments, ceiling_divide<int32_t>(max_query_length, CHAR_BIT * sizeof(myers::WordType)), max_target_length, allocator, stream);
 }
 
 AlignerGlobalMyers::~AlignerGlobalMyers()
@@ -60,4 +69,7 @@ void AlignerGlobalMyers::run_alignment(int8_t* results_d, int32_t* result_length
 }
 
 } // namespace cudaaligner
-} // namespace claragenomics
+
+} // namespace genomeworks
+
+} // namespace claraparabricks

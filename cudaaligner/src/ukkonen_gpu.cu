@@ -1,17 +1,23 @@
 /*
-* Copyright (c) 2019, NVIDIA CORPORATION.  All rights reserved.
+* Copyright 2019-2020 NVIDIA CORPORATION.
 *
-* NVIDIA CORPORATION and its licensors retain all intellectual property
-* and proprietary rights in and to this software, related documentation
-* and any modifications thereto.  Any use, reproduction, disclosure or
-* distribution of this software and related documentation without an express
-* license agreement from NVIDIA CORPORATION is strictly prohibited.
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
 */
 
 #include "ukkonen_gpu.cuh"
 #include "batched_device_matrices.cuh"
-#include <claragenomics/cudaaligner/cudaaligner.hpp>
-#include <claragenomics/utils/limits.cuh>
+#include <claraparabricks/genomeworks/cudaaligner/cudaaligner.hpp>
+#include <claraparabricks/genomeworks/utils/limits.cuh>
 
 #include <limits>
 #include <cstdint>
@@ -19,12 +25,17 @@
 #include <cassert>
 #include <thrust/tuple.h>
 
-#define CGA_UKKONEN_MAX_THREADS_PER_BLOCK 1024
+#define GW_UKKONEN_MAX_THREADS_PER_BLOCK 1024
 
-namespace claragenomics
+namespace claraparabricks
 {
+
+namespace genomeworks
+{
+
 namespace cudaaligner
 {
+
 namespace kernels
 {
 
@@ -49,7 +60,7 @@ __device__ thrust::tuple<int, int> to_band_indices(int i, int j, int p)
 }
 
 #ifndef NDEBUG
-__launch_bounds__(CGA_UKKONEN_MAX_THREADS_PER_BLOCK) // Workaround for a register allocation problem when compiled with -g
+__launch_bounds__(GW_UKKONEN_MAX_THREADS_PER_BLOCK) // Workaround for a register allocation problem when compiled with -g
 #endif
     __global__ void ukkonen_backtrace_kernel(int8_t* paths_base, int32_t* lengths, int32_t max_path_length, batched_device_matrices<nw_score_t>::device_interface* s, int32_t const* sequence_lengths_d, int32_t n_alignments, int32_t p)
 {
@@ -66,7 +77,7 @@ __launch_bounds__(CGA_UKKONEN_MAX_THREADS_PER_BLOCK) // Workaround for a registe
     if (id >= n_alignments)
         return;
 
-    CGA_CONSTEXPR nw_score_t max = numeric_limits<nw_score_t>::max() - 1;
+    GW_CONSTEXPR nw_score_t max = numeric_limits<nw_score_t>::max() - 1;
 
     int32_t m        = sequence_lengths_d[2 * id] + 1;
     int32_t n        = sequence_lengths_d[2 * id + 1] + 1;
@@ -142,7 +153,7 @@ __launch_bounds__(CGA_UKKONEN_MAX_THREADS_PER_BLOCK) // Workaround for a registe
 
 __device__ void ukkonen_compute_score_matrix_odd(device_matrix_view<nw_score_t>& scores, int32_t kmax, int32_t k, int32_t m, int32_t n, char const* query, char const* target, int32_t max_target_query_length, int32_t p, int32_t l)
 {
-    CGA_CONSTEXPR nw_score_t max = numeric_limits<nw_score_t>::max() - 1;
+    GW_CONSTEXPR nw_score_t max = numeric_limits<nw_score_t>::max() - 1;
     while (k < kmax)
     {
         int32_t const lmin = abs(2 * k + 1 - p);
@@ -162,7 +173,7 @@ __device__ void ukkonen_compute_score_matrix_odd(device_matrix_view<nw_score_t>&
 
 __device__ void ukkonen_compute_score_matrix_even(device_matrix_view<nw_score_t>& scores, int32_t kmax, int32_t k, int32_t m, int32_t n, char const* query, char const* target, int32_t max_target_query_length, int32_t p, int32_t l)
 {
-    CGA_CONSTEXPR nw_score_t max = numeric_limits<nw_score_t>::max() - 1;
+    GW_CONSTEXPR nw_score_t max = numeric_limits<nw_score_t>::max() - 1;
     while (k < kmax)
     {
         int32_t const lmin = abs(2 * k - p);
@@ -182,7 +193,7 @@ __device__ void ukkonen_compute_score_matrix_even(device_matrix_view<nw_score_t>
 
 __device__ void ukkonen_init_score_matrix(device_matrix_view<nw_score_t>& scores, int32_t k, int32_t p)
 {
-    CGA_CONSTEXPR nw_score_t max = numeric_limits<nw_score_t>::max() - 1;
+    GW_CONSTEXPR nw_score_t max = numeric_limits<nw_score_t>::max() - 1;
     while (k < scores.num_rows())
     {
         for (int32_t l = 0; l < scores.num_cols(); ++l)
@@ -203,7 +214,7 @@ __device__ void ukkonen_init_score_matrix(device_matrix_view<nw_score_t>& scores
 }
 
 #ifndef NDEBUG
-__launch_bounds__(CGA_UKKONEN_MAX_THREADS_PER_BLOCK) // Workaround for a register allocation problem when compiled with -g
+__launch_bounds__(GW_UKKONEN_MAX_THREADS_PER_BLOCK) // Workaround for a register allocation problem when compiled with -g
 #endif
     __global__ void ukkonen_compute_score_matrix(batched_device_matrices<nw_score_t>::device_interface* s, char const* sequences_d, int32_t const* sequence_lengths_d, int32_t max_target_query_length, int32_t p, int32_t max_cols)
 {
@@ -250,7 +261,7 @@ __launch_bounds__(CGA_UKKONEN_MAX_THREADS_PER_BLOCK) // Workaround for a registe
     }
 }
 
-} // end namespace kernels
+} // namespace kernels
 
 dim3 calc_blocks(dim3 const& n_threads, dim3 const& blocksize)
 {
@@ -265,7 +276,7 @@ constexpr int32_t calc_good_blockdim(int32_t n)
 {
     constexpr int32_t warpsize = 32;
     int32_t i                  = n + (warpsize - n % warpsize);
-    return i > CGA_UKKONEN_MAX_THREADS_PER_BLOCK ? CGA_UKKONEN_MAX_THREADS_PER_BLOCK : i;
+    return i > GW_UKKONEN_MAX_THREADS_PER_BLOCK ? GW_UKKONEN_MAX_THREADS_PER_BLOCK : i;
 }
 
 void ukkonen_compute_score_matrix_gpu(batched_device_matrices<nw_score_t>& score_matrices, char const* sequences_d, int32_t const* sequence_lengths_d, int32_t max_length_difference, int32_t max_target_query_length, int32_t n_alignments, int32_t p, cudaStream_t stream)
@@ -284,13 +295,13 @@ void ukkonen_compute_score_matrix_gpu(batched_device_matrices<nw_score_t>& score
     dim3 const blocks = dim3(1, n_alignments, 1);
 
     ukkonen_compute_score_matrix<<<blocks, compute_blockdims, 0, stream>>>(score_matrices.get_device_interface(), sequences_d, sequence_lengths_d, max_target_query_length, p, max_cols);
-    CGA_CU_CHECK_ERR(cudaPeekAtLastError());
+    GW_CU_CHECK_ERR(cudaPeekAtLastError());
 }
 
 void ukkonen_backtrace_gpu(int8_t* paths_d, int32_t* path_lengths_d, int32_t max_path_length, batched_device_matrices<nw_score_t>& scores, int32_t const* sequence_lengths_d, int32_t n_alignments, int32_t p, cudaStream_t stream)
 {
     kernels::ukkonen_backtrace_kernel<<<n_alignments, 1, 0, stream>>>(paths_d, path_lengths_d, max_path_length, scores.get_device_interface(), sequence_lengths_d, n_alignments, p);
-    CGA_CU_CHECK_ERR(cudaPeekAtLastError());
+    GW_CU_CHECK_ERR(cudaPeekAtLastError());
 }
 
 void ukkonen_gpu(int8_t* paths_d, int32_t* path_lengths_d, int32_t max_path_length,
@@ -323,5 +334,8 @@ size_t ukkonen_max_score_matrix_size(int32_t max_query_length, int32_t max_targe
     return bw * (n + m);
 }
 
-} // end namespace cudaaligner
-} // end namespace claragenomics
+} // namespace cudaaligner
+
+} // namespace genomeworks
+
+} // namespace claraparabricks

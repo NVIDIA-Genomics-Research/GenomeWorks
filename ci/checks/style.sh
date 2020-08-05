@@ -1,13 +1,22 @@
 #!/bin/bash
+
 #
-# Copyright (c) 2019, NVIDIA CORPORATION.  All rights reserved.
+# Copyright 2019-2020 NVIDIA CORPORATION.
 #
-# NVIDIA CORPORATION and its licensors retain all intellectual property
-# and proprietary rights in and to this software, related documentation
-# and any modifications thereto.  Any use, reproduction, disclosure or
-# distribution of this software and related documentation without an express
-# license agreement from NVIDIA CORPORATION is strictly prohibited.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+
 
 # Ignore errors and set path
 set -e
@@ -38,17 +47,18 @@ source ci/common/prep-init-env.sh ${WORKSPACE}
 logger "Run Copyright header check..."
 ./ci/checks/check_copyright.py
 
-# Run style check
-logger "Run Python formatting check..."
-python -m pip install -r ./pyclaragenomics/requirements.txt
-flake8 pyclaragenomics/
+# Python
+logger "Run Python/Cython formatting check..."
+python -m pip install -r ./pygenomeworks/python-style-requirements.txt
+source pygenomeworks/style_check
 
+# C++
 logger "Run C++ formatting check..."
 mkdir --parents ${WORKSPACE}/build
 cd ${WORKSPACE}/build
 
-# Initialize CMake
-cmake .. -DCMAKE_BUILD_TYPE=Release -Dcga_enable_tests=ON -Dcga_enable_benchmarks=ON
-
-# Run format check
+cmake .. -DCMAKE_BUILD_TYPE=Release -Dgw_enable_tests=ON -Dgw_enable_benchmarks=ON
 make check-format
+
+logger "Run C++ documentation generation..."
+make docs

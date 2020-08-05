@@ -1,17 +1,30 @@
 #
-# Copyright (c) 2019, NVIDIA CORPORATION.  All rights reserved.
+# Copyright 2019-2020 NVIDIA CORPORATION.
 #
-# NVIDIA CORPORATION and its licensors retain all intellectual property
-# and proprietary rights in and to this software, related documentation
-# and any modifications thereto.  Any use, reproduction, disclosure or
-# distribution of this software and related documentation without an express
-# license agreement from NVIDIA CORPORATION is strictly prohibited.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+
 
 project(cudamapper)
 
 # Process data subdirectory first
 add_subdirectory(data)
+
+GitVersion()
+
+configure_file(${CMAKE_SOURCE_DIR}/common/base/src/version.cpp.in
+                ${CMAKE_CURRENT_BINARY_DIR}/version.cpp)
 
 find_package(CUDA 9.0 QUIET REQUIRED)
 
@@ -20,65 +33,70 @@ if(NOT ${CUDA_FOUND})
 else()
     message(STATUS "Using CUDA ${CUDA_VERSION} from ${CUDA_TOOLKIT_ROOT_DIR}")
     set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -lineinfo --expt-extended-lambda -use_fast_math -Xcompiler -Wall,-Wno-pedantic -std=c++14")
+    # Determine arch flags
+    validate_boolean(gw_cuda_gen_all_arch)
+    if (gw_cuda_gen_all_arch)
+        CUDA_SELECT_NVCC_ARCH_FLAGS(ARCH_FLAGS "Common")
+    else()
+        CUDA_SELECT_NVCC_ARCH_FLAGS(ARCH_FLAGS "Auto")
+    endif()
+    set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} ${ARCH_FLAGS}")
+    message(STATUS "nvcc flags for cudamapper: ${CUDA_NVCC_FLAGS}")
 endif()
 
-cuda_add_library(minimizer
-        src/minimizer.cu)
-target_include_directories(minimizer PUBLIC include)
-target_link_libraries(minimizer logging pthread utils)
-target_compile_options(minimizer PRIVATE -Werror)
-
-cuda_add_library(index_gpu
+cuda_add_library(cudamapper
+        src/application_parameters.cpp
+        src/cudamapper.cpp
+        src/index_batcher.cu
+        src/index_descriptor.cpp
         src/index.cu
+        src/index_cache.cu
         src/index_gpu.cu
-        src/minimizer.cu)
-target_include_directories(index_gpu PUBLIC include)
-target_link_libraries(index_gpu logging minimizer pthread utils cgaio)
-target_compile_options(index_gpu PRIVATE -Werror)
+        src/index_host_copy.cu
+        src/minimizer.cu
+        src/matcher.cu
+        src/matcher_gpu.cu
+        src/cudamapper_utils.cpp
+        src/overlapper.cpp
+        src/overlapper_triggered.cu
+        src/utils.cpp
+        ${CMAKE_CURRENT_BINARY_DIR}/version.cpp)
 
-cuda_add_library(matcher_gpu
-        src/matcher_gpu.cu)
-target_include_directories(matcher_gpu PUBLIC include)
-target_link_libraries(matcher_gpu logging utils cgaio)
-target_compile_options(matcher_gpu PRIVATE -Werror)
-
-add_library(cudamapper_utils
-        src/cudamapper_utils.cpp)
-target_include_directories(cudamapper_utils PUBLIC include)
-
-cuda_add_library(overlapper_triggerred
-        src/overlapper_triggered.cu)
-target_include_directories(overlapper_triggerred PUBLIC include ${CUB_DIR})
-target_link_libraries(overlapper_triggerred logging utils cgaio)
-target_compile_options(overlapper_triggerred PRIVATE -Werror)
+target_include_directories(cudamapper
+    PUBLIC
+        $<INSTALL_INTERFACE:include>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+)
+target_link_libraries(cudamapper gwbase gwio cub)
+target_compile_options(cudamapper PRIVATE -Werror)
 
 add_doxygen_source_dir(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
-cuda_add_executable(cudamapper
-        src/cudamapper.cpp
+cuda_add_executable(cudamapper-bin
         src/main.cu
-        src/matcher.cu
-        src/overlapper.cpp
 )
 
-target_compile_options(cudamapper PRIVATE -Werror)
+target_compile_options(cudamapper-bin PRIVATE -Werror)
+target_link_libraries(cudamapper-bin cudamapper cudaaligner)
+set_target_properties(cudamapper-bin PROPERTIES OUTPUT_NAME cudamapper)
 
-target_include_directories(cudamapper
-    PUBLIC 
-        $<INSTALL_INTERFACE:include>    
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-)
-
-target_link_libraries(cudamapper utils index_gpu matcher_gpu logging overlapper_triggerred cudamapper_utils)
 
 # Add tests folder
 add_subdirectory(tests)
+add_subdirectory(samples)
 
-install(TARGETS cudamapper 
+install(TARGETS cudamapper
     EXPORT cudamapper
-    DESTINATION bin
+    DESTINATION lib
+    INCLUDES DESTINATION include
 )
+install(DIRECTORY include/ DESTINATION include)
 install(EXPORT cudamapper DESTINATION cmake)
 
+install(TARGETS cudamapper-bin
+    EXPORT cudamapper-bin
+    DESTINATION bin
+)
+
 # Add auto formatting.
-cga_enable_auto_formatting("${CMAKE_CURRENT_SOURCE_DIR}")
+gw_enable_auto_formatting("${CMAKE_CURRENT_SOURCE_DIR}")

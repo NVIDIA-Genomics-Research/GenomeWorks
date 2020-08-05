@@ -1,11 +1,17 @@
 /*
-* Copyright (c) 2019, NVIDIA CORPORATION.  All rights reserved.
+* Copyright 2019-2020 NVIDIA CORPORATION.
 *
-* NVIDIA CORPORATION and its licensors retain all intellectual property
-* and proprietary rights in and to this software, related documentation
-* and any modifications thereto.  Any use, reproduction, disclosure or
-* distribution of this software and related documentation without an express
-* license agreement from NVIDIA CORPORATION is strictly prohibited.
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
 */
 
 #include "../src/needleman_wunsch_cpu.hpp"
@@ -13,16 +19,19 @@
 #include "../src/ukkonen_gpu.cuh"
 #include "../src/batched_device_matrices.cuh"
 
-#include <claragenomics/utils/signed_integer_utils.hpp>
-#include <claragenomics/utils/genomeutils.hpp>
-#include <claragenomics/utils/device_buffer.cuh>
+#include <claraparabricks/genomeworks/utils/signed_integer_utils.hpp>
+#include <claraparabricks/genomeworks/utils/genomeutils.hpp>
+#include <claraparabricks/genomeworks/utils/device_buffer.hpp>
 
 #include <cuda_runtime_api.h>
 #include <random>
 #include <algorithm>
 #include "gtest/gtest.h"
 
-namespace claragenomics
+namespace claraparabricks
+{
+
+namespace genomeworks
 {
 
 namespace cudaaligner
@@ -81,8 +90,8 @@ std::vector<TestAlignmentPair> getTestCases()
 
     // Test 7
     std::minstd_rand rng(1);
-    t.target = claragenomics::genomeutils::generate_random_genome(5000, rng);
-    t.query  = claragenomics::genomeutils::generate_random_genome(4800, rng);
+    t.target = genomeworks::genomeutils::generate_random_genome(5000, rng);
+    t.query  = genomeworks::genomeutils::generate_random_genome(4800, rng);
     t.p      = 5000;
     test_cases.push_back(t);
 
@@ -145,6 +154,7 @@ protected:
 
 matrix<int> ukkonen_gpu_build_score_matrix(const std::string& target, const std::string& query, int32_t ukkonen_p)
 {
+    DefaultDeviceAllocator allocator = create_default_device_allocator();
     // Allocate buffers and prepare data
     int32_t query_length          = query.length();
     int32_t target_length         = target.length();
@@ -153,21 +163,21 @@ matrix<int> ukkonen_gpu_build_score_matrix(const std::string& target, const std:
     int32_t max_length_difference = std::abs(target_length - query_length);
 
     auto score_matrices = std::make_unique<batched_device_matrices<nw_score_t>>(
-        1, ukkonen_max_score_matrix_size(query_length, target_length, max_length_difference, ukkonen_p), nullptr);
+        1, ukkonen_max_score_matrix_size(query_length, target_length, max_length_difference, ukkonen_p), allocator, nullptr);
 
-    device_buffer<int8_t> path_d(max_path_length);
+    device_buffer<int8_t> path_d(max_path_length, allocator);
     std::vector<int8_t> path_h(max_path_length);
 
-    device_buffer<int32_t> path_length_d(1);
+    device_buffer<int32_t> path_length_d(1, allocator);
     std::vector<int32_t> path_length_h(1);
 
-    device_buffer<char> sequences_d(2 * max_alignment_length);
-    CGA_CU_CHECK_ERR(cudaMemcpy(sequences_d.data(), query.c_str(), sizeof(char) * query_length, cudaMemcpyHostToDevice));
-    CGA_CU_CHECK_ERR(cudaMemcpy(sequences_d.data() + max_alignment_length, target.c_str(), sizeof(char) * target_length, cudaMemcpyHostToDevice));
+    device_buffer<char> sequences_d(2 * max_alignment_length, allocator);
+    GW_CU_CHECK_ERR(cudaMemcpy(sequences_d.data(), query.c_str(), sizeof(char) * query_length, cudaMemcpyHostToDevice));
+    GW_CU_CHECK_ERR(cudaMemcpy(sequences_d.data() + max_alignment_length, target.c_str(), sizeof(char) * target_length, cudaMemcpyHostToDevice));
 
-    device_buffer<int32_t> sequence_lengths_d(2);
-    CGA_CU_CHECK_ERR(cudaMemcpy(sequence_lengths_d.data(), &query_length, sizeof(int32_t) * 1, cudaMemcpyHostToDevice));
-    CGA_CU_CHECK_ERR(cudaMemcpy(sequence_lengths_d.data() + 1, &target_length, sizeof(int32_t) * 1, cudaMemcpyHostToDevice));
+    device_buffer<int32_t> sequence_lengths_d(2, allocator);
+    GW_CU_CHECK_ERR(cudaMemcpy(sequence_lengths_d.data(), &query_length, sizeof(int32_t) * 1, cudaMemcpyHostToDevice));
+    GW_CU_CHECK_ERR(cudaMemcpy(sequence_lengths_d.data() + 1, &target_length, sizeof(int32_t) * 1, cudaMemcpyHostToDevice));
 
     ukkonen_compute_score_matrix_gpu(*score_matrices.get(),
                                      sequences_d.data(), sequence_lengths_d.data(),
@@ -225,6 +235,7 @@ TEST_P(AlignerImplementation, UkkonenGpuVsUkkonenCpuScoringMatrix)
 
 std::vector<int8_t> run_ukkonen_gpu(const std::string& target, const std::string& query, int32_t ukkonen_p)
 {
+    DefaultDeviceAllocator allocator = create_default_device_allocator();
     // Allocate buffers and prepare data
     int32_t query_length          = query.length();
     int32_t target_length         = target.length();
@@ -233,21 +244,21 @@ std::vector<int8_t> run_ukkonen_gpu(const std::string& target, const std::string
     int32_t max_length_difference = std::abs(target_length - query_length);
 
     auto score_matrices = std::make_unique<batched_device_matrices<nw_score_t>>(
-        1, ukkonen_max_score_matrix_size(query_length, target_length, max_length_difference, ukkonen_p), nullptr);
+        1, ukkonen_max_score_matrix_size(query_length, target_length, max_length_difference, ukkonen_p), allocator, nullptr);
 
-    device_buffer<int8_t> path_d(max_path_length);
+    device_buffer<int8_t> path_d(max_path_length, allocator);
     std::vector<int8_t> path_h(max_path_length);
 
-    device_buffer<int32_t> path_length_d(1);
+    device_buffer<int32_t> path_length_d(1, allocator);
     std::vector<int32_t> path_length_h(1);
 
-    device_buffer<char> sequences_d(2 * max_alignment_length);
-    CGA_CU_CHECK_ERR(cudaMemcpy(sequences_d.data(), query.c_str(), sizeof(char) * query_length, cudaMemcpyHostToDevice));
-    CGA_CU_CHECK_ERR(cudaMemcpy(sequences_d.data() + max_alignment_length, target.c_str(), sizeof(char) * target_length, cudaMemcpyHostToDevice));
+    device_buffer<char> sequences_d(2 * max_alignment_length, allocator);
+    GW_CU_CHECK_ERR(cudaMemcpy(sequences_d.data(), query.c_str(), sizeof(char) * query_length, cudaMemcpyHostToDevice));
+    GW_CU_CHECK_ERR(cudaMemcpy(sequences_d.data() + max_alignment_length, target.c_str(), sizeof(char) * target_length, cudaMemcpyHostToDevice));
 
-    device_buffer<int32_t> sequence_lengths_d(2);
-    CGA_CU_CHECK_ERR(cudaMemcpy(sequence_lengths_d.data(), &query_length, sizeof(int32_t) * 1, cudaMemcpyHostToDevice));
-    CGA_CU_CHECK_ERR(cudaMemcpy(sequence_lengths_d.data() + 1, &target_length, sizeof(int32_t) * 1, cudaMemcpyHostToDevice));
+    device_buffer<int32_t> sequence_lengths_d(2, allocator);
+    GW_CU_CHECK_ERR(cudaMemcpy(sequence_lengths_d.data(), &query_length, sizeof(int32_t) * 1, cudaMemcpyHostToDevice));
+    GW_CU_CHECK_ERR(cudaMemcpy(sequence_lengths_d.data() + 1, &target_length, sizeof(int32_t) * 1, cudaMemcpyHostToDevice));
 
     // Run kernel
     ukkonen_gpu(path_d.data(), path_length_d.data(), max_path_length,
@@ -258,8 +269,8 @@ std::vector<int8_t> run_ukkonen_gpu(const std::string& target, const std::string
                 nullptr);
 
     // Get results
-    CGA_CU_CHECK_ERR(cudaMemcpy(path_h.data(), path_d.data(), sizeof(int8_t) * max_path_length, cudaMemcpyDeviceToHost));
-    CGA_CU_CHECK_ERR(cudaMemcpy(path_length_h.data(), path_length_d.data(), sizeof(int32_t) * 1, cudaMemcpyDeviceToHost));
+    GW_CU_CHECK_ERR(cudaMemcpy(path_h.data(), path_d.data(), sizeof(int8_t) * max_path_length, cudaMemcpyDeviceToHost));
+    GW_CU_CHECK_ERR(cudaMemcpy(path_length_h.data(), path_length_d.data(), sizeof(int32_t) * 1, cudaMemcpyDeviceToHost));
 
     std::vector<int8_t> bt;
     for (int32_t l = 0; l < path_length_h[0]; l++)
@@ -283,4 +294,7 @@ TEST_P(AlignerImplementation, UkkonenCpuFullVsUkkonenGpuFull)
 
 INSTANTIATE_TEST_SUITE_P(TestNeedlemanWunschImplementation, AlignerImplementation, ValuesIn(getTestCases()));
 } // namespace cudaaligner
-} // namespace claragenomics
+
+} // namespace genomeworks
+
+} // namespace claraparabricks

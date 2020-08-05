@@ -1,12 +1,20 @@
 #
-# Copyright (c) 2019, NVIDIA CORPORATION.  All rights reserved.
+# Copyright 2019-2020 NVIDIA CORPORATION.
 #
-# NVIDIA CORPORATION and its licensors retain all intellectual property
-# and proprietary rights in and to this software, related documentation
-# and any modifications thereto.  Any use, reproduction, disclosure or
-# distribution of this software and related documentation without an express
-# license agreement from NVIDIA CORPORATION is strictly prohibited.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+
 
 # Check CUDA dependency for project.
 find_package(CUDA 9.0 REQUIRED)
@@ -16,5 +24,18 @@ if(NOT ${CUDA_FOUND})
 else()
     message(STATUS "Using CUDA ${CUDA_VERSION} from ${CUDA_TOOLKIT_ROOT_DIR}")
     set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -lineinfo -use_fast_math -Xcompiler -Wall,-Wno-pedantic")
+
+    if (${CUDA_VERSION_MAJOR} VERSION_LESS "10")
+        set(gw_cuda_before_10_0 TRUE)
+    else()
+        set(gw_cuda_before_10_0 FALSE)
+    endif()
+
+    if (${CUDA_VERSION_STRING} VERSION_GREATER "10")
+        set(gw_cuda_after_10_0 TRUE)
+    else()
+        set(gw_cuda_after_10_0 FALSE)
+    endif()
+
 endif()
 

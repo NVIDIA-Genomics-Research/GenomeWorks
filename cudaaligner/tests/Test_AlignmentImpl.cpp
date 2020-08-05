@@ -1,21 +1,30 @@
 /*
-* Copyright (c) 2019, NVIDIA CORPORATION.  All rights reserved.
+* Copyright 2019-2020 NVIDIA CORPORATION.
 *
-* NVIDIA CORPORATION and its licensors retain all intellectual property
-* and proprietary rights in and to this software, related documentation
-* and any modifications thereto.  Any use, reproduction, disclosure or
-* distribution of this software and related documentation without an express
-* license agreement from NVIDIA CORPORATION is strictly prohibited.
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
 */
 
 #include "../src/alignment_impl.hpp"
 
-#include <claragenomics/utils/signed_integer_utils.hpp>
+#include <claraparabricks/genomeworks/utils/signed_integer_utils.hpp>
 
 #include "gtest/gtest.h"
 #include <memory>
 
-namespace claragenomics
+namespace claraparabricks
+{
+
+namespace genomeworks
 {
 
 namespace cudaaligner
@@ -48,6 +57,7 @@ typedef struct AlignmentTestData
     std::string query;
     std::string target;
     std::vector<AlignmentState> alignment;
+    bool is_optimal;
     FormattedAlignment formatted_alignment;
     std::string cigar;
 } AlignmentTestData;
@@ -66,7 +76,8 @@ std::vector<AlignmentTestData> create_alignment_test_cases()
         AlignmentState::match,
         AlignmentState::mismatch,
         AlignmentState::insertion};
-    data.formatted_alignment = std::make_pair("AAAA-", "TTATG");
+    data.is_optimal          = true;
+    data.formatted_alignment = FormattedAlignment{"AAAA-", "xx|x ", "TTATG"};
     data.cigar               = "4M1I";
     test_cases.push_back(data);
 
@@ -82,7 +93,8 @@ std::vector<AlignmentTestData> create_alignment_test_cases()
         AlignmentState::match,
         AlignmentState::deletion,
         AlignmentState::deletion};
-    data.formatted_alignment = std::make_pair("CGATAATG", "-CATAA--");
+    data.is_optimal          = true;
+    data.formatted_alignment = FormattedAlignment{"CGATAATG", " x||||  ", "-CATAA--"};
     data.cigar               = "1D5M2D";
     test_cases.push_back(data);
 
@@ -101,7 +113,8 @@ std::vector<AlignmentTestData> create_alignment_test_cases()
         AlignmentState::insertion,
         AlignmentState::insertion,
     };
-    data.formatted_alignment = std::make_pair("--GT-TAG--", "AAGTCTAGAA");
+    data.is_optimal          = true;
+    data.formatted_alignment = FormattedAlignment{"--GT-TAG--", "  || |||  ", "AAGTCTAGAA"};
     data.cigar               = "2I2M1I3M2I";
     test_cases.push_back(data);
 
@@ -116,7 +129,8 @@ std::vector<AlignmentTestData> create_alignment_test_cases()
         AlignmentState::deletion,
         AlignmentState::match,
         AlignmentState::match};
-    data.formatted_alignment = std::make_pair("G-TTACA", "GATT-CA");
+    data.is_optimal          = false; // this example is optimal, but is_optimal = false does only mean it is an upper bound
+    data.formatted_alignment = FormattedAlignment{"G-TTACA", "| || ||", "GATT-CA"};
     data.cigar               = "1M1I2M1D2M";
     test_cases.push_back(data);
 
@@ -133,7 +147,7 @@ public:
                                                      param_.query.size(),
                                                      param_.target.c_str(),
                                                      param_.target.size());
-        alignment_->set_alignment(param_.alignment);
+        alignment_->set_alignment(param_.alignment, param_.is_optimal);
     }
 
 protected:
@@ -157,13 +171,17 @@ TEST_P(TestAlignmentImpl, AlignmentState)
     }
 }
 
+TEST_P(TestAlignmentImpl, AlignmentIsOptimal)
+{
+    ASSERT_EQ(param_.is_optimal, alignment_->is_optimal());
+}
+
 TEST_P(TestAlignmentImpl, AlignmentFormatting)
 {
     FormattedAlignment formatted_alignment = alignment_->format_alignment();
-    std::string query                      = formatted_alignment.first;
-    std::string target                     = formatted_alignment.second;
-    ASSERT_EQ(param_.formatted_alignment.first, query);
-    ASSERT_EQ(param_.formatted_alignment.second, target);
+    ASSERT_EQ(param_.formatted_alignment.query, formatted_alignment.query);
+    ASSERT_EQ(param_.formatted_alignment.pairing, formatted_alignment.pairing);
+    ASSERT_EQ(param_.formatted_alignment.target, formatted_alignment.target);
 }
 
 TEST_P(TestAlignmentImpl, CigarFormatting)
@@ -174,4 +192,7 @@ TEST_P(TestAlignmentImpl, CigarFormatting)
 
 INSTANTIATE_TEST_SUITE_P(TestAlignment, TestAlignmentImpl, ValuesIn(create_alignment_test_cases()));
 } // namespace cudaaligner
-} // namespace claragenomics
+
+} // namespace genomeworks
+
+} // namespace claraparabricks

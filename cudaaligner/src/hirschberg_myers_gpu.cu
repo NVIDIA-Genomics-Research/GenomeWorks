@@ -1,23 +1,32 @@
 /*
-* Copyright (c) 2019, NVIDIA CORPORATION.  All rights reserved.
+* Copyright 2019-2020 NVIDIA CORPORATION.
 *
-* NVIDIA CORPORATION and its licensors retain all intellectual property
-* and proprietary rights in and to this software, related documentation
-* and any modifications thereto.  Any use, reproduction, disclosure or
-* distribution of this software and related documentation without an express
-* license agreement from NVIDIA CORPORATION is strictly prohibited.
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
 */
 
 #include "hirschberg_myers_gpu.cuh"
 #include <cassert>
 #include "batched_device_matrices.cuh"
-#include <claragenomics/cudaaligner/aligner.hpp>
-#include <claragenomics/utils/cudautils.hpp>
-#include <claragenomics/utils/mathutils.hpp>
-#include <claragenomics/utils/limits.cuh>
+#include <claraparabricks/genomeworks/cudaaligner/aligner.hpp>
+#include <claraparabricks/genomeworks/utils/cudautils.hpp>
+#include <claraparabricks/genomeworks/utils/mathutils.hpp>
+#include <claraparabricks/genomeworks/utils/limits.cuh>
 #include <cstring>
 
-namespace claragenomics
+namespace claraparabricks
+{
+
+namespace genomeworks
 {
 
 namespace cudaaligner
@@ -31,6 +40,7 @@ constexpr int32_t word_size = sizeof(WordType) * CHAR_BIT;
 
 inline __device__ WordType warp_leftshift_sync(uint32_t warp_mask, WordType v)
 {
+    assert(((warp_mask >> threadIdx.x) & 1u) == 1);
     const WordType x = __shfl_up_sync(warp_mask, v >> (word_size - 1), 1);
     v <<= 1;
     if (threadIdx.x != 0)
@@ -40,6 +50,7 @@ inline __device__ WordType warp_leftshift_sync(uint32_t warp_mask, WordType v)
 
 inline __device__ WordType warp_add_sync(uint32_t warp_mask, WordType a, WordType b)
 {
+    assert(((warp_mask >> threadIdx.x) & 1u) == 1);
     static_assert(sizeof(WordType) == 4, "This function assumes WordType to have 4 bytes.");
     static_assert(CHAR_BIT == 8, "This function assumes a char width of 8 bit.");
     const uint64_t ax = a;
@@ -312,44 +323,59 @@ myers_compute_scores(
         {
             if (threadIdx.x == 0)
                 score(0, reverse ? 1 : 0) = query_size;
-            __syncwarp();
         }
     }
 
+    const int32_t n_warp_iterations = ceiling_divide(n_words, warp_size) * warp_size;
+    __syncwarp();
     for (int32_t t = 1; t <= target_size; ++t)
     {
         int32_t warp_carry = 0;
         if (threadIdx.x == 0)
-            warp_carry = 1; // for global alignment the (implicit) first row has to be 0,1,2,3,... -> carry 1
-        for (int32_t idx = threadIdx.x; idx < n_words; idx += warp_size)
         {
-            const uint32_t warp_mask = idx / warp_size < n_words / warp_size ? 0xffff'ffffu : (1u << (n_words % warp_size)) - 1;
-
-            WordType pv_local = pv(idx, full_score_matrix ? t - 1 : 0);
-            WordType mv_local = mv(idx, full_score_matrix ? t - 1 : 0);
-            // TODO these might be cached or only computed for the specific t at hand.
-            const WordType highest_bit = WordType(1) << (idx == (n_words - 1) ? (query_end - query_begin) - (n_words - 1) * word_size - 1 : word_size - 1);
-
-            const WordType eq = get_query_pattern(query_patterns, idx, pattern_idx_offset, target_begin[reverse ? target_size - t : t - 1], reverse);
-
-            warp_carry = myers_advance_block(warp_mask, highest_bit, eq, pv_local, mv_local, warp_carry);
-            if (full_score_matrix)
+            warp_carry = 1; // for global alignment the (implicit) first row has to be 0,1,2,3,... -> carry 1
+        }
+        for (int32_t idx = threadIdx.x; idx < n_warp_iterations; idx += warp_size)
+        {
+            if (idx < n_words)
             {
-                score(idx, t) = score(idx, t - 1) + warp_carry;
+                const uint32_t warp_mask = idx / warp_size < n_words / warp_size ? 0xffff'ffffu : (1u << (n_words % warp_size)) - 1;
+
+                WordType pv_local = pv(idx, full_score_matrix ? t - 1 : 0);
+                WordType mv_local = mv(idx, full_score_matrix ? t - 1 : 0);
+                // TODO these might be cached or only computed for the specific t at hand.
+                const WordType highest_bit = WordType(1) << (idx == (n_words - 1) ? (query_end - query_begin) - (n_words - 1) * word_size - 1 : word_size - 1);
+
+                const WordType eq = get_query_pattern(query_patterns, idx, pattern_idx_offset, target_begin[reverse ? target_size - t : t - 1], reverse);
+
+                warp_carry = myers_advance_block(warp_mask, highest_bit, eq, pv_local, mv_local, warp_carry);
+                if (full_score_matrix)
+                {
+                    score(idx, t) = score(idx, t - 1) + warp_carry;
+                }
+                else
+                {
+                    if (idx + 1 == n_words)
+                    {
+                        score(t, reverse ? 1 : 0) = score(t - 1, reverse ? 1 : 0) + warp_carry;
+                    }
+                }
+                if (threadIdx.x == 0)
+                {
+                    warp_carry = 0;
+                }
+                if (warp_mask == 0xffff'ffffu && (threadIdx.x == 31 || threadIdx.x == 0))
+                {
+                    warp_carry = __shfl_down_sync(0x8000'0001u, warp_carry, warp_size - 1);
+                }
+                if (threadIdx.x != 0)
+                {
+                    warp_carry = 0;
+                }
+                pv(idx, full_score_matrix ? t : 0) = pv_local;
+                mv(idx, full_score_matrix ? t : 0) = mv_local;
             }
-            else
-            {
-                if (idx + 1 == n_words)
-                    score(t, reverse ? 1 : 0) = score(t - 1, reverse ? 1 : 0) + warp_carry;
-            }
-            if (threadIdx.x == 0)
-                warp_carry = 0;
-            if (warp_mask == 0xffff'ffffu)
-                warp_carry = __shfl_down_sync(0x8000'0001u, warp_carry, warp_size - 1);
-            if (threadIdx.x != 0)
-                warp_carry = 0;
-            pv(idx, full_score_matrix ? t : 0) = pv_local;
-            mv(idx, full_score_matrix ? t : 0) = mv_local;
+            __syncwarp();
         }
     }
 }
@@ -442,15 +468,15 @@ __device__ const char* hirschberg_myers_compute_target_mid_warp(
 #pragma unroll
     for (int32_t i = 16; i > 0; i >>= 1)
     {
-        const int32_t mv = __shfl_down_sync(0xffff'ffff, cur_min, i);
-        const int32_t mp = __shfl_down_sync(0xffff'ffff, midpoint, i);
+        const int32_t mv = __shfl_down_sync(0xffff'ffffu, cur_min, i);
+        const int32_t mp = __shfl_down_sync(0xffff'ffffu, midpoint, i);
         if (mv < cur_min)
         {
             cur_min  = mv;
             midpoint = mp;
         }
     }
-    __shfl_sync(0xffff'ffff, midpoint, 0);
+    __shfl_sync(0xffff'ffffu, midpoint, 0);
     return target_begin + midpoint;
 }
 
@@ -499,7 +525,7 @@ public:
         assert(buffer_begin_ < buffer_end_);
     }
 
-    __device__ bool inline push(T const& t, unsigned warp_mask = 0xffff'ffff)
+    __device__ bool inline push(T const& t, unsigned warp_mask = 0xffff'ffffu)
     {
         if (buffer_end_ - cur_end_ >= 1)
         {
@@ -570,8 +596,8 @@ __device__ void hirschberg_myers(
     warp_shared_stack<query_target_range> stack(stack_buffer_begin, stack_buffer_end);
     stack.push({query_begin_absolute, query_end_absolute, target_begin_absolute, target_end_absolute});
 
-    assert(pvi->get_max_elements_per_matrix() == mvi->get_max_elements_per_matrix());
-    assert(scorei->get_max_elements_per_matrix() >= pvi->get_max_elements_per_matrix());
+    assert(pvi->get_max_elements_per_matrix(alignment_idx) == mvi->get_max_elements_per_matrix(alignment_idx));
+    assert(scorei->get_max_elements_per_matrix(alignment_idx) >= pvi->get_max_elements_per_matrix(alignment_idx));
 
     bool success   = true;
     int32_t length = 0;
@@ -598,7 +624,7 @@ __device__ void hirschberg_myers(
             if (e.query_end - e.query_begin < full_myers_threshold && e.query_end != e.query_begin)
             {
                 const int32_t n_words = ceiling_divide<int32_t>(e.query_end - e.query_begin, word_size);
-                if ((e.target_end - e.target_begin + 1) * n_words <= pvi->get_max_elements_per_matrix())
+                if ((e.target_end - e.target_begin + 1) * n_words <= pvi->get_max_elements_per_matrix(alignment_idx))
                 {
                     hirschberg_myers_compute_path(path, &length, pvi, mvi, scorei, query_patterns, e.target_begin, e.target_end, e.query_begin, e.query_end, query_begin_absolute, alignment_idx);
                     continue;
@@ -671,7 +697,11 @@ void hirschberg_myers_gpu(device_buffer<hirschbergmyers::query_target_range>& st
     const dim3 threads(warp_size, 1, 1);
     const dim3 blocks(1, 1, ceiling_divide<int32_t>(n_alignments, threads.z));
     hirschbergmyers::hirschberg_myers_compute_alignment<<<blocks, threads, 0, stream>>>(stack_buffer.data(), stack_buffer_size_per_alignment, switch_to_myers_threshold, paths_d, path_lengths_d, max_path_length, pv.get_device_interface(), mv.get_device_interface(), score.get_device_interface(), query_patterns.get_device_interface(), sequences_d, sequence_lengths_d, max_sequence_length, n_alignments);
+    GW_CU_CHECK_ERR(cudaPeekAtLastError());
 }
 
 } // namespace cudaaligner
-} // namespace claragenomics
+
+} // namespace genomeworks
+
+} // namespace claraparabricks

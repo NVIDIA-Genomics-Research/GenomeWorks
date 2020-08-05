@@ -1,20 +1,29 @@
 /*
-* Copyright (c) 2019, NVIDIA CORPORATION.  All rights reserved.
+* Copyright 2019-2020 NVIDIA CORPORATION.
 *
-* NVIDIA CORPORATION and its licensors retain all intellectual property
-* and proprietary rights in and to this software, related documentation
-* and any modifications thereto.  Any use, reproduction, disclosure or
-* distribution of this software and related documentation without an express
-* license agreement from NVIDIA CORPORATION is strictly prohibited.
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
 */
 
-#include <claragenomics/cudapoa/batch.hpp>
-#include <claragenomics/utils/genomeutils.hpp>
-#include <claragenomics/utils/graph.hpp>
+#include <claraparabricks/genomeworks/cudapoa/batch.hpp>
+#include <claraparabricks/genomeworks/utils/genomeutils.hpp>
+#include <claraparabricks/genomeworks/utils/graph.hpp>
 
 #include "gtest/gtest.h"
 
-namespace claragenomics
+namespace claraparabricks
+{
+
+namespace genomeworks
 {
 
 namespace cudapoa
@@ -34,27 +43,27 @@ public:
                     int8_t output_mask     = OutputType::msa,
                     int16_t gap_score      = -8,
                     int16_t mismatch_score = -6,
-                    int16_t match_score    = 8,
-                    bool banded_alignment  = false)
+                    int16_t match_score    = 8)
     {
         size_t total = 0, free = 0;
         cudaSetDevice(device_id);
         cudaMemGetInfo(&free, &total);
         size_t mem_per_batch = 0.9 * free;
+        BatchConfig batch_size(1024, max_sequences_per_poa);
 
-        cudapoa_batch = claragenomics::cudapoa::create_batch(max_sequences_per_poa, device_id, stream, mem_per_batch, output_mask, gap_score, mismatch_score, match_score, banded_alignment);
+        cudapoa_batch = genomeworks::cudapoa::create_batch(device_id, stream, mem_per_batch, output_mask, batch_size, gap_score, mismatch_score, match_score);
     }
 
 public:
-    std::unique_ptr<claragenomics::cudapoa::Batch> cudapoa_batch;
+    std::unique_ptr<genomeworks::cudapoa::Batch> cudapoa_batch;
 };
 
 TEST_F(GraphTest, CudapoaSerializeGraph)
 {
     std::minstd_rand rng(1);
     int num_sequences    = 500;
-    std::string backbone = claragenomics::genomeutils::generate_random_genome(50, rng);
-    auto sequences       = claragenomics::genomeutils::generate_random_sequences(backbone, num_sequences, rng, 10, 5, 10);
+    std::string backbone = genomeworks::genomeutils::generate_random_genome(50, rng);
+    auto sequences       = genomeworks::genomeutils::generate_random_sequences(backbone, num_sequences, rng, 10, 5, 10);
 
     initialize(num_sequences);
     Group poa_group;
@@ -82,4 +91,6 @@ TEST_F(GraphTest, CudapoaSerializeGraph)
 
 } // namespace cudapoa
 
-} // namespace claragenomics
+} // namespace genomeworks
+
+} // namespace claraparabricks

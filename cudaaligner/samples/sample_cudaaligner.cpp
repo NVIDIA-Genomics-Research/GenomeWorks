@@ -1,18 +1,24 @@
 /*
-* Copyright (c) 2019, NVIDIA CORPORATION.  All rights reserved.
+* Copyright 2019-2020 NVIDIA CORPORATION.
 *
-* NVIDIA CORPORATION and its licensors retain all intellectual property
-* and proprietary rights in and to this software, related documentation
-* and any modifications thereto.  Any use, reproduction, disclosure or
-* distribution of this software and related documentation without an express
-* license agreement from NVIDIA CORPORATION is strictly prohibited.
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
 */
 
-#include <claragenomics/cudaaligner/cudaaligner.hpp>
-#include <claragenomics/cudaaligner/aligner.hpp>
-#include <claragenomics/cudaaligner/alignment.hpp>
-#include <claragenomics/utils/cudautils.hpp>
-#include <claragenomics/utils/genomeutils.hpp>
+#include <claraparabricks/genomeworks/cudaaligner/cudaaligner.hpp>
+#include <claraparabricks/genomeworks/cudaaligner/aligner.hpp>
+#include <claraparabricks/genomeworks/cudaaligner/alignment.hpp>
+#include <claraparabricks/genomeworks/utils/cudautils.hpp>
+#include <claraparabricks/genomeworks/utils/genomeutils.hpp>
 
 #include <cuda_runtime_api.h>
 #include <vector>
@@ -21,17 +27,18 @@
 #include <iostream>
 #include <random>
 
-using namespace claragenomics;
-using namespace claragenomics::genomeutils;
-using namespace claragenomics::cudaaligner;
+using namespace claraparabricks::genomeworks;
+using namespace claraparabricks::genomeworks::genomeutils;
+using namespace claraparabricks::genomeworks::cudaaligner;
 
 std::unique_ptr<Aligner> initialize_batch(int32_t max_query_size,
                                           int32_t max_target_size,
-                                          int32_t max_alignments_per_batch)
+                                          int32_t max_alignments_per_batch,
+                                          DefaultDeviceAllocator allocator)
 {
     // Get device information.
     int32_t device_count = 0;
-    CGA_CU_CHECK_ERR(cudaGetDeviceCount(&device_count));
+    GW_CU_CHECK_ERR(cudaGetDeviceCount(&device_count));
     assert(device_count > 0);
 
     // Initialize internal logging framework.
@@ -45,6 +52,7 @@ std::unique_ptr<Aligner> initialize_batch(int32_t max_query_size,
                                                     max_target_size,
                                                     max_alignments_per_batch,
                                                     AlignmentType::global_alignment,
+                                                    allocator,
                                                     stream,
                                                     device_id);
 
@@ -99,10 +107,13 @@ int main(int argc, char** argv)
     const int32_t target_length = 15000;
     const uint32_t num_entries  = 1000;
 
+    const std::size_t max_gpu_memory = cudautils::find_largest_contiguous_device_memory_section();
+    DefaultDeviceAllocator allocator = create_default_device_allocator(max_gpu_memory);
+
     std::cout << "Running pairwise alignment for " << num_entries << " pairs..." << std::endl;
 
     // Initialize batch.
-    std::unique_ptr<Aligner> batch = initialize_batch(query_length, target_length, 100);
+    std::unique_ptr<Aligner> batch = initialize_batch(query_length, target_length, 100, allocator);
 
     // Generate data.
     std::vector<std::pair<std::string, std::string>> data;
@@ -130,9 +141,7 @@ int main(int argc, char** argv)
                 for (const auto& alignment : alignments)
                 {
                     FormattedAlignment formatted = alignment->format_alignment();
-                    std::cout << formatted.first << "\n"
-                              << formatted.second << "\n"
-                              << std::endl;
+                    std::cout << formatted;
                 }
             }
             // Reset batch to reuse memory for new alignments.
