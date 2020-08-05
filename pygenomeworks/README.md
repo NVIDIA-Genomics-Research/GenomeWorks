@@ -2,6 +2,14 @@
 
 Python libraries and utilities for manipulating genomics data
 
+## Features
+
+`genomeworks` python API exposes python bindings to the following CUDA-accelerated GenomeWorks
+libraries -
+
+1. cudapoa
+2. cudaaligner
+
 ## Installation
 
 ### Install from PyPI
