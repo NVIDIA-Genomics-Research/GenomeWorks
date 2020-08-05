@@ -29,7 +29,7 @@
 using namespace claraparabricks::genomeworks;
 using namespace claraparabricks::genomeworks::cudapoa;
 
-std::unique_ptr<Batch> initialize_batch(bool msa, bool banded_alignment, const BatchSize& batch_size)
+std::unique_ptr<Batch> initialize_batch(bool msa, const BatchConfig& batch_size)
 {
     // Get device information.
     int32_t device_count = 0;
@@ -48,7 +48,6 @@ std::unique_ptr<Batch> initialize_batch(bool msa, bool banded_alignment, const B
     cudaStream_t stream          = 0;
     size_t mem_per_batch         = 0.9 * free; // Using 90% of GPU available memory for CUDAPOA batch.
     const int32_t mismatch_score = -6, gap_score = -8, match_score = 8;
-
     std::unique_ptr<Batch> batch = create_batch(device_id,
                                                 stream,
                                                 mem_per_batch,
@@ -56,18 +55,17 @@ std::unique_ptr<Batch> initialize_batch(bool msa, bool banded_alignment, const B
                                                 batch_size,
                                                 gap_score,
                                                 mismatch_score,
-                                                match_score,
-                                                banded_alignment);
+                                                match_score);
 
     return std::move(batch);
 }
 
-void process_batch(Batch* batch, bool msa, bool print)
+void process_batch(Batch* batch, bool msa_flag, bool print, std::vector<int32_t>& list_of_group_ids, int id_offset)
 {
     batch->generate_poa();
 
     StatusType status = StatusType::success;
-    if (msa)
+    if (msa_flag)
     {
         // Grab MSA results for all POA groups in batch.
         std::vector<std::vector<std::string>> msa; // MSA per group
@@ -83,7 +81,7 @@ void process_batch(Batch* batch, bool msa, bool print)
         {
             if (output_status[g] != StatusType::success)
             {
-                std::cerr << "Error generating  MSA for POA group " << g << ". Error type " << output_status[g] << std::endl;
+                std::cerr << "Error generating  MSA for POA group " << list_of_group_ids[g + id_offset] << ". Error type " << output_status[g] << std::endl;
             }
             else
             {
@@ -114,7 +112,7 @@ void process_batch(Batch* batch, bool msa, bool print)
         {
             if (output_status[g] != StatusType::success)
             {
-                std::cerr << "Error generating consensus for POA group " << g << ". Error type " << output_status[g] << std::endl;
+                std::cerr << "Error generating consensus for POA group " << list_of_group_ids[g + id_offset] << ". Error type " << output_status[g] << std::endl;
             }
             else
             {
@@ -130,15 +128,16 @@ void process_batch(Batch* batch, bool msa, bool print)
 int main(int argc, char** argv)
 {
     // Process options
-    int c            = 0;
-    bool msa         = false;
-    bool long_read   = false;
-    bool banded      = true;
-    bool help        = false;
-    bool print       = false;
-    bool print_graph = false;
+    int c              = 0;
+    bool msa           = false;
+    bool long_read     = false;
+    BandMode band_mode = BandMode::adaptive_band; // 0: full, 1: static-band, 2: adaptive-band
+    bool help          = false;
+    bool print         = false;
+    bool print_graph   = false;
+    int32_t band_width = 256; // default band-width for static bands, and min band-width in adaptive bands
 
-    while ((c = getopt(argc, argv, "mlfpgh")) != -1)
+    while ((c = getopt(argc, argv, "mlb:pgh")) != -1)
     {
         switch (c)
         {
@@ -148,8 +147,12 @@ int main(int argc, char** argv)
         case 'l':
             long_read = true;
             break;
-        case 'f':
-            banded = false;
+        case 'b':
+            if (std::stoi(optarg) < 0 || std::stoi(optarg) > 2)
+            {
+                throw std::runtime_error("band-mode must be either 0 for full bands, 1 for static bands or 2 for adaptive bands");
+            }
+            band_mode = static_cast<BandMode>(std::stoi(optarg));
             break;
         case 'p':
             print = true;
@@ -170,7 +173,7 @@ int main(int argc, char** argv)
         std::cout << "./sample_cudapoa [-m] [-h]" << std::endl;
         std::cout << "-m : Generate MSA (if not provided, generates consensus by default)" << std::endl;
         std::cout << "-l : Perform long-read sample (if not provided, will run short-read sample by default)" << std::endl;
-        std::cout << "-f : Perform full alignment (if not provided, banded alignment is used by default)" << std::endl;
+        std::cout << "-b : Sets band mode 0: full-alignment, 1: static band, 2: adaptive band , will run adaptive band by default)" << std::endl;
         std::cout << "-p : Print the MSA or consensus output to stdout" << std::endl;
         std::cout << "-g : Print POA graph in dot format, this option is only for long-read sample" << std::endl;
         std::cout << "-h : Print help message" << std::endl;
@@ -210,10 +213,10 @@ int main(int argc, char** argv)
     }
 
     // analyze the POA groups and create a minimal set of batches to process them all
-    std::vector<BatchSize> list_of_batch_sizes;
+    std::vector<BatchConfig> list_of_batch_sizes;
     std::vector<std::vector<int32_t>> list_of_groups_per_batch;
 
-    get_multi_batch_sizes(list_of_batch_sizes, list_of_groups_per_batch, poa_groups, banded, msa);
+    get_multi_batch_sizes(list_of_batch_sizes, list_of_groups_per_batch, poa_groups, msa, band_width, band_mode);
 
     int32_t group_count_offset = 0;
 
@@ -223,7 +226,7 @@ int main(int argc, char** argv)
         auto& batch_group_ids = list_of_groups_per_batch[b];
 
         // Initialize batch.
-        std::unique_ptr<Batch> batch = initialize_batch(msa, banded, batch_size);
+        std::unique_ptr<Batch> batch = initialize_batch(msa, batch_size);
 
         // Loop over all the POA groups for the current batch, add them to the batch and process them.
         int32_t group_count = 0;
@@ -242,7 +245,7 @@ int main(int argc, char** argv)
                 if (batch->get_total_poas() > 0)
                 {
                     // No more POA groups can be added to batch. Now process batch.
-                    process_batch(batch.get(), msa, print);
+                    process_batch(batch.get(), msa, print, batch_group_ids, group_count);
 
                     if (print_graph && long_read)
                     {

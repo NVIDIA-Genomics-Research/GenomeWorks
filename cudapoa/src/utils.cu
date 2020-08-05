@@ -27,12 +27,12 @@ namespace genomeworks
 namespace cudapoa
 {
 
-void get_multi_batch_sizes(std::vector<BatchSize>& list_of_batch_sizes,
+void get_multi_batch_sizes(std::vector<BatchConfig>& list_of_batch_sizes,
                            std::vector<std::vector<int32_t>>& list_of_groups_per_batch,
                            const std::vector<Group>& poa_groups,
-                           bool banded_alignment /*= true*/,
                            bool msa_flag /*= false*/,
                            int32_t band_width /*= 256*/,
+                           BandMode band_mode /*= adaptive_band*/,
                            std::vector<int32_t>* bins_capacity /*= nullptr*/,
                            float gpu_memory_usage_quota /*= 0.9*/,
                            int32_t mismatch_score /*= -6*/,
@@ -51,9 +51,8 @@ void get_multi_batch_sizes(std::vector<BatchSize>& list_of_batch_sizes,
         {
             max_read_length = std::max(max_read_length, entry.length);
         }
-        max_poas[i]    = BatchBlock<int32_t, int32_t>::estimate_max_poas(BatchSize(max_read_length, get_size<int32_t>(poa_groups[i]), band_width),
-                                                                      banded_alignment, msa_flag,
-                                                                      gpu_memory_usage_quota,
+        max_poas[i]    = BatchBlock<int32_t, int32_t>::estimate_max_poas(BatchConfig(max_read_length, get_size<int32_t>(poa_groups[i]), band_width, band_mode),
+                                                                      msa_flag, gpu_memory_usage_quota,
                                                                       mismatch_score, gap_score, match_score);
         max_lengths[i] = max_read_length;
     }
@@ -120,7 +119,7 @@ void get_multi_batch_sizes(std::vector<BatchSize>& list_of_batch_sizes,
     {
         if (bins_frequency[j] > 0)
         {
-            list_of_batch_sizes.emplace_back(bins_max_length[j], bins_num_reads[j], band_width);
+            list_of_batch_sizes.emplace_back(bins_max_length[j], bins_num_reads[j], band_width, band_mode);
             list_of_groups_per_batch.push_back(bins_group_list[j]);
             // check if poa_groups in the following bins can be merged into the current bin
             for (int32_t k = j + 1; k < num_bins; k++)

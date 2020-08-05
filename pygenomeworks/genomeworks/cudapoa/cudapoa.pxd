@@ -52,6 +52,11 @@ cdef extern from "claraparabricks/genomeworks/cudapoa/cudapoa.hpp" namespace "cl
         output_type_unavailable
         generic_error
 
+    cdef enum BandMode:
+        full_band = 0
+        static_band
+        adaptive_band
+
     cdef enum OutputType:
         consensus = 0x1
         msa = 0x1 << 1
@@ -65,20 +70,21 @@ cdef extern from "claraparabricks/genomeworks/cudapoa/batch.hpp" namespace "clar
         const int8_t* weights
         int32_t length
 
-    cdef cppclass BatchSize:
+    cdef cppclass BatchConfig:
         int32_t max_sequence_size
         int32_t max_consensus_size
-        int32_t max_nodes_per_window
-        int32_t max_nodes_per_window_banded
+        int32_t max_nodes_per_graph
+        int32_t max_nodes_per_graph_banded
         int32_t max_matrix_graph_dimension
         int32_t max_matrix_graph_dimension_banded
         int32_t max_matrix_sequence_dimension
         int32_t alignment_band_width
         int32_t max_sequences_per_poa
+        BandMode band_mode
 
-        BatchSize(int32_t, int32_t, int32_t)
-        BatchSize(int32_t, int32_t, int32_t,
-                  int32_t, int32_t, int32_t)
+        BatchConfig(int32_t, int32_t, int32_t, BandMode)
+        BatchConfig(int32_t, int32_t, int32_t,
+                    int32_t, int32_t, int32_t, BandMode)
 
     ctypedef vector[Entry] Group
 
@@ -93,5 +99,5 @@ cdef extern from "claraparabricks/genomeworks/cudapoa/batch.hpp" namespace "clar
         void reset() except +
 
     cdef unique_ptr[Batch] create_batch(int32_t, _Stream, size_t, int8_t,
-                                        const BatchSize&, int16_t, int16_t,
-                                        int16_t, c_bool)
+                                        const BatchConfig&, int16_t, int16_t,
+                                        int16_t)
