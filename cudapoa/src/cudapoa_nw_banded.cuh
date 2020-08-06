@@ -248,15 +248,21 @@ __device__
             {
                 pred_node_id = incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES];
                 pred_idx     = node_id_to_pos[pred_node_id] + 1;
-                penalty      = max(score_type_min_limit, get_score(scores, pred_idx, SizeT{0}, gradient, band_width, max_column, min_score_value));
-                // if pred_num > 1 keep checking to find max score as penalty
-                for (uint16_t p = 0; p < pred_count; p++)
+                if (band_start > CELLS_PER_THREAD && pred_count == 1)
                 {
-                    pred_node_id       = incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES + p];
-                    SizeT pred_idx_tmp = node_id_to_pos[pred_node_id] + 1;
-                    penalty            = max(penalty, get_score(scores, pred_idx_tmp, SizeT{0}, gradient, band_width, max_column, min_score_value));
+                    first_element_prev_score = min_score_value + gap_score;
                 }
-                first_element_prev_score = penalty + gap_score;
+                {
+                    penalty = max(score_type_min_limit, get_score(scores, pred_idx, SizeT{0}, gradient, band_width, max_column, min_score_value));
+                    // if pred_num > 1 keep checking to find max score as penalty
+                    for (uint16_t p = 0; p < pred_count; p++)
+                    {
+                        pred_node_id       = incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES + p];
+                        SizeT pred_idx_tmp = node_id_to_pos[pred_node_id] + 1;
+                        penalty            = max(penalty, get_score(scores, pred_idx_tmp, SizeT{0}, gradient, band_width, max_column, min_score_value));
+                    }
+                    first_element_prev_score = penalty + gap_score;
+                }
                 set_score(scores, score_gIdx, SizeT{0}, first_element_prev_score, gradient, band_width, max_column);
             }
         }
