@@ -220,6 +220,9 @@ __device__
 
     __syncwarp();
 
+    SizeT previous_node_id        = -1;
+    ScoreT previous_node_id_score = -1;
+
     SeqT4<SeqT>* d_read4 = (SeqT4<SeqT>*)read;
     // compute vertical and diagonal values in parallel.
     for (SizeT graph_pos = 0; graph_pos < graph_count; graph_pos++)
@@ -243,28 +246,39 @@ __device__
             if (pred_count == 0)
             {
                 set_score(scores, score_gIdx, SizeT{0}, gap_score, gradient, band_width, max_column);
+                previous_node_id_score = gap_score;
             }
             else
             {
                 pred_node_id = incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES];
                 pred_idx     = node_id_to_pos[pred_node_id] + 1;
-                if (band_start > CELLS_PER_THREAD && pred_count == 1)
+
+                if (pred_count == 1 && band_start > CELLS_PER_THREAD)
                 {
                     first_element_prev_score = min_score_value + gap_score;
                 }
                 else
                 {
-                    penalty = max(score_type_min_limit, get_score(scores, pred_idx, SizeT{0}, gradient, band_width, max_column, min_score_value));
-                    // if pred_num > 1 keep checking to find max score as penalty
-                    for (uint16_t p = 0; p < pred_count; p++)
+                    if (pred_count == 1 && band_start == 0 && pred_node_id == previous_node_id)
                     {
-                        pred_node_id       = incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES + p];
-                        SizeT pred_idx_tmp = node_id_to_pos[pred_node_id] + 1;
-                        penalty            = max(penalty, get_score(scores, pred_idx_tmp, SizeT{0}, gradient, band_width, max_column, min_score_value));
+                        first_element_prev_score = previous_node_id_score + gap_score;
                     }
-                    first_element_prev_score = penalty + gap_score;
+                    else
+                    {
+                        penalty = max(score_type_min_limit, get_score(scores, pred_idx, SizeT{0}, gradient, band_width, max_column, min_score_value));
+                        // if pred_num > 1 keep checking to find max score as penalty
+                        for (uint16_t p = 0; p < pred_count; p++)
+                        {
+                            pred_node_id       = incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES + p];
+                            SizeT pred_idx_tmp = node_id_to_pos[pred_node_id] + 1;
+                            penalty            = max(penalty, get_score(scores, pred_idx_tmp, SizeT{0}, gradient, band_width, max_column, min_score_value));
+                        }
+                        first_element_prev_score = penalty + gap_score;
+                    }
                 }
+
                 set_score(scores, score_gIdx, SizeT{0}, first_element_prev_score, gradient, band_width, max_column);
+                previous_node_id_score = first_element_prev_score;
             }
         }
         pred_count = __shfl_sync(FULL_MASK, pred_count, 0);
@@ -362,6 +376,7 @@ __device__
 
             __syncwarp();
         }
+        previous_node_id = node_id;
     }
 
     SizeT aligned_nodes = 0;
