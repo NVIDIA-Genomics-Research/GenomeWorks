@@ -252,6 +252,7 @@ __device__
                 {
                     first_element_prev_score = min_score_value + gap_score;
                 }
+                else
                 {
                     penalty = max(score_type_min_limit, get_score(scores, pred_idx, SizeT{0}, gradient, band_width, max_column, min_score_value));
                     // if pred_num > 1 keep checking to find max score as penalty
