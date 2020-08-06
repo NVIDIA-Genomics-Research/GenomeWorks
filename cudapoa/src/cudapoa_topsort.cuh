@@ -57,6 +57,9 @@ __device__ void topologicalSortDeviceUtil(SizeT* sorted_poa,
     //memset(local_incoming_edge_count, -1, CUDAPOA_MAX_NODES_PER_WINDOW);
     SizeT sorted_poa_position = 0;
 
+    /// ToDo  use of local_incoming_edge_count is a bottleneck and contributes to around 6% of total run-time
+    ///       considering its usage is limited to only this kernel, can consider shared mem as a temporary on-chip buffer
+
     // Iterate through node IDs (since nodes are from 0
     // through node_count -1, a simple loop works) and fill
     // out the incoming edge count.

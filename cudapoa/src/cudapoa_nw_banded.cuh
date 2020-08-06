@@ -212,37 +212,12 @@ __device__
     // Initialise the vertical boundary of the score matrix
     if (lane_idx == 0)
     {
+        set_score(scores, SizeT{0}, SizeT{0}, ScoreT{0}, gradient, band_width, max_column);
 #ifdef NW_VERBOSE_PRINT
         printf("graph %d, read %d\n", graph_count, read_length);
 #endif
-
-        for (SizeT graph_pos = 0; graph_pos < graph_count; graph_pos++)
-        {
-            set_score(scores, SizeT{0}, SizeT{0}, ScoreT{0}, gradient, band_width, max_column);
-
-            SizeT node_id = graph[graph_pos];
-            SizeT i       = graph_pos + 1;
-
-            uint16_t pred_count = incoming_edge_count[node_id];
-            if (pred_count == 0)
-            {
-                set_score(scores, i, SizeT{0}, gap_score, gradient, band_width, max_column);
-            }
-            else
-            {
-                ScoreT penalty = score_type_min_limit;
-                for (uint16_t p = 0; p < pred_count; p++)
-                {
-                    SizeT pred_node_id        = incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES + p];
-                    SizeT pred_node_graph_pos = node_id_to_pos[pred_node_id] + 1;
-                    penalty                   = max(penalty, get_score(scores, pred_node_graph_pos, SizeT{0}, gradient, band_width, max_column, min_score_value));
-                }
-                set_score(scores, i, SizeT{0}, static_cast<ScoreT>(penalty + gap_score), gradient, band_width, max_column);
-            }
-        }
     }
 
-    // return;
     __syncwarp();
 
     SeqT4<SeqT>* d_read4 = (SeqT4<SeqT>*)read;
@@ -257,9 +232,30 @@ __device__
 
         initialize_band(scores, score_gIdx, min_score_value, gradient, band_width, max_column);
 
-        ScoreT first_element_prev_score = get_score(scores, score_gIdx, SizeT{0}, gradient, band_width, max_column, min_score_value);
-
-        uint16_t pred_count = incoming_edge_count[node_id];
+        ScoreT first_element_prev_score = 0;
+        uint16_t pred_count             = 0;
+        if (lane_idx == 0)
+        {
+            pred_count = incoming_edge_count[node_id];
+            if (pred_count == 0)
+            {
+                set_score(scores, score_gIdx, SizeT{0}, gap_score, gradient, band_width, max_column);
+            }
+            else
+            {
+                ScoreT penalty = score_type_min_limit;
+                for (uint16_t p = 0; p < pred_count; p++)
+                {
+                    SizeT pred_node_id        = incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES + p];
+                    SizeT pred_node_graph_pos = node_id_to_pos[pred_node_id] + 1;
+                    penalty                   = max(penalty, get_score(scores, pred_node_graph_pos, SizeT{0}, gradient, band_width, max_column, min_score_value));
+                }
+                first_element_prev_score = penalty + gap_score;
+                set_score(scores, score_gIdx, SizeT{0}, first_element_prev_score, gradient, band_width, max_column);
+            }
+        }
+        pred_count = __shfl_sync(FULL_MASK, pred_count, 0);
+        //-----------------------------------
 
         SizeT pred_idx = (pred_count == 0 ? 0 : node_id_to_pos[incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES]] + 1);
 
