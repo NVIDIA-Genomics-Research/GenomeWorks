@@ -224,7 +224,6 @@ __device__
     // compute vertical and diagonal values in parallel.
     for (SizeT graph_pos = 0; graph_pos < graph_count; graph_pos++)
     {
-
         SizeT node_id    = graph[graph_pos];
         SizeT score_gIdx = graph_pos + 1;
 
@@ -234,8 +233,12 @@ __device__
 
         ScoreT first_element_prev_score = 0;
         uint16_t pred_count             = 0;
+        SizeT pred_idx                  = 0;
+
         if (lane_idx == 0)
         {
+            SizeT pred_node_id;
+            ScoreT penalty;
             pred_count = incoming_edge_count[node_id];
             if (pred_count == 0)
             {
@@ -243,21 +246,23 @@ __device__
             }
             else
             {
-                ScoreT penalty = score_type_min_limit;
+                pred_node_id = incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES];
+                pred_idx     = node_id_to_pos[pred_node_id] + 1;
+                penalty      = max(score_type_min_limit, get_score(scores, pred_idx, SizeT{0}, gradient, band_width, max_column, min_score_value));
+                // if pred_num > 1 keep checking to find max score as penalty
                 for (uint16_t p = 0; p < pred_count; p++)
                 {
-                    SizeT pred_node_id        = incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES + p];
-                    SizeT pred_node_graph_pos = node_id_to_pos[pred_node_id] + 1;
-                    penalty                   = max(penalty, get_score(scores, pred_node_graph_pos, SizeT{0}, gradient, band_width, max_column, min_score_value));
+                    pred_node_id       = incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES + p];
+                    SizeT pred_idx_tmp = node_id_to_pos[pred_node_id] + 1;
+                    penalty            = max(penalty, get_score(scores, pred_idx_tmp, SizeT{0}, gradient, band_width, max_column, min_score_value));
                 }
                 first_element_prev_score = penalty + gap_score;
                 set_score(scores, score_gIdx, SizeT{0}, first_element_prev_score, gradient, band_width, max_column);
             }
         }
         pred_count = __shfl_sync(FULL_MASK, pred_count, 0);
-        //-----------------------------------
-
-        SizeT pred_idx = (pred_count == 0 ? 0 : node_id_to_pos[incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES]] + 1);
+        pred_idx   = __shfl_sync(FULL_MASK, pred_idx, 0);
+        //-------------------------------------------------------------
 
         SeqT graph_base = nodes[node_id];
 
