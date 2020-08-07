@@ -147,8 +147,7 @@ __global__ void generateMSAKernel(uint8_t* nodes_d,
                                   bool* check_aligned_nodes_d,
                                   SizeT* nodes_to_visit_d,
                                   uint32_t max_nodes_per_graph,
-                                  uint32_t max_limit_consensus_size,
-                                  bool static_banded = false)
+                                  uint32_t max_limit_consensus_size)
 {
     //each block of threads will operate on a window
     uint32_t window_idx = blockIdx.x;

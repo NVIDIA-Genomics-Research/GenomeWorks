@@ -570,8 +570,7 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
                                                                   check_aligned_nodes,
                                                                   nodes_to_visit,
                                                                   max_nodes_per_graph,
-                                                                  batch_size.max_consensus_size,
-                                                                  static_banded);
+                                                                  batch_size.max_consensus_size);
         GW_CU_CHECK_ERR(cudaPeekAtLastError());
     }
     else
@@ -596,8 +595,7 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
                                                                                    consensus_predecessors,
                                                                                    node_coverage_counts,
                                                                                    max_nodes_per_graph,
-                                                                                   batch_size.max_consensus_size,
-                                                                                   static_banded);
+                                                                                   batch_size.max_consensus_size);
         GW_CU_CHECK_ERR(cudaPeekAtLastError());
     }
 }
