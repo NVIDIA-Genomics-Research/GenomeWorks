@@ -224,10 +224,10 @@ __device__
     // compute vertical and diagonal values in parallel.
     for (SizeT graph_pos = 0; graph_pos < graph_count; graph_pos++)
     {
-        SizeT node_id    = graph[graph_pos];
-        SizeT score_gIdx = graph_pos + 1;
-
-        SizeT band_start = get_band_start_for_row(score_gIdx, gradient, band_width, max_column);
+        SizeT node_id      = graph[graph_pos];
+        SizeT score_gIdx   = graph_pos + 1;
+        SizeT band_start   = get_band_start_for_row(score_gIdx, gradient, band_width, max_column);
+        SizeT pred_node_id = incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES];
 
         initialize_band(scores, score_gIdx, min_score_value, gradient, band_width, max_column);
 
@@ -237,7 +237,6 @@ __device__
 
         if (lane_idx == 0)
         {
-            SizeT pred_node_id;
             ScoreT penalty;
             pred_count = incoming_edge_count[node_id];
             if (pred_count == 0)
@@ -246,8 +245,7 @@ __device__
             }
             else
             {
-                pred_node_id = incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES];
-                pred_idx     = node_id_to_pos[pred_node_id] + 1;
+                pred_idx = node_id_to_pos[pred_node_id] + 1;
                 if (band_start > CELLS_PER_THREAD && pred_count == 1)
                 {
                     first_element_prev_score = min_score_value + gap_score;
