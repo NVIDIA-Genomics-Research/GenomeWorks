@@ -40,48 +40,60 @@ namespace cudamapper
 
 struct Anchmer
 {
-    std::uint32_t n_anchors;
-    Anchor* anchors;
-
-    void merge_anchor(Anchor*& a, Anchor*& b){
-
-    }
-
-    void inner_chain()
-    {
-        std::int32_t i = 0;
-        std::int32_t j  = 0;
-        while (i < n_anchors)
-        {
-            j = i + 1;
-            while (j < n_anchors)
-            {
-                    // if (anchors[i] == anchors[j]){
-                    //     // merge_anchor(anchors[i], anchors[j]);
-                    //     j = i;
-                    // }
-                ++j;
-            }
-            ++i;
-        }
-    }
+    std::int32_t n_anchors = 0;
+    std::int32_t n_chained_anchors [10] = {0};
+    std::int32_t chain_id [10] = {0};
+    
 };
 
-__global__ __forceinline__ void
-generate_anchmers(const device_buffer<Anchor>& d_anchors, const size_t n_anchors, device_buffer<Anchmer>& anchmers, const uint8_t anchmer_size)
+__device__ bool operator==(const Anchor& lhs,
+                                    const Anchor& rhs)
 {
-    const std::uint64_t d_tid = blockIdx.x * blockDim.x + threadIdx.x;
+    auto score_threshold = 1;
 
-    const std::uint32_t n_anchmers = n_anchors / anchmer_size + 1;
+    // Very simple scoring function to quantify quality of overlaps.
+    auto score = 1;
 
-    if (d_tid < n_anchors && d_tid % anchmer_size == 0)
-    {
-        
-        for (std::size_t i = 0; i < anchmer_size; ++i)
-        {
+    if ((rhs.query_position_in_read_ - lhs.query_position_in_read_) < 150 and
+     abs(int(rhs.target_position_in_read_) - int(lhs.target_position_in_read_)) < 150)
+        score = 2;
+    return ((lhs.query_read_id_ == rhs.query_read_id_) &&
+            (lhs.target_read_id_ == rhs.target_read_id_) &&
+            score > score_threshold);
+}
 
+
+__global__  void
+generate_anchmers(const Anchor* d_anchors, const size_t n_anchors, Anchmer* anchmers, const uint8_t anchmer_size)
+{
+    const std::size_t d_tid = blockIdx.x * blockDim.x + threadIdx.x;
+
+    std::size_t first_anchor_index = d_tid * anchmer_size;
+
+    anchmers[d_tid].n_anchors = 0;
+    std::int32_t current_chain = 1;
+    for (int i = 0; i < 10; ++i){
+        anchmers[d_tid].chain_id[i] = 0;
+    }
+    anchmers[d_tid].chain_id[0] = current_chain;
+
+    for (std::size_t i = 0; i < anchmer_size; ++i){
+        std::size_t global_anchor_index = first_anchor_index + i;
+        if (global_anchor_index < n_anchors){
+            ++(anchmers[d_tid].n_anchors);
+            anchmers[d_tid].chain_id[i] = anchmers[d_tid].chain_id[i] == 0 ? ++current_chain : anchmers[d_tid].chain_id[i];
+            std::size_t j = i + 1;
+            while(j < anchmer_size && j + first_anchor_index < n_anchors)
+            {
+                if (d_anchors[global_anchor_index] == d_anchors[first_anchor_index + j]){
+                    anchmers[d_tid].chain_id[j] = anchmers[d_tid].chain_id[i];
+                }
+                ++j;
+            }
         }
     }
+
+
 }
 
 void OverlapperAnchmer::get_overlaps(std::vector<Overlap>& fused_overlaps,
@@ -93,19 +105,29 @@ void OverlapperAnchmer::get_overlaps(std::vector<Overlap>& fused_overlaps,
                                      float min_overlap_fraction)
 {
 
-    const int32_t anchmer_generation_rounds = 1;
-    const int32_t chain_filter_min_anchors  = 2;
-    const int32_t anchor_merge_min_dist     = 150;
-
-    std::vector<Anchmer> anchmers;
-    device_buffer<Anchmer> d_anchmers;
+    // const std::int32_t anchmer_generation_rounds = 1;
+    // const std::int32_t chain_filter_min_anchors  = 2;
+    // const std::int32_t anchor_merge_min_dist     = 150;
+    const std::int32_t anchors_per_anchmer = 10;
     std::size_t n_anchors = d_anchors.size();
+    std::size_t n_anchmers = (d_anchors.size() / anchors_per_anchmer) + 1; 
+    std::int32_t block_size = 32;
 
-    generate_anchmers<<<(n_anchors + 255) / 256, 256, 0, _cuda_stream>>>(d_anchors, n_anchors, d_anchmers, 10);
-
-    cudautils::device_copy_n(d_anchmers.data(), d_anchmers.size(), anchmers.data(), _cuda_stream);
+    std::vector<Anchmer> anchmers(n_anchmers);
+    device_buffer<Anchmer> d_anchmers(n_anchmers, _allocator, _cuda_stream);
 
     // Stage one: generate anchmers
+    generate_anchmers<<<(n_anchmers / block_size) + 1, block_size, 0, _cuda_stream>>>(d_anchors.data(), n_anchors, d_anchmers.data(), anchors_per_anchmer);
+
+    cudautils::device_copy_n(d_anchmers.data(), d_anchmers.size(), anchmers.data());
+
+    for (auto a : anchmers){
+        std::cout << a.n_anchors << std::endl;
+        for (std::size_t i = 0; i < a.n_anchors; ++i){
+            std::cout << a.chain_id[i] << " ";
+        }
+        std::cout << std::endl;
+    }
 
     // Stage two: within-anchmer chaining
 
