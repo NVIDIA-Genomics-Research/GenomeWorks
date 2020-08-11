@@ -22,7 +22,7 @@
 
 #include "cudamapper_utils.hpp"
 #include "overlapper_triggered.hpp"
-
+#include "overlapper_anchmer.hpp"
 namespace
 {
 
@@ -375,8 +375,8 @@ void Overlapper::rescue_overlap_ends(std::vector<Overlap>& overlaps,
 std::unique_ptr<Overlapper> Overlapper::create_overlapper(DefaultDeviceAllocator allocator,
                                                           const cudaStream_t cuda_stream)
 {
-    return std::make_unique<OverlapperTriggered>(allocator,
-                                                 cuda_stream);
+    return std::make_unique<OverlapperAnchmer>(allocator,
+                                               cuda_stream);
 }
 
 } // namespace cudamapper
