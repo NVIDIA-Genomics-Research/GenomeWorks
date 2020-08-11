@@ -184,6 +184,7 @@ int main(int argc, char* argv[])
                           parameters.msa,
                           parameters.band_width,
                           parameters.band_mode,
+                          parameters.adaptive_storage,
                           nullptr,
                           parameters.gpu_mem_allocation,
                           parameters.mismatch_score,

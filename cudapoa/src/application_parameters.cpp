@@ -50,7 +50,7 @@ ApplicationParameters::ApplicationParameters(int argc, char* argv[])
         {"help", no_argument, 0, 'h'},
     };
 
-    std::string optstring = "i:ab:w:d:M:R:m:n:g:vh";
+    std::string optstring = "i:ab:w:s:d:M:R:m:n:g:vh";
 
     int32_t argument = 0;
     while ((argument = getopt_long(argc, argv, optstring.c_str(), options, nullptr)) != -1)
@@ -72,6 +72,9 @@ ApplicationParameters::ApplicationParameters(int argc, char* argv[])
             break;
         case 'w':
             band_width = std::stoi(optarg);
+            break;
+        case 's':
+            adaptive_storage = std::stof(optarg);
             break;
         case 'd':
             graph_output_path = std::string(optarg);
