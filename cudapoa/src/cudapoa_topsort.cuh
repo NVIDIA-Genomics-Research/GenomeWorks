@@ -78,6 +78,7 @@ __device__ void topologicalSortDeviceUtil(SizeT* sorted_poa,
     // then iterate through their children. For each child decrement their
     // incoming edge count. If incoming edge count of child == 0,
     // add its node ID to the sorted order list.
+
     for (SizeT n = 0; n < sorted_poa_position; n++)
     {
         SizeT node = sorted_poa[n];
@@ -85,12 +86,13 @@ __device__ void topologicalSortDeviceUtil(SizeT* sorted_poa,
         {
             SizeT out_node = outgoing_edges[node * CUDAPOA_MAX_NODE_EDGES + edge];
             //printf("%d\n", out_node);
-            local_incoming_edge_count[out_node]--;
-            if (local_incoming_edge_count[out_node] == 0)
+            uint16_t in_node_count = local_incoming_edge_count[out_node];
+            if (--in_node_count == 0)
             {
                 sorted_poa_node_map[out_node]     = sorted_poa_position;
                 sorted_poa[sorted_poa_position++] = out_node;
             }
+            local_incoming_edge_count[out_node] = in_node_count;
         }
     }
 
