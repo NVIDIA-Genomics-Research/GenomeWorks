@@ -242,8 +242,7 @@ void process_one_device_batch(const IndexBatch& device_batch,
                     std::vector<Overlap> overlaps;
                     auto overlapper = Overlapper::create_overlapper(device_allocator,
                                                                     cuda_stream);
-                    
-                
+
                     overlapper->get_overlaps(overlaps,
                                              matcher->anchors(),
                                              application_parameters.all_to_all,
