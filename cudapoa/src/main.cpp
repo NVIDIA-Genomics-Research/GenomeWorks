@@ -268,13 +268,20 @@ int main(int argc, char* argv[])
             if (status == StatusType::success)
             {
                 // Check if all sequences in POA group wre added successfully.
+                int32_t num_dropped_seq = 0;
                 for (const auto& s : seq_status)
                 {
                     if (s == StatusType::exceeded_maximum_sequence_size)
                     {
-                        std::cerr << "Dropping sequence because sequence exceeded maximum size" << std::endl;
+                        num_dropped_seq++;
                     }
                 }
+
+                if (num_dropped_seq > 0)
+                {
+                    std::cerr << "Dropping " << num_dropped_seq << " sequence(s) in POA group " << batch_group_ids[i] << " because it exceeded maximum size" << std::endl;
+                }
+
                 i++;
             }
 
