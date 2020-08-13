@@ -39,6 +39,7 @@ ApplicationParameters::ApplicationParameters(int argc, char* argv[])
         {"msa", no_argument, 0, 'a'},
         {"band-mode", required_argument, 0, 'b'},
         {"band-width", required_argument, 0, 'w'},
+        {"adaptive-storage", required_argument, 0, 's'},
         {"dot", required_argument, 0, 'd'},
         {"max-groups", required_argument, 0, 'M'},
         {"gpu-mem-alloc", required_argument, 0, 'R'},
@@ -184,6 +185,9 @@ void ApplicationParameters::help(int32_t exit_code)
               << R"(
         -w, --band-width <int>
             band-width for banded alignment (must be multiple of 128) [256])"
+              << R"(
+        -s, --adaptive-storage  <float>
+            factor to accommodate extra memory for adaptive score matrix. The factor represents ratio of adaptive-banded score matrix to static-banded score matrix [2.0])"
               << R"(
         -d, --dot <file>
             output path for printing graph in DOT format [disabled])"
