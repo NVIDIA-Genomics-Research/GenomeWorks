@@ -33,6 +33,12 @@
 #include <thrust/host_vector.h>
 #endif
 
+
+//
+//          36a32532-4135-4ffe-a346-0b1b08c1b747   6370    173     683     -       fedde900-1485-42a2-8adb-b7a30dcf82fe    10014   91      620     105     529     0       minimap2        not_in_cm
+//         da4230aa-e79e-4a5f-9738-c272aad98a82   8554    74      293     +       ebb4ceeb-76f1-454a-84d9-a65cfcb3a9fa    1824    1572    1801    114     231     0       minimap2        not_in_cm
+
+
 namespace claraparabricks
 {
 
@@ -61,7 +67,7 @@ __device__ bool operator==(const Overlap& a,
     // bool t_end_overlap;
     position_in_read_t q_gap = abs((int)b.query_start_position_in_read_ - (int)a.query_end_position_in_read_);
     position_in_read_t t_gap = abs((int)b.target_start_position_in_read_ - (int)a.target_end_position_in_read_);
-    bool gap_match           = q_gap < 300 && t_gap < 300;
+    bool gap_match           = q_gap < 500 && t_gap < 500;
     bool gap_ratio_okay      = float(min(q_gap, t_gap) / max(q_gap, t_gap)) < 0.8;
 
     return identical_ids && same_strand && (gap_match || gap_ratio_okay);
@@ -401,7 +407,8 @@ void OverlapperAnchmer::get_overlaps(std::vector<Overlap>& fused_overlaps,
     // First overlap filtering stage
     // Remove short overlaps (length < 5bp)
     device_buffer<bool> d_initial_overlap_mask(n_initial_overlaps, _allocator, _cuda_stream);
-    mask_overlaps<<<(n_initial_overlaps / block_size) + 1, block_size, 0, _cuda_stream>>>(d_initial_overlaps.data(), n_initial_overlaps, d_initial_overlap_mask.data(), 5, 0, 0);
+    // TODO: make this pre-mask step parameterized / optional
+    mask_overlaps<<<(n_initial_overlaps / block_size) + 1, block_size, 0, _cuda_stream>>>(d_initial_overlaps.data(), n_initial_overlaps, d_initial_overlap_mask.data(), 0, 0, 0);
 
     device_buffer<Overlap> d_filtered_overlaps(n_initial_overlaps, _allocator, _cuda_stream);
     device_buffer<size_t> d_num_filtered_overlaps(1, _allocator, _cuda_stream);
@@ -450,7 +457,7 @@ void OverlapperAnchmer::get_overlaps(std::vector<Overlap>& fused_overlaps,
                                                n_filtered_overlaps, _cuda_stream);
     std::size_t n_overlap_runs = cudautils::get_value_from_device(d_num_overlap_runs.data(), _cuda_stream);
 
-    std::cerr << "Found " << n_overlap_runs << " runs of non-trivial overlaps." << std::endl;
+    std::cerr << "Found " << n_overlap_runs << " non-trivial runs of overlaps." << std::endl;
     device_buffer<Overlap> d_fused_overlaps(n_overlap_runs, _allocator, _cuda_stream);
 
     // Transform the overlap_run_lengths vector into a vector of overlap ends.
