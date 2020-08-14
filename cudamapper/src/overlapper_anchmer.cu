@@ -48,7 +48,7 @@ namespace genomeworks
 namespace cudamapper
 {
 
-#define MAX_ANCHMER_WINDOW 10
+#define MAX_ANCHMER_WINDOW 20
 
 struct Anchmer
 {
@@ -58,6 +58,19 @@ struct Anchmer
     std::int32_t n_anchors                            = 0;
 };
 
+struct ChainPiece
+{
+    Overlap overlap;
+};
+
+__device__ bool operator==(const ChainPiece& a, const ChainPiece& b)
+{
+    return a.overlap.query_read_id_ == b.overlap.query_read_id_ &&
+        a.overlap.target_read_id_ == b.overlap.target_read_id_ && 
+        a.overlap.relative_strand == b.overlap.relative_strand;
+
+        // Distance metric should be strand aware (abs + flip target relative to strand)
+}
 __device__ bool operator==(const Overlap& a,
                            const Overlap& b)
 {
@@ -67,7 +80,7 @@ __device__ bool operator==(const Overlap& a,
     // bool t_end_overlap;
     position_in_read_t q_gap = abs((int)b.query_start_position_in_read_ - (int)a.query_end_position_in_read_);
     position_in_read_t t_gap = abs((int)b.target_start_position_in_read_ - (int)a.target_end_position_in_read_);
-    bool gap_match           = q_gap < 500 && t_gap < 500;
+    bool gap_match           = q_gap < 100 && t_gap < 100;
     bool gap_ratio_okay      = float(min(q_gap, t_gap) / max(q_gap, t_gap)) < 0.8;
 
     return identical_ids && same_strand && (gap_match || gap_ratio_okay);
@@ -81,8 +94,8 @@ __device__ bool operator==(const Anchor& lhs,
     // Very simple scoring function to quantify quality of overlaps.
     auto score = 1;
 
-    if ((rhs.query_position_in_read_ - lhs.query_position_in_read_) < 150 and
-        abs(int(rhs.target_position_in_read_) - int(lhs.target_position_in_read_)) < 150)
+    if ((rhs.query_position_in_read_ - lhs.query_position_in_read_) < 20 and
+        abs(int(rhs.target_position_in_read_) - int(lhs.target_position_in_read_)) < 20)
         score = 2;
     return ((lhs.query_read_id_ == rhs.query_read_id_) &&
             (lhs.target_read_id_ == rhs.target_read_id_) &&
@@ -137,17 +150,24 @@ struct DecrementerOp
     }
 };
 
-__global__ void mask_overlaps(Overlap* overlaps, std::size_t n_overlaps, bool* mask, const std::size_t min_overlap_length, const std::size_t min_residues, const std::size_t min_bases_per_residue)
+__global__ void mask_overlaps(Overlap* overlaps, std::size_t n_overlaps, bool* mask,
+     const std::size_t min_overlap_length,
+      const std::size_t min_residues,
+       const std::size_t min_bases_per_residue,
+    const bool all_to_all,
+const bool filter_self_mappings)
 {
     std::size_t d_tid = blockIdx.x * blockDim.x + threadIdx.x;
     if (d_tid < n_overlaps)
     {
         position_in_read_t overlap_query_length  = overlaps[d_tid].query_end_position_in_read_ - overlaps[d_tid].query_start_position_in_read_;
         position_in_read_t overlap_target_length = overlaps[d_tid].target_end_position_in_read_ - overlaps[d_tid].target_start_position_in_read_;
+        const bool mask_self_self = overlaps[d_tid].query_read_id_ == overlaps[d_tid].target_read_id_ && all_to_all && filter_self_mappings;
         auto query_bases_per_residue = overlap_query_length / overlaps[d_tid].num_residues_;
         auto target_bases_per_residue = overlap_target_length / overlaps[d_tid].num_residues_;
-        mask[d_tid]                              = overlap_query_length > min_overlap_length & overlap_target_length > min_overlap_length;
+        mask[d_tid]                              = overlap_query_length >= min_overlap_length & overlap_target_length >= min_overlap_length;
         mask[d_tid] &= overlaps[d_tid].num_residues_ >= min_residues;
+        mask[d_tid] &= !mask_self_self;
         //mask[d_tid] &= (query_bases_per_residue < min_bases_per_residue || target_bases_per_residue < min_bases_per_residue);
     }
 }
@@ -408,7 +428,7 @@ void OverlapperAnchmer::get_overlaps(std::vector<Overlap>& fused_overlaps,
     // Remove short overlaps (length < 5bp)
     device_buffer<bool> d_initial_overlap_mask(n_initial_overlaps, _allocator, _cuda_stream);
     // TODO: make this pre-mask step parameterized / optional
-    mask_overlaps<<<(n_initial_overlaps / block_size) + 1, block_size, 0, _cuda_stream>>>(d_initial_overlaps.data(), n_initial_overlaps, d_initial_overlap_mask.data(), 0, 0, 0);
+    mask_overlaps<<<(n_initial_overlaps / block_size) + 1, block_size, 0, _cuda_stream>>>(d_initial_overlaps.data(), n_initial_overlaps, d_initial_overlap_mask.data(), 5, 2, 0, all_to_all, all_to_all);
 
     device_buffer<Overlap> d_filtered_overlaps(n_initial_overlaps, _allocator, _cuda_stream);
     device_buffer<size_t> d_num_filtered_overlaps(1, _allocator, _cuda_stream);
@@ -432,6 +452,8 @@ void OverlapperAnchmer::get_overlaps(std::vector<Overlap>& fused_overlaps,
                                n_initial_overlaps,
                                _cuda_stream);
     std::size_t n_filtered_overlaps = cudautils::get_value_from_device(d_num_filtered_overlaps.data(), _cuda_stream);
+
+    std::cerr << n_filtered_overlaps << " remain after initial filtering." << std::endl;
 
     device_buffer<std::size_t> d_num_overlap_runs(1, _allocator, _cuda_stream);
     device_buffer<std::size_t> d_overlap_run_offsets(n_filtered_overlaps, _allocator, _cuda_stream);
@@ -512,7 +534,7 @@ void OverlapperAnchmer::get_overlaps(std::vector<Overlap>& fused_overlaps,
 
 
     d_initial_overlap_mask.clear_and_resize(n_overlap_runs);
-    mask_overlaps<<<(n_initial_overlaps / block_size) + 1, block_size, 0, _cuda_stream>>>(d_fused_overlaps.data(), n_overlap_runs, d_initial_overlap_mask.data(), min_overlap_len, min_residues, min_bases_per_residue);
+    mask_overlaps<<<(n_initial_overlaps / block_size) + 1, block_size, 0, _cuda_stream>>>(d_fused_overlaps.data(), n_overlap_runs, d_initial_overlap_mask.data(), min_overlap_len, min_residues, min_bases_per_residue, all_to_all, true);
 
     device_buffer<Overlap> d_final_overlaps(n_overlap_runs, _allocator, _cuda_stream);
     device_buffer<size_t> d_num_final_overlaps(1, _allocator, _cuda_stream);
@@ -534,6 +556,7 @@ void OverlapperAnchmer::get_overlaps(std::vector<Overlap>& fused_overlaps,
                                n_overlap_runs,
                                _cuda_stream);
     std::size_t n_final_overlaps = cudautils::get_value_from_device(d_num_final_overlaps.data(), _cuda_stream);
+    std::cerr << "Produced " << n_final_overlaps << " final overlaps; " << n_overlap_runs - n_final_overlaps << " overlaps removed by filtering." << std::endl;
 
 
     fused_overlaps.resize(n_final_overlaps);
