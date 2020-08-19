@@ -16,17 +16,17 @@
 
 
 
-project(gwio)
+set(MODULE_NAME gwio)
 
 get_property(gw_library_type GLOBAL PROPERTY gw_library_type)
-add_library(${PROJECT_NAME} ${gw_library_type}
+add_library(${MODULE_NAME} ${gw_library_type}
         src/fasta_parser.cpp
         src/kseqpp_fasta_parser.cpp)
-target_link_libraries(${PROJECT_NAME} PUBLIC gwbase z)
+target_link_libraries(${MODULE_NAME} PUBLIC gwbase z)
 
 add_doxygen_source_dir(${CMAKE_CURRENT_SOURCE_DIR}/include/claraparabricks/genomeworks/io)
 
-target_include_directories(${PROJECT_NAME}
+target_include_directories(${MODULE_NAME}
     PRIVATE
         ${KSEQPP_DIR}
     PUBLIC 
@@ -34,15 +34,15 @@ target_include_directories(${PROJECT_NAME}
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 )
 
-target_compile_options(${PROJECT_NAME} PRIVATE -Werror)
+target_compile_options(${MODULE_NAME} PRIVATE -Werror)
 
-install(TARGETS ${PROJECT_NAME} 
-    EXPORT ${PROJECT_NAME}
+install(TARGETS ${MODULE_NAME} 
+    EXPORT ${MODULE_NAME}
     DESTINATION lib
     INCLUDES DESTINATION include
 )
 install(DIRECTORY include/ DESTINATION include)
-install(EXPORT ${PROJECT_NAME} DESTINATION cmake)
+install(EXPORT ${MODULE_NAME} DESTINATION cmake)
 
 # Add auto formatting.
 gw_enable_auto_formatting("${CMAKE_CURRENT_SOURCE_DIR}")

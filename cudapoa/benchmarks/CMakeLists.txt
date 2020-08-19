@@ -18,7 +18,7 @@
 
 ## Add benchmark to cudapoa project
 
-project(benchmark_cudapoa)
+set(MODULE_NAME benchmark_cudapoa)
 
 set(SOURCES
         main.cpp
@@ -29,7 +29,7 @@ include_directories(${cudapoa_data_include_dir})
 set(LIBS
         cudapoa)
 
-gw_add_benchmarks(${PROJECT_NAME} "cudapoa" "${SOURCES}" "${LIBS}")
+gw_add_benchmarks(${MODULE_NAME} "cudapoa" "${SOURCES}" "${LIBS}")
 
 install(FILES README.md
     DESTINATION benchmarks/cudapoa)
