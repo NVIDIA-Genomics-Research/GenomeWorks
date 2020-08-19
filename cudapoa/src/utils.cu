@@ -84,19 +84,17 @@ void get_multi_batch_sizes(std::vector<BatchConfig>& list_of_batch_sizes,
     // go through all poa_groups and keep track of the bin they fit in
     for (int32_t i = 0; i < num_groups; i++)
     {
-        int32_t current_group = max_lengths[i] * poa_groups[i].size();
         for (int32_t j = 0; j < num_bins; j++)
         {
             if (max_poas[i] <= bins_capacity->at(j) || j == num_bins - 1)
             {
                 bins_frequency[j]++;
                 bins_group_list[j].push_back(i);
-                int32_t largest_group = bins_max_length[j] * bins_num_reads[j];
-                if (largest_group < current_group)
-                {
-                    bins_max_length[j] = max_lengths[i];
-                    bins_num_reads[j]  = poa_groups[i].size();
-                }
+                bins_max_length[j] = max(bins_max_length[j], max_lengths[i]);
+                // note: for cases where number of reads per POA group largely vary, this binning strategy can be sub-optimal
+                // The reason is bins_max_length and bins_num_reads are selected independently as maximum value of all the groups in this bin.
+                // This can result in a smaller estimated maximum POA associated with this bin
+                bins_num_reads[j]  = max(bins_num_reads[j], get_size<int32_t>(poa_groups[i]));
                 break;
             }
         }
