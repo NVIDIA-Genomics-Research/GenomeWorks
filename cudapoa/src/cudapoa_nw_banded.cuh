@@ -304,13 +304,7 @@ __device__
             while (__any_sync(FULL_MASK, loop))
             {
 
-                // To increase instruction level parallelism, we compute the scores
-                // in reverse order (score3 first, then score2, then score1, etc).
-                // And then check if any of the scores had an update,
-                // and if there's an update then we rerun the loop to capture the effects
-                // of the change in the next loop.
                 loop = false;
-
                 // The shfl_up lets us grab a value from the lane below.
                 ScoreT last_score = __shfl_up_sync(FULL_MASK, score.s3, 1);
                 if (lane_idx == 0)
@@ -318,17 +312,10 @@ __device__
                     last_score = first_element_prev_score;
                 }
 
-                ScoreT tscore = max(score.s2 + gap_score, score.s3);
-                if (tscore > score.s3)
+                ScoreT tscore = max(last_score + gap_score, score.s0);
+                if (tscore > score.s0)
                 {
-                    score.s3 = tscore;
-                    loop     = true;
-                }
-
-                tscore = max(score.s1 + gap_score, score.s2);
-                if (tscore > score.s2)
-                {
-                    score.s2 = tscore;
+                    score.s0 = tscore;
                     loop     = true;
                 }
 
@@ -339,10 +326,17 @@ __device__
                     loop     = true;
                 }
 
-                tscore = max(last_score + gap_score, score.s0);
-                if (tscore > score.s0)
+                tscore = max(score.s1 + gap_score, score.s2);
+                if (tscore > score.s2)
                 {
-                    score.s0 = tscore;
+                    score.s2 = tscore;
+                    loop     = true;
+                }
+
+                tscore = max(score.s2 + gap_score, score.s3);
+                if (tscore > score.s3)
+                {
+                    score.s3 = tscore;
                     loop     = true;
                 }
             }

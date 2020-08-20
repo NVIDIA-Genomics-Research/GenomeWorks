@@ -94,7 +94,7 @@ void get_multi_batch_sizes(std::vector<BatchConfig>& list_of_batch_sizes,
                 // note: for cases where number of reads per POA group largely vary, this binning strategy can be sub-optimal
                 // The reason is bins_max_length and bins_num_reads are selected independently as maximum value of all the groups in this bin.
                 // This can result in a smaller estimated maximum POA associated with this bin
-                bins_num_reads[j]  = max(bins_num_reads[j], get_size<int32_t>(poa_groups[i]));
+                bins_num_reads[j] = max(bins_num_reads[j], get_size<int32_t>(poa_groups[i]));
                 break;
             }
         }
