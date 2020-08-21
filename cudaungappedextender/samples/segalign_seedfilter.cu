@@ -12,7 +12,7 @@
 #define MAX_UNGAPPED_PER_GB 4194304
 
 using namespace claraparabricks::genomeworks;
-using namespace claraparabricks::genomeworks::cudapoa;
+using namespace claraparabricks::genomeworks::cudaungappedextender;
 
 
 // Control Variables
