@@ -155,7 +155,7 @@ __device__ void generateConsensus(uint8_t* nodes,
                                   uint16_t* node_coverage_counts,
                                   SizeT* node_alignments,
                                   uint16_t* node_alignment_count,
-                                  uint32_t max_limit_consensus_size)
+                                  int32_t max_limit_consensus_size)
 {
     // Initialize scores and predecessors to default value.
     for (SizeT i = 0; i < node_count; i++)
@@ -301,8 +301,8 @@ __global__ void generateConsensusKernel(uint8_t* consensus_d,
                                         int32_t* consensus_scores_d,
                                         SizeT* consensus_predecessors_d,
                                         uint16_t* node_coverage_counts_d_,
-                                        uint32_t max_nodes_per_graph,
-                                        uint32_t max_limit_consensus_size)
+                                        int32_t max_nodes_per_graph,
+                                        int32_t max_limit_consensus_size)
 {
     //each thread will operate on a window
     int32_t window_idx = blockIdx.x * CUDAPOA_MAX_CONSENSUS_PER_BLOCK + threadIdx.x;
@@ -370,7 +370,7 @@ __global__ void generateConsensusTestKernel(uint8_t* nodes,
                                             uint16_t* node_coverage_counts,
                                             SizeT* node_alignments,
                                             uint16_t* node_alignment_count,
-                                            uint32_t max_limit_consensus_size)
+                                            int32_t max_limit_consensus_size)
 {
     generateConsensus(nodes,
                       node_count,
@@ -408,7 +408,7 @@ void generateConsensusTestHost(uint8_t* nodes,
                                uint16_t* node_coverage_counts,
                                SizeT* node_alignments,
                                uint16_t* node_alignment_count,
-                               uint32_t max_limit_consensus_size)
+                               int32_t max_limit_consensus_size)
 {
     generateConsensusTestKernel<SizeT><<<1, 1>>>(nodes,
                                                  node_count,
