@@ -192,19 +192,16 @@ __device__
                              ScoreT match_score)
 {
 
-    GW_CONSTEXPR ScoreT score_type_min_limit = numeric_limits<ScoreT>::min();
-    const ScoreT min_score_value             = 2 * abs(min(min(gap_score, mismatch_score), -match_score) - 1) + score_type_min_limit;
+    const ScoreT min_score_value = 2 * abs(min(min(gap_score, mismatch_score), -match_score) - 1) + numeric_limits<ScoreT>::min();
 
     int16_t lane_idx = threadIdx.x % WARP_SIZE;
-    int64_t score_index;
 
     //Calculate gradient for the scores matrix
     float gradient = float(read_length + 1) / float(graph_count + 1);
 
-    SizeT max_column                    = read_length + 1;
-    SizeT max_matrix_sequence_dimension = band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING;
+    SizeT max_column = read_length + 1;
     // Initialise the horizontal boundary of the score matrix
-    for (SizeT j = lane_idx; j < max_matrix_sequence_dimension; j += WARP_SIZE)
+    for (SizeT j = lane_idx; j < band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING; j += WARP_SIZE)
     {
         set_score(scores, SizeT{0}, j, static_cast<ScoreT>(j * gap_score), gradient, band_width, max_column);
     }
@@ -220,7 +217,6 @@ __device__
 
     __syncwarp();
 
-    SeqT4<SeqT>* d_read4 = (SeqT4<SeqT>*)read;
     // compute vertical and diagonal values in parallel.
     for (SizeT graph_pos = 0; graph_pos < graph_count; graph_pos++)
     {
@@ -252,7 +248,7 @@ __device__
                 }
                 else
                 {
-                    penalty = max(score_type_min_limit, get_score(scores, pred_idx, SizeT{0}, gradient, band_width, max_column, min_score_value));
+                    penalty = max(min_score_value, get_score(scores, pred_idx, SizeT{0}, gradient, band_width, max_column, min_score_value));
                     // if pred_num > 1 keep checking to find max score as penalty
                     for (uint16_t p = 0; p < pred_count; p++)
                     {
@@ -271,10 +267,10 @@ __device__
 
         SeqT graph_base = nodes[node_id];
 
-        for (SizeT read_pos = lane_idx * CELLS_PER_THREAD + band_start; read_pos < band_start + band_width; read_pos += WARP_SIZE * CELLS_PER_THREAD)
+        for (SizeT read_pos = lane_idx * CELLS_PER_THREAD + band_start; read_pos < band_start + band_width; read_pos += CUDAPOA_MIN_BAND_WIDTH)
         {
-            SizeT rIdx        = read_pos / CELLS_PER_THREAD;
-            SeqT4<SeqT> read4 = d_read4[rIdx];
+            SeqT4<SeqT>* d_read4 = (SeqT4<SeqT>*)read;
+            SeqT4<SeqT> read4    = d_read4[read_pos / CELLS_PER_THREAD];
 
             ScoreT4<ScoreT> char_profile;
             char_profile.s0 = (graph_base == read4.r0 ? match_score : mismatch_score);
@@ -345,7 +341,7 @@ __device__
             // which can be used to compute the first cell of the next warp.
             first_element_prev_score = __shfl_sync(FULL_MASK, score.s3, WARP_SIZE - 1);
 
-            score_index = static_cast<int64_t>(read_pos + 1 - band_start) + static_cast<int64_t>(score_gIdx) * static_cast<int64_t>(max_matrix_sequence_dimension);
+            int64_t score_index = static_cast<int64_t>(read_pos + 1 - band_start) + static_cast<int64_t>(score_gIdx) * static_cast<int64_t>(band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING);
 
             scores[score_index]      = score.s0;
             scores[score_index + 1L] = score.s1;
@@ -362,7 +358,7 @@ __device__
         // Find location of the maximum score in the matrix.
         SizeT i       = 0;
         SizeT j       = read_length;
-        ScoreT mscore = score_type_min_limit;
+        ScoreT mscore = min_score_value;
 
         for (SizeT idx = 1; idx <= graph_count; idx++)
         {

@@ -118,9 +118,8 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
     bool warp_error = false;
 
     int32_t nwindows_per_block = TPB / WARP_SIZE;
-    int32_t warp_idx           = threadIdx.x / WARP_SIZE;
     int32_t lane_idx           = threadIdx.x % WARP_SIZE;
-    int32_t window_idx         = blockIdx.x * nwindows_per_block + warp_idx;
+    int32_t window_idx         = blockIdx.x * nwindows_per_block + threadIdx.x / WARP_SIZE;
 
     if (window_idx >= total_windows)
         return;
@@ -167,7 +166,7 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
 
     SizeT* sequence_lengths = &sequence_lengths_d[window_details_d[window_idx].seq_len_buffer_offset];
 
-    uint32_t num_sequences = window_details_d[window_idx].num_seqs;
+    uint16_t num_sequences = window_details_d[window_idx].num_seqs;
     uint8_t* sequence      = &sequences_d[window_details_d[window_idx].seq_starts];
     int8_t* base_weights   = &base_weights_d[window_details_d[window_idx].seq_starts];
 
@@ -227,7 +226,7 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
     __syncwarp();
 
     // Align each subsequent read, add alignment to graph, run topoligical sort.
-    for (SizeT s = 1; s < num_sequences; s++)
+    for (uint16_t s = 1; s < num_sequences; s++)
     {
         SizeT seq_len = sequence_lengths[s];
         sequence += sequence_lengths[s - 1];     // increment the pointer so it is pointing to correct sequence data

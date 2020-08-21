@@ -168,7 +168,7 @@ __global__ void generateMSAKernel(uint8_t* nodes_d,
     uint8_t* multiple_sequence_alignments   = &multiple_sequence_alignments_d[window_idx * max_sequences_per_poa * max_limit_consensus_size];
     SizeT* sorted_poa                       = &sorted_poa_d[window_idx * max_nodes_per_graph];
     uint16_t* node_alignment_counts         = &node_alignment_counts_d[window_idx * max_nodes_per_graph];
-    uint32_t num_sequences                  = window_details_d[window_idx].num_seqs;
+    uint16_t num_sequences                  = window_details_d[window_idx].num_seqs;
     SizeT* sequence_lengths                 = &sequence_lengths_d[window_details_d[window_idx].seq_len_buffer_offset];
     SizeT* incoming_edges                   = &incoming_edges_d[window_idx * max_nodes_per_graph * CUDAPOA_MAX_NODE_EDGES];
     uint16_t* incoming_edge_count           = &incoming_edge_count_d[window_idx * max_nodes_per_graph];
