@@ -46,10 +46,10 @@ class UngappedExtender
     /// \brief Destructor for UngappedExtender.
     ~UngappedExtender() = default;
     /// \brief Constructor Prototype
-    UngappedExtender(int gpu_id=0,
-                     int* h_sub_mat,
+    UngappedExtender(int* h_sub_mat,
                      int input_xdrop,
                      bool input_noentropy,
+                     int gpu_id=0,
                      cudaStream_t stream=0);
   
  
@@ -81,7 +81,7 @@ class UngappedExtender
                                Anchor* d_seed_hits,
                                int32_t num_hits,
                                ScoredSegment* d_hsp_out,
-                               int32_t* num_hsps);
+                               int32_t* d_num_hsps);
  
     /// \brief Waits for CUDA accelerated extension to finish
     ///

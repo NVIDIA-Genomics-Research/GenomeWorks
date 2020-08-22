@@ -239,7 +239,7 @@ std::vector<segment> SeedAndFilter (std::vector<uint64_t> seed_offset_vector, bo
     uint32_t start_hit_val = 0;
     uint32_t iter_num_seeds, iter_num_hits;
     int32_t* d_num_anchors;
-    GW_CU_CHECK_ERR(cudaMalloc(&d_num_anchors, sizeof(int32_t)));
+    GW_CU_CHECK_ERR(cudaMalloc((void**)&d_num_anchors, sizeof(int32_t)));
 
     if(num_hits > 0){
         
@@ -323,9 +323,9 @@ void ShutdownProcessor(){
     d_hsp_vec.clear();
 
     g_cuda_ungapped_extenders.clear();
-    for(auto & cudaStream: g_cuda_streams)
+    for(auto& cudaStream: g_cuda_streams)
     {
-        cudaStreamDestry(cudaStream);
+        cudaStreamDestroy(cudaStream);
     }
     g_cuda_streams.clear();
     cudaDeviceReset();
