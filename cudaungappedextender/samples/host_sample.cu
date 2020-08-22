@@ -87,6 +87,7 @@ namespace cudaungappedextender
             i++;
         }
         
+        return 0;
         
     }
 }

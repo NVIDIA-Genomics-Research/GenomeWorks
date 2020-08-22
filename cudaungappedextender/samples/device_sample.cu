@@ -120,6 +120,8 @@ namespace cudaungappedextender
             }
         
         }
+
+        return 0;
         
     }
 } // namespace cudaungappedextender
