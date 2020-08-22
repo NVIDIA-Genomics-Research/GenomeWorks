@@ -44,7 +44,7 @@ namespace cudaungappedextender
         magic_sequence query_sequence = fasta_parser_query->get_sequence_by_id(0); 
         
         // CSV Anchors file - Each row -> query_position_in_read_, target_position_in_read_
-        std::string anchors_file_path = "../data/anchors.csv";
+        std::string anchors_file_path = "../data/example_hits.csv";
         
         std::vector<Anchor> h_hits;
         // Following function loops through all hits in the anchors.csv and returns results in 
