@@ -40,7 +40,7 @@ namespace cudaungappedextender
         // Assumes that only one sequence is present per file
         std::string target_sequence = fasta_parser_target->get_sequence_by_id(0); 
         
-        magic_sequence query_file_path = "../data/example.fa";
+        std::string query_file_path = "../data/example.fa";
         std::unique_ptr<io::FastaParser> fasta_parser_query = io::create_kseq_fasta_parser(query_file_path, 0, false);
         // Assumes that only one sequence is present per file
         magic_sequence query_sequence = fasta_parser_query->get_sequence_by_id(0); 
