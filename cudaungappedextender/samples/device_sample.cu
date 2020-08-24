@@ -46,8 +46,8 @@ int main(int argc, char* argv[])
     std::string anchors_file_path = "../data/example_hits.csv";
     
     std::vector<Anchor> h_hits;
-    // Following function loops through all hits in the anchors.csv and returns results in 
-    // the passed array
+    // Following function loops through all hits in the anchors csv and returns results in 
+    // the passed vector
     parse_anchors(anchors_file_path, h_hits);
 
     // Following sections TBD based on encoding
