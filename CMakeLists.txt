@@ -83,6 +83,7 @@ add_subdirectory(common/io)
 add_subdirectory(cudapoa)
 add_subdirectory(cudamapper)
 add_subdirectory(cudaaligner)
+add_subdirectory(cudaungappedextender)
 
 # Add documentation generation.
 validate_boolean(gw_generate_docs)

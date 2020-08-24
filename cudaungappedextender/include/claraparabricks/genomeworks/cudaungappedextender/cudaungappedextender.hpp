@@ -30,7 +30,8 @@ struct Anchor
     position_in_read_t target_position_in_read_;
 };
 
-struct ScoredSegment {
+struct ScoredSegment
+{
     /// Anchor for the segment
     Anchor anchor;
     /// length of the segment
@@ -42,57 +43,45 @@ struct ScoredSegment {
 /// CUDA Ungapped Extension object
 class UngappedExtender
 {
-    public:
+public:
     /// \brief Destructor for UngappedExtender.
     ~UngappedExtender() = default;
     /// \brief Constructor Prototype
-    UngappedExtender(int* h_sub_mat,
-                     int input_xdrop,
-                     bool input_noentropy,
-                     int gpu_id=0,
-                     cudaStream_t stream=0);
-  
- 
- 
+    UngappedExtender(int* h_sub_mat, int input_xdrop, bool input_noentropy,
+                     int gpu_id = 0, cudaStream_t stream = 0);
+
     /// \brief Host pointer prototype for ungapped extension
     ///
     /// Takes values from host data structures,
-    /// copies them over to device, 
+    /// copies them over to device,
     /// launches async extension kernels on specified stream. Filters
     /// segments on device based on input_hspthresh.
-    StatusType ungapped_extend(const char* h_query,
-                               int32_t query_length,
-                               const char* h_target,
-                               int32_t target_length,
+    StatusType ungapped_extend(const char* h_query, int32_t query_length,
+                               const char* h_target, int32_t target_length,
                                int32_t input_hspthresh,
                                std::vector<Anchor>& h_seedHits);
- 
+
     /// \brief Device pointer prototype for ungapped extension
     ///
-    /// Memcopies to device memory are assumed to be done before this 
+    /// Memcopies to device memory are assumed to be done before this
     /// function. Output array d_hsp_out must be pre-allocated on device.
-    /// Launches async extension kernel. Filters segments on device 
+    /// Launches async extension kernel. Filters segments on device
     /// based on input_hspthresh.
-    StatusType ungapped_extend(const char* d_query,
-                               int32_t query_length,
-                               const char* d_target,
-                               int32_t target_length,
-                               int32_t input_hspthresh,
-                               Anchor* d_seed_hits,
-                               int32_t num_hits,
-                               ScoredSegment* d_hsp_out,
+    StatusType ungapped_extend(const char* d_query, int32_t query_length,
+                               const char* d_target, int32_t target_length,
+                               int32_t input_hspthresh, Anchor* d_seed_hits,
+                               int32_t num_hits, ScoredSegment* d_hsp_out,
                                int32_t* d_num_hsps);
- 
+
     /// \brief Waits for CUDA accelerated extension to finish
     ///
     /// Blocking call that waits for all the extensions scheduled
     /// on the GPU to come to completion.
     StatusType sync_extensions();
- 
- 
+
     /// \brief Return the computed segments
     ///
-    /// \return Vector of Scored Segments 
+    /// \return Vector of Scored Segments
     const std::vector<std::shared_ptr<ScoredSegment>>& get_scored_segments();
 
     /// \brief Reset UngappedExtender object.
