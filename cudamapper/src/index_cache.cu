@@ -196,11 +196,11 @@ void IndexCache::generate_content_host(const std::vector<IndexDescriptor>& descr
                     index_on_device_from_previous_step = nullptr;
                 }
 
-                index_on_host = IndexHostCopy::create_cache(*index_on_device,
-                                                            descriptor_of_index_to_cache.first_read(),
-                                                            kmer_size_,
-                                                            window_size_,
-                                                            cuda_stream_copy_);
+                index_on_host = IndexHostCopy::create_host_copy(*index_on_device,
+                                                                descriptor_of_index_to_cache.first_read(),
+                                                                kmer_size_,
+                                                                window_size_,
+                                                                cuda_stream_copy_);
                 started_copy  = true; // index is being copied to host memory, a sync will be needed
             }
         }

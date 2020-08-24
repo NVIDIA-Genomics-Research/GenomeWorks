@@ -203,11 +203,11 @@ public:
     /// \param window_size the number of adjacent k-mers in a window, adjacent = shifted by one basepair
     /// \param cuda_stream D2H copy is done on this stream
     /// \return - an instance of IndexHostCopyBase
-    static std::unique_ptr<IndexHostCopyBase> create_cache(const Index& index,
-                                                           const read_id_t first_read_id,
-                                                           const std::uint64_t kmer_size,
-                                                           const std::uint64_t window_size,
-                                                           const cudaStream_t cuda_stream = 0);
+    static std::unique_ptr<IndexHostCopyBase> create_host_copy(const Index& index,
+                                                               const read_id_t first_read_id,
+                                                               const std::uint64_t kmer_size,
+                                                               const std::uint64_t window_size,
+                                                               const cudaStream_t cuda_stream = 0);
 };
 
 } // namespace cudamapper
