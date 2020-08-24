@@ -63,9 +63,8 @@ template <typename ScoreT, typename SizeT>
 class CudapoaBatch : public Batch
 {
 public:
-    CudapoaBatch(int32_t device_id, cudaStream_t stream, size_t max_mem, int8_t output_mask,
-                 const BatchSize& batch_size, ScoreT gap_score = -8, ScoreT mismatch_score = -6, ScoreT match_score = 8,
-                 bool cuda_banded_alignment = false)
+    CudapoaBatch(int32_t device_id, cudaStream_t stream, size_t max_gpu_mem, int8_t output_mask,
+                 const BatchConfig& batch_size, ScoreT gap_score = -8, ScoreT mismatch_score = -6, ScoreT match_score = 8)
         : max_sequences_per_poa_(throw_on_negative(batch_size.max_sequences_per_poa, "Maximum sequences per POA has to be non-negative"))
         , device_id_(throw_on_negative(device_id, "Device ID has to be non-negative"))
         , stream_(stream)
@@ -74,12 +73,12 @@ public:
         , gap_score_(gap_score)
         , mismatch_score_(mismatch_score)
         , match_score_(match_score)
-        , banded_alignment_(cuda_banded_alignment)
+        , banded_alignment_(batch_size.band_mode == BandMode::static_band)
+        , adaptive_banded_(batch_size.band_mode == BandMode::adaptive_band)
         , batch_block_(new BatchBlock<ScoreT, SizeT>(device_id,
-                                                     max_mem,
+                                                     max_gpu_mem,
                                                      output_mask,
-                                                     batch_size_,
-                                                     cuda_banded_alignment))
+                                                     batch_size_))
         , max_poas_(batch_block_->get_max_poas())
     {
         // Set CUDA device
@@ -172,7 +171,6 @@ public:
                                         num_nucleotides_copied_ * sizeof(*input_details_h_->base_weights), cudaMemcpyHostToDevice, stream_));
         GW_CU_CHECK_ERR(cudaMemcpyAsync(input_details_d_->window_details, input_details_h_->window_details,
                                         poa_count_ * sizeof(*input_details_h_->window_details), cudaMemcpyHostToDevice, stream_));
-        /// ToDo may need to revise the following sizeof()
         GW_CU_CHECK_ERR(cudaMemcpyAsync(input_details_d_->sequence_lengths, input_details_h_->sequence_lengths,
                                         global_sequence_idx_ * sizeof(*input_details_h_->sequence_lengths), cudaMemcpyHostToDevice, stream_));
 
@@ -190,6 +188,7 @@ public:
                                    mismatch_score_,
                                    match_score_,
                                    banded_alignment_,
+                                   adaptive_banded_,
                                    max_sequences_per_poa_,
                                    output_mask_,
                                    batch_size_);
@@ -315,7 +314,7 @@ public:
     void get_graphs(std::vector<DirectedGraph>& graphs,
                     std::vector<StatusType>& output_status)
     {
-        int32_t max_nodes_per_window_ = banded_alignment_ ? batch_size_.max_nodes_per_window_banded : batch_size_.max_nodes_per_window;
+        int32_t max_nodes_per_window_ = batch_size_.max_nodes_per_graph;
         GW_CU_CHECK_ERR(cudaMemcpyAsync(graph_details_h_->nodes,
                                         graph_details_d_->nodes,
                                         sizeof(*graph_details_h_->nodes) * max_nodes_per_window_ * max_poas_,
@@ -462,6 +461,10 @@ protected:
             GW_LOG_WARN("Kernel Error:: Loop count exceeded upper bound in nw algorithm in batch {}\n", bid_);
             output_status.emplace_back(error_type);
             break;
+        case genomeworks::cudapoa::StatusType::exceeded_adaptive_banded_matrix_size:
+            GW_LOG_WARN("Kernel Error:: Band width set for adaptive matrix allocation is too small in batch {}\n", bid_);
+            output_status.emplace_back(error_type);
+            break;
         case genomeworks::cudapoa::StatusType::exceeded_maximum_sequence_size:
             GW_LOG_WARN("Kernel Error:: Consensus/MSA sequence size exceeded max sequence size in batch {}\n", bid_);
             output_status.emplace_back(error_type);
@@ -547,9 +550,9 @@ protected:
     // Check if seq length can fit in available scoring matrix memory.
     bool reserve_buf(int32_t max_seq_length)
     {
-        int32_t max_graph_dimension = banded_alignment_ ? batch_size_.max_matrix_graph_dimension_banded : batch_size_.max_matrix_graph_dimension;
+        int32_t max_graph_dimension = batch_size_.matrix_graph_dimension;
 
-        int32_t scores_width = banded_alignment_ ? (batch_size_.alignment_band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING) : cudautils::align<int32_t, 4>(max_seq_length + 1 + CELLS_PER_THREAD);
+        int32_t scores_width = (banded_alignment_ || adaptive_banded_) ? batch_size_.matrix_sequence_dimension : cudautils::align<int32_t, 4>(max_seq_length + 1 + CELLS_PER_THREAD);
         size_t scores_size   = static_cast<size_t>(scores_width) * static_cast<size_t>(max_graph_dimension) * sizeof(ScoreT);
 
         if (scores_size > avail_scorebuf_mem_)
@@ -583,7 +586,7 @@ protected:
     int8_t output_mask_;
 
     // Upper limits for data size
-    BatchSize batch_size_;
+    BatchConfig batch_size_;
 
     // Gap, mismatch and match scores for NW dynamic programming loop.
     ScoreT gap_score_;
@@ -625,6 +628,11 @@ protected:
 
     // Use banded POA alignment
     bool banded_alignment_;
+    bool adaptive_banded_;
+
+    // flag that enables some extra buffers to accommodate fully adaptive bands with variable width and arbitrary location
+    // disabled for current implementation, can be enabled for possible future variants of adaptive alignment algorithm
+    bool variable_band_ = false;
 
     // Pointer of a seperate class BatchBlock that implements details on calculating and allocating the memory for each batch
     std::unique_ptr<BatchBlock<ScoreT, SizeT>> batch_block_;

@@ -54,17 +54,13 @@ template <typename ScoreT, typename SizeT>
 class BatchBlock
 {
 public:
-    BatchBlock(int32_t device_id, size_t avail_mem, int8_t output_mask, const BatchSize& batch_size, bool banded_alignment = false)
+    BatchBlock(int32_t device_id, size_t avail_mem, int8_t output_mask, const BatchConfig& batch_size)
         : max_sequences_per_poa_(throw_on_negative(batch_size.max_sequences_per_poa, "Maximum sequences per POA has to be non-negative"))
-        , banded_alignment_(banded_alignment)
         , device_id_(throw_on_negative(device_id, "Device ID has to be non-negative"))
         , output_mask_(output_mask)
     {
         scoped_device_switch dev(device_id_);
-
-        matrix_sequence_dimension_ = banded_alignment_ ? (batch_size.alignment_band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING) : batch_size.max_matrix_sequence_dimension;
-        max_graph_dimension_       = banded_alignment_ ? batch_size.max_matrix_graph_dimension_banded : batch_size.max_matrix_graph_dimension;
-        max_nodes_per_window_      = banded_alignment_ ? batch_size.max_nodes_per_window_banded : batch_size.max_nodes_per_window;
+        max_nodes_per_window_ = batch_size.max_nodes_per_graph;
 
         // calculate static and dynamic sizes of buffers needed per POA entry.
         int64_t host_size_fixed, device_size_fixed;
@@ -82,8 +78,9 @@ public:
         }
 
         // Calculate max POAs possible based on available memory.
-        int64_t device_size_per_score_matrix = static_cast<int64_t>(matrix_sequence_dimension_) * static_cast<int64_t>(max_graph_dimension_) * sizeof(ScoreT);
-        max_poas_                            = avail_mem / (device_size_per_poa + device_size_per_score_matrix);
+        int64_t device_size_per_score_matrix = static_cast<int64_t>(batch_size.matrix_sequence_dimension) *
+                                               static_cast<int64_t>(batch_size.matrix_graph_dimension) * sizeof(ScoreT);
+        max_poas_ = avail_mem / (device_size_per_poa + device_size_per_score_matrix);
 
         // Update final sizes for block based on calculated maximum POAs.
         output_size_ = max_poas_ * static_cast<int64_t>(batch_size.max_consensus_size);
@@ -198,9 +195,20 @@ public:
 
         // on device;
         alignment_details_d->alignment_graph = reinterpret_cast<decltype(alignment_details_d->alignment_graph)>(&block_data_d_[offset_d_]);
-        offset_d_ += cudautils::align<int64_t, 8>(sizeof(*alignment_details_d->alignment_graph) * max_graph_dimension_ * max_poas_);
+        offset_d_ += cudautils::align<int64_t, 8>(sizeof(*alignment_details_d->alignment_graph) * max_nodes_per_window_ * max_poas_);
         alignment_details_d->alignment_read = reinterpret_cast<decltype(alignment_details_d->alignment_read)>(&block_data_d_[offset_d_]);
-        offset_d_ += cudautils::align<int64_t, 8>(sizeof(*alignment_details_d->alignment_read) * max_graph_dimension_ * max_poas_);
+        offset_d_ += cudautils::align<int64_t, 8>(sizeof(*alignment_details_d->alignment_read) * max_nodes_per_window_ * max_poas_);
+        if (variable_bands_)
+        {
+            alignment_details_d->band_starts = reinterpret_cast<decltype(alignment_details_d->band_starts)>(&block_data_d_[offset_d_]);
+            offset_d_ += cudautils::align<int64_t, 8>(sizeof(*alignment_details_d->band_starts) * max_nodes_per_window_ * max_poas_);
+            alignment_details_d->band_widths = reinterpret_cast<decltype(alignment_details_d->band_widths)>(&block_data_d_[offset_d_]);
+            offset_d_ += cudautils::align<int64_t, 8>(sizeof(*alignment_details_d->band_widths) * max_nodes_per_window_ * max_poas_);
+            alignment_details_d->band_head_indices = reinterpret_cast<decltype(alignment_details_d->band_head_indices)>(&block_data_d_[offset_d_]);
+            offset_d_ += cudautils::align<int64_t, 8>(sizeof(*alignment_details_d->band_head_indices) * max_nodes_per_window_ * max_poas_);
+            alignment_details_d->band_max_indices = reinterpret_cast<decltype(alignment_details_d->band_max_indices)>(&block_data_d_[offset_d_]);
+            offset_d_ += cudautils::align<int64_t, 8>(sizeof(*alignment_details_d->band_max_indices) * max_nodes_per_window_ * max_poas_);
+        }
 
         // rest of the available memory is assigned to scores buffer
         alignment_details_d->scorebuf_alloc_size = total_d_ - offset_d_;
@@ -251,6 +259,11 @@ public:
         offset_d_ += cudautils::align<int64_t, 8>(sizeof(*graph_details_d->sorted_poa) * max_nodes_per_window_ * max_poas_);
         graph_details_d->sorted_poa_node_map = reinterpret_cast<decltype(graph_details_d->sorted_poa_node_map)>(&block_data_d_[offset_d_]);
         offset_d_ += cudautils::align<int64_t, 8>(sizeof(*graph_details_d->sorted_poa_node_map) * max_nodes_per_window_ * max_poas_);
+        if (variable_bands_)
+        {
+            graph_details_d->node_distance_to_head = reinterpret_cast<decltype(graph_details_d->node_distance_to_head)>(&block_data_d_[offset_d_]);
+            offset_d_ += cudautils::align<int64_t, 8>(sizeof(*graph_details_d->node_distance_to_head) * max_nodes_per_window_ * max_poas_);
+        }
         graph_details_d->sorted_poa_local_edge_count = reinterpret_cast<decltype(graph_details_d->sorted_poa_local_edge_count)>(&block_data_d_[offset_d_]);
         offset_d_ += cudautils::align<int64_t, 8>(sizeof(*graph_details_d->sorted_poa_local_edge_count) * max_nodes_per_window_ * max_poas_);
         if (output_mask_ & OutputType::consensus)
@@ -295,12 +308,10 @@ public:
 
     int32_t get_max_poas() const { return max_poas_; };
 
-    static int64_t compute_device_memory_per_poa(const BatchSize& batch_size, const bool banded_alignment, const bool msa_flag)
+    static int64_t compute_device_memory_per_poa(const BatchConfig& batch_size, const bool msa_flag, const bool variable_bands = false)
     {
         int64_t device_size_per_poa = 0;
-
-        int32_t matrix_graph_dimension = banded_alignment ? batch_size.max_matrix_graph_dimension_banded : batch_size.max_matrix_graph_dimension;
-        int32_t max_nodes_per_window   = banded_alignment ? batch_size.max_nodes_per_window_banded : batch_size.max_nodes_per_window;
+        int32_t max_nodes_per_graph = batch_size.max_nodes_per_graph;
 
         // for output - device
         device_size_per_poa += batch_size.max_consensus_size * sizeof(*OutputDetails::consensus);                                                                        // output_details_d_->consensus
@@ -313,39 +324,43 @@ public:
         device_size_per_poa += sizeof(*InputDetails<SizeT>::window_details);                                                                 // input_details_d_->window_details
         device_size_per_poa += (msa_flag) ? batch_size.max_sequences_per_poa * sizeof(*InputDetails<SizeT>::sequence_begin_nodes_ids) : 0;   // input_details_d_->sequence_begin_nodes_ids
         // for graph - device
-        device_size_per_poa += sizeof(*GraphDetails<SizeT>::nodes) * max_nodes_per_window;                                                                                                // graph_details_d_->nodes
-        device_size_per_poa += sizeof(*GraphDetails<SizeT>::node_alignments) * max_nodes_per_window * CUDAPOA_MAX_NODE_ALIGNMENTS;                                                        // graph_details_d_->node_alignments
-        device_size_per_poa += sizeof(*GraphDetails<SizeT>::node_alignment_count) * max_nodes_per_window;                                                                                 // graph_details_d_->node_alignment_count
-        device_size_per_poa += sizeof(*GraphDetails<SizeT>::incoming_edges) * max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES;                                                              // graph_details_d_->incoming_edges
-        device_size_per_poa += sizeof(*GraphDetails<SizeT>::incoming_edge_count) * max_nodes_per_window;                                                                                  // graph_details_d_->incoming_edge_count
-        device_size_per_poa += sizeof(*GraphDetails<SizeT>::outgoing_edges) * max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES;                                                              // graph_details_d_->outgoing_edges
-        device_size_per_poa += sizeof(*GraphDetails<SizeT>::outgoing_edge_count) * max_nodes_per_window;                                                                                  // graph_details_d_->outgoing_edge_count
-        device_size_per_poa += sizeof(*GraphDetails<SizeT>::incoming_edge_weights) * max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES;                                                       // graph_details_d_->incoming_edge_weights
-        device_size_per_poa += sizeof(*GraphDetails<SizeT>::outgoing_edge_weights) * max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES;                                                       // graph_details_d_->outgoing_edge_weights
-        device_size_per_poa += sizeof(*GraphDetails<SizeT>::sorted_poa) * max_nodes_per_window;                                                                                           // graph_details_d_->sorted_poa
-        device_size_per_poa += sizeof(*GraphDetails<SizeT>::sorted_poa_node_map) * max_nodes_per_window;                                                                                  // graph_details_d_->sorted_poa_node_map
-        device_size_per_poa += sizeof(*GraphDetails<SizeT>::sorted_poa_local_edge_count) * max_nodes_per_window;                                                                          // graph_details_d_->sorted_poa_local_edge_count
-        device_size_per_poa += (!msa_flag) ? sizeof(*GraphDetails<SizeT>::consensus_scores) * max_nodes_per_window : 0;                                                                   // graph_details_d_->consensus_scores
-        device_size_per_poa += (!msa_flag) ? sizeof(*GraphDetails<SizeT>::consensus_predecessors) * max_nodes_per_window : 0;                                                             // graph_details_d_->consensus_predecessors
-        device_size_per_poa += sizeof(*GraphDetails<SizeT>::node_marks) * max_nodes_per_window;                                                                                           // graph_details_d_->node_marks
-        device_size_per_poa += sizeof(*GraphDetails<SizeT>::check_aligned_nodes) * max_nodes_per_window;                                                                                  // graph_details_d_->check_aligned_nodes
-        device_size_per_poa += sizeof(*GraphDetails<SizeT>::nodes_to_visit) * max_nodes_per_window;                                                                                       // graph_details_d_->nodes_to_visit
-        device_size_per_poa += sizeof(*GraphDetails<SizeT>::node_coverage_counts) * max_nodes_per_window;                                                                                 // graph_details_d_->node_coverage_counts
-        device_size_per_poa += (msa_flag) ? sizeof(*GraphDetails<SizeT>::outgoing_edges_coverage) * max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES * batch_size.max_sequences_per_poa : 0; // graph_details_d_->outgoing_edges_coverage
-        device_size_per_poa += (msa_flag) ? sizeof(*GraphDetails<SizeT>::outgoing_edges_coverage_count) * max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES : 0;                              // graph_details_d_->outgoing_edges_coverage_count
-        device_size_per_poa += (msa_flag) ? sizeof(*GraphDetails<SizeT>::node_id_to_msa_pos) * max_nodes_per_window : 0;                                                                  // graph_details_d_->node_id_to_msa_pos
+        device_size_per_poa += sizeof(*GraphDetails<SizeT>::nodes) * max_nodes_per_graph;                                                                                                // graph_details_d_->nodes
+        device_size_per_poa += sizeof(*GraphDetails<SizeT>::node_alignments) * max_nodes_per_graph * CUDAPOA_MAX_NODE_ALIGNMENTS;                                                        // graph_details_d_->node_alignments
+        device_size_per_poa += sizeof(*GraphDetails<SizeT>::node_alignment_count) * max_nodes_per_graph;                                                                                 // graph_details_d_->node_alignment_count
+        device_size_per_poa += sizeof(*GraphDetails<SizeT>::incoming_edges) * max_nodes_per_graph * CUDAPOA_MAX_NODE_EDGES;                                                              // graph_details_d_->incoming_edges
+        device_size_per_poa += sizeof(*GraphDetails<SizeT>::incoming_edge_count) * max_nodes_per_graph;                                                                                  // graph_details_d_->incoming_edge_count
+        device_size_per_poa += sizeof(*GraphDetails<SizeT>::outgoing_edges) * max_nodes_per_graph * CUDAPOA_MAX_NODE_EDGES;                                                              // graph_details_d_->outgoing_edges
+        device_size_per_poa += sizeof(*GraphDetails<SizeT>::outgoing_edge_count) * max_nodes_per_graph;                                                                                  // graph_details_d_->outgoing_edge_count
+        device_size_per_poa += sizeof(*GraphDetails<SizeT>::incoming_edge_weights) * max_nodes_per_graph * CUDAPOA_MAX_NODE_EDGES;                                                       // graph_details_d_->incoming_edge_weights
+        device_size_per_poa += sizeof(*GraphDetails<SizeT>::outgoing_edge_weights) * max_nodes_per_graph * CUDAPOA_MAX_NODE_EDGES;                                                       // graph_details_d_->outgoing_edge_weights
+        device_size_per_poa += sizeof(*GraphDetails<SizeT>::sorted_poa) * max_nodes_per_graph;                                                                                           // graph_details_d_->sorted_poa
+        device_size_per_poa += sizeof(*GraphDetails<SizeT>::sorted_poa_node_map) * max_nodes_per_graph;                                                                                  // graph_details_d_->sorted_poa_node_map
+        device_size_per_poa += variable_bands ? sizeof(*GraphDetails<SizeT>::node_distance_to_head) * max_nodes_per_graph : 0;                                                           // graph_details_d_->node_distance_to_head
+        device_size_per_poa += sizeof(*GraphDetails<SizeT>::sorted_poa_local_edge_count) * max_nodes_per_graph;                                                                          // graph_details_d_->sorted_poa_local_edge_count
+        device_size_per_poa += (!msa_flag) ? sizeof(*GraphDetails<SizeT>::consensus_scores) * max_nodes_per_graph : 0;                                                                   // graph_details_d_->consensus_scores
+        device_size_per_poa += (!msa_flag) ? sizeof(*GraphDetails<SizeT>::consensus_predecessors) * max_nodes_per_graph : 0;                                                             // graph_details_d_->consensus_predecessors
+        device_size_per_poa += sizeof(*GraphDetails<SizeT>::node_marks) * max_nodes_per_graph;                                                                                           // graph_details_d_->node_marks
+        device_size_per_poa += sizeof(*GraphDetails<SizeT>::check_aligned_nodes) * max_nodes_per_graph;                                                                                  // graph_details_d_->check_aligned_nodes
+        device_size_per_poa += sizeof(*GraphDetails<SizeT>::nodes_to_visit) * max_nodes_per_graph;                                                                                       // graph_details_d_->nodes_to_visit
+        device_size_per_poa += sizeof(*GraphDetails<SizeT>::node_coverage_counts) * max_nodes_per_graph;                                                                                 // graph_details_d_->node_coverage_counts
+        device_size_per_poa += (msa_flag) ? sizeof(*GraphDetails<SizeT>::outgoing_edges_coverage) * max_nodes_per_graph * CUDAPOA_MAX_NODE_EDGES * batch_size.max_sequences_per_poa : 0; // graph_details_d_->outgoing_edges_coverage
+        device_size_per_poa += (msa_flag) ? sizeof(*GraphDetails<SizeT>::outgoing_edges_coverage_count) * max_nodes_per_graph * CUDAPOA_MAX_NODE_EDGES : 0;                              // graph_details_d_->outgoing_edges_coverage_count
+        device_size_per_poa += (msa_flag) ? sizeof(*GraphDetails<SizeT>::node_id_to_msa_pos) * max_nodes_per_graph : 0;                                                                  // graph_details_d_->node_id_to_msa_pos
         // for alignment - device
-        device_size_per_poa += sizeof(*AlignmentDetails<ScoreT, SizeT>::alignment_graph) * matrix_graph_dimension; // alignment_details_d_->alignment_graph
-        device_size_per_poa += sizeof(*AlignmentDetails<ScoreT, SizeT>::alignment_read) * matrix_graph_dimension;  // alignment_details_d_->alignment_read
+        device_size_per_poa += sizeof(*AlignmentDetails<ScoreT, SizeT>::alignment_graph) * max_nodes_per_graph;                        // alignment_details_d_->alignment_graph
+        device_size_per_poa += sizeof(*AlignmentDetails<ScoreT, SizeT>::alignment_read) * max_nodes_per_graph;                         // alignment_details_d_->alignment_read
+        device_size_per_poa += variable_bands ? sizeof(*AlignmentDetails<ScoreT, SizeT>::band_starts) * max_nodes_per_graph : 0;       // alignment_details_d_->band_starts
+        device_size_per_poa += variable_bands ? sizeof(*AlignmentDetails<ScoreT, SizeT>::band_widths) * max_nodes_per_graph : 0;       // alignment_details_d_->band_widths
+        device_size_per_poa += variable_bands ? sizeof(*AlignmentDetails<ScoreT, SizeT>::band_head_indices) * max_nodes_per_graph : 0; // alignment_details_d_->band_head_indices
+        device_size_per_poa += variable_bands ? sizeof(*AlignmentDetails<ScoreT, SizeT>::band_max_indices) * max_nodes_per_graph : 0;  // alignment_details_d_->band_max_indices
 
         return device_size_per_poa;
     }
 
-    static int64_t compute_host_memory_per_poa(const BatchSize& batch_size, const bool banded_alignment, const bool msa_flag)
+    static int64_t compute_host_memory_per_poa(const BatchConfig& batch_size, const bool msa_flag)
     {
-        int64_t host_size_per_poa = 0;
-
-        int32_t max_nodes_per_window = banded_alignment ? batch_size.max_nodes_per_window_banded : batch_size.max_nodes_per_window;
+        int64_t host_size_per_poa   = 0;
+        int32_t max_nodes_per_graph = batch_size.max_nodes_per_graph;
 
         // for output - host
         host_size_per_poa += batch_size.max_consensus_size * sizeof(*OutputDetails::consensus);                                                                        // output_details_h_->consensus
@@ -359,15 +374,15 @@ public:
         host_size_per_poa += sizeof(*InputDetails<SizeT>::window_details);                                                                 // input_details_h_->window_details
         host_size_per_poa += (msa_flag) ? batch_size.max_sequences_per_poa * sizeof(*InputDetails<SizeT>::sequence_begin_nodes_ids) : 0;   // input_details_h_->sequence_begin_nodes_ids
         // for graph - host
-        host_size_per_poa += sizeof(*GraphDetails<SizeT>::nodes) * max_nodes_per_window;                                          // graph_details_h_->nodes
-        host_size_per_poa += sizeof(*GraphDetails<SizeT>::incoming_edges) * max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES;        // graph_details_d_->incoming_edges
-        host_size_per_poa += sizeof(*GraphDetails<SizeT>::incoming_edge_weights) * max_nodes_per_window * CUDAPOA_MAX_NODE_EDGES; // graph_details_d_->incoming_edge_weights
-        host_size_per_poa += sizeof(*GraphDetails<SizeT>::incoming_edge_count) * max_nodes_per_window;                            // graph_details_d_->incoming_edge_count
+        host_size_per_poa += sizeof(*GraphDetails<SizeT>::nodes) * max_nodes_per_graph;                                          // graph_details_h_->nodes
+        host_size_per_poa += sizeof(*GraphDetails<SizeT>::incoming_edges) * max_nodes_per_graph * CUDAPOA_MAX_NODE_EDGES;        // graph_details_d_->incoming_edges
+        host_size_per_poa += sizeof(*GraphDetails<SizeT>::incoming_edge_weights) * max_nodes_per_graph * CUDAPOA_MAX_NODE_EDGES; // graph_details_d_->incoming_edge_weights
+        host_size_per_poa += sizeof(*GraphDetails<SizeT>::incoming_edge_count) * max_nodes_per_graph;                            // graph_details_d_->incoming_edge_count
 
         return host_size_per_poa;
     }
 
-    static int64_t estimate_max_poas(const BatchSize& batch_size, bool banded_alignment, bool msa_flag, float memory_usage_quota,
+    static int64_t estimate_max_poas(const BatchConfig& batch_size, bool msa_flag, float memory_usage_quota,
                                      int32_t mismatch_score, int32_t gap_score, int32_t match_score)
     {
         size_t total = 0, free = 0;
@@ -380,25 +395,24 @@ public:
         if (use32bitScore(batch_size, gap_score, mismatch_score, match_score))
         {
             sizeof_ScoreT = 4;
-            if (use32bitSize(batch_size, banded_alignment))
+            if (use32bitSize(batch_size))
             {
-                device_size_per_poa = BatchBlock<int32_t, int32_t>::compute_device_memory_per_poa(batch_size, banded_alignment, msa_flag);
+                device_size_per_poa = BatchBlock<int32_t, int32_t>::compute_device_memory_per_poa(batch_size, msa_flag);
             }
             else
             {
-                device_size_per_poa = BatchBlock<int32_t, int16_t>::compute_device_memory_per_poa(batch_size, banded_alignment, msa_flag);
+                device_size_per_poa = BatchBlock<int32_t, int16_t>::compute_device_memory_per_poa(batch_size, msa_flag);
             }
         }
         else
         {
             // if ScoreT is 16-bit, it's safe to assume SizeT is also 16-bit
-            device_size_per_poa = BatchBlock<int16_t, int16_t>::compute_device_memory_per_poa(batch_size, banded_alignment, msa_flag);
+            device_size_per_poa = BatchBlock<int16_t, int16_t>::compute_device_memory_per_poa(batch_size, msa_flag);
         }
 
         // Compute required memory for score matrix
-        int32_t matrix_sequence_dimension    = banded_alignment ? batch_size.alignment_band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING : batch_size.max_matrix_sequence_dimension;
-        int32_t matrix_graph_dimension       = banded_alignment ? batch_size.max_matrix_graph_dimension_banded : batch_size.max_matrix_graph_dimension;
-        int64_t device_size_per_score_matrix = (int64_t)matrix_sequence_dimension * (int64_t)matrix_graph_dimension * sizeof_ScoreT;
+        int64_t device_size_per_score_matrix = static_cast<int64_t>(batch_size.matrix_sequence_dimension) *
+                                               static_cast<int64_t>(batch_size.matrix_graph_dimension) * sizeof_ScoreT;
 
         // Calculate max POAs possible based on available memory.
         int64_t max_poas = mem_per_batch / (device_size_per_poa + device_size_per_score_matrix);
@@ -412,10 +426,10 @@ protected:
     // don't vary based on POA count. The latter two are host and device
     // buffer sizes that scale with number of POA entries to process. These sizes do
     // not include the scoring matrix needs for POA processing.
-    std::tuple<int64_t, int64_t, int64_t, int64_t> calculate_space_per_poa(const BatchSize& batch_size)
+    std::tuple<int64_t, int64_t, int64_t, int64_t> calculate_space_per_poa(const BatchConfig& batch_size)
     {
-        int64_t host_size_per_poa   = compute_host_memory_per_poa(batch_size, banded_alignment_, (output_mask_ & OutputType::msa));
-        int64_t device_size_per_poa = compute_device_memory_per_poa(batch_size, banded_alignment_, (output_mask_ & OutputType::msa));
+        int64_t host_size_per_poa   = compute_host_memory_per_poa(batch_size, (output_mask_ & OutputType::msa));
+        int64_t device_size_per_poa = compute_device_memory_per_poa(batch_size, (output_mask_ & OutputType::msa), variable_bands_);
         int64_t device_size_fixed   = 0;
         int64_t host_size_fixed     = 0;
         // for output - host
@@ -439,8 +453,9 @@ protected:
     // Maximum sequences per POA.
     int32_t max_sequences_per_poa_ = 0;
 
-    // Use banded POA alignment
-    bool banded_alignment_;
+    // flag that enables some extra buffers to accommodate fully adaptive bands with variable width and arbitrary location
+    // disabled for current implementation, can be enabled for possible future variants of adaptive alignment algorithm
+    bool variable_bands_ = false;
 
     // Pointer for block data on host and device
     uint8_t* block_data_h_;
@@ -454,11 +469,9 @@ protected:
     int64_t offset_h_ = 0;
     int64_t offset_d_ = 0;
 
-    int64_t input_size_                = 0;
-    int64_t output_size_               = 0;
-    int32_t matrix_sequence_dimension_ = 0;
-    int32_t max_graph_dimension_       = 0;
-    int32_t max_nodes_per_window_      = 0;
+    int64_t input_size_           = 0;
+    int64_t output_size_          = 0;
+    int32_t max_nodes_per_window_ = 0;
     int32_t device_id_;
 
     // Bit field for output type

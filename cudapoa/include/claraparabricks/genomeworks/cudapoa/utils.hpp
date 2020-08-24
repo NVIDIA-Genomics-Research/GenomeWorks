@@ -44,19 +44,20 @@ namespace cudapoa
 /// \param list_of_batch_sizes [out]        a set of batch-sizes, covering all input poa_groups
 /// \param list_of_groups_per_batch [out]   corresponding POA groups per batch-size bin
 /// \param poa_groups [in]                  vector of input poa_groups
-/// \param banded_alignment [in]            flag indicating whether banded-alignment or full-alignment is going to be used, default is banded-alignment
 /// \param msa_flag [in]                    flag indicating whether MSA or consensus is going to be computed, default is consensus
+/// \param band_width [in]                  band-width used in static band mode, it also defines minimum band-width in adaptive band mode
+/// \param band_mode [in]                   defining which banding mod is selected: full , static or adaptive
 /// \param bins_capacity [in]               pointer to vector of bins used to create separate different-sized poa_groups, if null as input, a set of default bins will be used
 /// \param gpu_memory_usage_quota [in]      portion of GPU available memory that will be used for compute each cudaPOA batch, default 0.9
 /// \param mismatch_score [in]              mismatch score, default -6
 /// \param gap_score [in]                   gap score, default -8
 /// \param match_score [in]                 match core, default 8
-void get_multi_batch_sizes(std::vector<BatchSize>& list_of_batch_sizes,
+void get_multi_batch_sizes(std::vector<BatchConfig>& list_of_batch_sizes,
                            std::vector<std::vector<int32_t>>& list_of_groups_per_batch,
                            const std::vector<Group>& poa_groups,
-                           bool banded_alignment               = true,
                            bool msa_flag                       = false,
                            int32_t band_width                  = 256,
+                           BandMode band_mode                  = BandMode::adaptive_band,
                            std::vector<int32_t>* bins_capacity = nullptr,
                            float gpu_memory_usage_quota        = 0.9,
                            int32_t mismatch_score              = -6,

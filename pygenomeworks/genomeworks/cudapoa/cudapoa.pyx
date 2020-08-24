@@ -67,7 +67,7 @@ def status_to_str(status):
 cdef class CudaPoaBatch:
     """Python API for CUDA-accelerated partial order alignment algorithm."""
     cdef unique_ptr[cudapoa.Batch] batch
-    cdef unique_ptr[cudapoa.BatchSize] batch_size
+    cdef unique_ptr[cudapoa.BatchConfig] batch_size
 
     def __cinit__(
             self,
@@ -75,16 +75,16 @@ cdef class CudaPoaBatch:
             max_sequence_size,
             max_gpu_mem,
             output_type="consensus",
+            band_mode="adaptive_band",
             device_id=0,
             stream=None,
             gap_score=-8,
             mismatch_score=-6,
             match_score=8,
-            cuda_banded_alignment=False,
             alignment_band_width=256,
             max_consensus_size=None,
-            max_nodes_per_window=None,
-            max_nodes_per_window_banded=None,
+            max_nodes_per_graph=None,
+            matrix_sequence_dimension=None,
             *args,
             **kwargs):
         """Construct a CUDAPOA Batch object to run CUDA-accelerated
@@ -95,16 +95,15 @@ cdef class CudaPoaBatch:
             max_sequence_size : Maximum number of elements in a sequence
             max_gpu_mem : Maximum GPU memory to use for this batch
             output_type : Types of outputs to generate (consensus, msa)
+            band_mode : Operation mode (full_band, static_band, adaptive_band)
             device_id : ID of GPU device to use
             stream : CudaStream to use for GPU execution
             gap_score : Penalty for gaps
             mismatch_score : Penalty for mismatches
             match_score : Reward for match
-            cuda_banded_alignment : Run POA using banded alignment
             alignment_band_width : Band-width size if using banded alignment
             max_consensus_size : Maximum size of final consensus
-            max_nodes_per_window : Maximum number of nodes in a graph, 1 graph per window
-            max_nodes_per_window_banded : Maximum number of nodes in a graph, 1 graph per window in banded mode
+            max_nodes_per_graph : Maximum number of nodes in a graph, 1 graph per window
         """
         cdef size_t st
         cdef _Stream temp_stream
@@ -130,14 +129,28 @@ cdef class CudaPoaBatch:
         cdef int32_t mx_seq_per_poa = max_sequences_per_poa
         cdef int32_t mx_consensus_sz = \
             2 * max_sequence_size if max_consensus_size is None else max_consensus_size
-        cdef int32_t mx_nodes_per_w = \
-            3 * max_sequence_size if max_nodes_per_window is None else max_nodes_per_window
-        cdef int32_t mx_nodes_per_w_banded = \
-            4 * max_sequence_size if max_nodes_per_window_banded is None else max_nodes_per_window_banded
+        cdef int32_t mx_nodes_per_w
+        cdef int32_t matrix_seq_dim
+        cdef BandMode batch_band_mode
+        if (band_mode == "full_band"):
+            batch_band_mode = BandMode.full_band
+            mx_nodes_per_w = 3 * max_sequence_size if max_nodes_per_graph is None else max_nodes_per_graph
+            matrix_seq_dim = max_sequence_size if matrix_sequence_dimension is None else matrix_sequence_dimension
+        elif (band_mode == "static_band"):
+            batch_band_mode = BandMode.static_band
+            mx_nodes_per_w = 4 * max_sequence_size if max_nodes_per_graph is None else max_nodes_per_graph
+            matrix_seq_dim = ((alignment_band_width + 8) if matrix_sequence_dimension is None
+                              else matrix_sequence_dimension)
+        elif (band_mode == "adaptive_band"):
+            batch_band_mode = BandMode.adaptive_band
+            mx_nodes_per_w = 4 * max_sequence_size if max_nodes_per_graph is None else max_nodes_per_graph
+            matrix_seq_dim = (2*(alignment_band_width + 8) if matrix_sequence_dimension is None
+                              else matrix_sequence_dimension)
+        else:
+            raise RuntimeError("Unknown band_mode provided. Must be full_band/static_band/adaptive_band.")
 
-        self.batch_size = make_unique[cudapoa.BatchSize](
-            mx_seq_sz, mx_consensus_sz, mx_nodes_per_w,
-            mx_nodes_per_w_banded, band_width_sz, mx_seq_per_poa)
+        self.batch_size = make_unique[cudapoa.BatchConfig](
+            mx_seq_sz, mx_consensus_sz, mx_nodes_per_w, band_width_sz, mx_seq_per_poa, matrix_seq_dim, batch_band_mode)
 
         self.batch = cudapoa.create_batch(
             device_id,
@@ -147,8 +160,7 @@ cdef class CudaPoaBatch:
             deref(self.batch_size),
             gap_score,
             mismatch_score,
-            match_score,
-            cuda_banded_alignment)
+            match_score)
 
     def __init__(
             self,
@@ -156,16 +168,15 @@ cdef class CudaPoaBatch:
             max_sequence_size,
             max_gpu_mem,
             output_type="consensus",
+            band_mode="static_band",
             device_id=0,
             stream=None,
             gap_score=-8,
             mismatch_score=-6,
             match_score=8,
-            cuda_banded_alignment=False,
             alignment_band_width=256,
             max_consensus_size=None,
-            max_nodes_per_window=None,
-            max_nodes_per_window_banded=None,
+            max_nodes_per_graph=None,
             *args,
             **kwargs):
         """Dummy implementation of __init__ function to allow

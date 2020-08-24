@@ -41,21 +41,20 @@ class MSATest : public ::testing::Test
 public:
     void SetUp() {}
 
-    void initialize(const BatchSize& batch_size,
+    void initialize(const BatchConfig& batch_size,
                     uint32_t device_id     = 0,
                     cudaStream_t stream    = 0,
                     int8_t output_mask     = OutputType::msa,
                     int16_t gap_score      = -8,
                     int16_t mismatch_score = -6,
-                    int16_t match_score    = 8,
-                    bool banded_alignment  = false)
+                    int16_t match_score    = 8)
     {
         size_t total = 0, free = 0;
         cudaSetDevice(device_id);
         cudaMemGetInfo(&free, &total);
         size_t mem_per_batch = 0.9 * free;
 
-        cudapoa_batch = genomeworks::cudapoa::create_batch(device_id, stream, mem_per_batch, output_mask, batch_size, gap_score, mismatch_score, match_score, banded_alignment);
+        cudapoa_batch = genomeworks::cudapoa::create_batch(device_id, stream, mem_per_batch, output_mask, batch_size, gap_score, mismatch_score, match_score);
     }
 
     std::vector<std::string> spoa_generate_multiple_sequence_alignments(std::vector<std::string> sequences,
@@ -87,7 +86,7 @@ TEST_F(MSATest, CudapoaMSA)
 {
     std::minstd_rand rng(1);
     int num_sequences = 500;
-    BatchSize batch_size(1024, num_sequences);
+    BatchConfig batch_size(1024, num_sequences);
 
     std::string backbone = genomeworks::genomeutils::generate_random_genome(50, rng);
     auto sequences       = genomeworks::genomeutils::generate_random_sequences(backbone, num_sequences, rng, 10, 5, 10);
@@ -134,7 +133,7 @@ TEST_F(MSATest, CudapoaMSAFailure)
 {
     std::minstd_rand rng(1);
     int num_sequences = 10;
-    BatchSize batch_size(1024, num_sequences);
+    BatchConfig batch_size(1024, num_sequences);
     batch_size.max_consensus_size = batch_size.max_sequence_size;
 
     std::string backbone = genomeworks::genomeutils::generate_random_genome(batch_size.max_consensus_size - 1, rng);
