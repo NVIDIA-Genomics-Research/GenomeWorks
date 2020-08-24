@@ -117,6 +117,13 @@ int main(int argc, char* argv[])
         }
     
     }
+    
+    // Free all allocated memory on the GPU
+    GW_CU_CHECK_ERROR(cudaFree(d_query); 
+    GW_CU_CHECK_ERROR(cudaFree(d_target); 
+    GW_CU_CHECK_ERROR(cudaFree(d_hsps); 
+    GW_CU_CHECK_ERROR(cudaFree(d_hits); 
+    GW_CU_CHECK_ERROR(cudaFree(d_num_hsps);
 
     return 0;
     
