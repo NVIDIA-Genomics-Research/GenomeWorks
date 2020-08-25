@@ -190,7 +190,7 @@ void IndexCache::generate_content_host(const std::vector<IndexDescriptor>& descr
                 // if a D2H copy has been been started in the previous step wait for it to finish
                 if (started_copy_from_previous_step)
                 {
-                    GW_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream_copy_));
+                    index_on_host_from_previous_step->finish_copying();
                     // copying is done, these pointer are not needed anymore
                     index_on_host_from_previous_step   = nullptr;
                     index_on_device_from_previous_step = nullptr;
