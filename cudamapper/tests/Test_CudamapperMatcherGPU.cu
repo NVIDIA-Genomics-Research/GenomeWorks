@@ -54,7 +54,7 @@ void test_find_query_target_matches(const thrust::host_vector<representation_t>&
     details::matcher_gpu::find_query_target_matches(found_target_indices_d, query_representations_d, target_representations_d, cuda_stream.get());
 
     thrust::host_vector<int64_t> found_target_indices_h(found_target_indices_d.size());
-    cudautils::device_copy_n(found_target_indices_d.data(), found_target_indices_d.size(), found_target_indices_h.data()); // D2H
+    cudautils::device_copy_n(found_target_indices_d.data(), found_target_indices_d.size(), found_target_indices_h.data(), cuda_stream.get()); // D2H
     GW_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream.get()));
     ASSERT_EQ(found_target_indices_h.size(), expected_found_target_indices_h.size());
 
@@ -281,7 +281,7 @@ void test_generate_anchors(
                                                       target_index);
 
     thrust::host_vector<Anchor> anchors_h(anchors_d.size());
-    cudautils::device_copy_n(anchors_d.data(), anchors_d.size(), anchors_h.data()); // D2H
+    cudautils::device_copy_n(anchors_d.data(), anchors_d.size(), anchors_h.data(), cuda_stream.get()); // D2H
     GW_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream.get()));
     ASSERT_EQ(anchors_h.size(), expected_anchors_h.size());
 
