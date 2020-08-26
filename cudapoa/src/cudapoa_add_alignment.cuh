@@ -63,7 +63,7 @@ namespace cudapoa
  * @return Status code for any errors encountered.
  */
 
-template <typename SizeT>
+template <typename SizeT, bool MSA = false>
 __device__
     uint8_t
     addAlignmentToGraph(SizeT& new_node_count,
@@ -85,8 +85,7 @@ __device__
                         uint16_t* outgoing_edges_coverage_count,
                         uint16_t s,
                         uint32_t max_sequences_per_poa,
-                        uint32_t max_limit_nodes_per_window,
-                        bool msa = false)
+                        uint32_t max_limit_nodes_per_window)
 {
     //printf("Running addition for alignment %d\n", alignment_length);
     SizeT head_node_id   = -1;
@@ -214,7 +213,7 @@ __device__
             }
 
             // for msa generation
-            if (msa && (read_pos == 0))
+            if (MSA && (read_pos == 0))
             {
                 //begin node of the sequence, add its node_id (curr_node_id) to sequence_begin_nodes_ids
                 *sequence_begin_nodes_ids = curr_node_id;
@@ -242,7 +241,7 @@ __device__
                     incoming_edge_count[curr_node_id]                                 = in_count + 1;
                     uint16_t out_count                                                = outgoing_edge_count[head_node_id];
                     outgoing_edges[head_node_id * CUDAPOA_MAX_NODE_EDGES + out_count] = curr_node_id;
-                    if (msa)
+                    if (MSA)
                     {
                         outgoing_edges_coverage_count[head_node_id * CUDAPOA_MAX_NODE_EDGES + out_count]                     = 1;
                         outgoing_edges_coverage[(head_node_id * CUDAPOA_MAX_NODE_EDGES + out_count) * max_sequences_per_poa] = s;
@@ -256,7 +255,7 @@ __device__
                         //printf("exceeded max edge count\n");
                     }
                 }
-                else if (msa) //if edge exists and for msa generation
+                else if (MSA) //if edge exists and for msa generation
                 {
                     uint16_t out_count = outgoing_edge_count[head_node_id];
                     for (uint16_t e = 0; e < out_count; e++)
