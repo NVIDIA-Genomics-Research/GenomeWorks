@@ -70,7 +70,7 @@ namespace cudapoa
  * @param[in] mismatch_score                Score for finding a mismatch in alignment
  * @param[in] match_score                   Score for finding a match in alignment
  */
-template <typename ScoreT, typename SizeT, bool MSA = false>
+template <typename ScoreT, typename SizeT, bool MSA = false, bool BANDED = false>
 __global__ void generatePOAKernel(uint8_t* consensus_d,
                                   uint8_t* sequences_d,
                                   int8_t* base_weights_d,
@@ -109,16 +109,13 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
                                   uint32_t max_limit_consensus_size,
                                   int32_t TPB                = 64,
                                   bool adaptive_banded       = false,
-                                  bool static_banded         = false,
-                                  uint32_t static_band_width = 256,
-                                  BandMode band_mode         = BandMode::full_band)
+                                  uint32_t static_band_width = 256)
 {
     // shared error indicator within a warp
     bool warp_error = false;
 
-    int32_t nwindows_per_block = TPB / WARP_SIZE;
     int32_t lane_idx           = threadIdx.x % WARP_SIZE;
-    int32_t window_idx         = blockIdx.x * nwindows_per_block + threadIdx.x / WARP_SIZE;
+    int32_t window_idx         = blockIdx.x * TPB / WARP_SIZE + threadIdx.x / WARP_SIZE;
 
     if (window_idx >= total_windows)
         return;
@@ -141,7 +138,7 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
 
     int64_t scores_offset;
     int64_t banded_score_matrix_size;
-    if (static_banded || adaptive_banded)
+    if (BANDED)
     {
         banded_score_matrix_size = static_cast<int64_t>(scores_matrix_height) * static_cast<int64_t>(scores_matrix_width);
         scores_offset            = banded_score_matrix_size * static_cast<int64_t>(window_idx);
@@ -250,7 +247,7 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
         // Run Needleman-Wunsch alignment between graph and new sequence.
         SizeT alignment_length;
 
-        if (static_banded || adaptive_banded)
+        if (BANDED)
         {
             if (adaptive_banded)
             {
@@ -500,91 +497,181 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
 
     if (msa)
     {
-        generatePOAKernel<ScoreT, SizeT, true>
-            <<<nblocks, TPB, 0, stream>>>(consensus_d,
-                                          sequences_d,
-                                          base_weights_d,
-                                          sequence_lengths_d,
-                                          window_details_d,
-                                          total_windows,
-                                          scores,
-                                          alignment_graph,
-                                          alignment_read,
-                                          nodes,
-                                          incoming_edges,
-                                          incoming_edge_count,
-                                          outgoing_edges,
-                                          outgoing_edge_count,
-                                          incoming_edge_w,
-                                          outgoing_edge_w,
-                                          sorted_poa,
-                                          node_id_to_pos,
-                                          node_alignments,
-                                          node_alignment_count,
-                                          sorted_poa_local_edge_count,
-                                          node_marks,
-                                          check_aligned_nodes,
-                                          nodes_to_visit,
-                                          node_coverage_counts,
-                                          gap_score,
-                                          mismatch_score,
-                                          match_score,
-                                          max_sequences_per_poa,
-                                          sequence_begin_nodes_ids,
-                                          outgoing_edges_coverage,
-                                          outgoing_edges_coverage_count,
-                                          max_nodes_per_graph,
-                                          matrix_graph_dimension,
-                                          matrix_seq_dimension,
-                                          batch_size.max_consensus_size,
-                                          TPB,
-                                          adaptive_banded,
-                                          static_banded,
-                                          batch_size.alignment_band_width);
+        if (adaptive_banded || static_banded)
+        {
+            generatePOAKernel<ScoreT, SizeT, true, true>
+                <<<nblocks, TPB, 0, stream>>>(consensus_d,
+                                              sequences_d,
+                                              base_weights_d,
+                                              sequence_lengths_d,
+                                              window_details_d,
+                                              total_windows,
+                                              scores,
+                                              alignment_graph,
+                                              alignment_read,
+                                              nodes,
+                                              incoming_edges,
+                                              incoming_edge_count,
+                                              outgoing_edges,
+                                              outgoing_edge_count,
+                                              incoming_edge_w,
+                                              outgoing_edge_w,
+                                              sorted_poa,
+                                              node_id_to_pos,
+                                              node_alignments,
+                                              node_alignment_count,
+                                              sorted_poa_local_edge_count,
+                                              node_marks,
+                                              check_aligned_nodes,
+                                              nodes_to_visit,
+                                              node_coverage_counts,
+                                              gap_score,
+                                              mismatch_score,
+                                              match_score,
+                                              max_sequences_per_poa,
+                                              sequence_begin_nodes_ids,
+                                              outgoing_edges_coverage,
+                                              outgoing_edges_coverage_count,
+                                              max_nodes_per_graph,
+                                              matrix_graph_dimension,
+                                              matrix_seq_dimension,
+                                              batch_size.max_consensus_size,
+                                              TPB,
+                                              adaptive_banded,
+                                              batch_size.alignment_band_width);
+        }
+        else
+        {
+            generatePOAKernel<ScoreT, SizeT, true, false>
+                <<<nblocks, TPB, 0, stream>>>(consensus_d,
+                                              sequences_d,
+                                              base_weights_d,
+                                              sequence_lengths_d,
+                                              window_details_d,
+                                              total_windows,
+                                              scores,
+                                              alignment_graph,
+                                              alignment_read,
+                                              nodes,
+                                              incoming_edges,
+                                              incoming_edge_count,
+                                              outgoing_edges,
+                                              outgoing_edge_count,
+                                              incoming_edge_w,
+                                              outgoing_edge_w,
+                                              sorted_poa,
+                                              node_id_to_pos,
+                                              node_alignments,
+                                              node_alignment_count,
+                                              sorted_poa_local_edge_count,
+                                              node_marks,
+                                              check_aligned_nodes,
+                                              nodes_to_visit,
+                                              node_coverage_counts,
+                                              gap_score,
+                                              mismatch_score,
+                                              match_score,
+                                              max_sequences_per_poa,
+                                              sequence_begin_nodes_ids,
+                                              outgoing_edges_coverage,
+                                              outgoing_edges_coverage_count,
+                                              max_nodes_per_graph,
+                                              matrix_graph_dimension,
+                                              matrix_seq_dimension,
+                                              batch_size.max_consensus_size,
+                                              TPB,
+                                              adaptive_banded,
+                                              batch_size.alignment_band_width);
+        }
     }
     else
     {
-        generatePOAKernel<ScoreT, SizeT, false>
-            <<<nblocks, TPB, 0, stream>>>(consensus_d,
-                                          sequences_d,
-                                          base_weights_d,
-                                          sequence_lengths_d,
-                                          window_details_d,
-                                          total_windows,
-                                          scores,
-                                          alignment_graph,
-                                          alignment_read,
-                                          nodes,
-                                          incoming_edges,
-                                          incoming_edge_count,
-                                          outgoing_edges,
-                                          outgoing_edge_count,
-                                          incoming_edge_w,
-                                          outgoing_edge_w,
-                                          sorted_poa,
-                                          node_id_to_pos,
-                                          node_alignments,
-                                          node_alignment_count,
-                                          sorted_poa_local_edge_count,
-                                          node_marks,
-                                          check_aligned_nodes,
-                                          nodes_to_visit,
-                                          node_coverage_counts,
-                                          gap_score,
-                                          mismatch_score,
-                                          match_score,
-                                          max_sequences_per_poa,
-                                          sequence_begin_nodes_ids,
-                                          outgoing_edges_coverage,
-                                          outgoing_edges_coverage_count,
-                                          max_nodes_per_graph,
-                                          matrix_graph_dimension,
-                                          matrix_seq_dimension,
-                                          batch_size.max_consensus_size,
-                                          TPB,
-                                          adaptive_banded,
-                                          static_banded,
-                                          batch_size.alignment_band_width);
+        if (adaptive_banded || static_banded)
+        {
+            generatePOAKernel<ScoreT, SizeT, false, true>
+                <<<nblocks, TPB, 0, stream>>>(consensus_d,
+                                              sequences_d,
+                                              base_weights_d,
+                                              sequence_lengths_d,
+                                              window_details_d,
+                                              total_windows,
+                                              scores,
+                                              alignment_graph,
+                                              alignment_read,
+                                              nodes,
+                                              incoming_edges,
+                                              incoming_edge_count,
+                                              outgoing_edges,
+                                              outgoing_edge_count,
+                                              incoming_edge_w,
+                                              outgoing_edge_w,
+                                              sorted_poa,
+                                              node_id_to_pos,
+                                              node_alignments,
+                                              node_alignment_count,
+                                              sorted_poa_local_edge_count,
+                                              node_marks,
+                                              check_aligned_nodes,
+                                              nodes_to_visit,
+                                              node_coverage_counts,
+                                              gap_score,
+                                              mismatch_score,
+                                              match_score,
+                                              max_sequences_per_poa,
+                                              sequence_begin_nodes_ids,
+                                              outgoing_edges_coverage,
+                                              outgoing_edges_coverage_count,
+                                              max_nodes_per_graph,
+                                              matrix_graph_dimension,
+                                              matrix_seq_dimension,
+                                              batch_size.max_consensus_size,
+                                              TPB,
+                                              adaptive_banded,
+                                              batch_size.alignment_band_width);
+        }
+        else
+        {
+            generatePOAKernel<ScoreT, SizeT, false, false>
+                <<<nblocks, TPB, 0, stream>>>(consensus_d,
+                                              sequences_d,
+                                              base_weights_d,
+                                              sequence_lengths_d,
+                                              window_details_d,
+                                              total_windows,
+                                              scores,
+                                              alignment_graph,
+                                              alignment_read,
+                                              nodes,
+                                              incoming_edges,
+                                              incoming_edge_count,
+                                              outgoing_edges,
+                                              outgoing_edge_count,
+                                              incoming_edge_w,
+                                              outgoing_edge_w,
+                                              sorted_poa,
+                                              node_id_to_pos,
+                                              node_alignments,
+                                              node_alignment_count,
+                                              sorted_poa_local_edge_count,
+                                              node_marks,
+                                              check_aligned_nodes,
+                                              nodes_to_visit,
+                                              node_coverage_counts,
+                                              gap_score,
+                                              mismatch_score,
+                                              match_score,
+                                              max_sequences_per_poa,
+                                              sequence_begin_nodes_ids,
+                                              outgoing_edges_coverage,
+                                              outgoing_edges_coverage_count,
+                                              max_nodes_per_graph,
+                                              matrix_graph_dimension,
+                                              matrix_seq_dimension,
+                                              batch_size.max_consensus_size,
+                                              TPB,
+                                              adaptive_banded,
+                                              batch_size.alignment_band_width);
+        }
     }
     GW_CU_CHECK_ERR(cudaPeekAtLastError());
 
