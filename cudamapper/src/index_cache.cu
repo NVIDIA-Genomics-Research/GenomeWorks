@@ -247,7 +247,7 @@ void IndexCache::generate_content_host(const std::vector<IndexDescriptor>& descr
     // wait for the last copy to finish
     if (started_copy_from_previous_step)
     {
-        GW_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream_copy_));
+        index_on_host_from_previous_step->finish_copying();
     }
 
     std::swap(new_cache, this_cache);
