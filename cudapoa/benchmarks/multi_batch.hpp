@@ -54,9 +54,8 @@ public:
         size_t mem_per_batch = 0.9 * free / num_batches_;
         for (int32_t batch = 0; batch < num_batches_; batch++)
         {
-            cudaStream_t stream;
-            cudaStreamCreate(&stream);
-            batches_.emplace_back(create_batch(0, stream, mem_per_batch,
+            streams_.emplace_back(make_cuda_stream());
+            batches_.emplace_back(create_batch(0, streams_.back().get(), mem_per_batch,
                                                OutputType::consensus,
                                                batch_size,
                                                -8, -6, 8));
@@ -218,6 +217,7 @@ private:
     std::vector<std::vector<std::string>> windows_;
     std::vector<std::string> consensus_;
     std::vector<std::vector<uint16_t>> coverages_;
+    std::vector<CudaStream> streams_;
 };
 } // namespace cudapoa
 
