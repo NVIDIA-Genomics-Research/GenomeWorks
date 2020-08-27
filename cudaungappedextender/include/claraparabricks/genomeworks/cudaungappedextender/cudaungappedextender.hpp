@@ -57,7 +57,7 @@ public:
     StatusType extend_async(const char* h_query, int32_t query_length,
                             const char* h_target, int32_t target_length,
                             int32_t input_hspthresh,
-                            std::vector<Seed>& h_seedHits);
+                            std::vector<Seed>& h_seeds);
 
     /// \brief Device pointer prototype for ungapped extension
     ///
@@ -67,8 +67,8 @@ public:
     /// based on input_hspthresh.
     StatusType extend_async(const char* d_query, int32_t query_length,
                             const char* d_target, int32_t target_length,
-                            int32_t input_hspthresh, Seed* d_seed_hits,
-                            int32_t num_hits, ScoredSegment* d_hsp_out,
+                            int32_t input_hspthresh, Seed* d_seeds,
+                            int32_t num_seeds, ScoredSegment* d_hsp_out,
                             int32_t* d_num_hsps);
 
     /// \brief Waits for CUDA accelerated extension to finish
