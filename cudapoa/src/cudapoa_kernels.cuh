@@ -114,8 +114,8 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
     // shared error indicator within a warp
     bool warp_error = false;
 
-    int32_t lane_idx           = threadIdx.x % WARP_SIZE;
-    int32_t window_idx         = blockIdx.x * TPB / WARP_SIZE + threadIdx.x / WARP_SIZE;
+    int32_t lane_idx   = threadIdx.x % WARP_SIZE;
+    int32_t window_idx = blockIdx.x * TPB / WARP_SIZE + threadIdx.x / WARP_SIZE;
 
     if (window_idx >= total_windows)
         return;
@@ -136,19 +136,19 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
 
     int32_t scores_width = window_details_d[window_idx].scores_width;
 
-    int64_t scores_offset;
+    ScoreT* scores;
     int64_t banded_score_matrix_size;
     if (BANDED)
     {
         banded_score_matrix_size = static_cast<int64_t>(scores_matrix_height) * static_cast<int64_t>(scores_matrix_width);
-        scores_offset            = banded_score_matrix_size * static_cast<int64_t>(window_idx);
+        int64_t scores_offset    = banded_score_matrix_size * static_cast<int64_t>(window_idx);
+        scores                   = &scores_d[scores_offset];
     }
     else
     {
-        scores_offset = static_cast<int64_t>(window_details_d[window_idx].scores_offset) * static_cast<int64_t>(scores_matrix_height);
+        int64_t scores_offset = static_cast<int64_t>(window_details_d[window_idx].scores_offset) * static_cast<int64_t>(scores_matrix_height);
+        scores                = &scores_d[scores_offset];
     }
-
-    ScoreT* scores = &scores_d[scores_offset];
 
     SizeT* alignment_graph         = &alignment_graph_d[max_nodes_per_graph * window_idx];
     SizeT* alignment_read          = &alignment_read_d[max_nodes_per_graph * window_idx];
