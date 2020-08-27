@@ -57,7 +57,7 @@ __device__ SizeT get_band_start_for_row(SizeT row_idx, float gradient, SizeT ban
 template <typename ScoreT, typename SizeT>
 __device__ ScoreT* get_score_ptr(ScoreT* scores, SizeT row, SizeT column, SizeT band_start, SizeT band_width)
 {
-    column              = column == 0 ? 0 : column - band_start;
+    column              = column == -1 ? 0 : column - band_start;
     int64_t score_index = static_cast<int64_t>(column) + static_cast<int64_t>(row) * static_cast<int64_t>(band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING);
     return &scores[score_index];
 };
@@ -68,7 +68,7 @@ __device__ void set_score(ScoreT* scores, SizeT row, SizeT column, ScoreT value,
     SizeT band_start = get_band_start_for_row(row, gradient, band_width, max_column);
 
     SizeT col_idx;
-    if (column == 0)
+    if (column == -1)
     {
         col_idx = band_start;
     }
@@ -104,8 +104,9 @@ __device__ ScoreT get_score(ScoreT* scores, SizeT row, SizeT column, float gradi
 {
     SizeT band_start = get_band_start_for_row(row, gradient, band_width, max_column);
     SizeT band_end   = band_start + band_width;
+    band_end         = min(band_end, max_column);
 
-    if (((column > band_end) || (column < band_start)) && column != 0)
+    if (((column > band_end) || (column < band_start)) && column != -1)
     {
         return min_score_value;
     }
@@ -140,7 +141,7 @@ __device__ ScoreT4<ScoreT> get_scores(ScoreT* scores,
     // subtract by CELLS_PER_THREAD to ensure score4_next is not pointing out of the corresponding band bounds
     SizeT band_end = static_cast<SizeT>(band_start + band_width - CELLS_PER_THREAD);
 
-    if ((read_pos > band_end || read_pos < band_start) && read_pos != 0)
+    if ((read_pos > band_end || read_pos < band_start) && read_pos != -1)
     {
         return ScoreT4<ScoreT>{default_value, default_value, default_value, default_value};
     }
@@ -236,7 +237,7 @@ __device__
             pred_count = incoming_edge_count[node_id];
             if (pred_count == 0)
             {
-                set_score(scores, score_gIdx, SizeT{0}, gap_score, gradient, band_width, max_column);
+                set_score(scores, score_gIdx, SizeT{-1}, gap_score, gradient, band_width, max_column);
             }
             else
             {
@@ -247,17 +248,17 @@ __device__
                 }
                 else
                 {
-                    penalty = max(min_score_value, get_score(scores, pred_idx, SizeT{0}, gradient, band_width, max_column, min_score_value));
+                    penalty = max(min_score_value, get_score(scores, pred_idx, SizeT{-1}, gradient, band_width, max_column, min_score_value));
                     // if pred_num > 1 keep checking to find max score as penalty
                     for (uint16_t p = 0; p < pred_count; p++)
                     {
                         pred_node_id       = incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES + p];
                         SizeT pred_idx_tmp = node_id_to_pos[pred_node_id] + 1;
-                        penalty            = max(penalty, get_score(scores, pred_idx_tmp, SizeT{0}, gradient, band_width, max_column, min_score_value));
+                        penalty            = max(penalty, get_score(scores, pred_idx_tmp, SizeT{-1}, gradient, band_width, max_column, min_score_value));
                     }
                     first_element_prev_score = penalty + gap_score;
                 }
-                set_score(scores, score_gIdx, SizeT{0}, first_element_prev_score, gradient, band_width, max_column);
+                set_score(scores, score_gIdx, SizeT{-1}, first_element_prev_score, gradient, band_width, max_column);
             }
         }
         pred_count = __shfl_sync(FULL_MASK, pred_count, 0);
