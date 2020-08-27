@@ -70,7 +70,7 @@ namespace cudapoa
  * @param[in] mismatch_score                Score for finding a mismatch in alignment
  * @param[in] match_score                   Score for finding a match in alignment
  */
-template <typename ScoreT, typename SizeT, bool MSA = false, bool BANDED = false>
+template <typename ScoreT, typename SizeT, bool MSA = false, BandMode BM = full_band>
 __global__ void generatePOAKernel(uint8_t* consensus_d,
                                   uint8_t* sequences_d,
                                   int8_t* base_weights_d,
@@ -138,7 +138,7 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
 
     ScoreT* scores;
     int64_t banded_score_matrix_size;
-    if (BANDED)
+    if (BM == BandMode::adaptive_band || BM == BandMode::static_band)
     {
         banded_score_matrix_size = static_cast<int64_t>(scores_matrix_height) * static_cast<int64_t>(scores_matrix_width);
         int64_t scores_offset    = banded_score_matrix_size * static_cast<int64_t>(window_idx);
@@ -202,7 +202,7 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
             sorted_poa[nucleotide_idx]                                     = nucleotide_idx;
             outgoing_edges[(nucleotide_idx - 1) * CUDAPOA_MAX_NODE_EDGES]  = nucleotide_idx;
             outgoing_edge_count[nucleotide_idx - 1]                        = 1;
-            incoming_edges[nucleotide_idx * CUDAPOA_MAX_NODE_EDGES]        = nucleotide_idx - SizeT(1);
+            incoming_edges[nucleotide_idx * CUDAPOA_MAX_NODE_EDGES]        = nucleotide_idx - 1;
             incoming_edge_weights[nucleotide_idx * CUDAPOA_MAX_NODE_EDGES] = base_weights[nucleotide_idx - 1] + base_weights[nucleotide_idx];
             incoming_edge_count[nucleotide_idx]                            = 1;
             node_alignment_count[nucleotide_idx]                           = 0;
@@ -247,10 +247,32 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
         // Run Needleman-Wunsch alignment between graph and new sequence.
         SizeT alignment_length;
 
-        if (BANDED)
+        if (BM == BandMode::adaptive_band)
         {
-            if (adaptive_banded)
+            alignment_length = runNeedlemanWunschAdaptiveBanded<uint8_t, ScoreT, SizeT>(nodes,
+                                                                                        sorted_poa,
+                                                                                        node_id_to_pos,
+                                                                                        sequence_lengths[0],
+                                                                                        incoming_edge_count,
+                                                                                        incoming_edges,
+                                                                                        outgoing_edge_count,
+                                                                                        sequence,
+                                                                                        seq_len,
+                                                                                        scores,
+                                                                                        banded_score_matrix_size,
+                                                                                        alignment_graph,
+                                                                                        alignment_read,
+                                                                                        static_band_width,
+                                                                                        gap_score,
+                                                                                        mismatch_score,
+                                                                                        match_score,
+                                                                                        int8_t{0});
+
+            __syncwarp();
+
+            if (alignment_length < -2)
             {
+                // rerun with extended band-width
                 alignment_length = runNeedlemanWunschAdaptiveBanded<uint8_t, ScoreT, SizeT>(nodes,
                                                                                             sorted_poa,
                                                                                             node_id_to_pos,
@@ -268,56 +290,31 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
                                                                                             gap_score,
                                                                                             mismatch_score,
                                                                                             match_score,
-                                                                                            int8_t{0});
-
-                __syncwarp();
-
-                if (alignment_length < -2)
-                {
-                    // rerun with extended band-width
-                    alignment_length = runNeedlemanWunschAdaptiveBanded<uint8_t, ScoreT, SizeT>(nodes,
-                                                                                                sorted_poa,
-                                                                                                node_id_to_pos,
-                                                                                                sequence_lengths[0],
-                                                                                                incoming_edge_count,
-                                                                                                incoming_edges,
-                                                                                                outgoing_edge_count,
-                                                                                                sequence,
-                                                                                                seq_len,
-                                                                                                scores,
-                                                                                                banded_score_matrix_size,
-                                                                                                alignment_graph,
-                                                                                                alignment_read,
-                                                                                                static_band_width,
-                                                                                                gap_score,
-                                                                                                mismatch_score,
-                                                                                                match_score,
-                                                                                                static_cast<int8_t>(alignment_length));
-                    __syncwarp();
-                }
-            }
-            else
-            {
-                alignment_length = runNeedlemanWunschBanded<uint8_t, ScoreT, SizeT>(nodes,
-                                                                                    sorted_poa,
-                                                                                    node_id_to_pos,
-                                                                                    sequence_lengths[0],
-                                                                                    incoming_edge_count,
-                                                                                    incoming_edges,
-                                                                                    outgoing_edge_count,
-                                                                                    sequence,
-                                                                                    seq_len,
-                                                                                    scores,
-                                                                                    alignment_graph,
-                                                                                    alignment_read,
-                                                                                    static_band_width,
-                                                                                    gap_score,
-                                                                                    mismatch_score,
-                                                                                    match_score);
+                                                                                            static_cast<int8_t>(alignment_length));
                 __syncwarp();
             }
         }
-        else
+        else if (BM == BandMode::static_band)
+        {
+            alignment_length = runNeedlemanWunschBanded<uint8_t, ScoreT, SizeT>(nodes,
+                                                                                sorted_poa,
+                                                                                node_id_to_pos,
+                                                                                sequence_lengths[0],
+                                                                                incoming_edge_count,
+                                                                                incoming_edges,
+                                                                                outgoing_edge_count,
+                                                                                sequence,
+                                                                                seq_len,
+                                                                                scores,
+                                                                                alignment_graph,
+                                                                                alignment_read,
+                                                                                static_band_width,
+                                                                                gap_score,
+                                                                                mismatch_score,
+                                                                                match_score);
+            __syncwarp();
+        }
+        else // BM == BandMode::full_band
         {
             alignment_length = runNeedlemanWunsch<uint8_t, ScoreT, SizeT>(nodes,
                                                                           sorted_poa,
@@ -497,9 +494,52 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
 
     if (msa)
     {
-        if (adaptive_banded || static_banded)
+        if (static_banded)
         {
-            generatePOAKernel<ScoreT, SizeT, true, true>
+            generatePOAKernel<ScoreT, SizeT, true, BandMode::static_band>
+                <<<nblocks, TPB, 0, stream>>>(consensus_d,
+                                              sequences_d,
+                                              base_weights_d,
+                                              sequence_lengths_d,
+                                              window_details_d,
+                                              total_windows,
+                                              scores,
+                                              alignment_graph,
+                                              alignment_read,
+                                              nodes,
+                                              incoming_edges,
+                                              incoming_edge_count,
+                                              outgoing_edges,
+                                              outgoing_edge_count,
+                                              incoming_edge_w,
+                                              outgoing_edge_w,
+                                              sorted_poa,
+                                              node_id_to_pos,
+                                              node_alignments,
+                                              node_alignment_count,
+                                              sorted_poa_local_edge_count,
+                                              node_marks,
+                                              check_aligned_nodes,
+                                              nodes_to_visit,
+                                              node_coverage_counts,
+                                              gap_score,
+                                              mismatch_score,
+                                              match_score,
+                                              max_sequences_per_poa,
+                                              sequence_begin_nodes_ids,
+                                              outgoing_edges_coverage,
+                                              outgoing_edges_coverage_count,
+                                              max_nodes_per_graph,
+                                              matrix_graph_dimension,
+                                              matrix_seq_dimension,
+                                              batch_size.max_consensus_size,
+                                              TPB,
+                                              adaptive_banded,
+                                              batch_size.alignment_band_width);
+        }
+        else if (adaptive_banded)
+        {
+            generatePOAKernel<ScoreT, SizeT, true, BandMode::adaptive_band>
                 <<<nblocks, TPB, 0, stream>>>(consensus_d,
                                               sequences_d,
                                               base_weights_d,
@@ -542,7 +582,7 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
         }
         else
         {
-            generatePOAKernel<ScoreT, SizeT, true, false>
+            generatePOAKernel<ScoreT, SizeT, true, BandMode::full_band>
                 <<<nblocks, TPB, 0, stream>>>(consensus_d,
                                               sequences_d,
                                               base_weights_d,
@@ -586,9 +626,52 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
     }
     else
     {
-        if (adaptive_banded || static_banded)
+        if (static_banded)
         {
-            generatePOAKernel<ScoreT, SizeT, false, true>
+            generatePOAKernel<ScoreT, SizeT, false, BandMode::static_band>
+                <<<nblocks, TPB, 0, stream>>>(consensus_d,
+                                              sequences_d,
+                                              base_weights_d,
+                                              sequence_lengths_d,
+                                              window_details_d,
+                                              total_windows,
+                                              scores,
+                                              alignment_graph,
+                                              alignment_read,
+                                              nodes,
+                                              incoming_edges,
+                                              incoming_edge_count,
+                                              outgoing_edges,
+                                              outgoing_edge_count,
+                                              incoming_edge_w,
+                                              outgoing_edge_w,
+                                              sorted_poa,
+                                              node_id_to_pos,
+                                              node_alignments,
+                                              node_alignment_count,
+                                              sorted_poa_local_edge_count,
+                                              node_marks,
+                                              check_aligned_nodes,
+                                              nodes_to_visit,
+                                              node_coverage_counts,
+                                              gap_score,
+                                              mismatch_score,
+                                              match_score,
+                                              max_sequences_per_poa,
+                                              sequence_begin_nodes_ids,
+                                              outgoing_edges_coverage,
+                                              outgoing_edges_coverage_count,
+                                              max_nodes_per_graph,
+                                              matrix_graph_dimension,
+                                              matrix_seq_dimension,
+                                              batch_size.max_consensus_size,
+                                              TPB,
+                                              adaptive_banded,
+                                              batch_size.alignment_band_width);
+        }
+        else if (adaptive_banded)
+        {
+            generatePOAKernel<ScoreT, SizeT, false, BandMode::adaptive_band>
                 <<<nblocks, TPB, 0, stream>>>(consensus_d,
                                               sequences_d,
                                               base_weights_d,
@@ -631,7 +714,7 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
         }
         else
         {
-            generatePOAKernel<ScoreT, SizeT, false, false>
+            generatePOAKernel<ScoreT, SizeT, false, BandMode::full_band>
                 <<<nblocks, TPB, 0, stream>>>(consensus_d,
                                               sequences_d,
                                               base_weights_d,
