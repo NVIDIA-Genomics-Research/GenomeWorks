@@ -77,7 +77,7 @@ int main(int argc, char* argv[])
     int32_t i = 0;
     for (const auto& segment : segments)
     {
-        std::cout << "Segment: " << i << "Length: " << segment.len
+        std::cout << "Segment: " << i << "Length: " << segment.length
                   << "Score: " << segment.score << std::endl;
         std::cout << "Position in query: "
                   << segment.seed.query_position_in_read_ << std::endl;

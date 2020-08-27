@@ -35,7 +35,7 @@ struct ScoredSegment
     /// Seed for the segment
     Seed seed;
     /// length of the segment
-    int32_t len;
+    int32_t length;
     /// score of the segment
     int32_t score;
 };
