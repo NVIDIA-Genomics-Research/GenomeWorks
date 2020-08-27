@@ -176,7 +176,6 @@ __device__
                                    SizeT band_shift,
                                    float gradient,
                                    SizeT max_column,
-                                   ScoreT score_type_min_limit,
                                    ScoreT min_score_value,
                                    ScoreT gap_score)
 {
@@ -189,7 +188,7 @@ __device__
     }
     else
     {
-        ScoreT penalty = score_type_min_limit;
+        ScoreT penalty = min_score_value;
         for (uint16_t p = 0; p < pred_count; p++)
         {
             SizeT pred_node_id        = incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES + p];
@@ -220,7 +219,7 @@ __device__
                                      SeqT* read,
                                      SizeT read_length,
                                      ScoreT* scores,
-                                     int64_t scores_size,
+                                     float scores_size,
                                      SizeT* alignment_graph,
                                      SizeT* alignment_read,
                                      SizeT static_band_width,
@@ -229,14 +228,12 @@ __device__
                                      ScoreT match_score,
                                      int8_t rerun)
 {
-    GW_CONSTEXPR ScoreT score_type_min_limit = numeric_limits<ScoreT>::min();
-    // in adaptive bands, there are cases where multiple rows happen to have a band with start index
-    // smaller than band-start index of a row above. If min_value is too close to score_type_min_limit,
+    // in adaptive bands, there can be cases where multiple rows happen to have a band with start index
+    // smaller than band-start index of a row above. If min_value is too close to numeric_limits<ScoreT>::min(),
     // this can cause overflow, therefore min_score_value is selected far enough
-    const ScoreT min_score_value = score_type_min_limit / 2;
+    const ScoreT min_score_value = numeric_limits<ScoreT>::min() / 2;
 
     int16_t lane_idx = threadIdx.x % WARP_SIZE;
-    int64_t score_index;
 
     // Calculate aspect ratio for the scores matrix
     float gradient = float(read_length + 1) / float(graph_count + 1);
@@ -252,7 +249,7 @@ __device__
         //                                                                            ad-hoc rule 1.b
         band_width = max(band_width, cudautils::align<SizeT, CUDAPOA_MIN_BAND_WIDTH>(max_column * 0.08 * gradient));
     }
-    if (gradient < 0.8) // ad-hoc rule 1.a
+    if (gradient < 0.8) // ad-hoc rule 2.a
     {
         //                                                                            ad-hoc rule 2.b
         band_width = max(band_width, cudautils::align<SizeT, CUDAPOA_MIN_BAND_WIDTH>(max_column * 0.1 / gradient));
@@ -280,9 +277,11 @@ __device__
         band_shift *= 1.5;
     }
     //---------------------------------------------------------
+
     // check required memory and return error if exceeding scores_size
     SizeT max_matrix_sequence_dimension = band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING;
-    int64_t required_scores_size        = static_cast<int64_t>(graph_count) * static_cast<int64_t>(max_matrix_sequence_dimension);
+    // using float to avoid 64-bit
+    float required_scores_size = static_cast<float>(graph_count) * static_cast<float>(max_matrix_sequence_dimension);
     if (required_scores_size > scores_size)
     {
         return -2;
@@ -325,7 +324,7 @@ __device__
         {
             first_element_prev_score = set_and_get_first_column_score(node_id_to_pos, node_id, score_gIdx, scores, incoming_edge_count, incoming_edges,
                                                                       band_start, band_width, band_shift, gradient,
-                                                                      max_column, score_type_min_limit, min_score_value, gap_score);
+                                                                      max_column, min_score_value, gap_score);
         }
 
         uint16_t pred_count = incoming_edge_count[node_id];
@@ -413,7 +412,7 @@ __device__
             // which can be used to compute the first cell of the next warp.
             first_element_prev_score = __shfl_sync(FULL_MASK, score.s3, WARP_SIZE - 1);
 
-            score_index = static_cast<int64_t>(read_pos + 1 - band_start) + static_cast<int64_t>(score_gIdx) * static_cast<int64_t>(max_matrix_sequence_dimension);
+            int64_t score_index = static_cast<int64_t>(read_pos + 1 - band_start) + static_cast<int64_t>(score_gIdx) * static_cast<int64_t>(max_matrix_sequence_dimension);
 
             scores[score_index]      = score.s0;
             scores[score_index + 1L] = score.s1;
@@ -430,7 +429,7 @@ __device__
         // Find location of the maximum score in the matrix.
         SizeT i       = 0;
         SizeT j       = read_length;
-        ScoreT mscore = score_type_min_limit;
+        ScoreT mscore = min_score_value;
 
         for (SizeT idx = 1; idx <= graph_count; idx++)
         {

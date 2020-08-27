@@ -137,11 +137,11 @@ __global__ void generatePOAKernel(uint8_t* consensus_d,
     int32_t scores_width = window_details_d[window_idx].scores_width;
 
     ScoreT* scores;
-    int64_t banded_score_matrix_size;
+    float banded_score_matrix_size; // using float instead of int64_t to minimize register
     if (BM == BandMode::adaptive_band || BM == BandMode::static_band)
     {
-        banded_score_matrix_size = static_cast<int64_t>(scores_matrix_height) * static_cast<int64_t>(scores_matrix_width);
-        int64_t scores_offset    = banded_score_matrix_size * static_cast<int64_t>(window_idx);
+        banded_score_matrix_size = static_cast<float>(scores_matrix_height) * static_cast<float>(scores_matrix_width);
+        int64_t scores_offset    = static_cast<int64_t>(banded_score_matrix_size) * static_cast<int64_t>(window_idx);
         scores                   = &scores_d[scores_offset];
     }
     else
