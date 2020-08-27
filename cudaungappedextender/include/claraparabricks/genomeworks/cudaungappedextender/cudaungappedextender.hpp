@@ -80,7 +80,7 @@ public:
     /// \brief Return the computed segments
     ///
     /// \return Vector of Scored Segments
-    const std::vector<ScoredSegment>& get_scored_segments();
+    const std::vector<ScoredSegment>& get_scored_segments() const;
 
     /// \brief Reset UngappedExtender object and free device/host memory
     void reset();
