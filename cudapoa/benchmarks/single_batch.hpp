@@ -37,14 +37,12 @@ public:
     /// \param max_poas_per_batch Batch size
     /// \param filename Filename with window data
     SingleBatch(int32_t max_poas_per_batch, const std::string& filename, int32_t total_windows)
-        : max_poas_per_batch_(max_poas_per_batch)
+        : stream_(make_cuda_stream())
+        , max_poas_per_batch_(max_poas_per_batch)
     {
         parse_cudapoa_file(windows_, filename, total_windows);
 
         assert(get_size(windows_) > 0);
-
-        cudaStream_t stream;
-        cudaStreamCreate(&stream);
 
         size_t total = 0, free = 0;
         cudaSetDevice(0);
@@ -53,7 +51,7 @@ public:
 
         BatchConfig batch_size(1024, 200);
 
-        batch_ = create_batch(0, stream, mem_per_batch, OutputType::consensus, batch_size, -8, -6, 8);
+        batch_ = create_batch(0, stream_.get(), mem_per_batch, OutputType::consensus, batch_size, -8, -6, 8);
     }
 
     ~SingleBatch()
@@ -96,6 +94,7 @@ public:
 
 private:
     std::unique_ptr<Batch> batch_;
+    CudaStream stream_;
     std::vector<std::vector<std::string>> windows_;
     int32_t max_poas_per_batch_;
 };
