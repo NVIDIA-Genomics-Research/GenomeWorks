@@ -206,10 +206,8 @@ __device__
         set_score(scores, SizeT{0}, j, static_cast<ScoreT>(j * gap_score), gradient, band_width, max_column);
     }
 
-    // Initialise the vertical boundary of the score matrix
     if (lane_idx == 0)
     {
-        set_score(scores, SizeT{0}, SizeT{0}, ScoreT{0}, gradient, band_width, max_column);
 #ifdef NW_VERBOSE_PRINT
         printf("graph %d, read %d\n", graph_count, read_length);
 #endif
@@ -233,6 +231,7 @@ __device__
 
         if (lane_idx == 0)
         {
+            // Initialise the vertical boundary of the score matrix
             ScoreT penalty;
             pred_count = incoming_edge_count[node_id];
             if (pred_count == 0)
