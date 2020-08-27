@@ -144,9 +144,10 @@ void IndexCache::generate_content_host(const std::vector<IndexDescriptor>& descr
     bool started_copy                                                         = false; // if index is found on host copy is not needed
     bool started_copy_from_previous_step                                      = false;
 
+    const bool host_copy_needed = !skip_copy_to_host;
+
     for (const IndexDescriptor& descriptor_of_index_to_cache : descriptors_of_indices_to_cache)
     {
-        const bool host_copy_needed   = !skip_copy_to_host;
         const bool device_copy_needed = descriptors_of_indices_to_keep_on_device_set.count(descriptor_of_index_to_cache) != 0;
 
         // check if host copy already exists
@@ -188,6 +189,7 @@ void IndexCache::generate_content_host(const std::vector<IndexDescriptor>& descr
             if (host_copy_needed)
             {
                 // if a D2H copy has been been started in the previous step wait for it to finish
+                // TODO: do this sync using an event
                 if (started_copy_from_previous_step)
                 {
                     index_on_host_from_previous_step->finish_copying();
@@ -213,7 +215,7 @@ void IndexCache::generate_content_host(const std::vector<IndexDescriptor>& descr
 
         // Device copy of index is only saved if is already exists, i.e. if the index has been generated
         // If the index has been found on host it won't be copied back to device at this point
-        // TODO: check device caches from this index in that case, this is not expected to happen frequently so performance gains are going to be small
+        // TODO: check whether this index is already present in device cache, this is not expected to happen frequently so performance gains are going to be small
         if (device_copy_needed && index_on_device)
         {
             indices_kept_on_device[descriptor_of_index_to_cache] = index_on_device;
@@ -222,7 +224,7 @@ void IndexCache::generate_content_host(const std::vector<IndexDescriptor>& descr
         // if a D2H copy has been been started in the previous step and it has not been waited for yet wait for it to finish
         if (started_copy_from_previous_step && index_on_host_from_previous_step && index_on_device_from_previous_step)
         {
-            GW_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream_copy_));
+            index_on_host_from_previous_step->finish_copying();
             // copying is done, these pointer are not needed anymore
             index_on_host_from_previous_step   = nullptr;
             index_on_device_from_previous_step = nullptr;
@@ -242,6 +244,7 @@ void IndexCache::generate_content_host(const std::vector<IndexDescriptor>& descr
         }
         index_on_host   = nullptr;
         index_on_device = nullptr;
+        started_copy    = false;
     }
 
     // wait for the last copy to finish
