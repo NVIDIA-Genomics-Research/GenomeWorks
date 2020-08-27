@@ -416,8 +416,9 @@ __device__
         }
 
         // Fill in backtrace
-        SizeT prev_i = 0;
-        SizeT prev_j = 0;
+        SizeT prev_i       = 0;
+        SizeT prev_j       = 0;
+        SizeT next_node_id = i > 0 ? graph[i - 1] : 0;
 
         int32_t loop_count = 0;
         while (!(i == 0 && j == 0) && loop_count < static_cast<int32_t>(read_length + graph_count + 2))
@@ -428,7 +429,6 @@ __device__
             // Check if move is diagonal.
             if (i != 0 && j != 0)
             {
-
                 if (rerun == 0)
                 {
                     // check if backtrace gets too close or hits the band limits, if so stop and rerun with extended band-width
@@ -450,7 +450,7 @@ __device__
                     }
                 }
 
-                SizeT node_id     = graph[i - 1];
+                SizeT node_id     = next_node_id;
                 ScoreT match_cost = (nodes[node_id] == read[j - 1] ? match_score : mismatch_score);
 
                 uint16_t pred_count = incoming_edge_count[node_id];
@@ -518,6 +518,7 @@ __device__
                 prev_j     = j - 1;
                 pred_found = true;
             }
+            next_node_id = graph[prev_i - 1];
 
             alignment_graph[aligned_nodes] = (i == prev_i ? -1 : graph[i - 1]);
             alignment_read[aligned_nodes]  = (j == prev_j ? -1 : j - 1);
