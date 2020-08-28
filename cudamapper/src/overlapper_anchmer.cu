@@ -1091,7 +1091,6 @@ void OverlapperAnchmer::get_overlaps(std::vector<Overlap>& fused_overlaps,
     //         // std::cerr << (host_masks[i] ? "true" : "false") << std::endl;
     //     }
     // #endif
-    // #define DEBUG
     // #ifdef DEBUG
     //     std::vector<Anchmer> anchmers;
     //     std::vector<Anchor> anchors;
@@ -1188,11 +1187,13 @@ void OverlapperAnchmer::get_overlaps(std::vector<Overlap>& fused_overlaps,
 
     init_overlap_scores<<<(n_initial_overlaps / block_size) + 1, block_size, 0, _cuda_stream>>>(d_overlaps_source.data(),
                                                                                                 d_overlap_scores.data(),
-                                                                                                n_initial_overlaps, 2.0);
+                                                                                                n_initial_overlaps,
+                                                                                                2.0);
 
     d_anchmers.clear_and_resize(0);
     d_anchor_select_mask.clear_and_resize(0);
-#define DEBUG
+
+//#define DEBUG
 #ifdef DEBUG
     std::size_t num_overlaps = n_initial_overlaps;
     std::vector<Overlap>
@@ -1226,7 +1227,9 @@ void OverlapperAnchmer::get_overlaps(std::vector<Overlap>& fused_overlaps,
 
     init_predecessor_and_score_arrays<<<(n_initial_overlaps / block_size) + 1, block_size, 0, _cuda_stream>>>(d_predecessors.data(), d_overlap_scores.data(), d_overlaps_select_mask.data(), n_initial_overlaps);
 
-    init_overlap_mask<<<(n_initial_overlaps / block_size) + 1, block_size, 0, _cuda_stream>>>(d_overlaps_select_mask.data(), n_initial_overlaps, true);
+    init_overlap_mask<<<(n_initial_overlaps / block_size) + 1, block_size, 0, _cuda_stream>>>(d_overlaps_select_mask.data(),
+                                                                                              n_initial_overlaps,
+                                                                                              true);
 
     chain_overlaps_by_score<<<(n_initial_overlaps / block_size) + 1, block_size, 0, _cuda_stream>>>(d_overlaps_source.data(),
                                                                                                     d_overlap_scores.data(),
@@ -1243,21 +1246,6 @@ void OverlapperAnchmer::get_overlaps(std::vector<Overlap>& fused_overlaps,
                                                                                            50);
 
     device_buffer<int32_t> d_n_filtered_overlaps(1, _allocator, _cuda_stream);
-    // drop_overlaps_by_mask(d_overlaps_dest,
-    //                       d_overlaps_select_mask,
-    //                       n_initial_overlaps,
-    //                       d_overlaps_source,
-    //                       d_n_filtered_overlaps,
-    //                       _allocator,
-    //                       _cuda_stream);
-    // drop_scores_by_mask(d_overlap_scores,
-    //                     d_overlaps_select_mask,
-    //                     n_initial_overlaps,
-    //                     d_overlap_scores_dest,
-    //                     d_n_filtered_overlaps,
-    //                     _allocator,
-    //                     _cuda_stream);
-    // n_initial_overlaps = cudautils::get_value_from_device(d_n_filtered_overlaps.data(), _cuda_stream);
 
     // device_buffer<int32_t> d_query_target_pair_starts(n_initial_overlaps, _allocator, _cuda_stream);
     // device_buffer<int32_t> d_query_target_pair_lengths(n_initial_overlaps, _allocator, _cuda_stream);
@@ -1274,7 +1262,6 @@ void OverlapperAnchmer::get_overlaps(std::vector<Overlap>& fused_overlaps,
     //                           _cuda_stream,
     //                           block_size);
 
-#define DEBUG
 #ifdef DEBUG
     num_overlaps = n_initial_overlaps;
     intermediate_scores.resize(num_overlaps);
