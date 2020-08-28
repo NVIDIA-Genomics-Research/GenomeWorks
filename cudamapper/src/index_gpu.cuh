@@ -778,9 +778,6 @@ void IndexGPU<SketchElementImpl>::generate_index(const io::FastaParser& parser,
                              merged_basepairs_h.size(),
                              merged_basepairs_d.data(),
                              cuda_stream_); // H2D
-    cudaStreamSynchronize(cuda_stream_);
-    merged_basepairs_h.clear();
-    merged_basepairs_h.shrink_to_fit();
 
     // sketch elements get generated here
     auto sketch_elements = SketchElementImpl::generate_sketch_elements(allocator_,
@@ -793,6 +790,10 @@ void IndexGPU<SketchElementImpl>::generate_index(const io::FastaParser& parser,
                                                                        read_id_to_basepairs_section_d,
                                                                        hash_representations,
                                                                        cuda_stream_);
+
+    GW_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream_));
+    merged_basepairs_h.clear();
+    merged_basepairs_h.shrink_to_fit();
 
     device_buffer<representation_t> generated_representations_d                         = std::move(sketch_elements.representations_d);
     device_buffer<typename SketchElementImpl::ReadidPositionDirection> generated_rest_d = std::move(sketch_elements.rest_d);
