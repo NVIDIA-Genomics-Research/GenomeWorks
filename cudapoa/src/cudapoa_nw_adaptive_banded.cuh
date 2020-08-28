@@ -280,7 +280,7 @@ __device__
             pred_count = incoming_edge_count[node_id];
             if (pred_count == 0)
             {
-                set_score(scores, score_gIdx, SizeT{-1}, gap_score, gradient, band_width, max_column);
+                set_score_adaptive(scores, score_gIdx, SizeT{-1}, gap_score, band_start, band_width);
             }
             else
             {
@@ -301,7 +301,7 @@ __device__
                     }
                     first_element_prev_score = penalty + gap_score;
                 }
-                set_score(scores, score_gIdx, SizeT{-1}, first_element_prev_score, gradient, band_width, max_column);
+                set_score_adaptive(scores, score_gIdx, SizeT{-1}, first_element_prev_score, band_start, band_width);
             }
         }
         pred_count = __shfl_sync(FULL_MASK, pred_count, 0);
