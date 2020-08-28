@@ -215,7 +215,8 @@ __device__
     }
 
     // limit band-width for very large reads, ad-hoc rule 3
-    band_width = min(band_width, 1536);
+    ///ToDo add a check for cases where static_band_width > CUDAPOA_MAX_ADAPTIVE_BAND_WIDTH
+    band_width = min(band_width, CUDAPOA_MAX_ADAPTIVE_BAND_WIDTH);
     // band_shift defines distance of band_start from the scores matrix diagonal, ad-hoc rule 4
     SizeT band_shift = band_width / 2;
     // rerun code is defined in backtracking loop from previous alignment try
