@@ -765,14 +765,12 @@ void IndexGPU<SketchElementImpl>::generate_index(const io::FastaParser& parser,
     fasta_reads.shrink_to_fit();
 
     // move basepairs to the device
-    GW_LOG_INFO("Allocating {} bytes for read_id_to_basepairs_section_d", read_id_to_basepairs_section_h.size() * sizeof(decltype(read_id_to_basepairs_section_h)::value_type));
     device_buffer<decltype(read_id_to_basepairs_section_h)::value_type> read_id_to_basepairs_section_d(read_id_to_basepairs_section_h.size(), allocator_, cuda_stream_);
     cudautils::device_copy_n(read_id_to_basepairs_section_h.data(),
                              read_id_to_basepairs_section_h.size(),
                              read_id_to_basepairs_section_d.data(),
                              cuda_stream_); // H2D
 
-    GW_LOG_INFO("Allocating {} bytes for merged_basepairs_d", merged_basepairs_h.size() * sizeof(decltype(merged_basepairs_h)::value_type));
     device_buffer<decltype(merged_basepairs_h)::value_type> merged_basepairs_d(merged_basepairs_h.size(), allocator_, cuda_stream_);
     cudautils::device_copy_n(merged_basepairs_h.data(),
                              merged_basepairs_h.size(),
@@ -801,9 +799,7 @@ void IndexGPU<SketchElementImpl>::generate_index(const io::FastaParser& parser,
     //       Consider implementing a move-to-index function for that sort. That way this interface would be more verbose and there
     //       would be no need for copy_rest_to_separate_arrays()
 
-    GW_LOG_INFO("Deallocating {} bytes from read_id_to_basepairs_section_d", read_id_to_basepairs_section_d.size() * sizeof(decltype(read_id_to_basepairs_section_d)::value_type));
     read_id_to_basepairs_section_d.free();
-    GW_LOG_INFO("Deallocating {} bytes from merged_basepairs_d", merged_basepairs_d.size() * sizeof(decltype(merged_basepairs_d)::value_type));
     merged_basepairs_d.free();
 
     // *** sort sketch elements by representation ***
