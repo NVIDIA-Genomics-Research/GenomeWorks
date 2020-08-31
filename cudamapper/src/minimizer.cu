@@ -878,7 +878,7 @@ Minimizer::GeneratedSketchElements Minimizer::generate_sketch_elements(DefaultDe
                                                                        const bool hash_representations,
                                                                        const cudaStream_t cuda_stream)
 {
-    GW_NVTX_RANGE(profiler, "generate_sketch_elements");
+    GW_NVTX_RANGE(profiler, "Minimizer::generate_sketch_elements");
 
     // for each read find the maximum number of minimizers (one per window), determine their section in the minimizer arrays and allocate the arrays
     std::uint64_t total_windows = 0;
