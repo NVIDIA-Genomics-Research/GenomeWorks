@@ -848,6 +848,7 @@ __global__ void find_back_end_minimizers(const std::uint64_t minimizer_size,
 /// \param representations_compressed array of representations of minimizers, grouped by reads, without invalid elements between the reads
 /// \param rest_compressed array of read_ids, positions_in_read and directions of reads, grouped by reads, without invalid elements between the reads
 /// \param read_id_to_compressed_minimizers index of the first minimizer of the next read (array comes from an inclusive scan, hence all indices are shifted by one)
+/// \param read_id_of_first_read
 __global__ void compress_minimizers(const representation_t* const window_minimizers_representation,
                                     const position_in_read_t* const window_minimizers_position_in_read,
                                     const char* const window_minimizers_direction,
@@ -855,7 +856,7 @@ __global__ void compress_minimizers(const representation_t* const window_minimiz
                                     representation_t* const representations_compressed,
                                     Minimizer::ReadidPositionDirection* const rest_compressed,
                                     const std::int64_t* const read_id_to_compressed_minimizers,
-                                    std::uint32_t offset)
+                                    std::uint32_t read_id_of_first_read)
 {
     const auto& first_input_minimizer = read_id_to_windows_section[blockIdx.x].first_element_;
     // elements have the index of read_id+1, i.e. everything is shifted by one
@@ -865,7 +866,7 @@ __global__ void compress_minimizers(const representation_t* const window_minimiz
     for (std::uint32_t i = threadIdx.x; i < number_of_minimizers; i += blockDim.x)
     {
         representations_compressed[first_output_minimizer + i]        = window_minimizers_representation[first_input_minimizer + i];
-        rest_compressed[first_output_minimizer + i].read_id_          = blockIdx.x + offset;
+        rest_compressed[first_output_minimizer + i].read_id_          = blockIdx.x + read_id_of_first_read;
         rest_compressed[first_output_minimizer + i].position_in_read_ = window_minimizers_position_in_read[first_input_minimizer + i];
         rest_compressed[first_output_minimizer + i].direction_        = window_minimizers_direction[first_input_minimizer + i];
     }
