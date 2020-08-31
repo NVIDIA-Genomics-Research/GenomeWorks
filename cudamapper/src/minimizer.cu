@@ -858,7 +858,7 @@ __global__ void compress_minimizers(const representation_t* const window_minimiz
                                     const std::int64_t* const read_id_to_compressed_minimizers,
                                     std::uint32_t read_id_of_first_read)
 {
-    const auto& first_input_minimizer = read_id_to_windows_section[blockIdx.x].first_element_;
+    const auto first_input_minimizer = read_id_to_windows_section[blockIdx.x].first_element_;
     // elements have the index of read_id+1, i.e. everything is shifted by one
     const auto first_output_minimizer = blockIdx.x == 0 ? 0 : read_id_to_compressed_minimizers[blockIdx.x - 1];
     const auto number_of_minimizers   = read_id_to_compressed_minimizers[blockIdx.x] - first_output_minimizer;
