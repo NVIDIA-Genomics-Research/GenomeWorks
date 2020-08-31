@@ -17,6 +17,9 @@
 #include <limits>
 #include "minimizer.hpp"
 
+#include <thrust/scan.h>
+#include <thrust/execution_policy.h>
+
 namespace claraparabricks
 {
 
@@ -97,7 +100,7 @@ __global__ void find_front_end_minimizers(const std::uint64_t minimizer_size,
                                           char* const window_minimizers_direction,
                                           position_in_read_t* const window_minimizers_position_in_read,
                                           const ArrayBlock* const read_id_to_windows_section,
-                                          std::uint32_t* const read_id_to_minimizers_written,
+                                          std::int64_t* const read_id_to_minimizers_written,
                                           const bool hash_representations)
 {
     // TODO: simplify this method similarly to find_back_end_minimizers
@@ -402,7 +405,7 @@ __global__ void find_central_minimizers(const std::uint64_t minimizer_size,
                                         char* const window_minimizers_direction,
                                         position_in_read_t* const window_minimizers_position_in_read,
                                         const ArrayBlock* const read_id_to_windows_section,
-                                        std::uint32_t* const read_id_to_minimizers_written,
+                                        std::int64_t* const read_id_to_minimizers_written,
                                         const bool hash_representations)
 {
     // See find_front_end_minimizers for more details about the algorithm
@@ -643,7 +646,7 @@ __global__ void find_back_end_minimizers(const std::uint64_t minimizer_size,
                                          char* const window_minimizers_direction,
                                          position_in_read_t* const window_minimizers_position_in_read,
                                          const ArrayBlock* const read_id_to_windows_section,
-                                         std::uint32_t* const read_id_to_minimizers_written,
+                                         std::int64_t* const read_id_to_minimizers_written,
                                          const bool hash_representations)
 {
     // See find_front_end_minimizers for more details about the algorithm
@@ -836,7 +839,7 @@ __global__ void find_back_end_minimizers(const std::uint64_t minimizer_size,
 /// window_minimizers_representation, window_minimizers_position_in_read and window_minimizers_direction all allocate one element for each window in the read.
 /// Many windows share the same minimizer and each minimizer is written only once, meaning many elements do not contain minimizers.
 /// This function creates new arrays where such elements do not exist.
-/// Note that in the input arrays all minimizers of one read are written consecutively, i.e. [read 0 minimizers], [read 0 junk], [read 1 minimizers], [read 1 junk], [read 2 minimizers]...
+/// Note that in the input arrays all minimizers of one read are written consecutively, i.e. [read_0 minimizers], [read_0 junk], [read_1 minimizers], [read_1 junk], [read_2 minimizers]...
 ///
 /// \param window_minimizers_representation array of representations of minimizers, grouped by reads
 /// \param window_minimizers_position_in_read array of positions in read of minimizers, grouped by reads
@@ -844,19 +847,20 @@ __global__ void find_back_end_minimizers(const std::uint64_t minimizer_size,
 /// \param read_id_to_windows_section index of first element dedicated to that read in input arrays and the number of dedicated elements
 /// \param representations_compressed array of representations of minimizers, grouped by reads, without invalid elements between the reads
 /// \param rest_compressed array of read_ids, positions_in_read and directions of reads, grouped by reads, without invalid elements between the reads
-/// \param read_id_to_compressed_minimizers index of first element dedicated to that read in input arrays and the number of dedicated elements
+/// \param read_id_to_compressed_minimizers index of the first minimizer of the next read (array comes from an inclusive scan, hence all indices are shifted by one)
 __global__ void compress_minimizers(const representation_t* const window_minimizers_representation,
                                     const position_in_read_t* const window_minimizers_position_in_read,
                                     const char* const window_minimizers_direction,
                                     const ArrayBlock* const read_id_to_windows_section,
                                     representation_t* const representations_compressed,
                                     Minimizer::ReadidPositionDirection* const rest_compressed,
-                                    const ArrayBlock* const read_id_to_compressed_minimizers,
+                                    const std::int64_t* const read_id_to_compressed_minimizers,
                                     std::uint32_t offset)
 {
-    const auto& first_input_minimizer  = read_id_to_windows_section[blockIdx.x].first_element_;
-    const auto& first_output_minimizer = read_id_to_compressed_minimizers[blockIdx.x].first_element_;
-    const auto& number_of_minimizers   = read_id_to_compressed_minimizers[blockIdx.x].block_size_;
+    const auto& first_input_minimizer = read_id_to_windows_section[blockIdx.x].first_element_;
+    // elements have the index of read_id+1, i.e. everything is shifted by one
+    const auto first_output_minimizer = blockIdx.x == 0 ? 0 : read_id_to_compressed_minimizers[blockIdx.x - 1];
+    const auto number_of_minimizers   = read_id_to_compressed_minimizers[blockIdx.x] - first_output_minimizer;
 
     for (std::uint32_t i = threadIdx.x; i < number_of_minimizers; i += blockDim.x)
     {
@@ -906,11 +910,11 @@ Minimizer::GeneratedSketchElements Minimizer::generate_sketch_elements(DefaultDe
     device_buffer<char> window_minimizers_direction_d(total_windows, allocator, cuda_stream);
     GW_LOG_INFO("Allocating {} bytes for window_minimizers_position_in_read_d", total_windows * sizeof(position_in_read_t));
     device_buffer<position_in_read_t> window_minimizers_position_in_read_d(total_windows, allocator, cuda_stream);
-    GW_LOG_INFO("Allocating {} bytes for read_id_to_minimizers_written_d", number_of_reads_to_add * sizeof(std::uint32_t));
-    device_buffer<std::uint32_t> read_id_to_minimizers_written_d(number_of_reads_to_add, allocator, cuda_stream);
+    GW_LOG_INFO("Allocating {} bytes for read_id_to_minimizers_written_d", number_of_reads_to_add * sizeof(std::int64_t));
+    device_buffer<std::int64_t> read_id_to_minimizers_written_d(number_of_reads_to_add, allocator, cuda_stream);
     // initially there are no minimizers written to the output arrays
     // TODO: is this needed?
-    GW_CU_CHECK_ERR(cudaMemsetAsync(read_id_to_minimizers_written_d.data(), 0, number_of_reads_to_add * sizeof(std::uint32_t), cuda_stream));
+    GW_CU_CHECK_ERR(cudaMemsetAsync(read_id_to_minimizers_written_d.data(), 0, number_of_reads_to_add * sizeof(std::int64_t), cuda_stream));
 
     // *** front end minimizers ***
     std::uint32_t num_of_basepairs_for_front_minimizers = (window_size - 1) + minimizer_size - 1;
@@ -1007,35 +1011,21 @@ Minimizer::GeneratedSketchElements Minimizer::generate_sketch_elements(DefaultDe
                                                                                                                 read_id_to_minimizers_written_d.data(),
                                                                                                                 hash_representations);
 
-    std::vector<std::uint32_t> read_id_to_minimizers_written_h(number_of_reads_to_add);
-    cudautils::device_copy_n(read_id_to_minimizers_written_d.data(),
-                             read_id_to_minimizers_written_h.size(),
-                             read_id_to_minimizers_written_h.data(),
-                             cuda_stream); // D2H
-    GW_LOG_INFO("Deallocating {} bytes from read_id_to_minimizers_written_d", read_id_to_minimizers_written_d.size() * sizeof(decltype(read_id_to_minimizers_written_d)::value_type));
-    read_id_to_minimizers_written_d.free();
-
     // *** remove unused elemets from the window minimizers arrays ***
-    // In window_minimizers_representation_d and other arrays enough space was allocated to support cases where each window has a different minimizers. In reality many neighboring windows share the same mininizer
-    // As a result there are areas of meaningless data between minimizers belonging to different reads (space_allocated_for_all_possible_minimizers_of_a_read - space_needed_for_the_actuall_minimizers)
+    // In window_minimizers_representation_d and other arrays enough space was allocated to support cases in which each window has a different minimizer. In reality many neighboring windows share the same minimizer
+    // As a result there are unused areas between minimizers belonging to different reads (space_allocated_for_all_possible_minimizers_of_a_read - space_needed_for_the_actual_minimizers)
     // At this point all mininizer are put together (compressed) so that the last minimizer of one read is next to the first minimizer of another read
+
+    // after this operation read_id_to_minimizers_written_d should be interpreted as read_id_to_index_of_the_first_minimizer_of_the_next_read_d
+    thrust::inclusive_scan(thrust::cuda::par(allocator).on(cuda_stream),
+                           read_id_to_minimizers_written_d.data(),
+                           read_id_to_minimizers_written_d.data() + read_id_to_minimizers_written_d.size(),
+                           read_id_to_minimizers_written_d.data());
+
+    // last element of contains the index of first minimizer of theoretical past-the-last read, which is equal to the overall number of minimizers
+    std::int64_t total_minimizers = cudautils::get_value_from_device(&(read_id_to_minimizers_written_d.data()[read_id_to_minimizers_written_d.size() - 1]), cuda_stream);
+
     // Data is organized in two arrays in order to support usage of thrust::stable_sort_by_key. One contains representations (key) and the other the rest (values)
-    std::vector<ArrayBlock> read_id_to_compressed_minimizers_h(number_of_reads_to_add, {0, 0});
-    std::uint64_t total_minimizers = 0;
-    for (std::size_t read_id = 0; read_id < read_id_to_minimizers_written_h.size(); ++read_id)
-    {
-        read_id_to_compressed_minimizers_h[read_id].first_element_ = total_minimizers;
-        read_id_to_compressed_minimizers_h[read_id].block_size_    = read_id_to_minimizers_written_h[read_id];
-        total_minimizers += read_id_to_minimizers_written_h[read_id];
-    }
-
-    GW_LOG_INFO("Allocating {} bytes for read_id_to_compressed_minimizers_d", read_id_to_compressed_minimizers_h.size() * sizeof(decltype(read_id_to_compressed_minimizers_h)::value_type));
-    device_buffer<decltype(read_id_to_compressed_minimizers_h)::value_type> read_id_to_compressed_minimizers_d(read_id_to_compressed_minimizers_h.size(), allocator, cuda_stream);
-    cudautils::device_copy_n(read_id_to_compressed_minimizers_h.data(),
-                             read_id_to_compressed_minimizers_h.size(),
-                             read_id_to_compressed_minimizers_d.data(),
-                             cuda_stream); // H2D
-
     GW_LOG_INFO("Allocating {} bytes for representations_compressed_d", total_minimizers * sizeof(representation_t));
     device_buffer<representation_t> representations_compressed_d(total_minimizers, allocator, cuda_stream);
     // rest = position_in_read, direction and read_id
@@ -1049,7 +1039,7 @@ Minimizer::GeneratedSketchElements Minimizer::generate_sketch_elements(DefaultDe
                                                                          read_id_to_windows_section_d.data(),
                                                                          representations_compressed_d.data(),
                                                                          rest_compressed_d.data(),
-                                                                         read_id_to_compressed_minimizers_d.data(),
+                                                                         read_id_to_minimizers_written_d.data(),
                                                                          read_id_of_first_read);
 
     // free these arrays as they are not needed anymore
@@ -1059,8 +1049,8 @@ Minimizer::GeneratedSketchElements Minimizer::generate_sketch_elements(DefaultDe
     window_minimizers_direction_d.free();
     GW_LOG_INFO("Deallocating {} bytes from window_minimizers_position_in_read_d", window_minimizers_position_in_read_d.size() * sizeof(decltype(window_minimizers_position_in_read_d)::value_type));
     window_minimizers_position_in_read_d.free();
-    GW_LOG_INFO("Deallocating {} bytes from read_id_to_compressed_minimizers_d", read_id_to_compressed_minimizers_d.size() * sizeof(decltype(read_id_to_compressed_minimizers_d)::value_type));
-    read_id_to_compressed_minimizers_d.free();
+    GW_LOG_INFO("Deallocating {} bytes from read_id_to_minimizers_written_d", read_id_to_minimizers_written_d.size() * sizeof(decltype(read_id_to_minimizers_written_d)::value_type));
+    read_id_to_minimizers_written_d.free();
     GW_LOG_INFO("Deallocating {} bytes from read_id_to_windows_section_d", read_id_to_windows_section_d.size() * sizeof(decltype(read_id_to_windows_section_d)::value_type));
     read_id_to_windows_section_d.free();
 
