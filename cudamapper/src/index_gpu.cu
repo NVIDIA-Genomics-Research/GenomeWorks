@@ -37,6 +37,8 @@ void find_first_occurrences_of_representations(DefaultDeviceAllocator allocator,
                                                const device_buffer<representation_t>& input_representations_d,
                                                const cudaStream_t cuda_stream)
 {
+    GW_NVTX_RANGE(profiler, "IndexGPU::find_first_occurrences_of_representations");
+
     // TODO: Currently maximum number of thread blocks is 2^31-1. This means we support representations of up to (2^31-1) * number_of_threads
     // With 256 that's (2^31-1)*2^8 ~= 2^39. If representation is 4-byte (we expect it to be 4 or 8) that's 2^39*2^2 = 2^41 = 2TB. We don't expect to hit this limit any time soon
     // The kernel can be modified to process several representation per thread to support arbitrary size
