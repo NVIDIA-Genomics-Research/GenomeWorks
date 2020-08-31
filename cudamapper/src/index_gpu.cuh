@@ -17,6 +17,7 @@
 #pragma once
 
 #include <algorithm>
+#include <functional>
 #include <vector>
 
 #include <thrust/adjacent_difference.h>
@@ -718,7 +719,7 @@ void IndexGPU<SketchElementImpl>::generate_index(const io::FastaParser& parser,
 
     std::uint64_t total_basepairs = 0;
     std::vector<ArrayBlock> read_id_to_basepairs_section_h;
-    std::vector<io::FastaSequence> fasta_reads;
+    std::vector<std::reference_wrapper<const io::FastaSequence>> fasta_reads;
 
     number_of_basepairs_in_longest_read_ = 0;
 
@@ -728,8 +729,8 @@ void IndexGPU<SketchElementImpl>::generate_index(const io::FastaParser& parser,
         for (read_id_t read_id = first_read_id; read_id < past_the_last_read_id; ++read_id)
         {
             fasta_reads.emplace_back(parser.get_sequence_by_id(read_id));
-            const std::string& read_basepairs = fasta_reads.back().seq;
-            const std::string& read_name      = fasta_reads.back().name;
+            const std::string& read_basepairs = fasta_reads.back().get().seq;
+            const std::string& read_name      = fasta_reads.back().get().name;
             if (read_basepairs.length() >= window_size_ + kmer_size_ - 1)
             {
                 // TODO: make sure that no read is longer than what fits into position_in_read_t
@@ -770,7 +771,7 @@ void IndexGPU<SketchElementImpl>::generate_index(const io::FastaParser& parser,
         // read_id starts from first_read_id which can have an arbitrary value, local_read_id always starts from 0
         for (read_id_t local_read_id = 0; local_read_id < number_of_reads_; ++local_read_id)
         {
-            const std::string& read_basepairs = fasta_reads[local_read_id].seq;
+            const std::string& read_basepairs = fasta_reads[local_read_id].get().seq;
             std::copy(std::begin(read_basepairs),
                       std::end(read_basepairs),
                       std::next(std::begin(merged_basepairs_h), read_id_to_basepairs_section_h[local_read_id].first_element_));
