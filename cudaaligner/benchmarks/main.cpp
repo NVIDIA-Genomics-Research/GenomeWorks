@@ -65,28 +65,6 @@ static void BM_SingleAlignment(benchmark::State& state)
     }
 }
 
-class CudaStream
-{
-public:
-    CudaStream()
-    {
-        GW_CU_CHECK_ERR(cudaStreamCreate(&s_));
-    }
-
-    ~CudaStream()
-    {
-        GW_CU_CHECK_ERR(cudaStreamDestroy(s_));
-    }
-
-    inline cudaStream_t& get()
-    {
-        return s_;
-    }
-
-private:
-    cudaStream_t s_ = nullptr;
-};
-
 template <typename AlignerT>
 typename std::enable_if<!std::is_same<AlignerT, AlignerGlobalMyersBanded>::value, std::unique_ptr<Aligner>>::type create_aligner_tmp_dispatch(int32_t genome_size, int32_t alignments_per_batch, DefaultDeviceAllocator allocator, cudaStream_t stream, int32_t device_id)
 {
@@ -115,8 +93,8 @@ typename std::enable_if<std::is_same<AlignerT, AlignerGlobalMyersBanded>::value,
 template <typename AlignerT>
 static void BM_SingleBatchAlignment(benchmark::State& state)
 {
-    const std::size_t max_gpu_memory = cudautils::find_largest_contiguous_device_memory_section();
-    CudaStream stream;
+    const std::size_t max_gpu_memory   = cudautils::find_largest_contiguous_device_memory_section();
+    CudaStream stream                  = make_cuda_stream();
     DefaultDeviceAllocator allocator   = create_default_device_allocator(max_gpu_memory);
     const int32_t alignments_per_batch = state.range(0);
     const int32_t genome_size          = state.range(1);
