@@ -203,12 +203,6 @@ struct __align__(8) ScoreT4<int16_t>
     int16_t s0, s1, s2, s3;
 };
 
-template <>
-struct __align__(16) ScoreT4<int32_t>
-{
-    int32_t s0, s1, s2, s3;
-};
-
 } // namespace cudapoa
 
 } // namespace genomeworks
