@@ -1055,10 +1055,6 @@ Minimizer::GeneratedSketchElements Minimizer::generate_sketch_elements(DefaultDe
     GW_LOG_INFO("Deallocating {} bytes from read_id_to_windows_section_d", read_id_to_windows_section_d.size() * sizeof(decltype(read_id_to_windows_section_d)::value_type));
     read_id_to_windows_section_d.free();
 
-    // This is not completely necessary, but if removed one has to make sure that the next step
-    // uses the same stream or that sync is done in caller
-    GW_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
-
     return {std::move(representations_compressed_d),
             std::move(rest_compressed_d)};
 }

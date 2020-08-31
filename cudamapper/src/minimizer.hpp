@@ -82,6 +82,8 @@ public:
 
     /// \brief generates sketch elements from the given input
     ///
+    /// This function does not sync at the end
+    ///
     /// \param number_of_reads_to_add number of reads which should be added to the collection (= number of reads in the data that is passed to the function)
     /// \param minimizer_size
     /// \param window_size
