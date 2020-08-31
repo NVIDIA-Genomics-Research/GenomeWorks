@@ -127,7 +127,7 @@ __device__ ScoreT4<ScoreT> get_scores_adaptive(ScoreT* scores,
     {
         ScoreT4<ScoreT>* pred_scores = (ScoreT4<ScoreT>*)get_score_ptr_adaptive(scores, row, column, band_start, band_width);
 
-        // loads 8 consecutive bytes (4 shorts)
+        // loads 8/16 consecutive bytes (4 ScoreTs)
         ScoreT4<ScoreT> score4 = pred_scores[0];
 
         // need to load the next chunk of memory as well

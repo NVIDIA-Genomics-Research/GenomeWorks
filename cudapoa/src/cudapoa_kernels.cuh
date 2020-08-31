@@ -146,11 +146,17 @@ __launch_bounds__(GW_POA_KERNELS_MAX_THREADS_PER_BLOCK)
         banded_score_matrix_size = static_cast<float>(scores_matrix_height) * static_cast<float>(scores_matrix_width);
         int64_t scores_offset    = static_cast<int64_t>(banded_score_matrix_size) * static_cast<int64_t>(window_idx);
         scores                   = &scores_d[scores_offset];
+        // ensure alignment for Score4T
+        scores_offset = reinterpret_cast<int64_t>(scores) + (sizeof(ScoreT4<ScoreT>) - (reinterpret_cast<int64_t>(scores) % sizeof(ScoreT4<ScoreT>)));
+        scores        = reinterpret_cast<ScoreT*>(scores_offset);
     }
     else
     {
         int64_t scores_offset = static_cast<int64_t>(window_details_d[window_idx].scores_offset) * static_cast<int64_t>(scores_matrix_height);
         scores                = &scores_d[scores_offset];
+        // ensure alignment for Score4T
+        scores_offset = reinterpret_cast<int64_t>(scores) + (sizeof(ScoreT4<ScoreT>) - (reinterpret_cast<int64_t>(scores) % sizeof(ScoreT4<ScoreT>)));
+        scores        = reinterpret_cast<ScoreT*>(scores_offset);
     }
 
     SizeT* alignment_graph         = &alignment_graph_d[max_nodes_per_graph * window_idx];
