@@ -299,7 +299,6 @@ __device__
 
             while (__any_sync(FULL_MASK, loop))
             {
-
                 loop = false;
                 // The shfl_up lets us grab a value from the lane below.
                 ScoreT last_score = __shfl_up_sync(FULL_MASK, score.s3, 1);
