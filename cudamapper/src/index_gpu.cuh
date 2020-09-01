@@ -733,9 +733,9 @@ void IndexGPU<SketchElementImpl>::generate_index(const io::FastaParser& parser,
             {
                 // TODO: make sure that no read is longer than what fits into position_in_read_t
                 local_to_global_read_id.push_back(read_id);
-                read_id_to_basepairs_section_h.emplace_back(ArrayBlock{total_basepairs, static_cast<std::uint32_t>(read_basepairs.length())});
+                read_id_to_basepairs_section_h.emplace_back(ArrayBlock{total_basepairs, get_size<std::uint32_t>(read_basepairs)});
                 total_basepairs += read_basepairs.length();
-                number_of_basepairs_in_longest_read_ = std::max(number_of_basepairs_in_longest_read_, static_cast<position_in_read_t>(read_basepairs.length()));
+                number_of_basepairs_in_longest_read_ = std::max(number_of_basepairs_in_longest_read_, get_size<position_in_read_t>(read_basepairs));
             }
             else
             {
