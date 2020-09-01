@@ -48,7 +48,7 @@ namespace cudamapper
 
 #define MAX_ANCHMER_WINDOW 10
 #define MAX_OVERLAPMER_WINDOW 10
-#define INT32_INFINITY 1000000
+#define INT32_INFINITY 100000000
 
 struct Anchmer
 {
@@ -667,15 +667,6 @@ generate_anchmers(const Anchor* d_anchors,
     }
 }
 
-__global__ void decrementer_kernel(std::size_t* vals, const std::size_t n_vals)
-{
-    const std::size_t d_tid = blockIdx.x * blockDim.x + threadIdx.x;
-    if (d_tid < n_vals)
-    {
-        vals[d_tid] = vals[d_tid] - 1;
-    }
-}
-
 __device__ __forceinline__ bool overlaps_mergable(const Overlap& a, const Overlap& b, std::int32_t max_dist, float min_gap_ratio)
 {
     const int q_diff      = abs(int(b.query_start_position_in_read_) - int(a.query_end_position_in_read_));
@@ -731,11 +722,12 @@ __global__ void init_predecessor_and_score_arrays(int32_t* predecessors,
     const std::size_t d_tid = blockIdx.x * blockDim.x + threadIdx.x;
     if (d_tid < n_overlaps)
     {
+        scores[d_tid]       = 0;
         predecessors[d_tid] = d_tid;
     }
 }
 
-__device__ __forceinline__ int32_t fast_approx_ratio_cost(const double ratio)
+__device__ __forceinline__ int32_t fast_approx_pow_6(const double ratio)
 {
     if (ratio > 0.9)
         return 0;
@@ -745,26 +737,115 @@ __device__ __forceinline__ int32_t fast_approx_ratio_cost(const double ratio)
         return 20;
     else if (ratio > 0.5)
         return 64;
+    else if (ratio > 0.4)
+        return 500;
     else
-        return 10000;
+        return INT32_INFINITY;
+}
+
+__device__ __forceinline__ int32_t fast_approx_log2(const int32_t val)
+{
+    if (val < 2)
+        return 0;
+    else if (val < 4)
+        return 1;
+    else if (val < 8)
+        return 2;
+    else if (val < 16)
+        return 3;
+    else if (val < 32)
+        return 4;
+    else if (val < 64)
+        return 5;
+    else if (val < 128)
+        return 6;
+    else if (val < 256)
+        return 7;
+    else
+        return 8;
+}
+
+__device__ __forceinline__ int32_t log_linear_weight(Overlap& a, Overlap& b, const int32_t max_dist)
+{
+    if (a.query_read_id_ != b.query_read_id_)
+        return -1 * INT32_INFINITY;
+    if (a.target_read_id_ != b.target_read_id_)
+        return -1 * INT32_INFINITY;
+
+    int32_t q_dist = int(b.query_end_position_in_read_) - int(a.query_end_position_in_read_);
+
+    if (q_dist == 0 || q_dist > max_dist)
+        return -1 * INT32_INFINITY;
+
+    int32_t t_dist = int(b.target_end_position_in_read_) - int(a.target_end_position_in_read_);
+
+    if (t_dist > max_dist || t_dist <= 0)
+        return -1 * INT32_INFINITY;
+
+    int32_t dist_diff = q_dist > t_dist ? q_dist - t_dist : t_dist - q_dist;
+
+    if (dist_diff > 500)
+        return -1 * INT32_INFINITY;
+
+    // if (3.0 * min(t_dist, q_dist))
+
+    int32_t min_dist      = min(q_dist, t_dist);
+    int32_t log_dist_diff = fast_approx_log2(dist_diff);
+
+    int32_t overlap_targ_length  = abs(int(b.target_end_position_in_read_) - int(b.target_start_position_in_read_));
+    int32_t overlap_query_length = abs(int(b.query_end_position_in_read_) - int(b.query_start_position_in_read_));
+
+    int32_t min_size = min(overlap_targ_length, overlap_query_length);
+    int32_t max_size = max(overlap_targ_length, overlap_query_length);
+
+    if (max_size > 500 && 4 * min_size < max_size)
+        return -1 * INT32_INFINITY;
+
+    int32_t score = min_dist > overlap_targ_length ? overlap_targ_length : min_dist;
+    score -= int32_t(double(score) * (0.01 * 50)) + int32_t(double(log_dist_diff) * 0.5);
+    return score;
+    //return int32_t(0.01 * 20.0 * abs(float(dist_diff))) + int32_t(0.5 * fast_approx_pow_6(dist_diff));
 }
 
 __device__ __forceinline__ int32_t exp_gap_cost(Overlap& a, Overlap& b)
 {
 
-    int32_t id_match_cost               = a.query_read_id_ == b.query_read_id_ && a.target_read_id_ == b.target_read_id_ ? 0 : INT32_INFINITY;
+    int32_t id_match_cost = a.query_read_id_ == b.query_read_id_ && a.target_read_id_ == b.target_read_id_ ? 0 : INT32_INFINITY;
+    if (id_match_cost == INT32_INFINITY)
+        return INT32_INFINITY;
     int32_t q_diff                      = abs(int(b.query_start_position_in_read_) - int(a.query_end_position_in_read_));
     const bool relative_strands_reverse = (a.relative_strand == claraparabricks::genomeworks::cudamapper::RelativeStrand::Reverse) && (b.relative_strand == claraparabricks::genomeworks::cudamapper::RelativeStrand::Reverse);
 
     int32_t t_diff      = relative_strands_reverse ? abs(int(a.target_start_position_in_read_) - int(b.target_end_position_in_read_)) : abs(int(b.target_start_position_in_read_) - int(a.target_end_position_in_read_));
+    int32_t min_diff    = min(t_diff, q_diff);
     int32_t strand_cost = a.relative_strand == b.relative_strand || a.num_residues_ == 1 || b.num_residues_ == 1 ? 0 : INT32_INFINITY;
 
     float gap_ratio = min(float(q_diff), float(t_diff)) / max(float(q_diff), float(t_diff));
     //int32_t ratio_cost = min(int(100), int(1.0 / pow(gap_ratio, 5)));
-    int32_t ratio_cost = fast_approx_ratio_cost(gap_ratio);
+    int32_t ratio_cost = fast_approx_pow_6(gap_ratio);
 
-    int32_t diff_cost = max(int(q_diff), int(t_diff)) < 5000 ? 0 : 100;
+    int32_t diff_cost = max(int(q_diff), int(t_diff)) < 5000 ? min_diff / 3 : INT32_INFINITY;
     return ratio_cost + diff_cost + strand_cost + id_match_cost;
+}
+
+__device__ __forceinline__ int32_t unweighted_base_addition_score(const Overlap& a, const Overlap& b)
+{
+    int32_t q_add                       = abs(int(b.query_end_position_in_read_) - int(a.query_end_position_in_read_));
+    const bool relative_strands_reverse = (a.relative_strand == claraparabricks::genomeworks::cudamapper::RelativeStrand::Reverse) && (b.relative_strand == claraparabricks::genomeworks::cudamapper::RelativeStrand::Reverse);
+
+    int32_t t_add            = relative_strands_reverse ? abs(int(a.target_end_position_in_read_) - int(b.target_end_position_in_read_)) : abs(int(b.target_end_position_in_read_) - int(a.target_end_position_in_read_));
+    int32_t current_addition = min(q_add, t_add);
+
+    int32_t q_length       = abs(int(b.query_end_position_in_read_) - int(b.query_start_position_in_read_));
+    int32_t t_length       = abs(int(b.target_end_position_in_read_) - int(b.target_start_position_in_read_));
+    int32_t current_length = min(q_length, t_length);
+
+    return min(current_length, current_addition);
+}
+
+__device__ __forceinline__ int32_t capped_score(const int32_t score, const int32_t cap)
+{
+    return min(int(score), int(cap));
 }
 
 __global__ void chain_overlaps_by_score(Overlap* overlaps,
@@ -784,15 +865,18 @@ __global__ void chain_overlaps_by_score(Overlap* overlaps,
         for (int32_t i = global_overlap_index; i < end_index; ++i)
         {
             int32_t i_score = scores[i];
-            for (int32_t j = i + 1; j < i + 20; ++j)
+            for (int32_t j = i + 1; j < end_index; ++j)
             {
-                int32_t score_addition  = min(int(scores[j]), int(100));
-                int32_t gap_cost        = exp_gap_cost(overlaps[i], overlaps[j]);
-                int32_t marginal_score  = min(int(score_addition), int(100)) - int(gap_cost);
-                int32_t tentative_score = min(i_score + marginal_score, 100);
+                //int32_t score_addition  = capped_score(scores[j]), 100);
+                // int32_t score_addition = unweighted_base_addition_score(overlaps[i], overlaps[j]);
+                //int32_t gap_cost        = exp_gap_cost(overlaps[i], overlaps[j]);
+                // int32_t gap_cost        = log_linear_gap_cost(overlaps[i], overlaps[j], max_distance);
+                int32_t marginal_score = log_linear_weight(overlaps[i], overlaps[j], max_distance);
+                // int32_t marginal_score  = score_addition - gap_cost;
+                int32_t tentative_score = i_score + marginal_score;
                 if (tentative_score > scores[j])
                 {
-                    scores[j]       = i_score + score_addition - gap_cost;
+                    scores[j]       = tentative_score;
                     predecessors[j] = i;
                     select_mask[i]  = false;
                 }
@@ -801,7 +885,18 @@ __global__ void chain_overlaps_by_score(Overlap* overlaps,
     }
 }
 
+// __device__ __forceinline__ bool check_distances(const Overlap& a, const Overlap& b, const int32_t max_dist)
+// {
+//     int32_t q_diff                      = b.query_start_position_in_read_ - a.query_end_position_in_read_;
+//     const bool relative_strands_reverse = (a.relative_strand == claraparabricks::genomeworks::cudamapper::RelativeStrand::Reverse) && (b.relative_strand == claraparabricks::genomeworks::cudamapper::RelativeStrand::Reverse);
+
+//     int32_t t_diff = relative_strands_reverse ? abs(int(a.target_start_position_in_read_) - int(b.target_end_position_in_read_)) : abs(int(b.target_start_position_in_read_) - int(a.target_end_position_in_read_));
+
+//     return q_diff < max_dist && t_diff < max_dist;
+// }
+
 __global__ void produce_chains(Overlap* overlaps,
+                               Overlap* dest,
                                double* scores,
                                int32_t* predecessors,
                                bool* select_mask,
@@ -813,23 +908,13 @@ __global__ void produce_chains(Overlap* overlaps,
     {
         int32_t global_overlap_index = d_tid;
 
-        if (true)
+        if (select_mask[global_overlap_index])
         {
             int32_t index = global_overlap_index;
             Overlap final_overlap;
             final_overlap      = overlaps[index];
             double final_score = scores[index];
-            while (index != predecessors[index])
-            {
-                int32_t pred      = predecessors[index];
-                final_overlap     = merge_helper(final_overlap, overlaps[pred]);
-                select_mask[pred] = false;
-                index             = pred;
-            }
-            overlaps[global_overlap_index] = final_overlap;
-            //select_mask[global_overlap_index] = true;
-            scores[global_overlap_index] = final_score;
-            // printf("Chain start: %d %d %d %d %d %d %d %f\n",
+            // printf("Chain start: %d %d %d %d %d %d %d %f %d\n",
             //        final_overlap.query_read_id_,
             //        final_overlap.query_start_position_in_read_,
             //        final_overlap.query_end_position_in_read_,
@@ -837,7 +922,41 @@ __global__ void produce_chains(Overlap* overlaps,
             //        final_overlap.target_start_position_in_read_,
             //        final_overlap.target_end_position_in_read_,
             //        final_overlap.num_residues_,
-            //        final_score);
+            //        final_score, select_mask[global_overlap_index] ? 1 : 0);
+            while (index != predecessors[index])
+            {
+                int32_t pred         = predecessors[index];
+                Overlap pred_overlap = overlaps[pred];
+
+                final_overlap = merge_helper(final_overlap, pred_overlap);
+                // printf("\tChain mid: [%f] %d -> %d | %d %d %d %d %d %d | %d %d %d %d %d %d |\n", final_score, index, pred,
+                //        pred_overlap.query_read_id_,
+                //        pred_overlap.query_start_position_in_read_,
+                //        pred_overlap.query_end_position_in_read_,
+                //        pred_overlap.target_read_id_,
+                //        pred_overlap.target_start_position_in_read_,
+                //        pred_overlap.target_end_position_in_read_,
+
+                //        final_overlap.query_read_id_,
+                //        final_overlap.query_start_position_in_read_,
+                //        final_overlap.query_end_position_in_read_,
+                //        final_overlap.target_read_id_,
+                //        final_overlap.target_start_position_in_read_,
+                //        final_overlap.target_end_position_in_read_);
+                select_mask[pred] = false;
+                index             = pred;
+            }
+            dest[global_overlap_index]   = final_overlap;
+            scores[global_overlap_index] = final_score;
+            // printf("Chain end: %d %d %d %d %d %d %d %f %d\n",
+            //        final_overlap.query_read_id_,
+            //        final_overlap.query_start_position_in_read_,
+            //        final_overlap.query_end_position_in_read_,
+            //        final_overlap.target_read_id_,
+            //        final_overlap.target_start_position_in_read_,
+            //        final_overlap.target_end_position_in_read_,
+            //        final_overlap.num_residues_,
+            //        final_score, select_mask[global_overlap_index] ? 1 : 0);
         }
     }
 }
@@ -889,21 +1008,6 @@ __global__ void primary_chains_in_query_target_pairs(Overlap* overlaps,
         const int32_t end   = qt_ends[d_tid];
         if (start != end)
         {
-
-            // for (int32_t i = start + 1; i < end; ++i)
-            // {
-            //     const bool strand_equal = overlaps[i].relative_strand == overlaps[i - 1].relative_strand;
-            //     double tmp_score        = scores[i] + scores[i - 1];
-            //     const int32_t q_gap     = overlaps[i].query_start_position_in_read_ - overlaps[i - 1].query_end_position_in_read_;
-            //     const int32_t t_gap     = overlaps[i].relative_strand == RelativeStrand::Forward ? overlaps[i].target_start_position_in_read_ - overlaps[i - 1].target_end_position_in_read_ : overlaps[i].target_end_position_in_read_ - overlaps[i - 1].target_start_position_in_read_;
-            //     const int32_t gap_cost  = max(q_gap, t_gap);
-            //     if (strand_equal && gap_cost < max_dist && (min(int(tmp_score), int(100)) - (int(gap_cost) / 100)) > 50)
-            //     {
-            //         overlaps[i]        = merge_helper(overlaps[i - 1], overlaps[i]);
-            //         select_mask[i - 1] = false;
-            //         scores[i]          = tmp_score;
-            //     }
-            // }
 
             for (int32_t i = start; i < end; ++i)
             {
@@ -1232,15 +1336,10 @@ void OverlapperAnchmer::get_overlaps(std::vector<Overlap>& fused_overlaps,
     //           << std::endl;
 #endif
 
-    // chain_overlaps_in_window<<<(n_initial_overlaps / overlapmer_window_size) + 1, block_size, 0, _cuda_stream>>>(d_overlaps_source.data(),
-    //                                                                                                              d_overlaps_select_mask.data(),
-    //                                                                                                              d_overlap_scores.data(),
-    //                                                                                                              n_initial_overlaps, (n_initial_overlaps / overlapmer_window_size) + 1,
-    //                                                                                                              overlapmer_window_size,
-    //                                                                                                              500,
-    //                                                                                                              0.8);
-
-    init_predecessor_and_score_arrays<<<(n_initial_overlaps / block_size) + 1, block_size, 0, _cuda_stream>>>(d_predecessors.data(), d_overlap_scores.data(), d_overlaps_select_mask.data(), n_initial_overlaps);
+    init_predecessor_and_score_arrays<<<(n_initial_overlaps / block_size) + 1, block_size, 0, _cuda_stream>>>(d_predecessors.data(),
+                                                                                                              d_overlap_scores.data(),
+                                                                                                              d_overlaps_select_mask.data(),
+                                                                                                              n_initial_overlaps);
 
     init_overlap_mask<<<(n_initial_overlaps / block_size) + 1, block_size, 0, _cuda_stream>>>(d_overlaps_select_mask.data(),
                                                                                               n_initial_overlaps,
@@ -1251,16 +1350,7 @@ void OverlapperAnchmer::get_overlaps(std::vector<Overlap>& fused_overlaps,
                                                                                                     d_overlaps_select_mask.data(),
                                                                                                     d_predecessors.data(), n_initial_overlaps,
                                                                                                     5000,
-                                                                                                    32);
-
-    produce_chains<<<(n_initial_overlaps / block_size) + 1, block_size, 0, _cuda_stream>>>(d_overlaps_source.data(),
-                                                                                           d_overlap_scores.data(),
-                                                                                           d_predecessors.data(),
-                                                                                           d_overlaps_select_mask.data(),
-                                                                                           n_initial_overlaps,
-                                                                                           50);
-
-    device_buffer<int32_t> d_n_filtered_overlaps(1, _allocator, _cuda_stream);
+                                                                                                    64);
 
     // device_buffer<int32_t> d_query_target_pair_starts(n_initial_overlaps, _allocator, _cuda_stream);
     // device_buffer<int32_t> d_query_target_pair_lengths(n_initial_overlaps, _allocator, _cuda_stream);
@@ -1276,6 +1366,16 @@ void OverlapperAnchmer::get_overlaps(std::vector<Overlap>& fused_overlaps,
     //                           _allocator,
     //                           _cuda_stream,
     //                           block_size);
+
+    produce_chains<<<(n_initial_overlaps / block_size) + 1, block_size, 0, _cuda_stream>>>(d_overlaps_source.data(),
+                                                                                           d_overlaps_dest.data(),
+                                                                                           d_overlap_scores.data(),
+                                                                                           d_predecessors.data(),
+                                                                                           d_overlaps_select_mask.data(),
+                                                                                           n_initial_overlaps,
+                                                                                           40);
+
+    device_buffer<int32_t> d_n_filtered_overlaps(1, _allocator, _cuda_stream);
 
 #ifdef DEBUG
     // num_overlaps = n_initial_overlaps;
@@ -1314,7 +1414,7 @@ void OverlapperAnchmer::get_overlaps(std::vector<Overlap>& fused_overlaps,
     //                                                                                                                20,
     //                                                                                                                5000);
 
-    mask_overlaps<<<(n_initial_overlaps / block_size) + 1, block_size, 0, _cuda_stream>>>(d_overlaps_source.data(),
+    mask_overlaps<<<(n_initial_overlaps / block_size) + 1, block_size, 0, _cuda_stream>>>(d_overlaps_dest.data(),
                                                                                           n_initial_overlaps,
                                                                                           d_overlaps_select_mask.data(),
                                                                                           min_overlap_len,
@@ -1323,10 +1423,12 @@ void OverlapperAnchmer::get_overlaps(std::vector<Overlap>& fused_overlaps,
                                                                                           all_to_all,
                                                                                           true);
 
-    drop_overlaps_by_mask(d_overlaps_source,
+    //d_overlaps_source.clear_and_resize(n_initial_overlaps);
+
+    drop_overlaps_by_mask(d_overlaps_dest,
                           d_overlaps_select_mask,
                           n_initial_overlaps,
-                          d_overlaps_dest,
+                          d_overlaps_source,
                           d_n_filtered_overlaps,
                           _allocator,
                           _cuda_stream);
@@ -1340,7 +1442,7 @@ void OverlapperAnchmer::get_overlaps(std::vector<Overlap>& fused_overlaps,
     int32_t n_filtered_overlaps = cudautils::get_value_from_device(d_n_filtered_overlaps.data(), _cuda_stream);
 
     fused_overlaps.resize(n_filtered_overlaps);
-    cudautils::device_copy_n(d_overlaps_dest.data(), n_filtered_overlaps, fused_overlaps.data(), _cuda_stream);
+    cudautils::device_copy_n(d_overlaps_source.data(), n_filtered_overlaps, fused_overlaps.data(), _cuda_stream);
 
     // This is not completely necessary, but if removed one has to make sure that the next step
     // uses the same stream or that sync is done in caller
