@@ -41,15 +41,15 @@ int main(int argc, char* argv[])
     // Assumes that only one sequence is present per file
     magic_sequence query_sequence = fasta_parser_query->get_sequence_by_id(0);
 
-    // CSV Seeds file - Each row -> query_position_in_read_,
+    // CSV SeedPairs file - Each row -> query_position_in_read_,
     // target_position_in_read_
-    std::string seeds_file_path = "../data/example_seeds.csv";
+    std::string seed_pairs_file_path = "../data/example_seed_pairs.csv";
 
-    std::vector<Seed> h_seeds;
-    // Following function loops through all seeds in the Seeds csv and returns
+    std::vector<SeedPair> h_seed_pairs;
+    // Following function loops through all seed_pairs in the SeedPairs csv and returns
     // results in
     // the passed vector
-    parse_Seeds(seeds_file_path, h_seeds);
+    parse_SeedPairs(seed_pairs_file_path, h_seed_pairs);
 
     // Following sections TBD based on encoding
     ScoreMatrix                = magic_number_matrix;
@@ -66,13 +66,13 @@ int main(int argc, char* argv[])
     ungapped_extender->extend_async(
         encoded_query.c_str(), // Type TBD based on encoding
         encoded_query.size(), encoded_target.c_str(), encoded_target.size(),
-        score_threshold, h_seeds);
+        score_threshold, h_seed_pairs);
 
     // Wait for ungapped extender to finish
     ungapped_extender->sync();
 
     // Get results
-    const std::vector<ScoredSegment>& segments =
+    const std::vector<ScoredSegmentPair>& segments =
         ungapped_extender->get_scored_segments();
     int32_t i = 0;
     for (const auto& segment : segments)
@@ -80,9 +80,9 @@ int main(int argc, char* argv[])
         std::cout << "Segment: " << i << "Length: " << segment.length
                   << "Score: " << segment.score << std::endl;
         std::cout << "Position in query: "
-                  << segment.seed.query_position_in_read_ << std::endl;
+                  << segment.seed_pair.query_position_in_read << std::endl;
         std::cout << "Position in target: "
-                  << segment.seed.target_position_in_read_ << std::endl;
+                  << segment.seed_pair.target_position_in_read << std::endl;
         i++;
     }
 

@@ -22,7 +22,7 @@ namespace genomeworks
 namespace cudaungappedextender
 {
 
-struct Seed
+struct SeedPair
 {
     /// position of first sketch element in query_read_id_
     position_in_read_t query_position_in_read;
@@ -30,10 +30,10 @@ struct Seed
     position_in_read_t target_position_in_read;
 };
 
-struct ScoredSegment
+struct ScoredSegmentPair
 {
     /// Seed for the segment
-    Seed seed;
+    Seed seed_pair;
     /// length of the segment
     int32_t length;
     /// score of the segment
