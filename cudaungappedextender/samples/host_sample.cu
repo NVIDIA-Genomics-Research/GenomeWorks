@@ -73,7 +73,7 @@ int main(int argc, char* argv[])
 
     // Get results
     const std::vector<ScoredSegmentPair>& segments =
-        ungapped_extender->get_scored_segments();
+        ungapped_extender->get_scored_segment_pairs();
     int32_t i = 0;
     for (const auto& segment : segments)
     {

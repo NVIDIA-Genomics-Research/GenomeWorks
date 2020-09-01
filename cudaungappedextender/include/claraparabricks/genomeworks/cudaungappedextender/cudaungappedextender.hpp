@@ -57,7 +57,7 @@ public:
     StatusType extend_async(const char* h_query, int32_t query_length,
                             const char* h_target, int32_t target_length,
                             int32_t score_threshold,
-                            std::vector<Seed>& h_seeds);
+                            std::vector<SeedPair>& h_seed_pairs);
 
     /// \brief Device pointer prototype for ungapped extension
     ///
@@ -67,8 +67,8 @@ public:
     /// based on input_hspthresh.
     StatusType extend_async(const char* d_query, int32_t query_length,
                             const char* d_target, int32_t target_length,
-                            int32_t score_threshold, Seed* d_seeds,
-                            int32_t num_seeds, ScoredSegment* d_hsp_out,
+                            int32_t score_threshold, SeedPair* d_seed_pairs,
+                            int32_t num_seed_pairs, ScoredSegmentPair* d_hsp_out,
                             int32_t* d_num_hsps);
 
     /// \brief Waits for CUDA accelerated extension to finish
@@ -80,7 +80,7 @@ public:
     /// \brief Return the computed segments
     ///
     /// \return Vector of Scored Segments
-    const std::vector<ScoredSegment>& get_scored_segments() const;
+    const std::vector<ScoredSegment>& get_scored_segment_pairs() const;
 
     /// \brief Reset UngappedExtender object and free device/host memory
     void reset();
