@@ -39,6 +39,7 @@ public:
 
     std::vector<std::string> input_paths;
     std::string graph_output_path;
+    bool output_gfa           = false;
     bool all_fasta            = true;
     bool msa                  = false; // consensus by default
     BandMode band_mode        = BandMode::adaptive_band;

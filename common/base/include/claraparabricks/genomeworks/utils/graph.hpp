@@ -160,6 +160,19 @@ protected:
         }
     }
 
+    ///
+    /// \brief Generates a GFA S(sequence) line from a node's label and sequence.
+    ///
+    /// \param gfa_str An output stringstream to write S lines to.
+    void node_labels_to_gfa(std::ostringstream& gfa_str) const
+    {
+        for (auto& iter : node_labels_)
+        {
+            gfa_str << "S"
+                    << "\t" << iter.first << "\t" << iter.second << std::endl;
+        }
+    }
+
     /// \brief Serialize edges to dot format
     ///
     /// \param dot_str Output string stream to serialize labels to
@@ -172,6 +185,27 @@ protected:
             const edge_weight_t& weight = iter.second;
             dot_str << edge.first << " " << node_separator << " " << edge.second;
             dot_str << " [label=\"" << weight << "\"];\n";
+        }
+    }
+
+    ///
+    /// \brief Serialize edges to GFA (v1) format
+    ///
+    /// \param gfa_str An output stringstream to write output to.
+    void edges_to_gfa(std::ostringstream& gfa_str) const
+    {
+        for (auto& iter : edges_)
+        {
+            const edge_t& edge          = iter.first;
+            const node_id_t edge_source = edge.first;
+            const node_id_t edge_sink   = edge.second;
+            gfa_str << "L"
+                    << "\t" << edge_source << "\t"
+                    << "+"
+                    << "\t" << edge_sink << "\t"
+                    << "+"
+                    << "\t"
+                    << "*" << std::endl;
         }
     }
 
@@ -212,6 +246,17 @@ public:
             edges_.insert({edge, weight});
             update_adject_nodes(edge);
         }
+    }
+
+    std::string serialize_to_gfa() const
+    {
+        std::ostringstream gfa_str;
+        gfa_str << "H"
+                << "\t"
+                << "VN:Z:1.0" << std::endl;
+        node_labels_to_gfa(gfa_str);
+        edges_to_gfa(gfa_str);
+        return gfa_str.str();
     }
 
     /// \brief Serialize graph structure to dot format
