@@ -1578,7 +1578,6 @@ TEST(TestCudamapperIndexGPU, CCCATACC_2_8)
                   expected_number_of_basepairs_in_longest_read);
 }
 
-// TODO: Cover this case as well
 TEST(TestCudamapperIndexGPU, CATCAAG_AAGCTA_3_5)
 {
     // *** One Read is shorter than one full window, the other is not ***
