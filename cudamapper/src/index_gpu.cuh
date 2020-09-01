@@ -17,7 +17,6 @@
 #pragma once
 
 #include <algorithm>
-#include <functional>
 #include <vector>
 
 #include <thrust/adjacent_difference.h>
@@ -719,7 +718,7 @@ void IndexGPU<SketchElementImpl>::generate_index(const io::FastaParser& parser,
 
     std::uint64_t total_basepairs = 0;
     std::vector<ArrayBlock> read_id_to_basepairs_section_h;
-    std::vector<std::reference_wrapper<const io::FastaSequence>> fasta_reads;
+    std::vector<read_id_t> local_to_global_read_id;
 
     number_of_basepairs_in_longest_read_ = 0;
 
@@ -728,12 +727,12 @@ void IndexGPU<SketchElementImpl>::generate_index(const io::FastaParser& parser,
         GW_NVTX_RANGE(profiler, "IndexGPU::generate_index::count_basepairs");
         for (read_id_t read_id = first_read_id; read_id < past_the_last_read_id; ++read_id)
         {
-            fasta_reads.emplace_back(parser.get_sequence_by_id(read_id));
-            const std::string& read_basepairs = fasta_reads.back().get().seq;
-            const std::string& read_name      = fasta_reads.back().get().name;
+            const io::FastaSequence& sequence = parser.get_sequence_by_id(read_id);
+            const std::string& read_basepairs = sequence.seq;
             if (read_basepairs.length() >= window_size_ + kmer_size_ - 1)
             {
                 // TODO: make sure that no read is longer than what fits into position_in_read_t
+                local_to_global_read_id.push_back(read_id);
                 read_id_to_basepairs_section_h.emplace_back(ArrayBlock{total_basepairs, static_cast<std::uint32_t>(read_basepairs.length())});
                 total_basepairs += read_basepairs.length();
                 number_of_basepairs_in_longest_read_ = std::max(number_of_basepairs_in_longest_read_, static_cast<position_in_read_t>(read_basepairs.length()));
@@ -742,7 +741,7 @@ void IndexGPU<SketchElementImpl>::generate_index(const io::FastaParser& parser,
             {
                 // TODO: Implement this skipping in a correct manner
                 GW_LOG_INFO("Skipping read {}. It has {} basepairs, one window covers {} basepairs",
-                            read_name,
+                            sequence.name,
                             read_basepairs.length(),
                             window_size_ + kmer_size_ - 1);
             }
@@ -769,16 +768,14 @@ void IndexGPU<SketchElementImpl>::generate_index(const io::FastaParser& parser,
         GW_NVTX_RANGE(profiler, "IndexGPU::generate_index::merge_basepairs");
         // copy basepairs from each read into one big array
         // read_id starts from first_read_id which can have an arbitrary value, local_read_id always starts from 0
-        for (read_id_t local_read_id = 0; local_read_id < number_of_reads_; ++local_read_id)
+        for (read_id_t local_read_id = 0; local_read_id < local_to_global_read_id.size(); ++local_read_id)
         {
-            const std::string& read_basepairs = fasta_reads[local_read_id].get().seq;
+            const std::string& read_basepairs = parser.get_sequence_by_id(local_to_global_read_id[local_read_id]).seq;
             std::copy(std::begin(read_basepairs),
                       std::end(read_basepairs),
                       std::next(std::begin(merged_basepairs_h), read_id_to_basepairs_section_h[local_read_id].first_element_));
         }
     }
-    fasta_reads.clear();
-    fasta_reads.shrink_to_fit();
 
     // move basepairs to the device
     device_buffer<decltype(read_id_to_basepairs_section_h)::value_type> read_id_to_basepairs_section_d(read_id_to_basepairs_section_h.size(), allocator_, cuda_stream_);
@@ -799,7 +796,7 @@ void IndexGPU<SketchElementImpl>::generate_index(const io::FastaParser& parser,
 
     // sketch elements get generated here
     auto sketch_elements = SketchElementImpl::generate_sketch_elements(allocator_,
-                                                                       number_of_reads_,
+                                                                       local_to_global_read_id.size(), // number of valid reads
                                                                        kmer_size_,
                                                                        window_size_,
                                                                        first_read_id,
