@@ -735,6 +735,20 @@ __global__ void init_predecessor_and_score_arrays(int32_t* predecessors,
     }
 }
 
+__device__ __forceinline__ int32_t fast_approx_ratio_cost(const double ratio)
+{
+    if (ratio > 0.9)
+        return 0;
+    else if (ratio > 0.8)
+        return 4;
+    else if (ratio > 0.6)
+        return 20;
+    else if (ratio > 0.5)
+        return 64;
+    else
+        return 10000;
+}
+
 __device__ __forceinline__ int32_t exp_gap_cost(Overlap& a, Overlap& b)
 {
 
@@ -746,9 +760,10 @@ __device__ __forceinline__ int32_t exp_gap_cost(Overlap& a, Overlap& b)
     int32_t strand_cost = a.relative_strand == b.relative_strand || a.num_residues_ == 1 || b.num_residues_ == 1 ? 0 : INT32_INFINITY;
 
     float gap_ratio = min(float(q_diff), float(t_diff)) / max(float(q_diff), float(t_diff));
+    //int32_t ratio_cost = min(int(100), int(1.0 / pow(gap_ratio, 5)));
+    int32_t ratio_cost = fast_approx_ratio_cost(gap_ratio);
 
-    int32_t ratio_cost = min(int(100), int(1.0 / pow(gap_ratio, 5)));
-    int32_t diff_cost  = max(int(q_diff), int(t_diff)) < 5000 ? 0 : 100;
+    int32_t diff_cost = max(int(q_diff), int(t_diff)) < 5000 ? 0 : 100;
     return ratio_cost + diff_cost + strand_cost + id_match_cost;
 }
 
