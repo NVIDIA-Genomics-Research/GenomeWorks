@@ -76,7 +76,8 @@ struct BatchConfig
     BandMode band_mode;
 
     /// constructor- set upper limit parameters based on max_seq_sz and band_width
-    BatchConfig(int32_t max_seq_sz = 1024, int32_t max_seq_per_poa = 100, int32_t band_width = 256, BandMode banding = BandMode::full_band, float adapive_storage_factor = 2.0);
+    BatchConfig(int32_t max_seq_sz = 1024, int32_t max_seq_per_poa = 100, int32_t band_width = 256, BandMode banding = BandMode::full_band,
+                float adapive_storage_factor = 2.0, float graph_length_factor = 3.0);
 
     /// constructor- set all parameters separately
     BatchConfig(int32_t max_seq_sz, int32_t max_consensus_sz, int32_t max_nodes_per_w,

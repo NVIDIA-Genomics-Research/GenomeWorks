@@ -40,6 +40,7 @@ ApplicationParameters::ApplicationParameters(int argc, char* argv[])
         {"band-mode", required_argument, 0, 'b'},
         {"band-width", required_argument, 0, 'w'},
         {"adaptive-storage", required_argument, 0, 's'},
+        {"graph-length", required_argument, 0, 'l'},
         {"dot", required_argument, 0, 'd'},
         {"max-groups", required_argument, 0, 'M'},
         {"gpu-mem-alloc", required_argument, 0, 'R'},
@@ -50,7 +51,7 @@ ApplicationParameters::ApplicationParameters(int argc, char* argv[])
         {"help", no_argument, 0, 'h'},
     };
 
-    std::string optstring = "i:ab:w:s:d:M:R:m:n:g:vh";
+    std::string optstring = "i:ab:w:s:l:d:M:R:m:n:g:vh";
 
     int32_t argument = 0;
     while ((argument = getopt_long(argc, argv, optstring.c_str(), options, nullptr)) != -1)
@@ -75,6 +76,9 @@ ApplicationParameters::ApplicationParameters(int argc, char* argv[])
             break;
         case 's':
             adaptive_storage = std::stof(optarg);
+            break;
+        case 'l':
+            graph_length = std::stof(optarg);
             break;
         case 'd':
             graph_output_path = std::string(optarg);
@@ -191,6 +195,9 @@ void ApplicationParameters::help(int32_t exit_code)
               << R"(
         -s, --adaptive-storage  <float>
             factor to accommodate extra memory for adaptive score matrix. The factor represents ratio of adaptive-banded score matrix to static-banded score matrix [2.0])"
+              << R"(
+        -l, --graph-length  <float>
+            factor to determine maximum length of POA graph. The factor represents ratio of graph length to maximum sequence length in POA group [3.0])"
               << R"(
         -d, --dot <file>
             output path for printing graph in DOT format [disabled])"
