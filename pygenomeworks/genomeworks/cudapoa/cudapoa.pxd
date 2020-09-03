@@ -82,9 +82,9 @@ cdef extern from "claraparabricks/genomeworks/cudapoa/batch.hpp" namespace "clar
         int32_t max_sequences_per_poa
         BandMode band_mode
 
-        BatchConfig(int32_t, int32_t, int32_t, BandMode, float, float)
-        BatchConfig(int32_t, int32_t, int32_t,
-                    int32_t, int32_t, int32_t, BandMode)
+        BatchConfig(int32_t, int32_t, int32_t, BandMode, float, float, int32t_t)
+        BatchConfig(int32_t, int32_t, int32_t, int32_t,
+                    int32_t, int32_t, BandMode, int32_t)
 
     ctypedef vector[Entry] Group
 

@@ -32,7 +32,8 @@ namespace cudapoa
 
 /// constructor- set other parameters based on a minimum set of input arguments
 BatchConfig::BatchConfig(int32_t max_seq_sz /*= 1024*/, int32_t max_seq_per_poa /*= 100*/, int32_t band_width /*= 256*/,
-                         BandMode banding /*= BandMode::full_band*/, float adapive_storage_factor /*= 2.0*/, float graph_length_factor /*= 3.0*/)
+                         BandMode banding /*= BandMode::full_band*/, float adapive_storage_factor /*= 2.0*/, float graph_length_factor /*= 3.0*/,
+                         int32_t max_pred_dist /*= 0*/)
     /// ensure a 4-byte boundary alignment for any allocated buffer
     : max_sequence_size(max_seq_sz)
     , max_consensus_size(2 * max_sequence_size)
@@ -40,6 +41,7 @@ BatchConfig::BatchConfig(int32_t max_seq_sz /*= 1024*/, int32_t max_seq_per_poa 
     , alignment_band_width(cudautils::align<int32_t, CUDAPOA_MIN_BAND_WIDTH>(band_width))
     , max_sequences_per_poa(max_seq_per_poa)
     , band_mode(banding)
+    , max_pred_distance_in_banded_mode(max_pred_dist > 0 ? max_pred_dist : cudautils::align<int32_t, CUDAPOA_MIN_BAND_WIDTH>(band_width))
 {
     if (banding == BandMode::full_band)
     {
@@ -71,8 +73,8 @@ BatchConfig::BatchConfig(int32_t max_seq_sz /*= 1024*/, int32_t max_seq_per_poa 
 }
 
 /// constructor- set all parameters separately
-BatchConfig::BatchConfig(int32_t max_seq_sz, int32_t max_consensus_sz, int32_t max_nodes_per_w,
-                         int32_t band_width, int32_t max_seq_per_poa, int32_t matrix_seq_dim, BandMode banding)
+BatchConfig::BatchConfig(int32_t max_seq_sz, int32_t max_consensus_sz, int32_t max_nodes_per_w, int32_t band_width,
+                         int32_t max_seq_per_poa, int32_t matrix_seq_dim, BandMode banding, int32_t max_pred_distance)
     /// ensure a 4-byte boundary alignment for any allocated buffer
     : max_sequence_size(max_seq_sz)
     , max_consensus_size(max_consensus_sz)
@@ -83,12 +85,14 @@ BatchConfig::BatchConfig(int32_t max_seq_sz, int32_t max_consensus_sz, int32_t m
     , alignment_band_width(cudautils::align<int32_t, CUDAPOA_MIN_BAND_WIDTH>(band_width))
     , max_sequences_per_poa(max_seq_per_poa)
     , band_mode(banding)
+    , max_pred_distance_in_banded_mode(max_pred_distance)
 {
     throw_on_negative(max_seq_sz, "max_sequence_size cannot be negative.");
     throw_on_negative(max_consensus_sz, "max_consensus_size cannot be negative.");
     throw_on_negative(max_nodes_per_w, "max_nodes_per_graph cannot be negative.");
     throw_on_negative(max_seq_per_poa, "max_sequences_per_poa cannot be negative.");
     throw_on_negative(band_width, "alignment_band_width cannot be negative.");
+    throw_on_negative(max_pred_distance, "max_pred_distance_in_banded_mode cannot be negative.");
 
     if (max_nodes_per_graph < max_sequence_size)
         throw std::invalid_argument("max_nodes_per_graph should be greater than or equal to max_sequence_size.");
