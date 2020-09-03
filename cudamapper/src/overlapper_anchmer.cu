@@ -858,21 +858,35 @@ __global__ void chain_overlaps_by_score(Overlap* overlaps,
     {
         int32_t global_overlap_index = d_tid;
         int32_t end_index            = min(int(global_overlap_index + max_iter), int(n_overlaps));
-        for (int32_t i = global_overlap_index; i < end_index; ++i)
+        int32_t i_score              = scores[global_overlap_index];
+        for (int32_t j = global_overlap_index + 1; j < end_index; ++j)
         {
-            int32_t i_score = scores[i];
-            for (int32_t j = i + 1; j < end_index; ++j)
+            int32_t marginal_score  = log_linear_weight(overlaps[global_overlap_index], overlaps[j], max_distance);
+            int32_t tentative_score = i_score + marginal_score;
+            if (tentative_score > scores[j])
             {
-                int32_t marginal_score  = log_linear_weight(overlaps[i], overlaps[j], max_distance);
-                int32_t tentative_score = i_score + marginal_score;
-                if (tentative_score > scores[j])
-                {
-                    scores[j]       = tentative_score;
-                    predecessors[j] = i;
-                    select_mask[i]  = false;
-                }
+                scores[j]                         = tentative_score;
+                predecessors[j]                   = global_overlap_index;
+                select_mask[global_overlap_index] = false;
+                break;
             }
         }
+
+        // for (int32_t i = global_overlap_index; i < end_index; ++i)
+        // {
+        //     int32_t i_score = scores[i];
+        //     for (int32_t j = i + 1; j < end_index; ++j)
+        //     {
+        //         int32_t marginal_score  = log_linear_weight(overlaps[i], overlaps[j], max_distance);
+        //         int32_t tentative_score = i_score + marginal_score;
+        //         if (tentative_score > scores[j])
+        //         {
+        //             scores[j]       = tentative_score;
+        //             predecessors[j] = i;
+        //             select_mask[i]  = false;
+        //         }
+        //     }
+        // }
     }
 }
 
