@@ -86,14 +86,14 @@ public:
         if (batch_size.band_mode == BandMode::full_band)
         {
             device_size_per_score_matrix = static_cast<int64_t>(batch_size.matrix_sequence_dimension) *
-                                           static_cast<int64_t>(batch_size.matrix_graph_dimension) * sizeof(ScoreT);
+                                           static_cast<int64_t>(batch_size.max_nodes_per_graph) * sizeof(ScoreT);
         }
         else
         {
             device_size_per_score_matrix = static_cast<int64_t>(batch_size.matrix_sequence_dimension) *
                                            static_cast<int64_t>(batch_size.max_pred_distance_in_banded_mode) * sizeof(ScoreT);
             device_size_per_backtracking_matrix = static_cast<int64_t>(batch_size.matrix_sequence_dimension) *
-                                                  static_cast<int64_t>(batch_size.matrix_graph_dimension) * sizeof(TraceT);
+                                                  static_cast<int64_t>(batch_size.max_nodes_per_graph) * sizeof(TraceT);
         }
 
         max_poas_ = avail_mem / (device_size_per_poa + device_size_per_score_matrix + device_size_per_backtracking_matrix);
@@ -440,14 +440,14 @@ public:
         if (batch_size.band_mode == BandMode::full_band)
         {
             device_size_per_score_matrix = static_cast<int64_t>(batch_size.matrix_sequence_dimension) *
-                                           static_cast<int64_t>(batch_size.matrix_graph_dimension) * sizeof_ScoreT;
+                                           static_cast<int64_t>(batch_size.max_nodes_per_graph) * sizeof_ScoreT;
         }
         else
         {
             device_size_per_score_matrix = static_cast<int64_t>(batch_size.matrix_sequence_dimension) *
                                            static_cast<int64_t>(batch_size.max_pred_distance_in_banded_mode) * sizeof_ScoreT;
             device_size_per_backtracking_matrix = static_cast<int64_t>(batch_size.matrix_sequence_dimension) *
-                                                  static_cast<int64_t>(batch_size.matrix_graph_dimension) * sizeof_TraceT;
+                                                  static_cast<int64_t>(batch_size.max_nodes_per_graph) * sizeof_TraceT;
         }
 
         // Calculate max POAs possible based on available memory.

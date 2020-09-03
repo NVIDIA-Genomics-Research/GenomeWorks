@@ -64,8 +64,6 @@ struct BatchConfig
     int32_t max_consensus_size;
     /// Maximum number of nodes in a POA graph, one graph per window
     int32_t max_nodes_per_graph;
-    /// Maximum vertical dimension of scoring matrix, which stores POA graph
-    int32_t matrix_graph_dimension;
     /// Maximum horizontal dimension of scoring matrix, which stores part of sequences used in scores matrix computation
     int32_t matrix_sequence_dimension;
     /// Band-width used in banded alignment, it also defines minimum band-width in adaptive alignment
@@ -82,7 +80,7 @@ struct BatchConfig
                 float adapive_storage_factor = 2.0, float graph_length_factor = 3.0, int32_t max_pred_dist = 0);
 
     /// constructor- set all parameters separately
-    BatchConfig(int32_t max_seq_sz, int32_t max_consensus_sz, int32_t max_nodes_per_w, int32_t band_width,
+    BatchConfig(int32_t max_seq_sz, int32_t max_consensus_sz, int32_t max_nodes_per_poa, int32_t band_width,
                 int32_t max_seq_per_poa, int32_t matrix_seq_dim, BandMode banding, int32_t max_pred_dist);
 };
 

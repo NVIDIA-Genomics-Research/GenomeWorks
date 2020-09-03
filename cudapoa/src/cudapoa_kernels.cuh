@@ -106,7 +106,6 @@ __launch_bounds__(GW_POA_KERNELS_MAX_THREADS_PER_BLOCK)
                                       uint16_t* outgoing_edges_coverage_d,
                                       uint16_t* outgoing_edges_coverage_count_d,
                                       int32_t max_nodes_per_graph,
-                                      int32_t scores_matrix_height,
                                       int32_t scores_matrix_width,
                                       int32_t max_limit_consensus_size,
                                       int32_t TPB               = 64,
@@ -144,18 +143,18 @@ __launch_bounds__(GW_POA_KERNELS_MAX_THREADS_PER_BLOCK)
     if (BM == BandMode::adaptive_band || BM == BandMode::static_band)
     {
         // buffer size for scores, in banded we only need to store part of the scores matrix
-//        banded_buffer_size = static_cast<float>(max_pred_distance) * static_cast<float>(scores_matrix_width);
-        banded_buffer_size = static_cast<float>(scores_matrix_height) * static_cast<float>(scores_matrix_width);
+        //        banded_buffer_size = static_cast<float>(max_pred_distance) * static_cast<float>(scores_matrix_width);
+        banded_buffer_size = static_cast<float>(max_nodes_per_graph) * static_cast<float>(scores_matrix_width);
         int64_t offset     = static_cast<int64_t>(banded_buffer_size) * static_cast<int64_t>(window_idx);
         scores             = &scores_d[offset];
         // buffer size for backtrace
-        banded_buffer_size = static_cast<float>(scores_matrix_height) * static_cast<float>(scores_matrix_width);
+        banded_buffer_size = static_cast<float>(max_nodes_per_graph) * static_cast<float>(scores_matrix_width);
         offset             = static_cast<int64_t>(banded_buffer_size) * static_cast<int64_t>(window_idx);
         backtrace          = &backtrace_d[offset];
     }
     else
     {
-        int64_t offset = static_cast<int64_t>(window_details_d[window_idx].scores_offset) * static_cast<int64_t>(scores_matrix_height);
+        int64_t offset = static_cast<int64_t>(window_details_d[window_idx].scores_offset) * static_cast<int64_t>(max_nodes_per_graph);
         scores         = &scores_d[offset];
     }
 
@@ -491,13 +490,12 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
     uint16_t* outgoing_edges_coverage_count = graph_details_d->outgoing_edges_coverage_count;
     SizeT* node_id_to_msa_pos               = graph_details_d->node_id_to_msa_pos;
 
-    int32_t nwindows_per_block     = CUDAPOA_THREADS_PER_BLOCK / WARP_SIZE;
-    int32_t nblocks                = (static_banded || adaptive_banded) ? total_windows : (total_windows + nwindows_per_block - 1) / nwindows_per_block;
-    int32_t TPB                    = (static_banded || adaptive_banded) ? CUDAPOA_BANDED_THREADS_PER_BLOCK : CUDAPOA_THREADS_PER_BLOCK;
-    int32_t max_nodes_per_graph    = batch_size.max_nodes_per_graph;
-    int32_t matrix_graph_dimension = batch_size.matrix_graph_dimension;
-    int32_t matrix_seq_dimension   = batch_size.matrix_sequence_dimension;
-    bool msa                       = output_mask & OutputType::msa;
+    int32_t nwindows_per_block   = CUDAPOA_THREADS_PER_BLOCK / WARP_SIZE;
+    int32_t nblocks              = (static_banded || adaptive_banded) ? total_windows : (total_windows + nwindows_per_block - 1) / nwindows_per_block;
+    int32_t TPB                  = (static_banded || adaptive_banded) ? CUDAPOA_BANDED_THREADS_PER_BLOCK : CUDAPOA_THREADS_PER_BLOCK;
+    int32_t max_nodes_per_graph  = batch_size.max_nodes_per_graph;
+    int32_t matrix_seq_dimension = batch_size.matrix_sequence_dimension;
+    bool msa                     = output_mask & OutputType::msa;
 
     GW_CU_CHECK_ERR(cudaDeviceSetCacheConfig(cudaFuncCachePreferL1));
 
@@ -540,7 +538,6 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
                                               outgoing_edges_coverage,
                                               outgoing_edges_coverage_count,
                                               max_nodes_per_graph,
-                                              matrix_graph_dimension,
                                               matrix_seq_dimension,
                                               batch_size.max_consensus_size,
                                               TPB,
@@ -583,7 +580,6 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
                                               outgoing_edges_coverage,
                                               outgoing_edges_coverage_count,
                                               max_nodes_per_graph,
-                                              matrix_graph_dimension,
                                               matrix_seq_dimension,
                                               batch_size.max_consensus_size,
                                               TPB,
@@ -626,7 +622,6 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
                                               outgoing_edges_coverage,
                                               outgoing_edges_coverage_count,
                                               max_nodes_per_graph,
-                                              matrix_graph_dimension,
                                               matrix_seq_dimension,
                                               batch_size.max_consensus_size,
                                               TPB);
@@ -669,7 +664,6 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
                                               outgoing_edges_coverage,
                                               outgoing_edges_coverage_count,
                                               max_nodes_per_graph,
-                                              matrix_graph_dimension,
                                               matrix_seq_dimension,
                                               batch_size.max_consensus_size,
                                               TPB,
@@ -712,7 +706,6 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
                                               outgoing_edges_coverage,
                                               outgoing_edges_coverage_count,
                                               max_nodes_per_graph,
-                                              matrix_graph_dimension,
                                               matrix_seq_dimension,
                                               batch_size.max_consensus_size,
                                               TPB,
@@ -755,7 +748,6 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
                                               outgoing_edges_coverage,
                                               outgoing_edges_coverage_count,
                                               max_nodes_per_graph,
-                                              matrix_graph_dimension,
                                               matrix_seq_dimension,
                                               batch_size.max_consensus_size,
                                               TPB);

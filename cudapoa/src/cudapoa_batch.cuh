@@ -550,7 +550,7 @@ protected:
     // Check if intermediate data for seq length can fit in available scoring/backtrace buffer
     bool reserve_buf(int32_t max_seq_length)
     {
-        int32_t matrix_height = batch_size_.matrix_graph_dimension;
+        int32_t matrix_height = batch_size_.max_nodes_per_graph;
         int32_t matrix_width  = (banded_alignment_ || adaptive_banded_) ? batch_size_.matrix_sequence_dimension : cudautils::align<int32_t, 4>(max_seq_length + 1 + CELLS_PER_THREAD);
         // in full-band, avail_buf_mem_ is dedicated to scores matrix and in static or adaptive band modes, avail_buf_mem_ is dedicated to backtrace matrix
         size_t required_size = static_cast<size_t>(matrix_width) * static_cast<size_t>(matrix_height);
