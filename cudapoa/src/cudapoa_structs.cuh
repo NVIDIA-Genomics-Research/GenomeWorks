@@ -143,7 +143,6 @@ struct GraphDetails
 
     // Devices buffers to store incoming and outgoing edge weights.
     uint16_t* incoming_edge_weights;
-    uint16_t* outgoing_edge_weights;
 
     // Device buffer to store the topologically sorted graph. Each element
     // of this buffer is an ID of the node.
@@ -152,9 +151,6 @@ struct GraphDetails
     // Device buffer that maintains a mapping between the node ID and its
     // position in the topologically sorted graph.
     SizeT* sorted_poa_node_map;
-
-    // Device buffer to store distance of each graph node to the head node(s), used in adaptive-banding alignment
-    SizeT* node_distance_to_head;
 
     // Device buffer used during topological sort to store incoming
     // edge counts for nodes.

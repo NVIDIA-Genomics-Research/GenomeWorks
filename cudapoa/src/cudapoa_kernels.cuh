@@ -58,7 +58,6 @@ namespace cudapoa
  * @param[in] outgoing_edges_d              Device scratch space for storing outgoing edges per node
  * @param[in] outgoing_edges_count_d        Device scratch space for storing number of outgoing edges per node
  * @param[in] incoming_edge_w_d             Device scratch space for storing weight of incoming edges
- * @param[in] outgoing_edge_w_d             Device scratch space for storing weight of outgoing edges
  * @param[in] sorted_poa_d                  Device scratch space for storing sorted graph
  * @param[in] node_id_to_pos_d              Device scratch space for mapping node ID to position in graph
  * @graph[in] node_alignments_d             Device scratch space for storing alignment nodes per node in graph
@@ -89,7 +88,6 @@ __launch_bounds__(GW_POA_KERNELS_MAX_THREADS_PER_BLOCK)
                                       SizeT* outgoing_edges_d,
                                       uint16_t* outgoing_edge_count_d,
                                       uint16_t* incoming_edge_w_d,
-                                      uint16_t* outgoing_edge_w_d,
                                       SizeT* sorted_poa_d,
                                       SizeT* node_id_to_pos_d,
                                       SizeT* node_alignments_d,
@@ -130,7 +128,6 @@ __launch_bounds__(GW_POA_KERNELS_MAX_THREADS_PER_BLOCK)
     SizeT* outgoing_edges                 = &outgoing_edges_d[window_idx * max_nodes_per_graph * CUDAPOA_MAX_NODE_EDGES];
     uint16_t* outgoing_edge_count         = &outgoing_edge_count_d[window_idx * max_nodes_per_graph];
     uint16_t* incoming_edge_weights       = &incoming_edge_w_d[window_idx * max_nodes_per_graph * CUDAPOA_MAX_NODE_EDGES];
-    uint16_t* outgoing_edge_weights       = &outgoing_edge_w_d[window_idx * max_nodes_per_graph * CUDAPOA_MAX_NODE_EDGES];
     SizeT* sorted_poa                     = &sorted_poa_d[window_idx * max_nodes_per_graph];
     SizeT* node_id_to_pos                 = &node_id_to_pos_d[window_idx * max_nodes_per_graph];
     SizeT* node_alignments                = &node_alignments_d[window_idx * max_nodes_per_graph * CUDAPOA_MAX_NODE_ALIGNMENTS];
@@ -368,7 +365,7 @@ __launch_bounds__(GW_POA_KERNELS_MAX_THREADS_PER_BLOCK)
                                                                  node_alignments, node_alignment_count,
                                                                  incoming_edges, incoming_edge_count,
                                                                  outgoing_edges, outgoing_edge_count,
-                                                                 incoming_edge_weights, outgoing_edge_weights,
+                                                                 incoming_edge_weights,
                                                                  alignment_length,
                                                                  sorted_poa, alignment_graph,
                                                                  sequence, alignment_read,
@@ -469,7 +466,6 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
     SizeT* outgoing_edges                   = graph_details_d->outgoing_edges;
     uint16_t* outgoing_edge_count           = graph_details_d->outgoing_edge_count;
     uint16_t* incoming_edge_w               = graph_details_d->incoming_edge_weights;
-    uint16_t* outgoing_edge_w               = graph_details_d->outgoing_edge_weights;
     SizeT* sorted_poa                       = graph_details_d->sorted_poa;
     SizeT* node_id_to_pos                   = graph_details_d->sorted_poa_node_map;
     uint16_t* sorted_poa_local_edge_count   = graph_details_d->sorted_poa_local_edge_count;
@@ -515,7 +511,6 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
                                               outgoing_edges,
                                               outgoing_edge_count,
                                               incoming_edge_w,
-                                              outgoing_edge_w,
                                               sorted_poa,
                                               node_id_to_pos,
                                               node_alignments,
@@ -558,7 +553,6 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
                                               outgoing_edges,
                                               outgoing_edge_count,
                                               incoming_edge_w,
-                                              outgoing_edge_w,
                                               sorted_poa,
                                               node_id_to_pos,
                                               node_alignments,
@@ -601,7 +595,6 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
                                               outgoing_edges,
                                               outgoing_edge_count,
                                               incoming_edge_w,
-                                              outgoing_edge_w,
                                               sorted_poa,
                                               node_id_to_pos,
                                               node_alignments,
@@ -647,7 +640,6 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
                                               outgoing_edges,
                                               outgoing_edge_count,
                                               incoming_edge_w,
-                                              outgoing_edge_w,
                                               sorted_poa,
                                               node_id_to_pos,
                                               node_alignments,
@@ -690,7 +682,6 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
                                               outgoing_edges,
                                               outgoing_edge_count,
                                               incoming_edge_w,
-                                              outgoing_edge_w,
                                               sorted_poa,
                                               node_id_to_pos,
                                               node_alignments,
@@ -733,7 +724,6 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
                                               outgoing_edges,
                                               outgoing_edge_count,
                                               incoming_edge_w,
-                                              outgoing_edge_w,
                                               sorted_poa,
                                               node_id_to_pos,
                                               node_alignments,
