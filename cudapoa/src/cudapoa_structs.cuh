@@ -104,8 +104,8 @@ struct AlignmentDetails
 {
     // Device buffer for the scoring matrix for all windows.
     ScoreT* scores;
-    // Device buffer for the backtrack matrix for all windows.
-    TraceT* backtrack;
+    // Device buffer for the backtracking matrix for all windows.
+    TraceT* backtrace;
     /// Buffer for storing per row band start location in absolute score matrix for adaptive banding
     SizeT* band_starts;
     /// Buffer for storing per row band widths for adaptive banding

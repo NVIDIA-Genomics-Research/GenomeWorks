@@ -358,11 +358,11 @@ __device__ __forceinline__
         int32_t prev_i = 0;
         int32_t prev_j = 0;
 
-        // Trace back from maximum score position to generate alignment.
-        // Trace back is done by re-calculating the score at each cell
+        // backtrack from maximum score position to generate alignment.
+        // backtracking is done by re-calculating the score at each cell
         // along the path to see which preceding cell the move could have
-        // come from. This seems computaitonally more expensive, but doesn't
-        // require storing any traceback buffer during alignment.
+        // come from. This seems computationally more expensive, but doesn't
+        // require storing any backtrace buffer during alignment.
         int32_t loop_count = 0;
         while (!(i == 0 && j == 0) && loop_count < static_cast<int32_t>(read_length + graph_count + 2))
         {

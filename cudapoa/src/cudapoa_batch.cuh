@@ -404,7 +404,7 @@ public:
         num_nucleotides_copied_ = 0;
         global_sequence_idx_    = 0;
         next_scores_offset_     = 0;
-        avail_scorebuf_mem_     = alignment_details_d_->scorebuf_alloc_size;
+        avail_buf_mem_          = alignment_details_d_->scorebuf_alloc_size;
     }
 
 protected:
@@ -547,27 +547,28 @@ protected:
         return StatusType::success;
     }
 
-    // Check if seq length can fit in available scoring matrix memory.
+    // Check if intermediate data for seq length can fit in available scoring/backtrace buffer
     bool reserve_buf(int32_t max_seq_length)
     {
-        int32_t max_graph_dimension = batch_size_.matrix_graph_dimension;
+        int32_t matrix_height = batch_size_.matrix_graph_dimension;
+        int32_t matrix_width  = (banded_alignment_ || adaptive_banded_) ? batch_size_.matrix_sequence_dimension : cudautils::align<int32_t, 4>(max_seq_length + 1 + CELLS_PER_THREAD);
+        // in full-band, avail_buf_mem_ is dedicated to scores matrix and in static or adaptive band modes, avail_buf_mem_ is dedicated to backtrace matrix
+        size_t required_size = static_cast<size_t>(matrix_width) * static_cast<size_t>(matrix_height);
+        required_size *= batch_size_.band_mode == BandMode::full_band ? sizeof(ScoreT) : sizeof(TraceT);
 
-        int32_t scores_width = (banded_alignment_ || adaptive_banded_) ? batch_size_.matrix_sequence_dimension : cudautils::align<int32_t, 4>(max_seq_length + 1 + CELLS_PER_THREAD);
-        size_t scores_size   = static_cast<size_t>(scores_width) * static_cast<size_t>(max_graph_dimension) * sizeof(ScoreT);
-
-        if (scores_size > avail_scorebuf_mem_)
+        if (required_size > avail_buf_mem_)
         {
             if (get_total_poas() == 0)
             {
-                std::cout << "Memory available " << std::fixed << std::setprecision(2) << (static_cast<double>(avail_scorebuf_mem_)) / 1024. / 1024. / 1024.;
-                std::cout << "GB, Memory required " << (static_cast<double>(scores_size)) / 1024. / 1024. / 1024.;
-                std::cout << "GB (sequence length " << max_seq_length << ", graph length " << max_graph_dimension << ")" << std::endl;
+                std::cout << "Memory available " << std::fixed << std::setprecision(2) << (static_cast<double>(avail_buf_mem_)) / 1024. / 1024. / 1024.;
+                std::cout << "GB, Memory required " << (static_cast<double>(required_size)) / 1024. / 1024. / 1024.;
+                std::cout << "GB (sequence length " << max_seq_length << ", graph length " << matrix_height << ")" << std::endl;
             }
             return false;
         }
         else
         {
-            avail_scorebuf_mem_ -= scores_size;
+            avail_buf_mem_ -= required_size;
             return true;
         }
     }
@@ -620,8 +621,8 @@ protected:
     // Global sequence index.
     int32_t global_sequence_idx_ = 0;
 
-    // Remaining scores buffer memory available for use.
-    size_t avail_scorebuf_mem_ = 0;
+    // Remaining buffer memory available for scores matrices in case of full alignment, and for backtrace matrices in case of banded alignment
+    size_t avail_buf_mem_ = 0;
 
     // Temporary variable to compute the offset to scorebuf.
     size_t next_scores_offset_ = 0;

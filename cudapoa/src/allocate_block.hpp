@@ -60,7 +60,9 @@ public:
         , output_mask_(output_mask)
     {
         scoped_device_switch dev(device_id_);
-        max_nodes_per_window_ = batch_size.max_nodes_per_graph;
+        max_nodes_per_window_  = batch_size.max_nodes_per_graph;
+        full_matrix_alignment_ = batch_size.band_mode == BandMode::full_band;
+        score_matrix_height_   = full_matrix_alignment_ ? batch_size.max_nodes_per_graph : batch_size.max_pred_distance_in_banded_mode;
 
         // calculate static and dynamic sizes of buffers needed per POA entry.
         int64_t host_size_fixed, device_size_fixed;
@@ -212,6 +214,7 @@ public:
         offset_d_ += cudautils::align<int64_t, 8>(sizeof(*alignment_details_d->alignment_graph) * max_nodes_per_window_ * max_poas_);
         alignment_details_d->alignment_read = reinterpret_cast<decltype(alignment_details_d->alignment_read)>(&block_data_d_[offset_d_]);
         offset_d_ += cudautils::align<int64_t, 8>(sizeof(*alignment_details_d->alignment_read) * max_nodes_per_window_ * max_poas_);
+
         if (variable_bands_)
         {
             alignment_details_d->band_starts = reinterpret_cast<decltype(alignment_details_d->band_starts)>(&block_data_d_[offset_d_]);
@@ -224,10 +227,24 @@ public:
             offset_d_ += cudautils::align<int64_t, 8>(sizeof(*alignment_details_d->band_max_indices) * max_nodes_per_window_ * max_poas_);
         }
 
-        // rest of the available memory is assigned to scores buffer
-        alignment_details_d->scorebuf_alloc_size = total_d_ - offset_d_;
-        alignment_details_d->scores              = reinterpret_cast<decltype(alignment_details_d->scores)>(&block_data_d_[offset_d_]);
-        *alignment_details_d_p                   = alignment_details_d;
+        if (full_matrix_alignment_)
+        {
+            // in full-band mode, where only scores buffer is used and backtrace buffer size is 0, rest of the available memory is assigned to scores buffer
+            alignment_details_d->scorebuf_alloc_size = total_d_ - offset_d_;
+            alignment_details_d->scores              = reinterpret_cast<decltype(alignment_details_d->scores)>(&block_data_d_[offset_d_]);
+            alignment_details_d->backtrace           = nullptr;
+        }
+        else
+        {
+            // in banded mode, we store only part of scores matrix for forward computation in NW
+            alignment_details_d->scores = reinterpret_cast<decltype(alignment_details_d->scores)>(&block_data_d_[offset_d_]);
+            offset_d_ += cudautils::align<int64_t, 8>(sizeof(*alignment_details_d->scores) * score_matrix_height_ * max_poas_);
+            // rest of the available memory is assigned to backtrace buffer
+            alignment_details_d->scorebuf_alloc_size = total_d_ - offset_d_;
+            alignment_details_d->backtrace           = reinterpret_cast<decltype(alignment_details_d->backtrace)>(&block_data_d_[offset_d_]);
+        }
+
+        *alignment_details_d_p = alignment_details_d;
     }
 
     void get_graph_details(GraphDetails<SizeT>** graph_details_d_p, GraphDetails<SizeT>** graph_details_h_p)
@@ -491,6 +508,8 @@ protected:
     int64_t input_size_           = 0;
     int64_t output_size_          = 0;
     int32_t max_nodes_per_window_ = 0;
+    int32_t score_matrix_height_  = 0;
+    bool full_matrix_alignment_   = false;
     int32_t device_id_;
 
     // Bit field for output type
