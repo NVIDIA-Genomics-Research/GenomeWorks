@@ -52,6 +52,12 @@ static bool use32bitSize(const BatchConfig& batch_size)
     return (max_length > INT16_MAX);
 }
 
+static bool use16bitTrace(const BatchConfig& batch_size)
+{
+    //if max_pred_distance_in_banded_mode exceeds the range represented by int8_t, then int16_t should be used
+    return (batch_size.max_pred_distance_in_banded_mode > INT8_MAX);
+}
+
 } // namespace cudapoa
 } // namespace genomeworks
 } // namespace claraparabricks

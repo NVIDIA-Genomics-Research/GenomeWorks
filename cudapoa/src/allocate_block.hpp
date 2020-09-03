@@ -395,6 +395,7 @@ public:
         size_t mem_per_batch = memory_usage_quota * free; // Using memory_usage_quota of GPU available memory for cudapoa batch.
 
         int64_t sizeof_ScoreT       = 2;
+        int64_t sizeof_TraceT       = use16bitTrace(batch_size) ? 2 : 1;
         int64_t device_size_per_poa = 0;
 
         if (use32bitScore(batch_size, gap_score, mismatch_score, match_score))
@@ -422,14 +423,14 @@ public:
         if (batch_size.band_mode == BandMode::full_band)
         {
             device_size_per_score_matrix = static_cast<int64_t>(batch_size.matrix_sequence_dimension) *
-                                           static_cast<int64_t>(batch_size.matrix_graph_dimension) * sizeof(ScoreT);
+                                           static_cast<int64_t>(batch_size.matrix_graph_dimension) * sizeof_ScoreT;
         }
         else
         {
             device_size_per_score_matrix = static_cast<int64_t>(batch_size.matrix_sequence_dimension) *
-                                           static_cast<int64_t>(batch_size.max_pred_distance_in_banded_mode) * sizeof(ScoreT);
+                                           static_cast<int64_t>(batch_size.max_pred_distance_in_banded_mode) * sizeof_ScoreT;
             device_size_per_backtracking_matrix = static_cast<int64_t>(batch_size.matrix_sequence_dimension) *
-                                                  static_cast<int64_t>(batch_size.matrix_graph_dimension) * sizeof(TraceT);
+                                                  static_cast<int64_t>(batch_size.matrix_graph_dimension) * sizeof_TraceT;
         }
 
         // Calculate max POAs possible based on available memory.

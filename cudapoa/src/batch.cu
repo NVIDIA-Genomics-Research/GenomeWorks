@@ -119,38 +119,81 @@ std::unique_ptr<Batch> create_batch(int32_t device_id,
     {
         if (use32bitSize(batch_size))
         {
-            return std::make_unique<CudapoaBatch<int32_t, int32_t, int16_t>>(device_id,
-                                                                             stream,
-                                                                             max_mem,
-                                                                             output_mask,
-                                                                             batch_size,
-                                                                             (int32_t)gap_score,
-                                                                             (int32_t)mismatch_score,
-                                                                             (int32_t)match_score);
+            if (use16bitTrace(batch_size))
+            {
+                return std::make_unique<CudapoaBatch<int32_t, int32_t, int16_t>>(device_id,
+                                                                                 stream,
+                                                                                 max_mem,
+                                                                                 output_mask,
+                                                                                 batch_size,
+                                                                                 (int32_t)gap_score,
+                                                                                 (int32_t)mismatch_score,
+                                                                                 (int32_t)match_score);
+            }
+            else
+            {
+                return std::make_unique<CudapoaBatch<int32_t, int32_t, int8_t>>(device_id,
+                                                                                 stream,
+                                                                                 max_mem,
+                                                                                 output_mask,
+                                                                                 batch_size,
+                                                                                 (int32_t)gap_score,
+                                                                                 (int32_t)mismatch_score,
+                                                                                 (int32_t)match_score);
+            }
         }
         else
         {
-            return std::make_unique<CudapoaBatch<int32_t, int16_t, int16_t>>(device_id,
-                                                                             stream,
-                                                                             max_mem,
-                                                                             output_mask,
-                                                                             batch_size,
-                                                                             (int32_t)gap_score,
-                                                                             (int32_t)mismatch_score,
-                                                                             (int32_t)match_score);
+            if (use16bitTrace(batch_size))
+            {
+                return std::make_unique<CudapoaBatch<int32_t, int16_t, int16_t>>(device_id,
+                                                                                 stream,
+                                                                                 max_mem,
+                                                                                 output_mask,
+                                                                                 batch_size,
+                                                                                 (int32_t)gap_score,
+                                                                                 (int32_t)mismatch_score,
+                                                                                 (int32_t)match_score);
+            }
+            else
+            {
+                return std::make_unique<CudapoaBatch<int32_t, int16_t, int8_t>>(device_id,
+                                                                                 stream,
+                                                                                 max_mem,
+                                                                                 output_mask,
+                                                                                 batch_size,
+                                                                                 (int32_t)gap_score,
+                                                                                 (int32_t)mismatch_score,
+                                                                                 (int32_t)match_score);
+            }
+
         }
     }
     else
     {
         // if ScoreT is 16-bit, then it's safe to assume SizeT is 16-bit
-        return std::make_unique<CudapoaBatch<int16_t, int16_t, int16_t>>(device_id,
-                                                                         stream,
-                                                                         max_mem,
-                                                                         output_mask,
-                                                                         batch_size,
-                                                                         gap_score,
-                                                                         mismatch_score,
-                                                                         match_score);
+        if (use16bitTrace(batch_size))
+        {
+            return std::make_unique<CudapoaBatch<int16_t, int16_t, int16_t>>(device_id,
+                                                                             stream,
+                                                                             max_mem,
+                                                                             output_mask,
+                                                                             batch_size,
+                                                                             gap_score,
+                                                                             mismatch_score,
+                                                                             match_score);
+        }
+        else
+        {
+            return std::make_unique<CudapoaBatch<int16_t, int16_t, int8_t>>(device_id,
+                                                                             stream,
+                                                                             max_mem,
+                                                                             output_mask,
+                                                                             batch_size,
+                                                                             gap_score,
+                                                                             mismatch_score,
+                                                                             match_score);
+        }
     }
 }
 
