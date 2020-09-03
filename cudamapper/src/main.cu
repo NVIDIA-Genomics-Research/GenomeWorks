@@ -62,8 +62,7 @@ void run_alignment_batch(DefaultDeviceAllocator allocator,
 {
     int32_t device_id;
     GW_CU_CHECK_ERR(cudaGetDevice(&device_id));
-    cudaStream_t stream;
-    GW_CU_CHECK_ERR(cudaStreamCreate(&stream));
+    CudaStream stream = make_cuda_stream();
     std::unique_ptr<cudaaligner::Aligner> batch =
         cudaaligner::create_aligner(
             max_query_size,
@@ -71,7 +70,7 @@ void run_alignment_batch(DefaultDeviceAllocator allocator,
             batch_size,
             cudaaligner::AlignmentType::global_alignment,
             allocator,
-            stream,
+            stream.get(),
             device_id);
     while (true)
     {
@@ -121,7 +120,6 @@ void run_alignment_batch(DefaultDeviceAllocator allocator,
         // Reset batch to reuse memory for new alignments.
         batch->reset();
     }
-    GW_CU_CHECK_ERR(cudaStreamDestroy(stream));
 }
 
 /// \brief performs global alignment between overlapped regions of reads
@@ -518,33 +516,33 @@ int main(int argc, char* argv[])
     // pairs of indices might be skipped if they cause out of memory errors
     std::atomic<int32_t> number_of_skipped_pairs_of_indices{0};
 
-    // explicitly assign one stream to each GPU
-    std::vector<cudaStream_t> cuda_streams(parameters.num_devices);
-
     // create worker threads (one thread per device)
     // these thread process batches_of_indices one by one
     std::vector<std::thread> worker_threads;
+
+    // CudaStreams for each thread
+    std::vector<CudaStream> cuda_streams;
+
     for (int32_t device_id = 0; device_id < parameters.num_devices; ++device_id)
     {
         GW_CU_CHECK_ERR(cudaSetDevice(device_id));
-        GW_CU_CHECK_ERR(cudaStreamCreate(&cuda_streams[device_id]));
+        cuda_streams.emplace_back(make_cuda_stream());
         worker_threads.emplace_back(worker_thread_function,
                                     device_id,
                                     std::ref(batches_of_indices),
                                     std::ref(parameters),
                                     std::ref(output_mutex),
-                                    cuda_streams[device_id],
+                                    cuda_streams.back().get(),
                                     number_of_total_batches,
                                     std::ref(number_of_skipped_pairs_of_indices),
                                     std::ref(number_of_processed_batches));
     }
 
     // wait for all work to be done
-    for (int32_t device_id = 0; device_id < parameters.num_devices; ++device_id)
+    for (auto& t : worker_threads)
     {
-        GW_CU_CHECK_ERR(cudaSetDevice(device_id));
-        worker_threads[device_id].join();
-        GW_CU_CHECK_ERR(cudaStreamDestroy(cuda_streams[device_id])); // no need to sync, it should be done at the end of worker_threads
+        // no need to sync, it should be done at the end of worker_threads
+        t.join();
     }
 
     if (number_of_skipped_pairs_of_indices != 0)

@@ -24,6 +24,7 @@
 #include <cuda_runtime_api.h>
 #include <cassert>
 #include <string>
+#include <memory>
 
 #ifdef GW_PROFILING
 #include <nvToolsExt.h>
@@ -183,6 +184,40 @@ public:
 #endif // GW_PROFILING
 
 } // namespace cudautils
+
+namespace detail
+{
+
+/// \brief A deleter which destroys cuda streams (i.e. cudaStream_t handles)
+struct CudaStreamDeleter
+{
+    /// \brief Destroys a cudaStream_t
+    void operator()(cudaStream_t s) const
+    {
+        if (s)
+        {
+            GW_CU_ABORT_ON_ERR(cudaStreamDestroy(s));
+        }
+    }
+};
+
+} // namespace detail
+
+/// \brief A C++ CUDA stream object managing the native cudaStream_t
+///
+/// Create a stream via make_cuda_stream()
+/// cudaStream lifetime is bound to the CudaStream object.
+using CudaStream = std::unique_ptr<std::remove_pointer<cudaStream_t>::type, detail::CudaStreamDeleter>;
+
+/// \brief Creates a new CUDA stream
+inline CudaStream make_cuda_stream()
+{
+    CudaStream s;
+    cudaStream_t native_handle;
+    GW_CU_CHECK_ERR(cudaStreamCreateWithFlags(&native_handle, cudaStreamNonBlocking));
+    s.reset(native_handle);
+    return s;
+}
 
 /// \brief A class to switch the CUDA device for the current scope using RAII
 ///
