@@ -172,7 +172,8 @@ __device__ __forceinline__ ScoreT4<ScoreT> get_scores(ScoreT* scores,
 
 template <typename SeqT,
           typename ScoreT,
-          typename SizeT>
+          typename SizeT,
+          typename TraceT>
 __device__ __forceinline__
     int32_t
     runNeedlemanWunschBanded(SeqT* nodes,
@@ -185,6 +186,7 @@ __device__ __forceinline__
                              SeqT* read,
                              int32_t read_length,
                              ScoreT* scores,
+                             TraceT* backtrace,
                              SizeT* alignment_graph,
                              SizeT* alignment_read,
                              int32_t band_width,

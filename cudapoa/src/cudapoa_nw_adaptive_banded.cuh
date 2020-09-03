@@ -164,7 +164,8 @@ __device__ __forceinline__ void initialize_band_adaptive(ScoreT* scores, int32_t
 
 template <typename SeqT,
           typename ScoreT,
-          typename SizeT>
+          typename SizeT,
+          typename TraceT>
 __device__ __forceinline__
     int32_t
     runNeedlemanWunschAdaptiveBanded(SeqT* nodes,
@@ -177,7 +178,8 @@ __device__ __forceinline__
                                      SeqT* read,
                                      int32_t read_length,
                                      ScoreT* scores,
-                                     float scores_size,
+                                     TraceT* backtrace,
+                                     float max_buffer_size,
                                      SizeT* alignment_graph,
                                      SizeT* alignment_read,
                                      int32_t static_band_width,
@@ -237,10 +239,10 @@ __device__ __forceinline__
     }
     //---------------------------------------------------------
 
-    // check required memory and return error if exceeding scores_size
+    // check required memory and return error if exceeding max_buffer_size
     // using float to avoid 64-bit
-    float required_scores_size = static_cast<float>(graph_count) * static_cast<float>(band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING);
-    if (required_scores_size > scores_size)
+    float required_buffer_size = static_cast<float>(graph_count) * static_cast<float>(band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING);
+    if (required_buffer_size > max_buffer_size)
     {
         return -2;
     }
