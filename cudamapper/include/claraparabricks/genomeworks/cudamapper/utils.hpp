@@ -21,6 +21,7 @@
 #include <string>
 
 #include <claraparabricks/genomeworks/cudamapper/types.hpp>
+#include <claraparabricks/genomeworks/cudamapper/index.hpp>
 
 namespace claraparabricks
 {
@@ -50,6 +51,14 @@ void print_paf(const std::vector<Overlap>& overlaps,
                int32_t kmer_size,
                std::mutex& write_output_mutex);
 
+/// \brief returns a vector of IndexDescriptors in which the sum of basepairs of all reads in one IndexDescriptor is at most max_basepairs_per_index
+/// If a single read exceeds max_chunk_size it will be placed in its own IndexDescriptor.
+///
+/// \param parser parser to get the reads from
+/// \param max_basepairs_per_index the maximum number of basepairs in an IndexDescriptor
+/// \return vector of IndexDescriptors
+std::vector<IndexDescriptor> group_reads_into_indices(const io::FastaParser& parser,
+                                                      number_of_basepairs_t max_basepairs_per_index = 1000000);
 } // namespace cudamapper
 
 } // namespace genomeworks
