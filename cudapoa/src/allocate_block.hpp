@@ -50,7 +50,7 @@ namespace genomeworks
 namespace cudapoa
 {
 
-template <typename ScoreT, typename SizeT>
+template <typename ScoreT, typename SizeT, typename TraceT>
 class BatchBlock
 {
 public:
@@ -185,13 +185,13 @@ public:
         *input_details_d_p = input_details_d;
     }
 
-    void get_alignment_details(AlignmentDetails<ScoreT, SizeT>** alignment_details_d_p)
+    void get_alignment_details(AlignmentDetails<ScoreT, SizeT, TraceT>** alignment_details_d_p)
     {
-        AlignmentDetails<ScoreT, SizeT>* alignment_details_d{};
+        AlignmentDetails<ScoreT, SizeT, TraceT>* alignment_details_d{};
 
         // on host
-        alignment_details_d = reinterpret_cast<AlignmentDetails<ScoreT, SizeT>*>(&block_data_h_[offset_h_]);
-        offset_h_ += sizeof(AlignmentDetails<ScoreT, SizeT>);
+        alignment_details_d = reinterpret_cast<AlignmentDetails<ScoreT, SizeT, TraceT>*>(&block_data_h_[offset_h_]);
+        offset_h_ += sizeof(AlignmentDetails<ScoreT, SizeT, TraceT>);
 
         // on device;
         alignment_details_d->alignment_graph = reinterpret_cast<decltype(alignment_details_d->alignment_graph)>(&block_data_d_[offset_d_]);
@@ -338,12 +338,12 @@ public:
         device_size_per_poa += (msa_flag) ? sizeof(*GraphDetails<SizeT>::outgoing_edges_coverage_count) * max_nodes_per_graph * CUDAPOA_MAX_NODE_EDGES : 0;                              // graph_details_d_->outgoing_edges_coverage_count
         device_size_per_poa += (msa_flag) ? sizeof(*GraphDetails<SizeT>::node_id_to_msa_pos) * max_nodes_per_graph : 0;                                                                  // graph_details_d_->node_id_to_msa_pos
         // for alignment - device
-        device_size_per_poa += sizeof(*AlignmentDetails<ScoreT, SizeT>::alignment_graph) * max_nodes_per_graph;                        // alignment_details_d_->alignment_graph
-        device_size_per_poa += sizeof(*AlignmentDetails<ScoreT, SizeT>::alignment_read) * max_nodes_per_graph;                         // alignment_details_d_->alignment_read
-        device_size_per_poa += variable_bands ? sizeof(*AlignmentDetails<ScoreT, SizeT>::band_starts) * max_nodes_per_graph : 0;       // alignment_details_d_->band_starts
-        device_size_per_poa += variable_bands ? sizeof(*AlignmentDetails<ScoreT, SizeT>::band_widths) * max_nodes_per_graph : 0;       // alignment_details_d_->band_widths
-        device_size_per_poa += variable_bands ? sizeof(*AlignmentDetails<ScoreT, SizeT>::band_head_indices) * max_nodes_per_graph : 0; // alignment_details_d_->band_head_indices
-        device_size_per_poa += variable_bands ? sizeof(*AlignmentDetails<ScoreT, SizeT>::band_max_indices) * max_nodes_per_graph : 0;  // alignment_details_d_->band_max_indices
+        device_size_per_poa += sizeof(*AlignmentDetails<ScoreT, SizeT, TraceT>::alignment_graph) * max_nodes_per_graph;                        // alignment_details_d_->alignment_graph
+        device_size_per_poa += sizeof(*AlignmentDetails<ScoreT, SizeT, TraceT>::alignment_read) * max_nodes_per_graph;                         // alignment_details_d_->alignment_read
+        device_size_per_poa += variable_bands ? sizeof(*AlignmentDetails<ScoreT, SizeT, TraceT>::band_starts) * max_nodes_per_graph : 0;       // alignment_details_d_->band_starts
+        device_size_per_poa += variable_bands ? sizeof(*AlignmentDetails<ScoreT, SizeT, TraceT>::band_widths) * max_nodes_per_graph : 0;       // alignment_details_d_->band_widths
+        device_size_per_poa += variable_bands ? sizeof(*AlignmentDetails<ScoreT, SizeT, TraceT>::band_head_indices) * max_nodes_per_graph : 0; // alignment_details_d_->band_head_indices
+        device_size_per_poa += variable_bands ? sizeof(*AlignmentDetails<ScoreT, SizeT, TraceT>::band_max_indices) * max_nodes_per_graph : 0;  // alignment_details_d_->band_max_indices
 
         return device_size_per_poa;
     }
@@ -388,17 +388,17 @@ public:
             sizeof_ScoreT = 4;
             if (use32bitSize(batch_size))
             {
-                device_size_per_poa = BatchBlock<int32_t, int32_t>::compute_device_memory_per_poa(batch_size, msa_flag);
+                device_size_per_poa = BatchBlock<int32_t, int32_t, int16_t>::compute_device_memory_per_poa(batch_size, msa_flag);
             }
             else
             {
-                device_size_per_poa = BatchBlock<int32_t, int16_t>::compute_device_memory_per_poa(batch_size, msa_flag);
+                device_size_per_poa = BatchBlock<int32_t, int16_t, int16_t>::compute_device_memory_per_poa(batch_size, msa_flag);
             }
         }
         else
         {
             // if ScoreT is 16-bit, it's safe to assume SizeT is also 16-bit
-            device_size_per_poa = BatchBlock<int16_t, int16_t>::compute_device_memory_per_poa(batch_size, msa_flag);
+            device_size_per_poa = BatchBlock<int16_t, int16_t, int16_t>::compute_device_memory_per_poa(batch_size, msa_flag);
         }
 
         // Compute required memory for score matrix
@@ -432,7 +432,7 @@ protected:
         host_size_fixed += sizeof(GraphDetails<SizeT>); // graph_details_h_
         host_size_fixed += sizeof(GraphDetails<SizeT>); // graph_details_d_
         // for alignment - host
-        host_size_fixed += sizeof(AlignmentDetails<ScoreT, SizeT>); // alignment_details_d_
+        host_size_fixed += sizeof(AlignmentDetails<ScoreT, SizeT, TraceT>); // alignment_details_d_
 
         return std::make_tuple(host_size_fixed, device_size_fixed, host_size_per_poa, device_size_per_poa);
     }

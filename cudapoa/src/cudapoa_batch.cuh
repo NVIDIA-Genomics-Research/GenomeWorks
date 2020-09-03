@@ -59,7 +59,7 @@ namespace cudapoa
 
 /// \class
 /// Batched GPU CUDA POA object
-template <typename ScoreT, typename SizeT>
+template <typename ScoreT, typename SizeT, typename TraceT>
 class CudapoaBatch : public Batch
 {
 public:
@@ -75,10 +75,10 @@ public:
         , match_score_(match_score)
         , banded_alignment_(batch_size.band_mode == BandMode::static_band)
         , adaptive_banded_(batch_size.band_mode == BandMode::adaptive_band)
-        , batch_block_(new BatchBlock<ScoreT, SizeT>(device_id,
-                                                     max_gpu_mem,
-                                                     output_mask,
-                                                     batch_size_))
+        , batch_block_(new BatchBlock<ScoreT, SizeT, TraceT>(device_id,
+                                                             max_gpu_mem,
+                                                             output_mask,
+                                                             batch_size_))
         , max_poas_(batch_block_->get_max_poas())
     {
         // Set CUDA device
@@ -178,20 +178,20 @@ public:
         std::string msg = " Launching kernel for " + std::to_string(poa_count_) + " on device ";
         print_batch_debug_message(msg);
 
-        generatePOA<ScoreT, SizeT>(output_details_d_,
-                                   input_details_d_,
-                                   poa_count_,
-                                   stream_,
-                                   alignment_details_d_,
-                                   graph_details_d_,
-                                   gap_score_,
-                                   mismatch_score_,
-                                   match_score_,
-                                   banded_alignment_,
-                                   adaptive_banded_,
-                                   max_sequences_per_poa_,
-                                   output_mask_,
-                                   batch_size_);
+        generatePOA<ScoreT, SizeT, TraceT>(output_details_d_,
+                                           input_details_d_,
+                                           poa_count_,
+                                           stream_,
+                                           alignment_details_d_,
+                                           graph_details_d_,
+                                           gap_score_,
+                                           mismatch_score_,
+                                           match_score_,
+                                           banded_alignment_,
+                                           adaptive_banded_,
+                                           max_sequences_per_poa_,
+                                           output_mask_,
+                                           batch_size_);
 
         msg = " Launched kernel on device ";
         print_batch_debug_message(msg);
@@ -602,7 +602,7 @@ protected:
     InputDetails<SizeT>* input_details_h_;
 
     // Device buffer struct for alignment details
-    AlignmentDetails<ScoreT, SizeT>* alignment_details_d_;
+    AlignmentDetails<ScoreT, SizeT, TraceT>* alignment_details_d_;
 
     // Device buffer struct for graph details
     GraphDetails<SizeT>* graph_details_d_;
@@ -635,7 +635,7 @@ protected:
     bool variable_band_ = false;
 
     // Pointer of a seperate class BatchBlock that implements details on calculating and allocating the memory for each batch
-    std::unique_ptr<BatchBlock<ScoreT, SizeT>> batch_block_;
+    std::unique_ptr<BatchBlock<ScoreT, SizeT, TraceT>> batch_block_;
 
     // Maximum POAs to process in batch.
     int32_t max_poas_ = 0;
@@ -645,8 +645,8 @@ public:
     static int32_t batches;
 };
 
-template <typename ScoreT, typename SizeT>
-int32_t CudapoaBatch<ScoreT, SizeT>::batches = 0;
+template <typename ScoreT, typename SizeT, typename TraceT>
+int32_t CudapoaBatch<ScoreT, SizeT, TraceT>::batches = 0;
 
 /// \}
 

@@ -423,12 +423,12 @@ __launch_bounds__(GW_POA_KERNELS_MAX_THREADS_PER_BLOCK)
     }
 }
 
-template <typename ScoreT, typename SizeT>
+template <typename ScoreT, typename SizeT, typename TraceT>
 void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
                  genomeworks::cudapoa::InputDetails<SizeT>* input_details_d,
                  int32_t total_windows,
                  cudaStream_t stream,
-                 genomeworks::cudapoa::AlignmentDetails<ScoreT, SizeT>* alignment_details_d,
+                 genomeworks::cudapoa::AlignmentDetails<ScoreT, SizeT, TraceT>* alignment_details_d,
                  genomeworks::cudapoa::GraphDetails<SizeT>* graph_details_d,
                  int32_t gap_score,
                  int32_t mismatch_score,

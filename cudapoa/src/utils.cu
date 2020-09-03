@@ -56,8 +56,8 @@ void get_multi_batch_sizes(std::vector<BatchConfig>& list_of_batch_sizes,
         BatchConfig batch_size = BatchConfig(max_read_length, get_size<int32_t>(poa_groups[i]), band_width, band_mode,
                                              adaptive_storage_factor, graph_length_factor);
 
-        max_poas[i] = BatchBlock<int32_t, int32_t>::estimate_max_poas(batch_size, msa_flag, gpu_memory_usage_quota,
-                                                                      mismatch_score, gap_score, match_score);
+        max_poas[i] = BatchBlock<int32_t, int32_t, int16_t>::estimate_max_poas(batch_size, msa_flag, gpu_memory_usage_quota,
+                                                                               mismatch_score, gap_score, match_score);
 
         max_lengths[i] = max_read_length;
     }

@@ -99,11 +99,13 @@ struct InputDetails
     SizeT* sequence_begin_nodes_ids;
 };
 
-template <typename ScoreT, typename SizeT>
+template <typename ScoreT, typename SizeT, typename TraceT>
 struct AlignmentDetails
 {
     // Device buffer for the scoring matrix for all windows.
     ScoreT* scores;
+    // Device buffer for the backtrack matrix for all windows.
+    TraceT* backtrack;
     /// Buffer for storing per row band start location in absolute score matrix for adaptive banding
     SizeT* band_starts;
     /// Buffer for storing per row band widths for adaptive banding
