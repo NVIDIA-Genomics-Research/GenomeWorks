@@ -201,6 +201,24 @@ struct __align__(8) ScoreT4<int16_t>
     int16_t s0, s1, s2, s3;
 };
 
+template <typename TraceT>
+struct TraceT4
+{
+    TraceT t0, t1, t2, t3;
+};
+
+template <>
+struct __align__(8) TraceT4<int16_t>
+{
+    int16_t t0, t1, t2, t3;
+};
+
+template <>
+struct __align__(4) TraceT4<int8_t>
+{
+    int8_t t0, t1, t2, t3;
+};
+
 } // namespace cudapoa
 
 } // namespace genomeworks

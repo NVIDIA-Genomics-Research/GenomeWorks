@@ -116,16 +116,18 @@ __device__ __forceinline__ ScoreT get_score(ScoreT* scores, int32_t row, int32_t
     }
 }
 
-template <typename ScoreT>
+template <typename ScoreT, typename TraceT>
 __device__ __forceinline__ ScoreT4<ScoreT> get_scores(ScoreT* scores,
-                                                      int32_t node,
+                                                      int32_t pred_node,
+                                                      int32_t current_node,
                                                       int32_t read_pos,
                                                       float gradient,
                                                       int32_t band_width,
                                                       int32_t max_column,
                                                       ScoreT default_value,
                                                       int32_t gap_score,
-                                                      ScoreT4<ScoreT>& char_profile)
+                                                      ScoreT4<ScoreT>& char_profile,
+                                                      TraceT4<TraceT>& trace)
 {
 
     // The load instructions typically load data in 4B or 8B chunks.
@@ -134,9 +136,9 @@ __device__ __forceinline__ ScoreT4<ScoreT> get_scores(ScoreT* scores,
     // as each read of 16b issues a separate load command.
     // Instead it is better to load a 4B or 8B chunk into a register
     // using a single load inst, and then extracting necessary part of
-    // of the data using bit arithmatic. Also reduces register count.
+    // of the data using bit arithmetic. Also reduces register count.
 
-    int32_t band_start = get_band_start_for_row(node, gradient, band_width, max_column);
+    int32_t band_start = get_band_start_for_row(pred_node, gradient, band_width, max_column);
 
     // subtract by CELLS_PER_THREAD to ensure score4_next is not pointing out of the corresponding band bounds
     int32_t band_end = static_cast<int32_t>(band_start + band_width - CELLS_PER_THREAD);
@@ -147,7 +149,7 @@ __device__ __forceinline__ ScoreT4<ScoreT> get_scores(ScoreT* scores,
     }
     else
     {
-        ScoreT4<ScoreT>* pred_scores = (ScoreT4<ScoreT>*)get_score_ptr(scores, node, read_pos, band_start, band_width);
+        ScoreT4<ScoreT>* pred_scores = (ScoreT4<ScoreT>*)get_score_ptr(scores, pred_node, read_pos, band_start, band_width);
 
         // loads 8/16 consecutive bytes (4 ScoreT)
         ScoreT4<ScoreT> score4 = pred_scores[0];
@@ -157,14 +159,50 @@ __device__ __forceinline__ ScoreT4<ScoreT> get_scores(ScoreT* scores,
 
         ScoreT4<ScoreT> score;
 
-        score.s0 = max(score4.s0 + char_profile.s0,
-                       score4.s1 + gap_score);
-        score.s1 = max(score4.s1 + char_profile.s1,
-                       score4.s2 + gap_score);
-        score.s2 = max(score4.s2 + char_profile.s2,
-                       score4.s3 + gap_score);
-        score.s3 = max(score4.s3 + char_profile.s3,
-                       score4_next.s0 + gap_score);
+        // if trace is diogonal, its value is positive and if vertical, negative
+        if ((score4.s0 + char_profile.s0) > (score4.s1 + gap_score))
+        {
+            score.s0 = score4.s0 + char_profile.s0;
+            trace.t0 = current_node - pred_node;
+        }
+        else
+        {
+            score.s0 = score4.s1 + gap_score;
+            trace.t0 = -(current_node - pred_node);
+        }
+
+        if ((score4.s1 + char_profile.s1) > (score4.s2 + gap_score))
+        {
+            score.s1 = score4.s1 + char_profile.s1;
+            trace.t1 = current_node - pred_node;
+        }
+        else
+        {
+            score.s1 = score4.s2 + gap_score;
+            trace.t1 = -(current_node - pred_node);
+        }
+
+        if ((score4.s2 + char_profile.s2) > (score4.s3 + gap_score))
+        {
+            score.s2 = score4.s2 + char_profile.s2;
+            trace.t2 = current_node - pred_node;
+        }
+        else
+        {
+            score.s2 = score4.s3 + gap_score;
+            trace.t2 = -(current_node - pred_node);
+        }
+
+        if ((score4.s3 + char_profile.s3) > (score4_next.s0 + gap_score))
+        {
+            score.s3 = score4.s3 + char_profile.s3;
+            trace.t3 = current_node - pred_node;
+        }
+        else
+        {
+            score.s3 = score4_next.s0 + gap_score;
+            trace.t3 = -(current_node - pred_node);
+        }
 
         return score;
     }
@@ -280,19 +318,36 @@ __device__ __forceinline__
             char_profile.s2 = (graph_base == read4.r2 ? match_score : mismatch_score);
             char_profile.s3 = (graph_base == read4.r3 ? match_score : mismatch_score);
 
-            ScoreT4<ScoreT> score = get_scores(scores, pred_idx, read_pos, gradient, band_width, max_column, min_score_value, gap_score, char_profile);
+            TraceT4<TraceT> trace;
+            ScoreT4<ScoreT> score = get_scores(scores, pred_idx, score_gIdx, read_pos, gradient, band_width, max_column, min_score_value, gap_score, char_profile, trace);
 
             // Perform same score updates as above, but for rest of predecessors.
             for (int32_t p = 1; p < pred_count; p++)
             {
                 int32_t pred_idx2 = node_id_to_pos[incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES + p]] + 1;
+                TraceT4<TraceT> traces_4;
+                ScoreT4<ScoreT> scores_4 = get_scores(scores, pred_idx2, score_gIdx, read_pos, gradient, band_width, max_column, min_score_value, gap_score, char_profile, traces_4);
 
-                ScoreT4<ScoreT> scores_4 = get_scores(scores, pred_idx2, read_pos, gradient, band_width, max_column, min_score_value, gap_score, char_profile);
-
-                score.s0 = max(score.s0, scores_4.s0);
-                score.s1 = max(score.s1, scores_4.s1);
-                score.s2 = max(score.s2, scores_4.s2);
-                score.s3 = max(score.s3, scores_4.s3);
+                if (score.s0 < scores_4.s0)
+                {
+                    score.s0 = scores_4.s0;
+                    trace.t0 = traces_4.t0;
+                }
+                if (score.s1 < scores_4.s1)
+                {
+                    score.s1 = scores_4.s1;
+                    trace.t1 = traces_4.t1;
+                }
+                if (score.s2 < scores_4.s2)
+                {
+                    score.s2 = scores_4.s2;
+                    trace.t2 = traces_4.t2;
+                }
+                if (score.s3 < scores_4.s3)
+                {
+                    score.s3 = scores_4.s3;
+                    trace.t3 = traces_4.t3;
+                }
             }
 
             // While there are changes to the horizontal score values, keep updating the matrix.
@@ -320,6 +375,7 @@ __device__ __forceinline__
                 if (tscore > score.s0)
                 {
                     score.s0 = tscore;
+                    trace.t0 = 0;
                     loop     = true;
                 }
 
@@ -327,6 +383,7 @@ __device__ __forceinline__
                 if (tscore > score.s1)
                 {
                     score.s1 = tscore;
+                    trace.t1 = 0;
                     loop     = true;
                 }
 
@@ -334,6 +391,7 @@ __device__ __forceinline__
                 if (tscore > score.s2)
                 {
                     score.s2 = tscore;
+                    trace.t2 = 0;
                     loop     = true;
                 }
 
@@ -341,6 +399,7 @@ __device__ __forceinline__
                 if (tscore > score.s3)
                 {
                     score.s3 = tscore;
+                    trace.t3 = 0;
                     loop     = true;
                 }
             }
