@@ -44,7 +44,7 @@ __device__ __forceinline__ int32_t get_band_start_for_row(int32_t row_idx, float
     if (end_pos > max_column)
     {
         start_pos = max_column - band_width + CELLS_PER_THREAD;
-    };
+    }
 
     start_pos = max(start_pos, 0);
 
@@ -61,7 +61,7 @@ __device__ __forceinline__ ScoreT* get_score_ptr(ScoreT* scores, int32_t row, in
     int64_t score_index = static_cast<int64_t>(column) + static_cast<int64_t>(row) * static_cast<int64_t>(band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING);
 
     return &scores[score_index];
-};
+}
 
 template <typename ScoreT>
 __device__ __forceinline__ void set_score(ScoreT* scores, int32_t row, int32_t column, int32_t value, float gradient, int32_t band_width, int32_t max_column)
@@ -97,6 +97,13 @@ __device__ __forceinline__ void initialize_band(ScoreT* scores, int32_t row, int
     {
         set_score(scores, row, j, value, gradient, band_width, max_column);
     }
+}
+
+template <typename TraceT>
+__device__ TraceT get_trace(TraceT* backtrace, int32_t row, int32_t column, int32_t band_start, int32_t band_width)
+{
+    int64_t trace_index = static_cast<int64_t>(column - band_start) + static_cast<int64_t>(row) * static_cast<int64_t>(band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING);
+    return backtrace[trace_index];
 }
 
 template <typename ScoreT>
@@ -160,7 +167,7 @@ __device__ __forceinline__ ScoreT4<ScoreT> get_scores(ScoreT* scores,
         ScoreT4<ScoreT> score;
 
         // if trace is diogonal, its value is positive and if vertical, negative
-        if ((score4.s0 + char_profile.s0) > (score4.s1 + gap_score))
+        if ((score4.s0 + char_profile.s0) >= (score4.s1 + gap_score))
         {
             score.s0 = score4.s0 + char_profile.s0;
             trace.t0 = current_node - pred_node;
@@ -171,7 +178,7 @@ __device__ __forceinline__ ScoreT4<ScoreT> get_scores(ScoreT* scores,
             trace.t0 = -(current_node - pred_node);
         }
 
-        if ((score4.s1 + char_profile.s1) > (score4.s2 + gap_score))
+        if ((score4.s1 + char_profile.s1) >= (score4.s2 + gap_score))
         {
             score.s1 = score4.s1 + char_profile.s1;
             trace.t1 = current_node - pred_node;
@@ -182,7 +189,7 @@ __device__ __forceinline__ ScoreT4<ScoreT> get_scores(ScoreT* scores,
             trace.t1 = -(current_node - pred_node);
         }
 
-        if ((score4.s2 + char_profile.s2) > (score4.s3 + gap_score))
+        if ((score4.s2 + char_profile.s2) >= (score4.s3 + gap_score))
         {
             score.s2 = score4.s2 + char_profile.s2;
             trace.t2 = current_node - pred_node;
@@ -193,7 +200,7 @@ __device__ __forceinline__ ScoreT4<ScoreT> get_scores(ScoreT* scores,
             trace.t2 = -(current_node - pred_node);
         }
 
-        if ((score4.s3 + char_profile.s3) > (score4_next.s0 + gap_score))
+        if ((score4.s3 + char_profile.s3) >= (score4_next.s0 + gap_score))
         {
             score.s3 = score4.s3 + char_profile.s3;
             trace.t3 = current_node - pred_node;
@@ -519,9 +526,8 @@ __device__ __forceinline__
             // Check if move is horizontal.
             if (!pred_found && scores_ij == get_score(scores, i, j - 1, gradient, band_width, max_column, min_score_value) + gap_score)
             {
-                prev_i     = i;
-                prev_j     = j - 1;
-                pred_found = true;
+                prev_i = i;
+                prev_j = j - 1;
             }
 
             next_node_id = graph[prev_i - 1];
