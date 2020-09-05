@@ -27,8 +27,8 @@ using namespace claraparabricks::genomeworks::cudaungappedextender;
 
 int main(int argc, char* argv[])
 {
-    const int32_t input_xdrop = 910;
-    const bool input_no_entropy = false;
+    const int32_t input_xdrop     = 910;
+    const bool input_no_entropy   = false;
     const int32_t score_threshold = 3000;
     // Fasta query and target files
     std::string target_file_path = "../data/example.fa";

@@ -39,7 +39,7 @@ std::unique_ptr<Extender> create_extender(int32_t* h_sub_mat, bool no_entropy, c
     }
 }
 
-} // namespace cudaaligner
+} // namespace cudaextender
 
 } // namespace genomeworks
 

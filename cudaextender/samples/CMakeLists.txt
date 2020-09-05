@@ -15,19 +15,18 @@
 #
 
 
-
 project(sample_cudaextender)
 
 get_property(cudaextender_data_include_dir GLOBAL PROPERTY cudaextender_data_include_dir)
 include_directories(${cudaextender_data_include_dir})
 
 add_executable(${PROJECT_NAME}
-               host_sample.cu
-               )
+        host_sample.cu
+        )
 
 target_link_libraries(${PROJECT_NAME}
-                      cudaextender
-                      )
+        cudaextender
+        )
 
 install(TARGETS ${PROJECT_NAME}
-            DESTINATION samples)
+        DESTINATION samples)

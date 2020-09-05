@@ -34,9 +34,9 @@ public:
     ~UngappedXDrop() override;
 
     StatusType extend_async(const char* h_query, int32_t query_length,
-                                    const char* h_target, int32_t target_length,
-                                    int32_t score_threshold,
-                                    std::vector<SeedPair>& h_seed_pairs) override;
+                            const char* h_target, int32_t target_length,
+                            int32_t score_threshold,
+                            std::vector<SeedPair>& h_seed_pairs) override;
 
     StatusType extend_async(const char* d_query, int32_t query_length,
                             const char* d_target, int32_t target_length,
@@ -47,11 +47,9 @@ public:
     StatusType sync() override;
     void reset() override;
 
-
     const std::vector<ScoredSegmentPair>& get_scored_segment_pairs() const override;
 
 private:
-
     int32_t* h_sub_mat_;
     cudaStream_t stream_;
     int32_t device_id_;
@@ -59,7 +57,7 @@ private:
     std::vector<ScoredSegmentPair> scored_segment_pairs_;
 };
 
-} // namespace cudaaligner
+} // namespace cudaextender
 
 } // namespace genomeworks
 
