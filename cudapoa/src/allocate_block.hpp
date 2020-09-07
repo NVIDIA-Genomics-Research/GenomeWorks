@@ -63,6 +63,7 @@ public:
         max_nodes_per_window_  = batch_size.max_nodes_per_graph;
         full_matrix_alignment_ = batch_size.band_mode == BandMode::full_band;
         score_matrix_height_   = full_matrix_alignment_ ? batch_size.max_nodes_per_graph : batch_size.max_pred_distance_in_banded_mode;
+        score_matrix_width_    = batch_size.matrix_sequence_dimension;
 
         // calculate static and dynamic sizes of buffers needed per POA entry.
         int64_t host_size_fixed, device_size_fixed;
@@ -79,24 +80,21 @@ public:
             throw std::runtime_error(msg);
         }
 
-        // Calculate max POAs possible based on available memory.
-        int64_t device_size_per_score_matrix        = 0;
-        int64_t device_size_per_backtracking_matrix = 0;
-
+        // compute device memory used for matrix buffer
+        // in full alignment, this is for scores matrix buffer, in static or adaptive banded alignment, it is for backtracking matrix buffer
+        int64_t device_size_per_matrix = static_cast<int64_t>(batch_size.matrix_sequence_dimension) *
+                                         static_cast<int64_t>(batch_size.max_nodes_per_graph);
         if (batch_size.band_mode == BandMode::full_band)
         {
-            device_size_per_score_matrix = static_cast<int64_t>(batch_size.matrix_sequence_dimension) *
-                                           static_cast<int64_t>(batch_size.max_nodes_per_graph) * sizeof(ScoreT);
+            device_size_per_matrix *= sizeof(ScoreT);
         }
         else
         {
-            device_size_per_score_matrix = static_cast<int64_t>(batch_size.matrix_sequence_dimension) *
-                                           static_cast<int64_t>(batch_size.max_pred_distance_in_banded_mode) * sizeof(ScoreT);
-            device_size_per_backtracking_matrix = static_cast<int64_t>(batch_size.matrix_sequence_dimension) *
-                                                  static_cast<int64_t>(batch_size.max_nodes_per_graph) * sizeof(TraceT);
+            device_size_per_matrix *= sizeof(TraceT);
         }
 
-        max_poas_ = avail_mem / (device_size_per_poa + device_size_per_score_matrix + device_size_per_backtracking_matrix);
+        // Calculate max POAs possible based on available memory
+        max_poas_ = avail_mem / (device_size_per_poa + device_size_per_matrix);
 
         // Update final sizes for block based on calculated maximum POAs.
         output_size_ = max_poas_ * static_cast<int64_t>(batch_size.max_consensus_size);
@@ -214,6 +212,12 @@ public:
         offset_d_ += cudautils::align<int64_t, 8>(sizeof(*alignment_details_d->alignment_graph) * max_nodes_per_window_ * max_poas_);
         alignment_details_d->alignment_read = reinterpret_cast<decltype(alignment_details_d->alignment_read)>(&block_data_d_[offset_d_]);
         offset_d_ += cudautils::align<int64_t, 8>(sizeof(*alignment_details_d->alignment_read) * max_nodes_per_window_ * max_poas_);
+        // in banded mode, we store only part of scores matrix for forward computation in NW
+        if (!full_matrix_alignment_)
+        {
+            alignment_details_d->scores = reinterpret_cast<decltype(alignment_details_d->scores)>(&block_data_d_[offset_d_]);
+            offset_d_ += cudautils::align<int64_t, 8>(sizeof(*alignment_details_d->scores) * score_matrix_width_ * score_matrix_height_ * max_poas_);
+        }
 
         if (variable_bands_)
         {
@@ -236,10 +240,7 @@ public:
         }
         else
         {
-            // in banded mode, we store only part of scores matrix for forward computation in NW
-            alignment_details_d->scores = reinterpret_cast<decltype(alignment_details_d->scores)>(&block_data_d_[offset_d_]);
-            offset_d_ += cudautils::align<int64_t, 8>(sizeof(*alignment_details_d->scores) * score_matrix_height_ * max_poas_);
-            // rest of the available memory is assigned to backtrace buffer
+            // in banded alignment, rest of the available memory is assigned to backtrace buffer
             alignment_details_d->scorebuf_alloc_size = total_d_ - offset_d_;
             alignment_details_d->backtrace           = reinterpret_cast<decltype(alignment_details_d->backtrace)>(&block_data_d_[offset_d_]);
         }
@@ -334,8 +335,10 @@ public:
 
     static int64_t compute_device_memory_per_poa(const BatchConfig& batch_size, const bool msa_flag, const bool variable_bands = false)
     {
-        int64_t device_size_per_poa = 0;
-        int32_t max_nodes_per_graph = batch_size.max_nodes_per_graph;
+        int64_t device_size_per_poa      = 0;
+        int32_t max_nodes_per_graph      = batch_size.max_nodes_per_graph;
+        bool banded                      = batch_size.band_mode == BandMode::static_band || batch_size.band_mode == BandMode::adaptive_band;
+        int32_t banded_score_matrix_size = batch_size.matrix_sequence_dimension * batch_size.max_pred_distance_in_banded_mode;
 
         // for output - device
         device_size_per_poa += batch_size.max_consensus_size * sizeof(*OutputDetails::consensus);                                                                        // output_details_d_->consensus
@@ -375,7 +378,7 @@ public:
         device_size_per_poa += variable_bands ? sizeof(*AlignmentDetails<ScoreT, SizeT, TraceT>::band_widths) * max_nodes_per_graph : 0;       // alignment_details_d_->band_widths
         device_size_per_poa += variable_bands ? sizeof(*AlignmentDetails<ScoreT, SizeT, TraceT>::band_head_indices) * max_nodes_per_graph : 0; // alignment_details_d_->band_head_indices
         device_size_per_poa += variable_bands ? sizeof(*AlignmentDetails<ScoreT, SizeT, TraceT>::band_max_indices) * max_nodes_per_graph : 0;  // alignment_details_d_->band_max_indices
-
+        device_size_per_poa += banded ? sizeof(*AlignmentDetails<ScoreT, SizeT, TraceT>::scores) * banded_score_matrix_size : 0;               // alignment_details_d_->scores (only for static and adaptive band modes)
         return device_size_per_poa;
     }
 
@@ -433,25 +436,20 @@ public:
             device_size_per_poa = BatchBlock<int16_t, int16_t, int16_t>::compute_device_memory_per_poa(batch_size, msa_flag);
         }
 
-        // Compute required memory for score matrix and backtracking matrix
-        int64_t device_size_per_score_matrix        = 0;
-        int64_t device_size_per_backtracking_matrix = 0;
-
+        // Compute required memory for score or backtracking matrix
+        int64_t device_size_per_matrix = static_cast<int64_t>(batch_size.matrix_sequence_dimension) *
+                                         static_cast<int64_t>(batch_size.max_nodes_per_graph);
         if (batch_size.band_mode == BandMode::full_band)
         {
-            device_size_per_score_matrix = static_cast<int64_t>(batch_size.matrix_sequence_dimension) *
-                                           static_cast<int64_t>(batch_size.max_nodes_per_graph) * sizeof_ScoreT;
+            device_size_per_matrix *= sizeof_ScoreT;
         }
         else
         {
-            device_size_per_score_matrix = static_cast<int64_t>(batch_size.matrix_sequence_dimension) *
-                                           static_cast<int64_t>(batch_size.max_pred_distance_in_banded_mode) * sizeof_ScoreT;
-            device_size_per_backtracking_matrix = static_cast<int64_t>(batch_size.matrix_sequence_dimension) *
-                                                  static_cast<int64_t>(batch_size.max_nodes_per_graph) * sizeof_TraceT;
+            device_size_per_matrix *= sizeof_TraceT;
         }
 
         // Calculate max POAs possible based on available memory.
-        int64_t max_poas = mem_per_batch / (device_size_per_poa + device_size_per_score_matrix + device_size_per_backtracking_matrix);
+        int64_t max_poas = mem_per_batch / (device_size_per_poa + device_size_per_matrix);
 
         return max_poas;
     }
@@ -509,6 +507,7 @@ protected:
     int64_t output_size_          = 0;
     int32_t max_nodes_per_window_ = 0;
     int32_t score_matrix_height_  = 0;
+    int32_t score_matrix_width_   = 0;
     bool full_matrix_alignment_   = false;
     int32_t device_id_;
 
