@@ -766,9 +766,7 @@ __device__ __forceinline__ int32_t fast_approx_log2(const int32_t val)
 
 __device__ __forceinline__ int32_t log_linear_weight(Overlap& a, Overlap& b, const int32_t max_dist)
 {
-    if (a.query_read_id_ != b.query_read_id_)
-        return -1 * INT32_INFINITY;
-    if (a.target_read_id_ != b.target_read_id_)
+    if (a.query_read_id_ != b.query_read_id_ || a.target_read_id_ != b.target_read_id_)
         return -1 * INT32_INFINITY;
 
     int32_t q_dist = int(b.query_end_position_in_read_) - int(a.query_end_position_in_read_);
@@ -798,7 +796,7 @@ __device__ __forceinline__ int32_t log_linear_weight(Overlap& a, Overlap& b, con
     if (max_size > 500 && 4 * min_size < max_size)
         return -1 * INT32_INFINITY;
 
-    int32_t score = min_dist > overlap_targ_length ? overlap_targ_length : min_dist;
+    int32_t score = min_dist > min_size ? min_size : min_dist;
     score -= int32_t(double(score) * (0.01 * 50)) + int32_t(double(log_dist_diff) * 0.5);
     return score;
 }
