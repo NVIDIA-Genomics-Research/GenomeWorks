@@ -23,6 +23,7 @@
 #include "cudamapper_utils.hpp"
 #include "overlapper_triggered.hpp"
 #include "overlapper_anchmer.hpp"
+#include "overlapper_minimap.hpp"
 namespace
 {
 
@@ -143,7 +144,6 @@ void Overlapper::post_process_overlaps(std::vector<Overlap>& overlaps, const boo
     int num_residues = 0;
     Overlap prev_overlap;
     std::vector<bool> drop_overlap_mask;
-    return;
     if (drop_fused_overlaps)
     {
         drop_overlap_mask.resize(overlaps.size());
@@ -240,6 +240,10 @@ namespace details
 {
 namespace overlapper
 {
+
+void filter_self_mappings(std::vector<Overlap>& overlaps, const double max_percent_similarity)
+{
+}
 void drop_overlaps_by_mask(std::vector<claraparabricks::genomeworks::cudamapper::Overlap>& overlaps, const std::vector<bool>& mask)
 {
     std::size_t i                                                               = 0;
@@ -376,7 +380,7 @@ void Overlapper::rescue_overlap_ends(std::vector<Overlap>& overlaps,
 std::unique_ptr<Overlapper> Overlapper::create_overlapper(DefaultDeviceAllocator allocator,
                                                           const cudaStream_t cuda_stream)
 {
-    return std::make_unique<OverlapperAnchmer>(allocator,
+    return std::make_unique<OverlapperMinimap>(allocator,
                                                cuda_stream);
 }
 
