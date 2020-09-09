@@ -241,9 +241,35 @@ namespace details
 namespace overlapper
 {
 
-void filter_self_mappings(std::vector<Overlap>& overlaps, const double max_percent_similarity)
+void filter_self_mappings(std::vector<Overlap>& overlaps,
+                          const io::FastaParser& query_parser,
+                          const io::FastaParser& target_parser,
+                          const double max_percent_overlap)
 {
+
+    auto remove_self_helper = [&query_parser, &max_percent_overlap](const Overlap& o) {
+        std::size_t read_len        = query_parser.get_sequence_by_id(o.query_read_id_).seq.size();
+        std::int32_t overlap_length = abs(o.query_end_position_in_read_ - o.query_start_position_in_read_);
+        double percent_overlap      = static_cast<double>(overlap_length) / static_cast<double>(read_len);
+        return percent_overlap >= max_percent_overlap;
+    };
+
+    overlaps.erase(std::remove_if(begin(overlaps), end(overlaps), remove_self_helper), end(overlaps));
+
+    // for (auto& o : overlaps)
+    // {
+    //     if (o.query_read_id_ == o.target_read_id_)
+    //     {
+    //         std::size_t read_len        = query_parser.get_sequence_by_id(o.query_read_id_).seq.size();
+    //         std::int32_t overlap_length = abs(o.query_end_position_in_read_ - o.query_start_position_in_read_);
+    //         double percent_overlap      = static_cast<double>(overlap_length) / static_cast<double>(read_len);
+    //         if (percent_overlap > static_cast<double>(max_percent_overlap))
+    //         {
+    //         }
+    //     }
+    // }
 }
+
 void drop_overlaps_by_mask(std::vector<claraparabricks::genomeworks::cudamapper::Overlap>& overlaps, const std::vector<bool>& mask)
 {
     std::size_t i                                                               = 0;

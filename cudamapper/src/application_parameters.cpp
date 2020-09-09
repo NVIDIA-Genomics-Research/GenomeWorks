@@ -51,6 +51,7 @@ ApplicationParameters::ApplicationParameters(int argc, char* argv[])
         {"min-overlap-fraction", required_argument, 0, 'z'},
         {"rescue-overlap-ends", no_argument, 0, 'R'},
         {"drop-fused-overlaps", no_argument, 0, 'D'},
+        {"drop-self-mappings", no_argument, 0, 'X'},
         {"query-indices-in-host-memory", required_argument, 0, 'Q'},
         {"query-indices-in-device-memory", required_argument, 0, 'q'},
         {"target-indices-in-host-memory", required_argument, 0, 'C'},
@@ -59,7 +60,7 @@ ApplicationParameters::ApplicationParameters(int argc, char* argv[])
         {"help", no_argument, 0, 'h'},
     };
 
-    std::string optstring = "k:w:d:m:i:t:F:a:r:l:b:z:RDQ:q:C:c:vh";
+    std::string optstring = "k:w:d:m:i:t:F:a:r:l:b:z:RDXQ:q:C:c:vh";
 
     bool target_indices_in_host_memory_set   = false;
     bool target_indices_in_device_memory_set = false;
@@ -116,6 +117,9 @@ ApplicationParameters::ApplicationParameters(int argc, char* argv[])
             break;
         case 'D':
             drop_fused_overlaps = true;
+            break;
+        case 'X':
+            drop_self_mappings = true;
             break;
         case 'Q':
             query_indices_in_host_memory = std::stoi(optarg);

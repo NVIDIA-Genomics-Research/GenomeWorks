@@ -38,9 +38,15 @@ namespace details
 namespace overlapper
 {
 
-// void filter_self_mappings(std::vector<Overlap>& overlaps, const double max_percent_similarity)
-// {
-// }
+// void filter_self_mappings(std::vector<Overlap>& overlaps,
+//                           const io::FastaParser& query_parser,
+//                           const io::FastaParser& target_parser,
+//                           const double max_percent_similarity);
+
+void filter_self_mappings(std::vector<Overlap>& overlaps,
+                          const io::FastaParser& query_parser,
+                          const io::FastaParser& target_parser,
+                          const double max_percent_overlap);
 
 /// \brief Extends a single overlap at its ends if the similarity of the query and target sequences is above a specified threshold.
 /// \param overlap An Overlap which is modified in place. Any of the query_start_position_in_read, query_end_position_in_read,

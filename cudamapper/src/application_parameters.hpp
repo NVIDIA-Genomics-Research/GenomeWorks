@@ -55,6 +55,7 @@ public:
     float min_overlap_fraction              = 0.8;   // z
     bool perform_overlap_end_rescue         = false; // R
     bool drop_fused_overlaps                = false; // D
+    bool drop_self_mappings                 = false; // X
     int32_t query_indices_in_host_memory    = 10;    // Q
     int32_t query_indices_in_device_memory  = 5;     // q
     int32_t target_indices_in_host_memory   = 10;    // C
