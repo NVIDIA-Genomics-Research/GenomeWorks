@@ -79,7 +79,7 @@ StatusType UngappedXDrop::extend_async(const char* d_query, int32_t query_length
         curr_num_pairs = std::min(max_ungapped_extensions_, num_seed_pairs - seed_pair_start);
         // TODO- Extricate the kernel params?
         find_high_scoring_segment_pairs<<<1024, 128, stream_>>>(d_query, query_length, d_target, target_length, d_sub_mat_, no_entropy_, xdrop_threshold_, score_threshold, curr_num_pairs, d_seed_pairs, seed_pair_start, d_scored_segment_pairs, d_done);
-        thrust::device_ptr<int32_t> d_done_dev_ptr = thrust::device_pointer_cast(d_done_scratch);
+        thrust::device_ptr<int32_t> d_done_dev_ptr = thrust::device_pointer_cast(d_done_scratch_);
         // TODO- Make thrust use caching allocator or change kernel
         thrust::inclusive_scan(thrust::cuda::par.on(stream_), d_done_dev_ptr, d_done_dev_ptr + curr_num_pairs, d_done_dev_ptr);
         device_copy_n((void*)(d_done[gpu_id]+curr_num_hits-1), sizeof(int32_t), &num_anchors, stream_);
