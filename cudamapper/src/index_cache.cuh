@@ -21,8 +21,7 @@
 
 #include <claraparabricks/genomeworks/cudamapper/types.hpp>
 #include <claraparabricks/genomeworks/utils/allocator.hpp>
-
-#include "index_descriptor.hpp"
+#include <claraparabricks/genomeworks/cudamapper/index.hpp>
 
 namespace claraparabricks
 {
@@ -38,7 +37,6 @@ class FastaParser;
 namespace cudamapper
 {
 
-class Index;
 class IndexHostCopyBase;
 
 /// IndexCacheHost - Creates Indices, stores them in host memory and on demand copies them back to device memory
