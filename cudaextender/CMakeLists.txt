@@ -45,8 +45,9 @@ get_property(gw_library_type GLOBAL PROPERTY gw_library_type)
 cuda_add_library(cudaextender ${gw_library_type}
         src/cudaextender.cpp
         src/extender.cpp
+        src/ungapped_xdrop.cpp
         ${CMAKE_CURRENT_BINARY_DIR}/version.cpp
-        )
+        src/ungapped_extender_kernels.cu)
 
 target_link_libraries(cudaextender gwbase gwio)
 

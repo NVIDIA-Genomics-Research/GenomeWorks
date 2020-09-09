@@ -30,7 +30,7 @@ namespace cudaextender
 class UngappedXDrop : public Extender
 {
 public:
-    UngappedXDrop(int32_t* h_sub_mat, bool no_entropy = false, cudaStream_t stream = 0, int32_t device_id = 0);
+    UngappedXDrop(int32_t* h_sub_mat, int32_t sub_mat_dim, int32_t xdrop_threshold, bool no_entropy, cudaStream_t stream, int32_t device_id);
     ~UngappedXDrop() override;
 
     StatusType extend_async(const char* h_query, int32_t query_length,
@@ -51,10 +51,16 @@ public:
 
 private:
     int32_t* h_sub_mat_;
+    int32_t sub_mat_dim_; // Assume matrix is square
+    int32_t xdrop_threshold_;
+    bool no_entropy_;
     cudaStream_t stream_;
     int32_t device_id_;
-    bool no_entropy_;
     std::vector<ScoredSegmentPair> scored_segment_pairs_;
+    int32_t max_ungapped_extensions_;
+    int32_t* d_sub_mat_; // Pointer to device substitution matrix
+    int32_t* d_done_;   // TODO- Rename scratch space
+    ScoredSegmentPair* d_tmp_hsp_;  // TODO- Rename Scratch space 2
 };
 
 } // namespace cudaextender

@@ -91,9 +91,7 @@ public:
     virtual void reset() = 0;
 };
 
-std::unique_ptr<Extender> create_extender(int32_t* h_sub_mat, bool no_entropy = false,
-                                          cudaStream_t stream = 0, int32_t device_id = 0,
-                                          ExtensionType type = ExtensionType::ungapped_xdrop);
+std::unique_ptr<Extender> create_extender(int32_t* h_sub_mat, int32_t sub_mat_size, int32_t xdrop_threshold, bool no_entropy, cudaStream_t stream, int32_t device_id, ExtensionType type);
 
 } // namespace cudaextender
 } // namespace genomeworks
