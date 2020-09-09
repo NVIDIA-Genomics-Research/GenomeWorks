@@ -18,7 +18,23 @@
 #include <claraparabricks/genomeworks/utils/cudautils.hpp>
 #include "ungapped_xdrop.hpp"
 
-/ extend the hits to a segment by ungapped x-drop method, adjust low-scoring
+namespace claraparabricks
+{
+
+namespace genomeworks
+{
+
+namespace cudaextender
+{
+
+// extend the hits to a segment by ungapped x-drop method, adjust low-scoring
 // segment scores based on entropy factor, compare resulting segment scores
 // to hspthresh and update the d_hsp and d_done vectors
-__global__ void find_hsps (const char* __restrict__  d_ref_seq, const char* __restrict__  d_query_seq, uint32_t ref_len, uint32_t query_len, int *d_sub_mat, bool noentropy, int xdrop, int hspthresh, int num_hits, seedHit* d_hit, uint32_t start_index, segment* d_hsp, uint32_t* d_done);
+__global__ void find_high_score_segment_pairs(const char* __restrict__ d_target, const int32_t target_length, const char* __restrict__ d_query, const int32_t query_length, const int* d_sub_mat, bool no_entropy, int32_t xdrop_threshold, int32_t score_threshold, SeedPair* d_seed_pairs, int32_t num_seed_pairs, int32_t start_index, ScoredSegmentPair* d_scored_segment, uint32_t* d_done);
+
+
+}
+
+}
+
+}
