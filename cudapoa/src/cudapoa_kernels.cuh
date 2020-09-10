@@ -109,7 +109,6 @@ __launch_bounds__(GW_POA_KERNELS_MAX_THREADS_PER_BLOCK)
                                       uint32_t scores_matrix_width,
                                       uint32_t max_limit_consensus_size,
                                       int32_t TPB                = 64,
-                                      bool adaptive_banded       = false,
                                       uint32_t static_band_width = 256)
 {
     // shared error indicator within a warp
@@ -323,7 +322,6 @@ __launch_bounds__(GW_POA_KERNELS_MAX_THREADS_PER_BLOCK)
                                                                           incoming_edge_count,
                                                                           incoming_edges,
                                                                           outgoing_edge_count,
-                                                                          outgoing_edges,
                                                                           sequence,
                                                                           seq_len,
                                                                           scores,
@@ -532,7 +530,6 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
                                               matrix_seq_dimension,
                                               batch_size.max_consensus_size,
                                               TPB,
-                                              adaptive_banded,
                                               batch_size.alignment_band_width);
         }
         else if (adaptive_banded)
@@ -574,7 +571,6 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
                                               matrix_seq_dimension,
                                               batch_size.max_consensus_size,
                                               TPB,
-                                              adaptive_banded,
                                               batch_size.alignment_band_width);
         }
         else
@@ -616,7 +612,6 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
                                               matrix_seq_dimension,
                                               batch_size.max_consensus_size,
                                               TPB,
-                                              adaptive_banded,
                                               batch_size.alignment_band_width);
         }
     }
@@ -661,7 +656,6 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
                                               matrix_seq_dimension,
                                               batch_size.max_consensus_size,
                                               TPB,
-                                              adaptive_banded,
                                               batch_size.alignment_band_width);
         }
         else if (adaptive_banded)
@@ -703,7 +697,6 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
                                               matrix_seq_dimension,
                                               batch_size.max_consensus_size,
                                               TPB,
-                                              adaptive_banded,
                                               batch_size.alignment_band_width);
         }
         else
@@ -745,7 +738,6 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
                                               matrix_seq_dimension,
                                               batch_size.max_consensus_size,
                                               TPB,
-                                              adaptive_banded,
                                               batch_size.alignment_band_width);
         }
     }

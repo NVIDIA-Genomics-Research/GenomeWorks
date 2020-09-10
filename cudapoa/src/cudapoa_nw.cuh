@@ -135,7 +135,6 @@ __device__ __forceinline__
  * @param[in] incoming_edge_count  Device buffer with number of incoming edges per node
  * @param[in] incoming_edges       Device buffer with incoming edges per node
  * @param[in] outgoing_edge_count  Device buffer with number of outgoing edges per node
- * @param[in] outgoing_edges       Device buffer with outgoing edges per node
  * @param[in] read                 Device buffer with sequence (read) to align
  * @param[in] read_length          Number of bases in read
  * @param[out] scores              Device scratch space that scores alignment matrix score
@@ -160,7 +159,6 @@ __device__ __forceinline__
                        uint16_t* incoming_edge_count,
                        SizeT* incoming_edges,
                        uint16_t* outgoing_edge_count,
-                       SizeT* outgoing_edges,
                        SeqT* read,
                        SizeT read_length,
                        ScoreT* scores,
@@ -474,7 +472,6 @@ __global__ void runNeedlemanWunschKernel(uint8_t* nodes,
                                          uint16_t* incoming_edge_count,
                                          SizeT* incoming_edges,
                                          uint16_t* outgoing_edge_count,
-                                         SizeT* outgoing_edges,
                                          uint8_t* read,
                                          SizeT read_length,
                                          int16_t* scores,
@@ -493,7 +490,6 @@ __global__ void runNeedlemanWunschKernel(uint8_t* nodes,
                                                                  incoming_edge_count,
                                                                  incoming_edges,
                                                                  outgoing_edge_count,
-                                                                 outgoing_edges,
                                                                  read,
                                                                  read_length,
                                                                  scores,
@@ -514,7 +510,6 @@ void runNW(uint8_t* nodes,
            uint16_t* incoming_edge_count,
            SizeT* incoming_edges,
            uint16_t* outgoing_edge_count,
-           SizeT* outgoing_edges,
            uint8_t* read,
            SizeT read_length,
            int16_t* scores,
@@ -533,7 +528,6 @@ void runNW(uint8_t* nodes,
                                         incoming_edge_count,
                                         incoming_edges,
                                         outgoing_edge_count,
-                                        outgoing_edges,
                                         read,
                                         read_length,
                                         scores,
