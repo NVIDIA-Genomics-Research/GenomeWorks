@@ -43,7 +43,7 @@ __device__ __forceinline__ ScoreT* get_score_ptr_adaptive(ScoreT* scores, int32_
 }
 
 template <typename ScoreT>
-__device__ __forceinline__ void set_score_adaptive(ScoreT* scores, int32_t row, int32_t column, ScoreT value, int32_t band_start, int32_t band_width)
+__device__ __forceinline__ void set_score_adaptive(ScoreT* scores, int32_t row, int32_t column, int32_t value, int32_t band_start, int32_t band_width)
 {
     if (column == -1)
     {
@@ -101,7 +101,7 @@ __device__ __forceinline__ ScoreT4<ScoreT> get_scores_adaptive(ScoreT* scores,
                                                                float gradient,
                                                                int32_t max_column,
                                                                ScoreT default_value,
-                                                               ScoreT gap_score,
+                                                               int32_t gap_score,
                                                                ScoreT4<ScoreT>& char_profile)
 {
 
@@ -149,7 +149,7 @@ __device__ __forceinline__ ScoreT4<ScoreT> get_scores_adaptive(ScoreT* scores,
 }
 
 template <typename ScoreT>
-__device__ __forceinline__ void initialize_band_adaptive(ScoreT* scores, int32_t row, ScoreT min_score_value, int32_t band_start, int32_t band_width, int32_t lane_idx)
+__device__ __forceinline__ void initialize_band_adaptive(ScoreT* scores, int32_t row, int32_t min_score_value, int32_t band_start, int32_t band_width, int32_t lane_idx)
 {
     int32_t band_end = band_start + band_width;
 
@@ -181,9 +181,9 @@ __device__ __forceinline__
                                      SizeT* alignment_graph,
                                      SizeT* alignment_read,
                                      int32_t static_band_width,
-                                     ScoreT gap_score,
-                                     ScoreT mismatch_score,
-                                     ScoreT match_score,
+                                     int32_t gap_score,
+                                     int32_t mismatch_score,
+                                     int32_t match_score,
                                      int32_t rerun)
 {
     // in adaptive bands, there can be cases where multiple rows happen to have a band with start index
@@ -270,14 +270,14 @@ __device__ __forceinline__
 
         initialize_band_adaptive(scores, score_gIdx, min_score_value, band_start, band_width, lane_idx);
 
-        ScoreT first_element_prev_score = 0;
+        int32_t first_element_prev_score = 0;
 
         uint16_t pred_count = 0;
         int32_t pred_idx    = 0;
 
         if (lane_idx == 0)
         {
-            ScoreT penalty;
+            int32_t penalty;
             pred_count = incoming_edge_count[node_id];
             if (pred_count == 0)
             {
@@ -346,13 +346,13 @@ __device__ __forceinline__
             {
                 loop = false;
                 // The shfl_up lets us grab a value from the lane below.
-                ScoreT last_score = __shfl_up_sync(FULL_MASK, score.s3, 1);
+                int32_t last_score = __shfl_up_sync(FULL_MASK, score.s3, 1);
                 if (lane_idx == 0)
                 {
                     last_score = first_element_prev_score;
                 }
 
-                ScoreT tscore = max(last_score + gap_score, score.s0);
+                int32_t tscore = max(last_score + gap_score, score.s0);
                 if (tscore > score.s0)
                 {
                     score.s0 = tscore;
@@ -400,15 +400,15 @@ __device__ __forceinline__
     if (lane_idx == 0)
     {
         // Find location of the maximum score in the matrix.
-        int32_t i     = 0;
-        int32_t j     = read_length;
-        ScoreT mscore = min_score_value;
+        int32_t i      = 0;
+        int32_t j      = read_length;
+        int32_t mscore = min_score_value;
 
         for (int32_t idx = 1; idx <= graph_count; idx++)
         {
             if (outgoing_edge_count[graph[idx - 1]] == 0)
             {
-                ScoreT s = get_score_adaptive(scores, idx, j, band_width, band_shift, gradient, max_column, min_score_value);
+                int32_t s = get_score_adaptive(scores, idx, j, band_width, band_shift, gradient, max_column, min_score_value);
                 if (mscore < s)
                 {
                     mscore = s;
@@ -426,8 +426,8 @@ __device__ __forceinline__
         while (!(i == 0 && j == 0) && loop_count < static_cast<int32_t>(read_length + graph_count + 2))
         {
             loop_count++;
-            ScoreT scores_ij = get_score_adaptive(scores, i, j, band_width, band_shift, gradient, max_column, min_score_value);
-            bool pred_found  = false;
+            int32_t scores_ij = get_score_adaptive(scores, i, j, band_width, band_shift, gradient, max_column, min_score_value);
+            bool pred_found   = false;
             // Check if move is diagonal.
             if (i != 0 && j != 0)
             {
@@ -452,8 +452,8 @@ __device__ __forceinline__
                     }
                 }
 
-                int32_t node_id   = next_node_id;
-                ScoreT match_cost = (nodes[node_id] == read[j - 1] ? match_score : mismatch_score);
+                int32_t node_id    = next_node_id;
+                int32_t match_cost = (nodes[node_id] == read[j - 1] ? match_score : mismatch_score);
 
                 uint16_t pred_count = incoming_edge_count[node_id];
                 int32_t pred_i      = (pred_count == 0 ? 0 : (node_id_to_pos[incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES]] + 1));
