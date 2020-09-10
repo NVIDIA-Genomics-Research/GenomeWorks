@@ -53,11 +53,11 @@ __device__
     // each of the end nodes of the edges clear the scores
     // for all the _other_ nodes that had edges to that end node.
     uint16_t out_edges = outgoing_edge_count[node_id];
-    for (uint16_t oe = 0; oe < out_edges; oe++)
+    for (int32_t oe = 0; oe < out_edges; oe++)
     {
         SizeT out_node_id          = outgoing_edges[node_id * CUDAPOA_MAX_NODE_EDGES + oe];
         uint16_t out_node_in_edges = incoming_edge_count[out_node_id];
-        for (uint16_t ie = 0; ie < out_node_in_edges; ie++)
+        for (int32_t ie = 0; ie < out_node_in_edges; ie++)
         {
             SizeT id = incoming_edges[out_node_id * CUDAPOA_MAX_NODE_EDGES + ie];
             if (id != node_id)
@@ -82,7 +82,7 @@ __device__
         int32_t score_node_id = -1;
 
         uint16_t in_edges = incoming_edge_count[node_id];
-        for (uint16_t e = 0; e < in_edges; e++)
+        for (int32_t e = 0; e < in_edges; e++)
         {
             SizeT begin_node_id = incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES + e];
             if (scores[begin_node_id] == -1)
@@ -179,7 +179,7 @@ __device__ void generateConsensus(uint8_t* nodes,
         // than the score of the current node, or if the weight is equal
         // but the predecessors of the edge are heavier than the current node,
         // then update the score of the node to be the incoming edge weight.
-        for (uint16_t e = 0; e < in_edges; e++)
+        for (int32_t e = 0; e < in_edges; e++)
         {
             int32_t edge_w      = static_cast<int32_t>(incoming_edge_w[node_id * CUDAPOA_MAX_NODE_EDGES + e]);
             SizeT begin_node_id = incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES + e];
@@ -250,7 +250,7 @@ __device__ void generateConsensus(uint8_t* nodes,
     {
         consensus[consensus_pos] = nodes[max_score_id];
         uint16_t cov             = node_coverage_counts[max_score_id];
-        for (uint16_t a = 0; a < node_alignment_count[max_score_id]; a++)
+        for (int32_t a = 0; a < node_alignment_count[max_score_id]; a++)
         {
             cov += node_coverage_counts[node_alignments[max_score_id * CUDAPOA_MAX_NODE_ALIGNMENTS + a]];
         }
@@ -261,7 +261,7 @@ __device__ void generateConsensus(uint8_t* nodes,
     }
     consensus[consensus_pos] = nodes[max_score_id];
     uint16_t cov             = node_coverage_counts[max_score_id];
-    for (uint16_t a = 0; a < node_alignment_count[max_score_id]; a++)
+    for (int32_t a = 0; a < node_alignment_count[max_score_id]; a++)
     {
         cov += node_coverage_counts[node_alignments[max_score_id * CUDAPOA_MAX_NODE_ALIGNMENTS + a]];
     }

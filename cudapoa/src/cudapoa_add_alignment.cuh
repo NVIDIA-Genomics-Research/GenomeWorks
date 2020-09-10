@@ -151,7 +151,7 @@ __device__
                     //printf("aligned nodes are %d\n", num_aligned_node);
                     SizeT aligned_node_id = -1;
                     //printf("looping through alignments\n");
-                    for (uint16_t n = 0; n < num_aligned_node; n++)
+                    for (int32_t n = 0; n < num_aligned_node; n++)
                     {
                         SizeT aid = node_alignments[graph_node_id * CUDAPOA_MAX_NODE_ALIGNMENTS + n];
                         if (nodes[aid] == read_base)
@@ -186,7 +186,7 @@ __device__
                         node_coverage_counts[curr_node_id] = 0;
                         SizeT new_node_alignments          = 0;
 
-                        for (uint16_t n = 0; n < num_aligned_node; n++)
+                        for (int32_t n = 0; n < num_aligned_node; n++)
                         {
                             SizeT aid                                                                         = node_alignments[graph_node_id * CUDAPOA_MAX_NODE_ALIGNMENTS + n];
                             uint16_t aid_count                                                                = node_alignment_count[aid];
@@ -225,7 +225,7 @@ __device__
             {
                 bool edge_exists  = false;
                 uint16_t in_count = incoming_edge_count[curr_node_id];
-                for (uint16_t e = 0; e < in_count; e++)
+                for (int32_t e = 0; e < in_count; e++)
                 {
                     if (incoming_edges[curr_node_id * CUDAPOA_MAX_NODE_EDGES + e] == head_node_id)
                     {
@@ -258,7 +258,7 @@ __device__
                 else if (MSA) //if edge exists and for msa generation
                 {
                     uint16_t out_count = outgoing_edge_count[head_node_id];
-                    for (uint16_t e = 0; e < out_count; e++)
+                    for (int32_t e = 0; e < out_count; e++)
                     {
                         if (outgoing_edges[head_node_id * CUDAPOA_MAX_NODE_EDGES + e] == curr_node_id)
                         {

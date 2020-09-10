@@ -225,7 +225,7 @@ __launch_bounds__(GW_POA_KERNELS_MAX_THREADS_PER_BLOCK)
     __syncwarp();
 
     // Align each subsequent read, add alignment to graph, run topoligical sort.
-    for (uint16_t s = 1; s < num_sequences; s++)
+    for (int32_t s = 1; s < num_sequences; s++)
     {
         SizeT seq_len = sequence_lengths[s];
         sequence += sequence_lengths[s - 1];     // increment the pointer so it is pointing to correct sequence data

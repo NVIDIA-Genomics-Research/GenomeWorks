@@ -204,7 +204,7 @@ __device__
             else
             {
                 ScoreT penalty = score_type_min_limit;
-                for (uint16_t p = 0; p < pred_count; p++)
+                for (int32_t p = 0; p < pred_count; p++)
                 {
                     SizeT pred_node_id        = incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES + p];
                     SizeT pred_node_graph_pos = node_id_to_pos[pred_node_id] + 1;
@@ -385,7 +385,7 @@ __device__
 
                 if (!pred_found)
                 {
-                    for (uint16_t p = 1; p < pred_count; p++)
+                    for (int32_t p = 1; p < pred_count; p++)
                     {
                         pred_i = (node_id_to_pos[incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES + p]] + 1);
 
@@ -418,7 +418,7 @@ __device__
 
                 if (!pred_found)
                 {
-                    for (uint16_t p = 1; p < pred_count; p++)
+                    for (int32_t p = 1; p < pred_count; p++)
                     {
                         pred_i = node_id_to_pos[incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES + p]] + 1;
 

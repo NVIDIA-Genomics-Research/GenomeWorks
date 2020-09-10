@@ -250,7 +250,7 @@ __device__
                 {
                     penalty = max(min_score_value, get_score(scores, pred_idx, SizeT{-1}, gradient, band_width, max_column, min_score_value));
                     // if pred_num > 1 keep checking to find max score as penalty
-                    for (uint16_t p = 0; p < pred_count; p++)
+                    for (int32_t p = 0; p < pred_count; p++)
                     {
                         pred_node_id       = incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES + p];
                         SizeT pred_idx_tmp = node_id_to_pos[pred_node_id] + 1;
@@ -281,7 +281,7 @@ __device__
             ScoreT4<ScoreT> score = get_scores(scores, pred_idx, read_pos, gradient, band_width, max_column, min_score_value, gap_score, char_profile);
 
             // Perform same score updates as above, but for rest of predecessors.
-            for (uint16_t p = 1; p < pred_count; p++)
+            for (int32_t p = 1; p < pred_count; p++)
             {
                 SizeT pred_idx2          = node_id_to_pos[incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES + p]] + 1;
                 ScoreT4<ScoreT> scores_4 = get_scores(scores, pred_idx2, read_pos, gradient, band_width, max_column, min_score_value, gap_score, char_profile);
@@ -402,7 +402,7 @@ __device__
 
                 if (!pred_found)
                 {
-                    for (uint16_t p = 1; p < pred_count; p++)
+                    for (int32_t p = 1; p < pred_count; p++)
                     {
                         pred_i = (node_id_to_pos[incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES + p]] + 1);
 
@@ -433,7 +433,7 @@ __device__
 
                 if (!pred_found)
                 {
-                    for (uint16_t p = 1; p < pred_count; p++)
+                    for (int32_t p = 1; p < pred_count; p++)
                     {
                         pred_i = node_id_to_pos[incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES + p]] + 1;
 

@@ -43,7 +43,7 @@ __device__ SizeT getNodeIDToMSAPosDevice(SizeT node_count,
         SizeT node_id               = sorted_poa[rank];
         node_id_to_msa_pos[node_id] = msa_pos;
         uint16_t alignment_count    = node_alignment_counts[node_id];
-        for (uint16_t n = 0; n < alignment_count; n++)
+        for (int32_t n = 0; n < alignment_count; n++)
         {
             node_id_to_msa_pos[sorted_poa[++rank]] = msa_pos;
         }
@@ -90,10 +90,10 @@ __device__ void generateMSADevice(uint8_t* nodes,
 
         //check if the current node has an outgoing edge on this sequnece, i.e. if it's the last node of the seq
         bool end_node = true;
-        for (uint16_t n = 0; n < outgoing_edge_count[node_id]; n++)
+        for (int32_t n = 0; n < outgoing_edge_count[node_id]; n++)
         {
             SizeT to_node = outgoing_edges[node_id * CUDAPOA_MAX_NODE_EDGES + n];
-            for (uint16_t m = 0; m < outgoing_edges_coverage_count[node_id * CUDAPOA_MAX_NODE_EDGES + n]; m++)
+            for (int32_t m = 0; m < outgoing_edges_coverage_count[node_id * CUDAPOA_MAX_NODE_EDGES + n]; m++)
             {
                 uint16_t curr_edge_seq = outgoing_edges_coverage[node_id * CUDAPOA_MAX_NODE_EDGES * max_sequences_per_poa +
                                                                  n * max_sequences_per_poa + m];

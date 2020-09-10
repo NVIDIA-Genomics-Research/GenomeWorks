@@ -79,7 +79,7 @@ __device__ void topologicalSortDeviceUtil(SizeT* sorted_poa,
     for (SizeT n = 0; n < sorted_poa_position; n++)
     {
         SizeT node = sorted_poa[n];
-        for (uint16_t edge = 0; edge < outgoing_edge_count[node]; edge++)
+        for (int32_t edge = 0; edge < outgoing_edge_count[node]; edge++)
         {
             SizeT out_node = outgoing_edges[node * CUDAPOA_MAX_NODE_EDGES + edge];
             //printf("%d\n", out_node);
@@ -139,7 +139,7 @@ __device__ void raconTopologicalSortDeviceUtil(SizeT* sorted_poa,
 
             if (node_marks[node_id] != 2)
             {
-                for (uint16_t e = 0; e < incoming_edge_count[node_id]; e++)
+                for (int32_t e = 0; e < incoming_edge_count[node_id]; e++)
                 {
                     SizeT begin_node_id = incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES + e];
                     if (node_marks[begin_node_id] != 2)
@@ -152,7 +152,7 @@ __device__ void raconTopologicalSortDeviceUtil(SizeT* sorted_poa,
 
                 if (check_aligned_nodes[node_id])
                 {
-                    for (uint16_t a = 0; a < aligned_node_count[node_id]; a++)
+                    for (int32_t a = 0; a < aligned_node_count[node_id]; a++)
                     {
                         SizeT aid = aligned_nodes[node_id * CUDAPOA_MAX_NODE_ALIGNMENTS + a];
                         if (node_marks[aid] != 2)
@@ -173,7 +173,7 @@ __device__ void raconTopologicalSortDeviceUtil(SizeT* sorted_poa,
                         sorted_poa[sorted_poa_idx]   = node_id;
                         sorted_poa_node_map[node_id] = sorted_poa_idx;
                         sorted_poa_idx++;
-                        for (uint16_t a = 0; a < aligned_node_count[node_id]; a++)
+                        for (int32_t a = 0; a < aligned_node_count[node_id]; a++)
                         {
                             SizeT aid                  = aligned_nodes[node_id * CUDAPOA_MAX_NODE_ALIGNMENTS + a];
                             sorted_poa[sorted_poa_idx] = aid;
