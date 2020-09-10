@@ -33,7 +33,7 @@ namespace cudapoa
 {
 
 template <typename SizeT>
-__device__ SizeT get_band_start_for_row(SizeT row_idx, float gradient, SizeT band_width, SizeT max_column)
+__device__ __forceinline__ SizeT get_band_start_for_row(SizeT row_idx, float gradient, SizeT band_width, SizeT max_column)
 {
 
     SizeT start_pos = SizeT(row_idx * gradient) - band_width / 2;
@@ -55,7 +55,7 @@ __device__ SizeT get_band_start_for_row(SizeT row_idx, float gradient, SizeT ban
 }
 
 template <typename ScoreT, typename SizeT>
-__device__ ScoreT* get_score_ptr(ScoreT* scores, SizeT row, SizeT column, SizeT band_start, SizeT band_width)
+__device__ __forceinline__ ScoreT* get_score_ptr(ScoreT* scores, SizeT row, SizeT column, SizeT band_start, SizeT band_width)
 {
     column              = column == -1 ? 0 : column - band_start;
     int64_t score_index = static_cast<int64_t>(column) + static_cast<int64_t>(row) * static_cast<int64_t>(band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING);
@@ -63,7 +63,7 @@ __device__ ScoreT* get_score_ptr(ScoreT* scores, SizeT row, SizeT column, SizeT 
 };
 
 template <typename ScoreT, typename SizeT>
-__device__ void set_score(ScoreT* scores, SizeT row, SizeT column, ScoreT value, float gradient, SizeT band_width, SizeT max_column)
+__device__ __forceinline__ void set_score(ScoreT* scores, SizeT row, SizeT column, ScoreT value, float gradient, SizeT band_width, SizeT max_column)
 {
     SizeT band_start = get_band_start_for_row(row, gradient, band_width, max_column);
 
@@ -82,7 +82,7 @@ __device__ void set_score(ScoreT* scores, SizeT row, SizeT column, ScoreT value,
 }
 
 template <typename ScoreT, typename SizeT>
-__device__ void initialize_band(ScoreT* scores, SizeT row, ScoreT value, float gradient, SizeT band_width, SizeT max_column)
+__device__ __forceinline__ void initialize_band(ScoreT* scores, SizeT row, ScoreT value, float gradient, SizeT band_width, SizeT max_column)
 {
     int16_t lane_idx = threadIdx.x % WARP_SIZE;
     SizeT band_start = get_band_start_for_row(row, gradient, band_width, max_column);
@@ -100,7 +100,7 @@ __device__ void initialize_band(ScoreT* scores, SizeT row, ScoreT value, float g
 };
 
 template <typename ScoreT, typename SizeT>
-__device__ ScoreT get_score(ScoreT* scores, SizeT row, SizeT column, float gradient, SizeT band_width, SizeT max_column, const ScoreT min_score_value)
+__device__ __forceinline__ ScoreT get_score(ScoreT* scores, SizeT row, SizeT column, float gradient, SizeT band_width, SizeT max_column, const ScoreT min_score_value)
 {
     SizeT band_start = get_band_start_for_row(row, gradient, band_width, max_column);
     SizeT band_end   = band_start + band_width;
@@ -117,15 +117,15 @@ __device__ ScoreT get_score(ScoreT* scores, SizeT row, SizeT column, float gradi
 }
 
 template <typename ScoreT, typename SizeT>
-__device__ ScoreT4<ScoreT> get_scores(ScoreT* scores,
-                                      SizeT node,
-                                      SizeT read_pos,
-                                      float gradient,
-                                      SizeT band_width,
-                                      SizeT max_column,
-                                      ScoreT default_value,
-                                      ScoreT gap_score,
-                                      ScoreT4<ScoreT>& char_profile)
+__device__ __forceinline__ ScoreT4<ScoreT> get_scores(ScoreT* scores,
+                                                      SizeT node,
+                                                      SizeT read_pos,
+                                                      float gradient,
+                                                      SizeT band_width,
+                                                      SizeT max_column,
+                                                      ScoreT default_value,
+                                                      ScoreT gap_score,
+                                                      ScoreT4<ScoreT>& char_profile)
 {
 
     // The load instructions typically load data in 4B or 8B chunks.
@@ -173,7 +173,7 @@ __device__ ScoreT4<ScoreT> get_scores(ScoreT* scores,
 template <typename SeqT,
           typename ScoreT,
           typename SizeT>
-__device__
+__device__ __forceinline__
     SizeT
     runNeedlemanWunschBanded(SeqT* nodes,
                              SizeT* graph,

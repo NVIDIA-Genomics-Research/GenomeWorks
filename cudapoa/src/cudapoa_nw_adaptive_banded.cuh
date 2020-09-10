@@ -33,7 +33,7 @@ namespace cudapoa
 {
 
 template <typename ScoreT, typename SizeT>
-__device__ ScoreT* get_score_ptr_adaptive(ScoreT* scores, SizeT row, SizeT column, SizeT band_start, SizeT band_width)
+__device__ __forceinline__ ScoreT* get_score_ptr_adaptive(ScoreT* scores, SizeT row, SizeT column, SizeT band_start, SizeT band_width)
 {
     column              = column == -1 ? 0 : column - band_start;
     int64_t score_index = static_cast<int64_t>(column) + static_cast<int64_t>(row) * static_cast<int64_t>(band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING);
@@ -41,7 +41,7 @@ __device__ ScoreT* get_score_ptr_adaptive(ScoreT* scores, SizeT row, SizeT colum
 }
 
 template <typename ScoreT, typename SizeT>
-__device__ void set_score_adaptive(ScoreT* scores, SizeT row, SizeT column, ScoreT value, SizeT band_start, SizeT band_width)
+__device__ __forceinline__ void set_score_adaptive(ScoreT* scores, SizeT row, SizeT column, ScoreT value, SizeT band_start, SizeT band_width)
 {
     SizeT col_offset;
     if (column == -1)
@@ -59,7 +59,7 @@ __device__ void set_score_adaptive(ScoreT* scores, SizeT row, SizeT column, Scor
 }
 
 template <typename SizeT>
-__device__ SizeT get_band_start_for_row_adaptive(SizeT row, float gradient, SizeT band_width, SizeT band_shift, SizeT max_column)
+__device__ __forceinline__ SizeT get_band_start_for_row_adaptive(SizeT row, float gradient, SizeT band_width, SizeT band_shift, SizeT max_column)
 {
 
     SizeT diagonal_index = SizeT(row * gradient);
@@ -74,9 +74,9 @@ __device__ SizeT get_band_start_for_row_adaptive(SizeT row, float gradient, Size
 }
 
 template <typename ScoreT, typename SizeT>
-__device__ ScoreT get_score_adaptive(ScoreT* scores, SizeT row, SizeT column,
-                                     SizeT band_width, SizeT band_shift, float gradient,
-                                     SizeT max_column, const ScoreT min_score_value)
+__device__ __forceinline__ ScoreT get_score_adaptive(ScoreT* scores, SizeT row, SizeT column,
+                                                     SizeT band_width, SizeT band_shift, float gradient,
+                                                     SizeT max_column, const ScoreT min_score_value)
 {
     SizeT band_start = get_band_start_for_row_adaptive(row, gradient, band_width, band_shift, max_column);
     SizeT band_end   = band_start + band_width;
@@ -93,16 +93,16 @@ __device__ ScoreT get_score_adaptive(ScoreT* scores, SizeT row, SizeT column,
 }
 
 template <typename ScoreT, typename SizeT>
-__device__ ScoreT4<ScoreT> get_scores_adaptive(ScoreT* scores,
-                                               SizeT row,
-                                               SizeT column,
-                                               SizeT band_width,
-                                               SizeT band_shift,
-                                               float gradient,
-                                               SizeT max_column,
-                                               ScoreT default_value,
-                                               ScoreT gap_score,
-                                               ScoreT4<ScoreT>& char_profile)
+__device__ __forceinline__ ScoreT4<ScoreT> get_scores_adaptive(ScoreT* scores,
+                                                               SizeT row,
+                                                               SizeT column,
+                                                               SizeT band_width,
+                                                               SizeT band_shift,
+                                                               float gradient,
+                                                               SizeT max_column,
+                                                               ScoreT default_value,
+                                                               ScoreT gap_score,
+                                                               ScoreT4<ScoreT>& char_profile)
 {
 
     // The load instructions typically load data in 4B or 8B chunks.
@@ -149,7 +149,7 @@ __device__ ScoreT4<ScoreT> get_scores_adaptive(ScoreT* scores,
 }
 
 template <typename ScoreT, typename SizeT>
-__device__ void initialize_band_adaptive(ScoreT* scores, SizeT row, ScoreT min_score_value, SizeT band_start, SizeT band_width)
+__device__ __forceinline__ void initialize_band_adaptive(ScoreT* scores, SizeT row, ScoreT min_score_value, SizeT band_start, SizeT band_width)
 {
     SizeT lane_idx = threadIdx.x % WARP_SIZE;
 
@@ -166,7 +166,7 @@ __device__ void initialize_band_adaptive(ScoreT* scores, SizeT row, ScoreT min_s
 template <typename SeqT,
           typename ScoreT,
           typename SizeT>
-__device__
+__device__ __forceinline__
     SizeT
     runNeedlemanWunschAdaptiveBanded(SeqT* nodes,
                                      SizeT* graph,

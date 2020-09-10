@@ -151,7 +151,7 @@ template <typename SeqT,
           typename ScoreT,
           typename SizeT,
           int32_t CPT = 4>
-__device__
+__device__ __forceinline__
     SizeT
     runNeedlemanWunsch(SeqT* nodes,
                        SizeT* graph,
