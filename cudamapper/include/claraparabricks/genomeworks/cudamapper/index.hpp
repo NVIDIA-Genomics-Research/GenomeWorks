@@ -187,6 +187,51 @@ public:
                                                            const cudaStream_t cuda_stream = 0);
 };
 
+/// IndexDescriptor Implementation - Every Index is defined by its first read and the number of reads
+/// Used in conjunction with a fasta parser object to create an index
+class IndexDescriptor
+{
+public:
+    /// \brief constructor
+    IndexDescriptor(read_id_t first_read,
+                    number_of_reads_t number_of_reads);
+
+    /// \brief getter
+    read_id_t first_read() const;
+
+    /// \brief getter
+    number_of_reads_t number_of_reads() const;
+
+    /// \brief returns hash value
+    std::size_t get_hash() const;
+
+private:
+    /// \brief generates hash
+    void generate_hash();
+
+    /// first read in index
+    read_id_t first_read_;
+    /// number of reads in index
+    number_of_reads_t number_of_reads_;
+    /// hash of this object
+    std::size_t hash_;
+};
+
+/// \brief equality operator
+bool operator==(const IndexDescriptor& lhs,
+                const IndexDescriptor& rhs);
+
+/// \brief inequality operator
+bool operator!=(const IndexDescriptor& lhs,
+                const IndexDescriptor& rhs);
+
+/// IndexDescriptorHash - operator() calculates hash of a given IndexDescriptor
+struct IndexDescriptorHash
+{
+    /// \brief caclulates hash of given IndexDescriptor
+    std::size_t operator()(const IndexDescriptor& index_descriptor) const;
+};
+
 } // namespace cudamapper
 
 } // namespace genomeworks

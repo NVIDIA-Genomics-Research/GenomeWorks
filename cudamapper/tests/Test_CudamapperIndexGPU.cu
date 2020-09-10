@@ -1578,87 +1578,103 @@ TEST(TestCudamapperIndexGPU, CCCATACC_2_8)
                   expected_number_of_basepairs_in_longest_read);
 }
 
-// TODO: Cover this case as well
-//TEST(TestCudamapperIndexGPU, CATCAAG_AAGCTA_3_5)
-//{
-//    // *** One Read is shorter than one full window, the other is not ***
-//
-//    // >read_0
-//    // CATCAAG
-//    // >read_1
-//    // AAGCTA
-//
-//    // ** CATCAAG **
-//
-//    // kmer representation: forward, reverse
-//    // CAT:  103 <032>
-//    // ATC: <031> 203
-//    // TCA: <310> 320
-//    // CAA: <100> 332
-//    // AAG: <002> 133
-//
-//    // front end minimizers: representation, position_in_read, direction, read_id
-//    // CAT   : 032 0 R 0
-//    // CATC  : 031 1 F 0
-//    // CATCA : 031 1 F 0
-//    // CATCAA: 031 1 F 0
-//
-//    // central minimizers
-//    // CATCAAG: 002 4 F 0
-//
-//    // back end minimizers
-//    // ATCAAG: 002 4 F 0
-//    // TCAAG : 002 4 F 0
-//    // CAAG  : 002 4 F 0
-//    // AAG   : 002 4 F 0
-//
-//    // ** AAGCTA **
-//    // ** read does not fit one array **
-//
-//    // All minimizers: ATG(0r0), ATC(1f0), AAG(4f0)
-//
-//    // (2r1) means position 2, reverse direction, read 1
-//    // (1,2) means array block start at element 1 and has 2 elements
-//
-//    //              0         1         2
-//    // data arrays: AAG(4f0), ATC(1f0), ATG(0r0)
-//
-//    const std::string filename         = std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/catcaag_aagcta.fasta";
-//    const std::uint64_t minimizer_size = 3;
-//    const std::uint64_t window_size    = 5;
-//
-//    std::vector<representation_t> expected_representations;
-//    std::vector<position_in_read_t> expected_positions_in_reads;
-//    std::vector<read_id_t> expected_read_ids;
-//    std::vector<SketchElement::DirectionOfRepresentation> expected_directions_of_reads;
-//    expected_representations.push_back(0b000010); // AAG(4f0)
-//    expected_positions_in_reads.push_back(4);
-//    expected_read_ids.push_back(0);
-//    expected_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::FORWARD);
-//    expected_representations.push_back(0b001101); // ATC(1f0)
-//    expected_positions_in_reads.push_back(1);
-//    expected_read_ids.push_back(0);
-//    expected_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::FORWARD);
-//    expected_representations.push_back(0b001110); // ATG(0r0)
-//    expected_positions_in_reads.push_back(0);
-//    expected_read_ids.push_back(0);
-//    expected_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::REVERSE);
-//
-//    const read_id_t expected_number_of_reads                              = 1;
-//    const position_in_read_t expected_number_of_basepairs_in_longest_read = 7;
-//
-//    test_function(filename,
-//                  0,
-//                  2,
-//                  minimizer_size,
-//                  window_size,
-//                  expected_representations,
-//                  expected_positions_in_reads,
-//                  expected_read_ids,
-//                  expected_directions_of_reads,
-//                  expected_number_of_reads,
-//                  expected_number_of_basepairs_in_longest_read); // <- only one read goes into index, the other is too short
-//}
+TEST(TestCudamapperIndexGPU, CATCAAG_AAGCTA_3_5)
+{
+    // *** One Read is shorter than one full window, the other is not ***
+
+    // >read_0
+    // CATCAAG
+    // >read_1
+    // AAGCTA
+
+    // ** CATCAAG **
+
+    // kmer representation: forward, reverse
+    // CAT:  103 <032>
+    // ATC: <031> 203
+    // TCA: <310> 320
+    // CAA: <100> 332
+    // AAG: <002> 133
+
+    // front end minimizers: representation, position_in_read, direction, read_id
+    // CAT   : 032 0 R 0
+    // CATC  : 031 1 F 0
+    // CATCA : 031 1 F 0
+    // CATCAA: 031 1 F 0
+
+    // central minimizers
+    // CATCAAG: 002 4 F 0
+
+    // back end minimizers
+    // ATCAAG: 002 4 F 0
+    // TCAAG : 002 4 F 0
+    // CAAG  : 002 4 F 0
+    // AAG   : 002 4 F 0
+
+    // ** AAGCTA **
+    // ** read does not fit one array **
+
+    // All minimizers: ATG(0r0), ATC(1f0), AAG(4f0)
+
+    // (2r1) means position 2, reverse direction, read 1
+    // (1,2) means array block start at element 1 and has 2 elements
+
+    //              0         1         2
+    // data arrays: AAG(4f0), ATC(1f0), ATG(0r0)
+
+    const std::string filename         = std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/catcaag_aagcta.fasta";
+    const std::uint64_t minimizer_size = 3;
+    const std::uint64_t window_size    = 5;
+
+    std::vector<representation_t> expected_representations;
+    std::vector<position_in_read_t> expected_positions_in_reads;
+    std::vector<read_id_t> expected_read_ids;
+    std::vector<SketchElement::DirectionOfRepresentation> expected_directions_of_reads;
+    std::vector<representation_t> expected_unique_representations;
+    std::vector<std::uint32_t> expected_first_occurrence_of_representations;
+
+    expected_representations.push_back(0b000010); // AAG(4f0)
+    expected_positions_in_reads.push_back(4);
+    expected_read_ids.push_back(0);
+    expected_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::FORWARD);
+    expected_unique_representations.push_back(0b000010);
+    expected_first_occurrence_of_representations.push_back(0);
+    expected_representations.push_back(0b001101); // ATC(1f0)
+    expected_positions_in_reads.push_back(1);
+    expected_read_ids.push_back(0);
+    expected_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::FORWARD);
+    expected_unique_representations.push_back(0b001101);
+    expected_first_occurrence_of_representations.push_back(1);
+    expected_representations.push_back(0b001110); // ATG(0r0)
+    expected_positions_in_reads.push_back(0);
+    expected_read_ids.push_back(0);
+    expected_directions_of_reads.push_back(SketchElement::DirectionOfRepresentation::REVERSE);
+    expected_unique_representations.push_back(0b001110);
+    expected_first_occurrence_of_representations.push_back(2);
+
+    expected_first_occurrence_of_representations.push_back(3);
+
+    const read_id_t expected_number_of_reads                              = 2;
+    const read_id_t expected_smallest_read_id                             = 0;
+    const read_id_t expected_largest_read_id                              = 1;
+    const position_in_read_t expected_number_of_basepairs_in_longest_read = 7;
+
+    test_function(filename,
+                  0,
+                  2,
+                  expected_smallest_read_id,
+                  expected_largest_read_id,
+                  minimizer_size,
+                  window_size,
+                  expected_representations,
+                  expected_positions_in_reads,
+                  expected_read_ids,
+                  expected_directions_of_reads,
+                  expected_unique_representations,
+                  expected_first_occurrence_of_representations,
+                  expected_number_of_reads,
+                  expected_number_of_basepairs_in_longest_read);
+}
 
 TEST(TestCudamapperIndexGPU, CCCATACC_3_5)
 {
