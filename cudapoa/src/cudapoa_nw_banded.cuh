@@ -97,7 +97,7 @@ __device__ __forceinline__ void initialize_band(ScoreT* scores, int32_t row, int
     {
         set_score(scores, row, j, value, gradient, band_width, max_column);
     }
-};
+}
 
 template <typename ScoreT>
 __device__ __forceinline__ ScoreT get_score(ScoreT* scores, int32_t row, int32_t column, float gradient, int32_t band_width, int32_t max_column, const ScoreT min_score_value)
@@ -195,7 +195,7 @@ __device__ __forceinline__
 
     const ScoreT min_score_value = 2 * abs(min(min(gap_score, mismatch_score), -match_score) - 1) + numeric_limits<ScoreT>::min();
 
-    int16_t lane_idx = threadIdx.x % WARP_SIZE;
+    int32_t lane_idx = threadIdx.x % WARP_SIZE;
 
     //Calculate gradient for the scores matrix
     float gradient = float(read_length + 1) / float(graph_count + 1);

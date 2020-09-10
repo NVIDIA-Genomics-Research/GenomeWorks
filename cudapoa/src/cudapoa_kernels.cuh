@@ -223,7 +223,7 @@ __launch_bounds__(GW_POA_KERNELS_MAX_THREADS_PER_BLOCK)
     // Align each subsequent read, add alignment to graph, run topoligical sort.
     for (int32_t s = 1; s < num_sequences; s++)
     {
-        SizeT seq_len = sequence_lengths[s];
+        int32_t seq_len = sequence_lengths[s];
         sequence += sequence_lengths[s - 1];     // increment the pointer so it is pointing to correct sequence data
         base_weights += sequence_lengths[s - 1]; // increment the pointer so it is pointing to correct sequence data
 
@@ -429,9 +429,9 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
                  cudaStream_t stream,
                  genomeworks::cudapoa::AlignmentDetails<ScoreT, SizeT>* alignment_details_d,
                  genomeworks::cudapoa::GraphDetails<SizeT>* graph_details_d,
-                 ScoreT gap_score,
-                 ScoreT mismatch_score,
-                 ScoreT match_score,
+                 int32_t gap_score,
+                 int32_t mismatch_score,
+                 int32_t match_score,
                  bool static_banded,
                  bool adaptive_banded,
                  uint32_t max_sequences_per_poa,
