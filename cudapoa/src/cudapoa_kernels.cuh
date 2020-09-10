@@ -244,7 +244,7 @@ __launch_bounds__(GW_POA_KERNELS_MAX_THREADS_PER_BLOCK)
         }
 
         // Run Needleman-Wunsch alignment between graph and new sequence.
-        SizeT alignment_length;
+        int32_t alignment_length;
 
         if (BM == BandMode::adaptive_band)
         {
