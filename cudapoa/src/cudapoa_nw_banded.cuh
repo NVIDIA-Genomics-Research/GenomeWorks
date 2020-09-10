@@ -64,7 +64,7 @@ __device__ __forceinline__ ScoreT* get_score_ptr(ScoreT* scores, int32_t row, in
 };
 
 template <typename ScoreT>
-__device__ __forceinline__ void set_score(ScoreT* scores, int32_t row, int32_t column, ScoreT value, float gradient, int32_t band_width, int32_t max_column)
+__device__ __forceinline__ void set_score(ScoreT* scores, int32_t row, int32_t column, int32_t value, float gradient, int32_t band_width, int32_t max_column)
 {
     int32_t band_start = get_band_start_for_row(row, gradient, band_width, max_column);
 
@@ -83,7 +83,7 @@ __device__ __forceinline__ void set_score(ScoreT* scores, int32_t row, int32_t c
 }
 
 template <typename ScoreT>
-__device__ __forceinline__ void initialize_band(ScoreT* scores, int32_t row, ScoreT value, float gradient, int32_t band_width, int32_t max_column, int32_t lane_idx)
+__device__ __forceinline__ void initialize_band(ScoreT* scores, int32_t row, int32_t value, float gradient, int32_t band_width, int32_t max_column, int32_t lane_idx)
 {
     int32_t band_start = get_band_start_for_row(row, gradient, band_width, max_column);
     int32_t band_end   = band_start + band_width;
@@ -124,7 +124,7 @@ __device__ __forceinline__ ScoreT4<ScoreT> get_scores(ScoreT* scores,
                                                       int32_t band_width,
                                                       int32_t max_column,
                                                       ScoreT default_value,
-                                                      ScoreT gap_score,
+                                                      int32_t gap_score,
                                                       ScoreT4<ScoreT>& char_profile)
 {
 
@@ -188,9 +188,9 @@ __device__ __forceinline__
                              SizeT* alignment_graph,
                              SizeT* alignment_read,
                              int32_t band_width,
-                             ScoreT gap_score,
-                             ScoreT mismatch_score,
-                             ScoreT match_score)
+                             int32_t gap_score,
+                             int32_t mismatch_score,
+                             int32_t match_score)
 {
 
     const ScoreT min_score_value = 2 * abs(min(min(gap_score, mismatch_score), -match_score) - 1) + numeric_limits<ScoreT>::min();
@@ -204,7 +204,7 @@ __device__ __forceinline__
     // Initialise the horizontal boundary of the score matrix
     for (int32_t j = lane_idx; j < band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING; j += WARP_SIZE)
     {
-        set_score(scores, 0, j, static_cast<ScoreT>(j * gap_score), gradient, band_width, max_column);
+        set_score(scores, 0, j, j * gap_score, gradient, band_width, max_column);
     }
 
     if (lane_idx == 0)
@@ -226,14 +226,14 @@ __device__ __forceinline__
 
         initialize_band(scores, score_gIdx, min_score_value, gradient, band_width, max_column, lane_idx);
 
-        ScoreT first_element_prev_score = 0;
-        uint16_t pred_count             = 0;
-        int32_t pred_idx                = 0;
+        int32_t first_element_prev_score = 0;
+        uint16_t pred_count              = 0;
+        int32_t pred_idx                 = 0;
 
         if (lane_idx == 0)
         {
             // Initialise the vertical boundary of the score matrix
-            ScoreT penalty;
+            int32_t penalty;
             pred_count = incoming_edge_count[node_id];
             if (pred_count == 0)
             {
@@ -301,13 +301,13 @@ __device__ __forceinline__
             {
                 loop = false;
                 // The shfl_up lets us grab a value from the lane below.
-                ScoreT last_score = __shfl_up_sync(FULL_MASK, score.s3, 1);
+                int32_t last_score = __shfl_up_sync(FULL_MASK, score.s3, 1);
                 if (lane_idx == 0)
                 {
                     last_score = first_element_prev_score;
                 }
 
-                ScoreT tscore = max(last_score + gap_score, score.s0);
+                int32_t tscore = max(last_score + gap_score, score.s0);
                 if (tscore > score.s0)
                 {
                     score.s0 = tscore;
@@ -355,15 +355,15 @@ __device__ __forceinline__
     if (lane_idx == 0)
     {
         // Find location of the maximum score in the matrix.
-        int32_t i     = 0;
-        int32_t j     = read_length;
-        ScoreT mscore = min_score_value;
+        int32_t i      = 0;
+        int32_t j      = read_length;
+        int32_t mscore = min_score_value;
 
         for (int32_t idx = 1; idx <= graph_count; idx++)
         {
             if (outgoing_edge_count[graph[idx - 1]] == 0)
             {
-                ScoreT s = get_score(scores, idx, j, gradient, band_width, max_column, min_score_value);
+                int32_t s = get_score(scores, idx, j, gradient, band_width, max_column, min_score_value);
                 if (mscore < s)
                 {
                     mscore = s;
@@ -381,15 +381,15 @@ __device__ __forceinline__
         while (!(i == 0 && j == 0) && loop_count < static_cast<int32_t>(read_length + graph_count + 2))
         {
             loop_count++;
-            ScoreT scores_ij = get_score(scores, i, j, gradient, band_width, max_column, min_score_value);
-            bool pred_found  = false;
+            int32_t scores_ij = get_score(scores, i, j, gradient, band_width, max_column, min_score_value);
+            bool pred_found   = false;
             // Check if move is diagonal.
             if (i != 0 && j != 0)
             {
 
                 int32_t node_id = next_node_id;
 
-                ScoreT match_cost   = (nodes[node_id] == read[j - 1] ? match_score : mismatch_score);
+                int32_t match_cost  = (nodes[node_id] == read[j - 1] ? match_score : mismatch_score);
                 uint16_t pred_count = incoming_edge_count[node_id];
                 int32_t pred_i      = (pred_count == 0 ? 0 : (node_id_to_pos[incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES]] + 1));
 
