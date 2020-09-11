@@ -161,7 +161,7 @@ public:
 
         for (int32_t i = 0; i < n_matrices + 1; ++i)
         {
-            offsets_host_[i] = max_elements_per_matrix * i;
+            offsets_host_[i] = static_cast<ptrdiff_t>(max_elements_per_matrix) * i;
         }
 
         construct_device_matrices_async(stream);

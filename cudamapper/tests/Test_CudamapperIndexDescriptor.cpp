@@ -16,7 +16,8 @@
 
 #include "gtest/gtest.h"
 
-#include "../src/index_descriptor.hpp"
+#include <claraparabricks/genomeworks/cudamapper/index.hpp>
+#include <claraparabricks/genomeworks/cudamapper/utils.hpp>
 
 #include "cudamapper_file_location.hpp"
 
