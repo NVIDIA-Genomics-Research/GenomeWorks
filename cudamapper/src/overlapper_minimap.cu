@@ -65,7 +65,7 @@ __device__ bool operator==(const Overlap& a,
     return identical_ids && same_strand && (gap_match);
 }
 
-__device__ double percent_reciprocal_overlap(const Overlap& a, const Overlap& b)
+__device__ __forceinline__ double percent_reciprocal_overlap(const Overlap& a, const Overlap& b)
 {
     if (a.query_read_id_ != b.query_read_id_ || a.target_read_id_ != b.target_read_id_ || a.relative_strand != b.relative_strand)
     {
@@ -96,7 +96,7 @@ __device__ double percent_reciprocal_overlap(const Overlap& a, const Overlap& b)
 }
 
 // Checks if Overlap a is contained within Overlap b.
-__device__ bool contained_overlap(const Overlap& a, const Overlap& b)
+__device__ __forceinline__ bool contained_overlap(const Overlap& a, const Overlap& b)
 {
     if (a.query_read_id_ != b.query_read_id_ || a.target_read_id_ != b.target_read_id_ || a.relative_strand != b.relative_strand)
         return false;
@@ -263,26 +263,6 @@ __global__ void init_overlap_mask(bool* mask, const int32_t n_overlaps, const bo
     }
 }
 
-__global__ void anchors_to_overlaps(const Anchor* anchors,
-                                    Overlap* overlaps,
-                                    const std::int32_t n_overlaps)
-{
-    const std::size_t d_tid = blockIdx.x * blockDim.x + threadIdx.x;
-
-    if (d_tid < n_overlaps)
-    {
-        init_overlap(overlaps[d_tid]);
-        overlaps[d_tid].query_read_id_                 = anchors[d_tid].query_read_id_;
-        overlaps[d_tid].target_read_id_                = anchors[d_tid].target_read_id_;
-        overlaps[d_tid].query_start_position_in_read_  = anchors[d_tid].query_position_in_read_;
-        overlaps[d_tid].query_end_position_in_read_    = anchors[d_tid].query_position_in_read_;
-        overlaps[d_tid].target_start_position_in_read_ = anchors[d_tid].target_position_in_read_;
-        overlaps[d_tid].target_end_position_in_read_   = anchors[d_tid].target_position_in_read_;
-        overlaps[d_tid].relative_strand                = RelativeStrand::Forward;
-        overlaps[d_tid].num_residues_                  = 1;
-    }
-}
-
 __global__ void init_predecessor_and_score_arrays(int32_t* predecessors,
                                                   double* scores,
                                                   bool* mask,
@@ -294,22 +274,6 @@ __global__ void init_predecessor_and_score_arrays(int32_t* predecessors,
         scores[d_tid]       = 0;
         predecessors[d_tid] = d_tid;
     }
-}
-
-__device__ __forceinline__ int32_t fast_approx_pow_6(const double ratio)
-{
-    if (ratio > 0.9)
-        return 0;
-    else if (ratio > 0.8)
-        return 4;
-    else if (ratio > 0.6)
-        return 20;
-    else if (ratio > 0.5)
-        return 64;
-    else if (ratio > 0.4)
-        return 500;
-    else
-        return INT32_INFINITY;
 }
 
 __device__ __forceinline__ int32_t fast_approx_log2(const int32_t val)
@@ -368,52 +332,6 @@ __device__ __forceinline__ int32_t log_linear_anchor_weight(const Anchor& a,
     //int32_t score = min_dist;
     score -= (double(score) * (0.01 * word_size) + double(log_dist_diff) * 0.5);
     //printf("%d %d %d %d | %d \n", x_dist, y_dist, min_dist, min_size, score);
-    return score;
-}
-
-__device__ __forceinline__ int32_t log_linear_weight(Overlap& a, Overlap& b, const int32_t max_dist)
-{
-
-    // From mm2: t_dist = "reference" = x
-    // q_dist = y = "query"
-    if (a.query_read_id_ != b.query_read_id_ || a.target_read_id_ != b.target_read_id_)
-        return -1 * INT32_INFINITY;
-
-    int32_t t_dist = max(int(b.target_end_position_in_read_), int(b.target_start_position_in_read_)) - int(a.target_end_position_in_read_);
-
-    if (t_dist == 0 || t_dist > max_dist)
-        return -1 * INT32_INFINITY;
-
-    int32_t q_dist = int(b.query_end_position_in_read_) - int(a.query_end_position_in_read_);
-
-    if (q_dist <= 0 || q_dist > max_dist)
-        return -1 * INT32_INFINITY;
-
-    int32_t dist_diff = t_dist > q_dist ? t_dist - q_dist : q_dist - t_dist;
-
-    if (dist_diff > 500)
-        return -1 * INT32_INFINITY;
-
-    int32_t min_dist      = min(q_dist, t_dist);
-    int32_t log_dist_diff = fast_approx_log2(dist_diff);
-
-    // Determine the length of the query / target bases.
-    // This value may be zero, so set a floor at k.
-    int32_t overlap_targ_length = abs(int(b.target_end_position_in_read_) - int(b.target_start_position_in_read_));
-    if (overlap_targ_length < 10)
-        overlap_targ_length = 10;
-    int32_t overlap_query_length = abs(int(b.query_end_position_in_read_) - int(b.query_start_position_in_read_));
-    if (overlap_query_length < 10)
-        overlap_query_length = 10;
-
-    int32_t min_size = min(overlap_targ_length, overlap_query_length);
-    // int32_t max_size = max(overlap_targ_length, overlap_query_length);
-
-    // if (max_size > 500 && 4 * min_size < max_size)
-    //     return -1 * INT32_INFINITY;
-
-    int32_t score = min_dist > min_size ? min_size : min_dist;
-    score -= double(score) * (0.01 * 10) + double(log_dist_diff) * 0.5;
     return score;
 }
 
@@ -672,7 +590,7 @@ void OverlapperMinimap::get_overlaps(std::vector<Overlap>& fused_overlaps,
                                                                                           n_anchors,
                                                                                           5000,
                                                                                           500,
-                                                                                          64);
+                                                                                          32);
 
     produce_anchor_chains<<<(n_anchors / block_size) + 1, block_size, 0, _cuda_stream>>>(d_anchors.data(),
                                                                                          d_overlaps_source.data(),
@@ -713,7 +631,7 @@ void OverlapperMinimap::get_overlaps(std::vector<Overlap>& fused_overlaps,
                                                                                  all_to_all,
                                                                                  false,
                                                                                  0.8,
-                                                                                 32);
+                                                                                 16);
     drop_overlaps_by_mask(d_overlaps_dest,
                           d_overlaps_select_mask,
                           n_filtered_overlaps,
