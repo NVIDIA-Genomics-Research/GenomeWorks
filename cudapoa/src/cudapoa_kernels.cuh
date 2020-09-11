@@ -28,7 +28,8 @@
 #include <claraparabricks/genomeworks/utils/cudautils.hpp>
 #include <claraparabricks/genomeworks/cudapoa/batch.hpp>
 
-#define GW_POA_KERNELS_MAX_THREADS_PER_BLOCK 896
+// considering 65536 register file size, __launch_bounds__(1024) translates to max 64 register usage
+#define GW_POA_KERNELS_MAX_THREADS_PER_BLOCK 1024
 
 namespace claraparabricks
 {
@@ -73,43 +74,43 @@ namespace cudapoa
  */
 template <typename ScoreT, typename SizeT, bool MSA = false, BandMode BM = full_band>
 __launch_bounds__(GW_POA_KERNELS_MAX_THREADS_PER_BLOCK)
-__global__ void generatePOAKernel(uint8_t* consensus_d,
-                                  uint8_t* sequences_d,
-                                  int8_t* base_weights_d,
-                                  SizeT* sequence_lengths_d,
-                                  genomeworks::cudapoa::WindowDetails* window_details_d,
-                                  int32_t total_windows,
-                                  ScoreT* scores_d,
-                                  SizeT* alignment_graph_d,
-                                  SizeT* alignment_read_d,
-                                  uint8_t* nodes_d,
-                                  SizeT* incoming_edges_d,
-                                  uint16_t* incoming_edge_count_d,
-                                  SizeT* outgoing_edges_d,
-                                  uint16_t* outgoing_edge_count_d,
-                                  uint16_t* incoming_edge_w_d,
-                                  SizeT* sorted_poa_d,
-                                  SizeT* node_id_to_pos_d,
-                                  SizeT* node_alignments_d,
-                                  uint16_t* node_alignment_count_d,
-                                  uint16_t* sorted_poa_local_edge_count_d,
-                                  uint8_t* node_marks_d_,
-                                  bool* check_aligned_nodes_d_,
-                                  SizeT* nodes_to_visit_d_,
-                                  uint16_t* node_coverage_counts_d_,
-                                  int32_t gap_score,
-                                  int32_t mismatch_score,
-                                  int32_t match_score,
-                                  uint32_t max_sequences_per_poa,
-                                  SizeT* sequence_begin_nodes_ids_d,
-                                  uint16_t* outgoing_edges_coverage_d,
-                                  uint16_t* outgoing_edges_coverage_count_d,
-                                  int32_t max_nodes_per_graph,
-                                  int32_t scores_matrix_height,
-                                  int32_t scores_matrix_width,
-                                  int32_t max_limit_consensus_size,
-                                  int32_t TPB               = 64,
-                                  int32_t static_band_width = 256)
+    __global__ void generatePOAKernel(uint8_t* consensus_d,
+                                      uint8_t* sequences_d,
+                                      int8_t* base_weights_d,
+                                      SizeT* sequence_lengths_d,
+                                      genomeworks::cudapoa::WindowDetails* window_details_d,
+                                      int32_t total_windows,
+                                      ScoreT* scores_d,
+                                      SizeT* alignment_graph_d,
+                                      SizeT* alignment_read_d,
+                                      uint8_t* nodes_d,
+                                      SizeT* incoming_edges_d,
+                                      uint16_t* incoming_edge_count_d,
+                                      SizeT* outgoing_edges_d,
+                                      uint16_t* outgoing_edge_count_d,
+                                      uint16_t* incoming_edge_w_d,
+                                      SizeT* sorted_poa_d,
+                                      SizeT* node_id_to_pos_d,
+                                      SizeT* node_alignments_d,
+                                      uint16_t* node_alignment_count_d,
+                                      uint16_t* sorted_poa_local_edge_count_d,
+                                      uint8_t* node_marks_d_,
+                                      bool* check_aligned_nodes_d_,
+                                      SizeT* nodes_to_visit_d_,
+                                      uint16_t* node_coverage_counts_d_,
+                                      int32_t gap_score,
+                                      int32_t mismatch_score,
+                                      int32_t match_score,
+                                      uint32_t max_sequences_per_poa,
+                                      SizeT* sequence_begin_nodes_ids_d,
+                                      uint16_t* outgoing_edges_coverage_d,
+                                      uint16_t* outgoing_edges_coverage_count_d,
+                                      int32_t max_nodes_per_graph,
+                                      int32_t scores_matrix_height,
+                                      int32_t scores_matrix_width,
+                                      int32_t max_limit_consensus_size,
+                                      int32_t TPB               = 64,
+                                      int32_t static_band_width = 256)
 {
     // shared error indicator within a warp
     bool warp_error = false;

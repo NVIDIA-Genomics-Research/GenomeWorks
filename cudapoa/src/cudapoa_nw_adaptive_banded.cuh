@@ -345,6 +345,12 @@ __device__ __forceinline__
             while (__any_sync(FULL_MASK, loop))
             {
                 loop = false;
+                // Note: computation of s3 depends on s2, s2 depends on s1 and s1 on s0.
+                // If we reverse the order of computation in this loop from s3 to s0, it will increase
+                // ILP. However, in longer reads where indels are more frequent, this reverse computations
+                // results in larger number of iterations. Since if s0 is changed, value of s1, s2 and s3 which
+                // already have been computed in parallel need to be updated again.
+
                 // The shfl_up lets us grab a value from the lane below.
                 int32_t last_score = __shfl_up_sync(FULL_MASK, score.s3, 1);
                 if (lane_idx == 0)
