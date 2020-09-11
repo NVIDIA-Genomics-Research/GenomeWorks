@@ -639,8 +639,8 @@ TEST(TestCudamapperMatcherGPU, OneReadOneMinimizer)
 {
     DefaultDeviceAllocator allocator        = create_default_device_allocator();
     std::unique_ptr<io::FastaParser> parser = io::create_kseq_fasta_parser(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/gatt.fasta");
-    std::unique_ptr<Index> query_index      = Index::create_index(allocator, *parser, IndexDescriptor(0, parser->get_numseqences()), 4, 1);
-    std::unique_ptr<Index> target_index     = Index::create_index(allocator, *parser, IndexDescriptor(0, parser->get_numseqences()), 4, 1);
+    std::unique_ptr<Index> query_index      = Index::create_index(allocator, *parser, IndexDescriptor(0, parser->get_num_seqences()), 4, 1);
+    std::unique_ptr<Index> target_index     = Index::create_index(allocator, *parser, IndexDescriptor(0, parser->get_num_seqences()), 4, 1);
     MatcherGPU matcher(allocator, *query_index, *target_index);
 
     thrust::host_vector<Anchor> anchors(matcher.anchors().size());
@@ -652,8 +652,8 @@ TEST(TestCudamapperMatcherGPU, AtLeastOneIndexEmpty)
 {
     DefaultDeviceAllocator allocator        = create_default_device_allocator();
     std::unique_ptr<io::FastaParser> parser = io::create_kseq_fasta_parser(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/gatt.fasta");
-    std::unique_ptr<Index> index_full       = Index::create_index(allocator, *parser, IndexDescriptor(0, parser->get_numseqences()), 4, 1);
-    std::unique_ptr<Index> index_empty      = Index::create_index(allocator, *parser, IndexDescriptor(0, parser->get_numseqences()), 5, 1); // kmer longer than read
+    std::unique_ptr<Index> index_full       = Index::create_index(allocator, *parser, IndexDescriptor(0, parser->get_num_seqences()), 4, 1);
+    std::unique_ptr<Index> index_empty      = Index::create_index(allocator, *parser, IndexDescriptor(0, parser->get_num_seqences()), 5, 1); // kmer longer than read
 
     {
         MatcherGPU matcher(allocator, *index_full, *index_empty);
