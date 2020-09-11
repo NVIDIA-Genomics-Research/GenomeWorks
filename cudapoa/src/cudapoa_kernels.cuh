@@ -73,49 +73,49 @@ namespace cudapoa
  */
 template <typename ScoreT, typename SizeT, bool MSA = false, BandMode BM = full_band>
 __launch_bounds__(GW_POA_KERNELS_MAX_THREADS_PER_BLOCK)
-    __global__ void generatePOAKernel(uint8_t* consensus_d,
-                                      uint8_t* sequences_d,
-                                      int8_t* base_weights_d,
-                                      SizeT* sequence_lengths_d,
-                                      genomeworks::cudapoa::WindowDetails* window_details_d,
-                                      int32_t total_windows,
-                                      ScoreT* scores_d,
-                                      SizeT* alignment_graph_d,
-                                      SizeT* alignment_read_d,
-                                      uint8_t* nodes_d,
-                                      SizeT* incoming_edges_d,
-                                      uint16_t* incoming_edge_count_d,
-                                      SizeT* outgoing_edges_d,
-                                      uint16_t* outgoing_edge_count_d,
-                                      uint16_t* incoming_edge_w_d,
-                                      SizeT* sorted_poa_d,
-                                      SizeT* node_id_to_pos_d,
-                                      SizeT* node_alignments_d,
-                                      uint16_t* node_alignment_count_d,
-                                      uint16_t* sorted_poa_local_edge_count_d,
-                                      uint8_t* node_marks_d_,
-                                      bool* check_aligned_nodes_d_,
-                                      SizeT* nodes_to_visit_d_,
-                                      uint16_t* node_coverage_counts_d_,
-                                      ScoreT gap_score,
-                                      ScoreT mismatch_score,
-                                      ScoreT match_score,
-                                      uint32_t max_sequences_per_poa,
-                                      SizeT* sequence_begin_nodes_ids_d,
-                                      uint16_t* outgoing_edges_coverage_d,
-                                      uint16_t* outgoing_edges_coverage_count_d,
-                                      uint32_t max_nodes_per_graph,
-                                      uint32_t scores_matrix_height,
-                                      uint32_t scores_matrix_width,
-                                      uint32_t max_limit_consensus_size,
-                                      int32_t TPB                = 64,
-                                      uint32_t static_band_width = 256)
+__global__ void generatePOAKernel(uint8_t* consensus_d,
+                                  uint8_t* sequences_d,
+                                  int8_t* base_weights_d,
+                                  SizeT* sequence_lengths_d,
+                                  genomeworks::cudapoa::WindowDetails* window_details_d,
+                                  int32_t total_windows,
+                                  ScoreT* scores_d,
+                                  SizeT* alignment_graph_d,
+                                  SizeT* alignment_read_d,
+                                  uint8_t* nodes_d,
+                                  SizeT* incoming_edges_d,
+                                  uint16_t* incoming_edge_count_d,
+                                  SizeT* outgoing_edges_d,
+                                  uint16_t* outgoing_edge_count_d,
+                                  uint16_t* incoming_edge_w_d,
+                                  SizeT* sorted_poa_d,
+                                  SizeT* node_id_to_pos_d,
+                                  SizeT* node_alignments_d,
+                                  uint16_t* node_alignment_count_d,
+                                  uint16_t* sorted_poa_local_edge_count_d,
+                                  uint8_t* node_marks_d_,
+                                  bool* check_aligned_nodes_d_,
+                                  SizeT* nodes_to_visit_d_,
+                                  uint16_t* node_coverage_counts_d_,
+                                  int32_t gap_score,
+                                  int32_t mismatch_score,
+                                  int32_t match_score,
+                                  uint32_t max_sequences_per_poa,
+                                  SizeT* sequence_begin_nodes_ids_d,
+                                  uint16_t* outgoing_edges_coverage_d,
+                                  uint16_t* outgoing_edges_coverage_count_d,
+                                  int32_t max_nodes_per_graph,
+                                  int32_t scores_matrix_height,
+                                  int32_t scores_matrix_width,
+                                  int32_t max_limit_consensus_size,
+                                  int32_t TPB               = 64,
+                                  int32_t static_band_width = 256)
 {
     // shared error indicator within a warp
     bool warp_error = false;
 
-    int32_t lane_idx   = threadIdx.x % WARP_SIZE;
-    int32_t window_idx = blockIdx.x * TPB / WARP_SIZE + threadIdx.x / WARP_SIZE;
+    uint32_t lane_idx   = threadIdx.x % WARP_SIZE;
+    uint32_t window_idx = blockIdx.x * TPB / WARP_SIZE + threadIdx.x / WARP_SIZE;
 
     if (window_idx >= total_windows)
         return;
@@ -265,7 +265,7 @@ __launch_bounds__(GW_POA_KERNELS_MAX_THREADS_PER_BLOCK)
                                                                                         gap_score,
                                                                                         mismatch_score,
                                                                                         match_score,
-                                                                                        int8_t{0});
+                                                                                        0);
 
             __syncwarp();
 
@@ -289,7 +289,7 @@ __launch_bounds__(GW_POA_KERNELS_MAX_THREADS_PER_BLOCK)
                                                                                             gap_score,
                                                                                             mismatch_score,
                                                                                             match_score,
-                                                                                            static_cast<int8_t>(alignment_length));
+                                                                                            alignment_length);
                 __syncwarp();
             }
         }
