@@ -139,7 +139,6 @@ def test_cudapoa_complex_batch():
 
     device = cuda.cuda_get_device()
     free, total = cuda.cuda_get_mem_info(device)
-    stream = cuda.CudaStream()
     batch = CudaPoaBatch(1000, 1024, 0.9 * free, device_id=device)
     (add_status, seq_status) = batch.add_poa_group(reads)
     batch.generate_poa()
