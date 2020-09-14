@@ -108,7 +108,7 @@ TEST_F(TestCudapoaBatch, MaxSeqPerPOATest)
     int32_t seq_length = 20;
     std::string seq(seq_length, 'A');
     std::vector<int8_t> weights(seq_length, 1);
-    for (uint16_t i = 0; i < (max_sequences_per_poa + 1); ++i)
+    for (int32_t i = 0; i < (max_sequences_per_poa + 1); ++i)
     {
         Entry e{};
         e.seq     = seq.c_str();

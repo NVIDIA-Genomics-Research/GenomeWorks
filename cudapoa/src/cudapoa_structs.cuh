@@ -31,6 +31,8 @@
 #define CELLS_PER_THREAD 4
 #define CUDAPOA_MIN_BAND_WIDTH (CELLS_PER_THREAD * WARP_SIZE)
 #define CUDAPOA_BANDED_MATRIX_RIGHT_PADDING (CELLS_PER_THREAD * 2)
+// ad-hoc maximum band-width defined in adaptive banding
+#define CUDAPOA_MAX_ADAPTIVE_BAND_WIDTH 1536
 
 #define CUDAPOA_THREADS_PER_BLOCK 64
 #define CUDAPOA_BANDED_THREADS_PER_BLOCK WARP_SIZE
@@ -141,7 +143,6 @@ struct GraphDetails
 
     // Devices buffers to store incoming and outgoing edge weights.
     uint16_t* incoming_edge_weights;
-    uint16_t* outgoing_edge_weights;
 
     // Device buffer to store the topologically sorted graph. Each element
     // of this buffer is an ID of the node.
@@ -150,9 +151,6 @@ struct GraphDetails
     // Device buffer that maintains a mapping between the node ID and its
     // position in the topologically sorted graph.
     SizeT* sorted_poa_node_map;
-
-    // Device buffer to store distance of each graph node to the head node(s), used in adaptive-banding alignment
-    SizeT* node_distance_to_head;
 
     // Device buffer used during topological sort to store incoming
     // edge counts for nodes.
@@ -196,7 +194,7 @@ struct ScoreT4
 };
 
 template <>
-struct __align__(4) ScoreT4<int16_t>
+struct __align__(8) ScoreT4<int16_t>
 {
     int16_t s0, s1, s2, s3;
 };

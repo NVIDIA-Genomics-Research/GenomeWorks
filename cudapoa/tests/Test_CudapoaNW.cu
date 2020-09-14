@@ -248,7 +248,6 @@ NWAnswer testNW(const BasicNW& obj)
                  incoming_edge_count,
                  incoming_edges,
                  outgoing_edge_count,
-                 outgoing_edges,
                  read,
                  read_count,
                  scores,
