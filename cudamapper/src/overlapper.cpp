@@ -136,7 +136,7 @@ namespace cudamapper
 void Overlapper::post_process_overlaps(std::vector<Overlap>& overlaps, const bool drop_fused_overlaps)
 {
 
-    const bool do_fusion = false;
+    const bool do_fusion = true;
     auto overlaps_equal  = [](const Overlap& a, const Overlap& b) {
         return a.query_read_id_ == b.query_read_id_ &&
                a.target_read_id_ == b.target_read_id_ &&

@@ -421,6 +421,7 @@ __global__ void produce_anchor_chains(const Anchor* anchors,
             int32_t global_overlap_index = d_tid;
             int32_t index                = global_overlap_index;
             Overlap final_overlap        = overlaps[global_overlap_index];
+            Anchor first_anchor          = anchors[global_overlap_index];
             double final_score           = scores[global_overlap_index];
             init_overlap(final_overlap);
             add_anchor_to_overlap(anchors[global_overlap_index], final_overlap);
@@ -431,6 +432,7 @@ __global__ void produce_anchor_chains(const Anchor* anchors,
                 select_mask[pred] = false;
                 index             = predecessors[index];
             }
+            final_overlap.relative_strand  = first_anchor.target_position_in_read_ < anchors[index].target_position_in_read_ ? RelativeStrand::Reverse : RelativeStrand::Forward;
             overlaps[global_overlap_index] = final_overlap;
             scores[global_overlap_index]   = final_score;
             // printf("Final chain: %d %d %d | %d %d %d | %d | %f | %d %d %d %d \n",
@@ -590,7 +592,7 @@ void OverlapperMinimap::get_overlaps(std::vector<Overlap>& fused_overlaps,
                                                                                           n_anchors,
                                                                                           5000,
                                                                                           500,
-                                                                                          32);
+                                                                                          50);
 
     produce_anchor_chains<<<(n_anchors / block_size) + 1, block_size, 0, _cuda_stream>>>(d_anchors.data(),
                                                                                          d_overlaps_source.data(),
@@ -631,7 +633,7 @@ void OverlapperMinimap::get_overlaps(std::vector<Overlap>& fused_overlaps,
                                                                                  all_to_all,
                                                                                  false,
                                                                                  0.8,
-                                                                                 16);
+                                                                                 10);
     drop_overlaps_by_mask(d_overlaps_dest,
                           d_overlaps_select_mask,
                           n_filtered_overlaps,
