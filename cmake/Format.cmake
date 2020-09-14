@@ -56,7 +56,7 @@ function(gw_enable_formatting_targets)
         set(format_check_list "")
 
         foreach(source IN LISTS FOLDER_FORMAT_SOURCES)
-            file(RELATIVE_PATH RELATIVE_PATH ${CMAKE_SOURCE_DIR} ${source})
+            file(RELATIVE_PATH RELATIVE_PATH ${PROJECT_SOURCE_DIR} ${source})
 
             # Apply formatting
             get_filename_component(SYMBOL_BASE_DIR ${RELATIVE_PATH} DIRECTORY)

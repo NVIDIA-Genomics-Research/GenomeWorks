@@ -16,14 +16,14 @@
 
 
 
-project(cudamapper)
+set(MODULE_NAME cudamapper)
 
 # Process data subdirectory first
 add_subdirectory(data)
 
 GitVersion()
 
-configure_file(${CMAKE_SOURCE_DIR}/common/base/src/version.cpp.in
+configure_file(${PROJECT_SOURCE_DIR}/common/base/src/version.cpp.in
                 ${CMAKE_CURRENT_BINARY_DIR}/version.cpp)
 
 find_package(CUDA 9.0 QUIET REQUIRED)
@@ -41,10 +41,10 @@ else()
         CUDA_SELECT_NVCC_ARCH_FLAGS(ARCH_FLAGS "Auto")
     endif()
     set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} ${ARCH_FLAGS}")
-    message(STATUS "nvcc flags for cudamapper: ${CUDA_NVCC_FLAGS}")
+    message(STATUS "nvcc flags for ${MODULE_NAME}: ${CUDA_NVCC_FLAGS}")
 endif()
 
-cuda_add_library(cudamapper
+cuda_add_library(${MODULE_NAME}
         src/application_parameters.cpp
         src/cudamapper.cpp
         src/index_batcher.cu
@@ -64,39 +64,39 @@ cuda_add_library(cudamapper
         src/utils.cpp
         ${CMAKE_CURRENT_BINARY_DIR}/version.cpp)
 
-target_include_directories(cudamapper
+target_include_directories(${MODULE_NAME}
     PUBLIC
         $<INSTALL_INTERFACE:include>
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 )
-target_link_libraries(cudamapper gwbase gwio cub)
-target_compile_options(cudamapper PRIVATE -Werror)
+target_link_libraries(${MODULE_NAME} gwbase gwio cub)
+target_compile_options(${MODULE_NAME} PRIVATE -Werror)
 
 add_doxygen_source_dir(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
-cuda_add_executable(cudamapper-bin
+cuda_add_executable(${MODULE_NAME}-bin
         src/main.cu
 )
 
-target_compile_options(cudamapper-bin PRIVATE -Werror)
-target_link_libraries(cudamapper-bin cudamapper cudaaligner)
-set_target_properties(cudamapper-bin PROPERTIES OUTPUT_NAME cudamapper)
+target_compile_options(${MODULE_NAME}-bin PRIVATE -Werror)
+target_link_libraries(${MODULE_NAME}-bin ${MODULE_NAME} cudaaligner)
+set_target_properties(${MODULE_NAME}-bin PROPERTIES OUTPUT_NAME ${MODULE_NAME})
 
 
 # Add tests folder
 add_subdirectory(tests)
 add_subdirectory(samples)
 
-install(TARGETS cudamapper
-    EXPORT cudamapper
+install(TARGETS ${MODULE_NAME}
+    EXPORT ${MODULE_NAME}
     DESTINATION lib
     INCLUDES DESTINATION include
 )
 install(DIRECTORY include/ DESTINATION include)
-install(EXPORT cudamapper DESTINATION cmake)
+install(EXPORT ${MODULE_NAME} DESTINATION cmake)
 
-install(TARGETS cudamapper-bin
-    EXPORT cudamapper-bin
+install(TARGETS ${MODULE_NAME}-bin
+    EXPORT ${MODULE_NAME}-bin
     DESTINATION bin
 )
 

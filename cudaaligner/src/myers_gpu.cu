@@ -879,33 +879,27 @@ int32_t myers_compute_edit_distance(std::string const& target, std::string const
         return get_size(target);
 
     const int32_t n_words = (get_size(query) + word_size - 1) / word_size;
-    matrix<int32_t> score_host;
 
-    cudaStream_t stream;
-    GW_CU_CHECK_ERR(cudaStreamCreate(&stream));
-    {
-        DefaultDeviceAllocator allocator = create_default_device_allocator();
+    CudaStream stream                = make_cuda_stream();
+    DefaultDeviceAllocator allocator = create_default_device_allocator();
 
-        int32_t max_sequence_length = std::max(get_size(target), get_size(query));
-        device_buffer<char> sequences_d(2 * max_sequence_length, allocator, stream);
-        device_buffer<int32_t> sequence_lengths_d(2, allocator, stream);
+    int32_t max_sequence_length = std::max(get_size(target), get_size(query));
+    device_buffer<char> sequences_d(2 * max_sequence_length, allocator, stream.get());
+    device_buffer<int32_t> sequence_lengths_d(2, allocator, stream.get());
 
-        batched_device_matrices<myers::WordType> pv(1, n_words * (get_size(target) + 1), allocator, stream);
-        batched_device_matrices<myers::WordType> mv(1, n_words * (get_size(target) + 1), allocator, stream);
-        batched_device_matrices<int32_t> score(1, n_words * (get_size(target) + 1), allocator, stream);
-        batched_device_matrices<myers::WordType> query_patterns(1, n_words * 4, allocator, stream);
+    batched_device_matrices<myers::WordType> pv(1, n_words * (get_size(target) + 1), allocator, stream.get());
+    batched_device_matrices<myers::WordType> mv(1, n_words * (get_size(target) + 1), allocator, stream.get());
+    batched_device_matrices<int32_t> score(1, n_words * (get_size(target) + 1), allocator, stream.get());
+    batched_device_matrices<myers::WordType> query_patterns(1, n_words * 4, allocator, stream.get());
 
-        std::array<int32_t, 2> lengths = {static_cast<int32_t>(get_size(query)), static_cast<int32_t>(get_size(target))};
-        GW_CU_CHECK_ERR(cudaMemcpyAsync(sequences_d.data(), query.data(), sizeof(char) * get_size(query), cudaMemcpyHostToDevice, stream));
-        GW_CU_CHECK_ERR(cudaMemcpyAsync(sequences_d.data() + max_sequence_length, target.data(), sizeof(char) * get_size(target), cudaMemcpyHostToDevice, stream));
-        GW_CU_CHECK_ERR(cudaMemcpyAsync(sequence_lengths_d.data(), lengths.data(), sizeof(int32_t) * 2, cudaMemcpyHostToDevice, stream));
+    std::array<int32_t, 2> lengths = {static_cast<int32_t>(get_size(query)), static_cast<int32_t>(get_size(target))};
+    GW_CU_CHECK_ERR(cudaMemcpyAsync(sequences_d.data(), query.data(), sizeof(char) * get_size(query), cudaMemcpyHostToDevice, stream.get()));
+    GW_CU_CHECK_ERR(cudaMemcpyAsync(sequences_d.data() + max_sequence_length, target.data(), sizeof(char) * get_size(target), cudaMemcpyHostToDevice, stream.get()));
+    GW_CU_CHECK_ERR(cudaMemcpyAsync(sequence_lengths_d.data(), lengths.data(), sizeof(int32_t) * 2, cudaMemcpyHostToDevice, stream.get()));
 
-        myers::myers_compute_score_matrix_kernel<<<1, warp_size, 0, stream>>>(pv.get_device_interface(), mv.get_device_interface(), score.get_device_interface(), query_patterns.get_device_interface(), sequences_d.data(), sequence_lengths_d.data(), max_sequence_length, 1);
+    myers::myers_compute_score_matrix_kernel<<<1, warp_size, 0, stream.get()>>>(pv.get_device_interface(), mv.get_device_interface(), score.get_device_interface(), query_patterns.get_device_interface(), sequences_d.data(), sequence_lengths_d.data(), max_sequence_length, 1);
 
-        score_host = score.get_matrix(0, n_words, get_size(target) + 1, stream);
-        GW_CU_CHECK_ERR(cudaStreamSynchronize(stream));
-    }
-    GW_CU_CHECK_ERR(cudaStreamDestroy(stream));
+    matrix<int32_t> score_host = score.get_matrix(0, n_words, get_size(target) + 1, stream.get());
     return score_host(n_words - 1, get_size(target));
 }
 
@@ -927,44 +921,36 @@ matrix<int32_t> myers_get_full_score_matrix(std::string const& target, std::stri
         return r;
     }
 
-    matrix<int32_t> fullscore_host;
+    CudaStream stream = make_cuda_stream();
 
-    cudaStream_t stream;
-    GW_CU_CHECK_ERR(cudaStreamCreate(&stream));
+    DefaultDeviceAllocator allocator = create_default_device_allocator();
+    int32_t max_sequence_length      = std::max(get_size(target), get_size(query));
+    device_buffer<char> sequences_d(2 * max_sequence_length, allocator, stream.get());
+    device_buffer<int32_t> sequence_lengths_d(2, allocator, stream.get());
 
+    const int32_t n_words = (get_size(query) + word_size - 1) / word_size;
+    batched_device_matrices<myers::WordType> pv(1, n_words * (get_size(target) + 1), allocator, stream.get());
+    batched_device_matrices<myers::WordType> mv(1, n_words * (get_size(target) + 1), allocator, stream.get());
+    batched_device_matrices<int32_t> score(1, n_words * (get_size(target) + 1), allocator, stream.get());
+    batched_device_matrices<myers::WordType> query_patterns(1, n_words * 4, allocator, stream.get());
+
+    batched_device_matrices<int32_t> fullscore(1, (get_size(query) + 1) * (get_size(target) + 1), allocator, stream.get());
+
+    std::array<int32_t, 2> lengths = {static_cast<int32_t>(get_size(query)), static_cast<int32_t>(get_size(target))};
+    GW_CU_CHECK_ERR(cudaMemcpyAsync(sequences_d.data(), query.data(), sizeof(char) * get_size(query), cudaMemcpyHostToDevice, stream.get()));
+    GW_CU_CHECK_ERR(cudaMemcpyAsync(sequences_d.data() + max_sequence_length, target.data(), sizeof(char) * get_size(target), cudaMemcpyHostToDevice, stream.get()));
+    GW_CU_CHECK_ERR(cudaMemcpyAsync(sequence_lengths_d.data(), lengths.data(), sizeof(int32_t) * 2, cudaMemcpyHostToDevice, stream.get()));
+
+    myers::myers_compute_score_matrix_kernel<<<1, warp_size, 0, stream.get()>>>(pv.get_device_interface(), mv.get_device_interface(), score.get_device_interface(), query_patterns.get_device_interface(), sequences_d.data(), sequence_lengths_d.data(), max_sequence_length, 1);
     {
-        DefaultDeviceAllocator allocator = create_default_device_allocator();
-        int32_t max_sequence_length      = std::max(get_size(target), get_size(query));
-        device_buffer<char> sequences_d(2 * max_sequence_length, allocator, stream);
-        device_buffer<int32_t> sequence_lengths_d(2, allocator, stream);
-
-        const int32_t n_words = (get_size(query) + word_size - 1) / word_size;
-        batched_device_matrices<myers::WordType> pv(1, n_words * (get_size(target) + 1), allocator, stream);
-        batched_device_matrices<myers::WordType> mv(1, n_words * (get_size(target) + 1), allocator, stream);
-        batched_device_matrices<int32_t> score(1, n_words * (get_size(target) + 1), allocator, stream);
-        batched_device_matrices<myers::WordType> query_patterns(1, n_words * 4, allocator, stream);
-
-        batched_device_matrices<int32_t> fullscore(1, (get_size(query) + 1) * (get_size(target) + 1), allocator, stream);
-
-        std::array<int32_t, 2> lengths = {static_cast<int32_t>(get_size(query)), static_cast<int32_t>(get_size(target))};
-        GW_CU_CHECK_ERR(cudaMemcpyAsync(sequences_d.data(), query.data(), sizeof(char) * get_size(query), cudaMemcpyHostToDevice, stream));
-        GW_CU_CHECK_ERR(cudaMemcpyAsync(sequences_d.data() + max_sequence_length, target.data(), sizeof(char) * get_size(target), cudaMemcpyHostToDevice, stream));
-        GW_CU_CHECK_ERR(cudaMemcpyAsync(sequence_lengths_d.data(), lengths.data(), sizeof(int32_t) * 2, cudaMemcpyHostToDevice, stream));
-
-        myers::myers_compute_score_matrix_kernel<<<1, warp_size, 0, stream>>>(pv.get_device_interface(), mv.get_device_interface(), score.get_device_interface(), query_patterns.get_device_interface(), sequences_d.data(), sequence_lengths_d.data(), max_sequence_length, 1);
-        {
-            dim3 n_threads = {32, 4, 1};
-            dim3 n_blocks  = {1, 1, 1};
-            n_blocks.x     = ceiling_divide<int32_t>(get_size<int32_t>(query) + 1, n_threads.x);
-            n_blocks.y     = ceiling_divide<int32_t>(get_size<int32_t>(target) + 1, n_threads.y);
-            myers::myers_convert_to_full_score_matrix_kernel<<<n_blocks, n_threads, 0, stream>>>(fullscore.get_device_interface(), pv.get_device_interface(), mv.get_device_interface(), score.get_device_interface(), sequence_lengths_d.data(), 0);
-        }
-
-        fullscore_host = fullscore.get_matrix(0, get_size(query) + 1, get_size(target) + 1, stream);
+        dim3 n_threads = {32, 4, 1};
+        dim3 n_blocks  = {1, 1, 1};
+        n_blocks.x     = ceiling_divide<int32_t>(get_size<int32_t>(query) + 1, n_threads.x);
+        n_blocks.y     = ceiling_divide<int32_t>(get_size<int32_t>(target) + 1, n_threads.y);
+        myers::myers_convert_to_full_score_matrix_kernel<<<n_blocks, n_threads, 0, stream.get()>>>(fullscore.get_device_interface(), pv.get_device_interface(), mv.get_device_interface(), score.get_device_interface(), sequence_lengths_d.data(), 0);
     }
 
-    GW_CU_CHECK_ERR(cudaStreamSynchronize(stream));
-    GW_CU_CHECK_ERR(cudaStreamDestroy(stream));
+    matrix<int32_t> fullscore_host = fullscore.get_matrix(0, get_size(query) + 1, get_size(target) + 1, stream.get());
     return fullscore_host;
 }
 
