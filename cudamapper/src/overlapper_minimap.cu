@@ -649,7 +649,7 @@ void OverlapperMinimap::get_overlaps(std::vector<Overlap>& fused_overlaps,
     //                     d_n_filtered_overlaps,
     //                     _allocator,
     //                     _cuda_stream);
-    std::cerr << "Writing " << n_filtered_overlaps << " overlaps." << std::endl;
+    //std::cerr << "Writing " << n_filtered_overlaps << " overlaps." << std::endl;
     fused_overlaps.resize(n_filtered_overlaps);
     cudautils::device_copy_n(d_overlaps_source.data(), n_filtered_overlaps, fused_overlaps.data(), _cuda_stream);
 
