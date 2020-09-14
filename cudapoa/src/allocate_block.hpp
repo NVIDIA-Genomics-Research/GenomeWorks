@@ -78,9 +78,23 @@ public:
         }
 
         // Calculate max POAs possible based on available memory.
-        int64_t device_size_per_score_matrix = static_cast<int64_t>(batch_size.matrix_sequence_dimension) *
-                                               static_cast<int64_t>(batch_size.matrix_graph_dimension) * sizeof(ScoreT);
-        max_poas_ = avail_mem / (device_size_per_poa + device_size_per_score_matrix);
+        int64_t device_size_per_score_matrix        = 0;
+        int64_t device_size_per_backtracking_matrix = 0;
+
+        if (batch_size.band_mode == BandMode::full_band)
+        {
+            device_size_per_score_matrix = static_cast<int64_t>(batch_size.matrix_sequence_dimension) *
+                                           static_cast<int64_t>(batch_size.matrix_graph_dimension) * sizeof(ScoreT);
+        }
+        else
+        {
+            device_size_per_score_matrix = static_cast<int64_t>(batch_size.matrix_sequence_dimension) *
+                                           static_cast<int64_t>(batch_size.max_pred_distance_in_banded_mode) * sizeof(ScoreT);
+            device_size_per_backtracking_matrix = static_cast<int64_t>(batch_size.matrix_sequence_dimension) *
+                                                  static_cast<int64_t>(batch_size.matrix_graph_dimension) * sizeof(TraceT);
+        }
+
+        max_poas_ = avail_mem / (device_size_per_poa + device_size_per_score_matrix + device_size_per_backtracking_matrix);
 
         // Update final sizes for block based on calculated maximum POAs.
         output_size_ = max_poas_ * static_cast<int64_t>(batch_size.max_consensus_size);
@@ -401,12 +415,25 @@ public:
             device_size_per_poa = BatchBlock<int16_t, int16_t, int16_t>::compute_device_memory_per_poa(batch_size, msa_flag);
         }
 
-        // Compute required memory for score matrix
-        int64_t device_size_per_score_matrix = static_cast<int64_t>(batch_size.matrix_sequence_dimension) *
-                                               static_cast<int64_t>(batch_size.matrix_graph_dimension) * sizeof_ScoreT;
+        // Compute required memory for score matrix and backtracking matrix
+        int64_t device_size_per_score_matrix        = 0;
+        int64_t device_size_per_backtracking_matrix = 0;
+
+        if (batch_size.band_mode == BandMode::full_band)
+        {
+            device_size_per_score_matrix = static_cast<int64_t>(batch_size.matrix_sequence_dimension) *
+                                           static_cast<int64_t>(batch_size.matrix_graph_dimension) * sizeof(ScoreT);
+        }
+        else
+        {
+            device_size_per_score_matrix = static_cast<int64_t>(batch_size.matrix_sequence_dimension) *
+                                           static_cast<int64_t>(batch_size.max_pred_distance_in_banded_mode) * sizeof(ScoreT);
+            device_size_per_backtracking_matrix = static_cast<int64_t>(batch_size.matrix_sequence_dimension) *
+                                                  static_cast<int64_t>(batch_size.matrix_graph_dimension) * sizeof(TraceT);
+        }
 
         // Calculate max POAs possible based on available memory.
-        int64_t max_poas = mem_per_batch / (device_size_per_poa + device_size_per_score_matrix);
+        int64_t max_poas = mem_per_batch / (device_size_per_poa + device_size_per_score_matrix + device_size_per_backtracking_matrix);
 
         return max_poas;
     }
