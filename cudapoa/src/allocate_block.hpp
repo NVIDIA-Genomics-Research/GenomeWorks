@@ -253,17 +253,10 @@ public:
         offset_d_ += cudautils::align<int64_t, 8>(sizeof(*graph_details_d->outgoing_edge_count) * max_nodes_per_window_ * max_poas_);
         graph_details_d->incoming_edge_weights = reinterpret_cast<decltype(graph_details_d->incoming_edge_weights)>(&block_data_d_[offset_d_]);
         offset_d_ += cudautils::align<int64_t, 8>(sizeof(*graph_details_d->incoming_edge_weights) * max_nodes_per_window_ * CUDAPOA_MAX_NODE_EDGES * max_poas_);
-        graph_details_d->outgoing_edge_weights = reinterpret_cast<decltype(graph_details_d->outgoing_edge_weights)>(&block_data_d_[offset_d_]);
-        offset_d_ += cudautils::align<int64_t, 8>(sizeof(*graph_details_d->outgoing_edge_weights) * max_nodes_per_window_ * CUDAPOA_MAX_NODE_EDGES * max_poas_);
         graph_details_d->sorted_poa = reinterpret_cast<decltype(graph_details_d->sorted_poa)>(&block_data_d_[offset_d_]);
         offset_d_ += cudautils::align<int64_t, 8>(sizeof(*graph_details_d->sorted_poa) * max_nodes_per_window_ * max_poas_);
         graph_details_d->sorted_poa_node_map = reinterpret_cast<decltype(graph_details_d->sorted_poa_node_map)>(&block_data_d_[offset_d_]);
         offset_d_ += cudautils::align<int64_t, 8>(sizeof(*graph_details_d->sorted_poa_node_map) * max_nodes_per_window_ * max_poas_);
-        if (variable_bands_)
-        {
-            graph_details_d->node_distance_to_head = reinterpret_cast<decltype(graph_details_d->node_distance_to_head)>(&block_data_d_[offset_d_]);
-            offset_d_ += cudautils::align<int64_t, 8>(sizeof(*graph_details_d->node_distance_to_head) * max_nodes_per_window_ * max_poas_);
-        }
         graph_details_d->sorted_poa_local_edge_count = reinterpret_cast<decltype(graph_details_d->sorted_poa_local_edge_count)>(&block_data_d_[offset_d_]);
         offset_d_ += cudautils::align<int64_t, 8>(sizeof(*graph_details_d->sorted_poa_local_edge_count) * max_nodes_per_window_ * max_poas_);
         if (output_mask_ & OutputType::consensus)
@@ -332,10 +325,8 @@ public:
         device_size_per_poa += sizeof(*GraphDetails<SizeT>::outgoing_edges) * max_nodes_per_graph * CUDAPOA_MAX_NODE_EDGES;                                                              // graph_details_d_->outgoing_edges
         device_size_per_poa += sizeof(*GraphDetails<SizeT>::outgoing_edge_count) * max_nodes_per_graph;                                                                                  // graph_details_d_->outgoing_edge_count
         device_size_per_poa += sizeof(*GraphDetails<SizeT>::incoming_edge_weights) * max_nodes_per_graph * CUDAPOA_MAX_NODE_EDGES;                                                       // graph_details_d_->incoming_edge_weights
-        device_size_per_poa += sizeof(*GraphDetails<SizeT>::outgoing_edge_weights) * max_nodes_per_graph * CUDAPOA_MAX_NODE_EDGES;                                                       // graph_details_d_->outgoing_edge_weights
         device_size_per_poa += sizeof(*GraphDetails<SizeT>::sorted_poa) * max_nodes_per_graph;                                                                                           // graph_details_d_->sorted_poa
         device_size_per_poa += sizeof(*GraphDetails<SizeT>::sorted_poa_node_map) * max_nodes_per_graph;                                                                                  // graph_details_d_->sorted_poa_node_map
-        device_size_per_poa += variable_bands ? sizeof(*GraphDetails<SizeT>::node_distance_to_head) * max_nodes_per_graph : 0;                                                           // graph_details_d_->node_distance_to_head
         device_size_per_poa += sizeof(*GraphDetails<SizeT>::sorted_poa_local_edge_count) * max_nodes_per_graph;                                                                          // graph_details_d_->sorted_poa_local_edge_count
         device_size_per_poa += (!msa_flag) ? sizeof(*GraphDetails<SizeT>::consensus_scores) * max_nodes_per_graph : 0;                                                                   // graph_details_d_->consensus_scores
         device_size_per_poa += (!msa_flag) ? sizeof(*GraphDetails<SizeT>::consensus_predecessors) * max_nodes_per_graph : 0;                                                             // graph_details_d_->consensus_predecessors
