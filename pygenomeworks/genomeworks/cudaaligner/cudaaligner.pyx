@@ -137,11 +137,11 @@ cdef class CudaAlignerBatch:
             max_query_length,
             max_target_length,
             max_alignments,
-            *args,
             alignment_type="global",
             stream=None,
             device_id=0,
             max_device_memory_allocator_caching_size=-1,
+            *args,
             **kwargs):
         """Construct a CudaAligner object to run CUDA-accelerated sequence
         to sequence alignment across all pairs in a batch.
@@ -194,11 +194,11 @@ cdef class CudaAlignerBatch:
             max_query_length,
             max_target_length,
             max_alignments,
-            *args,
             alignment_type="global",
             stream=None,
             device_id=0,
             max_device_memory_allocator_caching_size=-1,
+            *args,
             **kwargs):
         """Dummy implementation of __init__ function to allow
         for Python subclassing.
