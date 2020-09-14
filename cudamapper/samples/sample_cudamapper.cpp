@@ -18,7 +18,6 @@
 #include <claraparabricks/genomeworks/io/fasta_parser.hpp>
 #include <claraparabricks/genomeworks/utils/cudautils.hpp>
 #include <claraparabricks/genomeworks/utils/signed_integer_utils.hpp>
-#include "../src/index_descriptor.hpp"
 #include <cudamapper_file_location.hpp>
 
 #include <claraparabricks/genomeworks/cudamapper/index.hpp>

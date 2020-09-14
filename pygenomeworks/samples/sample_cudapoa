@@ -56,7 +56,6 @@ def run_cudapoa(groups, msa, print_output):
     batch = cudapoa.CudaPoaBatch(max_sequences_per_poa,
                                  max_seq_sz,
                                  gpu_mem_per_batch,
-                                 stream=None,
                                  output_type=("msa" if msa else "consensus"),
                                  cuda_banded_alignment=True)
 

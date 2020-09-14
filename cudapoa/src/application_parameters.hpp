@@ -49,6 +49,7 @@ public:
     int32_t gap_score         = -8;
     int32_t match_score       = 8;
     double gpu_mem_allocation = 0.9;
+    float adaptive_storage    = 2.0f;
 
 private:
     /// \brief verifies input file formats

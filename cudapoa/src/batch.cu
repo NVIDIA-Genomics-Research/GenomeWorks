@@ -31,7 +31,8 @@ namespace cudapoa
 {
 
 /// constructor- set other parameters based on a minimum set of input arguments
-BatchConfig::BatchConfig(int32_t max_seq_sz /*= 1024*/, int32_t max_seq_per_poa /*= 100*/, int32_t band_width /*= 256*/, BandMode banding /*= BandMode::full_band*/)
+BatchConfig::BatchConfig(int32_t max_seq_sz /*= 1024*/, int32_t max_seq_per_poa /*= 100*/, int32_t band_width /*= 256*/,
+                         BandMode banding /*= BandMode::full_band*/, float adapive_storage_factor /*= 2.0*/)
     /// ensure a 4-byte boundary alignment for any allocated buffer
     : max_sequence_size(max_seq_sz)
     , max_consensus_size(2 * max_sequence_size)
@@ -58,7 +59,7 @@ BatchConfig::BatchConfig(int32_t max_seq_sz /*= 1024*/, int32_t max_seq_per_poa 
         max_nodes_per_graph    = cudautils::align<int32_t, CELLS_PER_THREAD>(4 * max_sequence_size);
         matrix_graph_dimension = cudautils::align<int32_t, CELLS_PER_THREAD>(max_nodes_per_graph);
         // 8 = CUDAPOA_BANDED_MATRIX_RIGHT_PADDING, *2 is to reserve extra memory for cases with extended band-width
-        matrix_sequence_dimension = cudautils::align<int32_t, CELLS_PER_THREAD>(2 * (alignment_band_width + 8));
+        matrix_sequence_dimension = cudautils::align<int32_t, CELLS_PER_THREAD>(adapive_storage_factor * (alignment_band_width + 8));
     }
 
     throw_on_negative(max_seq_sz, "max_sequence_size cannot be negative.");
