@@ -45,7 +45,6 @@ namespace cudapoa
  * @param[in] outgoing_edges              Device buffer with outgoing edges per node
  * @param[in] outgoing_edges_count        Device buffer with number of outgoing edges per node
  * @param[in] incoming_edge_w             Device buffer with weight of incoming edges
- * @param[in] outgoing_edge_w             Device buffer with weight of outgoing edges
  * @param[in] alignment_length            Total length of new alignment
  * @param[in] graph                       Device scratch space with sorted graph
  * @param[in] alignment_graph             Device buffer with nodes from graph in alignment
@@ -63,7 +62,7 @@ namespace cudapoa
  * @return Status code for any errors encountered.
  */
 
-template <typename SizeT>
+template <typename SizeT, bool MSA = false>
 __device__
     uint8_t
     addAlignmentToGraph(SizeT& new_node_count,
@@ -72,7 +71,7 @@ __device__
                         SizeT* node_alignments, uint16_t* node_alignment_count,
                         SizeT* incoming_edges, uint16_t* incoming_edge_count,
                         SizeT* outgoing_edges, uint16_t* outgoing_edge_count,
-                        uint16_t* incoming_edge_w, uint16_t* /*outgoing_edge_w*/,
+                        uint16_t* incoming_edge_w,
                         SizeT alignment_length,
                         SizeT* /*graph*/,
                         SizeT* alignment_graph,
@@ -85,8 +84,7 @@ __device__
                         uint16_t* outgoing_edges_coverage_count,
                         uint16_t s,
                         uint32_t max_sequences_per_poa,
-                        uint32_t max_limit_nodes_per_window,
-                        bool msa = false)
+                        uint32_t max_limit_nodes_per_window)
 {
     //printf("Running addition for alignment %d\n", alignment_length);
     SizeT head_node_id   = -1;
@@ -152,7 +150,7 @@ __device__
                     //printf("aligned nodes are %d\n", num_aligned_node);
                     SizeT aligned_node_id = -1;
                     //printf("looping through alignments\n");
-                    for (uint16_t n = 0; n < num_aligned_node; n++)
+                    for (int32_t n = 0; n < num_aligned_node; n++)
                     {
                         SizeT aid = node_alignments[graph_node_id * CUDAPOA_MAX_NODE_ALIGNMENTS + n];
                         if (nodes[aid] == read_base)
@@ -187,7 +185,7 @@ __device__
                         node_coverage_counts[curr_node_id] = 0;
                         SizeT new_node_alignments          = 0;
 
-                        for (uint16_t n = 0; n < num_aligned_node; n++)
+                        for (int32_t n = 0; n < num_aligned_node; n++)
                         {
                             SizeT aid                                                                         = node_alignments[graph_node_id * CUDAPOA_MAX_NODE_ALIGNMENTS + n];
                             uint16_t aid_count                                                                = node_alignment_count[aid];
@@ -214,7 +212,7 @@ __device__
             }
 
             // for msa generation
-            if (msa && (read_pos == 0))
+            if (MSA && (read_pos == 0))
             {
                 //begin node of the sequence, add its node_id (curr_node_id) to sequence_begin_nodes_ids
                 *sequence_begin_nodes_ids = curr_node_id;
@@ -226,7 +224,7 @@ __device__
             {
                 bool edge_exists  = false;
                 uint16_t in_count = incoming_edge_count[curr_node_id];
-                for (uint16_t e = 0; e < in_count; e++)
+                for (int32_t e = 0; e < in_count; e++)
                 {
                     if (incoming_edges[curr_node_id * CUDAPOA_MAX_NODE_EDGES + e] == head_node_id)
                     {
@@ -242,7 +240,7 @@ __device__
                     incoming_edge_count[curr_node_id]                                 = in_count + 1;
                     uint16_t out_count                                                = outgoing_edge_count[head_node_id];
                     outgoing_edges[head_node_id * CUDAPOA_MAX_NODE_EDGES + out_count] = curr_node_id;
-                    if (msa)
+                    if (MSA)
                     {
                         outgoing_edges_coverage_count[head_node_id * CUDAPOA_MAX_NODE_EDGES + out_count]                     = 1;
                         outgoing_edges_coverage[(head_node_id * CUDAPOA_MAX_NODE_EDGES + out_count) * max_sequences_per_poa] = s;
@@ -256,10 +254,10 @@ __device__
                         //printf("exceeded max edge count\n");
                     }
                 }
-                else if (msa) //if edge exists and for msa generation
+                else if (MSA) //if edge exists and for msa generation
                 {
                     uint16_t out_count = outgoing_edge_count[head_node_id];
-                    for (uint16_t e = 0; e < out_count; e++)
+                    for (int32_t e = 0; e < out_count; e++)
                     {
                         if (outgoing_edges[head_node_id * CUDAPOA_MAX_NODE_EDGES + e] == curr_node_id)
                         {
@@ -293,7 +291,7 @@ __global__ void addAlignmentKernel(uint8_t* nodes,
                                    SizeT* node_alignments, uint16_t* node_alignment_count,
                                    SizeT* incoming_edges, uint16_t* incoming_edge_count,
                                    SizeT* outgoing_edges, uint16_t* outgoing_edge_count,
-                                   uint16_t* incoming_edge_w, uint16_t* outgoing_edge_w,
+                                   uint16_t* incoming_edge_w,
                                    SizeT* alignment_length,
                                    SizeT* graph,
                                    SizeT* alignment_graph,
@@ -315,7 +313,7 @@ __global__ void addAlignmentKernel(uint8_t* nodes,
                                node_alignments, node_alignment_count,
                                incoming_edges, incoming_edge_count,
                                outgoing_edges, outgoing_edge_count,
-                               incoming_edge_w, outgoing_edge_w,
+                               incoming_edge_w,
                                *alignment_length,
                                graph,
                                alignment_graph,
@@ -339,7 +337,7 @@ void addAlignment(uint8_t* nodes,
                   SizeT* node_alignments, uint16_t* node_alignment_count,
                   SizeT* incoming_edges, uint16_t* incoming_edge_count,
                   SizeT* outgoing_edges, uint16_t* outgoing_edge_count,
-                  uint16_t* incoming_edge_w, uint16_t* outgoing_edge_w,
+                  uint16_t* incoming_edge_w,
                   SizeT* alignment_length,
                   SizeT* graph,
                   SizeT* alignment_graph,
@@ -359,7 +357,7 @@ void addAlignment(uint8_t* nodes,
                                         node_alignments, node_alignment_count,
                                         incoming_edges, incoming_edge_count,
                                         outgoing_edges, outgoing_edge_count,
-                                        incoming_edge_w, outgoing_edge_w,
+                                        incoming_edge_w,
                                         alignment_length,
                                         graph,
                                         alignment_graph,

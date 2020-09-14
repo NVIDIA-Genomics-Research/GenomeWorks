@@ -300,7 +300,7 @@ public:
             {
                 output_status.emplace_back(genomeworks::cudapoa::StatusType::success);
                 uint16_t num_seqs = input_details_h_->window_details[poa].num_seqs;
-                for (uint16_t i = 0; i < num_seqs; i++)
+                for (int32_t i = 0; i < num_seqs; i++)
                 {
                     char* c = reinterpret_cast<char*>(&(output_details_h_->multiple_sequence_alignments[(poa * max_sequences_per_poa_ + i) * batch_size_.max_consensus_size]));
                     msa[poa].emplace_back(std::string(c));
@@ -379,7 +379,7 @@ public:
                     DirectedGraph::node_id_t sink = n;
                     graph.set_node_label(sink, std::string(1, static_cast<char>(nodes[n])));
                     uint16_t num_edges = graph_details_h_->incoming_edge_count[poa * max_nodes_per_window_ + n];
-                    for (uint16_t e = 0; e < num_edges; e++)
+                    for (int32_t e = 0; e < num_edges; e++)
                     {
                         int32_t idx                         = poa * max_nodes_per_window_ * CUDAPOA_MAX_NODE_EDGES + n * CUDAPOA_MAX_NODE_EDGES + e;
                         DirectedGraph::node_id_t src        = graph_details_h_->incoming_edges[idx];
