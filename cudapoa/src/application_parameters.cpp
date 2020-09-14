@@ -41,7 +41,7 @@ ApplicationParameters::ApplicationParameters(int argc, char* argv[])
         {"band-width", required_argument, 0, 'w'},
         {"adaptive-storage", required_argument, 0, 's'},
         {"graph-length", required_argument, 0, 'l'},
-        {"pred-distance", required_argument, 0, 'H'},
+        {"pred-distance", required_argument, 0, 'D'},
         {"dot", required_argument, 0, 'd'},
         {"max-groups", required_argument, 0, 'M'},
         {"gpu-mem-alloc", required_argument, 0, 'R'},
@@ -52,7 +52,7 @@ ApplicationParameters::ApplicationParameters(int argc, char* argv[])
         {"help", no_argument, 0, 'h'},
     };
 
-    std::string optstring = "i:ab:w:s:l:H:d:M:R:m:n:g:vh";
+    std::string optstring = "i:ab:w:s:l:D:d:M:R:m:n:g:vh";
 
     int32_t argument = 0;
     while ((argument = getopt_long(argc, argv, optstring.c_str(), options, nullptr)) != -1)
@@ -81,7 +81,7 @@ ApplicationParameters::ApplicationParameters(int argc, char* argv[])
         case 'l':
             graph_length = std::stof(optarg);
             break;
-        case 'H':
+        case 'D':
             predecessor_disance = std::stoi(optarg);
             break;
         case 'd':
@@ -208,8 +208,8 @@ void ApplicationParameters::help(int32_t exit_code)
         -l, --graph-length  <float>
             factor to determine maximum length of POA graph. The factor represents ratio of graph length to maximum sequence length in POA group [3.0])"
               << R"(
-        -H, --pred-distance <int>
-            maximum distance of predecessor nodes that are considered in Needleman-Wunsch computations for static or adaptive-banded. If 0, it will be set equal to band-width [0])"
+        -D, --pred-distance <int>
+            maximum distance of predecessor nodes that are considered in Needleman-Wunsch computations for static or adaptive-banded. If 0, it will be set equal to 2 x band-width [0])"
               << R"(
         -d, --dot <file>
             output path for printing graph in DOT format [disabled])"

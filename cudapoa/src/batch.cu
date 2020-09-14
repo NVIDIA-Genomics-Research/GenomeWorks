@@ -41,7 +41,7 @@ BatchConfig::BatchConfig(int32_t max_seq_sz /*= 1024*/, int32_t max_seq_per_poa 
     , alignment_band_width(cudautils::align<int32_t, CUDAPOA_MIN_BAND_WIDTH>(band_width))
     , max_sequences_per_poa(max_seq_per_poa)
     , band_mode(banding)
-    , max_pred_distance_in_banded_mode(max_pred_dist > 0 ? max_pred_dist : cudautils::align<int32_t, CUDAPOA_MIN_BAND_WIDTH>(band_width))
+    , max_pred_distance_in_banded_mode(max_pred_dist > 0 ? max_pred_dist : 2 * cudautils::align<int32_t, CUDAPOA_MIN_BAND_WIDTH>(band_width))
 {
     if (banding == BandMode::full_band)
     {
