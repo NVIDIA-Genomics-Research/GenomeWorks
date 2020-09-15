@@ -84,8 +84,7 @@ void process_batch(std::vector<IndexDescriptor>& query_index_descriptors,
     {
         std::unique_ptr<Index> query_index = Index::create_index(allocator,
                                                                  *query_parser,
-                                                                 query_index_descriptor.first_read(),
-                                                                 query_index_descriptor.first_read() + query_index_descriptor.number_of_reads(),
+                                                                 query_index_descriptor,
                                                                  KMER_SIZE,
                                                                  WINDOWS_SIZE,
                                                                  true,                 // hash representations
@@ -98,8 +97,7 @@ void process_batch(std::vector<IndexDescriptor>& query_index_descriptors,
             {
                 std::unique_ptr<Index> target_index = Index::create_index(allocator,
                                                                           *target_parser,
-                                                                          target_index_descriptor.first_read(),
-                                                                          target_index_descriptor.first_read() + target_index_descriptor.number_of_reads(),
+                                                                          target_index_descriptor,
                                                                           KMER_SIZE,
                                                                           WINDOWS_SIZE,
                                                                           true,                 // hash representations
