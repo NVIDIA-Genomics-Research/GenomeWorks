@@ -51,9 +51,9 @@ UngappedXDrop::UngappedXDrop(int32_t* h_sub_mat, int32_t sub_mat_dim, int32_t xd
     cudaGetDeviceProperties(&device_prop, device_id_);
     constexpr int32_t max_ungapped_per_gb   = 4194304; // FIXME: Calculate using sizeof datastructures
     constexpr int32_t max_seed_pairs_per_gb = 8388608; // FIXME: Calculate using sizeof datastructures
-    const float global_mem_gb               = static_cast<float>(device_prop.totalGlobalMem / 1073741824.0f);
-    batch_max_ungapped_extensions_          = static_cast<int32_t>(global_mem_gb * max_ungapped_per_gb);
-    int32_t max_seed_pairs                  = static_cast<int32_t>(global_mem_gb * max_seed_pairs_per_gb);
+    const float global_mem_gb               = static_cast<float>(device_prop.totalGlobalMem) / 1073741824.0f;
+    batch_max_ungapped_extensions_          = static_cast<int32_t>(global_mem_gb) * max_ungapped_per_gb;
+    int32_t max_seed_pairs                  = static_cast<int32_t>(global_mem_gb) * max_seed_pairs_per_gb;
     // Switch to device for copying over initial structures
     scoped_device_switch dev(device_id_);
 
