@@ -422,6 +422,17 @@ __device__ __forceinline__
             scores[score_index + 2L] = score.s2;
             scores[score_index + 3L] = score.s3;
 
+            /*
+            if (score_gIdx == 1 && lane_idx == 0)
+            {
+                printf(">> %d %d %d %d   score_index %ld\n", trace.t0, trace.t1, trace.t2, trace.t3, score_index);
+            }*/
+
+            backtrace[score_index]      = trace.t0;
+            backtrace[score_index + 1L] = trace.t1;
+            backtrace[score_index + 2L] = trace.t2;
+            backtrace[score_index + 3L] = trace.t3;
+
             __syncwarp();
         }
     }
@@ -448,96 +459,77 @@ __device__ __forceinline__
         }
 
         // Fill in backtrace
-        int32_t prev_i       = 0;
-        int32_t prev_j       = 0;
-        int32_t next_node_id = i > 0 ? graph[i - 1] : 0;
-
         int32_t loop_count = 0;
         while (!(i == 0 && j == 0) && loop_count < static_cast<int32_t>(read_length + graph_count + 2))
         {
             loop_count++;
-            int32_t scores_ij = get_score(scores, i, j, gradient, band_width, max_column, min_score_value);
-            bool pred_found   = false;
-            // Check if move is diagonal.
-            if (i != 0 && j != 0)
+            //printf("i %3d j %3d \n", i, j);
+
+            if (j > 0)
             {
+                int32_t band_start = get_band_start_for_row(i, gradient, band_width, max_column);
+                TraceT trace       = get_trace(backtrace, i, j, band_start, band_width);
 
-                int32_t node_id = next_node_id;
-
-                int32_t match_cost  = (nodes[node_id] == read[j - 1] ? match_score : mismatch_score);
-                uint16_t pred_count = incoming_edge_count[node_id];
-                int32_t pred_i      = (pred_count == 0 ? 0 : (node_id_to_pos[incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES]] + 1));
-
-                if (scores_ij == (get_score(scores, pred_i, j - 1, gradient, band_width, max_column, min_score_value) + match_cost))
+                if (trace == 0)
                 {
-                    prev_i     = pred_i;
-                    prev_j     = j - 1;
-                    pred_found = true;
+                    // horizontal path (indel)
+                    alignment_graph[aligned_nodes] = -1;
+                    alignment_read[aligned_nodes]  = j - 1;
+                    j--;
                 }
-
-                if (!pred_found)
+                else if (trace < 0)
                 {
-                    for (int32_t p = 1; p < pred_count; p++)
-                    {
-                        pred_i = (node_id_to_pos[incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES + p]] + 1);
-
-                        if (scores_ij == (get_score(scores, pred_i, j - 1, gradient, band_width, max_column, min_score_value) + match_cost))
-                        {
-                            prev_i     = pred_i;
-                            prev_j     = j - 1;
-                            pred_found = true;
-                            break;
-                        }
-                    }
+                    // vertical path (indel)
+                    alignment_graph[aligned_nodes] = graph[i - 1];
+                    alignment_read[aligned_nodes]  = -1;
+                    i += trace;
+                }
+                else
+                {
+                    // diagonal path (match/mismatch)
+                    alignment_graph[aligned_nodes] = graph[i - 1];
+                    alignment_read[aligned_nodes]  = j - 1;
+                    i -= trace;
+                    j--;
                 }
             }
-
-            // Check if move is vertical.
-            if (!pred_found && i != 0)
+            // backtrace data is not available for the first column, find the vertical path by checking predecessors
+            if (j == 0 && i != 0)
             {
+                int32_t scores_ij   = get_score(scores, i, j, gradient, band_width, max_column, min_score_value);
                 int32_t node_id     = graph[i - 1];
                 uint16_t pred_count = incoming_edge_count[node_id];
                 int32_t pred_i      = (pred_count == 0 ? 0 : node_id_to_pos[incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES]] + 1);
-
+                bool pred_found     = false;
                 if (scores_ij == get_score(scores, pred_i, j, gradient, band_width, max_column, min_score_value) + gap_score)
                 {
-                    prev_i     = pred_i;
-                    prev_j     = j;
-                    pred_found = true;
+                    alignment_graph[aligned_nodes] = graph[i - 1];
+                    alignment_read[aligned_nodes]  = -1;
+                    i                              = pred_i;
+                    pred_found                     = true;
                 }
-
-                if (!pred_found)
+                else
                 {
                     for (int32_t p = 1; p < pred_count; p++)
                     {
                         pred_i = node_id_to_pos[incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES + p]] + 1;
-
                         if (scores_ij == get_score(scores, pred_i, j, gradient, band_width, max_column, min_score_value) + gap_score)
                         {
-                            prev_i     = pred_i;
-                            prev_j     = j;
-                            pred_found = true;
+                            alignment_graph[aligned_nodes] = graph[i - 1];
+                            alignment_read[aligned_nodes]  = -1;
+                            i                              = pred_i;
+                            pred_found                     = true;
                             break;
                         }
                     }
                 }
+                if (!pred_found)
+                {
+                    //ToDo throw a new error code indicating max_pred_distance is not large enough
+                }
             }
 
-            // Check if move is horizontal.
-            if (!pred_found && scores_ij == get_score(scores, i, j - 1, gradient, band_width, max_column, min_score_value) + gap_score)
-            {
-                prev_i = i;
-                prev_j = j - 1;
-            }
-
-            next_node_id = graph[prev_i - 1];
-
-            alignment_graph[aligned_nodes] = (i == prev_i ? -1 : graph[i - 1]);
-            alignment_read[aligned_nodes]  = (j == prev_j ? -1 : j - 1);
             aligned_nodes++;
-
-            i = prev_i;
-            j = prev_j;
         }
 
         if (loop_count >= (read_length + graph_count + 2))
