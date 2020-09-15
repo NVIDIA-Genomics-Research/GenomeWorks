@@ -124,20 +124,21 @@ __device__ __forceinline__ ScoreT get_score(ScoreT* scores, int32_t row, int32_t
 }
 
 template <typename SeqT, typename ScoreT, typename TraceT>
-__device__ __forceinline__ ScoreT4<ScoreT> get_scores(ScoreT* scores,
-                                                      int32_t pred_node,
-                                                      int32_t current_node,
-                                                      int32_t read_pos,
-                                                      float gradient,
-                                                      int32_t band_width,
-                                                      int32_t max_column,
-                                                      ScoreT default_value,
-                                                      int32_t gap_score,
-                                                      int32_t match_score,
-                                                      int32_t mismatch_score,
-                                                      SeqT4<SeqT> read4,
-                                                      SeqT graph_base,
-                                                      TraceT4<TraceT>& trace)
+__device__ __forceinline__ void get_scores(ScoreT* scores,
+                                           int32_t pred_node,
+                                           int32_t current_node,
+                                           int32_t read_pos,
+                                           float gradient,
+                                           int32_t band_width,
+                                           int32_t max_column,
+                                           ScoreT default_value,
+                                           int32_t gap_score,
+                                           int32_t match_score,
+                                           int32_t mismatch_score,
+                                           SeqT4<SeqT> read4,
+                                           SeqT graph_base,
+                                           ScoreT4<ScoreT>& score,
+                                           TraceT4<TraceT>& trace)
 {
 
     // The load instructions typically load data in 4B or 8B chunks.
@@ -155,7 +156,7 @@ __device__ __forceinline__ ScoreT4<ScoreT> get_scores(ScoreT* scores,
 
     if ((read_pos > band_end || read_pos < band_start) && read_pos != -1)
     {
-        return ScoreT4<ScoreT>{default_value, default_value, default_value, default_value};
+        return;
     }
     else
     {
@@ -167,58 +168,80 @@ __device__ __forceinline__ ScoreT4<ScoreT> get_scores(ScoreT* scores,
         // need to load the next chunk of memory as well
         ScoreT4<ScoreT> score4_next = pred_scores[1];
 
-        ScoreT4<ScoreT> score;
         ScoreT char_profile = (graph_base == read4.r0 ? match_score : mismatch_score);
 
         // if trace is diogonal, its value is positive and if vertical, negative
+        // update score.s0, trace.t0 ----------
         if ((score4.s0 + char_profile) >= (score4.s1 + gap_score))
         {
-            score.s0 = score4.s0 + char_profile;
-            trace.t0 = current_node - pred_node;
+            if ((score4.s0 + char_profile) > score.s0)
+            {
+                score.s0 = score4.s0 + char_profile;
+                trace.t0 = current_node - pred_node;
+            }
         }
         else
         {
-            score.s0 = score4.s1 + gap_score;
-            trace.t0 = -(current_node - pred_node);
+            if ((score4.s1 + gap_score) > score.s0)
+            {
+                score.s0 = score4.s1 + gap_score;
+                trace.t0 = -(current_node - pred_node);
+            }
         }
-
+        // update score.s1, trace.t1 ----------
         char_profile = (graph_base == read4.r1 ? match_score : mismatch_score);
         if ((score4.s1 + char_profile) >= (score4.s2 + gap_score))
         {
-            score.s1 = score4.s1 + char_profile;
-            trace.t1 = current_node - pred_node;
+            if ((score4.s1 + char_profile) > score.s1)
+            {
+                score.s1 = score4.s1 + char_profile;
+                trace.t1 = current_node - pred_node;
+            }
         }
         else
         {
-            score.s1 = score4.s2 + gap_score;
-            trace.t1 = -(current_node - pred_node);
+            if ((score4.s2 + gap_score) > score.s1)
+            {
+                score.s1 = score4.s2 + gap_score;
+                trace.t1 = -(current_node - pred_node);
+            }
         }
-
+        // update score.s2, trace.t2  ----------
         char_profile = (graph_base == read4.r2 ? match_score : mismatch_score);
         if ((score4.s2 + char_profile) >= (score4.s3 + gap_score))
         {
-            score.s2 = score4.s2 + char_profile;
-            trace.t2 = current_node - pred_node;
+            if ((score4.s2 + char_profile) > score.s2)
+            {
+                score.s2 = score4.s2 + char_profile;
+                trace.t2 = current_node - pred_node;
+            }
         }
         else
         {
-            score.s2 = score4.s3 + gap_score;
-            trace.t2 = -(current_node - pred_node);
+            if ((score4.s3 + gap_score) > score.s2)
+            {
+                score.s2 = score4.s3 + gap_score;
+                trace.t2 = -(current_node - pred_node);
+            }
         }
-
+        // update score.s3, trace.t3 ----------
         char_profile = (graph_base == read4.r3 ? match_score : mismatch_score);
         if ((score4.s3 + char_profile) >= (score4_next.s0 + gap_score))
         {
-            score.s3 = score4.s3 + char_profile;
-            trace.t3 = current_node - pred_node;
+            if ((score4.s3 + char_profile) > score.s3)
+            {
+                score.s3 = score4.s3 + char_profile;
+                trace.t3 = current_node - pred_node;
+            }
         }
         else
         {
-            score.s3 = score4_next.s0 + gap_score;
-            trace.t3 = -(current_node - pred_node);
+            if ((score4_next.s0 + gap_score) > score.s3)
+            {
+                score.s3 = score4_next.s0 + gap_score;
+                trace.t3 = -(current_node - pred_node);
+            }
         }
-
-        return score;
     }
 }
 
@@ -327,37 +350,16 @@ __device__ __forceinline__
             SeqT4<SeqT> read4    = d_read4[read_pos / CELLS_PER_THREAD];
 
             TraceT4<TraceT> trace;
-            ScoreT4<ScoreT> score = get_scores(scores, pred_idx, score_gIdx, read_pos, gradient, band_width, max_column, min_score_value,
-                                               gap_score, match_score, mismatch_score, read4, graph_base, trace);
+            ScoreT4<ScoreT> score = {min_score_value, min_score_value, min_score_value, min_score_value};
+            get_scores(scores, pred_idx, score_gIdx, read_pos, gradient, band_width, max_column, min_score_value,
+                       gap_score, match_score, mismatch_score, read4, graph_base, score, trace);
 
             // Perform same score updates as above, but for rest of predecessors.
             for (int32_t p = 1; p < pred_count; p++)
             {
                 int32_t pred_idx2 = node_id_to_pos[incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES + p]] + 1;
-                TraceT4<TraceT> traces_4;
-                ScoreT4<ScoreT> scores_4 = get_scores(scores, pred_idx2, score_gIdx, read_pos, gradient, band_width, max_column, min_score_value,
-                                                      gap_score, match_score, mismatch_score, read4, graph_base, traces_4);
-
-                if (score.s0 < scores_4.s0)
-                {
-                    score.s0 = scores_4.s0;
-                    trace.t0 = traces_4.t0;
-                }
-                if (score.s1 < scores_4.s1)
-                {
-                    score.s1 = scores_4.s1;
-                    trace.t1 = traces_4.t1;
-                }
-                if (score.s2 < scores_4.s2)
-                {
-                    score.s2 = scores_4.s2;
-                    trace.t2 = traces_4.t2;
-                }
-                if (score.s3 < scores_4.s3)
-                {
-                    score.s3 = scores_4.s3;
-                    trace.t3 = traces_4.t3;
-                }
+                get_scores(scores, pred_idx2, score_gIdx, read_pos, gradient, band_width, max_column, min_score_value,
+                           gap_score, match_score, mismatch_score, read4, graph_base, score, trace);
             }
 
             // While there are changes to the horizontal score values, keep updating the matrix.
