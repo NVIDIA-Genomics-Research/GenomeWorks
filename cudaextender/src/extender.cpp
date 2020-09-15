@@ -16,7 +16,7 @@
 
 #include <claraparabricks/genomeworks/cudaextender/extender.hpp>
 
-#include "ungapped_xdrop.hpp"
+#include "ungapped_xdrop.cuh"
 
 namespace claraparabricks
 {
@@ -27,11 +27,11 @@ namespace genomeworks
 namespace cudaextender
 {
 
-std::unique_ptr<Extender> create_extender(int32_t* h_sub_mat, int32_t sub_mat_size, int32_t xdrop_threshold, bool no_entropy, cudaStream_t stream, int32_t device_id, ExtensionType type)
+std::unique_ptr<Extender> create_extender(int32_t* h_sub_mat, int32_t sub_mat_dim, int32_t xdrop_threshold, bool no_entropy, cudaStream_t stream, int32_t device_id, ExtensionType type)
 {
     if (type == ExtensionType::ungapped_xdrop)
     {
-        return std::make_unique<UngappedXDrop>(h_sub_mat, sub_mat_size, xdrop_threshold, no_entropy, stream, device_id);
+        return std::make_unique<UngappedXDrop>(h_sub_mat, sub_mat_dim, xdrop_threshold, no_entropy, stream, device_id);
     }
     else
     {

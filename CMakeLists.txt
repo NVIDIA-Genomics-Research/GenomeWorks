@@ -40,7 +40,7 @@ option(gw_enable_cudapoa_nw_print "Enable verbose prints within cudapoa NW kerne
 option(gw_profiling "Compile a binary for profiling with NVTX markers." OFF)
 option(gw_enable_caching_allocator "Enable caching allocator." ON)
 option(gw_generate_docs "Generate Doxygen documentation" ON)
-option(gw_cuda_gen_all_arch "ON: Generate optimized CUDA code for all architectures | OFF: for detected architectures only" ON)
+option(gw_cuda_gen_all_arch "ON: Generate optimized CUDA code for all architectures | OFF: for detected architectures only" OFF)
 
 # Must be included before others for options value validation
 include(cmake/Utils.cmake)

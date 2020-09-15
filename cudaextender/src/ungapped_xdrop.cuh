@@ -17,6 +17,7 @@
 #pragma once
 
 #include <claraparabricks/genomeworks/cudaextender/extender.hpp>
+#include <thrust/device_vector.h>
 
 namespace claraparabricks
 {
@@ -42,7 +43,7 @@ public:
                             const char* d_target, int32_t target_length,
                             int32_t score_threshold, SeedPair* d_seed_pairs,
                             int32_t num_seed_pairs, ScoredSegmentPair* d_scored_segment_pairs,
-                            int32_t* d_num_scored_segment_pairs) override;
+                            int32_t& num_scored_segment_pairs) override;
 
     StatusType sync() override;
     void reset() override;
@@ -57,10 +58,12 @@ private:
     cudaStream_t stream_;
     int32_t device_id_;
     std::vector<ScoredSegmentPair> scored_segment_pairs_;
-    int32_t max_ungapped_extensions_;
+    int32_t batch_max_ungapped_extensions_;
     int32_t* d_sub_mat_; // Pointer to device substitution matrix
-    int32_t* d_done_;   // TODO- Rename scratch space
-    ScoredSegmentPair* d_tmp_hsp_;  // TODO- Rename Scratch space 2
+    thrust::device_vector<int32_t> d_done_;   // TODO- Rename scratch space
+    thrust::device_vector<ScoredSegmentPair> d_tmp_hsp_;  // TODO- Rename Scratch space 2
+    thrust::device_vector<ScoredSegmentPair> d_hsp_;  // TODO- Rename output variable
+    int32_t total_scored_segment_pairs_;
 };
 
 } // namespace cudaextender

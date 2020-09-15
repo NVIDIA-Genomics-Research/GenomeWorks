@@ -39,15 +39,21 @@ set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -std=c++14")
 if (gw_cuda_after_10_0)
     set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} --expt-relaxed-constexpr")
 endif ()
+if (gw_cuda_gen_all_arch)
+    CUDA_SELECT_NVCC_ARCH_FLAGS(ARCH_FLAGS "Common")
+else()
+    CUDA_SELECT_NVCC_ARCH_FLAGS(ARCH_FLAGS "Auto")
+endif()
+set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} ${ARCH_FLAGS}")
 message(STATUS "nvcc flags for ${PROJECT_NAME}: ${CUDA_NVCC_FLAGS}")
 
 get_property(gw_library_type GLOBAL PROPERTY gw_library_type)
 cuda_add_library(cudaextender ${gw_library_type}
         src/cudaextender.cpp
         src/extender.cpp
-        src/ungapped_xdrop.cpp
-        ${CMAKE_CURRENT_BINARY_DIR}/version.cpp
-        src/ungapped_extender_kernels.cu)
+        src/ungapped_xdrop.cu
+        src/ungapped_xdrop_kernels.cu
+        ${CMAKE_CURRENT_BINARY_DIR}/version.cpp)
 
 target_link_libraries(cudaextender gwbase gwio)
 

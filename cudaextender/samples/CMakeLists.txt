@@ -21,11 +21,13 @@ get_property(cudaextender_data_include_dir GLOBAL PROPERTY cudaextender_data_inc
 include_directories(${cudaextender_data_include_dir})
 
 add_executable(${PROJECT_NAME}
-        host_sample.cu
+        device_sample.cpp
         )
 
 target_link_libraries(${PROJECT_NAME}
         cudaextender
+        gwio
+        gwbase
         )
 
 install(TARGETS ${PROJECT_NAME}

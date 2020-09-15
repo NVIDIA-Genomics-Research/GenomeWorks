@@ -27,7 +27,7 @@ namespace cudaextender
 // extend the hits to a segment by ungapped x-drop method, adjust low-scoring
 // segment scores based on entropy factor, compare resulting segment scores
 // to score_threshold and update the d_hsp and d_done vectors
-__global__ void find_high_scoring_segment_pairs(const char* __restrict__ d_target, const int32_t target_length, const char* __restrict__ d_query, const int32_t query_length, const int32_t* d_sub_mat, bool no_entropy, int32_t xdrop_threshold, int32_t score_threshold, SeedPair* d_seed_pairs, int32_t num_seed_pairs, int32_t start_index, ScoredSegmentPair* d_scored_segment, uint32_t* d_done)
+__global__ void find_high_scoring_segment_pairs(const char* __restrict__ d_target, const int32_t target_length, const char* __restrict__ d_query, const int32_t query_length, const int32_t* d_sub_mat, bool no_entropy, int32_t xdrop_threshold, int32_t score_threshold, SeedPair* d_seed_pairs, int32_t num_seed_pairs, int32_t start_index, ScoredSegmentPair* d_scored_segment, int32_t* d_done)
 {
 
     int32_t thread_id           = threadIdx.x;
@@ -40,33 +40,33 @@ __global__ void find_high_scoring_segment_pairs(const char* __restrict__ d_targe
     constexpr int32_t nuc       = 8;  // TODO - remove hardcode - pass in
     constexpr int32_t nuc2      = 64; // TODO - remove hardcode
 
-    __shared__ uint32_t ref_loc[num_warps];
-    __shared__ uint32_t query_loc[num_warps];
+    __shared__ int32_t ref_loc[num_warps];
+    __shared__ int32_t query_loc[num_warps];
     __shared__ int32_t total_score[num_warps];
     __shared__ int32_t prev_score[num_warps];
     __shared__ int32_t prev_max_score[num_warps];
-    __shared__ uint32_t prev_max_pos[num_warps];
+    __shared__ int32_t prev_max_pos[num_warps];
     __shared__ bool edge_found[num_warps];
     __shared__ bool xdrop_found[num_warps];
     __shared__ bool new_max_found[num_warps];
-    __shared__ uint32_t left_extent[num_warps];
-    __shared__ uint32_t extent[num_warps];
-    __shared__ uint32_t tile[num_warps];
+    __shared__ int32_t left_extent[num_warps];
+    __shared__ int32_t extent[num_warps];
+    __shared__ int32_t tile[num_warps];
     __shared__ double entropy[num_warps];
 
     int32_t thread_score;
     int32_t max_thread_score;
-    uint32_t max_pos;
-    uint32_t temp_pos;
+    int32_t max_pos;
+    int32_t temp_pos;
     bool xdrop_done;
     int32_t temp;
     short count[4];
     short count_del[4];
     char r_chr;
     char q_chr;
-    uint32_t ref_pos;
-    uint32_t query_pos;
-    uint32_t pos_offset;
+    int32_t ref_pos;
+    int32_t query_pos;
+    int32_t pos_offset;
 
     __shared__ int32_t sub_mat[nuc2];
 
@@ -453,6 +453,37 @@ __global__ void find_high_scoring_segment_pairs(const char* __restrict__ d_targe
             }
         }
         __syncwarp();
+    }
+}
+
+// gather only the HSPs from the resulting segments to the beginning of the
+// tmp_hsp vector
+__global__
+void compress_output (int32_t* d_done, int32_t start_index, ScoredSegmentPair* d_hsp, ScoredSegmentPair* d_tmp_hsp, int32_t num_hits){
+
+    int thread_id = threadIdx.x;
+    int block_dim = blockDim.x;
+    int grid_dim = gridDim.x;
+    int block_id = blockIdx.x;
+
+    int stride = block_dim * grid_dim;
+    int32_t start = block_dim * block_id + thread_id;
+    int32_t reduced_index = 0;
+    int32_t index = 0;
+
+    for (int32_t id = start; id < num_hits; id += stride) {
+        reduced_index = d_done[id];
+        index = id + start_index;
+        if(index > 0){
+            if(reduced_index > d_done[index-1]){
+                d_tmp_hsp[reduced_index-1] = d_hsp[index];
+            }
+        }
+        else{
+            if(reduced_index == 1){
+                d_tmp_hsp[0] = d_hsp[start_index];
+            }
+        }
     }
 }
 

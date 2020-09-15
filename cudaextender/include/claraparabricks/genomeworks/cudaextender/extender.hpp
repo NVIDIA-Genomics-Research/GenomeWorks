@@ -74,7 +74,7 @@ public:
                                     const char* d_target, int32_t target_length,
                                     int32_t score_threshold, SeedPair* d_seed_pairs,
                                     int32_t num_seed_pairs, ScoredSegmentPair* d_scored_segment_pairs,
-                                    int32_t* d_num_scored_segment_pairs) = 0;
+                                    int32_t& num_scored_segment_pairs) = 0;
 
     /// \brief Waits for CUDA accelerated extension to finish
     ///
@@ -91,7 +91,7 @@ public:
     virtual void reset() = 0;
 };
 
-std::unique_ptr<Extender> create_extender(int32_t* h_sub_mat, int32_t sub_mat_size, int32_t xdrop_threshold, bool no_entropy, cudaStream_t stream, int32_t device_id, ExtensionType type);
+std::unique_ptr<Extender> create_extender(int32_t* h_sub_mat, int32_t sub_mat_dim, int32_t xdrop_threshold, bool no_entropy, cudaStream_t stream, int32_t device_id, ExtensionType type=ExtensionType::ungapped_xdrop);
 
 } // namespace cudaextender
 } // namespace genomeworks
