@@ -89,7 +89,7 @@ StatusType UngappedXDrop::extend_async(const char* d_query, int32_t query_length
     {
         curr_num_pairs              = std::min(batch_max_ungapped_extensions_, num_seed_pairs - seed_pair_start);
         int32_t* d_done_raw_pointer = thrust::raw_pointer_cast(d_done_.data());
-        // TODO- Extricate the kernel params?
+        // TODO- Extricate the kernel launch params?
         find_high_scoring_segment_pairs<<<1024, 128, 0, stream_>>>(d_target,
                                                                    target_length,
                                                                    d_query,
@@ -133,6 +133,14 @@ StatusType UngappedXDrop::extend_async(const char* d_query, int32_t query_length
 
     }
     num_scored_segment_pairs = total_scored_segment_pairs_;
+    thrust::host_vector<ScoredSegmentPair> h_vec = d_hsp_;
+//
+    //    std::cout<<"Ouptut: "<<std::endl;
+//    for(int32_t i=0; i<num_scored_segment_pairs; i++)
+//    {
+//        ScoredSegmentPair ssp = h_vec[i];
+//        std::cout<<ssp.seed_pair.target_position_in_read<<','<<ssp.seed_pair.query_position_in_read<<","<<ssp.length<<","<<ssp.score<<std::endl;
+//    }
     return success;
 }
 

@@ -432,7 +432,10 @@ __global__ void find_high_scoring_segment_pairs(const char* __restrict__ d_targe
         {
             if (lane_id == 0)
             {
-
+                if(ref_loc[warp_id] - left_extent[warp_id] == 4852 || ref_loc[warp_id] ==4852 )
+                {
+                    printf("Length: %d Score: %d\n", extent[warp_id], ((int32_t)(((float)total_score[warp_id]) * entropy[warp_id])));
+                }
                 if (((int32_t)(((float)total_score[warp_id]) * entropy[warp_id])) >= score_threshold)
                 {
                     d_scored_segment[hid].seed_pair.target_position_in_read = ref_loc[warp_id] - left_extent[warp_id];

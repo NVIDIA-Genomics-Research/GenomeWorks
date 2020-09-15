@@ -96,7 +96,7 @@ int main(int argc, char* argv[])
     std::string query_file_path = "../data/example.fa";
     std::unique_ptr<io::FastaParser> fasta_parser_query =
         io::create_kseq_fasta_parser(query_file_path, 0, false);
-    // Assumes that only one sequence is present per file
+   // Assumes that only one sequence is present per file
     std::string query_sequence = fasta_parser_query->get_sequence_by_id(0).seq;
 
     // CSV SeedPairs file - Each row -> query_position_in_read_,
