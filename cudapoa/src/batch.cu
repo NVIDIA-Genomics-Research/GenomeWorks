@@ -63,6 +63,8 @@ BatchConfig::BatchConfig(int32_t max_seq_sz /*= 1024*/, int32_t max_seq_per_poa 
     throw_on_negative(max_seq_sz, "max_sequence_size cannot be negative.");
     throw_on_negative(max_seq_per_poa, "max_sequences_per_poa cannot be negative.");
     throw_on_negative(band_width, "alignment_band_width cannot be negative.");
+    throw_on_negative(max_nodes_per_graph, "max_nodes_per_graph cannot be negative.");
+
     if (alignment_band_width != band_width)
     {
         std::cerr << "Band-width should be multiple of 128. The input was changed from " << band_width << " to " << alignment_band_width << std::endl;
