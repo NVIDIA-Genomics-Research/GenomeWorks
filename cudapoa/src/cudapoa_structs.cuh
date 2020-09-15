@@ -26,6 +26,9 @@
 // Maximum number of nodes aligned to each other.
 #define CUDAPOA_MAX_NODE_ALIGNMENTS 50
 
+// Size of read chunks for reading sequences
+#define SIZE_OF_SeqT4 32
+
 // Dimensions for Banded alignment score matrix
 #define WARP_SIZE 32
 #define CELLS_PER_THREAD 4
@@ -187,6 +190,12 @@ template <typename SeqT>
 struct SeqT4
 {
     SeqT r0, r1, r2, r3;
+};
+
+template <>
+struct __align__(4) SeqT4<uint8_t>
+{
+    uint8_t r0, r1, r2, r3;
 };
 
 template <typename ScoreT>

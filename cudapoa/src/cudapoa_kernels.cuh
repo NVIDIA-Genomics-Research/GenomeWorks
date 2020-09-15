@@ -233,8 +233,8 @@ __launch_bounds__(GW_POA_KERNELS_MAX_THREADS_PER_BLOCK)
     for (int32_t s = 1; s < num_sequences; s++)
     {
         int32_t seq_len = sequence_lengths[s];
-        sequence += sequence_lengths[s - 1];     // increment the pointer so it is pointing to correct sequence data
-        base_weights += sequence_lengths[s - 1]; // increment the pointer so it is pointing to correct sequence data
+        sequence += cudautils::align<int32_t, SIZE_OF_SeqT4>(sequence_lengths[s - 1]);     // increment the pointer so it is pointing to correct sequence data
+        base_weights += cudautils::align<int32_t, SIZE_OF_SeqT4>(sequence_lengths[s - 1]); // increment the pointer so it is pointing to correct sequence data
 
         if (lane_idx == 0)
         {
@@ -275,7 +275,7 @@ __launch_bounds__(GW_POA_KERNELS_MAX_THREADS_PER_BLOCK)
                                                                                                 gap_score,
                                                                                                 mismatch_score,
                                                                                                 match_score,
-                                                                                        0);
+                                                                                                0);
 
             __syncwarp();
 
@@ -300,7 +300,7 @@ __launch_bounds__(GW_POA_KERNELS_MAX_THREADS_PER_BLOCK)
                                                                                                     gap_score,
                                                                                                     mismatch_score,
                                                                                                     match_score,
-                                                                                            alignment_length);
+                                                                                                    alignment_length);
                 __syncwarp();
             }
         }

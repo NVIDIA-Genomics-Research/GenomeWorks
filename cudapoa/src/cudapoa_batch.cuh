@@ -541,7 +541,9 @@ protected:
         }
         input_details_h_->sequence_lengths[global_sequence_idx_] = seq_len;
 
-        num_nucleotides_copied_ += seq_len;
+        // to be aligned with uchar4 size, pad sequence length to be multiple of 32
+        num_nucleotides_copied_ += cudautils::align<int32_t, SIZE_OF_SeqT4>(seq_len);
+        ;
         global_sequence_idx_++;
 
         return StatusType::success;
