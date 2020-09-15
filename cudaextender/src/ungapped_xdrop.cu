@@ -126,7 +126,7 @@ StatusType UngappedXDrop::extend_async(const char* d_query, int32_t query_length
                                                                                                 d_hsp_.begin() + total_scored_segment_pairs_,
                                                                                                 scored_segment_pair_equal());
             std::cout<<"Before: "<<num_scored_segment_pairs<<std::endl;
-            num_scored_segment_pairs                                      = thrust::distance(d_hsp_.begin()+total_scored_segment_pairs_, result_end), num_scored_segment_pairs;
+            num_scored_segment_pairs                                      = thrust::distance(d_hsp_.begin()+total_scored_segment_pairs_, result_end);
             std::cout<<num_scored_segment_pairs<<std::endl;
             total_scored_segment_pairs_ += num_scored_segment_pairs;
         }
