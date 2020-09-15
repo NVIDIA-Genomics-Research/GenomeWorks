@@ -21,6 +21,9 @@
 // b) Verify user input
 // c) (optional) reduce size of representations
 
+#include <claraparabricks/genomeworks/alphabet.hpp>
+#include <claraparabricks/genomeworks/sequence.hpp>
+
 __global__ some_kernel(ScoringMatrix::device_interface* m_ptr, DeviceSequenceVector::device_interface* p)
 {
     int idx                                       = ...;
