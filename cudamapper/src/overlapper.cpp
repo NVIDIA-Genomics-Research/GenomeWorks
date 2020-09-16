@@ -262,8 +262,12 @@ void filter_self_mappings(std::vector<Overlap>& overlaps,
                           const double max_percent_overlap)
 {
 
-    auto remove_self_helper = [&query_parser, &max_percent_overlap](const Overlap& o) {
-        std::size_t read_len        = query_parser.get_sequence_by_id(o.query_read_id_).seq.size();
+    auto remove_self_helper = [&query_parser, &target_parser, &max_percent_overlap](const Overlap& o) {
+        claraparabricks::genomeworks::io::FastaSequence query  = query_parser.get_sequence_by_id(o.query_read_id_);
+        claraparabricks::genomeworks::io::FastaSequence target = target_parser.get_sequence_by_id(o.target_read_id_);
+        if (query.name != target.name)
+            return false;
+        std::size_t read_len        = query.seq.size();
         std::int32_t overlap_length = abs(o.query_end_position_in_read_ - o.query_start_position_in_read_);
         double percent_overlap      = static_cast<double>(overlap_length) / static_cast<double>(read_len);
         return percent_overlap >= max_percent_overlap;
