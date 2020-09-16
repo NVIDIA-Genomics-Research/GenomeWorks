@@ -90,8 +90,8 @@ def match_overlaps(record, other, pos_tolerance, min_reciprocal_overlap):
     """
 
     equal, query_start_valid, query_end_valid, target_start_valid, target_end_valid, strands_equal = records_equal(record, other, pos_tolerance)
-    
-    reciprocal =  calculate_reciprocal_overlap(record, other) > min_reciprocal_overlap
+    pct_recip = calculate_reciprocal_overlap(record, other)
+    reciprocal =  pct_recip > min_reciprocal_overlap
 
     match = equal or reciprocal
 
@@ -100,6 +100,7 @@ def match_overlaps(record, other, pos_tolerance, min_reciprocal_overlap):
             "target_start_valid": target_start_valid,
             "target_end_valid": target_end_valid,
             "reciprocal_overlaps": reciprocal,
+            "percent_reciprocal": pct_recip,
             "strands_equal" : strands_equal,
             "equal" : equal,
             "match": match}
@@ -186,28 +187,35 @@ def evaluate_paf(truth_paf_filepath, test_paf_filepath, pos_tolerance, min_recip
 
         # seen_test_overlap_keys.add(key)
         # seen_test_overlap_keys.add(key_reversed)
-
+        #incorrect_query_start += not match_statistics["query_start_valid"]
+        #incorrect_query_end += not match_statistics["query_end_valid"]
+        #incorrect_target_start += not match_statistics["target_start_valid"]
+        #incorrect_target_end += not match_statistics["target_end_valid"]
+        best_pct_match = 0.0
+        best_ends = [1, 1, 1, 1]
+        
         found_match = False
         if key in truth_keys:
             for truth_interval in truth_query_intervals[test_overlap.query_sequence_name]:
                 truth_overlap = truth_interval.data
                 match_statistics = match_overlaps(truth_overlap, test_overlap, pos_tolerance, min_reciprocal)
-                incorrect_query_start += not match_statistics["query_start_valid"]
-                incorrect_query_end += not match_statistics["query_end_valid"]
-                incorrect_target_start += not match_statistics["target_start_valid"]
-                incorrect_target_end += not match_statistics["target_end_valid"]
                 if match_statistics["match"]:
                     true_positive_count += 1
                     found_match = True
+                    best_pct_match = match_statistics["percent_reciprocal"]
+                    best_ends = [0, 0, 0, 0]
                     break
+                pct_match = match_statistics["percent_reciprocal"]
+                if pct_match > best_pct_match:
+                    best_pct_match = pct_match
+                    best_ends[0] = 1 if not match_statistics["query_start_valid"] else 0
+                    best_ends[1] = 1 if not match_statistics["query_end_valid"] else 0
+                    best_ends[2] = 1 if not match_statistics["target_start_valid"] else 0
+                    best_ends[3] = 1 if not match_statistics["target_end_valid"] else 0
             if not found_match:
                 for truth_interval in truth_target_intervals[test_overlap.target_sequence_name]:
                     truth_overlap = truth_interval.data
                     match_statistics = match_overlaps(truth_overlap, test_overlap, pos_tolerance, min_reciprocal)
-                    incorrect_query_start += not match_statistics["query_start_valid"]
-                    incorrect_query_end += not match_statistics["query_end_valid"]
-                    incorrect_target_start += not match_statistics["target_start_valid"]
-                    incorrect_target_end += not match_statistics["target_end_valid"]
                     if match_statistics["match"]:
                         true_positive_count += 1
                         found_match = True
@@ -217,10 +225,6 @@ def evaluate_paf(truth_paf_filepath, test_paf_filepath, pos_tolerance, min_recip
             for truth_interval in truth_query_intervals[key_reversed]:
                 truth_overlap = truth_interval.data
                 match_statistics = match_overlaps(truth_overlap, test_overlap)
-                incorrect_query_start += not match_statistics["query_start_valid"]
-                incorrect_query_end += not match_statistics["query_end_valid"]
-                incorrect_target_start += not match_statistics["target_start_valid"]
-                incorrect_target_end += not match_statistics["target_end_valid"]
                 if match_statistics["match"]:
                     true_positive_count += 1
                     found_match = True
@@ -229,15 +233,15 @@ def evaluate_paf(truth_paf_filepath, test_paf_filepath, pos_tolerance, min_recip
                 for truth_interval in truth_target_intervals[key_reversed]:
                     truth_overlap = truth_interval.data
                     match_statistics = match_overlaps(truth_overlap, test_overlap)
-                    incorrect_query_start += not match_statistics["query_start_valid"]
-                    incorrect_query_end += not match_statistics["query_end_valid"]
-                    incorrect_target_start += not match_statistics["target_start_valid"]
-                    incorrect_target_end += not match_statistics["target_end_valid"]
                     if match_statistics["match"]:
                         true_positive_count += 1
                         found_match = True
                         break
-
+        incorrect_query_start += best_ends[0]
+        incorrect_query_end += best_ends[1]
+        incorrect_target_start += best_ends[2]
+        incorrect_target_end += best_ends[3]
+        
         if not found_match:
             false_positive_count += 1
 
