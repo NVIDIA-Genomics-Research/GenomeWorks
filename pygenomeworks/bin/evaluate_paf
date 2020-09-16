@@ -220,6 +220,13 @@ def evaluate_paf(truth_paf_filepath, test_paf_filepath, pos_tolerance, min_recip
                         true_positive_count += 1
                         found_match = True
                         break
+                    pct_match = match_statistics["percent_reciprocal"]
+                    if pct_match > best_pct_match:
+                        best_pct_match = pct_match
+                        best_ends[0] = 1 if not match_statistics["query_start_valid"] else 0
+                        best_ends[1] = 1 if not match_statistics["query_end_valid"] else 0
+                        best_ends[2] = 1 if not match_statistics["target_start_valid"] else 0
+                        best_ends[3] = 1 if not match_statistics["target_end_valid"] else 0
         if not found_match and key_reversed in truth_keys:
             test_overlap = reverse_record(test_overlap)
             for truth_interval in truth_query_intervals[key_reversed]:
@@ -229,6 +236,13 @@ def evaluate_paf(truth_paf_filepath, test_paf_filepath, pos_tolerance, min_recip
                     true_positive_count += 1
                     found_match = True
                     break
+                pct_match = match_statistics["percent_reciprocal"]
+                if pct_match > best_pct_match:
+                    best_pct_match = pct_match
+                    best_ends[0] = 1 if not match_statistics["query_start_valid"] else 0
+                    best_ends[1] = 1 if not match_statistics["query_end_valid"] else 0
+                    best_ends[2] = 1 if not match_statistics["target_start_valid"] else 0
+                    best_ends[3] = 1 if not match_statistics["target_end_valid"] else 0
             if not found_match:
                 for truth_interval in truth_target_intervals[key_reversed]:
                     truth_overlap = truth_interval.data
@@ -237,6 +251,13 @@ def evaluate_paf(truth_paf_filepath, test_paf_filepath, pos_tolerance, min_recip
                         true_positive_count += 1
                         found_match = True
                         break
+                    pct_match = match_statistics["percent_reciprocal"]
+                    if pct_match > best_pct_match:
+                        best_pct_match = pct_match
+                        best_ends[0] = 1 if not match_statistics["query_start_valid"] else 0
+                        best_ends[1] = 1 if not match_statistics["query_end_valid"] else 0
+                        best_ends[2] = 1 if not match_statistics["target_start_valid"] else 0
+                        best_ends[3] = 1 if not match_statistics["target_end_valid"] else 0
         incorrect_query_start += best_ends[0]
         incorrect_query_end += best_ends[1]
         incorrect_target_start += best_ends[2]
