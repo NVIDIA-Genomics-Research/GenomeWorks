@@ -100,7 +100,7 @@ __device__ __forceinline__ void initialize_band(ScoreT* scores, int32_t row, int
 }
 
 template <typename TraceT>
-__device__ TraceT get_trace(TraceT* backtrace, int32_t row, int32_t column, int32_t band_start, int32_t band_width)
+__device__ __forceinline__ TraceT get_trace(TraceT* backtrace, int32_t row, int32_t column, int32_t band_start, int32_t band_width)
 {
     int64_t trace_index = static_cast<int64_t>(column - band_start) + static_cast<int64_t>(row) * static_cast<int64_t>(band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING);
     return backtrace[trace_index];
@@ -311,14 +311,19 @@ __device__ __forceinline__
         {
             // Initialise the vertical boundary of the score matrix
             int32_t penalty;
-            pred_count = incoming_edge_count[node_id];
+            pred_count          = incoming_edge_count[node_id];
+            int64_t trace_index = static_cast<int64_t>(score_gIdx) * static_cast<int64_t>(band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING);
             if (pred_count == 0)
             {
-                set_score(scores, score_gIdx, -1, gap_score, gradient, band_width, max_column);
+                scores[trace_index]    = gap_score;
+                backtrace[trace_index] = -score_gIdx;
             }
             else
             {
                 pred_idx = node_id_to_pos[pred_node_id] + 1;
+                // fill in first column of backtrace buffer
+                backtrace[trace_index] = -(score_gIdx - pred_idx);
+
                 if (band_start > CELLS_PER_THREAD && pred_count == 1)
                 {
                     first_element_prev_score = min_score_value + gap_score;
@@ -331,10 +336,16 @@ __device__ __forceinline__
                     {
                         pred_node_id         = incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES + p];
                         int32_t pred_idx_tmp = node_id_to_pos[pred_node_id] + 1;
-                        penalty              = max(penalty, get_score(scores, pred_idx_tmp, -1, gradient, band_width, max_column, min_score_value));
+                        if (penalty < get_score(scores, pred_idx_tmp, -1, gradient, band_width, max_column, min_score_value))
+                        {
+                            penalty = get_score(scores, pred_idx_tmp, -1, gradient, band_width, max_column, min_score_value);
+                            // fill in first column of backtrace buffer
+                            backtrace[trace_index] = -(score_gIdx - pred_idx_tmp);
+                        }
                     }
                     first_element_prev_score = penalty + gap_score;
                 }
+
                 set_score(scores, score_gIdx, -1, first_element_prev_score, gradient, band_width, max_column);
             }
         }
@@ -427,12 +438,6 @@ __device__ __forceinline__
             scores[score_index + 2L] = score.s2;
             scores[score_index + 3L] = score.s3;
 
-            /*
-            if (score_gIdx == 1 && lane_idx == 0)
-            {
-                printf(">> %d %d %d %d   score_index %ld\n", trace.t0, trace.t1, trace.t2, trace.t3, score_index);
-            }*/
-
             backtrace[score_index]      = trace.t0;
             backtrace[score_index + 1L] = trace.t1;
             backtrace[score_index + 2L] = trace.t2;
@@ -468,70 +473,31 @@ __device__ __forceinline__
         while (!(i == 0 && j == 0) && loop_count < static_cast<int32_t>(read_length + graph_count + 2))
         {
             loop_count++;
-            //printf("i %3d j %3d \n", i, j);
 
-            if (j > 0)
+            int32_t band_start = get_band_start_for_row(i, gradient, band_width, max_column);
+            TraceT trace       = get_trace(backtrace, i, j, band_start, band_width);
+
+            if (trace == 0)
             {
-                int32_t band_start = get_band_start_for_row(i, gradient, band_width, max_column);
-                TraceT trace       = get_trace(backtrace, i, j, band_start, band_width);
-
-                if (trace == 0)
-                {
-                    // horizontal path (indel)
-                    alignment_graph[aligned_nodes] = -1;
-                    alignment_read[aligned_nodes]  = j - 1;
-                    j--;
-                }
-                else if (trace < 0)
-                {
-                    // vertical path (indel)
-                    alignment_graph[aligned_nodes] = graph[i - 1];
-                    alignment_read[aligned_nodes]  = -1;
-                    i += trace;
-                }
-                else
-                {
-                    // diagonal path (match/mismatch)
-                    alignment_graph[aligned_nodes] = graph[i - 1];
-                    alignment_read[aligned_nodes]  = j - 1;
-                    i -= trace;
-                    j--;
-                }
+                // horizontal path (indel)
+                alignment_graph[aligned_nodes] = -1;
+                alignment_read[aligned_nodes]  = j - 1;
+                j--;
             }
-            // backtrace data is not available for the first column, find the vertical path by checking predecessors
-            if (j == 0 && i != 0)
+            else if (trace < 0)
             {
-                int32_t scores_ij   = get_score(scores, i, j, gradient, band_width, max_column, min_score_value);
-                int32_t node_id     = graph[i - 1];
-                uint16_t pred_count = incoming_edge_count[node_id];
-                int32_t pred_i      = (pred_count == 0 ? 0 : node_id_to_pos[incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES]] + 1);
-                bool pred_found     = false;
-                if (scores_ij == get_score(scores, pred_i, j, gradient, band_width, max_column, min_score_value) + gap_score)
-                {
-                    alignment_graph[aligned_nodes] = graph[i - 1];
-                    alignment_read[aligned_nodes]  = -1;
-                    i                              = pred_i;
-                    pred_found                     = true;
-                }
-                else
-                {
-                    for (int32_t p = 1; p < pred_count; p++)
-                    {
-                        pred_i = node_id_to_pos[incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES + p]] + 1;
-                        if (scores_ij == get_score(scores, pred_i, j, gradient, band_width, max_column, min_score_value) + gap_score)
-                        {
-                            alignment_graph[aligned_nodes] = graph[i - 1];
-                            alignment_read[aligned_nodes]  = -1;
-                            i                              = pred_i;
-                            pred_found                     = true;
-                            break;
-                        }
-                    }
-                }
-                if (!pred_found)
-                {
-                    //ToDo throw a new error code indicating max_pred_distance is not large enough
-                }
+                // vertical path (indel)
+                alignment_graph[aligned_nodes] = graph[i - 1];
+                alignment_read[aligned_nodes]  = -1;
+                i += trace;
+            }
+            else
+            {
+                // diagonal path (match/mismatch)
+                alignment_graph[aligned_nodes] = graph[i - 1];
+                alignment_read[aligned_nodes]  = j - 1;
+                i -= trace;
+                j--;
             }
 
             aligned_nodes++;
