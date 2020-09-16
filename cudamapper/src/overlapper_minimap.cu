@@ -300,10 +300,10 @@ __device__ __forceinline__ int32_t fast_approx_log2(const int32_t val)
 
 __device__ __forceinline__ int32_t log_linear_anchor_weight(const Anchor& a,
                                                             const Anchor& b,
+                                                            const int32_t word_size,
                                                             const int32_t max_dist,
                                                             const int32_t max_bandwidth)
 {
-    int32_t word_size = 15;
     if (a.query_read_id_ != b.query_read_id_ || a.target_read_id_ != b.target_read_id_)
         return NEGATIVE_INT32_INFINITY;
 
@@ -330,7 +330,8 @@ __device__ __forceinline__ int32_t log_linear_anchor_weight(const Anchor& a,
     int32_t min_size = word_size;
     int32_t score    = min_dist > min_size ? min_size : min_dist;
     //int32_t score = min_dist;
-    score -= (double(score) * (0.01 * word_size) + double(log_dist_diff) * 0.5);
+    if (dist_diff > 0)
+        score -= (double(score) * (0.01 * word_size) + double(log_dist_diff) * 0.5);
     //printf("%d %d %d %d | %d \n", x_dist, y_dist, min_dist, min_size, score);
     return score;
 }
@@ -353,7 +354,7 @@ __global__ void chain_anchors_by_score(const Anchor* anchors,
         int32_t i_score                    = scores[global_overlap_index];
         for (int32_t j = global_overlap_index + 1; j < end_index; ++j)
         {
-            int32_t marginal_score = log_linear_anchor_weight(anchors[global_overlap_index], anchors[j], max_distance, max_bandwidth);
+            int32_t marginal_score = log_linear_anchor_weight(anchors[global_overlap_index], anchors[j], 15, max_distance, max_bandwidth);
             int32_t temp_score     = i_score + marginal_score;
             if (temp_score > scores[j])
             {
