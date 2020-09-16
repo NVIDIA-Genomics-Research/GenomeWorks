@@ -108,7 +108,6 @@ StatusType UngappedXDrop::extend_async(const char* d_query, int32_t query_length
         // TODO- Make async
         device_copy_n((d_done_raw_pointer + curr_num_pairs - 1), 1, &num_scored_segment_pairs, stream_);
         cudaStreamSynchronize(stream_);
-        std::cout<<num_scored_segment_pairs<<std::endl;
         if (num_scored_segment_pairs > 0)
         {
             compress_output<<<1024, 1024, 0, stream_>>>(d_done_raw_pointer,
@@ -125,22 +124,13 @@ StatusType UngappedXDrop::extend_async(const char* d_query, int32_t query_length
                                                                                                 d_tmp_hsp_.begin() + num_scored_segment_pairs,
                                                                                                 d_hsp_.begin() + total_scored_segment_pairs_,
                                                                                                 scored_segment_pair_equal());
-            std::cout<<"Before: "<<num_scored_segment_pairs<<std::endl;
             num_scored_segment_pairs                                      = thrust::distance(d_hsp_.begin()+total_scored_segment_pairs_, result_end);
-            std::cout<<num_scored_segment_pairs<<std::endl;
             total_scored_segment_pairs_ += num_scored_segment_pairs;
         }
 
     }
     num_scored_segment_pairs = total_scored_segment_pairs_;
     thrust::host_vector<ScoredSegmentPair> h_vec = d_hsp_;
-//
-    //    std::cout<<"Ouptut: "<<std::endl;
-//    for(int32_t i=0; i<num_scored_segment_pairs; i++)
-//    {
-//        ScoredSegmentPair ssp = h_vec[i];
-//        std::cout<<ssp.seed_pair.target_position_in_read<<','<<ssp.seed_pair.query_position_in_read<<","<<ssp.length<<","<<ssp.score<<std::endl;
-//    }
     return success;
 }
 

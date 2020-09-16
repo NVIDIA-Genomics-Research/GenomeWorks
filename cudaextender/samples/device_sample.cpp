@@ -26,16 +26,16 @@
 using namespace claraparabricks::genomeworks;
 using namespace claraparabricks::genomeworks::cudaextender;
 
-constexpr int8_t A_NT = 0;
-constexpr int8_t C_NT = 1;
-constexpr int8_t G_NT = 2;
-constexpr int8_t T_NT = 3;
-constexpr int8_t L_NT = 4;
-constexpr int8_t N_NT = 5;
-constexpr int8_t X_NT = 6;
-constexpr int8_t E_NT = 7;
-constexpr int8_t NUC  = 8;
-constexpr int8_t NUC2 = NUC * NUC;
+constexpr char A_NT = 0;
+constexpr char C_NT = 1;
+constexpr char G_NT = 2;
+constexpr char T_NT = 3;
+constexpr char L_NT = 4;
+constexpr char N_NT = 5;
+constexpr char X_NT = 6;
+constexpr char E_NT = 7;
+constexpr char NUC  = 8;
+constexpr char NUC2 = NUC * NUC;
 
 // Really simple parser with no error checks
 void parse_seed_pairs(const std::string& filepath, std::vector<SeedPair>& seed_pairs)
@@ -50,7 +50,7 @@ void parse_seed_pairs(const std::string& filepath, std::vector<SeedPair>& seed_p
         {
             SeedPair seed_pair;
             seed_pair.target_position_in_read = std::atoi(line.c_str());
-            std::getline(seed_pair_file, line, ','); // Get the next value
+            std::getline(seed_pair_file, line); // Get the next value
             seed_pair.query_position_in_read = std::atoi(line.c_str());
             seed_pairs.push_back(seed_pair);
         }
@@ -108,7 +108,7 @@ int main(int argc, char* argv[])
     // results in
     // the passed vector
     parse_seed_pairs(seed_pairs_file_path, h_seed_pairs);
-    std::cout << h_seed_pairs[0].query_position_in_read << std::endl;
+    std::cout <<"Number of seed pairs: "<<h_seed_pairs.size() << std::endl;
 
     // Define Scoring Matrix
     int32_t score_matrix[NUC2] = {91, -114, -31, -123, -1000, -1000, -100, -9100,
