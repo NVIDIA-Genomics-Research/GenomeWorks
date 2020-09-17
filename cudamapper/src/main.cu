@@ -362,7 +362,7 @@ void postprocess_and_write_thread_function(const int32_t device_id,
             if (application_parameters.all_to_all && application_parameters.filter_self_mappings)
             {
                 GW_NVTX_RANGE(profiler, "main::postprocess_and_write_thread::remove_self_mappings");
-                ::claraparabricks::genomeworks::cudamapper::details::overlapper::filter_self_mappings(overlaps, *application_parameters.query_parser, *application_parameters.target_parser, 0.98);
+                ::claraparabricks::genomeworks::cudamapper::details::overlapper::filter_self_mappings(overlaps, *application_parameters.query_parser, *application_parameters.target_parser, 0.9);
             }
 
             if (application_parameters.perform_overlap_end_rescue)
