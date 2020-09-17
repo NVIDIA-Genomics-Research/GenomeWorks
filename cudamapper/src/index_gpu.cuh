@@ -75,8 +75,7 @@ public:
     /// \param cuda_stream_copy CUDA stream on which the index is copied to host if needed. Device arrays are associated with this stream and will not be freed at least until all work issued on this stream before calling their destructor has been done
     IndexGPU(DefaultDeviceAllocator allocator,
              const io::FastaParser& parser,
-             const read_id_t first_read_id,
-             const read_id_t past_the_last_read_id,
+             const IndexDescriptor& descriptor,
              const std::uint64_t kmer_size,
              const std::uint64_t window_size,
              const bool hash_representations           = true,
@@ -417,6 +416,8 @@ void filter_out_most_common_representations(DefaultDeviceAllocator allocator,
                                             device_buffer<std::uint32_t>& first_occurrence_of_representations_d,
                                             const cudaStream_t cuda_stream = 0)
 {
+    GW_NVTX_RANGE(profiler, "IndexGPU::filter_out_most_common_representations");
+
     // *** find the number of sketch_elements for every representation ***
     // 0  2  4  8 14 17 20 <- first_occurrence_of_representations_d (before filtering)
     // 2  2  4  6  3  3  0 <- number_of_sketch_elements_with_each_representation_d (with additional 0 at the end)
@@ -564,15 +565,14 @@ void filter_out_most_common_representations(DefaultDeviceAllocator allocator,
 template <typename SketchElementImpl>
 IndexGPU<SketchElementImpl>::IndexGPU(DefaultDeviceAllocator allocator,
                                       const io::FastaParser& parser,
-                                      const read_id_t first_read_id,
-                                      const read_id_t past_the_last_read_id,
+                                      const IndexDescriptor& descriptor,
                                       const std::uint64_t kmer_size,
                                       const std::uint64_t window_size,
                                       const bool hash_representations,
                                       const double filtering_parameter,
                                       const cudaStream_t cuda_stream_generation,
                                       const cudaStream_t cuda_stream_copy)
-    : first_read_id_(first_read_id)
+    : first_read_id_(descriptor.first_read())
     , kmer_size_(kmer_size)
     , window_size_(window_size)
     , number_of_reads_(0)
@@ -588,7 +588,7 @@ IndexGPU<SketchElementImpl>::IndexGPU(DefaultDeviceAllocator allocator,
 {
     generate_index(parser,
                    first_read_id_,
-                   past_the_last_read_id,
+                   first_read_id_ + descriptor.number_of_reads(),
                    hash_representations,
                    filtering_parameter,
                    allocator,
@@ -615,6 +615,8 @@ IndexGPU<SketchElementImpl>::IndexGPU(DefaultDeviceAllocator allocator,
     , is_ready_(false) // set to true in wait_to_be_ready()
     , index_host_copy_source_(index_host_copy)
 {
+    GW_NVTX_RANGE(profiler, "IndexGPU::constructor_copy_from_IndexHostCopy");
+
     number_of_reads_                     = index_host_copy->number_of_reads();
     number_of_basepairs_in_longest_read_ = index_host_copy->number_of_basepairs_in_longest_read();
 
@@ -724,6 +726,7 @@ void IndexGPU<SketchElementImpl>::generate_index(const io::FastaParser& parser,
                                                  DefaultDeviceAllocator allocator,
                                                  const cudaStream_t cuda_stream)
 {
+    GW_NVTX_RANGE(profiler, "IndexGPU::generate_index");
 
     // check if there are any reads to process
     if (first_read_id >= past_the_last_read_id)
@@ -737,30 +740,33 @@ void IndexGPU<SketchElementImpl>::generate_index(const io::FastaParser& parser,
 
     std::uint64_t total_basepairs = 0;
     std::vector<ArrayBlock> read_id_to_basepairs_section_h;
-    std::vector<io::FastaSequence> fasta_reads;
+    std::vector<read_id_t> local_to_global_read_id;
 
     number_of_basepairs_in_longest_read_ = 0;
 
     // deterine the number of basepairs in each read and assign read_id to each read
-    for (read_id_t read_id = first_read_id; read_id < past_the_last_read_id; ++read_id)
     {
-        fasta_reads.emplace_back(parser.get_sequence_by_id(read_id));
-        const std::string& read_basepairs = fasta_reads.back().seq;
-        const std::string& read_name      = fasta_reads.back().name;
-        if (read_basepairs.length() >= window_size_ + kmer_size_ - 1)
+        GW_NVTX_RANGE(profiler, "IndexGPU::generate_index::count_basepairs");
+        for (read_id_t read_id = first_read_id; read_id < past_the_last_read_id; ++read_id)
         {
-            // TODO: make sure that no read is longer than what fits into position_in_read_t
-            read_id_to_basepairs_section_h.emplace_back(ArrayBlock{total_basepairs, static_cast<std::uint32_t>(read_basepairs.length())});
-            total_basepairs += read_basepairs.length();
-            number_of_basepairs_in_longest_read_ = std::max(number_of_basepairs_in_longest_read_, static_cast<position_in_read_t>(read_basepairs.length()));
-        }
-        else
-        {
-            // TODO: Implement this skipping in a correct manner
-            GW_LOG_INFO("Skipping read {}. It has {} basepairs, one window covers {} basepairs",
-                        read_name,
-                        read_basepairs.length(),
-                        window_size_ + kmer_size_ - 1);
+            const io::FastaSequence& sequence = parser.get_sequence_by_id(read_id);
+            const std::string& read_basepairs = sequence.seq;
+            if (read_basepairs.length() >= window_size_ + kmer_size_ - 1)
+            {
+                // TODO: make sure that no read is longer than what fits into position_in_read_t
+                local_to_global_read_id.push_back(read_id);
+                read_id_to_basepairs_section_h.emplace_back(ArrayBlock{total_basepairs, get_size<std::uint32_t>(read_basepairs)});
+                total_basepairs += read_basepairs.length();
+                number_of_basepairs_in_longest_read_ = std::max(number_of_basepairs_in_longest_read_, get_size<position_in_read_t>(read_basepairs));
+            }
+            else
+            {
+                // TODO: Implement this skipping in a correct manner
+                GW_LOG_INFO("Skipping read {}. It has {} basepairs, one window covers {} basepairs",
+                            sequence.name,
+                            read_basepairs.length(),
+                            window_size_ + kmer_size_ - 1);
+            }
         }
     }
 
@@ -774,41 +780,45 @@ void IndexGPU<SketchElementImpl>::generate_index(const io::FastaParser& parser,
         return;
     }
 
-    std::vector<char> merged_basepairs_h(total_basepairs);
-
-    // copy basepairs from each read into one big array
-    // read_id starts from first_read_id which can have an arbitrary value, local_read_id always starts from 0
-    for (read_id_t local_read_id = 0; local_read_id < number_of_reads_; ++local_read_id)
+    std::vector<char> merged_basepairs_h;
     {
-        const std::string& read_basepairs = fasta_reads[local_read_id].seq;
-        std::copy(std::begin(read_basepairs),
-                  std::end(read_basepairs),
-                  std::next(std::begin(merged_basepairs_h), read_id_to_basepairs_section_h[local_read_id].first_element_));
+        GW_NVTX_RANGE(profiler, "IndexGPU::generate_index::allocate_merged_basepairs");
+        merged_basepairs_h.resize(total_basepairs);
     }
-    fasta_reads.clear();
-    fasta_reads.shrink_to_fit();
+
+    {
+        GW_NVTX_RANGE(profiler, "IndexGPU::generate_index::merge_basepairs");
+        // copy basepairs from each read into one big array
+        // read_id starts from first_read_id which can have an arbitrary value, local_read_id always starts from 0
+        for (read_id_t local_read_id = 0; local_read_id < local_to_global_read_id.size(); ++local_read_id)
+        {
+            const std::string& read_basepairs = parser.get_sequence_by_id(local_to_global_read_id[local_read_id]).seq;
+            std::copy(std::begin(read_basepairs),
+                      std::end(read_basepairs),
+                      std::next(std::begin(merged_basepairs_h), read_id_to_basepairs_section_h[local_read_id].first_element_));
+        }
+    }
 
     // move basepairs to the device
-    GW_LOG_INFO("Allocating {} bytes for read_id_to_basepairs_section_d", read_id_to_basepairs_section_h.size() * sizeof(decltype(read_id_to_basepairs_section_h)::value_type));
     device_buffer<decltype(read_id_to_basepairs_section_h)::value_type> read_id_to_basepairs_section_d(read_id_to_basepairs_section_h.size(), allocator, cuda_stream);
-    cudautils::device_copy_n(read_id_to_basepairs_section_h.data(),
-                             read_id_to_basepairs_section_h.size(),
-                             read_id_to_basepairs_section_d.data(),
-                             cuda_stream); // H2D
-
-    GW_LOG_INFO("Allocating {} bytes for merged_basepairs_d", merged_basepairs_h.size() * sizeof(decltype(merged_basepairs_h)::value_type));
     device_buffer<decltype(merged_basepairs_h)::value_type> merged_basepairs_d(merged_basepairs_h.size(), allocator, cuda_stream);
-    cudautils::device_copy_n(merged_basepairs_h.data(),
-                             merged_basepairs_h.size(),
-                             merged_basepairs_d.data(),
-                             cuda_stream); // H2D
-    cudaStreamSynchronize(cuda_stream);
-    merged_basepairs_h.clear();
-    merged_basepairs_h.shrink_to_fit();
+
+    {
+        GW_NVTX_RANGE(profiler, "IndexGPU::generate_index::move_basepairs_to_gpu");
+        cudautils::device_copy_n(read_id_to_basepairs_section_h.data(),
+                                 read_id_to_basepairs_section_h.size(),
+                                 read_id_to_basepairs_section_d.data(),
+                                 cuda_stream); // H2D
+
+        cudautils::device_copy_n(merged_basepairs_h.data(),
+                                 merged_basepairs_h.size(),
+                                 merged_basepairs_d.data(),
+                                 cuda_stream); // H2D
+    }
 
     // sketch elements get generated here
     auto sketch_elements = SketchElementImpl::generate_sketch_elements(allocator,
-                                                                       number_of_reads_,
+                                                                       local_to_global_read_id.size(), // number of valid reads
                                                                        kmer_size_,
                                                                        window_size_,
                                                                        first_read_id,
@@ -818,24 +828,29 @@ void IndexGPU<SketchElementImpl>::generate_index(const io::FastaParser& parser,
                                                                        hash_representations,
                                                                        cuda_stream);
 
+    GW_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
+    merged_basepairs_h.clear();
+    merged_basepairs_h.shrink_to_fit();
+
     device_buffer<representation_t> generated_representations_d                         = std::move(sketch_elements.representations_d);
     device_buffer<typename SketchElementImpl::ReadidPositionDirection> generated_rest_d = std::move(sketch_elements.rest_d);
     // TODO: ^^^^ The reason for having the rest of values packed together is to be able to sort them all at once (a few lines below)
     //       Consider implementing a move-to-index function for that sort. That way this interface would be more verbose and there
     //       would be no need for copy_rest_to_separate_arrays()
 
-    GW_LOG_INFO("Deallocating {} bytes from read_id_to_basepairs_section_d", read_id_to_basepairs_section_d.size() * sizeof(decltype(read_id_to_basepairs_section_d)::value_type));
     read_id_to_basepairs_section_d.free();
-    GW_LOG_INFO("Deallocating {} bytes from merged_basepairs_d", merged_basepairs_d.size() * sizeof(decltype(merged_basepairs_d)::value_type));
     merged_basepairs_d.free();
 
     // *** sort sketch elements by representation ***
     // As this is a stable sort and the data was initailly grouper by read_id this means that the sketch elements within each representations are sorted by read_id
     // TODO: consider using a CUB radix sort based function here
-    thrust::stable_sort_by_key(thrust::cuda::par(allocator).on(cuda_stream),
-                               std::begin(generated_representations_d),
-                               std::end(generated_representations_d),
-                               std::begin(generated_rest_d));
+    {
+        GW_NVTX_RANGE(profiler, "IndexGPU::generate_index::sort_minimizers");
+        thrust::stable_sort_by_key(thrust::cuda::par(allocator).on(cuda_stream),
+                                   std::begin(generated_representations_d),
+                                   std::end(generated_representations_d),
+                                   std::begin(generated_rest_d));
+    }
 
     representations_d_ = std::move(generated_representations_d);
 
@@ -846,11 +861,14 @@ void IndexGPU<SketchElementImpl>::generate_index(const io::FastaParser& parser,
     const std::uint32_t threads = 256;
     const std::uint32_t blocks  = ceiling_divide<int64_t>(representations_d_.size(), threads);
 
-    details::index_gpu::copy_rest_to_separate_arrays<<<blocks, threads, 0, cuda_stream>>>(generated_rest_d.data(),
-                                                                                          read_ids_d_.data(),
-                                                                                          positions_in_reads_d_.data(),
-                                                                                          directions_of_reads_d_.data(),
-                                                                                          representations_d_.size());
+    {
+        GW_NVTX_RANGE(profiler, "IndexGPU::generate_index::copy_rest_to_separate_arrays");
+        details::index_gpu::copy_rest_to_separate_arrays<<<blocks, threads, 0, cuda_stream>>>(generated_rest_d.data(),
+                                                                                              read_ids_d_.data(),
+                                                                                              positions_in_reads_d_.data(),
+                                                                                              directions_of_reads_d_.data(),
+                                                                                              representations_d_.size());
+    }
 
     // now generate the index elements
     details::index_gpu::find_first_occurrences_of_representations(allocator,

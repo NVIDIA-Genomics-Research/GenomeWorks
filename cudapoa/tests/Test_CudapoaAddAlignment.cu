@@ -299,7 +299,7 @@ BasicGraph testAddAlignment(const BasicAlignment& obj)
                  node_alignments, node_alignment_count,
                  incoming_edges, incoming_edge_count,
                  outgoing_edges, outgoing_edge_count,
-                 incoming_edge_w, outgoing_edge_w,
+                 incoming_edge_w,
                  alignment_length,
                  graph,
                  alignment_graph,

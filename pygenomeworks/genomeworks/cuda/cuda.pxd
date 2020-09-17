@@ -14,22 +14,16 @@
 # limitations under the License.
 #
 
+# cython: profile=False
+# distutils: language = c++
+# cython: embedsignature = True
+# cython: language_level = 3
 
+# This file declares public cython utility objects for CUDA.
 
-## Add benchmark to cudapoa project
-
-set(MODULE_NAME benchmark_cudapoa)
-
-set(SOURCES
-        main.cpp
-        )
-get_property(cudapoa_data_include_dir GLOBAL PROPERTY cudapoa_data_include_dir)
-include_directories(${cudapoa_data_include_dir})
-
-set(LIBS
-        cudapoa)
-
-gw_add_benchmarks(${MODULE_NAME} "cudapoa" "${SOURCES}" "${LIBS}")
-
-install(FILES README.md
-    DESTINATION benchmarks/cudapoa)
+cdef class CudaStream:
+    # Using size_t to store stream since underlying
+    # representation of cudaStream_t is a (void *)
+    # and python doesn't know how to deal with converting
+    # (void *) to python objects.
+    cdef size_t stream

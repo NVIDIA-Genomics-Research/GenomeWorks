@@ -19,7 +19,6 @@
 #include <vector>
 
 #include "index_cache.cuh"
-#include "index_descriptor.hpp"
 
 #include <claraparabricks/genomeworks/io/fasta_parser.hpp>
 

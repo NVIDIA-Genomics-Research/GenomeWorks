@@ -18,7 +18,6 @@
 #include <claraparabricks/genomeworks/io/fasta_parser.hpp>
 #include <claraparabricks/genomeworks/utils/cudautils.hpp>
 #include <claraparabricks/genomeworks/utils/signed_integer_utils.hpp>
-#include "../src/index_descriptor.hpp"
 #include <cudamapper_file_location.hpp>
 
 #include <claraparabricks/genomeworks/cudamapper/index.hpp>
@@ -85,8 +84,7 @@ void process_batch(std::vector<IndexDescriptor>& query_index_descriptors,
     {
         std::unique_ptr<Index> query_index = Index::create_index(allocator,
                                                                  *query_parser,
-                                                                 query_index_descriptor.first_read(),
-                                                                 query_index_descriptor.first_read() + query_index_descriptor.number_of_reads(),
+                                                                 query_index_descriptor,
                                                                  KMER_SIZE,
                                                                  WINDOWS_SIZE,
                                                                  true,                 // hash representations
@@ -99,8 +97,7 @@ void process_batch(std::vector<IndexDescriptor>& query_index_descriptors,
             {
                 std::unique_ptr<Index> target_index = Index::create_index(allocator,
                                                                           *target_parser,
-                                                                          target_index_descriptor.first_read(),
-                                                                          target_index_descriptor.first_read() + target_index_descriptor.number_of_reads(),
+                                                                          target_index_descriptor,
                                                                           KMER_SIZE,
                                                                           WINDOWS_SIZE,
                                                                           true,                 // hash representations

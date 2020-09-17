@@ -174,8 +174,7 @@ void IndexCache::generate_content_host(const std::vector<IndexDescriptor>& descr
             // create index
             index_on_device = Index::create_index(allocator_,
                                                   *parser,
-                                                  descriptor_of_index_to_cache.first_read(),
-                                                  descriptor_of_index_to_cache.first_read() + descriptor_of_index_to_cache.number_of_reads(),
+                                                  descriptor_of_index_to_cache,
                                                   kmer_size_,
                                                   window_size_,
                                                   hash_representations_,
