@@ -27,11 +27,6 @@ namespace genomeworks
 namespace cudamapper
 {
 
-namespace details
-{
-class IndexHostMemoryPinner;
-} // namespace details
-
 /// IndexHostCopy - Creates and maintains a copy of computed IndexGPU elements on the host
 ///
 ///
