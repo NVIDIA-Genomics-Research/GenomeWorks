@@ -43,7 +43,7 @@ public:
                             const char* d_target, int32_t target_length,
                             int32_t score_threshold, SeedPair* d_seed_pairs,
                             int32_t num_seed_pairs, ScoredSegmentPair* d_scored_segment_pairs,
-                            int32_t& num_scored_segment_pairs) override;
+                            int32_t* d_num_scored_segment_pairs) override;
 
     StatusType sync() override;
     void reset() override;
@@ -63,9 +63,8 @@ private:
     int32_t* d_done_;   // TODO- Rename scratch space
     ScoredSegmentPair* d_tmp_ssp_;  // TODO- Rename Scratch space 2
     int32_t total_scored_segment_pairs_;
-    void* d_temp_storage_unique_; // temporary storage for cub functions
-    int32_t* d_num_hsps_temp; // TODO - move out to sample
-    size_t storage_;
+    void* d_temp_storage_cub_; // temporary storage for cub functions
+    size_t cub_storage_bytes_;
 };
 
 } // namespace cudaextender

@@ -87,6 +87,31 @@ int main(int argc, char* argv[])
     const int32_t xdrop_threshold = 910;
     const bool input_no_entropy   = false;
     const int32_t score_threshold = 3000;
+    char c;
+    bool print=false, help=false;
+    while ((c = getopt(argc, argv, "p")) != -1)
+    {
+        switch (c)
+        {
+        case 'p':
+            print = true;
+            break;
+        case 'h':
+        default:
+            help = true;
+            break;
+        }
+    }
+
+    if(help)
+    {
+        std::cout << "CUDAExtender API sample program. Runs ungapped extender on canned data." << std::endl;
+        std::cout << "-p : Print the Scored Segment Pair output to stdout" << std::endl;
+        std::cout << "-h : Print help message" << std::endl;
+        std::exit(0);
+    }
+
+
     // Fasta query and target files
     std::string target_file_path = "../data/example.fa";
     std::unique_ptr<io::FastaParser> fasta_parser_target = io::create_kseq_fasta_parser(target_file_path, 0, false);
@@ -108,7 +133,7 @@ int main(int argc, char* argv[])
     // results in
     // the passed vector
     parse_seed_pairs(seed_pairs_file_path, h_seed_pairs);
-    std::cout <<"Number of seed pairs: "<<h_seed_pairs.size() << std::endl;
+    std::cerr <<"Number of seed pairs: "<<h_seed_pairs.size() << std::endl;
 
     // Define Scoring Matrix
     int32_t score_matrix[NUC2] = {91, -114, -31, -123, -1000, -1000, -100, -9100,
@@ -120,24 +145,32 @@ int main(int argc, char* argv[])
                                 -100, -100, -100, -100, -1000, -1000, -100, -9100,
                                 -9100, -9100, -9100, -9100, -9100, -9100, -9100, -9100};
 
-    char* h_encoded_target = (char*)malloc(sizeof(char) * target_sequence.length());
-    char* h_encoded_query  = (char*)malloc(sizeof(char) * query_sequence.length());
+    // Allocate pinned memory for query and target strings
+    char* h_encoded_target;
+    char* h_encoded_query;
+    GW_CU_CHECK_ERR(cudaHostAlloc((void**)&h_encoded_target, sizeof(char) * target_sequence.length(), cudaHostAllocPortable));
+    GW_CU_CHECK_ERR(cudaHostAlloc((void**)&h_encoded_query, sizeof(char) * query_sequence.length(), cudaHostAllocPortable));
+
     encode_string(h_encoded_target, target_sequence.c_str(), target_sequence.length());
     encode_string(h_encoded_query, query_sequence.c_str(), query_sequence.length());
     // Create a stream for async use
     CudaStream stream0 = make_cuda_stream();
     // Allocate space on device for target and query sequences, seed_pairs,
-    // high scoring segment pairs (hsps) and num_hsps.
+    // high scoring segment pairs (ssp) and num_ssp.
     char* d_query;
     GW_CU_CHECK_ERR(cudaMalloc((void**)&d_query, sizeof(char) * query_sequence.length()));
     char* d_target;
     GW_CU_CHECK_ERR(cudaMalloc((void**)&d_target, sizeof(char) * target_sequence.length()));
+
+    // Allocate a minimum of num_seed_pairs as all seed_pairs could satisfy the threshold in the worst case
     SeedPair* d_seed_pairs;
     GW_CU_CHECK_ERR(cudaMalloc((void**)&d_seed_pairs, sizeof(SeedPair) * h_seed_pairs.size()));
-    // Allocate a minimum of num_seed_pairs as all seed_pairs could be hsps in the worst case
-    int32_t h_num_hsps = 0;
-    ScoredSegmentPair* d_hsps;
-    GW_CU_CHECK_ERR(cudaMalloc((void**)&d_hsps, sizeof(ScoredSegmentPair) * h_seed_pairs.size()));
+
+    int32_t* d_num_ssp;
+    GW_CU_CHECK_ERR(cudaMalloc((void**)&d_num_ssp, sizeof(int32_t)));
+
+    ScoredSegmentPair* d_ssp;
+    GW_CU_CHECK_ERR(cudaMalloc((void**)&d_ssp, sizeof(ScoredSegmentPair) * h_seed_pairs.size()));
 
     // Async Memcopy all the input values to device
     // TODO - Convert to pinned memory for true async copy
@@ -159,30 +192,40 @@ int main(int argc, char* argv[])
                                     score_threshold,
                                     d_seed_pairs,
                                     h_seed_pairs.size(),
-                                    d_hsps,
-                                    h_num_hsps);
+                                    d_ssp,
+                                    d_num_ssp);
 
     // Wait for ungapped extender to finish
     GW_CU_CHECK_ERR(cudaStreamSynchronize(stream0.get()));
 
+    // Following function has synchronization built-in, but the above sync is kept for demoing the async nature
+    int32_t h_num_ssp = cudautils::get_value_from_device(d_num_ssp, stream0.get());
+
     //Get results
-    std::cout << "h_num_hsps=" << h_num_hsps << std::endl;
-    ScoredSegmentPair *h_ssps =(ScoredSegmentPair*) malloc(h_num_hsps*sizeof(ScoredSegmentPair));
-    cudaMemcpy(h_ssps, d_hsps, h_num_hsps*sizeof(ScoredSegmentPair), cudaMemcpyDeviceToHost);
-//    for (int i=0; i<h_num_hsps; i++)
-//    {
-//        ScoredSegmentPair segment = h_ssps[i];
-//        std::cout <<segment.seed_pair.target_position_in_read <<"," << segment.seed_pair.query_position_in_read
-//                  << "," << segment.length <<","<<segment.score<<std::endl;
-//
-//    }
-    free(h_ssps);
-    free(h_encoded_target);
-    free(h_encoded_query);
-    // Free all allocated memory on the GPU
+    std::cerr << "Number of ScoredSegmentPairs found: " << h_num_ssp << std::endl;
+    ScoredSegmentPair *h_ssp =(ScoredSegmentPair*) malloc(h_num_ssp*sizeof(ScoredSegmentPair));
+    cudaMemcpy(h_ssp, d_ssp, h_num_ssp*sizeof(ScoredSegmentPair), cudaMemcpyDeviceToHost);
+
+    if(print){
+        std::cout<<"Target Position, Query Position, Length, Score"<<std::endl;
+        for (int i=0; i<h_num_ssp; i++)
+        {
+            ScoredSegmentPair segment = h_ssp[i];
+            std::cout <<segment.seed_pair.target_position_in_read <<"," << segment.seed_pair.query_position_in_read
+                      << "," << segment.length <<","<<segment.score<<std::endl;
+
+        }
+    }
+
+    // Free memory on host
+    free(h_ssp);
+    // Free all CUDA allocated memory
+    GW_CU_CHECK_ERR(cudaFreeHost(h_encoded_target));
+    GW_CU_CHECK_ERR(cudaFreeHost(h_encoded_query));
     GW_CU_CHECK_ERR(cudaFree(d_query));
     GW_CU_CHECK_ERR(cudaFree(d_target));
-    GW_CU_CHECK_ERR(cudaFree(d_hsps));
+    GW_CU_CHECK_ERR(cudaFree(d_ssp));
+    GW_CU_CHECK_ERR(cudaFree(d_num_ssp));
     GW_CU_CHECK_ERR(cudaFree(d_seed_pairs));
 
     return 0;

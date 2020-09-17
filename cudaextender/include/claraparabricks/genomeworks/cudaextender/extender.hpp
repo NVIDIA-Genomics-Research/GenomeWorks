@@ -79,7 +79,7 @@ public:
                                     const char* d_target, int32_t target_length,
                                     int32_t score_threshold, SeedPair* d_seed_pairs,
                                     int32_t num_seed_pairs, ScoredSegmentPair* d_scored_segment_pairs,
-                                    int32_t& num_scored_segment_pairs) = 0;
+                                    int32_t* d_num_scored_segment_pairs) = 0;
 
     /// \brief Waits for CUDA accelerated extension to finish
     ///
