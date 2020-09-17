@@ -45,7 +45,7 @@ public:
 
     /// \brief default constructor
     /// \param default_streams if a call to allocate() does not specify any streams these streams will be used instead, ignored in this allocator
-    CudaMallocAllocator(const std::vector<cudaStream_t>& default_streams = {{0}})
+    explicit CudaMallocAllocator(const std::vector<cudaStream_t>& default_streams = {{0}})
     {
         static_cast<void>(default_streams);
     }
@@ -177,8 +177,8 @@ public:
     /// \brief Constructor
     /// \param max_cached_bytes max bytes used by memory resource
     /// \param default_streams if a call to allocate() does not specify any streams these streams will be used instead
-    CachingDeviceAllocator(size_t max_cached_bytes,
-                           const std::vector<cudaStream_t>& default_streams = {{0}})
+    explicit CachingDeviceAllocator(size_t max_cached_bytes,
+                                    const std::vector<cudaStream_t>& default_streams = {{0}})
         : memory_resource_(std::make_shared<MemoryResource>(max_cached_bytes))
         , default_streams_(default_streams)
     {
