@@ -242,12 +242,6 @@ public:
     IndexNotFoundException(IndexDescriptor index_descriptor,
                            IndexType index_type);
 
-    IndexNotFoundException(const IndexNotFoundException&) = default;
-    IndexNotFoundException& operator=(const IndexNotFoundException&) = default;
-    IndexNotFoundException(IndexNotFoundException&&)                 = default;
-    IndexNotFoundException& operator=(IndexNotFoundException&&) = default;
-    virtual ~IndexNotFoundException()                           = default;
-
     /// Returns the error message of the exception
     virtual const char* what() const noexcept;
 
