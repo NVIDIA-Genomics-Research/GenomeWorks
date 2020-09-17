@@ -28,8 +28,10 @@ set(SOURCES
     Test_CudamapperMinimizer.cpp
     Test_CudamapperOverlapper.cpp
     Test_CudamapperOverlapperTriggered.cu
+    Test_CudamapperOverlapperMinimap.cu
     Test_CudamapperUtilsKmerFunctions.cpp
    )
+
 
 get_property(cudamapper_data_include_dir GLOBAL PROPERTY cudamapper_data_include_dir)
 include_directories(${cudamapper_data_include_dir})
