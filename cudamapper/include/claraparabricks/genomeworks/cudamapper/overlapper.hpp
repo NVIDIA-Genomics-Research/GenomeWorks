@@ -110,7 +110,8 @@ public:
     /// \brief Identified overlaps which can be combined into a larger overlap and add them to the input vector
     /// \param overlaps reference to vector of Overlaps. New overlaps (result of fusing) are added to this vector
     /// \param drop_fused_overlaps If true, remove overlaps that are fused into larger overlaps in output.
-    static void post_process_overlaps(std::vector<Overlap>& overlaps, bool drop_fused_overlaps = false);
+    /// \param max_reciprocal Maximum reciprocal identity between two overlaps before one is filtered. Default (< 0.0) means no filtering; 0.0 removes only identical adjacent overlaps.
+    static void post_process_overlaps(std::vector<Overlap>& overlaps, bool drop_fused_overlaps = false, const double max_reciprocal = -1.0);
 
     /// \brief Given a vector of overlaps, extend the start/end of the overlaps based on the sequence similarity of the query and target.
     /// \param overlaps A vector of overlaps. This is modified in-place; query_start_position_in_read_, query_end_position_in_read_,

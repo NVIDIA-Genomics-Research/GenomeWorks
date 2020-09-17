@@ -53,6 +53,7 @@ public:
     int32_t min_overlap_len                 = 250;   // l, recommended range: 100 - 1000
     int32_t min_bases_per_residue           = 1000;  // b
     float min_overlap_fraction              = 0.8;   // z
+    float max_reciprocal                    = -1.0;  // Z, < 0 : no filtering. 0.0: only identical filtering. > 1.0: filter by percent reciprocity
     bool perform_overlap_end_rescue         = false; // R
     bool drop_fused_overlaps                = false; // D
     bool filter_self_mappings               = true;  // S (to turn off)

@@ -52,6 +52,7 @@ ApplicationParameters::ApplicationParameters(int argc, char* argv[])
         {"rescue-overlap-ends", no_argument, 0, 'R'},
         {"drop-fused-overlaps", no_argument, 0, 'D'},
         {"preserve-self-mappings", no_argument, 0, 'S'},
+        {"max-reciprocal", required_argument, 0, 'Z'},
         {"query-indices-in-host-memory", required_argument, 0, 'Q'},
         {"query-indices-in-device-memory", required_argument, 0, 'q'},
         {"target-indices-in-host-memory", required_argument, 0, 'C'},
@@ -60,7 +61,7 @@ ApplicationParameters::ApplicationParameters(int argc, char* argv[])
         {"help", no_argument, 0, 'h'},
     };
 
-    std::string optstring = "k:w:d:m:i:t:F:a:r:l:b:z:RDSQ:q:C:c:vh";
+    std::string optstring = "k:w:d:m:i:t:F:a:r:l:b:z:Z:RDSQ:q:C:c:vh";
 
     bool target_indices_in_host_memory_set   = false;
     bool target_indices_in_device_memory_set = false;
@@ -111,6 +112,9 @@ ApplicationParameters::ApplicationParameters(int argc, char* argv[])
             break;
         case 'z':
             min_overlap_fraction = std::stof(optarg);
+            break;
+        case 'Z':
+            max_reciprocal = std::stof(optarg);
             break;
         case 'R':
             perform_overlap_end_rescue = true;

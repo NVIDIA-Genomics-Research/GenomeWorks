@@ -356,7 +356,7 @@ void postprocess_and_write_thread_function(const int32_t device_id,
             {
                 GW_NVTX_RANGE(profiler, "main::postprocess_and_write_thread::postprocessing");
                 // Overlap post processing - add overlaps which can be combined into longer ones.
-                Overlapper::post_process_overlaps(data_to_write->overlaps, application_parameters.drop_fused_overlaps);
+                Overlapper::post_process_overlaps(data_to_write->overlaps, application_parameters.drop_fused_overlaps, application_parameters.max_reciprocal);
             }
 
             if (application_parameters.all_to_all && application_parameters.filter_self_mappings)

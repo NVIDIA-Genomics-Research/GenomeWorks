@@ -177,7 +177,7 @@ namespace genomeworks
 namespace cudamapper
 {
 
-void Overlapper::post_process_overlaps(std::vector<Overlap>& overlaps, const bool drop_fused_overlaps)
+void Overlapper::post_process_overlaps(std::vector<Overlap>& overlaps, const bool drop_fused_overlaps, const double max_reciprocal)
 {
     const auto num_overlaps = get_size(overlaps);
     bool in_fuse            = false;
@@ -188,7 +188,7 @@ void Overlapper::post_process_overlaps(std::vector<Overlap>& overlaps, const boo
     int num_residues = 0;
     Overlap prev_overlap;
     std::vector<bool> drop_overlap_mask;
-    if (drop_fused_overlaps)
+    if (drop_fused_overlaps || max_reciprocal >= 0.0)
     {
         drop_overlap_mask.resize(overlaps.size());
     }
@@ -197,6 +197,14 @@ void Overlapper::post_process_overlaps(std::vector<Overlap>& overlaps, const boo
     {
         prev_overlap                  = overlaps[i - 1];
         const Overlap current_overlap = overlaps[i];
+        if (max_reciprocal == 0.0 && overlaps_identical(prev_overlap, current_overlap))
+        {
+            drop_overlap_mask[i - 1] = true;
+        }
+        else if (max_reciprocal > 0.0 && percent_reciprocal_overlap(prev_overlap, current_overlap))
+        {
+            drop_overlap_mask[i - 1] = true;
+        }
         //Check if previous overlap can be merged into the current one
         if (overlaps_mergable(prev_overlap, current_overlap))
         {
@@ -274,7 +282,7 @@ void Overlapper::post_process_overlaps(std::vector<Overlap>& overlaps, const boo
         overlaps.push_back(fused_overlap);
     }
 
-    if (drop_fused_overlaps)
+    if (drop_fused_overlaps || max_reciprocal >= 0.0)
     {
         details::overlapper::drop_overlaps_by_mask(overlaps, drop_overlap_mask);
     }
