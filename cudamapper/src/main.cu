@@ -359,6 +359,12 @@ void postprocess_and_write_thread_function(const int32_t device_id,
                 Overlapper::post_process_overlaps(data_to_write->overlaps, application_parameters.drop_fused_overlaps);
             }
 
+            if (application_parameters.all_to_all && application_parameters.filter_self_mappings)
+            {
+                GW_NVTX_RANGE(profiler, "main::postprocess_and_write_thread::remove_self_mappings");
+                ::claraparabricks::genomeworks::cudamapper::details::overlapper::filter_self_mappings(overlaps, *application_parameters.query_parser, *application_parameters.target_parser, 0.98);
+            }
+
             if (application_parameters.perform_overlap_end_rescue)
             {
                 GW_NVTX_RANGE(profiler, "main::postprocess_and_write_thread::rescue_overlap_end");

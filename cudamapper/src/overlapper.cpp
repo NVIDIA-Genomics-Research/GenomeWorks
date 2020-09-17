@@ -98,6 +98,51 @@ bool overlaps_mergable(const claraparabricks::genomeworks::cudamapper::Overlap o
     return short_gap_relative_to_length;
 }
 
+inline bool overlaps_identical(const claraparabricks::genomeworks::cudamapper::Overlap& a, const claraparabricks::genomeworks::cudamapper::Overlap& b)
+{
+    return a.query_read_id_ == b.query_read_id_ &&
+           a.target_read_id_ == b.target_read_id_ &&
+           a.query_start_position_in_read_ == b.query_start_position_in_read_ &&
+           a.query_end_position_in_read_ == b.query_end_position_in_read_ &&
+           a.target_start_position_in_read_ == b.target_start_position_in_read_ &&
+           a.target_end_position_in_read_ == b.target_end_position_in_read_;
+}
+
+inline double percent_reciprocal_overlap(const claraparabricks::genomeworks::cudamapper::Overlap& a, const claraparabricks::genomeworks::cudamapper::Overlap& b)
+{
+    if (a.query_read_id_ != b.query_read_id_ || a.target_read_id_ != b.target_read_id_ || a.relative_strand != b.relative_strand)
+    {
+        return 0.0;
+    }
+    int32_t query_overlap = std::min(a.query_end_position_in_read_, b.query_end_position_in_read_) - std::max(a.query_start_position_in_read_, b.query_start_position_in_read_);
+    int32_t target_overlap;
+    if (a.relative_strand == claraparabricks::genomeworks::cudamapper::RelativeStrand::Forward && b.relative_strand == claraparabricks::genomeworks::cudamapper::RelativeStrand::Forward)
+    {
+        target_overlap = std::min(a.target_end_position_in_read_, b.target_end_position_in_read_) - std::max(a.target_start_position_in_read_, b.target_start_position_in_read_);
+    }
+    else
+    {
+        target_overlap = std::max(a.target_start_position_in_read_, b.target_start_position_in_read_) - std::min(a.target_end_position_in_read_, b.target_end_position_in_read_);
+    }
+
+    int32_t query_total_length = std::max(a.query_end_position_in_read_, b.query_end_position_in_read_) - std::min(a.query_start_position_in_read_, b.query_start_position_in_read_);
+    int32_t target_total_length;
+    if (a.relative_strand == claraparabricks::genomeworks::cudamapper::RelativeStrand::Forward && b.relative_strand == claraparabricks::genomeworks::cudamapper::RelativeStrand::Forward)
+    {
+        target_total_length = std::max(a.target_end_position_in_read_, b.target_end_position_in_read_) - std::min(a.target_start_position_in_read_, b.target_start_position_in_read_);
+    }
+    else
+    {
+        target_total_length = std::min(a.target_start_position_in_read_, b.target_start_position_in_read_) - std::max(a.target_end_position_in_read_, b.target_end_position_in_read_);
+    }
+    return static_cast<double>(query_overlap + target_overlap) / static_cast<double>(query_total_length + target_total_length);
+}
+
+bool overlaps_reciprocal(const claraparabricks::genomeworks::cudamapper::Overlap& a, const claraparabricks::genomeworks::cudamapper::Overlap& b, const double threshold)
+{
+    return percent_reciprocal_overlap(a, b) > threshold;
+}
+
 // Reverse complement lookup table
 static char complement_array[26] = {
     84, 66, 71, 68, 69,
@@ -239,6 +284,27 @@ namespace details
 {
 namespace overlapper
 {
+
+void filter_self_mappings(std::vector<Overlap>& overlaps,
+                          const io::FastaParser& query_parser,
+                          const io::FastaParser& target_parser,
+                          const double max_percent_overlap)
+{
+
+    auto remove_self_helper = [&query_parser, &target_parser, &max_percent_overlap](const Overlap& o) {
+        claraparabricks::genomeworks::io::FastaSequence query  = query_parser.get_sequence_by_id(o.query_read_id_);
+        claraparabricks::genomeworks::io::FastaSequence target = target_parser.get_sequence_by_id(o.target_read_id_);
+        if (query.name != target.name)
+            return false;
+        std::size_t read_len        = query.seq.size();
+        std::int32_t overlap_length = abs(o.query_end_position_in_read_ - o.query_start_position_in_read_);
+        double percent_overlap      = static_cast<double>(overlap_length) / static_cast<double>(read_len);
+        return percent_overlap >= max_percent_overlap;
+    };
+
+    overlaps.erase(std::remove_if(begin(overlaps), end(overlaps), remove_self_helper), end(overlaps));
+}
+
 void drop_overlaps_by_mask(std::vector<claraparabricks::genomeworks::cudamapper::Overlap>& overlaps, const std::vector<bool>& mask)
 {
     std::size_t i                                                               = 0;
