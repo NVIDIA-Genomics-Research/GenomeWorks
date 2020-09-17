@@ -129,7 +129,7 @@ void IndexCache::generate_content_host(const std::vector<IndexDescriptor>& descr
                                                                                                           end(descriptors_of_indices_to_keep_on_device));
 
     host_cache_t new_cache;
-    indices_kept_on_device.empty(); // normally this should be empty anyway
+    indices_kept_on_device.clear(); // normally this should be empty anyway
 
     // In most cases index is generated on device and then moved to host. These two operations can be overlapped, i.e. while one index is being copied
     // to host the next index can be generated.
