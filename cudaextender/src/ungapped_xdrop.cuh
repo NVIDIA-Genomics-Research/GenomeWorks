@@ -60,10 +60,12 @@ private:
     std::vector<ScoredSegmentPair> scored_segment_pairs_;
     int32_t batch_max_ungapped_extensions_;
     int32_t* d_sub_mat_; // Pointer to device substitution matrix
-    thrust::device_vector<int32_t> d_done_;   // TODO- Rename scratch space
-    thrust::device_vector<ScoredSegmentPair> d_tmp_hsp_;  // TODO- Rename Scratch space 2
-    thrust::device_vector<ScoredSegmentPair> d_hsp_;  // TODO- Rename output variable
+    int32_t* d_done_;   // TODO- Rename scratch space
+    ScoredSegmentPair* d_tmp_ssp_;  // TODO- Rename Scratch space 2
     int32_t total_scored_segment_pairs_;
+    void* d_temp_storage_unique_; // temporary storage for cub functions
+    int32_t* d_num_hsps_temp; // TODO - move out to sample
+    size_t storage_;
 };
 
 } // namespace cudaextender

@@ -44,6 +44,11 @@ typedef struct ScoredSegmentPair
     int32_t length;
     /// score of the segment
     int32_t score;
+
+    __host__ __device__ bool operator==(const ScoredSegmentPair& other) const
+    {
+        return ((seed_pair.target_position_in_read == other.seed_pair.target_position_in_read) && (seed_pair.query_position_in_read == other.seed_pair.query_position_in_read) && (length == other.length) && (score == other.score));
+    }
 } ScoredSegmentPair;
 
 /// CUDA Extension object

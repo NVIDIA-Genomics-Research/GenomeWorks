@@ -25,6 +25,8 @@
 #include <thrust/unique.h>
 #include <thrust/distance.h>
 #include <thrust/device_vector.h>
+#include <cub/device/device_select.cuh>
+#include <chrono>
 
 namespace claraparabricks
 {
@@ -62,15 +64,30 @@ UngappedXDrop::UngappedXDrop(int32_t* h_sub_mat, int32_t sub_mat_dim, int32_t xd
     // FIXME - Pinned host memory registration for proper async behavior
     device_copy_n(h_sub_mat_, sub_mat_dim_, d_sub_mat_, stream_);
 
-    d_done_.resize(batch_max_ungapped_extensions_, 0);
     ScoredSegmentPair dummy_zero_pair = {{0, 0}, 0, 0};
-    d_tmp_hsp_.resize(batch_max_ungapped_extensions_, dummy_zero_pair);
-    d_hsp_.resize(max_seed_pairs, dummy_zero_pair);
-    //GW_CU_CHECK_ERR(cudaMalloc((void**)&d_done_, max_ungapped_extensions_ * sizeof(int32_t)));
-    //GW_CU_CHECK_ERR(cudaMalloc((void**)&d_tmp_hsp_, max_ungapped_extensions_ * sizeof(ScoredSegmentPair)));
+    GW_CU_CHECK_ERR(cudaMalloc((void**)&d_done_, batch_max_ungapped_extensions_ * sizeof(int32_t)));
+    GW_CU_CHECK_ERR(cudaMalloc((void**)&d_tmp_ssp_, batch_max_ungapped_extensions_ * sizeof(ScoredSegmentPair)));
+    GW_CU_CHECK_ERR(cudaMemsetAsync((void*)d_done_, 0, batch_max_ungapped_extensions_ * sizeof(int32_t), stream_));
+    GW_CU_CHECK_ERR(cudaMemsetAsync((void*)d_tmp_ssp_, 0, batch_max_ungapped_extensions_ * sizeof(ScoredSegmentPair), stream_));
 
-    //GW_CU_CHECK_ERR(cudaMemsetAsync((void*)d_done_, 0, max_ungapped_extensions_ * sizeof(int32_t), stream_));
-    //GW_CU_CHECK_ERR(cudaMemsetAsync((void*)d_tmp_hsp_, 0, max_ungapped_extensions_ * sizeof(ScoredSegmentPair), stream_));
+    // Experimental cub usage
+    // Get size of temporary storage
+    int32_t* num_out;
+    size_t temp_storage = 0;
+    storage_ = 0;
+    cub::DeviceSelect::Unique(NULL, temp_storage, d_tmp_ssp_, d_tmp_ssp_, num_out, batch_max_ungapped_extensions_);
+    storage_ = std::max(temp_storage, storage_);
+    std::cout<<"Storage requirement: "<< storage_<<std::endl;
+    cub::DeviceScan::InclusiveSum(NULL,temp_storage, d_done_,d_done_+batch_max_ungapped_extensions_, batch_max_ungapped_extensions_);
+    storage_ = std::max(temp_storage, storage_);
+    std::cout<<"Storage requirement: "<< temp_storage<<std::endl;
+
+    // Allocate temporary storage for cub
+    GW_CU_CHECK_ERR(cudaMalloc((void**)&d_temp_storage_unique_, storage_));
+    //TODO- Move out to device sample
+    GW_CU_CHECK_ERR(cudaMalloc((void**)&d_num_hsps_temp, sizeof(int32_t)));
+
+
 }
 
 StatusType UngappedXDrop::extend_async(const char* d_query, int32_t query_length,
@@ -81,14 +98,13 @@ StatusType UngappedXDrop::extend_async(const char* d_query, int32_t query_length
 {
     // Switch to configured GPU
     scoped_device_switch dev(device_id_);
-
+    auto start1 = std::chrono::high_resolution_clock::now();
     int32_t curr_num_pairs      = 0;
     num_scored_segment_pairs    = 0;
     total_scored_segment_pairs_ = 0;
     for (int32_t seed_pair_start = 0; seed_pair_start < num_seed_pairs; seed_pair_start += batch_max_ungapped_extensions_)
     {
-        curr_num_pairs              = std::min(batch_max_ungapped_extensions_, num_seed_pairs - seed_pair_start);
-        int32_t* d_done_raw_pointer = thrust::raw_pointer_cast(d_done_.data());
+        curr_num_pairs = std::min(batch_max_ungapped_extensions_, num_seed_pairs - seed_pair_start);
         // TODO- Extricate the kernel launch params?
         find_high_scoring_segment_pairs<<<1024, 128, 0, stream_>>>(d_target,
                                                                    target_length,
@@ -101,36 +117,51 @@ StatusType UngappedXDrop::extend_async(const char* d_query, int32_t query_length
                                                                    d_seed_pairs,
                                                                    curr_num_pairs,
                                                                    seed_pair_start,
-                                                                   thrust::raw_pointer_cast(d_hsp_.data()),
-                                                                   d_done_raw_pointer);
+                                                                   d_scored_segment_pairs,
+                                                                   d_done_);
         // TODO- Make thrust use caching allocator or change kernel
-        thrust::inclusive_scan(thrust::cuda::par.on(stream_), d_done_.begin(), d_done_.begin() + curr_num_pairs, d_done_.begin());
+        thrust::device_ptr<int32_t> d_done_dev_ptr(d_done_);
+        //cudaStreamSynchronize(stream_);
+        //auto start = std::chrono::high_resolution_clock::now();
+        //thrust::inclusive_scan(thrust::cuda::par.on(stream_), d_done_dev_ptr, d_done_dev_ptr + curr_num_pairs, d_done_dev_ptr);
+        cub::DeviceScan::InclusiveSum(d_temp_storage_unique_, storage_, d_done_, d_done_, curr_num_pairs, stream_);
         // TODO- Make async
-        device_copy_n((d_done_raw_pointer + curr_num_pairs - 1), 1, &num_scored_segment_pairs, stream_);
+        device_copy_n((d_done_ + curr_num_pairs - 1), 1, &num_scored_segment_pairs, stream_);
         cudaStreamSynchronize(stream_);
+       // auto stop = std::chrono::high_resolution_clock::now();
+        //auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
+        //std::cout<<"Duration: "<<duration.count()<<" us"<<std::endl;
+
         if (num_scored_segment_pairs > 0)
         {
-            compress_output<<<1024, 1024, 0, stream_>>>(d_done_raw_pointer,
+            compress_output<<<1024, 1024, 0, stream_>>>(d_done_,
                                                         seed_pair_start,
-                                                        thrust::raw_pointer_cast(d_hsp_.data()),
-                                                        thrust::raw_pointer_cast(d_tmp_hsp_.data()),
+                                                        d_scored_segment_pairs,
+                                                        d_tmp_ssp_,
                                                         curr_num_pairs); // TODO- Need configurability for kernel?
+            thrust::device_ptr<ScoredSegmentPair> d_tmp_hsp_dev_ptr(d_tmp_ssp_);
             thrust::stable_sort(thrust::cuda::par.on(stream_),
-                                d_tmp_hsp_.begin(),
-                                d_tmp_hsp_.begin() + num_scored_segment_pairs,
+                                d_tmp_hsp_dev_ptr,
+                                d_tmp_hsp_dev_ptr + num_scored_segment_pairs,
                                 scored_segment_pair_comp());
-            thrust::device_vector<ScoredSegmentPair>::iterator result_end = thrust::unique_copy(thrust::cuda::par.on(stream_),
-                                                                                                d_tmp_hsp_.begin(),
-                                                                                                d_tmp_hsp_.begin() + num_scored_segment_pairs,
-                                                                                                d_hsp_.begin() + total_scored_segment_pairs_,
-                                                                                                scored_segment_pair_equal());
-            num_scored_segment_pairs                                      = thrust::distance(d_hsp_.begin()+total_scored_segment_pairs_, result_end);
+            thrust::device_ptr<ScoredSegmentPair> d_scored_segment_pairs_dev_ptr(d_scored_segment_pairs);
+
+//            thrust::device_ptr<ScoredSegmentPair> result_end = thrust::unique_copy(thrust::cuda::par.on(stream_),
+//                                                                                   d_tmp_hsp_dev_ptr,
+//                                                                                   d_tmp_hsp_dev_ptr + num_scored_segment_pairs,
+//                                                                                   d_scored_segment_pairs_dev_ptr + total_scored_segment_pairs_,
+//                                                                                   scored_segment_pair_equal());
+            cub::DeviceSelect::Unique(d_temp_storage_unique_,storage_, d_tmp_ssp_, d_scored_segment_pairs+total_scored_segment_pairs_, d_num_hsps_temp, num_scored_segment_pairs, stream_);
+            num_scored_segment_pairs = get_value_from_device(d_num_hsps_temp, stream_);
+
+            //num_scored_segment_pairs                         = thrust::distance(d_scored_segment_pairs_dev_ptr + total_scored_segment_pairs_, result_end);
             total_scored_segment_pairs_ += num_scored_segment_pairs;
         }
-
     }
     num_scored_segment_pairs = total_scored_segment_pairs_;
-    thrust::host_vector<ScoredSegmentPair> h_vec = d_hsp_;
+    auto stop1 = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop1 - start1);
+    std::cout<<"Duration: "<<duration.count()<<" us"<<std::endl;
     return success;
 }
 
@@ -153,16 +184,15 @@ StatusType UngappedXDrop::sync()
     return success;
 }
 
-void UngappedXDrop::reset()
-{
-    d_done_.clear();
-    d_tmp_hsp_.clear();
-    d_hsp_.clear();
+void UngappedXDrop::reset(){
+
 };
 
 UngappedXDrop::~UngappedXDrop()
 {
     GW_CU_CHECK_ERR(cudaFree(d_sub_mat_));
+    GW_CU_CHECK_ERR(cudaFree(d_tmp_ssp_));
+    GW_CU_CHECK_ERR(cudaFree(d_done_));
 };
 
 } // namespace cudaextender

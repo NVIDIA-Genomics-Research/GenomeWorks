@@ -167,7 +167,16 @@ int main(int argc, char* argv[])
 
     //Get results
     std::cout << "h_num_hsps=" << h_num_hsps << std::endl;
-
+    ScoredSegmentPair *h_ssps =(ScoredSegmentPair*) malloc(h_num_hsps*sizeof(ScoredSegmentPair));
+    cudaMemcpy(h_ssps, d_hsps, h_num_hsps*sizeof(ScoredSegmentPair), cudaMemcpyDeviceToHost);
+//    for (int i=0; i<h_num_hsps; i++)
+//    {
+//        ScoredSegmentPair segment = h_ssps[i];
+//        std::cout <<segment.seed_pair.target_position_in_read <<"," << segment.seed_pair.query_position_in_read
+//                  << "," << segment.length <<","<<segment.score<<std::endl;
+//
+//    }
+    free(h_ssps);
     free(h_encoded_target);
     free(h_encoded_query);
     // Free all allocated memory on the GPU
