@@ -47,6 +47,7 @@ namespace cudamapper
 
 #define INT32_INFINITY 100000000
 #define NEGATIVE_INT32_INFINITY -1 * INT32_INFINITY
+#define PREDECESSOR_SEARCH_ITERATIONS 64
 
 __device__ bool operator==(const Overlap& a,
                            const Overlap& b)
@@ -603,7 +604,7 @@ void OverlapperMinimap::get_overlaps(std::vector<Overlap>& fused_overlaps,
                                                                                           n_anchors,
                                                                                           5000,
                                                                                           500,
-                                                                                          64);
+                                                                                          PREDECESSOR_SEARCH_ITERATIONS);
 
     produce_anchor_chains<<<(n_anchors / block_size) + 1, block_size, 0, _cuda_stream>>>(d_anchors.data(),
                                                                                          d_overlaps_source.data(),
