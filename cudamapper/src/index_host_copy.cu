@@ -135,32 +135,32 @@ std::unique_ptr<Index> IndexHostCopy::copy_index_to_device(DefaultDeviceAllocato
     // no stream synchronization, synchronization done in finish_copying()
 }
 
-const IndexHostCopyBase::ArrayView<representation_t> IndexHostCopy::representations() const
+const IndexHostCopyBase::Span<representation_t> IndexHostCopy::representations() const
 {
     return representations_;
 }
 
-const IndexHostCopyBase::ArrayView<read_id_t> IndexHostCopy::read_ids() const
+const IndexHostCopyBase::Span<read_id_t> IndexHostCopy::read_ids() const
 {
     return read_ids_;
 }
 
-const IndexHostCopyBase::ArrayView<position_in_read_t> IndexHostCopy::positions_in_reads() const
+const IndexHostCopyBase::Span<position_in_read_t> IndexHostCopy::positions_in_reads() const
 {
     return positions_in_reads_;
 }
 
-const IndexHostCopyBase::ArrayView<SketchElement::DirectionOfRepresentation> IndexHostCopy::directions_of_reads() const
+const IndexHostCopyBase::Span<SketchElement::DirectionOfRepresentation> IndexHostCopy::directions_of_reads() const
 {
     return directions_of_reads_;
 }
 
-const IndexHostCopyBase::ArrayView<representation_t> IndexHostCopy::unique_representations() const
+const IndexHostCopyBase::Span<representation_t> IndexHostCopy::unique_representations() const
 {
     return unique_representations_;
 }
 
-const IndexHostCopyBase::ArrayView<std::uint32_t> IndexHostCopy::first_occurrence_of_representations() const
+const IndexHostCopyBase::Span<std::uint32_t> IndexHostCopy::first_occurrence_of_representations() const
 {
     return first_occurrence_of_representations_;
 }
