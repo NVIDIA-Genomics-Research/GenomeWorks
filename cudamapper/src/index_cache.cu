@@ -318,7 +318,7 @@ void IndexCache::finish_generating_content_device(const CacheSelector which_cach
     device_cache_t& this_device_cache = (CacheSelector::query_cache == which_cache) ? query_device_cache_ : target_device_cache_;
     device_cache_t& new_cache         = (CacheSelector::query_cache == which_cache) ? next_query_device_cache_ : next_target_device_cache_;
 
-    for (const auto device_index : new_cache)
+    for (const auto& device_index : new_cache)
     {
         device_index.second->wait_to_be_ready();
     }
