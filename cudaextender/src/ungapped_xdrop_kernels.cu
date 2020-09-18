@@ -378,14 +378,18 @@ __global__ void find_high_scoring_segment_pairs(const char* __restrict__ d_targe
             }
             __syncwarp();
 
-            if (lane_id == warpSize - 1 && ((count[0] + count[1] + count[2] + count[3]) >= 20))
+            if (lane_id == warpSize - 1 && ((count[0] + count[1] + count[2] + count[3]) >= 20)) // TODO - MAGIC NUMBER ALERT!
             {
 
                 entropy[warp_id] = 0.f;
 #pragma unroll
                 for (int32_t i = 0; i < 4; i++)
                 {
-                    entropy[warp_id] += ((double)count[i]) / ((double)(extent[warp_id] + 1)) * ((count[i] != 0) ? log(((double)count[i]) / ((double)(extent[warp_id] + 1))) : 0.f);
+                    if(count[i]!=0)
+                    {
+                        const double probability = static_cast<double>(count[i]) / static_cast<double>(extent[warp_id] + 1);
+                        entropy[warp_id] += (probability) * log(probability);
+                    }
                 }
                 entropy[warp_id] = -entropy[warp_id] / log_4;
             }
