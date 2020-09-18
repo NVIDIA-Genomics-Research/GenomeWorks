@@ -28,15 +28,15 @@ namespace genomeworks
 namespace cudaextender
 {
 
-typedef struct SeedPair
+struct SeedPair
 {
     /// position of first sketch element in query_read_id_
     position_in_read_t query_position_in_read;
     /// position of second sketch element in target_read_id_
     position_in_read_t target_position_in_read;
-} SeedPair;
+};
 
-typedef struct ScoredSegmentPair
+struct ScoredSegmentPair
 {
     /// Seed for the segment
     SeedPair seed_pair;
@@ -49,7 +49,7 @@ typedef struct ScoredSegmentPair
     {
         return ((seed_pair.target_position_in_read == other.seed_pair.target_position_in_read) && (seed_pair.query_position_in_read == other.seed_pair.query_position_in_read) && (length == other.length) && (score == other.score));
     }
-} ScoredSegmentPair;
+};
 
 /// CUDA Extension object
 class Extender
@@ -72,9 +72,9 @@ public:
     /// \brief Device pointer prototype for  extension
     ///
     /// Memcopies to device memory are assumed to be done before this
-    /// function. Output array d_hsp_out must be pre-allocated on device.
+    /// function. Output array d_scored_segment_pairs must be pre-allocated on device.
     /// Launches async extension kernel. Filters segments on device
-    /// based on input_hspthresh.
+    /// based on score_threshold.
     virtual StatusType extend_async(const char* d_query, int32_t query_length,
                                     const char* d_target, int32_t target_length,
                                     int32_t score_threshold, SeedPair* d_seed_pairs,

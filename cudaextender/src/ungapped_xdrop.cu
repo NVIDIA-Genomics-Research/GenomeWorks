@@ -89,12 +89,10 @@ StatusType UngappedXDrop::extend_async(const char* d_query, int32_t query_length
     //TODO - Check bounds
     // Switch to configured GPU
     scoped_device_switch dev(device_id_);
-    int32_t curr_num_pairs           = 0;
-    int32_t num_scored_segment_pairs = 0;
     total_scored_segment_pairs_      = 0;
     for (int32_t seed_pair_start = 0; seed_pair_start < num_seed_pairs; seed_pair_start += batch_max_ungapped_extensions_)
     {
-        curr_num_pairs = std::min(batch_max_ungapped_extensions_, num_seed_pairs - seed_pair_start);
+        const int32_t curr_num_pairs = std::min(batch_max_ungapped_extensions_, num_seed_pairs - seed_pair_start);
         // TODO- Extricate the kernel launch params?
         find_high_scoring_segment_pairs<<<1024, 128, 0, stream_>>>(d_target,
                                                                    target_length,
@@ -111,7 +109,7 @@ StatusType UngappedXDrop::extend_async(const char* d_query, int32_t query_length
                                                                    d_done_);
         GW_CU_CHECK_ERR(cub::DeviceScan::InclusiveSum(d_temp_storage_cub_, cub_storage_bytes_, d_done_, d_done_, curr_num_pairs, stream_));
         // TODO- Make async
-        num_scored_segment_pairs = get_value_from_device(d_done_ + curr_num_pairs - 1, stream_);
+        const int32_t num_scored_segment_pairs = get_value_from_device(d_done_ + curr_num_pairs - 1, stream_);
         if (num_scored_segment_pairs > 0)
         {
             compress_output<<<1024, 1024, 0, stream_>>>(d_done_,
@@ -132,8 +130,7 @@ StatusType UngappedXDrop::extend_async(const char* d_query, int32_t query_length
                                                       d_num_scored_segment_pairs,
                                                       num_scored_segment_pairs,
                                                       stream_));
-            num_scored_segment_pairs = get_value_from_device(d_num_scored_segment_pairs, stream_);
-            total_scored_segment_pairs_ += num_scored_segment_pairs;
+            total_scored_segment_pairs_ += get_value_from_device(d_num_scored_segment_pairs, stream_);
         }
     }
     set_device_value_async(d_num_scored_segment_pairs, &total_scored_segment_pairs_, stream_);
@@ -153,13 +150,10 @@ StatusType UngappedXDrop::extend_async(const char* h_query, int32_t query_length
     GW_CU_CHECK_ERR(cudaMalloc((void**)&d_num_ssp_, sizeof(int32_t)));
     GW_CU_CHECK_ERR(cudaMalloc((void**)&d_ssp_, sizeof(ScoredSegmentPair) * h_seed_pairs.size()));
 
-    // Async Memcopy all the input values to device
-    GW_CU_CHECK_ERR(cudaMemcpyAsync(d_query_, h_query, sizeof(char) * query_length,
-                                    cudaMemcpyHostToDevice, stream_));
-    GW_CU_CHECK_ERR(cudaMemcpyAsync(d_target_, h_target, sizeof(char) * target_length,
-                                    cudaMemcpyHostToDevice, stream_));
-    GW_CU_CHECK_ERR(cudaMemcpyAsync(d_seed_pairs_, &h_seed_pairs[0], sizeof(SeedPair) * h_seed_pairs.size(), cudaMemcpyHostToDevice,
-                                    stream_));
+    // Async memcopy all the input values to device
+    device_copy_n(h_query, query_length, d_query_, stream_);
+    device_copy_n(h_target, target_length, d_target_, stream_);
+    device_copy_n(h_seed_pairs.data(), h_seed_pairs.size(), d_seed_pairs_, stream_);
 
     // Launch the ungapped extender device function
     if (!extend_async(d_query_, query_length, d_target_, target_length, score_threshold, d_seed_pairs_, h_seed_pairs.size(), d_ssp_, d_num_ssp_))
