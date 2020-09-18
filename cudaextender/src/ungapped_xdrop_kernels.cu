@@ -73,25 +73,19 @@ __global__ void find_high_scoring_segment_pairs(const char* __restrict__ d_targe
         short count[4]     = {0};
         short count_del[4] = {0};
         const int32_t hid  = hid0 + warp_id + start_index;
-
-        if (hid < num_seed_pairs)
+        if (lane_id == 0)
         {
-            if (lane_id == 0)
+            if (hid < num_seed_pairs)
             {
                 ref_loc[warp_id]     = d_seed_pairs[hid].target_position_in_read;
                 query_loc[warp_id]   = d_seed_pairs[hid].query_position_in_read;
-                total_score[warp_id] = 0;
             }
-        }
-        else
-        {
-            if (lane_id == 0)
+            else
             {
-
                 ref_loc[warp_id]     = d_seed_pairs[hid0].target_position_in_read;
                 query_loc[warp_id]   = d_seed_pairs[hid0].query_position_in_read;
-                total_score[warp_id] = 0;
             }
+            total_score[warp_id] = 0;
         }
         __syncwarp();
 
