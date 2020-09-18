@@ -73,7 +73,6 @@ private:
     SeedPair* d_seed_pairs_;
     int32_t* d_num_ssp_;
     ScoredSegmentPair* d_ssp_;
-    int32_t h_num_ssp_;
     std::vector<ScoredSegmentPair> h_ssp_;
 
 };

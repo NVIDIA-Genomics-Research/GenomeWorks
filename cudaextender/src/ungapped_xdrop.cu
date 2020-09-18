@@ -166,11 +166,11 @@ StatusType UngappedXDrop::extend_async(const char* h_query, int32_t query_length
 
 StatusType UngappedXDrop::sync()
 {
-    h_num_ssp_ = get_value_from_device(d_num_ssp_, stream_);
-    if (h_num_ssp_ > 0)
+    const int32_t h_num_ssp = get_value_from_device(d_num_ssp_, stream_);
+    if (h_num_ssp > 0)
     {
-        h_ssp_.resize(h_num_ssp_);
-        device_copy_n(d_ssp_, h_num_ssp_, &h_ssp_[0], stream_);
+        h_ssp_.resize(h_num_ssp);
+        device_copy_n(d_ssp_, h_num_ssp, &h_ssp_[0], stream_);
         cudaStreamSynchronize(stream_);
     }
 
