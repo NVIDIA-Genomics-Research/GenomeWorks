@@ -16,15 +16,15 @@
 
 
 
-project(sample_cudaaligner)
+set(MODULE_NAME sample_cudaaligner)
 
-add_executable(${PROJECT_NAME}
+add_executable(${MODULE_NAME}
                sample_cudaaligner.cpp
                )
 
-target_link_libraries(${PROJECT_NAME}
+target_link_libraries(${MODULE_NAME}
                       cudaaligner
                       )
 
-install(TARGETS ${PROJECT_NAME}
+install(TARGETS ${MODULE_NAME}
             DESTINATION samples)

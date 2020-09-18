@@ -39,8 +39,7 @@ public:
     MockIndex(DefaultDeviceAllocator allocator)
         : IndexGPU(allocator,
                    *genomeworks::io::create_kseq_fasta_parser(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/gatt.fasta"),
-                   0,
-                   0,
+                   IndexDescriptor(0, 0),
                    0,
                    0,
                    true)

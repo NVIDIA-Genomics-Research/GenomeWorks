@@ -117,7 +117,7 @@ TEST_F(MSATest, CudapoaMSA)
     auto spoa_msa = spoa_generate_multiple_sequence_alignments(sequences);
 
 #ifndef SPOA_ACCURATE
-    for (uint32_t i = 0; i < spoa_msa.size(); i++)
+    for (int32_t i = 0; i < spoa_msa.size(); i++)
     {
 
         std::string msa = cudapoa_msa[0][i];

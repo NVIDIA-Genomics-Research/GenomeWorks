@@ -14,18 +14,18 @@
 # limitations under the License.
 #
 
-project(sample_cudamapper)
+set(MODULE_NAME sample_cudamapper)
 
 get_property(cudamapper_data_include_dir GLOBAL PROPERTY cudamapper_data_include_dir)
 include_directories(${cudamapper_data_include_dir})
 
-add_executable(${PROJECT_NAME}
+add_executable(${MODULE_NAME}
                sample_cudamapper.cpp
                )
 
-target_link_libraries(${PROJECT_NAME}
+target_link_libraries(${MODULE_NAME}
                       cudamapper
                       )
 
-install(TARGETS ${PROJECT_NAME}
+install(TARGETS ${MODULE_NAME}
             DESTINATION samples)
