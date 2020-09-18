@@ -456,12 +456,9 @@ __global__
 void compress_output (int32_t* d_done, const int32_t start_index, ScoredSegmentPair* d_hsp, ScoredSegmentPair* d_tmp_hsp, const int32_t num_hits){
     const int32_t stride = blockDim.x * gridDim.x;
     const int32_t start = blockDim.x * blockIdx.x + threadIdx.x;
-    int32_t reduced_index = 0;
-    int32_t index = 0;
-
     for (int32_t id = start; id < num_hits; id += stride) {
-        reduced_index = d_done[id];
-        index = id + start_index;
+        const int32_t reduced_index = d_done[id];
+        const int32_t index = id + start_index;
         if(index > 0){
             if(reduced_index > d_done[index-1]){
                 d_tmp_hsp[reduced_index-1] = d_hsp[index];
