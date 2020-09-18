@@ -62,23 +62,39 @@ void encode_string(char* dst_seq, const char* src_seq, int32_t len)
 {
     for (int32_t i = 0; i < len; i++)
     {
-        char ch  = src_seq[i];
-        char dst = X_NT;
-        if (ch == 'A')
-            dst = A_NT;
-        else if (ch == 'C')
-            dst = C_NT;
-        else if (ch == 'G')
-            dst = G_NT;
-        else if (ch == 'T')
-            dst = T_NT;
-        else if ((ch == 'a') || (ch == 'c') || (ch == 'g') || (ch == 't'))
-            dst = L_NT;
-        else if ((ch == 'n') || (ch == 'N'))
-            dst = N_NT;
-        else if (ch == '&')
-            dst = E_NT;
-        dst_seq[i] = dst;
+        char ch = src_seq[i];
+        char dst;
+        switch (ch)
+        {
+        case 'A':
+            dst_seq[i] = A_NT;
+            break;
+        case 'C':
+            dst_seq[i] = C_NT;
+            break;
+        case 'G':
+            dst_seq[i] = G_NT;
+            break;
+        case 'T':
+            dst_seq[i] = T_NT;
+            break;
+        case '&':
+            dst_seq[i] = E_NT;
+            break;
+        case 'n':
+        case 'N':
+            dst_seq[i] = N_NT;
+            break;
+        case 'a':
+        case 'c':
+        case 'g':
+        case 't':
+            dst_seq[i] = L_NT;
+            break;
+        default:
+            dst_seq[i] = X_NT;
+            break;
+        }
     }
 }
 
@@ -88,7 +104,7 @@ int main(int argc, char* argv[])
     const bool input_no_entropy   = false;
     const int32_t score_threshold = 3000;
     char c;
-    bool print=false, help=false;
+    bool print = false, help = false;
     while ((c = getopt(argc, argv, "p")) != -1)
     {
         switch (c)
@@ -103,7 +119,7 @@ int main(int argc, char* argv[])
         }
     }
 
-    if(help)
+    if (help)
     {
         std::cout << "CUDAExtender API sample program. Runs ungapped extender on canned data." << std::endl;
         std::cout << "-p : Print the Scored Segment Pair output to stdout" << std::endl;
@@ -111,17 +127,17 @@ int main(int argc, char* argv[])
         std::exit(0);
     }
 
-
     // Fasta query and target files
-    std::string target_file_path = std::string(CUDAEXTENDER_DATA_DIR) + "/sample.fa";
+    std::string target_file_path                         = std::string(CUDAEXTENDER_DATA_DIR) + "/sample.fa";
     std::unique_ptr<io::FastaParser> fasta_parser_target = io::create_kseq_fasta_parser(target_file_path, 0, false);
     // Assumes that only one sequence is present per file
     std::string target_sequence = fasta_parser_target->get_sequence_by_id(0).seq;
 
-    std::string query_file_path = std::string(CUDAEXTENDER_DATA_DIR) + "/sample.fa";;
+    std::string query_file_path = std::string(CUDAEXTENDER_DATA_DIR) + "/sample.fa";
+    ;
     std::unique_ptr<io::FastaParser> fasta_parser_query =
         io::create_kseq_fasta_parser(query_file_path, 0, false);
-   // Assumes that only one sequence is present per file
+    // Assumes that only one sequence is present per file
     std::string query_sequence = fasta_parser_query->get_sequence_by_id(0).seq;
 
     // CSV SeedPairs file - Each row -> query_position_in_read_,
@@ -134,17 +150,17 @@ int main(int argc, char* argv[])
     // results in
     // the passed vector
     parse_seed_pairs(seed_pairs_file_path, h_seed_pairs);
-    std::cerr <<"Number of seed pairs: "<<h_seed_pairs.size() << std::endl;
+    std::cerr << "Number of seed pairs: " << h_seed_pairs.size() << std::endl;
 
     // Define Scoring Matrix
     int32_t score_matrix[NUC2] = {91, -114, -31, -123, -1000, -1000, -100, -9100,
-                                -114, 100, -125, -31, -1000, -1000, -100, -9100,
-                                -31, -125, 100, -114, -1000, -1000, -100, -9100,
-                                -123, -31, -114, 91, -1000, -1000, -100, -9100,
-                                -1000, -1000, -1000, -1000, -1000, -1000, -1000, -9100,
-                                -1000, -1000, -1000, -1000, -1000, -1000, -1000, -9100,
-                                -100, -100, -100, -100, -1000, -1000, -100, -9100,
-                                -9100, -9100, -9100, -9100, -9100, -9100, -9100, -9100};
+                                  -114, 100, -125, -31, -1000, -1000, -100, -9100,
+                                  -31, -125, 100, -114, -1000, -1000, -100, -9100,
+                                  -123, -31, -114, 91, -1000, -1000, -100, -9100,
+                                  -1000, -1000, -1000, -1000, -1000, -1000, -1000, -9100,
+                                  -1000, -1000, -1000, -1000, -1000, -1000, -1000, -9100,
+                                  -100, -100, -100, -100, -1000, -1000, -100, -9100,
+                                  -9100, -9100, -9100, -9100, -9100, -9100, -9100, -9100};
 
     // Allocate pinned memory for query and target strings
     char* h_encoded_target;
@@ -204,17 +220,17 @@ int main(int argc, char* argv[])
 
     //Get results
     std::cerr << "Number of ScoredSegmentPairs found: " << h_num_ssp << std::endl;
-    ScoredSegmentPair *h_ssp =(ScoredSegmentPair*) malloc(h_num_ssp*sizeof(ScoredSegmentPair));
-    cudaMemcpy(h_ssp, d_ssp, h_num_ssp*sizeof(ScoredSegmentPair), cudaMemcpyDeviceToHost);
+    ScoredSegmentPair* h_ssp = (ScoredSegmentPair*)malloc(h_num_ssp * sizeof(ScoredSegmentPair));
+    cudaMemcpy(h_ssp, d_ssp, h_num_ssp * sizeof(ScoredSegmentPair), cudaMemcpyDeviceToHost);
 
-    if(print){
-        std::cout<<"Target Position, Query Position, Length, Score"<<std::endl;
-        for (int i=0; i<h_num_ssp; i++)
+    if (print)
+    {
+        std::cout << "Target Position, Query Position, Length, Score" << std::endl;
+        for (int i = 0; i < h_num_ssp; i++)
         {
             ScoredSegmentPair segment = h_ssp[i];
-            std::cout <<segment.seed_pair.target_position_in_read <<"," << segment.seed_pair.query_position_in_read
-                      << "," << segment.length <<","<<segment.score<<std::endl;
-
+            std::cout << segment.seed_pair.target_position_in_read << "," << segment.seed_pair.query_position_in_read
+                      << "," << segment.length << "," << segment.score << std::endl;
         }
     }
 

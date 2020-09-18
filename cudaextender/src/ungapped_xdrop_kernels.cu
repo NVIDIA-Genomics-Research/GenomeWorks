@@ -59,7 +59,7 @@ __global__ void find_high_scoring_segment_pairs(const char* __restrict__ d_targe
     __shared__ int32_t left_extent[num_warps];
     __shared__ int32_t extent[num_warps];
     __shared__ int32_t tile[num_warps];
-    __shared__ double entropy[num_warps];
+    __shared__ double entropy[num_warps]; // TODO - Can this be a float?
     __shared__ int32_t sub_mat[nuc2];
 
     if (threadIdx.x < nuc2)
