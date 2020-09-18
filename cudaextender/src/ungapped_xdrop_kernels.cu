@@ -86,14 +86,6 @@ __global__ void find_high_scoring_segment_pairs(const char* __restrict__ d_targe
                 query_loc[warp_id]   = d_seed_pairs[hid0].query_position_in_read;
             }
             total_score[warp_id] = 0;
-        }
-        __syncwarp();
-
-        //////////////////////////////////////////////////////////////////
-        //Right extension
-
-        if (lane_id == 0)
-        {
             tile[warp_id]           = 0;
             xdrop_found[warp_id]    = false;
             edge_found[warp_id]     = false;
@@ -104,9 +96,9 @@ __global__ void find_high_scoring_segment_pairs(const char* __restrict__ d_targe
             prev_max_pos[warp_id]   = 0;
             extent[warp_id]         = 0;
         }
-
         __syncwarp();
-
+        //////////////////////////////////////////////////////////////////
+        //Right extension
         while (!xdrop_found[warp_id] && !edge_found[warp_id])
         {
             int32_t max_pos;
