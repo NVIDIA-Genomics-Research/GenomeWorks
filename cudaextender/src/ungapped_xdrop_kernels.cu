@@ -49,20 +49,12 @@ __global__ void find_high_scoring_segment_pairs(const char* __restrict__ d_targe
     __shared__ int32_t tile[num_warps];
     __shared__ double entropy[num_warps];
 
-
-
-    int32_t max_pos;
-    int32_t temp_pos;
     bool xdrop_done;
-    int32_t temp;
     short count[4];
     short count_del[4];
     char r_chr;
     char q_chr;
-    int32_t ref_pos;
-    int32_t query_pos;
-    int32_t pos_offset;
-    const float log_4= log(4.0f);
+    const float log_4 = log(4.0f);
 
     __shared__ int32_t sub_mat[nuc2];
 
@@ -74,8 +66,6 @@ __global__ void find_high_scoring_segment_pairs(const char* __restrict__ d_targe
 
     for (int32_t hid0 = blockIdx.x * num_warps; hid0 < num_seed_pairs; hid0 += num_warps * gridDim.x)
     {
-        int32_t thread_score;
-        int32_t max_thread_score;
         const int32_t hid = hid0 + warp_id + start_index;
 
         if (hid < num_seed_pairs)
@@ -123,16 +113,17 @@ __global__ void find_high_scoring_segment_pairs(const char* __restrict__ d_targe
         count_del[1] = 0;
         count_del[2] = 0;
         count_del[3] = 0;
-        max_pos      = 0;
 
         __syncwarp();
 
         while (!xdrop_found[warp_id] && !edge_found[warp_id])
         {
-            pos_offset   = lane_id + tile[warp_id];
-            ref_pos      = ref_loc[warp_id] + pos_offset;
-            query_pos    = query_loc[warp_id] + pos_offset;
-            thread_score = 0;
+            int32_t max_pos;
+            int32_t thread_score = 0;
+            int32_t max_thread_score;
+            const int32_t pos_offset = lane_id + tile[warp_id];
+            const int32_t ref_pos    = ref_loc[warp_id] + pos_offset;
+            const int32_t query_pos  = query_loc[warp_id] + pos_offset;
 
             if (ref_pos < target_length && query_pos < query_length)
             {
@@ -145,7 +136,7 @@ __global__ void find_high_scoring_segment_pairs(const char* __restrict__ d_targe
 #pragma unroll
             for (int32_t offset = 1; offset < warpSize; offset = offset << 1)
             {
-                temp = __shfl_up_sync(0xFFFFFFFF, thread_score, offset);
+                int32_t temp = __shfl_up_sync(0xFFFFFFFF, thread_score, offset);
 
                 if (lane_id >= offset)
                 {
@@ -170,8 +161,8 @@ __global__ void find_high_scoring_segment_pairs(const char* __restrict__ d_targe
 #pragma unroll
             for (int32_t offset = 1; offset < warpSize; offset = offset << 1)
             {
-                temp     = __shfl_up_sync(0xFFFFFFFF, max_thread_score, offset);
-                temp_pos = __shfl_up_sync(0xFFFFFFFF, max_pos, offset);
+                int32_t temp     = __shfl_up_sync(0xFFFFFFFF, max_thread_score, offset);
+                int32_t temp_pos = __shfl_up_sync(0xFFFFFFFF, max_pos, offset);
 
                 if (lane_id >= offset)
                 {
@@ -271,18 +262,19 @@ __global__ void find_high_scoring_segment_pairs(const char* __restrict__ d_targe
         count_del[1] = 0;
         count_del[2] = 0;
         count_del[3] = 0;
-        max_pos      = 0;
         __syncwarp();
 
         while (!xdrop_found[warp_id] && !edge_found[warp_id])
         {
-            pos_offset   = lane_id + 1 + tile[warp_id];
-            thread_score = 0;
+            int32_t max_pos;
+            int32_t thread_score = 0;
+            int32_t max_thread_score;
+            const int32_t pos_offset = lane_id + 1 + tile[warp_id];
 
             if (ref_loc[warp_id] >= pos_offset && query_loc[warp_id] >= pos_offset)
             {
-                ref_pos      = ref_loc[warp_id] - pos_offset;
-                query_pos    = query_loc[warp_id] - pos_offset;
+                const int32_t ref_pos      = ref_loc[warp_id] - pos_offset;
+                const int32_t query_pos    = query_loc[warp_id] - pos_offset;
                 r_chr        = d_target[ref_pos];
                 q_chr        = d_query[query_pos];
                 thread_score = sub_mat[r_chr * nuc + q_chr];
@@ -291,7 +283,7 @@ __global__ void find_high_scoring_segment_pairs(const char* __restrict__ d_targe
 #pragma unroll
             for (int32_t offset = 1; offset < warpSize; offset = offset << 1)
             {
-                temp = __shfl_up_sync(0xFFFFFFFF, thread_score, offset);
+                int32_t temp = __shfl_up_sync(0xFFFFFFFF, thread_score, offset);
 
                 if (lane_id >= offset)
                 {
@@ -315,8 +307,8 @@ __global__ void find_high_scoring_segment_pairs(const char* __restrict__ d_targe
 #pragma unroll
             for (int32_t offset = 1; offset < warpSize; offset = offset << 1)
             {
-                temp     = __shfl_up_sync(0xFFFFFFFF, max_thread_score, offset);
-                temp_pos = __shfl_up_sync(0xFFFFFFFF, max_pos, offset);
+                int32_t temp     = __shfl_up_sync(0xFFFFFFFF, max_thread_score, offset);
+                int32_t temp_pos = __shfl_up_sync(0xFFFFFFFF, max_pos, offset);
 
                 if (lane_id >= offset)
                 {
@@ -452,20 +444,25 @@ __global__ void find_high_scoring_segment_pairs(const char* __restrict__ d_targe
 
 // gather only the HSPs from the resulting segments to the beginning of the
 // tmp_hsp vector
-__global__
-void compress_output (const int32_t* d_done, const int32_t start_index, ScoredSegmentPair* d_hsp, ScoredSegmentPair* d_tmp_hsp, const int32_t num_hits){
+__global__ void compress_output(const int32_t* d_done, const int32_t start_index, ScoredSegmentPair* d_hsp, ScoredSegmentPair* d_tmp_hsp, const int32_t num_hits)
+{
     const int32_t stride = blockDim.x * gridDim.x;
-    const int32_t start = blockDim.x * blockIdx.x + threadIdx.x;
-    for (int32_t id = start; id < num_hits; id += stride) {
+    const int32_t start  = blockDim.x * blockIdx.x + threadIdx.x;
+    for (int32_t id = start; id < num_hits; id += stride)
+    {
         const int32_t reduced_index = d_done[id];
-        const int32_t index = id + start_index;
-        if(index > 0){
-            if(reduced_index > d_done[index-1]){
-                d_tmp_hsp[reduced_index-1] = d_hsp[index];
+        const int32_t index         = id + start_index;
+        if (index > 0)
+        {
+            if (reduced_index > d_done[index - 1])
+            {
+                d_tmp_hsp[reduced_index - 1] = d_hsp[index];
             }
         }
-        else{
-            if(reduced_index == 1){
+        else
+        {
+            if (reduced_index == 1)
+            {
                 d_tmp_hsp[0] = d_hsp[start_index];
             }
         }
