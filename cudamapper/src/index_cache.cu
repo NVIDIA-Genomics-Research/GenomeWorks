@@ -179,7 +179,8 @@ void IndexCache::generate_content_host(const std::vector<IndexDescriptor>& descr
                                                   window_size_,
                                                   hash_representations_,
                                                   filtering_parameter_,
-                                                  cuda_stream_generation_);
+                                                  cuda_stream_generation_,
+                                                  cuda_stream_copy_);
 
             // wait for index to be generated on cuda_stream_generation_ before copying it on cuda_stream_copy_
             // TODO: do this sync using an event
