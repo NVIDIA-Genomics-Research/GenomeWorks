@@ -219,6 +219,7 @@ __global__ void find_high_scoring_segment_pairs(const char* __restrict__ d_targe
 
             if (new_max_found[warp_id])
             {
+#pragma unroll
                 for (int32_t i = 0; i < 4; i++)
                 {
                     count[i]     = count[i] + count_del[i];
