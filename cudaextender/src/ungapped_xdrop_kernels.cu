@@ -77,15 +77,15 @@ __global__ void find_high_scoring_segment_pairs(const char* __restrict__ d_targe
         {
             if (hid < num_seed_pairs)
             {
-                ref_loc[warp_id]     = d_seed_pairs[hid].target_position_in_read;
-                query_loc[warp_id]   = d_seed_pairs[hid].query_position_in_read;
+                ref_loc[warp_id]   = d_seed_pairs[hid].target_position_in_read;
+                query_loc[warp_id] = d_seed_pairs[hid].query_position_in_read;
             }
             else
             {
-                ref_loc[warp_id]     = d_seed_pairs[hid0].target_position_in_read;
-                query_loc[warp_id]   = d_seed_pairs[hid0].query_position_in_read;
+                ref_loc[warp_id]   = d_seed_pairs[hid0].target_position_in_read;
+                query_loc[warp_id] = d_seed_pairs[hid0].query_position_in_read;
             }
-            total_score[warp_id] = 0;
+            total_score[warp_id]    = 0;
             tile[warp_id]           = 0;
             xdrop_found[warp_id]    = false;
             edge_found[warp_id]     = false;
@@ -171,12 +171,12 @@ __global__ void find_high_scoring_segment_pairs(const char* __restrict__ d_targe
             if (lane_id == warpSize - 1)
             {
                 new_max_found[warp_id] = max_pos > prev_max_pos[warp_id];
+                prev_max_pos[warp_id] = max_pos;
                 if (xdrop_done)
                 {
                     total_score[warp_id] += max_thread_score;
                     xdrop_found[warp_id]  = true;
                     extent[warp_id]       = max_pos;
-                    prev_max_pos[warp_id] = max_pos;
                     tile[warp_id]         = max_pos;
                 }
                 else if (ref_pos >= target_length || query_pos >= query_length)
@@ -184,14 +184,12 @@ __global__ void find_high_scoring_segment_pairs(const char* __restrict__ d_targe
                     total_score[warp_id] += max_thread_score;
                     edge_found[warp_id]   = true;
                     extent[warp_id]       = max_pos;
-                    prev_max_pos[warp_id] = max_pos;
                     tile[warp_id]         = max_pos;
                 }
                 else
                 {
                     prev_score[warp_id]     = thread_score;
                     prev_max_score[warp_id] = max_thread_score;
-                    prev_max_pos[warp_id]   = max_pos;
                     tile[warp_id] += warpSize;
                 }
             }
@@ -315,13 +313,13 @@ __global__ void find_high_scoring_segment_pairs(const char* __restrict__ d_targe
             if (lane_id == warpSize - 1)
             {
                 new_max_found[warp_id] = max_pos > prev_max_pos[warp_id];
+                prev_max_pos[warp_id] = max_pos;
                 if (xdrop_done)
                 {
                     total_score[warp_id] += max_thread_score;
                     xdrop_found[warp_id] = true;
                     left_extent[warp_id] = max_pos;
                     extent[warp_id] += left_extent[warp_id];
-                    prev_max_pos[warp_id] = max_pos;
                     tile[warp_id]         = max_pos;
                 }
                 else if (ref_loc[warp_id] < pos_offset || query_loc[warp_id] < pos_offset)
@@ -330,14 +328,12 @@ __global__ void find_high_scoring_segment_pairs(const char* __restrict__ d_targe
                     edge_found[warp_id]  = true;
                     left_extent[warp_id] = max_pos;
                     extent[warp_id] += left_extent[warp_id];
-                    prev_max_pos[warp_id] = max_pos;
                     tile[warp_id]         = max_pos;
                 }
                 else
                 {
                     prev_score[warp_id]     = thread_score;
                     prev_max_score[warp_id] = max_thread_score;
-                    prev_max_pos[warp_id]   = max_pos;
                     tile[warp_id] += warpSize;
                 }
             }
