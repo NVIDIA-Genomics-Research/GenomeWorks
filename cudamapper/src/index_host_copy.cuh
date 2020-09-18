@@ -133,7 +133,7 @@ private:
     };
 
     // use a single underlying vector in order to reduce memory fragmentation when using pool allocators
-    std::vector<unsigned char> underlying_array_;
+    std::vector<gw_byte_t> underlying_array_;
 
     Span<representation_t> representations_;
     Span<read_id_t> read_ids_;
