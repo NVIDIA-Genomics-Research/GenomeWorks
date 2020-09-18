@@ -46,6 +46,7 @@ UngappedXDrop::UngappedXDrop(int32_t* h_sub_mat, int32_t sub_mat_dim, int32_t xd
     , no_entropy_(no_entropy)
     , stream_(stream)
     , device_id_(device_id)
+    , host_ptr_api_mode_(false)
 {
     //TODO - Check bounds
     // Calculate the max limits on the number of extensions we can do on
@@ -88,6 +89,9 @@ StatusType UngappedXDrop::extend_async(const char* d_query, int32_t query_length
 {
     //TODO - Check bounds
     // Switch to configured GPU
+    // If host pointer API mode was used before this mode, reset data structures
+    if(host_ptr_api_mode_)
+        reset();
     scoped_device_switch dev(device_id_);
     total_scored_segment_pairs_      = 0;
     for (int32_t seed_pair_start = 0; seed_pair_start < num_seed_pairs; seed_pair_start += batch_max_ungapped_extensions_)
@@ -142,6 +146,8 @@ StatusType UngappedXDrop::extend_async(const char* h_query, int32_t query_length
                                        int32_t score_threshold,
                                        std::vector<SeedPair>& h_seed_pairs)
 {
+    // Set host pointer mode on
+    host_ptr_api_mode_=true;
     // Allocate space on device for target and query sequences, seed_pairs,
     // high scoring segment pairs (ssp) and num_ssp.
     GW_CU_CHECK_ERR(cudaMalloc((void**)&d_query_, sizeof(char) * query_length));
@@ -184,24 +190,27 @@ const std::vector<ScoredSegmentPair>& UngappedXDrop::get_scored_segment_pairs() 
 
 void UngappedXDrop::reset()
 {
-    // TODO - Add flag for host ptr mode
     // TODO - Add checks for prev free
-    h_ssp_.clear();
-    GW_CU_CHECK_ERR(cudaFree(d_query_));
-    GW_CU_CHECK_ERR(cudaFree(d_target_));
-    GW_CU_CHECK_ERR(cudaFree(d_seed_pairs_));
-    GW_CU_CHECK_ERR(cudaFree(d_num_ssp_));
-    GW_CU_CHECK_ERR(cudaFree(d_ssp_));
-};
+    if(host_ptr_api_mode_)
+    {
+        h_ssp_.clear();
+        GW_CU_CHECK_ERR(cudaFree(d_query_));
+        GW_CU_CHECK_ERR(cudaFree(d_target_));
+        GW_CU_CHECK_ERR(cudaFree(d_seed_pairs_));
+        GW_CU_CHECK_ERR(cudaFree(d_num_ssp_));
+        GW_CU_CHECK_ERR(cudaFree(d_ssp_));
+        host_ptr_api_mode_ = false;
+    }
+
+}
 
 UngappedXDrop::~UngappedXDrop()
 {
-    // TODO - Check flag for host pointer mode
     reset();
     GW_CU_CHECK_ERR(cudaFree(d_sub_mat_));
     GW_CU_CHECK_ERR(cudaFree(d_tmp_ssp_));
     GW_CU_CHECK_ERR(cudaFree(d_done_));
-};
+}
 
 } // namespace cudaextender
 

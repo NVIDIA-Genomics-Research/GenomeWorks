@@ -69,6 +69,7 @@ private:
     size_t cub_storage_bytes_;
 
     // Host ptr API additional required variables
+    bool host_ptr_api_mode_;
     char* d_query_;
     char* d_target_;
     SeedPair* d_seed_pairs_;
