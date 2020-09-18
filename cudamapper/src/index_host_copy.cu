@@ -66,7 +66,7 @@ IndexHostCopy::IndexHostCopy(const Index& index,
     }
 
     std::size_t current_byte = 0;
-    representations_        = {reinterpret_cast<representation_t*>(underlying_array_.data() + current_byte), index.representations().size()};
+    representations_         = {reinterpret_cast<representation_t*>(underlying_array_.data() + current_byte), index.representations().size()};
     current_byte += representations_bytes;
     read_ids_ = {reinterpret_cast<read_id_t*>(underlying_array_.data() + current_byte), index.read_ids().size()};
     current_byte += read_ids_bytes;
