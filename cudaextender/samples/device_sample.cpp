@@ -18,7 +18,7 @@
 #include <vector>
 #include <fstream>
 #include <cuda.h>
-
+#include <file_location.hpp>
 #include <claraparabricks/genomeworks/cudaextender/extender.hpp>
 #include <claraparabricks/genomeworks/io/fasta_parser.hpp>
 #include <claraparabricks/genomeworks/utils/cudautils.hpp>
@@ -113,12 +113,12 @@ int main(int argc, char* argv[])
 
 
     // Fasta query and target files
-    std::string target_file_path = "../data/example.fa";
+    std::string target_file_path = std::string(CUDAEXTENDER_DATA_DIR) + "/sample.fa";
     std::unique_ptr<io::FastaParser> fasta_parser_target = io::create_kseq_fasta_parser(target_file_path, 0, false);
     // Assumes that only one sequence is present per file
     std::string target_sequence = fasta_parser_target->get_sequence_by_id(0).seq;
 
-    std::string query_file_path = "../data/example.fa";
+    std::string query_file_path = std::string(CUDAEXTENDER_DATA_DIR) + "/sample.fa";;
     std::unique_ptr<io::FastaParser> fasta_parser_query =
         io::create_kseq_fasta_parser(query_file_path, 0, false);
    // Assumes that only one sequence is present per file
@@ -126,11 +126,11 @@ int main(int argc, char* argv[])
 
     // CSV SeedPairs file - Each row -> query_position_in_read_,
     // target_position_in_read_
-    std::string seed_pairs_file_path = "../data/example_hits.csv";
+    std::string seed_pairs_file_path = std::string(CUDAEXTENDER_DATA_DIR) + "/sample_seed_pairs.csv";
 
     //TODO - pinned seed_pairs
     std::vector<SeedPair> h_seed_pairs;
-    // Following function loops through all seed_pairs in the example_seed_pairs.csv and returns
+    // Following function loops through all seed_pairs in the sample_seed_pairs.csv and returns
     // results in
     // the passed vector
     parse_seed_pairs(seed_pairs_file_path, h_seed_pairs);
