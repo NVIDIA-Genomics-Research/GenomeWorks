@@ -34,12 +34,12 @@ __global__ void find_high_scoring_segment_pairs(const char* __restrict__ d_targe
 
 // gather only the HSPs from the resulting segments to the beginning of the
 // tmp_hsp vector
-__global__ void compress_output(int32_t* d_done, int32_t start_index, ScoredSegmentPair * d_hsp, ScoredSegmentPair* d_tmp_hsp, int num_hits);
+__global__ void compress_output(const int32_t* d_done, int32_t start_index, ScoredSegmentPair * d_hsp, ScoredSegmentPair* d_tmp_hsp, int num_hits);
 
 // Binary Predicate for sorting the ScoredSegmentPairs
 struct scored_segment_pair_comp
 {
-    __host__ __device__ bool operator()(ScoredSegmentPair x, ScoredSegmentPair y)
+    __host__ __device__ bool operator()(const ScoredSegmentPair& x, const ScoredSegmentPair& y)
     {
         if (x.seed_pair.query_position_in_read < y.seed_pair.query_position_in_read)
             return true;

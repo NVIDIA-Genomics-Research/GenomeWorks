@@ -89,6 +89,7 @@ StatusType UngappedXDrop::extend_async(const char* d_query, int32_t query_length
     //TODO - Check bounds
     // Switch to configured GPU
     // If host pointer API mode was used before this mode, reset data structures
+    auto t1 = std::chrono::high_resolution_clock::now();
     if(host_ptr_api_mode_)
         reset();
     scoped_device_switch dev(device_id_);
@@ -136,6 +137,12 @@ StatusType UngappedXDrop::extend_async(const char* d_query, int32_t query_length
             total_scored_segment_pairs_ += get_value_from_device(d_num_scored_segment_pairs, stream_);
         }
     }
+    auto t2 = std::chrono::high_resolution_clock::now();
+
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds>( t2 - t1 ).count();
+
+    std::cout <<"Time: " <<duration<<std::endl;
+
     set_device_value_async(d_num_scored_segment_pairs, &total_scored_segment_pairs_, stream_);
     return success;
 }
