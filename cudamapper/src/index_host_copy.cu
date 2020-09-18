@@ -43,38 +43,40 @@ IndexHostCopy::IndexHostCopy(const Index& index,
     GW_NVTX_RANGE(profiler, "index_host_copy::constructor");
 
     // Use only one large array to store all arrays in order to reduce fragmentation when using pool allocators
-    // Align all arrays by 64 bits
-    const std::size_t representations_bits                     = claraparabricks::genomeworks::ceiling_divide(index.representations().size() * sizeof(representation_t), sizeof(std::uint64_t)) * sizeof(uint64_t);
-    const std::size_t read_ids_bits                            = claraparabricks::genomeworks::ceiling_divide(index.read_ids().size() * sizeof(read_id_t), sizeof(std::uint64_t)) * sizeof(uint64_t);
-    const std::size_t positions_in_reads_bits                  = claraparabricks::genomeworks::ceiling_divide(index.positions_in_reads().size() * sizeof(position_in_read_t), sizeof(std::uint64_t)) * sizeof(uint64_t);
-    const std::size_t directions_of_reads_bits                 = claraparabricks::genomeworks::ceiling_divide(index.directions_of_reads().size() * sizeof(SketchElement::DirectionOfRepresentation), sizeof(std::uint64_t)) * sizeof(uint64_t);
-    const std::size_t unique_representations_bits              = claraparabricks::genomeworks::ceiling_divide(index.unique_representations().size() * sizeof(representation_t), sizeof(std::uint64_t)) * sizeof(uint64_t);
-    const std::size_t first_occurrence_of_representations_bits = claraparabricks::genomeworks::ceiling_divide(index.first_occurrence_of_representations().size() * sizeof(std::uint32_t), sizeof(std::uint64_t)) * sizeof(uint64_t);
+    // Align all arrays according to the largest type
+    constexpr size_t alignment_bytes = std::max({alignof(representation_t), alignof(read_id_t), alignof(position_in_read_t), alignof(SketchElement::DirectionOfRepresentation), alignof(std::uint32_t)});
 
-    const std::size_t total_bits = representations_bits +
-                                   read_ids_bits +
-                                   positions_in_reads_bits +
-                                   directions_of_reads_bits +
-                                   unique_representations_bits +
-                                   first_occurrence_of_representations_bits;
+    const std::size_t representations_bytes                     = claraparabricks::genomeworks::ceiling_divide(index.representations().size() * sizeof(representation_t), alignment_bytes) * alignment_bytes;
+    const std::size_t read_ids_bytes                            = claraparabricks::genomeworks::ceiling_divide(index.read_ids().size() * sizeof(read_id_t), alignment_bytes) * alignment_bytes;
+    const std::size_t positions_in_reads_bytes                  = claraparabricks::genomeworks::ceiling_divide(index.positions_in_reads().size() * sizeof(position_in_read_t), alignment_bytes) * alignment_bytes;
+    const std::size_t directions_of_reads_bytes                 = claraparabricks::genomeworks::ceiling_divide(index.directions_of_reads().size() * sizeof(SketchElement::DirectionOfRepresentation), alignment_bytes) * alignment_bytes;
+    const std::size_t unique_representations_bytes              = claraparabricks::genomeworks::ceiling_divide(index.unique_representations().size() * sizeof(representation_t), alignment_bytes) * alignment_bytes;
+    const std::size_t first_occurrence_of_representations_bytes = claraparabricks::genomeworks::ceiling_divide(index.first_occurrence_of_representations().size() * sizeof(std::uint32_t), alignment_bytes) * alignment_bytes;
+
+    const std::size_t total_bytes = representations_bytes +
+                                    read_ids_bytes +
+                                    positions_in_reads_bytes +
+                                    directions_of_reads_bytes +
+                                    unique_representations_bytes +
+                                    first_occurrence_of_representations_bytes;
 
     {
         GW_NVTX_RANGE(profiler, "index_host_copy::constructor::allocate_host_memory");
-        underlying_array_.resize(total_bits);
+        underlying_array_.resize(total_bytes);
     }
 
-    std::size_t current_bit = 0;
-    representations_        = {reinterpret_cast<representation_t*>(underlying_array_.data() + current_bit), index.representations().size()};
-    current_bit += representations_bits;
-    read_ids_ = {reinterpret_cast<read_id_t*>(underlying_array_.data() + current_bit), index.read_ids().size()};
-    current_bit += read_ids_bits;
-    positions_in_reads_ = {reinterpret_cast<position_in_read_t*>(underlying_array_.data() + current_bit), index.positions_in_reads().size()};
-    current_bit += positions_in_reads_bits;
-    directions_of_reads_ = {reinterpret_cast<SketchElement::DirectionOfRepresentation*>(underlying_array_.data() + current_bit), index.directions_of_reads().size()};
-    current_bit += directions_of_reads_bits;
-    unique_representations_ = {reinterpret_cast<representation_t*>(underlying_array_.data() + current_bit), index.unique_representations().size()};
-    current_bit += unique_representations_bits;
-    first_occurrence_of_representations_ = {reinterpret_cast<std::uint32_t*>(underlying_array_.data() + current_bit), index.first_occurrence_of_representations().size()};
+    std::size_t current_byte = 0;
+    representations_        = {reinterpret_cast<representation_t*>(underlying_array_.data() + current_byte), index.representations().size()};
+    current_byte += representations_bytes;
+    read_ids_ = {reinterpret_cast<read_id_t*>(underlying_array_.data() + current_byte), index.read_ids().size()};
+    current_byte += read_ids_bytes;
+    positions_in_reads_ = {reinterpret_cast<position_in_read_t*>(underlying_array_.data() + current_byte), index.positions_in_reads().size()};
+    current_byte += positions_in_reads_bytes;
+    directions_of_reads_ = {reinterpret_cast<SketchElement::DirectionOfRepresentation*>(underlying_array_.data() + current_byte), index.directions_of_reads().size()};
+    current_byte += directions_of_reads_bytes;
+    unique_representations_ = {reinterpret_cast<representation_t*>(underlying_array_.data() + current_byte), index.unique_representations().size()};
+    current_byte += unique_representations_bytes;
+    first_occurrence_of_representations_ = {reinterpret_cast<std::uint32_t*>(underlying_array_.data() + current_byte), index.first_occurrence_of_representations().size()};
 
     // register pinned memory, memory gets unpinned in finish_copying()
     memory_pinner_.register_pinned_memory();
