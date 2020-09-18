@@ -47,26 +47,25 @@ UngappedXDrop::UngappedXDrop(int32_t* h_sub_mat, int32_t sub_mat_dim, int32_t xd
     , stream_(stream)
     , device_id_(device_id)
 {
+    //TODO - Check bounds
     // Calculate the max limits on the number of extensions we can do on
     // this GPU
     cudaDeviceProp device_prop;
     cudaGetDeviceProperties(&device_prop, device_id_);
     const int32_t max_ungapped_per_gb   = 4194304; // FIXME: Calculate using sizeof datastructures
     const int32_t max_seed_pairs_per_gb = 8388608; // FIXME: Calculate using sizeof datastructures
-    const float global_mem_gb               = static_cast<float>(device_prop.totalGlobalMem) / 1073741824.0f;
-    batch_max_ungapped_extensions_          = static_cast<int32_t>(global_mem_gb) * max_ungapped_per_gb;
-    const int32_t max_seed_pairs                  = static_cast<int32_t>(global_mem_gb) * max_seed_pairs_per_gb;
+    const float global_mem_gb           = static_cast<float>(device_prop.totalGlobalMem) / 1073741824.0f;
+    batch_max_ungapped_extensions_      = static_cast<int32_t>(global_mem_gb) * max_ungapped_per_gb;
+    const int32_t max_seed_pairs        = static_cast<int32_t>(global_mem_gb) * max_seed_pairs_per_gb;
     // Switch to device for copying over initial structures
     scoped_device_switch dev(device_id_);
 
     //Figure out memory requirements for cub functions
-    int32_t* dummy_num_out;
     size_t temp_storage_bytes = 0;
-    cub_storage_bytes_  = 0;
-    cub::DeviceSelect::Unique(NULL, temp_storage_bytes, d_tmp_ssp_, d_tmp_ssp_, dummy_num_out, batch_max_ungapped_extensions_);
-    cub::DeviceScan::InclusiveSum(NULL, cub_storage_bytes_, d_done_,d_done_+batch_max_ungapped_extensions_, batch_max_ungapped_extensions_);
+    cub_storage_bytes_        = 0;
+    GW_CU_CHECK_ERR(cub::DeviceSelect::Unique(nullptr, temp_storage_bytes, d_tmp_ssp_, d_tmp_ssp_, (int32_t*)nullptr, batch_max_ungapped_extensions_));
+    GW_CU_CHECK_ERR(cub::DeviceScan::InclusiveSum(nullptr, cub_storage_bytes_, d_done_, d_done_ + batch_max_ungapped_extensions_, batch_max_ungapped_extensions_));
     cub_storage_bytes_ = std::max(temp_storage_bytes, cub_storage_bytes_);
-
 
     // Allocate space on device for scoring matrix and intermediate results
     GW_CU_CHECK_ERR(cudaMalloc((void**)&d_sub_mat_, sub_mat_dim_ * sizeof(int32_t)));
@@ -79,8 +78,6 @@ UngappedXDrop::UngappedXDrop(int32_t* h_sub_mat, int32_t sub_mat_dim, int32_t xd
     device_copy_n(h_sub_mat_, sub_mat_dim_, d_sub_mat_, stream_);
     GW_CU_CHECK_ERR(cudaMemsetAsync((void*)d_done_, 0, batch_max_ungapped_extensions_ * sizeof(int32_t), stream_));
     GW_CU_CHECK_ERR(cudaMemsetAsync((void*)d_tmp_ssp_, 0, batch_max_ungapped_extensions_ * sizeof(ScoredSegmentPair), stream_));
-
-
 }
 
 StatusType UngappedXDrop::extend_async(const char* d_query, int32_t query_length,
@@ -89,11 +86,12 @@ StatusType UngappedXDrop::extend_async(const char* d_query, int32_t query_length
                                        int32_t num_seed_pairs, ScoredSegmentPair* d_scored_segment_pairs,
                                        int32_t* d_num_scored_segment_pairs)
 {
+    //TODO - Check bounds
     // Switch to configured GPU
     scoped_device_switch dev(device_id_);
-    int32_t curr_num_pairs      = 0;
-    int32_t num_scored_segment_pairs  = 0;
-    total_scored_segment_pairs_ = 0;
+    int32_t curr_num_pairs           = 0;
+    int32_t num_scored_segment_pairs = 0;
+    total_scored_segment_pairs_      = 0;
     for (int32_t seed_pair_start = 0; seed_pair_start < num_seed_pairs; seed_pair_start += batch_max_ungapped_extensions_)
     {
         curr_num_pairs = std::min(batch_max_ungapped_extensions_, num_seed_pairs - seed_pair_start);
@@ -111,7 +109,7 @@ StatusType UngappedXDrop::extend_async(const char* d_query, int32_t query_length
                                                                    seed_pair_start,
                                                                    d_scored_segment_pairs,
                                                                    d_done_);
-        cub::DeviceScan::InclusiveSum(d_temp_storage_cub_, cub_storage_bytes_, d_done_, d_done_, curr_num_pairs, stream_);
+        GW_CU_CHECK_ERR(cub::DeviceScan::InclusiveSum(d_temp_storage_cub_, cub_storage_bytes_, d_done_, d_done_, curr_num_pairs, stream_));
         // TODO- Make async
         num_scored_segment_pairs = get_value_from_device(d_done_ + curr_num_pairs - 1, stream_);
         if (num_scored_segment_pairs > 0)
@@ -127,14 +125,13 @@ StatusType UngappedXDrop::extend_async(const char* d_query, int32_t query_length
                                 d_tmp_hsp_dev_ptr,
                                 d_tmp_hsp_dev_ptr + num_scored_segment_pairs,
                                 scored_segment_pair_comp());
-            thrust::device_ptr<ScoredSegmentPair> d_scored_segment_pairs_dev_ptr(d_scored_segment_pairs);
-            cub::DeviceSelect::Unique(d_temp_storage_cub_,
-                                      cub_storage_bytes_,
-                                      d_tmp_ssp_,
-                                      d_scored_segment_pairs+total_scored_segment_pairs_,
-                                      d_num_scored_segment_pairs,
-                                      num_scored_segment_pairs,
-                                      stream_);
+            GW_CU_CHECK_ERR(cub::DeviceSelect::Unique(d_temp_storage_cub_,
+                                                      cub_storage_bytes_,
+                                                      d_tmp_ssp_,
+                                                      d_scored_segment_pairs + total_scored_segment_pairs_,
+                                                      d_num_scored_segment_pairs,
+                                                      num_scored_segment_pairs,
+                                                      stream_));
             num_scored_segment_pairs = get_value_from_device(d_num_scored_segment_pairs, stream_);
             total_scored_segment_pairs_ += num_scored_segment_pairs;
         }
@@ -143,31 +140,70 @@ StatusType UngappedXDrop::extend_async(const char* d_query, int32_t query_length
     return success;
 }
 
-const std::vector<ScoredSegmentPair>& UngappedXDrop::get_scored_segment_pairs() const
-{
-    std::vector<ScoredSegmentPair> placeholder;
-    return placeholder;
-}
-
 StatusType UngappedXDrop::extend_async(const char* h_query, int32_t query_length,
                                        const char* h_target, int32_t target_length,
                                        int32_t score_threshold,
                                        std::vector<SeedPair>& h_seed_pairs)
 {
+    // Allocate space on device for target and query sequences, seed_pairs,
+    // high scoring segment pairs (ssp) and num_ssp.
+    GW_CU_CHECK_ERR(cudaMalloc((void**)&d_query_, sizeof(char) * query_length));
+    GW_CU_CHECK_ERR(cudaMalloc((void**)&d_target_, sizeof(char) * target_length));
+    GW_CU_CHECK_ERR(cudaMalloc((void**)&d_seed_pairs_, sizeof(SeedPair) * h_seed_pairs.size()));
+    GW_CU_CHECK_ERR(cudaMalloc((void**)&d_num_ssp_, sizeof(int32_t)));
+    GW_CU_CHECK_ERR(cudaMalloc((void**)&d_ssp_, sizeof(ScoredSegmentPair) * h_seed_pairs.size()));
+
+    // Async Memcopy all the input values to device
+    GW_CU_CHECK_ERR(cudaMemcpyAsync(d_query_, h_query, sizeof(char) * query_length,
+                                    cudaMemcpyHostToDevice, stream_));
+    GW_CU_CHECK_ERR(cudaMemcpyAsync(d_target_, h_target, sizeof(char) * target_length,
+                                    cudaMemcpyHostToDevice, stream_));
+    GW_CU_CHECK_ERR(cudaMemcpyAsync(d_seed_pairs_, &h_seed_pairs[0], sizeof(SeedPair) * h_seed_pairs.size(), cudaMemcpyHostToDevice,
+                                    stream_));
+
+    // Launch the ungapped extender device function
+    if (!extend_async(d_query_, query_length, d_target_, target_length, score_threshold, d_seed_pairs_, h_seed_pairs.size(), d_ssp_, d_num_ssp_))
+    {
+        GW_LOG_ERROR("Error running cudaextender");
+    }
+
     return success;
 }
 
 StatusType UngappedXDrop::sync()
 {
+    h_num_ssp_ = get_value_from_device(d_num_ssp_, stream_);
+    if (h_num_ssp_ > 0)
+    {
+        h_ssp_.resize(h_num_ssp_);
+        device_copy_n(d_ssp_, h_num_ssp_, &h_ssp_[0], stream_);
+        cudaStreamSynchronize(stream_);
+    }
+
     return success;
 }
 
-void UngappedXDrop::reset(){
+const std::vector<ScoredSegmentPair>& UngappedXDrop::get_scored_segment_pairs() const
+{
+    return h_ssp_;
+}
 
+void UngappedXDrop::reset()
+{
+    // TODO - Add flag for host ptr mode
+    // TODO - Add checks for prev free
+    h_ssp_.clear();
+    GW_CU_CHECK_ERR(cudaFree(d_query_));
+    GW_CU_CHECK_ERR(cudaFree(d_target_));
+    GW_CU_CHECK_ERR(cudaFree(d_seed_pairs_));
+    GW_CU_CHECK_ERR(cudaFree(d_num_ssp_));
+    GW_CU_CHECK_ERR(cudaFree(d_ssp_));
 };
 
 UngappedXDrop::~UngappedXDrop()
 {
+    // TODO - Check flag for host pointer mode
+    reset();
     GW_CU_CHECK_ERR(cudaFree(d_sub_mat_));
     GW_CU_CHECK_ERR(cudaFree(d_tmp_ssp_));
     GW_CU_CHECK_ERR(cudaFree(d_done_));

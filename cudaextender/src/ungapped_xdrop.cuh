@@ -51,6 +51,8 @@ public:
     const std::vector<ScoredSegmentPair>& get_scored_segment_pairs() const override;
 
 private:
+    // TODO - Smart pointers
+    // Device ptr required variables
     int32_t* h_sub_mat_;
     int32_t sub_mat_dim_; // Assume matrix is square
     int32_t xdrop_threshold_;
@@ -59,12 +61,21 @@ private:
     int32_t device_id_;
     std::vector<ScoredSegmentPair> scored_segment_pairs_;
     int32_t batch_max_ungapped_extensions_;
-    int32_t* d_sub_mat_; // Pointer to device substitution matrix
-    int32_t* d_done_;   // TODO- Rename scratch space
-    ScoredSegmentPair* d_tmp_ssp_;  // TODO- Rename Scratch space 2
+    int32_t* d_sub_mat_;           // Pointer to device substitution matrix
+    int32_t* d_done_;              // TODO- Rename scratch space
+    ScoredSegmentPair* d_tmp_ssp_; // TODO- Rename Scratch space 2
     int32_t total_scored_segment_pairs_;
     void* d_temp_storage_cub_; // temporary storage for cub functions
     size_t cub_storage_bytes_;
+
+    // Host ptr additional required variables
+    char *d_query_, *d_target_;
+    SeedPair* d_seed_pairs_;
+    int32_t* d_num_ssp_;
+    ScoredSegmentPair* d_ssp_;
+    int32_t h_num_ssp_;
+    std::vector<ScoredSegmentPair> h_ssp_;
+
 };
 
 } // namespace cudaextender

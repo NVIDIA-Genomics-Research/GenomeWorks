@@ -128,6 +128,7 @@ int main(int argc, char* argv[])
     // target_position_in_read_
     std::string seed_pairs_file_path = "../data/example_hits.csv";
 
+    //TODO - pinned seed_pairs
     std::vector<SeedPair> h_seed_pairs;
     // Following function loops through all seed_pairs in the example_seed_pairs.csv and returns
     // results in
