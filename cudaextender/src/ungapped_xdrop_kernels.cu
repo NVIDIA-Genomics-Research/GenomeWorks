@@ -29,13 +29,8 @@ namespace cudaextender
 // to score_threshold and update the d_hsp and d_done vectors
 __global__ void find_high_scoring_segment_pairs(const char* __restrict__ d_target, const int32_t target_length, const char* __restrict__ d_query, const int32_t query_length, const int32_t* d_sub_mat, bool no_entropy, int32_t xdrop_threshold, int32_t score_threshold, SeedPair* d_seed_pairs, int32_t num_seed_pairs, int32_t start_index, ScoredSegmentPair* d_scored_segment, int32_t* d_done)
 {
-
-    int32_t thread_id           = threadIdx.x;
-    int32_t block_id            = blockIdx.x;
-    int32_t num_blocks          = gridDim.x;
-    int32_t warp_size           = warpSize;
-    int32_t lane_id             = thread_id % warp_size;
-    int32_t warp_id             = (thread_id - lane_id) / warp_size;
+    int32_t lane_id             = threadIdx.x % warpSize;
+    int32_t warp_id             = (threadIdx.x - lane_id) / warpSize;
     constexpr int32_t num_warps = 4;  // TODO - move out?
     constexpr int32_t nuc       = 8;  // TODO - remove hardcode - pass in
     constexpr int32_t nuc2      = 64; // TODO - remove hardcode
@@ -70,13 +65,13 @@ __global__ void find_high_scoring_segment_pairs(const char* __restrict__ d_targe
 
     __shared__ int32_t sub_mat[nuc2];
 
-    if (thread_id < nuc2)
+    if (threadIdx.x < nuc2)
     {
-        sub_mat[thread_id] = d_sub_mat[thread_id];
+        sub_mat[threadIdx.x] = d_sub_mat[threadIdx.x];
     }
     __syncthreads();
 
-    for (int32_t hid0 = block_id * num_warps; hid0 < num_seed_pairs; hid0 += num_warps * num_blocks)
+    for (int32_t hid0 = blockIdx.x * num_warps; hid0 < num_seed_pairs; hid0 += num_warps * gridDim.x)
     {
         int32_t hid = hid0 + warp_id + start_index;
 
@@ -145,7 +140,7 @@ __global__ void find_high_scoring_segment_pairs(const char* __restrict__ d_targe
             __syncwarp();
 
 #pragma unroll
-            for (int32_t offset = 1; offset < warp_size; offset = offset << 1)
+            for (int32_t offset = 1; offset < warpSize; offset = offset << 1)
             {
                 temp = __shfl_up_sync(0xFFFFFFFF, thread_score, offset);
 
@@ -170,7 +165,7 @@ __global__ void find_high_scoring_segment_pairs(const char* __restrict__ d_targe
             __syncwarp();
 
 #pragma unroll
-            for (int32_t offset = 1; offset < warp_size; offset = offset << 1)
+            for (int32_t offset = 1; offset < warpSize; offset = offset << 1)
             {
                 temp     = __shfl_up_sync(0xFFFFFFFF, max_thread_score, offset);
                 temp_pos = __shfl_up_sync(0xFFFFFFFF, max_pos, offset);
@@ -189,12 +184,12 @@ __global__ void find_high_scoring_segment_pairs(const char* __restrict__ d_targe
             __syncwarp();
 
 #pragma unroll
-            for (int32_t offset = 1; offset < warp_size; offset = offset << 1)
+            for (int32_t offset = 1; offset < warpSize; offset = offset << 1)
             {
                 xdrop_done |= __shfl_up_sync(0xFFFFFFFF, xdrop_done, offset);
             }
 
-            if (lane_id == warp_size - 1)
+            if (lane_id == warpSize - 1)
             {
 
                 if (max_pos > prev_max_pos[warp_id])
@@ -223,7 +218,7 @@ __global__ void find_high_scoring_segment_pairs(const char* __restrict__ d_targe
                     prev_score[warp_id]     = thread_score;
                     prev_max_score[warp_id] = max_thread_score;
                     prev_max_pos[warp_id]   = max_pos;
-                    tile[warp_id] += warp_size;
+                    tile[warp_id] += warpSize;
                 }
             }
             __syncwarp();
@@ -291,7 +286,7 @@ __global__ void find_high_scoring_segment_pairs(const char* __restrict__ d_targe
             }
 
 #pragma unroll
-            for (int32_t offset = 1; offset < warp_size; offset = offset << 1)
+            for (int32_t offset = 1; offset < warpSize; offset = offset << 1)
             {
                 temp = __shfl_up_sync(0xFFFFFFFF, thread_score, offset);
 
@@ -315,7 +310,7 @@ __global__ void find_high_scoring_segment_pairs(const char* __restrict__ d_targe
             __syncwarp();
 
 #pragma unroll
-            for (int32_t offset = 1; offset < warp_size; offset = offset << 1)
+            for (int32_t offset = 1; offset < warpSize; offset = offset << 1)
             {
                 temp     = __shfl_up_sync(0xFFFFFFFF, max_thread_score, offset);
                 temp_pos = __shfl_up_sync(0xFFFFFFFF, max_pos, offset);
@@ -334,12 +329,12 @@ __global__ void find_high_scoring_segment_pairs(const char* __restrict__ d_targe
             __syncwarp();
 
 #pragma unroll
-            for (int32_t offset = 1; offset < warp_size; offset = offset << 1)
+            for (int32_t offset = 1; offset < warpSize; offset = offset << 1)
             {
                 xdrop_done |= __shfl_up_sync(0xFFFFFFFF, xdrop_done, offset);
             }
 
-            if (lane_id == warp_size - 1)
+            if (lane_id == warpSize - 1)
             {
 
                 if (max_pos > prev_max_pos[warp_id])
@@ -370,7 +365,7 @@ __global__ void find_high_scoring_segment_pairs(const char* __restrict__ d_targe
                     prev_score[warp_id]     = thread_score;
                     prev_max_score[warp_id] = max_thread_score;
                     prev_max_pos[warp_id]   = max_pos;
-                    tile[warp_id] += warp_size;
+                    tile[warp_id] += warpSize;
                 }
             }
             __syncwarp();
@@ -406,14 +401,14 @@ __global__ void find_high_scoring_segment_pairs(const char* __restrict__ d_targe
             for (int32_t i = 0; i < 4; i++)
             {
 #pragma unroll
-                for (int32_t offset = 1; offset < warp_size; offset = offset << 1)
+                for (int32_t offset = 1; offset < warpSize; offset = offset << 1)
                 {
                     count[i] += __shfl_up_sync(0xFFFFFFFF, count[i], offset);
                 }
             }
             __syncwarp();
 
-            if (lane_id == warp_size - 1 && ((count[0] + count[1] + count[2] + count[3]) >= 20))
+            if (lane_id == warpSize - 1 && ((count[0] + count[1] + count[2] + count[3]) >= 20))
             {
 
                 entropy[warp_id] = 0.f;
@@ -458,15 +453,9 @@ __global__ void find_high_scoring_segment_pairs(const char* __restrict__ d_targe
 // gather only the HSPs from the resulting segments to the beginning of the
 // tmp_hsp vector
 __global__
-void compress_output (int32_t* d_done, int32_t start_index, ScoredSegmentPair* d_hsp, ScoredSegmentPair* d_tmp_hsp, int32_t num_hits){
-
-    int thread_id = threadIdx.x;
-    int block_dim = blockDim.x;
-    int grid_dim = gridDim.x;
-    int block_id = blockIdx.x;
-
-    int stride = block_dim * grid_dim;
-    int32_t start = block_dim * block_id + thread_id;
+void compress_output (int32_t* d_done, const int32_t start_index, ScoredSegmentPair* d_hsp, ScoredSegmentPair* d_tmp_hsp, const int32_t num_hits){
+    const int32_t stride = blockDim.x * gridDim.x;
+    const int32_t start = blockDim.x * blockIdx.x + threadIdx.x;
     int32_t reduced_index = 0;
     int32_t index = 0;
 

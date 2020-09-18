@@ -54,31 +54,30 @@ UngappedXDrop::UngappedXDrop(int32_t* h_sub_mat, int32_t sub_mat_dim, int32_t xd
     cudaDeviceProp device_prop;
     cudaGetDeviceProperties(&device_prop, device_id_);
     const int32_t max_ungapped_per_gb   = 4194304; // FIXME: Calculate using sizeof datastructures
-    const int32_t max_seed_pairs_per_gb = 8388608; // FIXME: Calculate using sizeof datastructures
+    //const int32_t max_seed_pairs_per_gb = 8388608; // FIXME: Calculate using sizeof datastructures // TODO- Do we need this?
     const float global_mem_gb           = static_cast<float>(device_prop.totalGlobalMem) / 1073741824.0f;
     batch_max_ungapped_extensions_      = static_cast<int32_t>(global_mem_gb) * max_ungapped_per_gb;
-    const int32_t max_seed_pairs        = static_cast<int32_t>(global_mem_gb) * max_seed_pairs_per_gb;
     // Switch to device for copying over initial structures
     scoped_device_switch dev(device_id_);
 
     //Figure out memory requirements for cub functions
     size_t temp_storage_bytes = 0;
     cub_storage_bytes_        = 0;
-    GW_CU_CHECK_ERR(cub::DeviceSelect::Unique(nullptr, temp_storage_bytes, d_tmp_ssp_, d_tmp_ssp_, (int32_t*)nullptr, batch_max_ungapped_extensions_));
-    GW_CU_CHECK_ERR(cub::DeviceScan::InclusiveSum(nullptr, cub_storage_bytes_, d_done_, d_done_ + batch_max_ungapped_extensions_, batch_max_ungapped_extensions_));
+    GW_CU_CHECK_ERR(cub::DeviceSelect::Unique(nullptr, temp_storage_bytes, d_tmp_ssp_, d_tmp_ssp_, (int32_t*)nullptr, batch_max_ungapped_extensions_))
+    GW_CU_CHECK_ERR(cub::DeviceScan::InclusiveSum(nullptr, cub_storage_bytes_, d_done_, d_done_ + batch_max_ungapped_extensions_, batch_max_ungapped_extensions_))
     cub_storage_bytes_ = std::max(temp_storage_bytes, cub_storage_bytes_);
 
     // Allocate space on device for scoring matrix and intermediate results
-    GW_CU_CHECK_ERR(cudaMalloc((void**)&d_sub_mat_, sub_mat_dim_ * sizeof(int32_t)));
-    GW_CU_CHECK_ERR(cudaMalloc((void**)&d_done_, batch_max_ungapped_extensions_ * sizeof(int32_t)));
-    GW_CU_CHECK_ERR(cudaMalloc((void**)&d_tmp_ssp_, batch_max_ungapped_extensions_ * sizeof(ScoredSegmentPair)));
+    GW_CU_CHECK_ERR(cudaMalloc((void**)&d_sub_mat_, sub_mat_dim_ * sizeof(int32_t)))
+    GW_CU_CHECK_ERR(cudaMalloc((void**)&d_done_, batch_max_ungapped_extensions_ * sizeof(int32_t)))
+    GW_CU_CHECK_ERR(cudaMalloc((void**)&d_tmp_ssp_, batch_max_ungapped_extensions_ * sizeof(ScoredSegmentPair)))
     // Allocate temporary storage for cub
-    GW_CU_CHECK_ERR(cudaMalloc((void**)&d_temp_storage_cub_, cub_storage_bytes_));
+    GW_CU_CHECK_ERR(cudaMalloc((void**)&d_temp_storage_cub_, cub_storage_bytes_))
 
     // Requires pinned host memory registration for proper async behavior
     device_copy_n(h_sub_mat_, sub_mat_dim_, d_sub_mat_, stream_);
-    GW_CU_CHECK_ERR(cudaMemsetAsync((void*)d_done_, 0, batch_max_ungapped_extensions_ * sizeof(int32_t), stream_));
-    GW_CU_CHECK_ERR(cudaMemsetAsync((void*)d_tmp_ssp_, 0, batch_max_ungapped_extensions_ * sizeof(ScoredSegmentPair), stream_));
+    GW_CU_CHECK_ERR(cudaMemsetAsync((void*)d_done_, 0, batch_max_ungapped_extensions_ * sizeof(int32_t), stream_))
+    GW_CU_CHECK_ERR(cudaMemsetAsync((void*)d_tmp_ssp_, 0, batch_max_ungapped_extensions_ * sizeof(ScoredSegmentPair), stream_))
 }
 
 StatusType UngappedXDrop::extend_async(const char* d_query, int32_t query_length,
@@ -111,7 +110,7 @@ StatusType UngappedXDrop::extend_async(const char* d_query, int32_t query_length
                                                                    seed_pair_start,
                                                                    d_scored_segment_pairs,
                                                                    d_done_);
-        GW_CU_CHECK_ERR(cub::DeviceScan::InclusiveSum(d_temp_storage_cub_, cub_storage_bytes_, d_done_, d_done_, curr_num_pairs, stream_));
+        GW_CU_CHECK_ERR(cub::DeviceScan::InclusiveSum(d_temp_storage_cub_, cub_storage_bytes_, d_done_, d_done_, curr_num_pairs, stream_))
         // TODO- Make async
         const int32_t num_scored_segment_pairs = get_value_from_device(d_done_ + curr_num_pairs - 1, stream_);
         if (num_scored_segment_pairs > 0)
@@ -133,7 +132,7 @@ StatusType UngappedXDrop::extend_async(const char* d_query, int32_t query_length
                                                       d_scored_segment_pairs + total_scored_segment_pairs_,
                                                       d_num_scored_segment_pairs,
                                                       num_scored_segment_pairs,
-                                                      stream_));
+                                                      stream_))
             total_scored_segment_pairs_ += get_value_from_device(d_num_scored_segment_pairs, stream_);
         }
     }
@@ -150,11 +149,11 @@ StatusType UngappedXDrop::extend_async(const char* h_query, int32_t query_length
     host_ptr_api_mode_=true;
     // Allocate space on device for target and query sequences, seed_pairs,
     // high scoring segment pairs (ssp) and num_ssp.
-    GW_CU_CHECK_ERR(cudaMalloc((void**)&d_query_, sizeof(char) * query_length));
-    GW_CU_CHECK_ERR(cudaMalloc((void**)&d_target_, sizeof(char) * target_length));
-    GW_CU_CHECK_ERR(cudaMalloc((void**)&d_seed_pairs_, sizeof(SeedPair) * h_seed_pairs.size()));
-    GW_CU_CHECK_ERR(cudaMalloc((void**)&d_num_ssp_, sizeof(int32_t)));
-    GW_CU_CHECK_ERR(cudaMalloc((void**)&d_ssp_, sizeof(ScoredSegmentPair) * h_seed_pairs.size()));
+    GW_CU_CHECK_ERR(cudaMalloc((void**)&d_query_, sizeof(char) * query_length))
+    GW_CU_CHECK_ERR(cudaMalloc((void**)&d_target_, sizeof(char) * target_length))
+    GW_CU_CHECK_ERR(cudaMalloc((void**)&d_seed_pairs_, sizeof(SeedPair) * h_seed_pairs.size()))
+    GW_CU_CHECK_ERR(cudaMalloc((void**)&d_num_ssp_, sizeof(int32_t)))
+    GW_CU_CHECK_ERR(cudaMalloc((void**)&d_ssp_, sizeof(ScoredSegmentPair) * h_seed_pairs.size()))
 
     // Async memcopy all the input values to device
     device_copy_n(h_query, query_length, d_query_, stream_);
@@ -162,54 +161,59 @@ StatusType UngappedXDrop::extend_async(const char* h_query, int32_t query_length
     device_copy_n(h_seed_pairs.data(), h_seed_pairs.size(), d_seed_pairs_, stream_);
 
     // Launch the ungapped extender device function
-    if (!extend_async(d_query_, query_length, d_target_, target_length, score_threshold, d_seed_pairs_, h_seed_pairs.size(), d_ssp_, d_num_ssp_))
-    {
-        GW_LOG_ERROR("Error running cudaextender");
-    }
-
-    return success;
+    return extend_async(d_query_, query_length, d_target_, target_length, score_threshold, d_seed_pairs_, h_seed_pairs.size(), d_ssp_, d_num_ssp_);
 }
 
 StatusType UngappedXDrop::sync()
 {
-    const int32_t h_num_ssp = get_value_from_device(d_num_ssp_, stream_);
-    if (h_num_ssp > 0)
+    if(host_ptr_api_mode_)
     {
-        h_ssp_.resize(h_num_ssp);
-        device_copy_n(d_ssp_, h_num_ssp, h_ssp_.data(), stream_);
-        cudaStreamSynchronize(stream_);
+        const int32_t h_num_ssp = get_value_from_device(d_num_ssp_, stream_);
+        if (h_num_ssp > 0)
+        {
+            h_ssp_.resize(h_num_ssp);
+            device_copy_n(d_ssp_, h_num_ssp, h_ssp_.data(), stream_);
+            cudaStreamSynchronize(stream_);
+        }
+        return success;
     }
 
-    return success;
+    // If this function was called without using the host_ptr_api, throw error
+    return error_invalid_operation;
+
 }
 
 const std::vector<ScoredSegmentPair>& UngappedXDrop::get_scored_segment_pairs() const
 {
-    return h_ssp_;
+    if(host_ptr_api_mode_)
+    {
+        return h_ssp_;
+    }
+    // If this function was called using the host_ptr_api, throw error
+    throw std::runtime_error("Invalid API call. Getting scored segment pairs without calling extend_async host ptr API");
 }
 
 void UngappedXDrop::reset()
 {
-    // TODO - Add checks for prev free
+    // Reset only if host pointer API was used earlier
     if(host_ptr_api_mode_)
     {
         h_ssp_.clear();
-        GW_CU_CHECK_ERR(cudaFree(d_query_));
-        GW_CU_CHECK_ERR(cudaFree(d_target_));
-        GW_CU_CHECK_ERR(cudaFree(d_seed_pairs_));
-        GW_CU_CHECK_ERR(cudaFree(d_num_ssp_));
-        GW_CU_CHECK_ERR(cudaFree(d_ssp_));
+        GW_CU_CHECK_ERR(cudaFree(d_query_))
+        GW_CU_CHECK_ERR(cudaFree(d_target_))
+        GW_CU_CHECK_ERR(cudaFree(d_seed_pairs_))
+        GW_CU_CHECK_ERR(cudaFree(d_num_ssp_))
+        GW_CU_CHECK_ERR(cudaFree(d_ssp_))
         host_ptr_api_mode_ = false;
     }
-
 }
 
 UngappedXDrop::~UngappedXDrop()
 {
-    reset();
-    GW_CU_CHECK_ERR(cudaFree(d_sub_mat_));
-    GW_CU_CHECK_ERR(cudaFree(d_tmp_ssp_));
-    GW_CU_CHECK_ERR(cudaFree(d_done_));
+    UngappedXDrop::reset();
+    GW_CU_CHECK_ERR(cudaFree(d_sub_mat_))
+    GW_CU_CHECK_ERR(cudaFree(d_tmp_ssp_))
+    GW_CU_CHECK_ERR(cudaFree(d_done_))
 }
 
 } // namespace cudaextender

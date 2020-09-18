@@ -32,6 +32,7 @@ namespace cudaextender
 enum StatusType
 {
     success = 0,
+    error_invalid_operation = 1,
     generic_error
 };
 
