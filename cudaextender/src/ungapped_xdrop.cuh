@@ -17,7 +17,6 @@
 #pragma once
 
 #include <claraparabricks/genomeworks/cudaextender/extender.hpp>
-#include <thrust/device_vector.h>
 
 namespace claraparabricks
 {
@@ -46,13 +45,14 @@ public:
                             int32_t* d_num_scored_segment_pairs) override;
 
     StatusType sync() override;
+
     void reset() override;
 
     const std::vector<ScoredSegmentPair>& get_scored_segment_pairs() const override;
 
 private:
     // TODO - Smart pointers
-    // Device ptr required variables
+    // Device ptr API required variables
     int32_t* h_sub_mat_;
     int32_t sub_mat_dim_; // Assume matrix is square
     int32_t xdrop_threshold_;
@@ -68,13 +68,13 @@ private:
     void* d_temp_storage_cub_; // temporary storage for cub functions
     size_t cub_storage_bytes_;
 
-    // Host ptr additional required variables
-    char *d_query_, *d_target_;
+    // Host ptr API additional required variables
+    char* d_query_;
+    char* d_target_;
     SeedPair* d_seed_pairs_;
     int32_t* d_num_ssp_;
     ScoredSegmentPair* d_ssp_;
     std::vector<ScoredSegmentPair> h_ssp_;
-
 };
 
 } // namespace cudaextender
