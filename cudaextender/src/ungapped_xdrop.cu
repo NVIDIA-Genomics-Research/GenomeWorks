@@ -170,7 +170,7 @@ StatusType UngappedXDrop::sync()
     if (h_num_ssp > 0)
     {
         h_ssp_.resize(h_num_ssp);
-        device_copy_n(d_ssp_, h_num_ssp, &h_ssp_[0], stream_);
+        device_copy_n(d_ssp_, h_num_ssp, h_ssp_.data(), stream_);
         cudaStreamSynchronize(stream_);
     }
 
