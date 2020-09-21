@@ -74,8 +74,7 @@ public:
     /// \param cuda_stream CUDA stream on which the work is to be done. Device arrays are also associated with this stream and will not be freed at least until all work issued on this stream before calling their destructor is done
     IndexGPU(DefaultDeviceAllocator allocator,
              const io::FastaParser& parser,
-             const read_id_t first_read_id,
-             const read_id_t past_the_last_read_id,
+             const IndexDescriptor& descriptor,
              const std::uint64_t kmer_size,
              const std::uint64_t window_size,
              const bool hash_representations  = true,
@@ -555,14 +554,13 @@ void filter_out_most_common_representations(DefaultDeviceAllocator allocator,
 template <typename SketchElementImpl>
 IndexGPU<SketchElementImpl>::IndexGPU(DefaultDeviceAllocator allocator,
                                       const io::FastaParser& parser,
-                                      const read_id_t first_read_id,
-                                      const read_id_t past_the_last_read_id,
+                                      const IndexDescriptor& descriptor,
                                       const std::uint64_t kmer_size,
                                       const std::uint64_t window_size,
                                       const bool hash_representations,
                                       const double filtering_parameter,
                                       const cudaStream_t cuda_stream)
-    : first_read_id_(first_read_id)
+    : first_read_id_(descriptor.first_read())
     , kmer_size_(kmer_size)
     , window_size_(window_size)
     , number_of_reads_(0)
@@ -578,7 +576,7 @@ IndexGPU<SketchElementImpl>::IndexGPU(DefaultDeviceAllocator allocator,
 {
     generate_index(parser,
                    first_read_id_,
-                   past_the_last_read_id,
+                   first_read_id_ + descriptor.number_of_reads(),
                    hash_representations,
                    filtering_parameter);
 
