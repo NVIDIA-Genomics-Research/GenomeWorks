@@ -427,11 +427,11 @@ __global__ void find_high_scoring_segment_pairs(const char* __restrict__ d_targe
 
 // gather only the HSPs from the resulting segments to the beginning of the
 // tmp_hsp vector
-__global__ void compress_output(const int32_t* d_done, const int32_t start_index, const ScoredSegmentPair* d_hsp, ScoredSegmentPair* d_tmp_hsp, const int32_t num_hits)
+__global__ void compress_output(const int32_t* d_done, const int32_t start_index, const ScoredSegmentPair* d_ssp, ScoredSegmentPair* d_tmp_ssp, const int32_t num_seed_pairs)
 {
     const int32_t stride = blockDim.x * gridDim.x;
     const int32_t start  = blockDim.x * blockIdx.x + threadIdx.x;
-    for (int32_t id = start; id < num_hits; id += stride)
+    for (int32_t id = start; id < num_seed_pairs; id += stride)
     {
         const int32_t reduced_index = d_done[id];
         const int32_t index         = id + start_index;
@@ -439,14 +439,14 @@ __global__ void compress_output(const int32_t* d_done, const int32_t start_index
         {
             if (reduced_index > d_done[index - 1])
             {
-                d_tmp_hsp[reduced_index - 1] = d_hsp[index];
+                d_tmp_ssp[reduced_index - 1] = d_ssp[index];
             }
         }
         else
         {
             if (reduced_index == 1)
             {
-                d_tmp_hsp[0] = d_hsp[start_index];
+                d_tmp_ssp[0] = d_ssp[start_index];
             }
         }
     }

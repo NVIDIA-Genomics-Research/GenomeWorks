@@ -15,8 +15,9 @@
 */
 #pragma once
 
-#include <claraparabricks/genomeworks/utils/cudautils.hpp>
 #include "ungapped_xdrop.cuh"
+
+#include <claraparabricks/genomeworks/utils/cudautils.hpp>
 
 namespace claraparabricks
 {
@@ -48,8 +49,8 @@ __global__ void find_high_scoring_segment_pairs(const char* __restrict__ d_targe
 // tmp_hsp vector
 __global__ void compress_output(const int32_t* d_done,
                                 const int32_t start_index,
-                                const ScoredSegmentPair* d_hsp,
-                                ScoredSegmentPair* d_tmp_hsp,
+                                const ScoredSegmentPair* d_ssp,
+                                ScoredSegmentPair* d_tmp_ssp,
                                 int num_hits);
 
 // Binary Predicate for sorting the ScoredSegmentPairs

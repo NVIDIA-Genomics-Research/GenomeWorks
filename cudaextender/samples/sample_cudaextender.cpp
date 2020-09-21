@@ -13,11 +13,6 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-#include <iostream>
-#include <string>
-#include <vector>
-#include <fstream>
-#include <cuda.h>
 #include <file_location.hpp>
 #include <claraparabricks/genomeworks/cudaextender/extender.hpp>
 #include <claraparabricks/genomeworks/io/fasta_parser.hpp>
@@ -25,9 +20,15 @@
 #include <claraparabricks/genomeworks/utils/device_buffer.hpp>
 #include <claraparabricks/genomeworks/utils/pinned_host_vector.hpp>
 
+#include <iostream>
+#include <string>
+#include <vector>
+#include <fstream>
+#include <cuda.h>
+
 using namespace claraparabricks::genomeworks;
-using namespace claraparabricks::genomeworks::cudautils;
-using namespace claraparabricks::genomeworks::cudaextender;
+using namespace cudautils;
+using namespace cudaextender;
 
 constexpr char A_NT = 0;
 constexpr char C_NT = 1;
@@ -200,7 +201,7 @@ int main(int argc, char* argv[])
         ungapped_extender->sync();
         std::vector<ScoredSegmentPair> h_ssp = ungapped_extender->get_scored_segment_pairs();
         std::cerr << "Number of ScoredSegmentPairs found: " << h_ssp.size() << std::endl;
-        if(print)
+        if (print)
             print_scored_segment_pairs(h_ssp);
     }
     else

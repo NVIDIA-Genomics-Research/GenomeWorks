@@ -13,10 +13,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+#include "ungapped_xdrop.cuh"
 
 #include <claraparabricks/genomeworks/cudaextender/extender.hpp>
-
-#include "ungapped_xdrop.cuh"
 
 namespace claraparabricks
 {
