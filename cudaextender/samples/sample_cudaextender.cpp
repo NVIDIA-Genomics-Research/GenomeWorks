@@ -140,8 +140,9 @@ int main(int argc, char* argv[])
     if (help)
     {
         std::cout << "CUDAExtender API sample program. Runs ungapped extender on canned data." << std::endl;
-        std::cout << "-p : Print the Scored Segment Pair output to stdout" << std::endl;
-        std::cout << "-h : Print help message" << std::endl;
+        std::cout << "-p : Print the Scored Segment Pair output to stdout." << std::endl;
+        std::cout << "-d : Use Device Pointer API. If not provided uses Host Pointer API." << std::endl;
+        std::cout << "-h : Print help message." << std::endl;
         std::exit(0);
     }
 
