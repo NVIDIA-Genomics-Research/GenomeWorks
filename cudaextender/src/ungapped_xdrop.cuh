@@ -18,6 +18,7 @@
 
 #include <claraparabricks/genomeworks/cudaextender/extender.hpp>
 #include <claraparabricks/genomeworks/utils/device_buffer.hpp>
+#include <claraparabricks/genomeworks/utils/pinned_host_vector.hpp>
 
 namespace claraparabricks
 {
@@ -70,11 +71,11 @@ private:
 
     // Host ptr API additional required variables
     bool host_ptr_api_mode_;
-    char* d_query_;
-    char* d_target_;
-    SeedPair* d_seed_pairs_;
+    device_buffer<char> d_query_;
+    device_buffer<char> d_target_;
+    device_buffer<SeedPair> d_seed_pairs_;
     int32_t* d_num_ssp_;
-    ScoredSegmentPair* d_ssp_;
+    device_buffer<ScoredSegmentPair> d_ssp_;
     std::vector<ScoredSegmentPair> h_ssp_;
 };
 

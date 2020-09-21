@@ -38,7 +38,7 @@ __global__ void find_high_scoring_segment_pairs(const char* __restrict__ d_targe
                                                 const bool no_entropy,
                                                 const int32_t xdrop_threshold,
                                                 const int32_t score_threshold,
-                                                const SeedPair* d_seed_pairs,
+                                                const SeedPair* __restrict__ d_seed_pairs,
                                                 const int32_t num_seed_pairs,
                                                 const int32_t start_index,
                                                 ScoredSegmentPair* d_scored_segment,
@@ -82,14 +82,6 @@ struct scored_segment_pair_comp
         }
         else
             return false;
-    }
-};
-
-struct scored_segment_pair_equal
-{
-    __host__ __device__ bool operator()(ScoredSegmentPair x, ScoredSegmentPair y)
-    {
-        return ((x.seed_pair.target_position_in_read == y.seed_pair.target_position_in_read) && (x.seed_pair.query_position_in_read == y.seed_pair.query_position_in_read) && (x.length == y.length) && (x.score == y.score));
     }
 };
 

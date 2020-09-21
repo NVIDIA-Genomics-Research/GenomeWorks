@@ -149,23 +149,27 @@ StatusType UngappedXDrop::extend_async(const char* h_query, int32_t query_length
                                        int32_t score_threshold,
                                        std::vector<SeedPair>& h_seed_pairs)
 {
-//    // Set host pointer mode on
-//    host_ptr_api_mode_=true;
-//    // Allocate space on device for target and query sequences, seed_pairs,
-//    // high scoring segment pairs (ssp) and num_ssp.
-//    GW_CU_CHECK_ERR(cudaMalloc((void**)&d_query_, sizeof(char) * query_length))
-//    GW_CU_CHECK_ERR(cudaMalloc((void**)&d_target_, sizeof(char) * target_length))
-//    GW_CU_CHECK_ERR(cudaMalloc((void**)&d_seed_pairs_, sizeof(SeedPair) * h_seed_pairs.size()))
-//    GW_CU_CHECK_ERR(cudaMalloc((void**)&d_num_ssp_, sizeof(int32_t)))
-//    GW_CU_CHECK_ERR(cudaMalloc((void**)&d_ssp_, sizeof(ScoredSegmentPair) * h_seed_pairs.size()))
-//
-//    // Async memcopy all the input values to device
-//    device_copy_n(h_query, query_length, d_query_, stream_);
-//    device_copy_n(h_target, target_length, d_target_, stream_);
-//    device_copy_n(h_seed_pairs.data(), h_seed_pairs.size(), d_seed_pairs_, stream_);
-//
-//    // Launch the ungapped extender device function
-//    return extend_async(d_query_, query_length, d_target_, target_length, score_threshold, d_seed_pairs_, h_seed_pairs.size(), d_ssp_, d_num_ssp_);
+    // Set host pointer mode on
+    host_ptr_api_mode_=true;
+// Allocate space for query and target sequences
+    device_buffer<char> d_query(query_length, allocator_, stream_);
+    device_buffer<char> d_target(target_length, allocator_, stream_);
+    // Allocate space for SeedPair input
+    device_buffer<SeedPair> d_seed_pairs(h_seed_pairs.size(), allocator_, stream_);
+    // Allocate space for ScoredSegmentPair output
+    device_buffer<ScoredSegmentPair> d_ssp(h_seed_pairs.size(), allocator_, stream_);
+    GW_CU_CHECK_ERR(cudaMalloc((void**)&d_num_ssp_, sizeof(int32_t)))
+    // Async memcopy all the input values to device
+    device_copy_n(h_query, query_length, d_query_.data(), stream_);
+    device_copy_n(h_target, target_length, d_target_.data(), stream_);
+    device_copy_n(h_seed_pairs.data(), h_seed_pairs.size(), d_seed_pairs_.data(), stream_);
+
+    // Launch the ungapped extender device function
+    return extend_async(d_query_.data(), query_length,
+                        d_target_.data(), target_length,
+                        score_threshold, d_seed_pairs_.data(),
+                        h_seed_pairs.size(), d_ssp_.data(),
+                        d_num_ssp_);
 }
 
 StatusType UngappedXDrop::sync()
@@ -176,7 +180,7 @@ StatusType UngappedXDrop::sync()
         if (h_num_ssp > 0)
         {
             h_ssp_.resize(h_num_ssp);
-            device_copy_n(d_ssp_, h_num_ssp, h_ssp_.data(), stream_);
+            device_copy_n(d_ssp_.data(), h_num_ssp, h_ssp_.data(), stream_);
             cudaStreamSynchronize(stream_);
         }
         return success;
@@ -206,11 +210,7 @@ void UngappedXDrop::reset()
     if(host_ptr_api_mode_)
     {
         h_ssp_.clear();
-        GW_CU_CHECK_ERR(cudaFree(d_query_))
-        GW_CU_CHECK_ERR(cudaFree(d_target_))
-        GW_CU_CHECK_ERR(cudaFree(d_seed_pairs_))
         GW_CU_CHECK_ERR(cudaFree(d_num_ssp_))
-        GW_CU_CHECK_ERR(cudaFree(d_ssp_))
         host_ptr_api_mode_ = false;
     }
 }
