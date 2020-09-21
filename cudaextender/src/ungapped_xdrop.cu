@@ -65,7 +65,7 @@ UngappedXDrop::UngappedXDrop(int32_t* h_sub_mat, int32_t sub_mat_dim, int32_t xd
     size_t temp_storage_bytes = 0;
     size_t cub_storage_bytes  = 0;
     GW_CU_CHECK_ERR(cub::DeviceSelect::Unique(nullptr, temp_storage_bytes, d_tmp_ssp_.data(), d_tmp_ssp_.data(), (int32_t*)nullptr, batch_max_ungapped_extensions_, stream_));
-    GW_CU_CHECK_ERR(cub::DeviceScan::InclusiveSum(nullptr, cub_storage_bytes, d_done_.data(), d_done_.data() + batch_max_ungapped_extensions_, batch_max_ungapped_extensions_, stream_));
+    GW_CU_CHECK_ERR(cub::DeviceScan::InclusiveSum(nullptr, cub_storage_bytes, d_done_.data(), d_done_.data(), batch_max_ungapped_extensions_, stream_));
     cub_storage_bytes = std::max(temp_storage_bytes, cub_storage_bytes);
 
     // Allocate space on device for scoring matrix and intermediate results
@@ -86,10 +86,11 @@ StatusType UngappedXDrop::extend_async(const char* d_query, int32_t query_length
                                        int32_t* d_num_scored_segment_pairs)
 {
     //TODO - Check bounds
-    // Switch to configured GPU
-    // If host pointer API mode was used before this mode, reset data structures
+
     auto t1 = std::chrono::high_resolution_clock::now();
     reset();
+    // Switch to configured GPU
+    // If host pointer API mode was used before this mode, reset data structures
     scoped_device_switch dev(device_id_);
     total_scored_segment_pairs_      = 0;
     for (int32_t seed_pair_start = 0; seed_pair_start < num_seed_pairs; seed_pair_start += batch_max_ungapped_extensions_)
