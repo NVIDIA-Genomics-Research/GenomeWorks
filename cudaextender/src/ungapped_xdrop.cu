@@ -76,8 +76,7 @@ UngappedXDrop::UngappedXDrop(int32_t* h_sub_mat, int32_t sub_mat_dim, int32_t xd
 
     // Requires pinned host memory registration for proper async behavior
     device_copy_n(h_sub_mat_, sub_mat_dim_, d_sub_mat_.data(), stream_);
-    GW_CU_CHECK_ERR(cudaMemsetAsync((void*)d_done_.data(), 0, batch_max_ungapped_extensions_ * sizeof(int32_t), stream_));
-    GW_CU_CHECK_ERR(cudaMemsetAsync((void*)d_tmp_ssp_.data(), 0, batch_max_ungapped_extensions_ * sizeof(ScoredSegmentPair), stream_));
+
 }
 
 StatusType UngappedXDrop::extend_async(const char* d_query, int32_t query_length,
@@ -90,8 +89,7 @@ StatusType UngappedXDrop::extend_async(const char* d_query, int32_t query_length
     // Switch to configured GPU
     // If host pointer API mode was used before this mode, reset data structures
     auto t1 = std::chrono::high_resolution_clock::now();
-    if(host_ptr_api_mode_)
-        reset();
+    reset();
     scoped_device_switch dev(device_id_);
     total_scored_segment_pairs_      = 0;
     for (int32_t seed_pair_start = 0; seed_pair_start < num_seed_pairs; seed_pair_start += batch_max_ungapped_extensions_)
@@ -201,7 +199,10 @@ const std::vector<ScoredSegmentPair>& UngappedXDrop::get_scored_segment_pairs() 
 
 void UngappedXDrop::reset()
 {
-    // Reset only if host pointer API was used earlier
+    // TODO - Do we need these?
+    GW_CU_CHECK_ERR(cudaMemsetAsync((void*)d_done_.data(), 0, batch_max_ungapped_extensions_ * sizeof(int32_t), stream_));
+    GW_CU_CHECK_ERR(cudaMemsetAsync((void*)d_tmp_ssp_.data(), 0, batch_max_ungapped_extensions_ * sizeof(ScoredSegmentPair), stream_));
+    // Reset these only if host pointer API was used earlier
     if(host_ptr_api_mode_)
     {
         h_ssp_.clear();

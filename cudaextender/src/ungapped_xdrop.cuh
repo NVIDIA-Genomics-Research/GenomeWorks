@@ -52,7 +52,6 @@ public:
     const std::vector<ScoredSegmentPair>& get_scored_segment_pairs() const override;
 
 private:
-    // TODO - Smart pointers
     DefaultDeviceAllocator  allocator_;
     // Device ptr API required variables
     int32_t* h_sub_mat_;
