@@ -17,6 +17,7 @@
 #pragma once
 
 #include <claraparabricks/genomeworks/cudaextender/extender.hpp>
+#include <claraparabricks/genomeworks/utils/device_buffer.hpp>
 
 namespace claraparabricks
 {
@@ -30,7 +31,7 @@ namespace cudaextender
 class UngappedXDrop : public Extender
 {
 public:
-    UngappedXDrop(int32_t* h_sub_mat, int32_t sub_mat_dim, int32_t xdrop_threshold, bool no_entropy, cudaStream_t stream, int32_t device_id);
+    UngappedXDrop(int32_t* h_sub_mat, int32_t sub_mat_dim, int32_t xdrop_threshold, bool no_entropy, cudaStream_t stream, int32_t device_id, DefaultDeviceAllocator allocator);
     ~UngappedXDrop() override;
 
     StatusType extend_async(const char* h_query, int32_t query_length,
@@ -52,6 +53,7 @@ public:
 
 private:
     // TODO - Smart pointers
+    DefaultDeviceAllocator  allocator_;
     // Device ptr API required variables
     int32_t* h_sub_mat_;
     int32_t sub_mat_dim_; // Assume matrix is square
@@ -61,12 +63,11 @@ private:
     int32_t device_id_;
     std::vector<ScoredSegmentPair> scored_segment_pairs_;
     int32_t batch_max_ungapped_extensions_;
-    int32_t* d_sub_mat_;           // Pointer to device substitution matrix
-    int32_t* d_done_;              // TODO- Rename scratch space
-    ScoredSegmentPair* d_tmp_ssp_; // TODO- Rename Scratch space 2
+    device_buffer<int32_t> d_sub_mat_;           // Pointer to device substitution matrix
+    device_buffer<int32_t> d_done_;              // TODO- Rename scratch space
+    device_buffer<ScoredSegmentPair> d_tmp_ssp_; // TODO- Rename Scratch space 2
     int32_t total_scored_segment_pairs_;
-    void* d_temp_storage_cub_; // temporary storage for cub functions
-    size_t cub_storage_bytes_;
+    device_buffer<char> d_temp_storage_cub_; // temporary storage for cub functions
 
     // Host ptr API additional required variables
     bool host_ptr_api_mode_;

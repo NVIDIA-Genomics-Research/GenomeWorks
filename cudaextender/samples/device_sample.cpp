@@ -199,7 +199,9 @@ int main(int argc, char* argv[])
                                     stream0.get()));
 
     // Create an ungapped extender object
-    std::unique_ptr<Extender> ungapped_extender = create_extender(score_matrix, NUC2, xdrop_threshold, input_no_entropy, stream0.get(), 0);
+    const std::size_t max_gpu_memory = cudautils::find_largest_contiguous_device_memory_section();
+    DefaultDeviceAllocator allocator = create_default_device_allocator(max_gpu_memory);
+    std::unique_ptr<Extender> ungapped_extender = create_extender(score_matrix, NUC2, xdrop_threshold, input_no_entropy, stream0.get(), 0, allocator);
 
     // Launch the ungapped extender device function
     ungapped_extender->extend_async(d_query, // Type TBD based on encoding

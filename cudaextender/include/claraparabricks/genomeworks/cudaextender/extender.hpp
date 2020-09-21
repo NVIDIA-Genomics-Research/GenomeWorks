@@ -14,12 +14,12 @@
 * limitations under the License.
 */
 #pragma once
-#include <claraparabricks/genomeworks/types.hpp>
 #include <claraparabricks/genomeworks/cudaextender/cudaextender.hpp>
-
+#include <claraparabricks/genomeworks/types.hpp>
+#include <claraparabricks/genomeworks/utils/allocator.hpp>
+#include <cuda_runtime_api.h>
 #include <vector>
 #include <memory>
-#include <cuda_runtime_api.h>
 
 namespace claraparabricks
 {
@@ -96,7 +96,8 @@ public:
     virtual void reset() = 0;
 };
 
-std::unique_ptr<Extender> create_extender(int32_t* h_sub_mat, int32_t sub_mat_dim, int32_t xdrop_threshold, bool no_entropy, cudaStream_t stream, int32_t device_id, ExtensionType type=ExtensionType::ungapped_xdrop);
+std::unique_ptr<Extender> create_extender(int32_t* h_sub_mat, int32_t sub_mat_dim, int32_t xdrop_threshold, bool no_entropy, cudaStream_t stream, int32_t device_id, DefaultDeviceAllocator allocator, ExtensionType type=ExtensionType::ungapped_xdrop);
+
 
 } // namespace cudaextender
 } // namespace genomeworks
