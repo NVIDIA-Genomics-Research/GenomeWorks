@@ -176,21 +176,10 @@ def evaluate_paf(truth_paf_filepath, test_paf_filepath, pos_tolerance, min_recip
                 (test_overlap.query_sequence_name == test_overlap.target_sequence_name):
             continue
         test_overlap_count += 1
-        # query_0 = (test_overlap.query_start, test_overlap.query_end)
-        # target_0 = (test_overlap.target_start, test_overlap.target_end)
 
         key = generate_key(test_overlap.query_sequence_name, test_overlap.target_sequence_name)
         key_reversed = generate_key(test_overlap.target_sequence_name, test_overlap.query_sequence_name)
 
-        # if (key in seen_test_overlap_keys) or (key_reversed in seen_test_overlap_keys):
-        #     continue
-
-        # seen_test_overlap_keys.add(key)
-        # seen_test_overlap_keys.add(key_reversed)
-        #incorrect_query_start += not match_statistics["query_start_valid"]
-        #incorrect_query_end += not match_statistics["query_end_valid"]
-        #incorrect_target_start += not match_statistics["target_start_valid"]
-        #incorrect_target_end += not match_statistics["target_end_valid"]
         best_pct_match = 0.0
         best_ends = [1, 1, 1, 1]
         
