@@ -171,20 +171,20 @@ __global__ void find_high_scoring_segment_pairs(const char* __restrict__ d_targe
             if (lane_id == warpSize - 1)
             {
                 new_max_found[warp_id] = max_pos > prev_max_pos[warp_id];
-                prev_max_pos[warp_id] = max_pos;
+                prev_max_pos[warp_id]  = max_pos;
                 if (xdrop_done)
                 {
                     total_score[warp_id] += max_thread_score;
-                    xdrop_found[warp_id]  = true;
-                    extent[warp_id]       = max_pos;
-                    tile[warp_id]         = max_pos;
+                    xdrop_found[warp_id] = true;
+                    extent[warp_id]      = max_pos;
+                    tile[warp_id]        = max_pos;
                 }
                 else if (ref_pos >= target_length || query_pos >= query_length)
                 {
                     total_score[warp_id] += max_thread_score;
-                    edge_found[warp_id]   = true;
-                    extent[warp_id]       = max_pos;
-                    tile[warp_id]         = max_pos;
+                    edge_found[warp_id] = true;
+                    extent[warp_id]     = max_pos;
+                    tile[warp_id]       = max_pos;
                 }
                 else
                 {
@@ -313,14 +313,14 @@ __global__ void find_high_scoring_segment_pairs(const char* __restrict__ d_targe
             if (lane_id == warpSize - 1)
             {
                 new_max_found[warp_id] = max_pos > prev_max_pos[warp_id];
-                prev_max_pos[warp_id] = max_pos;
+                prev_max_pos[warp_id]  = max_pos;
                 if (xdrop_done)
                 {
                     total_score[warp_id] += max_thread_score;
                     xdrop_found[warp_id] = true;
                     left_extent[warp_id] = max_pos;
                     extent[warp_id] += left_extent[warp_id];
-                    tile[warp_id]         = max_pos;
+                    tile[warp_id] = max_pos;
                 }
                 else if (ref_loc[warp_id] < pos_offset || query_loc[warp_id] < pos_offset)
                 {
@@ -328,7 +328,7 @@ __global__ void find_high_scoring_segment_pairs(const char* __restrict__ d_targe
                     edge_found[warp_id]  = true;
                     left_extent[warp_id] = max_pos;
                     extent[warp_id] += left_extent[warp_id];
-                    tile[warp_id]         = max_pos;
+                    tile[warp_id] = max_pos;
                 }
                 else
                 {
@@ -385,10 +385,10 @@ __global__ void find_high_scoring_segment_pairs(const char* __restrict__ d_targe
 #pragma unroll
                 for (int32_t i = 0; i < 4; i++)
                 {
-                    if(count[i]!=0)
+                    if (count[i] != 0)
                     {
                         const double probability = static_cast<double>(count[i]) / static_cast<double>(extent[warp_id] + 1);
-                        entropy[warp_id] += (probability) * log(probability);
+                        entropy[warp_id] += (probability)*log(probability);
                     }
                 }
                 entropy[warp_id] = -entropy[warp_id] / log_4;

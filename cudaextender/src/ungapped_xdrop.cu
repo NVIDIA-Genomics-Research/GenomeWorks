@@ -54,10 +54,10 @@ UngappedXDrop::UngappedXDrop(int32_t* h_sub_mat, int32_t sub_mat_dim, int32_t xd
     // this GPU
     cudaDeviceProp device_prop;
     cudaGetDeviceProperties(&device_prop, device_id_);
-    const int32_t max_ungapped_per_gb   = 4194304; // FIXME: Calculate using sizeof datastructures
+    const int32_t max_ungapped_per_gb = 4194304; // FIXME: Calculate using sizeof datastructures
     //const int32_t max_seed_pairs_per_gb = 8388608; // FIXME: Calculate using sizeof datastructures // TODO- Do we need this?
-    const float global_mem_gb           = static_cast<float>(device_prop.totalGlobalMem) / 1073741824.0f;
-    batch_max_ungapped_extensions_      = static_cast<int32_t>(global_mem_gb) * max_ungapped_per_gb;
+    const float global_mem_gb      = static_cast<float>(device_prop.totalGlobalMem) / 1073741824.0f;
+    batch_max_ungapped_extensions_ = static_cast<int32_t>(global_mem_gb) * max_ungapped_per_gb;
     // Switch to device for copying over initial structures
     scoped_device_switch dev(device_id_);
 
@@ -69,14 +69,13 @@ UngappedXDrop::UngappedXDrop(int32_t* h_sub_mat, int32_t sub_mat_dim, int32_t xd
     cub_storage_bytes = std::max(temp_storage_bytes, cub_storage_bytes);
 
     // Allocate space on device for scoring matrix and intermediate results
-    d_sub_mat_ = device_buffer<int32_t>(sub_mat_dim_, allocator_, stream_);
-    d_done_ = device_buffer<int32_t>(batch_max_ungapped_extensions_, allocator_, stream_);
-    d_tmp_ssp_ = device_buffer<ScoredSegmentPair>(batch_max_ungapped_extensions_, allocator_,stream_);
+    d_sub_mat_          = device_buffer<int32_t>(sub_mat_dim_, allocator_, stream_);
+    d_done_             = device_buffer<int32_t>(batch_max_ungapped_extensions_, allocator_, stream_);
+    d_tmp_ssp_          = device_buffer<ScoredSegmentPair>(batch_max_ungapped_extensions_, allocator_, stream_);
     d_temp_storage_cub_ = device_buffer<char>(cub_storage_bytes, allocator_, stream_);
 
     // Requires pinned host memory registration for proper async behavior
     device_copy_n(h_sub_mat_, sub_mat_dim_, d_sub_mat_.data(), stream_);
-
 }
 
 StatusType UngappedXDrop::extend_async(const char* d_query, int32_t query_length,
@@ -88,13 +87,15 @@ StatusType UngappedXDrop::extend_async(const char* d_query, int32_t query_length
     //TODO - Check bounds
 
     auto t1 = std::chrono::high_resolution_clock::now();
-    reset();
     // Switch to configured GPU
     // If host pointer API mode was used before this mode, reset data structures
     scoped_device_switch dev(device_id_);
-    total_scored_segment_pairs_      = 0;
+    total_scored_segment_pairs_ = 0;
     for (int32_t seed_pair_start = 0; seed_pair_start < num_seed_pairs; seed_pair_start += batch_max_ungapped_extensions_)
     {
+        // TODO - Do we need these? It seems we don't!
+        GW_CU_CHECK_ERR(cudaMemsetAsync((void*)d_done_.data(), 0, batch_max_ungapped_extensions_ * sizeof(int32_t), stream_));
+        GW_CU_CHECK_ERR(cudaMemsetAsync((void*)d_tmp_ssp_.data(), 0, batch_max_ungapped_extensions_ * sizeof(ScoredSegmentPair), stream_));
         const int32_t curr_num_pairs = std::min(batch_max_ungapped_extensions_, num_seed_pairs - seed_pair_start);
         // TODO- Extricate the kernel launch params?
         find_high_scoring_segment_pairs<<<1024, 128, 0, stream_>>>(d_target,
@@ -137,28 +138,30 @@ StatusType UngappedXDrop::extend_async(const char* d_query, int32_t query_length
     }
     auto t2 = std::chrono::high_resolution_clock::now();
 
-    auto duration = std::chrono::duration_cast<std::chrono::microseconds>( t2 - t1 ).count();
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
 
-    std::cout <<"Time: " <<duration<<std::endl;
+    std::cout << "Time: " << duration << std::endl;
 
     set_device_value_async(d_num_scored_segment_pairs, &total_scored_segment_pairs_, stream_);
     return success;
 }
 
-StatusType UngappedXDrop::extend_async(const char* h_query, int32_t query_length,
-                                       const char* h_target, int32_t target_length,
-                                       int32_t score_threshold,
-                                       std::vector<SeedPair>& h_seed_pairs)
+StatusType UngappedXDrop::extend_async(const char* h_query, const int32_t& query_length,
+                                       const char* h_target, const int32_t& target_length,
+                                       const int32_t& score_threshold,
+                                       const std::vector<SeedPair>& h_seed_pairs)
 {
+    // Reset the extender if it was used before in this mode
+    reset();
     // Set host pointer mode on
-    host_ptr_api_mode_=true;
-// Allocate space for query and target sequences
-    device_buffer<char> d_query(query_length, allocator_, stream_);
-    device_buffer<char> d_target(target_length, allocator_, stream_);
+    host_ptr_api_mode_ = true;
+    // Allocate space for query and target sequences
+    d_query_  = device_buffer<char>(query_length, allocator_, stream_);
+    d_target_ = device_buffer<char>(target_length, allocator_, stream_);
     // Allocate space for SeedPair input
-    device_buffer<SeedPair> d_seed_pairs(h_seed_pairs.size(), allocator_, stream_);
+    d_seed_pairs_ = device_buffer<SeedPair>(h_seed_pairs.size(), allocator_, stream_);
     // Allocate space for ScoredSegmentPair output
-    device_buffer<ScoredSegmentPair> d_ssp(h_seed_pairs.size(), allocator_, stream_);
+    d_ssp_ = device_buffer<ScoredSegmentPair>(h_seed_pairs.size(), allocator_, stream_);
     GW_CU_CHECK_ERR(cudaMalloc((void**)&d_num_ssp_, sizeof(int32_t)))
     // Async memcopy all the input values to device
     device_copy_n(h_query, query_length, d_query_.data(), stream_);
@@ -169,13 +172,13 @@ StatusType UngappedXDrop::extend_async(const char* h_query, int32_t query_length
     return extend_async(d_query_.data(), query_length,
                         d_target_.data(), target_length,
                         score_threshold, d_seed_pairs_.data(),
-                        h_seed_pairs.size(), d_ssp_.data(),
+                        d_seed_pairs_.size(), d_ssp_.data(),
                         d_num_ssp_);
 }
 
 StatusType UngappedXDrop::sync()
 {
-    if(host_ptr_api_mode_)
+    if (host_ptr_api_mode_)
     {
         const int32_t h_num_ssp = get_value_from_device(d_num_ssp_, stream_);
         if (h_num_ssp > 0)
@@ -189,12 +192,11 @@ StatusType UngappedXDrop::sync()
 
     // If this function was called without using the host_ptr_api, throw error
     return error_invalid_operation;
-
 }
 
 const std::vector<ScoredSegmentPair>& UngappedXDrop::get_scored_segment_pairs() const
 {
-    if(host_ptr_api_mode_)
+    if (host_ptr_api_mode_)
     {
         return h_ssp_;
     }
@@ -204,11 +206,8 @@ const std::vector<ScoredSegmentPair>& UngappedXDrop::get_scored_segment_pairs() 
 
 void UngappedXDrop::reset()
 {
-    // TODO - Do we need these?
-    GW_CU_CHECK_ERR(cudaMemsetAsync((void*)d_done_.data(), 0, batch_max_ungapped_extensions_ * sizeof(int32_t), stream_));
-    GW_CU_CHECK_ERR(cudaMemsetAsync((void*)d_tmp_ssp_.data(), 0, batch_max_ungapped_extensions_ * sizeof(ScoredSegmentPair), stream_));
     // Reset these only if host pointer API was used earlier
-    if(host_ptr_api_mode_)
+    if (host_ptr_api_mode_)
     {
         h_ssp_.clear();
         GW_CU_CHECK_ERR(cudaFree(d_num_ssp_))

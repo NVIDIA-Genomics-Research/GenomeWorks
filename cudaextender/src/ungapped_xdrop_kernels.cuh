@@ -34,7 +34,7 @@ __global__ void find_high_scoring_segment_pairs(const char* __restrict__ d_targe
                                                 const int32_t target_length,
                                                 const char* __restrict__ d_query,
                                                 const int32_t query_length,
-                                                const int32_t * d_sub_mat,
+                                                const int32_t* d_sub_mat,
                                                 const bool no_entropy,
                                                 const int32_t xdrop_threshold,
                                                 const int32_t score_threshold,
@@ -48,7 +48,7 @@ __global__ void find_high_scoring_segment_pairs(const char* __restrict__ d_targe
 // tmp_hsp vector
 __global__ void compress_output(const int32_t* d_done,
                                 const int32_t start_index,
-                                const ScoredSegmentPair * d_hsp,
+                                const ScoredSegmentPair* d_hsp,
                                 ScoredSegmentPair* d_tmp_hsp,
                                 int num_hits);
 

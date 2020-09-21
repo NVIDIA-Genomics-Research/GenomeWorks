@@ -1,5 +1,5 @@
 #
-# Copyright 2019-2020 NVIDIA CORPORATION.
+# Copyright 2020 NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-project(cudaextender)
+set(MODULE_NAME cudaextender)
 
 # Process data subdirectory first
 add_subdirectory(data)
@@ -23,16 +23,6 @@ GitVersion()
 configure_file(${CMAKE_SOURCE_DIR}/common/base/src/version.cpp.in
         ${CMAKE_CURRENT_BINARY_DIR}/version.cpp)
 
-# Optimization flags interfere with nvcc and cause compilation issues with reworked
-# file structure.
-if (NOT DEFINED gw_cuda_before_10_0)
-    message(FATAL_ERROR "${PROJECT_NAME} : variable gw_cuda_before_10_0 is not defined yet. Please make sure CUDA.cmake is loaded first.")
-elseif (gw_cuda_before_10_0)
-    message(STATUS "${PROJECT_NAME} : Remove -O optimization when building for CUDA < 10 as it causes compilation issues.")
-    string(REGEX REPLACE "-O[0-3]" "" CMAKE_CXX_FLAGS_RELEASE ${CMAKE_CXX_FLAGS_RELEASE})
-    string(REGEX REPLACE "-O[0-3]" "" CMAKE_CXX_FLAGS_DEBUG ${CMAKE_CXX_FLAGS_DEBUG})
-endif ()
-
 # Project specific NVCC flags, --expt-relaxed-constexpr is being added to allow using numeric_limits inside device kernels.
 # Using in CUDA 10.1+ to avoid compilation issues with CUDA <= 10.0.
 set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -std=c++14")
@@ -41,28 +31,28 @@ if (gw_cuda_after_10_0)
 endif ()
 if (gw_cuda_gen_all_arch)
     CUDA_SELECT_NVCC_ARCH_FLAGS(ARCH_FLAGS "Common")
-else()
+else ()
     CUDA_SELECT_NVCC_ARCH_FLAGS(ARCH_FLAGS "Auto")
-endif()
+endif ()
 set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} ${ARCH_FLAGS}")
 message(STATUS "nvcc flags for ${PROJECT_NAME}: ${CUDA_NVCC_FLAGS}")
 
 get_property(gw_library_type GLOBAL PROPERTY gw_library_type)
-cuda_add_library(cudaextender ${gw_library_type}
+cuda_add_library(${MODULE_NAME} ${gw_library_type}
         src/cudaextender.cpp
         src/extender.cpp
         src/ungapped_xdrop.cu
         src/ungapped_xdrop_kernels.cu
         ${CMAKE_CURRENT_BINARY_DIR}/version.cpp)
 
-target_link_libraries(cudaextender gwbase gwio)
+target_link_libraries(${MODULE_NAME} gwbase gwio)
 
-target_compile_options(cudaextender PRIVATE -Werror -Wall -Wextra)
+target_compile_options(${MODULE_NAME} PRIVATE -Werror -Wall -Wextra)
 if (gw_optimize_for_native_cpu)
-    target_compile_options(cudaextender PRIVATE -march=native)
+    target_compile_options(${MODULE_NAME} PRIVATE -march=native)
 endif ()
 
-target_include_directories(cudaextender
+target_include_directories(${MODULE_NAME}
         PUBLIC
         $<INSTALL_INTERFACE:include>
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
@@ -70,14 +60,14 @@ target_include_directories(cudaextender
 
 add_doxygen_source_dir(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
-install(TARGETS cudaextender
+install(TARGETS ${MODULE_NAME}
         COMPONENT gwlogging
-        EXPORT cudaextender
+        EXPORT ${MODULE_NAME}
         DESTINATION lib
         INCLUDES DESTINATION include
         )
 install(DIRECTORY include/ DESTINATION include)
-install(EXPORT cudaextender DESTINATION cmake)
+install(EXPORT ${MODULE_NAME} DESTINATION cmake)
 
 # Add other folders.
 add_subdirectory(samples)

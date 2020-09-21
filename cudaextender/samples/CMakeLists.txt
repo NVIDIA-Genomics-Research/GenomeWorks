@@ -1,5 +1,5 @@
 #
-# Copyright 2019-2020 NVIDIA CORPORATION.
+# Copyright 2020 NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,20 +15,20 @@
 #
 
 
-project(sample_cudaextender)
+set(MODULE_NAME sample_cudaextender)
 
 get_property(cudaextender_data_include_dir GLOBAL PROPERTY cudaextender_data_include_dir)
 include_directories(${cudaextender_data_include_dir})
 
-add_executable(${PROJECT_NAME}
-        device_sample.cpp
+add_executable(${MODULE_NAME}
+        sample_cudaextender.cpp
         )
 
-target_link_libraries(${PROJECT_NAME}
+target_link_libraries(${MODULE_NAME}
         cudaextender
         gwio
         gwbase
         )
 
-install(TARGETS ${PROJECT_NAME}
+install(TARGETS ${MODULE_NAME}
         DESTINATION samples)

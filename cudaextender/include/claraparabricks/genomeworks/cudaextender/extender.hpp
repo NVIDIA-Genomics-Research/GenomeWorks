@@ -64,10 +64,10 @@ public:
     /// copies them over to device,
     /// launches async extension kernels on specified stream. Filters
     /// segments on device based on score_threshold
-    virtual StatusType extend_async(const char* h_query, int32_t query_length,
-                                    const char* h_target, int32_t target_length,
-                                    int32_t score_threshold,
-                                    std::vector<SeedPair>& h_seed_pairs) = 0;
+    virtual StatusType extend_async(const char* h_query, const int32_t& query_length,
+                                    const char* h_target, const int32_t& target_length,
+                                    const int32_t& score_threshold,
+                                    const std::vector<SeedPair>& h_seed_pairs) = 0;
 
     /// \brief Device pointer prototype for  extension
     ///
@@ -96,8 +96,7 @@ public:
     virtual void reset() = 0;
 };
 
-std::unique_ptr<Extender> create_extender(int32_t* h_sub_mat, int32_t sub_mat_dim, int32_t xdrop_threshold, bool no_entropy, cudaStream_t stream, int32_t device_id, DefaultDeviceAllocator allocator, ExtensionType type=ExtensionType::ungapped_xdrop);
-
+std::unique_ptr<Extender> create_extender(int32_t* h_sub_mat, int32_t sub_mat_dim, int32_t xdrop_threshold, bool no_entropy, cudaStream_t stream, int32_t device_id, DefaultDeviceAllocator allocator, ExtensionType type = ExtensionType::ungapped_xdrop);
 
 } // namespace cudaextender
 } // namespace genomeworks

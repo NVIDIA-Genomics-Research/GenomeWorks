@@ -101,19 +101,34 @@ void encode_string(char* dst_seq, const char* src_seq, int32_t len)
     }
 }
 
+void print_scored_segment_pairs(std::vector<ScoredSegmentPair> scored_segment_pairs)
+{
+    std::cout << "Target Position, Query Position, Length, Score" << std::endl;
+    for (auto& segment : scored_segment_pairs)
+    {
+        std::cout << segment.seed_pair.target_position_in_read << "," << segment.seed_pair.query_position_in_read
+                  << "," << segment.length << "," << segment.score << std::endl;
+    }
+}
+
 int main(int argc, char* argv[])
 {
     const int32_t xdrop_threshold = 910;
     const bool input_no_entropy   = false;
     const int32_t score_threshold = 3000;
     char c;
-    bool print = false, help = false;
-    while ((c = getopt(argc, argv, "p")) != -1)
+    bool print               = false;
+    bool help                = false;
+    bool device_ptr_api_mode = false;
+    while ((c = getopt(argc, argv, "pdh")) != -1)
     {
         switch (c)
         {
         case 'p':
             print = true;
+            break;
+        case 'd':
+            device_ptr_api_mode = true;
             break;
         case 'h':
         default:
@@ -173,61 +188,67 @@ int main(int argc, char* argv[])
     encode_string(h_encoded_query.data(), query_sequence.c_str(), query_sequence.length());
     // Create a stream for async use
     CudaStream stream0 = make_cuda_stream();
-
-    // Allocate space on device for target and query sequences, seed_pairs,
-    // scored segment pairs (ssp) and num_ssp using default allocator (caching)
+    // Create an allocator for use with both APIs
     const std::size_t max_gpu_memory = cudautils::find_largest_contiguous_device_memory_section();
     DefaultDeviceAllocator allocator = create_default_device_allocator(max_gpu_memory);
-    // Allocate space for query and target sequences
-    device_buffer<char> d_query(query_sequence.length(), allocator, stream0.get());
-    device_buffer<char> d_target(target_sequence.length(), allocator, stream0.get());
-    // Allocate space for SeedPair input
-    device_buffer<SeedPair> d_seed_pairs(h_seed_pairs.size(), allocator, stream0.get());
-    // Allocate space for ScoredSegmentPair output
-    device_buffer<ScoredSegmentPair> d_ssp(h_seed_pairs.size(), allocator, stream0.get());
-    // TODO - Keep this as a malloc for single int?
-    int32_t* d_num_ssp;
-    GW_CU_CHECK_ERR(cudaMalloc((void**)&d_num_ssp, sizeof(int32_t)));
 
-    // Async Memcopy all the input values to device
-    device_copy_n(h_encoded_query.data(), query_sequence.length(), d_query.data(), stream0.get());
-    device_copy_n(h_encoded_target.data(), target_sequence.length(), d_target.data(), stream0.get());
-    device_copy_n(h_seed_pairs.data(), h_seed_pairs.size(), d_seed_pairs.data(), stream0.get());
-
-    // Create an ungapped extender object
-    std::unique_ptr<Extender> ungapped_extender = create_extender(score_matrix, NUC2, xdrop_threshold, input_no_entropy, stream0.get(), 0, allocator);
-
-    // Launch the ungapped extender device function
-    ungapped_extender->extend_async(d_query.data(), // Type TBD based on encoding
-                                    d_query.size(),
-                                    d_target.data(),
-                                    d_target.size(),
-                                    score_threshold,
-                                    d_seed_pairs.data(),
-                                    d_seed_pairs.size(),
-                                    d_ssp.data(),
-                                    d_num_ssp);
-
-    // Wait for ungapped extender to finish
-    GW_CU_CHECK_ERR(cudaStreamSynchronize(stream0.get()));
-    int32_t h_num_ssp = cudautils::get_value_from_device(d_num_ssp, stream0.get());
-    //Get results
-    std::cerr << "Number of ScoredSegmentPairs found: " << h_num_ssp << std::endl;
-    std::vector<ScoredSegmentPair> h_ssp(h_num_ssp);
-    // Copy data synchronously
-    device_copy_n(d_ssp.data(), h_num_ssp, h_ssp.data());
-    if (print)
+    if (!device_ptr_api_mode)
     {
-        std::cout << "Target Position, Query Position, Length, Score" << std::endl;
-        for (int i = 0; i < h_num_ssp; i++)
-        {
-            ScoredSegmentPair segment = h_ssp[i];
-            std::cout << segment.seed_pair.target_position_in_read << "," << segment.seed_pair.query_position_in_read
-                      << "," << segment.length << "," << segment.score << std::endl;
-        }
+        std::unique_ptr<Extender> ungapped_extender = create_extender(score_matrix, NUC2, xdrop_threshold, input_no_entropy, stream0.get(), 0, allocator);
+        ungapped_extender->extend_async(h_encoded_query.data(), h_encoded_query.size(), h_encoded_target.data(), h_encoded_target.size(), score_threshold, h_seed_pairs);
+        ungapped_extender->sync();
+        std::vector<ScoredSegmentPair> h_ssp = ungapped_extender->get_scored_segment_pairs();
+        std::cerr << "Number of ScoredSegmentPairs found: " << h_ssp.size() << std::endl;
+        if(print)
+            print_scored_segment_pairs(h_ssp);
+    }
+    else
+    {
+        // Allocate space on device for target and query sequences, seed_pairs,
+        // scored segment pairs (ssp) and num_ssp using default allocator (caching)
+        // Allocate space for query and target sequences
+        device_buffer<char> d_query(query_sequence.length(), allocator, stream0.get());
+        device_buffer<char> d_target(target_sequence.length(), allocator, stream0.get());
+        // Allocate space for SeedPair input
+        device_buffer<SeedPair> d_seed_pairs(h_seed_pairs.size(), allocator, stream0.get());
+        // Allocate space for ScoredSegmentPair output
+        device_buffer<ScoredSegmentPair> d_ssp(h_seed_pairs.size(), allocator, stream0.get());
+        // TODO - Keep this as a malloc for single int?
+        int32_t* d_num_ssp;
+        GW_CU_CHECK_ERR(cudaMalloc((void**)&d_num_ssp, sizeof(int32_t)));
+
+        // Async Memcopy all the input values to device
+        device_copy_n(h_encoded_query.data(), query_sequence.length(), d_query.data(), stream0.get());
+        device_copy_n(h_encoded_target.data(), target_sequence.length(), d_target.data(), stream0.get());
+        device_copy_n(h_seed_pairs.data(), h_seed_pairs.size(), d_seed_pairs.data(), stream0.get());
+
+        // Create an ungapped extender object
+        std::unique_ptr<Extender> ungapped_extender = create_extender(score_matrix, NUC2, xdrop_threshold, input_no_entropy, stream0.get(), 0, allocator);
+
+        // Launch the ungapped extender device function
+        ungapped_extender->extend_async(d_query.data(), // Type TBD based on encoding
+                                        d_query.size(),
+                                        d_target.data(),
+                                        d_target.size(),
+                                        score_threshold,
+                                        d_seed_pairs.data(),
+                                        d_seed_pairs.size(),
+                                        d_ssp.data(),
+                                        d_num_ssp);
+
+        // Wait for ungapped extender to finish
+        GW_CU_CHECK_ERR(cudaStreamSynchronize(stream0.get()));
+        int32_t h_num_ssp = cudautils::get_value_from_device(d_num_ssp, stream0.get());
+        //Get results
+        std::cerr << "Number of ScoredSegmentPairs found: " << h_num_ssp << std::endl;
+        std::vector<ScoredSegmentPair> h_ssp(h_num_ssp);
+        // Copy data synchronously
+        device_copy_n(d_ssp.data(), h_num_ssp, h_ssp.data());
+        if (print)
+            print_scored_segment_pairs(h_ssp);
+        // Free all CUDA allocated memory
+        GW_CU_CHECK_ERR(cudaFree(d_num_ssp));
     }
 
-    // Free all CUDA allocated memory
-    GW_CU_CHECK_ERR(cudaFree(d_num_ssp));
     return 0;
 }

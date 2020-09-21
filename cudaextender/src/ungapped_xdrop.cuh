@@ -35,10 +35,10 @@ public:
     UngappedXDrop(int32_t* h_sub_mat, int32_t sub_mat_dim, int32_t xdrop_threshold, bool no_entropy, cudaStream_t stream, int32_t device_id, DefaultDeviceAllocator allocator);
     ~UngappedXDrop() override;
 
-    StatusType extend_async(const char* h_query, int32_t query_length,
-                            const char* h_target, int32_t target_length,
-                            int32_t score_threshold,
-                            std::vector<SeedPair>& h_seed_pairs) override;
+    StatusType extend_async(const char* h_query, const int32_t& query_length,
+                            const char* h_target, const int32_t& target_length,
+                            const int32_t& score_threshold,
+                            const std::vector<SeedPair>& h_seed_pairs) override;
 
     StatusType extend_async(const char* d_query, int32_t query_length,
                             const char* d_target, int32_t target_length,
@@ -53,7 +53,7 @@ public:
     const std::vector<ScoredSegmentPair>& get_scored_segment_pairs() const override;
 
 private:
-    DefaultDeviceAllocator  allocator_;
+    DefaultDeviceAllocator allocator_;
     // Device ptr API required variables
     int32_t* h_sub_mat_;
     int32_t sub_mat_dim_; // Assume matrix is square
