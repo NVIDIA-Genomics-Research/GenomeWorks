@@ -13,19 +13,19 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-#include <claraparabricks/genomeworks/utils/pinned_host_vector.hpp>
-#include <claraparabricks/genomeworks/utils/cudautils.hpp>
 #include "ungapped_xdrop.cuh"
 #include "ungapped_xdrop_kernels.cuh"
-#include <thrust/scan.h>
-#include <thrust/device_ptr.h>
+
+#include <claraparabricks/genomeworks/utils/pinned_host_vector.hpp>
+#include <claraparabricks/genomeworks/utils/cudautils.hpp>
+
 #include <thrust/system/cuda/execution_policy.h>
-#include <thrust/system/cpp/execution_policy.h>
 #include <thrust/sort.h>
-#include <thrust/unique.h>
-#include <thrust/distance.h>
-#include <thrust/device_vector.h>
+
 #include <cub/device/device_select.cuh>
+#include <cub/device/device_scan.cuh>
+
+// Temporary timing code
 #include <chrono>
 
 namespace claraparabricks

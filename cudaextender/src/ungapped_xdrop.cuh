@@ -18,7 +18,6 @@
 
 #include <claraparabricks/genomeworks/cudaextender/extender.hpp>
 #include <claraparabricks/genomeworks/utils/device_buffer.hpp>
-#include <claraparabricks/genomeworks/utils/pinned_host_vector.hpp>
 
 namespace claraparabricks
 {
