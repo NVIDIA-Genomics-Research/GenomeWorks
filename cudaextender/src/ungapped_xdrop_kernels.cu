@@ -38,7 +38,7 @@ __global__ void find_high_scoring_segment_pairs(const char* __restrict__ d_targe
                                                 const SeedPair* d_seed_pairs,
                                                 const int32_t num_seed_pairs,
                                                 const int32_t start_index,
-                                                ScoredSegmentPair* d_scored_segment,
+                                                ScoredSegmentPair* d_scored_segment_pairs,
                                                 int32_t* d_done)
 {
     constexpr int32_t num_warps = 4;  // TODO - move out?
@@ -404,19 +404,19 @@ __global__ void find_high_scoring_segment_pairs(const char* __restrict__ d_targe
             {
                 if (static_cast<int32_t>(static_cast<double>(total_score[warp_id]) * entropy[warp_id]) >= score_threshold)
                 {
-                    d_scored_segment[hid].seed_pair.target_position_in_read = ref_loc[warp_id] - left_extent[warp_id];
-                    d_scored_segment[hid].seed_pair.query_position_in_read  = query_loc[warp_id] - left_extent[warp_id];
-                    d_scored_segment[hid].length                            = extent[warp_id];
+                    d_scored_segment_pairs[hid].seed_pair.target_position_in_read = ref_loc[warp_id] - left_extent[warp_id];
+                    d_scored_segment_pairs[hid].seed_pair.query_position_in_read  = query_loc[warp_id] - left_extent[warp_id];
+                    d_scored_segment_pairs[hid].length                            = extent[warp_id];
                     if (entropy[warp_id] > 0) // TODO - Is this necessary?
-                        d_scored_segment[hid].score = total_score[warp_id] * entropy[warp_id];
+                        d_scored_segment_pairs[hid].score = total_score[warp_id] * entropy[warp_id];
                     d_done[hid - start_index] = 1;
                 }
                 else
                 {
-                    d_scored_segment[hid].seed_pair.target_position_in_read = ref_loc[warp_id];
-                    d_scored_segment[hid].seed_pair.query_position_in_read  = query_loc[warp_id];
-                    d_scored_segment[hid].length                            = 0;
-                    d_scored_segment[hid].score                             = 0;
+                    d_scored_segment_pairs[hid].seed_pair.target_position_in_read = ref_loc[warp_id];
+                    d_scored_segment_pairs[hid].seed_pair.query_position_in_read  = query_loc[warp_id];
+                    d_scored_segment_pairs[hid].length                            = 0;
+                    d_scored_segment_pairs[hid].score                             = 0;
                     d_done[hid - start_index]                               = 0;
                 }
             }

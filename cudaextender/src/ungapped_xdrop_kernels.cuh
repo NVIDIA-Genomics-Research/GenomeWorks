@@ -42,7 +42,7 @@ __global__ void find_high_scoring_segment_pairs(const char* __restrict__ d_targe
                                                 const SeedPair* __restrict__ d_seed_pairs,
                                                 const int32_t num_seed_pairs,
                                                 const int32_t start_index,
-                                                ScoredSegmentPair* d_scored_segment,
+                                                ScoredSegmentPair* d_scored_segment_pairs,
                                                 int32_t* d_done);
 
 // gather only the HSPs from the resulting segments to the beginning of the
