@@ -320,6 +320,7 @@ __launch_bounds__(GW_POA_KERNELS_MAX_THREADS_PER_BLOCK)
                                                                                         alignment_graph,
                                                                                         alignment_read,
                                                                                         static_band_width,
+                                                                                        max_pred_distance,
                                                                                         gap_score,
                                                                                         mismatch_score,
                                                                                         match_score);
