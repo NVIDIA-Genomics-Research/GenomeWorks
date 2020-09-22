@@ -47,7 +47,7 @@ __global__ void find_high_scoring_segment_pairs(const char* __restrict__ d_targe
     constexpr int32_t warp_size = 32;
     const int32_t lane_id       = threadIdx.x % warp_size;
     const int32_t warp_id       = (threadIdx.x - lane_id) / warp_size;
-    const float ln_4           = log(4.0f);
+    const float ln_4            = log(4.0f);
     __shared__ int32_t ref_loc[num_warps];
     __shared__ int32_t query_loc[num_warps];
     __shared__ int32_t total_score[num_warps];
@@ -102,7 +102,7 @@ __global__ void find_high_scoring_segment_pairs(const char* __restrict__ d_targe
         //Right extension
         while (!xdrop_found[warp_id] && !edge_found[warp_id])
         {
-            int32_t thread_score = 0;
+            int32_t thread_score     = 0;
             const int32_t pos_offset = lane_id + tile[warp_id];
             const int32_t ref_pos    = ref_loc[warp_id] + pos_offset;
             const int32_t query_pos  = query_loc[warp_id] + pos_offset;
@@ -248,7 +248,7 @@ __global__ void find_high_scoring_segment_pairs(const char* __restrict__ d_targe
 
         while (!xdrop_found[warp_id] && !edge_found[warp_id])
         {
-            int32_t thread_score = 0;
+            int32_t thread_score     = 0;
             const int32_t pos_offset = lane_id + 1 + tile[warp_id];
             char r_chr;
             char q_chr;
@@ -421,7 +421,7 @@ __global__ void find_high_scoring_segment_pairs(const char* __restrict__ d_targe
                     d_scored_segment_pairs[hid].seed_pair.query_position_in_read  = query_loc[warp_id];
                     d_scored_segment_pairs[hid].length                            = 0;
                     d_scored_segment_pairs[hid].score                             = 0;
-                    d_done[hid - start_index]                               = 0;
+                    d_done[hid - start_index]                                     = 0;
                 }
             }
         }
