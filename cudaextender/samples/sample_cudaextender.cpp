@@ -66,8 +66,7 @@ void encode_string(char* dst_seq, const char* src_seq, int32_t len)
 {
     for (int32_t i = 0; i < len; i++)
     {
-        char ch = src_seq[i];
-        char dst;
+        const char ch = src_seq[i];
         switch (ch)
         {
         case 'A':

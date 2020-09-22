@@ -46,7 +46,7 @@ __global__ void find_high_scoring_segment_pairs(const char* __restrict__ d_targe
     constexpr int32_t nuc2      = 64; // TODO - remove hardcode
     const int32_t lane_id       = threadIdx.x % warpSize;
     const int32_t warp_id       = (threadIdx.x - lane_id) / warpSize;
-    const float log_4           = log(4.0f);
+    const float ln_4           = log(4.0f);
     __shared__ int32_t ref_loc[num_warps];
     __shared__ int32_t query_loc[num_warps];
     __shared__ int32_t total_score[num_warps];
@@ -101,9 +101,7 @@ __global__ void find_high_scoring_segment_pairs(const char* __restrict__ d_targe
         //Right extension
         while (!xdrop_found[warp_id] && !edge_found[warp_id])
         {
-            int32_t max_pos;
             int32_t thread_score = 0;
-            int32_t max_thread_score;
             const int32_t pos_offset = lane_id + tile[warp_id];
             const int32_t ref_pos    = ref_loc[warp_id] + pos_offset;
             const int32_t query_pos  = query_loc[warp_id] + pos_offset;
@@ -130,6 +128,10 @@ __global__ void find_high_scoring_segment_pairs(const char* __restrict__ d_targe
             }
 
             thread_score += prev_score[warp_id];
+
+            int32_t max_pos;
+            int32_t max_thread_score;
+
             if (thread_score > prev_max_score[warp_id])
             {
                 max_thread_score = thread_score;
@@ -245,9 +247,7 @@ __global__ void find_high_scoring_segment_pairs(const char* __restrict__ d_targe
 
         while (!xdrop_found[warp_id] && !edge_found[warp_id])
         {
-            int32_t max_pos;
             int32_t thread_score = 0;
-            int32_t max_thread_score;
             const int32_t pos_offset = lane_id + 1 + tile[warp_id];
             char r_chr;
             char q_chr;
@@ -273,6 +273,10 @@ __global__ void find_high_scoring_segment_pairs(const char* __restrict__ d_targe
             }
 
             thread_score += prev_score[warp_id];
+
+            int32_t max_pos;
+            int32_t max_thread_score;
+
             if (thread_score > prev_max_score[warp_id])
             {
                 max_thread_score = thread_score;
@@ -380,18 +384,17 @@ __global__ void find_high_scoring_segment_pairs(const char* __restrict__ d_targe
 
             if (lane_id == warpSize - 1 && ((count[0] + count[1] + count[2] + count[3]) >= 20)) // TODO - MAGIC NUMBER ALERT!
             {
-
-                entropy[warp_id] = 0.f;
+                double entropy_ln = 0.f;
 #pragma unroll
                 for (int32_t i = 0; i < 4; i++)
                 {
                     if (count[i] != 0)
                     {
                         const double probability = static_cast<double>(count[i]) / static_cast<double>(extent[warp_id] + 1);
-                        entropy[warp_id] += (probability)*log(probability);
+                        entropy_ln += (probability)*log(probability);
                     }
                 }
-                entropy[warp_id] = -entropy[warp_id] / log_4;
+                entropy[warp_id] = -entropy_ln / ln_4; // Store Entropy with log base 4
             }
         }
         __syncwarp();
