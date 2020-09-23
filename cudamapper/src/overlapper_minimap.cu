@@ -49,7 +49,9 @@ namespace cudamapper
 #define NEGATIVE_INT32_INFINITY -1 * INT32_INFINITY
 #define PREDECESSOR_SEARCH_ITERATIONS 64
 #define BLOCK_COUNT 1792
+#define PARALLEL_UNITS (BLOCK_COUNT)
 #define TILE_SIZE 1024
+#define TILING_WINDOW_END (TILE_SIZE + PREDECESSOR_SEARCH_ITERATIONS + 1)
 #define THREADS_PER_BLOCK PREDECESSOR_SEARCH_ITERATIONS
 
 __device__ bool operator==(const Overlap& a,
@@ -69,7 +71,14 @@ __device__ bool operator==(const Overlap& a,
     return identical_ids && same_strand && (gap_match);
 }
 
-__device__ __forceinline__ double percent_reciprocal_overlap(const Overlap& a, const Overlap& b)
+struct anchor_score_and_predecessor
+{
+    int32_t predecessor;
+    int32_t score;
+};
+
+__device__ __forceinline__ double
+percent_reciprocal_overlap(const Overlap& a, const Overlap& b)
 {
     if (a.query_read_id_ != b.query_read_id_ || a.target_read_id_ != b.target_read_id_ || a.relative_strand != b.relative_strand)
     {
@@ -276,7 +285,7 @@ __global__ void init_predecessor_and_score_arrays(int32_t* predecessors,
     if (d_tid < n_overlaps)
     {
         scores[d_tid]       = 0;
-        predecessors[d_tid] = d_tid;
+        predecessors[d_tid] = -1;
     }
 }
 
@@ -309,6 +318,8 @@ __device__ __forceinline__ int32_t log_linear_anchor_weight(const Anchor& a,
                                                             const int32_t max_bandwidth)
 {
     if (a.query_read_id_ != b.query_read_id_ || a.target_read_id_ != b.target_read_id_)
+        return NEGATIVE_INT32_INFINITY;
+    if (a.query_position_in_read_ == b.query_position_in_read_ && a.target_position_in_read_ == b.target_position_in_read_)
         return NEGATIVE_INT32_INFINITY;
 
     int32_t b_query_pos  = b.query_position_in_read_ + word_size;
@@ -344,89 +355,10 @@ __device__ __forceinline__ int32_t log_linear_anchor_weight(const Anchor& a,
     return score;
 }
 
-__global__ void chain_anchors_sliding(const Anchor* anchors,
-                                      double* scores,
-                                      int32_t* predecessors,
-                                      const int32_t num_anchors,
-                                      const int32_t batch_id,
-                                      const int32_t batch_size,
-                                      const int32_t word_size,
-                                      const int32_t max_distance,
-                                      const int32_t max_bandwidth)
-{
-    int32_t thread_id    = (blockIdx.x * blockDim.x + threadIdx.x);
-    int32_t block_id     = blockIdx.x;
-    int32_t global_index = thread_id + (batch_id * (batch_size));
-    if (global_index < num_anchors && scores[global_index] == 0)
-    {
-        const int32_t j = threadIdx.x % PREDECESSOR_SEARCH_ITERATIONS;
-
-        __shared__ int32_t local_score_cache[PREDECESSOR_SEARCH_ITERATIONS];
-        __shared__ int32_t local_predecessor_cache[PREDECESSOR_SEARCH_ITERATIONS];
-        __shared__ Anchor local_anchor_cache[PREDECESSOR_SEARCH_ITERATIONS];
-        __shared__ int32_t local_global_index_cache[PREDECESSOR_SEARCH_ITERATIONS];
-
-        __syncthreads();
-        local_score_cache[j]        = scores[global_index];
-        local_predecessor_cache[j]  = predecessors[global_index];
-        local_anchor_cache[j]       = anchors[global_index];
-        local_global_index_cache[j] = global_index;
-
-        //printf("%d %f %d \n", global_index, scores[global_index], predecessors[global_index]);
-
-        for (int32_t i = 1, count = 0; count < batch_size; ++i, ++count)
-        {
-            __syncthreads();
-            if (global_index + (i % PREDECESSOR_SEARCH_ITERATIONS) < num_anchors)
-            {
-                int32_t current_score = local_score_cache[i % PREDECESSOR_SEARCH_ITERATIONS];
-                int32_t current_pred  = local_predecessor_cache[i % PREDECESSOR_SEARCH_ITERATIONS];
-                if (current_score < word_size)
-                {
-                    current_score = word_size;
-                }
-                __syncthreads();
-                if (j == i % PREDECESSOR_SEARCH_ITERATIONS)
-                {
-                    local_anchor_cache[j]       = anchors[global_index + PREDECESSOR_SEARCH_ITERATIONS];
-                    local_score_cache[j]        = scores[global_index + PREDECESSOR_SEARCH_ITERATIONS];
-                    local_predecessor_cache[j]  = predecessors[global_index + PREDECESSOR_SEARCH_ITERATIONS];
-                    local_global_index_cache[j] = global_index + PREDECESSOR_SEARCH_ITERATIONS;
-                }
-                __syncthreads();
-
-                int32_t marginal_score = log_linear_anchor_weight(local_anchor_cache[j], local_anchor_cache[i % PREDECESSOR_SEARCH_ITERATIONS], 15, max_distance, max_bandwidth);
-                if (current_score + marginal_score >= local_score_cache[j])
-                {
-                    local_score_cache[j]       = static_cast<int32_t>(current_score) + marginal_score;
-                    local_predecessor_cache[j] = local_global_index_cache[i % PREDECESSOR_SEARCH_ITERATIONS];
-                }
-
-                Anchor a = local_anchor_cache[j];
-                Anchor b = local_anchor_cache[i % PREDECESSOR_SEARCH_ITERATIONS];
-                __syncthreads();
-                printf("(%d) %d %d | %d %d | %d | +%d+ :%d: <%d> <%d> |[%d %d %d %d] [%d %d %d %d]\n", global_index, local_global_index_cache[j], local_global_index_cache[i % PREDECESSOR_SEARCH_ITERATIONS],
-                       j, i % PREDECESSOR_SEARCH_ITERATIONS,
-                       thread_id,
-                       marginal_score, current_score, local_score_cache[i % PREDECESSOR_SEARCH_ITERATIONS], local_predecessor_cache[i % PREDECESSOR_SEARCH_ITERATIONS],
-                       a.query_read_id_, a.query_position_in_read_, a.target_read_id_, a.target_position_in_read_,
-                       b.query_read_id_, b.query_position_in_read_, b.target_read_id_, b.target_position_in_read_);
-                if (j == count % PREDECESSOR_SEARCH_ITERATIONS)
-                {
-                    scores[local_global_index_cache[j]]       = current_score;
-                    predecessors[local_global_index_cache[j]] = current_pred;
-                }
-            }
-            // If it's a new window
-            // Update scores for global_index of J
-            // Update predecessors for global index of J
-        }
-    }
-}
-
 __global__ void chain_anchors_tiled(const Anchor* anchors,
                                     double* scores,
                                     int32_t* predecessors,
+                                    anchor_score_and_predecessor* ret,
                                     const int32_t num_anchors,
                                     const int32_t batch_id,
                                     const int32_t batch_size,
@@ -434,103 +366,69 @@ __global__ void chain_anchors_tiled(const Anchor* anchors,
                                     const int32_t max_distance,
                                     const int32_t max_bandwidth)
 {
+    int32_t block_id           = blockIdx.x;
+    int32_t thread_id_in_block = threadIdx.x % PREDECESSOR_SEARCH_ITERATIONS;
+    int32_t sub                = threadIdx.x / PREDECESSOR_SEARCH_ITERATIONS;
+    int32_t offset             = block_id + sub;
 
-    int32_t block_id     = blockIdx.x;
-    int32_t thread_id    = (blockIdx.x * blockDim.x + threadIdx.x);
-    int32_t global_index = thread_id + (batch_id * (batch_size)); // check this against the active array in Guo kernels
-    if (global_index < num_anchors && scores[global_index] == 0)  // scores [index] == 0 insures each anchor's score is only calculate once
+    int32_t global_anchor_index = offset * TILING_WINDOW_END + thread_id_in_block;
+    int32_t global_window_front = offset * TILING_WINDOW_END + PREDECESSOR_SEARCH_ITERATIONS + thread_id_in_block;
+
+    __shared__ int32_t local_score_cache[PREDECESSOR_SEARCH_ITERATIONS];
+    __shared__ int32_t local_predecessor_cache[PREDECESSOR_SEARCH_ITERATIONS];
+    __shared__ Anchor local_anchor_cache[PREDECESSOR_SEARCH_ITERATIONS];
+    __shared__ Anchor active_anchor_cache[PREDECESSOR_SEARCH_ITERATIONS];
+
+    __syncthreads();
+    active_anchor_cache[thread_id_in_block] = anchors[global_anchor_index];
+
+    local_score_cache[thread_id_in_block]       = scores[global_anchor_index];
+    local_predecessor_cache[thread_id_in_block] = predecessors[global_anchor_index];
+    local_anchor_cache[thread_id_in_block]      = anchors[global_window_front];
+
+    for (int32_t i = PREDECESSOR_SEARCH_ITERATIONS, counter = 0; counter < batch_size; i++, counter++)
     {
-        const Anchor b = anchors[global_index];
-        //const int32_t subdivision = thread_id / PREDECESSOR_SEARCH_ITERATIONS;
-        //const int32_t local_index = thread_id % PREDECESSOR_SEARCH_ITERATIONS;
-        const int32_t subdivision = threadIdx.x / PREDECESSOR_SEARCH_ITERATIONS;
-        const int32_t local_index = threadIdx.x % PREDECESSOR_SEARCH_ITERATIONS;
-        const int32_t offset      = block_id + subdivision;
-
-        __shared__ int32_t local_score_cache[PREDECESSOR_SEARCH_ITERATIONS];
-        __shared__ int32_t local_predecessor_cache[PREDECESSOR_SEARCH_ITERATIONS];
-        __shared__ Anchor local_anchor_cache[PREDECESSOR_SEARCH_ITERATIONS];
-
-        //printf("%d %d %d %d %d\n", thread_id, global_index, batch_id, subdivision, local_index);
-
         __syncthreads();
-        local_score_cache[local_index]       = scores[global_index];
-        local_predecessor_cache[local_index] = predecessors[global_index];
-        local_anchor_cache[local_index]      = b;
-
-        for (int32_t i = PREDECESSOR_SEARCH_ITERATIONS, counter = 0; counter < batch_size; ++i, ++counter)
+        const Anchor current_anchor = active_anchor_cache[i % PREDECESSOR_SEARCH_ITERATIONS];
+        int32_t current_score       = local_score_cache[i % PREDECESSOR_SEARCH_ITERATIONS];
+        int32_t current_pred        = local_predecessor_cache[i % PREDECESSOR_SEARCH_ITERATIONS];
+        if (word_size > current_score)
         {
-            __syncthreads();
-            //printf("%d %d %d %d %d\n", global_index, global_a_index, threadIdx.x, i, i % PREDECESSOR_SEARCH_ITERATIONS);
-            const Anchor a        = local_anchor_cache[i % PREDECESSOR_SEARCH_ITERATIONS];
-            int32_t current_score = local_score_cache[i % PREDECESSOR_SEARCH_ITERATIONS];
-            int32_t current_pred  = local_predecessor_cache[i % PREDECESSOR_SEARCH_ITERATIONS];
-            if (word_size > current_score)
-            {
-                current_score = word_size;
-                current_pred  = local_predecessor_cache[i % PREDECESSOR_SEARCH_ITERATIONS];
-            }
-            __syncthreads();
-            if (local_index == i % PREDECESSOR_SEARCH_ITERATIONS)
-            {
-                local_anchor_cache[local_index]      = anchors[offset * (TILE_SIZE + 65) + i];
-                local_score_cache[local_index]       = scores[offset * (TILE_SIZE + 65) + i];
-                local_predecessor_cache[local_index] = predecessors[offset * (TILE_SIZE + 65) + i];
-            }
-
-            __syncthreads();
-            int32_t marginal_score = log_linear_anchor_weight(local_anchor_cache[i / PREDECESSOR_SEARCH_ITERATIONS], a, 15, max_distance, max_bandwidth);
-            if (marginal_score + current_score >= local_score_cache[local_index])
-            {
-                local_score_cache[local_index]       = current_score + marginal_score;
-                local_predecessor_cache[local_index] = counter + (batch_id * batch_size);
-            }
-            __syncthreads();
-
-            //printf("%d %d %d | %d [%d] <%d> | %u %u\n", thread_id, global_index, local_index, i, current_score, current_pred, a.query_read_id_, a.target_read_id_);
+            current_score = word_size;
+            current_pred  = -1;
         }
         __syncthreads();
-        printf("%d %d %d %d | [%d] <%d> |\n", thread_id, global_index, batch_id, local_index, local_score_cache[local_index], local_predecessor_cache[local_index]);
-
-        scores[global_index]       = local_score_cache[local_index];
-        predecessors[global_index] = local_predecessor_cache[local_index];
-    }
-}
-
-__global__ void chain_anchors_by_score(const Anchor* anchors,
-                                       double* scores,
-                                       int32_t* predecessors,
-                                       bool* select_mask,
-                                       const int32_t num_anchors,
-                                       const int32_t max_distance,
-                                       const int32_t max_bandwidth,
-                                       const int32_t max_iter)
-{
-    const std::size_t d_tid = blockIdx.x * blockDim.x + threadIdx.x;
-
-    if (d_tid < num_anchors)
-    {
-        const int32_t global_overlap_index = static_cast<int32_t>(d_tid);
-        int32_t end_index                  = min(int(global_overlap_index + max_iter), int(num_anchors));
-        int32_t i_score                    = scores[global_overlap_index];
-        for (int32_t j = global_overlap_index + 1; j < end_index; ++j)
+        if (thread_id_in_block == i % PREDECESSOR_SEARCH_ITERATIONS)
         {
-            int32_t marginal_score = log_linear_anchor_weight(anchors[global_overlap_index], anchors[j], 15, max_distance, max_bandwidth);
-            int32_t temp_score     = i_score + marginal_score;
-            if (temp_score > scores[j])
-            {
-                scores[j]                         = static_cast<double>(temp_score);
-                predecessors[j]                   = global_overlap_index;
-                select_mask[global_overlap_index] = false;
-            }
+            active_anchor_cache[thread_id_in_block]     = local_anchor_cache[thread_id_in_block];
+            local_score_cache[thread_id_in_block]       = 0;
+            local_predecessor_cache[thread_id_in_block] = -1;
         }
-        // printf("| %d %d %d %d | %s\n",
-        //        anchors[d_tid].query_read_id_,
-        //        anchors[d_tid].query_position_in_read_,
-        //        anchors[d_tid].target_read_id_,
-        //        anchors[d_tid].target_position_in_read_,
-        //        select_mask[d_tid] ? "max" : "_within_chain_");
+
+        __syncthreads();
+        int32_t marginal_score = log_linear_anchor_weight(active_anchor_cache[sub], current_anchor, 15, max_distance, max_bandwidth);
+        if (marginal_score + current_score >= local_score_cache[thread_id_in_block])
+        {
+            local_score_cache[thread_id_in_block]       = current_score + marginal_score;
+            local_predecessor_cache[thread_id_in_block] = counter + (batch_id * batch_size);
+        }
+        __syncthreads();
+
+        if (thread_id_in_block == counter % PREDECESSOR_SEARCH_ITERATIONS)
+        {
+            anchor_score_and_predecessor final_match;
+            final_match.score                 = current_score;
+            final_match.predecessor           = current_pred;
+            ret[offset * TILE_SIZE + counter] = final_match;
+            Anchor t                          = active_anchor_cache[thread_id_in_block];
+            // if (offset == 0)
+            // printf("| %d %d %d %d | %d %d \n", t.query_read_id_, t.query_position_in_read_, t.target_read_id_, t.target_position_in_read_, current_score, current_pred);
+        }
     }
+    __syncthreads();
+
+    scores[offset + thread_id_in_block]       = local_score_cache[thread_id_in_block];
+    predecessors[offset + thread_id_in_block] = local_predecessor_cache[thread_id_in_block];
 }
 
 __device__ __forceinline__ void add_anchor_to_overlap(const Anchor& anchor, Overlap& overlap)
@@ -738,6 +636,7 @@ void OverlapperMinimap::get_overlaps(std::vector<Overlap>& fused_overlaps,
 
     device_buffer<int32_t> d_anchor_predecessors(n_anchors, _allocator, _cuda_stream);
     device_buffer<double> d_anchor_scores(n_anchors, _allocator, _cuda_stream);
+    device_buffer<anchor_score_and_predecessor> d_anchor_returns(n_anchors, _allocator, _cuda_stream);
 
     init_overlap_mask<<<(n_anchors / block_size) + 1, block_size, 0, _cuda_stream>>>(d_overlaps_select_mask.data(),
                                                                                      n_anchors,
@@ -759,15 +658,16 @@ void OverlapperMinimap::get_overlaps(std::vector<Overlap>& fused_overlaps,
     {
 
         std::cerr << "Running batch " << batch << ". Num anchors: " << n_anchors << std::endl;
-        chain_anchors_sliding<<<1792, PREDECESSOR_SEARCH_ITERATIONS, 0, _cuda_stream>>>(d_anchors.data(),
-                                                                                        d_anchor_scores.data(),
-                                                                                        d_anchor_predecessors.data(),
-                                                                                        n_anchors,
-                                                                                        batch,
-                                                                                        TILE_SIZE,
-                                                                                        15,
-                                                                                        5000,
-                                                                                        500);
+        chain_anchors_tiled<<<1792, PREDECESSOR_SEARCH_ITERATIONS, 0, _cuda_stream>>>(d_anchors.data() + batch * PARALLEL_UNITS * (TILING_WINDOW_END),
+                                                                                      d_anchor_scores.data() + batch * PARALLEL_UNITS * (TILING_WINDOW_END),
+                                                                                      d_anchor_predecessors.data() + batch * PARALLEL_UNITS * (TILING_WINDOW_END),
+                                                                                      d_anchor_returns.data() + batch * PARALLEL_UNITS * TILE_SIZE,
+                                                                                      n_anchors,
+                                                                                      batch,
+                                                                                      TILE_SIZE,
+                                                                                      15,
+                                                                                      5000,
+                                                                                      500);
     }
 
     // chain_anchors_by_score<<<(n_anchors / block_size) + 1, block_size, 0, _cuda_stream>>>(d_anchors.data(),
