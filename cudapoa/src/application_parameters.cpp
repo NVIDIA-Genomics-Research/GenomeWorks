@@ -82,6 +82,10 @@ ApplicationParameters::ApplicationParameters(int argc, char* argv[])
             graph_length = std::stof(optarg);
             break;
         case 'D':
+            if (std::stoi(optarg) <= 0)
+            {
+                throw std::runtime_error("pred-distance must be an integer greater than 0");
+            }
             predecessor_disance = std::stoi(optarg);
             break;
         case 'd':
@@ -119,11 +123,6 @@ ApplicationParameters::ApplicationParameters(int argc, char* argv[])
     if (band_mode != BandMode::adaptive_band && band_width < 1)
     {
         throw std::runtime_error("band-width must be positive");
-    }
-
-    if (band_mode != BandMode::full_band && predecessor_disance < 0)
-    {
-        throw std::runtime_error("pred-distance must be positive");
     }
 
     if (match_score < 0)
