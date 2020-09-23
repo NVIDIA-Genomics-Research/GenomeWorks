@@ -13,9 +13,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-#include "file_location.hpp"
-
 #include "gtest/gtest.h"
+
+#include <cudaextender_file_location.hpp>
 #include <claraparabricks/genomeworks/cudaextender/utils.hpp>
 #include <claraparabricks/genomeworks/cudaextender/extender.hpp>
 #include <claraparabricks/genomeworks/utils/pinned_host_vector.hpp>
