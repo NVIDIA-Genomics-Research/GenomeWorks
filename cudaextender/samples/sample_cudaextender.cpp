@@ -15,6 +15,7 @@
 */
 #include <file_location.hpp>
 #include <claraparabricks/genomeworks/cudaextender/extender.hpp>
+#include <claraparabricks/genomeworks/cudaextender/utils.hpp>
 #include <claraparabricks/genomeworks/io/fasta_parser.hpp>
 #include <claraparabricks/genomeworks/utils/cudautils.hpp>
 #include <claraparabricks/genomeworks/utils/device_buffer.hpp>
@@ -23,83 +24,11 @@
 #include <iostream>
 #include <string>
 #include <vector>
-#include <fstream>
 #include <cuda.h>
 
 using namespace claraparabricks::genomeworks;
 using namespace cudautils;
 using namespace cudaextender;
-
-constexpr char A_NT = 0;
-constexpr char C_NT = 1;
-constexpr char G_NT = 2;
-constexpr char T_NT = 3;
-constexpr char L_NT = 4;
-constexpr char N_NT = 5;
-constexpr char X_NT = 6;
-constexpr char E_NT = 7;
-constexpr char NUC  = 8;
-constexpr char NUC2 = NUC * NUC;
-
-// Really simple parser with no error checks
-void parse_seed_pairs(const std::string& filepath, std::vector<SeedPair>& seed_pairs)
-{
-    std::ifstream seed_pair_file(filepath);
-    if (!seed_pair_file.is_open())
-        throw std::runtime_error("Cannot open file");
-    if (seed_pair_file.good())
-    {
-        std::string line;
-        while (std::getline(seed_pair_file, line, ','))
-        {
-            SeedPair seed_pair;
-            seed_pair.target_position_in_read = std::atoi(line.c_str());
-            std::getline(seed_pair_file, line); // Get the next value
-            seed_pair.query_position_in_read = std::atoi(line.c_str());
-            seed_pairs.push_back(seed_pair);
-        }
-    }
-}
-
-// convert input sequence from alphabet to integers
-void encode_string(char* dst_seq, const char* src_seq, const int32_t& len)
-{
-    for (int32_t i = 0; i < len; i++)
-    {
-        const char ch = src_seq[i];
-        switch (ch)
-        {
-        case 'A':
-            dst_seq[i] = A_NT;
-            break;
-        case 'C':
-            dst_seq[i] = C_NT;
-            break;
-        case 'G':
-            dst_seq[i] = G_NT;
-            break;
-        case 'T':
-            dst_seq[i] = T_NT;
-            break;
-        case '&':
-            dst_seq[i] = E_NT;
-            break;
-        case 'n':
-        case 'N':
-            dst_seq[i] = N_NT;
-            break;
-        case 'a':
-        case 'c':
-        case 'g':
-        case 't':
-            dst_seq[i] = L_NT;
-            break;
-        default:
-            dst_seq[i] = X_NT;
-            break;
-        }
-    }
-}
 
 void print_scored_segment_pairs(const std::vector<ScoredSegmentPair>& scored_segment_pairs)
 {
@@ -164,8 +93,7 @@ int main(int argc, char* argv[])
     //TODO - pinned seed_pairs
     std::vector<SeedPair> h_seed_pairs;
     // Following function loops through all seed_pairs in the sample_seed_pairs.csv and returns
-    // results in
-    // the passed vector
+    // results in the passed vector
     parse_seed_pairs(seed_pairs_file_path, h_seed_pairs);
     std::cerr << "Number of seed pairs: " << h_seed_pairs.size() << std::endl;
 
@@ -183,8 +111,8 @@ int main(int argc, char* argv[])
     pinned_host_vector<char> h_encoded_target(target_sequence.length());
     pinned_host_vector<char> h_encoded_query(target_sequence.length());
 
-    encode_string(h_encoded_target.data(), target_sequence.c_str(), target_sequence.length());
-    encode_string(h_encoded_query.data(), query_sequence.c_str(), query_sequence.length());
+    encode_sequence(h_encoded_target.data(), target_sequence.c_str(), target_sequence.length());
+    encode_sequence(h_encoded_query.data(), query_sequence.c_str(), query_sequence.length());
     // Create a stream for async use
     CudaStream stream0 = make_cuda_stream();
     // Create an allocator for use with both APIs

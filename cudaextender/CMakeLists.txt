@@ -71,6 +71,7 @@ install(EXPORT ${MODULE_NAME} DESTINATION cmake)
 
 # Add other folders.
 add_subdirectory(samples)
+add_subdirectory(tests)
 
 # Add auto formatting.
 gw_enable_auto_formatting("${CMAKE_CURRENT_SOURCE_DIR}")
