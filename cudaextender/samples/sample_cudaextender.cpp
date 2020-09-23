@@ -62,7 +62,7 @@ void parse_seed_pairs(const std::string& filepath, std::vector<SeedPair>& seed_p
 }
 
 // convert input sequence from alphabet to integers
-void encode_string(char* dst_seq, const char* src_seq, int32_t len)
+void encode_string(char* dst_seq, const char* src_seq, const int32_t& len)
 {
     for (int32_t i = 0; i < len; i++)
     {
@@ -101,7 +101,7 @@ void encode_string(char* dst_seq, const char* src_seq, int32_t len)
     }
 }
 
-void print_scored_segment_pairs(std::vector<ScoredSegmentPair> scored_segment_pairs)
+void print_scored_segment_pairs(const std::vector<ScoredSegmentPair>& scored_segment_pairs)
 {
     std::cout << "Target Position, Query Position, Length, Score" << std::endl;
     for (auto& segment : scored_segment_pairs)
@@ -147,21 +147,19 @@ int main(int argc, char* argv[])
     }
 
     // Fasta query and target files
-    std::string target_file_path                         = std::string(CUDAEXTENDER_DATA_DIR) + "/sample.fa";
+    const std::string target_file_path                         = std::string(CUDAEXTENDER_DATA_DIR) + "/sample.fa";
     std::unique_ptr<io::FastaParser> fasta_parser_target = io::create_kseq_fasta_parser(target_file_path, 0, false);
     // Assumes that only one sequence is present per file
-    std::string target_sequence = fasta_parser_target->get_sequence_by_id(0).seq;
+    const std::string target_sequence = fasta_parser_target->get_sequence_by_id(0).seq;
 
-    std::string query_file_path = std::string(CUDAEXTENDER_DATA_DIR) + "/sample.fa";
-    ;
-    std::unique_ptr<io::FastaParser> fasta_parser_query =
-        io::create_kseq_fasta_parser(query_file_path, 0, false);
+    const std::string query_file_path                         = std::string(CUDAEXTENDER_DATA_DIR) + "/sample.fa";
+    std::unique_ptr<io::FastaParser> fasta_parser_query = io::create_kseq_fasta_parser(query_file_path, 0, false);
     // Assumes that only one sequence is present per file
-    std::string query_sequence = fasta_parser_query->get_sequence_by_id(0).seq;
+    const std::string query_sequence = fasta_parser_query->get_sequence_by_id(0).seq;
 
     // CSV SeedPairs file - Each row -> query_position_in_read_,
     // target_position_in_read_
-    std::string seed_pairs_file_path = std::string(CUDAEXTENDER_DATA_DIR) + "/sample_seed_pairs.csv";
+    const std::string seed_pairs_file_path = std::string(CUDAEXTENDER_DATA_DIR) + "/sample_seed_pairs.csv";
 
     //TODO - pinned seed_pairs
     std::vector<SeedPair> h_seed_pairs;
@@ -172,14 +170,14 @@ int main(int argc, char* argv[])
     std::cerr << "Number of seed pairs: " << h_seed_pairs.size() << std::endl;
 
     // Define Scoring Matrix
-    int32_t score_matrix[NUC2] = {91, -114, -31, -123, -1000, -1000, -100, -9100,
-                                  -114, 100, -125, -31, -1000, -1000, -100, -9100,
-                                  -31, -125, 100, -114, -1000, -1000, -100, -9100,
-                                  -123, -31, -114, 91, -1000, -1000, -100, -9100,
-                                  -1000, -1000, -1000, -1000, -1000, -1000, -1000, -9100,
-                                  -1000, -1000, -1000, -1000, -1000, -1000, -1000, -9100,
-                                  -100, -100, -100, -100, -1000, -1000, -100, -9100,
-                                  -9100, -9100, -9100, -9100, -9100, -9100, -9100, -9100};
+    const int32_t score_matrix[NUC2] = {91, -114, -31, -123, -1000, -1000, -100, -9100,
+                                        -114, 100, -125, -31, -1000, -1000, -100, -9100,
+                                        -31, -125, 100, -114, -1000, -1000, -100, -9100,
+                                        -123, -31, -114, 91, -1000, -1000, -100, -9100,
+                                        -1000, -1000, -1000, -1000, -1000, -1000, -1000, -9100,
+                                        -1000, -1000, -1000, -1000, -1000, -1000, -1000, -9100,
+                                        -100, -100, -100, -100, -1000, -1000, -100, -9100,
+                                        -9100, -9100, -9100, -9100, -9100, -9100, -9100, -9100};
 
     // Allocate pinned memory for query and target strings
     pinned_host_vector<char> h_encoded_target(target_sequence.length());
@@ -192,16 +190,14 @@ int main(int argc, char* argv[])
     // Create an allocator for use with both APIs
     const std::size_t max_gpu_memory = cudautils::find_largest_contiguous_device_memory_section();
     DefaultDeviceAllocator allocator = create_default_device_allocator(max_gpu_memory);
-
+    // Reference for output
+    std::vector<ScoredSegmentPair> h_ssp;
     if (!device_ptr_api_mode)
     {
         std::unique_ptr<Extender> ungapped_extender = create_extender(score_matrix, NUC2, xdrop_threshold, input_no_entropy, stream0.get(), 0, allocator);
         ungapped_extender->extend_async(h_encoded_query.data(), h_encoded_query.size(), h_encoded_target.data(), h_encoded_target.size(), score_threshold, h_seed_pairs);
         ungapped_extender->sync();
-        std::vector<ScoredSegmentPair> h_ssp = ungapped_extender->get_scored_segment_pairs();
-        std::cerr << "Number of ScoredSegmentPairs found: " << h_ssp.size() << std::endl;
-        if (print)
-            print_scored_segment_pairs(h_ssp);
+        h_ssp = ungapped_extender->get_scored_segment_pairs();
     }
     else
     {
@@ -214,9 +210,7 @@ int main(int argc, char* argv[])
         device_buffer<SeedPair> d_seed_pairs(h_seed_pairs.size(), allocator, stream0.get());
         // Allocate space for ScoredSegmentPair output
         device_buffer<ScoredSegmentPair> d_ssp(h_seed_pairs.size(), allocator, stream0.get());
-        // TODO - Keep this as a malloc for single int?
-        int32_t* d_num_ssp;
-        GW_CU_CHECK_ERR(cudaMalloc((void**)&d_num_ssp, sizeof(int32_t)));
+        device_buffer<int32_t> d_num_ssp(1, allocator, stream0.get());
 
         // Async Memcopy all the input values to device
         device_copy_n(h_encoded_query.data(), query_sequence.length(), d_query.data(), stream0.get());
@@ -235,21 +229,18 @@ int main(int argc, char* argv[])
                                         d_seed_pairs.data(),
                                         d_seed_pairs.size(),
                                         d_ssp.data(),
-                                        d_num_ssp);
+                                        d_num_ssp.data());
 
         // Wait for ungapped extender to finish
         GW_CU_CHECK_ERR(cudaStreamSynchronize(stream0.get()));
-        int32_t h_num_ssp = cudautils::get_value_from_device(d_num_ssp, stream0.get());
-        //Get results
-        std::cerr << "Number of ScoredSegmentPairs found: " << h_num_ssp << std::endl;
-        std::vector<ScoredSegmentPair> h_ssp(h_num_ssp);
+        const int32_t h_num_ssp = cudautils::get_value_from_device(d_num_ssp.data(), stream0.get());
+        h_ssp.resize(h_num_ssp);
         // Copy data synchronously
         device_copy_n(d_ssp.data(), h_num_ssp, h_ssp.data());
-        if (print)
-            print_scored_segment_pairs(h_ssp);
-        // Free all CUDA allocated memory
-        GW_CU_CHECK_ERR(cudaFree(d_num_ssp));
     }
+    std::cerr << "Number of ScoredSegmentPairs found: " << h_ssp.size() << std::endl;
+    if (print)
+        print_scored_segment_pairs(h_ssp);
 
     return 0;
 }

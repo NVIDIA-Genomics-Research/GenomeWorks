@@ -39,7 +39,7 @@ namespace cudaextender
 
 using namespace cudautils;
 
-UngappedXDrop::UngappedXDrop(int32_t* h_sub_mat, int32_t sub_mat_dim, int32_t xdrop_threshold, bool no_entropy, cudaStream_t stream, int32_t device_id, DefaultDeviceAllocator allocator)
+UngappedXDrop::UngappedXDrop(const int32_t* h_sub_mat, const int32_t sub_mat_dim, const int32_t xdrop_threshold, const bool no_entropy, cudaStream_t stream, const int32_t device_id, DefaultDeviceAllocator allocator)
     : h_sub_mat_(h_sub_mat)
     , sub_mat_dim_(sub_mat_dim)
     , xdrop_threshold_(xdrop_threshold)
@@ -162,7 +162,8 @@ StatusType UngappedXDrop::extend_async(const char* h_query, const int32_t& query
     d_seed_pairs_ = device_buffer<SeedPair>(h_seed_pairs.size(), allocator_, stream_);
     // Allocate space for ScoredSegmentPair output
     d_ssp_ = device_buffer<ScoredSegmentPair>(h_seed_pairs.size(), allocator_, stream_);
-    GW_CU_CHECK_ERR(cudaMalloc((void**)&d_num_ssp_, sizeof(int32_t)))
+    d_num_ssp_ = device_buffer<int32_t>(1, allocator_, stream_);
+
     // Async memcopy all the input values to device
     device_copy_n(h_query, query_length, d_query_.data(), stream_);
     device_copy_n(h_target, target_length, d_target_.data(), stream_);
@@ -173,14 +174,14 @@ StatusType UngappedXDrop::extend_async(const char* h_query, const int32_t& query
                         d_target_.data(), target_length,
                         score_threshold, d_seed_pairs_.data(),
                         d_seed_pairs_.size(), d_ssp_.data(),
-                        d_num_ssp_);
+                        d_num_ssp_.data());
 }
 
 StatusType UngappedXDrop::sync()
 {
     if (host_ptr_api_mode_)
     {
-        const int32_t h_num_ssp = get_value_from_device(d_num_ssp_, stream_);
+        const int32_t h_num_ssp = get_value_from_device(d_num_ssp_.data(), stream_);
         if (h_num_ssp > 0)
         {
             h_ssp_.resize(h_num_ssp);
@@ -210,7 +211,6 @@ void UngappedXDrop::reset()
     if (host_ptr_api_mode_)
     {
         h_ssp_.clear();
-        GW_CU_CHECK_ERR(cudaFree(d_num_ssp_))
         host_ptr_api_mode_ = false;
     }
 }
