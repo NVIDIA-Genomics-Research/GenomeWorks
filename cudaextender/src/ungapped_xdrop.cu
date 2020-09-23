@@ -46,7 +46,7 @@ UngappedXDrop::UngappedXDrop(const int32_t* h_sub_mat, const int32_t sub_mat_dim
     , host_ptr_api_mode_(false)
     , allocator_(allocator)
 {
-    if(h_sub_mat_ == nullptr)
+    if (h_sub_mat_ == nullptr)
     {
         throw std::runtime_error("Substitution matrix cannot be null");
     }
@@ -84,12 +84,12 @@ StatusType UngappedXDrop::extend_async(const char* d_query, int32_t query_length
                                        int32_t num_seed_pairs, ScoredSegmentPair* d_scored_segment_pairs,
                                        int32_t* d_num_scored_segment_pairs)
 {
-    if(d_query == nullptr || d_target == nullptr || d_seed_pairs == nullptr)
+    if (d_query == nullptr || d_target == nullptr || d_seed_pairs == nullptr)
     {
         GW_LOG_ERROR("Invalid input pointers");
         return StatusType::invalid_input;
     }
-    if(d_scored_segment_pairs == nullptr || d_num_scored_segment_pairs == nullptr)
+    if (d_scored_segment_pairs == nullptr || d_num_scored_segment_pairs == nullptr)
     {
         GW_LOG_ERROR("Invalid output pointers");
         return StatusType::invalid_input;
