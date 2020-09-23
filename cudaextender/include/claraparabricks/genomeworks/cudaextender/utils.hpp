@@ -143,7 +143,7 @@ inline void encode_sequence(char* dst_seq, const char* src_seq, const int32_t& l
     }
 }
 
-} // namespace cudapoa
+} // namespace cudaextender
 
 } // namespace genomeworks
 

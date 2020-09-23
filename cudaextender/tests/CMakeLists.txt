@@ -18,8 +18,8 @@
 set(TARGET_NAME cudaextendertests)
 
 set(SOURCES
-    main.cpp
-    Test_CudaextenderEnd2End.cu)
+        main.cpp
+        Test_CudaextenderEnd2End.cu)
 
 get_property(cudextender_data_include_dir GLOBAL PROPERTY cudaextender_data_include_dir)
 include_directories(${cudextender_data_include_dir})

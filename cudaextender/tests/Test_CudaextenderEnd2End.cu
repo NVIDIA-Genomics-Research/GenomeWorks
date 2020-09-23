@@ -43,11 +43,11 @@ std::vector<End2EndTestParam> getCudaextenderEnd2EndTestCases()
     std::vector<End2EndTestParam> test_cases;
 
     End2EndTestParam test1{};
-    test1.query_file  = std::string(CUDAEXTENDER_DATA_DIR) + "/sample.fa";
-    test1.target_file = std::string(CUDAEXTENDER_DATA_DIR) + "/sample.fa";
-    test1.seed_pairs_file = std::string(CUDAEXTENDER_DATA_DIR) + "/sample_seed_pairs.csv";
+    test1.query_file                       = std::string(CUDAEXTENDER_DATA_DIR) + "/sample.fa";
+    test1.target_file                      = std::string(CUDAEXTENDER_DATA_DIR) + "/sample.fa";
+    test1.seed_pairs_file                  = std::string(CUDAEXTENDER_DATA_DIR) + "/sample_seed_pairs.csv";
     test1.golden_scored_segment_pairs_file = std::string(CUDAEXTENDER_DATA_DIR) + "/sample_scored_segment_pairs.csv";
-    test1.score_threshold = 3000;
+    test1.score_threshold                  = 3000;
     test_cases.push_back(test1);
 
     return test_cases;
@@ -59,7 +59,7 @@ class TestCudaextenderEnd2End : public ::testing::TestWithParam<End2EndTestParam
 public:
     void SetUp()
     {
-        param_       = GetParam();
+        param_ = GetParam();
         // Define Scoring Matrix
         const int32_t score_matrix[NUC2] = {91, -114, -31, -123, -1000, -1000, -100, -9100,
                                             -114, 100, -125, -31, -1000, -1000, -100, -9100,
@@ -69,12 +69,12 @@ public:
                                             -1000, -1000, -1000, -1000, -1000, -1000, -1000, -9100,
                                             -100, -100, -100, -100, -1000, -1000, -100, -9100,
                                             -9100, -9100, -9100, -9100, -9100, -9100, -9100, -9100};
-        const int32_t xdrop_threshold = 910;
-        const int32_t device_id = 0;
-        const bool no_entropy   = false;
+        const int32_t xdrop_threshold    = 910;
+        const int32_t device_id          = 0;
+        const bool no_entropy            = false;
         const std::size_t max_gpu_memory = cudautils::find_largest_contiguous_device_memory_section();
-        allocator_ = create_default_device_allocator(max_gpu_memory);
-        stream_ = make_cuda_stream();
+        allocator_                       = create_default_device_allocator(max_gpu_memory);
+        stream_                          = make_cuda_stream();
         ungapped_extender_               = create_extender(score_matrix, NUC2, xdrop_threshold, no_entropy, stream_.get(), device_id, allocator_);
     }
 
@@ -86,9 +86,9 @@ public:
     void run_test()
     {
         std::unique_ptr<io::FastaParser> fasta_parser_target = io::create_kseq_fasta_parser(param_.target_file, 0, false);
-        const std::string target_sequence = fasta_parser_target->get_sequence_by_id(0).seq;
-        std::unique_ptr<io::FastaParser> fasta_parser_query = io::create_kseq_fasta_parser(param_.query_file, 0, false);
-        const std::string query_sequence = fasta_parser_query->get_sequence_by_id(0).seq;
+        const std::string target_sequence                    = fasta_parser_target->get_sequence_by_id(0).seq;
+        std::unique_ptr<io::FastaParser> fasta_parser_query  = io::create_kseq_fasta_parser(param_.query_file, 0, false);
+        const std::string query_sequence                     = fasta_parser_query->get_sequence_by_id(0).seq;
         std::vector<SeedPair> h_seed_pairs;
         parse_seed_pairs(param_.seed_pairs_file, h_seed_pairs);
         // Allocate pinned memory for query and target strings
