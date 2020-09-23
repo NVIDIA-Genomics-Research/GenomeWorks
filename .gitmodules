@@ -29,7 +29,7 @@
 	url = https://github.com/rvaser/spoa.git
 [submodule "3rdparty/cub"]
 	path = 3rdparty/cub
-	url = https://github.com/NVlabs/cub.git
+	url = https://github.com/NVIDIA/cub.git
 [submodule "3rdparty/kseqpp"]
 	path = 3rdparty/kseqpp
 	url = https://github.com/cartoonist/kseqpp.git
