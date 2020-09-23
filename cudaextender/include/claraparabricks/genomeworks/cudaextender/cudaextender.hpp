@@ -25,7 +25,7 @@ namespace genomeworks
 namespace cudaextender
 {
 /// \defgroup cudaextender CUDA Extender package
-/// Base docs for the cudaextender package (tbd)
+/// Base docs for the cudaextender package
 /// \{
 
 /// CUDA Extender status type
