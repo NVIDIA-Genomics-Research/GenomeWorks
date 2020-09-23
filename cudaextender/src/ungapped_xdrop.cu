@@ -22,9 +22,6 @@
 #include <thrust/system/cuda/execution_policy.h>
 #include <thrust/sort.h>
 
-#include <cub/device/device_select.cuh>
-#include <cub/device/device_scan.cuh>
-
 // Temporary timing code
 #include <chrono>
 
