@@ -26,7 +26,9 @@ message(STATUS "nvcc flags for ${MODULE_NAME}: ${CUDA_NVCC_FLAGS}")
 get_property(gw_library_type GLOBAL PROPERTY gw_library_type)
 add_library(${MODULE_NAME} ${gw_library_type}
         src/cudautils.cpp
-        src/logging.cpp)
+        src/logging.cpp
+        src/graph.cpp
+        )
 target_link_libraries(${MODULE_NAME} PUBLIC spdlog ${CUDA_LIBRARIES})
 
 if (gw_profiling)
