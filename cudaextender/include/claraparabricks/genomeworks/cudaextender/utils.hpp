@@ -16,6 +16,7 @@
 
 #pragma once
 #include <claraparabricks/genomeworks/io/fasta_parser.hpp>
+#include <claraparabricks/genomeworks/cudaextender/extender.hpp>
 
 #include <string>
 #include <vector>
@@ -69,9 +70,9 @@ inline void parse_seed_pairs(const std::string& filepath, std::vector<SeedPair>&
 }
 
 /// \brief Parses scored segment pairs from a csv file in the following format:
-///        target_position_in_read_1, query_position_in_read_1, score_1, length_1
-///        target_position_in_read_2, query_position_in_read_2, score_2, length_2
-///        target_position_in_read_n, query_position_in_read_n, score_n, length_n
+///        target_position_in_read_1, query_position_in_read_1, length_1, score_1
+///        target_position_in_read_2, query_position_in_read_2, length_2, score_2
+///        target_position_in_read_n, query_position_in_read_n, length_n, score_n
 ///
 /// \param[out] scored_segment_pairs Reference to vector into which parsed scored segment pairs are saved
 /// \param[in]  filepath   Reference to the string containing the path of the scored segment pairs csv
@@ -90,9 +91,9 @@ inline void parse_scored_segment_pairs(const std::string& filepath, std::vector<
             std::getline(scored_segment_pairs_file, line, ',');
             scored_segment_pair.seed_pair.query_position_in_read = std::atoi(line.c_str());
             std::getline(scored_segment_pairs_file, line, ',');
-            scored_segment_pair.score = std::atoi(line.c_str());
-            std::getline(scored_segment_pairs_file, line);
             scored_segment_pair.length = std::atoi(line.c_str());
+            std::getline(scored_segment_pairs_file, line);
+            scored_segment_pair.score = std::atoi(line.c_str());
             scored_segment_pairs.push_back(scored_segment_pair);
         }
     }
