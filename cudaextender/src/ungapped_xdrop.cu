@@ -21,6 +21,7 @@
 
 #include <thrust/system/cuda/execution_policy.h>
 #include <thrust/sort.h>
+#include <cub/cub.cuh>
 
 // Temporary timing code
 #include <chrono>
