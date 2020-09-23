@@ -27,11 +27,11 @@ namespace cudaextender
 {
 
 // TODO - Provide an allocator-less API for creation?
-std::unique_ptr<Extender> create_extender(const int32_t* h_sub_mat, const int32_t sub_mat_dim, const int32_t xdrop_threshold, const bool no_entropy, cudaStream_t stream, const int32_t device_id, DefaultDeviceAllocator allocator, const ExtensionType type)
+std::unique_ptr<Extender> create_extender(const int32_t* h_score_mat, const int32_t score_mat_dim, const int32_t xdrop_threshold, const bool no_entropy, cudaStream_t stream, const int32_t device_id, DefaultDeviceAllocator allocator, const ExtensionType type)
 {
     if (type == ExtensionType::ungapped_xdrop)
     {
-        return std::make_unique<UngappedXDrop>(h_sub_mat, sub_mat_dim, xdrop_threshold, no_entropy, stream, device_id, allocator);
+        return std::make_unique<UngappedXDrop>(h_score_mat, score_mat_dim, xdrop_threshold, no_entropy, stream, device_id, allocator);
     }
     else
     {

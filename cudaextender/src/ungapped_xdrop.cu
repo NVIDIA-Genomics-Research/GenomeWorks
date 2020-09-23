@@ -36,9 +36,9 @@ namespace cudaextender
 
 using namespace cudautils;
 
-UngappedXDrop::UngappedXDrop(const int32_t* h_sub_mat, const int32_t sub_mat_dim, const int32_t xdrop_threshold, const bool no_entropy, cudaStream_t stream, const int32_t device_id, DefaultDeviceAllocator allocator)
-    : h_sub_mat_(h_sub_mat)
-    , sub_mat_dim_(sub_mat_dim)
+UngappedXDrop::UngappedXDrop(const int32_t* h_score_mat, const int32_t score_mat_dim, const int32_t xdrop_threshold, const bool no_entropy, cudaStream_t stream, const int32_t device_id, DefaultDeviceAllocator allocator)
+    : h_score_mat_(h_score_mat)
+    , score_mat_dim_(score_mat_dim)
     , xdrop_threshold_(xdrop_threshold)
     , no_entropy_(no_entropy)
     , stream_(stream)
@@ -46,7 +46,7 @@ UngappedXDrop::UngappedXDrop(const int32_t* h_sub_mat, const int32_t sub_mat_dim
     , host_ptr_api_mode_(false)
     , allocator_(allocator)
 {
-    if (h_sub_mat_ == nullptr)
+    if (h_score_mat_ == nullptr)
     {
         throw std::runtime_error("Substitution matrix cannot be null");
     }
@@ -69,13 +69,13 @@ UngappedXDrop::UngappedXDrop(const int32_t* h_sub_mat, const int32_t sub_mat_dim
     cub_storage_bytes = std::max(temp_storage_bytes, cub_storage_bytes);
 
     // Allocate space on device for scoring matrix and intermediate results
-    d_sub_mat_          = device_buffer<int32_t>(sub_mat_dim_, allocator_, stream_);
+    d_score_mat_        = device_buffer<int32_t>(score_mat_dim_, allocator_, stream_);
     d_done_             = device_buffer<int32_t>(batch_max_ungapped_extensions_, allocator_, stream_);
     d_tmp_ssp_          = device_buffer<ScoredSegmentPair>(batch_max_ungapped_extensions_, allocator_, stream_);
     d_temp_storage_cub_ = device_buffer<char>(cub_storage_bytes, allocator_, stream_);
 
     // Requires pinned host memory registration for proper async behavior
-    device_copy_n(h_sub_mat_, sub_mat_dim_, d_sub_mat_.data(), stream_);
+    device_copy_n(h_score_mat_, score_mat_dim_, d_score_mat_.data(), stream_);
 }
 
 StatusType UngappedXDrop::extend_async(const char* d_query, int32_t query_length,
@@ -108,7 +108,7 @@ StatusType UngappedXDrop::extend_async(const char* d_query, int32_t query_length
                                                                    target_length,
                                                                    d_query,
                                                                    query_length,
-                                                                   d_sub_mat_.data(),
+                                                                   d_score_mat_.data(),
                                                                    no_entropy_,
                                                                    xdrop_threshold_,
                                                                    score_threshold,

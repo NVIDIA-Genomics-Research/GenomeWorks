@@ -31,7 +31,7 @@ namespace cudaextender
 class UngappedXDrop : public Extender
 {
 public:
-    UngappedXDrop(const int32_t* h_sub_mat, const int32_t sub_mat_dim, const int32_t xdrop_threshold, const bool no_entropy, cudaStream_t stream, const int32_t device_id, DefaultDeviceAllocator allocator);
+    UngappedXDrop(const int32_t* h_score_mat, const int32_t score_mat_dim, const int32_t xdrop_threshold, const bool no_entropy, cudaStream_t stream, const int32_t device_id, DefaultDeviceAllocator allocator);
     ~UngappedXDrop() override;
 
     StatusType extend_async(const char* h_query, const int32_t& query_length,
@@ -54,15 +54,15 @@ public:
 private:
     DefaultDeviceAllocator allocator_;
     // Device ptr API required variables
-    const int32_t* h_sub_mat_;
-    const int32_t sub_mat_dim_; // Assume matrix is square
+    const int32_t* h_score_mat_;
+    const int32_t score_mat_dim_; // Assume matrix is square
     const int32_t xdrop_threshold_;
     const bool no_entropy_;
     cudaStream_t stream_;
     const int32_t device_id_;
     std::vector<ScoredSegmentPair> scored_segment_pairs_;
     int32_t batch_max_ungapped_extensions_;      // TODO - Make const
-    device_buffer<int32_t> d_sub_mat_;           // Pointer to device substitution matrix
+    device_buffer<int32_t> d_score_mat_;         // Pointer to device substitution matrix
     device_buffer<int32_t> d_done_;              // TODO- Rename scratch space
     device_buffer<ScoredSegmentPair> d_tmp_ssp_; // TODO- Rename Scratch space 2
     int32_t total_scored_segment_pairs_;

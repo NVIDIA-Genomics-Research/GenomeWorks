@@ -30,7 +30,7 @@ namespace cudaextender
 
 // extend the hits to a segment by ungapped x-drop method, adjust low-scoring
 // segment scores based on entropy factor, compare resulting segment scores
-// to hspthresh and update the d_hsp and d_done vectors
+// to score_threshold and update the d_scored_segment_pairs and d_done vectors
 __global__ void find_high_scoring_segment_pairs(const char* __restrict__ d_target,
                                                 const int32_t target_length,
                                                 const char* __restrict__ d_query,
@@ -45,15 +45,15 @@ __global__ void find_high_scoring_segment_pairs(const char* __restrict__ d_targe
                                                 ScoredSegmentPair* d_scored_segment_pairs,
                                                 int32_t* d_done);
 
-// gather only the HSPs from the resulting segments to the beginning of the
-// tmp_hsp vector
+// Gathers the SSPs from the resulting segments to the beginning of the
+// tmp_ssp vector
 __global__ void compress_output(const int32_t* d_done,
                                 const int32_t start_index,
                                 const ScoredSegmentPair* d_ssp,
                                 ScoredSegmentPair* d_tmp_ssp,
                                 int num_hits);
 
-// Binary Predicate for sorting the ScoredSegmentPairs
+// Binary predicate for sorting the ScoredSegmentPairs
 struct scored_segment_pair_comp
 {
     __host__ __device__ bool operator()(const ScoredSegmentPair& x, const ScoredSegmentPair& y)

@@ -135,8 +135,8 @@ public:
 
 /// \brief Create Extender object
 ///
-/// \param h_sub_mat Host pointer to square scoring/substitution matrix for use during extension
-/// \param sub_mat_dim Length of the square matrix
+/// \param h_score_mat Host pointer to scoring matrix for use during extension
+/// \param score_mat_dim Dimension of the scoring matrix
 /// \param xdrop_threshold Threshold for performing X-Drop
 /// \param no_entropy Flag indicating whether to use entropy during extension
 /// \param stream CUDA Stream to be used with extension
@@ -144,7 +144,7 @@ public:
 /// \param allocator DeviceAllocator to be used for allocating/freeing memory
 /// \param type Type of extension to be performed
 /// \return Unique pointer to Extender object.
-std::unique_ptr<Extender> create_extender(const int32_t* h_sub_mat, const int32_t sub_mat_dim, const int32_t xdrop_threshold, const bool no_entropy, cudaStream_t stream, const int32_t device_id, DefaultDeviceAllocator allocator, const ExtensionType type = ExtensionType::ungapped_xdrop);
+std::unique_ptr<Extender> create_extender(const int32_t* h_score_mat, const int32_t score_mat_dim, const int32_t xdrop_threshold, const bool no_entropy, cudaStream_t stream, const int32_t device_id, DefaultDeviceAllocator allocator, const ExtensionType type = ExtensionType::ungapped_xdrop);
 /// \}
 } // namespace cudaextender
 } // namespace genomeworks
