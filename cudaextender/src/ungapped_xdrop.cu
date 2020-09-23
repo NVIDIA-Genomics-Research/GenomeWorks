@@ -161,7 +161,7 @@ StatusType UngappedXDrop::extend_async(const char* h_query, const int32_t& query
     // Allocate space for SeedPair input
     d_seed_pairs_ = device_buffer<SeedPair>(h_seed_pairs.size(), allocator_, stream_);
     // Allocate space for ScoredSegmentPair output
-    d_ssp_ = device_buffer<ScoredSegmentPair>(h_seed_pairs.size(), allocator_, stream_);
+    d_ssp_     = device_buffer<ScoredSegmentPair>(h_seed_pairs.size(), allocator_, stream_);
     d_num_ssp_ = device_buffer<int32_t>(1, allocator_, stream_);
 
     // Async memcopy all the input values to device

@@ -147,12 +147,12 @@ int main(int argc, char* argv[])
     }
 
     // Fasta query and target files
-    const std::string target_file_path                         = std::string(CUDAEXTENDER_DATA_DIR) + "/sample.fa";
+    const std::string target_file_path                   = std::string(CUDAEXTENDER_DATA_DIR) + "/sample.fa";
     std::unique_ptr<io::FastaParser> fasta_parser_target = io::create_kseq_fasta_parser(target_file_path, 0, false);
     // Assumes that only one sequence is present per file
     const std::string target_sequence = fasta_parser_target->get_sequence_by_id(0).seq;
 
-    const std::string query_file_path                         = std::string(CUDAEXTENDER_DATA_DIR) + "/sample.fa";
+    const std::string query_file_path                   = std::string(CUDAEXTENDER_DATA_DIR) + "/sample.fa";
     std::unique_ptr<io::FastaParser> fasta_parser_query = io::create_kseq_fasta_parser(query_file_path, 0, false);
     // Assumes that only one sequence is present per file
     const std::string query_sequence = fasta_parser_query->get_sequence_by_id(0).seq;
