@@ -24,9 +24,9 @@ namespace genomeworks
 namespace cudaextender
 {
 
-// extend the hits to a segment by ungapped x-drop method, adjust low-scoring
+// extend the seed values to a segment by ungapped x-drop method, adjust low-scoring
 // segment scores based on entropy factor, compare resulting segment scores
-// to score_threshold and update the d_hsp and d_done vectors
+// to score_threshold and update the d_scored_segment_pairs and d_done vectors
 __global__ void find_high_scoring_segment_pairs(const char* __restrict__ d_target,
                                                 const int32_t target_length,
                                                 const char* __restrict__ d_query,
@@ -429,8 +429,7 @@ __global__ void find_high_scoring_segment_pairs(const char* __restrict__ d_targe
     }
 }
 
-// gather only the HSPs from the resulting segments to the beginning of the
-// tmp_hsp vector
+// Gather the SSPs from the resulting segments to the beginning of the tmp_ssp array
 __global__ void compress_output(const int32_t* d_done, const int32_t start_index, const ScoredSegmentPair* d_ssp, ScoredSegmentPair* d_tmp_ssp, const int32_t num_seed_pairs)
 {
     const int32_t stride = blockDim.x * gridDim.x;
