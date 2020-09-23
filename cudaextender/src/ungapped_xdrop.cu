@@ -25,9 +25,6 @@
 #include <cub/device/device_select.cuh>
 #include <cub/device/device_scan.cuh>
 
-// Temporary timing code
-#include <chrono>
-
 namespace claraparabricks
 {
 
@@ -49,9 +46,12 @@ UngappedXDrop::UngappedXDrop(const int32_t* h_sub_mat, const int32_t sub_mat_dim
     , host_ptr_api_mode_(false)
     , allocator_(allocator)
 {
-    //TODO - Check bounds
-    // Calculate the max limits on the number of extensions we can do on
-    // this GPU
+    if(h_sub_mat_ == nullptr)
+    {
+        throw std::runtime_error("Substitution matrix cannot be null");
+    }
+    // TODO - check sub_mat_dim based on Sequence Encoder API
+    // Calculate the max limits on the number of extensions we can do on this GPU
     cudaDeviceProp device_prop;
     cudaGetDeviceProperties(&device_prop, device_id_);
     const int32_t max_ungapped_per_gb = 4194304; // FIXME: Calculate using sizeof datastructures
@@ -84,11 +84,17 @@ StatusType UngappedXDrop::extend_async(const char* d_query, int32_t query_length
                                        int32_t num_seed_pairs, ScoredSegmentPair* d_scored_segment_pairs,
                                        int32_t* d_num_scored_segment_pairs)
 {
-    //TODO - Check bounds
-
-    auto t1 = std::chrono::high_resolution_clock::now();
+    if(d_query == nullptr || d_target == nullptr || d_seed_pairs == nullptr)
+    {
+        GW_LOG_ERROR("Invalid input pointers");
+        return StatusType::invalid_input;
+    }
+    if(d_scored_segment_pairs == nullptr || d_num_scored_segment_pairs == nullptr)
+    {
+        GW_LOG_ERROR("Invalid output pointers");
+        return StatusType::invalid_input;
+    }
     // Switch to configured GPU
-    // If host pointer API mode was used before this mode, reset data structures
     scoped_device_switch dev(device_id_);
     total_scored_segment_pairs_ = 0;
     for (int32_t seed_pair_start = 0; seed_pair_start < num_seed_pairs; seed_pair_start += batch_max_ungapped_extensions_)
@@ -136,14 +142,10 @@ StatusType UngappedXDrop::extend_async(const char* d_query, int32_t query_length
             total_scored_segment_pairs_ += get_value_from_device(d_num_scored_segment_pairs, stream_);
         }
     }
-    auto t2 = std::chrono::high_resolution_clock::now();
-
-    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
-
-    std::cout << "Time: " << duration << std::endl;
 
     set_device_value_async(d_num_scored_segment_pairs, &total_scored_segment_pairs_, stream_);
-    return success;
+
+    return StatusType::success;
 }
 
 StatusType UngappedXDrop::extend_async(const char* h_query, const int32_t& query_length,
@@ -188,11 +190,11 @@ StatusType UngappedXDrop::sync()
             device_copy_n(d_ssp_.data(), h_num_ssp, h_ssp_.data(), stream_);
             cudaStreamSynchronize(stream_);
         }
-        return success;
+        return StatusType::success;
     }
 
     // If this function was called without using the host_ptr_api, throw error
-    return error_invalid_operation;
+    return StatusType::invalid_operation;
 }
 
 const std::vector<ScoredSegmentPair>& UngappedXDrop::get_scored_segment_pairs() const

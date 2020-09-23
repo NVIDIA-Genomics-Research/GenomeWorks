@@ -31,8 +31,9 @@ namespace cudaextender
 /// CUDA Extender status type
 enum StatusType
 {
-    success                 = 0,
-    error_invalid_operation = 1,
+    success           = 0,
+    invalid_operation = 1,
+    invalid_input     = 2,
     generic_error
 };
 
