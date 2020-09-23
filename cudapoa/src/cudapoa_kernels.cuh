@@ -143,8 +143,7 @@ __launch_bounds__(GW_POA_KERNELS_MAX_THREADS_PER_BLOCK)
     if (BM == BandMode::adaptive_band || BM == BandMode::static_band)
     {
         // buffer size for scores, in banded we only need to store part of the scores matrix
-        //        banded_buffer_size = static_cast<float>(max_pred_distance) * static_cast<float>(scores_matrix_width);
-        banded_buffer_size = static_cast<float>(max_nodes_per_graph) * static_cast<float>(scores_matrix_width);
+        banded_buffer_size = static_cast<float>(max_pred_distance) * static_cast<float>(scores_matrix_width);
         int64_t offset     = static_cast<int64_t>(banded_buffer_size) * static_cast<int64_t>(window_idx);
         scores             = &scores_d[offset];
         // buffer size for backtrace
