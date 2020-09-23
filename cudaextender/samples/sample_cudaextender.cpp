@@ -95,7 +95,7 @@ int main(int argc, char* argv[])
     // Following function loops through all seed_pairs in the sample_seed_pairs.csv and returns
     // results in the passed vector
     parse_seed_pairs(seed_pairs_file_path, h_seed_pairs);
-    std::cerr << "Number of seed pairs: " << h_seed_pairs.size() << std::endl;
+    std::cerr << "Number of Seed Pairs: " << h_seed_pairs.size() << std::endl;
 
     // Define Scoring Matrix
     const int32_t score_matrix[NUC2] = {91, -114, -31, -123, -1000, -1000, -100, -9100,
@@ -120,10 +120,22 @@ int main(int argc, char* argv[])
     DefaultDeviceAllocator allocator = create_default_device_allocator(max_gpu_memory);
     // Reference for output
     std::vector<ScoredSegmentPair> h_ssp;
+    // Create Ungapped Extender Object for both API modes
+    std::unique_ptr<Extender> ungapped_extender = create_extender(score_matrix,
+                                                                  NUC2,
+                                                                  xdrop_threshold,
+                                                                  input_no_entropy,
+                                                                  stream0.get(),
+                                                                  0,
+                                                                  allocator);
     if (!device_ptr_api_mode)
     {
-        std::unique_ptr<Extender> ungapped_extender = create_extender(score_matrix, NUC2, xdrop_threshold, input_no_entropy, stream0.get(), 0, allocator);
-        ungapped_extender->extend_async(h_encoded_query.data(), h_encoded_query.size(), h_encoded_target.data(), h_encoded_target.size(), score_threshold, h_seed_pairs);
+        ungapped_extender->extend_async(h_encoded_query.data(),
+                                        h_encoded_query.size(),
+                                        h_encoded_target.data(),
+                                        h_encoded_target.size(),
+                                        score_threshold,
+                                        h_seed_pairs);
         ungapped_extender->sync();
         h_ssp = ungapped_extender->get_scored_segment_pairs();
     }
@@ -145,11 +157,8 @@ int main(int argc, char* argv[])
         device_copy_n(h_encoded_target.data(), target_sequence.length(), d_target.data(), stream0.get());
         device_copy_n(h_seed_pairs.data(), h_seed_pairs.size(), d_seed_pairs.data(), stream0.get());
 
-        // Create an ungapped extender object
-        std::unique_ptr<Extender> ungapped_extender = create_extender(score_matrix, NUC2, xdrop_threshold, input_no_entropy, stream0.get(), 0, allocator);
-
-        // Launch the ungapped extender device function
-        ungapped_extender->extend_async(d_query.data(), // Type TBD based on encoding
+        // Launch the ungapped extender device pointer function
+        ungapped_extender->extend_async(d_query.data(),
                                         d_query.size(),
                                         d_target.data(),
                                         d_target.size(),
@@ -166,9 +175,8 @@ int main(int argc, char* argv[])
         // Copy data synchronously
         device_copy_n(d_ssp.data(), h_num_ssp, h_ssp.data());
     }
-    std::cerr << "Number of ScoredSegmentPairs found: " << h_ssp.size() << std::endl;
+    std::cerr << "Number of Scored Segment Pairs found: " << h_ssp.size() << std::endl;
     if (print)
         print_scored_segment_pairs(h_ssp);
-
     return 0;
 }
