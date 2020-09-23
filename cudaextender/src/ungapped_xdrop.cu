@@ -188,7 +188,7 @@ StatusType UngappedXDrop::sync()
         {
             h_ssp_.resize(h_num_ssp);
             device_copy_n(d_ssp_.data(), h_num_ssp, h_ssp_.data(), stream_);
-            cudaStreamSynchronize(stream_);
+            GW_CU_CHECK_ERR(cudaStreamSynchronize(stream_));
         }
         return StatusType::success;
     }
