@@ -29,6 +29,7 @@ namespace genomeworks
 namespace cudaextender
 {
 
+/// Seed positions in target and query reads
 struct SeedPair
 {
     /// position of first sketch element in query_read_id_
@@ -37,15 +38,16 @@ struct SeedPair
     position_in_read_t target_position_in_read;
 };
 
+/// Segment pairs in target & query reads with associated length & score
 struct ScoredSegmentPair
 {
-    /// Seed for the segment
+    /// seed for the segment
     SeedPair seed_pair;
     /// length of the segment
     int32_t length;
     /// score of the segment
     int32_t score;
-
+    /// equality operator
     __host__ __device__ bool operator==(const ScoredSegmentPair& other) const
     {
         return ((seed_pair.target_position_in_read == other.seed_pair.target_position_in_read) && (seed_pair.query_position_in_read == other.seed_pair.query_position_in_read) && (length == other.length) && (score == other.score));
@@ -70,7 +72,7 @@ public:
                                     const int32_t& score_threshold,
                                     const std::vector<SeedPair>& h_seed_pairs) = 0;
 
-    /// \brief Device pointer prototype for  extension
+    /// \brief Device pointer prototype for extension
     ///
     /// Memcopies to device memory are assumed to be done before this
     /// function. Output array d_scored_segment_pairs must be pre-allocated on device.
@@ -88,9 +90,9 @@ public:
     /// on the GPU to come to completion.
     virtual StatusType sync() = 0;
 
-    /// \brief Return the computed segments
+    /// \brief Return the computed segment pairs
     ///
-    /// \return Vector of Scored Segments
+    /// \return Vector of Scored Segment Pairs
     virtual const std::vector<ScoredSegmentPair>& get_scored_segment_pairs() const = 0;
 
     /// \brief Reset Extender object and free device/host memory
