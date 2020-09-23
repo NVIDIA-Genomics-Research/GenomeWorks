@@ -102,14 +102,7 @@ public:
         parse_scored_segment_pairs(param_.golden_scored_segment_pairs_file, golden_scored_segment_pairs);
         ungapped_extender_->sync();
         std::vector<ScoredSegmentPair> scored_segment_pairs = ungapped_extender_->get_scored_segment_pairs();
-        ASSERT_EQ(golden_scored_segment_pairs.size(), scored_segment_pairs.size());
-        for(int32_t i=0; i<golden_scored_segment_pairs.size(); i++)
-        {
-            ASSERT_EQ(golden_scored_segment_pairs[i].seed_pair.query_position_in_read, scored_segment_pairs[i].seed_pair.query_position_in_read);
-            ASSERT_EQ(golden_scored_segment_pairs[i].seed_pair.target_position_in_read, scored_segment_pairs[i].seed_pair.target_position_in_read);
-            ASSERT_EQ(golden_scored_segment_pairs[i].score, scored_segment_pairs[i].score);
-            ASSERT_EQ(golden_scored_segment_pairs[i].length, scored_segment_pairs[i].length);
-        }
+        ASSERT_EQ(golden_scored_segment_pairs, scored_segment_pairs);
     }
 
 private:
