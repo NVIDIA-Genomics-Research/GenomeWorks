@@ -454,31 +454,25 @@ __device__ __forceinline__
                     last_score = first_element_prev_score;
                 }
 
-                int32_t tscore = max(last_score + gap_score, score.s0);
-                if (tscore > score.s0)
+                if (score.s0 < last_score + gap_score)
                 {
-                    score.s0 = tscore;
+                    score.s0 = last_score + gap_score;
                     trace.t0 = 0;
-                    loop     = true;
                 }
 
-                tscore = max(score.s0 + gap_score, score.s1);
-                if (tscore > score.s1)
+                if (score.s1 < score.s0 + gap_score)
                 {
-                    score.s1 = tscore;
+                    score.s1 = score.s0 + gap_score;
                     trace.t1 = 0;
-                    loop     = true;
                 }
 
-                tscore = max(score.s1 + gap_score, score.s2);
-                if (tscore > score.s2)
+                if (score.s2 < score.s1 + gap_score)
                 {
-                    score.s2 = tscore;
+                    score.s2 = score.s1 + gap_score;
                     trace.t2 = 0;
-                    loop     = true;
                 }
 
-                tscore = max(score.s2 + gap_score, score.s3);
+                int32_t tscore = max(score.s2 + gap_score, score.s3);
                 if (tscore > score.s3)
                 {
                     score.s3 = tscore;
