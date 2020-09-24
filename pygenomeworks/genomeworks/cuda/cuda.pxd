@@ -14,13 +14,16 @@
 # limitations under the License.
 #
 
+# cython: profile=False
+# distutils: language = c++
+# cython: embedsignature = True
+# cython: language_level = 3
 
+# This file declares public cython utility objects for CUDA.
 
-Cython==0.29.12
-intervaltree==3.1.0
-networkx==2.4
-numpy==1.16.3
-pytest==4.4.1
-setuptools>=41.4.0
-sortedcollections==1.1.2
-tqdm==4.31.1
+cdef class CudaStream:
+    # Using size_t to store stream since underlying
+    # representation of cudaStream_t is a (void *)
+    # and python doesn't know how to deal with converting
+    # (void *) to python objects.
+    cdef size_t stream
