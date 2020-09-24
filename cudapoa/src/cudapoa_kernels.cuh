@@ -20,6 +20,7 @@
 #include "cudapoa_nw.cuh"
 #include "cudapoa_nw_banded.cuh"
 #include "cudapoa_nw_adaptive_banded.cuh"
+#include "cudapoa_nw_tb_banded.cuh"
 #include "cudapoa_topsort.cuh"
 #include "cudapoa_add_alignment.cuh"
 #include "cudapoa_generate_consensus.cuh"
@@ -305,24 +306,24 @@ __launch_bounds__(GW_POA_KERNELS_MAX_THREADS_PER_BLOCK)
         }
         else if (BM == BandMode::static_band)
         {
-            alignment_length = runNeedlemanWunschBanded<uint8_t, ScoreT, SizeT, TraceT>(nodes,
-                                                                                        sorted_poa,
-                                                                                        node_id_to_pos,
-                                                                                        sequence_lengths[0],
-                                                                                        incoming_edge_count,
-                                                                                        incoming_edges,
-                                                                                        outgoing_edge_count,
-                                                                                        sequence,
-                                                                                        seq_len,
-                                                                                        scores,
-                                                                                        backtrace,
-                                                                                        alignment_graph,
-                                                                                        alignment_read,
-                                                                                        static_band_width,
-                                                                                        max_pred_distance,
-                                                                                        gap_score,
-                                                                                        mismatch_score,
-                                                                                        match_score);
+            alignment_length = runNeedlemanWunschBandedTraceBack<uint8_t, ScoreT, SizeT, TraceT>(nodes,
+                                                                                                 sorted_poa,
+                                                                                                 node_id_to_pos,
+                                                                                                 sequence_lengths[0],
+                                                                                                 incoming_edge_count,
+                                                                                                 incoming_edges,
+                                                                                                 outgoing_edge_count,
+                                                                                                 sequence,
+                                                                                                 seq_len,
+                                                                                                 scores,
+                                                                                                 backtrace,
+                                                                                                 alignment_graph,
+                                                                                                 alignment_read,
+                                                                                                 static_band_width,
+                                                                                                 max_pred_distance,
+                                                                                                 gap_score,
+                                                                                                 mismatch_score,
+                                                                                                 match_score);
             __syncwarp();
         }
         else // BM == BandMode::full_band
