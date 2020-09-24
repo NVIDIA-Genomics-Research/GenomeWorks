@@ -45,15 +45,20 @@ enum StatusType
 };
 
 /// Banding mode used in Needleman-Wunch algorithm
-/// full_band performs computations on full scores matrix, highest accuracy
-/// static_band performs computations on a fixed band along scores matrix diagonal, fastest implementation
-/// adaptive_band, similar to static_band performs computations on a band along diagonal, but the band-width
+/// - full_band performs computations on full scores matrix, highest accuracy
+/// - static_band performs computations on a fixed band along scores matrix diagonal, fastest implementation
+/// - adaptive_band, similar to static_band performs computations on a band along diagonal, but the band-width
 /// can vary per alignment's score matrix, faster than full_band and more accurate than static_band
+/// - static_band_traceback computations are on a fixed band, score matrix is stored partially, instead traceback
+/// information is stored in a buffer and used in backtracking. This can be useful for long-read data GPU memory is
+/// limiting GPU parallelism. Traceback matrix requires 2x to 4x smaller memory compared to score matrix
+
 enum BandMode
 {
     full_band = 0,
     static_band,
-    adaptive_band
+    adaptive_band,
+    static_band_traceback
 };
 
 /// Initialize CUDA POA context.

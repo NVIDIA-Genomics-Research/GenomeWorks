@@ -73,8 +73,6 @@ public:
         , gap_score_(gap_score)
         , mismatch_score_(mismatch_score)
         , match_score_(match_score)
-        , banded_alignment_(batch_size.band_mode == BandMode::static_band)
-        , adaptive_banded_(batch_size.band_mode == BandMode::adaptive_band)
         , batch_block_(new BatchBlock<ScoreT, SizeT, TraceT>(device_id,
                                                              max_gpu_mem,
                                                              output_mask,
@@ -187,8 +185,6 @@ public:
                                            gap_score_,
                                            mismatch_score_,
                                            match_score_,
-                                           banded_alignment_,
-                                           adaptive_banded_,
                                            max_sequences_per_poa_,
                                            output_mask_,
                                            batch_size_);
@@ -553,7 +549,7 @@ protected:
     bool reserve_buf(int32_t max_seq_length)
     {
         int32_t matrix_height = batch_size_.max_nodes_per_graph;
-        int32_t matrix_width  = (banded_alignment_ || adaptive_banded_) ? batch_size_.matrix_sequence_dimension : cudautils::align<int32_t, 4>(max_seq_length + 1 + CELLS_PER_THREAD);
+        int32_t matrix_width  = (batch_size_.band_mode != BandMode::full_band) ? batch_size_.matrix_sequence_dimension : cudautils::align<int32_t, 4>(max_seq_length + 1 + CELLS_PER_THREAD);
         // in full-band, avail_buf_mem_ is dedicated to scores matrix and in static or adaptive band modes, avail_buf_mem_ is dedicated to traceback matrix
         size_t required_size = static_cast<size_t>(matrix_width) * static_cast<size_t>(matrix_height);
         required_size *= batch_size_.band_mode == BandMode::full_band ? sizeof(ScoreT) : sizeof(TraceT);
@@ -628,10 +624,6 @@ protected:
 
     // Temporary variable to compute the offset to scorebuf.
     size_t next_scores_offset_ = 0;
-
-    // Use banded POA alignment
-    bool banded_alignment_;
-    bool adaptive_banded_;
 
     // flag that enables some extra buffers to accommodate fully adaptive bands with variable width and arbitrary location
     // disabled for current implementation, can be enabled for possible future variants of adaptive alignment algorithm

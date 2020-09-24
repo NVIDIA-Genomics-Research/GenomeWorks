@@ -443,8 +443,6 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
                  int32_t gap_score,
                  int32_t mismatch_score,
                  int32_t match_score,
-                 bool static_banded,
-                 bool adaptive_banded,
                  uint32_t max_sequences_per_poa,
                  int8_t output_mask,
                  const BatchConfig& batch_size)
@@ -490,8 +488,8 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
     SizeT* node_id_to_msa_pos               = graph_details_d->node_id_to_msa_pos;
 
     int32_t nwindows_per_block   = CUDAPOA_THREADS_PER_BLOCK / WARP_SIZE;
-    int32_t nblocks              = (static_banded || adaptive_banded) ? total_windows : (total_windows + nwindows_per_block - 1) / nwindows_per_block;
-    int32_t TPB                  = (static_banded || adaptive_banded) ? CUDAPOA_BANDED_THREADS_PER_BLOCK : CUDAPOA_THREADS_PER_BLOCK;
+    int32_t nblocks              = (batch_size.band_mode != BandMode::full_band) ? total_windows : (total_windows + nwindows_per_block - 1) / nwindows_per_block;
+    int32_t TPB                  = (batch_size.band_mode != BandMode::full_band) ? CUDAPOA_BANDED_THREADS_PER_BLOCK : CUDAPOA_THREADS_PER_BLOCK;
     int32_t max_nodes_per_graph  = batch_size.max_nodes_per_graph;
     int32_t matrix_seq_dimension = batch_size.matrix_sequence_dimension;
     bool msa                     = output_mask & OutputType::msa;
@@ -502,7 +500,7 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
 
     if (msa)
     {
-        if (static_banded)
+        if (batch_size.band_mode == BandMode::static_band)
         {
             generatePOAKernel<ScoreT, SizeT, TraceT, true, BandMode::static_band>
                 <<<nblocks, TPB, 0, stream>>>(consensus_d,
@@ -544,7 +542,7 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
                                               batch_size.max_pred_distance_in_banded_mode,
                                               traceback);
         }
-        else if (adaptive_banded)
+        else if (batch_size.band_mode == BandMode::adaptive_band)
         {
             generatePOAKernel<ScoreT, SizeT, TraceT, true, BandMode::adaptive_band>
                 <<<nblocks, TPB, 0, stream>>>(consensus_d,
@@ -628,7 +626,7 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
     }
     else
     {
-        if (static_banded)
+        if (batch_size.band_mode == BandMode::static_band)
         {
             generatePOAKernel<ScoreT, SizeT, TraceT, false, BandMode::static_band>
                 <<<nblocks, TPB, 0, stream>>>(consensus_d,
@@ -670,7 +668,7 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
                                               batch_size.max_pred_distance_in_banded_mode,
                                               traceback);
         }
-        else if (adaptive_banded)
+        else if (batch_size.band_mode == BandMode::adaptive_band)
         {
             generatePOAKernel<ScoreT, SizeT, TraceT, false, BandMode::adaptive_band>
                 <<<nblocks, TPB, 0, stream>>>(consensus_d,
