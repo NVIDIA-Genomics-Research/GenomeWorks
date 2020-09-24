@@ -43,19 +43,18 @@ BatchConfig::BatchConfig(int32_t max_seq_sz /*= 1024*/, int32_t max_seq_per_poa 
     , band_mode(banding)
     , max_pred_distance_in_banded_mode(max_pred_dist > 0 ? max_pred_dist : 2 * cudautils::align<int32_t, CUDAPOA_MIN_BAND_WIDTH>(band_width))
 {
+    max_nodes_per_graph = cudautils::align<int32_t, CELLS_PER_THREAD>(graph_length_factor * max_sequence_size);
+
     if (banding == BandMode::full_band)
     {
-        max_nodes_per_graph       = cudautils::align<int32_t, CELLS_PER_THREAD>(graph_length_factor * max_sequence_size);
         matrix_sequence_dimension = cudautils::align<int32_t, CELLS_PER_THREAD>(max_sequence_size);
     }
-    else if (banding == BandMode::static_band)
+    else if (banding == BandMode::static_band || banding == BandMode::static_band_traceback)
     {
-        max_nodes_per_graph       = cudautils::align<int32_t, CELLS_PER_THREAD>(graph_length_factor * max_sequence_size);
         matrix_sequence_dimension = cudautils::align<int32_t, CELLS_PER_THREAD>(alignment_band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING);
     }
     else // BandMode::adaptive_band
     {
-        max_nodes_per_graph = cudautils::align<int32_t, CELLS_PER_THREAD>(graph_length_factor * max_sequence_size);
         // adapive_storage_factor is to reserve extra memory for cases with extended band-width
         matrix_sequence_dimension = cudautils::align<int32_t, CELLS_PER_THREAD>(adapive_storage_factor * (alignment_band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING));
     }

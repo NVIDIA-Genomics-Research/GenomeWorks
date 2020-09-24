@@ -143,6 +143,12 @@ __launch_bounds__(GW_POA_KERNELS_MAX_THREADS_PER_BLOCK)
     float banded_buffer_size; // using float instead of int64_t to minimize register
     if (BM == BandMode::adaptive_band || BM == BandMode::static_band)
     {
+        banded_buffer_size    = static_cast<float>(max_nodes_per_graph) * static_cast<float>(scores_matrix_width);
+        int64_t scores_offset = static_cast<int64_t>(banded_buffer_size) * static_cast<int64_t>(window_idx);
+        scores                = &scores_d[scores_offset];
+    }
+    else if (BM == BandMode::static_band_traceback)
+    {
         // buffer size for scores, in banded we only need to store part of the scores matrix
         banded_buffer_size = static_cast<float>(max_pred_distance) * static_cast<float>(scores_matrix_width);
         int64_t offset     = static_cast<int64_t>(banded_buffer_size) * static_cast<int64_t>(window_idx);
@@ -229,7 +235,7 @@ __launch_bounds__(GW_POA_KERNELS_MAX_THREADS_PER_BLOCK)
 
     __syncwarp();
 
-    // Align each subsequent read, add alignment to graph, run topoligical sort.
+    // Align each subsequent read, add alignment to graph, run topological sort.
     for (int32_t s = 1; s < num_sequences; s++)
     {
         int32_t seq_len = sequence_lengths[s];
@@ -303,6 +309,26 @@ __launch_bounds__(GW_POA_KERNELS_MAX_THREADS_PER_BLOCK)
             }
         }
         else if (BM == BandMode::static_band)
+        {
+            alignment_length = runNeedlemanWunschBanded<uint8_t, ScoreT, SizeT>(nodes,
+                                                                                sorted_poa,
+                                                                                node_id_to_pos,
+                                                                                sequence_lengths[0],
+                                                                                incoming_edge_count,
+                                                                                incoming_edges,
+                                                                                outgoing_edge_count,
+                                                                                sequence,
+                                                                                seq_len,
+                                                                                scores,
+                                                                                alignment_graph,
+                                                                                alignment_read,
+                                                                                static_band_width,
+                                                                                gap_score,
+                                                                                mismatch_score,
+                                                                                match_score);
+            __syncwarp();
+        }
+        else if (BM == BandMode::static_band_traceback)
         {
             alignment_length = runNeedlemanWunschBandedTraceBack<uint8_t, ScoreT, SizeT, TraceT>(nodes,
                                                                                                  sorted_poa,
@@ -539,12 +565,52 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
                                               batch_size.max_consensus_size,
                                               TPB,
                                               batch_size.alignment_band_width,
-                                              batch_size.max_pred_distance_in_banded_mode,
-                                              traceback);
+                                              batch_size.max_pred_distance_in_banded_mode);
         }
         else if (batch_size.band_mode == BandMode::adaptive_band)
         {
             generatePOAKernel<ScoreT, SizeT, TraceT, true, BandMode::adaptive_band>
+                <<<nblocks, TPB, 0, stream>>>(consensus_d,
+                                              sequences_d,
+                                              base_weights_d,
+                                              sequence_lengths_d,
+                                              window_details_d,
+                                              total_windows,
+                                              scores,
+                                              alignment_graph,
+                                              alignment_read,
+                                              nodes,
+                                              incoming_edges,
+                                              incoming_edge_count,
+                                              outgoing_edges,
+                                              outgoing_edge_count,
+                                              incoming_edge_w,
+                                              sorted_poa,
+                                              node_id_to_pos,
+                                              node_alignments,
+                                              node_alignment_count,
+                                              sorted_poa_local_edge_count,
+                                              node_marks,
+                                              check_aligned_nodes,
+                                              nodes_to_visit,
+                                              node_coverage_counts,
+                                              gap_score,
+                                              mismatch_score,
+                                              match_score,
+                                              max_sequences_per_poa,
+                                              sequence_begin_nodes_ids,
+                                              outgoing_edges_coverage,
+                                              outgoing_edges_coverage_count,
+                                              max_nodes_per_graph,
+                                              matrix_seq_dimension,
+                                              batch_size.max_consensus_size,
+                                              TPB,
+                                              batch_size.alignment_band_width,
+                                              batch_size.max_pred_distance_in_banded_mode);
+        }
+        else if (batch_size.band_mode == BandMode::static_band_traceback)
+        {
+            generatePOAKernel<ScoreT, SizeT, TraceT, true, BandMode::static_band_traceback>
                 <<<nblocks, TPB, 0, stream>>>(consensus_d,
                                               sequences_d,
                                               base_weights_d,
@@ -665,12 +731,52 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
                                               batch_size.max_consensus_size,
                                               TPB,
                                               batch_size.alignment_band_width,
-                                              batch_size.max_pred_distance_in_banded_mode,
-                                              traceback);
+                                              batch_size.max_pred_distance_in_banded_mode);
         }
         else if (batch_size.band_mode == BandMode::adaptive_band)
         {
             generatePOAKernel<ScoreT, SizeT, TraceT, false, BandMode::adaptive_band>
+                <<<nblocks, TPB, 0, stream>>>(consensus_d,
+                                              sequences_d,
+                                              base_weights_d,
+                                              sequence_lengths_d,
+                                              window_details_d,
+                                              total_windows,
+                                              scores,
+                                              alignment_graph,
+                                              alignment_read,
+                                              nodes,
+                                              incoming_edges,
+                                              incoming_edge_count,
+                                              outgoing_edges,
+                                              outgoing_edge_count,
+                                              incoming_edge_w,
+                                              sorted_poa,
+                                              node_id_to_pos,
+                                              node_alignments,
+                                              node_alignment_count,
+                                              sorted_poa_local_edge_count,
+                                              node_marks,
+                                              check_aligned_nodes,
+                                              nodes_to_visit,
+                                              node_coverage_counts,
+                                              gap_score,
+                                              mismatch_score,
+                                              match_score,
+                                              max_sequences_per_poa,
+                                              sequence_begin_nodes_ids,
+                                              outgoing_edges_coverage,
+                                              outgoing_edges_coverage_count,
+                                              max_nodes_per_graph,
+                                              matrix_seq_dimension,
+                                              batch_size.max_consensus_size,
+                                              TPB,
+                                              batch_size.alignment_band_width,
+                                              batch_size.max_pred_distance_in_banded_mode);
+        }
+        else if (batch_size.band_mode == BandMode::static_band_traceback)
+        {
+            generatePOAKernel<ScoreT, SizeT, TraceT, false, BandMode::static_band_traceback>
                 <<<nblocks, TPB, 0, stream>>>(consensus_d,
                                               sequences_d,
                                               base_weights_d,
