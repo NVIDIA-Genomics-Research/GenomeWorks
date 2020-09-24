@@ -52,8 +52,8 @@ namespace cudapoa
  * @param[in] window_details_d              Device buffer with structs encapsulating sequence details per window
  * @param[in] total_windows                 Total number of windows to process
  * @param[in] scores_d                      Device scratch space that scores alignment matrix score
- * @param[in] alignment_graph_d             Device scratch space for backtrace alignment of graph
- * @param[in] alignment_read_d              Device scratch space for backtrace alignment of sequence
+ * @param[in] alignment_graph_d             Device scratch space for traceback alignment of graph
+ * @param[in] alignment_read_d              Device scratch space for traceback alignment of sequence
  * @param[in] nodes_d                       Device scratch space for storing unique nodes in graph
  * @param[in] incoming_edges_d              Device scratch space for storing incoming edges per node
  * @param[in] incoming_edges_count_d        Device scratch space for storing number of incoming edges per node
@@ -112,7 +112,7 @@ __launch_bounds__(GW_POA_KERNELS_MAX_THREADS_PER_BLOCK)
                                       int32_t TPB               = 64,
                                       int32_t static_band_width = 256,
                                       int32_t max_pred_distance = 0,
-                                      TraceT* backtrace_d       = nullptr)
+                                      TraceT* traceback_d       = nullptr)
 {
     // shared error indicator within a warp
     bool warp_error = false;
@@ -139,7 +139,7 @@ __launch_bounds__(GW_POA_KERNELS_MAX_THREADS_PER_BLOCK)
     int32_t scores_width = window_details_d[window_idx].scores_width;
 
     ScoreT* scores;
-    TraceT* backtrace = backtrace_d;
+    TraceT* traceback = traceback_d;
     float banded_buffer_size; // using float instead of int64_t to minimize register
     if (BM == BandMode::adaptive_band || BM == BandMode::static_band)
     {
@@ -147,10 +147,10 @@ __launch_bounds__(GW_POA_KERNELS_MAX_THREADS_PER_BLOCK)
         banded_buffer_size = static_cast<float>(max_pred_distance) * static_cast<float>(scores_matrix_width);
         int64_t offset     = static_cast<int64_t>(banded_buffer_size) * static_cast<int64_t>(window_idx);
         scores             = &scores_d[offset];
-        // buffer size for backtrace
+        // buffer size for traceback
         banded_buffer_size = static_cast<float>(max_nodes_per_graph) * static_cast<float>(scores_matrix_width);
         offset             = static_cast<int64_t>(banded_buffer_size) * static_cast<int64_t>(window_idx);
-        backtrace          = &backtrace_d[offset];
+        traceback          = &traceback_d[offset];
     }
     else
     {
@@ -267,7 +267,6 @@ __launch_bounds__(GW_POA_KERNELS_MAX_THREADS_PER_BLOCK)
                                                                                                 sequence,
                                                                                                 seq_len,
                                                                                                 scores,
-                                                                                                backtrace,
                                                                                                 banded_buffer_size,
                                                                                                 alignment_graph,
                                                                                                 alignment_read,
@@ -292,7 +291,6 @@ __launch_bounds__(GW_POA_KERNELS_MAX_THREADS_PER_BLOCK)
                                                                                                     sequence,
                                                                                                     seq_len,
                                                                                                     scores,
-                                                                                                    backtrace,
                                                                                                     banded_buffer_size,
                                                                                                     alignment_graph,
                                                                                                     alignment_read,
@@ -316,7 +314,7 @@ __launch_bounds__(GW_POA_KERNELS_MAX_THREADS_PER_BLOCK)
                                                                                                  sequence,
                                                                                                  seq_len,
                                                                                                  scores,
-                                                                                                 backtrace,
+                                                                                                 traceback,
                                                                                                  alignment_graph,
                                                                                                  alignment_read,
                                                                                                  static_band_width,
@@ -465,7 +463,7 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
 
     // unpack alignment details
     ScoreT* scores         = alignment_details_d->scores;
-    TraceT* backtrace      = alignment_details_d->backtrace;
+    TraceT* traceback      = alignment_details_d->traceback;
     SizeT* alignment_graph = alignment_details_d->alignment_graph;
     SizeT* alignment_read  = alignment_details_d->alignment_read;
 
@@ -544,7 +542,7 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
                                               TPB,
                                               batch_size.alignment_band_width,
                                               batch_size.max_pred_distance_in_banded_mode,
-                                              backtrace);
+                                              traceback);
         }
         else if (adaptive_banded)
         {
@@ -586,7 +584,7 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
                                               TPB,
                                               batch_size.alignment_band_width,
                                               batch_size.max_pred_distance_in_banded_mode,
-                                              backtrace);
+                                              traceback);
         }
         else
         {
@@ -670,7 +668,7 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
                                               TPB,
                                               batch_size.alignment_band_width,
                                               batch_size.max_pred_distance_in_banded_mode,
-                                              backtrace);
+                                              traceback);
         }
         else if (adaptive_banded)
         {
@@ -712,7 +710,7 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
                                               TPB,
                                               batch_size.alignment_band_width,
                                               batch_size.max_pred_distance_in_banded_mode,
-                                              backtrace);
+                                              traceback);
         }
         else
         {

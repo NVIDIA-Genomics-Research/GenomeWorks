@@ -116,11 +116,11 @@ __device__ __forceinline__ void initialize_band_tb(ScoreT* scores,
 }
 
 template <typename TraceT>
-__device__ __forceinline__ TraceT get_trace(TraceT* backtrace, int32_t row, int32_t column, int32_t band_start, int32_t band_width)
+__device__ __forceinline__ TraceT get_trace(TraceT* traceback, int32_t row, int32_t column, int32_t band_start, int32_t band_width)
 {
     int64_t trace_index = static_cast<int64_t>(column - band_start) +
                           static_cast<int64_t>(row) * static_cast<int64_t>(band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING);
-    return backtrace[trace_index];
+    return traceback[trace_index];
 }
 
 template <typename ScoreT>
@@ -285,7 +285,7 @@ __device__ __forceinline__
                                       SeqT* read,
                                       int32_t read_length,
                                       ScoreT* scores,
-                                      TraceT* backtrace,
+                                      TraceT* traceback,
                                       SizeT* alignment_graph,
                                       SizeT* alignment_read,
                                       int32_t band_width,
@@ -342,7 +342,7 @@ __device__ __forceinline__
                 int64_t index    = static_cast<int64_t>(score_gIdx % score_matrix_height) * static_cast<int64_t>(band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING);
                 scores[index]    = gap_score;
                 index            = static_cast<int64_t>(score_gIdx) * static_cast<int64_t>(band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING);
-                backtrace[index] = -score_gIdx;
+                traceback[index] = -score_gIdx;
             }
             else
             {
@@ -352,8 +352,8 @@ __device__ __forceinline__
 
                 if ((graph_pos - pred_idx) < score_matrix_height)
                 {
-                    // fill in first column of backtrace buffer
-                    backtrace[index] = -(score_gIdx - pred_idx);
+                    // fill in first column of traceback buffer
+                    traceback[index] = -(score_gIdx - pred_idx);
 
                     if (band_start > CELLS_PER_THREAD && pred_count == 1)
                     {
@@ -374,7 +374,7 @@ __device__ __forceinline__
                                 if (penalty < score_tmp)
                                 {
                                     penalty          = score_tmp;
-                                    backtrace[index] = trace_tmp;
+                                    traceback[index] = trace_tmp;
                                 }
                             }
                         }
@@ -397,7 +397,7 @@ __device__ __forceinline__
                             if (penalty < score_tmp)
                             {
                                 penalty          = score_tmp;
-                                backtrace[index] = trace_tmp;
+                                traceback[index] = trace_tmp;
                             }
                         }
                     }
@@ -498,10 +498,10 @@ __device__ __forceinline__
             scores[index + 3L] = score.s3;
 
             index                 = static_cast<int64_t>(read_pos + 1 - band_start) + static_cast<int64_t>(score_gIdx) * static_cast<int64_t>(band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING);
-            backtrace[index]      = trace.t0;
-            backtrace[index + 1L] = trace.t1;
-            backtrace[index + 2L] = trace.t2;
-            backtrace[index + 3L] = trace.t3;
+            traceback[index]      = trace.t0;
+            traceback[index + 1L] = trace.t1;
+            traceback[index + 2L] = trace.t2;
+            traceback[index + 3L] = trace.t3;
 
             __syncwarp();
         }
@@ -537,14 +537,14 @@ __device__ __forceinline__
 
         //------------------------------------------------------------------------
 
-        // Fill in backtrace
+        // Fill in traceback
         int32_t loop_count = 0;
         while (!(i == 0 && j == 0) && loop_count < static_cast<int32_t>(read_length + graph_count + 2))
         {
             loop_count++;
 
             int32_t band_start = get_band_start_for_row_tb(i, gradient, band_width, max_column);
-            TraceT trace       = get_trace(backtrace, i, j, band_start, band_width);
+            TraceT trace       = get_trace(traceback, i, j, band_start, band_width);
 
             if (trace == 0)
             {

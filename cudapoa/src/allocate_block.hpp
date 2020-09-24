@@ -233,16 +233,16 @@ public:
 
         if (full_matrix_alignment_)
         {
-            // in full-band mode, where only scores buffer is used and backtrace buffer size is 0, rest of the available memory is assigned to scores buffer
+            // in full-band mode, where only scores buffer is used and traceback buffer size is 0, rest of the available memory is assigned to scores buffer
             alignment_details_d->scorebuf_alloc_size = total_d_ - offset_d_;
             alignment_details_d->scores              = reinterpret_cast<decltype(alignment_details_d->scores)>(&block_data_d_[offset_d_]);
-            alignment_details_d->backtrace           = nullptr;
+            alignment_details_d->traceback           = nullptr;
         }
         else
         {
-            // in banded alignment, rest of the available memory is assigned to backtrace buffer
+            // in banded alignment, rest of the available memory is assigned to traceback buffer
             alignment_details_d->scorebuf_alloc_size = total_d_ - offset_d_;
-            alignment_details_d->backtrace           = reinterpret_cast<decltype(alignment_details_d->backtrace)>(&block_data_d_[offset_d_]);
+            alignment_details_d->traceback           = reinterpret_cast<decltype(alignment_details_d->traceback)>(&block_data_d_[offset_d_]);
         }
 
         *alignment_details_d_p = alignment_details_d;

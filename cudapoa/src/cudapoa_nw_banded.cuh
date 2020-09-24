@@ -379,7 +379,7 @@ __device__ __forceinline__
             }
         }
 
-        // Fill in backtrace
+        // Fill in traceback
         int32_t prev_i       = 0;
         int32_t prev_j       = 0;
         int32_t next_node_id = i > 0 ? graph[i - 1] : 0;

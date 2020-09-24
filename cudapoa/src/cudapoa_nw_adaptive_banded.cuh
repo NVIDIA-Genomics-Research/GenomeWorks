@@ -178,7 +178,6 @@ __device__ __forceinline__
                                      SeqT* read,
                                      int32_t read_length,
                                      ScoreT* scores,
-                                     TraceT* backtrace,
                                      float max_buffer_size,
                                      SizeT* alignment_graph,
                                      SizeT* alignment_read,
@@ -221,8 +220,8 @@ __device__ __forceinline__
     // band_shift defines distance of band_start from the scores matrix diagonal, ad-hoc rule 4
     int32_t band_shift = band_width / 2;
     // rerun code is defined in backtracking loop from previous alignment try
-    // -3 means backtrace path was too close to the left bound of band
-    // -4 means backtrace path was too close to the right bound of band
+    // -3 means traceback path was too close to the left bound of band
+    // -4 means traceback path was too close to the right bound of band
     // Therefore we rerun alignment of the same read, but this time with double band-width and band_shift
     // further to the left for rerun == -3, and further to the right for rerun == -4.
     if (rerun == -3)
@@ -425,7 +424,7 @@ __device__ __forceinline__
             }
         }
 
-        // Fill in backtrace
+        // Fill in traceback
         int32_t prev_i       = 0;
         int32_t prev_j       = 0;
         int32_t next_node_id = i > 0 ? graph[i - 1] : 0;
@@ -441,7 +440,7 @@ __device__ __forceinline__
             {
                 if (rerun == 0)
                 {
-                    // check if backtrace gets too close or hits the band limits, if so stop and rerun with extended band-width
+                    // check if traceback gets too close or hits the band limits, if so stop and rerun with extended band-width
                     // threshold for proximity to band limits works better if defined proportionate to the sequence length
                     int32_t threshold = max(1, max_column / 1024); // ad-hoc rule 7
                     if (j > threshold && j < max_column - threshold)

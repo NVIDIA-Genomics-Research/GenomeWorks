@@ -549,12 +549,12 @@ protected:
         return StatusType::success;
     }
 
-    // Check if intermediate data for seq length can fit in available scoring/backtrace buffer
+    // Check if intermediate data for seq length can fit in available scoring/traceback buffer
     bool reserve_buf(int32_t max_seq_length)
     {
         int32_t matrix_height = batch_size_.max_nodes_per_graph;
         int32_t matrix_width  = (banded_alignment_ || adaptive_banded_) ? batch_size_.matrix_sequence_dimension : cudautils::align<int32_t, 4>(max_seq_length + 1 + CELLS_PER_THREAD);
-        // in full-band, avail_buf_mem_ is dedicated to scores matrix and in static or adaptive band modes, avail_buf_mem_ is dedicated to backtrace matrix
+        // in full-band, avail_buf_mem_ is dedicated to scores matrix and in static or adaptive band modes, avail_buf_mem_ is dedicated to traceback matrix
         size_t required_size = static_cast<size_t>(matrix_width) * static_cast<size_t>(matrix_height);
         required_size *= batch_size_.band_mode == BandMode::full_band ? sizeof(ScoreT) : sizeof(TraceT);
 
@@ -623,7 +623,7 @@ protected:
     // Global sequence index.
     int32_t global_sequence_idx_ = 0;
 
-    // Remaining buffer memory available for scores matrices in case of full alignment, and for backtrace matrices in case of banded alignment
+    // Remaining buffer memory available for scores matrices in case of full alignment, and for traceback matrices in case of banded alignment
     size_t avail_buf_mem_ = 0;
 
     // Temporary variable to compute the offset to scorebuf.

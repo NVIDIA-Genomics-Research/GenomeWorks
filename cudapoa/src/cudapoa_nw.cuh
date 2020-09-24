@@ -138,8 +138,8 @@ __device__ __forceinline__
  * @param[in] read                 Device buffer with sequence (read) to align
  * @param[in] read_length          Number of bases in read
  * @param[out] scores              Device scratch space that scores alignment matrix score
- * @param[out] alignment_graph     Device scratch space for backtrace alignment of graph
- * @param[out] alignment_read      Device scratch space for backtrace alignment of sequence
+ * @param[out] alignment_graph     Device scratch space for traceback alignment of graph
+ * @param[out] alignment_read      Device scratch space for traceback alignment of sequence
  * @param[in] gap_score            Score for inserting gap into alignment
  * @param[in] mismatch_score       Score for finding a mismatch in alignment
  * @param[in] match_score          Score for finding a match in alignment
@@ -353,7 +353,7 @@ __device__ __forceinline__
             }
         }
 
-        // Fill in backtrace
+        // Fill in traceback
 
         int32_t prev_i = 0;
         int32_t prev_j = 0;
@@ -362,7 +362,7 @@ __device__ __forceinline__
         // backtracking is done by re-calculating the score at each cell
         // along the path to see which preceding cell the move could have
         // come from. This seems computationally more expensive, but doesn't
-        // require storing any backtrace buffer during alignment.
+        // require storing any traceback buffer during alignment.
         int32_t loop_count = 0;
         while (!(i == 0 && j == 0) && loop_count < static_cast<int32_t>(read_length + graph_count + 2))
         {
