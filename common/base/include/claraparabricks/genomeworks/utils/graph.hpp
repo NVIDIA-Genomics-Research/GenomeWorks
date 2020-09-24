@@ -185,7 +185,7 @@ protected:
     std::unordered_map<node_id_t, std::string> node_labels_;
 
     /// An empty list representing no connectivity
-    const std::vector<node_id_t> empty_;
+    static const std::vector<node_id_t> empty_;
 };
 
 /// \brief DirectedGraph Object representing a directed graph structure
