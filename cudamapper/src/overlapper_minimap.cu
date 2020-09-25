@@ -28,6 +28,7 @@
 #include <thrust/execution_policy.h>
 
 #include <claraparabricks/genomeworks/utils/cudautils.hpp>
+#include "chainer_utils.cuh"
 
 #ifndef NDEBUG // only needed to check if input is sorted in assert
 #include <algorithm>
@@ -750,9 +751,7 @@ void OverlapperMinimap::get_overlaps(std::vector<Overlap>& fused_overlaps,
 
 #ifdef DEBUG_CHAINS
     std::cout << "Num anchors: " << n_anchors << std::endl;
-#endif
 
-#ifdef DEBUG_CHAINS
     std::vector<double> chain_scores;
     std::vector<int32_t> predecessors;
     chain_scores.resize(n_anchors);
