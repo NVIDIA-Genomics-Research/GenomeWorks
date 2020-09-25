@@ -92,8 +92,8 @@ public:
         std::vector<SeedPair> h_seed_pairs;
         parse_seed_pairs(param_.seed_pairs_file, h_seed_pairs);
         // Allocate pinned memory for query and target strings
-        pinned_host_vector<char> h_encoded_target(target_sequence.length());
-        pinned_host_vector<char> h_encoded_query(target_sequence.length());
+        pinned_host_vector<int8_t> h_encoded_target(target_sequence.length());
+        pinned_host_vector<int8_t> h_encoded_query(target_sequence.length());
         encode_sequence(h_encoded_target.data(), target_sequence.c_str(), target_sequence.length());
         encode_sequence(h_encoded_query.data(), query_sequence.c_str(), query_sequence.length());
         ungapped_extender_->extend_async(h_encoded_query.data(), h_encoded_query.size(), h_encoded_target.data(), h_encoded_target.size(), param_.score_threshold, h_seed_pairs);

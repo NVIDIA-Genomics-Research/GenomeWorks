@@ -108,8 +108,8 @@ int main(int argc, char* argv[])
                                         -9100, -9100, -9100, -9100, -9100, -9100, -9100, -9100};
 
     // Allocate pinned memory for query and target strings
-    pinned_host_vector<char> h_encoded_target(target_sequence.length());
-    pinned_host_vector<char> h_encoded_query(target_sequence.length());
+    pinned_host_vector<int8_t> h_encoded_target(target_sequence.length());
+    pinned_host_vector<int8_t> h_encoded_query(target_sequence.length());
 
     encode_sequence(h_encoded_target.data(), target_sequence.c_str(), target_sequence.length());
     encode_sequence(h_encoded_query.data(), query_sequence.c_str(), query_sequence.length());
@@ -144,8 +144,8 @@ int main(int argc, char* argv[])
         // Allocate space on device for target and query sequences, seed_pairs,
         // scored segment pairs (ssp) and num_ssp using default allocator (caching)
         // Allocate space for query and target sequences
-        device_buffer<char> d_query(query_sequence.length(), allocator, stream0.get());
-        device_buffer<char> d_target(target_sequence.length(), allocator, stream0.get());
+        device_buffer<int8_t> d_query(query_sequence.length(), allocator, stream0.get());
+        device_buffer<int8_t> d_target(target_sequence.length(), allocator, stream0.get());
         // Allocate space for SeedPair input
         device_buffer<SeedPair> d_seed_pairs(h_seed_pairs.size(), allocator, stream0.get());
         // Allocate space for ScoredSegmentPair output
@@ -177,6 +177,8 @@ int main(int argc, char* argv[])
     }
     std::cerr << "Number of Scored Segment Pairs found: " << h_ssp.size() << std::endl;
     if (print)
+    {
         print_scored_segment_pairs(h_ssp);
+    }
     return 0;
 }

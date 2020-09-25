@@ -72,14 +72,14 @@ UngappedXDrop::UngappedXDrop(const int32_t* h_score_mat, const int32_t score_mat
     d_score_mat_        = device_buffer<int32_t>(score_mat_dim_, allocator_, stream_);
     d_done_             = device_buffer<int32_t>(batch_max_ungapped_extensions_, allocator_, stream_);
     d_tmp_ssp_          = device_buffer<ScoredSegmentPair>(batch_max_ungapped_extensions_, allocator_, stream_);
-    d_temp_storage_cub_ = device_buffer<char>(cub_storage_bytes, allocator_, stream_);
+    d_temp_storage_cub_ = device_buffer<int8_t>(cub_storage_bytes, allocator_, stream_);
 
     // Requires pinned host memory registration for proper async behavior
     device_copy_n(h_score_mat_, score_mat_dim_, d_score_mat_.data(), stream_);
 }
 
-StatusType UngappedXDrop::extend_async(const char* d_query, int32_t query_length,
-                                       const char* d_target, int32_t target_length,
+StatusType UngappedXDrop::extend_async(const int8_t* d_query, int32_t query_length,
+                                       const int8_t* d_target, int32_t target_length,
                                        int32_t score_threshold, SeedPair* d_seed_pairs,
                                        int32_t num_seed_pairs, ScoredSegmentPair* d_scored_segment_pairs,
                                        int32_t* d_num_scored_segment_pairs)
@@ -148,8 +148,8 @@ StatusType UngappedXDrop::extend_async(const char* d_query, int32_t query_length
     return StatusType::success;
 }
 
-StatusType UngappedXDrop::extend_async(const char* h_query, const int32_t& query_length,
-                                       const char* h_target, const int32_t& target_length,
+StatusType UngappedXDrop::extend_async(const int8_t* h_query, const int32_t& query_length,
+                                       const int8_t* h_target, const int32_t& target_length,
                                        const int32_t& score_threshold,
                                        const std::vector<SeedPair>& h_seed_pairs)
 {
@@ -158,8 +158,8 @@ StatusType UngappedXDrop::extend_async(const char* h_query, const int32_t& query
     // Set host pointer mode on
     host_ptr_api_mode_ = true;
     // Allocate space for query and target sequences
-    d_query_  = device_buffer<char>(query_length, allocator_, stream_);
-    d_target_ = device_buffer<char>(target_length, allocator_, stream_);
+    d_query_  = device_buffer<int8_t>(query_length, allocator_, stream_);
+    d_target_ = device_buffer<int8_t>(target_length, allocator_, stream_);
     // Allocate space for SeedPair input
     d_seed_pairs_ = device_buffer<SeedPair>(h_seed_pairs.size(), allocator_, stream_);
     // Allocate space for ScoredSegmentPair output

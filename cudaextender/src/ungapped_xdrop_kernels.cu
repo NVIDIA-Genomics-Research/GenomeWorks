@@ -27,9 +27,9 @@ namespace cudaextender
 // extend the seed values to a segment by ungapped x-drop method, adjust low-scoring
 // segment scores based on entropy factor, compare resulting segment scores
 // to score_threshold and update the d_scored_segment_pairs and d_done vectors
-__global__ void find_high_scoring_segment_pairs(const char* __restrict__ d_target,
+__global__ void find_high_scoring_segment_pairs(const int8_t* __restrict__ d_target,
                                                 const int32_t target_length,
-                                                const char* __restrict__ d_query,
+                                                const int8_t* __restrict__ d_query,
                                                 const int32_t query_length,
                                                 const int32_t* d_sub_mat,
                                                 const bool no_entropy,
@@ -106,8 +106,8 @@ __global__ void find_high_scoring_segment_pairs(const char* __restrict__ d_targe
             const int32_t pos_offset = lane_id + tile[warp_id];
             const int32_t ref_pos    = ref_loc[warp_id] + pos_offset;
             const int32_t query_pos  = query_loc[warp_id] + pos_offset;
-            char r_chr;
-            char q_chr;
+            int8_t r_chr;
+            int8_t q_chr;
 
             if (ref_pos < target_length && query_pos < query_length)
             {
@@ -250,8 +250,8 @@ __global__ void find_high_scoring_segment_pairs(const char* __restrict__ d_targe
         {
             int32_t thread_score     = 0;
             const int32_t pos_offset = lane_id + 1 + tile[warp_id];
-            char r_chr;
-            char q_chr;
+            int8_t r_chr;
+            int8_t q_chr;
 
             if (ref_loc[warp_id] >= pos_offset && query_loc[warp_id] >= pos_offset)
             {
@@ -430,7 +430,11 @@ __global__ void find_high_scoring_segment_pairs(const char* __restrict__ d_targe
 }
 
 // Gather the SSPs from the resulting segments to the beginning of the tmp_ssp array
-__global__ void compress_output(const int32_t* d_done, const int32_t start_index, const ScoredSegmentPair* d_ssp, ScoredSegmentPair* d_tmp_ssp, const int32_t num_seed_pairs)
+__global__ void compress_output(const int32_t* d_done,
+                                const int32_t start_index,
+                                const ScoredSegmentPair* d_ssp,
+                                ScoredSegmentPair* d_tmp_ssp,
+                                const int32_t num_seed_pairs)
 {
     const int32_t stride = blockDim.x * gridDim.x;
     const int32_t start  = blockDim.x * blockIdx.x + threadIdx.x;

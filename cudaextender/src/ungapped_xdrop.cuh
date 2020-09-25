@@ -34,13 +34,13 @@ public:
     UngappedXDrop(const int32_t* h_score_mat, const int32_t score_mat_dim, const int32_t xdrop_threshold, const bool no_entropy, cudaStream_t stream, const int32_t device_id, DefaultDeviceAllocator allocator);
     ~UngappedXDrop() override;
 
-    StatusType extend_async(const char* h_query, const int32_t& query_length,
-                            const char* h_target, const int32_t& target_length,
+    StatusType extend_async(const int8_t* h_query, const int32_t& query_length,
+                            const int8_t* h_target, const int32_t& target_length,
                             const int32_t& score_threshold,
                             const std::vector<SeedPair>& h_seed_pairs) override;
 
-    StatusType extend_async(const char* d_query, int32_t query_length,
-                            const char* d_target, int32_t target_length,
+    StatusType extend_async(const int8_t* d_query, int32_t query_length,
+                            const int8_t* d_target, int32_t target_length,
                             int32_t score_threshold, SeedPair* d_seed_pairs,
                             int32_t num_seed_pairs, ScoredSegmentPair* d_scored_segment_pairs,
                             int32_t* d_num_scored_segment_pairs) override;
@@ -66,12 +66,12 @@ private:
     device_buffer<int32_t> d_done_;              // TODO- Rename scratch space
     device_buffer<ScoredSegmentPair> d_tmp_ssp_; // TODO- Rename Scratch space 2
     int32_t total_scored_segment_pairs_;
-    device_buffer<char> d_temp_storage_cub_; // temporary storage for cub functions
+    device_buffer<int8_t> d_temp_storage_cub_; // temporary storage for cub functions
 
     // Host ptr API additional required variables
     bool host_ptr_api_mode_;
-    device_buffer<char> d_query_;
-    device_buffer<char> d_target_;
+    device_buffer<int8_t> d_query_;
+    device_buffer<int8_t> d_target_;
     device_buffer<SeedPair> d_seed_pairs_;
     device_buffer<int32_t> d_num_ssp_;
     device_buffer<ScoredSegmentPair> d_ssp_;

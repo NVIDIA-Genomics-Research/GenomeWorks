@@ -32,16 +32,16 @@ namespace genomeworks
 namespace cudaextender
 {
 
-constexpr char A_NT = 0;
-constexpr char C_NT = 1;
-constexpr char G_NT = 2;
-constexpr char T_NT = 3;
-constexpr char L_NT = 4;
-constexpr char N_NT = 5;
-constexpr char X_NT = 6;
-constexpr char E_NT = 7;
-constexpr char NUC  = 8;
-constexpr char NUC2 = NUC * NUC;
+constexpr int8_t A_NT = 0;
+constexpr int8_t C_NT = 1;
+constexpr int8_t G_NT = 2;
+constexpr int8_t T_NT = 3;
+constexpr int8_t L_NT = 4;
+constexpr int8_t N_NT = 5;
+constexpr int8_t X_NT = 6;
+constexpr int8_t E_NT = 7;
+constexpr int8_t NUC  = 8;
+constexpr int8_t NUC2 = NUC * NUC;
 
 /// \brief Parses seed pairs from a csv file in the following format:
 ///        target_position_in_read_1, query_position_in_read_1
@@ -104,7 +104,7 @@ inline void parse_scored_segment_pairs(const std::string& filepath, std::vector<
 /// \param[out] dst_seq    Pointer to pre-allocated storage for encoded sequence
 /// \param[in]  src_seq    Pointer to input sequence
 /// \param[in]  length     Length of the sequence
-inline void encode_sequence(char* dst_seq, const char* src_seq, const int32_t& length)
+inline void encode_sequence(int8_t* dst_seq, const char* src_seq, const int32_t& length)
 {
     for (int32_t i = 0; i < length; i++)
     {

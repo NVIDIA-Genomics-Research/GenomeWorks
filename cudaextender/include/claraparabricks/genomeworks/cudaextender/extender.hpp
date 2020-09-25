@@ -79,8 +79,8 @@ public:
     /// \param[in] h_seed_pairs Vector of seed pairs mapping to query and target
     ///                         sequences
     /// \return Status of the async extension launch
-    virtual StatusType extend_async(const char* h_query, const int32_t& query_length,
-                                    const char* h_target, const int32_t& target_length,
+    virtual StatusType extend_async(const int8_t* h_query, const int32_t& query_length,
+                                    const int8_t* h_target, const int32_t& target_length,
                                     const int32_t& score_threshold,
                                     const std::vector<SeedPair>& h_seed_pairs) = 0;
 
@@ -105,8 +105,8 @@ public:
     /// \param[out] d_num_scored_segment_pairs Pointer to pre-allocated device location for
     ///                                        storing length of extension output
     /// \return Status of the async extension launch
-    virtual StatusType extend_async(const char* d_query, int32_t query_length,
-                                    const char* d_target, int32_t target_length,
+    virtual StatusType extend_async(const int8_t* d_query, int32_t query_length,
+                                    const int8_t* d_target, int32_t target_length,
                                     int32_t score_threshold, SeedPair* d_seed_pairs,
                                     int32_t num_seed_pairs, ScoredSegmentPair* d_scored_segment_pairs,
                                     int32_t* d_num_scored_segment_pairs) = 0;
@@ -144,7 +144,14 @@ public:
 /// \param allocator DeviceAllocator to be used for allocating/freeing memory
 /// \param type Type of extension to be performed
 /// \return Unique pointer to Extender object.
-std::unique_ptr<Extender> create_extender(const int32_t* h_score_mat, const int32_t score_mat_dim, const int32_t xdrop_threshold, const bool no_entropy, cudaStream_t stream, const int32_t device_id, DefaultDeviceAllocator allocator, const ExtensionType type = ExtensionType::ungapped_xdrop);
+std::unique_ptr<Extender> create_extender(const int32_t* h_score_mat,
+                                          const int32_t score_mat_dim,
+                                          const int32_t xdrop_threshold,
+                                          const bool no_entropy,
+                                          cudaStream_t stream,
+                                          const int32_t device_id,
+                                          DefaultDeviceAllocator allocator,
+                                          const ExtensionType type = ExtensionType::ungapped_xdrop);
 /// \}
 } // namespace cudaextender
 } // namespace genomeworks

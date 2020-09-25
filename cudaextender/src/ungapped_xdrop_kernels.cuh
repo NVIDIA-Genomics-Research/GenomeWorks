@@ -31,9 +31,9 @@ namespace cudaextender
 // extend the hits to a segment by ungapped x-drop method, adjust low-scoring
 // segment scores based on entropy factor, compare resulting segment scores
 // to score_threshold and update the d_scored_segment_pairs and d_done vectors
-__global__ void find_high_scoring_segment_pairs(const char* __restrict__ d_target,
+__global__ void find_high_scoring_segment_pairs(const int8_t* __restrict__ d_target,
                                                 const int32_t target_length,
-                                                const char* __restrict__ d_query,
+                                                const int8_t* __restrict__ d_query,
                                                 const int32_t query_length,
                                                 const int32_t* d_sub_mat,
                                                 const bool no_entropy,
