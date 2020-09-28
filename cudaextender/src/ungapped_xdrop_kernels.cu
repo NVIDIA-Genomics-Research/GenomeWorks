@@ -13,6 +13,12 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+/*
+* This algorithm was adapted from SegAlign's Ungapped Extender authored by
+* Sneha Goenka (gsneha@stanford.edu) and Yatish Turakhia (yturakhi@uscs.edu).
+* Source code for original implementation and use in SegAlign can be found
+* here: https://github.com/gsneha26/SegAlign
+*/
 #include "ungapped_xdrop_kernels.cuh"
 
 namespace claraparabricks
@@ -23,7 +29,6 @@ namespace genomeworks
 
 namespace cudaextender
 {
-
 // extend the seed values to a segment by ungapped x-drop method, adjust low-scoring
 // segment scores based on entropy factor, compare resulting segment scores
 // to score_threshold and update the d_scored_segment_pairs and d_done vectors

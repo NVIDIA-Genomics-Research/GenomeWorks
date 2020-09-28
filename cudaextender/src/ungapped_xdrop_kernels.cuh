@@ -13,6 +13,12 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+/*
+* This algorithm was adapted from SegAlign's Ungapped Extender authored by
+* Sneha Goenka (gsneha@stanford.edu) and Yatish Turakhia (yturakhi@uscs.edu).
+* Source code for original implementation and use in SegAlign can be found
+* here: https://github.com/gsneha26/SegAlign
+*/
 #pragma once
 
 #include "ungapped_xdrop.cuh"
