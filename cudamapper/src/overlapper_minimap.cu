@@ -35,6 +35,7 @@
 #include <thrust/host_vector.h>
 #endif
 
+// #define DEBUG_CHAINS
 //#define CHAINDEBUG
 
 namespace claraparabricks
@@ -705,7 +706,6 @@ void OverlapperMinimap::get_overlaps(std::vector<Overlap>& fused_overlaps,
 {
     const std::int32_t block_size = 32;
     const std::size_t n_anchors   = d_anchors.size();
-    int32_t num_batches           = (d_anchors.size() / BLOCK_COUNT);
 
     device_buffer<bool> d_overlaps_select_mask(n_anchors, _allocator, _cuda_stream);
     device_buffer<Overlap> d_overlaps_source(n_anchors, _allocator, _cuda_stream);
@@ -725,6 +725,29 @@ void OverlapperMinimap::get_overlaps(std::vector<Overlap>& fused_overlaps,
                                                                                                      d_anchor_scores.data(),
                                                                                                      d_overlaps_select_mask.data(),
                                                                                                      n_anchors);
+
+    // Allocate half the number of anchors for the number of QT pairs under the naive assumption that
+    // the average number of anchors per read is greater than 2 (i.e., the total number of Anchors >> 2 times the total number of Q-T pairs).
+    device_buffer<int32_t> query_id_starts(n_anchors / 2, _allocator, _cuda_stream);
+    device_buffer<int32_t> query_id_lengths(n_anchors / 2, _allocator, _cuda_stream);
+    device_buffer<int32_t> query_id_ends(n_anchors / 2, _allocator, _cuda_stream);
+    device_buffer<int32_t> tiles_per_query_id(n_anchors / 2, _allocator, _cuda_stream);
+    int32_t n_queries;
+    int32_t n_query_tiles;
+    chainerutils::encode_anchor_query_locations(d_anchors.data(),
+                                                n_anchors,
+                                                TILE_SIZE,
+                                                query_id_starts,
+                                                query_id_lengths,
+                                                query_id_ends,
+                                                tiles_per_query_id,
+                                                n_queries,
+                                                n_query_tiles,
+                                                _allocator,
+                                                _cuda_stream,
+                                                32);
+
+    int32_t num_batches = (d_anchors.size() / BLOCK_COUNT);
 
     // We use batches to ensure that for each anchor, the
     // scores and predecessors up to that anchor have been generated
@@ -746,8 +769,6 @@ void OverlapperMinimap::get_overlaps(std::vector<Overlap>& fused_overlaps,
                                                                                                 5000,
                                                                                                 500);
     }
-
-    // #define DEBUG_CHAINS
 
 #ifdef DEBUG_CHAINS
     std::cout << "Num anchors: " << n_anchors << std::endl;
