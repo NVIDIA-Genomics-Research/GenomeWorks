@@ -62,21 +62,21 @@ public:
     {
         param_ = GetParam();
         // Define Scoring Matrix
-        int32_t score_matrix[static_cast<int8_t>(Encoding::NUC2)] = {91, -114, -31, -123, -1000, -1000, -100, -9100,
-                                                                     -114, 100, -125, -31, -1000, -1000, -100, -9100,
-                                                                     -31, -125, 100, -114, -1000, -1000, -100, -9100,
-                                                                     -123, -31, -114, 91, -1000, -1000, -100, -9100,
-                                                                     -1000, -1000, -1000, -1000, -1000, -1000, -1000, -9100,
-                                                                     -1000, -1000, -1000, -1000, -1000, -1000, -1000, -9100,
-                                                                     -100, -100, -100, -100, -1000, -1000, -100, -9100,
-                                                                     -9100, -9100, -9100, -9100, -9100, -9100, -9100, -9100};
-        const int32_t xdrop_threshold                             = 910;
-        const int32_t device_id                                   = 0;
-        const bool no_entropy                                     = false;
-        const std::size_t max_gpu_memory                          = cudautils::find_largest_contiguous_device_memory_section();
-        allocator_                                                = create_default_device_allocator(max_gpu_memory);
-        stream_                                                   = make_cuda_stream();
-        ungapped_extender_                                        = create_extender(score_matrix, static_cast<int8_t>(Encoding::NUC2), xdrop_threshold, no_entropy, stream_.get(), device_id, allocator_);
+        int32_t score_matrix[NUC2]       = {91, -114, -31, -123, -1000, -1000, -100, -9100,
+                                      -114, 100, -125, -31, -1000, -1000, -100, -9100,
+                                      -31, -125, 100, -114, -1000, -1000, -100, -9100,
+                                      -123, -31, -114, 91, -1000, -1000, -100, -9100,
+                                      -1000, -1000, -1000, -1000, -1000, -1000, -1000, -9100,
+                                      -1000, -1000, -1000, -1000, -1000, -1000, -1000, -9100,
+                                      -100, -100, -100, -100, -1000, -1000, -100, -9100,
+                                      -9100, -9100, -9100, -9100, -9100, -9100, -9100, -9100};
+        const int32_t xdrop_threshold    = 910;
+        const int32_t device_id          = 0;
+        const bool no_entropy            = false;
+        const std::size_t max_gpu_memory = cudautils::find_largest_contiguous_device_memory_section();
+        allocator_                       = create_default_device_allocator(max_gpu_memory);
+        stream_                          = make_cuda_stream();
+        ungapped_extender_               = create_extender(score_matrix, NUC2, xdrop_threshold, no_entropy, stream_.get(), device_id, allocator_);
     }
 
     void TearDown()

@@ -19,7 +19,6 @@
 * Source code for original implementation and use in SegAlign can be found
 * here: https://github.com/gsneha26/SegAlign
 */
-
 #pragma once
 
 #include <claraparabricks/genomeworks/cudaextender/extender.hpp>
