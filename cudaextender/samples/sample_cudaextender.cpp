@@ -20,6 +20,7 @@
 #include <claraparabricks/genomeworks/utils/cudautils.hpp>
 #include <claraparabricks/genomeworks/utils/device_buffer.hpp>
 #include <claraparabricks/genomeworks/utils/pinned_host_vector.hpp>
+#include <claraparabricks/genomeworks/utils/signed_integer_utils.hpp>
 
 #include <iostream>
 #include <string>
@@ -30,7 +31,7 @@ using namespace claraparabricks::genomeworks;
 using namespace cudautils;
 using namespace cudaextender;
 
-void print_scored_segment_pairs(const std::vector<ScoredSegmentPair>& scored_segment_pairs)
+static void print_scored_segment_pairs(const std::vector<ScoredSegmentPair>& scored_segment_pairs)
 {
     std::cout << "Target Position, Query Position, Length, Score" << std::endl;
     for (auto& segment : scored_segment_pairs)
@@ -98,14 +99,14 @@ int main(int argc, char* argv[])
     std::cerr << "Number of Seed Pairs: " << h_seed_pairs.size() << std::endl;
 
     // Define Scoring Matrix
-    const int32_t score_matrix[NUC2] = {91, -114, -31, -123, -1000, -1000, -100, -9100,
-                                        -114, 100, -125, -31, -1000, -1000, -100, -9100,
-                                        -31, -125, 100, -114, -1000, -1000, -100, -9100,
-                                        -123, -31, -114, 91, -1000, -1000, -100, -9100,
-                                        -1000, -1000, -1000, -1000, -1000, -1000, -1000, -9100,
-                                        -1000, -1000, -1000, -1000, -1000, -1000, -1000, -9100,
-                                        -100, -100, -100, -100, -1000, -1000, -100, -9100,
-                                        -9100, -9100, -9100, -9100, -9100, -9100, -9100, -9100};
+    int32_t score_matrix[NUC2] = {91, -114, -31, -123, -1000, -1000, -100, -9100,
+                                  -114, 100, -125, -31, -1000, -1000, -100, -9100,
+                                  -31, -125, 100, -114, -1000, -1000, -100, -9100,
+                                  -123, -31, -114, 91, -1000, -1000, -100, -9100,
+                                  -1000, -1000, -1000, -1000, -1000, -1000, -1000, -9100,
+                                  -1000, -1000, -1000, -1000, -1000, -1000, -1000, -9100,
+                                  -100, -100, -100, -100, -1000, -1000, -100, -9100,
+                                  -9100, -9100, -9100, -9100, -9100, -9100, -9100, -9100};
 
     // Allocate pinned memory for query and target strings
     pinned_host_vector<int8_t> h_encoded_target(target_sequence.length());
@@ -131,9 +132,9 @@ int main(int argc, char* argv[])
     if (!device_ptr_api_mode)
     {
         ungapped_extender->extend_async(h_encoded_query.data(),
-                                        h_encoded_query.size(),
+                                        get_size<int32_t>(h_encoded_query),
                                         h_encoded_target.data(),
-                                        h_encoded_target.size(),
+                                        get_size<int32_t>(h_encoded_target),
                                         score_threshold,
                                         h_seed_pairs);
         ungapped_extender->sync();
@@ -159,9 +160,9 @@ int main(int argc, char* argv[])
 
         // Launch the ungapped extender device pointer function
         ungapped_extender->extend_async(d_query.data(),
-                                        d_query.size(),
+                                        get_size<int32_t>(d_query),
                                         d_target.data(),
-                                        d_target.size(),
+                                        get_size<int32_t>(d_target),
                                         score_threshold,
                                         d_seed_pairs.data(),
                                         d_seed_pairs.size(),
@@ -172,8 +173,9 @@ int main(int argc, char* argv[])
         GW_CU_CHECK_ERR(cudaStreamSynchronize(stream0.get()));
         const int32_t h_num_ssp = cudautils::get_value_from_device(d_num_ssp.data(), stream0.get());
         h_ssp.resize(h_num_ssp);
-        // Copy data synchronously
-        device_copy_n(d_ssp.data(), h_num_ssp, h_ssp.data());
+        // Copy data asynchronously
+        device_copy_n(d_ssp.data(), h_num_ssp, h_ssp.data(), stream0.get());
+        cudaStreamSynchronize(stream0.get());
     }
     std::cerr << "Number of Scored Segment Pairs found: " << h_ssp.size() << std::endl;
     if (print)

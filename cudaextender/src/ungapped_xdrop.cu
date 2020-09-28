@@ -36,8 +36,11 @@ namespace cudaextender
 
 using namespace cudautils;
 
-UngappedXDrop::UngappedXDrop(const int32_t* h_score_mat, const int32_t score_mat_dim, const int32_t xdrop_threshold, const bool no_entropy, cudaStream_t stream, const int32_t device_id, DefaultDeviceAllocator allocator)
-    : h_score_mat_(h_score_mat)
+UngappedXDrop::UngappedXDrop(int32_t* h_score_mat, const int32_t score_mat_dim,
+                             const int32_t xdrop_threshold, const bool no_entropy,
+                             cudaStream_t stream, const int32_t device_id,
+                             DefaultDeviceAllocator allocator)
+    : h_score_mat_(h_score_mat, h_score_mat + score_mat_dim)
     , score_mat_dim_(score_mat_dim)
     , xdrop_threshold_(xdrop_threshold)
     , no_entropy_(no_entropy)
@@ -46,10 +49,6 @@ UngappedXDrop::UngappedXDrop(const int32_t* h_score_mat, const int32_t score_mat
     , host_ptr_api_mode_(false)
     , allocator_(allocator)
 {
-    if (h_score_mat_ == nullptr)
-    {
-        throw std::runtime_error("Substitution matrix cannot be null");
-    }
     // TODO - check sub_mat_dim based on Sequence Encoder API
     // Calculate the max limits on the number of extensions we can do on this GPU
     cudaDeviceProp device_prop;
@@ -64,8 +63,19 @@ UngappedXDrop::UngappedXDrop(const int32_t* h_score_mat, const int32_t score_mat
     //Figure out memory requirements for cub functions
     size_t temp_storage_bytes = 0;
     size_t cub_storage_bytes  = 0;
-    GW_CU_CHECK_ERR(cub::DeviceSelect::Unique(nullptr, temp_storage_bytes, d_tmp_ssp_.data(), d_tmp_ssp_.data(), (int32_t*)nullptr, batch_max_ungapped_extensions_, stream_));
-    GW_CU_CHECK_ERR(cub::DeviceScan::InclusiveSum(nullptr, cub_storage_bytes, d_done_.data(), d_done_.data(), batch_max_ungapped_extensions_, stream_));
+    GW_CU_CHECK_ERR(cub::DeviceSelect::Unique(nullptr,
+                                              temp_storage_bytes,
+                                              d_tmp_ssp_.data(),
+                                              d_tmp_ssp_.data(),
+                                              (int32_t*)nullptr,
+                                              batch_max_ungapped_extensions_,
+                                              stream_));
+    GW_CU_CHECK_ERR(cub::DeviceScan::InclusiveSum(nullptr,
+                                                  cub_storage_bytes,
+                                                  d_done_.data(),
+                                                  d_done_.data(),
+                                                  batch_max_ungapped_extensions_,
+                                                  stream_));
     cub_storage_bytes = std::max(temp_storage_bytes, cub_storage_bytes);
 
     // Allocate space on device for scoring matrix and intermediate results
@@ -75,13 +85,13 @@ UngappedXDrop::UngappedXDrop(const int32_t* h_score_mat, const int32_t score_mat
     d_temp_storage_cub_ = device_buffer<int8_t>(cub_storage_bytes, allocator_, stream_);
 
     // Requires pinned host memory registration for proper async behavior
-    device_copy_n(h_score_mat_, score_mat_dim_, d_score_mat_.data(), stream_);
+    device_copy_n(h_score_mat_.data(), score_mat_dim_, d_score_mat_.data(), stream_);
 }
 
-StatusType UngappedXDrop::extend_async(const int8_t* d_query, int32_t query_length,
-                                       const int8_t* d_target, int32_t target_length,
-                                       int32_t score_threshold, SeedPair* d_seed_pairs,
-                                       int32_t num_seed_pairs, ScoredSegmentPair* d_scored_segment_pairs,
+StatusType UngappedXDrop::extend_async(int8_t* d_query, const int32_t query_length,
+                                       int8_t* d_target, const int32_t target_length,
+                                       const int32_t score_threshold, SeedPair* d_seed_pairs,
+                                       const int32_t num_seed_pairs, ScoredSegmentPair* d_scored_segment_pairs,
                                        int32_t* d_num_scored_segment_pairs)
 {
     if (d_query == nullptr || d_target == nullptr || d_seed_pairs == nullptr)
@@ -118,7 +128,12 @@ StatusType UngappedXDrop::extend_async(const int8_t* d_query, int32_t query_leng
                                                                    d_scored_segment_pairs,
                                                                    d_done_.data());
         size_t cub_storage_bytes = d_temp_storage_cub_.size();
-        GW_CU_CHECK_ERR(cub::DeviceScan::InclusiveSum(d_temp_storage_cub_.data(), cub_storage_bytes, d_done_.data(), d_done_.data(), curr_num_pairs, stream_))
+        GW_CU_CHECK_ERR(cub::DeviceScan::InclusiveSum(d_temp_storage_cub_.data(),
+                                                      cub_storage_bytes,
+                                                      d_done_.data(),
+                                                      d_done_.data(),
+                                                      curr_num_pairs,
+                                                      stream_))
         // TODO- Make async
         const int32_t num_scored_segment_pairs = get_value_from_device(d_done_.data() + curr_num_pairs - 1, stream_);
         if (num_scored_segment_pairs > 0)
@@ -148,9 +163,9 @@ StatusType UngappedXDrop::extend_async(const int8_t* d_query, int32_t query_leng
     return StatusType::success;
 }
 
-StatusType UngappedXDrop::extend_async(const int8_t* h_query, const int32_t& query_length,
-                                       const int8_t* h_target, const int32_t& target_length,
-                                       const int32_t& score_threshold,
+StatusType UngappedXDrop::extend_async(int8_t* h_query, const int32_t query_length,
+                                       int8_t* h_target, const int32_t target_length,
+                                       const int32_t score_threshold,
                                        const std::vector<SeedPair>& h_seed_pairs)
 {
     // Reset the extender if it was used before in this mode

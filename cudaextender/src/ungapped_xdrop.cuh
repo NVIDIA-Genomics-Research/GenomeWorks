@@ -18,6 +18,7 @@
 
 #include <claraparabricks/genomeworks/cudaextender/extender.hpp>
 #include <claraparabricks/genomeworks/utils/device_buffer.hpp>
+#include <claraparabricks/genomeworks/utils/pinned_host_vector.hpp>
 
 namespace claraparabricks
 {
@@ -31,16 +32,22 @@ namespace cudaextender
 class UngappedXDrop : public Extender
 {
 public:
-    UngappedXDrop(const int32_t* h_score_mat, const int32_t score_mat_dim, const int32_t xdrop_threshold, const bool no_entropy, cudaStream_t stream, const int32_t device_id, DefaultDeviceAllocator allocator);
+    UngappedXDrop(int32_t* h_score_mat,
+                  int32_t score_mat_dim,
+                  int32_t xdrop_threshold,
+                  bool no_entropy,
+                  cudaStream_t stream,
+                  int32_t device_id,
+                  DefaultDeviceAllocator allocator);
     ~UngappedXDrop() override;
 
-    StatusType extend_async(const int8_t* h_query, const int32_t& query_length,
-                            const int8_t* h_target, const int32_t& target_length,
-                            const int32_t& score_threshold,
+    StatusType extend_async(int8_t* h_query, int32_t query_length,
+                            int8_t* h_target, int32_t target_length,
+                            int32_t score_threshold,
                             const std::vector<SeedPair>& h_seed_pairs) override;
 
-    StatusType extend_async(const int8_t* d_query, int32_t query_length,
-                            const int8_t* d_target, int32_t target_length,
+    StatusType extend_async(int8_t* d_query, int32_t query_length,
+                            int8_t* d_target, int32_t target_length,
                             int32_t score_threshold, SeedPair* d_seed_pairs,
                             int32_t num_seed_pairs, ScoredSegmentPair* d_scored_segment_pairs,
                             int32_t* d_num_scored_segment_pairs) override;
@@ -54,7 +61,7 @@ public:
 private:
     DefaultDeviceAllocator allocator_;
     // Device ptr API required variables
-    const int32_t* h_score_mat_;
+    pinned_host_vector<int32_t> h_score_mat_;
     const int32_t score_mat_dim_; // Assume matrix is square
     const int32_t xdrop_threshold_;
     const bool no_entropy_;

@@ -104,7 +104,7 @@ inline void parse_scored_segment_pairs(const std::string& filepath, std::vector<
 /// \param[out] dst_seq    Pointer to pre-allocated storage for encoded sequence
 /// \param[in]  src_seq    Pointer to input sequence
 /// \param[in]  length     Length of the sequence
-inline void encode_sequence(int8_t* dst_seq, const char* src_seq, const int32_t& length)
+inline void encode_sequence(int8_t* dst_seq, const char* src_seq, const int32_t length)
 {
     for (int32_t i = 0; i < length; i++)
     {

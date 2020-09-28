@@ -19,6 +19,7 @@
 #include <claraparabricks/genomeworks/cudaextender/utils.hpp>
 #include <claraparabricks/genomeworks/cudaextender/extender.hpp>
 #include <claraparabricks/genomeworks/utils/pinned_host_vector.hpp>
+#include <claraparabricks/genomeworks/utils/signed_integer_utils.hpp>
 
 namespace claraparabricks
 {
@@ -29,14 +30,14 @@ namespace genomeworks
 namespace cudaextender
 {
 
-typedef struct
+struct End2EndTestParam
 {
     std::string query_file;
     std::string target_file;
     std::string seed_pairs_file;
     std::string golden_scored_segment_pairs_file;
     int32_t score_threshold;
-} End2EndTestParam;
+};
 
 std::vector<End2EndTestParam> getCudaextenderEnd2EndTestCases()
 {
@@ -96,7 +97,12 @@ public:
         pinned_host_vector<int8_t> h_encoded_query(target_sequence.length());
         encode_sequence(h_encoded_target.data(), target_sequence.c_str(), target_sequence.length());
         encode_sequence(h_encoded_query.data(), query_sequence.c_str(), query_sequence.length());
-        ungapped_extender_->extend_async(h_encoded_query.data(), h_encoded_query.size(), h_encoded_target.data(), h_encoded_target.size(), param_.score_threshold, h_seed_pairs);
+        ungapped_extender_->extend_async(h_encoded_query.data(),
+                                         get_size<int32_t>(h_encoded_query),
+                                         h_encoded_target.data(),
+                                         get_size<int32_t>(h_encoded_target),
+                                         param_.score_threshold,
+                                         h_seed_pairs);
         // Parse golden scored_segment_pairs while extension is in progress
         std::vector<ScoredSegmentPair> golden_scored_segment_pairs;
         parse_scored_segment_pairs(param_.golden_scored_segment_pairs_file, golden_scored_segment_pairs);
