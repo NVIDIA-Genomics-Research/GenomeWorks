@@ -53,7 +53,7 @@ BatchConfig::BatchConfig(int32_t max_seq_sz /*= 1024*/, int32_t max_seq_per_poa 
     {
         matrix_sequence_dimension = cudautils::align<int32_t, CELLS_PER_THREAD>(alignment_band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING);
     }
-    else // BandMode::adaptive_band
+    else // BandMode::adaptive_band || BandMode::adaptive_band_traceback
     {
         // adapive_storage_factor is to reserve extra memory for cases with extended band-width
         matrix_sequence_dimension = cudautils::align<int32_t, CELLS_PER_THREAD>(adapive_storage_factor * (alignment_band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING));

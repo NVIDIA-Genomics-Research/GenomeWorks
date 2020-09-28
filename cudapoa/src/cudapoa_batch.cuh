@@ -552,7 +552,7 @@ protected:
         int32_t matrix_width  = (batch_size_.band_mode != BandMode::full_band) ? batch_size_.matrix_sequence_dimension : cudautils::align<int32_t, 4>(max_seq_length + 1 + CELLS_PER_THREAD);
         // in full-band, avail_buf_mem_ is dedicated to scores matrix and in static or adaptive band modes, avail_buf_mem_ is dedicated to traceback matrix
         size_t required_size = static_cast<size_t>(matrix_width) * static_cast<size_t>(matrix_height);
-        required_size *= batch_size_.band_mode == BandMode::static_band_traceback ? sizeof(TraceT) : sizeof(ScoreT);
+        required_size *= (batch_size_.band_mode == static_band_traceback || batch_size_.band_mode == adaptive_band_traceback) ? sizeof(TraceT) : sizeof(ScoreT);
 
         if (required_size > avail_buf_mem_)
         {

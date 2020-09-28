@@ -17,7 +17,6 @@
 #pragma once
 
 #include "cudapoa_structs.cuh"
-#include "cudapoa_nw_banded.cuh"
 
 #include <claraparabricks/genomeworks/utils/cudautils.hpp>
 #include <claraparabricks/genomeworks/utils/limits.cuh>
@@ -279,13 +278,15 @@ __device__ __forceinline__
                                       int32_t read_length,
                                       ScoreT* scores,
                                       TraceT* traceback,
+                                      float max_buffer_size,
                                       SizeT* alignment_graph,
                                       SizeT* alignment_read,
                                       int32_t band_width,
                                       int32_t score_matrix_height,
                                       int32_t gap_score,
                                       int32_t mismatch_score,
-                                      int32_t match_score)
+                                      int32_t match_score,
+                                      int32_t rerun)
 {
     const ScoreT min_score_value = numeric_limits<ScoreT>::min() / 2;
 
@@ -298,9 +299,53 @@ __device__ __forceinline__
 
     // Set band-width based on scores matrix aspect ratio
     //---------------------------------------------------------
-    //adaptive additions here...
+    if (ADAPTIVE)
+    {
+        if (gradient > 1.1) // ad-hoc rule 1.a
+        {
+            //                                                                            ad-hoc rule 1.b
+            band_width = max(band_width, cudautils::align<int32_t, CUDAPOA_MIN_BAND_WIDTH>(max_column * 0.08 * gradient));
+        }
+        if (gradient < 0.8) // ad-hoc rule 2.a
+        {
+            //                                                                            ad-hoc rule 2.b
+            band_width = max(band_width, cudautils::align<int32_t, CUDAPOA_MIN_BAND_WIDTH>(max_column * 0.1 / gradient));
+        }
+
+        // limit band-width for very large reads, ad-hoc rule 3
+        band_width = min(band_width, CUDAPOA_MAX_ADAPTIVE_BAND_WIDTH);
+    }
+
     // band_shift defines distance of band_start from the scores matrix diagonal, ad-hoc rule 4
     int32_t band_shift = band_width / 2;
+
+    if (ADAPTIVE)
+    {
+        // rerun code is defined in backtracking loop from previous alignment try
+        // -3 means traceback path was too close to the left bound of band
+        // -4 means traceback path was too close to the right bound of band
+        // Therefore we rerun alignment of the same read, but this time with double band-width and band_shift
+        // further to the left for rerun == -3, and further to the right for rerun == -4.
+        if (rerun == -3)
+        {
+            // ad-hoc rule 5
+            band_width *= 2;
+            band_shift *= 2.5;
+        }
+        if (rerun == -4)
+        {
+            // ad-hoc rule 6
+            band_width *= 2;
+            band_shift *= 1.5;
+        }
+        // check required memory and return error if exceeding max_buffer_size
+        // using float to avoid 64-bit
+        float required_buffer_size = static_cast<float>(graph_count) * static_cast<float>(band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING);
+        if (required_buffer_size > max_buffer_size)
+        {
+            return -2;
+        }
+    }
     //---------------------------------------------------------
 
     // Initialise the horizontal boundary of the score matrix, initialising of the vertical boundary is done within the main for loop
@@ -564,6 +609,30 @@ __device__ __forceinline__
                 alignment_read[aligned_nodes]  = j - 1;
                 i -= trace;
                 j--;
+
+                if (ADAPTIVE)
+                {
+                    if (rerun == 0)
+                    {
+                        // check if traceback gets too close or hits the band limits, if so stop and rerun with extended band-width
+                        // threshold for proximity to band limits works better if defined proportionate to the sequence length
+                        int32_t threshold = max(1, max_column / 1024); // ad-hoc rule 7
+                        if (j > threshold && j < max_column - threshold)
+                        {
+                            int32_t band_start = get_band_start_for_row(i, gradient, band_width, band_shift, max_column);
+                            if (j <= band_start + threshold) // ad-hoc rule 8-a, too close to left bound
+                            {
+                                aligned_nodes = -3;
+                                break;
+                            }
+                            if (j >= (band_start + band_width - threshold)) // ad-hoc rule 8-b, too close to right bound
+                            {
+                                aligned_nodes = -4;
+                                break;
+                            }
+                        }
+                    }
+                }
             }
 
             aligned_nodes++;
