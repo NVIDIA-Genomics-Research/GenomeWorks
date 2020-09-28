@@ -15,6 +15,7 @@
 */
 
 #pragma once
+
 #include <fstream>
 #include <sstream>
 #include <cstdlib>
@@ -42,7 +43,25 @@ struct QueryTargetPair
     int32_t query_read_id_;
     int32_t target_read_id_;
     __device__ QueryTargetPair() {}
-}; // namespace chainerutilsstructQueryTargetPair
+};
+
+struct QueryReadID
+{
+    int32_t query_read_id_;
+    __device__ QueryReadID(){};
+};
+
+struct AnchorToQueryReadIDOp
+{
+    __device__ __forceinline__ QueryReadID operator()(const Anchor& a) const
+    {
+        QueryReadID query;
+        query.query_read_id_ = a.query_read_id_;
+        return query;
+    }
+};
+
+__device__ bool operator==(const QueryTargetPair& a, const QueryTargetPair& b);
 
 struct OverlapToQueryTargetPairOp
 {
@@ -74,19 +93,32 @@ struct ChainResult
     int32_t num_anchors;
 };
 
-__device__ bool operator==(const QueryTargetPair& a, const QueryTargetPair& b)
-{
-    return a.query_read_id_ == b.query_read_id_ && a.target_read_id_ == b.target_read_id_;
-}
+__device__ bool operator==(const QueryTargetPair& a, const QueryTargetPair& b);
 
 __global__ void convert_offsets_to_ends(std::int32_t* starts, std::int32_t* lengths, std::int32_t* ends, std::int32_t n_starts);
 
-void encode_anchor_query_target_pairs(Anchor* anchors,
+void encode_anchor_query_locations(const Anchor* anchors,
+                                   int32_t n_anchors,
+                                   int32_t tile_size,
+                                   device_buffer<int32_t>& query_starts,
+                                   device_buffer<int32_t>& query_lengths,
+                                   device_buffer<int32_t>& query_ends,
+                                   device_buffer<int32_t>& tiles_per_query,
+                                   int32_t& n_queries,
+                                   int32_t& n_query_tiles,
+                                   DefaultDeviceAllocator& _allocator,
+                                   cudaStream_t& _cuda_stream,
+                                   int32_t block_size);
+
+void encode_anchor_query_target_pairs(const Anchor* anchors,
                                       int32_t n_anchors,
+                                      int32_t tile_size,
                                       device_buffer<int32_t>& query_target_pair_starts,
                                       device_buffer<int32_t>& query_target_pair_lengths,
                                       device_buffer<int32_t>& query_target_pair_ends,
+                                      device_buffer<int32_t>& tiles_per_qt_pair,
                                       int32_t& n_query_target_pairs,
+                                      int32_t& n_qt_tiles,
                                       DefaultDeviceAllocator& _allocator,
                                       cudaStream_t& _cuda_stream,
                                       int32_t block_size);
