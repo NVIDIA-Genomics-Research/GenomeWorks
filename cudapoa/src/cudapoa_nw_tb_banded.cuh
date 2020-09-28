@@ -17,6 +17,7 @@
 #pragma once
 
 #include "cudapoa_structs.cuh"
+#include "cudapoa_nw_banded.cuh"
 
 #include <claraparabricks/genomeworks/utils/cudautils.hpp>
 #include <claraparabricks/genomeworks/utils/limits.cuh>
@@ -272,10 +273,11 @@ __device__ __forceinline__ void get_scores_tb(ScoreT* scores,
 template <typename SeqT,
           typename ScoreT,
           typename SizeT,
-          typename TraceT>
+          typename TraceT,
+          bool ADAPTIVE = true>
 __device__ __forceinline__
     int32_t
-    runNeedlemanWunschBandedTraceBack(SeqT* nodes,
+    runNeedlemanWunschBandedTraceback(SeqT* nodes,
                                       SizeT* graph,
                                       SizeT* node_id_to_pos,
                                       int32_t graph_count,
@@ -294,15 +296,22 @@ __device__ __forceinline__
                                       int32_t mismatch_score,
                                       int32_t match_score)
 {
-
-    const ScoreT min_score_value = 2 * abs(min(min(gap_score, mismatch_score), -match_score) - 1) + numeric_limits<ScoreT>::min();
+    const ScoreT min_score_value = numeric_limits<ScoreT>::min() / 2;
 
     int32_t lane_idx = threadIdx.x % WARP_SIZE;
 
-    //Calculate gradient for the scores matrix
+    //Calculate aspect ratio for the scores matrix
     float gradient = float(read_length + 1) / float(graph_count + 1);
 
     int32_t max_column = read_length + 1;
+
+    // Set band-width based on scores matrix aspect ratio
+    //---------------------------------------------------------
+    //adaptive additions here...
+    // band_shift defines distance of band_start from the scores matrix diagonal, ad-hoc rule 4
+    //int32_t band_shift = band_width / 2;
+    //---------------------------------------------------------
+
     // Initialise the horizontal boundary of the score matrix
     for (int32_t j = lane_idx; j < band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING; j += WARP_SIZE)
     {

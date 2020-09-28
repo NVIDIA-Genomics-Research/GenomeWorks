@@ -18,7 +18,7 @@
 #pragma once
 
 #include "cudapoa_nw.cuh"
-#include "cudapoa_nw_adaptive_banded.cuh"
+#include "cudapoa_nw_banded.cuh"
 #include "cudapoa_nw_tb_banded.cuh"
 #include "cudapoa_topsort.cuh"
 #include "cudapoa_add_alignment.cuh"
@@ -260,8 +260,9 @@ __launch_bounds__(GW_POA_KERNELS_MAX_THREADS_PER_BLOCK)
         // Run Needleman-Wunsch alignment between graph and new sequence.
         int32_t alignment_length;
 
-        if (BM == BandMode::adaptive_band)
+        if (BM == BandMode::adaptive_band && static_band_width < CUDAPOA_MAX_ADAPTIVE_BAND_WIDTH)
         {
+            // run in adaptive mode only if static_band_width < CUDAPOA_MAX_ADAPTIVE_BAND_WIDTH
             alignment_length = runNeedlemanWunschBanded<uint8_t, ScoreT, SizeT, true>(nodes,
                                                                                       sorted_poa,
                                                                                       node_id_to_pos,
@@ -280,7 +281,6 @@ __launch_bounds__(GW_POA_KERNELS_MAX_THREADS_PER_BLOCK)
                                                                                       mismatch_score,
                                                                                       match_score,
                                                                                       0);
-
             __syncwarp();
 
             if (alignment_length < -2)
@@ -307,7 +307,7 @@ __launch_bounds__(GW_POA_KERNELS_MAX_THREADS_PER_BLOCK)
                 __syncwarp();
             }
         }
-        else if (BM == BandMode::static_band)
+        else if (BM == BandMode::static_band || (BM == BandMode::adaptive_band && static_band_width >= CUDAPOA_MAX_ADAPTIVE_BAND_WIDTH))
         {
             alignment_length = runNeedlemanWunschBanded<uint8_t, ScoreT, SizeT, false>(nodes,
                                                                                        sorted_poa,
@@ -331,7 +331,7 @@ __launch_bounds__(GW_POA_KERNELS_MAX_THREADS_PER_BLOCK)
         }
         else if (BM == BandMode::static_band_traceback)
         {
-            alignment_length = runNeedlemanWunschBandedTraceBack<uint8_t, ScoreT, SizeT, TraceT>(nodes,
+            alignment_length = runNeedlemanWunschBandedTraceback<uint8_t, ScoreT, SizeT, TraceT>(nodes,
                                                                                                  sorted_poa,
                                                                                                  node_id_to_pos,
                                                                                                  sequence_lengths[0],

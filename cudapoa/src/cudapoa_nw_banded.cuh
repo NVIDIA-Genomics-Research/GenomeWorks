@@ -187,9 +187,6 @@ __device__ __forceinline__
                              int32_t match_score,
                              int32_t rerun)
 {
-    // in adaptive bands, there can be cases where multiple rows happen to have a band with start index
-    // smaller than band-start index of a row above. If min_value is too close to numeric_limits<ScoreT>::min(),
-    // this can cause overflow, therefore min_score_value is selected far enough
     const ScoreT min_score_value = numeric_limits<ScoreT>::min() / 2;
 
     int32_t lane_idx = threadIdx.x % WARP_SIZE;
@@ -217,7 +214,6 @@ __device__ __forceinline__
         }
 
         // limit band-width for very large reads, ad-hoc rule 3
-        ///ToDo add a check for cases where static_band_width > CUDAPOA_MAX_ADAPTIVE_BAND_WIDTH
         band_width = min(band_width, CUDAPOA_MAX_ADAPTIVE_BAND_WIDTH);
     }
 
