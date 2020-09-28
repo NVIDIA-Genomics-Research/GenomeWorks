@@ -43,7 +43,12 @@ __device__ __forceinline__ ScoreT* get_score_ptr(ScoreT* scores, int32_t row, in
 }
 
 template <typename ScoreT>
-__device__ __forceinline__ void set_score(ScoreT* scores, int32_t row, int32_t column, int32_t value, int32_t band_start, int32_t band_width)
+__device__ __forceinline__ void set_score(ScoreT* scores,
+                                          int32_t row,
+                                          int32_t column,
+                                          int32_t value,
+                                          int32_t band_start,
+                                          int32_t band_width)
 {
     if (column == -1)
     {
@@ -61,7 +66,6 @@ __device__ __forceinline__ void set_score(ScoreT* scores, int32_t row, int32_t c
 
 __device__ __forceinline__ int32_t get_band_start_for_row(int32_t row, float gradient, int32_t band_width, int32_t band_shift, int32_t max_column)
 {
-
     int32_t diagonal_index = int32_t(row * gradient);
     int32_t start_pos      = max(0, diagonal_index - band_shift);
     if (max_column < start_pos + band_width)
@@ -74,9 +78,14 @@ __device__ __forceinline__ int32_t get_band_start_for_row(int32_t row, float gra
 }
 
 template <typename ScoreT>
-__device__ __forceinline__ ScoreT get_score(ScoreT* scores, int32_t row, int32_t column,
-                                            int32_t band_width, int32_t band_shift, float gradient,
-                                            int32_t max_column, const ScoreT min_score_value)
+__device__ __forceinline__ ScoreT get_score(ScoreT* scores,
+                                            int32_t row,
+                                            int32_t column,
+                                            int32_t band_width,
+                                            int32_t band_shift,
+                                            float gradient,
+                                            int32_t max_column,
+                                            const ScoreT min_score_value)
 {
     int32_t band_start = get_band_start_for_row(row, gradient, band_width, band_shift, max_column);
     int32_t band_end   = band_start + band_width;
@@ -104,7 +113,6 @@ __device__ __forceinline__ ScoreT4<ScoreT> get_scores(ScoreT* scores,
                                                       int32_t gap_score,
                                                       ScoreT4<ScoreT>& char_profile)
 {
-
     // The load instructions typically load data in 4B or 8B chunks.
     // If data is 16b (2B), then a 4B load chunk is loaded into register
     // and the necessary bits are extracted before returning. This wastes cycles
@@ -113,7 +121,6 @@ __device__ __forceinline__ ScoreT4<ScoreT> get_scores(ScoreT* scores,
     // using a single load inst, and then extracting necessary part of
     // of the data using bit arithmatic. Also reduces register count.
 
-    // subtract by CELLS_PER_THREAD to ensure score4_next is not pointing out of the corresponding band bounds
     int32_t band_start = get_band_start_for_row(row, gradient, band_width, band_shift, max_column);
     // subtract by CELLS_PER_THREAD to ensure score4_next is not pointing out of the corresponding band bounds
     int32_t band_end = band_start + band_width - CELLS_PER_THREAD;
@@ -149,7 +156,12 @@ __device__ __forceinline__ ScoreT4<ScoreT> get_scores(ScoreT* scores,
 }
 
 template <typename ScoreT>
-__device__ __forceinline__ void initialize_band(ScoreT* scores, int32_t row, int32_t min_score_value, int32_t band_start, int32_t band_width, int32_t lane_idx)
+__device__ __forceinline__ void initialize_band(ScoreT* scores,
+                                                int32_t row,
+                                                int32_t min_score_value,
+                                                int32_t band_start,
+                                                int32_t band_width,
+                                                int32_t lane_idx)
 {
     int32_t band_end = band_start + band_width;
 
@@ -181,7 +193,7 @@ __device__ __forceinline__
                              float max_buffer_size,
                              SizeT* alignment_graph,
                              SizeT* alignment_read,
-                             int32_t static_band_width,
+                             int32_t band_width,
                              int32_t gap_score,
                              int32_t mismatch_score,
                              int32_t match_score,
@@ -198,8 +210,6 @@ __device__ __forceinline__
 
     // Set band-width based on scores matrix aspect ratio
     //---------------------------------------------------------
-    int32_t band_width = static_band_width;
-
     if (ADAPTIVE)
     {
         if (gradient > 1.1) // ad-hoc rule 1.a
@@ -275,9 +285,8 @@ __device__ __forceinline__
         initialize_band(scores, score_gIdx, min_score_value, band_start, band_width, lane_idx);
 
         int32_t first_element_prev_score = 0;
-
-        uint16_t pred_count = 0;
-        int32_t pred_idx    = 0;
+        uint16_t pred_count              = 0;
+        int32_t pred_idx                 = 0;
 
         if (lane_idx == 0)
         {
