@@ -123,7 +123,7 @@ int main(int argc, char* argv[])
     std::vector<ScoredSegmentPair> h_ssp;
     // Create Ungapped Extender Object for both API modes
     std::unique_ptr<Extender> ungapped_extender = create_extender(score_matrix,
-                                                                  static_cast<int32_t>(Encoding::NUC2),
+                                                                  NUC2,
                                                                   xdrop_threshold,
                                                                   input_no_entropy,
                                                                   stream0.get(),
