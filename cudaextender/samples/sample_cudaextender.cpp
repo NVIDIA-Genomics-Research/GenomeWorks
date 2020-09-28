@@ -117,7 +117,7 @@ int main(int argc, char* argv[])
     // Create a stream for async use
     CudaStream stream0 = make_cuda_stream();
     // Create an allocator for use with both APIs
-    const std::size_t max_gpu_memory = cudautils::find_largest_contiguous_device_memory_section();
+    const int64_t max_gpu_memory = cudautils::find_largest_contiguous_device_memory_section();
     DefaultDeviceAllocator allocator = create_default_device_allocator(max_gpu_memory);
     // Reference for output
     std::vector<ScoredSegmentPair> h_ssp;
