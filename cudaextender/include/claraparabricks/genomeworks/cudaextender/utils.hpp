@@ -32,6 +32,17 @@ namespace genomeworks
 namespace cudaextender
 {
 
+constexpr int8_t A_NT = 0;
+constexpr int8_t C_NT = 1;
+constexpr int8_t G_NT = 2;
+constexpr int8_t T_NT = 3;
+constexpr int8_t L_NT = 4;
+constexpr int8_t N_NT = 5;
+constexpr int8_t X_NT = 6;
+constexpr int8_t E_NT = 7;
+constexpr int8_t NUC  = 8;
+constexpr int8_t NUC2 = NUC * NUC;
+
 /// \brief Parses seed pairs from a csv file in the following format:
 ///        target_position_in_read_1, query_position_in_read_1
 ///        target_position_in_read_2, query_position_in_read_2
@@ -87,20 +98,6 @@ inline void parse_scored_segment_pairs(const std::string& filepath, std::vector<
         }
     }
 }
-/// \brief Integer encoding scheme for character sequence
-enum class Encoding : int8_t
-{
-    A_NT = 0,
-    C_NT,
-    G_NT,
-    T_NT,
-    L_NT,
-    N_NT,
-    X_NT,
-    E_NT,
-    NUC,
-    NUC2 = NUC * NUC,
-};
 
 /// \brief Encodes character sequence as integer sequence
 ///
@@ -115,32 +112,32 @@ inline void encode_sequence(int8_t* dst_seq, const char* src_seq, const int32_t 
         switch (ch)
         {
         case 'A':
-            dst_seq[i] = static_cast<int8_t>(Encoding::A_NT);
+            dst_seq[i] = A_NT;
             break;
         case 'C':
-            dst_seq[i] = static_cast<int8_t>(Encoding::C_NT);
+            dst_seq[i] = C_NT;
             break;
         case 'G':
-            dst_seq[i] = static_cast<int8_t>(Encoding::G_NT);
+            dst_seq[i] = G_NT;
             break;
         case 'T':
-            dst_seq[i] = static_cast<int8_t>(Encoding::T_NT);
+            dst_seq[i] = T_NT;
             break;
         case '&':
-            dst_seq[i] = static_cast<int8_t>(Encoding::E_NT);
+            dst_seq[i] = E_NT;
             break;
         case 'n':
         case 'N':
-            dst_seq[i] = static_cast<int8_t>(Encoding::N_NT);
+            dst_seq[i] = N_NT;
             break;
         case 'a':
         case 'c':
         case 'g':
         case 't':
-            dst_seq[i] = static_cast<int8_t>(Encoding::L_NT);
+            dst_seq[i] = L_NT;
             break;
         default:
-            dst_seq[i] = static_cast<int8_t>(Encoding::X_NT);
+            dst_seq[i] = X_NT;
             break;
         }
     }
