@@ -96,7 +96,7 @@ int main(int argc, char* argv[])
     // Following function loops through all seed_pairs in the sample_seed_pairs.csv and returns
     // results in the passed vector
     parse_seed_pairs(seed_pairs_file_path, h_seed_pairs);
-    std::cerr << "Number of Seed Pairs: " << h_seed_pairs.size() << std::endl;
+    std::cerr << "Number of Seed Pairs: " << get_size(h_seed_pairs) << std::endl;
 
     // Define Scoring Matrix
     const int32_t score_matrix[NUC2] = {91, -114, -31, -123, -1000, -1000, -100, -9100,
@@ -109,11 +109,11 @@ int main(int argc, char* argv[])
                                         -9100, -9100, -9100, -9100, -9100, -9100, -9100, -9100};
 
     // Allocate pinned memory for query and target strings
-    pinned_host_vector<int8_t> h_encoded_target(target_sequence.length());
-    pinned_host_vector<int8_t> h_encoded_query(target_sequence.length());
+    pinned_host_vector<int8_t> h_encoded_target(get_size(target_sequence));
+    pinned_host_vector<int8_t> h_encoded_query(get_size(query_sequence));
 
-    encode_sequence(h_encoded_target.data(), target_sequence.c_str(), target_sequence.length());
-    encode_sequence(h_encoded_query.data(), query_sequence.c_str(), query_sequence.length());
+    encode_sequence(h_encoded_target.data(), target_sequence.c_str(), get_size(target_sequence));
+    encode_sequence(h_encoded_query.data(), query_sequence.c_str(), get_size(query_sequence));
     // Create a stream for async use
     CudaStream stream0 = make_cuda_stream();
     // Create an allocator for use with both APIs
