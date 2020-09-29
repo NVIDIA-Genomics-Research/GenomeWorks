@@ -34,7 +34,7 @@ using namespace cudaextender;
 static void print_scored_segment_pairs(const std::vector<ScoredSegmentPair>& scored_segment_pairs)
 {
     std::cout << "Target Position, Query Position, Length, Score" << std::endl;
-    for (auto& segment : scored_segment_pairs)
+    for (const auto& segment : scored_segment_pairs)
     {
         std::cout << segment.seed_pair.target_position_in_read << "," << segment.seed_pair.query_position_in_read
                   << "," << segment.length << "," << segment.score << std::endl;
@@ -99,14 +99,14 @@ int main(int argc, char* argv[])
     std::cerr << "Number of Seed Pairs: " << h_seed_pairs.size() << std::endl;
 
     // Define Scoring Matrix
-    int32_t score_matrix[NUC2] = {91, -114, -31, -123, -1000, -1000, -100, -9100,
-                                  -114, 100, -125, -31, -1000, -1000, -100, -9100,
-                                  -31, -125, 100, -114, -1000, -1000, -100, -9100,
-                                  -123, -31, -114, 91, -1000, -1000, -100, -9100,
-                                  -1000, -1000, -1000, -1000, -1000, -1000, -1000, -9100,
-                                  -1000, -1000, -1000, -1000, -1000, -1000, -1000, -9100,
-                                  -100, -100, -100, -100, -1000, -1000, -100, -9100,
-                                  -9100, -9100, -9100, -9100, -9100, -9100, -9100, -9100};
+    const int32_t score_matrix[NUC2] = {91, -114, -31, -123, -1000, -1000, -100, -9100,
+                                        -114, 100, -125, -31, -1000, -1000, -100, -9100,
+                                        -31, -125, 100, -114, -1000, -1000, -100, -9100,
+                                        -123, -31, -114, 91, -1000, -1000, -100, -9100,
+                                        -1000, -1000, -1000, -1000, -1000, -1000, -1000, -9100,
+                                        -1000, -1000, -1000, -1000, -1000, -1000, -1000, -9100,
+                                        -100, -100, -100, -100, -1000, -1000, -100, -9100,
+                                        -9100, -9100, -9100, -9100, -9100, -9100, -9100, -9100};
 
     // Allocate pinned memory for query and target strings
     pinned_host_vector<int8_t> h_encoded_target(target_sequence.length());
@@ -132,9 +132,9 @@ int main(int argc, char* argv[])
     if (!device_ptr_api_mode)
     {
         ungapped_extender->extend_async(h_encoded_query.data(),
-                                        get_size<int32_t>(h_encoded_query),
+                                        get_size(h_encoded_query),
                                         h_encoded_target.data(),
-                                        get_size<int32_t>(h_encoded_target),
+                                        get_size(h_encoded_target),
                                         score_threshold,
                                         h_seed_pairs);
         ungapped_extender->sync();
@@ -145,27 +145,27 @@ int main(int argc, char* argv[])
         // Allocate space on device for target and query sequences, seed_pairs,
         // scored segment pairs (ssp) and num_ssp using default allocator (caching)
         // Allocate space for query and target sequences
-        device_buffer<int8_t> d_query(query_sequence.length(), allocator, stream0.get());
-        device_buffer<int8_t> d_target(target_sequence.length(), allocator, stream0.get());
+        device_buffer<int8_t> d_query(get_size(query_sequence), allocator, stream0.get());
+        device_buffer<int8_t> d_target(get_size(target_sequence), allocator, stream0.get());
         // Allocate space for SeedPair input
-        device_buffer<SeedPair> d_seed_pairs(h_seed_pairs.size(), allocator, stream0.get());
+        device_buffer<SeedPair> d_seed_pairs(get_size(h_seed_pairs), allocator, stream0.get());
         // Allocate space for ScoredSegmentPair output
-        device_buffer<ScoredSegmentPair> d_ssp(h_seed_pairs.size(), allocator, stream0.get());
+        device_buffer<ScoredSegmentPair> d_ssp(get_size(h_seed_pairs), allocator, stream0.get());
         device_buffer<int32_t> d_num_ssp(1, allocator, stream0.get());
 
         // Async Memcopy all the input values to device
-        device_copy_n(h_encoded_query.data(), query_sequence.length(), d_query.data(), stream0.get());
-        device_copy_n(h_encoded_target.data(), target_sequence.length(), d_target.data(), stream0.get());
-        device_copy_n(h_seed_pairs.data(), h_seed_pairs.size(), d_seed_pairs.data(), stream0.get());
+        device_copy_n(h_encoded_query.data(), get_size(query_sequence), d_query.data(), stream0.get());
+        device_copy_n(h_encoded_target.data(), get_size(target_sequence), d_target.data(), stream0.get());
+        device_copy_n(h_seed_pairs.data(), get_size(h_seed_pairs), d_seed_pairs.data(), stream0.get());
 
         // Launch the ungapped extender device pointer function
         ungapped_extender->extend_async(d_query.data(),
-                                        get_size<int32_t>(d_query),
+                                        get_size(d_query),
                                         d_target.data(),
-                                        get_size<int32_t>(d_target),
+                                        get_size(d_target),
                                         score_threshold,
                                         d_seed_pairs.data(),
-                                        d_seed_pairs.size(),
+                                        get_size(d_seed_pairs),
                                         d_ssp.data(),
                                         d_num_ssp.data());
 
@@ -177,7 +177,7 @@ int main(int argc, char* argv[])
         device_copy_n(d_ssp.data(), h_num_ssp, h_ssp.data(), stream0.get());
         cudaStreamSynchronize(stream0.get());
     }
-    std::cerr << "Number of Scored Segment Pairs found: " << h_ssp.size() << std::endl;
+    std::cerr << "Number of Scored Segment Pairs found: " << get_size(h_ssp) << std::endl;
     if (print)
     {
         print_scored_segment_pairs(h_ssp);

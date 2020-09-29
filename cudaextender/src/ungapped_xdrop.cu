@@ -42,7 +42,7 @@ namespace cudaextender
 
 using namespace cudautils;
 
-UngappedXDrop::UngappedXDrop(int32_t* h_score_mat, const int32_t score_mat_dim,
+UngappedXDrop::UngappedXDrop(const int32_t* h_score_mat, const int32_t score_mat_dim,
                              const int32_t xdrop_threshold, const bool no_entropy,
                              cudaStream_t stream, const int32_t device_id,
                              DefaultDeviceAllocator allocator)
@@ -89,14 +89,12 @@ UngappedXDrop::UngappedXDrop(int32_t* h_score_mat, const int32_t score_mat_dim,
     d_done_             = device_buffer<int32_t>(batch_max_ungapped_extensions_, allocator_, stream_);
     d_tmp_ssp_          = device_buffer<ScoredSegmentPair>(batch_max_ungapped_extensions_, allocator_, stream_);
     d_temp_storage_cub_ = device_buffer<int8_t>(cub_storage_bytes, allocator_, stream_);
-
-    // Requires pinned host memory registration for proper async behavior
     device_copy_n(h_score_mat_.data(), score_mat_dim_, d_score_mat_.data(), stream_);
 }
 
-StatusType UngappedXDrop::extend_async(int8_t* d_query, const int32_t query_length,
-                                       int8_t* d_target, const int32_t target_length,
-                                       const int32_t score_threshold, SeedPair* d_seed_pairs,
+StatusType UngappedXDrop::extend_async(const int8_t* d_query, const int32_t query_length,
+                                       const int8_t* d_target, const int32_t target_length,
+                                       const int32_t score_threshold, const SeedPair* d_seed_pairs,
                                        const int32_t num_seed_pairs, ScoredSegmentPair* d_scored_segment_pairs,
                                        int32_t* d_num_scored_segment_pairs)
 {
@@ -169,8 +167,8 @@ StatusType UngappedXDrop::extend_async(int8_t* d_query, const int32_t query_leng
     return StatusType::success;
 }
 
-StatusType UngappedXDrop::extend_async(int8_t* h_query, const int32_t query_length,
-                                       int8_t* h_target, const int32_t target_length,
+StatusType UngappedXDrop::extend_async(const int8_t* h_query, const int32_t query_length,
+                                       const int8_t* h_target, const int32_t target_length,
                                        const int32_t score_threshold,
                                        const std::vector<SeedPair>& h_seed_pairs)
 {

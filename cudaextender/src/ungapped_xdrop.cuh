@@ -37,7 +37,7 @@ namespace cudaextender
 class UngappedXDrop : public Extender
 {
 public:
-    UngappedXDrop(int32_t* h_score_mat,
+    UngappedXDrop(const int32_t* h_score_mat,
                   int32_t score_mat_dim,
                   int32_t xdrop_threshold,
                   bool no_entropy,
@@ -46,14 +46,14 @@ public:
                   DefaultDeviceAllocator allocator);
     ~UngappedXDrop() override;
 
-    StatusType extend_async(int8_t* h_query, int32_t query_length,
-                            int8_t* h_target, int32_t target_length,
+    StatusType extend_async(const int8_t* h_query, int32_t query_length,
+                            const int8_t* h_target, int32_t target_length,
                             int32_t score_threshold,
                             const std::vector<SeedPair>& h_seed_pairs) override;
 
-    StatusType extend_async(int8_t* d_query, int32_t query_length,
-                            int8_t* d_target, int32_t target_length,
-                            int32_t score_threshold, SeedPair* d_seed_pairs,
+    StatusType extend_async(const int8_t* d_query, int32_t query_length,
+                            const int8_t* d_target, int32_t target_length,
+                            int32_t score_threshold, const SeedPair* d_seed_pairs,
                             int32_t num_seed_pairs, ScoredSegmentPair* d_scored_segment_pairs,
                             int32_t* d_num_scored_segment_pairs) override;
 
