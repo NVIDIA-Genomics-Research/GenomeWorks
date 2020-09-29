@@ -440,13 +440,21 @@ __global__ void chain_anchors_in_block(const Anchor* anchors,
 
                 __syncthreads();
                 // Calculate score
-                int32_t marginal_score = log_linear_anchor_weight(block_anchor_cache[thread_id_in_block], possible_successor_anchor, word_size, max_distance, max_bandwidth);
-                printf("%d %d | %d %d : %d %d : %d\n",
-                       thread_id_in_block, (i % PREDECESSOR_SEARCH_ITERATIONS), counter,
-                       i,
-                       current_score,
-                       marginal_score,
-                       block_score_cache[thread_id_in_block]);
+                int32_t marginal_score = log_linear_anchor_weight(possible_successor_anchor, block_anchor_cache[thread_id_in_block], word_size, max_distance, max_bandwidth);
+                // printf("%d %d | %d %d : %d %d : %d | %d %d %d %d | %d %d %d %d\n",
+                //        thread_id_in_block, (i % PREDECESSOR_SEARCH_ITERATIONS), counter,
+                //        i,
+                //        current_score,
+                //        marginal_score,
+                //        block_score_cache[thread_id_in_block],
+                //        block_anchor_cache[thread_id_in_block].query_read_id_,
+                //        block_anchor_cache[thread_id_in_block].query_position_in_read_,
+                //        block_anchor_cache[thread_id_in_block].target_read_id_,
+                //        block_anchor_cache[thread_id_in_block].target_position_in_read_,
+                //        possible_successor_anchor.query_read_id_,
+                //        possible_successor_anchor.query_position_in_read_,
+                //        possible_successor_anchor.target_read_id_,
+                //        possible_successor_anchor.target_position_in_read_);
                 __syncthreads();
 
                 if (current_score + marginal_score >= block_score_cache[thread_id_in_block] && (global_read_index + i) < num_anchors)
@@ -733,7 +741,7 @@ void OverlapperMinimap::get_overlaps(std::vector<Overlap>& fused_overlaps,
                                                                                                 500);
     }
 
-// #define DEBUG_CHAINSq
+#define DEBUG_CHAINS
 #ifdef DEBUG_CHAINS
     std::cout << "Num anchors: " << n_anchors << std::endl;
     std::cout << "Num query tiles: " << n_query_tiles << std::endl;
