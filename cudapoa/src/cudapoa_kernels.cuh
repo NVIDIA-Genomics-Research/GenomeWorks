@@ -407,7 +407,7 @@ __launch_bounds__(GW_POA_KERNELS_MAX_THREADS_PER_BLOCK)
             __syncwarp();
         }
         // Full band -------------------------------------------------------------------------------------------
-        else // BM == BandMode::full_band
+        else if (BM == BandMode::full_band)
         {
             alignment_length = runNeedlemanWunsch<uint8_t, ScoreT, SizeT>(nodes,
                                                                           sorted_poa,

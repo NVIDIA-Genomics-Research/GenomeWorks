@@ -62,8 +62,9 @@ __device__ __forceinline__ void set_score_tb(ScoreT* scores,
         col_idx = column - band_start;
     }
     // in NW with traceback buffer, score matrix is stored partially, hence row is mapped to [0, score_matrix_height) span
+    row                 = row % score_matrix_height;
     int64_t score_index = static_cast<int64_t>(col_idx) +
-                          static_cast<int64_t>(row % score_matrix_height) * static_cast<int64_t>(band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING);
+                          static_cast<int64_t>(row) * static_cast<int64_t>(band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING);
     scores[score_index] = value;
 }
 
