@@ -59,7 +59,10 @@ __global__ void convert_offsets_to_ends(std::int32_t* starts, std::int32_t* leng
     }
 }
 
-__global__ void calculate_tiles_per_read(std::int32_t* lengths, const int32_t num_reads, const int32_t tile_size, std::int32_t* tiles_per_read)
+__global__ void calculate_tiles_per_read(std::int32_t* lengths,
+                                         const int32_t num_reads,
+                                         const int32_t tile_size,
+                                         std::int32_t* tiles_per_read)
 {
     int32_t d_thread_id = blockIdx.x * blockDim.x + threadIdx.x;
     if (d_thread_id < num_reads)
@@ -70,6 +73,22 @@ __global__ void calculate_tiles_per_read(std::int32_t* lengths, const int32_t nu
     }
 }
 
+__global__ void calculate_tile_starts(std::int32_t* query_starts,
+                                      std::int32_t* tiles_per_query,
+                                      std::int32_t* tile_starts,
+                                      const int32_t tile_size,
+                                      int32_t num_queries)
+{
+    int32_t d_thread_id = blockIdx.x * blockDim.x + threadIdx.x;
+    if (d_thread_id < num_queries)
+    {
+        for (int i = 0; i < tiles_per_query[d_thread_id]; ++i)
+        {
+            tile_starts[d_thread_id + i] = query_starts[d_thread_id] + (i * tile_size);
+        }
+    }
+}
+
 void encode_anchor_query_locations(const Anchor* anchors,
                                    int32_t n_anchors,
                                    int32_t tile_size,
@@ -77,6 +96,7 @@ void encode_anchor_query_locations(const Anchor* anchors,
                                    device_buffer<int32_t>& query_lengths,
                                    device_buffer<int32_t>& query_ends,
                                    device_buffer<int32_t>& tiles_per_query,
+                                   device_buffer<int32_t>& tile_starts,
                                    int32_t& n_queries,
                                    int32_t& n_query_tiles,
                                    DefaultDeviceAllocator& _allocator,
@@ -139,7 +159,7 @@ void encode_anchor_query_locations(const Anchor* anchors,
 
     if (tile_size > 0)
     {
-        calculate_tiles_per_read<<<(n_queries / block_size) + 1, 32, 0, _cuda_stream>>>(query_starts.data(), n_queries, tile_size, tiles_per_query.data());
+        calculate_tiles_per_read<<<(n_queries / block_size) + 1, 32, 0, _cuda_stream>>>(query_lengths.data(), n_queries, tile_size, tiles_per_query.data());
         device_buffer<int32_t> d_n_query_tiles(1, _allocator, _cuda_stream);
 
         d_temp_storage     = nullptr;
@@ -148,7 +168,9 @@ void encode_anchor_query_locations(const Anchor* anchors,
         d_temp_buf.clear_and_resize(temp_storage_bytes);
         d_temp_storage = d_temp_buf.data();
         cub::DeviceReduce::Sum(d_temp_storage, temp_storage_bytes, tiles_per_query.data(), d_n_query_tiles.data(), n_queries);
+
         n_query_tiles = cudautils::get_value_from_device(d_n_query_tiles.data(), _cuda_stream);
+        calculate_tile_starts<<<(n_queries / block_size) + 1, 32, 0, _cuda_stream>>>(query_starts.data(), tiles_per_query.data(), tile_starts.data(), tile_size, n_queries);
     }
 }
 

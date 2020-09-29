@@ -38,6 +38,8 @@ namespace cudamapper
 namespace chainerutils
 {
 
+#define MAX_CHAINS_PER_TILE 5
+
 struct QueryTargetPair
 {
     int32_t query_read_id_;
@@ -89,13 +91,47 @@ struct ChainResult
 {
     Anchor start;
     Anchor end;
+    int32_t tile_id;
     int32_t total_score;
     int32_t num_anchors;
 };
 
-__device__ bool operator==(const QueryTargetPair& a, const QueryTargetPair& b);
+struct TileResults
+{
+    ChainResult results[MAX_CHAINS_PER_TILE];
+    int num_results = 0;
+    bool add_result(const ChainResult& r)
+    {
+        if (num_results < MAX_CHAINS_PER_TILE)
+        {
+            results[num_results] = r;
+            ++num_results;
+            return true;
+        }
+        else
+        {
+            for (int i = 0; i < num_results; ++i)
+            {
+                if (r.total_score > results[i].total_score)
+                {
+                    results[i] = r;
+                }
+            }
+        }
+        return false;
+    }
+};
+
+__device__ bool
+operator==(const QueryTargetPair& a, const QueryTargetPair& b);
 
 __global__ void convert_offsets_to_ends(std::int32_t* starts, std::int32_t* lengths, std::int32_t* ends, std::int32_t n_starts);
+
+__global__ void calculate_tile_starts(std::int32_t* query_starts,
+                                      std::int32_t* tiles_per_query,
+                                      std::int32_t* tile_starts,
+                                      const int32_t tile_size,
+                                      int32_t num_queries);
 
 void encode_anchor_query_locations(const Anchor* anchors,
                                    int32_t n_anchors,
@@ -104,6 +140,7 @@ void encode_anchor_query_locations(const Anchor* anchors,
                                    device_buffer<int32_t>& query_lengths,
                                    device_buffer<int32_t>& query_ends,
                                    device_buffer<int32_t>& tiles_per_query,
+                                   device_buffer<int32_t>& tile_starts,
                                    int32_t& n_queries,
                                    int32_t& n_query_tiles,
                                    DefaultDeviceAllocator& _allocator,
