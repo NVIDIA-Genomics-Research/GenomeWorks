@@ -184,7 +184,7 @@ __device__ __forceinline__ void get_scores_tb(ScoreT* scores,
         // need to load the next chunk of memory as well
         ScoreT4<ScoreT> score4_next = pred_scores[1];
 
-        ScoreT char_profile = (graph_base == read4.r0 ? match_score : mismatch_score);
+        int32_t char_profile = (graph_base == read4.r0 ? match_score : mismatch_score);
 
         // if trace is diogonal, its value is positive and if vertical, negative
         // update score.s0, trace.t0 ----------
