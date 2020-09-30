@@ -196,14 +196,16 @@ struct OverlapsAndCigars
 
 /// \brief does overlapping and matching for pairs of query and target indices from device_batch
 /// \param device_batch list of query and target indices to be processed
-/// \param index_cache indices should be loaded into cache beforehand
+/// \param query_index_cache indices should be loaded into cache beforehand
+/// \param target_index_cache indices should be loaded into cache beforehand
 /// \param application_parameters
 /// \param device_allocator
 /// \param overlaps_and_cigars_to_process overlaps and cigars are output here and then consumed by another thread
 /// \param number_of_skipped_pairs_of_indices number of pairs of indices skipped due to OOM error, variable shared between all threads, each call increases the number by the number of skipped pairs
 /// \param cuda_stream cuda stream on which the computation should be done
 void process_one_device_batch(const IndexBatch& device_batch,
-                              IndexCache& index_cache,
+                              std::shared_ptr<DeviceIndexCache> query_index_cache,
+                              std::shared_ptr<DeviceIndexCache> target_index_cache,
                               const ApplicationParameters& application_parameters,
                               DefaultDeviceAllocator device_allocator,
                               ThreadsafeProducerConsumer<OverlapsAndCigars>& overlaps_and_cigars_to_process,
@@ -223,8 +225,8 @@ void process_one_device_batch(const IndexBatch& device_batch,
             // if doing all-to-all skip pairs in which target batch has smaller id than query batch as it will be covered by symmetry
             if (!application_parameters.all_to_all || target_index_descriptor.first_read() >= query_index_descriptor.first_read())
             {
-                std::shared_ptr<const Index> query_index  = index_cache.get_index_from_query_cache(query_index_descriptor);
-                std::shared_ptr<const Index> target_index = index_cache.get_index_from_target_cache(target_index_descriptor);
+                std::shared_ptr<const Index> query_index  = query_index_cache->get_index(query_index_descriptor);
+                std::shared_ptr<const Index> target_index = target_index_cache->get_index(target_index_descriptor);
 
                 try
                 {
@@ -278,14 +280,14 @@ void process_one_device_batch(const IndexBatch& device_batch,
 /// \brief loads one batch into host memory and then processes its device batches one by one
 /// \param batch list of all query and target indices that belong to this batch, as well as subgroups of those indices that belong to device batches
 /// \param application_parameters
-/// \param index_cache data will be loaded into cache within the function
+/// \param host_index_cache data will be loaded into cache within the function
 /// \param overlaps_and_cigars_to_process overlaps and cigars are output to this structure and the then consumed by another thread
 /// \param number_of_skipped_pairs_of_indices number of pairs of indices skipped due to OOM error, variable shared between all threads, each call increases the number by the number of skipped pairs
 /// \param cuda_stream
 void process_one_batch(const BatchOfIndices& batch,
                        const ApplicationParameters& application_parameters,
                        DefaultDeviceAllocator device_allocator,
-                       IndexCache& index_cache,
+                       HostIndexCache& host_index_cache,
                        ThreadsafeProducerConsumer<OverlapsAndCigars>& overlaps_and_cigars_to_process,
                        std::atomic<int32_t>& number_of_skipped_pairs_of_indices,
                        cudaStream_t cuda_stream)
@@ -304,12 +306,14 @@ void process_one_batch(const BatchOfIndices& batch,
         GW_NVTX_RANGE(profiler, "main::process_one_batch::generte_host_indices");
         assert(!host_batch.query_indices.empty() && !host_batch.target_indices.empty() && !device_batches.empty());
 
-        index_cache.generate_content_query_host(host_batch.query_indices,
-                                                device_batches.front().query_indices,
-                                                skip_copy_to_host);
-        index_cache.generate_content_target_host(host_batch.target_indices,
-                                                 device_batches.front().target_indices,
-                                                 skip_copy_to_host);
+        host_index_cache.generate_content(CacheType::query_cache,
+                                          host_batch.query_indices,
+                                          device_batches.front().query_indices,
+                                          skip_copy_to_host);
+        host_index_cache.generate_content(CacheType::target_cache,
+                                          host_batch.target_indices,
+                                          device_batches.front().target_indices,
+                                          skip_copy_to_host);
     }
 
     // process device batches one by one
@@ -317,14 +321,20 @@ void process_one_batch(const BatchOfIndices& batch,
     // Loop uses copy_device_batch_index as its index, compute_device_batch_index is equal to copy_device_batch_index - 1
     // (compute_device_batch_index does not actually exist).
     // copy_device_batch_index loops over one more element because for such element compute_device_batch_index would have been equal to the last batch
+    std::shared_ptr<DeviceIndexCache> query_cache_being_copied_into;
+    std::shared_ptr<DeviceIndexCache> query_cache_with_ready_data;
+    std::shared_ptr<DeviceIndexCache> target_cache_being_copied_into;
+    std::shared_ptr<DeviceIndexCache> target_cache_with_ready_data;
     for (int32_t copy_device_batch_index = 0; copy_device_batch_index < get_size<int32_t>(batch.device_batches) + 1; ++copy_device_batch_index)
     {
         if (copy_device_batch_index > 0)
         {
             // if not the first batch wait for previous batch to finish copying
             GW_NVTX_RANGE(profiler, "main::process_one_batch::finish_generating_device_indices");
-            index_cache.finish_generating_content_query_device();
-            index_cache.finish_generating_content_target_device();
+            query_cache_being_copied_into->wait_for_data_to_be_ready();
+            target_cache_being_copied_into->wait_for_data_to_be_ready();
+            query_cache_with_ready_data  = query_cache_being_copied_into;
+            target_cache_with_ready_data = target_cache_being_copied_into;
         }
 
         if (copy_device_batch_index < get_size<int32_t>(batch.device_batches))
@@ -333,8 +343,11 @@ void process_one_batch(const BatchOfIndices& batch,
             GW_NVTX_RANGE(profiler, "main::process_one_batch::start_generating_device_indices");
             const std::vector<IndexDescriptor>& query_index_batch_to_start_copying  = batch.device_batches[copy_device_batch_index].query_indices;
             const std::vector<IndexDescriptor>& target_index_batch_to_start_copying = batch.device_batches[copy_device_batch_index].target_indices;
-            index_cache.start_generating_content_query_device(query_index_batch_to_start_copying);
-            index_cache.start_generating_content_target_device(target_index_batch_to_start_copying);
+
+            query_cache_being_copied_into  = host_index_cache.start_copying_indices_to_device(CacheType::query_cache,
+                                                                                             query_index_batch_to_start_copying);
+            target_cache_being_copied_into = host_index_cache.start_copying_indices_to_device(CacheType::target_cache,
+                                                                                              target_index_batch_to_start_copying);
         }
 
         if (copy_device_batch_index > 0)
@@ -342,13 +355,16 @@ void process_one_batch(const BatchOfIndices& batch,
             // when copy_device_batch_index == 0 then compute_device_batch_index == -1, so there is no batch to process
             GW_NVTX_RANGE(profiler, "main::process_one_batch::process_device_batch");
             process_one_device_batch(batch.device_batches[copy_device_batch_index - 1],
-                                     index_cache,
+                                     query_cache_with_ready_data,
+                                     target_cache_with_ready_data,
                                      application_parameters,
                                      device_allocator,
                                      overlaps_and_cigars_to_process,
                                      number_of_skipped_pairs_of_indices,
                                      cuda_stream);
         }
+
+        GW_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
     }
 }
 
@@ -440,16 +456,16 @@ void worker_thread_function(const int32_t device_id,
                                                                               {cuda_stream_computation});
 
     // create index_cache, indices are not created at this point but later as each batch gets processed
-    IndexCache index_cache(application_parameters.all_to_all,
-                           device_allocator,
-                           application_parameters.query_parser,
-                           application_parameters.target_parser,
-                           application_parameters.kmer_size,
-                           application_parameters.windows_size,
-                           true, // hash_representations
-                           application_parameters.filtering_parameter,
-                           cuda_stream_computation,
-                           cuda_stream_copy);
+    HostIndexCache host_index_cache(application_parameters.all_to_all,
+                                    device_allocator,
+                                    application_parameters.query_parser,
+                                    application_parameters.target_parser,
+                                    application_parameters.kmer_size,
+                                    application_parameters.windows_size,
+                                    true, // hash_representations
+                                    application_parameters.filtering_parameter,
+                                    cuda_stream_computation,
+                                    cuda_stream_copy);
 
     // data structure used to exchange data with postprocess_and_write_thread
     ThreadsafeProducerConsumer<OverlapsAndCigars> overlaps_and_cigars_to_process;
@@ -483,7 +499,7 @@ void worker_thread_function(const int32_t device_id,
         process_one_batch(batch_of_indices.value(),
                           application_parameters,
                           device_allocator,
-                          index_cache,
+                          host_index_cache,
                           overlaps_and_cigars_to_process,
                           number_of_skipped_pairs_of_indices,
                           cuda_stream_computation);

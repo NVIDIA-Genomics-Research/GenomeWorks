@@ -32,16 +32,92 @@ namespace genomeworks
 namespace cudamapper
 {
 
-IndexCache::IndexCache(bool same_query_and_target,
-                       genomeworks::DefaultDeviceAllocator allocator,
-                       std::shared_ptr<genomeworks::io::FastaParser> query_parser,
-                       std::shared_ptr<genomeworks::io::FastaParser> target_parser,
-                       std::uint64_t kmer_size,
-                       std::uint64_t window_size,
-                       bool hash_representations,
-                       double filtering_parameter,
-                       cudaStream_t cuda_stream_generation,
-                       cudaStream_t cuda_stream_copy)
+DeviceIndexCache::DeviceIndexCache(const CacheType cache_type,
+                                   HostIndexCache* host_cache)
+    : cache_type_(cache_type)
+    , host_cache_(host_cache)
+    , is_ready_(false)
+{
+    host_cache_->register_device_cache(cache_type_,
+                                       this);
+}
+
+DeviceIndexCache::~DeviceIndexCache()
+{
+    host_cache_->deregister_device_cache(cache_type_,
+                                         this);
+}
+
+void DeviceIndexCache::add_index(const IndexDescriptor index_descriptor,
+                                 std::shared_ptr<Index> device_index)
+{
+    cache_[index_descriptor] = device_index;
+}
+
+std::shared_ptr<Index> DeviceIndexCache::get_index(const IndexDescriptor index_descriptor) const
+{
+    if (!is_ready_)
+    {
+        throw DeviceCacheNotReadyException(cache_type_,
+                                           index_descriptor);
+    }
+
+    const auto index_iter = cache_.find(index_descriptor);
+    if (index_iter == cache_.end())
+    {
+        throw IndexNotFoundException(cache_type_,
+                                     IndexNotFoundException::IndexLocation::device_cache,
+                                     index_descriptor);
+    }
+    return index_iter->second;
+}
+
+std::shared_ptr<Index> DeviceIndexCache::get_index_no_check_if_ready(IndexDescriptor index_descriptor) const
+{
+    const auto index_iter = cache_.find(index_descriptor);
+    if (index_iter == cache_.end())
+    {
+        throw IndexNotFoundException(cache_type_,
+                                     IndexNotFoundException::IndexLocation::device_cache,
+                                     index_descriptor);
+    }
+    return index_iter->second;
+}
+
+bool DeviceIndexCache::has_index(const IndexDescriptor index_descriptor) const
+{
+    // TODO: use optional instead
+    return 0 != cache_.count(index_descriptor);
+}
+
+void DeviceIndexCache::wait_for_data_to_be_ready()
+{
+    if (!is_ready_)
+    {
+        for (const auto& index_it : cache_)
+        {
+            index_it.second->wait_to_be_ready();
+        }
+
+        is_ready_ = true;
+    }
+}
+
+bool DeviceIndexCache::is_ready() const
+{
+    return is_ready_;
+}
+
+HostIndexCache::HostIndexCache(const bool same_query_and_target,
+                               genomeworks::DefaultDeviceAllocator allocator,
+                               std::shared_ptr<genomeworks::io::FastaParser> query_parser,
+                               std::shared_ptr<genomeworks::io::FastaParser> target_parser,
+                               const std::uint64_t kmer_size,
+                               const std::uint64_t window_size,
+                               const bool hash_representations,
+                               const double filtering_parameter,
+                               cudaStream_t cuda_stream_generation,
+                               cudaStream_t cuda_stream_copy)
     : same_query_and_target_(same_query_and_target)
     , allocator_(allocator)
     , query_parser_(query_parser)
@@ -55,74 +131,20 @@ IndexCache::IndexCache(bool same_query_and_target,
 {
 }
 
-void IndexCache::generate_content_query_host(const std::vector<IndexDescriptor>& descriptors_of_indices_to_cache,
-                                             const std::vector<IndexDescriptor>& descriptors_of_indices_to_keep_on_device,
-                                             const bool skip_copy_to_host)
-{
-    generate_content_host(descriptors_of_indices_to_cache,
-                          descriptors_of_indices_to_keep_on_device,
-                          skip_copy_to_host,
-                          CacheSelector::query_cache);
-}
-
-void IndexCache::generate_content_target_host(const std::vector<IndexDescriptor>& descriptors_of_indices_to_cache,
-                                              const std::vector<IndexDescriptor>& descriptors_of_indices_to_keep_on_device,
-                                              const bool skip_copy_to_host)
-{
-    generate_content_host(descriptors_of_indices_to_cache,
-                          descriptors_of_indices_to_keep_on_device,
-                          skip_copy_to_host,
-                          CacheSelector::target_cache);
-}
-
-void IndexCache::start_generating_content_query_device(const std::vector<IndexDescriptor>& descriptors_of_indices_to_cache)
-{
-    start_generating_content_device(descriptors_of_indices_to_cache,
-                                    CacheSelector::query_cache);
-}
-
-void IndexCache::finish_generating_content_query_device()
-{
-    finish_generating_content_device(CacheSelector::query_cache);
-}
-
-void IndexCache::start_generating_content_target_device(const std::vector<IndexDescriptor>& descriptors_of_indices_to_cache)
-{
-    start_generating_content_device(descriptors_of_indices_to_cache,
-                                    CacheSelector::target_cache);
-}
-
-void IndexCache::finish_generating_content_target_device()
-{
-    finish_generating_content_device(CacheSelector::target_cache);
-}
-
-std::shared_ptr<const Index> IndexCache::get_index_from_query_cache(const IndexDescriptor& index_descriptor) const
-{
-    return get_index_from_cache(index_descriptor,
-                                CacheSelector::query_cache);
-}
-
-std::shared_ptr<const Index> IndexCache::get_index_from_target_cache(const IndexDescriptor& index_descriptor) const
-{
-    return get_index_from_cache(index_descriptor,
-                                CacheSelector::target_cache);
-}
-
-void IndexCache::generate_content_host(const std::vector<IndexDescriptor>& descriptors_of_indices_to_cache,
-                                       const std::vector<IndexDescriptor>& descriptors_of_indices_to_keep_on_device,
-                                       const bool skip_copy_to_host,
-                                       const CacheSelector which_cache)
+void HostIndexCache::generate_content(const CacheType cache_type,
+                                      const std::vector<IndexDescriptor>& descriptors_of_indices_to_cache,
+                                      const std::vector<IndexDescriptor>& descriptors_of_indices_to_keep_on_device,
+                                      const bool skip_copy_to_host)
 {
     // skip_copy_to_host only makes sense if descriptors_of_indices_to_cache and descriptors_of_indices_to_keep_on_device are the same
     // otherwise some indices would be created and not saved on either host or device
     assert(!skip_copy_to_host || (descriptors_of_indices_to_cache == descriptors_of_indices_to_keep_on_device));
     assert(!descriptors_of_indices_to_cache.empty());
 
-    host_cache_t& this_cache                   = (CacheSelector::query_cache == which_cache) ? query_host_cache_ : target_host_cache_;
-    const host_cache_t& other_cache            = (CacheSelector::query_cache == which_cache) ? target_host_cache_ : query_host_cache_;
-    device_cache_t& indices_kept_on_device     = (CacheSelector::query_cache == which_cache) ? query_indices_kept_on_device_ : target_indices_kept_on_device_;
-    const genomeworks::io::FastaParser* parser = (CacheSelector::query_cache == which_cache) ? query_parser_.get() : target_parser_.get();
+    host_cache_t& this_cache                   = (CacheType::query_cache == cache_type) ? query_host_cache_ : target_host_cache_;
+    const host_cache_t& other_cache            = (CacheType::query_cache == cache_type) ? target_host_cache_ : query_host_cache_;
+    device_cache_t& indices_kept_on_device     = (CacheType::query_cache == cache_type) ? query_indices_kept_on_device_ : target_indices_kept_on_device_;
+    const genomeworks::io::FastaParser* parser = (CacheType::query_cache == cache_type) ? query_parser_.get() : target_parser_.get();
 
     // convert descriptors_of_indices_to_keep_on_device into set for faster search
     std::unordered_set<IndexDescriptor, IndexDescriptorHash> descriptors_of_indices_to_keep_on_device_set(begin(descriptors_of_indices_to_keep_on_device),
@@ -207,7 +229,7 @@ void IndexCache::generate_content_host(const std::vector<IndexDescriptor>& descr
             }
         }
 
-        if (host_copy_needed)
+        if (index_on_host)
         {
             assert(index_on_host);
             new_cache[descriptor_of_index_to_cache] = index_on_host;
@@ -256,100 +278,129 @@ void IndexCache::generate_content_host(const std::vector<IndexDescriptor>& descr
     std::swap(new_cache, this_cache);
 }
 
-void IndexCache::start_generating_content_device(const std::vector<IndexDescriptor>& descriptors_of_indices_to_cache,
-                                                 const CacheSelector which_cache)
+std::shared_ptr<DeviceIndexCache> HostIndexCache::start_copying_indices_to_device(const CacheType cache_type,
+                                                                                  const std::vector<IndexDescriptor>& descriptors_of_indices_to_cache)
 {
-    const host_cache_t& host_cache           = (CacheSelector::query_cache == which_cache) ? query_host_cache_ : target_host_cache_;
-    device_cache_t& this_device_cache        = (CacheSelector::query_cache == which_cache) ? query_device_cache_ : target_device_cache_;
-    const device_cache_t& other_device_cache = (CacheSelector::query_cache == which_cache) ? target_device_cache_ : query_device_cache_;
-    device_cache_t& indices_kept_on_device   = (CacheSelector::query_cache == which_cache) ? query_indices_kept_on_device_ : target_indices_kept_on_device_;
-    device_cache_t& new_cache                = (CacheSelector::query_cache == which_cache) ? next_query_device_cache_ : next_target_device_cache_;
+    const host_cache_t& host_cache                            = (CacheType::query_cache == cache_type) ? query_host_cache_ : target_host_cache_;
+    const std::vector<DeviceIndexCache*>& this_device_caches  = (CacheType::query_cache == cache_type) ? device_caches_query_ : device_caches_target_;
+    const std::vector<DeviceIndexCache*>& other_device_caches = (CacheType::query_cache == cache_type) ? device_caches_target_ : device_caches_query_;
+    device_cache_t& indices_kept_on_device                    = (CacheType::query_cache == cache_type) ? query_indices_kept_on_device_ : target_indices_kept_on_device_;
 
-    for (const IndexDescriptor& index_descriptor : descriptors_of_indices_to_cache)
+    std::shared_ptr<DeviceIndexCache> device_cache = std::make_shared<DeviceIndexCache>(cache_type,
+                                                                                        this);
+
+    for (const IndexDescriptor& descriptor : descriptors_of_indices_to_cache)
     {
         std::shared_ptr<Index> device_index = nullptr;
 
         // check if index was kept on device after creation
-        auto index_kept_on_device = indices_kept_on_device.find(index_descriptor);
+        auto index_kept_on_device = indices_kept_on_device.find(descriptor);
         if (index_kept_on_device != indices_kept_on_device.end())
         {
             device_index = index_kept_on_device->second;
-            indices_kept_on_device.erase(index_descriptor);
+            indices_kept_on_device.erase(descriptor);
         }
 
         // check if value is already in this cache
         if (!device_index)
         {
-            auto index_in_this_cache = this_device_cache.find(index_descriptor);
-            if (index_in_this_cache != this_device_cache.end())
+            for (const DeviceIndexCache* const existing_cache : this_device_caches)
             {
-                device_index = index_in_this_cache->second;
+                if (existing_cache != device_cache.get() && existing_cache->has_index(descriptor))
+                {
+                    device_index = existing_cache->get_index_no_check_if_ready(descriptor);
+                    break;
+                }
             }
         }
 
         // if query and target files are the same check the other index as well
         if (!device_index && same_query_and_target_)
         {
-            auto index_in_other_cache = other_device_cache.find(index_descriptor);
-            if (index_in_other_cache != other_device_cache.end())
+            for (const DeviceIndexCache* const existing_cache : other_device_caches)
             {
-                device_index = index_in_other_cache->second;
+                if (existing_cache->has_index(descriptor))
+                {
+                    device_index = existing_cache->get_index_no_check_if_ready(descriptor);
+                    break;
+                }
             }
         }
 
         // if index has not been found on device copy it from host
         if (!device_index)
         {
-            const auto index_on_host_iter = host_cache.find(index_descriptor);
+            const auto index_on_host_iter = host_cache.find(descriptor);
             if (index_on_host_iter == host_cache.end())
             {
-                throw IndexNotFoundException(index_descriptor,
-                                             IndexNotFoundException::IndexType::host_cache);
+                throw IndexNotFoundException(cache_type,
+                                             IndexNotFoundException::IndexLocation::host_cache,
+                                             descriptor);
             }
             device_index = index_on_host_iter->second->copy_index_to_device(allocator_, cuda_stream_copy_);
         }
 
         assert(device_index);
-        new_cache[index_descriptor] = device_index;
+        device_cache->add_index(descriptor,
+                                device_index);
     }
+
+    return device_cache;
 }
 
-void IndexCache::finish_generating_content_device(const CacheSelector which_cache)
+void HostIndexCache::register_device_cache(const CacheType cache_type,
+                                           DeviceIndexCache* index_cache)
 {
-    device_cache_t& this_device_cache = (CacheSelector::query_cache == which_cache) ? query_device_cache_ : target_device_cache_;
-    device_cache_t& new_cache         = (CacheSelector::query_cache == which_cache) ? next_query_device_cache_ : next_target_device_cache_;
+    assert(cache_type == CacheType::query_cache || cache_type == CacheType::target_cache);
 
-    for (const auto& device_index : new_cache)
-    {
-        device_index.second->wait_to_be_ready();
-    }
+    std::vector<DeviceIndexCache*>& device_caches = cache_type == CacheType::query_cache ? device_caches_query_ : device_caches_target_;
 
-    this_device_cache.clear();
-    std::swap(this_device_cache, new_cache);
+    device_caches.push_back(index_cache);
 }
 
-std::shared_ptr<const Index> IndexCache::get_index_from_cache(const IndexDescriptor& index_descriptor,
-                                                              const CacheSelector which_cache) const
+void HostIndexCache::deregister_device_cache(const CacheType cache_type,
+                                             DeviceIndexCache* index_cache)
 {
-    const device_cache_t& this_device_cache = (CacheSelector::query_cache == which_cache) ? query_device_cache_ : target_device_cache_;
-    const auto index_iter                   = this_device_cache.find(index_descriptor);
-    if (index_iter == this_device_cache.end())
-    {
-        throw IndexNotFoundException(index_descriptor,
-                                     IndexNotFoundException::IndexType::device_cache);
-    }
-    return index_iter->second;
+    assert(cache_type == CacheType::query_cache || cache_type == CacheType::target_cache);
+
+    std::vector<DeviceIndexCache*>& device_caches = cache_type == CacheType::query_cache ? device_caches_query_ : device_caches_target_;
+
+    auto new_end = std::remove(begin(device_caches), end(device_caches), index_cache);
+    device_caches.erase(new_end, end(device_caches));
 }
 
-IndexNotFoundException::IndexNotFoundException(IndexDescriptor index_descriptor,
-                                               IndexType index_type)
-    : error_message_("Index not found in " + std::string(index_type == IndexType::host_cache ? "host" : "device") + " cache. First read: " + std::to_string(index_descriptor.first_read()) + ", number of reads: " + std::to_string(index_descriptor.number_of_reads()))
+IndexNotFoundException::IndexNotFoundException(const CacheType cache_type,
+                                               const IndexLocation index_location,
+                                               const IndexDescriptor index_descriptor)
+    : message_(std::string(cache_type == CacheType::query_cache ? "Query " : "Target ") +
+               "index not found in " +
+               std::string(index_location == IndexLocation::host_cache ? "host " : "device ") +
+               "cache. First read: " +
+               std::to_string(index_descriptor.first_read()) +
+               ", number of reads: " +
+               std::to_string(index_descriptor.number_of_reads()))
 {
 }
 
 const char* IndexNotFoundException::what() const noexcept
 {
-    return error_message_.c_str();
+    return message_.c_str();
+}
+
+DeviceCacheNotReadyException::DeviceCacheNotReadyException(const CacheType cache_type,
+                                                           const IndexDescriptor index_descriptor)
+    : message_("Cache for " +
+               std::string(cache_type == CacheType::query_cache ? "query " : "target ") +
+               "index is not ready. First read: " +
+               std::to_string(index_descriptor.first_read()) +
+               ", number of reads: " +
+               std::to_string(index_descriptor.number_of_reads()))
+{
+}
+
+const char* DeviceCacheNotReadyException::what() const noexcept
+{
+    return message_.c_str();
 }
 
 } // namespace cudamapper
