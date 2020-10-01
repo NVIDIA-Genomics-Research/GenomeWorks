@@ -69,25 +69,13 @@ public:
     /// \brief Destructor
     ~DeviceIndexCache();
 
-    /// \brief Adds index to host, should only be called by HostIndexCache::start_copying_indices_to_device()
-    /// \param index_descriptor
-    /// \param device_index
-    void add_index(IndexDescriptor index_descriptor,
-                   std::shared_ptr<Index> device_index);
-
-    /// \brief Returns requested index
+    /// \brief Returns requested index for which it is guarateed that it is ready, i.e. is has been fully copied from host memory is needed
     /// Calling this function before wait_for_data_to_be_ready() results in an exception
     /// \param index_descriptor
     /// \throw IndexNotFoundException if requested index is not cached
     /// \throw DeviceCacheNotReadyException is cache is not ready, i.e. wait_for_data_to_be_ready() has not been called yet
     /// \return requested index
     std::shared_ptr<Index> get_index(IndexDescriptor index_descriptor) const;
-
-    /// \brief Returns requested index, returned index might not be ready and has to be synchronized directly
-    /// \param index_descriptor
-    /// \throw IndexNotFoundException if requested index is not cached
-    /// \return requested index
-    std::shared_ptr<Index> get_index_no_check_if_ready(IndexDescriptor index_descriptor) const;
 
     /// \brief Returns whether given index is present in cache
     /// \param index_descriptor
@@ -102,9 +90,24 @@ public:
     bool is_ready() const;
 
 private:
+    friend HostIndexCache;
+
     using device_cache_t = std::unordered_map<IndexDescriptor,
                                               std::shared_ptr<Index>,
                                               IndexDescriptorHash>;
+
+    /// \brief Adds index to cache
+    /// To be called by HostIndexCache::start_copying_indices_to_device()
+    /// \param index_descriptor
+    /// \param device_index
+    void add_index(IndexDescriptor index_descriptor,
+                   std::shared_ptr<Index> device_index);
+
+    /// \brief Returns requested index, returned index might not be ready and has to be synchronized directly
+    /// \param index_descriptor
+    /// \throw IndexNotFoundException if requested index is not cached
+    /// \return requested index
+    std::shared_ptr<Index> get_index_no_check_if_ready(IndexDescriptor index_descriptor) const;
 
     device_cache_t cache_;
 
@@ -190,19 +193,9 @@ public:
     std::shared_ptr<DeviceIndexCache> start_copying_indices_to_device(CacheType cache_type,
                                                                       const std::vector<IndexDescriptor>& descriptors_of_indices_to_cache);
 
-    /// \brief Registers DeviceIndexCache object
-    /// \param cache_type
-    /// \param index_cache
-    void register_device_cache(CacheType cache_type,
-                               DeviceIndexCache* index_cache);
-
-    /// \brief Deregisters DeviceIndexCache object
-    /// \param cache_type
-    /// \param index_cache
-    void deregister_device_cache(CacheType cache_type,
-                                 DeviceIndexCache* index_cache);
-
 private:
+    friend DeviceIndexCache;
+
     using host_cache_t = std::unordered_map<IndexDescriptor,
                                             std::shared_ptr<const IndexHostCopyBase>,
                                             IndexDescriptorHash>;
@@ -210,6 +203,20 @@ private:
     using device_cache_t = std::unordered_map<IndexDescriptor,
                                               std::shared_ptr<Index>,
                                               IndexDescriptorHash>;
+
+    /// \brief Registers DeviceIndexCache object
+    /// To be called by the constructor of DeviceIndexCache
+    /// \param cache_type
+    /// \param index_cache
+    void register_device_cache(CacheType cache_type,
+                               DeviceIndexCache* index_cache);
+
+    /// \brief Deregisters DeviceIndexCache object
+    /// To be called by the destructor of DeviceIndexCache
+    /// \param cache_type
+    /// \param index_cache
+    void deregister_device_cache(CacheType cache_type,
+                                 DeviceIndexCache* index_cache);
 
     // Indices kept on host
     host_cache_t query_host_cache_;
