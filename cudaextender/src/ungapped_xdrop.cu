@@ -61,16 +61,16 @@ UngappedXDrop::UngappedXDrop(const int32_t* h_score_mat, const int32_t score_mat
     // Calculate the max limits on the number of extensions we can do on this GPU
     cudaDeviceProp device_prop;
     cudaGetDeviceProperties(&device_prop, device_id_);
-    
+
     // TODO - Currently element and memory limits are artifacts of hardcoded global memory limits in
-    // SegAlign. To be replaced with actual calculation of memory requirements with sizes of 
-    // datastructures taken into consideration. Also currently the max limit is based on total 
+    // SegAlign. To be replaced with actual calculation of memory requirements with sizes of
+    // datastructures taken into consideration. Also currently the max limit is based on total
     // global memory, which should be replaced with memory available from the passed in allocator.
     // Github Issue: https://github.com/clara-parabricks/GenomeWorks/issues/576
-    const int32_t max_ungapped_per_gb = 4194304; 
-    const float global_mem_gb      = static_cast<float>(device_prop.totalGlobalMem) / 1073741824.0f;
-    batch_max_ungapped_extensions_ = static_cast<int32_t>(global_mem_gb) * max_ungapped_per_gb;
-    
+    const int32_t max_ungapped_per_gb = 4194304;
+    const float global_mem_gb         = static_cast<float>(device_prop.totalGlobalMem) / 1073741824.0f;
+    batch_max_ungapped_extensions_    = static_cast<int32_t>(global_mem_gb) * max_ungapped_per_gb;
+
     //Figure out memory requirements for cub functions
     size_t temp_storage_bytes = 0;
     size_t cub_storage_bytes  = 0;
@@ -143,7 +143,7 @@ StatusType UngappedXDrop::extend_async(const int8_t* d_query, const int32_t quer
                                                       d_done_.data(),
                                                       curr_num_pairs,
                                                       stream_))
-        // TODO- Make output compression async. Currently synchronocity is arising due to 
+        // TODO- Make output compression async. Currently synchronocity is arising due to
         // thrust::stable_sort. Dynamic parallelism or an equivalent sort with cub can be used
         // Github Issue: https://github.com/clara-parabricks/GenomeWorks/issues/578
         const int32_t num_scored_segment_pairs = get_value_from_device(d_done_.data() + curr_num_pairs - 1, stream_);
@@ -151,7 +151,7 @@ StatusType UngappedXDrop::extend_async(const int8_t* d_query, const int32_t quer
         {
             // TODO - Explore scaling up/down launch config based on workload. Also explore making
             // this accessible to the user for configuration
-            // Github Issue: https://github.com/clara-parabricks/GenomeWorks/issues/577 
+            // Github Issue: https://github.com/clara-parabricks/GenomeWorks/issues/577
             compress_output<<<1024, 1024, 0, stream_>>>(d_done_.data(),
                                                         seed_pair_start,
                                                         d_scored_segment_pairs,
