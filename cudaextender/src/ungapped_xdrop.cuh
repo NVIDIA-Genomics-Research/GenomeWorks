@@ -74,8 +74,8 @@ private:
     const int32_t device_id_;
     std::vector<ScoredSegmentPair> scored_segment_pairs_;
     int32_t batch_max_ungapped_extensions_;
-    device_buffer<int32_t> d_score_mat_;         // Pointer to device substitution matrix
-    device_buffer<int32_t> d_done_;              
+    device_buffer<int32_t> d_score_mat_; // Pointer to device substitution matrix
+    device_buffer<int32_t> d_done_;
     device_buffer<ScoredSegmentPair> d_tmp_ssp_;
     int32_t total_scored_segment_pairs_;
     device_buffer<int8_t> d_temp_storage_cub_; // temporary storage for cub functions
