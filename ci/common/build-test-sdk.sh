@@ -31,6 +31,7 @@ cmake .. "${CMAKE_COMMON_VARIABLES[@]}" \
     -Dgw_enable_tests=ON \
     -Dgw_enable_benchmarks=ON \
     -Dgw_build_shared=ON \
+    -Dgw_cuda_gen_all_arch=ON \
     -DCMAKE_INSTALL_PREFIX="${LOCAL_BUILD_DIR}/install" \
     -GNinja
 

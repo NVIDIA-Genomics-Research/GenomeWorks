@@ -83,7 +83,8 @@ class CMakeWrapper:
         cmake_args = ['-DCMAKE_INSTALL_PREFIX=' + self.gw_install_dir,
                       '-DCMAKE_BUILD_TYPE=' + 'Release',
                       '-DCMAKE_INSTALL_RPATH=' + os.path.join(self.gw_install_dir, "lib"),
-                      '-Dgw_generate_docs=OFF']
+                      '-Dgw_generate_docs=OFF',
+                      '-Dgw_cuda_gen_all_arch=ON']
         cmake_args += [self.cmake_extra_args] if self.cmake_extra_args else []
 
         if self.cuda_toolkit_root_dir:
