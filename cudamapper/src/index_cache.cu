@@ -282,8 +282,8 @@ std::shared_ptr<DeviceIndexCache> HostIndexCache::start_copying_indices_to_devic
                                                                                   const std::vector<IndexDescriptor>& descriptors_of_indices_to_cache)
 {
     const host_cache_t& host_cache                            = (CacheType::query_cache == cache_type) ? query_host_cache_ : target_host_cache_;
-    const std::vector<DeviceIndexCache*>& this_device_caches  = (CacheType::query_cache == cache_type) ? device_caches_query_ : device_caches_target_;
-    const std::vector<DeviceIndexCache*>& other_device_caches = (CacheType::query_cache == cache_type) ? device_caches_target_ : device_caches_query_;
+    const std::vector<DeviceIndexCache*>& this_device_caches  = (CacheType::query_cache == cache_type) ? query_device_caches_ : target_device_caches_;
+    const std::vector<DeviceIndexCache*>& other_device_caches = (CacheType::query_cache == cache_type) ? target_device_caches_ : query_device_caches_;
     device_cache_t& indices_kept_on_device                    = (CacheType::query_cache == cache_type) ? query_indices_kept_on_device_ : target_indices_kept_on_device_;
 
     std::shared_ptr<DeviceIndexCache> device_cache = std::make_shared<DeviceIndexCache>(cache_type,
@@ -353,7 +353,7 @@ void HostIndexCache::register_device_cache(const CacheType cache_type,
 {
     assert(cache_type == CacheType::query_cache || cache_type == CacheType::target_cache);
 
-    std::vector<DeviceIndexCache*>& device_caches = cache_type == CacheType::query_cache ? device_caches_query_ : device_caches_target_;
+    std::vector<DeviceIndexCache*>& device_caches = cache_type == CacheType::query_cache ? query_device_caches_ : target_device_caches_;
 
     device_caches.push_back(index_cache);
 }
@@ -363,7 +363,7 @@ void HostIndexCache::deregister_device_cache(const CacheType cache_type,
 {
     assert(cache_type == CacheType::query_cache || cache_type == CacheType::target_cache);
 
-    std::vector<DeviceIndexCache*>& device_caches = cache_type == CacheType::query_cache ? device_caches_query_ : device_caches_target_;
+    std::vector<DeviceIndexCache*>& device_caches = cache_type == CacheType::query_cache ? query_device_caches_ : target_device_caches_;
 
     auto new_end = std::remove(begin(device_caches), end(device_caches), index_cache);
     device_caches.erase(new_end, end(device_caches));

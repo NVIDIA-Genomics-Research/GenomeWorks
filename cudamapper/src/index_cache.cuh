@@ -104,6 +104,7 @@ private:
                    std::shared_ptr<Index> device_index);
 
     /// \brief Returns requested index, returned index might not be ready and has to be synchronized directly
+    /// To be called by HostIndexCache::start_copying_indices_to_device()
     /// \param index_descriptor
     /// \throw IndexNotFoundException if requested index is not cached
     /// \return requested index
@@ -227,8 +228,8 @@ private:
     device_cache_t target_indices_kept_on_device_;
 
     // Currently existing DeviceIndexCaches created by this HostIndexCache
-    std::vector<DeviceIndexCache*> device_caches_query_;
-    std::vector<DeviceIndexCache*> device_caches_target_;
+    std::vector<DeviceIndexCache*> query_device_caches_;
+    std::vector<DeviceIndexCache*> target_device_caches_;
 
     const bool same_query_and_target_;
     genomeworks::DefaultDeviceAllocator allocator_;
