@@ -55,17 +55,22 @@ UngappedXDrop::UngappedXDrop(const int32_t* h_score_mat, const int32_t score_mat
     , host_ptr_api_mode_(false)
     , allocator_(allocator)
 {
-    // TODO - check sub_mat_dim based on Sequence Encoder API
-    // Calculate the max limits on the number of extensions we can do on this GPU
-    cudaDeviceProp device_prop;
-    cudaGetDeviceProperties(&device_prop, device_id_);
-    const int32_t max_ungapped_per_gb = 4194304; // FIXME: Calculate using sizeof datastructures
-    //const int32_t max_seed_pairs_per_gb = 8388608; // FIXME: Calculate using sizeof datastructures // TODO- Do we need this?
-    const float global_mem_gb      = static_cast<float>(device_prop.totalGlobalMem) / 1073741824.0f;
-    batch_max_ungapped_extensions_ = static_cast<int32_t>(global_mem_gb) * max_ungapped_per_gb;
     // Switch to device for copying over initial structures
     scoped_device_switch dev(device_id_);
 
+    // Calculate the max limits on the number of extensions we can do on this GPU
+    cudaDeviceProp device_prop;
+    cudaGetDeviceProperties(&device_prop, device_id_);
+    
+    // TODO - Currently element and memory limits are artifacts of hardcoded global memory limits in
+    // SegAlign. To be replaced with actual calculation of memory requirements with sizes of 
+    // datastructures taken into consideration. Also currently the max limit is based on total 
+    // global memory, which should be replaced with memory available from the passed in allocator.
+    // Github Issue: https://github.com/clara-parabricks/GenomeWorks/issues/576
+    const int32_t max_ungapped_per_gb = 4194304; 
+    const float global_mem_gb      = static_cast<float>(device_prop.totalGlobalMem) / 1073741824.0f;
+    batch_max_ungapped_extensions_ = static_cast<int32_t>(global_mem_gb) * max_ungapped_per_gb;
+    
     //Figure out memory requirements for cub functions
     size_t temp_storage_bytes = 0;
     size_t cub_storage_bytes  = 0;
@@ -113,11 +118,11 @@ StatusType UngappedXDrop::extend_async(const int8_t* d_query, const int32_t quer
     total_scored_segment_pairs_ = 0;
     for (int32_t seed_pair_start = 0; seed_pair_start < num_seed_pairs; seed_pair_start += batch_max_ungapped_extensions_)
     {
-        // TODO - Do we need these? It seems we don't!
+        // TODO - Kernel optimizations [Unnecessary memset?]
+        // Github Issue: https://github.com/clara-parabricks/GenomeWorks/issues/579
         GW_CU_CHECK_ERR(cudaMemsetAsync((void*)d_done_.data(), 0, batch_max_ungapped_extensions_ * sizeof(int32_t), stream_));
         GW_CU_CHECK_ERR(cudaMemsetAsync((void*)d_tmp_ssp_.data(), 0, batch_max_ungapped_extensions_ * sizeof(ScoredSegmentPair), stream_));
         const int32_t curr_num_pairs = std::min(batch_max_ungapped_extensions_, num_seed_pairs - seed_pair_start);
-        // TODO- Extricate the kernel launch params?
         find_high_scoring_segment_pairs<<<1024, 128, 0, stream_>>>(d_target,
                                                                    target_length,
                                                                    d_query,
@@ -138,15 +143,20 @@ StatusType UngappedXDrop::extend_async(const int8_t* d_query, const int32_t quer
                                                       d_done_.data(),
                                                       curr_num_pairs,
                                                       stream_))
-        // TODO- Make async
+        // TODO- Make output compression async. Currently synchronocity is arising due to 
+        // thrust::stable_sort. Dynamic parallelism or an equivalent sort with cub can be used
+        // Github Issue: https://github.com/clara-parabricks/GenomeWorks/issues/578
         const int32_t num_scored_segment_pairs = get_value_from_device(d_done_.data() + curr_num_pairs - 1, stream_);
         if (num_scored_segment_pairs > 0)
         {
+            // TODO - Explore scaling up/down launch config based on workload. Also explore making
+            // this accessible to the user for configuration
+            // Github Issue: https://github.com/clara-parabricks/GenomeWorks/issues/577 
             compress_output<<<1024, 1024, 0, stream_>>>(d_done_.data(),
                                                         seed_pair_start,
                                                         d_scored_segment_pairs,
                                                         d_tmp_ssp_.data(),
-                                                        curr_num_pairs); // TODO- Need configurability for kernel?
+                                                        curr_num_pairs);
             thrust::stable_sort(thrust::cuda::par(allocator_).on(stream_),
                                 d_tmp_ssp_.begin(),
                                 d_tmp_ssp_.begin() + num_scored_segment_pairs,

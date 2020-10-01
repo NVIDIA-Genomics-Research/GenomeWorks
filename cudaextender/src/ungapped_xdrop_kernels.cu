@@ -46,6 +46,9 @@ __global__ void find_high_scoring_segment_pairs(const int8_t* __restrict__ d_tar
                                                 ScoredSegmentPair* d_scored_segment_pairs,
                                                 int32_t* d_done)
 {
+    // TODO - Kernel optimizations - 
+    // Github Issue: https://github.com/clara-parabricks/GenomeWorks/issues/579
+    
     // TODO - Following variables are an artifact of the hardcoded encoding scheme with a fixed
     // scoring matrix and a fixed alphabet. Will be replaced with cudasequence API.
     // Github Issue: https://github.com/clara-parabricks/GenomeWorks/issues/574
@@ -70,7 +73,8 @@ __global__ void find_high_scoring_segment_pairs(const int8_t* __restrict__ d_tar
     __shared__ int32_t extent[num_warps];
     __shared__ int32_t tile[num_warps];
     __shared__ int32_t sub_mat[nuc2];
-    // TODO - Accuracy exploration required to check if the following member can be a float
+    // TODO - Accuracy exploration required to check if the following member can be a float and to 
+    // check the condition for entropy calculation.
     // Github Issue: https://github.com/clara-parabricks/GenomeWorks/issues/575
     __shared__ double entropy[num_warps];
    
@@ -394,7 +398,7 @@ __global__ void find_high_scoring_segment_pairs(const int8_t* __restrict__ d_tar
             }
             __syncwarp();
 
-            if (lane_id == warp_size - 1 && ((count[0] + count[1] + count[2] + count[3]) >= 20)) // TODO - MAGIC NUMBER ALERT!
+            if (lane_id == warp_size - 1 && ((count[0] + count[1] + count[2] + count[3]) >= 20))
             {
                 double entropy_ln = 0.f;
 #pragma unroll
