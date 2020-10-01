@@ -222,7 +222,7 @@ StatusType UngappedXDrop::sync()
         return StatusType::success;
     }
 
-    // If this function was called without using the host_ptr_api, throw error
+    // If this function was called without using the host pointer API, throw error
     return StatusType::invalid_operation;
 }
 
@@ -232,7 +232,7 @@ const std::vector<ScoredSegmentPair>& UngappedXDrop::get_scored_segment_pairs() 
     {
         return h_ssp_;
     }
-    // If this function was called using the host_ptr_api, throw error
+    // If this function was called using the host pointer API, throw error
     throw std::runtime_error("Invalid API call. Getting scored segment pairs without calling extend_async host ptr API");
 }
 
