@@ -26,7 +26,6 @@ namespace genomeworks
 namespace cudaextender
 {
 
-// TODO - Provide an allocator-less API for creation?
 std::unique_ptr<Extender> create_extender(const int32_t* h_score_mat,
                                           int32_t score_mat_dim,
                                           int32_t xdrop_threshold,

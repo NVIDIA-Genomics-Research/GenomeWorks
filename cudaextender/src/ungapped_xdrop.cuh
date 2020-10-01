@@ -64,8 +64,8 @@ public:
     const std::vector<ScoredSegmentPair>& get_scored_segment_pairs() const override;
 
 private:
-    DefaultDeviceAllocator allocator_;
     // Device ptr API required variables
+    DefaultDeviceAllocator allocator_;
     pinned_host_vector<int32_t> h_score_mat_;
     const int32_t score_mat_dim_; // Assume matrix is square
     const int32_t xdrop_threshold_;
@@ -73,10 +73,10 @@ private:
     cudaStream_t stream_;
     const int32_t device_id_;
     std::vector<ScoredSegmentPair> scored_segment_pairs_;
-    int32_t batch_max_ungapped_extensions_;      // TODO - Make const
+    int32_t batch_max_ungapped_extensions_;
     device_buffer<int32_t> d_score_mat_;         // Pointer to device substitution matrix
-    device_buffer<int32_t> d_done_;              // TODO- Rename scratch space
-    device_buffer<ScoredSegmentPair> d_tmp_ssp_; // TODO- Rename Scratch space 2
+    device_buffer<int32_t> d_done_;              
+    device_buffer<ScoredSegmentPair> d_tmp_ssp_;
     int32_t total_scored_segment_pairs_;
     device_buffer<int8_t> d_temp_storage_cub_; // temporary storage for cub functions
 

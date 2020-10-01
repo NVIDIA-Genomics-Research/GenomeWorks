@@ -426,7 +426,7 @@ __global__ void find_high_scoring_segment_pairs(const int8_t* __restrict__ d_tar
                     d_scored_segment_pairs[hid].seed_pair.target_position_in_read = ref_loc[warp_id] - left_extent[warp_id];
                     d_scored_segment_pairs[hid].seed_pair.query_position_in_read  = query_loc[warp_id] - left_extent[warp_id];
                     d_scored_segment_pairs[hid].length                            = extent[warp_id];
-                    if (entropy[warp_id] > 0) // TODO - Is this necessary?
+                    if (entropy[warp_id] > 0)
                         d_scored_segment_pairs[hid].score = total_score[warp_id] * entropy[warp_id];
                     d_done[hid - start_index] = 1;
                 }
