@@ -46,9 +46,13 @@ __global__ void find_high_scoring_segment_pairs(const int8_t* __restrict__ d_tar
                                                 ScoredSegmentPair* d_scored_segment_pairs,
                                                 int32_t* d_done)
 {
-    constexpr int32_t num_warps = 4;  // TODO - move out?
-    constexpr int32_t nuc       = 8;  // TODO - remove hardcode - pass in
-    constexpr int32_t nuc2      = 64; // TODO - remove hardcode - TBD based on encoding
+    // TODO - Following variables are an artifact of the hardcoded encoding scheme with a fixed
+    // scoring matrix and a fixed alphabet. Will be replaced with cudasequence API.
+    // Github Issue: https://github.com/clara-parabricks/GenomeWorks/issues/574
+    constexpr int32_t nuc       = 8;
+    constexpr int32_t nuc2      = 64;
+    
+    constexpr int32_t num_warps = 4;
     constexpr int32_t warp_size = 32;
     const int32_t lane_id       = threadIdx.x % warp_size;
     const int32_t warp_id       = (threadIdx.x - lane_id) / warp_size;
@@ -65,9 +69,11 @@ __global__ void find_high_scoring_segment_pairs(const int8_t* __restrict__ d_tar
     __shared__ int32_t left_extent[num_warps];
     __shared__ int32_t extent[num_warps];
     __shared__ int32_t tile[num_warps];
-    __shared__ double entropy[num_warps]; // TODO - Can this be a float?
     __shared__ int32_t sub_mat[nuc2];
-
+    // TODO - Accuracy exploration required to check if the following member can be a float
+    // Github Issue: https://github.com/clara-parabricks/GenomeWorks/issues/575
+    __shared__ double entropy[num_warps];
+   
     if (threadIdx.x < nuc2)
     {
         sub_mat[threadIdx.x] = d_sub_mat[threadIdx.x];
