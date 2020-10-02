@@ -145,7 +145,7 @@ def copyright_present(f):
     f - Path to file
     """
     with io.open(f, "r", encoding="utf-8") as fh:
-        return re.search('Copyright 20[0-9]+-20[0-9]+', fh.read())
+        return re.search('Copyright (20[0-9][0-9]-)?20[0-9][0-9] NVIDIA CORPORATION', fh.read())
 
 
 def parse_args():
