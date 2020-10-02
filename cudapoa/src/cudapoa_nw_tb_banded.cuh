@@ -385,6 +385,7 @@ __device__ __forceinline__
             pred_count = incoming_edge_count[node_id];
             if (pred_count == 0)
             {
+                // row is mapped to [0, score_matrix_height) span
                 int64_t index    = static_cast<int64_t>(score_gIdx % score_matrix_height) * static_cast<int64_t>(band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING);
                 scores[index]    = gap_score;
                 index            = static_cast<int64_t>(score_gIdx) * static_cast<int64_t>(band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING);
@@ -468,6 +469,7 @@ __device__ __forceinline__
 
             TraceT4<TraceT> trace;
             ScoreT4<ScoreT> score = {min_score_value, min_score_value, min_score_value, min_score_value};
+            // note that whenever accessing a score matrix row, the row needs to be mapped to [0, score_matrix_height)
             get_scores_tb(scores, pred_idx, score_gIdx, read_pos, score_matrix_height, band_width, band_shift, gradient,
                           max_column, gap_score, match_score, mismatch_score, read4, graph_base, score, trace);
 
@@ -534,6 +536,7 @@ __device__ __forceinline__
             // which can be used to compute the first cell of the next warp.
             first_element_prev_score = __shfl_sync(FULL_MASK, score.s3, WARP_SIZE - 1);
 
+            // row is mapped to [0, score_matrix_height) span
             int64_t index      = static_cast<int64_t>(read_pos + 1 - band_start) + static_cast<int64_t>(score_gIdx % score_matrix_height) * static_cast<int64_t>(band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING);
             scores[index]      = score.s0;
             scores[index + 1L] = score.s1;

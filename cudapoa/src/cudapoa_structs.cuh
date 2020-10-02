@@ -27,7 +27,7 @@
 #define CUDAPOA_MAX_NODE_ALIGNMENTS 50
 
 // Size of read chunks for reading sequences
-#define SIZE_OF_SeqT4 32
+#define SIZE_OF_SeqT4 4
 
 // Dimensions for Banded alignment score matrix
 #define WARP_SIZE 32

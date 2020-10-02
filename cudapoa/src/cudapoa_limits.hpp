@@ -54,8 +54,8 @@ static bool use32bitSize(const BatchConfig& batch_size)
 
 static bool use16bitTrace(const BatchConfig& batch_size)
 {
-    //if max_pred_distance_in_banded_mode exceeds the range represented by int8_t, then int16_t should be used
-    return (batch_size.max_pred_distance_in_banded_mode > INT8_MAX);
+    //if max_banded_pred_distance exceeds the range represented by int8_t, then int16_t should be used
+    return (batch_size.max_banded_pred_distance > INT8_MAX);
 }
 
 } // namespace cudapoa
