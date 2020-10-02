@@ -41,7 +41,7 @@ BatchConfig::BatchConfig(int32_t max_seq_sz /*= 1024*/, int32_t max_seq_per_poa 
     , alignment_band_width(cudautils::align<int32_t, CUDAPOA_MIN_BAND_WIDTH>(band_width))
     , max_sequences_per_poa(max_seq_per_poa)
     , band_mode(banding)
-    , max_pred_distance_in_banded_mode(max_pred_dist > 0 ? max_pred_dist : 2 * cudautils::align<int32_t, CUDAPOA_MIN_BAND_WIDTH>(band_width))
+    , max_banded_pred_distance(max_pred_dist > 0 ? max_pred_dist : 2 * cudautils::align<int32_t, CUDAPOA_MIN_BAND_WIDTH>(band_width))
 {
     max_nodes_per_graph = cudautils::align<int32_t, CELLS_PER_THREAD>(graph_length_factor * max_sequence_size);
 
@@ -82,14 +82,14 @@ BatchConfig::BatchConfig(int32_t max_seq_sz, int32_t max_consensus_sz, int32_t m
     , alignment_band_width(cudautils::align<int32_t, CUDAPOA_MIN_BAND_WIDTH>(band_width))
     , max_sequences_per_poa(max_seq_per_poa)
     , band_mode(banding)
-    , max_pred_distance_in_banded_mode(max_pred_distance)
+    , max_banded_pred_distance(max_pred_distance)
 {
     throw_on_negative(max_seq_sz, "max_sequence_size cannot be negative.");
     throw_on_negative(max_consensus_sz, "max_consensus_size cannot be negative.");
     throw_on_negative(max_nodes_per_poa, "max_nodes_per_graph cannot be negative.");
     throw_on_negative(max_seq_per_poa, "max_sequences_per_poa cannot be negative.");
     throw_on_negative(band_width, "alignment_band_width cannot be negative.");
-    throw_on_negative(max_pred_distance, "max_pred_distance_in_banded_mode cannot be negative.");
+    throw_on_negative(max_pred_distance, "max_banded_pred_distance cannot be negative.");
 
     if (max_nodes_per_graph < max_sequence_size)
         throw std::invalid_argument("max_nodes_per_graph should be greater than or equal to max_sequence_size.");
@@ -123,9 +123,9 @@ std::unique_ptr<Batch> create_batch(int32_t device_id,
                                                                                  max_mem,
                                                                                  output_mask,
                                                                                  batch_size,
-                                                                                 (int32_t)gap_score,
-                                                                                 (int32_t)mismatch_score,
-                                                                                 (int32_t)match_score);
+                                                                                 gap_score,
+                                                                                 mismatch_score,
+                                                                                 match_score);
             }
             else
             {
@@ -134,9 +134,9 @@ std::unique_ptr<Batch> create_batch(int32_t device_id,
                                                                                 max_mem,
                                                                                 output_mask,
                                                                                 batch_size,
-                                                                                (int32_t)gap_score,
-                                                                                (int32_t)mismatch_score,
-                                                                                (int32_t)match_score);
+                                                                                gap_score,
+                                                                                mismatch_score,
+                                                                                match_score);
             }
         }
         else
@@ -148,9 +148,9 @@ std::unique_ptr<Batch> create_batch(int32_t device_id,
                                                                                  max_mem,
                                                                                  output_mask,
                                                                                  batch_size,
-                                                                                 (int32_t)gap_score,
-                                                                                 (int32_t)mismatch_score,
-                                                                                 (int32_t)match_score);
+                                                                                 gap_score,
+                                                                                 mismatch_score,
+                                                                                 match_score);
             }
             else
             {
@@ -159,9 +159,9 @@ std::unique_ptr<Batch> create_batch(int32_t device_id,
                                                                                 max_mem,
                                                                                 output_mask,
                                                                                 batch_size,
-                                                                                (int32_t)gap_score,
-                                                                                (int32_t)mismatch_score,
-                                                                                (int32_t)match_score);
+                                                                                gap_score,
+                                                                                mismatch_score,
+                                                                                match_score);
             }
         }
     }

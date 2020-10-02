@@ -204,9 +204,9 @@ NWAnswer testNW(const BasicNW& obj)
     int16_t* scores;
     SizeT* alignment_graph;
     SizeT* alignment_read;
-    int16_t gap_score;
-    int16_t mismatch_score;
-    int16_t match_score;
+    int32_t gap_score;
+    int32_t mismatch_score;
+    int32_t match_score;
     SizeT* aligned_nodes;   //local; to store num of nodes aligned (length of alignment_graph and alignment_read)
     BatchConfig batch_size; //default max_sequence_size = 1024, max_sequences_per_poa = 100
 

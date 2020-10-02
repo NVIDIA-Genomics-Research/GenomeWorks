@@ -73,7 +73,7 @@ struct BatchConfig
     /// Banding mode: full, static, adaptive
     BandMode band_mode;
     /// Maximum distance of predecessor node used in NW computations for static or adaptive-banded
-    int32_t max_pred_distance_in_banded_mode;
+    int32_t max_banded_pred_distance;
 
     /// constructor- set upper limit parameters based on max_seq_sz and band_width
     BatchConfig(int32_t max_seq_sz = 1024, int32_t max_seq_per_poa = 100, int32_t band_width = 256, BandMode banding = BandMode::full_band,

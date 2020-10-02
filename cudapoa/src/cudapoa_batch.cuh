@@ -64,7 +64,7 @@ class CudapoaBatch : public Batch
 {
 public:
     CudapoaBatch(int32_t device_id, cudaStream_t stream, size_t max_gpu_mem, int8_t output_mask,
-                 const BatchConfig& batch_size, ScoreT gap_score = -8, ScoreT mismatch_score = -6, ScoreT match_score = 8)
+                 const BatchConfig& batch_size, int32_t gap_score = -8, int32_t mismatch_score = -6, int32_t match_score = 8)
         : max_sequences_per_poa_(throw_on_negative(batch_size.max_sequences_per_poa, "Maximum sequences per POA has to be non-negative"))
         , device_id_(throw_on_negative(device_id, "Device ID has to be non-negative"))
         , stream_(stream)
@@ -537,9 +537,9 @@ protected:
         }
         input_details_h_->sequence_lengths[global_sequence_idx_] = seq_len;
 
-        // to be aligned with uchar4 size, pad sequence length to be multiple of 32
+        // to be aligned with uchar4 size, pad sequence length to be multiple of 4
         num_nucleotides_copied_ += cudautils::align<int32_t, SIZE_OF_SeqT4>(seq_len);
-        ;
+
         global_sequence_idx_++;
 
         return StatusType::success;
@@ -588,9 +588,9 @@ protected:
     BatchConfig batch_size_;
 
     // Gap, mismatch and match scores for NW dynamic programming loop.
-    ScoreT gap_score_;
-    ScoreT mismatch_score_;
-    ScoreT match_score_;
+    int32_t gap_score_;
+    int32_t mismatch_score_;
+    int32_t match_score_;
 
     // Host and device buffer for output data.
     OutputDetails* output_details_h_;
