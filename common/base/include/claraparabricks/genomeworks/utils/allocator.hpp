@@ -172,13 +172,16 @@ public:
     /// Constructs an invalid CachingDeviceAllocator to allow default-construction of containers.
     /// A container using this allocator needs obtain a non-default constructed CachingDeviceAllocator object before performing any allocations.
     /// This can be achieved through through container assignment for example.
-    CachingDeviceAllocator() = default;
+    CachingDeviceAllocator()
+        : default_streams_(std::vector<cudaStream_t>(1, 0))
+    {
+    }
 
     /// \brief Constructor
     /// \param max_cached_bytes max bytes used by memory resource
     /// \param default_streams if a call to allocate() does not specify any streams these streams will be used instead
     explicit CachingDeviceAllocator(size_t max_cached_bytes,
-                                    const std::vector<cudaStream_t>& default_streams = {{0}})
+                                    const std::vector<cudaStream_t>& default_streams = std::vector<cudaStream_t>(1, 0))
         : memory_resource_(std::make_shared<MemoryResource>(max_cached_bytes))
         , default_streams_(default_streams)
     {
