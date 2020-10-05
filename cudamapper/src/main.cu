@@ -453,7 +453,7 @@ void worker_thread_function(const int32_t device_id,
 
     // Whenever device_allocator is used directly (e.g. in Thrust library) it will be associated with cuda_stream_computation
     DefaultDeviceAllocator device_allocator = create_default_device_allocator(application_parameters.max_cached_memory_bytes,
-                                                                              {cuda_stream_computation});
+                                                                              cuda_stream_computation);
 
     // create index_cache, indices are not created at this point but later as each batch gets processed
     HostIndexCache host_index_cache(application_parameters.all_to_all,
