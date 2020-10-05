@@ -198,6 +198,7 @@ public:
     template <typename U>
     CachingDeviceAllocator(const CachingDeviceAllocator<U, MemoryResource>& rhs)
         : memory_resource_(rhs.memory_resource())
+        , default_streams_(rhs.default_streams())
     {
     }
 
@@ -215,6 +216,7 @@ public:
     CachingDeviceAllocator& operator=(const CachingDeviceAllocator<U, MemoryResource>& rhs)
     {
         memory_resource_ = rhs.memory_resource();
+        default_streams_ = rhs.default_streams();
         return *this;
     }
 
@@ -229,6 +231,7 @@ public:
     template <typename U>
     CachingDeviceAllocator(CachingDeviceAllocator<U, MemoryResource>&& rhs)
         : memory_resource_(rhs.memory_resource())
+        , default_streams_(std::move(rhs.default_streams()))
     {
     }
 
@@ -246,6 +249,7 @@ public:
     CachingDeviceAllocator& operator=(CachingDeviceAllocator<U, MemoryResource>&& rhs)
     {
         memory_resource_ = rhs.memory_resource();
+        default_streams_ = std::move(rhs.default_streams());
         return *this;
     }
 
@@ -306,6 +310,10 @@ public:
     /// \brief returns a shared pointer to memory_resource
     /// \return a shared pointer to memory_resource
     std::shared_ptr<MemoryResource> memory_resource() const { return memory_resource_; }
+
+    /// \brief returns default streams
+    /// \return default streams
+    const std::vector<cudaStream_t> default_streams() const { return default_streams_; }
 
 private:
     std::shared_ptr<MemoryResource> memory_resource_;
