@@ -549,8 +549,10 @@ protected:
     bool reserve_buf(int32_t max_seq_length)
     {
         int32_t matrix_height = batch_size_.max_nodes_per_graph;
-        int32_t matrix_width  = (batch_size_.band_mode != BandMode::full_band) ? batch_size_.matrix_sequence_dimension : cudautils::align<int32_t, 4>(max_seq_length + 1 + CELLS_PER_THREAD);
-        // in full-band, avail_buf_mem_ is dedicated to scores matrix and in static or adaptive band modes, avail_buf_mem_ is dedicated to traceback matrix
+        // matrix width for full_band is based on the current group max_seq_length as opposed to batch_size_.matrix_sequence_dimension.
+        // The latter is based on the largest group in the batch and is more conservative
+        int32_t matrix_width = (batch_size_.band_mode != BandMode::full_band) ? batch_size_.matrix_sequence_dimension : cudautils::align<int32_t, 4>(max_seq_length + 1 + CELLS_PER_THREAD);
+        // in traceback alignments avail_buf_mem_ is dedicated to traceback matrix, otherwise it is being used for score matrix
         size_t required_size = static_cast<size_t>(matrix_width) * static_cast<size_t>(matrix_height);
         required_size *= (batch_size_.band_mode == static_band_traceback || batch_size_.band_mode == adaptive_band_traceback) ? sizeof(TraceT) : sizeof(ScoreT);
 
