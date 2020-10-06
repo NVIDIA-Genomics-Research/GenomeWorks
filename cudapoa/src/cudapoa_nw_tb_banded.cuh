@@ -132,7 +132,7 @@ __device__ __forceinline__ ScoreT get_score_tb(ScoreT* scores,
     }
     else
     {
-        // in NW with traceback buffer, score matrix is stored partially, hence row is mapped to [0, score_matrix_height) span
+        // row is mapped to [0, score_matrix_height) span
         return *get_score_ptr_tb(scores, row % score_matrix_height, column, band_start, band_width);
     }
 }

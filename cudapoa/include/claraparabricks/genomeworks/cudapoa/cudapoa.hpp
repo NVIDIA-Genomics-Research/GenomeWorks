@@ -51,8 +51,9 @@ enum StatusType
 ///   can vary per alignment's score matrix, faster than full_band and more accurate than static_band
 /// - static_band_traceback is similar to static_band, but uses traceback matrix. In this mode, score matrix is only
 ///   partially stored. The height of score matrix is equivalent to maximum predecessors distance and this maximum
-///   distance is limited and smaller than full POA graph length. Traceback matrix requires less memory compared to
-///   score matrix, and this banding mode can be useful for long-read cases where GPU memory is limiting parallelism.
+///   distance is limited and smaller than full POA graph length, this can be a source of difference vs static_band.
+///   Traceback matrix requires less memory compared to score matrix, and this banding mode can be useful for
+///   long-read cases where GPU memory is limiting the parallelism.
 /// - adaptive_band_traceback, similar to static_band_traceback but with varying band-width size
 enum BandMode
 {
