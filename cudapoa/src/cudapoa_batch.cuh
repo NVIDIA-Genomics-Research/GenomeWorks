@@ -537,7 +537,9 @@ protected:
         }
         input_details_h_->sequence_lengths[global_sequence_idx_] = seq_len;
 
-        // to be aligned with uchar4 size, pad sequence length to be multiple of 4
+        // to be aligned with SeqT4 struct size, pad sequence length to be multiple of 4.
+        // Note: num_nucleotides_copied_ is used to define allocated space per read on device as well as on host,
+        // therefore it is important to reflect any changes in the following line in the corresponding device code as well
         num_nucleotides_copied_ += cudautils::align<int32_t, SIZE_OF_SeqT4>(seq_len);
 
         global_sequence_idx_++;

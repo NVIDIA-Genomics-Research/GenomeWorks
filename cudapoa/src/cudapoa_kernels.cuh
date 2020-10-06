@@ -225,6 +225,8 @@ __launch_bounds__(MAX_THREADS_PER_BLOCK_64)
     for (int32_t s = 1; s < num_sequences; s++)
     {
         int32_t seq_len = sequence_lengths[s];
+        // Note: the following 2 lines correspond to num_nucleotides_copied_ value on the host side
+        // therefore it is important to reflect any changes in the following 2 lines in the corresponding host code as well
         sequence += cudautils::align<int32_t, SIZE_OF_SeqT4>(sequence_lengths[s - 1]);     // increment the pointer so it is pointing to correct sequence data
         base_weights += cudautils::align<int32_t, SIZE_OF_SeqT4>(sequence_lengths[s - 1]); // increment the pointer so it is pointing to correct sequence data
 
@@ -429,7 +431,7 @@ __launch_bounds__(MAX_THREADS_PER_BLOCK_64)
 }
 
 // Similar to generatePOAKernel(), but with a different launch bounds setting, used to call kernels using traceback buffer
-// i.e. BM == BandMode::static_band_traceback or BM == BandMode::adaptive_band_traceback
+// i.e. for BM == BandMode::static_band_traceback or BM == BandMode::adaptive_band_traceback
 template <typename ScoreT, typename SizeT, typename TraceT, bool MSA = false, BandMode BM = BandMode::static_band_traceback>
 __launch_bounds__(MAX_THREADS_PER_BLOCK_72)
     __global__ void generatePOAKernelTB(uint8_t* consensus_d,
@@ -580,6 +582,8 @@ __launch_bounds__(MAX_THREADS_PER_BLOCK_72)
     for (int32_t s = 1; s < num_sequences; s++)
     {
         int32_t seq_len = sequence_lengths[s];
+        // Note: the following 2 lines correspond to num_nucleotides_copied_ value on the host side
+        // therefore it is important to reflect any changes in the following 2 lines in the corresponding host code as well
         sequence += cudautils::align<int32_t, SIZE_OF_SeqT4>(sequence_lengths[s - 1]);     // increment the pointer so it is pointing to correct sequence data
         base_weights += cudautils::align<int32_t, SIZE_OF_SeqT4>(sequence_lengths[s - 1]); // increment the pointer so it is pointing to correct sequence data
 
