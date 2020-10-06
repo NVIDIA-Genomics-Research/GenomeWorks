@@ -26,6 +26,9 @@
 // Maximum number of nodes aligned to each other.
 #define CUDAPOA_MAX_NODE_ALIGNMENTS 50
 
+// Size of read chunks for reading sequences
+#define SIZE_OF_SeqT4 4
+
 // Dimensions for Banded alignment score matrix
 #define WARP_SIZE 32
 #define CELLS_PER_THREAD 4
@@ -99,11 +102,13 @@ struct InputDetails
     SizeT* sequence_begin_nodes_ids;
 };
 
-template <typename ScoreT, typename SizeT>
+template <typename ScoreT, typename SizeT, typename TraceT>
 struct AlignmentDetails
 {
     // Device buffer for the scoring matrix for all windows.
     ScoreT* scores;
+    // Device buffer for the backtracking matrix for all windows.
+    TraceT* traceback;
     /// Buffer for storing per row band start location in absolute score matrix for adaptive banding
     SizeT* band_starts;
     /// Buffer for storing per row band widths for adaptive banding
@@ -116,7 +121,7 @@ struct AlignmentDetails
     // preallocated size of scores buffer
     size_t scorebuf_alloc_size = 0;
 
-    // Device buffers for alignment backtrace
+    // Device buffers for alignment traceback
     SizeT* alignment_graph;
     SizeT* alignment_read;
 };
@@ -187,6 +192,12 @@ struct SeqT4
     SeqT r0, r1, r2, r3;
 };
 
+template <>
+struct __align__(4) SeqT4<uint8_t>
+{
+    uint8_t r0, r1, r2, r3;
+};
+
 template <typename ScoreT>
 struct ScoreT4
 {
@@ -197,6 +208,24 @@ template <>
 struct __align__(8) ScoreT4<int16_t>
 {
     int16_t s0, s1, s2, s3;
+};
+
+template <typename TraceT>
+struct TraceT4
+{
+    TraceT t0, t1, t2, t3;
+};
+
+template <>
+struct __align__(8) TraceT4<int16_t>
+{
+    int16_t t0, t1, t2, t3;
+};
+
+template <>
+struct __align__(4) TraceT4<int8_t>
+{
+    int8_t t0, t1, t2, t3;
 };
 
 } // namespace cudapoa

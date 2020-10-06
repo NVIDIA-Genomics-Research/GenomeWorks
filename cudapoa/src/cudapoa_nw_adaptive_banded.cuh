@@ -164,7 +164,8 @@ __device__ __forceinline__ void initialize_band_adaptive(ScoreT* scores, int32_t
 
 template <typename SeqT,
           typename ScoreT,
-          typename SizeT>
+          typename SizeT,
+          typename TraceT>
 __device__ __forceinline__
     int32_t
     runNeedlemanWunschAdaptiveBanded(SeqT* nodes,
@@ -177,7 +178,7 @@ __device__ __forceinline__
                                      SeqT* read,
                                      int32_t read_length,
                                      ScoreT* scores,
-                                     float scores_size,
+                                     float max_buffer_size,
                                      SizeT* alignment_graph,
                                      SizeT* alignment_read,
                                      int32_t static_band_width,
@@ -219,8 +220,8 @@ __device__ __forceinline__
     // band_shift defines distance of band_start from the scores matrix diagonal, ad-hoc rule 4
     int32_t band_shift = band_width / 2;
     // rerun code is defined in backtracking loop from previous alignment try
-    // -3 means backtrace path was too close to the left bound of band
-    // -4 means backtrace path was too close to the right bound of band
+    // -3 means traceback path was too close to the left bound of band
+    // -4 means traceback path was too close to the right bound of band
     // Therefore we rerun alignment of the same read, but this time with double band-width and band_shift
     // further to the left for rerun == -3, and further to the right for rerun == -4.
     if (rerun == -3)
@@ -237,10 +238,10 @@ __device__ __forceinline__
     }
     //---------------------------------------------------------
 
-    // check required memory and return error if exceeding scores_size
+    // check required memory and return error if exceeding max_buffer_size
     // using float to avoid 64-bit
-    float required_scores_size = static_cast<float>(graph_count) * static_cast<float>(band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING);
-    if (required_scores_size > scores_size)
+    float required_buffer_size = static_cast<float>(graph_count) * static_cast<float>(band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING);
+    if (required_buffer_size > max_buffer_size)
     {
         return -2;
     }
@@ -358,28 +359,11 @@ __device__ __forceinline__
                     last_score = first_element_prev_score;
                 }
 
-                int32_t tscore = max(last_score + gap_score, score.s0);
-                if (tscore > score.s0)
-                {
-                    score.s0 = tscore;
-                    loop     = true;
-                }
+                score.s0 = max(last_score + gap_score, score.s0);
+                score.s1 = max(score.s0 + gap_score, score.s1);
+                score.s2 = max(score.s1 + gap_score, score.s2);
 
-                tscore = max(score.s0 + gap_score, score.s1);
-                if (tscore > score.s1)
-                {
-                    score.s1 = tscore;
-                    loop     = true;
-                }
-
-                tscore = max(score.s1 + gap_score, score.s2);
-                if (tscore > score.s2)
-                {
-                    score.s2 = tscore;
-                    loop     = true;
-                }
-
-                tscore = max(score.s2 + gap_score, score.s3);
+                int32_t tscore = max(score.s2 + gap_score, score.s3);
                 if (tscore > score.s3)
                 {
                     score.s3 = tscore;
@@ -423,7 +407,7 @@ __device__ __forceinline__
             }
         }
 
-        // Fill in backtrace
+        // Fill in traceback
         int32_t prev_i       = 0;
         int32_t prev_j       = 0;
         int32_t next_node_id = i > 0 ? graph[i - 1] : 0;
@@ -439,7 +423,7 @@ __device__ __forceinline__
             {
                 if (rerun == 0)
                 {
-                    // check if backtrace gets too close or hits the band limits, if so stop and rerun with extended band-width
+                    // check if traceback gets too close or hits the band limits, if so stop and rerun with extended band-width
                     // threshold for proximity to band limits works better if defined proportionate to the sequence length
                     int32_t threshold = max(1, max_column / 1024); // ad-hoc rule 7
                     if (j > threshold && j < max_column - threshold)
