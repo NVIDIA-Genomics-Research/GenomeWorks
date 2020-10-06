@@ -196,7 +196,7 @@ void ApplicationParameters::help(int32_t exit_code)
             generates msa if this flag is passed [default: consensus])"
               << R"(
         -b, --band-mode  <int>
-            selects banding mode, 0: full-alignment, 1: static band, 2: adaptive band [2])"
+            selects banding mode, 0: full-alignment, 1: static band, 2: adaptive band, 3: traceback static band, 4: traceback adaptive band [2])"
               << R"(
         -w, --band-width <int>
             band-width for banded alignment (must be multiple of 128) [256])"
