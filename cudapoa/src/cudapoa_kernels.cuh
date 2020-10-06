@@ -273,9 +273,9 @@ __launch_bounds__(MAX_THREADS_PER_BLOCK_64)
                                                                                       0);
             __syncwarp();
 
-            if (alignment_length < -2)
+            if (alignment_length == SHIFT_ADAPTIVE_BAND_TO_LEFT || alignment_length == SHIFT_ADAPTIVE_BAND_TO_RIGHT)
             {
-                // rerun with extended band-width
+                // rerun with extended and shifted band-width
                 alignment_length = runNeedlemanWunschBanded<uint8_t, ScoreT, SizeT, true>(nodes,
                                                                                           sorted_poa,
                                                                                           node_id_to_pos,
@@ -342,7 +342,7 @@ __launch_bounds__(MAX_THREADS_PER_BLOCK_64)
             __syncwarp();
         }
 
-        if (alignment_length == -1)
+        if (alignment_length == NW_BACKTRACKING_LOOP_FAILED)
         {
             if (lane_idx == 0)
             {
@@ -351,7 +351,7 @@ __launch_bounds__(MAX_THREADS_PER_BLOCK_64)
             }
             return;
         }
-        else if (alignment_length == -2)
+        else if (alignment_length == NW_ADAPTIVE_STORAGE_FAILED)
         {
             if (lane_idx == 0)
             {
@@ -630,9 +630,9 @@ __launch_bounds__(MAX_THREADS_PER_BLOCK_72)
                                                                                                        match_score,
                                                                                                        0);
             __syncwarp();
-            if (alignment_length < -2)
+            if (alignment_length == SHIFT_ADAPTIVE_BAND_TO_LEFT || alignment_length == SHIFT_ADAPTIVE_BAND_TO_RIGHT)
             {
-                // rerun with extended band-width
+                // rerun with extended and shifted band-width
                 alignment_length = runNeedlemanWunschBandedTraceback<uint8_t, ScoreT, SizeT, TraceT, true>(nodes,
                                                                                                            sorted_poa,
                                                                                                            node_id_to_pos,
@@ -682,7 +682,7 @@ __launch_bounds__(MAX_THREADS_PER_BLOCK_72)
             __syncwarp();
         }
 
-        if (alignment_length == -1)
+        if (alignment_length == NW_BACKTRACKING_LOOP_FAILED)
         {
             if (lane_idx == 0)
             {
@@ -691,12 +691,21 @@ __launch_bounds__(MAX_THREADS_PER_BLOCK_72)
             }
             return;
         }
-        else if (alignment_length == -2)
+        else if (alignment_length == NW_ADAPTIVE_STORAGE_FAILED)
         {
             if (lane_idx == 0)
             {
                 consensus[0] = CUDAPOA_KERNEL_ERROR_ENCOUNTERED;
                 consensus[1] = static_cast<uint8_t>(StatusType::exceeded_adaptive_banded_matrix_size);
+            }
+            return;
+        }
+        else if (alignment_length == NW_TRACEBACK_BUFFER_FAILED)
+        {
+            if (lane_idx == 0)
+            {
+                consensus[0] = CUDAPOA_KERNEL_ERROR_ENCOUNTERED;
+                consensus[1] = static_cast<uint8_t>(StatusType::exceeded_maximum_predecessor_distance);
             }
             return;
         }

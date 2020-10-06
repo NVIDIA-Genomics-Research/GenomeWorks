@@ -41,7 +41,8 @@ enum StatusType
     seq_len_exceeded_maximum_nodes_per_window,
     loop_count_exceeded_upper_bound,
     output_type_unavailable,
-    generic_error
+    generic_error,
+    exceeded_maximum_predecessor_distance
 };
 
 /// Banding mode used in Needleman-Wunsch algorithm

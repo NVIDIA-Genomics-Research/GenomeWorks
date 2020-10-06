@@ -233,17 +233,17 @@ __device__ __forceinline__
     if (ADAPTIVE)
     {
         // rerun code is defined in backtracking loop from previous alignment try
-        // -3 means traceback path was too close to the left bound of band
-        // -4 means traceback path was too close to the right bound of band
-        // Therefore we rerun alignment of the same read, but this time with double band-width and band_shift
-        // further to the left for rerun == -3, and further to the right for rerun == -4.
-        if (rerun == -3)
+        // SHIFT_ADAPTIVE_BAND_TO_LEFT means traceback path was too close to the left bound of band
+        // SHIFT_ADAPTIVE_BAND_TO_RIGHT means traceback path was too close to the right bound of band
+        // Therefore we rerun alignment of the same read, but this time with double band-width and band_shift further to
+        // the left for rerun == SHIFT_ADAPTIVE_BAND_TO_LEFT, and further to the right for rerun == SHIFT_ADAPTIVE_BAND_TO_RIGHT.
+        if (rerun == SHIFT_ADAPTIVE_BAND_TO_LEFT)
         {
             // ad-hoc rule 5
             band_width *= 2;
             band_shift *= 2.5;
         }
-        if (rerun == -4)
+        if (rerun == SHIFT_ADAPTIVE_BAND_TO_RIGHT)
         {
             // ad-hoc rule 6
             band_width *= 2;
@@ -254,7 +254,7 @@ __device__ __forceinline__
         float required_buffer_size = static_cast<float>(graph_count) * static_cast<float>(band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING);
         if (required_buffer_size > max_buffer_size)
         {
-            return -2;
+            return NW_ADAPTIVE_STORAGE_FAILED;
         }
     }
     //---------------------------------------------------------
@@ -445,12 +445,12 @@ __device__ __forceinline__
                             int32_t band_start = get_band_start_for_row(i, gradient, band_width, band_shift, max_column);
                             if (j <= band_start + threshold) // ad-hoc rule 8-a, too close to left bound
                             {
-                                aligned_nodes = -3;
+                                aligned_nodes = SHIFT_ADAPTIVE_BAND_TO_LEFT;
                                 break;
                             }
                             if (j >= (band_start + band_width - threshold)) // ad-hoc rule 8-b, too close to right bound
                             {
-                                aligned_nodes = -4;
+                                aligned_nodes = SHIFT_ADAPTIVE_BAND_TO_RIGHT;
                                 break;
                             }
                         }
@@ -538,7 +538,7 @@ __device__ __forceinline__
 
         if (loop_count >= (read_length + graph_count + 2))
         {
-            aligned_nodes = -1;
+            aligned_nodes = NW_BACKTRACKING_LOOP_FAILED;
         }
 
 #ifdef NW_VERBOSE_PRINT

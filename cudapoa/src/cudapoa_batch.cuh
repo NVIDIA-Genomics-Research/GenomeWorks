@@ -465,6 +465,10 @@ protected:
             GW_LOG_WARN("Kernel Error:: Consensus/MSA sequence size exceeded max sequence size in batch {}\n", bid_);
             output_status.emplace_back(error_type);
             break;
+        case genomeworks::cudapoa::StatusType::exceeded_maximum_predecessor_distance:
+            GW_LOG_WARN("Kernel Error:: Set value for maximum predecessor distance in traceback NW is too small {}\n", bid_);
+            output_status.emplace_back(error_type);
+            break;
         default:
             GW_LOG_WARN("Kernel Error:: Unknown error in batch {}\n", bid_);
             output_status.emplace_back(error_type);

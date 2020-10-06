@@ -37,6 +37,10 @@
 // ad-hoc maximum band-width defined in adaptive banding
 #define CUDAPOA_MAX_ADAPTIVE_BAND_WIDTH 1536
 
+// rerun codes used in adaptive banding
+#define SHIFT_ADAPTIVE_BAND_TO_LEFT -10
+#define SHIFT_ADAPTIVE_BAND_TO_RIGHT -11
+
 #define CUDAPOA_THREADS_PER_BLOCK 64
 #define CUDAPOA_BANDED_THREADS_PER_BLOCK WARP_SIZE
 #define CUDAPOA_MAX_CONSENSUS_PER_BLOCK 512
@@ -44,6 +48,11 @@
 #define FULL_MASK 0xffffffff
 #define CUDAPOA_KERNEL_ERROR_ENCOUNTERED UINT8_MAX
 #define CUDAPOA_KERNEL_NOERROR_ENCOUNTERED 0
+
+// NW return error codes
+#define NW_BACKTRACKING_LOOP_FAILED -1
+#define NW_ADAPTIVE_STORAGE_FAILED -2
+#define NW_TRACEBACK_BUFFER_FAILED -3
 
 namespace claraparabricks
 {
