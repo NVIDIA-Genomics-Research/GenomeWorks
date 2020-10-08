@@ -35,6 +35,51 @@ namespace cudamapper
 /// \addtogroup cudamapper
 /// \{
 
+/// IndexDescriptor Implementation - Every Index is defined by its first read and the number of reads
+/// Used in conjunction with a fasta parser object to create an index
+class IndexDescriptor
+{
+public:
+    /// \brief constructor
+    IndexDescriptor(read_id_t first_read,
+                    number_of_reads_t number_of_reads);
+
+    /// \brief getter
+    read_id_t first_read() const;
+
+    /// \brief getter
+    number_of_reads_t number_of_reads() const;
+
+    /// \brief returns hash value
+    std::size_t get_hash() const;
+
+private:
+    /// \brief generates hash
+    void generate_hash();
+
+    /// first read in index
+    read_id_t first_read_;
+    /// number of reads in index
+    number_of_reads_t number_of_reads_;
+    /// hash of this object
+    std::size_t hash_;
+};
+
+/// \brief equality operator
+bool operator==(const IndexDescriptor& lhs,
+                const IndexDescriptor& rhs);
+
+/// \brief inequality operator
+bool operator!=(const IndexDescriptor& lhs,
+                const IndexDescriptor& rhs);
+
+/// IndexDescriptorHash - operator() calculates hash of a given IndexDescriptor
+struct IndexDescriptorHash
+{
+    /// \brief caclulates hash of given IndexDescriptor
+    std::size_t operator()(const IndexDescriptor& index_descriptor) const;
+};
+
 /// Index - manages mapping of (k,w)-kmer-representation and all its occurences
 class Index
 {
@@ -92,8 +137,7 @@ public:
     /// \brief generates a mapping of (k,w)-kmer-representation to all of its occurrences for one or more sequences
     /// \param allocator The device memory allocator to use for temporary buffer allocations
     /// \param parser parser for the whole input file (part that goes into this index is determined by first_read_id and past_the_last_read_id)
-    /// \param first_read_id read_id of the first read to the included in this index
-    /// \param past_the_last_read_id read_id+1 of the last read to be included in this index
+    /// \param descriptor object holding the first read, size of the read, and hash value of the index being created
     /// \param kmer_size k - the kmer length
     /// \param window_size w - the length of the sliding window used to find sketch elements  (i.e. the number of adjacent kmers in a window, adjacent = shifted by one basepair)
     /// \param hash_representations if true, hash kmer representations
@@ -103,8 +147,7 @@ public:
     static std::unique_ptr<Index>
     create_index(DefaultDeviceAllocator allocator,
                  const io::FastaParser& parser,
-                 const read_id_t first_read_id,
-                 const read_id_t past_the_last_read_id,
+                 const IndexDescriptor& descriptor,
                  const std::uint64_t kmer_size,
                  const std::uint64_t window_size,
                  const bool hash_representations  = true,
@@ -185,51 +228,6 @@ public:
                                                            const std::uint64_t kmer_size,
                                                            const std::uint64_t window_size,
                                                            const cudaStream_t cuda_stream = 0);
-};
-
-/// IndexDescriptor Implementation - Every Index is defined by its first read and the number of reads
-/// Used in conjunction with a fasta parser object to create an index
-class IndexDescriptor
-{
-public:
-    /// \brief constructor
-    IndexDescriptor(read_id_t first_read,
-                    number_of_reads_t number_of_reads);
-
-    /// \brief getter
-    read_id_t first_read() const;
-
-    /// \brief getter
-    number_of_reads_t number_of_reads() const;
-
-    /// \brief returns hash value
-    std::size_t get_hash() const;
-
-private:
-    /// \brief generates hash
-    void generate_hash();
-
-    /// first read in index
-    read_id_t first_read_;
-    /// number of reads in index
-    number_of_reads_t number_of_reads_;
-    /// hash of this object
-    std::size_t hash_;
-};
-
-/// \brief equality operator
-bool operator==(const IndexDescriptor& lhs,
-                const IndexDescriptor& rhs);
-
-/// \brief inequality operator
-bool operator!=(const IndexDescriptor& lhs,
-                const IndexDescriptor& rhs);
-
-/// IndexDescriptorHash - operator() calculates hash of a given IndexDescriptor
-struct IndexDescriptorHash
-{
-    /// \brief caclulates hash of given IndexDescriptor
-    std::size_t operator()(const IndexDescriptor& index_descriptor) const;
 };
 
 } // namespace cudamapper

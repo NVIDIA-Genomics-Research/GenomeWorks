@@ -50,7 +50,7 @@ namespace genomeworks
 namespace cudapoa
 {
 
-template <typename ScoreT, typename SizeT>
+template <typename ScoreT, typename SizeT, typename TraceT>
 class BatchBlock
 {
 public:
@@ -61,6 +61,9 @@ public:
     {
         scoped_device_switch dev(device_id_);
         max_nodes_per_window_ = batch_size.max_nodes_per_graph;
+        traceback_alignment_  = batch_size.band_mode == BandMode::static_band_traceback;
+        score_matrix_height_  = traceback_alignment_ ? batch_size.max_banded_pred_distance : batch_size.max_nodes_per_graph;
+        score_matrix_width_   = batch_size.matrix_sequence_dimension;
 
         // calculate static and dynamic sizes of buffers needed per POA entry.
         int64_t host_size_fixed, device_size_fixed;
@@ -77,10 +80,21 @@ public:
             throw std::runtime_error(msg);
         }
 
-        // Calculate max POAs possible based on available memory.
-        int64_t device_size_per_score_matrix = static_cast<int64_t>(batch_size.matrix_sequence_dimension) *
-                                               static_cast<int64_t>(batch_size.matrix_graph_dimension) * sizeof(ScoreT);
-        max_poas_ = avail_mem / (device_size_per_poa + device_size_per_score_matrix);
+        // compute device memory used for matrix buffer
+        // in banded traceback alignment, this is for traceback matrix, otherwise it is for score matrix
+        int64_t device_size_per_matrix = static_cast<int64_t>(batch_size.matrix_sequence_dimension) *
+                                         static_cast<int64_t>(batch_size.max_nodes_per_graph);
+        if (batch_size.band_mode == BandMode::static_band_traceback)
+        {
+            device_size_per_matrix *= sizeof(TraceT);
+        }
+        else
+        {
+            device_size_per_matrix *= sizeof(ScoreT);
+        }
+
+        // Calculate max POAs possible based on available memory
+        max_poas_ = avail_mem / (device_size_per_poa + device_size_per_matrix);
 
         // Update final sizes for block based on calculated maximum POAs.
         output_size_ = max_poas_ * static_cast<int64_t>(batch_size.max_consensus_size);
@@ -185,19 +199,26 @@ public:
         *input_details_d_p = input_details_d;
     }
 
-    void get_alignment_details(AlignmentDetails<ScoreT, SizeT>** alignment_details_d_p)
+    void get_alignment_details(AlignmentDetails<ScoreT, SizeT, TraceT>** alignment_details_d_p)
     {
-        AlignmentDetails<ScoreT, SizeT>* alignment_details_d{};
+        AlignmentDetails<ScoreT, SizeT, TraceT>* alignment_details_d{};
 
         // on host
-        alignment_details_d = reinterpret_cast<AlignmentDetails<ScoreT, SizeT>*>(&block_data_h_[offset_h_]);
-        offset_h_ += sizeof(AlignmentDetails<ScoreT, SizeT>);
+        alignment_details_d = reinterpret_cast<AlignmentDetails<ScoreT, SizeT, TraceT>*>(&block_data_h_[offset_h_]);
+        offset_h_ += sizeof(AlignmentDetails<ScoreT, SizeT, TraceT>);
 
         // on device;
         alignment_details_d->alignment_graph = reinterpret_cast<decltype(alignment_details_d->alignment_graph)>(&block_data_d_[offset_d_]);
         offset_d_ += cudautils::align<int64_t, 8>(sizeof(*alignment_details_d->alignment_graph) * max_nodes_per_window_ * max_poas_);
         alignment_details_d->alignment_read = reinterpret_cast<decltype(alignment_details_d->alignment_read)>(&block_data_d_[offset_d_]);
         offset_d_ += cudautils::align<int64_t, 8>(sizeof(*alignment_details_d->alignment_read) * max_nodes_per_window_ * max_poas_);
+        // in traceback banded mode, we store only part of scores matrix for forward computation in NW
+        if (traceback_alignment_)
+        {
+            alignment_details_d->scores = reinterpret_cast<decltype(alignment_details_d->scores)>(&block_data_d_[offset_d_]);
+            offset_d_ += cudautils::align<int64_t, 8>(sizeof(*alignment_details_d->scores) * score_matrix_width_ * score_matrix_height_ * max_poas_);
+        }
+
         if (variable_bands_)
         {
             alignment_details_d->band_starts = reinterpret_cast<decltype(alignment_details_d->band_starts)>(&block_data_d_[offset_d_]);
@@ -210,10 +231,21 @@ public:
             offset_d_ += cudautils::align<int64_t, 8>(sizeof(*alignment_details_d->band_max_indices) * max_nodes_per_window_ * max_poas_);
         }
 
-        // rest of the available memory is assigned to scores buffer
-        alignment_details_d->scorebuf_alloc_size = total_d_ - offset_d_;
-        alignment_details_d->scores              = reinterpret_cast<decltype(alignment_details_d->scores)>(&block_data_d_[offset_d_]);
-        *alignment_details_d_p                   = alignment_details_d;
+        if (!traceback_alignment_)
+        {
+            // in non-traceback alignments, where only scores buffer is used and traceback buffer size is 0, rest of the available memory is assigned to scores buffer
+            alignment_details_d->scorebuf_alloc_size = total_d_ - offset_d_;
+            alignment_details_d->scores              = reinterpret_cast<decltype(alignment_details_d->scores)>(&block_data_d_[offset_d_]);
+            alignment_details_d->traceback           = nullptr;
+        }
+        else
+        {
+            // in traceback alignment, rest of the available memory is assigned to traceback buffer
+            alignment_details_d->scorebuf_alloc_size = total_d_ - offset_d_;
+            alignment_details_d->traceback           = reinterpret_cast<decltype(alignment_details_d->traceback)>(&block_data_d_[offset_d_]);
+        }
+
+        *alignment_details_d_p = alignment_details_d;
     }
 
     void get_graph_details(GraphDetails<SizeT>** graph_details_d_p, GraphDetails<SizeT>** graph_details_h_p)
@@ -303,8 +335,10 @@ public:
 
     static int64_t compute_device_memory_per_poa(const BatchConfig& batch_size, const bool msa_flag, const bool variable_bands = false)
     {
-        int64_t device_size_per_poa = 0;
-        int32_t max_nodes_per_graph = batch_size.max_nodes_per_graph;
+        int64_t device_size_per_poa         = 0;
+        int32_t max_nodes_per_graph         = batch_size.max_nodes_per_graph;
+        bool traceback                      = batch_size.band_mode == BandMode::static_band_traceback;
+        int32_t traceback_score_matrix_size = batch_size.matrix_sequence_dimension * batch_size.max_banded_pred_distance;
 
         // for output - device
         device_size_per_poa += batch_size.max_consensus_size * sizeof(*OutputDetails::consensus);                                                                        // output_details_d_->consensus
@@ -338,13 +372,13 @@ public:
         device_size_per_poa += (msa_flag) ? sizeof(*GraphDetails<SizeT>::outgoing_edges_coverage_count) * max_nodes_per_graph * CUDAPOA_MAX_NODE_EDGES : 0;                              // graph_details_d_->outgoing_edges_coverage_count
         device_size_per_poa += (msa_flag) ? sizeof(*GraphDetails<SizeT>::node_id_to_msa_pos) * max_nodes_per_graph : 0;                                                                  // graph_details_d_->node_id_to_msa_pos
         // for alignment - device
-        device_size_per_poa += sizeof(*AlignmentDetails<ScoreT, SizeT>::alignment_graph) * max_nodes_per_graph;                        // alignment_details_d_->alignment_graph
-        device_size_per_poa += sizeof(*AlignmentDetails<ScoreT, SizeT>::alignment_read) * max_nodes_per_graph;                         // alignment_details_d_->alignment_read
-        device_size_per_poa += variable_bands ? sizeof(*AlignmentDetails<ScoreT, SizeT>::band_starts) * max_nodes_per_graph : 0;       // alignment_details_d_->band_starts
-        device_size_per_poa += variable_bands ? sizeof(*AlignmentDetails<ScoreT, SizeT>::band_widths) * max_nodes_per_graph : 0;       // alignment_details_d_->band_widths
-        device_size_per_poa += variable_bands ? sizeof(*AlignmentDetails<ScoreT, SizeT>::band_head_indices) * max_nodes_per_graph : 0; // alignment_details_d_->band_head_indices
-        device_size_per_poa += variable_bands ? sizeof(*AlignmentDetails<ScoreT, SizeT>::band_max_indices) * max_nodes_per_graph : 0;  // alignment_details_d_->band_max_indices
-
+        device_size_per_poa += sizeof(*AlignmentDetails<ScoreT, SizeT, TraceT>::alignment_graph) * max_nodes_per_graph;                        // alignment_details_d_->alignment_graph
+        device_size_per_poa += sizeof(*AlignmentDetails<ScoreT, SizeT, TraceT>::alignment_read) * max_nodes_per_graph;                         // alignment_details_d_->alignment_read
+        device_size_per_poa += variable_bands ? sizeof(*AlignmentDetails<ScoreT, SizeT, TraceT>::band_starts) * max_nodes_per_graph : 0;       // alignment_details_d_->band_starts
+        device_size_per_poa += variable_bands ? sizeof(*AlignmentDetails<ScoreT, SizeT, TraceT>::band_widths) * max_nodes_per_graph : 0;       // alignment_details_d_->band_widths
+        device_size_per_poa += variable_bands ? sizeof(*AlignmentDetails<ScoreT, SizeT, TraceT>::band_head_indices) * max_nodes_per_graph : 0; // alignment_details_d_->band_head_indices
+        device_size_per_poa += variable_bands ? sizeof(*AlignmentDetails<ScoreT, SizeT, TraceT>::band_max_indices) * max_nodes_per_graph : 0;  // alignment_details_d_->band_max_indices
+        device_size_per_poa += traceback ? sizeof(*AlignmentDetails<ScoreT, SizeT, TraceT>::scores) * traceback_score_matrix_size : 0;         // alignment_details_d_->scores (only for traceback banded modes)
         return device_size_per_poa;
     }
 
@@ -380,33 +414,42 @@ public:
         cudaMemGetInfo(&free, &total);
         size_t mem_per_batch = memory_usage_quota * free; // Using memory_usage_quota of GPU available memory for cudapoa batch.
 
-        int64_t sizeof_ScoreT       = 2;
+        int64_t sizeof_ScoreT       = sizeof(int16_t);
+        int64_t sizeof_TraceT       = use16bitTrace(batch_size) ? sizeof(int16_t) : sizeof(int8_t);
         int64_t device_size_per_poa = 0;
 
         if (use32bitScore(batch_size, gap_score, mismatch_score, match_score))
         {
-            sizeof_ScoreT = 4;
+            sizeof_ScoreT = sizeof(int32_t);
             if (use32bitSize(batch_size))
             {
-                device_size_per_poa = BatchBlock<int32_t, int32_t>::compute_device_memory_per_poa(batch_size, msa_flag);
+                device_size_per_poa = BatchBlock<int32_t, int32_t, int16_t>::compute_device_memory_per_poa(batch_size, msa_flag);
             }
             else
             {
-                device_size_per_poa = BatchBlock<int32_t, int16_t>::compute_device_memory_per_poa(batch_size, msa_flag);
+                device_size_per_poa = BatchBlock<int32_t, int16_t, int16_t>::compute_device_memory_per_poa(batch_size, msa_flag);
             }
         }
         else
         {
             // if ScoreT is 16-bit, it's safe to assume SizeT is also 16-bit
-            device_size_per_poa = BatchBlock<int16_t, int16_t>::compute_device_memory_per_poa(batch_size, msa_flag);
+            device_size_per_poa = BatchBlock<int16_t, int16_t, int16_t>::compute_device_memory_per_poa(batch_size, msa_flag);
         }
 
-        // Compute required memory for score matrix
-        int64_t device_size_per_score_matrix = static_cast<int64_t>(batch_size.matrix_sequence_dimension) *
-                                               static_cast<int64_t>(batch_size.matrix_graph_dimension) * sizeof_ScoreT;
+        // Compute required memory for score or backtracking matrix
+        int64_t device_size_per_matrix = static_cast<int64_t>(batch_size.matrix_sequence_dimension) *
+                                         static_cast<int64_t>(batch_size.max_nodes_per_graph);
+        if (batch_size.band_mode == BandMode::static_band_traceback)
+        {
+            device_size_per_matrix *= sizeof_TraceT;
+        }
+        else
+        {
+            device_size_per_matrix *= sizeof_ScoreT;
+        }
 
         // Calculate max POAs possible based on available memory.
-        int64_t max_poas = mem_per_batch / (device_size_per_poa + device_size_per_score_matrix);
+        int64_t max_poas = mem_per_batch / (device_size_per_poa + device_size_per_matrix);
 
         return max_poas;
     }
@@ -432,7 +475,7 @@ protected:
         host_size_fixed += sizeof(GraphDetails<SizeT>); // graph_details_h_
         host_size_fixed += sizeof(GraphDetails<SizeT>); // graph_details_d_
         // for alignment - host
-        host_size_fixed += sizeof(AlignmentDetails<ScoreT, SizeT>); // alignment_details_d_
+        host_size_fixed += sizeof(AlignmentDetails<ScoreT, SizeT, TraceT>); // alignment_details_d_
 
         return std::make_tuple(host_size_fixed, device_size_fixed, host_size_per_poa, device_size_per_poa);
     }
@@ -463,6 +506,9 @@ protected:
     int64_t input_size_           = 0;
     int64_t output_size_          = 0;
     int32_t max_nodes_per_window_ = 0;
+    int32_t score_matrix_height_  = 0;
+    int32_t score_matrix_width_   = 0;
+    bool traceback_alignment_     = false;
     int32_t device_id_;
 
     // Bit field for output type
