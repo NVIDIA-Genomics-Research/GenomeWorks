@@ -20,7 +20,7 @@ add_subdirectory(data)
 
 GitVersion()
 
-configure_file(${CMAKE_SOURCE_DIR}/common/base/src/version.cpp.in
+configure_file(${PROJECT_SOURCE_DIR}/common/base/src/version.cpp.in
         ${CMAKE_CURRENT_BINARY_DIR}/version.cpp)
 
 # Project specific NVCC flags, --expt-relaxed-constexpr is being added to allow using numeric_limits inside device kernels.
