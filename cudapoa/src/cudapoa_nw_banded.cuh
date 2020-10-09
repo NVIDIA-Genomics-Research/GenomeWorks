@@ -225,6 +225,12 @@ __device__ __forceinline__
 
         // limit band-width for very large reads, ad-hoc rule 3
         band_width = min(band_width, CUDAPOA_MAX_ADAPTIVE_BAND_WIDTH);
+
+        if (band_width == CUDAPOA_MAX_ADAPTIVE_BAND_WIDTH && rerun != 0)
+        {
+            // already we have tried with maximum allowed band-width, rerun won't help
+            return rerun;
+        }
     }
 
     // band_shift defines distance of band_start from the scores matrix diagonal, ad-hoc rule 4
@@ -237,13 +243,13 @@ __device__ __forceinline__
         // SHIFT_ADAPTIVE_BAND_TO_RIGHT means traceback path was too close to the right bound of band
         // Therefore we rerun alignment of the same read, but this time with double band-width and band_shift further to
         // the left for rerun == SHIFT_ADAPTIVE_BAND_TO_LEFT, and further to the right for rerun == SHIFT_ADAPTIVE_BAND_TO_RIGHT.
-        if (rerun == SHIFT_ADAPTIVE_BAND_TO_LEFT)
+        if (rerun == SHIFT_ADAPTIVE_BAND_TO_LEFT && band_width <= CUDAPOA_MAX_ADAPTIVE_BAND_WIDTH / 2)
         {
             // ad-hoc rule 5
             band_width *= 2;
             band_shift *= 2.5;
         }
-        if (rerun == SHIFT_ADAPTIVE_BAND_TO_RIGHT)
+        if (rerun == SHIFT_ADAPTIVE_BAND_TO_RIGHT && band_width <= CUDAPOA_MAX_ADAPTIVE_BAND_WIDTH / 2)
         {
             // ad-hoc rule 6
             band_width *= 2;
