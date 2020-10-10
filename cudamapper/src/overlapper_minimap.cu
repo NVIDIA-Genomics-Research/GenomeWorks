@@ -161,10 +161,10 @@ __global__ void mask_overlaps(Overlap* overlaps, std::size_t n_overlaps, bool* s
         const bool mask_self_self     = false;
         auto query_bases_per_residue  = static_cast<double>(overlap_query_length) / static_cast<double>(overlaps[d_tid].num_residues_);
         auto target_bases_per_residue = static_cast<double>(overlap_target_length) / static_cast<double>(overlaps[d_tid].num_residues_);
-        select_mask[d_tid] &= (overlap_query_length >= min_overlap_length) && (overlap_target_length >= min_overlap_length);
-        select_mask[d_tid] &= overlaps[d_tid].num_residues_ >= min_residues;
+        select_mask[d_tid] = select_mask[d_tid] && (overlap_query_length >= min_overlap_length) && (overlap_target_length >= min_overlap_length);
+        select_mask[d_tid] = select_mask[d_tid] && (overlaps[d_tid].num_residues_ >= min_residues);
         //mask[d_tid] &= !mask_self_self;
-        select_mask[d_tid] &= (query_bases_per_residue < max_bases_per_residue) && (target_bases_per_residue < max_bases_per_residue);
+        select_mask[d_tid] = select_mask[d_tid] && (query_bases_per_residue < max_bases_per_residue) && (target_bases_per_residue < max_bases_per_residue);
         // Look at the overlaps and all the overlaps adjacent to me, up to some maximum. Between neighbor i and myself, if
         // some criteria is met, defined by percent_reciprocal_overlap() and contained_overlap(), I get filtered
         // TODO VI: since we do these pair-wise, I think there is some overlap in work that adjacent threads do
