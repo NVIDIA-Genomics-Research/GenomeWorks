@@ -23,8 +23,8 @@ string(STRIP ${GW_VERSION} GW_VERSION)
 project(${GW_PROJECT_NAME})
 
 # Process options.
-option(gw_enable_tests "Build GenomeWorks unit tests" OFF)
-option(gw_enable_benchmarks "Build GenomeWorks benchmarks" OFF)
+option(gw_enable_tests "Build GenomeWorks unit tests" ON)
+option(gw_enable_benchmarks "Build GenomeWorks benchmarks" ON)
 option(gw_build_shared "Build GenomeWorks libraries as shared objects" OFF)
 option(gw_device_synchronize_kernels "Run cudaDeviceSynchronize() in GW_CU_CHECK_ERR calls" OFF)
 option(gw_optimize_for_native_cpu "Build with march=native" ON)
@@ -83,6 +83,7 @@ add_subdirectory(common/io)
 add_subdirectory(cudapoa)
 add_subdirectory(cudamapper)
 add_subdirectory(cudaaligner)
+add_subdirectory(cudaextender)
 
 # Add documentation generation.
 validate_boolean(gw_generate_docs)
