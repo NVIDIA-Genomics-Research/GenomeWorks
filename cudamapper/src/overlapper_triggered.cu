@@ -38,8 +38,8 @@ namespace genomeworks
 namespace cudamapper
 {
 
-__host__ __device__ bool operator==(const Anchor& lhs,
-                                    const Anchor& rhs)
+__device__ bool operator==(const Anchor& lhs,
+                           const Anchor& rhs)
 {
     auto score_threshold = 1;
 

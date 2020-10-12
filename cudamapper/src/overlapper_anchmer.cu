@@ -145,8 +145,8 @@ __device__ bool operator==(const Overlap& a,
     return identical_ids && same_strand && (gap_match);
 }
 
-__device__ bool operator==(const Anchor& lhs,
-                           const Anchor& rhs)
+__host__ __device__ bool operator==(const Anchor& lhs,
+                                    const Anchor& rhs)
 {
     auto score_threshold = 1;
 
