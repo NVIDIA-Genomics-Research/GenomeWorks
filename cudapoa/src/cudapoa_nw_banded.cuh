@@ -441,7 +441,8 @@ __device__ __forceinline__
             {
                 if (ADAPTIVE)
                 {
-                    if (rerun == 0)
+                    // no need to request rerun if (a) it's not the first run, (b) band_width == CUDAPOA_MAX_ADAPTIVE_BAND_WIDTH already
+                    if (rerun == 0 && band_width < CUDAPOA_MAX_ADAPTIVE_BAND_WIDTH)
                     {
                         // check if traceback gets too close or hits the band limits, if so stop and rerun with extended band-width
                         // threshold for proximity to band limits works better if defined proportionate to the sequence length
