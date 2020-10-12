@@ -300,29 +300,6 @@ __device__ __forceinline__
 
     // Set band-width based on scores matrix aspect ratio
     //---------------------------------------------------------
-    if (ADAPTIVE)
-    {
-        if (gradient > 1.1) // ad-hoc rule 1.a
-        {
-            //                                                                            ad-hoc rule 1.b
-            band_width = max(band_width, cudautils::align<int32_t, CUDAPOA_MIN_BAND_WIDTH>(max_column * 0.08 * gradient));
-        }
-        if (gradient < 0.8) // ad-hoc rule 2.a
-        {
-            //                                                                            ad-hoc rule 2.b
-            band_width = max(band_width, cudautils::align<int32_t, CUDAPOA_MIN_BAND_WIDTH>(max_column * 0.1 / gradient));
-        }
-
-        // limit band-width for very large reads, ad-hoc rule 3
-        band_width = min(band_width, CUDAPOA_MAX_ADAPTIVE_BAND_WIDTH);
-
-        if (band_width == CUDAPOA_MAX_ADAPTIVE_BAND_WIDTH && rerun != 0)
-        {
-            // already we have tried with maximum allowed band-width, rerun won't help
-            return rerun;
-        }
-    }
-
     // band_shift defines distance of band_start from the scores matrix diagonal, ad-hoc rule 4
     int32_t band_shift = band_width / 2;
 
