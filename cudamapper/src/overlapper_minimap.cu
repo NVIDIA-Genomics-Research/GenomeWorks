@@ -438,14 +438,19 @@ __global__ void chain_anchors_in_block(const Anchor* anchors,
             // VI: We do iterate i throughout
             // Do we go over to the next tile here...? Is that ok?
             // Answer to the above is it should be fine (maybe)
-            for (int32_t i = PREDECESSOR_SEARCH_ITERATIONS, counter = 0; counter < batch_size; counter++, i++)
+            int32_t i = PREDECESSOR_SEARCH_ITERATIONS;
+            int32_t counter = 0;
+            int32_t current_score;
+            int32_t current_pred;
+            bool current_mask;
+            for (; counter < batch_size; counter++, i++)
             {
                 __syncthreads();
                 // on the first iteration, every thread looks at the 0th anchor
                 const Anchor possible_successor_anchor = block_anchor_cache[i % PREDECESSOR_SEARCH_ITERATIONS];
-                int32_t current_score            = block_score_cache[i % PREDECESSOR_SEARCH_ITERATIONS];
-                int32_t current_pred             = block_predecessor_cache[i % PREDECESSOR_SEARCH_ITERATIONS];
-                bool current_mask                = block_max_select_mask[i % PREDECESSOR_SEARCH_ITERATIONS];
+                current_score            = block_score_cache[i % PREDECESSOR_SEARCH_ITERATIONS];
+                current_pred             = block_predecessor_cache[i % PREDECESSOR_SEARCH_ITERATIONS];
+                current_mask                = block_max_select_mask[i % PREDECESSOR_SEARCH_ITERATIONS];
                 if (current_score <= word_size)
                 {
                     current_score = word_size;
@@ -461,6 +466,13 @@ __global__ void chain_anchors_in_block(const Anchor* anchors,
                     // Read in the anchor, score, and predecessor of the next anchor in memory.
                     // I think we load if we're at the LHS so we want to get the (threadIdx + 64)th anchor
                     block_anchor_cache[thread_id_in_block]      = anchors[global_write_index + i];
+                    block_score_cache[thread_id_in_block]       = 0;
+                    block_predecessor_cache[thread_id_in_block] = -1;
+                    block_max_select_mask[thread_id_in_block]   = false;
+                }
+                else if (thread_id_in_block == (i % PREDECESSOR_SEARCH_ITERATIONS))
+                {
+                    block_anchor_cache[thread_id_in_block] = chainerutils::empty_anchor();
                     block_score_cache[thread_id_in_block]       = 0;
                     block_predecessor_cache[thread_id_in_block] = -1;
                     block_max_select_mask[thread_id_in_block]   = false;
@@ -505,6 +517,13 @@ __global__ void chain_anchors_in_block(const Anchor* anchors,
 
             }
             __syncthreads();
+            // TODO not sure if this is correct
+            if (global_write_index + counter + thread_id_in_block < num_anchors)
+            {
+                scores[global_write_index + counter + thread_id_in_block]             = current_score;
+                predecessors[global_write_index + counter + thread_id_in_block]       = current_pred;
+                anchor_select_mask[global_write_index + counter + thread_id_in_block] = current_mask;
+            }
         }
     }
 }

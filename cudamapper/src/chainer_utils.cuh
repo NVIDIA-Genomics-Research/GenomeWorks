@@ -123,6 +123,16 @@ struct TileResults
     }
 };
 
+__device__ __forceinline__ Anchor empty_anchor()
+{
+    Anchor empty;
+    empty.query_read_id_ = UINT32_MAX;
+    empty.target_read_id_          = UINT32_MAX;
+    empty.query_position_in_read_  = UINT32_MAX;
+    empty.target_position_in_read_  = UINT32_MAX;
+    return empty;
+}
+
 __device__ bool
 operator==(const QueryTargetPair& a, const QueryTargetPair& b);
 
