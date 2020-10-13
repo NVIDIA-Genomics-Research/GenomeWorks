@@ -126,6 +126,14 @@ struct TileResults
 __device__ bool
 operator==(const QueryTargetPair& a, const QueryTargetPair& b);
 
+__global__ void backtrace_anchors_to_overlaps(const Anchor* anchors,
+                                              Overlap* overlaps,
+                                              double* scores,
+                                              bool* max_select_mask,
+                                              int32_t* predecessors,
+                                              const int32_t n_anchors,
+                                              const int32_t min_score);
+
 __global__ void convert_offsets_to_ends(std::int32_t* starts, std::int32_t* lengths, std::int32_t* ends, std::int32_t n_starts);
 
 __global__ void calculate_tile_starts(const std::int32_t* query_starts,

@@ -161,8 +161,8 @@ __global__ void mask_overlaps(Overlap* overlaps, std::size_t n_overlaps, bool* s
         const bool mask_self_self     = false;
         auto query_bases_per_residue  = static_cast<double>(overlap_query_length) / static_cast<double>(overlaps[d_tid].num_residues_);
         auto target_bases_per_residue = static_cast<double>(overlap_target_length) / static_cast<double>(overlaps[d_tid].num_residues_);
-        select_mask[d_tid] = select_mask[d_tid] && (overlap_query_length >= min_overlap_length) && (overlap_target_length >= min_overlap_length);
-        select_mask[d_tid] = select_mask[d_tid] && (overlaps[d_tid].num_residues_ >= min_residues);
+        select_mask[d_tid]            = select_mask[d_tid] && (overlap_query_length >= min_overlap_length) && (overlap_target_length >= min_overlap_length);
+        select_mask[d_tid]            = select_mask[d_tid] && (overlaps[d_tid].num_residues_ >= min_residues);
         //mask[d_tid] &= !mask_self_self;
         select_mask[d_tid] = select_mask[d_tid] && (query_bases_per_residue < max_bases_per_residue) && (target_bases_per_residue < max_bases_per_residue);
         // Look at the overlaps and all the overlaps adjacent to me, up to some maximum. Between neighbor i and myself, if
@@ -314,7 +314,6 @@ __device__ __forceinline__ int32_t fast_approx_log2(const int32_t val)
         return 8;
 }
 
-
 // TODO VI: This may need to be fixed at some point. Likely the last line
 __device__ __forceinline__ int32_t log_linear_anchor_weight(const Anchor& a,
                                                             const Anchor& b,
@@ -398,7 +397,7 @@ __global__ void chain_anchors_in_block(const Anchor* anchors,
                                        const int32_t* tile_starts,
                                        const int32_t num_anchors,
                                        const int32_t num_query_tiles,
-                                       const int32_t batch_id,  // which batch number we are on
+                                       const int32_t batch_id,   // which batch number we are on
                                        const int32_t batch_size, // fixed to TILE_SIZE...?
                                        const int32_t word_size,
                                        const int32_t max_distance,
@@ -429,14 +428,14 @@ __global__ void chain_anchors_in_block(const Anchor* anchors,
             __shared__ int32_t block_predecessor_cache[PREDECESSOR_SEARCH_ITERATIONS];
 
             // Initialize the local caches
-            block_anchor_cache[thread_id_in_block]      = anchors[global_read_index];
+            block_anchor_cache[thread_id_in_block] = anchors[global_read_index];
             // I _believe_ some or most of these will be 0
             // not sure why we downcast to integer here
-            block_score_cache[thread_id_in_block]       = static_cast<int32_t>(scores[global_read_index]);
+            block_score_cache[thread_id_in_block] = static_cast<int32_t>(scores[global_read_index]);
             // I _believe some or most of these will be -1 at first
             block_predecessor_cache[thread_id_in_block] = predecessors[global_read_index];
             // Still not sure what this is for
-            block_max_select_mask[thread_id_in_block]   = false;
+            block_max_select_mask[thread_id_in_block] = false;
 
             // iterate through the tile
             for (int32_t i = PREDECESSOR_SEARCH_ITERATIONS, counter = 0; counter < batch_size; ++counter, ++i)
@@ -486,7 +485,7 @@ __global__ void chain_anchors_in_block(const Anchor* anchors,
                 //        possible_successor_anchor.target_position_in_read_);
                 __syncthreads();
 
-                // if 
+                // if
                 if (current_score + marginal_score >= block_score_cache[thread_id_in_block] && (global_read_index + i) < num_anchors)
                 {
                     //current_score                               = current_score + marginal_score;
@@ -739,7 +738,7 @@ void OverlapperMinimap::get_overlaps(std::vector<Overlap>& fused_overlaps,
     // generates the scheduler blocks
     chainerutils::encode_anchor_query_locations(d_anchors.data(),
                                                 n_anchors,
-                                                TILE_SIZE,  // This is 1024
+                                                TILE_SIZE, // This is 1024
                                                 query_id_starts,
                                                 query_id_lengths,
                                                 query_id_ends,
@@ -799,13 +798,13 @@ void OverlapperMinimap::get_overlaps(std::vector<Overlap>& fused_overlaps,
 #endif
 
     // the deschedule block. Get outputs from here
-    produce_anchor_chains<<<(n_anchors / block_size) + 1, block_size, 0, _cuda_stream>>>(d_anchors.data(),
-                                                                                         d_overlaps_source.data(),
-                                                                                         d_anchor_scores.data(),
-                                                                                         d_overlaps_select_mask.data(),
-                                                                                         d_anchor_predecessors.data(),
-                                                                                         n_anchors,
-                                                                                         20);
+    chainerutils::backtrace_anchors_to_overlaps<<<BLOCK_COUNT, block_size, 0, _cuda_stream>>>(d_anchors.data(),
+                                                                                              d_overlaps_source.data(),
+                                                                                              d_anchor_scores.data(),
+                                                                                              d_overlaps_select_mask.data(),
+                                                                                              d_anchor_predecessors.data(),
+                                                                                              n_anchors,
+                                                                                              40);
 
     // TODO VI: I think we can get better device occupancy here with some kernel refactoring
     mask_overlaps<<<(n_anchors / block_size) + 1, block_size, 0, _cuda_stream>>>(d_overlaps_source.data(),

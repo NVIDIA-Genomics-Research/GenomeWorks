@@ -28,7 +28,6 @@ set(SOURCES
     Test_CudamapperMinimizer.cpp
     Test_CudamapperOverlapper.cpp
     Test_CudamapperOverlapperTriggered.cu
-    Test_CudamapperOverlapperMinimap.cu
     Test_CudamapperUtilsKmerFunctions.cpp
    )
 
