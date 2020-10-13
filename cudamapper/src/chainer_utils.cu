@@ -50,6 +50,81 @@ __device__ bool operator==(const QueryReadID& a, const QueryReadID& b)
     return a.query_read_id_ == b.query_read_id_;
 }
 
+__device__ Overlap create_simple_overlap(const Anchor& start, const Anchor& end, const int32_t num_anchors)
+{
+    Overlap overlap;
+    overlap.num_residues_ = num_anchors;
+
+    overlap.query_read_id_  = start.query_read_id_;
+    overlap.target_read_id_ = start.target_read_id_;
+    assert(start.query_read_id_ == end.query_read_id_ && start.target_read_id_ == end.target_read_id_);
+
+    overlap.query_start_position_in_read_ = min(start.query_position_in_read_, end.query_position_in_read_);
+    overlap.query_end_position_in_read_   = max(start.query_position_in_read_, end.query_position_in_read_);
+    bool is_negative_strand               = end.target_position_in_read_ < start.target_position_in_read_;
+    if (is_negative_strand)
+    {
+        overlap.relative_strand                = RelativeStrand::Reverse;
+        overlap.target_start_position_in_read_ = end.target_position_in_read_;
+        overlap.target_end_position_in_read_   = start.target_position_in_read_;
+    }
+    else
+    {
+        overlap.relative_strand                = RelativeStrand::Forward;
+        overlap.target_start_position_in_read_ = start.target_position_in_read_;
+        overlap.target_end_position_in_read_   = end.target_position_in_read_;
+    }
+    return overlap;
+}
+
+__global__ void backtrace_anchors_to_overlaps(const Anchor* anchors,
+                                              Overlap* overlaps,
+                                              double* scores,
+                                              bool* max_select_mask,
+                                              int32_t* predecessors,
+                                              const int32_t n_anchors,
+                                              const int32_t min_score)
+{
+    const std::size_t d_tid = blockIdx.x * blockDim.x + threadIdx.x;
+    if (d_tid < n_anchors)
+    {
+
+        int32_t global_overlap_index = d_tid;
+        if (scores[d_tid] >= min_score)
+        {
+
+            int32_t index                = global_overlap_index;
+            int32_t first_index          = index;
+            int32_t num_anchors_in_chain = 0;
+            Anchor final_anchor          = anchors[global_overlap_index];
+
+            while (index != -1)
+            {
+                first_index  = index;
+                int32_t pred = predecessors[index];
+                if (pred != -1)
+                {
+                    max_select_mask[pred] = false;
+                }
+                num_anchors_in_chain++;
+                index = predecessors[index];
+            }
+            Anchor first_anchor            = anchors[first_index];
+            overlaps[global_overlap_index] = create_simple_overlap(first_anchor, final_anchor, num_anchors_in_chain);
+            // Overlap final_overlap          = overlaps[global_overlap_index];
+            // printf("%d %d %d %d %d %d %d %f\n",
+            //        final_overlap.query_read_id_, final_overlap.query_start_position_in_read_, final_overlap.query_end_position_in_read_,
+            //        final_overlap.target_read_id_, final_overlap.target_start_position_in_read_, final_overlap.target_end_position_in_read_,
+            //        final_overlap.num_residues_,
+            //        final_score);
+        }
+        else
+        {
+            max_select_mask[global_overlap_index] = false;
+        }
+    }
+}
+
 __global__ void convert_offsets_to_ends(std::int32_t* starts, std::int32_t* lengths, std::int32_t* ends, std::int32_t n_starts)
 {
     std::int32_t d_tid = blockIdx.x * blockDim.x + threadIdx.x;
@@ -89,7 +164,7 @@ __global__ void calculate_tile_starts(const std::int32_t* query_starts,
                                       const std::int32_t* tiles_per_query_up_to_point)
 {
     int32_t d_thread_id = blockIdx.x * blockDim.x + threadIdx.x;
-    int32_t stride = blockDim.x * gridDim.x;
+    int32_t stride      = blockDim.x * gridDim.x;
     if (d_thread_id < num_queries)
     {
         // for each tile, we look up the query it corresponds to and offset it by the which tile in the query
@@ -167,7 +242,7 @@ void encode_anchor_query_locations(const Anchor* anchors,
     cub::DeviceScan::ExclusiveSum(d_temp_storage,
                                   temp_storage_bytes,
                                   query_lengths.data(), // this is the vector of encoded lengths
-                                  query_starts.data(), // at this point, this vector is empty
+                                  query_starts.data(),  // at this point, this vector is empty
                                   n_queries,
                                   _cuda_stream);
 
@@ -178,7 +253,7 @@ void encode_anchor_query_locations(const Anchor* anchors,
     cub::DeviceScan::ExclusiveSum(d_temp_storage,
                                   temp_storage_bytes,
                                   query_lengths.data(), // this is the vector of encoded lengths
-                                  query_starts.data(), 
+                                  query_starts.data(),
                                   n_queries,
                                   _cuda_stream);
 
@@ -186,7 +261,7 @@ void encode_anchor_query_locations(const Anchor* anchors,
     // TODO VI: I'm not entirely sure what this is for? I think we want to change the read query
     // (defined by [query_start, query_start + query_length] to [query_end - query_length + 1, query_end])
     // The above () is NOT true
-    convert_offsets_to_ends<<<(n_queries / block_size) + 1, block_size, 0, _cuda_stream>>>(query_starts.data(), // this gives how many starts at each index
+    convert_offsets_to_ends<<<(n_queries / block_size) + 1, block_size, 0, _cuda_stream>>>(query_starts.data(),  // this gives how many starts at each index
                                                                                            query_lengths.data(), // this is the vector of encoded lengths
                                                                                            query_ends.data(),
                                                                                            n_queries);
@@ -215,21 +290,21 @@ void encode_anchor_query_locations(const Anchor* anchors,
         d_temp_storage     = nullptr;
         temp_storage_bytes = 0;
         cub::DeviceScan::ExclusiveSum(d_temp_storage,
-                                temp_storage_bytes,
-                                tiles_per_query.data(), // this is the vector of encoded lengths
-                                d_tiles_per_query_up_to_point.data(), 
-                                n_queries,
-                                _cuda_stream);
+                                      temp_storage_bytes,
+                                      tiles_per_query.data(), // this is the vector of encoded lengths
+                                      d_tiles_per_query_up_to_point.data(),
+                                      n_queries,
+                                      _cuda_stream);
 
         d_temp_buf.clear_and_resize(temp_storage_bytes);
         d_temp_storage = d_temp_buf.data();
-        
+
         cub::DeviceScan::ExclusiveSum(d_temp_storage,
-                                temp_storage_bytes,
-                                tiles_per_query.data(), // this is the vector of encoded lengths
-                                d_tiles_per_query_up_to_point.data(), 
-                                n_queries,
-                                _cuda_stream);        
+                                      temp_storage_bytes,
+                                      tiles_per_query.data(), // this is the vector of encoded lengths
+                                      d_tiles_per_query_up_to_point.data(),
+                                      n_queries,
+                                      _cuda_stream);
 
         calculate_tile_starts<<<(n_queries / block_size) + 1, block_size, 0, _cuda_stream>>>(query_starts.data(), tiles_per_query.data(), tile_starts.data(), tile_size, n_queries, d_tiles_per_query_up_to_point.data());
     }
@@ -276,7 +351,6 @@ void encode_anchor_query_target_pairs(const Anchor* anchors,
                                        d_num_query_target_pairs.data(),
                                        n_anchors);
 
-    
     n_query_target_pairs = cudautils::get_value_from_device(d_num_query_target_pairs.data(), _cuda_stream);
 
     d_temp_storage     = nullptr;
