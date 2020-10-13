@@ -153,9 +153,6 @@ __global__ void calculate_tiles_per_read(const std::int32_t* lengths,
     }
 }
 
-// TODO VI: threads may be overwriting each other.
-// because the number of queries is greater than number of tiles, each thread here has to write the query starts
-// for multiple tiles
 __global__ void calculate_tile_starts(const std::int32_t* query_starts,
                                       const std::int32_t* tiles_per_query,
                                       std::int32_t* tile_starts,
@@ -164,27 +161,16 @@ __global__ void calculate_tile_starts(const std::int32_t* query_starts,
                                       const std::int32_t* tiles_per_query_up_to_point)
 {
     int32_t d_thread_id = blockIdx.x * blockDim.x + threadIdx.x;
-    int32_t stride      = blockDim.x * gridDim.x;
     if (d_thread_id < num_queries)
     {
         // for each tile, we look up the query it corresponds to and offset it by the which tile in the query
         // we're at multiplied by the total size of the tile
-        // TODO VI: this memory access pattern seems a little off? Thread i and thread i+1 would overwrite eachother, no?
         for (int i = 0; i < tiles_per_query[d_thread_id]; i++)
         {
             //finds the offset in the ragged array and offsets to find start of "next" sub array
             tile_starts[tiles_per_query_up_to_point[d_thread_id] + i] = query_starts[d_thread_id] + (i * tile_size);
         }
     }
-    //int counter = 0;
-    //for (int i =0; i < num_queries; i++)
-    //{
-    //    for (int j = 0; j < tiles_per_query[i]; j++)
-    //    {
-    //        tile_starts[counter] = query_starts[i] + (j * tile_size);
-    //        counter++;
-    //    }
-    //}
 }
 
 void encode_anchor_query_locations(const Anchor* anchors,
