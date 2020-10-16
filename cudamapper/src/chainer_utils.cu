@@ -77,6 +77,37 @@ __device__ Overlap create_simple_overlap(const Anchor& start, const Anchor& end,
     return overlap;
 }
 
+Overlap create_simple_overlap_cpu(const Anchor& start, const Anchor& end, const int32_t num_anchors)
+{
+    Overlap overlap;
+    overlap.num_residues_ = num_anchors;
+
+    overlap.query_read_id_  = start.query_read_id_;
+    overlap.target_read_id_ = start.target_read_id_;
+    assert(start.query_read_id_ == end.query_read_id_ && start.target_read_id_ == end.target_read_id_);
+
+    overlap.query_start_position_in_read_ = min(start.query_position_in_read_, end.query_position_in_read_);
+    overlap.query_end_position_in_read_   = max(start.query_position_in_read_, end.query_position_in_read_);
+    bool is_negative_strand               = end.target_position_in_read_ < start.target_position_in_read_;
+    if (is_negative_strand)
+    {
+        overlap.relative_strand                = RelativeStrand::Reverse;
+        overlap.target_start_position_in_read_ = end.target_position_in_read_;
+        overlap.target_end_position_in_read_   = start.target_position_in_read_;
+    }
+    else
+    {
+        overlap.relative_strand                = RelativeStrand::Forward;
+        overlap.target_start_position_in_read_ = start.target_position_in_read_;
+        overlap.target_end_position_in_read_   = end.target_position_in_read_;
+    }
+    return overlap;
+}
+
+// TODO VI: this may have some thread overwrite issues, as well as some problems
+// uninitialized variables in overlap struct.
+// This also has an upper bound on how many anchors we actually process. If num_anchors is greater
+// than 1792 * 32, we never actually process that anchor
 __global__ void backtrace_anchors_to_overlaps(const Anchor* anchors,
                                               Overlap* overlaps,
                                               double* scores,
@@ -125,6 +156,82 @@ __global__ void backtrace_anchors_to_overlaps(const Anchor* anchors,
     }
 }
 
+__global__ void backtrace_anchors_to_overlaps_debug(const Anchor* anchors,
+                                              Overlap* overlaps,
+                                              double* scores,
+                                              bool* max_select_mask,
+                                              int32_t* predecessors,
+                                              const int32_t n_anchors,
+                                              const int32_t min_score)
+{
+    int32_t end = n_anchors - 1;
+    for (int32_t i = end; i >= 0; i--)
+    {
+        if (scores[i] >= min_score)
+        {
+            int32_t index                = i;
+            int32_t first_index          = index;
+            int32_t num_anchors_in_chain = 0;
+            Anchor final_anchor          = anchors[i];
+
+            while (index != -1)
+            {
+                first_index  = index;
+                int32_t pred = predecessors[index];
+                if (pred != -1)
+                {
+                    max_select_mask[pred] = false;
+                }
+                num_anchors_in_chain++;
+                index = predecessors[index];
+            }
+            Anchor first_anchor            = anchors[first_index];
+            overlaps[i] = create_simple_overlap(first_anchor, final_anchor, num_anchors_in_chain);
+        }
+        else
+        {
+            max_select_mask[i] = false;
+        }
+    }
+}
+void backtrace_anchors_to_overlaps_cpu(const Anchor* anchors,
+                                       Overlap* overlaps,
+                                       double* scores,
+                                       bool* max_select_mask,
+                                       int32_t* predecessors,
+                                       const int32_t n_anchors,
+                                       const int32_t min_score)
+{
+    int32_t end = n_anchors - 1;
+    for (int32_t i = end; i >= 0; i--)
+    {
+        if (scores[i] >= min_score)
+        {
+            int32_t index                = i;
+            int32_t first_index          = index;
+            int32_t num_anchors_in_chain = 0;
+            Anchor final_anchor          = anchors[i];
+
+            while (index != -1)
+            {
+                first_index  = index;
+                int32_t pred = predecessors[index];
+                if (pred != -1)
+                {
+                    max_select_mask[pred] = false;
+                }
+                num_anchors_in_chain++;
+                index = predecessors[index];
+            }
+            Anchor first_anchor            = anchors[first_index];
+            overlaps[i] = create_simple_overlap_cpu(first_anchor, final_anchor, num_anchors_in_chain);
+        }
+        else
+        {
+            max_select_mask[i] = false;
+        }
+    }
+}
 __global__ void convert_offsets_to_ends(std::int32_t* starts, std::int32_t* lengths, std::int32_t* ends, std::int32_t n_starts)
 {
     std::int32_t d_tid = blockIdx.x * blockDim.x + threadIdx.x;

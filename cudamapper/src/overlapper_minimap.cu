@@ -518,12 +518,12 @@ __global__ void chain_anchors_in_block(const Anchor* anchors,
             }
             __syncthreads();
             // TODO not sure if this is correct
-            if (global_write_index + counter + thread_id_in_block < num_anchors)
-            {
-                scores[global_write_index + counter + thread_id_in_block]             = current_score;
-                predecessors[global_write_index + counter + thread_id_in_block]       = current_pred;
-                anchor_select_mask[global_write_index + counter + thread_id_in_block] = current_mask;
-            }
+            //if (global_write_index + counter + thread_id_in_block < num_anchors)
+            //{
+            //    scores[global_write_index + counter + thread_id_in_block]             = current_score;
+            //    predecessors[global_write_index + counter + thread_id_in_block]       = current_pred;
+            //    anchor_select_mask[global_write_index + counter + thread_id_in_block] = current_mask;
+            //}
         }
     }
 }
@@ -802,14 +802,24 @@ void OverlapperMinimap::get_overlaps(std::vector<Overlap>& fused_overlaps,
     }
 #endif
 
+#if 0
     // the deschedule block. Get outputs from here
-    chainerutils::backtrace_anchors_to_overlaps<<<BLOCK_COUNT, block_size, 0, _cuda_stream>>>(d_anchors.data(),
+    chainerutils::backtrace_anchors_to_overlaps<<<(n_anchors / block_size) + 1, block_size, 0, _cuda_stream>>>(d_anchors.data(),
                                                                                               d_overlaps_source.data(),
                                                                                               d_anchor_scores.data(),
                                                                                               d_overlaps_select_mask.data(),
                                                                                               d_anchor_predecessors.data(),
                                                                                               n_anchors,
                                                                                               40);
+#else
+    chainerutils::backtrace_anchors_to_overlaps_debug<<<1, 1, 0, _cuda_stream>>>(d_anchors.data(),
+                                                                                              d_overlaps_source.data(),
+                                                                                              d_anchor_scores.data(),
+                                                                                              d_overlaps_select_mask.data(),
+                                                                                              d_anchor_predecessors.data(),
+                                                                                              n_anchors,
+                                                                                              40);
+#endif
 
     // TODO VI: I think we can get better device occupancy here with some kernel refactoring
     mask_overlaps<<<(n_anchors / block_size) + 1, block_size, 0, _cuda_stream>>>(d_overlaps_source.data(),
