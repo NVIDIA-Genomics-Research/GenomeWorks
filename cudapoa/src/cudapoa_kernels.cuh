@@ -20,6 +20,7 @@
 #include "cudapoa_nw.cuh"
 #include "cudapoa_nw_banded.cuh"
 #include "cudapoa_nw_adaptive_banded.cuh"
+#include "cudapoa_nw_tb_banded.cuh"
 #include "cudapoa_topsort.cuh"
 #include "cudapoa_add_alignment.cuh"
 #include "cudapoa_generate_consensus.cuh"
@@ -51,8 +52,8 @@ namespace cudapoa
  * @param[in] window_details_d              Device buffer with structs encapsulating sequence details per window
  * @param[in] total_windows                 Total number of windows to process
  * @param[in] scores_d                      Device scratch space that scores alignment matrix score
- * @param[in] alignment_graph_d             Device scratch space for backtrace alignment of graph
- * @param[in] alignment_read_d              Device scratch space for backtrace alignment of sequence
+ * @param[in] alignment_graph_d             Device scratch space for traceback alignment of graph
+ * @param[in] alignment_read_d              Device scratch space for traceback alignment of sequence
  * @param[in] nodes_d                       Device scratch space for storing unique nodes in graph
  * @param[in] incoming_edges_d              Device scratch space for storing incoming edges per node
  * @param[in] incoming_edges_count_d        Device scratch space for storing number of incoming edges per node
@@ -72,7 +73,7 @@ namespace cudapoa
  * @param[in] mismatch_score                Score for finding a mismatch in alignment
  * @param[in] match_score                   Score for finding a match in alignment
  */
-template <typename ScoreT, typename SizeT, bool MSA = false, BandMode BM = full_band>
+template <typename ScoreT, typename SizeT, typename TraceT, bool MSA = false, BandMode BM = full_band>
 __launch_bounds__(GW_POA_KERNELS_MAX_THREADS_PER_BLOCK)
     __global__ void generatePOAKernel(uint8_t* consensus_d,
                                       uint8_t* sequences_d,
@@ -106,11 +107,12 @@ __launch_bounds__(GW_POA_KERNELS_MAX_THREADS_PER_BLOCK)
                                       uint16_t* outgoing_edges_coverage_d,
                                       uint16_t* outgoing_edges_coverage_count_d,
                                       int32_t max_nodes_per_graph,
-                                      int32_t scores_matrix_height,
                                       int32_t scores_matrix_width,
                                       int32_t max_limit_consensus_size,
                                       int32_t TPB               = 64,
-                                      int32_t static_band_width = 256)
+                                      int32_t static_band_width = 256,
+                                      int32_t max_pred_distance = 0,
+                                      TraceT* traceback_d       = nullptr)
 {
     // shared error indicator within a warp
     bool warp_error = false;
@@ -137,17 +139,29 @@ __launch_bounds__(GW_POA_KERNELS_MAX_THREADS_PER_BLOCK)
     int32_t scores_width = window_details_d[window_idx].scores_width;
 
     ScoreT* scores;
-    float banded_score_matrix_size; // using float instead of int64_t to minimize register
+    TraceT* traceback = traceback_d;
+    float banded_buffer_size; // using float instead of int64_t to minimize register
     if (BM == BandMode::adaptive_band || BM == BandMode::static_band)
     {
-        banded_score_matrix_size = static_cast<float>(scores_matrix_height) * static_cast<float>(scores_matrix_width);
-        int64_t scores_offset    = static_cast<int64_t>(banded_score_matrix_size) * static_cast<int64_t>(window_idx);
-        scores                   = &scores_d[scores_offset];
+        banded_buffer_size    = static_cast<float>(max_nodes_per_graph) * static_cast<float>(scores_matrix_width);
+        int64_t scores_offset = static_cast<int64_t>(banded_buffer_size) * static_cast<int64_t>(window_idx);
+        scores                = &scores_d[scores_offset];
+    }
+    else if (BM == BandMode::static_band_traceback)
+    {
+        // buffer size for scores, in banded we only need to store part of the scores matrix
+        banded_buffer_size = static_cast<float>(max_pred_distance) * static_cast<float>(scores_matrix_width);
+        int64_t offset     = static_cast<int64_t>(banded_buffer_size) * static_cast<int64_t>(window_idx);
+        scores             = &scores_d[offset];
+        // buffer size for traceback
+        banded_buffer_size = static_cast<float>(max_nodes_per_graph) * static_cast<float>(scores_matrix_width);
+        offset             = static_cast<int64_t>(banded_buffer_size) * static_cast<int64_t>(window_idx);
+        traceback          = &traceback_d[offset];
     }
     else
     {
-        int64_t scores_offset = static_cast<int64_t>(window_details_d[window_idx].scores_offset) * static_cast<int64_t>(scores_matrix_height);
-        scores                = &scores_d[scores_offset];
+        int64_t offset = static_cast<int64_t>(window_details_d[window_idx].scores_offset) * static_cast<int64_t>(max_nodes_per_graph);
+        scores         = &scores_d[offset];
     }
 
     SizeT* alignment_graph         = &alignment_graph_d[max_nodes_per_graph * window_idx];
@@ -221,12 +235,12 @@ __launch_bounds__(GW_POA_KERNELS_MAX_THREADS_PER_BLOCK)
 
     __syncwarp();
 
-    // Align each subsequent read, add alignment to graph, run topoligical sort.
+    // Align each subsequent read, add alignment to graph, run topological sort.
     for (int32_t s = 1; s < num_sequences; s++)
     {
         int32_t seq_len = sequence_lengths[s];
-        sequence += sequence_lengths[s - 1];     // increment the pointer so it is pointing to correct sequence data
-        base_weights += sequence_lengths[s - 1]; // increment the pointer so it is pointing to correct sequence data
+        sequence += cudautils::align<int32_t, SIZE_OF_SeqT4>(sequence_lengths[s - 1]);     // increment the pointer so it is pointing to correct sequence data
+        base_weights += cudautils::align<int32_t, SIZE_OF_SeqT4>(sequence_lengths[s - 1]); // increment the pointer so it is pointing to correct sequence data
 
         if (lane_idx == 0)
         {
@@ -249,48 +263,48 @@ __launch_bounds__(GW_POA_KERNELS_MAX_THREADS_PER_BLOCK)
 
         if (BM == BandMode::adaptive_band)
         {
-            alignment_length = runNeedlemanWunschAdaptiveBanded<uint8_t, ScoreT, SizeT>(nodes,
-                                                                                        sorted_poa,
-                                                                                        node_id_to_pos,
-                                                                                        sequence_lengths[0],
-                                                                                        incoming_edge_count,
-                                                                                        incoming_edges,
-                                                                                        outgoing_edge_count,
-                                                                                        sequence,
-                                                                                        seq_len,
-                                                                                        scores,
-                                                                                        banded_score_matrix_size,
-                                                                                        alignment_graph,
-                                                                                        alignment_read,
-                                                                                        static_band_width,
-                                                                                        gap_score,
-                                                                                        mismatch_score,
-                                                                                        match_score,
-                                                                                        0);
+            alignment_length = runNeedlemanWunschAdaptiveBanded<uint8_t, ScoreT, SizeT, TraceT>(nodes,
+                                                                                                sorted_poa,
+                                                                                                node_id_to_pos,
+                                                                                                sequence_lengths[0],
+                                                                                                incoming_edge_count,
+                                                                                                incoming_edges,
+                                                                                                outgoing_edge_count,
+                                                                                                sequence,
+                                                                                                seq_len,
+                                                                                                scores,
+                                                                                                banded_buffer_size,
+                                                                                                alignment_graph,
+                                                                                                alignment_read,
+                                                                                                static_band_width,
+                                                                                                gap_score,
+                                                                                                mismatch_score,
+                                                                                                match_score,
+                                                                                                0);
 
             __syncwarp();
 
             if (alignment_length < -2)
             {
                 // rerun with extended band-width
-                alignment_length = runNeedlemanWunschAdaptiveBanded<uint8_t, ScoreT, SizeT>(nodes,
-                                                                                            sorted_poa,
-                                                                                            node_id_to_pos,
-                                                                                            sequence_lengths[0],
-                                                                                            incoming_edge_count,
-                                                                                            incoming_edges,
-                                                                                            outgoing_edge_count,
-                                                                                            sequence,
-                                                                                            seq_len,
-                                                                                            scores,
-                                                                                            banded_score_matrix_size,
-                                                                                            alignment_graph,
-                                                                                            alignment_read,
-                                                                                            static_band_width,
-                                                                                            gap_score,
-                                                                                            mismatch_score,
-                                                                                            match_score,
-                                                                                            alignment_length);
+                alignment_length = runNeedlemanWunschAdaptiveBanded<uint8_t, ScoreT, SizeT, TraceT>(nodes,
+                                                                                                    sorted_poa,
+                                                                                                    node_id_to_pos,
+                                                                                                    sequence_lengths[0],
+                                                                                                    incoming_edge_count,
+                                                                                                    incoming_edges,
+                                                                                                    outgoing_edge_count,
+                                                                                                    sequence,
+                                                                                                    seq_len,
+                                                                                                    scores,
+                                                                                                    banded_buffer_size,
+                                                                                                    alignment_graph,
+                                                                                                    alignment_read,
+                                                                                                    static_band_width,
+                                                                                                    gap_score,
+                                                                                                    mismatch_score,
+                                                                                                    match_score,
+                                                                                                    alignment_length);
                 __syncwarp();
             }
         }
@@ -312,6 +326,28 @@ __launch_bounds__(GW_POA_KERNELS_MAX_THREADS_PER_BLOCK)
                                                                                 gap_score,
                                                                                 mismatch_score,
                                                                                 match_score);
+            __syncwarp();
+        }
+        else if (BM == BandMode::static_band_traceback)
+        {
+            alignment_length = runNeedlemanWunschBandedTraceBack<uint8_t, ScoreT, SizeT, TraceT>(nodes,
+                                                                                                 sorted_poa,
+                                                                                                 node_id_to_pos,
+                                                                                                 sequence_lengths[0],
+                                                                                                 incoming_edge_count,
+                                                                                                 incoming_edges,
+                                                                                                 outgoing_edge_count,
+                                                                                                 sequence,
+                                                                                                 seq_len,
+                                                                                                 scores,
+                                                                                                 traceback,
+                                                                                                 alignment_graph,
+                                                                                                 alignment_read,
+                                                                                                 static_band_width,
+                                                                                                 max_pred_distance,
+                                                                                                 gap_score,
+                                                                                                 mismatch_score,
+                                                                                                 match_score);
             __syncwarp();
         }
         else // BM == BandMode::full_band
@@ -423,18 +459,16 @@ __launch_bounds__(GW_POA_KERNELS_MAX_THREADS_PER_BLOCK)
     }
 }
 
-template <typename ScoreT, typename SizeT>
+template <typename ScoreT, typename SizeT, typename TraceT>
 void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
                  genomeworks::cudapoa::InputDetails<SizeT>* input_details_d,
                  int32_t total_windows,
                  cudaStream_t stream,
-                 genomeworks::cudapoa::AlignmentDetails<ScoreT, SizeT>* alignment_details_d,
+                 genomeworks::cudapoa::AlignmentDetails<ScoreT, SizeT, TraceT>* alignment_details_d,
                  genomeworks::cudapoa::GraphDetails<SizeT>* graph_details_d,
                  int32_t gap_score,
                  int32_t mismatch_score,
                  int32_t match_score,
-                 bool static_banded,
-                 bool adaptive_banded,
                  uint32_t max_sequences_per_poa,
                  int8_t output_mask,
                  const BatchConfig& batch_size)
@@ -453,6 +487,7 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
 
     // unpack alignment details
     ScoreT* scores         = alignment_details_d->scores;
+    TraceT* traceback      = alignment_details_d->traceback;
     SizeT* alignment_graph = alignment_details_d->alignment_graph;
     SizeT* alignment_read  = alignment_details_d->alignment_read;
 
@@ -478,13 +513,12 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
     uint16_t* outgoing_edges_coverage_count = graph_details_d->outgoing_edges_coverage_count;
     SizeT* node_id_to_msa_pos               = graph_details_d->node_id_to_msa_pos;
 
-    int32_t nwindows_per_block     = CUDAPOA_THREADS_PER_BLOCK / WARP_SIZE;
-    int32_t nblocks                = (static_banded || adaptive_banded) ? total_windows : (total_windows + nwindows_per_block - 1) / nwindows_per_block;
-    int32_t TPB                    = (static_banded || adaptive_banded) ? CUDAPOA_BANDED_THREADS_PER_BLOCK : CUDAPOA_THREADS_PER_BLOCK;
-    int32_t max_nodes_per_graph    = batch_size.max_nodes_per_graph;
-    int32_t matrix_graph_dimension = batch_size.matrix_graph_dimension;
-    int32_t matrix_seq_dimension   = batch_size.matrix_sequence_dimension;
-    bool msa                       = output_mask & OutputType::msa;
+    int32_t nwindows_per_block   = CUDAPOA_THREADS_PER_BLOCK / WARP_SIZE;
+    int32_t nblocks              = (batch_size.band_mode != BandMode::full_band) ? total_windows : (total_windows + nwindows_per_block - 1) / nwindows_per_block;
+    int32_t TPB                  = (batch_size.band_mode != BandMode::full_band) ? CUDAPOA_BANDED_THREADS_PER_BLOCK : CUDAPOA_THREADS_PER_BLOCK;
+    int32_t max_nodes_per_graph  = batch_size.max_nodes_per_graph;
+    int32_t matrix_seq_dimension = batch_size.matrix_sequence_dimension;
+    bool msa                     = output_mask & OutputType::msa;
 
     GW_CU_CHECK_ERR(cudaDeviceSetCacheConfig(cudaFuncCachePreferL1));
 
@@ -492,9 +526,9 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
 
     if (msa)
     {
-        if (static_banded)
+        if (batch_size.band_mode == BandMode::static_band)
         {
-            generatePOAKernel<ScoreT, SizeT, true, BandMode::static_band>
+            generatePOAKernel<ScoreT, SizeT, TraceT, true, BandMode::static_band>
                 <<<nblocks, TPB, 0, stream>>>(consensus_d,
                                               sequences_d,
                                               base_weights_d,
@@ -527,15 +561,15 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
                                               outgoing_edges_coverage,
                                               outgoing_edges_coverage_count,
                                               max_nodes_per_graph,
-                                              matrix_graph_dimension,
                                               matrix_seq_dimension,
                                               batch_size.max_consensus_size,
                                               TPB,
-                                              batch_size.alignment_band_width);
+                                              batch_size.alignment_band_width,
+                                              batch_size.max_banded_pred_distance);
         }
-        else if (adaptive_banded)
+        else if (batch_size.band_mode == BandMode::adaptive_band)
         {
-            generatePOAKernel<ScoreT, SizeT, true, BandMode::adaptive_band>
+            generatePOAKernel<ScoreT, SizeT, TraceT, true, BandMode::adaptive_band>
                 <<<nblocks, TPB, 0, stream>>>(consensus_d,
                                               sequences_d,
                                               base_weights_d,
@@ -568,15 +602,57 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
                                               outgoing_edges_coverage,
                                               outgoing_edges_coverage_count,
                                               max_nodes_per_graph,
-                                              matrix_graph_dimension,
                                               matrix_seq_dimension,
                                               batch_size.max_consensus_size,
                                               TPB,
-                                              batch_size.alignment_band_width);
+                                              batch_size.alignment_band_width,
+                                              batch_size.max_banded_pred_distance);
+        }
+        else if (batch_size.band_mode == BandMode::static_band_traceback)
+        {
+            generatePOAKernel<ScoreT, SizeT, TraceT, true, BandMode::static_band_traceback>
+                <<<nblocks, TPB, 0, stream>>>(consensus_d,
+                                              sequences_d,
+                                              base_weights_d,
+                                              sequence_lengths_d,
+                                              window_details_d,
+                                              total_windows,
+                                              scores,
+                                              alignment_graph,
+                                              alignment_read,
+                                              nodes,
+                                              incoming_edges,
+                                              incoming_edge_count,
+                                              outgoing_edges,
+                                              outgoing_edge_count,
+                                              incoming_edge_w,
+                                              sorted_poa,
+                                              node_id_to_pos,
+                                              node_alignments,
+                                              node_alignment_count,
+                                              sorted_poa_local_edge_count,
+                                              node_marks,
+                                              check_aligned_nodes,
+                                              nodes_to_visit,
+                                              node_coverage_counts,
+                                              gap_score,
+                                              mismatch_score,
+                                              match_score,
+                                              max_sequences_per_poa,
+                                              sequence_begin_nodes_ids,
+                                              outgoing_edges_coverage,
+                                              outgoing_edges_coverage_count,
+                                              max_nodes_per_graph,
+                                              matrix_seq_dimension,
+                                              batch_size.max_consensus_size,
+                                              TPB,
+                                              batch_size.alignment_band_width,
+                                              batch_size.max_banded_pred_distance,
+                                              traceback);
         }
         else
         {
-            generatePOAKernel<ScoreT, SizeT, true, BandMode::full_band>
+            generatePOAKernel<ScoreT, SizeT, TraceT, true, BandMode::full_band>
                 <<<nblocks, TPB, 0, stream>>>(consensus_d,
                                               sequences_d,
                                               base_weights_d,
@@ -609,18 +685,16 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
                                               outgoing_edges_coverage,
                                               outgoing_edges_coverage_count,
                                               max_nodes_per_graph,
-                                              matrix_graph_dimension,
                                               matrix_seq_dimension,
                                               batch_size.max_consensus_size,
-                                              TPB,
-                                              batch_size.alignment_band_width);
+                                              TPB);
         }
     }
     else
     {
-        if (static_banded)
+        if (batch_size.band_mode == BandMode::static_band)
         {
-            generatePOAKernel<ScoreT, SizeT, false, BandMode::static_band>
+            generatePOAKernel<ScoreT, SizeT, TraceT, false, BandMode::static_band>
                 <<<nblocks, TPB, 0, stream>>>(consensus_d,
                                               sequences_d,
                                               base_weights_d,
@@ -653,15 +727,15 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
                                               outgoing_edges_coverage,
                                               outgoing_edges_coverage_count,
                                               max_nodes_per_graph,
-                                              matrix_graph_dimension,
                                               matrix_seq_dimension,
                                               batch_size.max_consensus_size,
                                               TPB,
-                                              batch_size.alignment_band_width);
+                                              batch_size.alignment_band_width,
+                                              batch_size.max_banded_pred_distance);
         }
-        else if (adaptive_banded)
+        else if (batch_size.band_mode == BandMode::adaptive_band)
         {
-            generatePOAKernel<ScoreT, SizeT, false, BandMode::adaptive_band>
+            generatePOAKernel<ScoreT, SizeT, TraceT, false, BandMode::adaptive_band>
                 <<<nblocks, TPB, 0, stream>>>(consensus_d,
                                               sequences_d,
                                               base_weights_d,
@@ -694,15 +768,57 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
                                               outgoing_edges_coverage,
                                               outgoing_edges_coverage_count,
                                               max_nodes_per_graph,
-                                              matrix_graph_dimension,
                                               matrix_seq_dimension,
                                               batch_size.max_consensus_size,
                                               TPB,
-                                              batch_size.alignment_band_width);
+                                              batch_size.alignment_band_width,
+                                              batch_size.max_banded_pred_distance);
+        }
+        else if (batch_size.band_mode == BandMode::static_band_traceback)
+        {
+            generatePOAKernel<ScoreT, SizeT, TraceT, false, BandMode::static_band_traceback>
+                <<<nblocks, TPB, 0, stream>>>(consensus_d,
+                                              sequences_d,
+                                              base_weights_d,
+                                              sequence_lengths_d,
+                                              window_details_d,
+                                              total_windows,
+                                              scores,
+                                              alignment_graph,
+                                              alignment_read,
+                                              nodes,
+                                              incoming_edges,
+                                              incoming_edge_count,
+                                              outgoing_edges,
+                                              outgoing_edge_count,
+                                              incoming_edge_w,
+                                              sorted_poa,
+                                              node_id_to_pos,
+                                              node_alignments,
+                                              node_alignment_count,
+                                              sorted_poa_local_edge_count,
+                                              node_marks,
+                                              check_aligned_nodes,
+                                              nodes_to_visit,
+                                              node_coverage_counts,
+                                              gap_score,
+                                              mismatch_score,
+                                              match_score,
+                                              max_sequences_per_poa,
+                                              sequence_begin_nodes_ids,
+                                              outgoing_edges_coverage,
+                                              outgoing_edges_coverage_count,
+                                              max_nodes_per_graph,
+                                              matrix_seq_dimension,
+                                              batch_size.max_consensus_size,
+                                              TPB,
+                                              batch_size.alignment_band_width,
+                                              batch_size.max_banded_pred_distance,
+                                              traceback);
         }
         else
         {
-            generatePOAKernel<ScoreT, SizeT, false, BandMode::full_band>
+            generatePOAKernel<ScoreT, SizeT, TraceT, false, BandMode::full_band>
                 <<<nblocks, TPB, 0, stream>>>(consensus_d,
                                               sequences_d,
                                               base_weights_d,
@@ -735,11 +851,9 @@ void generatePOA(genomeworks::cudapoa::OutputDetails* output_details_d,
                                               outgoing_edges_coverage,
                                               outgoing_edges_coverage_count,
                                               max_nodes_per_graph,
-                                              matrix_graph_dimension,
                                               matrix_seq_dimension,
                                               batch_size.max_consensus_size,
-                                              TPB,
-                                              batch_size.alignment_band_width);
+                                              TPB);
         }
     }
     GW_CU_CHECK_ERR(cudaPeekAtLastError());

@@ -32,6 +32,9 @@ class FastaParser;
 namespace cudamapper
 {
 
+// Forward declare enum for output type
+enum class OutputFormat;
+
 /// @brief application parameteres, default or passed through command line
 class ApplicationParameters
 {
@@ -59,7 +62,8 @@ public:
     int32_t query_indices_in_device_memory  = 5;     // q
     int32_t target_indices_in_host_memory   = 10;    // C
     int32_t target_indices_in_device_memory = 5;     // c
-    bool all_to_all                         = false;
+    OutputFormat format;                             // default is PAF, S for SAM, and B for BAM
+    bool all_to_all = false;
     std::string query_filepath;
     std::string target_filepath;
     std::shared_ptr<io::FastaParser> query_parser;

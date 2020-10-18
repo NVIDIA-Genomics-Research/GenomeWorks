@@ -59,12 +59,12 @@ namespace cudapoa
 
 /// \class
 /// Batched GPU CUDA POA object
-template <typename ScoreT, typename SizeT>
+template <typename ScoreT, typename SizeT, typename TraceT>
 class CudapoaBatch : public Batch
 {
 public:
     CudapoaBatch(int32_t device_id, cudaStream_t stream, size_t max_gpu_mem, int8_t output_mask,
-                 const BatchConfig& batch_size, ScoreT gap_score = -8, ScoreT mismatch_score = -6, ScoreT match_score = 8)
+                 const BatchConfig& batch_size, int32_t gap_score = -8, int32_t mismatch_score = -6, int32_t match_score = 8)
         : max_sequences_per_poa_(throw_on_negative(batch_size.max_sequences_per_poa, "Maximum sequences per POA has to be non-negative"))
         , device_id_(throw_on_negative(device_id, "Device ID has to be non-negative"))
         , stream_(stream)
@@ -73,12 +73,10 @@ public:
         , gap_score_(gap_score)
         , mismatch_score_(mismatch_score)
         , match_score_(match_score)
-        , banded_alignment_(batch_size.band_mode == BandMode::static_band)
-        , adaptive_banded_(batch_size.band_mode == BandMode::adaptive_band)
-        , batch_block_(new BatchBlock<ScoreT, SizeT>(device_id,
-                                                     max_gpu_mem,
-                                                     output_mask,
-                                                     batch_size_))
+        , batch_block_(new BatchBlock<ScoreT, SizeT, TraceT>(device_id,
+                                                             max_gpu_mem,
+                                                             output_mask,
+                                                             batch_size_))
         , max_poas_(batch_block_->get_max_poas())
     {
         // Set CUDA device
@@ -178,20 +176,18 @@ public:
         std::string msg = " Launching kernel for " + std::to_string(poa_count_) + " on device ";
         print_batch_debug_message(msg);
 
-        generatePOA<ScoreT, SizeT>(output_details_d_,
-                                   input_details_d_,
-                                   poa_count_,
-                                   stream_,
-                                   alignment_details_d_,
-                                   graph_details_d_,
-                                   gap_score_,
-                                   mismatch_score_,
-                                   match_score_,
-                                   banded_alignment_,
-                                   adaptive_banded_,
-                                   max_sequences_per_poa_,
-                                   output_mask_,
-                                   batch_size_);
+        generatePOA<ScoreT, SizeT, TraceT>(output_details_d_,
+                                           input_details_d_,
+                                           poa_count_,
+                                           stream_,
+                                           alignment_details_d_,
+                                           graph_details_d_,
+                                           gap_score_,
+                                           mismatch_score_,
+                                           match_score_,
+                                           max_sequences_per_poa_,
+                                           output_mask_,
+                                           batch_size_);
 
         msg = " Launched kernel on device ";
         print_batch_debug_message(msg);
@@ -404,7 +400,7 @@ public:
         num_nucleotides_copied_ = 0;
         global_sequence_idx_    = 0;
         next_scores_offset_     = 0;
-        avail_scorebuf_mem_     = alignment_details_d_->scorebuf_alloc_size;
+        avail_buf_mem_          = alignment_details_d_->scorebuf_alloc_size;
     }
 
 protected:
@@ -541,33 +537,38 @@ protected:
         }
         input_details_h_->sequence_lengths[global_sequence_idx_] = seq_len;
 
-        num_nucleotides_copied_ += seq_len;
+        // to be aligned with uchar4 size, pad sequence length to be multiple of 4
+        num_nucleotides_copied_ += cudautils::align<int32_t, SIZE_OF_SeqT4>(seq_len);
+
         global_sequence_idx_++;
 
         return StatusType::success;
     }
 
-    // Check if seq length can fit in available scoring matrix memory.
+    // Check if intermediate data for seq length can fit in available scoring/traceback buffer
     bool reserve_buf(int32_t max_seq_length)
     {
-        int32_t max_graph_dimension = batch_size_.matrix_graph_dimension;
+        int32_t matrix_height = batch_size_.max_nodes_per_graph;
+        // matrix width for full_band is based on the current group max_seq_length as opposed to batch_size_.matrix_sequence_dimension.
+        // The latter is based on the largest group in the batch and is more conservative
+        int32_t matrix_width = (batch_size_.band_mode != BandMode::full_band) ? batch_size_.matrix_sequence_dimension : cudautils::align<int32_t, 4>(max_seq_length + 1 + CELLS_PER_THREAD);
+        // in traceback alignments avail_buf_mem_ is dedicated to traceback matrix, otherwise it is being used for score matrix
+        size_t required_size = static_cast<size_t>(matrix_width) * static_cast<size_t>(matrix_height);
+        required_size *= batch_size_.band_mode == BandMode::static_band_traceback ? sizeof(TraceT) : sizeof(ScoreT);
 
-        int32_t scores_width = (banded_alignment_ || adaptive_banded_) ? batch_size_.matrix_sequence_dimension : cudautils::align<int32_t, 4>(max_seq_length + 1 + CELLS_PER_THREAD);
-        size_t scores_size   = static_cast<size_t>(scores_width) * static_cast<size_t>(max_graph_dimension) * sizeof(ScoreT);
-
-        if (scores_size > avail_scorebuf_mem_)
+        if (required_size > avail_buf_mem_)
         {
             if (get_total_poas() == 0)
             {
-                std::cout << "Memory available " << std::fixed << std::setprecision(2) << (static_cast<double>(avail_scorebuf_mem_)) / 1024. / 1024. / 1024.;
-                std::cout << "GB, Memory required " << (static_cast<double>(scores_size)) / 1024. / 1024. / 1024.;
-                std::cout << "GB (sequence length " << max_seq_length << ", graph length " << max_graph_dimension << ")" << std::endl;
+                std::cout << "Memory available " << std::fixed << std::setprecision(2) << (static_cast<double>(avail_buf_mem_)) / 1024. / 1024. / 1024.;
+                std::cout << "GB, Memory required " << (static_cast<double>(required_size)) / 1024. / 1024. / 1024.;
+                std::cout << "GB (sequence length " << max_seq_length << ", graph length " << matrix_height << ")" << std::endl;
             }
             return false;
         }
         else
         {
-            avail_scorebuf_mem_ -= scores_size;
+            avail_buf_mem_ -= required_size;
             return true;
         }
     }
@@ -589,9 +590,9 @@ protected:
     BatchConfig batch_size_;
 
     // Gap, mismatch and match scores for NW dynamic programming loop.
-    ScoreT gap_score_;
-    ScoreT mismatch_score_;
-    ScoreT match_score_;
+    int32_t gap_score_;
+    int32_t mismatch_score_;
+    int32_t match_score_;
 
     // Host and device buffer for output data.
     OutputDetails* output_details_h_;
@@ -602,7 +603,7 @@ protected:
     InputDetails<SizeT>* input_details_h_;
 
     // Device buffer struct for alignment details
-    AlignmentDetails<ScoreT, SizeT>* alignment_details_d_;
+    AlignmentDetails<ScoreT, SizeT, TraceT>* alignment_details_d_;
 
     // Device buffer struct for graph details
     GraphDetails<SizeT>* graph_details_d_;
@@ -620,22 +621,18 @@ protected:
     // Global sequence index.
     int32_t global_sequence_idx_ = 0;
 
-    // Remaining scores buffer memory available for use.
-    size_t avail_scorebuf_mem_ = 0;
+    // Remaining buffer memory available for scores matrices in case of full alignment, and for traceback matrices in case of banded alignment
+    size_t avail_buf_mem_ = 0;
 
     // Temporary variable to compute the offset to scorebuf.
     size_t next_scores_offset_ = 0;
-
-    // Use banded POA alignment
-    bool banded_alignment_;
-    bool adaptive_banded_;
 
     // flag that enables some extra buffers to accommodate fully adaptive bands with variable width and arbitrary location
     // disabled for current implementation, can be enabled for possible future variants of adaptive alignment algorithm
     bool variable_band_ = false;
 
     // Pointer of a seperate class BatchBlock that implements details on calculating and allocating the memory for each batch
-    std::unique_ptr<BatchBlock<ScoreT, SizeT>> batch_block_;
+    std::unique_ptr<BatchBlock<ScoreT, SizeT, TraceT>> batch_block_;
 
     // Maximum POAs to process in batch.
     int32_t max_poas_ = 0;
@@ -645,8 +642,8 @@ public:
     static int32_t batches;
 };
 
-template <typename ScoreT, typename SizeT>
-int32_t CudapoaBatch<ScoreT, SizeT>::batches = 0;
+template <typename ScoreT, typename SizeT, typename TraceT>
+int32_t CudapoaBatch<ScoreT, SizeT, TraceT>::batches = 0;
 
 /// \}
 

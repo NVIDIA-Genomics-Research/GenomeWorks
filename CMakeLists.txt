@@ -23,8 +23,8 @@ string(STRIP ${GW_VERSION} GW_VERSION)
 project(${GW_PROJECT_NAME})
 
 # Process options.
-option(gw_enable_tests "Build GenomeWorks unit tests" OFF)
-option(gw_enable_benchmarks "Build GenomeWorks benchmarks" OFF)
+option(gw_enable_tests "Build GenomeWorks unit tests" ON)
+option(gw_enable_benchmarks "Build GenomeWorks benchmarks" ON)
 option(gw_build_shared "Build GenomeWorks libraries as shared objects" OFF)
 option(gw_device_synchronize_kernels "Run cudaDeviceSynchronize() in GW_CU_CHECK_ERR calls" OFF)
 option(gw_optimize_for_native_cpu "Build with march=native" ON)
@@ -41,6 +41,8 @@ option(gw_profiling "Compile a binary for profiling with NVTX markers." OFF)
 option(gw_enable_caching_allocator "Enable caching allocator." ON)
 option(gw_generate_docs "Generate Doxygen documentation" ON)
 option(gw_cuda_gen_all_arch "ON: Generate optimized CUDA code for all architectures | OFF: for detected architectures only" OFF)
+# Optionally build htslib for SAM/BAM support. Requires autoconf to be installed
+option(gw_build_htslib "Build 3rdparty htslib that allows output in SAM/BAM format" OFF)
 
 # Must be included before others for options value validation
 include(cmake/Utils.cmake)

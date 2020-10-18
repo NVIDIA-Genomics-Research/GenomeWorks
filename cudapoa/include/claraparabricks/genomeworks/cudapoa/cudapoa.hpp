@@ -44,16 +44,21 @@ enum StatusType
     generic_error
 };
 
-/// Banding mode used in Needleman-Wunch algorithm
-/// full_band performs computations on full scores matrix, highest accuracy
-/// static_band performs computations on a fixed band along scores matrix diagonal, fastest implementation
-/// adaptive_band, similar to static_band performs computations on a band along diagonal, but the band-width
-/// can vary per alignment's score matrix, faster than full_band and more accurate than static_band
+/// Banding mode used in Needleman-Wunsch algorithm
+/// - full_band performs computations on full scores matrix, highest accuracy
+/// - static_band performs computations on a fixed band along scores matrix diagonal, fastest implementation
+/// - adaptive_band, similar to static_band performs computations on a band along diagonal, but the band-width
+///   can vary per alignment's score matrix, faster than full_band and more accurate than static_band
+/// - static_band_traceback similar to static_band, but uses traceback matrix. In this mode, score matrix is only
+///   partially stored. The height of score matrix is equivalent to maximum predecessors distance and this maximum
+///   distance is limited and smaller than full POA graph length. Traceback matrix requires less memory compared to
+///   score matrix, and this banding mode can be useful for long-read cases where GPU memory is limiting parallelism.
 enum BandMode
 {
     full_band = 0,
     static_band,
-    adaptive_band
+    adaptive_band,
+    static_band_traceback
 };
 
 /// Initialize CUDA POA context.

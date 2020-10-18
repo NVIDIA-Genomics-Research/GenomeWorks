@@ -74,17 +74,14 @@ cdef extern from "claraparabricks/genomeworks/cudapoa/batch.hpp" namespace "clar
         int32_t max_sequence_size
         int32_t max_consensus_size
         int32_t max_nodes_per_graph
-        int32_t max_nodes_per_graph_banded
-        int32_t max_matrix_graph_dimension
-        int32_t max_matrix_graph_dimension_banded
-        int32_t max_matrix_sequence_dimension
+        int32_t matrix_sequence_dimension
         int32_t alignment_band_width
         int32_t max_sequences_per_poa
         BandMode band_mode
 
-        BatchConfig(int32_t, int32_t, int32_t, BandMode)
-        BatchConfig(int32_t, int32_t, int32_t,
-                    int32_t, int32_t, int32_t, BandMode)
+        BatchConfig(int32_t, int32_t, int32_t, BandMode, float, float, int32t_t)
+        BatchConfig(int32_t, int32_t, int32_t, int32_t,
+                    int32_t, int32_t, BandMode, int32_t)
 
     ctypedef vector[Entry] Group
 

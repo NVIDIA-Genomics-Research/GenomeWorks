@@ -138,8 +138,8 @@ __device__ __forceinline__
  * @param[in] read                 Device buffer with sequence (read) to align
  * @param[in] read_length          Number of bases in read
  * @param[out] scores              Device scratch space that scores alignment matrix score
- * @param[out] alignment_graph     Device scratch space for backtrace alignment of graph
- * @param[out] alignment_read      Device scratch space for backtrace alignment of sequence
+ * @param[out] alignment_graph     Device scratch space for traceback alignment of graph
+ * @param[out] alignment_read      Device scratch space for traceback alignment of sequence
  * @param[in] gap_score            Score for inserting gap into alignment
  * @param[in] mismatch_score       Score for finding a mismatch in alignment
  * @param[in] match_score          Score for finding a match in alignment
@@ -285,28 +285,11 @@ __device__ __forceinline__
                     last_score = first_element_prev_score;
                 }
 
-                int32_t tscore = max(last_score + gap_score, score.s0);
-                if (tscore > score.s0)
-                {
-                    score.s0 = tscore;
-                    loop     = true;
-                }
+                score.s0 = max(last_score + gap_score, score.s0);
+                score.s1 = max(score.s0 + gap_score, score.s1);
+                score.s2 = max(score.s1 + gap_score, score.s2);
 
-                tscore = max(score.s0 + gap_score, score.s1);
-                if (tscore > score.s1)
-                {
-                    score.s1 = tscore;
-                    loop     = true;
-                }
-
-                tscore = max(score.s1 + gap_score, score.s2);
-                if (tscore > score.s2)
-                {
-                    score.s2 = tscore;
-                    loop     = true;
-                }
-
-                tscore = max(score.s2 + gap_score, score.s3);
+                int32_t tscore = max(score.s2 + gap_score, score.s3);
                 if (tscore > score.s3)
                 {
                     score.s3 = tscore;
@@ -353,15 +336,15 @@ __device__ __forceinline__
             }
         }
 
-        // Fill in backtrace
+        // Fill in traceback
 
         int32_t prev_i = 0;
         int32_t prev_j = 0;
 
-        // Trace back from maximum score position to generate alignment.
-        // Trace back is done by re-calculating the score at each cell
+        // backtrack from maximum score position to generate alignment.
+        // backtracking is done by re-calculating the score at each cell
         // along the path to see which preceding cell the move could have
-        // come from. This seems computaitonally more expensive, but doesn't
+        // come from. This seems computationally more expensive, but doesn't
         // require storing any traceback buffer during alignment.
         int32_t loop_count = 0;
         while (!(i == 0 && j == 0) && loop_count < static_cast<int32_t>(read_length + graph_count + 2))
@@ -484,9 +467,9 @@ __global__ void runNeedlemanWunschKernel(uint8_t* nodes,
                                          int32_t scores_width,
                                          SizeT* alignment_graph,
                                          SizeT* alignment_read,
-                                         int16_t gap_score,
-                                         int16_t mismatch_score,
-                                         int16_t match_score,
+                                         int32_t gap_score,
+                                         int32_t mismatch_score,
+                                         int32_t match_score,
                                          SizeT* aligned_nodes)
 {
     *aligned_nodes = runNeedlemanWunsch<uint8_t, int16_t, SizeT>(nodes,
@@ -522,9 +505,9 @@ void runNW(uint8_t* nodes,
            int32_t scores_width,
            SizeT* alignment_graph,
            SizeT* alignment_read,
-           int16_t gap_score,
-           int16_t mismatch_score,
-           int16_t match_score,
+           int32_t gap_score,
+           int32_t mismatch_score,
+           int32_t match_score,
            SizeT* aligned_nodes)
 {
     runNeedlemanWunschKernel<<<1, 64>>>(nodes,
