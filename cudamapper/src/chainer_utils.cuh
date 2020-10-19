@@ -118,65 +118,29 @@ __global__ void backtrace_anchors_to_overlaps(const Anchor* anchors,
 ///@param _cuda_stream The cudastream to allocate memory within.
 void allocate_anchor_chains(device_buffer<Overlap> overlaps,
                             device_buffer<int32_t>& unrolled_anchor_chains,
+                            device_buffer<int32_t>& anchor_chain_starts,
                             const int32_t num_overlaps,
                             int32_t& num_total_anchors,
                             DefaultDeviceAllocator& _allocator,
                             cudaStream_t& _cuda_stream);
 
-__global__ void output_overlap_chains(const Overlap* overlaps,
-                                      const Anchor* anchors,
-                                      const bool* select_mask,
-                                      const int32_t* predecessors,
-                                      int32_t* anchor_chains,
-                                      int32_t* anchor_chain_starts,
-                                      int32_t num_overlaps,
-                                      bool check_mask);
+__global__ void output_overlap_chains_by_backtrace(const Overlap* overlaps,
+                                                   const Anchor* anchors,
+                                                   const bool* select_mask,
+                                                   const int32_t* predecessors,
+                                                   int32_t* anchor_chains,
+                                                   int32_t* anchor_chain_starts,
+                                                   int32_t num_overlaps,
+                                                   bool check_mask);
 
-__global__ void convert_offsets_to_ends(std::int32_t* starts, std::int32_t* lengths, std::int32_t* ends, std::int32_t n_starts);
+__global__ void output_overlap_chains_by_RLE(const Overlap* overlaps,
+                                             const Anchor* anchors,
+                                             const int32_t* chain_starts,
+                                             const int32_t* chain_lengths,
+                                             int32_t* anchor_chains,
+                                             int32_t* anchor_chain_starts,
+                                             int32_t num_overlaps);
 
-__global__ void calculate_tile_starts(const std::int32_t* query_starts,
-                                      const std::int32_t* tiles_per_query,
-                                      std::int32_t* tile_starts,
-                                      const int32_t tile_size,
-                                      int32_t num_queries,
-                                      const std::int32_t* tiles_per_query_up_to_point);
-
-void encode_anchor_query_locations(const Anchor* anchors,
-                                   int32_t n_anchors,
-                                   int32_t tile_size,
-                                   device_buffer<int32_t>& query_starts,
-                                   device_buffer<int32_t>& query_lengths,
-                                   device_buffer<int32_t>& query_ends,
-                                   device_buffer<int32_t>& tiles_per_query,
-                                   device_buffer<int32_t>& tile_starts,
-                                   int32_t& n_queries,
-                                   int32_t& n_query_tiles,
-                                   DefaultDeviceAllocator& _allocator,
-                                   cudaStream_t& _cuda_stream,
-                                   int32_t block_size);
-
-void encode_anchor_query_target_pairs(const Anchor* anchors,
-                                      int32_t n_anchors,
-                                      int32_t tile_size,
-                                      device_buffer<int32_t>& query_target_pair_starts,
-                                      device_buffer<int32_t>& query_target_pair_lengths,
-                                      device_buffer<int32_t>& query_target_pair_ends,
-                                      device_buffer<int32_t>& tiles_per_qt_pair,
-                                      int32_t& n_query_target_pairs,
-                                      int32_t& n_qt_tiles,
-                                      DefaultDeviceAllocator& _allocator,
-                                      cudaStream_t& _cuda_stream,
-                                      int32_t block_size);
-
-void encode_overlap_query_target_pairs(Overlap* overlaps,
-                                       int32_t n_overlaps,
-                                       device_buffer<int32_t>& query_target_pair_starts,
-                                       device_buffer<int32_t>& query_target_pair_lengths,
-                                       device_buffer<int32_t>& query_target_pair_ends,
-                                       int32_t& n_query_target_pairs,
-                                       DefaultDeviceAllocator& _allocator,
-                                       cudaStream_t& _cuda_stream,
-                                       int32_t block_size);
 } // namespace chainerutils
 } // namespace cudamapper
 } // namespace genomeworks
