@@ -40,16 +40,6 @@ namespace cudamapper
 namespace chainerutils
 {
 
-__device__ bool operator==(const QueryTargetPair& a, const QueryTargetPair& b)
-{
-    return a.query_read_id_ == b.query_read_id_ && a.target_read_id_ == b.target_read_id_;
-}
-
-__device__ bool operator==(const QueryReadID& a, const QueryReadID& b)
-{
-    return a.query_read_id_ == b.query_read_id_;
-}
-
 __device__ Overlap create_simple_overlap(const Anchor& start, const Anchor& end, const int32_t num_anchors)
 {
     Overlap overlap;

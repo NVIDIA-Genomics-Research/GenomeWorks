@@ -38,56 +38,6 @@ namespace cudamapper
 namespace chainerutils
 {
 
-#define MAX_CHAINS_PER_TILE 5
-
-struct QueryTargetPair
-{
-    int32_t query_read_id_;
-    int32_t target_read_id_;
-    __device__ QueryTargetPair() {}
-};
-
-struct QueryReadID
-{
-    int32_t query_read_id_;
-    __device__ QueryReadID(){};
-};
-
-// takes the anchor and returns the query read id
-struct AnchorToQueryReadIDOp
-{
-    __device__ __forceinline__ QueryReadID operator()(const Anchor& a) const
-    {
-        QueryReadID query;
-        query.query_read_id_ = a.query_read_id_;
-        return query;
-    }
-};
-
-__device__ bool operator==(const QueryTargetPair& a, const QueryTargetPair& b);
-
-struct OverlapToQueryTargetPairOp
-{
-    __device__ __forceinline__ QueryTargetPair operator()(const Overlap& a) const
-    {
-        QueryTargetPair p;
-        p.query_read_id_  = a.query_read_id_;
-        p.target_read_id_ = a.target_read_id_;
-        return p;
-    }
-};
-
-struct AnchorToQueryTargetPairOp
-{
-    __device__ __forceinline__ QueryTargetPair operator()(const Anchor& a) const
-    {
-        QueryTargetPair p;
-        p.query_read_id_  = a.query_read_id_;
-        p.target_read_id_ = a.target_read_id_;
-        return p;
-    }
-};
-
 struct OverlapToNumResiduesOp
 {
     __device__ __forceinline__ int32_t operator()(const Overlap& overlap) const
@@ -95,9 +45,6 @@ struct OverlapToNumResiduesOp
         return overlap.num_residues_;
     }
 };
-
-__device__ bool
-operator==(const QueryTargetPair& a, const QueryTargetPair& b);
 
 __global__ void backtrace_anchors_to_overlaps(const Anchor* anchors,
                                               Overlap* overlaps,
