@@ -84,7 +84,7 @@ A prototypical binary to showcase the use of `libcudaaligner.so` APIs.
 
 ### cudaextender
 The `cudaextender` package provides GPU-accelerated seed-extension. Details can be found in
-the package's [Readme](cudaextender/README.md).
+the package's readme.
 
 ## Clone GenomeWorks 
 
