@@ -370,15 +370,32 @@ void postprocess_and_write_thread_function(const int32_t device_id,
                                                 0.5);
             }
 
-            // write to output
+            // write to output PAF, SAM, or BAM format
             {
-                GW_NVTX_RANGE(profiler, "main::postprocess_and_write_thread::print_paf");
-                print_paf(overlaps,
-                          cigars,
-                          *application_parameters.query_parser,
-                          *application_parameters.target_parser,
-                          application_parameters.kmer_size,
-                          output_mutex);
+                GW_NVTX_RANGE(profiler, "main::postprocess_and_write_thread::print_function");
+#ifdef GW_BUILD_HTSLIB
+                if (application_parameters.format == OutputFormat::PAF)
+                {
+#endif
+                    print_paf(overlaps,
+                              cigars,
+                              *application_parameters.query_parser,
+                              *application_parameters.target_parser,
+                              application_parameters.kmer_size,
+                              output_mutex);
+#ifdef GW_BUILD_HTSLIB
+                }
+                // SAM or BAM, depends on type of format
+                else
+                {
+                    print_sam(overlaps,
+                              cigars,
+                              *application_parameters.query_parser,
+                              *application_parameters.target_parser,
+                              application_parameters.format,
+                              output_mutex);
+                }
+#endif
             }
         }
     }

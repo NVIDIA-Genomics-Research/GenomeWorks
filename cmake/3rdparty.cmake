@@ -50,3 +50,10 @@ set_property(TARGET cub APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES "${CUB_DIR
 
 set(KSEQPP_DIR ${PROJECT_SOURCE_DIR}/3rdparty/kseqpp/src CACHE STRING
     "Path to kseqpp repo")
+
+if (gw_build_htslib)
+    include(cmake/BuildHTSLib.cmake)
+    build_htslib_source()
+else()
+    message(STATUS "Not building htslib, overlap output to SAM & BAM unavailable. Enable with -Dgw_build_htslib=ON")
+endif()
