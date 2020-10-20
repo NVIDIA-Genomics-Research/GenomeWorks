@@ -9,6 +9,7 @@ For more detailed API documentation please refer to the [documentation](#enable-
     * [cudamapper](#cudamapper) - CUDA-accelerated sequence to sequence mapping
     * [cudapoa](#cudapoa) - CUDA-accelerated partial order alignment
     * [cudaaligner](#cudaaligner) - CUDA-accelerated pairwise sequence alignment
+    * [cudaextender](#cudaextender) - CUDA-accelerated seed extension
 * Setup GenomeWorks
     * [Clone GenomeWorks](#clone-genomeworks)
     * [System Requirements](#system-requirements)
@@ -80,6 +81,10 @@ The `cudaaligner` package provides GPU-accelerated global alignment. Features in
 #### Sample - *sample_cudaaligner*
 
 A prototypical binary to showcase the use of `libcudaaligner.so` APIs.
+
+### cudaextender
+The `cudaextender` package provides GPU-accelerated seed-extension. Details can be found in
+the package's readme.
 
 ## Clone GenomeWorks 
 

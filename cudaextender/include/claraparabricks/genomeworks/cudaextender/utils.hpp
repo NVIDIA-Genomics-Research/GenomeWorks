@@ -32,6 +32,7 @@ namespace genomeworks
 namespace cudaextender
 {
 
+/// Sequence encoding scheme:
 constexpr int8_t A_NT = 0;
 constexpr int8_t C_NT = 1;
 constexpr int8_t G_NT = 2;
