@@ -108,6 +108,10 @@ Minimum requirements -
 4. Python 3.6.7+
 5. CMake (>= 3.10.2)
 
+Optional requirements -
+
+1. autoconf (required to output SAM/BAM files)
+
 ## GenomeWorks Setup
 
 ### Build and Install
@@ -123,6 +127,8 @@ make -j install
 NOTE : The `gw_cuda_gen_all_arch=OFF` option pre-generates optimized code only for the GPU(s) on your system.
 For building a binary that pre-generates opimized code for all common GPU architectures, please remove the option
 or set it to `ON`.
+
+NOTE : (OPTIONAL) To enable outputting overlaps in SAM/BAM format, pass the `gw_build_htslib=ON` option.
 
 ### Package generation
 Package generation puts the libraries, headers and binaries built by the `make` command above
