@@ -123,6 +123,16 @@ struct TileResults
     }
 };
 
+__device__ __forceinline__ Anchor empty_anchor()
+{
+    Anchor empty;
+    empty.query_read_id_ = UINT32_MAX;
+    empty.target_read_id_          = UINT32_MAX;
+    empty.query_position_in_read_  = UINT32_MAX;
+    empty.target_position_in_read_  = UINT32_MAX;
+    return empty;
+}
+
 __device__ bool
 operator==(const QueryTargetPair& a, const QueryTargetPair& b);
 
@@ -133,6 +143,22 @@ __global__ void backtrace_anchors_to_overlaps(const Anchor* anchors,
                                               int32_t* predecessors,
                                               const int32_t n_anchors,
                                               const int32_t min_score);
+
+__global__ void backtrace_anchors_to_overlaps_debug(const Anchor* anchors,
+                                              Overlap* overlaps,
+                                              double* scores,
+                                              bool* max_select_mask,
+                                              int32_t* predecessors,
+                                              const int32_t n_anchors,
+                                              const int32_t min_score);
+
+void backtrace_anchors_to_overlaps_cpu(const Anchor* anchors,
+                                       Overlap* overlaps,
+                                       double* scores,
+                                       bool* max_select_mask,
+                                       int32_t* predecessors,
+                                       const int32_t n_anchors,
+                                       const int32_t min_score);
 
 __global__ void convert_offsets_to_ends(std::int32_t* starts, std::int32_t* lengths, std::int32_t* ends, std::int32_t n_starts);
 

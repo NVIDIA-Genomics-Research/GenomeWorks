@@ -262,9 +262,10 @@ void filter_self_mappings(std::vector<Overlap>& overlaps,
                           const double max_percent_overlap)
 {
 
+    // TODO This is causing the segfault on some reads. Fix looking up overlaps with uninitialzed values
     auto remove_self_helper = [&query_parser, &target_parser, &max_percent_overlap](const Overlap& o) {
-        claraparabricks::genomeworks::io::FastaSequence query  = query_parser.get_sequence_by_id(o.query_read_id_);
-        claraparabricks::genomeworks::io::FastaSequence target = target_parser.get_sequence_by_id(o.target_read_id_);
+        const claraparabricks::genomeworks::io::FastaSequence& query  = query_parser.get_sequence_by_id(o.query_read_id_);
+        const claraparabricks::genomeworks::io::FastaSequence& target = target_parser.get_sequence_by_id(o.target_read_id_);
         if (query.name != target.name)
             return false;
         std::size_t read_len        = query.seq.size();
