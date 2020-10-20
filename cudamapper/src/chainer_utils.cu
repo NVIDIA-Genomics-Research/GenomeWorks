@@ -40,7 +40,7 @@ namespace cudamapper
 namespace chainerutils
 {
 
-__device__ Overlap create_simple_overlap(const Anchor& start, const Anchor& end, const int32_t num_anchors)
+__host__ __device__ Overlap create_simple_overlap(const Anchor& start, const Anchor& end, const int32_t num_anchors)
 {
     Overlap overlap;
     overlap.num_residues_ = num_anchors;
@@ -67,10 +67,10 @@ __device__ Overlap create_simple_overlap(const Anchor& start, const Anchor& end,
     return overlap;
 }
 
-void allocate_anchor_chains(device_buffer<Overlap> overlaps,
+void allocate_anchor_chains(device_buffer<Overlap>& overlaps,
                             device_buffer<int32_t>& unrolled_anchor_chains,
                             device_buffer<int32_t>& anchor_chain_starts,
-                            const int32_t num_overlaps,
+                            int32_t num_overlaps,
                             int32_t& num_total_anchors,
                             DefaultDeviceAllocator& _allocator,
                             cudaStream_t& _cuda_stream)

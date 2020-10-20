@@ -29,6 +29,7 @@ set(SOURCES
     Test_CudamapperOverlapper.cpp
     Test_CudamapperOverlapperTriggered.cu
     Test_CudamapperUtilsKmerFunctions.cpp
+    Test_CudamapperChainerUtils.cu
    )
 
 get_property(cudamapper_data_include_dir GLOBAL PROPERTY cudamapper_data_include_dir)

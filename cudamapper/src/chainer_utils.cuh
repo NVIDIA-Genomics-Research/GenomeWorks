@@ -46,6 +46,10 @@ struct OverlapToNumResiduesOp
     }
 };
 
+__host__ __device__ Overlap create_simple_overlap(const Anchor& start,
+                                                  const Anchor& end,
+                                                  const int32_t num_anchors);
+
 __global__ void backtrace_anchors_to_overlaps(const Anchor* anchors,
                                               Overlap* overlaps,
                                               double* scores,
@@ -63,10 +67,10 @@ __global__ void backtrace_anchors_to_overlaps(const Anchor* anchors,
 ///@param num_overlaps The number of overlaps in the overlaps array.
 ///@param _allocator  The DefaultDeviceAllocator
 ///@param _cuda_stream The cudastream to allocate memory within.
-void allocate_anchor_chains(device_buffer<Overlap> overlaps,
+void allocate_anchor_chains(device_buffer<Overlap>& overlaps,
                             device_buffer<int32_t>& unrolled_anchor_chains,
                             device_buffer<int32_t>& anchor_chain_starts,
-                            const int32_t num_overlaps,
+                            int32_t num_overlaps,
                             int32_t& num_total_anchors,
                             DefaultDeviceAllocator& _allocator,
                             cudaStream_t& _cuda_stream);
