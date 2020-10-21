@@ -341,13 +341,10 @@ void process_one_batch(const BatchOfIndices& batch,
         {
             // if not pass-the-last batch start copying the batch
             GW_NVTX_RANGE(profiler, "main::process_one_batch::start_generating_device_indices");
-            const std::vector<IndexDescriptor>& query_index_batch_to_start_copying  = batch.device_batches[copy_device_batch_index].query_indices;
-            const std::vector<IndexDescriptor>& target_index_batch_to_start_copying = batch.device_batches[copy_device_batch_index].target_indices;
-
             query_cache_being_copied_into  = host_index_cache.start_copying_indices_to_device(CacheType::query_cache,
-                                                                                             query_index_batch_to_start_copying);
+                                                                                             batch.device_batches[copy_device_batch_index].query_indices);
             target_cache_being_copied_into = host_index_cache.start_copying_indices_to_device(CacheType::target_cache,
-                                                                                              target_index_batch_to_start_copying);
+                                                                                              batch.device_batches[copy_device_batch_index].target_indices);
         }
 
         if (copy_device_batch_index > 0)
