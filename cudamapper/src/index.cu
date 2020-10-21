@@ -64,6 +64,16 @@ std::unique_ptr<IndexHostCopyBase> IndexHostCopyBase::create_host_copy(const Ind
                                            cuda_stream);
 }
 
+IndexNotReadyException::IndexNotReadyException(const std::string& function_name)
+    : message_("Index::" + function_name + "() has been accessed before a call to wait_to_be_ready()")
+{
+}
+
+const char* IndexNotReadyException::what() const noexcept
+{
+    return message_.c_str();
+}
+
 } // namespace cudamapper
 
 } // namespace genomeworks

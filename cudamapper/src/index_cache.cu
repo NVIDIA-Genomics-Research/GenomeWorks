@@ -56,7 +56,7 @@ void DeviceIndexCache::add_index(const IndexDescriptor index_descriptor,
 
 std::shared_ptr<Index> DeviceIndexCache::get_index(const IndexDescriptor index_descriptor) const
 {
-    if (!is_ready_)
+    if (!is_ready())
     {
         throw DeviceCacheNotReadyException(cache_type_,
                                            index_descriptor);
@@ -85,7 +85,7 @@ bool DeviceIndexCache::has_index(const IndexDescriptor index_descriptor) const
 
 void DeviceIndexCache::wait_for_data_to_be_ready()
 {
-    if (!is_ready_)
+    if (!is_ready())
     {
         for (const auto& index_it : cache_)
         {

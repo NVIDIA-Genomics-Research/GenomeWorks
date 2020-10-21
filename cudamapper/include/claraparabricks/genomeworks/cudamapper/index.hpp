@@ -16,9 +16,9 @@
 
 #pragma once
 
+#include <exception>
 #include <memory>
 #include <string>
-#include <vector>
 #include <claraparabricks/genomeworks/cudamapper/sketch_element.hpp>
 #include <claraparabricks/genomeworks/cudamapper/types.hpp>
 #include <claraparabricks/genomeworks/io/fasta_parser.hpp>
@@ -88,46 +88,57 @@ public:
     virtual ~Index() = default;
 
     /// \brief returns an array of representations of sketch elements
+    /// \throw IndexNotReadyException if called before wait_to_be_ready()
     /// \return an array of representations of sketch elements
     virtual const device_buffer<representation_t>& representations() const = 0;
 
     /// \brief returns an array of reads ids for sketch elements
+    /// \throw IndexNotReadyException if called before wait_to_be_ready()
     /// \return an array of reads ids for sketch elements
     virtual const device_buffer<read_id_t>& read_ids() const = 0;
 
     /// \brief returns an array of starting positions of sketch elements in their reads
+    /// \throw IndexNotReadyException if called before wait_to_be_ready()
     /// \return an array of starting positions of sketch elements in their reads
     virtual const device_buffer<position_in_read_t>& positions_in_reads() const = 0;
 
     /// \brief returns an array of directions in which sketch elements were read
+    /// \throw IndexNotReadyException if called before wait_to_be_ready()
     /// \return an array of directions in which sketch elements were read
     virtual const device_buffer<SketchElement::DirectionOfRepresentation>& directions_of_reads() const = 0;
 
     /// \brief returns an array where each representation is recorder only once, sorted by representation
+    /// \throw IndexNotReadyException if called before wait_to_be_ready()
     /// \return an array where each representation is recorder only once, sorted by representation
     virtual const device_buffer<representation_t>& unique_representations() const = 0;
 
     /// \brief returns first occurrence of corresponding representation from unique_representations() in data arrays
+    /// \throw IndexNotReadyException if called before wait_to_be_ready()
     /// \return first occurrence of corresponding representation from unique_representations() in data arrays
     virtual const device_buffer<std::uint32_t>& first_occurrence_of_representations() const = 0;
 
     /// \brief returns number of reads in input data
+    /// \throw IndexNotReadyException if called before wait_to_be_ready()
     /// \return number of reads in input data
     virtual read_id_t number_of_reads() const = 0;
 
     /// \brief returns smallest read_id in index
+    /// \throw IndexNotReadyException if called before wait_to_be_ready()
     /// \return smallest read_id in index (0 if empty index)
     virtual read_id_t smallest_read_id() const = 0;
 
     /// \brief returns largest read_id in index
+    /// \throw IndexNotReadyException if called before wait_to_be_ready()
     /// \return largest read_id in index (0 if empty index)
     virtual read_id_t largest_read_id() const = 0;
 
     /// \brief returns length of the longest read in this index
+    /// \throw IndexNotReadyException if called before wait_to_be_ready()
     /// \return length of the longest read in this index
     virtual position_in_read_t number_of_basepairs_in_longest_read() const = 0;
 
     /// \brief Return the maximum kmer length allowable
+    /// \throw IndexNotReadyException if called before wait_to_be_ready()
     /// \return Return the maximum kmer length allowable
     static uint64_t maximum_kmer_size()
     {
@@ -252,6 +263,21 @@ public:
                                                                const std::uint64_t kmer_size,
                                                                const std::uint64_t window_size,
                                                                const cudaStream_t cuda_stream = 0);
+};
+
+/// IndexNotReadyException - Exception to be thrown if a member of Index is accessed, but is_read() == false
+class IndexNotReadyException : public std::exception
+{
+public:
+    /// \brief Constructor
+    /// \param function_name name of funciton which has been accessed
+    IndexNotReadyException(const std::string& function_name);
+
+    /// \brief Returns the error message of the exception
+    const char* what() const noexcept override;
+
+private:
+    const std::string message_;
 };
 
 } // namespace cudamapper

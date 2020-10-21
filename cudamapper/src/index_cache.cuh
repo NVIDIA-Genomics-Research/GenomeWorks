@@ -254,8 +254,9 @@ public:
     };
 
     /// \brief constructor
+    /// \param cache_type was Index requested from host or device cache
+    /// \param index_location
     /// \param index_descriptor
-    /// \param index_type was Index equested from host or device cache
     IndexNotFoundException(CacheType cache_type,
                            IndexLocation index_location,
                            IndexDescriptor index_descriptor);

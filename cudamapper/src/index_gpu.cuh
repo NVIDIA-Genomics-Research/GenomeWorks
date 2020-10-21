@@ -93,42 +93,52 @@ public:
              const cudaStream_t cuda_stream = 0);
 
     /// \brief returns an array of representations of sketch elements
+    /// \throw IndexNotReadyException if called before wait_to_be_ready()
     /// \return an array of representations of sketch elements
     const device_buffer<representation_t>& representations() const override;
 
     /// \brief returns an array of reads ids for sketch elements
+    /// \throw IndexNotReadyException if called before wait_to_be_ready()
     /// \return an array of reads ids for sketch elements
     const device_buffer<read_id_t>& read_ids() const override;
 
     /// \brief returns an array of starting positions of sketch elements in their reads
+    /// \throw IndexNotReadyException if called before wait_to_be_ready()
     /// \return an array of starting positions of sketch elements in their reads
     const device_buffer<position_in_read_t>& positions_in_reads() const override;
 
     /// \brief returns an array of directions in which sketch elements were read
+    /// \throw IndexNotReadyException if called before wait_to_be_ready()
     /// \return an array of directions in which sketch elements were read
     const device_buffer<typename SketchElementImpl::DirectionOfRepresentation>& directions_of_reads() const override;
 
     /// \brief returns an array where each representation is recorder only once, sorted by representation
+    /// \throw IndexNotReadyException if called before wait_to_be_ready()
     /// \return an array where each representation is recorder only once, sorted by representation
     const device_buffer<representation_t>& unique_representations() const override;
 
     /// \brief returns first occurrence of corresponding representation from unique_representations() in data arrays, plus one more element with the total number of sketch elements
+    /// \throw IndexNotReadyException if called before wait_to_be_ready()
     /// \return first occurrence of corresponding representation from unique_representations() in data arrays, plus one more element with the total number of sketch elements
     const device_buffer<std::uint32_t>& first_occurrence_of_representations() const override;
 
     /// \brief returns number of reads in input data
+    /// \throw IndexNotReadyException if called before wait_to_be_ready()
     /// \return number of reads in input data
     read_id_t number_of_reads() const override;
 
     /// \brief returns smallest read_id in index
+    /// \throw IndexNotReadyException if called before wait_to_be_ready()
     /// \return smallest read_id in index (0 if empty index)
     read_id_t smallest_read_id() const override;
 
     /// \brief returns largest read_id in index
+    /// \throw IndexNotReadyException if called before wait_to_be_ready()
     /// \return largest read_id in index (0 if empty index)
     read_id_t largest_read_id() const override;
 
     /// \brief returns length of the longest read in this index
+    /// \throw IndexNotReadyException if called before wait_to_be_ready()
     /// \return length of the longest read in this index
     position_in_read_t number_of_basepairs_in_longest_read() const override;
 
@@ -630,70 +640,110 @@ IndexGPU<SketchElementImpl>::IndexGPU(DefaultDeviceAllocator allocator,
 template <typename SketchElementImpl>
 const device_buffer<representation_t>& IndexGPU<SketchElementImpl>::representations() const
 {
-    assert(is_ready());
+    if (!is_ready())
+    {
+        throw IndexNotReadyException("representations");
+    }
+
     return representations_d_;
 };
 
 template <typename SketchElementImpl>
 const device_buffer<read_id_t>& IndexGPU<SketchElementImpl>::read_ids() const
 {
-    assert(is_ready());
+    if (!is_ready())
+    {
+        throw IndexNotReadyException("read_ids");
+    }
+
     return read_ids_d_;
 }
 
 template <typename SketchElementImpl>
 const device_buffer<position_in_read_t>& IndexGPU<SketchElementImpl>::positions_in_reads() const
 {
-    assert(is_ready());
+    if (!is_ready())
+    {
+        throw IndexNotReadyException("positions_in_reads");
+    }
+
     return positions_in_reads_d_;
 }
 
 template <typename SketchElementImpl>
 const device_buffer<typename SketchElementImpl::DirectionOfRepresentation>& IndexGPU<SketchElementImpl>::directions_of_reads() const
 {
-    assert(is_ready());
+    if (!is_ready())
+    {
+        throw IndexNotReadyException("directions_of_reads");
+    }
+
     return directions_of_reads_d_;
 }
 
 template <typename SketchElementImpl>
 const device_buffer<representation_t>& IndexGPU<SketchElementImpl>::unique_representations() const
 {
-    assert(is_ready());
+    if (!is_ready())
+    {
+        throw IndexNotReadyException("unique_representations");
+    }
+
     return unique_representations_d_;
 }
 
 template <typename SketchElementImpl>
 const device_buffer<std::uint32_t>& IndexGPU<SketchElementImpl>::first_occurrence_of_representations() const
 {
-    assert(is_ready());
+    if (!is_ready())
+    {
+        throw IndexNotReadyException("first_occurrence_of_representations");
+    }
+
     return first_occurrence_of_representations_d_;
 }
 
 template <typename SketchElementImpl>
 read_id_t IndexGPU<SketchElementImpl>::number_of_reads() const
 {
-    assert(is_ready());
+    if (!is_ready())
+    {
+        throw IndexNotReadyException("number_of_reads");
+    }
+
     return number_of_reads_;
 }
 
 template <typename SketchElementImpl>
 read_id_t IndexGPU<SketchElementImpl>::smallest_read_id() const
 {
-    assert(is_ready());
+    if (!is_ready())
+    {
+        throw IndexNotReadyException("smallest_read_id");
+    }
+
     return number_of_reads_ > 0 ? first_read_id_ : 0;
 }
 
 template <typename SketchElementImpl>
 read_id_t IndexGPU<SketchElementImpl>::largest_read_id() const
 {
-    assert(is_ready());
+    if (!is_ready())
+    {
+        throw IndexNotReadyException("largest_read_id");
+    }
+
     return number_of_reads_ > 0 ? first_read_id_ + number_of_reads_ - 1 : 0;
 }
 
 template <typename SketchElementImpl>
 position_in_read_t IndexGPU<SketchElementImpl>::number_of_basepairs_in_longest_read() const
 {
-    assert(is_ready());
+    if (!is_ready())
+    {
+        throw IndexNotReadyException("number_of_basepairs_in_longest_read");
+    }
+
     return number_of_basepairs_in_longest_read_;
 }
 
