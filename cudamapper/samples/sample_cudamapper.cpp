@@ -90,6 +90,7 @@ void process_batch(std::vector<IndexDescriptor>& query_index_descriptors,
                                                                  WINDOWS_SIZE,
                                                                  true,                 // hash representations
                                                                  FILTERING_PARAMETER); // filter parameter
+        query_index->wait_to_be_ready();
 
         for (const IndexDescriptor& target_index_descriptor : target_index_descriptors)
         {
@@ -103,6 +104,7 @@ void process_batch(std::vector<IndexDescriptor>& query_index_descriptors,
                                                                           WINDOWS_SIZE,
                                                                           true,                 // hash representations
                                                                           FILTERING_PARAMETER); // filter parameter
+                target_index->wait_to_be_ready();
 
                 // find anchors & find overlaps
                 auto matcher = Matcher::create_matcher(allocator,

@@ -199,10 +199,7 @@ void HostIndexCache::generate_content(const CacheType cache_type,
                                                   filtering_parameter_,
                                                   cuda_stream_generation_,
                                                   cuda_stream_copy_);
-
-            // wait for index to be generated on cuda_stream_generation_ before copying it on cuda_stream_copy_
-            // TODO: do this sync using an event
-            GW_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream_generation_));
+            index_on_device->wait_to_be_ready();
 
             if (host_copy_needed)
             {

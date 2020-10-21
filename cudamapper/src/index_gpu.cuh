@@ -583,7 +583,7 @@ IndexGPU<SketchElementImpl>::IndexGPU(DefaultDeviceAllocator allocator,
     , directions_of_reads_d_(0, allocator, cuda_stream_generation, cuda_stream_copy)
     , unique_representations_d_(0, allocator, cuda_stream_generation, cuda_stream_copy)
     , first_occurrence_of_representations_d_(0, allocator, cuda_stream_generation, cuda_stream_copy)
-    , is_ready_(false) // set to true at the end of generate_index()
+    , is_ready_(false)
     , index_host_copy_source_(nullptr)
 {
     generate_index(parser,
@@ -594,9 +594,8 @@ IndexGPU<SketchElementImpl>::IndexGPU(DefaultDeviceAllocator allocator,
                    allocator,
                    cuda_stream_generation);
 
-    // This is not completely necessary, but if removed one has to make sure that the next step
-    // uses the same stream or that sync is done in caller
     GW_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream_generation));
+    is_ready_ = true;
 }
 
 template <typename SketchElementImpl>
@@ -878,10 +877,6 @@ void IndexGPU<SketchElementImpl>::generate_index(const io::FastaParser& parser,
                                                                    first_occurrence_of_representations_d_,
                                                                    cuda_stream);
     }
-
-    // TODO: replace with stream callback
-    GW_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
-    is_ready_ = true;
 }
 
 } // namespace cudamapper

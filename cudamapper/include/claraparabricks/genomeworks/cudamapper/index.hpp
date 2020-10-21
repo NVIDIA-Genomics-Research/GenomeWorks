@@ -142,6 +142,7 @@ public:
     virtual void wait_to_be_ready() = 0;
 
     /// \brief generates a mapping of (k,w)-kmer-representation to all of its occurrences for one or more sequences
+    /// Generation is done asynchronously and one should call wait_to_be_ready() before using the object
     /// \param allocator The device memory allocator to use for temporary buffer allocations
     /// \param parser parser for the whole input file (part that goes into this index is determined by first_read_id and past_the_last_read_id)
     /// \param descriptor object holding the first read, size of the read, and hash value of the index being created
