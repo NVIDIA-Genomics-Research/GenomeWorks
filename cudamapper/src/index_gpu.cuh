@@ -137,7 +137,7 @@ public:
     bool is_ready() const override;
 
     /// \brief if is_ready() is true returns immediately, blocks until it becomes ready otherwise
-    void wait_to_be_ready() const override;
+    void wait_to_be_ready() override;
 
 private:
     /// \brief generates the index
@@ -166,7 +166,7 @@ private:
     position_in_read_t number_of_basepairs_in_longest_read_ = 0;
 
     // has index generation finished
-    mutable bool is_ready_;
+    bool is_ready_;
     // if index is not generated but copied from the host a pointer to it is saved here
     const IndexHostCopy* const index_host_copy_source_;
 };
@@ -695,7 +695,7 @@ bool IndexGPU<SketchElementImpl>::is_ready() const
 }
 
 template <typename SketchElementImpl>
-void IndexGPU<SketchElementImpl>::wait_to_be_ready() const
+void IndexGPU<SketchElementImpl>::wait_to_be_ready()
 {
     // if index is not ready for usage wait for it to become ready
     if (!is_ready())

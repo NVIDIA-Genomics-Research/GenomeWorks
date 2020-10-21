@@ -139,7 +139,7 @@ public:
     virtual bool is_ready() const = 0;
 
     /// \brief if is_ready() is true returns immediately, blocks until it becomes ready otherwise
-    virtual void wait_to_be_ready() const = 0;
+    virtual void wait_to_be_ready() = 0;
 
     /// \brief generates a mapping of (k,w)-kmer-representation to all of its occurrences for one or more sequences
     /// \param allocator The device memory allocator to use for temporary buffer allocations
