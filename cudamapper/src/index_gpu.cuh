@@ -630,60 +630,70 @@ IndexGPU<SketchElementImpl>::IndexGPU(DefaultDeviceAllocator allocator,
 template <typename SketchElementImpl>
 const device_buffer<representation_t>& IndexGPU<SketchElementImpl>::representations() const
 {
+    assert(is_ready());
     return representations_d_;
 };
 
 template <typename SketchElementImpl>
 const device_buffer<read_id_t>& IndexGPU<SketchElementImpl>::read_ids() const
 {
+    assert(is_ready());
     return read_ids_d_;
 }
 
 template <typename SketchElementImpl>
 const device_buffer<position_in_read_t>& IndexGPU<SketchElementImpl>::positions_in_reads() const
 {
+    assert(is_ready());
     return positions_in_reads_d_;
 }
 
 template <typename SketchElementImpl>
 const device_buffer<typename SketchElementImpl::DirectionOfRepresentation>& IndexGPU<SketchElementImpl>::directions_of_reads() const
 {
+    assert(is_ready());
     return directions_of_reads_d_;
 }
 
 template <typename SketchElementImpl>
 const device_buffer<representation_t>& IndexGPU<SketchElementImpl>::unique_representations() const
 {
+    assert(is_ready());
     return unique_representations_d_;
 }
 
 template <typename SketchElementImpl>
 const device_buffer<std::uint32_t>& IndexGPU<SketchElementImpl>::first_occurrence_of_representations() const
 {
+    assert(is_ready());
     return first_occurrence_of_representations_d_;
 }
 
 template <typename SketchElementImpl>
 read_id_t IndexGPU<SketchElementImpl>::number_of_reads() const
 {
+    assert(is_ready());
     return number_of_reads_;
 }
 
 template <typename SketchElementImpl>
 read_id_t IndexGPU<SketchElementImpl>::smallest_read_id() const
 {
+    assert(is_ready());
     return number_of_reads_ > 0 ? first_read_id_ : 0;
 }
 
 template <typename SketchElementImpl>
 read_id_t IndexGPU<SketchElementImpl>::largest_read_id() const
 {
+    assert(is_ready());
     return number_of_reads_ > 0 ? first_read_id_ + number_of_reads_ - 1 : 0;
 }
 
 template <typename SketchElementImpl>
 position_in_read_t IndexGPU<SketchElementImpl>::number_of_basepairs_in_longest_read() const
 {
+    assert(is_ready());
     return number_of_basepairs_in_longest_read_;
 }
 
