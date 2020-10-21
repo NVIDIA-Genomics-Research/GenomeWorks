@@ -29,8 +29,8 @@
 #include <claraparabricks/genomeworks/cudapoa/batch.hpp>
 
 // considering 65536 register file size, __launch_bounds__(1024) translates to max 64 register usage
-#define MAX_THREADS_PER_BLOCK_64 1024
-#define MAX_THREADS_PER_BLOCK_72 896
+#define GW_POA_KERNELS_MAX_THREADS_PER_BLOCK_64_REGISTERS 1024
+#define GW_POA_KERNELS_MAX_THREADS_PER_BLOCK_72_REGISTERS 896
 
 namespace claraparabricks
 {
@@ -74,7 +74,7 @@ namespace cudapoa
  * @param[in] match_score                   Score for finding a match in alignment
  */
 template <typename ScoreT, typename SizeT, typename TraceT, bool MSA = false, BandMode BM = full_band>
-__launch_bounds__(MAX_THREADS_PER_BLOCK_64)
+__launch_bounds__(GW_POA_KERNELS_MAX_THREADS_PER_BLOCK_64_REGISTERS)
     __global__ void generatePOAKernel(uint8_t* consensus_d,
                                       uint8_t* sequences_d,
                                       int8_t* base_weights_d,
@@ -342,7 +342,7 @@ __launch_bounds__(MAX_THREADS_PER_BLOCK_64)
             __syncwarp();
         }
 
-        if (alignment_length == NW_BACKTRACKING_LOOP_FAILED)
+        if (alignment_length == CUDAPOA_KERNEL_NW_BACKTRACKING_LOOP_FAILED)
         {
             if (lane_idx == 0)
             {
@@ -351,7 +351,7 @@ __launch_bounds__(MAX_THREADS_PER_BLOCK_64)
             }
             return;
         }
-        else if (alignment_length == NW_ADAPTIVE_STORAGE_FAILED)
+        else if (alignment_length == CUDAPOA_KERNEL_NW_ADAPTIVE_STORAGE_FAILED)
         {
             if (lane_idx == 0)
             {
@@ -433,7 +433,7 @@ __launch_bounds__(MAX_THREADS_PER_BLOCK_64)
 // Similar to generatePOAKernel(), but with a different launch bounds setting, used to call kernels using traceback buffer
 // i.e. for BM == BandMode::static_band_traceback or BM == BandMode::adaptive_band_traceback
 template <typename ScoreT, typename SizeT, typename TraceT, bool MSA = false, BandMode BM = BandMode::static_band_traceback>
-__launch_bounds__(MAX_THREADS_PER_BLOCK_72)
+__launch_bounds__(GW_POA_KERNELS_MAX_THREADS_PER_BLOCK_72_REGISTERS)
     __global__ void generatePOAKernelTB(uint8_t* consensus_d,
                                         uint8_t* sequences_d,
                                         int8_t* base_weights_d,
@@ -682,7 +682,7 @@ __launch_bounds__(MAX_THREADS_PER_BLOCK_72)
             __syncwarp();
         }
 
-        if (alignment_length == NW_BACKTRACKING_LOOP_FAILED)
+        if (alignment_length == CUDAPOA_KERNEL_NW_BACKTRACKING_LOOP_FAILED)
         {
             if (lane_idx == 0)
             {
@@ -691,7 +691,7 @@ __launch_bounds__(MAX_THREADS_PER_BLOCK_72)
             }
             return;
         }
-        else if (alignment_length == NW_ADAPTIVE_STORAGE_FAILED)
+        else if (alignment_length == CUDAPOA_KERNEL_NW_ADAPTIVE_STORAGE_FAILED)
         {
             if (lane_idx == 0)
             {
@@ -700,7 +700,7 @@ __launch_bounds__(MAX_THREADS_PER_BLOCK_72)
             }
             return;
         }
-        else if (alignment_length == NW_TRACEBACK_BUFFER_FAILED)
+        else if (alignment_length == CUDAPOA_KERNEL_NW_TRACEBACK_BUFFER_FAILED)
         {
             if (lane_idx == 0)
             {

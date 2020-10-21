@@ -260,7 +260,7 @@ __device__ __forceinline__
         float required_buffer_size = static_cast<float>(graph_count) * static_cast<float>(band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING);
         if (required_buffer_size > max_buffer_size)
         {
-            return NW_ADAPTIVE_STORAGE_FAILED;
+            return CUDAPOA_KERNEL_NW_ADAPTIVE_STORAGE_FAILED;
         }
     }
     //---------------------------------------------------------
@@ -545,7 +545,7 @@ __device__ __forceinline__
 
         if (loop_count >= (read_length + graph_count + 2))
         {
-            aligned_nodes = NW_BACKTRACKING_LOOP_FAILED;
+            aligned_nodes = CUDAPOA_KERNEL_NW_BACKTRACKING_LOOP_FAILED;
         }
 
 #ifdef NW_VERBOSE_PRINT
