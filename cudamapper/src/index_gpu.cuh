@@ -62,7 +62,9 @@ template <typename SketchElementImpl>
 class IndexGPU : public Index
 {
 public:
-    /// \brief Constructor whcih constucts a new index
+    /// \brief Constructor which generates a new index
+    ///
+    /// Generation is done asynchronously and one should call wait_to_be_ready() before using the object
     ///
     /// \param parser parser for the whole input file (part that goes into this index is determined by first_read_id and past_the_last_read_id)
     /// \param first_read_id read_id of the first read to the included in this index
@@ -84,6 +86,8 @@ public:
              const cudaStream_t cuda_stream_copy       = 0);
 
     /// \brief Constructor which copies the index from host copy
+    ///
+    /// Copy is done asynchronously and one should call wait_to_be_ready() before using the object
     ///
     /// \param allocator is pointer to asynchronous device allocator
     /// \param index_host_copy is a copy of index for a set of reads which has been previously computed and stored on the host.
@@ -150,6 +154,13 @@ public:
     void wait_to_be_ready() override;
 
 private:
+    /// WayOfConstruciton - has IndexGPU been created by generation or copy from host copy
+    enum class WayOfConstruciton
+    {
+        generation,
+        copy
+    };
+
     /// \brief generates the index
     void generate_index(const io::FastaParser& query_parser,
                         const read_id_t first_read_id,
@@ -174,11 +185,15 @@ private:
     const std::uint64_t window_size_                        = 0;
     read_id_t number_of_reads_                              = 0;
     position_in_read_t number_of_basepairs_in_longest_read_ = 0;
+    const WayOfConstruciton way_of_construciton_;
 
     // has index generation finished
     bool is_ready_;
     // if index is not generated but copied from the host a pointer to it is saved here
     const IndexHostCopy* const index_host_copy_source_;
+
+    // only important is using generating constructor, ignored in copying constructor
+    cudaStream_t cuda_stream_generation_;
 };
 
 namespace details
@@ -593,8 +608,10 @@ IndexGPU<SketchElementImpl>::IndexGPU(DefaultDeviceAllocator allocator,
     , directions_of_reads_d_(0, allocator, cuda_stream_generation, cuda_stream_copy)
     , unique_representations_d_(0, allocator, cuda_stream_generation, cuda_stream_copy)
     , first_occurrence_of_representations_d_(0, allocator, cuda_stream_generation, cuda_stream_copy)
-    , is_ready_(false)
+    , way_of_construciton_(WayOfConstruciton::generation)
+    , is_ready_(false) // set to true in wait_to_be_ready()
     , index_host_copy_source_(nullptr)
+    , cuda_stream_generation_(cuda_stream_generation)
 {
     generate_index(parser,
                    first_read_id_,
@@ -603,9 +620,6 @@ IndexGPU<SketchElementImpl>::IndexGPU(DefaultDeviceAllocator allocator,
                    filtering_parameter,
                    allocator,
                    cuda_stream_generation);
-
-    GW_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream_generation));
-    is_ready_ = true;
 }
 
 template <typename SketchElementImpl>
@@ -621,8 +635,10 @@ IndexGPU<SketchElementImpl>::IndexGPU(DefaultDeviceAllocator allocator,
     , directions_of_reads_d_(index_host_copy->directions_of_reads().size, allocator, cuda_stream)
     , unique_representations_d_(index_host_copy->unique_representations().size, allocator, cuda_stream)
     , first_occurrence_of_representations_d_(index_host_copy->first_occurrence_of_representations().size, allocator, cuda_stream)
+    , way_of_construciton_(WayOfConstruciton::copy)
     , is_ready_(false) // set to true in wait_to_be_ready()
     , index_host_copy_source_(index_host_copy)
+    , cuda_stream_generation_(cuda_stream)
 {
     GW_NVTX_RANGE(profiler, "IndexGPU::constructor_copy_from_IndexHostCopy");
 
@@ -759,8 +775,20 @@ void IndexGPU<SketchElementImpl>::wait_to_be_ready()
     // if index is not ready for usage wait for it to become ready
     if (!is_ready())
     {
-        assert(index_host_copy_source_);
-        index_host_copy_source_->finish_copying();
+        if (WayOfConstruciton::generation == way_of_construciton_)
+        {
+            GW_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream_generation_));
+        }
+        else if (WayOfConstruciton::copy == way_of_construciton_)
+        {
+            assert(index_host_copy_source_);
+            index_host_copy_source_->finish_copying();
+        }
+        else
+        {
+            assert(!"unsupported value of WayOfConstruciton");
+        }
+
         is_ready_ = true;
     }
 }
