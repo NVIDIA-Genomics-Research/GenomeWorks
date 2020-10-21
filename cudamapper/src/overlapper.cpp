@@ -154,6 +154,7 @@ void Overlapper::post_process_overlaps(std::vector<Overlap>& overlaps, const boo
     int num_residues = 0;
     Overlap prev_overlap;
     std::vector<bool> drop_overlap_mask;
+    return;
     //if (drop_fused_overlaps)
     if (true)
     {
