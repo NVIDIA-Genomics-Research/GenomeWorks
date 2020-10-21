@@ -62,14 +62,7 @@ std::shared_ptr<Index> DeviceIndexCache::get_index(const IndexDescriptor index_d
                                            index_descriptor);
     }
 
-    const auto index_iter = cache_.find(index_descriptor);
-    if (index_iter == cache_.end())
-    {
-        throw IndexNotFoundException(cache_type_,
-                                     IndexNotFoundException::IndexLocation::device_cache,
-                                     index_descriptor);
-    }
-    return index_iter->second;
+    return get_index_no_check_if_ready(index_descriptor);
 }
 
 std::shared_ptr<Index> DeviceIndexCache::get_index_no_check_if_ready(IndexDescriptor index_descriptor) const
