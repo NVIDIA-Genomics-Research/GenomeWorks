@@ -20,6 +20,10 @@
 #include <vector>
 #include <string>
 
+#ifdef GW_BUILD_HTSLIB
+#include "sam.h"
+#endif
+
 #include <claraparabricks/genomeworks/cudamapper/types.hpp>
 #include <claraparabricks/genomeworks/cudamapper/index.hpp>
 
@@ -37,6 +41,14 @@ class FastaParser;
 namespace cudamapper
 {
 
+// enum to determine output format
+enum class OutputFormat
+{
+    PAF,
+    SAM,
+    BAM
+};
+
 /// \brief prints overlaps to stdout in <a href="https://github.com/lh3/miniasm/blob/master/PAF.md">PAF format</a>
 /// \param overlaps vector of overlap objects
 /// \param cigars CIGAR strings. Empty vector if none exist
@@ -51,6 +63,25 @@ void print_paf(const std::vector<Overlap>& overlaps,
                int32_t kmer_size,
                std::mutex& write_output_mutex);
 
+#ifdef GW_BUILD_HTSLIB
+/// \brief prints overlaps to stdout in <a href="https://samtools.github.io/hts-specs/SAMv1.pdf">BAM format</a>
+/// \param overlaps vector of overlap objects
+/// \param cigars CIGAR strings. Empty vector if none exist
+/// \param query_parser needed for read names and lengths
+/// \param target_parser needed for read names and lengths
+/// \param format print in either BAM or SAM
+/// \param write_output_mutex mutex that enables exclusive access to output stream
+/// \param argc (optional) number of command line arguments used to generated the @PG CL sections
+/// \param argv (optional) command line arguments used to generated the @PG CL sections
+void print_sam(const std::vector<Overlap>& overlaps,
+               const std::vector<std::string>& cigars,
+               const io::FastaParser& query_parser,
+               const io::FastaParser& target_parser,
+               OutputFormat format,
+               std::mutex& write_output_mutex,
+               int argc     = -1,
+               char* argv[] = nullptr);
+#endif
 /// \brief returns a vector of IndexDescriptors in which the sum of basepairs of all reads in one IndexDescriptor is at most max_basepairs_per_index
 /// If a single read exceeds max_chunk_size it will be placed in its own IndexDescriptor.
 ///
@@ -59,6 +90,7 @@ void print_paf(const std::vector<Overlap>& overlaps,
 /// \return vector of IndexDescriptors
 std::vector<IndexDescriptor> group_reads_into_indices(const io::FastaParser& parser,
                                                       number_of_basepairs_t max_basepairs_per_index = 1000000);
+
 } // namespace cudamapper
 
 } // namespace genomeworks

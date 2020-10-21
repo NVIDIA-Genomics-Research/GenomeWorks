@@ -33,3 +33,6 @@
 [submodule "3rdparty/kseqpp"]
 	path = 3rdparty/kseqpp
 	url = https://github.com/cartoonist/kseqpp.git
+[submodule "3rdparty/htslib"]
+	path = 3rdparty/htslib
+	url = https://github.com/samtools/htslib.git

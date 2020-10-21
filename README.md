@@ -9,6 +9,7 @@ For more detailed API documentation please refer to the [documentation](#enable-
     * [cudamapper](#cudamapper) - CUDA-accelerated sequence to sequence mapping
     * [cudapoa](#cudapoa) - CUDA-accelerated partial order alignment
     * [cudaaligner](#cudaaligner) - CUDA-accelerated pairwise sequence alignment
+    * [cudaextender](#cudaextender) - CUDA-accelerated seed extension
 * Setup GenomeWorks
     * [Clone GenomeWorks](#clone-genomeworks)
     * [System Requirements](#system-requirements)
@@ -81,6 +82,10 @@ The `cudaaligner` package provides GPU-accelerated global alignment. Features in
 
 A prototypical binary to showcase the use of `libcudaaligner.so` APIs.
 
+### cudaextender
+The `cudaextender` package provides GPU-accelerated seed-extension. Details can be found in
+the package's readme.
+
 ## Clone GenomeWorks 
 
 ### Latest released version
@@ -108,6 +113,10 @@ Minimum requirements -
 4. Python 3.6.7+
 5. CMake (>= 3.10.2)
 
+Optional requirements -
+
+1. autoconf (required to output SAM/BAM files)
+
 ## GenomeWorks Setup
 
 ### Build and Install
@@ -123,6 +132,8 @@ make -j install
 NOTE : The `gw_cuda_gen_all_arch=OFF` option pre-generates optimized code only for the GPU(s) on your system.
 For building a binary that pre-generates opimized code for all common GPU architectures, please remove the option
 or set it to `ON`.
+
+NOTE : (OPTIONAL) To enable outputting overlaps in SAM/BAM format, pass the `gw_build_htslib=ON` option.
 
 ### Package generation
 Package generation puts the libraries, headers and binaries built by the `make` command above
