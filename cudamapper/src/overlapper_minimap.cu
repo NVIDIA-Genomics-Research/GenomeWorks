@@ -495,12 +495,12 @@ __global__ void chain_anchors_in_tile(const Anchor* anchors,
                 }
                 __syncthreads();
                 // TODO not sure if this is correct
-                //if (global_write_index + counter + thread_id_in_block < num_anchors)
-                //{
-                //    scores[global_write_index + counter + thread_id_in_block]             = current_score;
-                //    predecessors[global_write_index + counter + thread_id_in_block]       = current_pred;
-                //    anchor_select_mask[global_write_index + counter + thread_id_in_block] = current_mask;
-                //}
+                if (global_write_index + counter + thread_id_in_block < num_anchors)
+                {
+                    scores[global_write_index + counter + thread_id_in_block]             = current_score;
+                    predecessors[global_write_index + counter + thread_id_in_block]       = current_pred;
+                    anchor_select_mask[global_write_index + counter + thread_id_in_block] = current_mask;
+                }
             }
         }
     }
