@@ -224,7 +224,6 @@ void HostIndexCache::generate_content(const CacheType cache_type,
 
         if (index_on_host)
         {
-            assert(index_on_host);
             new_cache[descriptor_of_index_to_cache] = index_on_host;
         }
 
