@@ -132,7 +132,7 @@ public:
     /// \return length of the longest read in this index
     position_in_read_t number_of_basepairs_in_longest_read() const override;
 
-    /// \brief checks if index is ready to be used, index might not be ready if its creation is asynchronous
+    /// \brief checks if index is ready to be used on this device, index might not be ready if its creation or copy from host is asynchronous
     /// \return whether the index is ready to be used
     bool is_ready() const override;
 
@@ -620,22 +620,11 @@ IndexGPU<SketchElementImpl>::IndexGPU(DefaultDeviceAllocator allocator,
     number_of_reads_                     = index_host_copy->number_of_reads();
     number_of_basepairs_in_longest_read_ = index_host_copy->number_of_basepairs_in_longest_read();
 
-    //H2D- representations_d_ = index_host_copy->representations();
     cudautils::device_copy_n(index_host_copy->representations().data, index_host_copy->representations().size, representations_d_.data(), cuda_stream);
-
-    //H2D- read_ids_d_ = index_host_copy->read_ids();
     cudautils::device_copy_n(index_host_copy->read_ids().data, index_host_copy->read_ids().size, read_ids_d_.data(), cuda_stream);
-
-    //H2D- positions_in_reads_d_ = index_host_copy->positions_in_reads();
     cudautils::device_copy_n(index_host_copy->positions_in_reads().data, index_host_copy->positions_in_reads().size, positions_in_reads_d_.data(), cuda_stream);
-
-    //H2D- directions_of_reads_d_ = index_host_copy->directions_of_reads();
     cudautils::device_copy_n(index_host_copy->directions_of_reads().data, index_host_copy->directions_of_reads().size, directions_of_reads_d_.data(), cuda_stream);
-
-    //H2D- unique_representations_d_ = index_host_copy->unique_representations();
     cudautils::device_copy_n(index_host_copy->unique_representations().data, index_host_copy->unique_representations().size, unique_representations_d_.data(), cuda_stream);
-
-    //H2D- first_occurrence_of_representations_d_ = index_host_copy->first_occurrence_of_representations();
     cudautils::device_copy_n(index_host_copy->first_occurrence_of_representations().data, index_host_copy->first_occurrence_of_representations().size, first_occurrence_of_representations_d_.data(), cuda_stream);
 }
 

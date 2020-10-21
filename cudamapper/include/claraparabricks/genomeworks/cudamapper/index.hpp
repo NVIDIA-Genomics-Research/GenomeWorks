@@ -134,7 +134,7 @@ public:
         return sizeof(representation_t) * CHAR_BIT / 2;
     }
 
-    /// \brief checks if index is ready to be used, index might not be ready if its creation is asynchronous
+    /// \brief checks if index is ready to be used on this device, index might not be ready if its creation or copy from host is asynchronous
     /// \return true if the index is ready to be used
     virtual bool is_ready() const = 0;
 

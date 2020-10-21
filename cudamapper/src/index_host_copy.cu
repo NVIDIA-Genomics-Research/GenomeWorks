@@ -216,7 +216,7 @@ void IndexHostCopy::IndexHostMemoryPinner::register_pinned_memory()
     {
         GW_NVTX_RANGE(profiler, "index_host_memory_pinner::register_pinned_memory");
         GW_CU_CHECK_ERR(cudaHostRegister(index_host_copy_.underlying_array_.data(),
-                                         index_host_copy_.underlying_array_.size() * sizeof(unsigned char),
+                                         index_host_copy_.underlying_array_.size() * sizeof(gw_byte_t),
                                          cudaHostRegisterDefault));
     }
     ++times_memory_pinned_;
