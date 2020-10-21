@@ -152,17 +152,20 @@ void HostIndexCache::generate_content(const CacheType cache_type,
     // being copied to host. In this implementation only two copies of index are kept on device: the one currently being generated and the one currently
     // being copied to host (from the previous step).
 
-    std::shared_ptr<const IndexHostCopyBase> index_on_host                    = nullptr;
-    std::shared_ptr<const IndexHostCopyBase> index_on_host_from_previous_step = nullptr;
-    std::shared_ptr<Index> index_on_device                                    = nullptr;
-    std::shared_ptr<Index> index_on_device_from_previous_step                 = nullptr;
-    bool started_copy                                                         = false; // if index is found on host copy is not needed
-    bool started_copy_from_previous_step                                      = false;
+    std::shared_ptr<const IndexHostCopyBase> index_on_host = nullptr;
+    std::shared_ptr<Index> index_on_device                 = nullptr;
+    // Only one pair of (host, device) indices can be copied at a time. Whenever a copy should be started if these pointers are not null (= copy is in progress)
+    // wait for that current copy to be done first
+    std::shared_ptr<const IndexHostCopyBase> index_on_host_copy_in_flight = nullptr;
+    std::shared_ptr<Index> index_on_device_copy_in_flight                 = nullptr;
 
     const bool host_copy_needed = !skip_copy_to_host;
 
     for (const IndexDescriptor& descriptor_of_index_to_cache : descriptors_of_indices_to_cache)
     {
+        index_on_host   = nullptr;
+        index_on_device = nullptr;
+
         const bool device_copy_needed = descriptors_of_indices_to_keep_on_device_set.count(descriptor_of_index_to_cache) != 0;
 
         // check if host copy already exists
@@ -203,14 +206,11 @@ void HostIndexCache::generate_content(const CacheType cache_type,
 
             if (host_copy_needed)
             {
-                // if a D2H copy has been been started in the previous step wait for it to finish
-                // TODO: do this sync using an event
-                if (started_copy_from_previous_step)
+                // if a copy is already in progress wait for it to finish
+                if (index_on_host_copy_in_flight)
                 {
-                    index_on_host_from_previous_step->finish_copying();
-                    // copying is done, these pointer are not needed anymore
-                    index_on_host_from_previous_step   = nullptr;
-                    index_on_device_from_previous_step = nullptr;
+                    assert(index_on_host_copy_in_flight && index_on_device_copy_in_flight);
+                    index_on_host_copy_in_flight->finish_copying();
                 }
 
                 index_on_host = IndexHostCopy::create_host_copy(*index_on_device,
@@ -218,7 +218,9 @@ void HostIndexCache::generate_content(const CacheType cache_type,
                                                                 kmer_size_,
                                                                 window_size_,
                                                                 cuda_stream_copy_);
-                started_copy  = true; // index is being copied to host memory, a sync will be needed
+
+                index_on_host_copy_in_flight   = index_on_host;
+                index_on_device_copy_in_flight = index_on_device;
             }
         }
 
@@ -234,37 +236,13 @@ void HostIndexCache::generate_content(const CacheType cache_type,
         {
             indices_kept_on_device[descriptor_of_index_to_cache] = index_on_device;
         }
-
-        // if a D2H copy has been been started in the previous step and it has not been waited for yet wait for it to finish
-        if (started_copy_from_previous_step && index_on_host_from_previous_step && index_on_device_from_previous_step)
-        {
-            index_on_host_from_previous_step->finish_copying();
-            // copying is done, these pointer are not needed anymore
-            index_on_host_from_previous_step   = nullptr;
-            index_on_device_from_previous_step = nullptr;
-        }
-
-        // prepare for next step
-        started_copy_from_previous_step = started_copy;
-        if (started_copy)
-        {
-            index_on_host_from_previous_step   = index_on_host;
-            index_on_device_from_previous_step = index_on_device;
-        }
-        else
-        {
-            index_on_host_from_previous_step   = nullptr;
-            index_on_device_from_previous_step = nullptr;
-        }
-        index_on_host   = nullptr;
-        index_on_device = nullptr;
-        started_copy    = false;
     }
 
     // wait for the last copy to finish
-    if (started_copy_from_previous_step)
+    if (index_on_host_copy_in_flight)
     {
-        index_on_host_from_previous_step->finish_copying();
+        assert(index_on_host_copy_in_flight && index_on_device_copy_in_flight);
+        index_on_host_copy_in_flight->finish_copying();
     }
 
     std::swap(new_cache, this_cache);
