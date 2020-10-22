@@ -279,7 +279,7 @@ public:
                                  IndexDescriptor index_descriptor);
 
     /// \brief Returns the error message of the exception
-    virtual const char* what() const noexcept override;
+    const char* what() const noexcept override;
 
 private:
     const std::string message_;
