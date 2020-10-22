@@ -190,15 +190,15 @@ void HostIndexCache::generate_content(const CacheType cache_type,
         if (!index_on_host)
         {
             // create index
-            index_on_device = Index::create_index(allocator_,
-                                                  *parser,
-                                                  descriptor_of_index_to_cache,
-                                                  kmer_size_,
-                                                  window_size_,
-                                                  hash_representations_,
-                                                  filtering_parameter_,
-                                                  cuda_stream_generation_,
-                                                  cuda_stream_copy_);
+            index_on_device = Index::create_index_async(allocator_,
+                                                        *parser,
+                                                        descriptor_of_index_to_cache,
+                                                        kmer_size_,
+                                                        window_size_,
+                                                        hash_representations_,
+                                                        filtering_parameter_,
+                                                        cuda_stream_generation_,
+                                                        cuda_stream_copy_);
             index_on_device->wait_to_be_ready();
 
             if (host_copy_needed)
@@ -210,11 +210,11 @@ void HostIndexCache::generate_content(const CacheType cache_type,
                     index_on_host_copy_in_flight->finish_copying();
                 }
 
-                index_on_host = IndexHostCopy::create_host_copy(*index_on_device,
-                                                                descriptor_of_index_to_cache.first_read(),
-                                                                kmer_size_,
-                                                                window_size_,
-                                                                cuda_stream_copy_);
+                index_on_host = IndexHostCopy::create_host_copy_async(*index_on_device,
+                                                                      descriptor_of_index_to_cache.first_read(),
+                                                                      kmer_size_,
+                                                                      window_size_,
+                                                                      cuda_stream_copy_);
 
                 index_on_host_copy_in_flight   = index_on_host;
                 index_on_device_copy_in_flight = index_on_device;

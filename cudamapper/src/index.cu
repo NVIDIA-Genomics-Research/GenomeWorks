@@ -28,17 +28,17 @@ namespace genomeworks
 namespace cudamapper
 {
 
-std::unique_ptr<Index> Index::create_index(DefaultDeviceAllocator allocator,
-                                           const io::FastaParser& parser,
-                                           const IndexDescriptor& descriptor,
-                                           const std::uint64_t kmer_size,
-                                           const std::uint64_t window_size,
-                                           const bool hash_representations,
-                                           const double filtering_parameter,
-                                           const cudaStream_t cuda_stream_generation,
-                                           const cudaStream_t cuda_stream_copy)
+std::unique_ptr<Index> Index::create_index_async(DefaultDeviceAllocator allocator,
+                                                 const io::FastaParser& parser,
+                                                 const IndexDescriptor& descriptor,
+                                                 const std::uint64_t kmer_size,
+                                                 const std::uint64_t window_size,
+                                                 const bool hash_representations,
+                                                 const double filtering_parameter,
+                                                 const cudaStream_t cuda_stream_generation,
+                                                 const cudaStream_t cuda_stream_copy)
 {
-    GW_NVTX_RANGE(profiler, "create_index");
+    GW_NVTX_RANGE(profiler, "create_index_async");
     return std::make_unique<IndexGPU<Minimizer>>(allocator,
                                                  parser,
                                                  descriptor,
@@ -50,11 +50,11 @@ std::unique_ptr<Index> Index::create_index(DefaultDeviceAllocator allocator,
                                                  cuda_stream_copy);
 }
 
-std::unique_ptr<IndexHostCopyBase> IndexHostCopyBase::create_host_copy(const Index& index,
-                                                                       const read_id_t first_read_id,
-                                                                       const std::uint64_t kmer_size,
-                                                                       const std::uint64_t window_size,
-                                                                       const cudaStream_t cuda_stream)
+std::unique_ptr<IndexHostCopyBase> IndexHostCopyBase::create_host_copy_async(const Index& index,
+                                                                             const read_id_t first_read_id,
+                                                                             const std::uint64_t kmer_size,
+                                                                             const std::uint64_t window_size,
+                                                                             const cudaStream_t cuda_stream)
 {
     GW_NVTX_RANGE(profiler, "cache_D2H");
     return std::make_unique<IndexHostCopy>(index,

@@ -165,15 +165,15 @@ public:
     /// \param cuda_stream_copy CUDA stream on which the index is copied to host if needed. Device arrays are associated with this stream and will not be freed at least until all work issued on this stream before calling their destructor has been done
     /// \return instance of Index
     static std::unique_ptr<Index>
-    create_index(DefaultDeviceAllocator allocator,
-                 const io::FastaParser& parser,
-                 const IndexDescriptor& descriptor,
-                 const std::uint64_t kmer_size,
-                 const std::uint64_t window_size,
-                 const bool hash_representations           = true,
-                 const double filtering_parameter          = 1.0,
-                 const cudaStream_t cuda_stream_generation = 0,
-                 const cudaStream_t cuda_stream_copy       = 0);
+    create_index_async(DefaultDeviceAllocator allocator,
+                       const io::FastaParser& parser,
+                       const IndexDescriptor& descriptor,
+                       const std::uint64_t kmer_size,
+                       const std::uint64_t window_size,
+                       const bool hash_representations           = true,
+                       const double filtering_parameter          = 1.0,
+                       const cudaStream_t cuda_stream_generation = 0,
+                       const cudaStream_t cuda_stream_copy       = 0);
 };
 
 /// IndexHostCopyBase - Creates and maintains a copy of computed IndexGPU elements on the host, then allows to retrieve target
@@ -258,11 +258,11 @@ public:
     /// \param window_size the number of adjacent k-mers in a window, adjacent = shifted by one basepair
     /// \param cuda_stream D2H copy is done on this stream
     /// \return - an instance of IndexHostCopyBase
-    static std::unique_ptr<IndexHostCopyBase> create_host_copy(const Index& index,
-                                                               const read_id_t first_read_id,
-                                                               const std::uint64_t kmer_size,
-                                                               const std::uint64_t window_size,
-                                                               const cudaStream_t cuda_stream = 0);
+    static std::unique_ptr<IndexHostCopyBase> create_host_copy_async(const Index& index,
+                                                                     const read_id_t first_read_id,
+                                                                     const std::uint64_t kmer_size,
+                                                                     const std::uint64_t window_size,
+                                                                     const cudaStream_t cuda_stream = 0);
 };
 
 /// IndexNotReadyException - Exception to be thrown if a member of Index is accessed, but is_read() == false
