@@ -44,7 +44,11 @@ public:
     using pointer = T*;
 
     /// \brief default constructor
-    CudaMallocAllocator() = default;
+    /// \param default_stream if a call to allocate() does not specify any streams this stream will be used instead, ignored in this allocator
+    explicit CudaMallocAllocator(cudaStream_t default_stream = 0)
+    {
+        static_cast<void>(default_stream);
+    }
 
     /// \brief copy constructor
     /// \param rhs input allocator
@@ -114,7 +118,7 @@ public:
     /// \return pointer to allocated memory
     /// \throw device_memory_allocation_exception if allocation was not successful
     pointer allocate(std::size_t n,
-                     const std::vector<cudaStream_t>& streams = {{0}})
+                     const std::vector<cudaStream_t>& streams = {})
     {
         static_cast<void>(streams);
         void* ptr       = nullptr;
@@ -168,12 +172,18 @@ public:
     /// Constructs an invalid CachingDeviceAllocator to allow default-construction of containers.
     /// A container using this allocator needs obtain a non-default constructed CachingDeviceAllocator object before performing any allocations.
     /// This can be achieved through through container assignment for example.
-    CachingDeviceAllocator() = default;
+    CachingDeviceAllocator()
+        : default_stream_(0)
+    {
+    }
 
     /// \brief Constructor
     /// \param max_cached_bytes max bytes used by memory resource
-    CachingDeviceAllocator(size_t max_cached_bytes)
+    /// \param default_stream if a call to allocate() does not specify any streams this stream will be used instead
+    explicit CachingDeviceAllocator(size_t max_cached_bytes,
+                                    cudaStream_t default_stream = 0)
         : memory_resource_(std::make_shared<MemoryResource>(max_cached_bytes))
+        , default_stream_(default_stream)
     {
     }
 
@@ -188,6 +198,7 @@ public:
     template <typename U>
     CachingDeviceAllocator(const CachingDeviceAllocator<U, MemoryResource>& rhs)
         : memory_resource_(rhs.memory_resource())
+        , default_stream_(rhs.default_stream())
     {
     }
 
@@ -205,6 +216,7 @@ public:
     CachingDeviceAllocator& operator=(const CachingDeviceAllocator<U, MemoryResource>& rhs)
     {
         memory_resource_ = rhs.memory_resource();
+        default_stream_  = rhs.default_stream();
         return *this;
     }
 
@@ -219,6 +231,7 @@ public:
     template <typename U>
     CachingDeviceAllocator(CachingDeviceAllocator<U, MemoryResource>&& rhs)
         : memory_resource_(rhs.memory_resource())
+        , default_stream_(rhs.default_stream())
     {
     }
 
@@ -236,6 +249,7 @@ public:
     CachingDeviceAllocator& operator=(CachingDeviceAllocator<U, MemoryResource>&& rhs)
     {
         memory_resource_ = rhs.memory_resource();
+        default_stream_  = rhs.default_stream();
         return *this;
     }
 
@@ -244,22 +258,23 @@ public:
 
     /// \brief asynchronously allocates a device array with enough space for n elements of value_type
     /// \param n number of elements to allocate the array for
-    /// \param streams on deallocation this memory block is guaranteed to live at least until all previously scheduled work in these streams has finished, if no stream is specified default stream (0) is used
+    /// \param streams on deallocation this memory block is guaranteed to live at least until all previously scheduled work in these streams has finished, if no streams are specified default_stream from constructor are used, if no default_stream was specified in constructor default stream is used
     /// \return pointer to allocated memory
     /// \throw device_memory_allocation_exception if allocation was not successful
     pointer allocate(std::size_t n,
-                     const std::vector<cudaStream_t>& streams = {{0}})
+                     const std::vector<cudaStream_t>& streams = {})
     {
-        assert(!streams.empty());
-
         if (!memory_resource_)
         {
             GW_LOG_ERROR("{}\n", "ERROR:: Trying to allocate memory from an default-constructed CachingDeviceAllocator. Please assign a non-default-constructed CachingDeviceAllocator before performing any memory operations.");
             assert(false);
             std::abort();
         }
+
         void* ptr       = nullptr;
-        cudaError_t err = memory_resource_->DeviceAllocate(&ptr, n * sizeof(T), streams);
+        cudaError_t err = memory_resource_->DeviceAllocate(&ptr,
+                                                           n * sizeof(T),
+                                                           streams.empty() ? std::vector<cudaStream_t>(1, default_stream_) : streams); // if no streams have been specified use default_stream_
         if (err == cudaErrorMemoryAllocation)
         {
             throw device_memory_allocation_exception();
@@ -295,8 +310,13 @@ public:
     /// \return a shared pointer to memory_resource
     std::shared_ptr<MemoryResource> memory_resource() const { return memory_resource_; }
 
+    /// \brief returns default stream
+    /// \return default stream
+    cudaStream_t default_stream() const { return default_stream_; }
+
 private:
     std::shared_ptr<MemoryResource> memory_resource_;
+    cudaStream_t default_stream_;
 };
 
 #ifdef GW_ENABLE_CACHING_ALLOCATOR
@@ -323,12 +343,16 @@ inline int64_t get_size_of_largest_free_memory_block(DefaultDeviceAllocator cons
 /// Default constuction of CachingDeviceAllocator yields an dummy object
 /// which cannot allocate memory.
 /// \param max_cached_bytes max bytes used by memory resource used by CachingDeviceAllocator (default: 2GiB, unused for CudaMallocAllocator)
-inline DefaultDeviceAllocator create_default_device_allocator(std::size_t max_caching_size = 2ull * 1024 * 1024 * 1024)
+/// \param default_stream if a call to allocate() does not specify any streams this stream will be used instead (unused for CudaMallocAllocator)
+inline DefaultDeviceAllocator create_default_device_allocator(std::size_t max_caching_size = 2ull * 1024 * 1024 * 1024,
+                                                              cudaStream_t default_stream  = 0)
 {
 #ifdef GW_ENABLE_CACHING_ALLOCATOR
-    return DefaultDeviceAllocator(max_caching_size);
+    return DefaultDeviceAllocator(max_caching_size,
+                                  default_stream);
 #else
     static_cast<void>(max_caching_size);
+    static_cast<void>(default_stream);
     return DefaultDeviceAllocator();
 #endif
 }
