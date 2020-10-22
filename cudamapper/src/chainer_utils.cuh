@@ -16,14 +16,6 @@
 
 #pragma once
 
-#include <fstream>
-#include <sstream>
-#include <cstdlib>
-
-// Needed for accumulate - remove when ported to cuda
-#include <numeric>
-#include <limits>
-
 #include <claraparabricks/genomeworks/cudamapper/types.hpp>
 #include <claraparabricks/genomeworks/utils/device_buffer.hpp>
 

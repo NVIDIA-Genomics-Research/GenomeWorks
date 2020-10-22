@@ -16,17 +16,7 @@
 
 #include "chainer_utils.cuh"
 
-#include <fstream>
-#include <sstream>
-#include <cstdlib>
-
-// Needed for accumulate - remove when ported to cuda
-#include <numeric>
-#include <limits>
-
 #include <cub/cub.cuh>
-#include <thrust/execution_policy.h>
-
 #include <claraparabricks/genomeworks/utils/cudautils.hpp>
 
 namespace claraparabricks
