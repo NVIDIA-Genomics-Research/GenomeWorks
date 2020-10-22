@@ -41,7 +41,7 @@ __host__ __device__ Overlap create_simple_overlap(const Anchor& start, const Anc
 
     overlap.query_start_position_in_read_ = min(start.query_position_in_read_, end.query_position_in_read_);
     overlap.query_end_position_in_read_   = max(start.query_position_in_read_, end.query_position_in_read_);
-    bool is_negative_strand               = end.target_position_in_read_ < start.target_position_in_read_;
+    const bool is_negative_strand         = end.target_position_in_read_ < start.target_position_in_read_;
     if (is_negative_strand)
     {
         overlap.relative_strand                = RelativeStrand::Reverse;
