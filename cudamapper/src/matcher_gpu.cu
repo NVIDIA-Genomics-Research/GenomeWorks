@@ -40,7 +40,7 @@ MatcherGPU::MatcherGPU(DefaultDeviceAllocator allocator,
                        const Index& query_index,
                        const Index& target_index,
                        const cudaStream_t cuda_stream)
-    : anchors_d_(allocator)
+    : anchors_d_(0, allocator, cuda_stream)
 {
     GW_NVTX_RANGE(profile, "matcherGPU");
     if (query_index.unique_representations().size() == 0 || target_index.unique_representations().size() == 0)

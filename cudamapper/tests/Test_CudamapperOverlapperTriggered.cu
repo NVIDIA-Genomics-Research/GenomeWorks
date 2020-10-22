@@ -306,7 +306,7 @@ TEST(TestCudamapperOverlapperTriggerred, ReverseStrand)
 
 TEST(TestCudamapperOverlapperTriggerred, OverlapPostProcessingTwoForwardOverlapsTwoFusable)
 {
-    DefaultDeviceAllocator allocator;
+    DefaultDeviceAllocator allocator = create_default_device_allocator();
     OverlapperTriggered overlapper(allocator);
 
     std::vector<Overlap> overlaps;
@@ -359,7 +359,7 @@ TEST(TestCudamapperOverlapperTriggerred, OverlapPostProcessingTwoForwardOverlaps
 
 TEST(TestCudamapperOverlapperTriggerred, OverlapPostProcessingTwoForwardOverlapsOneFusable)
 {
-    DefaultDeviceAllocator allocator;
+    DefaultDeviceAllocator allocator = create_default_device_allocator();
     OverlapperTriggered overlapper(allocator);
 
     std::vector<Overlap> overlaps;
@@ -412,7 +412,7 @@ TEST(TestCudamapperOverlapperTriggerred, OverlapPostProcessingTwoForwardOverlaps
 
 TEST(TestCudamapperOverlapperTriggerred, OverlapPostProcessingOneForwardOneReverseBothFuasble)
 {
-    DefaultDeviceAllocator allocator;
+    DefaultDeviceAllocator allocator = create_default_device_allocator();
     OverlapperTriggered overlapper(allocator);
 
     std::vector<Overlap> overlaps;

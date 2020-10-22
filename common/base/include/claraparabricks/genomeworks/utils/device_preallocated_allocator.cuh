@@ -194,6 +194,7 @@ private:
             return cudaErrorMemoryAllocation;
         }
 
+        assert(!associated_streams.empty());
         MemoryBlock new_memory_block{block_to_get_memory_from_iter->begin,
                                      bytes_needed,
                                      associated_streams};
@@ -247,6 +248,7 @@ private:
         assert(block_to_be_freed_iter != std::end(used_blocks_));
 
         // ** wait for all work on associated_streams to finish before freeing up this memory block
+        assert(!block_to_be_freed_iter->associated_streams.empty());
         for (cudaStream_t associated_stream : block_to_be_freed_iter->associated_streams)
         {
             // WARNING: The way and place this synchronization is done might change in the future, do not rely on this cudaStreamSynchronize() in the caller.
