@@ -72,17 +72,6 @@ __global__ void backtrace_anchors_to_overlaps(const Anchor* anchors,
                                               int32_t* predecessors,
                                               const int32_t n_anchors,
                                               const int32_t min_score);
-///
-/// \brief Allocate a 1-dimensional array representing an unrolled 2D-array
-/// (overlap X n_anchors_in_overlap) of anchors within each overlap. Rather than
-/// copy the anchors, the final array holds the indices within the anchors array
-/// of the anchors in the chain.
-///
-/// \param overlaps An array of Overlaps. Must have a well-formed num_residues_ field.
-/// \param unrolled_anchor_chains  An array of int32_t. Will be resided on return.
-/// param num_overlaps The number of overlaps in the overlaps array.
-///@param _allocator  The DefaultDeviceAllocator
-///@param _cuda_stream The cudastream to allocate memory within.
 
 ///
 /// \brief Allocate a 1-dimensional array representing an unrolled 2D-array
