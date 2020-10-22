@@ -300,6 +300,7 @@ __device__ __forceinline__
             pred_count = incoming_edge_count[node_id];
             if (pred_count == 0)
             {
+                first_element_prev_score = gap_score;
                 set_score(scores, score_gIdx, -1, gap_score, band_start, band_width);
             }
             else
@@ -389,16 +390,27 @@ __device__ __forceinline__
                 }
             }
 
+            ScoreT s3_copy = score.s3;
+            score.s3       = score.s2;
+            score.s2       = score.s1;
+            score.s1       = score.s0;
+            score.s0       = __shfl_up_sync(FULL_MASK, s3_copy, 1);
+            if (lane_idx == 0)
+            {
+                score.s0 = first_element_prev_score;
+            }
+
+            ScoreT4<ScoreT>* scores4_ptr = reinterpret_cast<ScoreT4<ScoreT>*>(scores);
+            int64_t score_index          = static_cast<int64_t>((read_pos - band_start) / CELLS_PER_THREAD + static_cast<float>(score_gIdx) * static_cast<float>(band_width / CELLS_PER_THREAD + 2));
+            scores4_ptr[score_index]     = score;
+            if (lane_idx == (WARP_SIZE - 1))
+            {
+                scores4_ptr[score_index + 1] = ScoreT4<ScoreT>{s3_copy, min_score_value, min_score_value, min_score_value};
+            }
+
             // Copy over the last element score of the last lane into a register of first lane
             // which can be used to compute the first cell of the next warp.
-            first_element_prev_score = __shfl_sync(FULL_MASK, score.s3, WARP_SIZE - 1);
-
-            int64_t score_index = static_cast<int64_t>(read_pos + 1 - band_start) + static_cast<int64_t>(score_gIdx) * static_cast<int64_t>(band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING);
-
-            scores[score_index]      = score.s0;
-            scores[score_index + 1L] = score.s1;
-            scores[score_index + 2L] = score.s2;
-            scores[score_index + 3L] = score.s3;
+            first_element_prev_score = __shfl_sync(FULL_MASK, s3_copy, WARP_SIZE - 1);
 
             __syncwarp();
         }
