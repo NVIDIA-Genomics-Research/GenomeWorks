@@ -390,6 +390,7 @@ __device__ __forceinline__
                 }
             }
 
+            // shuffle registers to allow coalesced storing
             ScoreT s3_copy = score.s3;
             score.s3       = score.s2;
             score.s2       = score.s1;
@@ -400,6 +401,7 @@ __device__ __forceinline__
                 score.s0 = first_element_prev_score;
             }
 
+            // perform coalesced write
             ScoreT4<ScoreT>* scores4_ptr = reinterpret_cast<ScoreT4<ScoreT>*>(scores);
             int64_t score_index          = static_cast<int64_t>((read_pos - band_start) / CELLS_PER_THREAD + static_cast<float>(score_gIdx) * static_cast<float>(band_width / CELLS_PER_THREAD + 2));
             scores4_ptr[score_index]     = score;

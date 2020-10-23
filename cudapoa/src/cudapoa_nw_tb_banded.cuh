@@ -358,6 +358,7 @@ __device__ __forceinline__
         initialize_band_tb(scores, score_gIdx, score_matrix_height, min_score_value, band_start, band_width, lane_idx);
 
         int32_t first_element_prev_score = 0;
+        int32_t first_element_prev_trace = 0;
         uint16_t pred_count              = 0;
         int32_t pred_idx                 = 0;
 
@@ -368,11 +369,13 @@ __device__ __forceinline__
             pred_count = incoming_edge_count[node_id];
             if (pred_count == 0)
             {
+                first_element_prev_score = gap_score;
+                first_element_prev_trace = -score_gIdx;
                 // row is mapped to [0, score_matrix_height) span
                 int64_t index    = static_cast<int64_t>(score_gIdx % score_matrix_height) * static_cast<int64_t>(band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING);
-                scores[index]    = gap_score;
+                scores[index]    = first_element_prev_score;
                 index            = static_cast<int64_t>(score_gIdx) * static_cast<int64_t>(band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING);
-                traceback[index] = -score_gIdx;
+                traceback[index] = first_element_prev_trace;
             }
             else
             {
@@ -381,12 +384,12 @@ __device__ __forceinline__
                 // only predecessors that are less than score_matrix_height distant can be taken into account
                 if ((graph_pos - pred_idx) < score_matrix_height)
                 {
-                    // fill in first column of traceback buffer
-                    traceback[index] = -(score_gIdx - pred_idx);
-
+                    first_element_prev_trace = -(score_gIdx - pred_idx);
                     if (band_start > CELLS_PER_THREAD && pred_count == 1)
                     {
                         first_element_prev_score = min_score_value + gap_score;
+                        // fill in first column of traceback buffer
+                        traceback[index] = first_element_prev_trace;
                     }
                     else
                     {
@@ -405,13 +408,14 @@ __device__ __forceinline__
                                                                  gradient, max_column, min_score_value);
                                 if (penalty < score_tmp)
                                 {
-                                    penalty          = score_tmp;
-                                    traceback[index] = trace_tmp;
+                                    penalty                  = score_tmp;
+                                    first_element_prev_trace = trace_tmp;
                                 }
                             }
                         }
                         first_element_prev_score = penalty + gap_score;
                         set_score_tb(scores, score_gIdx, -1, score_matrix_height, first_element_prev_score, band_start, band_width);
+                        traceback[index] = first_element_prev_trace;
                     }
                 }
                 else
@@ -429,13 +433,14 @@ __device__ __forceinline__
                             int32_t score_tmp = get_score_tb(scores, pred_idx_tmp, -1, score_matrix_height, band_width, band_shift, gradient, max_column, min_score_value);
                             if (penalty < score_tmp)
                             {
-                                penalty          = score_tmp;
-                                traceback[index] = trace_tmp;
+                                penalty                  = score_tmp;
+                                first_element_prev_trace = trace_tmp;
                             }
                         }
                     }
                     first_element_prev_score = penalty + gap_score;
                     set_score_tb(scores, score_gIdx, -1, score_matrix_height, first_element_prev_score, band_start, band_width);
+                    traceback[index] = first_element_prev_trace;
                 }
             }
         }
@@ -515,22 +520,46 @@ __device__ __forceinline__
                 }
             }
 
-            // Copy over the last element score of the last lane into a register of first lane
+            // shuffle registers to allow coalesced storing
+            ScoreT s3_copy = score.s3;
+            score.s3       = score.s2;
+            score.s2       = score.s1;
+            score.s1       = score.s0;
+            score.s0       = __shfl_up_sync(FULL_MASK, s3_copy, 1);
+
+            TraceT t3_copy = trace.t3;
+            trace.t3       = trace.t2;
+            trace.t2       = trace.t1;
+            trace.t1       = trace.t0;
+            trace.t0       = __shfl_up_sync(FULL_MASK, t3_copy, 1);
+
+            if (lane_idx == 0)
+            {
+                score.s0 = first_element_prev_score;
+                trace.t0 = first_element_prev_trace;
+            }
+
+            // perform coalesced write
+            ScoreT4<ScoreT>* scores4_ptr = reinterpret_cast<ScoreT4<ScoreT>*>(scores);
+            int64_t index                = static_cast<int64_t>((read_pos - band_start) / CELLS_PER_THREAD + static_cast<float>(score_gIdx % score_matrix_height) * static_cast<float>(band_width / CELLS_PER_THREAD + 2));
+            scores4_ptr[index]           = score;
+            if (lane_idx == (WARP_SIZE - 1))
+            {
+                scores4_ptr[index + 1] = ScoreT4<ScoreT>{s3_copy, min_score_value, min_score_value, min_score_value};
+            }
+
+            TraceT4<TraceT>* traces4_ptr = reinterpret_cast<TraceT4<TraceT>*>(traceback);
+            index                        = static_cast<int64_t>((read_pos - band_start) / CELLS_PER_THREAD + static_cast<float>(score_gIdx) * static_cast<float>(band_width / CELLS_PER_THREAD + 2));
+            traces4_ptr[index]           = trace;
+            if (lane_idx == (WARP_SIZE - 1))
+            {
+                traces4_ptr[index + 1] = TraceT4<TraceT>{t3_copy, 0, 0, 0};
+            }
+
+            // Copy over the last element score and trace of the last lane into a register of first lane
             // which can be used to compute the first cell of the next warp.
-            first_element_prev_score = __shfl_sync(FULL_MASK, score.s3, WARP_SIZE - 1);
-
-            // row is mapped to [0, score_matrix_height) span
-            int64_t index      = static_cast<int64_t>(read_pos + 1 - band_start) + static_cast<int64_t>(score_gIdx % score_matrix_height) * static_cast<int64_t>(band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING);
-            scores[index]      = score.s0;
-            scores[index + 1L] = score.s1;
-            scores[index + 2L] = score.s2;
-            scores[index + 3L] = score.s3;
-
-            index                 = static_cast<int64_t>(read_pos + 1 - band_start) + static_cast<int64_t>(score_gIdx) * static_cast<int64_t>(band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING);
-            traceback[index]      = trace.t0;
-            traceback[index + 1L] = trace.t1;
-            traceback[index + 2L] = trace.t2;
-            traceback[index + 3L] = trace.t3;
+            first_element_prev_score = __shfl_sync(FULL_MASK, s3_copy, WARP_SIZE - 1);
+            first_element_prev_trace = __shfl_sync(FULL_MASK, t3_copy, WARP_SIZE - 1);
 
             __syncwarp();
         }
