@@ -369,7 +369,7 @@ __global__ void chain_anchors_in_tile(const Anchor* anchors,
                                       int32_t* predecessors,
                                       bool* anchor_select_mask,
                                       const int32_t* tiles_per_query,
-                                      const int32_t* tile_starts,
+                                      const int32_t* query_starts,
                                       const int32_t tile_size,
                                       const int32_t batch_id,
                                       const int32_t batch_size,
@@ -384,19 +384,22 @@ __global__ void chain_anchors_in_tile(const Anchor* anchors,
     int32_t thread_id_in_block = threadIdx.x; // Equivalent to "j." Represents the end of a sliding window.
 
     int32_t batch_block_id = batch_id * (batch_size) + block_id;
-
+    // printf("%d %d %d\n", batch_block_id, block_id, batch_size);
     if (batch_block_id < num_queries)
     {
+        // printf("%d %d %d\n", batch_block_id, block_id, batch_size);
 
         for (int tile_id = 0; tile_id < tiles_per_query[batch_block_id]; ++tile_id)
         {
-            int32_t tile_start = tile_starts[batch_block_id] + tile_id * tile_size;
+            int32_t tile_start = query_starts[batch_block_id] + tile_id * tile_size; /// tile_starts is length num_tiles
             // All threads in the block will get the same tile_start number
 
             // write is the leftmost index? global_read_index is offset by my thread_id
             // initialize as the 0th anchor in the tile and the "me" anchor
             int32_t global_write_index = tile_start;
             int32_t global_read_index  = tile_start + thread_id_in_block;
+            // printf("%d %d %d %d %d\n", block_id, thread_id_in_block, global_write_index, global_read_index, tile_start);
+
             // printf("%d %d %d %d\n", block_id, global_write_index, global_read_index, tile_start);
             if (global_write_index < num_anchors)
             {
@@ -550,7 +553,7 @@ __global__ void chain_anchors_in_block(const Anchor* anchors,
     int32_t thread_id_in_block = threadIdx.x; // Equivalent to "j." Represents the end of a sliding window.
 
     // figure out which tile I am currently working on
-    int32_t batch_block_id = batch_id * BLOCK_COUNT + block_id;
+    int32_t batch_block_id = batch_id * batch_size + block_id;
     if (batch_block_id < num_query_tiles)
     {
 
@@ -561,7 +564,6 @@ __global__ void chain_anchors_in_block(const Anchor* anchors,
         // initialize as the 0th anchor in the tile and the "me" anchor
         int32_t global_write_index = tile_start;
         int32_t global_read_index  = tile_start + thread_id_in_block;
-        // printf("%d %d %d %d\n", block_id, global_write_index, global_read_index, tile_start);
         if (global_write_index < num_anchors)
         {
             __shared__ Anchor block_anchor_cache[PREDECESSOR_SEARCH_ITERATIONS];
@@ -659,12 +661,13 @@ __global__ void chain_anchors_in_block(const Anchor* anchors,
             }
             __syncthreads();
             // TODO not sure if this is correct
-            //if (global_write_index + counter + thread_id_in_block < num_anchors)
-            //{
-            //    scores[global_write_index + counter + thread_id_in_block]             = current_score;
-            //    predecessors[global_write_index + counter + thread_id_in_block]       = current_pred;
-            //    anchor_select_mask[global_write_index + counter + thread_id_in_block] = current_mask;
-            //}
+            if (global_write_index + counter + thread_id_in_block < num_anchors)
+            {
+                scores[global_write_index + counter + thread_id_in_block]             = current_score;
+                predecessors[global_write_index + counter + thread_id_in_block]       = current_pred;
+                anchor_select_mask[global_write_index + counter + thread_id_in_block] = current_mask;
+            }
+            // printf("%d %d %d %d | %f | %d", );
         }
     }
 }
@@ -946,6 +949,7 @@ void OverlapperMinimap::get_overlaps(std::vector<Overlap>& fused_overlaps,
 
     for (std::size_t batch = 0; batch < static_cast<size_t>(num_batches); ++batch)
     {
+        std::cerr << "Processing batch " << batch << " of " << num_batches << ". Total queries: " << n_queries << "." << std::endl;
         // Launch one 1792 blocks (from paper), with 64 threads
         // each batch is of size BLOCK_COUNT
         chain_anchors_in_tile<<<BLOCK_COUNT, PREDECESSOR_SEARCH_ITERATIONS, 0, _cuda_stream>>>(d_anchors.data(),
@@ -953,7 +957,7 @@ void OverlapperMinimap::get_overlaps(std::vector<Overlap>& fused_overlaps,
                                                                                                d_anchor_predecessors.data(),
                                                                                                d_overlaps_select_mask.data(),
                                                                                                d_tiles_per_query_id.data(),
-                                                                                               d_tile_starts.data(),
+                                                                                               query_id_starts.data(),
                                                                                                TILE_SIZE,
                                                                                                batch,
                                                                                                BLOCK_COUNT,
@@ -985,7 +989,7 @@ void OverlapperMinimap::get_overlaps(std::vector<Overlap>& fused_overlaps,
     }
 #endif
 
-#if 0
+#if 1
     // the deschedule block. Get outputs from here
     chainerutils::backtrace_anchors_to_overlaps<<<(n_anchors / block_size) + 1, block_size, 0, _cuda_stream>>>(d_anchors.data(),
                                                                                                                d_overlaps_source.data(),
@@ -1005,16 +1009,16 @@ void OverlapperMinimap::get_overlaps(std::vector<Overlap>& fused_overlaps,
 #endif
 
     // TODO VI: I think we can get better device occupancy here with some kernel refactoring
-    // mask_overlaps<<<(n_anchors / block_size) + 1, block_size, 0, _cuda_stream>>>(d_overlaps_source.data(),
-    //                                                                              n_anchors,
-    //                                                                              d_overlaps_select_mask.data(),
-    //                                                                              0,
-    //                                                                              0,
-    //                                                                              100000,
-    //                                                                              all_to_all,
-    //                                                                              false,
-    //                                                                              0.8,
-    //                                                                              0);
+    mask_overlaps<<<(n_anchors / block_size) + 1, block_size, 0, _cuda_stream>>>(d_overlaps_source.data(),
+                                                                                 n_anchors,
+                                                                                 d_overlaps_select_mask.data(),
+                                                                                 min_overlap_len,
+                                                                                 min_residues,
+                                                                                 min_bases_per_residue,
+                                                                                 all_to_all,
+                                                                                 false,
+                                                                                 0.8,
+                                                                                 0);
 
     device_buffer<int32_t> d_n_filtered_overlaps(1, _allocator, _cuda_stream);
     drop_overlaps_by_mask(d_overlaps_source,
