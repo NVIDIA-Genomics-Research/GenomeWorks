@@ -176,7 +176,7 @@ __global__ void mask_overlaps(Overlap* overlaps,
         for (int j = d_tid + 1; j < d_tid + max_reciprocal_iterations && j < n_overlaps; ++j)
         {
             Overlap left_neighbor_overlap = overlaps[j];
-            local_select_val              = local_select_val && percent_reciprocal_overlap(local_current_overlap, left_neighbor_overlap) < max_percent_reciprocal;
+            local_select_val              = local_select_val && percent_reciprocal_overlap(local_current_overlap, left_neighbor_overlap) <= max_percent_reciprocal;
         }
         select_mask[i] = local_select_val;
     }
@@ -912,24 +912,14 @@ void OverlapperMinimap::get_overlaps(std::vector<Overlap>& fused_overlaps,
     }
 #endif
 
-    // #if 1
     // the deschedule block. Get outputs from here
-    chainerutils::backtrace_anchors_to_overlaps<<<(n_anchors / BLOCK_SIZE) + 1, BLOCK_SIZE, 0, _cuda_stream>>>(d_anchors.data(),
-                                                                                                               d_overlaps_source.data(),
-                                                                                                               d_anchor_scores.data(),
-                                                                                                               d_overlaps_select_mask.data(),
-                                                                                                               d_anchor_predecessors.data(),
-                                                                                                               n_anchors,
-                                                                                                               40);
-    // #else
-    //     chainerutils::backtrace_anchors_to_overlaps_debug<<<1, 1, 0, _cuda_stream>>>(d_anchors.data(),
-    //                                                                                  d_overlaps_source.data(),
-    //                                                                                  d_anchor_scores.data(),
-    //                                                                                  d_overlaps_select_mask.data(),
-    //                                                                                  d_anchor_predecessors.data(),
-    //                                                                                  n_anchors,
-    //                                                                                  40);
-    // #endif
+    chainerutils::backtrace_anchors_to_overlaps<<<BLOCK_COUNT, BLOCK_SIZE, 0, _cuda_stream>>>(d_anchors.data(),
+                                                                                              d_overlaps_source.data(),
+                                                                                              d_anchor_scores.data(),
+                                                                                              d_overlaps_select_mask.data(),
+                                                                                              d_anchor_predecessors.data(),
+                                                                                              n_anchors,
+                                                                                              40);
 
     // TODO VI: I think we can get better device occupancy here with some kernel refactoring
     mask_overlaps<<<BLOCK_COUNT, BLOCK_SIZE, 0, _cuda_stream>>>(d_overlaps_source.data(),
@@ -939,8 +929,8 @@ void OverlapperMinimap::get_overlaps(std::vector<Overlap>& fused_overlaps,
                                                                 min_bases_per_residue,
                                                                 all_to_all,
                                                                 false,
-                                                                0.8,
-                                                                0,
+                                                                0.9,
+                                                                50,
                                                                 n_anchors);
     device_buffer<int32_t> d_n_filtered_overlaps(1, _allocator, _cuda_stream);
     drop_overlaps_by_mask(d_overlaps_source,
