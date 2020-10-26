@@ -87,6 +87,9 @@ cuda_add_executable(${MODULE_NAME}-bin
 target_compile_options(${MODULE_NAME}-bin PRIVATE -Werror)
 target_link_libraries(${MODULE_NAME}-bin ${MODULE_NAME} cudaaligner)
 set_target_properties(${MODULE_NAME}-bin PROPERTIES OUTPUT_NAME ${MODULE_NAME})
+if (TARGET htslib_project)
+    target_compile_definitions(${MODULE_NAME}-bin PUBLIC GW_BUILD_HTSLIB)
+endif()
 
 
 # Add tests folder

@@ -94,8 +94,8 @@
 #ifdef GW_CUDA_BEFORE_9_2
 // Due to a header file incompatibility with nvcc in CUDA 9.0
 // logging through the logger class in GW is disabled for any .cu files.
-#elif __GNUC__ >= 9
 #pragma message("Logging disabled for CUDA Toolkit < 9.2")
+#elif __GNUC__ >= 9
 // Due to a ISO C++ standard incompatibility the spdlog fails to pass
 // pedantic requirements.
 #pragma message("Logging disabled for GCC >= 9")
