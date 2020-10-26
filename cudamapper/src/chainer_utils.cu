@@ -123,8 +123,8 @@ __global__ void backtrace_anchors_to_overlaps(const Anchor* anchors,
     int32_t stride          = blockDim.x * gridDim.x;
     for (int i = d_tid; i < n_anchors; i += stride)
     {
-        int32_t global_overlap_index = d_tid;
-        if (scores[d_tid] >= min_score)
+        int32_t global_overlap_index = i;
+        if (scores[i] >= min_score)
         {
 
             int32_t index                = global_overlap_index;
