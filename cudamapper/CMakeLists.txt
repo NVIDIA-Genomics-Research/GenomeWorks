@@ -70,7 +70,7 @@ target_include_directories(${MODULE_NAME}
 
 # optionally link against htslib
 if (TARGET htslib_project)
-    add_compile_definitions(GW_BUILD_HTSLIB)
+    target_compile_definitions(${MODULE_NAME} PUBLIC GW_BUILD_HTSLIB)
     add_dependencies(${MODULE_NAME} htslib_project)
     target_link_libraries(${MODULE_NAME} htslib gwbase gwio cub)
 else()
