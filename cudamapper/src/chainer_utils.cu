@@ -68,7 +68,7 @@ __host__ __device__ Overlap create_simple_overlap(const Anchor& start, const Anc
 void allocate_anchor_chains(device_buffer<Overlap>& overlaps,
                             device_buffer<int32_t>& unrolled_anchor_chains,
                             device_buffer<int32_t>& anchor_chain_starts,
-                            int32_t num_overlaps,
+                            const int32_t num_overlaps,
                             int32_t& num_total_anchors,
                             DefaultDeviceAllocator& _allocator,
                             cudaStream_t& _cuda_stream)
@@ -125,16 +125,16 @@ void allocate_anchor_chains(device_buffer<Overlap>& overlaps,
                                   _cuda_stream);
 }
 
-__global__ void output_overlap_chains_by_RLE(const Overlap* overlaps,
-                                             const Anchor* anchors,
+__global__ void output_overlap_chains_by_RLE(const Overlap* const overlaps,
+                                             const Anchor* const anchors,
                                              const int32_t* const chain_starts,
-                                             const int32_t* chain_lengths,
-                                             int32_t* anchor_chains,
-                                             int32_t* anchor_chain_starts,
-                                             int32_t num_overlaps)
+                                             const int32_t* const chain_lengths,
+                                             int32_t* const anchor_chains,
+                                             int32_t* const anchor_chain_starts,
+                                             const int32_t num_overlaps)
 {
-    int32_t d_thread_id = blockIdx.x * blockDim.x + threadIdx.x;
-    int32_t stride      = blockDim.x * gridDim.x;
+    const int32_t d_thread_id = blockIdx.x * blockDim.x + threadIdx.x;
+    const int32_t stride      = blockDim.x * gridDim.x;
     for (int i = d_thread_id; i < num_overlaps; i += stride)
     {
         int32_t chain_start  = chain_starts[i];
@@ -146,17 +146,17 @@ __global__ void output_overlap_chains_by_RLE(const Overlap* overlaps,
     }
 }
 
-__global__ void output_overlap_chains_by_backtrace(const Overlap* overlaps,
-                                                   const Anchor* anchors,
-                                                   const bool* select_mask,
-                                                   const int32_t* predecessors,
-                                                   int32_t* anchor_chains,
-                                                   int32_t* anchor_chain_starts,
-                                                   int32_t num_overlaps,
-                                                   bool check_mask)
+__global__ void output_overlap_chains_by_backtrace(const Overlap* const overlaps,
+                                                   const Anchor* const anchors,
+                                                   const bool* const select_mask,
+                                                   const int32_t* const predecessors,
+                                                   int32_t* const anchor_chains,
+                                                   int32_t* const anchor_chain_starts,
+                                                   const int32_t num_overlaps,
+                                                   const bool check_mask)
 {
-    int32_t d_thread_id = blockIdx.x * blockDim.x + threadIdx.x;
-    int32_t stride      = blockDim.x * gridDim.x;
+    const int32_t d_thread_id = blockIdx.x * blockDim.x + threadIdx.x;
+    const int32_t stride      = blockDim.x * gridDim.x;
 
     // Processes one overlap per iteration,
     // "i" corresponds to an overlap
@@ -181,11 +181,11 @@ __global__ void output_overlap_chains_by_backtrace(const Overlap* overlaps,
     }
 }
 
-__global__ void backtrace_anchors_to_overlaps(const Anchor* anchors,
+__global__ void backtrace_anchors_to_overlaps(const Anchor* const anchors,
                                               Overlap* overlaps,
-                                              double* scores,
-                                              bool* max_select_mask,
-                                              int32_t* predecessors,
+                                              double* const scores,
+                                              bool* const max_select_mask,
+                                              int32_t* const predecessors,
                                               const int32_t n_anchors,
                                               const int32_t min_score)
 {

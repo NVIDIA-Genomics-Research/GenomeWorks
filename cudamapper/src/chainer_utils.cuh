@@ -51,11 +51,11 @@ __host__ __device__ Overlap create_simple_overlap(const Anchor& start,
 /// \param predecessors An array of indices into the anchors array marking the predecessor of each anchor within a chain.
 /// \param n_anchors The number of anchors.
 /// \param min_score The minimum score of a chain for performing backtracing.
-__global__ void backtrace_anchors_to_overlaps(const Anchor* anchors,
-                                              Overlap* overlaps,
-                                              double* scores,
-                                              bool* max_select_mask,
-                                              int32_t* predecessors,
+__global__ void backtrace_anchors_to_overlaps(const Anchor* const anchors,
+                                              Overlap* const overlaps,
+                                              double* const scores,
+                                              bool* const max_select_mask,
+                                              int32_t* const predecessors,
                                               const int32_t n_anchors,
                                               const int32_t min_score);
 
@@ -74,7 +74,7 @@ __global__ void backtrace_anchors_to_overlaps(const Anchor* anchors,
 void allocate_anchor_chains(device_buffer<Overlap>& overlaps,
                             device_buffer<int32_t>& unrolled_anchor_chains,
                             device_buffer<int32_t>& anchor_chain_starts,
-                            int32_t num_overlaps,
+                            const int32_t num_overlaps,
                             int32_t& num_total_anchors,
                             DefaultDeviceAllocator& _allocator,
                             cudaStream_t& _cuda_stream);
@@ -90,14 +90,14 @@ void allocate_anchor_chains(device_buffer<Overlap>& overlaps,
 /// \param anchor_chain_starts An array which holds the indices of the first anchor for each overlap in the overlaps array.
 /// \param num_overlaps The number of overlaps in the overlaps array
 /// \param check_mask A boolean. If true, only overlaps where select_mask is true will have their anchor chains calculated.
-__global__ void output_overlap_chains_by_backtrace(const Overlap* overlaps,
-                                                   const Anchor* anchors,
-                                                   const bool* select_mask,
-                                                   const int32_t* predecessors,
-                                                   int32_t* anchor_chains,
-                                                   int32_t* anchor_chain_starts,
-                                                   int32_t num_overlaps,
-                                                   bool check_mask);
+__global__ void output_overlap_chains_by_backtrace(const Overlap* const overlaps,
+                                                   const Anchor* const anchors,
+                                                   const bool* const select_mask,
+                                                   const int32_t* const predecessors,
+                                                   int32_t* const anchor_chains,
+                                                   int32_t* const anchor_chain_starts,
+                                                   const int32_t num_overlaps,
+                                                   const bool check_mask);
 
 /// \brief Calculate the anchors chains used to produce each overlap in the
 /// overlap array for anchors chained by RLE.
@@ -109,13 +109,13 @@ __global__ void output_overlap_chains_by_backtrace(const Overlap* overlaps,
 /// \param anchor_chains An array (allocated by allocate_anchor_chains) which will hold the indices of anchors within each chain.
 /// \param anchor_chain_starts An array which holds the indices of the first anchor for each overlap in the overlaps array.
 /// \param num_overlaps The number of overlaps in the overlaps array.
-__global__ void output_overlap_chains_by_RLE(const Overlap* overlaps,
-                                             const Anchor* anchors,
-                                             const int32_t* chain_starts,
-                                             const int32_t* chain_lengths,
-                                             int32_t* anchor_chains,
-                                             int32_t* anchor_chain_starts,
-                                             int32_t num_overlaps);
+__global__ void output_overlap_chains_by_RLE(const Overlap* const overlaps,
+                                             const Anchor* const anchors,
+                                             const int32_t* const chain_starts,
+                                             const int32_t* const chain_lengths,
+                                             int32_t* const anchor_chains,
+                                             int32_t* const anchor_chain_starts,
+                                             const int32_t num_overlaps);
 
 } // namespace chainerutils
 } // namespace cudamapper
