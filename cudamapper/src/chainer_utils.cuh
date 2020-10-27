@@ -38,8 +38,6 @@ namespace cudamapper
 namespace chainerutils
 {
 
-#define MAX_CHAINS_PER_TILE 5
-
 struct QueryTargetPair
 {
     int32_t query_read_id_;
@@ -88,48 +86,13 @@ struct AnchorToQueryTargetPairOp
     }
 };
 
-struct ChainResult
-{
-    Anchor start;
-    Anchor end;
-    int32_t tile_id;
-    int32_t total_score;
-    int32_t num_anchors;
-};
-
-struct TileResults
-{
-    ChainResult results[MAX_CHAINS_PER_TILE];
-    int num_results = 0;
-    bool add_result(const ChainResult& r)
-    {
-        if (num_results < MAX_CHAINS_PER_TILE)
-        {
-            results[num_results] = r;
-            ++num_results;
-            return true;
-        }
-        else
-        {
-            for (int i = 0; i < num_results; ++i)
-            {
-                if (r.total_score > results[i].total_score)
-                {
-                    results[i] = r;
-                }
-            }
-        }
-        return false;
-    }
-};
-
 __device__ __forceinline__ Anchor empty_anchor()
 {
     Anchor empty;
-    empty.query_read_id_ = UINT32_MAX;
+    empty.query_read_id_           = UINT32_MAX;
     empty.target_read_id_          = UINT32_MAX;
     empty.query_position_in_read_  = UINT32_MAX;
-    empty.target_position_in_read_  = UINT32_MAX;
+    empty.target_position_in_read_ = UINT32_MAX;
     return empty;
 }
 
@@ -145,12 +108,12 @@ __global__ void backtrace_anchors_to_overlaps(const Anchor* anchors,
                                               const int32_t min_score);
 
 __global__ void backtrace_anchors_to_overlaps_debug(const Anchor* anchors,
-                                              Overlap* overlaps,
-                                              double* scores,
-                                              bool* max_select_mask,
-                                              int32_t* predecessors,
-                                              const int32_t n_anchors,
-                                              const int32_t min_score);
+                                                    Overlap* overlaps,
+                                                    double* scores,
+                                                    bool* max_select_mask,
+                                                    int32_t* predecessors,
+                                                    const int32_t n_anchors,
+                                                    const int32_t min_score);
 
 void backtrace_anchors_to_overlaps_cpu(const Anchor* anchors,
                                        Overlap* overlaps,
@@ -169,19 +132,25 @@ __global__ void calculate_tile_starts(const std::int32_t* query_starts,
                                       int32_t num_queries,
                                       const std::int32_t* tiles_per_query_up_to_point);
 
-void encode_anchor_query_locations(const Anchor* anchors,
-                                   int32_t n_anchors,
-                                   int32_t tile_size,
-                                   device_buffer<int32_t>& query_starts,
-                                   device_buffer<int32_t>& query_lengths,
-                                   device_buffer<int32_t>& query_ends,
-                                   device_buffer<int32_t>& tiles_per_query,
-                                   device_buffer<int32_t>& tile_starts,
-                                   int32_t& n_queries,
-                                   int32_t& n_query_tiles,
-                                   DefaultDeviceAllocator& _allocator,
-                                   cudaStream_t& _cuda_stream,
-                                   int32_t block_size);
+void encode_query_locations_from_anchors(const Anchor* anchors,
+                                         int32_t n_anchors,
+                                         device_buffer<int32_t>& query_starts,
+                                         device_buffer<int32_t>& query_lengths,
+                                         device_buffer<int32_t>& query_ends,
+                                         int32_t& n_queries,
+                                         DefaultDeviceAllocator& _allocator,
+                                         cudaStream_t& _cuda_stream);
+
+// void encode_tile_starts_and_ends(device_buffer<int32_t>& starts,
+//                                  device_buffer<int32_t>& lengths,
+//                                  device_buffer<int32_t>& ends,
+//                                  device_buffer<int32_t>& tiles_per_entry,
+//                                  device_buffer<int32_t>& tile_starts,
+//                                  device_buffer<int32_t>& tile_ends,
+//                                  int32_t num_entries,
+//                                  int32_t num_tiles,
+//                                  DefaultDeviceAllocator& _allocator,
+//                                  cudaStream_t& _cuda_stream);
 
 void encode_anchor_query_target_pairs(const Anchor* anchors,
                                       int32_t n_anchors,
@@ -205,6 +174,12 @@ void encode_overlap_query_target_pairs(Overlap* overlaps,
                                        DefaultDeviceAllocator& _allocator,
                                        cudaStream_t& _cuda_stream,
                                        int32_t block_size);
+
+__global__ void initialize_mask(bool* anchors_mask, const int32_t n_anchors, bool val);
+
+__global__ void initialize_array(int32_t* array, const int32_t num_values, int32_t value);
+__global__ void initialize_array(double* array, const int32_t num_values, double value);
+
 } // namespace chainerutils
 } // namespace cudamapper
 } // namespace genomeworks
