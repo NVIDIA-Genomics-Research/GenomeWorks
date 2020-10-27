@@ -72,12 +72,12 @@ __global__ void backtrace_anchors_to_overlaps(const Anchor* const anchors,
 /// \param num_total_anchors The number of anchors in the anchors array.
 /// \param allocator The DefaultDeviceAllocator for this overlapper.
 /// \param cuda_stream The cudastream to allocate memory within.
-void allocate_anchor_chains(device_buffer<Overlap>& overlaps,
+void allocate_anchor_chains(const device_buffer<Overlap>& overlaps,
                             device_buffer<int32_t>& unrolled_anchor_chains,
                             device_buffer<int32_t>& anchor_chain_starts,
                             int32_t& num_total_anchors,
                             DefaultDeviceAllocator allocator,
-                            cudaStream_t cuda_stream);
+                            cudaStream_t cuda_stream = 0);
 
 /// \brief Calculate the anchors chains used to produce each overlap in the
 /// overlap array for anchors chained by backtrace_anchors_to_overlaps.
@@ -115,7 +115,7 @@ __global__ void output_overlap_chains_by_RLE(const Overlap* const overlaps,
                                              const int32_t* const chain_lengths,
                                              int32_t* const anchor_chains,
                                              int32_t* const anchor_chain_starts,
-                                             const int32_t num_overlaps);
+                                             const uint32_t num_overlaps);
 
 } // namespace chainerutils
 } // namespace cudamapper
