@@ -30,6 +30,14 @@ namespace cudamapper
 namespace chainerutils
 {
 
+struct OverlapToNumResiduesOp
+{
+    __device__ __forceinline__ int32_t operator()(const Overlap& overlap) const
+    {
+        return overlap.num_residues_;
+    }
+};
+
 __host__ __device__ Overlap create_simple_overlap(const Anchor& start, const Anchor& end, const int32_t num_anchors)
 {
     Overlap overlap;

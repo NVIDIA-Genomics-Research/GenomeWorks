@@ -111,9 +111,6 @@ TEST(TestChainerUtils, Anchor_Chain_Extraction_Tests)
     cudautils::device_copy_n(anchors.data(), anchors.size(), d_anchors.data());
     cudautils::device_copy_n(overlaps.data(), overlaps.size(), d_overlaps.data());
 
-    // device_buffer<int32_t> unrolled_anchor_chains(1, allocator, cuda_stream.get());
-    // device_buffer<int32_t> chain_starts(1, allocator, cuda_stream.get());
-
     device_buffer<int32_t> unrolled_anchor_chains;
     device_buffer<int32_t> chain_starts;
 
@@ -125,13 +122,6 @@ TEST(TestChainerUtils, Anchor_Chain_Extraction_Tests)
                                          num_total_anchors,
                                          allocator,
                                          cu_ptr);
-    // void allocate_anchor_chains(device_buffer<Overlap> overlaps,
-    // device_buffer<int32_t>& unrolled_anchor_chains,
-    // device_buffer<int32_t>& anchor_chain_starts,
-    // const int32_t num_overlaps,
-    // int32_t& num_total_anchors,
-    // DefaultDeviceAllocator& _allocator,
-    // cudaStream_t& _cuda_stream);
 }
 
 } // namespace cudamapper
