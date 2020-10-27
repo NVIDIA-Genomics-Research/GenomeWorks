@@ -127,7 +127,7 @@ void allocate_anchor_chains(device_buffer<Overlap>& overlaps,
 
 __global__ void output_overlap_chains_by_RLE(const Overlap* overlaps,
                                              const Anchor* anchors,
-                                             const int32_t* chain_starts,
+                                             const int32_t* const chain_starts,
                                              const int32_t* chain_lengths,
                                              int32_t* anchor_chains,
                                              int32_t* anchor_chain_starts,

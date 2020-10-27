@@ -21,6 +21,7 @@
 #include <claraparabricks/genomeworks/utils/genomeutils.hpp>
 
 #include <cuda_runtime_api.h>
+#include <getopt.h>
 #include <vector>
 #include <string>
 #include <stdexcept>
