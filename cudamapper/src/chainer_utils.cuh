@@ -75,7 +75,6 @@ __global__ void backtrace_anchors_to_overlaps(const Anchor* const anchors,
 void allocate_anchor_chains(device_buffer<Overlap>& overlaps,
                             device_buffer<int32_t>& unrolled_anchor_chains,
                             device_buffer<int32_t>& anchor_chain_starts,
-                            const int32_t num_overlaps,
                             int32_t& num_total_anchors,
                             DefaultDeviceAllocator allocator,
                             cudaStream_t cuda_stream);

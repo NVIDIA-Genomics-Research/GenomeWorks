@@ -65,122 +65,6 @@ __host__ __device__ Overlap create_simple_overlap(const Anchor& start, const Anc
     return overlap;
 }
 
-void allocate_anchor_chains(device_buffer<Overlap>& overlaps,
-                            device_buffer<int32_t>& unrolled_anchor_chains,
-                            device_buffer<int32_t>& anchor_chain_starts,
-                            const int32_t num_overlaps,
-                            int32_t& num_total_anchors,
-                            DefaultDeviceAllocator allocator,
-                            cudaStream_t cuda_stream)
-{
-    // sum the number of chains across all overlaps
-    device_buffer<char> d_temp_buf(allocator, cuda_stream);
-    void* d_temp_storage           = nullptr;
-    std::size_t temp_storage_bytes = 0;
-    OverlapToNumResiduesOp overlap_residue_count_op;
-    cub::TransformInputIterator<int32_t, OverlapToNumResiduesOp, Overlap*> d_residue_counts(overlaps.data(), overlap_residue_count_op);
-
-    device_buffer<int32_t> d_num_total_anchors(1, allocator, cuda_stream);
-
-    cub::DeviceReduce::Sum(d_temp_storage,
-                           temp_storage_bytes,
-                           d_residue_counts,
-                           d_num_total_anchors.data(),
-                           num_overlaps,
-                           cuda_stream);
-
-    d_temp_buf.clear_and_resize(temp_storage_bytes);
-    d_temp_storage = d_temp_buf.data();
-
-    cub::DeviceReduce::Sum(d_temp_storage,
-                           temp_storage_bytes,
-                           d_residue_counts,
-                           d_num_total_anchors.data(),
-                           num_overlaps,
-                           cuda_stream);
-
-    d_temp_storage     = nullptr;
-    temp_storage_bytes = 0;
-
-    num_total_anchors = cudautils::get_value_from_device(d_num_total_anchors.data(), cuda_stream);
-
-    unrolled_anchor_chains.clear_and_resize(num_total_anchors);
-    anchor_chain_starts.clear_and_resize(num_overlaps);
-
-    cub::DeviceScan::ExclusiveSum(d_temp_storage,
-                                  temp_storage_bytes,
-                                  d_residue_counts,
-                                  anchor_chain_starts.data(),
-                                  num_overlaps,
-                                  cuda_stream);
-
-    d_temp_buf.clear_and_resize(temp_storage_bytes);
-    d_temp_storage = d_temp_buf.data();
-
-    cub::DeviceScan::ExclusiveSum(d_temp_storage,
-                                  temp_storage_bytes,
-                                  d_residue_counts,
-                                  anchor_chain_starts.data(),
-                                  num_overlaps,
-                                  cuda_stream);
-}
-
-__global__ void output_overlap_chains_by_RLE(const Overlap* const overlaps,
-                                             const Anchor* const anchors,
-                                             const int32_t* const chain_starts,
-                                             const int32_t* const chain_lengths,
-                                             int32_t* const anchor_chains,
-                                             int32_t* const anchor_chain_starts,
-                                             const int32_t num_overlaps)
-{
-    const int32_t d_thread_id = blockIdx.x * blockDim.x + threadIdx.x;
-    const int32_t stride      = blockDim.x * gridDim.x;
-    for (int i = d_thread_id; i < num_overlaps; i += stride)
-    {
-        int32_t chain_start  = chain_starts[i];
-        int32_t chain_length = chain_lengths[i];
-        for (int32_t ind = chain_start; ind < chain_start + chain_length; ++i)
-        {
-            anchor_chains[ind] = ind;
-        }
-    }
-}
-
-__global__ void output_overlap_chains_by_backtrace(const Overlap* const overlaps,
-                                                   const Anchor* const anchors,
-                                                   const bool* const select_mask,
-                                                   const int32_t* const predecessors,
-                                                   int32_t* const anchor_chains,
-                                                   int32_t* const anchor_chain_starts,
-                                                   const int32_t num_overlaps,
-                                                   const bool check_mask)
-{
-    const int32_t d_thread_id = blockIdx.x * blockDim.x + threadIdx.x;
-    const int32_t stride      = blockDim.x * gridDim.x;
-
-    // Processes one overlap per iteration,
-    // "i" corresponds to an overlap
-    for (int i = d_thread_id; i < num_overlaps; i += stride)
-    {
-        // index within this chain of anchors (i.e., the anchors within a single overlap)
-
-        if (!check_mask || (check_mask & select_mask[i]))
-        {
-            int32_t anchor_chain_index = 0;
-            // As chaining proceeds backwards (i.e., it's a backtrace),
-            // we need to fill the new anchor chain array in in reverse order.
-            int32_t index = anchor_chain_starts[i];
-            while (index != -1)
-            {
-                anchor_chains[anchor_chain_starts[i] + (overlaps[i].num_residues_ - anchor_chain_index)] = index;
-                int32_t pred                                                                             = predecessors[index];
-                index                                                                                    = pred;
-                ++anchor_chain_index;
-            }
-        }
-    }
-}
-
 __global__ void backtrace_anchors_to_overlaps(const Anchor* const anchors,
                                               Overlap* overlaps,
                                               double* const scores,
@@ -219,6 +103,121 @@ __global__ void backtrace_anchors_to_overlaps(const Anchor* const anchors,
         else
         {
             max_select_mask[global_overlap_index] = false;
+        }
+    }
+}
+
+void allocate_anchor_chains(device_buffer<Overlap>& overlaps,
+                            device_buffer<int32_t>& unrolled_anchor_chains,
+                            device_buffer<int32_t>& anchor_chain_starts,
+                            int32_t& num_total_anchors,
+                            DefaultDeviceAllocator allocator,
+                            cudaStream_t cuda_stream)
+{
+    // sum the number of chains across all overlaps
+    device_buffer<char> d_temp_buf(allocator, cuda_stream);
+    void* d_temp_storage           = nullptr;
+    std::size_t temp_storage_bytes = 0;
+    OverlapToNumResiduesOp overlap_residue_count_op;
+    cub::TransformInputIterator<int32_t, OverlapToNumResiduesOp, Overlap*> d_residue_counts(overlaps.data(), overlap_residue_count_op);
+
+    device_buffer<int32_t> d_num_total_anchors(1, allocator, cuda_stream);
+
+    cub::DeviceReduce::Sum(d_temp_storage,
+                           temp_storage_bytes,
+                           d_residue_counts,
+                           d_num_total_anchors.data(),
+                           overlaps.size(),
+                           cuda_stream);
+
+    d_temp_buf.clear_and_resize(temp_storage_bytes);
+    d_temp_storage = d_temp_buf.data();
+
+    cub::DeviceReduce::Sum(d_temp_storage,
+                           temp_storage_bytes,
+                           d_residue_counts,
+                           d_num_total_anchors.data(),
+                           overlaps.size(),
+                           cuda_stream);
+
+    d_temp_storage     = nullptr;
+    temp_storage_bytes = 0;
+
+    num_total_anchors = cudautils::get_value_from_device(d_num_total_anchors.data(), cuda_stream);
+
+    unrolled_anchor_chains.clear_and_resize(num_total_anchors);
+    anchor_chain_starts.clear_and_resize(overlaps.size());
+
+    cub::DeviceScan::ExclusiveSum(d_temp_storage,
+                                  temp_storage_bytes,
+                                  d_residue_counts,
+                                  anchor_chain_starts.data(),
+                                  overlaps.size(),
+                                  cuda_stream);
+
+    d_temp_buf.clear_and_resize(temp_storage_bytes);
+    d_temp_storage = d_temp_buf.data();
+
+    cub::DeviceScan::ExclusiveSum(d_temp_storage,
+                                  temp_storage_bytes,
+                                  d_residue_counts,
+                                  anchor_chain_starts.data(),
+                                  overlaps.size(),
+                                  cuda_stream);
+}
+
+__global__ void output_overlap_chains_by_backtrace(const Overlap* const overlaps,
+                                                   const Anchor* const anchors,
+                                                   const bool* const select_mask,
+                                                   const int32_t* const predecessors,
+                                                   int32_t* const anchor_chains,
+                                                   int32_t* const anchor_chain_starts,
+                                                   const int32_t num_overlaps,
+                                                   const bool check_mask)
+{
+    const int32_t d_thread_id = blockIdx.x * blockDim.x + threadIdx.x;
+    const int32_t stride      = blockDim.x * gridDim.x;
+
+    // Processes one overlap per iteration,
+    // "i" corresponds to an overlap
+    for (int i = d_thread_id; i < num_overlaps; i += stride)
+    {
+        // index within this chain of anchors (i.e., the anchors within a single overlap)
+
+        if (!check_mask || (check_mask & select_mask[i]))
+        {
+            int32_t anchor_chain_index = 0;
+            // As chaining proceeds backwards (i.e., it's a backtrace),
+            // we need to fill the new anchor chain array in in reverse order.
+            int32_t index = anchor_chain_starts[i];
+            while (index != -1)
+            {
+                anchor_chains[anchor_chain_starts[i] + (overlaps[i].num_residues_ - anchor_chain_index)] = index;
+                int32_t pred                                                                             = predecessors[index];
+                index                                                                                    = pred;
+                ++anchor_chain_index;
+            }
+        }
+    }
+}
+
+__global__ void output_overlap_chains_by_RLE(const Overlap* const overlaps,
+                                             const Anchor* const anchors,
+                                             const int32_t* const chain_starts,
+                                             const int32_t* const chain_lengths,
+                                             int32_t* const anchor_chains,
+                                             int32_t* const anchor_chain_starts,
+                                             const int32_t num_overlaps)
+{
+    const int32_t d_thread_id = blockIdx.x * blockDim.x + threadIdx.x;
+    const int32_t stride      = blockDim.x * gridDim.x;
+    for (int i = d_thread_id; i < num_overlaps; i += stride)
+    {
+        int32_t chain_start  = chain_starts[i];
+        int32_t chain_length = chain_lengths[i];
+        for (int32_t ind = chain_start; ind < chain_start + chain_length; ++i)
+        {
+            anchor_chains[ind] = ind;
         }
     }
 }

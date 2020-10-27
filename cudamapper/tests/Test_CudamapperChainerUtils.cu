@@ -118,7 +118,6 @@ TEST(TestChainerUtils, Anchor_Chain_Extraction_Tests)
     chainerutils::allocate_anchor_chains(d_overlaps,
                                          unrolled_anchor_chains,
                                          chain_starts,
-                                         overlaps.size(),
                                          num_total_anchors,
                                          allocator,
                                          cu_ptr);
