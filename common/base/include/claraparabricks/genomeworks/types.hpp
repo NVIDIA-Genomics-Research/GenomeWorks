@@ -21,6 +21,7 @@
 #if __cplusplus >= 201703
 #include <optional>
 #include <string_view>
+#include <cstddef>
 #else
 #include <experimental/optional>
 #include <experimental/string_view>
@@ -45,8 +46,8 @@ using position_in_read_t = std::uint32_t;
 using number_of_basepairs_t = position_in_read_t;
 
 // TODO: Once minimal supported GCC version is moved to GCC 7.1
-// or higher, thegw_optional_t and gw_string_view_t aliases
-// can be removed and std::optional and std::string_view can
+// or higher, gw_optional_t, gw_string_view_t and gw_byte_t aliases
+// can be removed and std::optional, std::string_view and std::byte can
 // be used directly instead
 #if __cplusplus >= 201703
 template <typename T>
@@ -54,12 +55,14 @@ using gw_optional_t               = std::optional<T>;
 using gw_nullopt_t                = std::nullopt_t;
 constexpr gw_nullopt_t gw_nullopt = std::nullopt;
 using gw_string_view_t            = std::string_view;
+using gw_byte_t                   = std::byte;
 #else
 template <typename T>
 using gw_optional_t               = std::experimental::optional<T>;
 using gw_nullopt_t                = std::experimental::nullopt_t;
 constexpr gw_nullopt_t gw_nullopt = std::experimental::nullopt;
 using gw_string_view_t            = std::experimental::string_view;
+using gw_byte_t                   = unsigned char;
 #endif
 
 } // namespace genomeworks

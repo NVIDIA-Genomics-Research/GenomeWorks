@@ -1345,7 +1345,7 @@ void test_function(const std::string& filename,
                               false,
                               filtering_parameter,
                               cuda_stream.get());
-    GW_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream.get()));
+    index.wait_to_be_ready();
 
     ASSERT_EQ(index.number_of_reads(), expected_number_of_reads);
     if (0 == expected_number_of_reads)
