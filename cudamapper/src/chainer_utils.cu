@@ -70,24 +70,24 @@ void allocate_anchor_chains(device_buffer<Overlap>& overlaps,
                             device_buffer<int32_t>& anchor_chain_starts,
                             const int32_t num_overlaps,
                             int32_t& num_total_anchors,
-                            DefaultDeviceAllocator& _allocator,
-                            cudaStream_t& _cuda_stream)
+                            DefaultDeviceAllocator allocator,
+                            cudaStream_t cuda_stream)
 {
     // sum the number of chains across all overlaps
-    device_buffer<char> d_temp_buf(_allocator, _cuda_stream);
+    device_buffer<char> d_temp_buf(allocator, cuda_stream);
     void* d_temp_storage           = nullptr;
     std::size_t temp_storage_bytes = 0;
     OverlapToNumResiduesOp overlap_residue_count_op;
     cub::TransformInputIterator<int32_t, OverlapToNumResiduesOp, Overlap*> d_residue_counts(overlaps.data(), overlap_residue_count_op);
 
-    device_buffer<int32_t> d_num_total_anchors(1, _allocator, _cuda_stream);
+    device_buffer<int32_t> d_num_total_anchors(1, allocator, cuda_stream);
 
     cub::DeviceReduce::Sum(d_temp_storage,
                            temp_storage_bytes,
                            d_residue_counts,
                            d_num_total_anchors.data(),
                            num_overlaps,
-                           _cuda_stream);
+                           cuda_stream);
 
     d_temp_buf.clear_and_resize(temp_storage_bytes);
     d_temp_storage = d_temp_buf.data();
@@ -97,12 +97,12 @@ void allocate_anchor_chains(device_buffer<Overlap>& overlaps,
                            d_residue_counts,
                            d_num_total_anchors.data(),
                            num_overlaps,
-                           _cuda_stream);
+                           cuda_stream);
 
     d_temp_storage     = nullptr;
     temp_storage_bytes = 0;
 
-    num_total_anchors = cudautils::get_value_from_device(d_num_total_anchors.data(), _cuda_stream);
+    num_total_anchors = cudautils::get_value_from_device(d_num_total_anchors.data(), cuda_stream);
 
     unrolled_anchor_chains.clear_and_resize(num_total_anchors);
     anchor_chain_starts.clear_and_resize(num_overlaps);
@@ -112,7 +112,7 @@ void allocate_anchor_chains(device_buffer<Overlap>& overlaps,
                                   d_residue_counts,
                                   anchor_chain_starts.data(),
                                   num_overlaps,
-                                  _cuda_stream);
+                                  cuda_stream);
 
     d_temp_buf.clear_and_resize(temp_storage_bytes);
     d_temp_storage = d_temp_buf.data();
@@ -122,7 +122,7 @@ void allocate_anchor_chains(device_buffer<Overlap>& overlaps,
                                   d_residue_counts,
                                   anchor_chain_starts.data(),
                                   num_overlaps,
-                                  _cuda_stream);
+                                  cuda_stream);
 }
 
 __global__ void output_overlap_chains_by_RLE(const Overlap* const overlaps,

@@ -40,9 +40,10 @@ __host__ __device__ Overlap create_simple_overlap(const Anchor& start,
                                                   const Anchor& end,
                                                   const int32_t num_anchors);
 
-/// \brief Perform a backtrace on the predecessors array
-/// to generate overlaps from anchors. Anchors must have been chained
-/// by a chaining function that filles the predecessors and scores array.
+/// \brief Produce an array of overlaps by iterating
+/// through the predecessors of each anchor within a chain,
+/// until an anchor with no predecessor is reached. Anchors must have been chained
+/// by a chaining function that fills the predecessors and scores array.
 ///
 /// \param anchors An array of anchors.
 /// \param overlaps An array of overlaps to be filled.
@@ -65,19 +66,19 @@ __global__ void backtrace_anchors_to_overlaps(const Anchor* const anchors,
 /// of the anchors in the chain.
 ///
 /// \param overlaps An array of Overlaps. Must have a well-formed num_residues_ field
-/// \param unrolled_anchor_chains  An array of int32_t. Will be resided on return.
+/// \param unrolled_anchor_chains An array of int32_t. Will be resided on return.
 /// \param anchor_chain_starts An array holding the index in the anchors array of the first anchor in an overlap.
 /// \param num_overlaps The number of overlaps in the overlaps array.
 /// \param num_total_anchors The number of anchors in the anchors array.
-/// \param _allocator The DefaultDeviceAllocator for this overlapper.
-/// \param _cuda_stream The cudastream to allocate memory within.
+/// \param allocator The DefaultDeviceAllocator for this overlapper.
+/// \param cuda_stream The cudastream to allocate memory within.
 void allocate_anchor_chains(device_buffer<Overlap>& overlaps,
                             device_buffer<int32_t>& unrolled_anchor_chains,
                             device_buffer<int32_t>& anchor_chain_starts,
                             const int32_t num_overlaps,
                             int32_t& num_total_anchors,
-                            DefaultDeviceAllocator& _allocator,
-                            cudaStream_t& _cuda_stream);
+                            DefaultDeviceAllocator allocator,
+                            cudaStream_t cuda_stream);
 
 /// \brief Calculate the anchors chains used to produce each overlap in the
 /// overlap array for anchors chained by backtrace_anchors_to_overlaps.
