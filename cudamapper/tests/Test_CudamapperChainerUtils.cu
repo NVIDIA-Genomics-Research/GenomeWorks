@@ -69,8 +69,7 @@ TEST(TestChainerUtils, Create_Simple_Overlap_Tests)
 
 TEST(TestChainerUtils, Anchor_Chain_Extraction_Tests)
 {
-
-    DefaultDeviceAllocator allocator = create_default_device_allocator(2048);
+    DefaultDeviceAllocator allocator = create_default_device_allocator();
 
     CudaStream cuda_stream = make_cuda_stream();
     auto cu_ptr            = cuda_stream.get();
@@ -106,15 +105,15 @@ TEST(TestChainerUtils, Anchor_Chain_Extraction_Tests)
     overlaps.push_back(p_ab);
     overlaps.push_back(p_bc);
 
-    device_buffer<Anchor> d_anchors(anchors.size(), allocator, cuda_stream.get());
-    device_buffer<Overlap> d_overlaps(overlaps.size(), allocator, cuda_stream.get());
-    cudautils::device_copy_n(anchors.data(), anchors.size(), d_anchors.data());
-    cudautils::device_copy_n(overlaps.data(), overlaps.size(), d_overlaps.data());
+    device_buffer<Anchor> d_anchors(anchors.size(), allocator, cu_ptr);
+    device_buffer<Overlap> d_overlaps(overlaps.size(), allocator, cu_ptr);
+    cudautils::device_copy_n(anchors.data(), anchors.size(), d_anchors.data(), cu_ptr);
+    cudautils::device_copy_n(overlaps.data(), overlaps.size(), d_overlaps.data(), cu_ptr);
 
-    device_buffer<int32_t> unrolled_anchor_chains;
-    device_buffer<int32_t> chain_starts;
-
+    device_buffer<int32_t> unrolled_anchor_chains(0, allocator, cu_ptr);
+    device_buffer<int32_t> chain_starts(0, allocator, cu_ptr);
     int32_t num_total_anchors;
+
     chainerutils::allocate_anchor_chains(d_overlaps,
                                          unrolled_anchor_chains,
                                          chain_starts,
