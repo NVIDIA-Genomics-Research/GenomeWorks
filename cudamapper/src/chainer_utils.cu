@@ -119,18 +119,17 @@ __global__ void backtrace_anchors_to_overlaps(const Anchor* anchors,
                                               const int32_t n_anchors,
                                               const int32_t min_score)
 {
-    const std::size_t d_tid = blockIdx.x * blockDim.x + threadIdx.x;
-    int32_t stride          = blockDim.x * gridDim.x;
-    for (int i = d_tid; i < n_anchors; i += stride)
+    const std::size_t tid = blockIdx.x * blockDim.x + threadIdx.x;
+    const int32_t stride  = blockDim.x * gridDim.x;
+    for (int i = tid; i < n_anchors; i += stride)
     {
-        int32_t global_overlap_index = i;
-        if (scores[i] >= min_score)
+        double score = scores[i];
+        if (score >= min_score)
         {
-
-            int32_t index                = global_overlap_index;
+            int32_t index                = i;
             int32_t first_index          = index;
             int32_t num_anchors_in_chain = 0;
-            Anchor final_anchor          = anchors[global_overlap_index];
+            Anchor final_anchor          = anchors[i];
 
             while (index != -1)
             {
@@ -143,13 +142,12 @@ __global__ void backtrace_anchors_to_overlaps(const Anchor* anchors,
                 num_anchors_in_chain++;
                 index = predecessors[index];
             }
-            Anchor first_anchor            = anchors[first_index];
-            overlaps[global_overlap_index] = create_simple_overlap(first_anchor, final_anchor, num_anchors_in_chain);
+            Anchor first_anchor = anchors[first_index];
+            overlaps[i]         = create_simple_overlap(first_anchor, final_anchor, num_anchors_in_chain);
         }
         else
         {
-            max_select_mask[global_overlap_index] = false;
-            overlaps[global_overlap_index]        = create_simple_overlap(empty_anchor(), empty_anchor(), 0);
+            max_select_mask[i] = false;
         }
     }
 }
