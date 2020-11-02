@@ -38,7 +38,7 @@ struct OverlapToNumResiduesOp
     }
 };
 
-__host__ __device__ Overlap create_simple_overlap(const Anchor& start, const Anchor& end, const int32_t num_anchors)
+__host__ __device__ Overlap create_overlap(const Anchor& start, const Anchor& end, const int32_t num_anchors)
 {
     Overlap overlap;
     overlap.num_residues_ = num_anchors;
@@ -96,7 +96,7 @@ __global__ void backtrace_anchors_to_overlaps(const Anchor* const anchors,
                 index = predecessors[index];
             }
             Anchor first_anchor = anchors[first_index];
-            overlaps[i]         = create_simple_overlap(first_anchor, final_anchor, num_anchors_in_chain);
+            overlaps[i]         = create_overlap(first_anchor, final_anchor, num_anchors_in_chain);
         }
         else
         {

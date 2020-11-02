@@ -32,7 +32,7 @@ namespace genomeworks
 namespace cudamapper
 {
 
-TEST(TestChainerUtils, Create_Simple_Overlap_Tests)
+TEST(TestChainerUtils, Create_Overlap_Tests)
 {
     Anchor a;
     a.query_read_id_           = 12;
@@ -46,7 +46,7 @@ TEST(TestChainerUtils, Create_Simple_Overlap_Tests)
     b.target_read_id_          = 46;
     b.target_position_in_read_ = 20400;
 
-    Overlap p_ab = chainerutils::create_simple_overlap(a, b, 12);
+    Overlap p_ab = chainerutils::create_overlap(a, b, 12);
     ASSERT_EQ(p_ab.query_read_id_, static_cast<uint32_t>(12));
     ASSERT_EQ(p_ab.target_read_id_, 46);
     ASSERT_EQ(p_ab.query_start_position_in_read_, 130);
@@ -61,7 +61,7 @@ TEST(TestChainerUtils, Create_Simple_Overlap_Tests)
     c.target_read_id_          = 46;
     c.target_position_in_read_ = 16000;
 
-    Overlap p_bc = chainerutils::create_simple_overlap(b, c, 22);
+    Overlap p_bc = chainerutils::create_overlap(b, c, 22);
     ASSERT_EQ(p_bc.target_start_position_in_read_, 16000);
     ASSERT_EQ(p_bc.target_end_position_in_read_, 20400);
     ASSERT_EQ(static_cast<char>(p_bc.relative_strand), static_cast<char>(RelativeStrand::Reverse));
@@ -86,7 +86,7 @@ TEST(TestChainerUtils, Anchor_Chain_Extraction_Tests)
     b.target_read_id_          = 46;
     b.target_position_in_read_ = 20400;
 
-    Overlap p_ab = chainerutils::create_simple_overlap(a, b, 2);
+    Overlap p_ab = chainerutils::create_overlap(a, b, 2);
 
     Anchor c;
     c.query_read_id_           = 12;
@@ -94,7 +94,7 @@ TEST(TestChainerUtils, Anchor_Chain_Extraction_Tests)
     c.target_read_id_          = 46;
     c.target_position_in_read_ = 16000;
 
-    Overlap p_bc = chainerutils::create_simple_overlap(b, c, 2);
+    Overlap p_bc = chainerutils::create_overlap(b, c, 2);
 
     std::vector<Anchor> anchors;
     anchors.push_back(a);

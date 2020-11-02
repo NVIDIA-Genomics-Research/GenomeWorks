@@ -36,7 +36,7 @@ namespace chainerutils
 /// \param start The first anchor in the chain.
 /// \param end The last anchor in the chain.
 /// \param num_anchors The total number of anchors in the chain.
-__host__ __device__ Overlap create_simple_overlap(const Anchor& start,
+__host__ __device__ Overlap create_overlap(const Anchor& start,
                                                   const Anchor& end,
                                                   const int32_t num_anchors);
 
