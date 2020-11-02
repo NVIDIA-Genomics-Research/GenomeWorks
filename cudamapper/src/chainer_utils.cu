@@ -113,11 +113,12 @@ void allocate_anchor_chains(const device_buffer<Overlap>& overlaps,
                             cudaStream_t cuda_stream)
 {
     // sum the number of chains across all overlaps
-    device_buffer<char> temp_buf_d(allocator, cuda_stream);
+
     void* temp_storage_d           = nullptr;
     std::size_t temp_storage_bytes = 0;
     OverlapToNumResiduesOp overlap_residue_count_op;
-    cub::TransformInputIterator<int32_t, OverlapToNumResiduesOp, const Overlap*> residue_counts_d(overlaps.data(), overlap_residue_count_op);
+    cub::TransformInputIterator<int32_t, OverlapToNumResiduesOp, const Overlap*> residue_counts_d(overlaps.data(),
+                                                                                                  overlap_residue_count_op);
 
     device_buffer<int32_t> num_total_anchors_d(1, allocator, cuda_stream);
 
@@ -128,7 +129,7 @@ void allocate_anchor_chains(const device_buffer<Overlap>& overlaps,
                            overlaps.size(),
                            cuda_stream);
 
-    temp_buf_d.clear_and_resize(temp_storage_bytes);
+    device_buffer<char> temp_buf_d(temp_storage_bytes, allocator, cuda_stream);
     temp_storage_d = temp_buf_d.data();
 
     cub::DeviceReduce::Sum(temp_storage_d,
