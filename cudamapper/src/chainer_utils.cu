@@ -73,8 +73,9 @@ __global__ void backtrace_anchors_to_overlaps(const Anchor* const anchors,
                                               const int64_t n_anchors,
                                               const int32_t min_score)
 {
-    const std::size_t tid = blockIdx.x * blockDim.x + threadIdx.x;
-    const int32_t stride  = blockDim.x * gridDim.x;
+    const int64_t tid    = blockIdx.x * blockDim.x + threadIdx.x;
+    const int32_t stride = blockDim.x * gridDim.x;
+
     for (int i = tid; i < n_anchors; i += stride)
     {
         if (scores[i] >= min_score)
