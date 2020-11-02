@@ -70,7 +70,7 @@ __global__ void backtrace_anchors_to_overlaps(const Anchor* const anchors,
                                               double* const scores,
                                               bool* const max_select_mask,
                                               int32_t* const predecessors,
-                                              const int32_t n_anchors,
+                                              const int64_t n_anchors,
                                               const int32_t min_score)
 {
     const std::size_t tid = blockIdx.x * blockDim.x + threadIdx.x;
@@ -108,7 +108,7 @@ __global__ void backtrace_anchors_to_overlaps(const Anchor* const anchors,
 void allocate_anchor_chains(const device_buffer<Overlap>& overlaps,
                             device_buffer<int32_t>& unrolled_anchor_chains,
                             device_buffer<int32_t>& anchor_chain_starts,
-                            int32_t& num_total_anchors,
+                            int64_t& num_total_anchors,
                             DefaultDeviceAllocator allocator,
                             cudaStream_t cuda_stream)
 {
@@ -120,7 +120,7 @@ void allocate_anchor_chains(const device_buffer<Overlap>& overlaps,
     cub::TransformInputIterator<int32_t, OverlapToNumResiduesOp, const Overlap*> residue_counts_d(overlaps.data(),
                                                                                                   overlap_residue_count_op);
 
-    device_buffer<int32_t> num_total_anchors_d(1, allocator, cuda_stream);
+    device_buffer<int64_t> num_total_anchors_d(1, allocator, cuda_stream);
 
     cub::DeviceReduce::Sum(temp_storage_d,
                            temp_storage_bytes,

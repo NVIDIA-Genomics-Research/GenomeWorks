@@ -37,8 +37,8 @@ namespace chainerutils
 /// \param end The last anchor in the chain.
 /// \param num_anchors The total number of anchors in the chain.
 __host__ __device__ Overlap create_overlap(const Anchor& start,
-                                                  const Anchor& end,
-                                                  const int32_t num_anchors);
+                                           const Anchor& end,
+                                           const int32_t num_anchors);
 
 /// \brief Produce an array of overlaps by iterating
 /// through the predecessors of each anchor within a chain,
@@ -57,7 +57,7 @@ __global__ void backtrace_anchors_to_overlaps(const Anchor* const anchors,
                                               double* const scores,
                                               bool* const max_select_mask,
                                               int32_t* const predecessors,
-                                              const int32_t n_anchors,
+                                              const int64_t n_anchors,
                                               const int32_t min_score);
 
 /// \brief Allocate a 1-dimensional array representing an unrolled 2D-array
@@ -75,7 +75,7 @@ __global__ void backtrace_anchors_to_overlaps(const Anchor* const anchors,
 void allocate_anchor_chains(const device_buffer<Overlap>& overlaps,
                             device_buffer<int32_t>& unrolled_anchor_chains,
                             device_buffer<int32_t>& anchor_chain_starts,
-                            int32_t& num_total_anchors,
+                            int64_t& num_total_anchors,
                             DefaultDeviceAllocator allocator,
                             cudaStream_t cuda_stream = 0);
 

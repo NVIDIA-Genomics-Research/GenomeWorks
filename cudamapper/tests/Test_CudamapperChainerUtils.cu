@@ -112,7 +112,7 @@ TEST(TestChainerUtils, Anchor_Chain_Extraction_Tests)
 
     device_buffer<int32_t> unrolled_anchor_chains(0, allocator, cu_ptr);
     device_buffer<int32_t> chain_starts(0, allocator, cu_ptr);
-    int32_t num_total_anchors;
+    int64_t num_total_anchors;
 
     chainerutils::allocate_anchor_chains(overlaps_d,
                                          unrolled_anchor_chains,
