@@ -193,8 +193,7 @@ __global__ void output_overlap_chains_by_backtrace(const Overlap* const overlaps
             while (index != -1)
             {
                 anchor_chains[anchor_chain_starts[i] + (overlaps[i].num_residues_ - anchor_chain_index)] = index;
-                int32_t pred                                                                             = predecessors[index];
-                index                                                                                    = pred;
+                index                                                                                    = predecessors[index];
                 ++anchor_chain_index;
             }
         }
