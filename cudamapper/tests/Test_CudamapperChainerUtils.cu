@@ -67,7 +67,7 @@ TEST(TestChainerUtils, Create_Overlap_Tests)
     ASSERT_EQ(static_cast<char>(p_bc.relative_strand), static_cast<char>(RelativeStrand::Reverse));
 }
 
-TEST(TestChainerUtils, Anchor_Chain_Extraction_Tests)
+TEST(TestChainerUtils, Anchor_Chain_Allocation_Tests)
 {
     DefaultDeviceAllocator allocator = create_default_device_allocator();
 
@@ -120,6 +120,13 @@ TEST(TestChainerUtils, Anchor_Chain_Extraction_Tests)
                                          num_total_anchors,
                                          allocator,
                                          cu_ptr);
+
+    ASSERT_EQ(num_total_anchors, 4);
+
+    std::vector<int32_t> anchors_chain_starts_h(overlaps.size());
+    cudautils::device_copy_n(chain_starts.data(), num_total_anchors, anchors_chain_starts_h.data(), cu_ptr);
+    ASSERT_EQ(anchors_chain_starts_h[0], 0);
+    ASSERT_EQ(anchors_chain_starts_h[1], 2);
 }
 
 } // namespace cudamapper

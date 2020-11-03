@@ -17,6 +17,9 @@
 #include "chainer_utils.cuh"
 
 #include <cub/cub.cuh>
+#include <thrust/execution_policy.h>
+#include <thrust/iterator/transform_iterator.h>
+#include <thrust/reduce.h>
 #include <claraparabricks/genomeworks/utils/cudautils.hpp>
 
 namespace claraparabricks
@@ -35,6 +38,14 @@ struct OverlapToNumResiduesOp
     __device__ __forceinline__ int32_t operator()(const Overlap& overlap) const
     {
         return overlap.num_residues_;
+    }
+};
+
+struct ConvertOverlapToNumResidues : public thrust::unary_function<Overlap, int32_t>
+{
+    __host__ __device__ int32_t operator()(const Overlap& o) const
+    {
+        return o.num_residues_;
     }
 };
 
@@ -113,57 +124,19 @@ void allocate_anchor_chains(const device_buffer<Overlap>& overlaps,
                             DefaultDeviceAllocator allocator,
                             cudaStream_t cuda_stream)
 {
-    // sum the number of chains across all overlaps
-
-    void* temp_storage_d           = nullptr;
-    std::size_t temp_storage_bytes = 0;
-    OverlapToNumResiduesOp overlap_residue_count_op;
-    cub::TransformInputIterator<int32_t, OverlapToNumResiduesOp, const Overlap*> residue_counts_d(overlaps.data(),
-                                                                                                  overlap_residue_count_op);
-
-    device_buffer<int64_t> num_total_anchors_d(1, allocator, cuda_stream);
-
-    cub::DeviceReduce::Sum(temp_storage_d,
-                           temp_storage_bytes,
-                           residue_counts_d,
-                           num_total_anchors_d.data(),
-                           overlaps.size(),
-                           cuda_stream);
-
-    device_buffer<char> temp_buf_d(temp_storage_bytes, allocator, cuda_stream);
-    temp_storage_d = temp_buf_d.data();
-
-    cub::DeviceReduce::Sum(temp_storage_d,
-                           temp_storage_bytes,
-                           residue_counts_d,
-                           num_total_anchors_d.data(),
-                           overlaps.size(),
-                           cuda_stream);
-
-    temp_storage_d     = nullptr;
-    temp_storage_bytes = 0;
-
-    num_total_anchors = cudautils::get_value_from_device(num_total_anchors_d.data(), cuda_stream);
+    auto thrust_exec_policy = thrust::cuda::par(allocator).on(cuda_stream);
+    num_total_anchors       = thrust::reduce(thrust_exec_policy,
+                                       thrust::make_transform_iterator(overlaps.begin(), ConvertOverlapToNumResidues()),
+                                       thrust::make_transform_iterator(overlaps.end(), ConvertOverlapToNumResidues()),
+                                       0);
 
     unrolled_anchor_chains.clear_and_resize(num_total_anchors);
     anchor_chain_starts.clear_and_resize(overlaps.size());
 
-    cub::DeviceScan::ExclusiveSum(temp_storage_d,
-                                  temp_storage_bytes,
-                                  residue_counts_d,
-                                  anchor_chain_starts.data(),
-                                  overlaps.size(),
-                                  cuda_stream);
-
-    temp_buf_d.clear_and_resize(temp_storage_bytes);
-    temp_storage_d = temp_buf_d.data();
-
-    cub::DeviceScan::ExclusiveSum(temp_storage_d,
-                                  temp_storage_bytes,
-                                  residue_counts_d,
-                                  anchor_chain_starts.data(),
-                                  overlaps.size(),
-                                  cuda_stream);
+    thrust::exclusive_scan(thrust_exec_policy,
+                           thrust::make_transform_iterator(overlaps.begin(), ConvertOverlapToNumResidues()),
+                           thrust::make_transform_iterator(overlaps.end(), ConvertOverlapToNumResidues()),
+                           anchor_chain_starts.data());
 }
 
 __global__ void output_overlap_chains_by_backtrace(const Overlap* const overlaps,
