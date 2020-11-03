@@ -84,11 +84,16 @@ __global__ void backtrace_anchors_to_overlaps(const Anchor* const anchors,
                                               const int64_t n_anchors,
                                               const int32_t min_score)
 {
-    const int64_t tid    = blockIdx.x * blockDim.x + threadIdx.x;
-    const int32_t stride = blockDim.x * gridDim.x;
+    const int64_t block_id = blockIdx.x;
+    const int32_t stride   = gridDim.x;
 
-    for (int i = tid; i < n_anchors; i += stride)
+    for (int i = block_id; i < n_anchors; i += stride)
     {
+
+        if (threadIdx.x != 0)
+        {
+            return;
+        }
         if (scores[i] >= min_score)
         {
             int32_t index                = i;
@@ -148,14 +153,17 @@ __global__ void output_overlap_chains_by_backtrace(const Overlap* const overlaps
                                                    const int32_t num_overlaps,
                                                    const bool check_mask)
 {
-    const int32_t thread_id = blockIdx.x * blockDim.x + threadIdx.x;
-    const int32_t stride    = blockDim.x * gridDim.x;
+    const int32_t block_id = blockIdx.x;
+    const int32_t stride   = gridDim.x;
 
     // Processes one overlap per iteration,
     // "i" corresponds to an overlap
-    for (int i = thread_id; i < num_overlaps; i += stride)
+    for (int i = block_id; i < num_overlaps; i += stride)
     {
-        // index within this chain of anchors (i.e., the anchors within a single overlap)
+        if (threadIdx.x != 0)
+        {
+            return;
+        }
 
         if (!check_mask || (check_mask & select_mask[i]))
         {
