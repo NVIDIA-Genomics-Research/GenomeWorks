@@ -25,6 +25,7 @@
 #include <vector>
 #include <string>
 #include <unistd.h>
+#include <getopt.h>
 
 using namespace claraparabricks::genomeworks;
 using namespace claraparabricks::genomeworks::cudapoa;

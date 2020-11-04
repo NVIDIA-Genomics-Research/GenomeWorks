@@ -29,6 +29,7 @@
 #include <iostream>
 #include <string>
 #include <mutex>
+#include <getopt.h>
 
 // define constants. See cudamapper/src/application_parameters.hpp for more.
 // constants used in multiple places
@@ -83,26 +84,28 @@ void process_batch(std::vector<IndexDescriptor>& query_index_descriptors,
     // process the pairs of query and target indices
     for (const IndexDescriptor& query_index_descriptor : query_index_descriptors)
     {
-        std::unique_ptr<Index> query_index = Index::create_index(allocator,
-                                                                 *query_parser,
-                                                                 query_index_descriptor,
-                                                                 KMER_SIZE,
-                                                                 WINDOWS_SIZE,
-                                                                 true,                 // hash representations
-                                                                 FILTERING_PARAMETER); // filter parameter
+        std::unique_ptr<Index> query_index = Index::create_index_async(allocator,
+                                                                       *query_parser,
+                                                                       query_index_descriptor,
+                                                                       KMER_SIZE,
+                                                                       WINDOWS_SIZE,
+                                                                       true,                 // hash representations
+                                                                       FILTERING_PARAMETER); // filter parameter
+        query_index->wait_to_be_ready();
 
         for (const IndexDescriptor& target_index_descriptor : target_index_descriptors)
         {
             // skip pairs in which target batch has smaller id than query batch as it will be covered by symmetry
             if (target_index_descriptor.first_read() >= query_index_descriptor.first_read())
             {
-                std::unique_ptr<Index> target_index = Index::create_index(allocator,
-                                                                          *target_parser,
-                                                                          target_index_descriptor,
-                                                                          KMER_SIZE,
-                                                                          WINDOWS_SIZE,
-                                                                          true,                 // hash representations
-                                                                          FILTERING_PARAMETER); // filter parameter
+                std::unique_ptr<Index> target_index = Index::create_index_async(allocator,
+                                                                                *target_parser,
+                                                                                target_index_descriptor,
+                                                                                KMER_SIZE,
+                                                                                WINDOWS_SIZE,
+                                                                                true,                 // hash representations
+                                                                                FILTERING_PARAMETER); // filter parameter
+                target_index->wait_to_be_ready();
 
                 // find anchors & find overlaps
                 auto matcher = Matcher::create_matcher(allocator,
