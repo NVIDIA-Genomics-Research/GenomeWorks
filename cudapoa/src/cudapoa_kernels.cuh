@@ -293,7 +293,7 @@ __launch_bounds__(TRACEBACK ? GW_POA_KERNELS_MAX_THREADS_PER_BLOCK_72_REGISTERS 
                                                                                                            match_score,
                                                                                                            0);
                 __syncwarp();
-                if (alignment_length == SHIFT_ADAPTIVE_BAND_TO_LEFT || alignment_length == SHIFT_ADAPTIVE_BAND_TO_RIGHT)
+                if (alignment_length == CUDAPOA_SHIFT_ADAPTIVE_BAND_TO_LEFT || alignment_length == CUDAPOA_SHIFT_ADAPTIVE_BAND_TO_RIGHT)
                 {
                     // rerun with extended and shifted band-width
                     alignment_length = runNeedlemanWunschBandedTraceback<uint8_t, ScoreT, SizeT, TraceT, true>(nodes,
@@ -371,7 +371,7 @@ __launch_bounds__(TRACEBACK ? GW_POA_KERNELS_MAX_THREADS_PER_BLOCK_72_REGISTERS 
                                                                                           0);
                 __syncwarp();
 
-                if (alignment_length == SHIFT_ADAPTIVE_BAND_TO_LEFT || alignment_length == SHIFT_ADAPTIVE_BAND_TO_RIGHT)
+                if (alignment_length == CUDAPOA_SHIFT_ADAPTIVE_BAND_TO_LEFT || alignment_length == CUDAPOA_SHIFT_ADAPTIVE_BAND_TO_RIGHT)
                 {
                     // rerun with extended and shifted band-width
                     alignment_length = runNeedlemanWunschBanded<uint8_t, ScoreT, SizeT, true>(nodes,

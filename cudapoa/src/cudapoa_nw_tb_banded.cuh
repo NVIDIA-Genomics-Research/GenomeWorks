@@ -74,9 +74,9 @@ __device__ __forceinline__ int32_t get_band_start_for_row_tb(int32_t row, float 
     int32_t start_pos      = max(0, diagonal_index - band_shift);
     if (max_column < start_pos + band_width)
     {
-        start_pos = max(0, max_column - band_width + CELLS_PER_THREAD);
+        start_pos = max(0, max_column - band_width + CUDAPOA_CELLS_PER_THREAD);
     }
-    start_pos = start_pos - (start_pos % CELLS_PER_THREAD);
+    start_pos = start_pos - (start_pos % CUDAPOA_CELLS_PER_THREAD);
 
     return start_pos;
 }
@@ -166,7 +166,7 @@ __device__ __forceinline__ void get_scores_tb(ScoreT* scores,
     int32_t band_start = get_band_start_for_row_tb(pred_node, gradient, band_width, band_shift, max_column);
 
     // subtract by CELLS_PER_THREAD to ensure score4_next is not pointing out of the corresponding band bounds
-    int32_t band_end = band_start + band_width - CELLS_PER_THREAD;
+    int32_t band_end = band_start + band_width - CUDAPOA_CELLS_PER_THREAD;
     band_end         = min(band_end, max_column);
 
     if ((column > band_end || column < band_start) && column != -1)
@@ -310,13 +310,13 @@ __device__ __forceinline__
         // SHIFT_ADAPTIVE_BAND_TO_RIGHT means traceback path was too close to the right bound of band
         // Therefore we rerun alignment of the same read, but this time with double band-width and band_shift further to
         // the left for rerun == SHIFT_ADAPTIVE_BAND_TO_LEFT, and further to the right for rerun == SHIFT_ADAPTIVE_BAND_TO_RIGHT.
-        if (rerun == SHIFT_ADAPTIVE_BAND_TO_LEFT && band_width <= CUDAPOA_MAX_ADAPTIVE_BAND_WIDTH / 2)
+        if (rerun == CUDAPOA_SHIFT_ADAPTIVE_BAND_TO_LEFT && band_width <= CUDAPOA_MAX_ADAPTIVE_BAND_WIDTH / 2)
         {
             // ad-hoc rule 5
             band_width *= 2;
             band_shift *= 2.5;
         }
-        if (rerun == SHIFT_ADAPTIVE_BAND_TO_RIGHT && band_width <= CUDAPOA_MAX_ADAPTIVE_BAND_WIDTH / 2)
+        if (rerun == CUDAPOA_SHIFT_ADAPTIVE_BAND_TO_RIGHT && band_width <= CUDAPOA_MAX_ADAPTIVE_BAND_WIDTH / 2)
         {
             // ad-hoc rule 6
             band_width *= 2;
@@ -384,7 +384,7 @@ __device__ __forceinline__
                     // fill in first column of traceback buffer
                     traceback[index] = -(score_gIdx - pred_idx);
 
-                    if (band_start > CELLS_PER_THREAD && pred_count == 1)
+                    if (band_start > CUDAPOA_CELLS_PER_THREAD && pred_count == 1)
                     {
                         first_element_prev_score = min_score_value + gap_score;
                     }
@@ -445,10 +445,10 @@ __device__ __forceinline__
 
         SeqT graph_base = nodes[node_id];
 
-        for (int32_t read_pos = lane_idx * CELLS_PER_THREAD + band_start; read_pos < band_start + band_width; read_pos += CUDAPOA_MIN_BAND_WIDTH)
+        for (int32_t read_pos = lane_idx * CUDAPOA_CELLS_PER_THREAD + band_start; read_pos < band_start + band_width; read_pos += CUDAPOA_MIN_BAND_WIDTH)
         {
             SeqT4<SeqT>* d_read4 = (SeqT4<SeqT>*)read;
-            SeqT4<SeqT> read4    = d_read4[read_pos / CELLS_PER_THREAD];
+            SeqT4<SeqT> read4    = d_read4[read_pos / CUDAPOA_CELLS_PER_THREAD];
 
             TraceT4<TraceT> trace;
             ScoreT4<ScoreT> score = {min_score_value, min_score_value, min_score_value, min_score_value};
@@ -613,12 +613,12 @@ __device__ __forceinline__
                             int32_t band_start = get_band_start_for_row(i, gradient, band_width, band_shift, max_column);
                             if (j <= band_start + threshold) // ad-hoc rule 8-a, too close to left bound
                             {
-                                aligned_nodes = SHIFT_ADAPTIVE_BAND_TO_LEFT;
+                                aligned_nodes = CUDAPOA_SHIFT_ADAPTIVE_BAND_TO_LEFT;
                                 break;
                             }
                             if (j >= (band_start + band_width - threshold)) // ad-hoc rule 8-b, too close to right bound
                             {
-                                aligned_nodes = SHIFT_ADAPTIVE_BAND_TO_RIGHT;
+                                aligned_nodes = CUDAPOA_SHIFT_ADAPTIVE_BAND_TO_RIGHT;
                                 break;
                             }
                         }
