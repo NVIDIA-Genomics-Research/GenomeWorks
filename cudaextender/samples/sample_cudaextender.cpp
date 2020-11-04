@@ -26,6 +26,7 @@
 #include <string>
 #include <vector>
 #include <cuda.h>
+#include <getopt.h>
 
 using namespace claraparabricks::genomeworks;
 using namespace cudautils;
