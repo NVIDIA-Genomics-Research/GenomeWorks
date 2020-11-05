@@ -27,6 +27,7 @@
 #include <stdexcept>
 #include <iostream>
 #include <random>
+#include <getopt.h>
 
 using namespace claraparabricks::genomeworks;
 using namespace claraparabricks::genomeworks::genomeutils;

@@ -61,7 +61,7 @@ public:
     {
         scoped_device_switch dev(device_id_);
         max_nodes_per_window_ = batch_size.max_nodes_per_graph;
-        traceback_alignment_  = batch_size.band_mode == BandMode::static_band_traceback;
+        traceback_alignment_  = batch_size.band_mode == BandMode::static_band_traceback || batch_size.band_mode == BandMode::adaptive_band_traceback;
         score_matrix_height_  = traceback_alignment_ ? batch_size.max_banded_pred_distance : batch_size.max_nodes_per_graph;
         score_matrix_width_   = batch_size.matrix_sequence_dimension;
 
@@ -84,7 +84,7 @@ public:
         // in banded traceback alignment, this is for traceback matrix, otherwise it is for score matrix
         int64_t device_size_per_matrix = static_cast<int64_t>(batch_size.matrix_sequence_dimension) *
                                          static_cast<int64_t>(batch_size.max_nodes_per_graph);
-        if (batch_size.band_mode == BandMode::static_band_traceback)
+        if (traceback_alignment_)
         {
             device_size_per_matrix *= sizeof(TraceT);
         }
@@ -337,7 +337,7 @@ public:
     {
         int64_t device_size_per_poa         = 0;
         int32_t max_nodes_per_graph         = batch_size.max_nodes_per_graph;
-        bool traceback                      = batch_size.band_mode == BandMode::static_band_traceback;
+        bool traceback                      = batch_size.band_mode == static_band_traceback || batch_size.band_mode == adaptive_band_traceback;
         int32_t traceback_score_matrix_size = batch_size.matrix_sequence_dimension * batch_size.max_banded_pred_distance;
 
         // for output - device
@@ -439,7 +439,7 @@ public:
         // Compute required memory for score or backtracking matrix
         int64_t device_size_per_matrix = static_cast<int64_t>(batch_size.matrix_sequence_dimension) *
                                          static_cast<int64_t>(batch_size.max_nodes_per_graph);
-        if (batch_size.band_mode == BandMode::static_band_traceback)
+        if (batch_size.band_mode == BandMode::static_band_traceback || batch_size.band_mode == BandMode::adaptive_band_traceback)
         {
             device_size_per_matrix *= sizeof_TraceT;
         }

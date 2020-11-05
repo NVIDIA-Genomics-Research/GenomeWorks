@@ -465,6 +465,10 @@ protected:
             GW_LOG_WARN("Kernel Error:: Consensus/MSA sequence size exceeded max sequence size in batch {}\n", bid_);
             output_status.emplace_back(error_type);
             break;
+        case genomeworks::cudapoa::StatusType::exceeded_maximum_predecessor_distance:
+            GW_LOG_WARN("Kernel Error:: Set value for maximum predecessor distance in traceback NW is too small {}\n", bid_);
+            output_status.emplace_back(error_type);
+            break;
         default:
             GW_LOG_WARN("Kernel Error:: Unknown error in batch {}\n", bid_);
             output_status.emplace_back(error_type);
@@ -500,7 +504,7 @@ protected:
         }
 
         WindowDetails* window_details = &(input_details_h_->window_details[poa_count_ - 1]);
-        int32_t scores_width_         = cudautils::align<int32_t, 4>(seq_len + 1 + CELLS_PER_THREAD);
+        int32_t scores_width_         = cudautils::align<int32_t, 4>(seq_len + 1 + CUDAPOA_CELLS_PER_THREAD);
         if (scores_width_ > window_details->scores_width)
         {
             next_scores_offset_ += (scores_width_ - window_details->scores_width);
@@ -537,7 +541,9 @@ protected:
         }
         input_details_h_->sequence_lengths[global_sequence_idx_] = seq_len;
 
-        // to be aligned with uchar4 size, pad sequence length to be multiple of 4
+        // to be aligned with SeqT4 struct size, pad sequence length to be multiple of 4.
+        // Note: num_nucleotides_copied_ is used to define allocated space per read on device as well as on host,
+        // therefore it is important to reflect any changes in the following line in the corresponding device code as well
         num_nucleotides_copied_ += cudautils::align<int32_t, SIZE_OF_SeqT4>(seq_len);
 
         global_sequence_idx_++;
@@ -551,10 +557,10 @@ protected:
         int32_t matrix_height = batch_size_.max_nodes_per_graph;
         // matrix width for full_band is based on the current group max_seq_length as opposed to batch_size_.matrix_sequence_dimension.
         // The latter is based on the largest group in the batch and is more conservative
-        int32_t matrix_width = (batch_size_.band_mode != BandMode::full_band) ? batch_size_.matrix_sequence_dimension : cudautils::align<int32_t, 4>(max_seq_length + 1 + CELLS_PER_THREAD);
+        int32_t matrix_width = (batch_size_.band_mode != BandMode::full_band) ? batch_size_.matrix_sequence_dimension : cudautils::align<int32_t, 4>(max_seq_length + 1 + CUDAPOA_CELLS_PER_THREAD);
         // in traceback alignments avail_buf_mem_ is dedicated to traceback matrix, otherwise it is being used for score matrix
         size_t required_size = static_cast<size_t>(matrix_width) * static_cast<size_t>(matrix_height);
-        required_size *= batch_size_.band_mode == BandMode::static_band_traceback ? sizeof(TraceT) : sizeof(ScoreT);
+        required_size *= (batch_size_.band_mode == static_band_traceback || batch_size_.band_mode == adaptive_band_traceback) ? sizeof(TraceT) : sizeof(ScoreT);
 
         if (required_size > avail_buf_mem_)
         {

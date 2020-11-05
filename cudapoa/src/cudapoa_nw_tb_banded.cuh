@@ -32,27 +32,6 @@ namespace genomeworks
 namespace cudapoa
 {
 
-__device__ __forceinline__ int32_t get_band_start_for_row_tb(int32_t row_idx, float gradient, int32_t band_width, int32_t max_column)
-{
-
-    int32_t start_pos = int32_t(row_idx * gradient) - band_width / 2;
-
-    start_pos = max(start_pos, 0);
-
-    int32_t end_pos = start_pos + band_width;
-
-    if (end_pos > max_column)
-    {
-        start_pos = max_column - band_width + CELLS_PER_THREAD;
-    }
-
-    start_pos = max(start_pos, 0);
-
-    start_pos = start_pos - (start_pos % CELLS_PER_THREAD);
-
-    return start_pos;
-}
-
 template <typename ScoreT>
 __device__ __forceinline__ ScoreT* get_score_ptr_tb(ScoreT* scores, int32_t score_row, int32_t column, int32_t band_start, int32_t band_width)
 {
@@ -70,12 +49,9 @@ __device__ __forceinline__ void set_score_tb(ScoreT* scores,
                                              int32_t column,
                                              int32_t score_matrix_height,
                                              int32_t value,
-                                             float gradient,
-                                             int32_t band_width,
-                                             int32_t max_column)
+                                             int32_t band_start,
+                                             int32_t band_width)
 {
-    int32_t band_start = get_band_start_for_row_tb(row, gradient, band_width, max_column);
-
     int32_t col_idx;
     if (column == -1)
     {
@@ -85,34 +61,45 @@ __device__ __forceinline__ void set_score_tb(ScoreT* scores,
     {
         col_idx = column - band_start;
     }
-
-    // row is mapped to [0, score_matrix_height) span
+    // in NW with traceback buffer, score matrix is stored partially, hence row is mapped to [0, score_matrix_height) span
+    row                 = row % score_matrix_height;
     int64_t score_index = static_cast<int64_t>(col_idx) +
-                          static_cast<int64_t>(row % score_matrix_height) * static_cast<int64_t>(band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING);
+                          static_cast<int64_t>(row) * static_cast<int64_t>(band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING);
     scores[score_index] = value;
+}
+
+__device__ __forceinline__ int32_t get_band_start_for_row_tb(int32_t row, float gradient, int32_t band_width, int32_t band_shift, int32_t max_column)
+{
+    int32_t diagonal_index = int32_t(row * gradient);
+    int32_t start_pos      = max(0, diagonal_index - band_shift);
+    if (max_column < start_pos + band_width)
+    {
+        start_pos = max(0, max_column - band_width + CUDAPOA_CELLS_PER_THREAD);
+    }
+    start_pos = start_pos - (start_pos % CUDAPOA_CELLS_PER_THREAD);
+
+    return start_pos;
 }
 
 template <typename ScoreT>
 __device__ __forceinline__ void initialize_band_tb(ScoreT* scores,
                                                    int32_t row,
                                                    int32_t score_matrix_height,
-                                                   int32_t value,
-                                                   float gradient,
+                                                   int32_t min_score_value,
+                                                   int32_t band_start,
                                                    int32_t band_width,
-                                                   int32_t max_column,
                                                    int32_t lane_idx)
 {
-    int32_t band_start = get_band_start_for_row_tb(row, gradient, band_width, max_column);
-    int32_t band_end   = band_start + band_width;
+    int32_t band_end = band_start + band_width;
 
-    int32_t initialization_offset = (band_start == 0) ? 1 : band_start;
+    band_start = max(1, band_start);
 
-    set_score_tb(scores, row, initialization_offset, score_matrix_height, value, gradient, band_width, max_column);
+    set_score_tb(scores, row, band_start, score_matrix_height, min_score_value, band_start, band_width);
 
     // note: as long as CUDAPOA_BANDED_MATRIX_RIGHT_PADDING < WARP_SIZE, no need for a for loop
     for (int32_t j = lane_idx + band_end; j < band_end + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING; j += WARP_SIZE)
     {
-        set_score_tb(scores, row, j, score_matrix_height, value, gradient, band_width, max_column);
+        set_score_tb(scores, row, j, score_matrix_height, min_score_value, band_start, band_width);
     }
 }
 
@@ -129,12 +116,13 @@ __device__ __forceinline__ ScoreT get_score_tb(ScoreT* scores,
                                                int32_t row,
                                                int32_t column,
                                                int32_t score_matrix_height,
-                                               float gradient,
                                                int32_t band_width,
+                                               int32_t band_shift,
+                                               float gradient,
                                                int32_t max_column,
                                                const ScoreT min_score_value)
 {
-    int32_t band_start = get_band_start_for_row_tb(row, gradient, band_width, max_column);
+    int32_t band_start = get_band_start_for_row_tb(row, gradient, band_width, band_shift, max_column);
     int32_t band_end   = band_start + band_width;
     band_end           = min(band_end, max_column);
 
@@ -153,10 +141,11 @@ template <typename SeqT, typename ScoreT, typename TraceT>
 __device__ __forceinline__ void get_scores_tb(ScoreT* scores,
                                               int32_t pred_node,
                                               int32_t current_node,
-                                              int32_t read_pos,
+                                              int32_t column,
                                               int32_t score_matrix_height,
-                                              float gradient,
                                               int32_t band_width,
+                                              int32_t band_shift,
+                                              float gradient,
                                               int32_t max_column,
                                               int32_t gap_score,
                                               int32_t match_score,
@@ -166,7 +155,6 @@ __device__ __forceinline__ void get_scores_tb(ScoreT* scores,
                                               ScoreT4<ScoreT>& score,
                                               TraceT4<TraceT>& trace)
 {
-
     // The load instructions typically load data in 4B or 8B chunks.
     // If data is 16b (2B), then a 4B load chunk is loaded into register
     // and the necessary bits are extracted before returning. This wastes cycles
@@ -175,27 +163,28 @@ __device__ __forceinline__ void get_scores_tb(ScoreT* scores,
     // using a single load inst, and then extracting necessary part of
     // of the data using bit arithmetic. Also reduces register count.
 
-    int32_t band_start = get_band_start_for_row_tb(pred_node, gradient, band_width, max_column);
+    int32_t band_start = get_band_start_for_row_tb(pred_node, gradient, band_width, band_shift, max_column);
 
     // subtract by CELLS_PER_THREAD to ensure score4_next is not pointing out of the corresponding band bounds
-    int32_t band_end = static_cast<int32_t>(band_start + band_width - CELLS_PER_THREAD);
+    int32_t band_end = band_start + band_width - CUDAPOA_CELLS_PER_THREAD;
+    band_end         = min(band_end, max_column);
 
-    if ((read_pos > band_end || read_pos < band_start) && read_pos != -1)
+    if ((column > band_end || column < band_start) && column != -1)
     {
         return;
     }
     else
     {
         // row is mapped to [0, score_matrix_height) span
-        ScoreT4<ScoreT>* pred_scores = (ScoreT4<ScoreT>*)get_score_ptr_tb(scores, pred_node % score_matrix_height, read_pos, band_start, band_width);
+        ScoreT4<ScoreT>* pred_scores = (ScoreT4<ScoreT>*)get_score_ptr_tb(scores, pred_node % score_matrix_height, column, band_start, band_width);
 
-        // loads 8/16 consecutive bytes (4 ScoreT)
+        // loads 8/16 consecutive bytes (4 ScoreTs)
         ScoreT4<ScoreT> score4 = pred_scores[0];
 
         // need to load the next chunk of memory as well
         ScoreT4<ScoreT> score4_next = pred_scores[1];
 
-        ScoreT char_profile = (graph_base == read4.r0 ? match_score : mismatch_score);
+        int32_t char_profile = (graph_base == read4.r0 ? match_score : mismatch_score);
 
         // if trace is diogonal, its value is positive and if vertical, negative
         // update score.s0, trace.t0 ----------
@@ -275,10 +264,11 @@ __device__ __forceinline__ void get_scores_tb(ScoreT* scores,
 template <typename SeqT,
           typename ScoreT,
           typename SizeT,
-          typename TraceT>
+          typename TraceT,
+          bool ADAPTIVE = true>
 __device__ __forceinline__
     int32_t
-    runNeedlemanWunschBandedTraceBack(SeqT* nodes,
+    runNeedlemanWunschBandedTraceback(SeqT* nodes,
                                       SizeT* graph,
                                       SizeT* node_id_to_pos,
                                       int32_t graph_count,
@@ -289,27 +279,63 @@ __device__ __forceinline__
                                       int32_t read_length,
                                       ScoreT* scores,
                                       TraceT* traceback,
+                                      float max_buffer_size,
                                       SizeT* alignment_graph,
                                       SizeT* alignment_read,
                                       int32_t band_width,
                                       int32_t score_matrix_height,
                                       int32_t gap_score,
                                       int32_t mismatch_score,
-                                      int32_t match_score)
+                                      int32_t match_score,
+                                      int32_t rerun)
 {
-
-    const ScoreT min_score_value = 2 * abs(min(min(gap_score, mismatch_score), -match_score) - 1) + numeric_limits<ScoreT>::min();
+    const ScoreT min_score_value = numeric_limits<ScoreT>::min() / 2;
 
     int32_t lane_idx = threadIdx.x % WARP_SIZE;
 
-    //Calculate gradient for the scores matrix
+    //Calculate aspect ratio for the scores matrix
     float gradient = float(read_length + 1) / float(graph_count + 1);
 
     int32_t max_column = read_length + 1;
-    // Initialise the horizontal boundary of the score matrix
+
+    // Set band-width based on scores matrix aspect ratio
+    //---------------------------------------------------------
+    // band_shift defines distance of band_start from the scores matrix diagonal, ad-hoc rule 4
+    int32_t band_shift = band_width / 2;
+
+    if (ADAPTIVE)
+    {
+        // rerun code is defined in backtracking loop from previous alignment try
+        // SHIFT_ADAPTIVE_BAND_TO_LEFT means traceback path was too close to the left bound of band
+        // SHIFT_ADAPTIVE_BAND_TO_RIGHT means traceback path was too close to the right bound of band
+        // Therefore we rerun alignment of the same read, but this time with double band-width and band_shift further to
+        // the left for rerun == SHIFT_ADAPTIVE_BAND_TO_LEFT, and further to the right for rerun == SHIFT_ADAPTIVE_BAND_TO_RIGHT.
+        if (rerun == CUDAPOA_SHIFT_ADAPTIVE_BAND_TO_LEFT && band_width <= CUDAPOA_MAX_ADAPTIVE_BAND_WIDTH / 2)
+        {
+            // ad-hoc rule 5
+            band_width *= 2;
+            band_shift *= 2.5;
+        }
+        if (rerun == CUDAPOA_SHIFT_ADAPTIVE_BAND_TO_RIGHT && band_width <= CUDAPOA_MAX_ADAPTIVE_BAND_WIDTH / 2)
+        {
+            // ad-hoc rule 6
+            band_width *= 2;
+            band_shift *= 1.5;
+        }
+        // check required memory and return error if exceeding max_buffer_size
+        // using float to avoid 64-bit
+        float required_buffer_size = static_cast<float>(graph_count) * static_cast<float>(band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING);
+        if (required_buffer_size > max_buffer_size)
+        {
+            return CUDAPOA_KERNEL_NW_ADAPTIVE_STORAGE_FAILED;
+        }
+    }
+    //---------------------------------------------------------
+
+    // Initialise the horizontal boundary of the score matrix, initialising of the vertical boundary is done within the main for loop
     for (int32_t j = lane_idx; j < band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING; j += WARP_SIZE)
     {
-        set_score_tb(scores, 0, j, score_matrix_height, j * gap_score, gradient, band_width, max_column);
+        set_score_tb(scores, 0, j, score_matrix_height, j * gap_score, 0, band_width);
     }
 
     if (lane_idx == 0)
@@ -326,10 +352,10 @@ __device__ __forceinline__
     {
         int32_t node_id      = graph[graph_pos];
         int32_t score_gIdx   = graph_pos + 1;
-        int32_t band_start   = get_band_start_for_row_tb(score_gIdx, gradient, band_width, max_column);
+        int32_t band_start   = get_band_start_for_row_tb(score_gIdx, gradient, band_width, band_shift, max_column);
         int32_t pred_node_id = incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES];
 
-        initialize_band_tb(scores, score_gIdx, score_matrix_height, min_score_value, gradient, band_width, max_column, lane_idx);
+        initialize_band_tb(scores, score_gIdx, score_matrix_height, min_score_value, band_start, band_width, lane_idx);
 
         int32_t first_element_prev_score = 0;
         uint16_t pred_count              = 0;
@@ -351,30 +377,32 @@ __device__ __forceinline__
             else
             {
                 int64_t index = static_cast<int64_t>(score_gIdx) * static_cast<int64_t>(band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING);
-
-                pred_idx = node_id_to_pos[pred_node_id] + 1;
-
+                pred_idx      = node_id_to_pos[pred_node_id] + 1;
+                // only predecessors that are less than score_matrix_height distant can be taken into account
                 if ((graph_pos - pred_idx) < score_matrix_height)
                 {
                     // fill in first column of traceback buffer
                     traceback[index] = -(score_gIdx - pred_idx);
 
-                    if (band_start > CELLS_PER_THREAD && pred_count == 1)
+                    if (band_start > CUDAPOA_CELLS_PER_THREAD && pred_count == 1)
                     {
                         first_element_prev_score = min_score_value + gap_score;
                     }
                     else
                     {
-                        penalty = max(min_score_value, get_score_tb(scores, pred_idx, -1, score_matrix_height, gradient, band_width, max_column, min_score_value));
+                        penalty = max(min_score_value,
+                                      get_score_tb(scores, pred_idx, -1, score_matrix_height, band_width, band_shift, gradient, max_column, min_score_value));
                         // if pred_num > 1 keep checking to find max score as penalty
                         for (int32_t p = 1; p < pred_count; p++)
                         {
                             pred_node_id         = incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES + p];
                             int32_t pred_idx_tmp = node_id_to_pos[pred_node_id] + 1;
+                            // only predecessors that are less than score_matrix_height distant can be taken into account
                             if ((score_gIdx - pred_idx_tmp) < score_matrix_height)
                             {
                                 int32_t trace_tmp = -(score_gIdx - pred_idx_tmp);
-                                int32_t score_tmp = get_score_tb(scores, pred_idx_tmp, -1, score_matrix_height, gradient, band_width, max_column, min_score_value);
+                                int32_t score_tmp = get_score_tb(scores, pred_idx_tmp, -1, score_matrix_height, band_width, band_shift,
+                                                                 gradient, max_column, min_score_value);
                                 if (penalty < score_tmp)
                                 {
                                     penalty          = score_tmp;
@@ -383,21 +411,22 @@ __device__ __forceinline__
                             }
                         }
                         first_element_prev_score = penalty + gap_score;
-                        set_score_tb(scores, score_gIdx, -1, score_matrix_height, first_element_prev_score, gradient, band_width, max_column);
+                        set_score_tb(scores, score_gIdx, -1, score_matrix_height, first_element_prev_score, band_start, band_width);
                     }
                 }
                 else
                 {
                     penalty = min_score_value;
-                    // pick the predecessor which falls within the limit of score_matrix_height
+                    // look for a predecessor which is within score_matrix_height limit
                     for (int32_t p = 1; p < pred_count; p++)
                     {
                         pred_node_id         = incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES + p];
                         int32_t pred_idx_tmp = node_id_to_pos[pred_node_id] + 1;
+                        // only predecessors that are less than score_matrix_height distant can be taken into account
                         if ((score_gIdx - pred_idx_tmp) < score_matrix_height)
                         {
                             int32_t trace_tmp = -(score_gIdx - pred_idx_tmp);
-                            int32_t score_tmp = get_score_tb(scores, pred_idx_tmp, -1, score_matrix_height, gradient, band_width, max_column, min_score_value);
+                            int32_t score_tmp = get_score_tb(scores, pred_idx_tmp, -1, score_matrix_height, band_width, band_shift, gradient, max_column, min_score_value);
                             if (penalty < score_tmp)
                             {
                                 penalty          = score_tmp;
@@ -406,7 +435,7 @@ __device__ __forceinline__
                         }
                     }
                     first_element_prev_score = penalty + gap_score;
-                    set_score_tb(scores, score_gIdx, -1, score_matrix_height, first_element_prev_score, gradient, band_width, max_column);
+                    set_score_tb(scores, score_gIdx, -1, score_matrix_height, first_element_prev_score, band_start, band_width);
                 }
             }
         }
@@ -416,16 +445,16 @@ __device__ __forceinline__
 
         SeqT graph_base = nodes[node_id];
 
-        for (int32_t read_pos = lane_idx * CELLS_PER_THREAD + band_start; read_pos < band_start + band_width; read_pos += CUDAPOA_MIN_BAND_WIDTH)
+        for (int32_t read_pos = lane_idx * CUDAPOA_CELLS_PER_THREAD + band_start; read_pos < band_start + band_width; read_pos += CUDAPOA_MIN_BAND_WIDTH)
         {
             SeqT4<SeqT>* d_read4 = (SeqT4<SeqT>*)read;
-            SeqT4<SeqT> read4    = d_read4[read_pos / CELLS_PER_THREAD];
+            SeqT4<SeqT> read4    = d_read4[read_pos / CUDAPOA_CELLS_PER_THREAD];
 
             TraceT4<TraceT> trace;
             ScoreT4<ScoreT> score = {min_score_value, min_score_value, min_score_value, min_score_value};
             // note that whenever accessing a score matrix row, the row needs to be mapped to [0, score_matrix_height)
-            get_scores_tb(scores, pred_idx, score_gIdx, read_pos, score_matrix_height, gradient, band_width, max_column,
-                          gap_score, match_score, mismatch_score, read4, graph_base, score, trace);
+            get_scores_tb(scores, pred_idx, score_gIdx, read_pos, score_matrix_height, band_width, band_shift, gradient,
+                          max_column, gap_score, match_score, mismatch_score, read4, graph_base, score, trace);
 
             // Perform same score updates as above, but for rest of predecessors.
             for (int32_t p = 1; p < pred_count; p++)
@@ -433,8 +462,8 @@ __device__ __forceinline__
                 int32_t pred_idx_tmp = node_id_to_pos[incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES + p]] + 1;
                 if ((score_gIdx - pred_idx_tmp) < score_matrix_height)
                 {
-                    get_scores_tb(scores, pred_idx_tmp, score_gIdx, read_pos, score_matrix_height, gradient, band_width, max_column,
-                                  gap_score, match_score, mismatch_score, read4, graph_base, score, trace);
+                    get_scores_tb(scores, pred_idx_tmp, score_gIdx, read_pos, score_matrix_height, band_width, band_shift, gradient,
+                                  max_column, gap_score, match_score, mismatch_score, read4, graph_base, score, trace);
                 }
             }
 
@@ -521,18 +550,21 @@ __device__ __forceinline__
             {
                 if ((graph_count - idx) < score_matrix_height)
                 {
-                    int32_t s = get_score_tb(scores, idx, j, score_matrix_height, gradient, band_width, max_column, min_score_value);
+                    int32_t s = get_score_tb(scores, idx, j, score_matrix_height, band_width, band_shift, gradient, max_column, min_score_value);
                     if (mscore < s)
                     {
                         mscore = s;
                         i      = idx;
                     }
                 }
-                else
-                {
-                    ///ToDo throw an error indicating selected score_matrix_height (i.e. max predecessor distance) is too small
-                }
             }
+        }
+
+        // if i was not set, throw an error indicating selected score_matrix_height (i.e. max predecessor distance) is too small
+        if (i == 0)
+        {
+            j             = 0;
+            aligned_nodes = CUDAPOA_KERNEL_NW_TRACEBACK_BUFFER_FAILED;
         }
 
         //------------------------------------------------------------------------
@@ -543,7 +575,7 @@ __device__ __forceinline__
         {
             loop_count++;
 
-            int32_t band_start = get_band_start_for_row_tb(i, gradient, band_width, max_column);
+            int32_t band_start = get_band_start_for_row_tb(i, gradient, band_width, band_shift, max_column);
             TraceT trace       = get_trace(traceback, i, j, band_start, band_width);
 
             if (trace == 0)
@@ -567,6 +599,31 @@ __device__ __forceinline__
                 alignment_read[aligned_nodes]  = j - 1;
                 i -= trace;
                 j--;
+
+                if (ADAPTIVE)
+                {
+                    // no need to request rerun if (a) it's not the first run, (b) band_width == CUDAPOA_MAX_ADAPTIVE_BAND_WIDTH already
+                    if (rerun == 0 && band_width < CUDAPOA_MAX_ADAPTIVE_BAND_WIDTH)
+                    {
+                        // check if traceback gets too close or hits the band limits, if so stop and rerun with extended band-width
+                        // threshold for proximity to band limits works better if defined proportionate to the sequence length
+                        int32_t threshold = max(1, max_column / 1024); // ad-hoc rule 7
+                        if (j > threshold && j < max_column - threshold)
+                        {
+                            int32_t band_start = get_band_start_for_row(i, gradient, band_width, band_shift, max_column);
+                            if (j <= band_start + threshold) // ad-hoc rule 8-a, too close to left bound
+                            {
+                                aligned_nodes = CUDAPOA_SHIFT_ADAPTIVE_BAND_TO_LEFT;
+                                break;
+                            }
+                            if (j >= (band_start + band_width - threshold)) // ad-hoc rule 8-b, too close to right bound
+                            {
+                                aligned_nodes = CUDAPOA_SHIFT_ADAPTIVE_BAND_TO_RIGHT;
+                                break;
+                            }
+                        }
+                    }
+                }
             }
 
             aligned_nodes++;
@@ -574,7 +631,7 @@ __device__ __forceinline__
 
         if (loop_count >= (read_length + graph_count + 2))
         {
-            aligned_nodes = -1;
+            aligned_nodes = CUDAPOA_KERNEL_NW_BACKTRACKING_LOOP_FAILED;
         }
 
 #ifdef NW_VERBOSE_PRINT

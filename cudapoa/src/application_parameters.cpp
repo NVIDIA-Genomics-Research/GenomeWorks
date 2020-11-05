@@ -66,9 +66,9 @@ ApplicationParameters::ApplicationParameters(int argc, char* argv[])
             msa = true;
             break;
         case 'b':
-            if (std::stoi(optarg) < 0 || std::stoi(optarg) > 3)
+            if (std::stoi(optarg) < 0 || std::stoi(optarg) > 4)
             {
-                throw std::runtime_error("band-mode must be either 0 for full bands, 1 for static bands, 2 for adaptive bands or 3 for static band with traceback");
+                throw std::runtime_error("band-mode must be either 0 for full bands, 1 for static bands, 2 for adaptive bands, 3 and 4 for static and adaptive bands with traceback");
             }
             band_mode = static_cast<BandMode>(std::stoi(optarg));
             break;
@@ -196,7 +196,7 @@ void ApplicationParameters::help(int32_t exit_code)
             generates msa if this flag is passed [default: consensus])"
               << R"(
         -b, --band-mode  <int>
-            selects banding mode, 0: full-alignment, 1: static band, 2: adaptive band [2])"
+            selects banding mode, 0: full-alignment, 1: static band, 2: adaptive band, 3: traceback static band, 4: traceback adaptive band [2])"
               << R"(
         -w, --band-width <int>
             band-width for banded alignment (must be multiple of 128) [256])"
