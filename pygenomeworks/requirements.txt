@@ -18,6 +18,7 @@
 
 Cython==0.29.12
 intervaltree==3.1.0
+matplotlib==3.3.2
 networkx==2.4
 numpy==1.16.3
 pytest==4.4.1
