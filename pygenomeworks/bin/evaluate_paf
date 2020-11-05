@@ -30,8 +30,10 @@ from genomeworks.io import pafio
 def points_equal(fixed, point, slop):
     return max(0, int(fixed) - slop) <= int(point) <= (int(fixed) + slop)
 
+
 def within(val, target, tolerance=0.05):
     return abs(float(val) - float(target)) <= tolerance
+
 
 def calculate_reciprocal_overlap(record, other):
     q_overlap = min(record.query_end, other.query_end) - max(record.query_start, other.query_start)
@@ -45,6 +47,7 @@ def calculate_reciprocal_overlap(record, other):
 
 def _gen_interval(start, end, value, tolerance):
     return intervaltree.Interval(max(0, int(start) - tolerance), end + tolerance, value)
+
 
 def construct_interval_dictionaries(paf_record_list, tolerance):
     """
@@ -64,6 +67,7 @@ def construct_interval_dictionaries(paf_record_list, tolerance):
 
     return query_paf_dict, target_paf_dict
 
+
 def records_equal(record, other, pos_tolerance):
     query_start_valid = points_equal(record.query_start, other.query_start, pos_tolerance)
     query_end_valid = points_equal(record.query_end, other.query_end, pos_tolerance)
@@ -75,6 +79,7 @@ def records_equal(record, other, pos_tolerance):
     equal = query_start_valid and target_start_valid and query_end_valid and target_end_valid and strands_equal
 
     return equal, query_start_valid, query_end_valid, target_start_valid, target_end_valid, strands_equal
+
 
 def match_overlaps(record, other, pos_tolerance, min_reciprocal_overlap):
     """Given two sets of query and target ranges, check if the query and target ranges
@@ -89,9 +94,10 @@ def match_overlaps(record, other, pos_tolerance, min_reciprocal_overlap):
     Returns: Boolean indicating query and target match.
     """
 
-    equal, query_start_valid, query_end_valid, target_start_valid, target_end_valid, strands_equal = records_equal(record, other, pos_tolerance)
+    equal, query_start_valid, query_end_valid, target_start_valid, target_end_valid, \
+        strands_equal = records_equal(record, other, pos_tolerance)
     pct_recip = calculate_reciprocal_overlap(record, other)
-    reciprocal =  pct_recip > min_reciprocal_overlap
+    reciprocal = pct_recip > min_reciprocal_overlap
 
     match = equal or reciprocal
 
@@ -101,8 +107,8 @@ def match_overlaps(record, other, pos_tolerance, min_reciprocal_overlap):
             "target_end_valid": target_end_valid,
             "reciprocal_overlaps": reciprocal,
             "percent_reciprocal": pct_recip,
-            "strands_equal" : strands_equal,
-            "equal" : equal,
+            "strands_equal": strands_equal,
+            "equal": equal,
             "match": match}
     return match
 
@@ -118,8 +124,10 @@ def generate_key(name_1, name_2):
     """
     return "{}_{}".format(name_1, name_2)
 
+
 def _swap(val, dest):
     return dest, val
+
 
 def reverse_record(record):
     query_sequence_name, target_sequence_name = _swap(record.query_sequence_name, record.target_sequence_name)
@@ -127,7 +135,20 @@ def reverse_record(record):
     query_start, target_start = _swap(record.query_start, record.target_start)
     query_end, target_end = _swap(record.query_end, record.target_end)
 
-    return pafio.Overlap(query_sequence_name, query_sequence_length, query_start, query_end, record.relative_strand, target_sequence_name, target_sequence_length, target_start, target_end, record.num_residue_matches, record.alignment_block_length, record.mapping_quality, record.tags)
+    return pafio.Overlap(query_sequence_name,
+                         query_sequence_length,
+                         query_start,
+                         query_end,
+                         record.relative_strand,
+                         target_sequence_name,
+                         target_sequence_length,
+                         target_start,
+                         target_end,
+                         record.num_residue_matches,
+                         record.alignment_block_length,
+                         record.mapping_quality,
+                         record.tags)
+
 
 def evaluate_paf(truth_paf_filepath, test_paf_filepath, pos_tolerance, min_reciprocal, skip_self_mappings=True):
     """Given a truth and test set PAF file, count number of in/incorrectly detected, and non-detected overlaps
@@ -164,8 +185,6 @@ def evaluate_paf(truth_paf_filepath, test_paf_filepath, pos_tolerance, min_recip
     test_overlap_count = 0
     print("{} true overlaps in truth set".format(num_true_overlaps))
 
-    seen_test_overlap_keys = set()
-
     incorrect_query_start = 0
     incorrect_query_end = 0
     incorrect_target_start = 0
@@ -182,7 +201,7 @@ def evaluate_paf(truth_paf_filepath, test_paf_filepath, pos_tolerance, min_recip
 
         best_pct_match = 0.0
         best_ends = [1, 1, 1, 1]
-        
+
         found_match = False
         if key in truth_keys:
             for truth_interval in truth_query_intervals[test_overlap.query_sequence_name]:
@@ -251,7 +270,7 @@ def evaluate_paf(truth_paf_filepath, test_paf_filepath, pos_tolerance, min_recip
         incorrect_query_end += best_ends[1]
         incorrect_target_start += best_ends[2]
         incorrect_target_end += best_ends[3]
-        
+
         if not found_match:
             false_positive_count += 1
 
@@ -281,21 +300,23 @@ if __name__ == "__main__":
     parser.add_argument("-s", '--slop', dest="pos_tolerance",
                         type=int,
                         default=200,
-                        help="Number of basepairs to tolerate on either side of an interval (or record) to consider the two records equal [200].")
+                        help="Number of basepairs to tolerate on either side of an interval (or record) \
+                                to consider the two records equal [200].")
     parser.add_argument("-r", "--reciprocal-cutoff", dest="min_reciprocal", type=float,
-        required=False, default=0.9, help="Amount of reciprocal overlap required to consider two overlaps the same [0.9]")
+                        required=False, default=0.9, help="Amount of reciprocal overlap required \
+                                to consider two overlaps the same [0.9]")
     parser.add_argument('--skip_self_mapping',
                         action="store_true",
                         help="Skip checking overlaps where query/target name are same")
 
     args = parser.parse_args()
 
-    true_positives, false_positives, false_negatives, incorrect_query_start, incorrect_query_end, incorrect_target_start, \
-        incorrect_target_end, total_test_records = evaluate_paf(args.truth,
-                                            args.test,
-                                            args.pos_tolerance,
-                                            args.min_reciprocal,
-                                            args.skip_self_mapping)
+    true_positives, false_positives, false_negatives, incorrect_query_start, incorrect_query_end, \
+        incorrect_target_start, incorrect_target_end, total_test_records = evaluate_paf(args.truth,
+                                                                                        args.test,
+                                                                                        args.pos_tolerance,
+                                                                                        args.min_reciprocal,
+                                                                                        args.skip_self_mapping)
     print("Total test records:", total_test_records)
     print("True positives: ", true_positives)
     print("False positives: ", false_positives)

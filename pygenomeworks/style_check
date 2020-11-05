@@ -23,6 +23,7 @@ set -e
 PYGW_DIR=$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")
 echo "Run Python formatting check..."
 flake8 "$PYGW_DIR"
+flake8 "$PYGW_DIR" $PYGW_DIR/bin/*
 echo "Run Cython formatting check..."
 flake8 "$PYGW_DIR" --config "$PYGW_DIR"/.flake8.cython
 echo "Run Python docstring conventions check..."
