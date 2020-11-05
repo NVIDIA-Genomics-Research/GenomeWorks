@@ -441,7 +441,7 @@ __device__ __forceinline__
 
         if (loop_count >= (read_length + graph_count + 2))
         {
-            aligned_nodes = -1;
+            aligned_nodes = CUDAPOA_KERNEL_NW_BACKTRACKING_LOOP_FAILED;
         }
 
 #ifdef NW_VERBOSE_PRINT

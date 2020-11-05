@@ -43,20 +43,20 @@ BatchConfig::BatchConfig(int32_t max_seq_sz /*= 1024*/, int32_t max_seq_per_poa 
     , band_mode(banding)
     , max_banded_pred_distance(max_pred_dist > 0 ? max_pred_dist : 2 * cudautils::align<int32_t, CUDAPOA_MIN_BAND_WIDTH>(band_width))
 {
-    max_nodes_per_graph = cudautils::align<int32_t, CELLS_PER_THREAD>(graph_length_factor * max_sequence_size);
+    max_nodes_per_graph = cudautils::align<int32_t, CUDAPOA_CELLS_PER_THREAD>(graph_length_factor * max_sequence_size);
 
     if (banding == BandMode::full_band)
     {
-        matrix_sequence_dimension = cudautils::align<int32_t, CELLS_PER_THREAD>(max_sequence_size);
+        matrix_sequence_dimension = cudautils::align<int32_t, CUDAPOA_CELLS_PER_THREAD>(max_sequence_size);
     }
     else if (banding == BandMode::static_band || banding == BandMode::static_band_traceback)
     {
-        matrix_sequence_dimension = cudautils::align<int32_t, CELLS_PER_THREAD>(alignment_band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING);
+        matrix_sequence_dimension = cudautils::align<int32_t, CUDAPOA_CELLS_PER_THREAD>(alignment_band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING);
     }
-    else // BandMode::adaptive_band
+    else // BandMode::adaptive_band || BandMode::adaptive_band_traceback
     {
         // adapive_storage_factor is to reserve extra memory for cases with extended band-width
-        matrix_sequence_dimension = cudautils::align<int32_t, CELLS_PER_THREAD>(adapive_storage_factor * (alignment_band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING));
+        matrix_sequence_dimension = cudautils::align<int32_t, CUDAPOA_CELLS_PER_THREAD>(adapive_storage_factor * (alignment_band_width + CUDAPOA_BANDED_MATRIX_RIGHT_PADDING));
     }
 
     throw_on_negative(max_seq_sz, "max_sequence_size cannot be negative.");
@@ -76,8 +76,8 @@ BatchConfig::BatchConfig(int32_t max_seq_sz, int32_t max_consensus_sz, int32_t m
     /// ensure a 4-byte boundary alignment for any allocated buffer
     : max_sequence_size(max_seq_sz)
     , max_consensus_size(max_consensus_sz)
-    , max_nodes_per_graph(cudautils::align<int32_t, CELLS_PER_THREAD>(max_nodes_per_poa))
-    , matrix_sequence_dimension(cudautils::align<int32_t, CELLS_PER_THREAD>(matrix_seq_dim))
+    , max_nodes_per_graph(cudautils::align<int32_t, CUDAPOA_CELLS_PER_THREAD>(max_nodes_per_poa))
+    , matrix_sequence_dimension(cudautils::align<int32_t, CUDAPOA_CELLS_PER_THREAD>(matrix_seq_dim))
     /// ensure 128-alignment for band_width size
     , alignment_band_width(cudautils::align<int32_t, CUDAPOA_MIN_BAND_WIDTH>(band_width))
     , max_sequences_per_poa(max_seq_per_poa)
