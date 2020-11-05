@@ -156,13 +156,13 @@ static inline void encode_seq(bam1_t* const alignment, const std::string& seq)
             15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15,
             15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15};
 
-    const size_t len = seq.length();
+    const int32_t len = get_size(seq);
 
     // encode bases as nibbles and write them into the alignment struct 2 bases at a time
     // 4 high bits are first base, 4 low bits are second base
     uint8_t* bam_seq_start = bam_get_seq(alignment);
-    int i                  = 0;
-    for (i; (i + 1) < len; i += 2)
+    int32_t i              = 0;
+    for (; (i + 1) < len; i += 2)
     {
         *bam_seq_start++ = (L[static_cast<unsigned char>(seq[i])] << 4) + L[static_cast<unsigned char>(seq[i + 1])];
     }
@@ -214,7 +214,6 @@ void print_sam(const std::vector<Overlap>& overlaps,
     const int64_t number_of_overlaps_to_print = get_size<int64_t>(overlaps);
     for (int64_t i = 0; i < number_of_overlaps_to_print; ++i)
     {
-        const std::string& query_read_name  = query_parser.get_sequence_by_id(overlaps[i].query_read_id_).name;
         const std::string& target_read_name = target_parser.get_sequence_by_id(overlaps[i].target_read_id_).name;
         const std::string length            = std::to_string(target_parser.get_sequence_by_id(overlaps[i].target_read_id_).seq.length());
 
@@ -305,7 +304,11 @@ void print_sam(const std::vector<Overlap>& overlaps,
         // TODO: write AUX data if available
 
         std::lock_guard<std::mutex> lg(write_output_mutex);
-        int out = sam_write1(file.get(), header.get(), alignment.get());
+        result = sam_write1(file.get(), header.get(), alignment.get());
+        if (result < 0)
+        {
+            fprintf(stderr, "print_sam: could not write alignment");
+        }
     }
 
     return;

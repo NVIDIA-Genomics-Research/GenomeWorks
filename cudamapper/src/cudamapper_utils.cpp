@@ -38,7 +38,7 @@ std::vector<gw_string_view_t> split_into_kmers(const gw_string_view_t& s, const 
     const std::size_t kmer_count = s.length() - kmer_size + 1;
     std::vector<gw_string_view_t> kmers;
 
-    if (s.length() < kmer_size)
+    if (get_size(s) < kmer_size)
     {
         kmers.push_back(s);
         return kmers;
