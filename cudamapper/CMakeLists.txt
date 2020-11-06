@@ -79,7 +79,7 @@ endif()
 
 target_compile_options(${MODULE_NAME} PRIVATE -Werror -Wall -Wextra)
 if (gw_optimize_for_native_cpu)
-    target_compile_options(cudapoa PRIVATE -march=native)
+    target_compile_options(${MODULE_NAME} PRIVATE -march=native)
 endif()
 
 add_doxygen_source_dir(${CMAKE_CURRENT_SOURCE_DIR}/include)

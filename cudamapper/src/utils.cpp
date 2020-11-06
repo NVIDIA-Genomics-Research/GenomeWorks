@@ -16,6 +16,7 @@
 
 #include <cassert>
 #include <string>
+#include <iostream>
 
 #include <claraparabricks/genomeworks/io/fasta_parser.hpp>
 #include <claraparabricks/genomeworks/utils/cudautils.hpp>
@@ -221,7 +222,7 @@ void print_sam(const std::vector<Overlap>& overlaps,
                                   "CL", NULL);
         if (result < 0)
         {
-            fprintf(stderr, "print_sam: could not add header value");
+            std::cerr << "print_sam: could not add header value" << std::endl;
         }
     }
 
@@ -238,14 +239,14 @@ void print_sam(const std::vector<Overlap>& overlaps,
     }
     if (result < 0)
     {
-        fprintf(stderr, "print_sam: could not add PG header line");
+        std::cerr << "print_sam: could not add PG header line" << std::endl;
     }
 
     {
         result = sam_hdr_write(file.get(), header.get());
         if (result < 0)
         {
-            fprintf(stderr, "print_sam: could not add PG header line");
+            std::cerr << "print_sam: could not add PG header line" << std::endl;
         }
     }
 
@@ -307,7 +308,7 @@ void print_sam(const std::vector<Overlap>& overlaps,
         result = sam_write1(file.get(), header.get(), alignment.get());
         if (result < 0)
         {
-            fprintf(stderr, "print_sam: could not write alignment");
+            std::cerr << "print_sam: could not write alignment" << std::endl;
         }
     }
 
