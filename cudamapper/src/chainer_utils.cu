@@ -16,9 +16,8 @@
 
 #include "chainer_utils.cuh"
 
-#include <cub/cub.cuh>
 #include <thrust/execution_policy.h>
-#include <thrust/iterator/transform_iterator.h>
+#include <thrust/transform_scan.h>
 #include <thrust/reduce.h>
 #include <claraparabricks/genomeworks/utils/cudautils.hpp>
 
@@ -32,14 +31,6 @@ namespace cudamapper
 {
 namespace chainerutils
 {
-
-struct OverlapToNumResiduesOp
-{
-    __device__ __forceinline__ int32_t operator()(const Overlap& overlap) const
-    {
-        return overlap.num_residues_;
-    }
-};
 
 struct ConvertOverlapToNumResidues : public thrust::unary_function<Overlap, int32_t>
 {
@@ -77,12 +68,12 @@ __host__ __device__ Overlap create_overlap(const Anchor& start, const Anchor& en
 }
 
 __global__ void backtrace_anchors_to_overlaps(const Anchor* const anchors,
-                                              Overlap* overlaps,
-                                              double* const scores,
+                                              Overlap* const overlaps,
+                                              const double* const scores,
                                               bool* const max_select_mask,
-                                              int32_t* const predecessors,
+                                              const int32_t* const predecessors,
                                               const int64_t n_anchors,
-                                              const int32_t min_score)
+                                              const double min_score)
 {
     const int64_t thread_id = blockIdx.x * blockDim.x + threadIdx.x;
     const int32_t stride    = blockDim.x * gridDim.x;
@@ -125,18 +116,29 @@ void allocate_anchor_chains(const device_buffer<Overlap>& overlaps,
                             cudaStream_t cuda_stream)
 {
     auto thrust_exec_policy = thrust::cuda::par(allocator).on(cuda_stream);
-    num_total_anchors       = thrust::reduce(thrust_exec_policy,
-                                       thrust::make_transform_iterator(overlaps.begin(), ConvertOverlapToNumResidues()),
-                                       thrust::make_transform_iterator(overlaps.end(), ConvertOverlapToNumResidues()),
-                                       0);
+    thrust::plus<int32_t> sum_op;
+    num_total_anchors = thrust::transform_reduce(thrust_exec_policy,
+                                                 overlaps.begin(),
+                                                 overlaps.end(),
+                                                 ConvertOverlapToNumResidues(),
+                                                 0,
+                                                 sum_op);
 
     unrolled_anchor_chains.clear_and_resize(num_total_anchors);
     anchor_chain_starts.clear_and_resize(overlaps.size());
 
-    thrust::exclusive_scan(thrust_exec_policy,
-                           thrust::make_transform_iterator(overlaps.begin(), ConvertOverlapToNumResidues()),
-                           thrust::make_transform_iterator(overlaps.end(), ConvertOverlapToNumResidues()),
-                           anchor_chain_starts.data());
+    // thrust::exclusive_scan(thrust_exec_policy,
+    //                        thrust::make_transform_iterator(overlaps.begin(), ConvertOverlapToNumResidues()),
+    //                        thrust::make_transform_iterator(overlaps.end(), ConvertOverlapToNumResidues()),
+    //                        anchor_chain_starts.data());
+
+    thrust::transform_exclusive_scan(thrust_exec_policy,
+                                     overlaps.begin(),
+                                     overlaps.end(),
+                                     anchor_chain_starts.data(),
+                                     ConvertOverlapToNumResidues(),
+                                     0,
+                                     sum_op);
 }
 
 __global__ void output_overlap_chains_by_backtrace(const Overlap* const overlaps,

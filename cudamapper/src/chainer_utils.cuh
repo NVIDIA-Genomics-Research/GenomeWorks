@@ -46,17 +46,17 @@ __host__ __device__ Overlap create_overlap(const Anchor& start,
 /// \param anchors An array of anchors.
 /// \param overlaps An array of overlaps to be filled.
 /// \param scores An array of scores. Only chains with a score greater than min_score will be backtraced.
-/// \param max_select_mask A boolean mask, used to mask out any subchains during the backtrace.
+/// \param max_select_mask A boolean mask, used to mask out any chains which are completely contained within larger chains during the backtrace.
 /// \param predecessors An array of indices into the anchors array marking the predecessor of each anchor within a chain.
 /// \param n_anchors The number of anchors.
 /// \param min_score The minimum score of a chain for performing backtracing.
 __global__ void backtrace_anchors_to_overlaps(const Anchor* const anchors,
                                               Overlap* const overlaps,
-                                              double* const scores,
+                                              const double* const scores,
                                               bool* const max_select_mask,
-                                              int32_t* const predecessors,
+                                              const int32_t* const predecessors,
                                               const int64_t n_anchors,
-                                              const int32_t min_score);
+                                              const double min_score);
 
 /// \brief Allocate a 1-dimensional array representing an unrolled ragged array
 /// of anchors within each overlap. The final array holds the indices within the anchors array

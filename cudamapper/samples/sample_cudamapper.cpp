@@ -29,7 +29,6 @@
 #include <iostream>
 #include <string>
 #include <mutex>
-#include <unistd.h>
 #include <getopt.h>
 
 // define constants. See cudamapper/src/application_parameters.hpp for more.
