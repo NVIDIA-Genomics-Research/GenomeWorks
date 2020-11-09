@@ -308,7 +308,7 @@ void print_sam(const std::vector<Overlap>& overlaps,
         result = sam_write1(file.get(), header.get(), alignment.get());
         if (result < 0)
         {
-            std::cerr << "print_sam: could not write alignment" << std::endl;
+            throw std::runtime_error("ERROR, print_sam: could not write alignment");
         }
     }
 
