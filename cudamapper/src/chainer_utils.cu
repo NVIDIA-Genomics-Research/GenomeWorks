@@ -32,6 +32,15 @@ namespace cudamapper
 namespace chainerutils
 {
 
+__device__ __forceinline__ Anchor empty_anchor()
+{
+    Anchor a;
+    a.query_read_id_           = UINT32_MAX;
+    a.query_position_in_read_  = UINT32_MAX;
+    a.target_read_id_          = UINT32_MAX;
+    a.target_position_in_read_ = UINT32_MAX;
+    return a;
+}
 struct ConvertOverlapToNumResidues : public thrust::unary_function<Overlap, int32_t>
 {
     __host__ __device__ int32_t operator()(const Overlap& o) const
@@ -69,11 +78,12 @@ __host__ __device__ Overlap create_overlap(const Anchor& start, const Anchor& en
 
 __global__ void backtrace_anchors_to_overlaps(const Anchor* const anchors,
                                               Overlap* const overlaps,
-                                              const double* const scores,
+                                              int32_t* const overlap_terminal_anchors,
+                                              const float* const scores,
                                               bool* const max_select_mask,
                                               const int32_t* const predecessors,
                                               const int64_t n_anchors,
-                                              const double min_score)
+                                              const float min_score)
 {
     const int64_t thread_id = blockIdx.x * blockDim.x + threadIdx.x;
     const int32_t stride    = blockDim.x * gridDim.x;
@@ -98,12 +108,15 @@ __global__ void backtrace_anchors_to_overlaps(const Anchor* const anchors,
                 num_anchors_in_chain++;
                 index = predecessors[index];
             }
-            Anchor first_anchor = anchors[first_index];
-            overlaps[i]         = create_overlap(first_anchor, final_anchor, num_anchors_in_chain);
+            Anchor first_anchor         = anchors[first_index];
+            overlap_terminal_anchors[i] = i;
+            overlaps[i]                 = create_overlap(first_anchor, final_anchor, num_anchors_in_chain);
         }
         else
         {
-            max_select_mask[i] = false;
+            max_select_mask[i]          = false;
+            overlap_terminal_anchors[i] = -1;
+            overlaps[i]                 = create_overlap(empty_anchor(), empty_anchor(), 1);
         }
     }
 }
@@ -127,11 +140,6 @@ void allocate_anchor_chains(const device_buffer<Overlap>& overlaps,
     unrolled_anchor_chains.clear_and_resize(num_total_anchors);
     anchor_chain_starts.clear_and_resize(overlaps.size());
 
-    // thrust::exclusive_scan(thrust_exec_policy,
-    //                        thrust::make_transform_iterator(overlaps.begin(), ConvertOverlapToNumResidues()),
-    //                        thrust::make_transform_iterator(overlaps.end(), ConvertOverlapToNumResidues()),
-    //                        anchor_chain_starts.data());
-
     thrust::transform_exclusive_scan(thrust_exec_policy,
                                      overlaps.begin(),
                                      overlaps.end(),
@@ -145,6 +153,7 @@ __global__ void output_overlap_chains_by_backtrace(const Overlap* const overlaps
                                                    const Anchor* const anchors,
                                                    const bool* const select_mask,
                                                    const int32_t* const predecessors,
+                                                   const int32_t* const chain_terminators,
                                                    int32_t* const anchor_chains,
                                                    int32_t* const anchor_chain_starts,
                                                    const int32_t num_overlaps,
@@ -163,11 +172,11 @@ __global__ void output_overlap_chains_by_backtrace(const Overlap* const overlaps
             int32_t anchor_chain_index = 0;
             // As chaining proceeds backwards (i.e., it's a backtrace),
             // we need to fill the new anchor chain array in in reverse order.
-            int32_t index = anchor_chain_starts[i];
+            int32_t index = chain_terminators[i];
             while (index != -1)
             {
-                anchor_chains[anchor_chain_starts[i] + (overlaps[i].num_residues_ - anchor_chain_index)] = index;
-                index                                                                                    = predecessors[index];
+                anchor_chains[anchor_chain_starts[i] + (overlaps[i].num_residues_ - anchor_chain_index - 1)] = index;
+                index                                                                                        = predecessors[index];
                 ++anchor_chain_index;
             }
         }
@@ -188,9 +197,9 @@ __global__ void output_overlap_chains_by_RLE(const Overlap* const overlaps,
     {
         int32_t chain_start  = chain_starts[i];
         int32_t chain_length = chain_lengths[i];
-        for (int32_t ind = chain_start; ind < chain_start + chain_length; ++i)
+        for (int32_t index = chain_start; index < chain_start + chain_length; ++index)
         {
-            anchor_chains[ind] = ind;
+            anchor_chains[index] = index;
         }
     }
 }

@@ -24,6 +24,11 @@
 
 #include <claraparabricks/genomeworks/utils/cudautils.hpp>
 
+#include <algorithm>
+
+#ifndef NDEBUG
+#include <thrust/host_vector.h>
+#endif
 namespace claraparabricks
 {
 
