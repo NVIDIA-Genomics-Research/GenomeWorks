@@ -110,7 +110,8 @@ std::unique_ptr<Batch> create_batch(int32_t device_id,
                                     const BatchConfig& batch_size,
                                     int16_t gap_score,
                                     int16_t mismatch_score,
-                                    int16_t match_score)
+                                    int16_t match_score,
+                                    DefaultDeviceAllocator allocator)
 {
     if (use32bitScore(batch_size, gap_score, mismatch_score, match_score))
     {
@@ -125,7 +126,8 @@ std::unique_ptr<Batch> create_batch(int32_t device_id,
                                                                                  batch_size,
                                                                                  gap_score,
                                                                                  mismatch_score,
-                                                                                 match_score);
+                                                                                 match_score,
+                                                                                 allocator);
             }
             else
             {
@@ -136,7 +138,8 @@ std::unique_ptr<Batch> create_batch(int32_t device_id,
                                                                                 batch_size,
                                                                                 gap_score,
                                                                                 mismatch_score,
-                                                                                match_score);
+                                                                                match_score,
+                                                                                allocator);
             }
         }
         else
@@ -150,7 +153,8 @@ std::unique_ptr<Batch> create_batch(int32_t device_id,
                                                                                  batch_size,
                                                                                  gap_score,
                                                                                  mismatch_score,
-                                                                                 match_score);
+                                                                                 match_score,
+                                                                                 allocator);
             }
             else
             {
@@ -161,7 +165,8 @@ std::unique_ptr<Batch> create_batch(int32_t device_id,
                                                                                 batch_size,
                                                                                 gap_score,
                                                                                 mismatch_score,
-                                                                                match_score);
+                                                                                match_score,
+                                                                                allocator);
             }
         }
     }
@@ -177,7 +182,8 @@ std::unique_ptr<Batch> create_batch(int32_t device_id,
                                                                              batch_size,
                                                                              gap_score,
                                                                              mismatch_score,
-                                                                             match_score);
+                                                                             match_score,
+                                                                             allocator);
         }
         else
         {
@@ -188,7 +194,8 @@ std::unique_ptr<Batch> create_batch(int32_t device_id,
                                                                             batch_size,
                                                                             gap_score,
                                                                             mismatch_score,
-                                                                            match_score);
+                                                                            match_score,
+                                                                            allocator);
         }
     }
 }
