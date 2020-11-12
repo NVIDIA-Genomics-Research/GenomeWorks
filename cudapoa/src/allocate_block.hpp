@@ -71,8 +71,8 @@ public:
         int64_t host_size_per_poa, device_size_per_poa;
         std::tie(host_size_fixed, device_size_fixed, host_size_per_poa, device_size_per_poa) = calculate_space_per_poa(batch_size);
         // Check minimum requirement for device memory
-        // Max memory that can be used = min(available free mem, upper limit on memory use) 
-        int64_t avail_mem = std::min(get_size_of_largest_free_memory_block(allocator), max_mem);
+        // Max memory that can be used = min(available free mem, upper limit on memory use)
+        int64_t avail_mem          = std::min(get_size_of_largest_free_memory_block(allocator), max_mem);
         int64_t minimum_device_mem = device_size_fixed + device_size_per_poa;
         if (avail_mem < minimum_device_mem)
         {
@@ -118,7 +118,7 @@ public:
     {
         OutputDetails* output_details_h{};
         OutputDetails* output_details_d{};
-        uint8_t * block_data_d = block_data_d_.data();
+        uint8_t* block_data_d = block_data_d_.data();
 
         // on host
         output_details_h = reinterpret_cast<OutputDetails*>(&block_data_h_[offset_h_]);
@@ -162,7 +162,7 @@ public:
         // on host
         InputDetails<SizeT>* input_details_h{};
         InputDetails<SizeT>* input_details_d{};
-        uint8_t * block_data_d = block_data_d_.data();
+        uint8_t* block_data_d = block_data_d_.data();
 
         input_details_h = reinterpret_cast<InputDetails<SizeT>*>(&block_data_h_[offset_h_]);
         offset_h_ += sizeof(InputDetails<SizeT>);
@@ -205,7 +205,7 @@ public:
     void get_alignment_details(AlignmentDetails<ScoreT, SizeT, TraceT>** alignment_details_d_p)
     {
         AlignmentDetails<ScoreT, SizeT, TraceT>* alignment_details_d{};
-        uint8_t * block_data_d = block_data_d_.data();
+        uint8_t* block_data_d = block_data_d_.data();
         // on host
         alignment_details_d = reinterpret_cast<AlignmentDetails<ScoreT, SizeT, TraceT>*>(&block_data_h_[offset_h_]);
         offset_h_ += sizeof(AlignmentDetails<ScoreT, SizeT, TraceT>);
@@ -255,7 +255,7 @@ public:
     {
         GraphDetails<SizeT>* graph_details_d{};
         GraphDetails<SizeT>* graph_details_h{};
-        uint8_t * block_data_d = block_data_d_.data();
+        uint8_t* block_data_d = block_data_d_.data();
         // on host
         graph_details_h = reinterpret_cast<GraphDetails<SizeT>*>(&block_data_h_[offset_h_]);
         offset_h_ += sizeof(GraphDetails<SizeT>);
