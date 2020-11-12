@@ -116,6 +116,7 @@ Minimum requirements -
 Optional requirements -
 
 1. autoconf (required to output SAM/BAM files)
+2. automake (required to output SAM/BAM files)
 
 ## GenomeWorks Setup
 
