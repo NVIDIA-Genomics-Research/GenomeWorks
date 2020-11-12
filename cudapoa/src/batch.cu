@@ -105,13 +105,13 @@ BatchConfig::BatchConfig(int32_t max_seq_sz, int32_t max_consensus_sz, int32_t m
 
 std::unique_ptr<Batch> create_batch(int32_t device_id,
                                     cudaStream_t stream,
-                                    size_t max_mem,
+                                    DefaultDeviceAllocator allocator,
+                                    int64_t max_mem,
                                     int8_t output_mask,
                                     const BatchConfig& batch_size,
                                     int16_t gap_score,
                                     int16_t mismatch_score,
-                                    int16_t match_score,
-                                    DefaultDeviceAllocator allocator)
+                                    int16_t match_score)
 {
     if (use32bitScore(batch_size, gap_score, mismatch_score, match_score))
     {
@@ -121,25 +121,25 @@ std::unique_ptr<Batch> create_batch(int32_t device_id,
             {
                 return std::make_unique<CudapoaBatch<int32_t, int32_t, int16_t>>(device_id,
                                                                                  stream,
+                                                                                 allocator,
                                                                                  max_mem,
                                                                                  output_mask,
                                                                                  batch_size,
                                                                                  gap_score,
                                                                                  mismatch_score,
-                                                                                 match_score,
-                                                                                 allocator);
+                                                                                 match_score);
             }
             else
             {
                 return std::make_unique<CudapoaBatch<int32_t, int32_t, int8_t>>(device_id,
                                                                                 stream,
+                                                                                allocator,
                                                                                 max_mem,
                                                                                 output_mask,
                                                                                 batch_size,
                                                                                 gap_score,
                                                                                 mismatch_score,
-                                                                                match_score,
-                                                                                allocator);
+                                                                                match_score);
             }
         }
         else
@@ -148,25 +148,25 @@ std::unique_ptr<Batch> create_batch(int32_t device_id,
             {
                 return std::make_unique<CudapoaBatch<int32_t, int16_t, int16_t>>(device_id,
                                                                                  stream,
+                                                                                 allocator,
                                                                                  max_mem,
                                                                                  output_mask,
                                                                                  batch_size,
                                                                                  gap_score,
                                                                                  mismatch_score,
-                                                                                 match_score,
-                                                                                 allocator);
+                                                                                 match_score);
             }
             else
             {
                 return std::make_unique<CudapoaBatch<int32_t, int16_t, int8_t>>(device_id,
                                                                                 stream,
+                                                                                allocator,
                                                                                 max_mem,
                                                                                 output_mask,
                                                                                 batch_size,
                                                                                 gap_score,
                                                                                 mismatch_score,
-                                                                                match_score,
-                                                                                allocator);
+                                                                                match_score);
             }
         }
     }
@@ -177,27 +177,58 @@ std::unique_ptr<Batch> create_batch(int32_t device_id,
         {
             return std::make_unique<CudapoaBatch<int16_t, int16_t, int16_t>>(device_id,
                                                                              stream,
+                                                                             allocator,
                                                                              max_mem,
                                                                              output_mask,
                                                                              batch_size,
                                                                              gap_score,
                                                                              mismatch_score,
-                                                                             match_score,
-                                                                             allocator);
+                                                                             match_score);
         }
         else
         {
             return std::make_unique<CudapoaBatch<int16_t, int16_t, int8_t>>(device_id,
                                                                             stream,
+                                                                            allocator,
                                                                             max_mem,
                                                                             output_mask,
                                                                             batch_size,
                                                                             gap_score,
                                                                             mismatch_score,
-                                                                            match_score,
-                                                                            allocator);
+                                                                            match_score);
         }
     }
+}
+
+std::unique_ptr<Batch> create_batch(int32_t device_id,
+                                    cudaStream_t stream,
+                                    int64_t max_mem,
+                                    int8_t output_mask,
+                                    const BatchConfig& batch_size,
+                                    int16_t gap_score,
+                                    int16_t mismatch_score,
+                                    int16_t match_score)
+{
+    if (max_mem < -1)
+    {
+        throw std::invalid_argument("max_mem has to be either -1 (=all available GPU memory) or greater or equal than 0.");
+    }
+#ifdef GW_ENABLE_CACHING_ALLOCATOR
+    // uses CachingDeviceAllocator
+    if (max_mem == -1)
+    {
+        max_mem = claraparabricks::genomeworks::cudautils::find_largest_contiguous_device_memory_section();
+        if (max_mem == 0)
+        {
+            throw std::runtime_error("No memory available for caching");
+        }
+    }
+    claraparabricks::genomeworks::DefaultDeviceAllocator allocator(max_mem);
+#else
+    // uses CudaMallocAllocator
+    claraparabricks::genomeworks::DefaultDeviceAllocator allocator;
+#endif
+    return create_batch(device_id, stream, allocator, max_mem, output_mask, batch_size, gap_score, mismatch_score, match_score);
 }
 
 } // namespace cudapoa

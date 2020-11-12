@@ -51,7 +51,7 @@ public:
         size_t total = 0, free = 0;
         cudaSetDevice(0);
         cudaMemGetInfo(&free, &total);
-        size_t mem_per_batch = 0.9 * free / num_batches_;
+        int64_t mem_per_batch = 0.9 * free / num_batches_;
         for (int32_t batch = 0; batch < num_batches_; batch++)
         {
             streams_.emplace_back(make_cuda_stream());

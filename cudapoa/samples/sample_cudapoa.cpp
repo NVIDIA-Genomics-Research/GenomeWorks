@@ -47,7 +47,7 @@ std::unique_ptr<Batch> initialize_batch(bool msa, const BatchConfig& batch_size)
     // Initialize CUDAPOA batch object for batched processing of POAs on the GPU.
     const int32_t device_id      = 0;
     cudaStream_t stream          = 0;
-    size_t mem_per_batch         = 0.9 * free; // Using 90% of GPU available memory for CUDAPOA batch.
+    int64_t mem_per_batch         = 0.9 * free; // Using 90% of GPU available memory for CUDAPOA batch.
     const int32_t mismatch_score = -6, gap_score = -8, match_score = 8;
     std::unique_ptr<Batch> batch = create_batch(device_id,
                                                 stream,

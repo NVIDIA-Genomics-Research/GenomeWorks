@@ -55,7 +55,7 @@ template <typename ScoreT, typename SizeT, typename TraceT>
 class BatchBlock
 {
 public:
-    BatchBlock(int32_t device_id, size_t avail_mem, int8_t output_mask, const BatchConfig& batch_size, DefaultDeviceAllocator allocator)
+    BatchBlock(int32_t device_id, DefaultDeviceAllocator allocator, int64_t max_mem, int8_t output_mask, const BatchConfig& batch_size)
         : max_sequences_per_poa_(throw_on_negative(batch_size.max_sequences_per_poa, "Maximum sequences per POA has to be non-negative"))
         , device_id_(throw_on_negative(device_id, "Device ID has to be non-negative"))
         , output_mask_(output_mask)
@@ -70,12 +70,13 @@ public:
         int64_t host_size_fixed, device_size_fixed;
         int64_t host_size_per_poa, device_size_per_poa;
         std::tie(host_size_fixed, device_size_fixed, host_size_per_poa, device_size_per_poa) = calculate_space_per_poa(batch_size);
-
         // Check minimum requirement for device memory
-        size_t minimum_device_mem = device_size_fixed + device_size_per_poa;
+        // Max memory that can be used = min(available free mem, upper limit on memory use) 
+        int64_t avail_mem = std::min(get_size_of_largest_free_memory_block(allocator), max_mem);
+        int64_t minimum_device_mem = device_size_fixed + device_size_per_poa;
         if (avail_mem < minimum_device_mem)
         {
-            std::string msg = std::string("Require at least ")
+            std::string msg = std::string("Requires at least ")
                                   .append(std::to_string(minimum_device_mem))
                                   .append(" bytes of device memory per CUDAPOA batch to process correctly.");
             throw std::runtime_error(msg);
@@ -512,7 +513,6 @@ protected:
     int32_t score_matrix_width_   = 0;
     bool traceback_alignment_     = false;
     int32_t device_id_;
-
     // Bit field for output type
     int8_t output_mask_;
 };

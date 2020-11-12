@@ -166,23 +166,43 @@ public:
 ///
 /// \param device_id                GPU device on which to run CUDA POA algorithm
 /// \param stream                   CUDA stream to use on GPU
+/// \param allocator                Allocator to use for internal device memory allocations
 /// \param max_gpu_mem              Maximum GPU memory to use for this batch.
 /// \param output_mask              which outputs to produce from POA (msa, consensus)
 /// \param batch_size               defines upper limits for size of a POA batch, i.e. sequence length and other related parameters
 /// \param gap_score                score to be assigned to a gap
 /// \param mismatch_score           score to be assigned to a mismatch
 /// \param match_score              score to be assigned for a match
-/// \param allocator                allocator to be used
 /// \return Returns a unique pointer to a new Batch object
 std::unique_ptr<Batch> create_batch(int32_t device_id,
                                     cudaStream_t stream,
-                                    size_t max_gpu_mem,
+                                    DefaultDeviceAllocator allocator,
+                                    int64_t max_gpu_mem,
                                     int8_t output_mask,
                                     const BatchConfig& batch_size,
                                     int16_t gap_score,
                                     int16_t mismatch_score,
-                                    int16_t match_score,
-                                    DefaultDeviceAllocator allocator);
+                                    int16_t match_score);
+
+/// \brief Creates a new CUDA Batch object.
+///
+/// \param device_id                GPU device on which to run CUDA POA algorithm
+/// \param stream                   CUDA stream to use on GPU
+/// \param max_gpu_mem              Maximum GPU memory to use for this batch.
+/// \param output_mask              which outputs to produce from POA (msa, consensus)
+/// \param batch_size               defines upper limits for size of a POA batch, i.e. sequence length and other related parameters
+/// \param gap_score                score to be assigned to a gap
+/// \param mismatch_score           score to be assigned to a mismatch
+/// \param match_score              score to be assigned for a match
+/// \return Returns a unique pointer to a new Batch object
+std::unique_ptr<Batch> create_batch(int32_t device_id,
+                                    cudaStream_t stream,
+                                    int64_t max_gpu_mem,
+                                    int8_t output_mask,
+                                    const BatchConfig& batch_size,
+                                    int16_t gap_score,
+                                    int16_t mismatch_score,
+                                    int16_t match_score);
 
 /// \}
 
