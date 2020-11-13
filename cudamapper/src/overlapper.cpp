@@ -136,10 +136,10 @@ void Overlapper::post_process_overlaps(std::vector<Overlap>& overlaps, const boo
 {
     const auto num_overlaps = get_size(overlaps);
     bool in_fuse            = false;
-    int fused_target_start  = 0;
-    int fused_query_start   = 0;
-    int fused_target_end    = 0;
-    int fused_query_end     = 0;
+    position_in_read_t fused_target_start  = UINT32_MAX;
+    position_in_read_t fused_query_start   = UINT32_MAX;
+    position_in_read_t fused_target_end    = UINT32_MAX;
+    position_in_read_t fused_query_end     = UINT32_MAX;
     int num_residues        = 0;
     Overlap prev_overlap;
     std::vector<bool> drop_overlap_mask;
