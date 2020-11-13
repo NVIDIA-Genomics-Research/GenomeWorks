@@ -19,6 +19,7 @@
 #include <claraparabricks/genomeworks/cudamapper/overlapper.hpp>
 #include <claraparabricks/genomeworks/utils/cudautils.hpp>
 #include <claraparabricks/genomeworks/utils/signed_integer_utils.hpp>
+#include <limits>
 
 #include "cudamapper_utils.hpp"
 #include "overlapper_triggered.hpp"
@@ -134,13 +135,13 @@ namespace cudamapper
 
 void Overlapper::post_process_overlaps(std::vector<Overlap>& overlaps, const bool drop_fused_overlaps)
 {
-    const auto num_overlaps = get_size(overlaps);
-    bool in_fuse            = false;
-    position_in_read_t fused_target_start  = UINT32_MAX;
-    position_in_read_t fused_query_start   = UINT32_MAX;
-    position_in_read_t fused_target_end    = UINT32_MAX;
-    position_in_read_t fused_query_end     = UINT32_MAX;
-    int num_residues        = 0;
+    const auto num_overlaps               = get_size(overlaps);
+    bool in_fuse                          = false;
+    position_in_read_t fused_target_start = std::numeric_limits<position_in_read_t>::max();
+    position_in_read_t fused_query_start  = std::numeric_limits<position_in_read_t>::max();
+    position_in_read_t fused_target_end   = std::numeric_limits<position_in_read_t>::max();
+    position_in_read_t fused_query_end    = std::numeric_limits<position_in_read_t>::max();
+    int num_residues                      = 0;
     Overlap prev_overlap;
     std::vector<bool> drop_overlap_mask;
     if (drop_fused_overlaps)
