@@ -64,8 +64,8 @@ public:
     /// Allocates the buffer
     /// \param buffer_size
     DevicePreallocatedAllocator(size_t buffer_size)
-    : buffer_size_(roundup_allocation(buffer_size))
-    , buffer_ptr_(create_buffer(buffer_size_))
+        : buffer_size_(roundup_allocation(buffer_size))
+        , buffer_ptr_(create_buffer(buffer_size_))
     {
         assert(buffer_size_ > 0);
         MemoryBlock whole_memory_block;
