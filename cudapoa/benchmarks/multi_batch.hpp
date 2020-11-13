@@ -51,11 +51,12 @@ public:
         size_t total = 0, free = 0;
         cudaSetDevice(0);
         cudaMemGetInfo(&free, &total);
+        DefaultDeviceAllocator allocator = create_default_device_allocator(0.901*free);
         int64_t mem_per_batch = 0.9 * free / num_batches_;
         for (int32_t batch = 0; batch < num_batches_; batch++)
         {
             streams_.emplace_back(make_cuda_stream());
-            batches_.emplace_back(create_batch(0, streams_.back().get(), mem_per_batch,
+            batches_.emplace_back(create_batch(0, streams_.back().get(), allocator, mem_per_batch,
                                                OutputType::consensus,
                                                batch_size,
                                                -8, -6, 8));
