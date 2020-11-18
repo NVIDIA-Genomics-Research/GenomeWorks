@@ -5,7 +5,7 @@ This package implements CUDA-accelerated seed-extension algorithms that use seed
 encoded input strands to extend and compute the alignment between the strands. 
 Currently this module implements the ungapped X-drop algorithm, adapted from 
 [SegAlign's](https://github.com/gsneha26/SegAlign) Ungapped Extender authored by 
-Sneha Goenka (gsneha@stanford.edu) and Yatish Turakhia (yturakhi@uscs.edu).
+Sneha Goenka (gsneha@stanford.edu) and Yatish Turakhia (yturakhi@ucsc.edu).
 
 ### Encoded Input
 `cudaextender` expects the input strands to be encoded as integer sequences. 
