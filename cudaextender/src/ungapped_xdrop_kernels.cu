@@ -108,8 +108,8 @@ __global__ void find_high_scoring_segment_pairs(const int8_t* __restrict__ d_tar
             new_max_found[warp_id]  = false;
             entropy[warp_id]        = 1.0f;
             prev_score[warp_id]     = 0;
-            prev_max_score[warp_id] = -1000;
-            prev_max_pos[warp_id]   = 0;
+            prev_max_score[warp_id] = 0;
+            prev_max_pos[warp_id]   = -1;
             extent[warp_id]         = 0;
         }
         __syncwarp();
@@ -183,8 +183,36 @@ __global__ void find_high_scoring_segment_pairs(const int8_t* __restrict__ d_tar
 #pragma unroll
             for (int32_t offset = 1; offset < warp_size; offset = offset << 1)
             {
-                xdrop_done |= __shfl_up_sync(0xFFFFFFFF, xdrop_done, offset);
+                bool temp_xdrop_done = __shfl_up_sync(0xFFFFFFFF, xdrop_done, offset);
+                if (lane_id >= offset)
+                {
+                    xdrop_done |= temp_xdrop_done;
+                }
             }
+
+            if(xdrop_done == 1)
+            {
+                max_thread_score = prev_max_score[warp_id];
+                max_pos = prev_max_pos[warp_id];
+            }
+            __syncwarp();
+
+#pragma unroll
+            for (int32_t offset = 1; offset < warp_size; offset = offset << 1)
+            {
+                const int32_t temp = __shfl_up_sync(0xFFFFFFFF, max_thread_score, offset);
+                const int32_t temp_pos = __shfl_up_sync(0xFFFFFFFF, max_pos, offset);
+
+                if(lane_id >= offset)
+                {
+                    if(temp >= max_thread_score)
+                    {
+                        max_thread_score = temp;
+                        max_pos = temp_pos;
+                    }
+                }
+            }
+            __syncwarp();
 
             if (lane_id == warp_size - 1)
             {
@@ -224,7 +252,7 @@ __global__ void find_high_scoring_segment_pairs(const int8_t* __restrict__ d_tar
             }
             __syncwarp();
 
-            if (r_chr == q_chr)
+            if (r_chr == q_chr && r_chr < 4)
             {
                 if (pos_offset <= prev_max_pos[warp_id])
                 {
@@ -250,7 +278,7 @@ __global__ void find_high_scoring_segment_pairs(const int8_t* __restrict__ d_tar
             edge_found[warp_id]     = false;
             new_max_found[warp_id]  = false;
             prev_score[warp_id]     = 0;
-            prev_max_score[warp_id] = -1000;
+            prev_max_score[warp_id] = 0;
             prev_max_pos[warp_id]   = 0;
             left_extent[warp_id]    = 0;
         }
@@ -327,8 +355,36 @@ __global__ void find_high_scoring_segment_pairs(const int8_t* __restrict__ d_tar
 #pragma unroll
             for (int32_t offset = 1; offset < warp_size; offset = offset << 1)
             {
-                xdrop_done |= __shfl_up_sync(0xFFFFFFFF, xdrop_done, offset);
+                bool temp_xdrop_done = __shfl_up_sync(0xFFFFFFFF, xdrop_done, offset);
+                if (lane_id >= offset)
+                {
+                    xdrop_done |= temp_xdrop_done;
+                }
             }
+
+            if(xdrop_done == 1)
+            {
+                max_thread_score = prev_max_score[warp_id];
+                max_pos = prev_max_pos[warp_id];
+            }
+            __syncwarp();
+
+#pragma unroll
+            for (int32_t offset = 1; offset < warp_size; offset = offset << 1)
+            {
+                const int32_t temp = __shfl_up_sync(0xFFFFFFFF, max_thread_score, offset);
+                const int32_t temp_pos = __shfl_up_sync(0xFFFFFFFF, max_pos, offset);
+
+                if(lane_id >= offset)
+                {
+                    if(temp >= max_thread_score)
+                    {
+                        max_thread_score = temp;
+                        max_pos = temp_pos;
+                    }
+                }
+            }
+            __syncwarp();
 
             if (lane_id == warp_size - 1)
             {
@@ -370,7 +426,7 @@ __global__ void find_high_scoring_segment_pairs(const int8_t* __restrict__ d_tar
             }
             __syncwarp();
 
-            if (r_chr == q_chr)
+            if (r_chr == q_chr && r_chr < 4)
             {
                 if (pos_offset <= prev_max_pos[warp_id])
                 {

@@ -27,9 +27,15 @@
 
 #include <thrust/system/cuda/execution_policy.h>
 #include <thrust/sort.h>
+#include <thrust/device_vector.h>
+#include <thrust/unique.h>
+#include <thrust/iterator/constant_iterator.h>
 
 #include <cub/device/device_select.cuh>
 #include <cub/device/device_scan.cuh>
+
+
+#include <thrust/binary_search.h>
 
 namespace claraparabricks
 {
@@ -161,14 +167,27 @@ StatusType UngappedXDrop::extend_async(const int8_t* d_query, const int32_t quer
                                 d_tmp_ssp_.begin(),
                                 d_tmp_ssp_.begin() + num_scored_segment_pairs,
                                 scored_segment_pair_comp());
-            GW_CU_CHECK_ERR(cub::DeviceSelect::Unique(d_temp_storage_cub_.data(),
-                                                      cub_storage_bytes,
-                                                      d_tmp_ssp_.data(),
-                                                      d_scored_segment_pairs + total_scored_segment_pairs_,
-                                                      d_num_scored_segment_pairs,
-                                                      num_scored_segment_pairs,
-                                                      stream_))
-            total_scored_segment_pairs_ += get_value_from_device(d_num_scored_segment_pairs, stream_);
+
+            ScoredSegmentPair* result_end = 
+                thrust::unique_copy(thrust::cuda::par(allocator_).on(stream_),
+                        d_tmp_ssp_.begin(),
+                        d_tmp_ssp_.begin() + num_scored_segment_pairs,
+                        d_scored_segment_pairs + total_scored_segment_pairs_,
+                        scored_segment_pair_equal());
+
+            total_scored_segment_pairs_ += thrust::distance(
+                    d_scored_segment_pairs+total_scored_segment_pairs_,
+                    result_end);
+
+//            GW_CU_CHECK_ERR(cub::DeviceSelect::Unique(d_temp_storage_cub_.data(),
+//                                                      cub_storage_bytes,
+//                                                      d_tmp_ssp_.data(),
+//                                                      d_scored_segment_pairs + total_scored_segment_pairs_,
+//                                                      d_num_scored_segment_pairs,
+//                                                      num_scored_segment_pairs,
+//                                                      stream_))
+
+//            total_scored_segment_pairs_ += get_value_from_device(d_num_scored_segment_pairs, stream_);
         }
     }
 
