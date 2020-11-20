@@ -63,7 +63,7 @@ template <typename ScoreT, typename SizeT, typename TraceT>
 class CudapoaBatch : public Batch
 {
 public:
-    CudapoaBatch(int32_t device_id, cudaStream_t stream, size_t max_gpu_mem, int8_t output_mask,
+    CudapoaBatch(int32_t device_id, cudaStream_t stream, DefaultDeviceAllocator allocator, int64_t max_mem, int8_t output_mask,
                  const BatchConfig& batch_size, int32_t gap_score = -8, int32_t mismatch_score = -6, int32_t match_score = 8)
         : max_sequences_per_poa_(throw_on_negative(batch_size.max_sequences_per_poa, "Maximum sequences per POA has to be non-negative"))
         , device_id_(throw_on_negative(device_id, "Device ID has to be non-negative"))
@@ -74,7 +74,8 @@ public:
         , mismatch_score_(mismatch_score)
         , match_score_(match_score)
         , batch_block_(new BatchBlock<ScoreT, SizeT, TraceT>(device_id,
-                                                             max_gpu_mem,
+                                                             allocator,
+                                                             max_mem,
                                                              output_mask,
                                                              batch_size_))
         , max_poas_(batch_block_->get_max_poas())

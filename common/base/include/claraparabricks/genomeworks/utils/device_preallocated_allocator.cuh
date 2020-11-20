@@ -64,13 +64,13 @@ public:
     /// Allocates the buffer
     /// \param buffer_size
     DevicePreallocatedAllocator(size_t buffer_size)
-        : buffer_size_(buffer_size)
-        , buffer_ptr_(create_buffer(buffer_size))
+        : buffer_size_(roundup_allocation(buffer_size))
+        , buffer_ptr_(create_buffer(buffer_size_))
     {
-        assert(buffer_size > 0);
+        assert(buffer_size_ > 0);
         MemoryBlock whole_memory_block;
         whole_memory_block.begin = 0;
-        whole_memory_block.size  = buffer_size;
+        whole_memory_block.size  = buffer_size_;
         free_blocks_.push_back(whole_memory_block);
     }
 
@@ -174,14 +174,7 @@ private:
         }
 
         // ** All allocations should be alligned with 256 bytes
-        // The easiest way to do this is to make all allocation request sizes divisible by 256
-        if ((bytes_needed & 0xFF) != 0)
-        {
-            // bytes needed not divisible by 256, increase it to the next value divisible by 256
-            bytes_needed = bytes_needed + (0x100 - (bytes_needed & 0xFF));
-        }
-        assert((bytes_needed & 0xFF) == 0);
-
+        bytes_needed = roundup_allocation(bytes_needed);
         // ** look for first free block that can fit requested size
         auto block_to_get_memory_from_iter = std::find_if(std::begin(free_blocks_),
                                                           std::end(free_blocks_),
@@ -335,6 +328,22 @@ private:
         free_blocks_.insert(insert_free_block_before_iter, new_memory_block);
 
         return cudaSuccess;
+    }
+
+    /// \brief Rounds up requested size to align with allocation boundaries (256B)
+    /// \param bytes_requested
+    /// \return bytes needed for aligning with 256B boundary
+    inline static size_t roundup_allocation(size_t requested_bytes)
+    {
+        // ** All allocations should be aligned with 256 bytes
+        // The easiest way to do this is to make all allocation request sizes divisible by 256
+        if ((requested_bytes & 0xFF) != 0)
+        {
+            // bytes needed not divisible by 256, increase it to the next value divisible by 256
+            requested_bytes = requested_bytes + (0x100 - (requested_bytes & 0xFF));
+        }
+        assert((requested_bytes & 0xFF) == 0);
+        return requested_bytes;
     }
 
     /// buffer size
