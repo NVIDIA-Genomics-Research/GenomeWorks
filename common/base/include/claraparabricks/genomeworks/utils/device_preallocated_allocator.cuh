@@ -33,7 +33,7 @@ namespace genomeworks
 
 /// \brief Allocator that preallocates one big buffer of device memory and assigns sections of it to allocation requests
 /// Allocator allocates one big buffer of device memory during constructor and keeps it until destruction.
-/// For every allocation request it linearly scans the preallocated memory and assigns first buffer of it that is big enough.
+/// For every allocation request it linearly scans the preallocated buffer and assigns first section of it that is big enough.
 ///
 /// For example imagine 100000 bytes buffer has been preallocated and that sections between (10000, 19999), (30000, 39999)
 /// and (60000, 79999) bytes have already been assigned:
@@ -48,8 +48,8 @@ namespace genomeworks
 /// 0 --- 10000 --- 20000 --- 30000 --- 40000 ------ 55000 - 60000 --- 70000 --- 80000 --- 90000 --- 100000
 /// |  FREE |   USED  |  FREE   |  USED   |    USED    | FREE  |       USED        |        FREE        |
 ///
-/// Uppon returning a memory allocation its gets merged with any neighboring free arey, so if section (10000, 19999) is
-/// returned the memory will look like this:
+/// Uppon deallocation deallocated memory gets merged with neighboring free blocks, if any, so if section (10000, 19999) is
+/// deallocated the memory will look like this:
 ///
 /// 0 ---------------------- 30000 --- 40000 ------ 55000 - 60000 --- 70000 --- 80000 --- 90000 --- 100000
 /// |           FREE           |  USED   |    USED    | FREE  |       USED        |        FREE        |
@@ -57,7 +57,7 @@ namespace genomeworks
 /// Allocator aligns memory by 256 bytes
 ///
 /// Note that this allocator heavily relies on iterating over lists of free and used memory and should thus
-/// not be used for cases when there are millions of allocation at a time
+/// not be used when there are many allocations and deallocations
 class DevicePreallocatedAllocator
 {
 public:
