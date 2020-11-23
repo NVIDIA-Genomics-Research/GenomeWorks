@@ -23,6 +23,7 @@
 #include <vector>
 
 #include <claraparabricks/genomeworks/utils/cudautils.hpp>
+#include <claraparabricks/genomeworks/utils/mathutils.hpp>
 
 namespace claraparabricks
 {
@@ -192,7 +193,7 @@ private:
 
         // Allocations are aligned to 256B. new_memory_block's size is exactly bytes_needed, but the remaining
         // memory block should start at byte divisible by 256
-        const size_t rounded_up_bytes = roundup_allocation(bytes_needed);
+        const size_t rounded_up_bytes = round_up(bytes_needed, 256);
 
         // ** reduce the size of the block the memory is going to be taken from
         if (block_to_get_memory_from_iter->size <= rounded_up_bytes)
@@ -261,8 +262,8 @@ private:
         // is not divisible by 256 but the lenght from the beginning of the block until the end of the buffer
         const size_t blocks_last_byte_index = block_to_be_freed_iter->begin + block_to_be_freed_iter->size;
         assert(blocks_last_byte_index <= buffer_size_);
-        const bool block_ends_in_buffers_last_block = roundup_allocation(buffer_size_) - blocks_last_byte_index < 256;
-        const size_t number_of_bytes                = block_ends_in_buffers_last_block ? buffer_size_ - block_to_be_freed_iter->begin : roundup_allocation(block_to_be_freed_iter->size);
+        const bool block_ends_in_buffers_last_block = round_up(buffer_size_, 256) - blocks_last_byte_index < 256;
+        const size_t number_of_bytes                = block_ends_in_buffers_last_block ? buffer_size_ - block_to_be_freed_iter->begin : round_up(block_to_be_freed_iter->size, 256);
 
         // ** remove memory block from the list of used memory blocks
         used_blocks_.erase(block_to_be_freed_iter);
@@ -340,23 +341,6 @@ private:
         free_blocks_.insert(insert_free_block_before_iter, new_memory_block);
 
         return cudaSuccess;
-    }
-
-    /// \brief Rounds up requested size to align with allocation boundaries (256B)
-    /// \param bytes_requested
-    /// \return bytes needed for aligning with 256B boundary
-    inline static size_t roundup_allocation(const size_t requested_bytes)
-    {
-        size_t rounded_up_value = requested_bytes;
-        // ** All allocations should be aligned with 256 bytes
-        // The easiest way to do this is to make all allocation request sizes divisible by 256
-        if ((requested_bytes & 0xFF) != 0)
-        {
-            // bytes needed not divisible by 256, increase it to the next value divisible by 256
-            rounded_up_value = requested_bytes + (0x100 - (requested_bytes & 0xFF));
-        }
-        assert((rounded_up_value & 0xFF) == 0);
-        return rounded_up_value;
     }
 
     /// buffer size
