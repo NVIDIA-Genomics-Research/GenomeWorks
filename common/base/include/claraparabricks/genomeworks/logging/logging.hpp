@@ -95,6 +95,10 @@
 // Due to a header file incompatibility with nvcc in CUDA 9.0
 // logging through the logger class in GW is disabled for any .cu files.
 #pragma message("Logging disabled for CUDA Toolkit < 9.2")
+#elif __GNUC__ >= 9
+// Due to a ISO C++ standard incompatibility the spdlog fails to pass
+// pedantic requirements.
+#pragma message("Logging disabled for GCC >= 9")
 #else
 #include <spdlog/spdlog.h>
 #endif
@@ -137,6 +141,8 @@ LoggingStatus SetHeader(bool logTime, bool logLocation);
 /// parameters as per https://github.com/gabime/spdlog/blob/v1.x/README.md
 #ifdef GW_CUDA_BEFORE_9_2
 #define GW_LOG_DEBUG(...)
+#elif __GNUC__ >= 9
+#define GW_LOG_DEBUG(...)
 #else
 #define GW_LOG_DEBUG(...) SPDLOG_DEBUG(__VA_ARGS__)
 #endif
@@ -147,6 +153,8 @@ LoggingStatus SetHeader(bool logTime, bool logLocation);
 ///
 /// parameters as per https://github.com/gabime/spdlog/blob/v1.x/README.md
 #ifdef GW_CUDA_BEFORE_9_2
+#define GW_LOG_INFO(...)
+#elif __GNUC__ >= 9
 #define GW_LOG_INFO(...)
 #else
 #define GW_LOG_INFO(...) SPDLOG_INFO(__VA_ARGS__)
@@ -159,6 +167,8 @@ LoggingStatus SetHeader(bool logTime, bool logLocation);
 /// parameters as per https://github.com/gabime/spdlog/blob/v1.x/README.md
 #ifdef GW_CUDA_BEFORE_9_2
 #define GW_LOG_WARN(...)
+#elif __GNUC__ >= 9
+#define GW_LOG_WARN(...)
 #else
 #define GW_LOG_WARN(...) SPDLOG_WARN(__VA_ARGS__)
 #endif
@@ -170,6 +180,8 @@ LoggingStatus SetHeader(bool logTime, bool logLocation);
 /// parameters as per https://github.com/gabime/spdlog/blob/v1.x/README.md
 #ifdef GW_CUDA_BEFORE_9_2
 #define GW_LOG_ERROR(...)
+#elif __GNUC__ >= 9
+#define GW_LOG_ERROR(...)
 #else
 #define GW_LOG_ERROR(...) SPDLOG_ERROR(__VA_ARGS__)
 #endif
@@ -180,6 +192,8 @@ LoggingStatus SetHeader(bool logTime, bool logLocation);
 ///
 /// parameters as per https://github.com/gabime/spdlog/blob/v1.x/README.md
 #ifdef GW_CUDA_BEFORE_9_2
+#define GW_LOG_CRITICAL(...)
+#elif __GNUC__ >= 9
 #define GW_LOG_CRITICAL(...)
 #else
 #define GW_LOG_CRITICAL(...) SPDLOG_CRITICAL(__VA_ARGS__)

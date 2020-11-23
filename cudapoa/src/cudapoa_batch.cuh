@@ -63,7 +63,7 @@ template <typename ScoreT, typename SizeT, typename TraceT>
 class CudapoaBatch : public Batch
 {
 public:
-    CudapoaBatch(int32_t device_id, cudaStream_t stream, size_t max_gpu_mem, int8_t output_mask,
+    CudapoaBatch(int32_t device_id, cudaStream_t stream, DefaultDeviceAllocator allocator, int64_t max_mem, int8_t output_mask,
                  const BatchConfig& batch_size, int32_t gap_score = -8, int32_t mismatch_score = -6, int32_t match_score = 8)
         : max_sequences_per_poa_(throw_on_negative(batch_size.max_sequences_per_poa, "Maximum sequences per POA has to be non-negative"))
         , device_id_(throw_on_negative(device_id, "Device ID has to be non-negative"))
@@ -74,7 +74,8 @@ public:
         , mismatch_score_(mismatch_score)
         , match_score_(match_score)
         , batch_block_(new BatchBlock<ScoreT, SizeT, TraceT>(device_id,
-                                                             max_gpu_mem,
+                                                             allocator,
+                                                             max_mem,
                                                              output_mask,
                                                              batch_size_))
         , max_poas_(batch_block_->get_max_poas())
@@ -504,7 +505,7 @@ protected:
         }
 
         WindowDetails* window_details = &(input_details_h_->window_details[poa_count_ - 1]);
-        int32_t scores_width_         = cudautils::align<int32_t, 4>(seq_len + 1 + CELLS_PER_THREAD);
+        int32_t scores_width_         = cudautils::align<int32_t, 4>(seq_len + 1 + CUDAPOA_CELLS_PER_THREAD);
         if (scores_width_ > window_details->scores_width)
         {
             next_scores_offset_ += (scores_width_ - window_details->scores_width);
@@ -557,7 +558,7 @@ protected:
         int32_t matrix_height = batch_size_.max_nodes_per_graph;
         // matrix width for full_band is based on the current group max_seq_length as opposed to batch_size_.matrix_sequence_dimension.
         // The latter is based on the largest group in the batch and is more conservative
-        int32_t matrix_width = (batch_size_.band_mode != BandMode::full_band) ? batch_size_.matrix_sequence_dimension : cudautils::align<int32_t, 4>(max_seq_length + 1 + CELLS_PER_THREAD);
+        int32_t matrix_width = (batch_size_.band_mode != BandMode::full_band) ? batch_size_.matrix_sequence_dimension : cudautils::align<int32_t, 4>(max_seq_length + 1 + CUDAPOA_CELLS_PER_THREAD);
         // in traceback alignments avail_buf_mem_ is dedicated to traceback matrix, otherwise it is being used for score matrix
         size_t required_size = static_cast<size_t>(matrix_width) * static_cast<size_t>(matrix_height);
         required_size *= (batch_size_.band_mode == static_band_traceback || batch_size_.band_mode == adaptive_band_traceback) ? sizeof(TraceT) : sizeof(ScoreT);

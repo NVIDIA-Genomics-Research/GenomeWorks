@@ -53,8 +53,19 @@ python --version
 logger "Conda install GenomeWorks custom packages - clang-format"
 conda install --override-channels -c sarcasm clang-format
 
-logger "Conda install GenomeWorks custom packages - doxygen ninja cmake"
-conda install --override-channels -c conda-forge doxygen ninja cmake">=3.10.2"
+logger "Conda install GenomeWorks custom packages - doxygen ninja"
+conda install --override-channels -c conda-forge doxygen ninja
+
+# Building cudamapper, using CUDA_SELECT_NVCC_ARCH_FLAGS() with the 'common' argument, generates
+# the "-gencode;arch=compute_72,code=sm_72" arch flag which is incompatible with CUDA 9.0 and causes nvcc command to fail
+# Using cmake with a version older than 3.18 does not create 'compute_72' arch.
+if [ "$(echo ${CUDA_VERSION} | cut -d"." -f1-2)" = "9.0" ]; then
+  logger "Conda install cmake for CUDA 9.0"
+  conda install --override-channels -c conda-forge cmake"=3.17"
+else
+  logger "Conda install cmake"
+  conda install --override-channels -c conda-forge cmake">=3.10.2"
+fi
 
 logger "Update LD_LIBRARY_PATH"
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib

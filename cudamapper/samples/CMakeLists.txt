@@ -27,5 +27,11 @@ target_link_libraries(${MODULE_NAME}
                       cudamapper
                       )
 
+if (TARGET htslib_project)
+    target_compile_definitions(${MODULE_NAME}
+                               PUBLIC
+                               GW_BUILD_HTSLIB)
+endif()
+
 install(TARGETS ${MODULE_NAME}
             DESTINATION samples)
