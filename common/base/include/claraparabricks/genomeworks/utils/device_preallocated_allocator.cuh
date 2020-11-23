@@ -191,9 +191,9 @@ private:
                                      bytes_needed,
                                      associated_streams};
 
-        // Allocations are aligned to 256B. new_memory_block's size is exactly bytes_needed, but the remaining
-        // memory block should start at byte divisible by 256
-        const size_t rounded_up_bytes = round_up(bytes_needed, 256);
+        // Allocations are aligned to alignment_ bytes. new_memory_block's size is exactly bytes_needed, but the remaining
+        // memory block should start at byte divisible by alignment_
+        const size_t rounded_up_bytes = round_up(bytes_needed, alignment_);
 
         // ** reduce the size of the block the memory is going to be taken from
         if (block_to_get_memory_from_iter->size <= rounded_up_bytes)
@@ -255,15 +255,15 @@ private:
         }
 
         // ** find actual block size
-        // Allocations are aligned by 256B. block_to_be_freed_iter->size is the exact number of requested bytes, but the block
-        // is actually allocated that-value-rounded-up-to-the-next-number-divisible-by-256 bytes.
-        // One exception is the block that goes into the last 256-divisible block of allocated buffer. In that case actually
-        // allocated memory goes up to the end of the buffer, even in buffer's size if not divisible by 256. In this case number_of_bytes
-        // is not divisible by 256 but the lenght from the beginning of the block until the end of the buffer
+        // Allocations are aligned by alignment_ bytes. block_to_be_freed_iter->size is the exact number of requested bytes, but the block
+        // is actually allocated that-value-rounded-up-to-the-next-number-divisible-by-alignment_ bytes.
+        // One exception is the block that goes into the last alignment_-divisible block of allocated buffer. In that case actually
+        // allocated memory goes up to the end of the buffer, even in buffer's size if not divisible by alignment_. In this case number_of_bytes
+        // is not divisible by alignment_ but the lenght from the beginning of the block until the end of the buffer
         const size_t blocks_last_byte_index = block_to_be_freed_iter->begin + block_to_be_freed_iter->size;
         assert(blocks_last_byte_index <= buffer_size_);
-        const bool block_ends_in_buffers_last_block = round_up(buffer_size_, 256) - blocks_last_byte_index < 256;
-        const size_t number_of_bytes                = block_ends_in_buffers_last_block ? buffer_size_ - block_to_be_freed_iter->begin : round_up(block_to_be_freed_iter->size, 256);
+        const bool block_ends_in_buffers_last_block = round_up(buffer_size_, alignment_) - blocks_last_byte_index < alignment_;
+        const size_t number_of_bytes                = block_ends_in_buffers_last_block ? buffer_size_ - block_to_be_freed_iter->begin : round_up(block_to_be_freed_iter->size, alignment_);
 
         // ** remove memory block from the list of used memory blocks
         used_blocks_.erase(block_to_be_freed_iter);
@@ -354,6 +354,9 @@ private:
     std::list<MemoryBlock> free_blocks_;
     /// list of block in use, sorted by memory block beginning location
     std::list<MemoryBlock> used_blocks_;
+
+    /// number of bytes to align allocations to
+    static const uint32_t alignment_ = 256; // if changing alignment update comments as well
 };
 
 } // namespace genomeworks
