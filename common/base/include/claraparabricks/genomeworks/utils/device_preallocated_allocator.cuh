@@ -163,7 +163,7 @@ private:
     /// \param associated_streams on deallocation this memory block is guaranteed to live at least until all previously scheduled work in these streams has finished
     /// \return cudaSuccess if allocation was successful, cudaErrorMemoryAllocation otherwise
     cudaError_t allocate_memory_block(void** ptr,
-                                      size_t bytes_needed,
+                                      const size_t bytes_needed,
                                       const std::vector<cudaStream_t>& associated_streams)
     {
         *ptr = nullptr;
@@ -345,17 +345,18 @@ private:
     /// \brief Rounds up requested size to align with allocation boundaries (256B)
     /// \param bytes_requested
     /// \return bytes needed for aligning with 256B boundary
-    inline static size_t roundup_allocation(size_t requested_bytes)
+    inline static size_t roundup_allocation(const size_t requested_bytes)
     {
+        size_t rounded_up_value = requested_bytes;
         // ** All allocations should be aligned with 256 bytes
         // The easiest way to do this is to make all allocation request sizes divisible by 256
         if ((requested_bytes & 0xFF) != 0)
         {
             // bytes needed not divisible by 256, increase it to the next value divisible by 256
-            requested_bytes = requested_bytes + (0x100 - (requested_bytes & 0xFF));
+            rounded_up_value = requested_bytes + (0x100 - (requested_bytes & 0xFF));
         }
-        assert((requested_bytes & 0xFF) == 0);
-        return requested_bytes;
+        assert((rounded_up_value & 0xFF) == 0);
+        return rounded_up_value;
     }
 
     /// buffer size
