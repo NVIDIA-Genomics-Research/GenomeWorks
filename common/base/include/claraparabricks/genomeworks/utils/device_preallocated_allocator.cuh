@@ -64,7 +64,7 @@ public:
     /// Allocates the buffer
     /// \param buffer_size
     DevicePreallocatedAllocator(size_t buffer_size)
-        : buffer_size_(roundup_allocation(buffer_size))
+        : buffer_size_(buffer_size)
         , buffer_ptr_(create_buffer(buffer_size_))
     {
         assert(buffer_size_ > 0);
@@ -173,8 +173,6 @@ private:
             return cudaErrorMemoryAllocation;
         }
 
-        // ** All allocations should be alligned with 256 bytes
-        bytes_needed = roundup_allocation(bytes_needed);
         // ** look for first free block that can fit requested size
         auto block_to_get_memory_from_iter = std::find_if(std::begin(free_blocks_),
                                                           std::end(free_blocks_),
@@ -192,8 +190,12 @@ private:
                                      bytes_needed,
                                      associated_streams};
 
+        // Allocations are aligned to 256B. new_memory_block's size is exactly bytes_needed, but the remaining
+        // memory block should start at byte divisible by 256
+        const size_t rounded_up_bytes = roundup_allocation(bytes_needed);
+
         // ** reduce the size of the block the memory is going to be taken from
-        if (block_to_get_memory_from_iter->size == bytes_needed)
+        if (block_to_get_memory_from_iter->size <= rounded_up_bytes)
         {
             // this memory block is completely used, remove it
             free_blocks_.erase(block_to_get_memory_from_iter);
@@ -201,8 +203,8 @@ private:
         else
         {
             // there will still be some memory left, update free block size
-            block_to_get_memory_from_iter->begin += new_memory_block.size;
-            block_to_get_memory_from_iter->size -= new_memory_block.size;
+            block_to_get_memory_from_iter->begin += rounded_up_bytes;
+            block_to_get_memory_from_iter->size -= rounded_up_bytes;
         }
 
         // ** add new used memory block to the list of used blocks
@@ -251,8 +253,18 @@ private:
             GW_CU_ABORT_ON_ERR(cudaStreamSynchronize(associated_stream));
         }
 
+        // ** find actual block size
+        // Allocations are aligned by 256B. block_to_be_freed_iter->size is the exact number of requested bytes, but the block
+        // is actually allocated that-value-rounded-up-to-the-next-number-divisible-by-256 bytes.
+        // One exception is the block that goes into the last 256-divisible block of allocated buffer. In that case actually
+        // allocated memory goes up to the end of the buffer, even in buffer's size if not divisible by 256. In this case number_of_bytes
+        // is not divisible by 256 but the lenght from the beginning of the block until the end of the buffer
+        const size_t blocks_last_byte_index = block_to_be_freed_iter->begin + block_to_be_freed_iter->size;
+        assert(blocks_last_byte_index <= buffer_size_);
+        const bool block_ends_in_buffers_last_block = roundup_allocation(buffer_size_) - blocks_last_byte_index < 256;
+        const size_t number_of_bytes                = block_ends_in_buffers_last_block ? buffer_size_ - block_to_be_freed_iter->begin : roundup_allocation(block_to_be_freed_iter->size);
+
         // ** remove memory block from the list of used memory blocks
-        const size_t number_of_bytes = block_to_be_freed_iter->size;
         used_blocks_.erase(block_to_be_freed_iter);
 
         // ** add the block back the list of free blocks (and merge with any neighbouring free blocks)
