@@ -106,7 +106,7 @@ public:
     /// \brief deallocates memory (returns its part of buffer to the list of free parts)
     /// This function blocks until all work on associated_stream is done
     /// \param ptr
-    /// \return error status
+    /// \return cudaSuccess if deallocation was successful, cudaErrorInvalidValue otherwise
     cudaError_t DeviceFree(void* ptr)
     {
         cudaError_t status = cudaSuccess;
@@ -227,7 +227,7 @@ private:
     /// \brief returns the block starting at pointer
     /// This function blocks until all work on associated_streams is done
     /// \param pointer pointer at the begining of the block to be freed
-    /// \return error status
+    /// \return cudaSuccess if deallocation was successful, cudaErrorInvalidValue otherwise
     cudaError_t free_memory_block(void* pointer)
     {
         assert(static_cast<char*>(pointer) >= buffer_ptr_.get());
@@ -240,7 +240,12 @@ private:
                                                    [block_start](const MemoryBlock& memory_block) {
                                                        return memory_block.begin == block_start;
                                                    });
-        assert(block_to_be_freed_iter != std::end(used_blocks_));
+
+        // * return error is pointer is not valid
+        if (block_to_be_freed_iter == std::end(used_blocks_))
+        {
+            return cudaErrorInvalidValue;
+        }
 
         // ** wait for all work on associated_streams to finish before freeing up this memory block
         assert(!block_to_be_freed_iter->associated_streams.empty());
