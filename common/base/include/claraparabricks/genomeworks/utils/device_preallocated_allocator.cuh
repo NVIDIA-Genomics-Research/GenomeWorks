@@ -167,8 +167,6 @@ private:
                                       const size_t bytes_needed,
                                       const std::vector<cudaStream_t>& associated_streams)
     {
-        *ptr = nullptr;
-
         if (free_blocks_.empty())
         {
             return cudaErrorMemoryAllocation;
@@ -183,6 +181,7 @@ private:
 
         if (block_to_get_memory_from_iter == std::end(free_blocks_))
         {
+            *ptr = nullptr;
             return cudaErrorMemoryAllocation;
         }
 
