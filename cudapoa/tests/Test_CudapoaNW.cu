@@ -411,9 +411,9 @@ NWAnswer testNWbanded(const BasicNW& obj, bool adaptive)
 class NWbandedTest : public ::testing::Test
 {
 public:
-    BasicNW* nw; //({'A', 'A', 'A', 'A'}, {0, 1, 2, 3}, {{1}, {2}, {3}, {}}, {'A', 'A', 'T', 'A'});
+    BasicNW* nw;
+
 public:
-    NWbandedTest(){};
     void SetUp()
     {
         // initialize nw graph and read with the following data
@@ -429,7 +429,7 @@ public:
             outgoing_edges[i].push_back(i + 1);
         }
         std::vector<uint8_t> read(read_str.begin(), read_str.end());
-        //
+        // setup nw
         nw = new BasicNW(nodes, sorted_graph, outgoing_edges, read);
     }
 
@@ -438,14 +438,22 @@ public:
 
 TEST_F(NWbandedTest, NWSaticBandvsFull)
 {
-    auto str1 = testNW(*nw).second;
-    auto str2 = testNWbanded(*nw, false).second;
-    EXPECT_EQ(testNW(*nw).second, testNWbanded(*nw, false).second);
+    auto full_alignment_results = testNW(*nw);
+    auto static_banded_results  = testNWbanded(*nw, false);
+    // verify alignment_graph
+    EXPECT_EQ(full_alignment_results.first, static_banded_results.first);
+    // verify alignment_read
+    EXPECT_EQ(full_alignment_results.second, static_banded_results.second);
 }
 
 TEST_F(NWbandedTest, NWAdaptiveBandvsFull)
 {
-    EXPECT_EQ(testNW(*nw).second, testNWbanded(*nw, true).second);
+    auto full_alignment_results = testNW(*nw);
+    auto adaptive_banded_results = testNWbanded(*nw, true);
+    // verify alignment_graph
+    EXPECT_EQ(full_alignment_results.first, adaptive_banded_results.first);
+    // verify alignment_read
+    EXPECT_EQ(full_alignment_results.second, adaptive_banded_results.second);
 }
 
 } // namespace cudapoa
