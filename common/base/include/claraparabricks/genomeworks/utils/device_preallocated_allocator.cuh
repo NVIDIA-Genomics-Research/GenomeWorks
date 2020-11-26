@@ -194,7 +194,7 @@ private:
                                      associated_streams};
 
         // Allocations are aligned to alignment_ bytes. new_memory_block's size is exactly bytes_needed, but the part of
-        // the original memory block which remais unallocated should start at byte divisible by alignment_
+        // the original memory block which remains unallocated should start at byte divisible by alignment_
         const size_t rounded_up_bytes = roundup_next_multiple(bytes_needed, alignment_);
 
         // ** reduce the size of the block the memory is going to be taken from
@@ -360,7 +360,7 @@ private:
     std::list<MemoryBlock> used_blocks_;
 
     /// number of bytes to align allocations to
-    static const uint32_t alignment_ = 256; // if changing alignment update comments as well
+    static const int32_t alignment_ = 256; // if changing alignment update comments as well
 };
 
 } // namespace details

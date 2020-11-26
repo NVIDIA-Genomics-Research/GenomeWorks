@@ -80,14 +80,14 @@ std::int32_t int_floor_log2(T val)
 
 /// @brief Rounds up a number to the next number divisible by the given denominator. If the number is already divisible by the denominator it remains the same
 /// @param val number to round up
-/// @param roundup_denominator
-/// @tparam Integer val' type, has to be integer
+/// @param roundup_denominator has to be positive
+/// @tparam Integer has to be integer
 template <typename Integer>
 __host__ __device__ Integer roundup_next_multiple(const Integer val,
-                                                  const uint32_t roundup_denominator)
+                                                  int32_t roundup_denominator)
 {
     static_assert(std::is_integral<Integer>::value, "Expected an integer");
-    assert(roundup_denominator > 0);
+    assert(roundup_denominator >= 0);
 
     const Integer remainder = val % roundup_denominator;
 
