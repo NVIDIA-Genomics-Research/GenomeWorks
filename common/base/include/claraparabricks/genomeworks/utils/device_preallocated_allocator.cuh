@@ -195,7 +195,7 @@ private:
 
         // Allocations are aligned to alignment_ bytes. new_memory_block's size is exactly bytes_needed, but the part of
         // the original memory block which remais unallocated should start at byte divisible by alignment_
-        const size_t rounded_up_bytes = round_up(bytes_needed, alignment_);
+        const size_t rounded_up_bytes = roundup_next_multiple(bytes_needed, alignment_);
 
         // ** reduce the size of the block the memory is going to be taken from
         if (block_to_get_memory_from_iter->size <= rounded_up_bytes)
@@ -267,7 +267,7 @@ private:
         // One exception is the block that goes into the last alignment_-divisible block of allocated buffer. In that case actually
         // allocated memory goes up to the end of the buffer, even if buffer's size is not divisible by alignment_. In this case number_of_bytes
         // is not divisible by alignment_ but the length from the beginning of the block until the end of the buffer
-        const size_t number_of_bytes = std::min(round_up(block_to_be_freed_iter->size, alignment_), buffer_size_ - block_to_be_freed_iter->begin);
+        const size_t number_of_bytes = std::min(roundup_next_multiple(block_to_be_freed_iter->size, alignment_), buffer_size_ - block_to_be_freed_iter->begin);
 
         // ** remove memory block from the list of used memory blocks
         used_blocks_.erase(block_to_be_freed_iter);

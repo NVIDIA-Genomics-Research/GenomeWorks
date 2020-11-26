@@ -83,8 +83,8 @@ std::int32_t int_floor_log2(T val)
 /// @param roundup_denominator
 /// @tparam Integer val' type, has to be integer
 template <typename Integer>
-__host__ __device__ Integer round_up(const Integer val,
-                                     const uint32_t roundup_denominator)
+__host__ __device__ Integer roundup_next_multiple(const Integer val,
+                                                  const uint32_t roundup_denominator)
 {
     static_assert(std::is_integral<Integer>::value, "Expected an integer");
     assert(roundup_denominator > 0);
