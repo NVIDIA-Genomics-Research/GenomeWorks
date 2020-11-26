@@ -87,7 +87,7 @@ __host__ __device__ Integer roundup_next_multiple(const Integer val,
                                                   int32_t roundup_denominator)
 {
     static_assert(std::is_integral<Integer>::value, "Expected an integer");
-    assert(roundup_denominator >= 0);
+    assert(roundup_denominator > 0);
 
     const Integer remainder = val % roundup_denominator;
 
