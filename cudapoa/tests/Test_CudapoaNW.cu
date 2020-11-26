@@ -20,6 +20,7 @@
 #include <claraparabricks/genomeworks/utils/cudautils.hpp>            //GW_CU_CHECK_ERR
 #include <claraparabricks/genomeworks/utils/stringutils.hpp>          //array_to_string
 #include <claraparabricks/genomeworks/utils/signed_integer_utils.hpp> //get_size
+#include <numeric>
 
 #include "gtest/gtest.h"
 
@@ -185,7 +186,7 @@ std::vector<NWTestPair> getNWTestCases()
     return test_cases;
 }
 
-// host function for calling the kernel to test topsort device function.
+// host function for calling the kernel to test full-band NW device function.
 NWAnswer testNW(const BasicNW& obj)
 {
     typedef int16_t SizeT;
@@ -251,7 +252,7 @@ NWAnswer testNW(const BasicNW& obj)
                  read,
                  read_count,
                  scores,
-                 BatchConfig().matrix_sequence_dimension,
+                 batch_size.matrix_sequence_dimension,
                  alignment_graph,
                  alignment_read,
                  gap_score,
@@ -303,6 +304,149 @@ TEST_P(NWTest, TestNWCorrectness)
 }
 
 INSTANTIATE_TEST_SUITE_P(TestNW, NWTest, ValuesIn(getNWTestCases()));
+
+//---------------------------------------------------------------------------------------
+
+// host function for calling the kernel to test static/adaptive-band NW device functions
+NWAnswer testNWbanded(const BasicNW& obj, bool adaptive)
+{
+    typedef int16_t SizeT;
+
+    //declare device buffer
+    uint8_t* nodes;
+    SizeT* graph;
+    SizeT* node_id_to_pos;
+    SizeT graph_count; //local
+    uint16_t* incoming_edge_count;
+    SizeT* incoming_edges;
+    uint16_t* outgoing_edge_count;
+    SizeT* outgoing_edges;
+    uint8_t* read;
+    uint16_t read_count; //local
+    int16_t* scores;
+    SizeT* alignment_graph;
+    SizeT* alignment_read;
+    int32_t gap_score;
+    int32_t mismatch_score;
+    int32_t match_score;
+    SizeT* aligned_nodes; //local; to store num of nodes aligned (length of alignment_graph and alignment_read)
+    BatchConfig batch_size(1024 /*max_sequence_size*/, 2 /*max_sequences_per_poa*/, 128 /*= band_width*/,
+                           adaptive ? BandMode::adaptive_band : BandMode::static_band /*band-mode*/);
+
+    //allocate unified memory so they can be accessed by both host and device.
+    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&nodes, batch_size.max_nodes_per_graph * sizeof(uint8_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&graph, batch_size.max_nodes_per_graph * sizeof(SizeT)));
+    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&node_id_to_pos, batch_size.max_nodes_per_graph * sizeof(SizeT)));
+    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&incoming_edges, batch_size.max_nodes_per_graph * CUDAPOA_MAX_NODE_EDGES * sizeof(SizeT)));
+    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&incoming_edge_count, batch_size.max_nodes_per_graph * sizeof(uint16_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&outgoing_edges, batch_size.max_nodes_per_graph * CUDAPOA_MAX_NODE_EDGES * sizeof(SizeT)));
+    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&outgoing_edge_count, batch_size.max_nodes_per_graph * sizeof(uint16_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&scores, batch_size.max_nodes_per_graph * batch_size.matrix_sequence_dimension * sizeof(int16_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&alignment_graph, batch_size.max_nodes_per_graph * sizeof(SizeT)));
+    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&read, batch_size.max_sequence_size * sizeof(uint8_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&alignment_read, batch_size.max_nodes_per_graph * sizeof(SizeT)));
+    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&aligned_nodes, sizeof(SizeT)));
+
+    //initialize all 'count' buffers
+    memset((void**)incoming_edge_count, 0, batch_size.max_nodes_per_graph * sizeof(uint16_t));
+    memset((void**)outgoing_edge_count, 0, batch_size.max_nodes_per_graph * sizeof(uint16_t));
+    memset((void**)node_id_to_pos, 0, batch_size.max_nodes_per_graph * sizeof(SizeT));
+    memset((void**)scores, 0, batch_size.max_nodes_per_graph * batch_size.matrix_sequence_dimension * sizeof(int16_t));
+
+    //calculate edge counts on host
+    obj.get_graph_buffers(incoming_edges, incoming_edge_count,
+                          outgoing_edges, outgoing_edge_count,
+                          nodes, &graph_count,
+                          graph, node_id_to_pos);
+    obj.get_read_buffers(read, &read_count);
+    gap_score      = BasicNW::gap_score_;
+    mismatch_score = BasicNW::mismatch_score_;
+    match_score    = BasicNW::match_score_;
+
+    //call the host wrapper of nw kernel
+    runNWbanded<SizeT>(nodes,
+                       graph,
+                       node_id_to_pos,
+                       graph_count,
+                       incoming_edge_count,
+                       incoming_edges,
+                       outgoing_edge_count,
+                       read,
+                       read_count,
+                       scores,
+                       batch_size.matrix_sequence_dimension,
+                       batch_size.max_nodes_per_graph,
+                       alignment_graph,
+                       alignment_read,
+                       batch_size.alignment_band_width,
+                       gap_score,
+                       mismatch_score,
+                       match_score,
+                       aligned_nodes,
+                       adaptive);
+
+    GW_CU_CHECK_ERR(cudaDeviceSynchronize());
+
+    //input and output buffers are the same ones in unified memory, so the results are updated in place
+    //results are stored in alignment_graph and alignment_read; return string representation of those
+    auto res = std::make_pair(genomeworks::stringutils::array_to_string<SizeT>(alignment_graph, *aligned_nodes, ","),
+                              genomeworks::stringutils::array_to_string<SizeT>(alignment_read, *aligned_nodes, ","));
+
+    GW_CU_CHECK_ERR(cudaFree(nodes));
+    GW_CU_CHECK_ERR(cudaFree(graph));
+    GW_CU_CHECK_ERR(cudaFree(node_id_to_pos));
+    GW_CU_CHECK_ERR(cudaFree(incoming_edges));
+    GW_CU_CHECK_ERR(cudaFree(incoming_edge_count));
+    GW_CU_CHECK_ERR(cudaFree(outgoing_edges));
+    GW_CU_CHECK_ERR(cudaFree(outgoing_edge_count));
+    GW_CU_CHECK_ERR(cudaFree(scores));
+    GW_CU_CHECK_ERR(cudaFree(alignment_graph));
+    GW_CU_CHECK_ERR(cudaFree(read));
+    GW_CU_CHECK_ERR(cudaFree(alignment_read));
+    GW_CU_CHECK_ERR(cudaFree(aligned_nodes));
+
+    return res;
+}
+
+class NWbandedTest : public ::testing::Test
+{
+public:
+    BasicNW* nw; //({'A', 'A', 'A', 'A'}, {0, 1, 2, 3}, {{1}, {2}, {3}, {}}, {'A', 'A', 'T', 'A'});
+public:
+    NWbandedTest(){};
+    void SetUp()
+    {
+        // initialize nw graph and read with the following data
+        std::string nodes_str = "TTTAACCTAATAAATCAGTGAAGATTTAAAATATGATAATTATTGATTTTGGTGAGAGTGCAAAGAAATTTGTTACCCTCATAAGCTGAGCAGACAGATAAGATAGAAAAACAGAAGATAGAATATTAAAACCATGATAGGTACAGACTGAAAAATTCTTGGATAAATATTAAAATTTAGGCTTTAGTAGTAGATTGATGACTGTGAGGAAAAAGGATGTCCAATTGTTGAGTGACATGTAGAATGCCTTAAAATAATTTTACACGTCACTGAAAGCTATATTTATATTCAGGAAGGATATATCCCAGTCATGATTTTCTTAATAAGTTGCCCCATTTTCCAAGTTTAGCTAATTAACATTTATGTCTTCTATAATCAGGAATAGTCATTAACTGACACAGAAACAATTGGAAGCATATGTAGCCAAAAACATAAAAATTATTGCATCCAAATAATGATAAAGTAAAATATTAAAAAATATAGTCTTCTAAAT";
+        std::string read_str  = "TTTCACCTAGAAAATCAGTGAAGATTTAACAAAAAAAAAAAAAAAAAAAAAAAAATATTGATAATTATTGATTTTGGTGAGAGTGCAAAGCAATTGGCTACCCTCATAAGCTGAGCAGAAGATAAGATAGACAACAGAAGATAGAATAGTTAAACCATGATAGGTACAGACTGCAAAAAAATTCGATAAATATTAAAATTTAGGGCTTTAGTATATATTGATGACTGAGAAAAATCGTGATGTGCAATTGTGCGTGACATGTAGAATTGCCTTAAATAAAATTTAATCTGTCACTGAAGCTATATTTATATTCAGGAAGGATATATCCCAGTCATTGCTTTTCTTAATAAGTGCCCATGTTCCAAGTTTAGCCTAATTAAAAACTTTATGTCTTCTATATCAGAATAGTCATTAATGCACAGAAACAATTTGCGAAGGCATTATGTAGCAAAAACATAAAAAATTATTGCAGCCAAATAATGAATAAAAGTAACACAATCATTTAAAAAAATTATTATGTACTTCTAAAC";
+        // extract data to build BasicNW
+        std::vector<uint8_t> nodes(nodes_str.begin(), nodes_str.end());
+        std::vector<SizeT> sorted_graph(nodes.size());
+        std::iota(sorted_graph.begin(), sorted_graph.end(), 0);
+        SizeTVec2D outgoing_edges(nodes.size());
+        for (size_t i = 0; i < outgoing_edges.size() - 1; i++)
+        {
+            outgoing_edges[i].push_back(i + 1);
+        }
+        std::vector<uint8_t> read(read_str.begin(), read_str.end());
+        //
+        nw = new BasicNW(nodes, sorted_graph, outgoing_edges, read);
+    }
+
+    void TearDown() { delete nw; }
+};
+
+TEST_F(NWbandedTest, NWSaticBandvsFull)
+{
+    auto str1 = testNW(*nw).second;
+    auto str2 = testNWbanded(*nw, false).second;
+    EXPECT_EQ(testNW(*nw).second, testNWbanded(*nw, false).second);
+}
+
+TEST_F(NWbandedTest, NWAdaptiveBandvsFull)
+{
+    EXPECT_EQ(testNW(*nw).second, testNWbanded(*nw, true).second);
+}
 
 } // namespace cudapoa
 
