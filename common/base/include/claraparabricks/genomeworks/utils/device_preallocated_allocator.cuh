@@ -267,10 +267,7 @@ private:
         // One exception is the block that goes into the last alignment_-divisible block of allocated buffer. In that case actually
         // allocated memory goes up to the end of the buffer, even if buffer's size is not divisible by alignment_. In this case number_of_bytes
         // is not divisible by alignment_ but the length from the beginning of the block until the end of the buffer
-        const size_t blocks_last_byte_index = block_to_be_freed_iter->begin + block_to_be_freed_iter->size;
-        assert(blocks_last_byte_index <= buffer_size_);
-        const bool block_ends_in_buffers_last_block = round_up(buffer_size_, alignment_) - blocks_last_byte_index < alignment_;
-        const size_t number_of_bytes                = block_ends_in_buffers_last_block ? buffer_size_ - block_to_be_freed_iter->begin : round_up(block_to_be_freed_iter->size, alignment_);
+        const size_t number_of_bytes = std::min(round_up(block_to_be_freed_iter->size, alignment_), buffer_size_ - block_to_be_freed_iter->begin);
 
         // ** remove memory block from the list of used memory blocks
         used_blocks_.erase(block_to_be_freed_iter);
