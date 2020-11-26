@@ -31,6 +31,9 @@ namespace claraparabricks
 namespace genomeworks
 {
 
+namespace details
+{
+
 /// \brief Allocator that preallocates one big buffer of device memory and assigns sections of it to allocation requests
 /// Allocator allocates one big buffer of device memory during constructor and keeps it until destruction.
 /// For every allocation request it linearly scans the preallocated buffer and assigns first section of it that is big enough.
@@ -362,6 +365,8 @@ private:
     /// number of bytes to align allocations to
     static const uint32_t alignment_ = 256; // if changing alignment update comments as well
 };
+
+} // namespace details
 
 } // namespace genomeworks
 

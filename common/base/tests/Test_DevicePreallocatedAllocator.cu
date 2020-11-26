@@ -35,7 +35,7 @@ TEST(TestDevicePreallocatedAllocator, allocations_do_not_overlap)
     std::vector<cudaStream_t> cuda_streams;
     cuda_streams.push_back(cuda_stream.get());
 
-    DevicePreallocatedAllocator allocator(2000);
+    details::DevicePreallocatedAllocator allocator(2000);
     // 0 - 1999: free
 
     cudaError status;
@@ -83,7 +83,7 @@ TEST(TestDevicePreallocatedAllocator, memory_correctly_deallocated)
     std::vector<cudaStream_t> cuda_streams;
     cuda_streams.push_back(cuda_stream.get());
 
-    DevicePreallocatedAllocator allocator(2000);
+    details::DevicePreallocatedAllocator allocator(2000);
     // 0 - 1999: free
 
     cudaError status;
@@ -216,7 +216,7 @@ TEST(TestDevicePreallocatedAllocator, no_memory_left)
     std::vector<cudaStream_t> cuda_streams;
     cuda_streams.push_back(cuda_stream.get());
 
-    DevicePreallocatedAllocator allocator(2000);
+    details::DevicePreallocatedAllocator allocator(2000);
     // 0 - 1999: free
 
     cudaError status;
@@ -254,7 +254,7 @@ TEST(TestDevicePreallocatedAllocator, deallocating_invalid_pointer)
     std::vector<cudaStream_t> cuda_streams;
     cuda_streams.push_back(cuda_stream.get());
 
-    DevicePreallocatedAllocator allocator(2000);
+    details::DevicePreallocatedAllocator allocator(2000);
 
     cudaError status;
 
