@@ -453,6 +453,8 @@ __device__ __forceinline__
     return aligned_nodes;
 }
 
+// global kernel used in testing, hence uses int16_t for SizeT and ScoreT,
+// may need to change if test inputs change to long reads
 template <typename SizeT>
 __global__ void runNeedlemanWunschKernel(uint8_t* nodes,
                                          SizeT* graph,
@@ -472,22 +474,22 @@ __global__ void runNeedlemanWunschKernel(uint8_t* nodes,
                                          int32_t match_score,
                                          SizeT* aligned_nodes)
 {
-    *aligned_nodes = runNeedlemanWunsch<uint8_t, int16_t, SizeT>(nodes,
-                                                                 graph,
-                                                                 node_id_to_pos,
-                                                                 graph_count,
-                                                                 incoming_edge_count,
-                                                                 incoming_edges,
-                                                                 outgoing_edge_count,
-                                                                 read,
-                                                                 read_length,
-                                                                 scores,
-                                                                 scores_width,
-                                                                 alignment_graph,
-                                                                 alignment_read,
-                                                                 gap_score,
-                                                                 mismatch_score,
-                                                                 match_score);
+    *aligned_nodes = runNeedlemanWunsch<uint8_t, int16_t, int16_t>(nodes,
+                                                                   graph,
+                                                                   node_id_to_pos,
+                                                                   graph_count,
+                                                                   incoming_edge_count,
+                                                                   incoming_edges,
+                                                                   outgoing_edge_count,
+                                                                   read,
+                                                                   read_length,
+                                                                   scores,
+                                                                   scores_width,
+                                                                   alignment_graph,
+                                                                   alignment_read,
+                                                                   gap_score,
+                                                                   mismatch_score,
+                                                                   match_score);
 }
 
 // Host function that calls the kernel
@@ -510,23 +512,23 @@ void runNW(uint8_t* nodes,
            int32_t match_score,
            SizeT* aligned_nodes)
 {
-    runNeedlemanWunschKernel<<<1, 64>>>(nodes,
-                                        graph,
-                                        node_id_to_pos,
-                                        graph_count,
-                                        incoming_edge_count,
-                                        incoming_edges,
-                                        outgoing_edge_count,
-                                        read,
-                                        read_length,
-                                        scores,
-                                        scores_width,
-                                        alignment_graph,
-                                        alignment_read,
-                                        gap_score,
-                                        mismatch_score,
-                                        match_score,
-                                        aligned_nodes);
+    runNeedlemanWunschKernel<<<1, CUDAPOA_THREADS_PER_BLOCK>>>(nodes,
+                                                               graph,
+                                                               node_id_to_pos,
+                                                               graph_count,
+                                                               incoming_edge_count,
+                                                               incoming_edges,
+                                                               outgoing_edge_count,
+                                                               read,
+                                                               read_length,
+                                                               scores,
+                                                               scores_width,
+                                                               alignment_graph,
+                                                               alignment_read,
+                                                               gap_score,
+                                                               mismatch_score,
+                                                               match_score,
+                                                               aligned_nodes);
     GW_CU_CHECK_ERR(cudaPeekAtLastError());
 }
 
