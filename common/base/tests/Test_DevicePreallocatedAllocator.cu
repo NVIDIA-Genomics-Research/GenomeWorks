@@ -92,20 +92,20 @@ TEST(TestDevicePreallocatedAllocator, memory_correctly_deallocated)
     status                                       = allocator.DeviceAllocate(&pointer_from_0_to_999_actually_to_1023, 1000, cuda_streams);
     ASSERT_EQ(status, cudaSuccess);
     // 0 - 1023: taken
-    // 1024 - 19999: free
+    // 1024 - 1999: free
 
     void* pointer_from_1024_to_1523_actually_to_1535 = nullptr;
     status                                           = allocator.DeviceAllocate(&pointer_from_1024_to_1523_actually_to_1535, 500, cuda_streams);
     ASSERT_EQ(status, cudaSuccess);
     // 0 - 1535: taken
-    // 1536 - 19999: free
+    // 1536 - 1999: free
     ASSERT_EQ(static_cast<gw_byte_t*>(pointer_from_1024_to_1523_actually_to_1535) - static_cast<gw_byte_t*>(pointer_from_0_to_999_actually_to_1023), 1024);
 
     void* pointer_from_1536_to_1537_actually_to_1791 = nullptr;
     status                                           = allocator.DeviceAllocate(&pointer_from_1536_to_1537_actually_to_1791, 2, cuda_streams);
     ASSERT_EQ(status, cudaSuccess);
     // 0 - 1791: taken
-    // 1792 - 19999: free
+    // 1792 - 1999: free
     ASSERT_EQ(static_cast<gw_byte_t*>(pointer_from_1536_to_1537_actually_to_1791) - static_cast<gw_byte_t*>(pointer_from_1024_to_1523_actually_to_1535), 512);
 
     status = allocator.DeviceFree(pointer_from_1024_to_1523_actually_to_1535);

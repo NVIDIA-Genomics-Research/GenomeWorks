@@ -48,7 +48,7 @@ namespace genomeworks
 /// 0 --- 10000 --- 20000 --- 30000 --- 40000 ------ 55000 - 60000 --- 70000 --- 80000 --- 90000 --- 100000
 /// |  FREE |   USED  |  FREE   |  USED   |    USED    | FREE  |       USED        |        FREE        |
 ///
-/// Uppon deallocation deallocated memory gets merged with neighboring free blocks, if any, so if section (10000, 19999) is
+/// Upon deallocation deallocated memory gets merged with neighboring free blocks, if any, so if section (10000, 19999) is
 /// deallocated the memory will look like this:
 ///
 /// 0 ---------------------- 30000 --- 40000 ------ 55000 - 60000 --- 70000 --- 80000 --- 90000 --- 100000
@@ -190,8 +190,8 @@ private:
                                      bytes_needed,
                                      associated_streams};
 
-        // Allocations are aligned to alignment_ bytes. new_memory_block's size is exactly bytes_needed, but the remaining
-        // memory block should start at byte divisible by alignment_
+        // Allocations are aligned to alignment_ bytes. new_memory_block's size is exactly bytes_needed, but the part of
+        // the original memory block which remais unallocated should start at byte divisible by alignment_
         const size_t rounded_up_bytes = round_up(bytes_needed, alignment_);
 
         // ** reduce the size of the block the memory is going to be taken from
@@ -224,10 +224,10 @@ private:
         return cudaSuccess;
     }
 
-    /// \brief returns the block starting at pointer
+    /// \brief releases the block starting at pointer
     /// This function blocks until all work on associated_streams is done
     /// \param pointer pointer at the begining of the block to be freed
-    /// \return cudaSuccess if deallocation was successful, cudaErrorInvalidValue otherwise
+    /// \return cudaSuccess if release was successful, cudaErrorInvalidValue otherwise
     cudaError_t free_memory_block(void* pointer)
     {
         assert(static_cast<char*>(pointer) >= buffer_ptr_.get());
@@ -241,7 +241,7 @@ private:
                                                        return memory_block.begin == block_start;
                                                    });
 
-        // * return error is pointer is not valid
+        // * return error if pointer is not valid
         if (block_to_be_freed_iter == std::end(used_blocks_))
         {
             return cudaErrorInvalidValue;
@@ -262,8 +262,8 @@ private:
         // Allocations are aligned by alignment_ bytes. block_to_be_freed_iter->size is the exact number of requested bytes, but the block
         // is actually allocated that-value-rounded-up-to-the-next-number-divisible-by-alignment_ bytes.
         // One exception is the block that goes into the last alignment_-divisible block of allocated buffer. In that case actually
-        // allocated memory goes up to the end of the buffer, even in buffer's size if not divisible by alignment_. In this case number_of_bytes
-        // is not divisible by alignment_ but the lenght from the beginning of the block until the end of the buffer
+        // allocated memory goes up to the end of the buffer, even if buffer's size is not divisible by alignment_. In this case number_of_bytes
+        // is not divisible by alignment_ but the length from the beginning of the block until the end of the buffer
         const size_t blocks_last_byte_index = block_to_be_freed_iter->begin + block_to_be_freed_iter->size;
         assert(blocks_last_byte_index <= buffer_size_);
         const bool block_ends_in_buffers_last_block = round_up(buffer_size_, alignment_) - blocks_last_byte_index < alignment_;
