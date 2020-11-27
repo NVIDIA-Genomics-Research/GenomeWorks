@@ -642,6 +642,134 @@ __device__ __forceinline__
     return aligned_nodes;
 }
 
+// global kernel used in testing, hence uses int16_t for SizeT and ScoreT,
+// may need to change if test inputs change to long reads
+template <typename SizeT>
+__global__ void runNeedlemanWunschBandedTBKernel(uint8_t* nodes,
+                                                 SizeT* graph,
+                                                 SizeT* node_id_to_pos,
+                                                 int32_t graph_count,
+                                                 uint16_t* incoming_edge_count,
+                                                 SizeT* incoming_edges,
+                                                 uint16_t* outgoing_edge_count,
+                                                 uint8_t* read,
+                                                 int32_t read_length,
+                                                 int16_t* scores,
+                                                 int16_t* traceback,
+                                                 int32_t scores_width,
+                                                 int32_t max_nodes_per_graph,
+                                                 SizeT* alignment_graph,
+                                                 SizeT* alignment_read,
+                                                 int32_t band_width,
+                                                 int32_t score_matrix_height,
+                                                 int32_t gap_score,
+                                                 int32_t mismatch_score,
+                                                 int32_t match_score,
+                                                 SizeT* aligned_nodes,
+                                                 bool adaptive)
+{
+    float banded_buffer_size = static_cast<float>(max_nodes_per_graph) * static_cast<float>(scores_width);
+
+    if (adaptive)
+    {
+        *aligned_nodes = runNeedlemanWunschBandedTraceback<uint8_t, int16_t,
+                                                           int16_t, int16_t, true>(nodes,
+                                                                                   graph,
+                                                                                   node_id_to_pos,
+                                                                                   graph_count,
+                                                                                   incoming_edge_count,
+                                                                                   incoming_edges,
+                                                                                   outgoing_edge_count,
+                                                                                   read,
+                                                                                   read_length,
+                                                                                   scores,
+                                                                                   traceback,
+                                                                                   banded_buffer_size,
+                                                                                   alignment_graph,
+                                                                                   alignment_read,
+                                                                                   band_width,
+                                                                                   score_matrix_height,
+                                                                                   gap_score,
+                                                                                   mismatch_score,
+                                                                                   match_score,
+                                                                                   0);
+    }
+    else
+    {
+        *aligned_nodes = runNeedlemanWunschBandedTraceback<uint8_t, int16_t,
+                                                           int16_t, int16_t, false>(nodes,
+                                                                                    graph,
+                                                                                    node_id_to_pos,
+                                                                                    graph_count,
+                                                                                    incoming_edge_count,
+                                                                                    incoming_edges,
+                                                                                    outgoing_edge_count,
+                                                                                    read,
+                                                                                    read_length,
+                                                                                    scores,
+                                                                                    traceback,
+                                                                                    banded_buffer_size,
+                                                                                    alignment_graph,
+                                                                                    alignment_read,
+                                                                                    band_width,
+                                                                                    score_matrix_height,
+                                                                                    gap_score,
+                                                                                    mismatch_score,
+                                                                                    match_score,
+                                                                                    0);
+    }
+}
+
+// Host function that calls the kernel
+template <typename SizeT>
+void runNWbandedTB(uint8_t* nodes,
+                   SizeT* graph,
+                   SizeT* node_id_to_pos,
+                   int32_t graph_count,
+                   uint16_t* incoming_edge_count,
+                   SizeT* incoming_edges,
+                   uint16_t* outgoing_edge_count,
+                   uint8_t* read,
+                   int32_t read_length,
+                   int16_t* scores,
+                   int16_t* traceback,
+                   int32_t scores_width,
+                   int32_t max_nodes_per_graph,
+                   SizeT* alignment_graph,
+                   SizeT* alignment_read,
+                   int32_t band_width,
+                   int32_t score_matrix_height,
+                   int32_t gap_score,
+                   int32_t mismatch_score,
+                   int32_t match_score,
+                   SizeT* aligned_nodes,
+                   bool adaptive)
+{
+    runNeedlemanWunschBandedTBKernel<<<1, CUDAPOA_BANDED_THREADS_PER_BLOCK>>>(nodes,
+                                                                              graph,
+                                                                              node_id_to_pos,
+                                                                              graph_count,
+                                                                              incoming_edge_count,
+                                                                              incoming_edges,
+                                                                              outgoing_edge_count,
+                                                                              read,
+                                                                              read_length,
+                                                                              scores,
+                                                                              traceback,
+                                                                              scores_width,
+                                                                              max_nodes_per_graph,
+                                                                              alignment_graph,
+                                                                              alignment_read,
+                                                                              band_width,
+                                                                              score_matrix_height,
+                                                                              gap_score,
+                                                                              mismatch_score,
+                                                                              match_score,
+                                                                              aligned_nodes,
+                                                                              adaptive);
+    GW_CU_CHECK_ERR(cudaPeekAtLastError());
+}
+
 } // namespace cudapoa
 
 } // namespace genomeworks
