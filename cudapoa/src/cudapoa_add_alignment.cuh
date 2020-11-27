@@ -352,25 +352,27 @@ void addAlignment(uint8_t* nodes,
                   uint32_t max_sequences_per_poa,
                   uint32_t max_limit_nodes_per_window)
 {
-    addAlignmentKernel<SizeT><<<1, 1>>>(nodes,
-                                        node_count,
-                                        node_alignments, node_alignment_count,
-                                        incoming_edges, incoming_edge_count,
-                                        outgoing_edges, outgoing_edge_count,
-                                        incoming_edge_w,
-                                        alignment_length,
-                                        graph,
-                                        alignment_graph,
-                                        read,
-                                        alignment_read,
-                                        node_coverage_counts,
-                                        base_weights,
-                                        sequence_begin_nodes_ids,
-                                        outgoing_edges_coverage,
-                                        outgoing_edges_coverage_count,
-                                        s,
-                                        max_sequences_per_poa,
-                                        max_limit_nodes_per_window);
+    static_assert(std::is_same<SizeT, int16_t>::value, "This function only accepts int16_t as SizeT.");
+
+    addAlignmentKernel<<<1, 1>>>(nodes,
+                                 node_count,
+                                 node_alignments, node_alignment_count,
+                                 incoming_edges, incoming_edge_count,
+                                 outgoing_edges, outgoing_edge_count,
+                                 incoming_edge_w,
+                                 alignment_length,
+                                 graph,
+                                 alignment_graph,
+                                 read,
+                                 alignment_read,
+                                 node_coverage_counts,
+                                 base_weights,
+                                 sequence_begin_nodes_ids,
+                                 outgoing_edges_coverage,
+                                 outgoing_edges_coverage_count,
+                                 s,
+                                 max_sequences_per_poa,
+                                 max_limit_nodes_per_window);
     GW_CU_CHECK_ERR(cudaPeekAtLastError());
 }
 

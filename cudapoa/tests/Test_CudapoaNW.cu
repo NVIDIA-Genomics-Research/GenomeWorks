@@ -42,7 +42,7 @@ public:
     const static int16_t match_score_    = 8;
 
 public:
-    BasicNW(std::vector<uint8_t> nodes, std::vector<int16_t> sorted_graph, SizeTVec2D outgoing_edges,
+    BasicNW(std::vector<uint8_t> nodes, std::vector<int16_t> sorted_graph, Int16Vec2D outgoing_edges,
             std::vector<uint8_t> read)
         : graph_(nodes, sorted_graph, outgoing_edges)
         , read_(read)
@@ -374,50 +374,50 @@ NWAnswer testNWbanded(const BasicNW& obj, bool adaptive, bool traceback = false)
     if (traceback)
     {
         runNWbandedTB(nodes,
-                               graph,
-                               node_id_to_pos,
-                               graph_count,
-                               incoming_edge_count,
-                               incoming_edges,
-                               outgoing_edge_count,
-                               read,
-                               read_count,
-                               scores,
-                               traces,
-                               batch_size.matrix_sequence_dimension,
-                               batch_size.max_nodes_per_graph,
-                               alignment_graph,
-                               alignment_read,
-                               batch_size.alignment_band_width,
-                               batch_size.max_banded_pred_distance,
-                               gap_score,
-                               mismatch_score,
-                               match_score,
-                               aligned_nodes,
-                               adaptive);
+                      graph,
+                      node_id_to_pos,
+                      graph_count,
+                      incoming_edge_count,
+                      incoming_edges,
+                      outgoing_edge_count,
+                      read,
+                      read_count,
+                      scores,
+                      traces,
+                      batch_size.matrix_sequence_dimension,
+                      batch_size.max_nodes_per_graph,
+                      alignment_graph,
+                      alignment_read,
+                      batch_size.alignment_band_width,
+                      batch_size.max_banded_pred_distance,
+                      gap_score,
+                      mismatch_score,
+                      match_score,
+                      aligned_nodes,
+                      adaptive);
     }
     else
     {
         runNWbanded(nodes,
-                             graph,
-                             node_id_to_pos,
-                             graph_count,
-                             incoming_edge_count,
-                             incoming_edges,
-                             outgoing_edge_count,
-                             read,
-                             read_count,
-                             scores,
-                             batch_size.matrix_sequence_dimension,
-                             batch_size.max_nodes_per_graph,
-                             alignment_graph,
-                             alignment_read,
-                             batch_size.alignment_band_width,
-                             gap_score,
-                             mismatch_score,
-                             match_score,
-                             aligned_nodes,
-                             adaptive);
+                    graph,
+                    node_id_to_pos,
+                    graph_count,
+                    incoming_edge_count,
+                    incoming_edges,
+                    outgoing_edge_count,
+                    read,
+                    read_count,
+                    scores,
+                    batch_size.matrix_sequence_dimension,
+                    batch_size.max_nodes_per_graph,
+                    alignment_graph,
+                    alignment_read,
+                    batch_size.alignment_band_width,
+                    gap_score,
+                    mismatch_score,
+                    match_score,
+                    aligned_nodes,
+                    adaptive);
     }
 
     GW_CU_CHECK_ERR(cudaDeviceSynchronize());
@@ -462,7 +462,7 @@ public:
         std::vector<uint8_t> nodes(nodes_str.begin(), nodes_str.end());
         std::vector<int16_t> sorted_graph(nodes.size());
         std::iota(sorted_graph.begin(), sorted_graph.end(), 0);
-        SizeTVec2D outgoing_edges(nodes.size());
+        Int16Vec2D outgoing_edges(nodes.size());
         for (size_t i = 0; i < outgoing_edges.size() - 1; i++)
         {
             outgoing_edges[i].push_back(i + 1);

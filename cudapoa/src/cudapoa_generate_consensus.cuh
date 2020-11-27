@@ -410,6 +410,8 @@ void generateConsensusTestHost(uint8_t* nodes,
                                uint16_t* node_alignment_count,
                                int32_t max_limit_consensus_size)
 {
+    static_assert(std::is_same<SizeT, int16_t>::value, "This function only accepts int16_t as SizeT.");
+
     generateConsensusTestKernel<SizeT><<<1, 1>>>(nodes,
                                                  node_count,
                                                  graph,
