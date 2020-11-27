@@ -76,16 +76,16 @@ std::string testTopSortDeviceUtil(int16_t node_count, Int16Vec2D outgoing_edges_
     size_t graph_size = node_count * sizeof(uint16_t);
 
     //allocate unified memory so they can be accessed by both host and device.
-    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&sorted_poa, node_count * sizeof(int16_t)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&sorted_poa_node_map, node_count * sizeof(int16_t)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&incoming_edge_count, graph_size));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&outgoing_edges, node_count * sizeof(int16_t) * CUDAPOA_MAX_NODE_EDGES));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&outgoing_edge_count, graph_size));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&local_incoming_edge_count, graph_size));
+    GW_CU_CHECK_ERR(cudaMallocManaged(&sorted_poa, node_count * sizeof(int16_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged(&sorted_poa_node_map, node_count * sizeof(int16_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged(&incoming_edge_count, graph_size));
+    GW_CU_CHECK_ERR(cudaMallocManaged(&outgoing_edges, node_count * sizeof(int16_t) * CUDAPOA_MAX_NODE_EDGES));
+    GW_CU_CHECK_ERR(cudaMallocManaged(&outgoing_edge_count, graph_size));
+    GW_CU_CHECK_ERR(cudaMallocManaged(&local_incoming_edge_count, graph_size));
 
     //initialize incoming_edge_count & local_incoming_edge_count
-    memset((void**)incoming_edge_count, 0, graph_size);
-    memset((void**)local_incoming_edge_count, 0, graph_size);
+    memset(incoming_edge_count, 0, graph_size);
+    memset(local_incoming_edge_count, 0, graph_size);
 
     //calculate edge counts on host
 

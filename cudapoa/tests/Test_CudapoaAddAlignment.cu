@@ -257,32 +257,32 @@ BasicGraph testAddAlignment(const BasicAlignment& obj)
     BatchConfig batch_size; // default max_sequence_size = 1024, max_sequences_per_poa = 100
 
     //allocate unified memory so they can be accessed by both host and device.
-    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&nodes, batch_size.max_nodes_per_graph * sizeof(uint8_t)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&node_count, sizeof(int16_t)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&node_alignments, batch_size.max_nodes_per_graph * CUDAPOA_MAX_NODE_ALIGNMENTS * sizeof(int16_t)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&node_alignment_count, batch_size.max_nodes_per_graph * sizeof(uint16_t)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&incoming_edges, batch_size.max_nodes_per_graph * CUDAPOA_MAX_NODE_EDGES * sizeof(int16_t)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&incoming_edge_count, batch_size.max_nodes_per_graph * sizeof(uint16_t)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&outgoing_edges, batch_size.max_nodes_per_graph * CUDAPOA_MAX_NODE_EDGES * sizeof(int16_t)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&outgoing_edge_count, batch_size.max_nodes_per_graph * sizeof(uint16_t)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&incoming_edge_w, batch_size.max_nodes_per_graph * CUDAPOA_MAX_NODE_EDGES * sizeof(uint16_t)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&outgoing_edge_w, batch_size.max_nodes_per_graph * CUDAPOA_MAX_NODE_EDGES * sizeof(uint16_t)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&alignment_length, sizeof(int16_t)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&graph, batch_size.max_nodes_per_graph * sizeof(int16_t)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&alignment_graph, batch_size.max_sequence_size * sizeof(int16_t)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&read, batch_size.max_sequence_size * sizeof(uint8_t)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&base_weights, batch_size.max_sequence_size * sizeof(int8_t)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&alignment_read, batch_size.max_sequence_size * sizeof(int16_t)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&node_coverage_counts, batch_size.max_nodes_per_graph * sizeof(int16_t)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&sequence_begin_nodes_ids, batch_size.max_sequences_per_poa * sizeof(int16_t)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&outgoing_edges_coverage, batch_size.max_nodes_per_graph * CUDAPOA_MAX_NODE_EDGES * batch_size.max_sequences_per_poa * sizeof(uint16_t)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&outgoing_edges_coverage_count, batch_size.max_nodes_per_graph * CUDAPOA_MAX_NODE_EDGES * sizeof(uint16_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged(&nodes, batch_size.max_nodes_per_graph * sizeof(uint8_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged(&node_count, sizeof(int16_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged(&node_alignments, batch_size.max_nodes_per_graph * CUDAPOA_MAX_NODE_ALIGNMENTS * sizeof(int16_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged(&node_alignment_count, batch_size.max_nodes_per_graph * sizeof(uint16_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged(&incoming_edges, batch_size.max_nodes_per_graph * CUDAPOA_MAX_NODE_EDGES * sizeof(int16_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged(&incoming_edge_count, batch_size.max_nodes_per_graph * sizeof(uint16_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged(&outgoing_edges, batch_size.max_nodes_per_graph * CUDAPOA_MAX_NODE_EDGES * sizeof(int16_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged(&outgoing_edge_count, batch_size.max_nodes_per_graph * sizeof(uint16_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged(&incoming_edge_w, batch_size.max_nodes_per_graph * CUDAPOA_MAX_NODE_EDGES * sizeof(uint16_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged(&outgoing_edge_w, batch_size.max_nodes_per_graph * CUDAPOA_MAX_NODE_EDGES * sizeof(uint16_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged(&alignment_length, sizeof(int16_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged(&graph, batch_size.max_nodes_per_graph * sizeof(int16_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged(&alignment_graph, batch_size.max_sequence_size * sizeof(int16_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged(&read, batch_size.max_sequence_size * sizeof(uint8_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged(&base_weights, batch_size.max_sequence_size * sizeof(int8_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged(&alignment_read, batch_size.max_sequence_size * sizeof(int16_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged(&node_coverage_counts, batch_size.max_nodes_per_graph * sizeof(int16_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged(&sequence_begin_nodes_ids, batch_size.max_sequences_per_poa * sizeof(int16_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged(&outgoing_edges_coverage, batch_size.max_nodes_per_graph * CUDAPOA_MAX_NODE_EDGES * batch_size.max_sequences_per_poa * sizeof(uint16_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged(&outgoing_edges_coverage_count, batch_size.max_nodes_per_graph * CUDAPOA_MAX_NODE_EDGES * sizeof(uint16_t)));
 
     //initialize all 'count' buffers
-    memset((void**)node_alignment_count, 0, batch_size.max_nodes_per_graph * sizeof(uint16_t));
-    memset((void**)incoming_edge_count, 0, batch_size.max_nodes_per_graph * sizeof(uint16_t));
-    memset((void**)outgoing_edge_count, 0, batch_size.max_nodes_per_graph * sizeof(uint16_t));
-    memset((void**)node_coverage_counts, 0, batch_size.max_nodes_per_graph * sizeof(uint16_t));
+    memset(node_alignment_count, 0, batch_size.max_nodes_per_graph * sizeof(uint16_t));
+    memset(incoming_edge_count, 0, batch_size.max_nodes_per_graph * sizeof(uint16_t));
+    memset(outgoing_edge_count, 0, batch_size.max_nodes_per_graph * sizeof(uint16_t));
+    memset(node_coverage_counts, 0, batch_size.max_nodes_per_graph * sizeof(uint16_t));
 
     //calculate edge counts on host
     //3 buffers are disregarded because they don't affect correctness -- incoming_edge_w, outgoing_edge_w, graph

@@ -190,44 +190,41 @@ std::vector<NWTestPair> getNWTestCases()
 NWAnswer testNW(const BasicNW& obj)
 {
     //declare device buffer
-    uint8_t* nodes;
-    int16_t* graph;
-    int16_t* node_id_to_pos;
-    int16_t graph_count; //local
-    uint16_t* incoming_edge_count;
-    int16_t* incoming_edges;
-    uint16_t* outgoing_edge_count;
-    int16_t* outgoing_edges;
-    uint8_t* read;
-    uint16_t read_count; //local
-    int16_t* scores;
-    int16_t* alignment_graph;
-    int16_t* alignment_read;
-    int32_t gap_score;
-    int32_t mismatch_score;
-    int32_t match_score;
-    int16_t* aligned_nodes; //local; to store num of nodes aligned (length of alignment_graph and alignment_read)
-    BatchConfig batch_size; //default max_sequence_size = 1024, max_sequences_per_poa = 100
+    uint8_t* nodes                = nullptr;
+    int16_t* graph                = nullptr;
+    int16_t* node_id_to_pos       = nullptr;
+    int16_t graph_count           = 0; //local
+    uint16_t* incoming_edge_count = nullptr;
+    int16_t* incoming_edges       = nullptr;
+    uint16_t* outgoing_edge_count = nullptr;
+    int16_t* outgoing_edges       = nullptr;
+    uint8_t* read                 = nullptr;
+    uint16_t read_count           = 0; //local
+    int16_t* scores               = nullptr;
+    int16_t* alignment_graph      = nullptr;
+    int16_t* alignment_read       = nullptr;
+    int16_t* aligned_nodes        = nullptr; //local; to store num of nodes aligned (length of alignment_graph and alignment_read)
+    BatchConfig batch_size;                  //default max_sequence_size = 1024, max_sequences_per_poa = 100
 
     //allocate unified memory so they can be accessed by both host and device.
-    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&nodes, batch_size.max_nodes_per_graph * sizeof(uint8_t)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&graph, batch_size.max_nodes_per_graph * sizeof(int16_t)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&node_id_to_pos, batch_size.max_nodes_per_graph * sizeof(int16_t)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&incoming_edges, batch_size.max_nodes_per_graph * CUDAPOA_MAX_NODE_EDGES * sizeof(int16_t)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&incoming_edge_count, batch_size.max_nodes_per_graph * sizeof(uint16_t)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&outgoing_edges, batch_size.max_nodes_per_graph * CUDAPOA_MAX_NODE_EDGES * sizeof(int16_t)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&outgoing_edge_count, batch_size.max_nodes_per_graph * sizeof(uint16_t)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&scores, batch_size.max_nodes_per_graph * batch_size.matrix_sequence_dimension * sizeof(int16_t)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&alignment_graph, batch_size.max_nodes_per_graph * sizeof(int16_t)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&read, batch_size.max_sequence_size * sizeof(uint8_t)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&alignment_read, batch_size.max_nodes_per_graph * sizeof(int16_t)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&aligned_nodes, sizeof(int16_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged(&nodes, batch_size.max_nodes_per_graph * sizeof(uint8_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged(&graph, batch_size.max_nodes_per_graph * sizeof(int16_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged(&node_id_to_pos, batch_size.max_nodes_per_graph * sizeof(int16_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged(&incoming_edges, batch_size.max_nodes_per_graph * CUDAPOA_MAX_NODE_EDGES * sizeof(int16_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged(&incoming_edge_count, batch_size.max_nodes_per_graph * sizeof(uint16_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged(&outgoing_edges, batch_size.max_nodes_per_graph * CUDAPOA_MAX_NODE_EDGES * sizeof(int16_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged(&outgoing_edge_count, batch_size.max_nodes_per_graph * sizeof(uint16_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged(&scores, batch_size.max_nodes_per_graph * batch_size.matrix_sequence_dimension * sizeof(int16_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged(&alignment_graph, batch_size.max_nodes_per_graph * sizeof(int16_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged(&read, batch_size.max_sequence_size * sizeof(uint8_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged(&alignment_read, batch_size.max_nodes_per_graph * sizeof(int16_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged(&aligned_nodes, sizeof(int16_t)));
 
     //initialize all 'count' buffers
-    memset((void**)incoming_edge_count, 0, batch_size.max_nodes_per_graph * sizeof(uint16_t));
-    memset((void**)outgoing_edge_count, 0, batch_size.max_nodes_per_graph * sizeof(uint16_t));
-    memset((void**)node_id_to_pos, 0, batch_size.max_nodes_per_graph * sizeof(int16_t));
-    memset((void**)scores, 0, batch_size.max_nodes_per_graph * batch_size.matrix_sequence_dimension * sizeof(int16_t));
+    memset(incoming_edge_count, 0, batch_size.max_nodes_per_graph * sizeof(uint16_t));
+    memset(outgoing_edge_count, 0, batch_size.max_nodes_per_graph * sizeof(uint16_t));
+    memset(node_id_to_pos, 0, batch_size.max_nodes_per_graph * sizeof(int16_t));
+    memset(scores, 0, batch_size.max_nodes_per_graph * batch_size.matrix_sequence_dimension * sizeof(int16_t));
 
     //calculate edge counts on host
     obj.get_graph_buffers(incoming_edges, incoming_edge_count,
@@ -235,9 +232,9 @@ NWAnswer testNW(const BasicNW& obj)
                           nodes, &graph_count,
                           graph, node_id_to_pos);
     obj.get_read_buffers(read, &read_count);
-    gap_score      = BasicNW::gap_score_;
-    mismatch_score = BasicNW::mismatch_score_;
-    match_score    = BasicNW::match_score_;
+    int32_t gap_score      = BasicNW::gap_score_;
+    int32_t mismatch_score = BasicNW::mismatch_score_;
+    int32_t match_score    = BasicNW::match_score_;
 
     //call the host wrapper of nw kernel
     runNW(nodes,
@@ -309,56 +306,53 @@ INSTANTIATE_TEST_SUITE_P(TestNW, NWTest, ValuesIn(getNWTestCases()));
 NWAnswer testNWbanded(const BasicNW& obj, bool adaptive, bool traceback = false)
 {
     //declare device buffer
-    uint8_t* nodes;
-    int16_t* graph;
-    int16_t* node_id_to_pos;
-    int16_t graph_count; //local
-    uint16_t* incoming_edge_count;
-    int16_t* incoming_edges;
-    uint16_t* outgoing_edge_count;
-    int16_t* outgoing_edges;
-    uint8_t* read;
-    uint16_t read_count; //local
-    int16_t* scores;
-    int16_t* traces;
-    int16_t* alignment_graph;
-    int16_t* alignment_read;
-    int32_t gap_score;
-    int32_t mismatch_score;
-    int32_t match_score;
-    int16_t* aligned_nodes; //local; to store num of nodes aligned (length of alignment_graph and alignment_read)
-    BandMode band_mode = traceback ? (adaptive ? BandMode::adaptive_band_traceback : BandMode::static_band_traceback)
+    uint8_t* nodes                = nullptr;
+    int16_t* graph                = nullptr;
+    int16_t* node_id_to_pos       = nullptr;
+    int16_t graph_count           = 0; //local
+    uint16_t* incoming_edge_count = nullptr;
+    int16_t* incoming_edges       = nullptr;
+    uint16_t* outgoing_edge_count = nullptr;
+    int16_t* outgoing_edges       = nullptr;
+    uint8_t* read                 = nullptr;
+    uint16_t read_count           = 0; //local
+    int16_t* scores               = nullptr;
+    int16_t* traces               = nullptr;
+    int16_t* alignment_graph      = nullptr;
+    int16_t* alignment_read       = nullptr;
+    int16_t* aligned_nodes        = nullptr; //local; to store num of nodes aligned (length of alignment_graph and alignment_read)
+    BandMode band_mode            = traceback ? (adaptive ? BandMode::adaptive_band_traceback : BandMode::static_band_traceback)
                                    : (adaptive ? BandMode::adaptive_band : BandMode::static_band);
     BatchConfig batch_size(1024 /*max_sequence_size*/, 2 /*max_sequences_per_poa*/,
                            128 /*= band_width*/, band_mode);
 
     //allocate unified memory so they can be accessed by both host and device.
-    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&nodes, batch_size.max_nodes_per_graph * sizeof(uint8_t)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&graph, batch_size.max_nodes_per_graph * sizeof(int16_t)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&node_id_to_pos, batch_size.max_nodes_per_graph * sizeof(int16_t)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&incoming_edges, batch_size.max_nodes_per_graph * CUDAPOA_MAX_NODE_EDGES * sizeof(int16_t)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&incoming_edge_count, batch_size.max_nodes_per_graph * sizeof(uint16_t)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&outgoing_edges, batch_size.max_nodes_per_graph * CUDAPOA_MAX_NODE_EDGES * sizeof(int16_t)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&outgoing_edge_count, batch_size.max_nodes_per_graph * sizeof(uint16_t)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&alignment_graph, batch_size.max_nodes_per_graph * sizeof(int16_t)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&read, batch_size.max_sequence_size * sizeof(uint8_t)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&alignment_read, batch_size.max_nodes_per_graph * sizeof(int16_t)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&aligned_nodes, sizeof(int16_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged(&nodes, batch_size.max_nodes_per_graph * sizeof(uint8_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged(&graph, batch_size.max_nodes_per_graph * sizeof(int16_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged(&node_id_to_pos, batch_size.max_nodes_per_graph * sizeof(int16_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged(&incoming_edges, batch_size.max_nodes_per_graph * CUDAPOA_MAX_NODE_EDGES * sizeof(int16_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged(&incoming_edge_count, batch_size.max_nodes_per_graph * sizeof(uint16_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged(&outgoing_edges, batch_size.max_nodes_per_graph * CUDAPOA_MAX_NODE_EDGES * sizeof(int16_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged(&outgoing_edge_count, batch_size.max_nodes_per_graph * sizeof(uint16_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged(&alignment_graph, batch_size.max_nodes_per_graph * sizeof(int16_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged(&read, batch_size.max_sequence_size * sizeof(uint8_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged(&alignment_read, batch_size.max_nodes_per_graph * sizeof(int16_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged(&aligned_nodes, sizeof(int16_t)));
     if (traceback)
     {
-        GW_CU_CHECK_ERR(cudaMallocManaged((void**)&scores, batch_size.max_banded_pred_distance * batch_size.matrix_sequence_dimension * sizeof(int16_t)));
-        GW_CU_CHECK_ERR(cudaMallocManaged((void**)&traces, batch_size.max_nodes_per_graph * batch_size.matrix_sequence_dimension * sizeof(int16_t)));
+        GW_CU_CHECK_ERR(cudaMallocManaged(&scores, batch_size.max_banded_pred_distance * batch_size.matrix_sequence_dimension * sizeof(int16_t)));
+        GW_CU_CHECK_ERR(cudaMallocManaged(&traces, batch_size.max_nodes_per_graph * batch_size.matrix_sequence_dimension * sizeof(int16_t)));
     }
     else
     {
-        GW_CU_CHECK_ERR(cudaMallocManaged((void**)&scores, batch_size.max_nodes_per_graph * batch_size.matrix_sequence_dimension * sizeof(int16_t)));
+        GW_CU_CHECK_ERR(cudaMallocManaged(&scores, batch_size.max_nodes_per_graph * batch_size.matrix_sequence_dimension * sizeof(int16_t)));
     }
 
     //initialize all 'count' buffers
-    memset((void**)incoming_edge_count, 0, batch_size.max_nodes_per_graph * sizeof(uint16_t));
-    memset((void**)outgoing_edge_count, 0, batch_size.max_nodes_per_graph * sizeof(uint16_t));
-    memset((void**)node_id_to_pos, 0, batch_size.max_nodes_per_graph * sizeof(int16_t));
-    memset((void**)scores, 0, batch_size.max_nodes_per_graph * batch_size.matrix_sequence_dimension * sizeof(int16_t));
+    memset(incoming_edge_count, 0, batch_size.max_nodes_per_graph * sizeof(uint16_t));
+    memset(outgoing_edge_count, 0, batch_size.max_nodes_per_graph * sizeof(uint16_t));
+    memset(node_id_to_pos, 0, batch_size.max_nodes_per_graph * sizeof(int16_t));
+    memset(scores, 0, batch_size.max_nodes_per_graph * batch_size.matrix_sequence_dimension * sizeof(int16_t));
 
     //calculate edge counts on host
     obj.get_graph_buffers(incoming_edges, incoming_edge_count,
@@ -366,9 +360,9 @@ NWAnswer testNWbanded(const BasicNW& obj, bool adaptive, bool traceback = false)
                           nodes, &graph_count,
                           graph, node_id_to_pos);
     obj.get_read_buffers(read, &read_count);
-    gap_score      = BasicNW::gap_score_;
-    mismatch_score = BasicNW::mismatch_score_;
-    match_score    = BasicNW::match_score_;
+    int32_t gap_score      = BasicNW::gap_score_;
+    int32_t mismatch_score = BasicNW::mismatch_score_;
+    int32_t match_score    = BasicNW::match_score_;
 
     //call the host wrapper of nw kernels
     if (traceback)
@@ -450,7 +444,7 @@ NWAnswer testNWbanded(const BasicNW& obj, bool adaptive, bool traceback = false)
 class NWbandedTest : public ::testing::Test
 {
 public:
-    BasicNW* nw;
+    std::unique_ptr<BasicNW> nw;
 
 public:
     void SetUp()
@@ -469,10 +463,8 @@ public:
         }
         std::vector<uint8_t> read(read_str.begin(), read_str.end());
         // setup nw
-        nw = new BasicNW(nodes, sorted_graph, outgoing_edges, read);
+        nw = std::make_unique<BasicNW>(nodes, sorted_graph, outgoing_edges, read);
     }
-
-    void TearDown() { delete nw; }
 };
 
 TEST_F(NWbandedTest, NWSaticBandvsFull)

@@ -191,29 +191,29 @@ std::string testGenerateConsensus(const BasicGenerateConsensus& obj)
     BatchConfig batch_size;
 
     //allocate unified memory so they can be accessed by both host and device.
-    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&nodes, batch_size.max_nodes_per_graph * sizeof(uint8_t)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&node_count, sizeof(int16_t)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&graph, batch_size.max_nodes_per_graph * sizeof(int16_t)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&node_id_to_pos, batch_size.max_nodes_per_graph * sizeof(int16_t)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&incoming_edges, batch_size.max_nodes_per_graph * CUDAPOA_MAX_NODE_EDGES * sizeof(int16_t)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&incoming_edge_count, batch_size.max_nodes_per_graph * sizeof(uint16_t)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&outgoing_edges, batch_size.max_nodes_per_graph * CUDAPOA_MAX_NODE_EDGES * sizeof(int16_t)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&outgoing_edge_count, batch_size.max_nodes_per_graph * sizeof(uint16_t)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&incoming_edge_w, batch_size.max_nodes_per_graph * CUDAPOA_MAX_NODE_EDGES * sizeof(uint16_t)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&node_coverage_counts, batch_size.max_nodes_per_graph * sizeof(uint16_t)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&node_alignments, batch_size.max_nodes_per_graph * CUDAPOA_MAX_NODE_ALIGNMENTS * sizeof(int16_t)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&node_alignment_count, batch_size.max_nodes_per_graph * sizeof(uint16_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged(&nodes, batch_size.max_nodes_per_graph * sizeof(uint8_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged(&node_count, sizeof(int16_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged(&graph, batch_size.max_nodes_per_graph * sizeof(int16_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged(&node_id_to_pos, batch_size.max_nodes_per_graph * sizeof(int16_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged(&incoming_edges, batch_size.max_nodes_per_graph * CUDAPOA_MAX_NODE_EDGES * sizeof(int16_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged(&incoming_edge_count, batch_size.max_nodes_per_graph * sizeof(uint16_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged(&outgoing_edges, batch_size.max_nodes_per_graph * CUDAPOA_MAX_NODE_EDGES * sizeof(int16_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged(&outgoing_edge_count, batch_size.max_nodes_per_graph * sizeof(uint16_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged(&incoming_edge_w, batch_size.max_nodes_per_graph * CUDAPOA_MAX_NODE_EDGES * sizeof(uint16_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged(&node_coverage_counts, batch_size.max_nodes_per_graph * sizeof(uint16_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged(&node_alignments, batch_size.max_nodes_per_graph * CUDAPOA_MAX_NODE_ALIGNMENTS * sizeof(int16_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged(&node_alignment_count, batch_size.max_nodes_per_graph * sizeof(uint16_t)));
 
-    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&predecessors, batch_size.max_nodes_per_graph * sizeof(int16_t)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&scores, batch_size.max_nodes_per_graph * sizeof(int32_t)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&consensus, batch_size.max_consensus_size * sizeof(uint8_t)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&coverage, batch_size.max_consensus_size * sizeof(uint16_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged(&predecessors, batch_size.max_nodes_per_graph * sizeof(int16_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged(&scores, batch_size.max_nodes_per_graph * sizeof(int32_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged(&consensus, batch_size.max_consensus_size * sizeof(uint8_t)));
+    GW_CU_CHECK_ERR(cudaMallocManaged(&coverage, batch_size.max_consensus_size * sizeof(uint16_t)));
 
     //initialize all 'count' buffers
-    memset((void**)incoming_edge_count, 0, batch_size.max_nodes_per_graph * sizeof(uint16_t));
-    memset((void**)outgoing_edge_count, 0, batch_size.max_nodes_per_graph * sizeof(uint16_t));
-    memset((void**)node_coverage_counts, 0, batch_size.max_nodes_per_graph * sizeof(uint16_t));
-    memset((void**)node_alignment_count, 0, batch_size.max_nodes_per_graph * sizeof(uint16_t));
+    memset(incoming_edge_count, 0, batch_size.max_nodes_per_graph * sizeof(uint16_t));
+    memset(outgoing_edge_count, 0, batch_size.max_nodes_per_graph * sizeof(uint16_t));
+    memset(node_coverage_counts, 0, batch_size.max_nodes_per_graph * sizeof(uint16_t));
+    memset(node_alignment_count, 0, batch_size.max_nodes_per_graph * sizeof(uint16_t));
 
     //calculate edge counts on host
     obj.get_graph_buffers(nodes, node_count,
