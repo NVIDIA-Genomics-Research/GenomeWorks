@@ -307,8 +307,8 @@ INSTANTIATE_TEST_SUITE_P(TestNW, NWTest, ValuesIn(getNWTestCases()));
 
 //---------------------------------------------------------------------------------------
 
-// host function for calling the kernel to test static/adaptive-band NW device functions
-NWAnswer testNWbanded(const BasicNW& obj, bool adaptive)
+// host function for calling the kernels to test static/adaptive-band NW with/without traceback buffer
+NWAnswer testNWbanded(const BasicNW& obj, bool adaptive, bool traceback = false)
 {
     typedef int16_t SizeT;
 
@@ -324,14 +324,17 @@ NWAnswer testNWbanded(const BasicNW& obj, bool adaptive)
     uint8_t* read;
     uint16_t read_count; //local
     int16_t* scores;
+    int16_t* traces;
     SizeT* alignment_graph;
     SizeT* alignment_read;
     int32_t gap_score;
     int32_t mismatch_score;
     int32_t match_score;
     SizeT* aligned_nodes; //local; to store num of nodes aligned (length of alignment_graph and alignment_read)
-    BatchConfig batch_size(1024 /*max_sequence_size*/, 2 /*max_sequences_per_poa*/, 128 /*= band_width*/,
-                           adaptive ? BandMode::adaptive_band : BandMode::static_band /*band-mode*/);
+    BandMode band_mode = traceback ? (adaptive ? BandMode::adaptive_band_traceback : BandMode::static_band_traceback)
+                                   : (adaptive ? BandMode::adaptive_band : BandMode::static_band);
+    BatchConfig batch_size(1024 /*max_sequence_size*/, 2 /*max_sequences_per_poa*/,
+                           128 /*= band_width*/, band_mode);
 
     //allocate unified memory so they can be accessed by both host and device.
     GW_CU_CHECK_ERR(cudaMallocManaged((void**)&nodes, batch_size.max_nodes_per_graph * sizeof(uint8_t)));
@@ -341,11 +344,19 @@ NWAnswer testNWbanded(const BasicNW& obj, bool adaptive)
     GW_CU_CHECK_ERR(cudaMallocManaged((void**)&incoming_edge_count, batch_size.max_nodes_per_graph * sizeof(uint16_t)));
     GW_CU_CHECK_ERR(cudaMallocManaged((void**)&outgoing_edges, batch_size.max_nodes_per_graph * CUDAPOA_MAX_NODE_EDGES * sizeof(SizeT)));
     GW_CU_CHECK_ERR(cudaMallocManaged((void**)&outgoing_edge_count, batch_size.max_nodes_per_graph * sizeof(uint16_t)));
-    GW_CU_CHECK_ERR(cudaMallocManaged((void**)&scores, batch_size.max_nodes_per_graph * batch_size.matrix_sequence_dimension * sizeof(int16_t)));
     GW_CU_CHECK_ERR(cudaMallocManaged((void**)&alignment_graph, batch_size.max_nodes_per_graph * sizeof(SizeT)));
     GW_CU_CHECK_ERR(cudaMallocManaged((void**)&read, batch_size.max_sequence_size * sizeof(uint8_t)));
     GW_CU_CHECK_ERR(cudaMallocManaged((void**)&alignment_read, batch_size.max_nodes_per_graph * sizeof(SizeT)));
     GW_CU_CHECK_ERR(cudaMallocManaged((void**)&aligned_nodes, sizeof(SizeT)));
+    if (traceback)
+    {
+        GW_CU_CHECK_ERR(cudaMallocManaged((void**)&scores, batch_size.max_banded_pred_distance * batch_size.matrix_sequence_dimension * sizeof(int16_t)));
+        GW_CU_CHECK_ERR(cudaMallocManaged((void**)&traces, batch_size.max_nodes_per_graph * batch_size.matrix_sequence_dimension * sizeof(int16_t)));
+    }
+    else
+    {
+        GW_CU_CHECK_ERR(cudaMallocManaged((void**)&scores, batch_size.max_nodes_per_graph * batch_size.matrix_sequence_dimension * sizeof(int16_t)));
+    }
 
     //initialize all 'count' buffers
     memset((void**)incoming_edge_count, 0, batch_size.max_nodes_per_graph * sizeof(uint16_t));
@@ -363,27 +374,55 @@ NWAnswer testNWbanded(const BasicNW& obj, bool adaptive)
     mismatch_score = BasicNW::mismatch_score_;
     match_score    = BasicNW::match_score_;
 
-    //call the host wrapper of nw kernel
-    runNWbanded<SizeT>(nodes,
-                       graph,
-                       node_id_to_pos,
-                       graph_count,
-                       incoming_edge_count,
-                       incoming_edges,
-                       outgoing_edge_count,
-                       read,
-                       read_count,
-                       scores,
-                       batch_size.matrix_sequence_dimension,
-                       batch_size.max_nodes_per_graph,
-                       alignment_graph,
-                       alignment_read,
-                       batch_size.alignment_band_width,
-                       gap_score,
-                       mismatch_score,
-                       match_score,
-                       aligned_nodes,
-                       adaptive);
+    //call the host wrapper of nw kernels
+    if (traceback)
+    {
+        runNWbandedTB<SizeT>(nodes,
+                             graph,
+                             node_id_to_pos,
+                             graph_count,
+                             incoming_edge_count,
+                             incoming_edges,
+                             outgoing_edge_count,
+                             read,
+                             read_count,
+                             scores,
+                             traces,
+                             batch_size.matrix_sequence_dimension,
+                             batch_size.max_nodes_per_graph,
+                             alignment_graph,
+                             alignment_read,
+                             batch_size.alignment_band_width,
+                             batch_size.max_banded_pred_distance,
+                             gap_score,
+                             mismatch_score,
+                             match_score,
+                             aligned_nodes,
+                             adaptive);
+    }
+    else
+    {
+        runNWbanded<SizeT>(nodes,
+                           graph,
+                           node_id_to_pos,
+                           graph_count,
+                           incoming_edge_count,
+                           incoming_edges,
+                           outgoing_edge_count,
+                           read,
+                           read_count,
+                           scores,
+                           batch_size.matrix_sequence_dimension,
+                           batch_size.max_nodes_per_graph,
+                           alignment_graph,
+                           alignment_read,
+                           batch_size.alignment_band_width,
+                           gap_score,
+                           mismatch_score,
+                           match_score,
+                           aligned_nodes,
+                           adaptive);
+    }
 
     GW_CU_CHECK_ERR(cudaDeviceSynchronize());
 
@@ -404,6 +443,10 @@ NWAnswer testNWbanded(const BasicNW& obj, bool adaptive)
     GW_CU_CHECK_ERR(cudaFree(read));
     GW_CU_CHECK_ERR(cudaFree(alignment_read));
     GW_CU_CHECK_ERR(cudaFree(aligned_nodes));
+    if (traceback)
+    {
+        GW_CU_CHECK_ERR(cudaFree(traces));
+    }
 
     return res;
 }
@@ -448,12 +491,32 @@ TEST_F(NWbandedTest, NWSaticBandvsFull)
 
 TEST_F(NWbandedTest, NWAdaptiveBandvsFull)
 {
-    auto full_alignment_results = testNW(*nw);
+    auto full_alignment_results  = testNW(*nw);
     auto adaptive_banded_results = testNWbanded(*nw, true);
     // verify alignment_graph
     EXPECT_EQ(full_alignment_results.first, adaptive_banded_results.first);
     // verify alignment_read
     EXPECT_EQ(full_alignment_results.second, adaptive_banded_results.second);
+}
+
+TEST_F(NWbandedTest, NWSaticBandTracebackvsFull)
+{
+    auto full_alignment_results   = testNW(*nw);
+    auto static_banded_tb_results = testNWbanded(*nw, false, true);
+    // verify alignment_graph
+    EXPECT_EQ(full_alignment_results.first, static_banded_tb_results.first);
+    // verify alignment_read
+    EXPECT_EQ(full_alignment_results.second, static_banded_tb_results.second);
+}
+
+TEST_F(NWbandedTest, NWAdaptiveBandTracebackvsFull)
+{
+    auto full_alignment_results     = testNW(*nw);
+    auto adaptive_banded_tb_results = testNWbanded(*nw, true, true);
+    // verify alignment_graph
+    EXPECT_EQ(full_alignment_results.first, adaptive_banded_tb_results.first);
+    // verify alignment_read
+    EXPECT_EQ(full_alignment_results.second, adaptive_banded_tb_results.second);
 }
 
 } // namespace cudapoa
