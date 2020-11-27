@@ -209,7 +209,7 @@ TEST(TestDevicePreallocatedAllocator, memory_correctly_deallocated)
     ASSERT_EQ(status, cudaSuccess);
 }
 
-TEST(TestDevicePreallocatedAllocator, no_memory_left)
+TEST(TestDevicePreallocatedAllocator, not_enough_memory_left)
 {
     CudaStream cuda_stream = make_cuda_stream();
 
@@ -247,6 +247,42 @@ TEST(TestDevicePreallocatedAllocator, no_memory_left)
     ASSERT_EQ(status, cudaSuccess);
 }
 
+TEST(TestDevicePreallocatedAllocator, no_memory_left)
+{
+    CudaStream cuda_stream = make_cuda_stream();
+
+    std::vector<cudaStream_t> cuda_streams;
+    cuda_streams.push_back(cuda_stream.get());
+
+    details::DevicePreallocatedAllocator allocator(2000);
+    // 0 - 1999: free
+
+    cudaError status;
+
+    void* pointer_from_0_to_1499_actually_1535 = nullptr;
+    status                                     = allocator.DeviceAllocate(&pointer_from_0_to_1499_actually_1535, 1500, cuda_streams);
+    ASSERT_EQ(status, cudaSuccess);
+    ASSERT_NE(pointer_from_0_to_1499_actually_1535, nullptr);
+    // 0 - 1535: taken
+    // 1536 - 1999: free
+
+    void* pointer_from_1536_to_1999_actually_1999 = nullptr;
+    status                                        = allocator.DeviceAllocate(&pointer_from_1536_to_1999_actually_1999, 464, cuda_streams);
+    ASSERT_EQ(status, cudaSuccess);
+    ASSERT_NE(pointer_from_1536_to_1999_actually_1999, nullptr);
+    // 0 - 1999: taken
+
+    void* pointer_to_unsuccessful_allocation = pointer_from_1536_to_1999_actually_1999; // set it to some value to make sure it gets reset to nullptr
+    status                                   = allocator.DeviceAllocate(&pointer_to_unsuccessful_allocation, 1, cuda_streams);
+    ASSERT_EQ(status, cudaErrorMemoryAllocation);
+    ASSERT_EQ(pointer_to_unsuccessful_allocation, nullptr);
+
+    status = allocator.DeviceFree(pointer_from_1536_to_1999_actually_1999);
+    ASSERT_EQ(status, cudaSuccess);
+    status = allocator.DeviceFree(pointer_from_0_to_1499_actually_1535);
+    ASSERT_EQ(status, cudaSuccess);
+}
+
 TEST(TestDevicePreallocatedAllocator, deallocating_invalid_pointer)
 {
     CudaStream cuda_stream = make_cuda_stream();
@@ -271,8 +307,16 @@ TEST(TestDevicePreallocatedAllocator, deallocating_invalid_pointer)
     status         = allocator.DeviceFree(null_ptr);
     ASSERT_EQ(status, cudaSuccess);
 
+    // deallocating nullptr does nothing, but is a success
+    status = allocator.DeviceFree(nullptr);
+    ASSERT_EQ(status, cudaSuccess);
+
     status = allocator.DeviceFree(valid_ptr);
     ASSERT_EQ(status, cudaSuccess);
+
+    // deallocating previously deallocated pointer results in error
+    status = allocator.DeviceFree(valid_ptr); // pointer not valid anymore
+    ASSERT_EQ(status, cudaErrorInvalidValue);
 }
 
 } // namespace genomeworks

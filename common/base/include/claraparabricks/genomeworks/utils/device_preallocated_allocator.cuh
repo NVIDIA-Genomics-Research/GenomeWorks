@@ -172,6 +172,7 @@ private:
     {
         if (free_blocks_.empty())
         {
+            *ptr = nullptr;
             return cudaErrorMemoryAllocation;
         }
 
