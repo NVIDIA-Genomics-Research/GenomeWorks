@@ -649,6 +649,8 @@ void runNWbanded(uint8_t* nodes,
                  SizeT* aligned_nodes,
                  bool adaptive)
 {
+    static_assert(std::is_same<SizeT, int16_t>::value, "This function only accepts int16_t as SizeT.");
+
     runNeedlemanWunschBandedKernel<<<1, CUDAPOA_BANDED_THREADS_PER_BLOCK>>>(nodes,
                                                                             graph,
                                                                             node_id_to_pos,
