@@ -66,12 +66,12 @@ std::vector<TopSortTestPair> getTopSortTestCases()
 std::string testTopSortDeviceUtil(int16_t node_count, Int16Vec2D outgoing_edges_vec)
 {
     //declare device buffer
-    int16_t* sorted_poa;
-    int16_t* sorted_poa_node_map;
-    uint16_t* incoming_edge_count;
-    int16_t* outgoing_edges;
-    uint16_t* outgoing_edge_count;
-    uint16_t* local_incoming_edge_count;
+    int16_t* sorted_poa                 = nullptr;
+    int16_t* sorted_poa_node_map        = nullptr;
+    uint16_t* incoming_edge_count       = nullptr;
+    int16_t* outgoing_edges             = nullptr;
+    uint16_t* outgoing_edge_count       = nullptr;
+    uint16_t* local_incoming_edge_count = nullptr;
 
     size_t graph_size = node_count * sizeof(uint16_t);
 
@@ -113,7 +113,7 @@ std::string testTopSortDeviceUtil(int16_t node_count, Int16Vec2D outgoing_edges_
 
     GW_CU_CHECK_ERR(cudaDeviceSynchronize());
 
-    std::string res = genomeworks::stringutils::array_to_string<int16_t>(sorted_poa, node_count);
+    std::string res = genomeworks::stringutils::array_to_string(sorted_poa, node_count);
 
     GW_CU_CHECK_ERR(cudaFree(sorted_poa));
     GW_CU_CHECK_ERR(cudaFree(sorted_poa_node_map));

@@ -55,10 +55,10 @@ public:
 
     void get_node_id_to_pos(int16_t* node_id_to_pos) const
     {
-        for (int32_t pos = 0; pos < get_size(sorted_graph_); pos++)
+        for (int16_t pos = 0; pos < get_size<int16_t>(sorted_graph_); pos++)
         {
             int32_t id         = sorted_graph_[pos];
-            node_id_to_pos[id] = static_cast<int16_t>(pos);
+            node_id_to_pos[id] = pos;
         }
     }
 

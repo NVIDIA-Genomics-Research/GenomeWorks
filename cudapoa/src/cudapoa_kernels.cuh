@@ -73,8 +73,8 @@ namespace cudapoa
  * @param[in] mismatch_score                Score for finding a mismatch in alignment
  * @param[in] match_score                   Score for finding a match in alignment
  */
-template <typename ScoreT, typename SizeT, typename TraceT, bool MSA = false, BandMode BM = full_band, bool TRACEBACK = false>
-__launch_bounds__(TRACEBACK ? GW_POA_KERNELS_MAX_THREADS_PER_BLOCK_72_REGISTERS : GW_POA_KERNELS_MAX_THREADS_PER_BLOCK_64_REGISTERS)
+template <typename ScoreT, typename SizeT, typename TraceT, bool MSA = false, BandMode BM = full_band, bool Traceback = false>
+__launch_bounds__(Traceback ? GW_POA_KERNELS_MAX_THREADS_PER_BLOCK_72_REGISTERS : GW_POA_KERNELS_MAX_THREADS_PER_BLOCK_64_REGISTERS)
     __global__ void generatePOAKernel(uint8_t* consensus_d,
                                       uint8_t* sequences_d,
                                       int8_t* base_weights_d,
@@ -142,7 +142,7 @@ __launch_bounds__(TRACEBACK ? GW_POA_KERNELS_MAX_THREADS_PER_BLOCK_72_REGISTERS 
     TraceT* traceback    = traceback_d;                               // only used in traceback
     int32_t scores_width = window_details_d[window_idx].scores_width; // only used in non-traceback
 
-    if (TRACEBACK)
+    if (Traceback)
     {
         // buffer size for scores, in traceback we only need to store part of the scores matrix
         banded_buffer_size = static_cast<float>(max_pred_distance) * static_cast<float>(scores_matrix_width);
@@ -267,7 +267,7 @@ __launch_bounds__(TRACEBACK ? GW_POA_KERNELS_MAX_THREADS_PER_BLOCK_72_REGISTERS 
         // Run Needleman-Wunsch alignment between graph and new sequence.
         SizeT alignment_length;
 
-        if (TRACEBACK)
+        if (Traceback)
         {
             // Adaptive band with traceback ------------------------------------------------------------------------
             if (BM == BandMode::adaptive_band_traceback && static_band_width < CUDAPOA_MAX_ADAPTIVE_BAND_WIDTH)
@@ -459,7 +459,7 @@ __launch_bounds__(TRACEBACK ? GW_POA_KERNELS_MAX_THREADS_PER_BLOCK_72_REGISTERS 
             }
             return;
         }
-        if (TRACEBACK)
+        if (Traceback)
         {
             if (alignment_length == CUDAPOA_KERNEL_NW_TRACEBACK_BUFFER_FAILED)
             {

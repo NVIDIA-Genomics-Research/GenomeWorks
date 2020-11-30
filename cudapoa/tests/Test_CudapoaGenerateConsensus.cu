@@ -168,24 +168,24 @@ std::vector<GenerateConsensusTestPair> getGenerateConsensusTestCases()
 std::string testGenerateConsensus(const BasicGenerateConsensus& obj)
 {
     //declare device buffer
-    uint8_t* nodes;
-    int16_t* node_count;
-    int16_t* graph;
-    int16_t* node_id_to_pos;
-    int16_t* incoming_edges;
-    uint16_t* incoming_edge_count;
-    int16_t* outgoing_edges;
-    uint16_t* outgoing_edge_count;
-    uint16_t* incoming_edge_w;
-    uint16_t* node_coverage_counts;
-    int16_t* node_alignments;
-    uint16_t* node_alignment_count;
+    uint8_t* nodes                 = nullptr;
+    int16_t* node_count            = nullptr;
+    int16_t* graph                 = nullptr;
+    int16_t* node_id_to_pos        = nullptr;
+    int16_t* incoming_edges        = nullptr;
+    uint16_t* incoming_edge_count  = nullptr;
+    int16_t* outgoing_edges        = nullptr;
+    uint16_t* outgoing_edge_count  = nullptr;
+    uint16_t* incoming_edge_w      = nullptr;
+    uint16_t* node_coverage_counts = nullptr;
+    int16_t* node_alignments       = nullptr;
+    uint16_t* node_alignment_count = nullptr;
 
     //buffers that don't need initialization
-    int16_t* predecessors;
-    int32_t* scores;
-    uint8_t* consensus;
-    uint16_t* coverage;
+    int16_t* predecessors = nullptr;
+    int32_t* scores       = nullptr;
+    uint8_t* consensus    = nullptr;
+    uint16_t* coverage    = nullptr;
 
     //default data size limits
     BatchConfig batch_size;

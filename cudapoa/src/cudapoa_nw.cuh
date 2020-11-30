@@ -474,6 +474,8 @@ __global__ void runNeedlemanWunschKernel(uint8_t* nodes,
                                          int32_t match_score,
                                          SizeT* aligned_nodes)
 {
+    static_assert(std::is_same<SizeT, int16_t>::value, "This function only accepts int16_t as SizeT.");
+
     *aligned_nodes = runNeedlemanWunsch<uint8_t, int16_t, int16_t>(nodes,
                                                                    graph,
                                                                    node_id_to_pos,
@@ -512,8 +514,6 @@ void runNW(uint8_t* nodes,
            int32_t match_score,
            SizeT* aligned_nodes)
 {
-    static_assert(std::is_same<SizeT, int16_t>::value, "This function only accepts int16_t as SizeT.");
-
     runNeedlemanWunschKernel<<<1, CUDAPOA_THREADS_PER_BLOCK>>>(nodes,
                                                                graph,
                                                                node_id_to_pos,

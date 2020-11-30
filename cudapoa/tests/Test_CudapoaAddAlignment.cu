@@ -233,27 +233,27 @@ std::vector<AddAlginmentTestPair> getAddAlignmentTestCases()
 BasicGraph testAddAlignment(const BasicAlignment& obj)
 {
     //declare device buffer
-    uint8_t* nodes;
-    int16_t* node_count;
-    int16_t* node_alignments;
-    uint16_t* node_alignment_count;
-    int16_t* incoming_edges;
-    uint16_t* incoming_edge_count;
-    int16_t* outgoing_edges;
-    uint16_t* outgoing_edge_count;
-    uint16_t* incoming_edge_w;
-    uint16_t* outgoing_edge_w;
-    int16_t* alignment_length;
-    int16_t* graph;
-    int16_t* alignment_graph;
-    uint8_t* read;
-    int8_t* base_weights;
-    int16_t* alignment_read;
-    uint16_t* node_coverage_counts;
-    int16_t* sequence_begin_nodes_ids;
-    uint16_t* outgoing_edges_coverage;
-    uint16_t* outgoing_edges_coverage_count;
-    uint16_t s = 0;
+    uint8_t* nodes                          = nullptr;
+    int16_t* node_count                     = nullptr;
+    int16_t* node_alignments                = nullptr;
+    uint16_t* node_alignment_count          = nullptr;
+    int16_t* incoming_edges                 = nullptr;
+    uint16_t* incoming_edge_count           = nullptr;
+    int16_t* outgoing_edges                 = nullptr;
+    uint16_t* outgoing_edge_count           = nullptr;
+    uint16_t* incoming_edge_w               = nullptr;
+    uint16_t* outgoing_edge_w               = nullptr;
+    int16_t* alignment_length               = nullptr;
+    int16_t* graph                          = nullptr;
+    int16_t* alignment_graph                = nullptr;
+    uint8_t* read                           = nullptr;
+    int8_t* base_weights                    = nullptr;
+    int16_t* alignment_read                 = nullptr;
+    uint16_t* node_coverage_counts          = nullptr;
+    int16_t* sequence_begin_nodes_ids       = nullptr;
+    uint16_t* outgoing_edges_coverage       = nullptr;
+    uint16_t* outgoing_edges_coverage_count = nullptr;
+    uint16_t s                              = 0;
     BatchConfig batch_size; // default max_sequence_size = 1024, max_sequences_per_poa = 100
 
     //allocate unified memory so they can be accessed by both host and device.
