@@ -157,7 +157,7 @@ public:
 
 /// \brief A simple caching allocator for device memory allocations
 /// \tparam T
-/// \tparam MemoryResource resource that does actual allocation, e.g. cudautils::DevicePreallocatedAllocator
+/// \tparam MemoryResource resource that does actual allocation, e.g. cudautils::details::DevicePreallocatedAllocator
 template <typename T, typename MemoryResource>
 class CachingDeviceAllocator
 {
@@ -320,7 +320,7 @@ private:
 };
 
 #ifdef GW_ENABLE_CACHING_ALLOCATOR
-using DefaultDeviceAllocator = CachingDeviceAllocator<char, DevicePreallocatedAllocator>;
+using DefaultDeviceAllocator = CachingDeviceAllocator<char, details::DevicePreallocatedAllocator>;
 #else
 using DefaultDeviceAllocator = CudaMallocAllocator<char>;
 #endif
