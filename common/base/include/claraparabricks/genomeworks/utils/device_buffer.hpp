@@ -215,7 +215,7 @@ private:
 
 template <typename T>
 #ifdef GW_ENABLE_CACHING_ALLOCATOR
-using device_buffer = details::buffer<T, CachingDeviceAllocator<T, DevicePreallocatedAllocator>>;
+using device_buffer = details::buffer<T, CachingDeviceAllocator<T, details::DevicePreallocatedAllocator>>;
 #else
 using device_buffer = details::buffer<T, CudaMallocAllocator<T>>;
 #endif
