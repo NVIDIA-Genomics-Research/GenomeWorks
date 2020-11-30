@@ -467,7 +467,7 @@ public:
     }
 };
 
-TEST_F(NWbandedTest, NWSaticBandvsFull)
+TEST_F(NWbandedTest, NWStaticBandvsFull)
 {
     auto full_alignment_results = testNW(*nw);
     auto static_banded_results  = testNWbanded(*nw, false);
@@ -487,7 +487,7 @@ TEST_F(NWbandedTest, NWAdaptiveBandvsFull)
     EXPECT_EQ(full_alignment_results.second, adaptive_banded_results.second);
 }
 
-TEST_F(NWbandedTest, NWSaticBandTracebackvsFull)
+TEST_F(NWbandedTest, NWStaticBandTracebackvsFull)
 {
     auto full_alignment_results   = testNW(*nw);
     auto static_banded_tb_results = testNWbanded(*nw, false, true);

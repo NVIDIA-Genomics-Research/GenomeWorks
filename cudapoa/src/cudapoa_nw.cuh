@@ -152,22 +152,22 @@ template <typename SeqT,
           int32_t CPT = 4>
 __device__ __forceinline__
     int32_t
-    runNeedlemanWunsch(SeqT* nodes,
-                       SizeT* graph,
-                       SizeT* node_id_to_pos,
-                       int32_t graph_count,
-                       uint16_t* incoming_edge_count,
-                       SizeT* incoming_edges,
-                       uint16_t* outgoing_edge_count,
-                       SeqT* read,
-                       int32_t read_length,
-                       ScoreT* scores,
-                       int32_t scores_width,
-                       SizeT* alignment_graph,
-                       SizeT* alignment_read,
-                       int32_t gap_score,
-                       int32_t mismatch_score,
-                       int32_t match_score)
+    needlemanWunsch(SeqT* nodes,
+                    SizeT* graph,
+                    SizeT* node_id_to_pos,
+                    int32_t graph_count,
+                    uint16_t* incoming_edge_count,
+                    SizeT* incoming_edges,
+                    uint16_t* outgoing_edge_count,
+                    SeqT* read,
+                    int32_t read_length,
+                    ScoreT* scores,
+                    int32_t scores_width,
+                    SizeT* alignment_graph,
+                    SizeT* alignment_read,
+                    int32_t gap_score,
+                    int32_t mismatch_score,
+                    int32_t match_score)
 {
 
     static_assert(CPT == 4, "implementation currently supports only 4 cells per thread");
@@ -476,22 +476,22 @@ __global__ void runNeedlemanWunschKernel(uint8_t* nodes,
 {
     static_assert(std::is_same<SizeT, int16_t>::value, "This function only accepts int16_t as SizeT.");
 
-    *aligned_nodes = runNeedlemanWunsch<uint8_t, int16_t, int16_t>(nodes,
-                                                                   graph,
-                                                                   node_id_to_pos,
-                                                                   graph_count,
-                                                                   incoming_edge_count,
-                                                                   incoming_edges,
-                                                                   outgoing_edge_count,
-                                                                   read,
-                                                                   read_length,
-                                                                   scores,
-                                                                   scores_width,
-                                                                   alignment_graph,
-                                                                   alignment_read,
-                                                                   gap_score,
-                                                                   mismatch_score,
-                                                                   match_score);
+    *aligned_nodes = needlemanWunsch<uint8_t, int16_t, int16_t>(nodes,
+                                                                graph,
+                                                                node_id_to_pos,
+                                                                graph_count,
+                                                                incoming_edge_count,
+                                                                incoming_edges,
+                                                                outgoing_edge_count,
+                                                                read,
+                                                                read_length,
+                                                                scores,
+                                                                scores_width,
+                                                                alignment_graph,
+                                                                alignment_read,
+                                                                gap_score,
+                                                                mismatch_score,
+                                                                match_score);
 }
 
 // Host function that calls the kernel
