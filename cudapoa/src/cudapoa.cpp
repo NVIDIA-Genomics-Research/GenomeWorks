@@ -62,6 +62,10 @@ void decode_error(StatusType error_type, std::string& error_message, std::string
         error_message = "Kernel Error: Allocated buffer for score/traceback matrix in adaptive banding is not large enough";
         error_hint    = "Suggestion  : Check BatchConfig::matrix_sequence_dimension and increase if necessary";
         break;
+    case StatusType::exceeded_maximum_predecessor_distance:
+        error_message = "Kernel Error: Set value for maximum predecessor distance in Needleman-Wunsch algorithm with traceback buffer is not large enough";
+        error_hint    = "Suggestion  : Check BatchConfig::max_banded_pred_distance and increase if necessary";
+        break;
     case StatusType::loop_count_exceeded_upper_bound:
         error_message = "Kernel Error: Traceback in Needleman-Wunsch algorithm failed";
         error_hint    = "Suggestion  : You may retry with a different banding mode";
@@ -69,10 +73,6 @@ void decode_error(StatusType error_type, std::string& error_message, std::string
     case StatusType::output_type_unavailable:
         error_message = "Kernel Error: Output type not available";
         error_hint    = "Suggestion  : Check MSA/Consensus selection for output type";
-        break;
-    case StatusType::exceeded_maximum_predecessor_distance:
-        error_message = "Kernel Error: Set value for maximum predecessor distance in Needleman-Wunsch algorithm with traceback buffer is not large enough";
-        error_hint    = "Suggestion  : Check BatchConfig::max_banded_pred_distance and increase if necessary";
         break;
     case StatusType::generic_error:
         error_message = "Kernel Error: Unknown error";
