@@ -440,7 +440,10 @@ protected:
     void decode_cudapoa_kernel_error(genomeworks::cudapoa::StatusType error_type,
                                      std::vector<StatusType>& output_status)
     {
-        std::string error_message = decode_error(error_type) + " {}\n";
+        std::string error_message;
+        std::string error_hint;
+        decode_error(error_type, error_message, error_hint);
+        error_message = error_message + " in batch {}\n" + error_hint;
         GW_LOG_WARN(error_message.c_str(), bid_);
         output_status.emplace_back(error_type);
     }

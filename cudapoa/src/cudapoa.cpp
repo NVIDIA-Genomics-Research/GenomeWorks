@@ -34,37 +34,55 @@ StatusType Init()
     return StatusType::success;
 }
 
-std::string decode_error(StatusType error_type)
+void decode_error(StatusType error_type, std::string& error_message, std::string& error_hint)
 {
-    std::string error_message;
     switch (error_type)
     {
-    case genomeworks::cudapoa::StatusType::node_count_exceeded_maximum_graph_size:
-        error_message = "Kernel Error:: Node count exceeded maximum nodes per graph in batch";
+    case StatusType::exceeded_maximum_poas:
+        error_message = "Kernel Error: Number of groups per batch exceeded maximum POAs";
+        error_hint    = "Suggestion  : Evaluate maximum number of groups per batch using BatchBlock::estimate_max_poas()";
         break;
-    case genomeworks::cudapoa::StatusType::edge_count_exceeded_maximum_graph_size:
-        error_message = "Kernel Error:: Edge count exceeded maximum edges per graph in batch";
+    case StatusType::exceeded_maximum_sequence_size:
+        error_message = "Kernel Error: Input read length or output consensus/MSA sequence length exceeded max sequence size";
+        error_hint    = "Suggestion  : Check BatchConfig::max_sequence_size and BatchConfig::max_consensus_size, increase if necessary";
         break;
-    case genomeworks::cudapoa::StatusType::seq_len_exceeded_maximum_nodes_per_window:
-        error_message = "Kernel Error:: Sequence length exceeded maximum nodes per window in batch";
+    case StatusType::exceeded_maximum_sequences_per_poa:
+        error_message = "Kernel Error: Exceeded maximum number of reads per POA";
+        error_hint    = "Suggestion  : Check BatchConfig::max_sequences_per_poa and increase if necessary";
         break;
-    case genomeworks::cudapoa::StatusType::loop_count_exceeded_upper_bound:
-        error_message = "Kernel Error:: Loop count exceeded upper bound in nw algorithm in batch";
+    case StatusType::node_count_exceeded_maximum_graph_size:
+        error_message = "Kernel Error: Node count exceeded maximum nodes per POA graph";
+        error_hint    = "Suggestion  : Check BatchConfig::max_nodes_per_graph and increase if necessary";
         break;
-    case genomeworks::cudapoa::StatusType::exceeded_adaptive_banded_matrix_size:
-        error_message = "Kernel Error:: Band width set for adaptive matrix allocation is too small in batch";
+    case StatusType::edge_count_exceeded_maximum_graph_size:
+        error_message = "Kernel Error: Edge count exceeded maximum edges per graph";
+        error_hint    = "Suggestion  : Check default value of CUDAPOA_MAX_NODE_EDGES, note that increasing this macro would increase memory usage per POA";
         break;
-    case genomeworks::cudapoa::StatusType::exceeded_maximum_sequence_size:
-        error_message = "Kernel Error:: Consensus/MSA sequence size exceeded max sequence size in batch";
+    case StatusType::exceeded_adaptive_banded_matrix_size:
+        error_message = "Kernel Error: Allocated buffer for score/traceback matrix in adaptive banding is not large enough";
+        error_hint    = "Suggestion  : Check BatchConfig::matrix_sequence_dimension and increase if necessary";
         break;
-    case genomeworks::cudapoa::StatusType::exceeded_maximum_predecessor_distance:
-        error_message = "Kernel Error:: Set value for maximum predecessor distance in traceback NW is too small";
+    case StatusType::loop_count_exceeded_upper_bound:
+        error_message = "Kernel Error: Traceback in Needleman-Wunsch algorithm failed";
+        error_hint    = "Suggestion  : You may retry with a different banding mode";
+        break;
+    case StatusType::output_type_unavailable:
+        error_message = "Kernel Error: Output type not available";
+        error_hint    = "Suggestion  : Check MSA/Consensus selection for output type";
+        break;
+    case StatusType::exceeded_maximum_predecessor_distance:
+        error_message = "Kernel Error: Set value for maximum predecessor distance in Needleman-Wunsch algorithm with traceback buffer is not large enough";
+        error_hint    = "Suggestion  : Check BatchConfig::max_banded_pred_distance and increase if necessary";
+        break;
+    case StatusType::generic_error:
+        error_message = "Kernel Error: Unknown error";
+        error_hint    = "";
         break;
     default:
-        error_message = "Kernel Error:: Unknown error in batch";
+        error_message = "Kernel Error: Unknown error";
+        error_hint    = "";
         break;
     }
-    return error_message;
 }
 
 } // namespace cudapoa

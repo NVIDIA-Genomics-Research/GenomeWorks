@@ -49,8 +49,9 @@ enum StatusType
 
 /// Generate corresponding error message for a given error type
 /// \param [in] error_type input error code
-/// \return corresponding error message
-std::string decode_error(StatusType error_type);
+/// \param [out] error_message corresponding error message
+/// \param [out] error_hint possible hint to resolve the error
+void decode_error(StatusType error_type, std::string& error_message, std::string& error_hint);
 
 /// Banding mode used in Needleman-Wunsch algorithm
 /// - full_band performs computations on full scores matrix, highest accuracy
