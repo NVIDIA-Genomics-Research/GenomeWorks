@@ -147,8 +147,10 @@ ApplicationParameters::ApplicationParameters(int argc, char* argv[])
             break;
         case 'v':
             print_version();
+            exit(1);
         case 'h':
             help(0);
+            exit(1);
         default:
             exit(1);
         }
