@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <string>
+
 namespace claraparabricks
 {
 
@@ -44,6 +46,11 @@ enum StatusType
     generic_error,
     exceeded_maximum_predecessor_distance
 };
+
+/// Generate corresponding error message for a given error type
+/// \param [in] error_type input error code
+/// \return corresponding error message
+std::string decode_error(StatusType error_type);
 
 /// Banding mode used in Needleman-Wunsch algorithm
 /// - full_band performs computations on full scores matrix, highest accuracy
