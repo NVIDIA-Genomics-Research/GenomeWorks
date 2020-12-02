@@ -225,8 +225,6 @@ void runTopSort(SizeT* sorted_poa,
                 uint16_t* outgoing_edge_count,
                 uint16_t* local_incoming_edge_count)
 {
-    static_assert(std::is_same<SizeT, int16_t>::value, "This function only accepts int16_t as SizeT.");
-
     // calls the topsort kernel on 1 thread
     runTopSortKernel<<<1, 1>>>(sorted_poa,
                                sorted_poa_node_map,

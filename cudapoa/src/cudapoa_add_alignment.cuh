@@ -352,8 +352,6 @@ void addAlignment(uint8_t* nodes,
                   uint32_t max_sequences_per_poa,
                   uint32_t max_limit_nodes_per_window)
 {
-    static_assert(std::is_same<SizeT, int16_t>::value, "This function only accepts int16_t as SizeT.");
-
     addAlignmentKernel<<<1, 1>>>(nodes,
                                  node_count,
                                  node_alignments, node_alignment_count,
