@@ -112,10 +112,8 @@ Minimum requirements -
 3. gcc/g++ 5.4.0+ / 7.x.x
 4. Python 3.6.7+
 5. CMake (>= 3.10.2)
-
-Optional requirements -
-
-1. autoconf (required to output SAM/BAM files)
+6. autoconf (required to output SAM/BAM files)
+7. automake (required to output SAM/BAM files)
 
 ## GenomeWorks Setup
 
