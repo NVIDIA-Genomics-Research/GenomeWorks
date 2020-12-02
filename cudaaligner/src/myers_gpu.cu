@@ -425,19 +425,25 @@ __device__ int32_t myers_backtrace_banded(int8_t* path, device_matrix_view<WordT
     assert(pv.num_cols() == score.num_cols());
     assert(mv.num_cols() == score.num_cols());
     assert(score.num_rows() == ceiling_divide(band_width, word_size));
+    assert(diagonal_begin >= 0);
+    assert(diagonal_end >= diagonal_begin);
+    assert(diagonal_end >= 2); // this should only break if target_size == 0 - which is not valid input.
+
     int32_t i = band_width;
     int32_t j = target_size;
 
     const WordType last_entry_mask = band_width % word_size != 0 ? (WordType(1) << (band_width % word_size)) - 1 : ~WordType(0);
 
-    nw_score_t myscore = score((i - 1) / word_size, j); // row 0 is implicit, NW matrix is shifted by i -> i-1 (see get_myers_score)
-    int32_t pos        = 0;
+    const nw_score_t last_diagonal_score = diagonal_end < 2 ? out_of_band : get_myers_score(1, diagonal_end - 2, pv, mv, score, last_entry_mask) + 2;
+    nw_score_t myscore                   = score((i - 1) / word_size, j); // row 0 is implicit, NW matrix is shifted by i -> i-1, i.e. i \in [1,band_width] for get_myers_score. (see get_myers_score)
+    int32_t pos                          = 0;
     while (j >= diagonal_end)
     {
-        int8_t r               = 0;
-        nw_score_t const above = i <= 1 ? j : get_myers_score(i - 1, j, pv, mv, score, last_entry_mask);
-        nw_score_t const diag  = i <= 1 ? j - 1 : get_myers_score(i - 1, j - 1, pv, mv, score, last_entry_mask);
-        nw_score_t const left  = get_myers_score(i, j - 1, pv, mv, score, last_entry_mask);
+        int8_t r = 0;
+        // Worst case for the implicit top row (i == 0) of the bottom right block of the NW is the last diagonal entry on the same row + (j - diagonal_end) * indel cost.
+        nw_score_t const above = i <= 1 ? (last_diagonal_score + j - diagonal_end) : get_myers_score(i - 1, j, pv, mv, score, last_entry_mask);
+        nw_score_t const diag  = i <= 1 ? (last_diagonal_score + j - 1 - diagonal_end) : get_myers_score(i - 1, j - 1, pv, mv, score, last_entry_mask);
+        nw_score_t const left  = i < 1 ? (last_diagonal_score + j - 1 - diagonal_end) : get_myers_score(i, j - 1, pv, mv, score, last_entry_mask);
         if (left + 1 == myscore)
         {
             r       = static_cast<int8_t>(AlignmentState::insertion);
@@ -452,6 +458,7 @@ __device__ int32_t myers_backtrace_banded(int8_t* path, device_matrix_view<WordT
         }
         else
         {
+            assert(diag == myscore || diag + 1 == myscore);
             r       = (diag == myscore ? static_cast<int8_t>(AlignmentState::match) : static_cast<int8_t>(AlignmentState::mismatch));
             myscore = diag;
             --i;
@@ -463,9 +470,10 @@ __device__ int32_t myers_backtrace_banded(int8_t* path, device_matrix_view<WordT
     while (j >= diagonal_begin)
     {
         int8_t r               = 0;
-        nw_score_t const above = i <= 1 ? j : get_myers_score(i - 1, j, pv, mv, score, last_entry_mask);
+        nw_score_t const above = i <= 1 ? out_of_band : get_myers_score(i - 1, j, pv, mv, score, last_entry_mask);
         nw_score_t const diag  = i <= 0 ? j - 1 : get_myers_score(i, j - 1, pv, mv, score, last_entry_mask);
         nw_score_t const left  = i >= band_width ? out_of_band : get_myers_score(i + 1, j - 1, pv, mv, score, last_entry_mask);
+        // out-of-band cases: diag always preferrable, since worst-case-(above|left) - myscore >= diag - myscore always holds.
         if (left + 1 == myscore)
         {
             r       = static_cast<int8_t>(AlignmentState::insertion);
@@ -481,6 +489,7 @@ __device__ int32_t myers_backtrace_banded(int8_t* path, device_matrix_view<WordT
         }
         else
         {
+            assert(diag == myscore || diag + 1 == myscore);
             r       = (diag == myscore ? static_cast<int8_t>(AlignmentState::match) : static_cast<int8_t>(AlignmentState::mismatch));
             myscore = diag;
             --j;
@@ -494,6 +503,7 @@ __device__ int32_t myers_backtrace_banded(int8_t* path, device_matrix_view<WordT
         nw_score_t const above = i == 1 ? j : get_myers_score(i - 1, j, pv, mv, score, last_entry_mask);
         nw_score_t const diag  = i == 1 ? j - 1 : get_myers_score(i - 1, j - 1, pv, mv, score, last_entry_mask);
         nw_score_t const left  = i > band_width ? out_of_band : get_myers_score(i, j - 1, pv, mv, score, last_entry_mask);
+        // out-of-band cases: diag always preferrable, since worst-case-(above|left) - myscore >= diag - myscore always holds.
         if (left + 1 == myscore)
         {
             r       = static_cast<int8_t>(AlignmentState::insertion);
@@ -508,6 +518,7 @@ __device__ int32_t myers_backtrace_banded(int8_t* path, device_matrix_view<WordT
         }
         else
         {
+            assert(diag == myscore || diag + 1 == myscore);
             r       = (diag == myscore ? static_cast<int8_t>(AlignmentState::match) : static_cast<int8_t>(AlignmentState::mismatch));
             myscore = diag;
             --i;
