@@ -177,27 +177,27 @@ __device__ __forceinline__ void initialize_band(ScoreT* scores,
 template <typename SeqT,
           typename ScoreT,
           typename SizeT,
-          bool ADAPTIVE = true>
+          bool Adaptive = true>
 __device__ __forceinline__
     int32_t
-    runNeedlemanWunschBanded(SeqT* nodes,
-                             SizeT* graph,
-                             SizeT* node_id_to_pos,
-                             int32_t graph_count,
-                             uint16_t* incoming_edge_count,
-                             SizeT* incoming_edges,
-                             uint16_t* outgoing_edge_count,
-                             SeqT* read,
-                             int32_t read_length,
-                             ScoreT* scores,
-                             float max_buffer_size,
-                             SizeT* alignment_graph,
-                             SizeT* alignment_read,
-                             int32_t band_width,
-                             int32_t gap_score,
-                             int32_t mismatch_score,
-                             int32_t match_score,
-                             int32_t rerun)
+    needlemanWunschBanded(SeqT* nodes,
+                          SizeT* graph,
+                          SizeT* node_id_to_pos,
+                          int32_t graph_count,
+                          uint16_t* incoming_edge_count,
+                          SizeT* incoming_edges,
+                          uint16_t* outgoing_edge_count,
+                          SeqT* read,
+                          int32_t read_length,
+                          ScoreT* scores,
+                          float max_buffer_size,
+                          SizeT* alignment_graph,
+                          SizeT* alignment_read,
+                          int32_t band_width,
+                          int32_t gap_score,
+                          int32_t mismatch_score,
+                          int32_t match_score,
+                          int32_t rerun)
 {
     const ScoreT min_score_value = numeric_limits<ScoreT>::min() / 2;
 
@@ -210,7 +210,7 @@ __device__ __forceinline__
 
     // Set band-width based on scores matrix aspect ratio
     //---------------------------------------------------------
-    if (ADAPTIVE)
+    if (Adaptive)
     {
         if (gradient > 1.1) // ad-hoc rule 1.a
         {
@@ -236,7 +236,7 @@ __device__ __forceinline__
     // band_shift defines distance of band_start from the scores matrix diagonal, ad-hoc rule 4
     int32_t band_shift = band_width / 2;
 
-    if (ADAPTIVE)
+    if (Adaptive)
     {
         // rerun code is defined in backtracking loop from previous alignment try
         // SHIFT_ADAPTIVE_BAND_TO_LEFT means traceback path was too close to the left bound of band
@@ -439,7 +439,7 @@ __device__ __forceinline__
             // Check if move is diagonal.
             if (i != 0 && j != 0)
             {
-                if (ADAPTIVE)
+                if (Adaptive)
                 {
                     // no need to request rerun if (a) it's not the first run, (b) band_width == CUDAPOA_MAX_ADAPTIVE_BAND_WIDTH already
                     if (rerun == 0 && band_width < CUDAPOA_MAX_ADAPTIVE_BAND_WIDTH)
@@ -554,6 +554,124 @@ __device__ __forceinline__
     }
     aligned_nodes = __shfl_sync(FULL_MASK, aligned_nodes, 0);
     return aligned_nodes;
+}
+
+// global kernel used in testing, hence uses int16_t for SizeT and ScoreT,
+// may need to change if test inputs change to long reads
+template <typename SizeT, bool Adaptive>
+__global__ void runNeedlemanWunschBandedKernel(uint8_t* nodes,
+                                               SizeT* graph,
+                                               SizeT* node_id_to_pos,
+                                               int32_t graph_count,
+                                               uint16_t* incoming_edge_count,
+                                               SizeT* incoming_edges,
+                                               uint16_t* outgoing_edge_count,
+                                               uint8_t* read,
+                                               int32_t read_length,
+                                               int16_t* scores,
+                                               int32_t scores_width,
+                                               int32_t max_nodes_per_graph,
+                                               SizeT* alignment_graph,
+                                               SizeT* alignment_read,
+                                               int32_t band_width,
+                                               int32_t gap_score,
+                                               int32_t mismatch_score,
+                                               int32_t match_score,
+                                               SizeT* aligned_nodes)
+{
+    static_assert(std::is_same<SizeT, int16_t>::value, "This function only accepts int16_t as SizeT.");
+
+    float banded_buffer_size = static_cast<float>(max_nodes_per_graph) * static_cast<float>(scores_width);
+
+    *aligned_nodes = needlemanWunschBanded<uint8_t, int16_t, int16_t, Adaptive>(nodes,
+                                                                                graph,
+                                                                                node_id_to_pos,
+                                                                                graph_count,
+                                                                                incoming_edge_count,
+                                                                                incoming_edges,
+                                                                                outgoing_edge_count,
+                                                                                read,
+                                                                                read_length,
+                                                                                scores,
+                                                                                banded_buffer_size,
+                                                                                alignment_graph,
+                                                                                alignment_read,
+                                                                                band_width,
+                                                                                gap_score,
+                                                                                mismatch_score,
+                                                                                match_score,
+                                                                                0);
+}
+
+// Host function that calls the kernel
+template <typename SizeT>
+void runNWbanded(uint8_t* nodes,
+                 SizeT* graph,
+                 SizeT* node_id_to_pos,
+                 int32_t graph_count,
+                 uint16_t* incoming_edge_count,
+                 SizeT* incoming_edges,
+                 uint16_t* outgoing_edge_count,
+                 uint8_t* read,
+                 int32_t read_length,
+                 int16_t* scores,
+                 int32_t scores_width,
+                 int32_t max_nodes_per_graph,
+                 SizeT* alignment_graph,
+                 SizeT* alignment_read,
+                 int32_t band_width,
+                 int32_t gap_score,
+                 int32_t mismatch_score,
+                 int32_t match_score,
+                 SizeT* aligned_nodes,
+                 bool adaptive)
+{
+    if (adaptive)
+    {
+        runNeedlemanWunschBandedKernel<SizeT, true><<<1, CUDAPOA_BANDED_THREADS_PER_BLOCK>>>(nodes,
+                                                                                             graph,
+                                                                                             node_id_to_pos,
+                                                                                             graph_count,
+                                                                                             incoming_edge_count,
+                                                                                             incoming_edges,
+                                                                                             outgoing_edge_count,
+                                                                                             read,
+                                                                                             read_length,
+                                                                                             scores,
+                                                                                             scores_width,
+                                                                                             max_nodes_per_graph,
+                                                                                             alignment_graph,
+                                                                                             alignment_read,
+                                                                                             band_width,
+                                                                                             gap_score,
+                                                                                             mismatch_score,
+                                                                                             match_score,
+                                                                                             aligned_nodes);
+    }
+    else
+    {
+        runNeedlemanWunschBandedKernel<SizeT, false><<<1, CUDAPOA_BANDED_THREADS_PER_BLOCK>>>(nodes,
+                                                                                              graph,
+                                                                                              node_id_to_pos,
+                                                                                              graph_count,
+                                                                                              incoming_edge_count,
+                                                                                              incoming_edges,
+                                                                                              outgoing_edge_count,
+                                                                                              read,
+                                                                                              read_length,
+                                                                                              scores,
+                                                                                              scores_width,
+                                                                                              max_nodes_per_graph,
+                                                                                              alignment_graph,
+                                                                                              alignment_read,
+                                                                                              band_width,
+                                                                                              gap_score,
+                                                                                              mismatch_score,
+                                                                                              match_score,
+                                                                                              aligned_nodes);
+    }
+
+    GW_CU_CHECK_ERR(cudaPeekAtLastError());
 }
 
 } // namespace cudapoa
