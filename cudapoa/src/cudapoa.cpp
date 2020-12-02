@@ -75,11 +75,11 @@ void decode_error(StatusType error_type, std::string& error_message, std::string
         error_hint    = "Suggestion  : Check MSA/Consensus selection for output type";
         break;
     case StatusType::generic_error:
-        error_message = "Kernel Error: Unknown error";
+        error_message = "Unknown error";
         error_hint    = "";
         break;
     default:
-        error_message = "Kernel Error: Unknown error";
+        error_message = "Unknown error";
         error_hint    = "";
         break;
     }
