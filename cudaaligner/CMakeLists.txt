@@ -65,6 +65,7 @@ target_include_directories(${MODULE_NAME}
 target_compile_options(${MODULE_NAME} PRIVATE -Werror)
 
 add_doxygen_source_dir(${CMAKE_CURRENT_SOURCE_DIR}/include)
+add_doxygen_source_dir(${CMAKE_CURRENT_SOURCE_DIR}/README.md)
 
 # Add tests folder
 add_subdirectory(tests)
