@@ -17,6 +17,8 @@
 #include <claraparabricks/genomeworks/cudapoa/cudapoa.hpp>
 #include <claraparabricks/genomeworks/logging/logging.hpp>
 
+#include <stdexcept>
+
 namespace claraparabricks
 {
 
