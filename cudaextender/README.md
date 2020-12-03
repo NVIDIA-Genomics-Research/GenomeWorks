@@ -19,9 +19,10 @@ producer/consumer modules. The user is expected to handle all memory transaction
 sychronizations for the device pointer API. The host pointer API abstracts those operations away.
 Both APIs are documented here: [extender.hpp](include/claraparabricks/genomeworks/cudaextender/extender.hpp)
 
-## Library - libcudaextender.so
-Features:
+## Library
+Built as `libcudaextender.[so|a]`
+
 * Ungapped X-Drop extension
 
-## Sample - sample_cudaextender
-Protoype to show the usage of host and device pointer APIs on FASTA sequences.
+## Sample
+[sample_cudaextender](samples/sample_cudaextender.cpp) - Protoype to show the usage of host and device pointer APIs on FASTA sequences.
