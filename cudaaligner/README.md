@@ -1,6 +1,6 @@
 # cudaaligner
 
-The `cudaaligner` package provides GPU-accelerated global alignment. Features include:
+The `cudaaligner` package provides GPU-accelerated global alignment.
 
 ## Library
 Built as `libcudaaligner.[so|a]`.
@@ -11,5 +11,5 @@ Built as `libcudaaligner.[so|a]`.
 APIs documented in [include](include/claraparabricks/genomeworks/cudaaligner) folder.
 
 ## Sample
-[sample_cudaaligner](samples/sample_cudaaligner.cpp) - A prototypical binary to showcase the use of `libcudaaligner.so` APIs.
+[sample_cudaaligner](samples/sample_cudaaligner.cpp) - A prototypical binary to showcase the use of `libcudaaligner` APIs.
 
