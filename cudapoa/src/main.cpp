@@ -254,7 +254,14 @@ int main(int argc, char* argv[])
                         batch->get_graphs(graph, graph_status);
                         for (auto& g : graph)
                         {
-                            graph_output << g.serialize_to_dot() << std::endl;
+                            if (parameters.output_gfa)
+                            {
+                                graph_output << g.serialize_to_gfa() << std::endl;
+                            }
+                            else
+                            {
+                                graph_output << g.serialize_to_dot() << std::endl;
+                            }
                         }
                     }
 
