@@ -440,41 +440,12 @@ protected:
     void decode_cudapoa_kernel_error(genomeworks::cudapoa::StatusType error_type,
                                      std::vector<StatusType>& output_status)
     {
-        switch (error_type)
-        {
-        case genomeworks::cudapoa::StatusType::node_count_exceeded_maximum_graph_size:
-            GW_LOG_WARN("Kernel Error:: Node count exceeded maximum nodes per graph in batch {}\n", bid_);
-            output_status.emplace_back(error_type);
-            break;
-        case genomeworks::cudapoa::StatusType::edge_count_exceeded_maximum_graph_size:
-            GW_LOG_WARN("Kernel Error:: Edge count exceeded maximum edges per graph in batch {}\n", bid_);
-            output_status.emplace_back(error_type);
-            break;
-        case genomeworks::cudapoa::StatusType::seq_len_exceeded_maximum_nodes_per_window:
-            GW_LOG_WARN("Kernel Error:: Sequence length exceeded maximum nodes per window in batch {}\n", bid_);
-            output_status.emplace_back(error_type);
-            break;
-        case genomeworks::cudapoa::StatusType::loop_count_exceeded_upper_bound:
-            GW_LOG_WARN("Kernel Error:: Loop count exceeded upper bound in nw algorithm in batch {}\n", bid_);
-            output_status.emplace_back(error_type);
-            break;
-        case genomeworks::cudapoa::StatusType::exceeded_adaptive_banded_matrix_size:
-            GW_LOG_WARN("Kernel Error:: Band width set for adaptive matrix allocation is too small in batch {}\n", bid_);
-            output_status.emplace_back(error_type);
-            break;
-        case genomeworks::cudapoa::StatusType::exceeded_maximum_sequence_size:
-            GW_LOG_WARN("Kernel Error:: Consensus/MSA sequence size exceeded max sequence size in batch {}\n", bid_);
-            output_status.emplace_back(error_type);
-            break;
-        case genomeworks::cudapoa::StatusType::exceeded_maximum_predecessor_distance:
-            GW_LOG_WARN("Kernel Error:: Set value for maximum predecessor distance in traceback NW is too small {}\n", bid_);
-            output_status.emplace_back(error_type);
-            break;
-        default:
-            GW_LOG_WARN("Kernel Error:: Unknown error in batch {}\n", bid_);
-            output_status.emplace_back(error_type);
-            break;
-        }
+        std::string error_message;
+        std::string error_hint;
+        decode_error(error_type, error_message, error_hint);
+        error_message = error_message + " in batch {}\n" + error_hint;
+        GW_LOG_WARN(error_message.c_str(), bid_);
+        output_status.emplace_back(error_type);
     }
 
     // Add new partial order alignment to batch.
