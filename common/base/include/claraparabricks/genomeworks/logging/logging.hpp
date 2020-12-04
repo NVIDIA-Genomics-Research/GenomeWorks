@@ -91,13 +91,7 @@
 #endif
 
 // MUST come after the defines of the logging level!
-#if __GNUC__ >= 9
-// Due to a ISO C++ standard incompatibility the spdlog fails to pass
-// pedantic requirements.
-#pragma message("Logging disabled for GCC >= 9")
-#else
 #include <spdlog/spdlog.h>
-#endif
 
 namespace claraparabricks
 {
@@ -135,55 +129,35 @@ LoggingStatus SetHeader(bool logTime, bool logLocation);
 /// \brief Log at debug level
 ///
 /// parameters as per https://github.com/gabime/spdlog/blob/v1.x/README.md
-#if __GNUC__ >= 9
-#define GW_LOG_DEBUG(...)
-#else
 #define GW_LOG_DEBUG(...) SPDLOG_DEBUG(__VA_ARGS__)
-#endif
 
 /// \ingroup logging
 /// \def GW_LOG_INFO
 /// \brief Log at info level
 ///
 /// parameters as per https://github.com/gabime/spdlog/blob/v1.x/README.md
-#if __GNUC__ >= 9
-#define GW_LOG_INFO(...)
-#else
 #define GW_LOG_INFO(...) SPDLOG_INFO(__VA_ARGS__)
-#endif
 
 /// \ingroup logging
 /// \def GW_LOG_WARN
 /// \brief Log at warning level
 ///
 /// parameters as per https://github.com/gabime/spdlog/blob/v1.x/README.md
-#if __GNUC__ >= 9
-#define GW_LOG_WARN(...)
-#else
 #define GW_LOG_WARN(...) SPDLOG_WARN(__VA_ARGS__)
-#endif
 
 /// \ingroup logging
 /// \def GW_LOG_ERROR
 /// \brief Log at error level
 ///
 /// parameters as per https://github.com/gabime/spdlog/blob/v1.x/README.md
-#if __GNUC__ >= 9
-#define GW_LOG_ERROR(...)
-#else
 #define GW_LOG_ERROR(...) SPDLOG_ERROR(__VA_ARGS__)
-#endif
 
 /// \ingroup logging
 /// \def GW_LOG_CRITICAL
 /// \brief Log at fatal/critical error level (does NOT exit)
 ///
 /// parameters as per https://github.com/gabime/spdlog/blob/v1.x/README.md
-#if __GNUC__ >= 9
-#define GW_LOG_CRITICAL(...)
-#else
 #define GW_LOG_CRITICAL(...) SPDLOG_CRITICAL(__VA_ARGS__)
-#endif
 
 } // namespace logging
 
