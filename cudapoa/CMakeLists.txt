@@ -74,6 +74,7 @@ target_include_directories(${MODULE_NAME}
 )
 
 add_doxygen_source_dir(${CMAKE_CURRENT_SOURCE_DIR}/include)
+add_doxygen_source_dir(${CMAKE_CURRENT_SOURCE_DIR}/README.md)
 
 add_executable(${MODULE_NAME}-bin
         src/main.cpp

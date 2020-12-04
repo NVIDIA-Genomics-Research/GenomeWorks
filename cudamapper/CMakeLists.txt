@@ -83,6 +83,7 @@ if (gw_optimize_for_native_cpu)
 endif()
 
 add_doxygen_source_dir(${CMAKE_CURRENT_SOURCE_DIR}/include)
+add_doxygen_source_dir(${CMAKE_CURRENT_SOURCE_DIR}/README.md)
 
 cuda_add_executable(${MODULE_NAME}-bin
         src/main.cu

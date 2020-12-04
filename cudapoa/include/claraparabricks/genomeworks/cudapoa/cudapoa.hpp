@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <string>
+
 namespace claraparabricks
 {
 
@@ -38,12 +40,17 @@ enum StatusType
     node_count_exceeded_maximum_graph_size,
     edge_count_exceeded_maximum_graph_size,
     exceeded_adaptive_banded_matrix_size,
-    seq_len_exceeded_maximum_nodes_per_window,
+    exceeded_maximum_predecessor_distance,
     loop_count_exceeded_upper_bound,
     output_type_unavailable,
-    generic_error,
-    exceeded_maximum_predecessor_distance
+    generic_error
 };
+
+/// Generate corresponding error message for a given error type
+/// \param [in] error_type input error code
+/// \param [out] error_message corresponding error message
+/// \param [out] error_hint possible hint to resolve the error
+void decode_error(StatusType error_type, std::string& error_message, std::string& error_hint);
 
 /// Banding mode used in Needleman-Wunsch algorithm
 /// - full_band performs computations on full scores matrix, highest accuracy
