@@ -87,16 +87,21 @@ TEST(TestApproximateBandedMyersStatic, ImplicitNWEntries1)
     // the diagonal band, but on the lower right block there are cases where the backtrace runs through this worst case
     // - which is technically still part of the band. This tests this specific corner case.
 
-    // Band of the NW matrix: (* = tested implicit 0-row entry)
-    //																																	      *      *
-    //       A  A  C  C  G  G     T     T     A     A     A     A     C     C     C     C     G     G     G     G     G     T     T     A     A      A  C  G  G  T  T
-    // A  1  0  1  2  3  4  5  A  5  C  5  C  5  G  5  G  5  T  5  T  5  A  5  A  5  C  5  C  5  G  5  G  5  T  6  T  7  A  8  A  9  C 10  C 11  C  12 12 13 14 15 16
-    // A  2  1  0  1  2  3  4  C  4  C  4  G  4  G  4  T  4  T  4  A  4  A  4  C  4  C  4  G  4  G  4  T  5  T  6  A  7  A  8  C  9  C 10  G 11  G  12 13 12 13 14 15
-    // C  3  2  1  0  1  2  3  C  3  G  3  G  3  T  3  T  3  A  3  A  3  C  3  C  3  G  4  G  4  T  5  T  6  A  7  A  8  C  9  C 10  G 11  G 12  G  12 13 13 12 13 14
-    // C  4  3  2  1  0  1  2  G  2  G  2  T  2  T  2  A  2  A  2  C  2  C  2  G  3  G  4  T  5  T  6  A  7  A  8  C  9  C 10  G 11  G 12  T 13  T  13 13 14 13 12 13
-    // G  5  4  3  2  1  0  1  G  1  T  1  T  1  A  1  A  1  C  2  C  2  G  3  G  4  T  5  T  6  A  7  A  8  C  9  C 10  G 11  G 12  T 12  T 12  T  13 14 14 14 13 12
-    // G  6  5  4  3  2  1  0  T  0  T  0  A  0  A  0  C  1  C  2  G  3  G  4  T  5  T  6  A  7  A  8  C  9  C 10  G 10  G 11  T 11  T 11  T 12  T  13 14 15 15 14 13
-    // T  7  6  5  4  3  2  1  T  1  A  1  A  1  C  1  C  2  G  3  G  4  T  5  T  6  A  7  A  8  C  9  C 10  G 10  G 10  T 10  T 10  T 11  T 12  T  13 14 15 16 15 14
+    // * = tested implicit 0-row entry
+    // Band of the NW matrix:
+    // top left block of NW m.|  diagonal band (each column shifted by one row)                                                                 | bottom right block
+    //   NW_(i,j), index i of first shown row:
+    //    1  1  1  1  1  1  1 |   2     3     4     5     6     7     8     9    10    11    12    13    14    15    16    17    18    19    20 |  20 20 20 20 20 20
+    //
+    //       A  A  C  C  G  G |   T     T     A     A     A     A     C     C     C     C     G     G     G     G     G     T     T     A     A |   A  C  G  G  T  T
+    // row 0 (implicit):      |                                                                                                               * |   *
+    // A  1  0  1  2  3  4  5 |A  5  C  5  C  5  G  5  G  5  T  5  T  5  A  5  A  5  C  5  C  5  G  5  G  5  T  6  T  7  A  8  A  9  C 10  C 11 |C 12 12 13 14 15 16
+    // A  2  1  0  1  2  3  4 |C  4  C  4  G  4  G  4  T  4  T  4  A  4  A  4  C  4  C  4  G  4  G  4  T  5  T  6  A  7  A  8  C  9  C 10  G 11 |G 12 13 12 13 14 15
+    // C  3  2  1  0  1  2  3 |C  3  G  3  G  3  T  3  T  3  A  3  A  3  C  3  C  3  G  4  G  4  T  5  T  6  A  7  A  8  C  9  C 10  G 11  G 12 |G 12 13 13 12 13 14
+    // C  4  3  2  1  0  1  2 |G  2  G  2  T  2  T  2  A  2  A  2  C  2  C  2  G  3  G  4  T  5  T  6  A  7  A  8  C  9  C 10  G 11  G 12  T 13 |T 13 13 14 13 12 13
+    // G  5  4  3  2  1  0  1 |G  1  T  1  T  1  A  1  A  1  C  2  C  2  G  3  G  4  T  5  T  6  A  7  A  8  C  9  C 10  G 11  G 12  T 12  T 12 |T 13 14 14 14 13 12
+    // G  6  5  4  3  2  1  0 |T  0  T  0  A  0  A  0  C  1  C  2  G  3  G  4  T  5  T  6  A  7  A  8  C  9  C 10  G 10  G 11  T 11  T 11  T 12 |T 13 14 15 15 14 13
+    // T  7  6  5  4  3  2  1 |T  1  A  1  A  1  C  1  C  2  G  3  G  4  T  5  T  6  A  7  A  8  C  9  C 10  G 10  G 10  T 10  T 10  T 11  T 12 |T 13 14 15 16 15 14
 
     implicit_new_entries_test_impl("AACCGGTTAACCGGTTAACCGGTTTT",
                                    "AACCGGTTAAAACCCCGGGGGTTAAACGGTT",
@@ -105,16 +110,21 @@ TEST(TestApproximateBandedMyersStatic, ImplicitNWEntries1)
 
 TEST(TestApproximateBandedMyersStatic, ImplicitNWEntries2)
 {
-    // Band of the NW matrix: (* = tested implicit 0-row entry)
-    //                                                                                                                                     *
-    //       A  A  C  C  G  G  T     T     A     A     A     A     C     C     C     C     G     G     G     G     G     T     T     A     A      C  C  G  G  T  T
-    // A  1  0  1  2  3  4  5  6  A  6  C  6  C  6  G  6  G  6  T  6  T  6  A  6  A  6  C  6  C  6  G  6  G  6  T  7  T  7  A  8  A  8  C  9  C   9 10 11 12 13 14
-    // A  2  1  0  1  2  3  4  5  C  5  C  5  G  5  G  5  T  5  T  5  A  5  A  5  C  5  C  5  G  5  G  5  T  6  T  7  A  8  A  9  C  9  C 10  C   9  9 10 11 12 13
-    // C  3  2  1  0  1  2  3  4  C  4  G  4  G  4  T  4  T  4  A  4  A  4  C  4  C  4  G  4  G  4  T  5  T  6  A  7  A  8  C  9  C 10  G 11  G  10 10  9 10 11 12
-    // C  4  3  2  1  0  1  2  3  G  3  G  3  T  3  T  3  A  3  A  3  C  3  C  3  G  4  G  4  T  5  T  6  A  7  A  8  C  9  C 10  G 11  G 12  G  11 11 10  9 10 11
-    // G  5  4  3  2  1  0  1  2  G  2  T  2  T  2  A  2  A  2  C  2  C  2  G  3  G  4  T  5  T  6  A  7  A  8  C  9  C 10  G 11  G 12  T 13  T  12 12 11 10  9 10
-    // G  6  5  4  3  2  1  0  1  T  1  T  1  A  1  A  1  C  2  C  2  G  3  G  4  T  5  T  6  A  7  A  8  C  9  C 10  G 11  G 12  T 12  T 13  T  13 13 12 11 10  9
-    // T  7  6  5  4  3  2  1  0  T  0  A  0  A  0  C  1  C  2  G  3  G  4  T  5  T  6  A  7  A  8  C  9  C 10  G 10  G 11  T 11  T 12  T 13  T  14 14 13 12 11 10
+    // * = tested implicit 0-row entry
+    // Band of the NW matrix:
+    // top left block of NW mat, |  diagonal band (each column shifted by one row)                                                           | bottom right block
+    //   NW_(i,j), index i of first shown row:
+    //    1  1  1  1  1  1  1  1 |   2     3     4     5     6     7     8     9    10    11    12    13    14    15    16    17    18    19 |   19 19 19 19 19 19
+    //
+    //       A  A  C  C  G  G  T |   T     A     A     A     A     C     C     C     C     G     G     G     G     G     T     T     A     A |    C  C  G  G  T  T
+    // row 0 (implicit):         |                                                                                                         * |
+    // A  1  0  1  2  3  4  5  6 |A  6  C  6  C  6  G  6  G  6  T  6  T  6  A  6  A  6  C  6  C  6  G  6  G  6  T  7  T  7  A  8  A  8  C  9 |C   9 10 11 12 13 14
+    // A  2  1  0  1  2  3  4  5 |C  5  C  5  G  5  G  5  T  5  T  5  A  5  A  5  C  5  C  5  G  5  G  5  T  6  T  7  A  8  A  9  C  9  C 10 |C   9  9 10 11 12 13
+    // C  3  2  1  0  1  2  3  4 |C  4  G  4  G  4  T  4  T  4  A  4  A  4  C  4  C  4  G  4  G  4  T  5  T  6  A  7  A  8  C  9  C 10  G 11 |G  10 10  9 10 11 12
+    // C  4  3  2  1  0  1  2  3 |G  3  G  3  T  3  T  3  A  3  A  3  C  3  C  3  G  4  G  4  T  5  T  6  A  7  A  8  C  9  C 10  G 11  G 12 |G  11 11 10  9 10 11
+    // G  5  4  3  2  1  0  1  2 |G  2  T  2  T  2  A  2  A  2  C  2  C  2  G  3  G  4  T  5  T  6  A  7  A  8  C  9  C 10  G 11  G 12  T 13 |T  12 12 11 10  9 10
+    // G  6  5  4  3  2  1  0  1 |T  1  T  1  A  1  A  1  C  2  C  2  G  3  G  4  T  5  T  6  A  7  A  8  C  9  C 10  G 11  G 12  T 12  T 13 |T  13 13 12 11 10  9
+    // T  7  6  5  4  3  2  1  0 |T  0  A  0  A  0  C  1  C  2  G  3  G  4  T  5  T  6  A  7  A  8  C  9  C 10  G 10  G 11  T 11  T 12  T 13 |T  14 14 13 12 11 10
     implicit_new_entries_test_impl("AACCGGTTAACCGGTTAACCGGTTT",
                                    "AACCGGTTAAAACCCCGGGGGTTAACCGGTT",
                                    "10M2I2M2I3M2I3M1I6M1D");
