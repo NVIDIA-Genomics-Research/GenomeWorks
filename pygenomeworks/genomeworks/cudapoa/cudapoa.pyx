@@ -24,8 +24,6 @@
 
 import networkx as nx
 
-import genomeworks.cuda as cuda
-
 from cython.operator cimport dereference as deref
 from libc.stdint cimport uint16_t, int8_t, int32_t
 from libcpp.memory cimport unique_ptr, make_unique
@@ -33,7 +31,9 @@ from libcpp.pair cimport pair
 from libcpp.string cimport string
 from libcpp.vector cimport vector
 
+from cpython.ref cimport Py_INCREF, Py_DECREF
 from genomeworks.cuda.cuda_runtime_api cimport _Stream
+from genomeworks.cuda.cuda cimport CudaStream
 from genomeworks.cudapoa.graph cimport DirectedGraph
 cimport genomeworks.cudapoa.cudapoa as cudapoa
 
@@ -52,8 +52,10 @@ def status_to_str(status):
         return "node_count_exceeded_maximum_graph_size"
     elif status == cudapoa.edge_count_exceeded_maximum_graph_size:
         return "edge_count_exceeded_maximum_graph_size"
-    elif status == cudapoa.seq_len_exceeded_maximum_nodes_per_window:
-        return "seq_len_exceeded_maximum_nodes_per_window"
+    elif status == cudapoa.exceeded_adaptive_banded_matrix_size:
+        return "exceeded_adaptive_banded_matrix_size"
+    elif status == cudapoa.exceeded_maximum_predecessor_distance:
+        return "exceeded_maximum_predecessor_distance"
     elif status == cudapoa.loop_count_exceeded_upper_bound:
         return "loop_count_exceeded_upper_bound"
     elif status == cudapoa.output_type_unavailable:
@@ -68,6 +70,7 @@ cdef class CudaPoaBatch:
     """Python API for CUDA-accelerated partial order alignment algorithm."""
     cdef unique_ptr[cudapoa.Batch] batch
     cdef unique_ptr[cudapoa.BatchConfig] batch_size
+    cdef CudaStream stream
 
     def __cinit__(
             self,
@@ -109,11 +112,18 @@ cdef class CudaPoaBatch:
         cdef _Stream temp_stream
         if (stream is None):
             temp_stream = NULL
-        elif (not isinstance(stream, cuda.CudaStream)):
+        elif (not isinstance(stream, CudaStream)):
             raise RuntimeError("Type for stream option must be CudaStream")
         else:
             st = stream.stream
             temp_stream = <_Stream>st
+        # keep a reference to the stream, such that it gets destroyed after the batch.
+        self.stream = stream
+        # Increasing ref count of CudaStream object to ensure it doesn't get garbage
+        # collected before CudaPoaBatch object.
+        # NOTE: Ideally this is taken care of by just storing the reference
+        # in the line above, but that doesn't seem to be persistent.
+        Py_INCREF(stream)
 
         if (output_type == "consensus"):
             output_mask = cudapoa.consensus
@@ -129,28 +139,30 @@ cdef class CudaPoaBatch:
         cdef int32_t mx_seq_per_poa = max_sequences_per_poa
         cdef int32_t mx_consensus_sz = \
             2 * max_sequence_size if max_consensus_size is None else max_consensus_size
-        cdef int32_t mx_nodes_per_w
+        cdef int32_t mx_nodes_per_poa
         cdef int32_t matrix_seq_dim
+        cdef int32_t mx_pred_dist
         cdef BandMode batch_band_mode
         if (band_mode == "full_band"):
             batch_band_mode = BandMode.full_band
-            mx_nodes_per_w = 3 * max_sequence_size if max_nodes_per_graph is None else max_nodes_per_graph
+            mx_nodes_per_poa = 3 * max_sequence_size if max_nodes_per_graph is None else max_nodes_per_graph
             matrix_seq_dim = max_sequence_size if matrix_sequence_dimension is None else matrix_sequence_dimension
         elif (band_mode == "static_band"):
             batch_band_mode = BandMode.static_band
-            mx_nodes_per_w = 4 * max_sequence_size if max_nodes_per_graph is None else max_nodes_per_graph
+            mx_nodes_per_poa = 4 * max_sequence_size if max_nodes_per_graph is None else max_nodes_per_graph
             matrix_seq_dim = ((alignment_band_width + 8) if matrix_sequence_dimension is None
                               else matrix_sequence_dimension)
         elif (band_mode == "adaptive_band"):
             batch_band_mode = BandMode.adaptive_band
-            mx_nodes_per_w = 4 * max_sequence_size if max_nodes_per_graph is None else max_nodes_per_graph
+            mx_nodes_per_poa = 4 * max_sequence_size if max_nodes_per_graph is None else max_nodes_per_graph
             matrix_seq_dim = (2*(alignment_band_width + 8) if matrix_sequence_dimension is None
                               else matrix_sequence_dimension)
         else:
             raise RuntimeError("Unknown band_mode provided. Must be full_band/static_band/adaptive_band.")
 
         self.batch_size = make_unique[cudapoa.BatchConfig](
-            mx_seq_sz, mx_consensus_sz, mx_nodes_per_w, band_width_sz, mx_seq_per_poa, matrix_seq_dim, batch_band_mode)
+            mx_seq_sz, mx_consensus_sz, mx_nodes_per_poa, band_width_sz, mx_seq_per_poa, matrix_seq_dim,
+            batch_band_mode, mx_pred_dist)
 
         self.batch = cudapoa.create_batch(
             device_id,
@@ -314,3 +326,9 @@ cdef class CudaPoaBatch:
         assigned to batch object.
         """
         deref(self.batch).reset()
+
+    def __dealloc__(self):
+        # Decreasing ref count for CudaStream object.
+        self.batch.reset()
+        self.batch_size.reset()
+        Py_DECREF(self.stream)

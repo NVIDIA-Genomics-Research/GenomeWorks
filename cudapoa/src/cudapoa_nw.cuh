@@ -138,8 +138,8 @@ __device__ __forceinline__
  * @param[in] read                 Device buffer with sequence (read) to align
  * @param[in] read_length          Number of bases in read
  * @param[out] scores              Device scratch space that scores alignment matrix score
- * @param[out] alignment_graph     Device scratch space for backtrace alignment of graph
- * @param[out] alignment_read      Device scratch space for backtrace alignment of sequence
+ * @param[out] alignment_graph     Device scratch space for traceback alignment of graph
+ * @param[out] alignment_read      Device scratch space for traceback alignment of sequence
  * @param[in] gap_score            Score for inserting gap into alignment
  * @param[in] mismatch_score       Score for finding a mismatch in alignment
  * @param[in] match_score          Score for finding a match in alignment
@@ -152,22 +152,22 @@ template <typename SeqT,
           int32_t CPT = 4>
 __device__ __forceinline__
     int32_t
-    runNeedlemanWunsch(SeqT* nodes,
-                       SizeT* graph,
-                       SizeT* node_id_to_pos,
-                       int32_t graph_count,
-                       uint16_t* incoming_edge_count,
-                       SizeT* incoming_edges,
-                       uint16_t* outgoing_edge_count,
-                       SeqT* read,
-                       int32_t read_length,
-                       ScoreT* scores,
-                       int32_t scores_width,
-                       SizeT* alignment_graph,
-                       SizeT* alignment_read,
-                       int32_t gap_score,
-                       int32_t mismatch_score,
-                       int32_t match_score)
+    needlemanWunsch(SeqT* nodes,
+                    SizeT* graph,
+                    SizeT* node_id_to_pos,
+                    int32_t graph_count,
+                    uint16_t* incoming_edge_count,
+                    SizeT* incoming_edges,
+                    uint16_t* outgoing_edge_count,
+                    SeqT* read,
+                    int32_t read_length,
+                    ScoreT* scores,
+                    int32_t scores_width,
+                    SizeT* alignment_graph,
+                    SizeT* alignment_read,
+                    int32_t gap_score,
+                    int32_t mismatch_score,
+                    int32_t match_score)
 {
 
     static_assert(CPT == 4, "implementation currently supports only 4 cells per thread");
@@ -285,28 +285,11 @@ __device__ __forceinline__
                     last_score = first_element_prev_score;
                 }
 
-                int32_t tscore = max(last_score + gap_score, score.s0);
-                if (tscore > score.s0)
-                {
-                    score.s0 = tscore;
-                    loop     = true;
-                }
+                score.s0 = max(last_score + gap_score, score.s0);
+                score.s1 = max(score.s0 + gap_score, score.s1);
+                score.s2 = max(score.s1 + gap_score, score.s2);
 
-                tscore = max(score.s0 + gap_score, score.s1);
-                if (tscore > score.s1)
-                {
-                    score.s1 = tscore;
-                    loop     = true;
-                }
-
-                tscore = max(score.s1 + gap_score, score.s2);
-                if (tscore > score.s2)
-                {
-                    score.s2 = tscore;
-                    loop     = true;
-                }
-
-                tscore = max(score.s2 + gap_score, score.s3);
+                int32_t tscore = max(score.s2 + gap_score, score.s3);
                 if (tscore > score.s3)
                 {
                     score.s3 = tscore;
@@ -353,15 +336,15 @@ __device__ __forceinline__
             }
         }
 
-        // Fill in backtrace
+        // Fill in traceback
 
         int32_t prev_i = 0;
         int32_t prev_j = 0;
 
-        // Trace back from maximum score position to generate alignment.
-        // Trace back is done by re-calculating the score at each cell
+        // backtrack from maximum score position to generate alignment.
+        // backtracking is done by re-calculating the score at each cell
         // along the path to see which preceding cell the move could have
-        // come from. This seems computaitonally more expensive, but doesn't
+        // come from. This seems computationally more expensive, but doesn't
         // require storing any traceback buffer during alignment.
         int32_t loop_count = 0;
         while (!(i == 0 && j == 0) && loop_count < static_cast<int32_t>(read_length + graph_count + 2))
@@ -458,7 +441,7 @@ __device__ __forceinline__
 
         if (loop_count >= (read_length + graph_count + 2))
         {
-            aligned_nodes = -1;
+            aligned_nodes = CUDAPOA_KERNEL_NW_BACKTRACKING_LOOP_FAILED;
         }
 
 #ifdef NW_VERBOSE_PRINT
@@ -470,6 +453,8 @@ __device__ __forceinline__
     return aligned_nodes;
 }
 
+// global kernel used in testing, hence uses int16_t for SizeT and ScoreT,
+// may need to change if test inputs change to long reads
 template <typename SizeT>
 __global__ void runNeedlemanWunschKernel(uint8_t* nodes,
                                          SizeT* graph,
@@ -484,27 +469,29 @@ __global__ void runNeedlemanWunschKernel(uint8_t* nodes,
                                          int32_t scores_width,
                                          SizeT* alignment_graph,
                                          SizeT* alignment_read,
-                                         int16_t gap_score,
-                                         int16_t mismatch_score,
-                                         int16_t match_score,
+                                         int32_t gap_score,
+                                         int32_t mismatch_score,
+                                         int32_t match_score,
                                          SizeT* aligned_nodes)
 {
-    *aligned_nodes = runNeedlemanWunsch<uint8_t, int16_t, SizeT>(nodes,
-                                                                 graph,
-                                                                 node_id_to_pos,
-                                                                 graph_count,
-                                                                 incoming_edge_count,
-                                                                 incoming_edges,
-                                                                 outgoing_edge_count,
-                                                                 read,
-                                                                 read_length,
-                                                                 scores,
-                                                                 scores_width,
-                                                                 alignment_graph,
-                                                                 alignment_read,
-                                                                 gap_score,
-                                                                 mismatch_score,
-                                                                 match_score);
+    static_assert(std::is_same<SizeT, int16_t>::value, "This function only accepts int16_t as SizeT.");
+
+    *aligned_nodes = needlemanWunsch<uint8_t, int16_t, int16_t>(nodes,
+                                                                graph,
+                                                                node_id_to_pos,
+                                                                graph_count,
+                                                                incoming_edge_count,
+                                                                incoming_edges,
+                                                                outgoing_edge_count,
+                                                                read,
+                                                                read_length,
+                                                                scores,
+                                                                scores_width,
+                                                                alignment_graph,
+                                                                alignment_read,
+                                                                gap_score,
+                                                                mismatch_score,
+                                                                match_score);
 }
 
 // Host function that calls the kernel
@@ -522,28 +509,28 @@ void runNW(uint8_t* nodes,
            int32_t scores_width,
            SizeT* alignment_graph,
            SizeT* alignment_read,
-           int16_t gap_score,
-           int16_t mismatch_score,
-           int16_t match_score,
+           int32_t gap_score,
+           int32_t mismatch_score,
+           int32_t match_score,
            SizeT* aligned_nodes)
 {
-    runNeedlemanWunschKernel<<<1, 64>>>(nodes,
-                                        graph,
-                                        node_id_to_pos,
-                                        graph_count,
-                                        incoming_edge_count,
-                                        incoming_edges,
-                                        outgoing_edge_count,
-                                        read,
-                                        read_length,
-                                        scores,
-                                        scores_width,
-                                        alignment_graph,
-                                        alignment_read,
-                                        gap_score,
-                                        mismatch_score,
-                                        match_score,
-                                        aligned_nodes);
+    runNeedlemanWunschKernel<<<1, CUDAPOA_THREADS_PER_BLOCK>>>(nodes,
+                                                               graph,
+                                                               node_id_to_pos,
+                                                               graph_count,
+                                                               incoming_edge_count,
+                                                               incoming_edges,
+                                                               outgoing_edge_count,
+                                                               read,
+                                                               read_length,
+                                                               scores,
+                                                               scores_width,
+                                                               alignment_graph,
+                                                               alignment_read,
+                                                               gap_score,
+                                                               mismatch_score,
+                                                               match_score,
+                                                               aligned_nodes);
     GW_CU_CHECK_ERR(cudaPeekAtLastError());
 }
 

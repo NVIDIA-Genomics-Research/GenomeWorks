@@ -1334,16 +1334,18 @@ void test_function(const std::string& filename,
 
     CudaStream cuda_stream = make_cuda_stream();
 
+    // IndexDescriptors take the first_read and num_reads, get num_reads from past_the_last_read_id
+    IndexDescriptor descriptor = {first_read_id, (past_the_last_read_id - first_read_id)};
+
     IndexGPU<Minimizer> index(allocator,
                               *parser,
-                              first_read_id,
-                              past_the_last_read_id,
+                              descriptor,
                               kmer_size,
                               window_size,
                               false,
                               filtering_parameter,
                               cuda_stream.get());
-    GW_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream.get()));
+    index.wait_to_be_ready();
 
     ASSERT_EQ(index.number_of_reads(), expected_number_of_reads);
     if (0 == expected_number_of_reads)

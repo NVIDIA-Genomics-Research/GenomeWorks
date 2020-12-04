@@ -219,7 +219,7 @@ protected:
     std::unordered_map<node_id_t, std::string> node_labels_;
 
     /// An empty list representing no connectivity
-    const std::vector<node_id_t> empty_;
+    static const std::vector<node_id_t> empty_;
 };
 
 /// \brief DirectedGraph Object representing a directed graph structure
@@ -248,6 +248,9 @@ public:
         }
     }
 
+    /// \brief Serialize graph structure to GFA format
+    ///
+    /// \return A string encoding the graph in GFA format
     std::string serialize_to_gfa() const
     {
         std::ostringstream gfa_str;

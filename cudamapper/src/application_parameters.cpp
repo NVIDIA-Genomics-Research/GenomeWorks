@@ -23,6 +23,7 @@
 #include <claraparabricks/genomeworks/cudamapper/index.hpp>
 #include <claraparabricks/genomeworks/io/fasta_parser.hpp>
 #include <claraparabricks/genomeworks/utils/signed_integer_utils.hpp>
+#include <claraparabricks/genomeworks/cudamapper/utils.hpp>
 #include <claraparabricks/genomeworks/version.hpp>
 
 namespace claraparabricks
@@ -59,12 +60,13 @@ ApplicationParameters::ApplicationParameters(int argc, char* argv[])
         {"help", no_argument, 0, 'h'},
     };
 
-    std::string optstring = "k:w:d:m:i:t:F:a:r:l:b:z:RDQ:q:C:c:vh";
+    std::string optstring = "k:w:d:m:i:t:F:a:r:l:b:z:RDQ:q:C:c:BSvh";
 
     bool target_indices_in_host_memory_set   = false;
     bool target_indices_in_device_memory_set = false;
     bool custom_filtering_parameter          = false;
     int32_t argument                         = 0;
+    format                                   = OutputFormat::PAF;
     while ((argument = getopt_long(argc, argv, optstring.c_str(), options, nullptr)) != -1)
     {
         switch (argument)
@@ -131,10 +133,24 @@ ApplicationParameters::ApplicationParameters(int argc, char* argv[])
             target_indices_in_device_memory     = std::stoi(optarg);
             target_indices_in_device_memory_set = true;
             break;
+        case 'S':
+#ifndef GW_BUILD_HTSLIB
+            throw std::runtime_error("ERROR: Argument -S cannot be used without htslib");
+#endif
+            format = OutputFormat::SAM;
+            break;
+        case 'B':
+#ifndef GW_BUILD_HTSLIB
+            throw std::runtime_error("ERROR: Argument -B cannot be used without htslib");
+#endif
+            format = OutputFormat::BAM;
+            break;
         case 'v':
             print_version();
+            exit(1);
         case 'h':
             help(0);
+            exit(1);
         default:
             exit(1);
         }
@@ -354,6 +370,12 @@ void ApplicationParameters::help(int32_t exit_code)
               << R"(
         -c, --target-indices-in-device-memory
             number of target indices to keep in device memory [5])"
+              << R"(
+        -S
+            print overlaps in SAM format"
+              << R"(
+        -B
+            print overlaps in BAM format"
               << R"(
         -v, --version
             Version information)"

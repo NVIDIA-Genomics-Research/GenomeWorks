@@ -1,0 +1,133 @@
+#!/usr/bin/env python3
+
+#
+# Copyright 2020 NVIDIA CORPORATION.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+"""Tool to visualize pairwise alignments."""
+
+import argparse
+import numpy as np
+import matplotlib.pyplot as plt
+import csv
+import math
+
+
+def expand_cigar(cigar):
+    """
+    Expand CIGAR string into array of CIGAR operations.
+    """
+    start_of_num = 0
+    str_idx = 0
+    expanded_cigar = []
+    for c in cigar:
+        if c.isdigit():
+            str_idx += 1
+        else:
+            temp_arr = [c] * int(cigar[start_of_num: str_idx])
+            expanded_cigar.extend(temp_arr)
+            str_idx += 1
+            start_of_num = str_idx
+    return expanded_cigar
+
+
+def fill_alignment_matrix_with_cigar(alignment_matrix, cigar, val):
+    """
+    Based on CIGAR string, fill backtrce matrix with alignment
+    path, storing value val at each cell.
+    """
+    # Starting the alignment at top left of matrix
+    i = 0
+    j = 0
+    alignment_matrix[i, j] = val
+
+    cigar = expand_cigar(cigar)
+    for op in cigar:
+        if op == 'M':
+            i += 1
+            j += 1
+            alignment_matrix[i, j] = val
+        elif op == 'I':
+            i += 0
+            j += 1
+            alignment_matrix[i, j] = val
+        elif op == 'D':
+            i += 1
+            j += 0
+            alignment_matrix[i, j] = val
+        else:
+            raise RuntimeError(f"Unknown operation type - {op}")
+
+
+def viz_alignments(axes, target, query, cigars):
+    """
+    Visualize alignment(s) between target and query on the
+    subplot defined by axes. Supports rendering multiple
+    alignments per pair.
+    """
+    target = list(target)
+    query = list(query)
+
+    alignment_matrix = np.zeros((len(query) + 1, len(target) + 1))
+    for i, cigar in enumerate(cigars):
+        fill_alignment_matrix_with_cigar(alignment_matrix, cigar, i+1)
+
+    cax = axes.matshow(alignment_matrix)
+    figure.colorbar(cax)
+
+    target = [''] * 2 + target
+    query = [''] * 2 + query
+    axes.set_xticklabels(target)
+    axes.set_yticklabels(query)
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(description="A tool to visualize alignment for pairwise alignments.")
+    parser.add_argument("alignment_file",
+                        help="A CSV file of the format target,query,cigar1,cigar2,...",
+                        type=str)
+    args = parser.parse_args()
+    return args
+
+
+if __name__ == "__main__":
+    targets = []
+    queries = []
+    cigars = []
+
+    # Parse arguments
+    args = parse_args()
+
+    # Parse in all alignments to be visualized.
+    with open(args.alignment_file, newline='') as fh:
+        reader = csv.reader(fh)
+        for row in reader:
+            targets.append(row[0])
+            queries.append(row[1])
+            cigars.append(row[2:])
+
+    # Generate figure dimensions.
+    plot_width = int(math.sqrt(len(targets))) + 1
+    plot_height = (len(targets) // plot_width) + 1
+
+    # Iterate through every pair of alignment and visualize it.
+    figure = plt.figure()
+    for i in range(len(targets)):
+        subplot_idx = i + 1
+        subplot = figure.add_subplot(plot_width, plot_height, subplot_idx)
+        viz_alignments(subplot, targets[i], queries[i], cigars[i])
+
+    # Generate final plot.
+    plt.show()

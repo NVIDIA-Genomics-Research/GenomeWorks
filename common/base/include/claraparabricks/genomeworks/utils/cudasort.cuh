@@ -176,7 +176,7 @@ void sort_by_two_keys(device_buffer<MoreSignificantKeyT>& more_significant_keys,
     device_buffer<LessSignificantKeyT> less_significant_key_sorted(number_of_elements, allocator, cuda_stream);
     device_buffer<move_to_index_t> move_to_index_sorted(number_of_elements, allocator, cuda_stream);
 
-    device_buffer<char> temp_storage_vect(0, allocator);
+    device_buffer<char> temp_storage_vect(0, allocator, cuda_stream);
 
     details::perform_radix_sort(temp_storage_vect,
                                 less_significant_keys.data(),

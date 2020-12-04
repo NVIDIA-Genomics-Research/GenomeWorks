@@ -29,6 +29,7 @@
 #include <iostream>
 #include <string>
 #include <mutex>
+#include <getopt.h>
 
 // define constants. See cudamapper/src/application_parameters.hpp for more.
 // constants used in multiple places
@@ -73,7 +74,8 @@ void process_batch(std::vector<IndexDescriptor>& query_index_descriptors,
                    const std::shared_ptr<const io::FastaParser> query_parser,
                    const std::shared_ptr<const io::FastaParser> target_parser,
                    DefaultDeviceAllocator allocator,
-                   bool print)
+                   const bool print,
+                   const OutputFormat format)
 {
     // extra variables used in print_paf. Note "cigars" are typically found during alignment.
     const std::vector<std::string> cigars(0);
@@ -82,28 +84,28 @@ void process_batch(std::vector<IndexDescriptor>& query_index_descriptors,
     // process the pairs of query and target indices
     for (const IndexDescriptor& query_index_descriptor : query_index_descriptors)
     {
-        std::unique_ptr<Index> query_index = Index::create_index(allocator,
-                                                                 *query_parser,
-                                                                 query_index_descriptor.first_read(),
-                                                                 query_index_descriptor.first_read() + query_index_descriptor.number_of_reads(),
-                                                                 KMER_SIZE,
-                                                                 WINDOWS_SIZE,
-                                                                 true,                 // hash representations
-                                                                 FILTERING_PARAMETER); // filter parameter
+        std::unique_ptr<Index> query_index = Index::create_index_async(allocator,
+                                                                       *query_parser,
+                                                                       query_index_descriptor,
+                                                                       KMER_SIZE,
+                                                                       WINDOWS_SIZE,
+                                                                       true,                 // hash representations
+                                                                       FILTERING_PARAMETER); // filter parameter
+        query_index->wait_to_be_ready();
 
         for (const IndexDescriptor& target_index_descriptor : target_index_descriptors)
         {
             // skip pairs in which target batch has smaller id than query batch as it will be covered by symmetry
             if (target_index_descriptor.first_read() >= query_index_descriptor.first_read())
             {
-                std::unique_ptr<Index> target_index = Index::create_index(allocator,
-                                                                          *target_parser,
-                                                                          target_index_descriptor.first_read(),
-                                                                          target_index_descriptor.first_read() + target_index_descriptor.number_of_reads(),
-                                                                          KMER_SIZE,
-                                                                          WINDOWS_SIZE,
-                                                                          true,                 // hash representations
-                                                                          FILTERING_PARAMETER); // filter parameter
+                std::unique_ptr<Index> target_index = Index::create_index_async(allocator,
+                                                                                *target_parser,
+                                                                                target_index_descriptor,
+                                                                                KMER_SIZE,
+                                                                                WINDOWS_SIZE,
+                                                                                true,                 // hash representations
+                                                                                FILTERING_PARAMETER); // filter parameter
+                target_index->wait_to_be_ready();
 
                 // find anchors & find overlaps
                 auto matcher = Matcher::create_matcher(allocator,
@@ -128,7 +130,19 @@ void process_batch(std::vector<IndexDescriptor>& query_index_descriptors,
                 // print overlaps
                 if (print)
                 {
-                    print_paf(overlaps, cigars, *query_parser, *target_parser, KMER_SIZE, print_mutex);
+#ifdef GW_BUILD_HTSLIB
+                    if (format == OutputFormat::PAF)
+                    {
+#endif
+                        print_paf(overlaps, cigars, *query_parser, *target_parser, KMER_SIZE, print_mutex);
+#ifdef GW_BUILD_HTSLIB
+                    }
+                    // SAM or BAM, depends on type of format
+                    else
+                    {
+                        print_sam(overlaps, cigars, *query_parser, *target_parser, format, print_mutex);
+                    }
+#endif
                 }
             }
         }
@@ -140,11 +154,12 @@ void process_batch(std::vector<IndexDescriptor>& query_index_descriptors,
 int main(int argc, char** argv)
 {
     // parse command line options
-    int c      = 0;
-    bool help  = false;
-    bool print = false;
+    int c               = 0;
+    bool help           = false;
+    bool print          = false;
+    OutputFormat format = OutputFormat::PAF;
 
-    while ((c = getopt(argc, argv, "hp")) != -1)
+    while ((c = getopt(argc, argv, "hpSB")) != -1)
     {
         switch (c)
         {
@@ -154,6 +169,18 @@ int main(int argc, char** argv)
         case 'h':
             help = true;
             break;
+        case 'S':
+#ifndef GW_BUILD_HTSLIB
+            throw std::runtime_error("ERROR: Argument -S cannot be used without htslib");
+#endif
+            format = OutputFormat::SAM;
+            break;
+        case 'B':
+#ifndef GW_BUILD_HTSLIB
+            throw std::runtime_error("ERROR: Argument -B cannot be used without htslib");
+#endif
+            format = OutputFormat::BAM;
+            break;
         }
     }
 
@@ -162,9 +189,11 @@ int main(int argc, char** argv)
     {
         std::cout << "CUDA Mapper API sample program. Runs minimizer-based approximate mapping" << std::endl;
         std::cout << "Usage:" << std::endl;
-        std::cout << "./sample_cudamapper [-p] [-h]" << std::endl;
+        std::cout << "./sample_cudamapper [-p] [-h] [-S] [-B]" << std::endl;
         std::cout << "-p : Print the overlaps to stdout" << std::endl;
         std::cout << "-h : Print help message" << std::endl;
+        std::cout << "-S : Print in SAM format" << std::endl;
+        std::cout << "-B : Print in BAM format" << std::endl;
         std::exit(0);
     }
 
@@ -185,7 +214,7 @@ int main(int argc, char** argv)
     std::vector<IndexDescriptor> query_index_descriptors  = initialize_batch(query_parser, allocator);
     std::vector<IndexDescriptor> target_index_descriptors = initialize_batch(target_parser, allocator);
 
-    process_batch(query_index_descriptors, target_index_descriptors, query_parser, target_parser, allocator, print);
+    process_batch(query_index_descriptors, target_index_descriptors, query_parser, target_parser, allocator, print, format);
 
     return 0;
 }

@@ -67,10 +67,23 @@ target_include_directories(${MODULE_NAME}
         $<INSTALL_INTERFACE:include>
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 )
-target_link_libraries(${MODULE_NAME} gwbase gwio cub)
-target_compile_options(${MODULE_NAME} PRIVATE -Werror)
+
+# optionally link against htslib
+if (TARGET htslib_project)
+    target_compile_definitions(${MODULE_NAME} PUBLIC GW_BUILD_HTSLIB)
+    add_dependencies(${MODULE_NAME} htslib_project)
+    target_link_libraries(${MODULE_NAME} htslib gwbase gwio cub)
+else()
+     target_link_libraries(${MODULE_NAME} gwbase gwio cub)
+endif()
+
+target_compile_options(${MODULE_NAME} PRIVATE -Werror -Wall -Wextra)
+if (gw_optimize_for_native_cpu)
+    target_compile_options(${MODULE_NAME} PRIVATE -march=native)
+endif()
 
 add_doxygen_source_dir(${CMAKE_CURRENT_SOURCE_DIR}/include)
+add_doxygen_source_dir(${CMAKE_CURRENT_SOURCE_DIR}/README.md)
 
 cuda_add_executable(${MODULE_NAME}-bin
         src/main.cu
@@ -79,6 +92,9 @@ cuda_add_executable(${MODULE_NAME}-bin
 target_compile_options(${MODULE_NAME}-bin PRIVATE -Werror)
 target_link_libraries(${MODULE_NAME}-bin ${MODULE_NAME} cudaaligner)
 set_target_properties(${MODULE_NAME}-bin PROPERTIES OUTPUT_NAME ${MODULE_NAME})
+if (TARGET htslib_project)
+    target_compile_definitions(${MODULE_NAME}-bin PUBLIC GW_BUILD_HTSLIB)
+endif()
 
 
 # Add tests folder

@@ -23,6 +23,7 @@
 #include <vector>
 
 #include <claraparabricks/genomeworks/utils/cudautils.hpp>
+#include <claraparabricks/genomeworks/utils/mathutils.hpp>
 
 namespace claraparabricks
 {
@@ -30,9 +31,12 @@ namespace claraparabricks
 namespace genomeworks
 {
 
+namespace details
+{
+
 /// \brief Allocator that preallocates one big buffer of device memory and assigns sections of it to allocation requests
 /// Allocator allocates one big buffer of device memory during constructor and keeps it until destruction.
-/// For every allocation request it linearly scans the preallocated memory and assigns first buffer of it that is big enough.
+/// For every allocation request it linearly scans the preallocated buffer and assigns first section of it that is big enough.
 ///
 /// For example imagine 100000 bytes buffer has been preallocated and that sections between (10000, 19999), (30000, 39999)
 /// and (60000, 79999) bytes have already been assigned:
@@ -47,8 +51,8 @@ namespace genomeworks
 /// 0 --- 10000 --- 20000 --- 30000 --- 40000 ------ 55000 - 60000 --- 70000 --- 80000 --- 90000 --- 100000
 /// |  FREE |   USED  |  FREE   |  USED   |    USED    | FREE  |       USED        |        FREE        |
 ///
-/// Uppon returning a memory allocation its gets merged with any neighboring free arey, so if section (10000, 19999) is
-/// returned the memory will look like this:
+/// Upon deallocation deallocated memory gets merged with neighboring free blocks, if any, so if section (10000, 19999) is
+/// deallocated the memory will look like this:
 ///
 /// 0 ---------------------- 30000 --- 40000 ------ 55000 - 60000 --- 70000 --- 80000 --- 90000 --- 100000
 /// |           FREE           |  USED   |    USED    | FREE  |       USED        |        FREE        |
@@ -56,7 +60,7 @@ namespace genomeworks
 /// Allocator aligns memory by 256 bytes
 ///
 /// Note that this allocator heavily relies on iterating over lists of free and used memory and should thus
-/// not be used for cases when there are millions of allocation at a time
+/// not be used when there are many allocations and deallocations
 class DevicePreallocatedAllocator
 {
 public:
@@ -65,12 +69,12 @@ public:
     /// \param buffer_size
     DevicePreallocatedAllocator(size_t buffer_size)
         : buffer_size_(buffer_size)
-        , buffer_ptr_(create_buffer(buffer_size))
+        , buffer_ptr_(create_buffer(buffer_size_))
     {
-        assert(buffer_size > 0);
+        assert(buffer_size_ > 0);
         MemoryBlock whole_memory_block;
         whole_memory_block.begin = 0;
-        whole_memory_block.size  = buffer_size;
+        whole_memory_block.size  = buffer_size_;
         free_blocks_.push_back(whole_memory_block);
     }
 
@@ -105,7 +109,7 @@ public:
     /// \brief deallocates memory (returns its part of buffer to the list of free parts)
     /// This function blocks until all work on associated_stream is done
     /// \param ptr
-    /// \return error status
+    /// \return cudaSuccess if deallocation was successful, cudaErrorInvalidValue otherwise
     cudaError_t DeviceFree(void* ptr)
     {
         cudaError_t status = cudaSuccess;
@@ -163,24 +167,14 @@ private:
     /// \param associated_streams on deallocation this memory block is guaranteed to live at least until all previously scheduled work in these streams has finished
     /// \return cudaSuccess if allocation was successful, cudaErrorMemoryAllocation otherwise
     cudaError_t allocate_memory_block(void** ptr,
-                                      size_t bytes_needed,
+                                      const size_t bytes_needed,
                                       const std::vector<cudaStream_t>& associated_streams)
     {
-        *ptr = nullptr;
-
         if (free_blocks_.empty())
         {
+            *ptr = nullptr;
             return cudaErrorMemoryAllocation;
         }
-
-        // ** All allocations should be alligned with 256 bytes
-        // The easiest way to do this is to make all allocation request sizes divisible by 256
-        if ((bytes_needed & 0xFF) != 0)
-        {
-            // bytes needed not divisible by 256, increase it to the next value divisible by 256
-            bytes_needed = bytes_needed + (0x100 - (bytes_needed & 0xFF));
-        }
-        assert((bytes_needed & 0xFF) == 0);
 
         // ** look for first free block that can fit requested size
         auto block_to_get_memory_from_iter = std::find_if(std::begin(free_blocks_),
@@ -191,15 +185,21 @@ private:
 
         if (block_to_get_memory_from_iter == std::end(free_blocks_))
         {
+            *ptr = nullptr;
             return cudaErrorMemoryAllocation;
         }
 
+        assert(!associated_streams.empty());
         MemoryBlock new_memory_block{block_to_get_memory_from_iter->begin,
                                      bytes_needed,
                                      associated_streams};
 
+        // Allocations are aligned to alignment_ bytes. new_memory_block's size is exactly bytes_needed, but the part of
+        // the original memory block which remains unallocated should start at byte divisible by alignment_
+        const size_t rounded_up_bytes = roundup_next_multiple(bytes_needed, alignment_);
+
         // ** reduce the size of the block the memory is going to be taken from
-        if (block_to_get_memory_from_iter->size == bytes_needed)
+        if (block_to_get_memory_from_iter->size <= rounded_up_bytes)
         {
             // this memory block is completely used, remove it
             free_blocks_.erase(block_to_get_memory_from_iter);
@@ -207,8 +207,8 @@ private:
         else
         {
             // there will still be some memory left, update free block size
-            block_to_get_memory_from_iter->begin += new_memory_block.size;
-            block_to_get_memory_from_iter->size -= new_memory_block.size;
+            block_to_get_memory_from_iter->begin += rounded_up_bytes;
+            block_to_get_memory_from_iter->size -= rounded_up_bytes;
         }
 
         // ** add new used memory block to the list of used blocks
@@ -228,10 +228,10 @@ private:
         return cudaSuccess;
     }
 
-    /// \brief returns the block starting at pointer
+    /// \brief releases the block starting at pointer
     /// This function blocks until all work on associated_streams is done
     /// \param pointer pointer at the begining of the block to be freed
-    /// \return error status
+    /// \return cudaSuccess if release was successful, cudaErrorInvalidValue otherwise
     cudaError_t free_memory_block(void* pointer)
     {
         assert(static_cast<char*>(pointer) >= buffer_ptr_.get());
@@ -244,9 +244,15 @@ private:
                                                    [block_start](const MemoryBlock& memory_block) {
                                                        return memory_block.begin == block_start;
                                                    });
-        assert(block_to_be_freed_iter != std::end(used_blocks_));
+
+        // * return error if pointer is not valid
+        if (block_to_be_freed_iter == std::end(used_blocks_))
+        {
+            return cudaErrorInvalidValue;
+        }
 
         // ** wait for all work on associated_streams to finish before freeing up this memory block
+        assert(!block_to_be_freed_iter->associated_streams.empty());
         for (cudaStream_t associated_stream : block_to_be_freed_iter->associated_streams)
         {
             // WARNING: The way and place this synchronization is done might change in the future, do not rely on this cudaStreamSynchronize() in the caller.
@@ -256,8 +262,15 @@ private:
             GW_CU_ABORT_ON_ERR(cudaStreamSynchronize(associated_stream));
         }
 
+        // ** find actual block size
+        // Allocations are aligned by alignment_ bytes. block_to_be_freed_iter->size is the exact number of requested bytes, but the block
+        // is actually allocated that-value-rounded-up-to-the-next-number-divisible-by-alignment_ bytes.
+        // One exception is the block that goes into the last alignment_-divisible block of allocated buffer. In that case actually
+        // allocated memory goes up to the end of the buffer, even if buffer's size is not divisible by alignment_. In this case number_of_bytes
+        // is not divisible by alignment_ but the length from the beginning of the block until the end of the buffer
+        const size_t number_of_bytes = std::min(roundup_next_multiple(block_to_be_freed_iter->size, alignment_), buffer_size_ - block_to_be_freed_iter->begin);
+
         // ** remove memory block from the list of used memory blocks
-        const size_t number_of_bytes = block_to_be_freed_iter->size;
         used_blocks_.erase(block_to_be_freed_iter);
 
         // ** add the block back the list of free blocks (and merge with any neighbouring free blocks)
@@ -346,7 +359,12 @@ private:
     std::list<MemoryBlock> free_blocks_;
     /// list of block in use, sorted by memory block beginning location
     std::list<MemoryBlock> used_blocks_;
+
+    /// number of bytes to align allocations to
+    static const int32_t alignment_ = 256; // if changing alignment update comments as well
 };
+
+} // namespace details
 
 } // namespace genomeworks
 
