@@ -39,7 +39,7 @@ git clone --recursive https://github.com/clara-parabricks/GenomeWorks.git
 Minimum requirements -
 
 1. Ubuntu 16.04 or Ubuntu 18.04
-2. CUDA 9.0+ (official instructions for installing CUDA are available [here](https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html))
+2. CUDA 10.0+ (official instructions for installing CUDA are available [here](https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html))
 3. GPU generation Pascal and later (compute capability >= 6.0)
 4. gcc/g++ 5.4.0+ / 7.x.x
 5. Python 3.6.7+
