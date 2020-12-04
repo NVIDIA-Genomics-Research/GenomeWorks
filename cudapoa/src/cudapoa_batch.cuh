@@ -502,11 +502,23 @@ protected:
         }
         else
         {
-            // Verify that weightsw are positive.
+            // Verify that weights are positive.
+            bool all_base_weights_are_zero = true;
             for (int32_t i = 0; i < seq_len; i++)
             {
                 throw_on_negative(weights[i], "Base weights need to be non-negative");
+                if (weights[i] > 0)
+                {
+                    all_base_weights_are_zero = false;
+                }
             }
+
+            // all base weights can not be 0
+            if (all_base_weights_are_zero)
+            {
+                throw std::invalid_argument("All base weights can not be zero");
+            }
+
             memcpy(&(input_details_h_->base_weights[num_nucleotides_copied_]),
                    weights,
                    seq_len);
