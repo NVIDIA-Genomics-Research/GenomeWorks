@@ -134,15 +134,23 @@ public:
         // If a new group can be added, attempt to add all entries
         // in the group. If they can't be added, record their status
         // and continue adding till the end of the group.
+        bool poa_empty = true;
         for (auto& entry : poa_group)
         {
             StatusType entry_status = add_seq_to_poa(entry.seq,
                                                      entry.weights,
                                                      entry.length);
-
+            if (entry_status == StatusType::success)
+            {
+                poa_empty = false;
+            }
             per_seq_status.push_back(entry_status);
         }
 
+        if (poa_empty)
+        {
+            return StatusType::empty_poa_group;
+        }
         return StatusType::success;
     }
 
@@ -475,6 +483,25 @@ protected:
             return StatusType::exceeded_maximum_sequence_size;
         }
 
+        if (weights != nullptr)
+        {
+            // Verify that weights are positive.
+            bool all_base_weights_are_zero = true;
+            for (int32_t i = 0; i < seq_len; i++)
+            {
+                throw_on_negative(weights[i], "Base weights need to be non-negative");
+                if (weights[i] > 0)
+                {
+                    all_base_weights_are_zero = false;
+                }
+            }
+            // all base weights of the sequence can not be zero, skip
+            if (all_base_weights_are_zero)
+            {
+                return StatusType::zero_weighted_poa_sequence;
+            }
+        }
+
         WindowDetails* window_details = &(input_details_h_->window_details[poa_count_ - 1]);
         int32_t scores_width_         = cudautils::align<int32_t, 4>(seq_len + 1 + CUDAPOA_CELLS_PER_THREAD);
         if (scores_width_ > window_details->scores_width)
@@ -502,23 +529,6 @@ protected:
         }
         else
         {
-            // Verify that weights are positive.
-            bool all_base_weights_are_zero = true;
-            for (int32_t i = 0; i < seq_len; i++)
-            {
-                throw_on_negative(weights[i], "Base weights need to be non-negative");
-                if (weights[i] > 0)
-                {
-                    all_base_weights_are_zero = false;
-                }
-            }
-
-            // all base weights can not be 0
-            if (all_base_weights_are_zero)
-            {
-                throw std::invalid_argument("All base weights can not be zero");
-            }
-
             memcpy(&(input_details_h_->base_weights[num_nucleotides_copied_]),
                    weights,
                    seq_len);
