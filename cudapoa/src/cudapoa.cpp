@@ -76,6 +76,14 @@ void decode_error(StatusType error_type, std::string& error_message, std::string
         error_message = "Kernel Error: Output type not available.";
         error_hint    = "Suggestion  : Check MSA/Consensus selection for output type.";
         break;
+    case StatusType::zero_weighted_poa_sequence:
+        error_message = "Error      : Input sequence has all zero base weights.";
+        error_hint    = "Suggestion : Check base weights of POA group sequences on host.";
+        break;
+    case StatusType::empty_poa_group:
+        error_message = "Error      : No sequence was added to POA group.";
+        error_hint    = "Suggestion : Check status vector in Batch::add_poa_group().";
+        break;
     case StatusType::generic_error:
         error_message = "Unknown error.";
         error_hint    = "";
