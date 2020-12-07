@@ -18,8 +18,6 @@
 
 set(MODULE_NAME gwbase)
 
-find_package(CUDA 9.0 QUIET REQUIRED)
-
 set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -std=c++14")
 message(STATUS "nvcc flags for ${MODULE_NAME}: ${CUDA_NVCC_FLAGS}")
 

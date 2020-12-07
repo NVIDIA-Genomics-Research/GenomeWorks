@@ -26,8 +26,6 @@ GitVersion()
 configure_file(${PROJECT_SOURCE_DIR}/common/base/src/version.cpp.in
                 ${CMAKE_CURRENT_BINARY_DIR}/version.cpp)
 
-find_package(CUDA 9.0 QUIET REQUIRED)
-
 if(NOT ${CUDA_FOUND})
     message(FATAL_ERROR "CUDA not detected on system. Please install")
 else()
