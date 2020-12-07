@@ -43,6 +43,7 @@ ApplicationParameters::ApplicationParameters(int argc, char* argv[])
         {"graph-length", required_argument, 0, 'l'},
         {"pred-distance", required_argument, 0, 'D'},
         {"dot", required_argument, 0, 'd'},
+        {"gfa", required_argument, 0, 'G'},
         {"max-groups", required_argument, 0, 'M'},
         {"gpu-mem-alloc", required_argument, 0, 'R'},
         {"match", required_argument, 0, 'm'},
@@ -52,7 +53,7 @@ ApplicationParameters::ApplicationParameters(int argc, char* argv[])
         {"help", no_argument, 0, 'h'},
     };
 
-    std::string optstring = "i:ab:w:s:l:D:d:M:R:m:n:g:vh";
+    std::string optstring = "i:ab:w:s:l:D:d:G:M:R:m:n:g:vh";
 
     int32_t argument = 0;
     while ((argument = getopt_long(argc, argv, optstring.c_str(), options, nullptr)) != -1)
@@ -90,6 +91,10 @@ ApplicationParameters::ApplicationParameters(int argc, char* argv[])
             break;
         case 'd':
             graph_output_path = std::string(optarg);
+            break;
+        case 'G':
+            graph_output_path = std::string(optarg);
+            output_gfa        = true;
             break;
         case 'M':
             max_groups = std::stoi(optarg);
@@ -212,6 +217,9 @@ void ApplicationParameters::help(int32_t exit_code)
               << R"(
         -d, --dot <file>
             output path for printing graph in DOT format [disabled])"
+              << R"(
+        -G, --gfa <file>
+            output path for printing graph in GFA format [disabled])"
               << R"(
         -M, --max-groups  <int>
             maximum number of POA groups to create from file (-1 for all, > 0 for limited) [-1]

@@ -64,6 +64,7 @@ std::unique_ptr<Batch> initialize_batch(bool msa, const BatchConfig& batch_size)
 void process_batch(Batch* batch, bool msa_flag, bool print, std::vector<int32_t>& list_of_group_ids, int id_offset)
 {
     batch->generate_poa();
+    std::string error_message, error_hint;
 
     StatusType status = StatusType::success;
     if (msa_flag)
@@ -75,14 +76,20 @@ void process_batch(Batch* batch, bool msa_flag, bool print, std::vector<int32_t>
         status = batch->get_msa(msa, output_status);
         if (status != StatusType::success)
         {
-            std::cerr << "Could not generate MSA for batch : " << status << std::endl;
+            decode_error(status, error_message, error_hint);
+            std::cerr << "Could not generate MSA for batch : " << std::endl;
+            std::cerr << error_message << std::endl
+                      << error_hint << std::endl;
         }
 
         for (int32_t g = 0; g < get_size(msa); g++)
         {
             if (output_status[g] != StatusType::success)
             {
-                std::cerr << "Error generating  MSA for POA group " << list_of_group_ids[g + id_offset] << ". Error type " << output_status[g] << std::endl;
+                decode_error(output_status[g], error_message, error_hint);
+                std::cerr << "Error generating  MSA for POA group " << list_of_group_ids[g + id_offset] << std::endl;
+                std::cerr << error_message << std::endl
+                          << error_hint << std::endl;
             }
             else
             {
@@ -106,14 +113,20 @@ void process_batch(Batch* batch, bool msa_flag, bool print, std::vector<int32_t>
         status = batch->get_consensus(consensus, coverage, output_status);
         if (status != StatusType::success)
         {
-            std::cerr << "Could not generate consensus for batch : " << status << std::endl;
+            decode_error(status, error_message, error_hint);
+            std::cerr << "Could not generate consensus for batch : " << std::endl;
+            std::cerr << error_message << std::endl
+                      << error_hint << std::endl;
         }
 
         for (int32_t g = 0; g < get_size(consensus); g++)
         {
             if (output_status[g] != StatusType::success)
             {
-                std::cerr << "Error generating consensus for POA group " << list_of_group_ids[g + id_offset] << ". Error type " << output_status[g] << std::endl;
+                decode_error(output_status[g], error_message, error_hint);
+                std::cerr << "Error generating  consensus for POA group " << list_of_group_ids[g + id_offset] << std::endl;
+                std::cerr << error_message << std::endl
+                          << error_hint << std::endl;
             }
             else
             {
@@ -213,6 +226,9 @@ int main(int argc, char** argv)
         }
     }
 
+    // for error code message
+    std::string error_message, error_hint;
+
     // analyze the POA groups and create a minimal set of batches to process them all
     std::vector<BatchConfig> list_of_batch_sizes;
     std::vector<std::vector<int32_t>> list_of_groups_per_batch;
@@ -304,7 +320,10 @@ int main(int argc, char** argv)
 
             if (status != StatusType::exceeded_maximum_poas && status != StatusType::success)
             {
-                std::cout << "Could not add POA group " << batch_group_ids[i] << " to batch " << b << ". Error code " << status << std::endl;
+                decode_error(status, error_message, error_hint);
+                std::cerr << "Could not add POA group " << batch_group_ids[i] << " to batch " << b << std::endl;
+                std::cerr << error_message << std::endl
+                          << error_hint << std::endl;
                 i++;
             }
         }
