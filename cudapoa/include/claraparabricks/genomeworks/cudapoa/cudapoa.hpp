@@ -43,6 +43,8 @@ enum StatusType
     exceeded_maximum_predecessor_distance,
     loop_count_exceeded_upper_bound,
     output_type_unavailable,
+    zero_weighted_poa_sequence,
+    empty_poa_group,
     generic_error
 };
 
