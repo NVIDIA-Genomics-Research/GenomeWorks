@@ -16,8 +16,9 @@
 
 #include <claraparabricks/genomeworks/logging/logging.hpp>
 
-#include <spdlog/sinks/basic_file_sink.h>
-#include <spdlog/sinks/stdout_sinks.h>
+#include <iostream>
+#include <fstream>
+#include <memory>
 
 namespace claraparabricks
 {
@@ -27,66 +28,68 @@ namespace genomeworks
 
 namespace logging
 {
-static std::shared_ptr<spdlog::logger> logger = nullptr;
+static std::unique_ptr<std::ostream> out_stream_ = nullptr;
+static std::unique_ptr<std::ofstream> out_file_  = nullptr;
 
-LoggingStatus Init(const char* filename)
+static LogLevel level_ = LogLevel::ERROR;
+
+void check_logger()
 {
-    // for now, first call wins:
-    if (logger != nullptr)
-        return LoggingStatus::success;
-
-    if (filename != nullptr)
+    if (out_stream_ == nullptr)
     {
-        try
+        std::cerr << "Automatically initializing logger..." << std::endl;
+        create_logger(LogLevel::ERROR);
+    }
+}
+
+std::string log_level_str(LogLevel level)
+{
+    std::string prefix;
+    switch (level)
+    {
+    case CRITICAL: prefix = "CRITICAL"; break;
+    case ERROR: prefix = "ERROR"; break;
+    case WARN: prefix = "WARN"; break;
+    case INFO: prefix = "INFO"; break;
+    case DEBUG: prefix = "DEBUG"; break;
+    default: throw std::runtime_error("Unknown Log Level passed.\n");
+    }
+    return prefix;
+}
+
+void create_logger(LogLevel level, const std::string& filename)
+{
+    if (out_stream_ == nullptr)
+    {
+        std::streambuf* buffer = nullptr;
+        level_                 = level;
+        if (filename != "")
         {
-            logger = spdlog::basic_logger_mt("GWLogger", filename);
+            out_file_ = std::make_unique<std::ofstream>(filename);
+            buffer    = out_file_->rdbuf();
         }
-        catch (const spdlog::spdlog_ex& ex)
+        else
         {
-            return LoggingStatus::cannot_open_file;
+            buffer = std::cerr.rdbuf();
         }
+        out_stream_ = std::make_unique<std::ostream>(buffer);
+        *out_stream_ << "Initialized GenomeWorks logger..." << std::endl;
     }
     else
     {
-        try
-        {
-            logger = spdlog::stderr_logger_mt("GWLogger");
-        }
-        catch (const spdlog::spdlog_ex& ex)
-        {
-            return LoggingStatus::cannot_open_stdout;
-        }
+        *out_stream_ << "Logger already initialized with log level " << log_level_str(level_) << std::endl;
     }
-
-    spdlog::set_default_logger(logger);
-
-#ifdef _DEBUG
-    SetHeader(true, true);
-#else
-    SetHeader(false, false);
-#endif
-
-    spdlog::flush_every(std::chrono::seconds(1));
-
-    return LoggingStatus::success;
 }
-
-LoggingStatus SetHeader(bool logTime, bool logLocation)
+void log(LogLevel level, const std::string& file, int32_t line, const std::string& msg)
 {
-    std::string pattern = "";
-
-    if (logTime)
-        pattern = pattern + "[%H:%M:%S %z]";
-
-    if (logLocation)
-        pattern = pattern + "[%@]";
-
-    pattern = pattern + "%v";
-
-    spdlog::set_pattern(pattern);
-
-    return LoggingStatus::success;
+    check_logger();
+    if (level <= level_)
+    {
+        std::string prefix = log_level_str(level);
+        *out_stream_ << "[" << prefix << " " << file << ":" << line << "] " << msg << std::endl;
+    }
 }
+
 } // namespace logging
 
 } // namespace genomeworks

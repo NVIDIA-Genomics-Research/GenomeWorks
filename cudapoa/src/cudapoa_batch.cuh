@@ -417,7 +417,9 @@ protected:
     void print_batch_debug_message(const std::string& message)
     {
         (void)message;
-        GW_LOG_DEBUG("{}{}{}{}", TABS, bid_, message, device_id_);
+        std::string msg = TABS + " " + std::to_string(bid_) + " " + message + " " + std::to_string(device_id_);
+        //std::string msg("Just a debug msg");
+        GW_LOG_DEBUG(msg);
     }
 
     // Allocate buffers for output details
@@ -451,8 +453,8 @@ protected:
         std::string error_message;
         std::string error_hint;
         decode_error(error_type, error_message, error_hint);
-        error_message = error_message + " in batch {}\n" + error_hint;
-        GW_LOG_WARN(error_message.c_str(), bid_);
+        error_message = error_message + " in batch " + std::to_string(bid_) + "\n" + error_hint;
+        GW_LOG_WARN(error_message);
         output_status.emplace_back(error_type);
     }
 

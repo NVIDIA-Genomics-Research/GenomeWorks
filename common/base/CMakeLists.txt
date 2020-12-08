@@ -27,7 +27,7 @@ add_library(${MODULE_NAME} ${gw_library_type}
         src/logging.cpp
         src/graph.cpp
         )
-target_link_libraries(${MODULE_NAME} PUBLIC spdlog ${CUDA_LIBRARIES})
+target_link_libraries(${MODULE_NAME} PUBLIC ${CUDA_LIBRARIES})
 
 if (gw_profiling)
     find_library(NVTX_LIBRARY nvToolsExt HINTS ${CUDA_TOOLKIT_ROOT_DIR}/lib64)

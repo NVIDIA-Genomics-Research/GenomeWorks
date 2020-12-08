@@ -29,16 +29,6 @@ if (enable_benchmarks AND NOT TARGET benchmark)
     add_subdirectory(3rdparty/benchmark EXCLUDE_FROM_ALL)
 endif()
 
-if (NOT TARGET spdlog)
-    get_property(gw_library_type GLOBAL PROPERTY gw_library_type)
-    if (${gw_library_type} STREQUAL "SHARED")
-        set(SPDLOG_BUILD_SHARED ON CACHE BOOL "Build shared object." FORCE)
-    endif()
-    # FORCE spdlog to put out an install target, which we need
-    set(SPDLOG_INSTALL ON CACHE BOOL "Generate the install target." FORCE)
-    add_subdirectory(3rdparty/spdlog)
-endif()
-
 if (NOT TARGET spoa)
     add_subdirectory(3rdparty/spoa EXCLUDE_FROM_ALL)
 # Don't show warnings when compiling the 3rd party library
