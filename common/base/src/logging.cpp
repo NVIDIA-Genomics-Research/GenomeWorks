@@ -37,7 +37,7 @@ void check_logger()
 {
     if (out_stream_ == nullptr)
     {
-        std::cerr << "Automatically initializing logger..." << std::endl;
+        std::cerr << "GenomeWorks logger not initialized yet. Initializing default logger now." << std::endl;
         create_logger(LogLevel::ERROR);
     }
 }
@@ -73,7 +73,7 @@ void create_logger(LogLevel level, const std::string& filename)
             buffer = std::cerr.rdbuf();
         }
         out_stream_ = std::make_unique<std::ostream>(buffer);
-        *out_stream_ << "Initialized GenomeWorks logger..." << std::endl;
+        *out_stream_ << "Initialized GenomeWorks logger with log level " << log_level_str(level_) << std::endl;
     }
     else
     {

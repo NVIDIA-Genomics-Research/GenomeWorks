@@ -143,7 +143,6 @@ extensions = [
         include_dirs=[
             cuda_include_path,
             get_verified_absolute_path(os.path.join(gw_install_dir, "include")),
-            get_verified_absolute_path(os.path.join(gw_root_dir, "3rdparty", "spdlog", "include")),
         ],
         library_dirs=[cuda_library_path, get_verified_absolute_path(os.path.join(gw_install_dir, "lib"))],
         runtime_library_dirs=[cuda_library_path, os.path.join('$ORIGIN', os.pardir, 'shared_libs')],
@@ -158,7 +157,6 @@ extensions = [
             cuda_include_path,
             get_verified_absolute_path(os.path.join(gw_install_dir, "include")),
             get_verified_absolute_path(os.path.join(gw_root_dir, "3rdparty", "cub")),
-            get_verified_absolute_path(os.path.join(gw_root_dir, "3rdparty", "spdlog", "include")),
         ],
         library_dirs=[cuda_library_path, get_verified_absolute_path(os.path.join(gw_install_dir, "lib"))],
         runtime_library_dirs=[cuda_library_path, os.path.join('$ORIGIN', os.pardir, 'shared_libs')],
