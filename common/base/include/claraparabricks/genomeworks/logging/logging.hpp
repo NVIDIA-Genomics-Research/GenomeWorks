@@ -84,36 +84,26 @@ void log(LogLevel level, const std::string& file, int32_t line, const std::strin
 /// \ingroup logging
 /// \def GW_LOG_DEBUG
 /// \brief Log at debug level
-///
-/// parameters as per https://github.com/gabime/spdlog/blob/v1.x/README.md
 #define GW_LOG_DEBUG(msg) claraparabricks::genomeworks::logging::log(claraparabricks::genomeworks::logging::LogLevel::DEBUG, __FILE__, __LINE__, msg)
 
 /// \ingroup logging
 /// \def GW_LOG_INFO
 /// \brief Log at info level
-///
-/// parameters as per https://github.com/gabime/spdlog/blob/v1.x/README.md
 #define GW_LOG_INFO(msg) claraparabricks::genomeworks::logging::log(claraparabricks::genomeworks::logging::LogLevel::INFO, __FILE__, __LINE__, msg)
 
 /// \ingroup logging
 /// \def GW_LOG_WARN
 /// \brief Log at warning level
-///
-/// parameters as per https://github.com/gabime/spdlog/blob/v1.x/README.md
 #define GW_LOG_WARN(msg) claraparabricks::genomeworks::logging::log(claraparabricks::genomeworks::logging::LogLevel::WARN, __FILE__, __LINE__, msg)
 
 /// \ingroup logging
 /// \def GW_LOG_ERROR
 /// \brief Log at error level
-///
-/// parameters as per https://github.com/gabime/spdlog/blob/v1.x/README.md
 #define GW_LOG_ERROR(msg) claraparabricks::genomeworks::logging::log(claraparabricks::genomeworks::logging::LogLevel::ERROR, __FILE__, __LINE__, msg)
 
 /// \ingroup logging
 /// \def GW_LOG_CRITICAL
-/// \brief Log at fatal/critical error level (does NOT exit)
-///
-/// parameters as per https://github.com/gabime/spdlog/blob/v1.x/README.md
+/// \brief Log at fatal/critical error level
 #define GW_LOG_CRITICAL(msg) claraparabricks::genomeworks::logging::log(claraparabricks::genomeworks::logging::LogLevel::CRITICAL, __FILE__, __LINE__, msg)
 } // namespace logging
 
