@@ -87,6 +87,10 @@ void log(LogLevel level, const std::string& file, int32_t line, const std::strin
     {
         std::string prefix = log_level_str(level);
         *out_stream_ << "[" << prefix << " " << file << ":" << line << "] " << msg << std::endl;
+        if (level == LogLevel::CRITICAL)
+        {
+            std::exit(1);
+        }
     }
 }
 
