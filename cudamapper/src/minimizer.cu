@@ -937,7 +937,7 @@ Minimizer::GeneratedSketchElements Minimizer::generate_sketch_elements(DefaultDe
     shared_memory_for_kernel *= 8; // before it the number of 8-byte values, now get the number of bytes
 
     std::string msg = "Launching find_front_end_minimizers with " + std::to_string(shared_memory_for_kernel) + " bytes of shared memory";
-    GW_LOG_INFO(msg);
+    GW_LOG_INFO(msg.c_str());
     find_front_end_minimizers<<<number_of_reads_to_add, num_of_threads, shared_memory_for_kernel, cuda_stream>>>(minimizer_size,
                                                                                                                  window_size,
                                                                                                                  merged_basepairs_d.data(),
@@ -970,7 +970,7 @@ Minimizer::GeneratedSketchElements Minimizer::generate_sketch_elements(DefaultDe
     shared_memory_for_kernel *= 8; // before it the number of 8-byte values, now get the number of bytes
 
     msg = "Launching find_central_minimizers with " + std::to_string(shared_memory_for_kernel) + " bytes of shared memory";
-    GW_LOG_INFO(msg);
+    GW_LOG_INFO(msg.c_str());
     find_central_minimizers<<<number_of_reads_to_add, num_of_threads, shared_memory_for_kernel, cuda_stream>>>(minimizer_size,
                                                                                                                window_size,
                                                                                                                basepairs_per_thread,
@@ -998,7 +998,7 @@ Minimizer::GeneratedSketchElements Minimizer::generate_sketch_elements(DefaultDe
     shared_memory_for_kernel *= 8; // before it the number of 8-byte values, now get the number of bytes
 
     msg = "Launching find_back_end_minimizers with " + std::to_string(shared_memory_for_kernel) + " bytes of shared memory";
-    GW_LOG_INFO(msg);
+    GW_LOG_INFO(msg.c_str());
     find_back_end_minimizers<<<number_of_reads_to_add, num_of_threads, shared_memory_for_kernel, cuda_stream>>>(minimizer_size,
                                                                                                                 window_size,
                                                                                                                 merged_basepairs_d.data(),
@@ -1030,7 +1030,7 @@ Minimizer::GeneratedSketchElements Minimizer::generate_sketch_elements(DefaultDe
     device_buffer<ReadidPositionDirection> rest_compressed_d(total_minimizers, allocator, cuda_stream);
 
     msg = "Launching compress_minimizers with " + std::to_string(0) + " bytes of shared memory";
-    GW_LOG_INFO(msg);
+    GW_LOG_INFO(msg.c_str());
     compress_minimizers<<<number_of_reads_to_add, 128, 0, cuda_stream>>>(window_minimizers_representation_d.data(),
                                                                          window_minimizers_position_in_read_d.data(),
                                                                          window_minimizers_direction_d.data(),

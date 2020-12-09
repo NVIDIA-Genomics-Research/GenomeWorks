@@ -19,6 +19,7 @@
 #include <iostream>
 #include <fstream>
 #include <memory>
+#include <cassert>
 
 namespace claraparabricks
 {
@@ -31,14 +32,14 @@ namespace logging
 static std::unique_ptr<std::ostream> out_stream_ = nullptr;
 static std::unique_ptr<std::ofstream> out_file_  = nullptr;
 
-static LogLevel level_ = LogLevel::ERROR;
+static LogLevel level_ = LogLevel::error;
 
 void check_logger()
 {
     if (out_stream_ == nullptr)
     {
         std::cerr << "GenomeWorks logger not initialized yet. Initializing default logger now." << std::endl;
-        create_logger(LogLevel::ERROR);
+        initialize_logger(LogLevel::error);
     }
 }
 
@@ -47,32 +48,32 @@ std::string log_level_str(LogLevel level)
     std::string prefix;
     switch (level)
     {
-    case CRITICAL: prefix = "CRITICAL"; break;
-    case ERROR: prefix = "ERROR"; break;
-    case WARN: prefix = "WARN"; break;
-    case INFO: prefix = "INFO"; break;
-    case DEBUG: prefix = "DEBUG"; break;
-    default: throw std::runtime_error("Unknown Log Level passed.\n");
+    case critical: prefix = "CRITICAL"; break;
+    case error: prefix = "ERROR"; break;
+    case warn: prefix = "WARN"; break;
+    case info: prefix = "INFO"; break;
+    case debug: prefix = "DEBUG"; break;
+    default:
+        assert(false); // Unknown log level
+        prefix = "INFO";
+        break;
     }
     return prefix;
 }
 
-void create_logger(LogLevel level, const std::string& filename)
+void initialize_logger(LogLevel level, const char* filename)
 {
     if (out_stream_ == nullptr)
     {
-        std::streambuf* buffer = nullptr;
-        level_                 = level;
-        if (filename != "")
+        level_ = level;
+        if (filename == nullptr)
         {
-            out_file_ = std::make_unique<std::ofstream>(filename);
-            buffer    = out_file_->rdbuf();
+            out_stream_ = std::make_unique<std::ofstream>(filename);
         }
         else
         {
-            buffer = std::cerr.rdbuf();
+            out_stream_ = std::make_unique<std::ostream>(std::cerr.rdbuf());
         }
-        out_stream_ = std::make_unique<std::ostream>(buffer);
         *out_stream_ << "Initialized GenomeWorks logger with log level " << log_level_str(level_) << std::endl;
     }
     else
@@ -80,17 +81,12 @@ void create_logger(LogLevel level, const std::string& filename)
         *out_stream_ << "Logger already initialized with log level " << log_level_str(level_) << std::endl;
     }
 }
-void log(LogLevel level, const std::string& file, int32_t line, const std::string& msg)
+void log(LogLevel level, const char* file, int32_t line, const char* msg)
 {
     check_logger();
     if (level <= level_)
     {
-        std::string prefix = log_level_str(level);
-        *out_stream_ << "[" << prefix << " " << file << ":" << line << "] " << msg << std::endl;
-        if (level == LogLevel::CRITICAL)
-        {
-            std::exit(1);
-        }
+        *out_stream_ << "[" << log_level_str(level) << " " << file << ":" << line << "] " << msg << std::endl;
     }
 }
 

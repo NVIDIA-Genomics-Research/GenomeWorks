@@ -535,7 +535,7 @@ void worker_thread_function(const int32_t device_id,
 
 int main(int argc, char* argv[])
 {
-    logging::create_logger(logging::LogLevel::ERROR);
+    logging::initialize_logger(logging::LogLevel::error);
 
     const ApplicationParameters parameters(argc, argv);
 

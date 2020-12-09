@@ -28,7 +28,7 @@ namespace cudaaligner
 
 StatusType Init()
 {
-    create_logger(claraparabricks::genomeworks::logging::LogLevel::WARN);
+    initialize_logger(claraparabricks::genomeworks::logging::LogLevel::warn);
     return StatusType::success;
 }
 } // namespace cudaaligner

@@ -42,11 +42,6 @@
 /// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 /// THE SOFTWARE.
 
-#include <claraparabricks/genomeworks/gw_config.hpp>
-
-#include <cstdint>
-#include <string>
-
 /// \ingroup logging
 /// \{
 
@@ -62,53 +57,52 @@ namespace logging
 /// GenomeWorks Logging levels.
 enum LogLevel
 {
-    CRITICAL = 0,
-    ERROR,
-    WARN,
-    INFO,
-    DEBUG
+    critical = 0,
+    error,
+    warn,
+    info,
+    debug
 };
 
 /// Initialize logger across GenomeWorks.
 /// \param [in] level LogLevel for logger.
 /// \param [in] filename File to redirect log messages to.
-void create_logger(LogLevel level, const std::string& filename = "");
+void initialize_logger(LogLevel level, const char* filename = nullptr);
 
 /// Log messages to logger.
 /// \param [in] level LogLevel for message.
 /// \param [in] file Filename for originating message.
 /// \param [in] line Line number for originating message.
 /// \param [in] msg Content of log message.
-void log(LogLevel level, const std::string& file, int32_t line, const std::string& msg);
-
-/// \ingroup logging
-/// \def GW_LOG_DEBUG
-/// \brief Log at debug level
-#define GW_LOG_DEBUG(msg) claraparabricks::genomeworks::logging::log(claraparabricks::genomeworks::logging::LogLevel::DEBUG, __FILE__, __LINE__, msg)
-
-/// \ingroup logging
-/// \def GW_LOG_INFO
-/// \brief Log at info level
-#define GW_LOG_INFO(msg) claraparabricks::genomeworks::logging::log(claraparabricks::genomeworks::logging::LogLevel::INFO, __FILE__, __LINE__, msg)
-
-/// \ingroup logging
-/// \def GW_LOG_WARN
-/// \brief Log at warning level
-#define GW_LOG_WARN(msg) claraparabricks::genomeworks::logging::log(claraparabricks::genomeworks::logging::LogLevel::WARN, __FILE__, __LINE__, msg)
-
-/// \ingroup logging
-/// \def GW_LOG_ERROR
-/// \brief Log at error level
-#define GW_LOG_ERROR(msg) claraparabricks::genomeworks::logging::log(claraparabricks::genomeworks::logging::LogLevel::ERROR, __FILE__, __LINE__, msg)
-
-/// \ingroup logging
-/// \def GW_LOG_CRITICAL
-/// \brief Log at fatal/critical error level
-#define GW_LOG_CRITICAL(msg) claraparabricks::genomeworks::logging::log(claraparabricks::genomeworks::logging::LogLevel::CRITICAL, __FILE__, __LINE__, msg)
+void log(LogLevel level, const char* file, int line, const char* msg);
 } // namespace logging
 
 } // namespace genomeworks
 
 } // namespace claraparabricks
 
+/// \ingroup logging
+/// \def GW_LOG_DEBUG
+/// \brief Log at debug level
+#define GW_LOG_DEBUG(msg) claraparabricks::genomeworks::logging::log(claraparabricks::genomeworks::logging::LogLevel::debug, __FILE__, __LINE__, msg)
+
+/// \ingroup logging
+/// \def GW_LOG_INFO
+/// \brief Log at info level
+#define GW_LOG_INFO(msg) claraparabricks::genomeworks::logging::log(claraparabricks::genomeworks::logging::LogLevel::info, __FILE__, __LINE__, msg)
+
+/// \ingroup logging
+/// \def GW_LOG_WARN
+/// \brief Log at warning level
+#define GW_LOG_WARN(msg) claraparabricks::genomeworks::logging::log(claraparabricks::genomeworks::logging::LogLevel::warn, __FILE__, __LINE__, msg)
+
+/// \ingroup logging
+/// \def GW_LOG_ERROR
+/// \brief Log at error level
+#define GW_LOG_ERROR(msg) claraparabricks::genomeworks::logging::log(claraparabricks::genomeworks::logging::LogLevel::error, __FILE__, __LINE__, msg)
+
+/// \ingroup logging
+/// \def GW_LOG_CRITICAL
+/// \brief Log at fatal/critical error level
+#define GW_LOG_CRITICAL(msg) claraparabricks::genomeworks::logging::log(claraparabricks::genomeworks::logging::LogLevel::critical, __FILE__, __LINE__, msg)
 /// \}

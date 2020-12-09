@@ -87,19 +87,22 @@ StatusType AlignerGlobal::add_alignment(const char* query, int32_t query_length,
     int32_t const num_alignments       = get_size(alignments_);
     if (num_alignments >= max_alignments_)
     {
-        GW_LOG_DEBUG("Exceeded maximum number of alignments allowed : " + max_alignments_);
+        std::string msg = "Exceeded maximum number of alignments allowed : " + std::to_string(max_alignments_);
+        GW_LOG_DEBUG(msg.c_str());
         return StatusType::exceeded_max_alignments;
     }
 
     if (query_length > max_query_length_)
     {
-        GW_LOG_DEBUG("Exceeded maximum length of query allowed : " + max_query_length_);
+        std::string msg = "Exceeded maximum length of query allowed : " + std::to_string(max_query_length_);
+        GW_LOG_DEBUG(msg.c_str());
         return StatusType::exceeded_max_length;
     }
 
     if (target_length > max_target_length_)
     {
-        GW_LOG_DEBUG("Exceeded maximum length of target allowed : " + max_target_length_);
+        std::string msg = "Exceeded maximum length of target allowed : " + std::to_string(max_target_length_);
+        GW_LOG_DEBUG(msg.c_str());
         return StatusType::exceeded_max_length;
     }
 

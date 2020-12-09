@@ -266,7 +266,7 @@ public:
     {
         if (!memory_resource_)
         {
-            GW_LOG_ERROR("ERROR:: Trying to allocate memory from an default-constructed CachingDeviceAllocator. Please assign a non-default-constructed CachingDeviceAllocator before performing any memory operations.");
+            GW_LOG_ERROR("Trying to allocate memory from an default-constructed CachingDeviceAllocator. Please assign a non-default-constructed CachingDeviceAllocator before performing any memory operations.");
             assert(false);
             std::abort();
         }
@@ -291,7 +291,7 @@ public:
         static_cast<void>(n);
         if (!memory_resource_)
         {
-            GW_LOG_ERROR("ERROR:: Trying to deallocate memory from an default-constructed CachingDeviceAllocator. Please assign a non-default-constructed CachingDeviceAllocator before performing any memory operations.");
+            GW_LOG_ERROR("Trying to deallocate memory from an default-constructed CachingDeviceAllocator. Please assign a non-default-constructed CachingDeviceAllocator before performing any memory operations.");
             assert(false);
             std::abort();
         }
