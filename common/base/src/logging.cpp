@@ -65,14 +65,16 @@ void initialize_logger(LogLevel level, const char* filename)
     if (out_stream_ == nullptr)
     {
         level_ = level;
-        if (filename == nullptr)
+        if (filename != nullptr)
         {
+            std::cerr << "Initialized with nullptr..." << std::endl;
             out_stream_ = std::make_unique<std::ofstream>(filename);
         }
         else
         {
             out_stream_ = std::make_unique<std::ostream>(std::cerr.rdbuf());
         }
+        assert(out_stream_->good());
         *out_stream_ << "Initialized GenomeWorks logger with log level " << log_level_str(level_) << std::endl;
     }
     else
