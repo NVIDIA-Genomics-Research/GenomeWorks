@@ -57,11 +57,8 @@ namespace cudamapper
 
 namespace
 {
-std::vector<IndexDescriptor> initialize_batch(const std::shared_ptr<const io::FastaParser> parser,
-                                              DefaultDeviceAllocator allocator)
+std::vector<IndexDescriptor> initialize_batch(const std::shared_ptr<const io::FastaParser> parser)
 {
-    //Init();
-
     // group reads into indices. For small inputs, there will only be 1 index
     std::vector<IndexDescriptor> index_descriptors = group_reads_into_indices(*parser,
                                                                               INDEX_SIZE * 1'000'000);
@@ -211,8 +208,8 @@ int main(int argc, char** argv)
     target_parser = query_parser;                                                           // assume all to all
 
     // group the indices
-    std::vector<IndexDescriptor> query_index_descriptors  = initialize_batch(query_parser, allocator);
-    std::vector<IndexDescriptor> target_index_descriptors = initialize_batch(target_parser, allocator);
+    std::vector<IndexDescriptor> query_index_descriptors  = initialize_batch(query_parser);
+    std::vector<IndexDescriptor> target_index_descriptors = initialize_batch(target_parser);
 
     process_batch(query_index_descriptors, target_index_descriptors, query_parser, target_parser, allocator, print, format);
 

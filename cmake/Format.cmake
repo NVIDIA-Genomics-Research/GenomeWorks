@@ -86,7 +86,7 @@ function(gw_enable_formatting_targets)
         endforeach()
 
         add_custom_target(format DEPENDS ${format_list} COMMENT "Format source files")
-        add_custom_target(check-format DEPENDS ${format_check_list} COMMENT "Check format of source files")
+        add_custom_target(check-format ALL DEPENDS ${format_check_list} COMMENT "Check format of source files")
     else()
         message(STATUS "clang-format not found. Auto-formatting disabled.")
     endif()
