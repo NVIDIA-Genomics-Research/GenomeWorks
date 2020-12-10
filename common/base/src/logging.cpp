@@ -30,7 +30,6 @@ namespace genomeworks
 namespace logging
 {
 static std::unique_ptr<std::ostream> out_stream_ = nullptr;
-static std::unique_ptr<std::ofstream> out_file_  = nullptr;
 
 static LogLevel level_ = LogLevel::error;
 
