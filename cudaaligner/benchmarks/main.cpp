@@ -80,6 +80,8 @@ typename std::enable_if<!std::is_same<AlignerT, AlignerGlobalMyersBanded>::value
 template <typename AlignerT>
 typename std::enable_if<std::is_same<AlignerT, AlignerGlobalMyersBanded>::value, std::unique_ptr<Aligner>>::type create_aligner_tmp_dispatch(int32_t genome_size, int32_t alignments_per_batch, DefaultDeviceAllocator allocator, cudaStream_t stream, int32_t device_id)
 {
+    (void) genome_size;
+    (void) alignments_per_batch;
     const int64_t max_device_memory = -1;
     const int32_t max_bandwidth     = 1024;
     return std::make_unique<AlignerT>(

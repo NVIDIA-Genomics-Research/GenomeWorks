@@ -21,3 +21,6 @@ set(CMAKE_CXX_STANDARD 17)
 
 #Add OpenMP
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp")
+
+# Add common copmiler checks
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror -Wall -Wextra")

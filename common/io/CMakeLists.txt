@@ -34,8 +34,6 @@ target_include_directories(${MODULE_NAME}
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 )
 
-target_compile_options(${MODULE_NAME} PRIVATE -Werror)
-
 install(TARGETS ${MODULE_NAME} 
     EXPORT ${MODULE_NAME}
     DESTINATION lib

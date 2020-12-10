@@ -51,7 +51,6 @@ target_include_directories(${MODULE_NAME}_internal INTERFACE
 
 target_link_libraries(${MODULE_NAME} gwbase cub)
 
-target_compile_options(${MODULE_NAME} PRIVATE -Werror -Wall -Wextra)
 if (gw_optimize_for_native_cpu)
     target_compile_options(${MODULE_NAME} PRIVATE -march=native)
 endif()
