@@ -67,7 +67,6 @@ void initialize_logger(LogLevel level, const char* filename)
         level_ = level;
         if (filename != nullptr)
         {
-            std::cerr << "Initialized with nullptr..." << std::endl;
             out_stream_ = std::make_unique<std::ofstream>(filename);
         }
         else
