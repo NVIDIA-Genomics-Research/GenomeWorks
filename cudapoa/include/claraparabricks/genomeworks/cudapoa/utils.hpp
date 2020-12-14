@@ -91,7 +91,7 @@ inline void resize_windows(std::vector<std::vector<std::string>>& windows, const
             }
         }
 
-        assert(windows.size() == total_windows);
+        assert(get_size(windows) == total_windows);
     }
 }
 
