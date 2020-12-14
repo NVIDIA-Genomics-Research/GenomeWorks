@@ -73,7 +73,10 @@ void initialize_logger(LogLevel level, const char* filename)
         {
             out_stream_ = std::make_unique<std::ostream>(std::cerr.rdbuf());
         }
-        assert(out_stream_->good());
+        if (!out_stream_->good())
+        {
+            throw std::runtime_error("Could not initialize logger. Please check call to initialize_logger.");
+        }
         *out_stream_ << "Initialized GenomeWorks logger with log level " << log_level_str(level_) << std::endl;
     }
     else
