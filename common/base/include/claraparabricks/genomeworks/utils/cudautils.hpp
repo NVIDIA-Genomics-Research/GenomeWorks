@@ -87,7 +87,7 @@ inline void gpu_assert(cudaError_t code, const char* file, int line)
                           std::string(cudaGetErrorString(code)) +
                           " " + std::string(file) +
                           " " + std::to_string(line);
-        GW_LOG_ERROR("{}\n", err);
+        GW_LOG_ERROR(err.c_str());
         // In Debug mode, this assert will cause a debugger trap
         // which is beneficial when debugging errors.
         assert(false);
