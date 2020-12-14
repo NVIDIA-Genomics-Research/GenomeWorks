@@ -838,19 +838,19 @@ void IndexGPU<SketchElementImpl>::generate_index(const io::FastaParser& parser,
             else
             {
                 // TODO: Implement this skipping in a correct manner
-                GW_LOG_INFO("Skipping read {}. It has {} basepairs, one window covers {} basepairs",
-                            sequence.name,
-                            read_basepairs.length(),
-                            window_size_ + kmer_size_ - 1);
+                std::string msg = "Skipping read " + sequence.name + ". It has " +
+                                  std::to_string(read_basepairs.length()) + " basepairs, one window covers " +
+                                  std::to_string(window_size_ + kmer_size_ - 1) + " basepairs";
+                GW_LOG_INFO(msg.c_str());
             }
         }
     }
 
     if (0 == total_basepairs)
     {
-        GW_LOG_INFO("Index for reads {} to past {} is empty",
-                    first_read_id,
-                    past_the_last_read_id);
+        std::string msg = "Index for reads " + std::to_string(first_read_id) +
+                          " to past " + std::to_string(past_the_last_read_id) + " is empty";
+        GW_LOG_INFO(msg.c_str());
         number_of_reads_                     = 0;
         number_of_basepairs_in_longest_read_ = 0;
         return;
