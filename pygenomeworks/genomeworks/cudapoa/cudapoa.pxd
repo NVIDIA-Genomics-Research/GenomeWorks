@@ -47,7 +47,8 @@ cdef extern from "claraparabricks/genomeworks/cudapoa/cudapoa.hpp" namespace "cl
         exceeded_maximum_sequences_per_poa
         node_count_exceeded_maximum_graph_size
         edge_count_exceeded_maximum_graph_size
-        seq_len_exceeded_maximum_nodes_per_window
+        exceeded_adaptive_banded_matrix_size
+        exceeded_maximum_predecessor_distance
         loop_count_exceeded_upper_bound
         output_type_unavailable
         generic_error

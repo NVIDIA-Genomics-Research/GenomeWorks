@@ -52,8 +52,10 @@ def status_to_str(status):
         return "node_count_exceeded_maximum_graph_size"
     elif status == cudapoa.edge_count_exceeded_maximum_graph_size:
         return "edge_count_exceeded_maximum_graph_size"
-    elif status == cudapoa.seq_len_exceeded_maximum_nodes_per_window:
-        return "seq_len_exceeded_maximum_nodes_per_window"
+    elif status == cudapoa.exceeded_adaptive_banded_matrix_size:
+        return "exceeded_adaptive_banded_matrix_size"
+    elif status == cudapoa.exceeded_maximum_predecessor_distance:
+        return "exceeded_maximum_predecessor_distance"
     elif status == cudapoa.loop_count_exceeded_upper_bound:
         return "loop_count_exceeded_upper_bound"
     elif status == cudapoa.output_type_unavailable:

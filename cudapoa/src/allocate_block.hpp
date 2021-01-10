@@ -32,16 +32,6 @@
 #include <claraparabricks/genomeworks/utils/signed_integer_utils.hpp>
 #include <claraparabricks/genomeworks/utils/device_buffer.hpp>
 
-#ifndef GW_LOG_LEVEL
-#ifndef NDEBUG
-/// \brief Defines the logging level used in the current module
-#define GW_LOG_LEVEL gw_log_level_debug
-#else // NDEBUG
-/// \brief Defines the logging level used in the current module
-#define GW_LOG_LEVEL gw_log_level_error
-#endif // NDEBUG
-#endif // GW_LOG_LEVEL
-
 namespace claraparabricks
 {
 

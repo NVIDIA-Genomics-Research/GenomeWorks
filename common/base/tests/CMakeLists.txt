@@ -20,6 +20,7 @@ set(TARGET_NAME gwbasetests)
 
 set(SOURCES
     main.cpp
+    Test_DevicePreallocatedAllocator.cu
     Test_UtilsCudasort.cu
     Test_UtilsThreadsafeContainers.cpp
     TestGraph.cpp

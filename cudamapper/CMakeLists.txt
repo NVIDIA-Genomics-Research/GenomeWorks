@@ -26,8 +26,6 @@ GitVersion()
 configure_file(${PROJECT_SOURCE_DIR}/common/base/src/version.cpp.in
                 ${CMAKE_CURRENT_BINARY_DIR}/version.cpp)
 
-find_package(CUDA 9.0 QUIET REQUIRED)
-
 if(NOT ${CUDA_FOUND})
     message(FATAL_ERROR "CUDA not detected on system. Please install")
 else()
@@ -76,9 +74,14 @@ if (TARGET htslib_project)
 else()
      target_link_libraries(${MODULE_NAME} gwbase gwio cub)
 endif()
-target_compile_options(${MODULE_NAME} PRIVATE -Werror)
+
+target_compile_options(${MODULE_NAME} PRIVATE -Werror -Wall -Wextra)
+if (gw_optimize_for_native_cpu)
+    target_compile_options(${MODULE_NAME} PRIVATE -march=native)
+endif()
 
 add_doxygen_source_dir(${CMAKE_CURRENT_SOURCE_DIR}/include)
+add_doxygen_source_dir(${CMAKE_CURRENT_SOURCE_DIR}/README.md)
 
 cuda_add_executable(${MODULE_NAME}-bin
         src/main.cu

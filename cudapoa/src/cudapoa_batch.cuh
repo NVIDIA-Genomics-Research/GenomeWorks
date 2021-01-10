@@ -32,10 +32,6 @@
 #include <iomanip>
 #include <cuda_runtime_api.h>
 
-#ifndef TABS
-#define TABS printTabs(bid_)
-#endif
-
 inline std::string printTabs(int32_t tab_count)
 {
     std::string s;
@@ -134,15 +130,23 @@ public:
         // If a new group can be added, attempt to add all entries
         // in the group. If they can't be added, record their status
         // and continue adding till the end of the group.
+        bool poa_empty = true;
         for (auto& entry : poa_group)
         {
             StatusType entry_status = add_seq_to_poa(entry.seq,
                                                      entry.weights,
                                                      entry.length);
-
+            if (entry_status == StatusType::success)
+            {
+                poa_empty = false;
+            }
             per_seq_status.push_back(entry_status);
         }
 
+        if (poa_empty)
+        {
+            return StatusType::empty_poa_group;
+        }
         return StatusType::success;
     }
 
@@ -408,8 +412,8 @@ protected:
     // Print debug message with batch specific formatting.
     void print_batch_debug_message(const std::string& message)
     {
-        (void)message;
-        GW_LOG_DEBUG("{}{}{}{}", TABS, bid_, message, device_id_);
+        std::string msg = printTabs(bid_) + " " + std::to_string(bid_) + " " + message + " " + std::to_string(device_id_);
+        GW_LOG_DEBUG(msg.c_str());
     }
 
     // Allocate buffers for output details
@@ -440,41 +444,12 @@ protected:
     void decode_cudapoa_kernel_error(genomeworks::cudapoa::StatusType error_type,
                                      std::vector<StatusType>& output_status)
     {
-        switch (error_type)
-        {
-        case genomeworks::cudapoa::StatusType::node_count_exceeded_maximum_graph_size:
-            GW_LOG_WARN("Kernel Error:: Node count exceeded maximum nodes per graph in batch {}\n", bid_);
-            output_status.emplace_back(error_type);
-            break;
-        case genomeworks::cudapoa::StatusType::edge_count_exceeded_maximum_graph_size:
-            GW_LOG_WARN("Kernel Error:: Edge count exceeded maximum edges per graph in batch {}\n", bid_);
-            output_status.emplace_back(error_type);
-            break;
-        case genomeworks::cudapoa::StatusType::seq_len_exceeded_maximum_nodes_per_window:
-            GW_LOG_WARN("Kernel Error:: Sequence length exceeded maximum nodes per window in batch {}\n", bid_);
-            output_status.emplace_back(error_type);
-            break;
-        case genomeworks::cudapoa::StatusType::loop_count_exceeded_upper_bound:
-            GW_LOG_WARN("Kernel Error:: Loop count exceeded upper bound in nw algorithm in batch {}\n", bid_);
-            output_status.emplace_back(error_type);
-            break;
-        case genomeworks::cudapoa::StatusType::exceeded_adaptive_banded_matrix_size:
-            GW_LOG_WARN("Kernel Error:: Band width set for adaptive matrix allocation is too small in batch {}\n", bid_);
-            output_status.emplace_back(error_type);
-            break;
-        case genomeworks::cudapoa::StatusType::exceeded_maximum_sequence_size:
-            GW_LOG_WARN("Kernel Error:: Consensus/MSA sequence size exceeded max sequence size in batch {}\n", bid_);
-            output_status.emplace_back(error_type);
-            break;
-        case genomeworks::cudapoa::StatusType::exceeded_maximum_predecessor_distance:
-            GW_LOG_WARN("Kernel Error:: Set value for maximum predecessor distance in traceback NW is too small {}\n", bid_);
-            output_status.emplace_back(error_type);
-            break;
-        default:
-            GW_LOG_WARN("Kernel Error:: Unknown error in batch {}\n", bid_);
-            output_status.emplace_back(error_type);
-            break;
-        }
+        std::string error_message;
+        std::string error_hint;
+        decode_error(error_type, error_message, error_hint);
+        error_message += " in batch " + std::to_string(bid_) + "\n" + error_hint;
+        GW_LOG_WARN(error_message.c_str());
+        output_status.emplace_back(error_type);
     }
 
     // Add new partial order alignment to batch.
@@ -504,6 +479,25 @@ protected:
             return StatusType::exceeded_maximum_sequence_size;
         }
 
+        if (weights != nullptr)
+        {
+            // Verify that weights are positive.
+            bool all_base_weights_are_zero = true;
+            for (int32_t i = 0; i < seq_len; i++)
+            {
+                throw_on_negative(weights[i], "Base weights need to be non-negative");
+                if (weights[i] > 0)
+                {
+                    all_base_weights_are_zero = false;
+                }
+            }
+            // all base weights of the sequence can not be zero, skip
+            if (all_base_weights_are_zero)
+            {
+                return StatusType::zero_weighted_poa_sequence;
+            }
+        }
+
         WindowDetails* window_details = &(input_details_h_->window_details[poa_count_ - 1]);
         int32_t scores_width_         = cudautils::align<int32_t, 4>(seq_len + 1 + CUDAPOA_CELLS_PER_THREAD);
         if (scores_width_ > window_details->scores_width)
@@ -531,11 +525,6 @@ protected:
         }
         else
         {
-            // Verify that weightsw are positive.
-            for (int32_t i = 0; i < seq_len; i++)
-            {
-                throw_on_negative(weights[i], "Base weights need to be non-negative");
-            }
             memcpy(&(input_details_h_->base_weights[num_nucleotides_copied_]),
                    weights,
                    seq_len);

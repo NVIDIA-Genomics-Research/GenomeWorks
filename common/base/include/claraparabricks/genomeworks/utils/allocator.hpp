@@ -157,7 +157,7 @@ public:
 
 /// \brief A simple caching allocator for device memory allocations
 /// \tparam T
-/// \tparam MemoryResource resource that does actual allocation, e.g. cudautils::DevicePreallocatedAllocator
+/// \tparam MemoryResource resource that does actual allocation, e.g. cudautils::details::DevicePreallocatedAllocator
 template <typename T, typename MemoryResource>
 class CachingDeviceAllocator
 {
@@ -266,7 +266,7 @@ public:
     {
         if (!memory_resource_)
         {
-            GW_LOG_ERROR("{}\n", "ERROR:: Trying to allocate memory from an default-constructed CachingDeviceAllocator. Please assign a non-default-constructed CachingDeviceAllocator before performing any memory operations.");
+            GW_LOG_ERROR("Trying to allocate memory from an default-constructed CachingDeviceAllocator. Please assign a non-default-constructed CachingDeviceAllocator before performing any memory operations.");
             assert(false);
             std::abort();
         }
@@ -291,7 +291,7 @@ public:
         static_cast<void>(n);
         if (!memory_resource_)
         {
-            GW_LOG_ERROR("{}\n", "ERROR:: Trying to deallocate memory from an default-constructed CachingDeviceAllocator. Please assign a non-default-constructed CachingDeviceAllocator before performing any memory operations.");
+            GW_LOG_ERROR("Trying to deallocate memory from an default-constructed CachingDeviceAllocator. Please assign a non-default-constructed CachingDeviceAllocator before performing any memory operations.");
             assert(false);
             std::abort();
         }
@@ -320,7 +320,7 @@ private:
 };
 
 #ifdef GW_ENABLE_CACHING_ALLOCATOR
-using DefaultDeviceAllocator = CachingDeviceAllocator<char, DevicePreallocatedAllocator>;
+using DefaultDeviceAllocator = CachingDeviceAllocator<char, details::DevicePreallocatedAllocator>;
 #else
 using DefaultDeviceAllocator = CudaMallocAllocator<char>;
 #endif

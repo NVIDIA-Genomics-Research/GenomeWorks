@@ -18,8 +18,6 @@
 
 set(MODULE_NAME gwbase)
 
-find_package(CUDA 9.0 QUIET REQUIRED)
-
 set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -std=c++14")
 message(STATUS "nvcc flags for ${MODULE_NAME}: ${CUDA_NVCC_FLAGS}")
 
@@ -29,7 +27,7 @@ add_library(${MODULE_NAME} ${gw_library_type}
         src/logging.cpp
         src/graph.cpp
         )
-target_link_libraries(${MODULE_NAME} PUBLIC spdlog ${CUDA_LIBRARIES})
+target_link_libraries(${MODULE_NAME} PUBLIC ${CUDA_LIBRARIES})
 
 if (gw_profiling)
     find_library(NVTX_LIBRARY nvToolsExt HINTS ${CUDA_TOOLKIT_ROOT_DIR}/lib64)
