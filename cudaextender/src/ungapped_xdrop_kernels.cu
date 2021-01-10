@@ -52,8 +52,8 @@ __global__ void find_high_scoring_segment_pairs(const int8_t* __restrict__ d_tar
     // TODO - Following variables are an artifact of the hardcoded encoding scheme with a fixed
     // scoring matrix and a fixed alphabet. Will be replaced with cudasequence API.
     // Github Issue: https://github.com/clara-parabricks/GenomeWorks/issues/574
-    constexpr int32_t nuc  = 8;
-    constexpr int32_t nuc2 = 64;
+    constexpr int32_t nuc         = 8;
+    constexpr int32_t nuc2        = 64;
     constexpr int32_t nuc_entropy = 4;
 
     constexpr int32_t num_warps = 4;
@@ -89,7 +89,7 @@ __global__ void find_high_scoring_segment_pairs(const int8_t* __restrict__ d_tar
     {
         short count[nuc_entropy]     = {0};
         short count_del[nuc_entropy] = {0};
-        const int32_t hid  = hid0 + warp_id + start_index;
+        const int32_t hid            = hid0 + warp_id + start_index;
         if (lane_id == 0)
         {
             if (hid < num_seed_pairs)
@@ -191,25 +191,25 @@ __global__ void find_high_scoring_segment_pairs(const int8_t* __restrict__ d_tar
                 }
             }
 
-            if(xdrop_done)
+            if (xdrop_done)
             {
                 max_thread_score = prev_max_score[warp_id];
-                max_pos = prev_max_pos[warp_id];
+                max_pos          = prev_max_pos[warp_id];
             }
             __syncwarp();
 
 #pragma unroll
             for (int32_t offset = 1; offset < warp_size; offset = offset << 1)
             {
-                const int32_t temp = __shfl_up_sync(0xFFFFFFFF, max_thread_score, offset);
+                const int32_t temp     = __shfl_up_sync(0xFFFFFFFF, max_thread_score, offset);
                 const int32_t temp_pos = __shfl_up_sync(0xFFFFFFFF, max_pos, offset);
 
-                if(lane_id >= offset)
+                if (lane_id >= offset)
                 {
-                    if(temp >= max_thread_score)
+                    if (temp >= max_thread_score)
                     {
                         max_thread_score = temp;
-                        max_pos = temp_pos;
+                        max_pos          = temp_pos;
                     }
                 }
             }
@@ -363,25 +363,25 @@ __global__ void find_high_scoring_segment_pairs(const int8_t* __restrict__ d_tar
                 }
             }
 
-            if(xdrop_done)
+            if (xdrop_done)
             {
                 max_thread_score = prev_max_score[warp_id];
-                max_pos = prev_max_pos[warp_id];
+                max_pos          = prev_max_pos[warp_id];
             }
             __syncwarp();
 
 #pragma unroll
             for (int32_t offset = 1; offset < warp_size; offset = offset << 1)
             {
-                const int32_t temp = __shfl_up_sync(0xFFFFFFFF, max_thread_score, offset);
+                const int32_t temp     = __shfl_up_sync(0xFFFFFFFF, max_thread_score, offset);
                 const int32_t temp_pos = __shfl_up_sync(0xFFFFFFFF, max_pos, offset);
 
-                if(lane_id >= offset)
+                if (lane_id >= offset)
                 {
-                    if(temp >= max_thread_score)
+                    if (temp >= max_thread_score)
                     {
                         max_thread_score = temp;
-                        max_pos = temp_pos;
+                        max_pos          = temp_pos;
                     }
                 }
             }

@@ -64,28 +64,19 @@ struct scored_segment_pair_equal
 {
     __host__ __device__ bool operator()(ScoredSegmentPair x, ScoredSegmentPair y)
     {
-            return ( ( 
-                        (x.seed_pair.target_position_in_read - x.seed_pair.query_position_in_read) == (y.seed_pair.target_position_in_read - y.seed_pair.query_position_in_read) 
-                        ) 
+        return ((
+                    (x.seed_pair.target_position_in_read - x.seed_pair.query_position_in_read) == (y.seed_pair.target_position_in_read - y.seed_pair.query_position_in_read))
 
-                    &&  
+                &&
 
-                    ( 
-                     ( 
-                      (x.seed_pair.target_position_in_read >= y.seed_pair.target_position_in_read) 
-                      && 
-                      ( (x.seed_pair.target_position_in_read + x.length) <= (y.seed_pair.target_position_in_read + y.length) )  
-                      ) 
+                ((
+                     (x.seed_pair.target_position_in_read >= y.seed_pair.target_position_in_read) &&
+                     ((x.seed_pair.target_position_in_read + x.length) <= (y.seed_pair.target_position_in_read + y.length)))
 
-                     || 
+                 ||
 
-                     ( 
-                      ( y.seed_pair.target_position_in_read >= x.seed_pair.target_position_in_read ) 
-                      && 
-                      ( (y.seed_pair.target_position_in_read + y.length) <= (x.seed_pair.target_position_in_read + x.length) ) 
-                      ) 
-                     ) 
-                    );
+                 ((y.seed_pair.target_position_in_read >= x.seed_pair.target_position_in_read) &&
+                  ((y.seed_pair.target_position_in_read + y.length) <= (x.seed_pair.target_position_in_read + x.length)))));
     }
 };
 
@@ -93,17 +84,17 @@ struct scored_segment_pair_comp
 {
     __host__ __device__ bool operator()(const ScoredSegmentPair& x, const ScoredSegmentPair& y)
     {
-        if ( (x.seed_pair.target_position_in_read - x.seed_pair.query_position_in_read) < ( y.seed_pair.target_position_in_read - y.seed_pair.query_position_in_read))
+        if ((x.seed_pair.target_position_in_read - x.seed_pair.query_position_in_read) < (y.seed_pair.target_position_in_read - y.seed_pair.query_position_in_read))
             return true;
-        else if ( (x.seed_pair.target_position_in_read - x.seed_pair.query_position_in_read) == ( y.seed_pair.target_position_in_read - y.seed_pair.query_position_in_read))
+        else if ((x.seed_pair.target_position_in_read - x.seed_pair.query_position_in_read) == (y.seed_pair.target_position_in_read - y.seed_pair.query_position_in_read))
         {
             if (x.seed_pair.target_position_in_read < y.seed_pair.target_position_in_read)
                 return true;
             else if (x.seed_pair.target_position_in_read == y.seed_pair.target_position_in_read)
             {
-                if(x.length > y.length)
+                if (x.length > y.length)
                     return true;
-                else if(x.length == y.length)
+                else if (x.length == y.length)
                 {
                     if (x.score > y.score)
                         return true;

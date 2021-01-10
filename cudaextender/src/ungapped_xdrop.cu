@@ -163,16 +163,16 @@ StatusType UngappedXDrop::extend_async(const int8_t* d_query, const int32_t quer
                                 d_tmp_ssp_.begin() + num_scored_segment_pairs,
                                 scored_segment_pair_comp());
 
-            ScoredSegmentPair* result_end = 
+            ScoredSegmentPair* result_end =
                 thrust::unique_copy(thrust::cuda::par(allocator_).on(stream_),
-                        d_tmp_ssp_.begin(),
-                        d_tmp_ssp_.begin() + num_scored_segment_pairs,
-                        d_scored_segment_pairs + total_scored_segment_pairs_,
-                        scored_segment_pair_equal());
+                                    d_tmp_ssp_.begin(),
+                                    d_tmp_ssp_.begin() + num_scored_segment_pairs,
+                                    d_scored_segment_pairs + total_scored_segment_pairs_,
+                                    scored_segment_pair_equal());
 
             total_scored_segment_pairs_ += thrust::distance(
-                    d_scored_segment_pairs+total_scored_segment_pairs_,
-                    result_end);
+                d_scored_segment_pairs + total_scored_segment_pairs_,
+                result_end);
         }
     }
 
