@@ -54,6 +54,7 @@ __global__ void find_high_scoring_segment_pairs(const int8_t* __restrict__ d_tar
     // Github Issue: https://github.com/clara-parabricks/GenomeWorks/issues/574
     constexpr int32_t nuc  = 8;
     constexpr int32_t nuc2 = 64;
+    constexpr int32_t nuc_entropy = 4;
 
     constexpr int32_t num_warps = 4;
     constexpr int32_t warp_size = 32;
@@ -86,8 +87,8 @@ __global__ void find_high_scoring_segment_pairs(const int8_t* __restrict__ d_tar
 
     for (int32_t hid0 = blockIdx.x * num_warps; hid0 < num_seed_pairs; hid0 += num_warps * gridDim.x)
     {
-        short count[4]     = {0};
-        short count_del[4] = {0};
+        short count[nuc_entropy]     = {0};
+        short count_del[nuc_entropy] = {0};
         const int32_t hid  = hid0 + warp_id + start_index;
         if (lane_id == 0)
         {
@@ -190,7 +191,7 @@ __global__ void find_high_scoring_segment_pairs(const int8_t* __restrict__ d_tar
                 }
             }
 
-            if(xdrop_done == 1)
+            if(xdrop_done)
             {
                 max_thread_score = prev_max_score[warp_id];
                 max_pos = prev_max_pos[warp_id];
@@ -244,7 +245,7 @@ __global__ void find_high_scoring_segment_pairs(const int8_t* __restrict__ d_tar
             if (new_max_found[warp_id])
             {
 #pragma unroll
-                for (int32_t i = 0; i < 4; i++)
+                for (int32_t i = 0; i < nuc_entropy; i++)
                 {
                     count[i]     = count[i] + count_del[i];
                     count_del[i] = 0;
@@ -252,7 +253,7 @@ __global__ void find_high_scoring_segment_pairs(const int8_t* __restrict__ d_tar
             }
             __syncwarp();
 
-            if (r_chr == q_chr && r_chr < 4)
+            if (r_chr == q_chr && r_chr < nuc_entropy)
             {
                 if (pos_offset <= prev_max_pos[warp_id])
                 {
@@ -362,7 +363,7 @@ __global__ void find_high_scoring_segment_pairs(const int8_t* __restrict__ d_tar
                 }
             }
 
-            if(xdrop_done == 1)
+            if(xdrop_done)
             {
                 max_thread_score = prev_max_score[warp_id];
                 max_pos = prev_max_pos[warp_id];
@@ -418,7 +419,7 @@ __global__ void find_high_scoring_segment_pairs(const int8_t* __restrict__ d_tar
             if (new_max_found[warp_id])
             {
 #pragma unroll
-                for (int32_t i = 0; i < 4; i++)
+                for (int32_t i = 0; i < nuc_entropy; i++)
                 {
                     count[i]     = count[i] + count_del[i];
                     count_del[i] = 0;
@@ -426,7 +427,7 @@ __global__ void find_high_scoring_segment_pairs(const int8_t* __restrict__ d_tar
             }
             __syncwarp();
 
-            if (r_chr == q_chr && r_chr < 4)
+            if (r_chr == q_chr && r_chr < nuc_entropy)
             {
                 if (pos_offset <= prev_max_pos[warp_id])
                 {
@@ -444,7 +445,7 @@ __global__ void find_high_scoring_segment_pairs(const int8_t* __restrict__ d_tar
 
         if (total_score[warp_id] >= score_threshold && total_score[warp_id] <= 3 * score_threshold && !no_entropy)
         {
-            for (int32_t i = 0; i < 4; i++)
+            for (int32_t i = 0; i < nuc_entropy; i++)
             {
 #pragma unroll
                 for (int32_t offset = 1; offset < warp_size; offset = offset << 1)
@@ -458,7 +459,7 @@ __global__ void find_high_scoring_segment_pairs(const int8_t* __restrict__ d_tar
             {
                 double entropy_ln = 0.f;
 #pragma unroll
-                for (int32_t i = 0; i < 4; i++)
+                for (int32_t i = 0; i < nuc_entropy; i++)
                 {
                     if (count[i] != 0)
                     {

@@ -101,9 +101,9 @@ struct scored_segment_pair_comp
                 return true;
             else if (x.seed_pair.target_position_in_read == y.seed_pair.target_position_in_read)
             {
-                if (x.seed_pair.query_position_in_read > y.seed_pair.query_position_in_read)
+                if(x.length > y.length)
                     return true;
-                else if (x.seed_pair.query_position_in_read == y.seed_pair.query_position_in_read)
+                else if(x.length == y.length)
                 {
                     if (x.score > y.score)
                         return true;
