@@ -284,10 +284,10 @@ __global__ void find_high_scoring_segment_pairs(const int8_t* __restrict__ d_tar
             left_extent[warp_id]    = 0;
         }
 
-        count_del[0] = 0;
-        count_del[1] = 0;
-        count_del[2] = 0;
-        count_del[3] = 0;
+        for (int32_t i = 0; i < nuc_entropy; i++)
+        {
+            count_del[i] = 0;
+        }
         __syncwarp();
 
         while (!xdrop_found[warp_id] && !edge_found[warp_id])
