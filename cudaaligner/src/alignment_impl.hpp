@@ -47,7 +47,7 @@ public:
     /// \brief Converts an alignment to CIGAR format
     ///
     /// \return CIGAR string
-    std::string convert_to_cigar() const override;
+    std::string convert_to_cigar(CigarFormat format) const override;
 
     /// \brief Set alignment type.
     /// \param type Alignment type.

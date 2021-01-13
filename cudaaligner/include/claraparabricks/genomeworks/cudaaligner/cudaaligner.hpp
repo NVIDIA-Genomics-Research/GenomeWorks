@@ -57,6 +57,13 @@ enum AlignmentState : int8_t
     deletion   // Present in query, absent in target
 };
 
+/// CigarFormat - Enum to switch between different CIGAR formats.
+enum CigarFormat
+{
+    basic = 0, // Basic format. Symbols: I,D,M
+    extended   // Extended format. Symbols: I,D,X,=
+};
+
 /// Initialize CUDA Aligner context.
 StatusType Init();
 /// \}
