@@ -41,36 +41,40 @@ char alignment_state_to_cigar_state(AlignmentState s)
     case AlignmentState::mismatch: return 'M';
     case AlignmentState::insertion: return 'I';
     case AlignmentState::deletion: return 'D';
-    default: throw std::runtime_error("Unrecognized alignment state.");
+    default: assert(false); return '!';
     }
 }
 
-} // namespace
-
-AlignmentImpl::AlignmentImpl(const char* query, int32_t query_length, const char* target, int32_t target_length)
-    : query_(query, query + throw_on_negative(query_length, "query_length has to be non-negative."))
-    , target_(target, target + throw_on_negative(target_length, "target_length has to be non-negative."))
-    , status_(StatusType::uninitialized)
-    , type_(AlignmentType::unset)
-    , alignment_()
-    , is_optimal_(false)
+char alignment_state_to_cigar_state_extended(AlignmentState s)
 {
-    // Initialize Alignment object.
-}
-
-std::string AlignmentImpl::convert_to_cigar() const
-{
-    if (get_size(alignment_) < 1)
+    // CIGAR string format from http://bioinformatics.cvr.ac.uk/blog/tag/cigar-string/
+    // Implementing the set of CIGAR states with =, X, D and I characters,
+    // which distingishes matches and mismatches.
+    switch (s)
     {
-        return std::string("");
+    case AlignmentState::match: return '=';
+    case AlignmentState::mismatch: return 'X';
+    case AlignmentState::insertion: return 'I';
+    case AlignmentState::deletion: return 'D';
+    default: assert(false); return '!';
+    }
+}
+
+template <typename CigarConversionFunction>
+std::string convert_to_cigar_impl(const std::vector<AlignmentState>& alignment, CigarConversionFunction convert_to_cigar)
+{
+    std::string cigar;
+
+    if (get_size(alignment) < 1)
+    {
+        return cigar;
     }
 
-    std::string cigar        = "";
-    char last_cigar_state    = alignment_state_to_cigar_state(alignment_[0]);
+    char last_cigar_state    = convert_to_cigar(alignment[0]);
     int32_t count_last_state = 0;
-    for (auto const& x : alignment_)
+    for (auto const& x : alignment)
     {
-        const char cur_cigar_state = alignment_state_to_cigar_state(x);
+        const char cur_cigar_state = convert_to_cigar(x);
         if (cur_cigar_state == last_cigar_state)
         {
             count_last_state++;
@@ -84,6 +88,27 @@ std::string AlignmentImpl::convert_to_cigar() const
     }
     cigar += std::to_string(count_last_state) + last_cigar_state;
     return cigar;
+}
+
+} // namespace
+
+AlignmentImpl::AlignmentImpl(const char* const query, const int32_t query_length, const char* const target, const int32_t target_length)
+    : query_(query, query + throw_on_negative(query_length, "query_length has to be non-negative."))
+    , target_(target, target + throw_on_negative(target_length, "target_length has to be non-negative."))
+    , status_(StatusType::uninitialized)
+    , type_(AlignmentType::unset)
+    , alignment_()
+    , is_optimal_(false)
+{
+    // Initialize Alignment object.
+}
+
+std::string AlignmentImpl::convert_to_cigar(const CigarFormat format) const
+{
+    if (format == CigarFormat::extended)
+        return convert_to_cigar_impl(alignment_, alignment_state_to_cigar_state_extended);
+    else
+        return convert_to_cigar_impl(alignment_, alignment_state_to_cigar_state);
 }
 
 int32_t AlignmentImpl::get_edit_distance() const
