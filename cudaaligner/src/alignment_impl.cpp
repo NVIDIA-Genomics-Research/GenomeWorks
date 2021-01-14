@@ -48,7 +48,8 @@ char alignment_state_to_cigar_state(AlignmentState s)
 char alignment_state_to_cigar_state_extended(AlignmentState s)
 {
     // CIGAR string format from http://bioinformatics.cvr.ac.uk/blog/tag/cigar-string/
-    // Implementing a reduced set of CIGAR states, covering only the M, D and I characters.
+    // Implementing the set of CIGAR states with =, X, D and I characters,
+    // which distingishes matches and mismatches.
     switch (s)
     {
     case AlignmentState::match: return '=';
@@ -91,7 +92,7 @@ std::string convert_to_cigar_impl(const std::vector<AlignmentState>& alignment, 
 
 } // namespace
 
-AlignmentImpl::AlignmentImpl(const char* query, int32_t query_length, const char* target, int32_t target_length)
+AlignmentImpl::AlignmentImpl(const char* const query, const int32_t query_length, const char* const target, const int32_t target_length)
     : query_(query, query + throw_on_negative(query_length, "query_length has to be non-negative."))
     , target_(target, target + throw_on_negative(target_length, "target_length has to be non-negative."))
     , status_(StatusType::uninitialized)
@@ -102,7 +103,7 @@ AlignmentImpl::AlignmentImpl(const char* query, int32_t query_length, const char
     // Initialize Alignment object.
 }
 
-std::string AlignmentImpl::convert_to_cigar(CigarFormat format) const
+std::string AlignmentImpl::convert_to_cigar(const CigarFormat format) const
 {
     if (format == CigarFormat::extended)
         return convert_to_cigar_impl(alignment_, alignment_state_to_cigar_state_extended);
