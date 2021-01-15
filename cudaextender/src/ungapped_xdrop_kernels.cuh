@@ -18,6 +18,8 @@
 * Sneha Goenka (gsneha@stanford.edu) and Yatish Turakhia (yturakhi@ucsc.edu).
 * Source code for original implementation and use in SegAlign can be found
 * here: https://github.com/gsneha26/SegAlign
+* Description of the algorithm and original implementation can be found in the 
+* SegAlign paper published in SC20 (DOI Bookmark: 10.1109/SC41405.2020.00043)
 */
 #pragma once
 
