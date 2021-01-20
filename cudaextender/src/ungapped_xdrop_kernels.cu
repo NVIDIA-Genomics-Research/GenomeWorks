@@ -286,6 +286,7 @@ __global__ void find_high_scoring_segment_pairs(const int8_t* __restrict__ d_tar
             left_extent[warp_id]    = 0;
         }
 
+#pragma unroll
         for (int32_t i = 0; i < nuc_entropy; i++)
         {
             count_del[i] = 0;
