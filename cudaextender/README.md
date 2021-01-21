@@ -3,9 +3,12 @@
 This package implements CUDA-accelerated seed-extension algorithms that use seed positions in 
 encoded input strands to extend and compute the alignment between the strands. 
 Currently this module implements the ungapped X-drop algorithm, adapted from 
-[SegAlign's](https://github.com/gsneha26/SegAlign) Ungapped Extender published in SC20 
-(DOI Bookmark: 10.1109/SC41405.2020.00043) authored by Sneha Goenka (gsneha@stanford.edu) 
-and Yatish Turakhia (yturakhi@ucsc.edu).
+[SegAlign's](https://github.com/gsneha26/SegAlign) Ungapped Extender  authored by 
+Sneha Goenka (gsneha@stanford.edu) and Yatish Turakhia (yturakhi@ucsc.edu).
+Citing SegAlign: S. Goenka, Y. Turakhia, B. Paten and M. Horowitz,  "SegAlign: A Scalable 
+GPU-Based Whole Genome Aligner," in 2020 SC20: International Conference for High Performance 
+Computing, Networking, Storage and Analysis (SC), Atlanta, GA, US, 2020 pp. 540-552.
+url: https://doi.ieeecomputersociety.org/10.1109/SC41405.2020.00043
 
 ## Library
 Built as `libcudaextender.[so|a]`
