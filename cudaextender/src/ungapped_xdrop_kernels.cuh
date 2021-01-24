@@ -61,8 +61,8 @@ __global__ void compress_output(const int32_t* d_done,
                                 ScoredSegmentPair* d_tmp_ssp,
                                 int num_hits);
 
-// Binary predicate for sorting the ScoredSegmentPairs
-struct scored_segment_pair_equal
+// Binary predicate for determining if the ScoredSegmentPairs overlap (and lie on the same diagonal)
+struct scored_segment_pair_diagonal_overlap
 {
     __host__ __device__ bool operator()(const ScoredSegmentPair& x, const ScoredSegmentPair& y)
     {
@@ -86,31 +86,50 @@ struct scored_segment_pair_comp
 {
     __host__ __device__ bool operator()(const ScoredSegmentPair& x, const ScoredSegmentPair& y)
     {
-        if ((x.seed_pair.target_position_in_read - x.seed_pair.query_position_in_read) < (y.seed_pair.target_position_in_read - y.seed_pair.query_position_in_read))
+        position_in_read_t diag_x = x.seed_pair.target_position_in_read - x.seed_pair.query_position_in_read;
+        position_in_read_t diag_y = y.seed_pair.target_position_in_read - y.seed_pair.query_position_in_read;
+
+        if (diag_x < diag_y)
+        {
             return true;
-        else if ((x.seed_pair.target_position_in_read - x.seed_pair.query_position_in_read) == (y.seed_pair.target_position_in_read - y.seed_pair.query_position_in_read))
+        }
+        else if (diag_x == diag_y)
         {
             if (x.seed_pair.target_position_in_read < y.seed_pair.target_position_in_read)
+            {
                 return true;
+            }
             else if (x.seed_pair.target_position_in_read == y.seed_pair.target_position_in_read)
             {
                 if (x.length > y.length)
+                {
                     return true;
+                }
                 else if (x.length == y.length)
                 {
                     if (x.score > y.score)
+                    {
                         return true;
+                    }
                     else
+                    {
                         return false;
+                    }
                 }
                 else
+                {
                     return false;
+                }
             }
             else
+            {
                 return false;
+            }
         }
         else
+        {
             return false;
+        }
     }
 };
 

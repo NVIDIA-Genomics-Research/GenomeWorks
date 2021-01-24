@@ -170,7 +170,7 @@ StatusType UngappedXDrop::extend_async(const int8_t* d_query, const int32_t quer
                                     d_tmp_ssp_.begin(),
                                     d_tmp_ssp_.begin() + num_scored_segment_pairs,
                                     d_scored_segment_pairs + total_scored_segment_pairs_,
-                                    scored_segment_pair_equal());
+                                    scored_segment_pair_diagonal_overlap());
 
             total_scored_segment_pairs_ += thrust::distance(
                 d_scored_segment_pairs + total_scored_segment_pairs_,
