@@ -76,13 +76,6 @@ UngappedXDrop::UngappedXDrop(const int32_t* h_score_mat, const int32_t score_mat
     //Figure out memory requirements for cub functions
     size_t temp_storage_bytes = 0;
     size_t cub_storage_bytes  = 0;
-    GW_CU_CHECK_ERR(cub::DeviceSelect::Unique(nullptr,
-                                              temp_storage_bytes,
-                                              d_tmp_ssp_.data(),
-                                              d_tmp_ssp_.data(),
-                                              (int32_t*)nullptr,
-                                              batch_max_ungapped_extensions_,
-                                              stream_));
     GW_CU_CHECK_ERR(cub::DeviceScan::InclusiveSum(nullptr,
                                                   cub_storage_bytes,
                                                   d_done_.data(),
