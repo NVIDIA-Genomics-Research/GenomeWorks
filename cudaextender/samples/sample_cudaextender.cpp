@@ -37,7 +37,7 @@ static void print_scored_segment_pairs(const std::vector<ScoredSegmentPair>& sco
     std::cout << "Target Position, Query Position, Length, Score" << std::endl;
     for (const auto& segment : scored_segment_pairs)
     {
-        std::cout << segment.seed_pair.target_position_in_read << "," << segment.seed_pair.query_position_in_read
+        std::cout << segment.start_coord.target_position_in_read << "," << segment.start_coord.query_position_in_read
                   << "," << segment.length << "," << segment.score << std::endl;
     }
 }

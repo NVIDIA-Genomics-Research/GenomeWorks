@@ -67,18 +67,18 @@ struct scored_segment_pair_diagonal_overlap
     __host__ __device__ bool operator()(const ScoredSegmentPair& x, const ScoredSegmentPair& y)
     {
         return ((
-                    (x.seed_pair.target_position_in_read - x.seed_pair.query_position_in_read) == (y.seed_pair.target_position_in_read - y.seed_pair.query_position_in_read))
+                    (x.start_coord.target_position_in_read - x.start_coord.query_position_in_read) == (y.start_coord.target_position_in_read - y.start_coord.query_position_in_read))
 
                 &&
 
                 ((
-                     (x.seed_pair.target_position_in_read >= y.seed_pair.target_position_in_read) &&
-                     ((x.seed_pair.target_position_in_read + x.length) <= (y.seed_pair.target_position_in_read + y.length)))
+                     (x.start_coord.target_position_in_read >= y.start_coord.target_position_in_read) &&
+                     ((x.start_coord.target_position_in_read + x.length) <= (y.start_coord.target_position_in_read + y.length)))
 
                  ||
 
-                 ((y.seed_pair.target_position_in_read >= x.seed_pair.target_position_in_read) &&
-                  ((y.seed_pair.target_position_in_read + y.length) <= (x.seed_pair.target_position_in_read + x.length)))));
+                 ((y.start_coord.target_position_in_read >= x.start_coord.target_position_in_read) &&
+                  ((y.start_coord.target_position_in_read + y.length) <= (x.start_coord.target_position_in_read + x.length)))));
     }
 };
 
@@ -86,8 +86,8 @@ struct scored_segment_pair_comp
 {
     __host__ __device__ bool operator()(const ScoredSegmentPair& x, const ScoredSegmentPair& y)
     {
-        position_in_read_t diag_x = x.seed_pair.target_position_in_read - x.seed_pair.query_position_in_read;
-        position_in_read_t diag_y = y.seed_pair.target_position_in_read - y.seed_pair.query_position_in_read;
+        position_in_read_t diag_x = x.start_coord.target_position_in_read - x.start_coord.query_position_in_read;
+        position_in_read_t diag_y = y.start_coord.target_position_in_read - y.start_coord.query_position_in_read;
 
         if (diag_x < diag_y)
         {
@@ -95,11 +95,11 @@ struct scored_segment_pair_comp
         }
         else if (diag_x == diag_y)
         {
-            if (x.seed_pair.target_position_in_read < y.seed_pair.target_position_in_read)
+            if (x.start_coord.target_position_in_read < y.start_coord.target_position_in_read)
             {
                 return true;
             }
-            else if (x.seed_pair.target_position_in_read == y.seed_pair.target_position_in_read)
+            else if (x.start_coord.target_position_in_read == y.start_coord.target_position_in_read)
             {
                 if (x.length > y.length)
                 {
