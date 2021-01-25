@@ -136,7 +136,7 @@ void set_device_value(Type* dst, const Type& src)
 
 /// Copies elements from the range [src, src + n) to the range [dst, dst + n) asynchronously.
 template <typename Type>
-void device_copy_n(const Type* src, size_t n, Type* dst, cudaStream_t stream)
+void device_copy_n_async(const Type* src, size_t n, Type* dst, cudaStream_t stream)
 {
     GW_CU_CHECK_ERR(cudaMemcpyAsync(dst, src, n * sizeof(Type), cudaMemcpyDefault, stream));
 }

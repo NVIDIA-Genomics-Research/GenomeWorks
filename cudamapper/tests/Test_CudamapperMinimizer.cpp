@@ -43,13 +43,13 @@ void test_function(const std::uint64_t number_of_reads_to_add,
     CudaStream cuda_stream = make_cuda_stream();
 
     device_buffer<char> merged_basepairs_d(merged_basepairs_h.size(), allocator, cuda_stream.get());
-    cudautils::device_copy_n(merged_basepairs_h.data(),
+    cudautils::device_copy_n_async(merged_basepairs_h.data(),
                              merged_basepairs_h.size(),
                              merged_basepairs_d.data(),
                              cuda_stream.get());
 
     device_buffer<ArrayBlock> read_id_to_basepairs_section_d(read_id_to_basepairs_section_h.size(), allocator, cuda_stream.get());
-    cudautils::device_copy_n(read_id_to_basepairs_section_h.data(),
+    cudautils::device_copy_n_async(read_id_to_basepairs_section_h.data(),
                              read_id_to_basepairs_section_h.size(),
                              read_id_to_basepairs_section_d.data(),
                              cuda_stream.get());
@@ -67,13 +67,13 @@ void test_function(const std::uint64_t number_of_reads_to_add,
 
     device_buffer<representation_t> representations_d = std::move(sketch_elements.representations_d);
     std::vector<representation_t> representations_h(representations_d.size());
-    cudautils::device_copy_n(representations_d.data(),
+    cudautils::device_copy_n_async(representations_d.data(),
                              representations_d.size(),
                              representations_h.data(),
                              cuda_stream.get());
     device_buffer<Minimizer::ReadidPositionDirection> rest_d = std::move(sketch_elements.rest_d);
     std::vector<Minimizer::ReadidPositionDirection> rest_h(rest_d.size());
-    cudautils::device_copy_n(rest_d.data(),
+    cudautils::device_copy_n_async(rest_d.data(),
                              rest_d.size(),
                              rest_h.data(), cuda_stream.get());
     GW_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream.get()));

@@ -81,32 +81,32 @@ IndexHostCopy::IndexHostCopy(const Index& index,
     // register pinned memory, memory gets unpinned in finish_copying()
     memory_pinner_.register_pinned_memory();
 
-    cudautils::device_copy_n(index.representations().data(),
+    cudautils::device_copy_n_async(index.representations().data(),
                              index.representations().size(),
                              representations_.data,
                              cuda_stream_);
 
-    cudautils::device_copy_n(index.read_ids().data(),
+    cudautils::device_copy_n_async(index.read_ids().data(),
                              index.read_ids().size(),
                              read_ids_.data,
                              cuda_stream_);
 
-    cudautils::device_copy_n(index.positions_in_reads().data(),
+    cudautils::device_copy_n_async(index.positions_in_reads().data(),
                              index.positions_in_reads().size(),
                              positions_in_reads_.data,
                              cuda_stream_);
 
-    cudautils::device_copy_n(index.directions_of_reads().data(),
+    cudautils::device_copy_n_async(index.directions_of_reads().data(),
                              index.directions_of_reads().size(),
                              directions_of_reads_.data,
                              cuda_stream_);
 
-    cudautils::device_copy_n(index.unique_representations().data(),
+    cudautils::device_copy_n_async(index.unique_representations().data(),
                              index.unique_representations().size(),
                              unique_representations_.data,
                              cuda_stream_);
 
-    cudautils::device_copy_n(index.first_occurrence_of_representations().data(),
+    cudautils::device_copy_n_async(index.first_occurrence_of_representations().data(),
                              index.first_occurrence_of_representations().size(),
                              first_occurrence_of_representations_.data,
                              cuda_stream_);
