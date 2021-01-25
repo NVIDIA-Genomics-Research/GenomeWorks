@@ -31,7 +31,6 @@
 #include <thrust/sort.h>
 #include <thrust/unique.h>
 
-#include <cub/device/device_select.cuh>
 #include <cub/device/device_scan.cuh>
 
 namespace claraparabricks
