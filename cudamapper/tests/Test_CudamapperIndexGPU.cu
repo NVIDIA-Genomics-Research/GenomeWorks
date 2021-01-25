@@ -186,9 +186,9 @@ void test_find_first_occurrences_of_representations(const thrust::host_vector<re
 
     device_buffer<representation_t> representations_d(representations_h.size(), allocator, cuda_stream.get());
     cudautils::device_copy_n_async(representations_h.data(),
-                             representations_h.size(),
-                             representations_d.data(),
-                             cuda_stream.get()); // H2D
+                                   representations_h.size(),
+                                   representations_d.data(),
+                                   cuda_stream.get()); // H2D
 
     device_buffer<std::uint32_t> starting_index_of_each_representation_d(allocator, cuda_stream.get());
     device_buffer<representation_t> unique_representations_d(allocator, cuda_stream.get());
@@ -201,14 +201,14 @@ void test_find_first_occurrences_of_representations(const thrust::host_vector<re
 
     thrust::host_vector<std::uint32_t> starting_index_of_each_representation_h(starting_index_of_each_representation_d.size());
     cudautils::device_copy_n_async(starting_index_of_each_representation_d.data(),
-                             starting_index_of_each_representation_d.size(),
-                             starting_index_of_each_representation_h.data(),
-                             cuda_stream.get()); // D2H
+                                   starting_index_of_each_representation_d.size(),
+                                   starting_index_of_each_representation_h.data(),
+                                   cuda_stream.get()); // D2H
     thrust::host_vector<representation_t> unique_representations_h(unique_representations_d.size());
     cudautils::device_copy_n_async(unique_representations_d.data(),
-                             unique_representations_d.size(),
-                             unique_representations_h.data(),
-                             cuda_stream.get()); //D2H
+                                   unique_representations_d.size(),
+                                   unique_representations_h.data(),
+                                   cuda_stream.get()); //D2H
     GW_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream.get()));
 
     ASSERT_EQ(starting_index_of_each_representation_h.size(), expected_starting_index_of_each_representation_h.size());

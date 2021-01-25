@@ -82,34 +82,34 @@ IndexHostCopy::IndexHostCopy(const Index& index,
     memory_pinner_.register_pinned_memory();
 
     cudautils::device_copy_n_async(index.representations().data(),
-                             index.representations().size(),
-                             representations_.data,
-                             cuda_stream_);
+                                   index.representations().size(),
+                                   representations_.data,
+                                   cuda_stream_);
 
     cudautils::device_copy_n_async(index.read_ids().data(),
-                             index.read_ids().size(),
-                             read_ids_.data,
-                             cuda_stream_);
+                                   index.read_ids().size(),
+                                   read_ids_.data,
+                                   cuda_stream_);
 
     cudautils::device_copy_n_async(index.positions_in_reads().data(),
-                             index.positions_in_reads().size(),
-                             positions_in_reads_.data,
-                             cuda_stream_);
+                                   index.positions_in_reads().size(),
+                                   positions_in_reads_.data,
+                                   cuda_stream_);
 
     cudautils::device_copy_n_async(index.directions_of_reads().data(),
-                             index.directions_of_reads().size(),
-                             directions_of_reads_.data,
-                             cuda_stream_);
+                                   index.directions_of_reads().size(),
+                                   directions_of_reads_.data,
+                                   cuda_stream_);
 
     cudautils::device_copy_n_async(index.unique_representations().data(),
-                             index.unique_representations().size(),
-                             unique_representations_.data,
-                             cuda_stream_);
+                                   index.unique_representations().size(),
+                                   unique_representations_.data,
+                                   cuda_stream_);
 
     cudautils::device_copy_n_async(index.first_occurrence_of_representations().data(),
-                             index.first_occurrence_of_representations().size(),
-                             first_occurrence_of_representations_.data,
-                             cuda_stream_);
+                                   index.first_occurrence_of_representations().size(),
+                                   first_occurrence_of_representations_.data,
+                                   cuda_stream_);
 
     number_of_reads_                     = index.number_of_reads();
     number_of_basepairs_in_longest_read_ = index.number_of_basepairs_in_longest_read();

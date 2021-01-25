@@ -882,14 +882,14 @@ void IndexGPU<SketchElementImpl>::generate_index(const io::FastaParser& parser,
     {
         GW_NVTX_RANGE(profiler, "IndexGPU::generate_index::move_basepairs_to_gpu");
         cudautils::device_copy_n_async(read_id_to_basepairs_section_h.data(),
-                                 read_id_to_basepairs_section_h.size(),
-                                 read_id_to_basepairs_section_d.data(),
-                                 cuda_stream); // H2D
+                                       read_id_to_basepairs_section_h.size(),
+                                       read_id_to_basepairs_section_d.data(),
+                                       cuda_stream); // H2D
 
         cudautils::device_copy_n_async(merged_basepairs_h.data(),
-                                 merged_basepairs_h.size(),
-                                 merged_basepairs_d.data(),
-                                 cuda_stream); // H2D
+                                       merged_basepairs_h.size(),
+                                       merged_basepairs_d.data(),
+                                       cuda_stream); // H2D
     }
 
     // sketch elements get generated here
