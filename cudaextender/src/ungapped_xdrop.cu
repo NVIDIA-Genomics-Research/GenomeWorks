@@ -94,7 +94,7 @@ UngappedXDrop::UngappedXDrop(const int32_t* h_score_mat, const int32_t score_mat
     d_done_             = device_buffer<int32_t>(batch_max_ungapped_extensions_, allocator_, stream_);
     d_tmp_ssp_          = device_buffer<ScoredSegmentPair>(batch_max_ungapped_extensions_, allocator_, stream_);
     d_temp_storage_cub_ = device_buffer<int8_t>(cub_storage_bytes, allocator_, stream_);
-    device_copy_n(h_score_mat_.data(), score_mat_dim_, d_score_mat_.data(), stream_);
+    device_copy_n_async(h_score_mat_.data(), score_mat_dim_, d_score_mat_.data(), stream_);
 }
 
 StatusType UngappedXDrop::extend_async(const int8_t* d_query, const int32_t query_length,
@@ -196,9 +196,9 @@ StatusType UngappedXDrop::extend_async(const int8_t* h_query, const int32_t quer
     d_num_ssp_ = device_buffer<int32_t>(1, allocator_, stream_);
 
     // Async memcopy all the input values to device
-    device_copy_n(h_query, query_length, d_query_.data(), stream_);
-    device_copy_n(h_target, target_length, d_target_.data(), stream_);
-    device_copy_n(h_seed_pairs.data(), h_seed_pairs.size(), d_seed_pairs_.data(), stream_);
+    device_copy_n_async(h_query, query_length, d_query_.data(), stream_);
+    device_copy_n_async(h_target, target_length, d_target_.data(), stream_);
+    device_copy_n_async(h_seed_pairs.data(), h_seed_pairs.size(), d_seed_pairs_.data(), stream_);
 
     // Launch the ungapped extender device function
     return extend_async(d_query_.data(), query_length,
@@ -216,7 +216,7 @@ StatusType UngappedXDrop::sync()
         if (h_num_ssp > 0)
         {
             h_ssp_.resize(h_num_ssp);
-            device_copy_n(d_ssp_.data(), h_num_ssp, h_ssp_.data(), stream_);
+            device_copy_n_async(d_ssp_.data(), h_num_ssp, h_ssp_.data(), stream_);
             GW_CU_CHECK_ERR(cudaStreamSynchronize(stream_));
         }
         return StatusType::success;

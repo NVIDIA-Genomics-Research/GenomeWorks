@@ -181,7 +181,7 @@ TEST_P(TestMyersBandedMatrixDeltas, TestCases)
     // Test if adjacent matrix entries
     // do not differ by more than delta = +/-1.
 
-    using cudautils::device_copy_n;
+    using cudautils::device_copy_n_async;
     using cudautils::set_device_value;
     using myers::word_size;
     using myers::WordType;
@@ -198,8 +198,8 @@ TEST_P(TestMyersBandedMatrixDeltas, TestCases)
     const int32_t target_size = get_size<int32_t>(t.target);
     device_buffer<char> query_d(query_size, allocator, stream.get());
     device_buffer<char> target_d(target_size, allocator, stream.get());
-    device_copy_n(t.query.c_str(), query_size, query_d.data(), stream.get());
-    device_copy_n(t.target.c_str(), target_size, target_d.data(), stream.get());
+    device_copy_n_async(t.query.c_str(), query_size, query_d.data(), stream.get());
+    device_copy_n_async(t.target.c_str(), target_size, target_d.data(), stream.get());
 
     GW_CU_CHECK_ERR(cudaStreamSynchronize(stream.get()));
 
