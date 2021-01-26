@@ -149,16 +149,8 @@ StatusType AlignerGlobal::align_all()
     scoped_device_switch dev(device_id_);
     const int32_t max_alignment_length = std::max(max_query_length_, max_target_length_);
     const int32_t max_result_length    = calc_max_result_length(max_query_length_, max_target_length_);
-    GW_CU_CHECK_ERR(cudaMemcpyAsync(sequence_lengths_d_.data(),
-                                    sequence_lengths_h_.data(),
-                                    2 * sizeof(int32_t) * num_alignments,
-                                    cudaMemcpyHostToDevice,
-                                    stream_));
-    GW_CU_CHECK_ERR(cudaMemcpyAsync(sequences_d_.data(),
-                                    sequences_h_.data(),
-                                    2 * sizeof(char) * max_alignment_length * num_alignments,
-                                    cudaMemcpyHostToDevice,
-                                    stream_));
+    cudautils::device_copy_n_async<int32_t>(sequence_lengths_h_.data(), 2 * num_alignments, sequence_lengths_d_.data(), stream_);
+    cudautils::device_copy_n_async<char>(sequences_h_.data(), 2 * max_alignment_length * num_alignments, sequences_d_.data(), stream_);
 
     // Run kernel
     run_alignment(results_d_.data(), result_lengths_d_.data(),
@@ -167,16 +159,8 @@ StatusType AlignerGlobal::align_all()
                   num_alignments,
                   stream_);
 
-    GW_CU_CHECK_ERR(cudaMemcpyAsync(results_h_.data(),
-                                    results_d_.data(),
-                                    sizeof(int8_t) * max_result_length * num_alignments,
-                                    cudaMemcpyDeviceToHost,
-                                    stream_));
-    GW_CU_CHECK_ERR(cudaMemcpyAsync(result_lengths_h_.data(),
-                                    result_lengths_d_.data(),
-                                    sizeof(int32_t) * num_alignments,
-                                    cudaMemcpyDeviceToHost,
-                                    stream_));
+    cudautils::device_copy_n_async<int8_t>(results_d_.data(), max_result_length * num_alignments, results_h_.data(), stream_);
+    cudautils::device_copy_n_async<int32_t>(result_lengths_d_.data(), num_alignments, result_lengths_h_.data(), stream_);
     return StatusType::success;
 }
 
