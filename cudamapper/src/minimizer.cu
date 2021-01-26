@@ -899,10 +899,10 @@ Minimizer::GeneratedSketchElements Minimizer::generate_sketch_elements(DefaultDe
     }
 
     device_buffer<decltype(read_id_to_windows_section_h)::value_type> read_id_to_windows_section_d(read_id_to_windows_section_h.size(), allocator, cuda_stream);
-    cudautils::device_copy_n(read_id_to_windows_section_h.data(),
-                             read_id_to_windows_section_h.size(),
-                             read_id_to_windows_section_d.data(),
-                             cuda_stream); // H2D
+    cudautils::device_copy_n_async(read_id_to_windows_section_h.data(),
+                                   read_id_to_windows_section_h.size(),
+                                   read_id_to_windows_section_d.data(),
+                                   cuda_stream); // H2D
 
     device_buffer<representation_t> window_minimizers_representation_d(total_windows, allocator, cuda_stream);
     device_buffer<char> window_minimizers_direction_d(total_windows, allocator, cuda_stream);
