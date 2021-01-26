@@ -172,12 +172,12 @@ matrix<int> ukkonen_gpu_build_score_matrix(const std::string& target, const std:
     std::vector<int32_t> path_length_h(1);
 
     device_buffer<char> sequences_d(2 * max_alignment_length, allocator);
-    cudautils::device_copy_n<char>(query.c_str(), query_length, sequences_d.data());
-    cudautils::device_copy_n<char>(target.c_str(), target_length, sequences_d.data() + max_alignment_length);
+    cudautils::device_copy_n(query.c_str(), query_length, sequences_d.data());
+    cudautils::device_copy_n(target.c_str(), target_length, sequences_d.data() + max_alignment_length);
 
     device_buffer<int32_t> sequence_lengths_d(2, allocator);
-    cudautils::device_copy_n<int32_t>(&query_length, 1, sequence_lengths_d.data());
-    cudautils::device_copy_n<int32_t>(&target_length, 1, sequence_lengths_d.data() + 1);
+    cudautils::device_copy_n(&query_length, 1, sequence_lengths_d.data());
+    cudautils::device_copy_n(&target_length, 1, sequence_lengths_d.data() + 1);
 
     ukkonen_compute_score_matrix_gpu(*score_matrices.get(),
                                      sequences_d.data(), sequence_lengths_d.data(),
@@ -253,12 +253,12 @@ std::vector<int8_t> run_ukkonen_gpu(const std::string& target, const std::string
     std::vector<int32_t> path_length_h(1);
 
     device_buffer<char> sequences_d(2 * max_alignment_length, allocator);
-    cudautils::device_copy_n<char>(query.c_str(), query_length, sequences_d.data());
-    cudautils::device_copy_n<char>(target.c_str(), target_length, sequences_d.data() + max_alignment_length);
+    cudautils::device_copy_n(query.c_str(), query_length, sequences_d.data());
+    cudautils::device_copy_n(target.c_str(), target_length, sequences_d.data() + max_alignment_length);
 
     device_buffer<int32_t> sequence_lengths_d(2, allocator);
-    cudautils::device_copy_n<int32_t>(&query_length, 1, sequence_lengths_d.data());
-    cudautils::device_copy_n<int32_t>(&target_length, 1, sequence_lengths_d.data() + 1);
+    cudautils::device_copy_n(&query_length, 1, sequence_lengths_d.data());
+    cudautils::device_copy_n(&target_length, 1, sequence_lengths_d.data() + 1);
 
     // Run kernel
     ukkonen_gpu(path_d.data(), path_length_d.data(), max_path_length,
@@ -269,8 +269,8 @@ std::vector<int8_t> run_ukkonen_gpu(const std::string& target, const std::string
                 nullptr);
 
     // Get results
-    cudautils::device_copy_n<int8_t>(path_d.data(), max_path_length, path_h.data());
-    cudautils::device_copy_n<int32_t>(path_length_d.data(), 1, path_length_h.data());
+    cudautils::device_copy_n(path_d.data(), max_path_length, path_h.data());
+    cudautils::device_copy_n(path_length_d.data(), 1, path_length_h.data());
 
     std::vector<int8_t> bt;
     for (int32_t l = 0; l < path_length_h[0]; l++)
