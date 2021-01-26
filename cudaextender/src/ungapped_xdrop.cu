@@ -74,15 +74,13 @@ UngappedXDrop::UngappedXDrop(const int32_t* h_score_mat, const int32_t score_mat
     batch_max_ungapped_extensions_    = static_cast<int32_t>(global_mem_gb) * max_ungapped_per_gb;
 
     //Figure out memory requirements for cub functions
-    size_t temp_storage_bytes = 0;
-    size_t cub_storage_bytes  = 0;
+    size_t cub_storage_bytes = 0;
     GW_CU_CHECK_ERR(cub::DeviceScan::InclusiveSum(nullptr,
                                                   cub_storage_bytes,
                                                   d_done_.data(),
                                                   d_done_.data(),
                                                   batch_max_ungapped_extensions_,
                                                   stream_));
-    cub_storage_bytes = std::max(temp_storage_bytes, cub_storage_bytes);
 
     // Allocate space on device for scoring matrix and intermediate results
     d_score_mat_        = device_buffer<int32_t>(score_mat_dim_, allocator_, stream_);
