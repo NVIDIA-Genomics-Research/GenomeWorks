@@ -59,7 +59,8 @@ typedef struct AlignmentTestData
     std::vector<AlignmentState> alignment;
     bool is_optimal;
     FormattedAlignment formatted_alignment;
-    std::string cigar;
+    std::string cigar_basic;
+    std::string cigar_extended;
 } AlignmentTestData;
 
 std::vector<AlignmentTestData> create_alignment_test_cases()
@@ -78,7 +79,8 @@ std::vector<AlignmentTestData> create_alignment_test_cases()
         AlignmentState::insertion};
     data.is_optimal          = true;
     data.formatted_alignment = FormattedAlignment{"AAAA-", "xx|x ", "TTATG"};
-    data.cigar               = "4M1I";
+    data.cigar_basic         = "4M1I";
+    data.cigar_extended      = "2X1=1X1I";
     test_cases.push_back(data);
 
     // Test case 2
@@ -95,7 +97,8 @@ std::vector<AlignmentTestData> create_alignment_test_cases()
         AlignmentState::deletion};
     data.is_optimal          = true;
     data.formatted_alignment = FormattedAlignment{"CGATAATG", " x||||  ", "-CATAA--"};
-    data.cigar               = "1D5M2D";
+    data.cigar_basic         = "1D5M2D";
+    data.cigar_extended      = "1D1X4=2D";
     test_cases.push_back(data);
 
     // Test case 3
@@ -115,7 +118,8 @@ std::vector<AlignmentTestData> create_alignment_test_cases()
     };
     data.is_optimal          = true;
     data.formatted_alignment = FormattedAlignment{"--GT-TAG--", "  || |||  ", "AAGTCTAGAA"};
-    data.cigar               = "2I2M1I3M2I";
+    data.cigar_basic         = "2I2M1I3M2I";
+    data.cigar_extended      = "2I2=1I3=2I";
     test_cases.push_back(data);
 
     // Test case 4
@@ -131,7 +135,8 @@ std::vector<AlignmentTestData> create_alignment_test_cases()
         AlignmentState::match};
     data.is_optimal          = false; // this example is optimal, but is_optimal = false does only mean it is an upper bound
     data.formatted_alignment = FormattedAlignment{"G-TTACA", "| || ||", "GATT-CA"};
-    data.cigar               = "1M1I2M1D2M";
+    data.cigar_basic         = "1M1I2M1D2M";
+    data.cigar_extended      = "1=1I2=1D2=";
     test_cases.push_back(data);
 
     return test_cases;
@@ -184,10 +189,16 @@ TEST_P(TestAlignmentImpl, AlignmentFormatting)
     ASSERT_EQ(param_.formatted_alignment.target, formatted_alignment.target);
 }
 
-TEST_P(TestAlignmentImpl, CigarFormatting)
+TEST_P(TestAlignmentImpl, CigarFormattingBasic)
 {
-    std::string cigar = alignment_->convert_to_cigar();
-    ASSERT_EQ(param_.cigar, cigar);
+    std::string cigar = alignment_->convert_to_cigar(CigarFormat::basic);
+    ASSERT_EQ(param_.cigar_basic, cigar);
+}
+
+TEST_P(TestAlignmentImpl, CigarFormattingExtended)
+{
+    std::string cigar = alignment_->convert_to_cigar(CigarFormat::extended);
+    ASSERT_EQ(param_.cigar_extended, cigar);
 }
 
 INSTANTIATE_TEST_SUITE_P(TestAlignment, TestAlignmentImpl, ValuesIn(create_alignment_test_cases()));

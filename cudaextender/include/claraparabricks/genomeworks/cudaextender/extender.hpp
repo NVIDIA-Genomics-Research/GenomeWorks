@@ -44,8 +44,8 @@ struct SeedPair
 /// Segment pairs in target & query reads with associated length & score
 struct ScoredSegmentPair
 {
-    /// seed for the segment
-    SeedPair seed_pair;
+    /// leftmost coordinate for the segment
+    SeedPair start_coord;
     /// length of the segment
     int32_t length;
     /// score of the segment
@@ -55,7 +55,7 @@ struct ScoredSegmentPair
 /// Equality operator for ScoredSegmentPair
 __host__ __device__ inline bool operator==(const ScoredSegmentPair& x, const ScoredSegmentPair& y)
 {
-    return ((x.seed_pair.target_position_in_read == y.seed_pair.target_position_in_read) && (x.seed_pair.query_position_in_read == y.seed_pair.query_position_in_read) && (x.length == y.length) && (x.score == y.score));
+    return ((x.start_coord.target_position_in_read == y.start_coord.target_position_in_read) && (x.start_coord.query_position_in_read == y.start_coord.query_position_in_read) && (x.length == y.length) && (x.score == y.score));
 }
 
 /// CUDA Extender Class

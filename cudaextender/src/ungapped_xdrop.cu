@@ -15,9 +15,11 @@
 */
 /*
 * This algorithm was adapted from SegAlign's Ungapped Extender authored by
-* Sneha Goenka (gsneha@stanford.edu) and Yatish Turakhia (yturakhi@uscs.edu).
+* Sneha Goenka (gsneha@stanford.edu) and Yatish Turakhia (yturakhi@ucsc.edu).
 * Source code for original implementation and use in SegAlign can be found
 * here: https://github.com/gsneha26/SegAlign
+* Description of the algorithm and original implementation can be found in the SegAlign 
+* paper published in SC20 (https://doi.ieeecomputersociety.org/10.1109/SC41405.2020.00043)
 */
 #include "ungapped_xdrop.cuh"
 #include "ungapped_xdrop_kernels.cuh"
@@ -27,8 +29,8 @@
 
 #include <thrust/system/cuda/execution_policy.h>
 #include <thrust/sort.h>
+#include <thrust/unique.h>
 
-#include <cub/device/device_select.cuh>
 #include <cub/device/device_scan.cuh>
 
 namespace claraparabricks
@@ -72,29 +74,20 @@ UngappedXDrop::UngappedXDrop(const int32_t* h_score_mat, const int32_t score_mat
     batch_max_ungapped_extensions_    = static_cast<int32_t>(global_mem_gb) * max_ungapped_per_gb;
 
     //Figure out memory requirements for cub functions
-    size_t temp_storage_bytes = 0;
-    size_t cub_storage_bytes  = 0;
-    GW_CU_CHECK_ERR(cub::DeviceSelect::Unique(nullptr,
-                                              temp_storage_bytes,
-                                              d_tmp_ssp_.data(),
-                                              d_tmp_ssp_.data(),
-                                              (int32_t*)nullptr,
-                                              batch_max_ungapped_extensions_,
-                                              stream_));
+    size_t cub_storage_bytes = 0;
     GW_CU_CHECK_ERR(cub::DeviceScan::InclusiveSum(nullptr,
                                                   cub_storage_bytes,
                                                   d_done_.data(),
                                                   d_done_.data(),
                                                   batch_max_ungapped_extensions_,
                                                   stream_));
-    cub_storage_bytes = std::max(temp_storage_bytes, cub_storage_bytes);
 
     // Allocate space on device for scoring matrix and intermediate results
     d_score_mat_        = device_buffer<int32_t>(score_mat_dim_, allocator_, stream_);
     d_done_             = device_buffer<int32_t>(batch_max_ungapped_extensions_, allocator_, stream_);
     d_tmp_ssp_          = device_buffer<ScoredSegmentPair>(batch_max_ungapped_extensions_, allocator_, stream_);
     d_temp_storage_cub_ = device_buffer<int8_t>(cub_storage_bytes, allocator_, stream_);
-    device_copy_n(h_score_mat_.data(), score_mat_dim_, d_score_mat_.data(), stream_);
+    device_copy_n_async(h_score_mat_.data(), score_mat_dim_, d_score_mat_.data(), stream_);
 }
 
 StatusType UngappedXDrop::extend_async(const int8_t* d_query, const int32_t query_length,
@@ -161,14 +154,17 @@ StatusType UngappedXDrop::extend_async(const int8_t* d_query, const int32_t quer
                                 d_tmp_ssp_.begin(),
                                 d_tmp_ssp_.begin() + num_scored_segment_pairs,
                                 scored_segment_pair_comp());
-            GW_CU_CHECK_ERR(cub::DeviceSelect::Unique(d_temp_storage_cub_.data(),
-                                                      cub_storage_bytes,
-                                                      d_tmp_ssp_.data(),
-                                                      d_scored_segment_pairs + total_scored_segment_pairs_,
-                                                      d_num_scored_segment_pairs,
-                                                      num_scored_segment_pairs,
-                                                      stream_))
-            total_scored_segment_pairs_ += get_value_from_device(d_num_scored_segment_pairs, stream_);
+
+            ScoredSegmentPair* result_end =
+                thrust::unique_copy(thrust::cuda::par(allocator_).on(stream_),
+                                    d_tmp_ssp_.begin(),
+                                    d_tmp_ssp_.begin() + num_scored_segment_pairs,
+                                    d_scored_segment_pairs + total_scored_segment_pairs_,
+                                    scored_segment_pair_diagonal_overlap());
+
+            total_scored_segment_pairs_ += thrust::distance(
+                d_scored_segment_pairs + total_scored_segment_pairs_,
+                result_end);
         }
     }
 
@@ -196,9 +192,9 @@ StatusType UngappedXDrop::extend_async(const int8_t* h_query, const int32_t quer
     d_num_ssp_ = device_buffer<int32_t>(1, allocator_, stream_);
 
     // Async memcopy all the input values to device
-    device_copy_n(h_query, query_length, d_query_.data(), stream_);
-    device_copy_n(h_target, target_length, d_target_.data(), stream_);
-    device_copy_n(h_seed_pairs.data(), h_seed_pairs.size(), d_seed_pairs_.data(), stream_);
+    device_copy_n_async(h_query, query_length, d_query_.data(), stream_);
+    device_copy_n_async(h_target, target_length, d_target_.data(), stream_);
+    device_copy_n_async(h_seed_pairs.data(), h_seed_pairs.size(), d_seed_pairs_.data(), stream_);
 
     // Launch the ungapped extender device function
     return extend_async(d_query_.data(), query_length,
@@ -216,7 +212,7 @@ StatusType UngappedXDrop::sync()
         if (h_num_ssp > 0)
         {
             h_ssp_.resize(h_num_ssp);
-            device_copy_n(d_ssp_.data(), h_num_ssp, h_ssp_.data(), stream_);
+            device_copy_n_async(d_ssp_.data(), h_num_ssp, h_ssp_.data(), stream_);
             GW_CU_CHECK_ERR(cudaStreamSynchronize(stream_));
         }
         return StatusType::success;
