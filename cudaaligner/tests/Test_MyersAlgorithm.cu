@@ -224,6 +224,7 @@ TEST_P(TestMyersBandedMatrixDeltas, TestCases)
         pvs.get_device_interface(), mvs.get_device_interface(),
         scores.get_device_interface(), query_patterns.get_device_interface(),
         target_d.data(), query_d.data(), target_size, query_size, band_width, p);
+    GW_CU_CHECK_ERR(cudaPeekAtLastError());
 
     const int32_t n_rows             = n_words_band;
     const int32_t n_cols             = target_size + 1;

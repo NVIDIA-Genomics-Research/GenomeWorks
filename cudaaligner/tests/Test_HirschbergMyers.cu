@@ -64,6 +64,7 @@ matrix<WordType> compute_myers_preprocess_matrix(std::string query_host)
 
     batched_device_matrices<WordType> query_pattern(1, 8 * n_words, allocator, stream);
     myers_preprocess_kernel<<<1, 32>>>(query_pattern.get_device_interface(), query.data(), query.size());
+    GW_CU_CHECK_ERR(cudaPeekAtLastError());
     return query_pattern.get_matrix(0, n_words, 8, stream);
 }
 
@@ -77,9 +78,11 @@ std::vector<WordType> myers_get_query_pattern_test(std::string query_host, int32
     GW_CU_CHECK_ERR(cudaMemcpy(query.data(), query_host.data(), sizeof(char) * query.size(), cudaMemcpyHostToDevice));
     batched_device_matrices<WordType> query_pattern(1, 8 * n_words, allocator, stream);
     myers_preprocess_kernel<<<1, 32>>>(query_pattern.get_device_interface(), query.data(), query.size());
+    GW_CU_CHECK_ERR(cudaPeekAtLastError());
 
     device_buffer<WordType> result(32, allocator);
     myers_get_query_pattern_test_kernel<<<1, 32>>>(n_words, result.data(), query_pattern.get_device_interface(), idx, x, reverse);
+    GW_CU_CHECK_ERR(cudaPeekAtLastError());
 
     std::vector<WordType> result_host(result.size());
     cudaMemcpy(result_host.data(), result.data(), sizeof(WordType) * result.size(), cudaMemcpyDeviceToHost);
