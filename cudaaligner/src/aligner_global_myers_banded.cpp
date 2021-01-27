@@ -76,7 +76,7 @@ memory_distribution split_available_memory(const int64_t max_device_memory, cons
 
     const float mem_req_total_per_bp = 2 * mem_req_sequence + mem_req_results + mem_req_query_patterns + 2 * mem_req_pmvs_matrix + mem_req_score_matrix;
 
-    const float fmax_device_memory = static_cast<float>(max_device_memory) * 0.95; // reserve 5% for misc
+    const float fmax_device_memory = static_cast<float>(max_device_memory) * 0.95f; // reserve 5% for misc
 
     memory_distribution r;
     r.sequence_memory       = static_cast<int64_t>(fmax_device_memory / mem_req_total_per_bp * mem_req_sequence);
