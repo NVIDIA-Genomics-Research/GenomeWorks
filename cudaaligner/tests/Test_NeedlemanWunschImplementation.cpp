@@ -172,12 +172,12 @@ matrix<int> ukkonen_gpu_build_score_matrix(const std::string& target, const std:
     std::vector<int32_t> path_length_h(1);
 
     device_buffer<char> sequences_d(2 * max_alignment_length, allocator);
-    GW_CU_CHECK_ERR(cudaMemcpy(sequences_d.data(), query.c_str(), sizeof(char) * query_length, cudaMemcpyHostToDevice));
-    GW_CU_CHECK_ERR(cudaMemcpy(sequences_d.data() + max_alignment_length, target.c_str(), sizeof(char) * target_length, cudaMemcpyHostToDevice));
+    cudautils::device_copy_n(query.c_str(), query_length, sequences_d.data());
+    cudautils::device_copy_n(target.c_str(), target_length, sequences_d.data() + max_alignment_length);
 
     device_buffer<int32_t> sequence_lengths_d(2, allocator);
-    GW_CU_CHECK_ERR(cudaMemcpy(sequence_lengths_d.data(), &query_length, sizeof(int32_t) * 1, cudaMemcpyHostToDevice));
-    GW_CU_CHECK_ERR(cudaMemcpy(sequence_lengths_d.data() + 1, &target_length, sizeof(int32_t) * 1, cudaMemcpyHostToDevice));
+    cudautils::set_device_value(sequence_lengths_d.data(), query_length);
+    cudautils::set_device_value(sequence_lengths_d.data() + 1, target_length);
 
     ukkonen_compute_score_matrix_gpu(*score_matrices.get(),
                                      sequences_d.data(), sequence_lengths_d.data(),
@@ -253,12 +253,12 @@ std::vector<int8_t> run_ukkonen_gpu(const std::string& target, const std::string
     std::vector<int32_t> path_length_h(1);
 
     device_buffer<char> sequences_d(2 * max_alignment_length, allocator);
-    GW_CU_CHECK_ERR(cudaMemcpy(sequences_d.data(), query.c_str(), sizeof(char) * query_length, cudaMemcpyHostToDevice));
-    GW_CU_CHECK_ERR(cudaMemcpy(sequences_d.data() + max_alignment_length, target.c_str(), sizeof(char) * target_length, cudaMemcpyHostToDevice));
+    cudautils::device_copy_n(query.c_str(), query_length, sequences_d.data());
+    cudautils::device_copy_n(target.c_str(), target_length, sequences_d.data() + max_alignment_length);
 
     device_buffer<int32_t> sequence_lengths_d(2, allocator);
-    GW_CU_CHECK_ERR(cudaMemcpy(sequence_lengths_d.data(), &query_length, sizeof(int32_t) * 1, cudaMemcpyHostToDevice));
-    GW_CU_CHECK_ERR(cudaMemcpy(sequence_lengths_d.data() + 1, &target_length, sizeof(int32_t) * 1, cudaMemcpyHostToDevice));
+    cudautils::set_device_value(sequence_lengths_d.data(), query_length);
+    cudautils::set_device_value(sequence_lengths_d.data() + 1, target_length);
 
     // Run kernel
     ukkonen_gpu(path_d.data(), path_length_d.data(), max_path_length,
@@ -269,8 +269,8 @@ std::vector<int8_t> run_ukkonen_gpu(const std::string& target, const std::string
                 nullptr);
 
     // Get results
-    GW_CU_CHECK_ERR(cudaMemcpy(path_h.data(), path_d.data(), sizeof(int8_t) * max_path_length, cudaMemcpyDeviceToHost));
-    GW_CU_CHECK_ERR(cudaMemcpy(path_length_h.data(), path_length_d.data(), sizeof(int32_t) * 1, cudaMemcpyDeviceToHost));
+    cudautils::device_copy_n(path_d.data(), max_path_length, path_h.data());
+    cudautils::device_copy_n(path_length_d.data(), 1, path_length_h.data());
 
     std::vector<int8_t> bt;
     for (int32_t l = 0; l < path_length_h[0]; l++)

@@ -78,6 +78,7 @@ void find_first_occurrences_of_representations(DefaultDeviceAllocator allocator,
                                                                                                               representation_index_mask_d.size(),
                                                                                                               first_occurrence_index_d.data(),
                                                                                                               unique_representations_d.data());
+    GW_CU_CHECK_ERR(cudaPeekAtLastError());
     // last element is the total number of elements in representations array
 
     std::uint32_t input_representations_size = input_representations_d.size();

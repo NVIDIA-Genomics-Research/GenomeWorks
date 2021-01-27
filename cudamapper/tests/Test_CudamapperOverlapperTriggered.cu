@@ -46,7 +46,7 @@ TEST(TestCudamapperOverlapperTriggerred, OneAchorNoOverlaps)
     anchors.push_back(anchor1);
 
     device_buffer<Anchor> anchors_d(anchors.size(), allocator, cuda_stream.get());
-    cudautils::device_copy_n(anchors.data(), anchors.size(), anchors_d.data(), cuda_stream.get()); //H2D
+    cudautils::device_copy_n_async(anchors.data(), anchors.size(), anchors_d.data(), cuda_stream.get()); //H2D
 
     std::vector<Overlap> overlaps;
     overlapper.get_overlaps(overlaps, anchors_d, 0, 0);
@@ -93,7 +93,7 @@ TEST(TestCudamapperOverlapperTriggerred, FourAnchorsOneOverlap)
     anchors.push_back(anchor4);
 
     device_buffer<Anchor> anchors_d(anchors.size(), allocator, cuda_stream.get());
-    cudautils::device_copy_n(anchors.data(), anchors.size(), anchors_d.data(), cuda_stream.get()); //H2D
+    cudautils::device_copy_n_async(anchors.data(), anchors.size(), anchors_d.data(), cuda_stream.get()); //H2D
 
     std::vector<Overlap> overlaps;
     overlapper.get_overlaps(overlaps, anchors_d, false, 0, 0, 1000);
@@ -146,7 +146,7 @@ TEST(TestCudamapperOverlapperTriggerred, FourAnchorsNoOverlap)
     anchors.push_back(anchor4);
 
     device_buffer<Anchor> anchors_d(anchors.size(), allocator, cuda_stream.get());
-    cudautils::device_copy_n(anchors.data(), anchors.size(), anchors_d.data(), cuda_stream.get()); //H2D
+    cudautils::device_copy_n_async(anchors.data(), anchors.size(), anchors_d.data(), cuda_stream.get()); //H2D
 
     std::vector<Overlap> overlaps;
     overlapper.get_overlaps(overlaps, anchors_d, 0, 0, 1000);
@@ -193,7 +193,7 @@ TEST(TestCudamapperOverlapperTriggerred, FourColinearAnchorsOneOverlap)
     anchors.push_back(anchor4);
 
     device_buffer<Anchor> anchors_d(anchors.size(), allocator, cuda_stream.get());
-    cudautils::device_copy_n(anchors.data(), anchors.size(), anchors_d.data(), cuda_stream.get()); //H2D
+    cudautils::device_copy_n_async(anchors.data(), anchors.size(), anchors_d.data(), cuda_stream.get()); //H2D
 
     std::vector<Overlap> overlaps;
     overlapper.get_overlaps(overlaps, anchors_d, 0, 0);
@@ -240,7 +240,7 @@ TEST(TestCudamapperOverlapperTriggerred, FourAnchorsLastNotInOverlap)
     anchors.push_back(anchor4);
 
     device_buffer<Anchor> anchors_d(anchors.size(), allocator, cuda_stream.get());
-    cudautils::device_copy_n(anchors.data(), anchors.size(), anchors_d.data(), cuda_stream.get()); //H2D
+    cudautils::device_copy_n_async(anchors.data(), anchors.size(), anchors_d.data(), cuda_stream.get()); //H2D
 
     std::vector<Overlap> overlaps;
     overlapper.get_overlaps(overlaps, anchors_d, false, 0, 0, 1000);
@@ -293,7 +293,7 @@ TEST(TestCudamapperOverlapperTriggerred, ReverseStrand)
     anchors.push_back(anchor4);
 
     device_buffer<Anchor> anchors_d(anchors.size(), allocator, cuda_stream.get());
-    cudautils::device_copy_n(anchors.data(), anchors.size(), anchors_d.data(), cuda_stream.get()); //H2D
+    cudautils::device_copy_n_async(anchors.data(), anchors.size(), anchors_d.data(), cuda_stream.get()); //H2D
 
     std::vector<Overlap> overlaps;
     overlapper.get_overlaps(overlaps, anchors_d, false, 0, 0, 1000);
