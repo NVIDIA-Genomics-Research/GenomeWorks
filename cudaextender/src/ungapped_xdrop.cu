@@ -129,6 +129,7 @@ StatusType UngappedXDrop::extend_async(const int8_t* d_query, const int32_t quer
                                                                    seed_pair_start,
                                                                    d_scored_segment_pairs,
                                                                    d_done_.data());
+        GW_CU_CHECK_ERR(cudaPeekAtLastError());
         size_t cub_storage_bytes = d_temp_storage_cub_.size();
         GW_CU_CHECK_ERR(cub::DeviceScan::InclusiveSum(d_temp_storage_cub_.data(),
                                                       cub_storage_bytes,
@@ -150,6 +151,7 @@ StatusType UngappedXDrop::extend_async(const int8_t* d_query, const int32_t quer
                                                         d_scored_segment_pairs,
                                                         d_tmp_ssp_.data(),
                                                         curr_num_pairs);
+            GW_CU_CHECK_ERR(cudaPeekAtLastError());
             thrust::stable_sort(thrust::cuda::par(allocator_).on(stream_),
                                 d_tmp_ssp_.begin(),
                                 d_tmp_ssp_.begin() + num_scored_segment_pairs,
